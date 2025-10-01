@@ -33,12 +33,14 @@ impl iceoryx2_tunnel_traits::Transport for Transport {
     type Config = Config;
     type CreationError = CreationError;
     type Discovery = Discovery;
+
+    type PublishSubscribeRelay = publish_subscribe::Relay;
+    type EventRelay = event::Relay;
+
     type RelayFactory<'a>
         = Factory<'a>
     where
         Self: 'a;
-    type PublishSubscribeRelay = publish_subscribe::Relay;
-    type EventRelay = event::Relay;
 
     fn create(config: &Self::Config) -> Result<Self, Self::CreationError> {
         let session = zenoh::open(config.clone()).wait();

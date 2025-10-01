@@ -22,11 +22,10 @@ use iceoryx2::service::builder::publish_subscribe::*;
 use iceoryx2::service::builder::CustomHeaderMarker;
 use iceoryx2::service::builder::CustomPayloadMarker;
 use iceoryx2::service::port_factory::*;
+use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2::service::Service;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_log::fatal_panic;
-
-use iceoryx2_tunnel_traits::Relay;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
@@ -62,16 +61,18 @@ impl From<SubscriberCreateError> for CreationError {
 }
 
 pub(crate) struct Ports<S: Service> {
+    pub(crate) static_config: StaticConfig,
     pub(crate) publisher: Publisher<S, [CustomPayloadMarker], CustomHeaderMarker>,
     pub(crate) subscriber: Subscriber<S, [CustomPayloadMarker], CustomHeaderMarker>,
 }
 
 impl<S: Service> Ports<S> {
     pub(crate) fn new(
+        static_config: &StaticConfig,
         service: &publish_subscribe::PortFactory<S, [CustomPayloadMarker], CustomHeaderMarker>,
     ) -> Result<Self, CreationError> {
         let publisher = fail!(
-            from "PublishSubscribePorts<S>::new",
+            from "PublishSubscribePorts::new",
             when service
                 .publisher_builder()
                 .allocation_strategy(AllocationStrategy::PowerOfTwo)
@@ -80,21 +81,23 @@ impl<S: Service> Ports<S> {
         );
 
         let subscriber = fail!(
-            from "PublishSubscribePorts<S>::new",
+            from "PublishSubscribePorts::new",
             when service.subscriber_builder().create(),
             "{}", &format!("Failed to create Subscriber for '{}'", service.name())
         );
 
         Ok(Ports {
+            static_config: static_config.clone(),
             publisher,
             subscriber,
         })
     }
 
-    pub(crate) fn propagate(
+    /// Receive data from the ports
+    pub(crate) fn receive<F: FnMut(*const u8, usize)>(
         &self,
         node_id: &iceoryx2::node::NodeId,
-        relay: &Box<dyn Relay>,
+        mut process_received: F,
     ) -> Result<(), PropagationError> {
         loop {
             match unsafe { self.subscriber.receive_custom_payload() } {
@@ -106,7 +109,7 @@ impl<S: Service> Ports<S> {
                     let ptr = sample.payload().as_ptr() as *const u8;
                     let len = sample.len();
 
-                    relay.propagate(ptr, len);
+                    process_received(ptr, len);
                 }
                 Ok(None) => break,
                 Err(e) => {
@@ -119,19 +122,24 @@ impl<S: Service> Ports<S> {
         Ok(())
     }
 
-    pub(crate) fn ingest(&self, relay: &Box<dyn Relay>) -> Result<(), IngestionError>
+    /// Send data on the ports
+    pub(crate) fn send<F>(&self, mut loan: F) -> Result<(), IngestionError>
     where
         S: Service,
+        F: FnMut(&mut dyn FnMut(usize) -> (*mut u8, usize)) -> bool,
     {
-        let payload_size = 1; // TODO: Get from PortFactory
+        let type_details = self
+            .static_config
+            .publish_subscribe()
+            .message_type_details();
 
         loop {
             let mut loaned_sample: Option<
                 SampleMutUninit<S, [MaybeUninit<CustomPayloadMarker>], CustomHeaderMarker>,
             > = None;
 
-            let ingested = relay.ingest(&mut |number_of_bytes| {
-                let number_of_elements = number_of_bytes / payload_size;
+            let ingested = loan(&mut |number_of_bytes| {
+                let number_of_elements = number_of_bytes / type_details.payload.size();
 
                 let (ptr, len) =
                     match unsafe { self.publisher.loan_custom_payload(number_of_elements) } {
@@ -154,7 +162,7 @@ impl<S: Service> Ports<S> {
                 if let Some(sample) = loaned_sample {
                     let sample = unsafe { sample.assume_init() };
                     fail!(
-                        from "PublishSubscribePorts<S>::ingest",
+                        from "PublishSubscribePorts::send",
                         when sample.send(),
                         with IngestionError::FailedToSendSample,
                         "Failed to send ingested payload"

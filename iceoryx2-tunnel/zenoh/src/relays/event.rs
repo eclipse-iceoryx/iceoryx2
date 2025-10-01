@@ -47,17 +47,7 @@ impl<'a> iceoryx2_tunnel_traits::RelayBuilder for Builder<'a> {
     type CreationError = CreationError;
     type Relay = Relay;
 
-    fn create(
-        self,
-    ) -> Result<
-        Box<
-            dyn iceoryx2_tunnel_traits::Relay<
-                PropagationError = <Self::Relay as iceoryx2_tunnel_traits::Relay>::PropagationError,
-                IngestionError = <Self::Relay as iceoryx2_tunnel_traits::Relay>::IngestionError,
-            >,
-        >,
-        Self::CreationError,
-    > {
+    fn create(self) -> Result<Self::Relay, Self::CreationError> {
         todo!()
     }
 }

@@ -62,17 +62,7 @@ impl<'a> iceoryx2_tunnel_traits::RelayBuilder for Builder<'a> {
     type CreationError = CreationError;
     type Relay = Relay;
 
-    fn create(
-        self,
-    ) -> Result<
-        Box<
-            dyn iceoryx2_tunnel_traits::Relay<
-                PropagationError = <Self::Relay as iceoryx2_tunnel_traits::Relay>::PropagationError,
-                IngestionError = <Self::Relay as iceoryx2_tunnel_traits::Relay>::IngestionError,
-            >,
-        >,
-        Self::CreationError,
-    > {
+    fn create(self) -> Result<Self::Relay, Self::CreationError> {
         let key = keys::publish_subscribe(self.static_config.service_id());
 
         let publisher = fail!(
@@ -102,10 +92,10 @@ impl<'a> iceoryx2_tunnel_traits::RelayBuilder for Builder<'a> {
             "Failed to announce service"
         );
 
-        Ok(Box::new(Relay {
+        Ok(Relay {
             publisher,
             subscriber,
-        }))
+        })
     }
 }
 
@@ -151,6 +141,8 @@ impl iceoryx2_tunnel_traits::Relay for Relay {
                     zenoh_payload.len(),
                 );
             }
+
+            return Ok(true);
         }
 
         Ok(false)

@@ -14,7 +14,7 @@ use core::fmt::Debug;
 
 use iceoryx2::service::static_config::StaticConfig;
 
-/// Relays data between iceoryx2 and the transport.
+/// Relays data over the transport.
 ///
 /// A relay should be created for each messaging pattern.
 pub trait Relay {
@@ -36,17 +36,7 @@ pub trait RelayBuilder {
     type CreationError: Debug;
     type Relay: Relay;
 
-    fn create(
-        self,
-    ) -> Result<
-        Box<
-            dyn Relay<
-                PropagationError = <Self::Relay as Relay>::PropagationError,
-                IngestionError = <Self::Relay as Relay>::IngestionError,
-            >,
-        >,
-        Self::CreationError,
-    >;
+    fn create(self) -> Result<Self::Relay, Self::CreationError>;
 }
 
 /// Factory for creating relay builders for different messaging patterns.
@@ -63,6 +53,9 @@ pub trait RelayBuilder {
 /// - Each builder can borrow a different `StaticConfig` with its own lifetime
 /// - The factory (and any resources it holds) must outlive all builders it creates
 pub trait RelayFactory {
+    type PublishSubscribeRelay: Relay;
+    type EventRelay: Relay;
+
     /// Builder for publish-subscribe messaging pattern.
     ///
     /// The `'config` lifetime parameter allows each call to `publish_subscribe()`
@@ -70,7 +63,9 @@ pub trait RelayFactory {
     ///
     /// The `where Self: 'config` constraint ensures the factory and its resources
     /// outlive the builder.
-    type PublishSubscribeBuilder<'config>: RelayBuilder + Debug + 'config
+    type PublishSubscribeBuilder<'config>: RelayBuilder<Relay = Self::PublishSubscribeRelay>
+        + Debug
+        + 'config
     where
         Self: 'config;
 
@@ -81,7 +76,7 @@ pub trait RelayFactory {
     ///
     /// The `where Self: 'config` constraint ensures the factory and its resources
     /// outlive the builder.
-    type EventBuilder<'config>: RelayBuilder + Debug + 'config
+    type EventBuilder<'config>: RelayBuilder<Relay = Self::EventRelay> + Debug + 'config
     where
         Self: 'config;
 

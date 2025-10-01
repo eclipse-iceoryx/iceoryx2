@@ -91,6 +91,21 @@ impl From<PublishSubscribeOpenOrCreateError> for CreationError {
     }
 }
 
+/// Struct to store different relay types by service id
+pub struct Relays<T: Transport> {
+    publish_subscribe: HashMap<ServiceId, T::PublishSubscribeRelay>,
+    event: HashMap<ServiceId, T::EventRelay>,
+}
+
+impl<T: Transport> Relays<T> {
+    pub fn new() -> Self {
+        Self {
+            publish_subscribe: HashMap::new(),
+            event: HashMap::new(),
+        }
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct Config {
     pub discovery_service: Option<String>,
@@ -102,7 +117,7 @@ pub struct Tunnel<S: Service, T: for<'a> Transport> {
     transport: T,
     services: HashSet<ServiceId>,
     ports: HashMap<ServiceId, Ports<S>>,
-    relays: HashMap<ServiceId, Box<dyn Relay>>,
+    relays: Relays<T>,
     subscriber: Option<discovery::subscriber::DiscoverySubscriber<S>>,
     tracker: Option<discovery::tracker::DiscoveryTracker<S>>,
 }
@@ -147,7 +162,7 @@ impl<S: Service, T: for<'a> Transport> Tunnel<S, T> {
             transport,
             services: HashSet::new(),
             ports: HashMap::new(),
-            relays: HashMap::new(),
+            relays: Relays::new(),
             subscriber: subscriber,
             tracker: tracker,
         })
@@ -205,26 +220,22 @@ impl<S: Service, T: for<'a> Transport> Tunnel<S, T> {
     /// Propagate payloads between iceoryx2 and the Transport
     pub fn propagate(&mut self) -> Result<(), PropagationOrIngestionError> {
         for (id, ports) in &self.ports {
-            let relay = match self.relays.get(id) {
-                Some(relay) => relay,
-                None => {
-                    warn!("No relay available for id {:?}. Skipping.", id);
-                    return Ok(());
-                }
-            };
-
             match ports {
-                Ports::PublishSubscribe(ports) => {
-                    fail!(
-                        from "Tunnel::propagate",
-                        when ports.propagate(self.node.id(), relay),
-                        "Failed to propagate PublishSubscribe payload"
-                    );
-                    fail!(
-                        from "Tunnel::propagate",
-                        when ports.ingest(relay),
-                        "Failed to ingest PublishSubscribe payload"
-                    );
+                Ports::PublishSubscribe(port) => {
+                    let relay = match self.relays.publish_subscribe.get(id) {
+                        Some(relay) => relay,
+                        None => {
+                            warn!("No relay available for id {:?}. Skipping.", id);
+                            return Ok(());
+                        }
+                    };
+
+                    port.receive(self.node.id(), |ptr, len| {
+                        relay.propagate(ptr, len).unwrap();
+                    })
+                    .unwrap();
+
+                    port.send(|loan| relay.ingest(loan).unwrap()).unwrap();
                 }
                 Ports::Event(_) => todo!(),
             }
@@ -244,19 +255,12 @@ fn on_discovery<S: Service, T: Transport>(
     transport: &T,
     services: &mut HashSet<ServiceId>,
     ports: &mut HashMap<ServiceId, Ports<S>>,
-    relays: &mut HashMap<ServiceId, Box<dyn Relay>>,
+    relays: &mut Relays<T>,
 ) -> Result<(), CreationError> {
     match static_config.messaging_pattern() {
         MessagingPattern::PublishSubscribe(_) => {
             debug!("Discovered: PublishSubscribe({})", static_config.name());
-            setup_publish_subscribe(
-                static_config,
-                node,
-                transport.relay_builder().publish_subscribe(static_config),
-                services,
-                ports,
-                relays,
-            )
+            setup_publish_subscribe(static_config, node, transport, services, ports, relays)
         }
         MessagingPattern::Event(_) => {
             debug!("Discovered: Event({})", static_config.name());
@@ -274,13 +278,13 @@ fn on_discovery<S: Service, T: Transport>(
     }
 }
 
-fn setup_publish_subscribe<S: Service, B: RelayBuilder>(
+fn setup_publish_subscribe<S: Service, T: Transport>(
     static_config: &StaticConfig,
     node: &Node<S>,
-    builder: B,
+    transport: &T,
     services: &mut HashSet<ServiceId>,
     ports: &mut HashMap<ServiceId, Ports<S>>,
-    relays: &mut HashMap<ServiceId, Box<dyn Relay>>,
+    relays: &mut Relays<T>,
 ) -> Result<(), CreationError> {
     let service_id = static_config.service_id();
 
@@ -316,14 +320,20 @@ fn setup_publish_subscribe<S: Service, B: RelayBuilder>(
     };
 
     // TODO: Use fail!
-    let port = ports::publish_subscribe::Ports::new(&service).unwrap();
+    let port = ports::publish_subscribe::Ports::new(static_config, &service).unwrap();
 
     // TODO: Use fail!
-    let relay = builder.create().unwrap();
+    let relay = transport
+        .relay_builder()
+        .publish_subscribe(static_config)
+        .create()
+        .unwrap();
 
     services.insert(service.service_id().clone());
     ports.insert(service.service_id().clone(), Ports::PublishSubscribe(port));
-    relays.insert(service.service_id().clone(), relay);
+    relays
+        .publish_subscribe
+        .insert(service.service_id().clone(), relay);
 
     Ok(())
 }

@@ -30,6 +30,9 @@ impl<'session> Factory<'session> {
 }
 
 impl<'session> iceoryx2_tunnel_traits::RelayFactory for Factory<'session> {
+    type PublishSubscribeRelay = publish_subscribe::Relay;
+    type EventRelay = event::Relay;
+
     type PublishSubscribeBuilder<'config>
         = publish_subscribe::Builder<'config>
     where
