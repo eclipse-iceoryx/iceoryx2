@@ -76,3 +76,18 @@
    const VEC_CAPACITY: usize = 1234;
    let my_vec = StaticVec::<MyType, VEC_CAPACITY>::new();
    ```
+
+2. Replaced `Vec` with the `PolymorphicVec`
+
+    ```rust
+   // old
+   use iceoryx2_bb_container::vec::Vec;
+   const VEC_CAPACITY: usize = 1234;
+   let my_vec = Vec::<MyType>::new();
+
+   // new
+   use iceoryx2_bb_container::vector::*;
+   let my_stateful_allocator = acquire_allocator();
+   let vec_capacity: usize = 1234;
+   let my_vec = PolymorphicVec::<MyType>::new(my_stateful_allocator, vec_capacity)?;
+    ```
