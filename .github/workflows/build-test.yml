@@ -477,7 +477,7 @@ jobs:
       - name: Upload Rust coverage to Codecov
         uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # ratchet:codecov/codecov-action@v4
         with:
-          file: target/ff/coverage/lcov/iceoryx2_lcov_rust.info
+          files: target/ff/coverage/lcov/iceoryx2_lcov_rust.info, target/ff/coverage/lcov/iceoryx2_lcov_cpp.info
           name: iceoryx2
           flags: Rust
           fail_ci_if_error: false
