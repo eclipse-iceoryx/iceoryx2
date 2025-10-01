@@ -368,6 +368,15 @@ TEST(StaticString, try_push_back_fails_for_invalid_character) {
     ASSERT_FALSE(sut.try_push_back(InvalidChar<>::value));
 }
 
+TEST(StaticString, try_push_back_explicitly_rewrites_zero_terminator_for_rust_compatibility) {
+    constexpr uint64_t const STRING_SIZE = 3;
+    iox2::container::StaticString<STRING_SIZE> sut;
+    sut.unchecked_access()[1] = 'B';
+    ASSERT_TRUE(sut.try_push_back('A'));
+    ASSERT_EQ(sut.size(), 1);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "A");
+}
+
 TEST(StaticString, static_string_with_capacity_0_can_never_be_pushed_into) {
     iox2::container::StaticString<0> sut;
     ASSERT_TRUE(sut.empty());
@@ -482,6 +491,15 @@ TEST(StaticString, try_append_fails_for_invalid_characters) {
     ASSERT_FALSE(sut.try_append(2, InvalidChar<>::value));
 }
 
+TEST(StaticString, try_append_explicitly_rewrites_zero_terminator_for_rust_compatibility) {
+    constexpr uint64_t const STRING_SIZE = 5;
+    iox2::container::StaticString<STRING_SIZE> sut;
+    sut.unchecked_access()[3] = 'B';
+    ASSERT_TRUE(sut.try_append(3, 'A'));
+    ASSERT_EQ(sut.size(), 3);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "AAA");
+}
+
 TEST(StaticString, try_append_utf8_null_terminated_unchecked_appends_a_c_style_string) {
     constexpr uint64_t const STRING_SIZE = 12;
     iox2::container::StaticString<STRING_SIZE> sut;
@@ -556,6 +574,15 @@ TEST(StaticString, try_append_utf8_null_terminated_unchecked_fails_if_input_cont
     strcpy(mutable_string, test_string);
     ASSERT_TRUE(sut.try_append_utf8_null_terminated_unchecked(str_ptr));
     // NOLINTEND(clang-analyzer-security.insecureAPI.strcpy,cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
+}
+
+TEST(StaticString, try_append_utf8_unchecked_explicitly_rewrites_zero_terminator_for_rust_compatibility) {
+    constexpr uint64_t const STRING_SIZE = 5;
+    iox2::container::StaticString<STRING_SIZE> sut;
+    sut.unchecked_access()[3] = 'B';
+    ASSERT_TRUE(sut.try_append_utf8_null_terminated_unchecked("AAA"));
+    ASSERT_EQ(sut.size(), 3);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "AAA");
 }
 
 TEST(StaticString, code_unit_element_at_accesses_element_by_index) {

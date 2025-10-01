@@ -348,6 +348,9 @@ class StaticString {
         if ((m_size < N) && (is_valid_next(character))) {
             m_string[m_size] = character;
             ++m_size;
+            // we explicitly write the terminator here, as the rust string
+            // may contain non-null characters after the end
+            m_string[m_size] = '\0';
             return true;
         } else {
             return false;
@@ -376,6 +379,9 @@ class StaticString {
         if ((m_size + count <= N) && (is_valid_next(character))) {
             std::fill(&(m_string[m_size]), &(m_string[m_size + count]), character);
             m_size += count;
+            // we explicitly write the terminator here, as the rust string
+            // may contain non-null characters after the end
+            m_string[m_size] = '\0';
             return true;
         } else {
             return false;
