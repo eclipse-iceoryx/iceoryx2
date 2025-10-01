@@ -159,6 +159,11 @@ auto get_type_name() -> TypeName {
     return get_type_name_impl<PayloadType>();
 }
 
+// TODO
+template <typename T>
+auto default_key_eq_cmp_func(const T* lhs, const T* rhs) -> bool {
+    return *lhs == *rhs;
+}
 } // namespace iox2::internal
 
 #endif

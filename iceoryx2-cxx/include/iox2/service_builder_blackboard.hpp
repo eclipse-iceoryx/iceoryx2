@@ -17,6 +17,7 @@
 #include "iox/expected.hpp"
 #include "iox2/attribute_specifier.hpp"
 #include "iox2/attribute_verifier.hpp"
+#include "iox2/internal/iceoryx2.hpp"
 #include "iox2/internal/service_builder_internal.hpp"
 #include "iox2/port_factory_blackboard.hpp"
 #include "iox2/service_builder_blackboard_error.hpp"
@@ -125,7 +126,14 @@ inline void ServiceBuilderBlackboardCreator<KeyType, S>::set_parameters() {
     const auto key_type_result = iox2_service_builder_blackboard_creator_set_key_type_details(
         &m_handle, type_name.unchecked_access().c_str(), type_name.size(), sizeof(KeyType), alignof(KeyType));
     if (key_type_result != IOX2_OK) {
-        IOX_PANIC("This should never happen! Implementation failure while setting the Key-Type.");
+        IOX_PANIC("This should never happen! Implementation failure while setting the key type.");
+    }
+
+    // key eq comparison function
+    const auto key_cmp_result = iox2_service_builder_blackboard_creator_set_key_eq_comparison_function(
+        &m_handle, internal::default_key_eq_cmp_func);
+    if (key_cmp_result != IOX2_OK) {
+        IOX_PANIC("This should never happen! Implementation failure while setting the key eq comparison function.");
     }
 }
 
