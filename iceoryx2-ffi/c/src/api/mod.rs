@@ -17,7 +17,7 @@ use iceoryx2_bb_container::semantic_string::SemanticStringError;
 use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_ffi_macros::CStrRepr;
 
-use core::ffi::{c_char, c_int, c_void};
+use core::ffi::{c_char, c_int, c_uchar, c_void};
 
 mod active_request;
 mod attribute;
@@ -295,3 +295,8 @@ pub unsafe extern "C" fn iox2_semantic_string_error_string(
 ) -> *const c_char {
     error.as_const_cstr().as_ptr() as *const c_char
 }
+
+// TODO
+// tiny_fn
+pub type iox2_service_blackboard_key_eq_cmp_func =
+    unsafe extern "C" fn(*const c_uchar, *const c_uchar) -> bool;

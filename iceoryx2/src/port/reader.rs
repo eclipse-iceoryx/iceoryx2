@@ -192,7 +192,7 @@ impl<
 
         let offset = self.get_entry_offset(
             key,
-            __internal_default_eq_comparison::<KeyType>,
+            &__internal_default_eq_comparison::<KeyType>,
             &TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
             msg,
         )?;
@@ -208,10 +208,10 @@ impl<
         Ok(EntryHandle::new(self.shared_state.clone(), atomic, offset))
     }
 
-    fn get_entry_offset(
+    fn get_entry_offset<F: Fn(*const u8, *const u8) -> bool>(
         &self,
         key: &KeyType,
-        key_eq_func: unsafe fn(*const u8, *const u8) -> bool,
+        key_eq_func: &F,
         type_details: &TypeDetail,
         msg: &str,
     ) -> Result<u64, EntryHandleError> {
@@ -353,14 +353,14 @@ impl<Service: service::Service> Reader<Service, u64> {
         key: &u64,
         type_details: &TypeDetail,
     ) -> Result<__InternalEntryHandle<Service>, EntryHandleError> {
-        self.__internal_entry_impl(key, __internal_default_eq_comparison::<u64>, type_details)
+        self.__internal_entry_impl(key, &__internal_default_eq_comparison::<u64>, type_details)
     }
 
     #[doc(hidden)]
-    fn __internal_entry_impl(
+    pub fn __internal_entry_impl<F: Fn(*const u8, *const u8) -> bool>(
         &self,
         key: &u64,
-        key_eq_func: unsafe fn(*const u8, *const u8) -> bool,
+        key_eq_func: &F,
         type_details: &TypeDetail,
     ) -> Result<__InternalEntryHandle<Service>, EntryHandleError> {
         let msg = "Unable to create entry handle";

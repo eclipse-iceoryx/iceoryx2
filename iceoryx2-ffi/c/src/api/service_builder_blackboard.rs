@@ -15,10 +15,10 @@
 use super::{iox2_attribute_specifier_h_ref, iox2_attribute_verifier_h_ref, iox2_type_variant_e};
 use crate::api::{
     c_size_t, iox2_port_factory_blackboard_h, iox2_port_factory_blackboard_t,
-    iox2_service_builder_blackboard_creator_h, iox2_service_builder_blackboard_creator_h_ref,
-    iox2_service_builder_blackboard_opener_h, iox2_service_builder_blackboard_opener_h_ref,
-    iox2_service_type_e, AssertNonNullHandle, HandleToType, IntoCInt, KeyFfi,
-    PortFactoryBlackboardUnion, ServiceBuilderUnion, IOX2_OK,
+    iox2_service_blackboard_key_eq_cmp_func, iox2_service_builder_blackboard_creator_h,
+    iox2_service_builder_blackboard_creator_h_ref, iox2_service_builder_blackboard_opener_h,
+    iox2_service_builder_blackboard_opener_h_ref, iox2_service_type_e, AssertNonNullHandle,
+    HandleToType, IntoCInt, KeyFfi, PortFactoryBlackboardUnion, ServiceBuilderUnion, IOX2_OK,
 };
 use crate::create_type_details;
 use core::ffi::{c_char, c_int, c_void};
@@ -329,6 +329,43 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_opener_set_key_type_det
             let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_opener);
             service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_opener(
                 service_builder.__internal_set_key_type_details(&value),
+            ));
+        }
+    }
+
+    IOX2_OK
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_set_key_eq_comparison_function(
+    service_builder_handle: iox2_service_builder_blackboard_creator_h_ref,
+    key_eq_func: iox2_service_blackboard_key_eq_cmp_func,
+) -> c_int {
+    service_builder_handle.assert_non_null();
+
+    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+
+    match service_builder_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
+            service_builder_struct.set(ServiceBuilderUnion::new_ipc_blackboard_creator(
+                service_builder.__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
+                    key_eq_func(lhs, rhs)
+                })),
+            ));
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
+            service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_creator(
+                service_builder.__internal_set_key_eq_cmp_func(Box::new(
+                    move |lhs: *const u8, rhs: *const u8| key_eq_func(lhs, rhs),
+                )),
             ));
         }
     }

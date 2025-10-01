@@ -91,6 +91,12 @@ inline auto Reader<S, KeyType>::id() const -> UniqueReaderId {
     return UniqueReaderId { id_handle };
 }
 
+// TODO
+template <typename T>
+auto default_key_eq_cmp_func2(const T* lhs, const T* rhs) -> bool {
+    return *lhs == *rhs;
+}
+
 template <ServiceType S, typename KeyType>
 template <typename ValueType>
 inline auto Reader<S, KeyType>::entry(const KeyType& key)
@@ -102,6 +108,7 @@ inline auto Reader<S, KeyType>::entry(const KeyType& key)
                                     nullptr,
                                     &entry_handle,
                                     key,
+                                    default_key_eq_cmp_func2,
                                     type_name.unchecked_access().c_str(),
                                     type_name.size(),
                                     sizeof(ValueType),

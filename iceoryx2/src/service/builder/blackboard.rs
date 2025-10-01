@@ -315,7 +315,7 @@ struct Builder<
     verify_max_nodes: bool,
     internals: Vec<BuilderInternals<KeyType>>,
     override_key_type: Option<TypeDetail>,
-    key_eq_func: unsafe fn(*const u8, *const u8) -> bool,
+    key_eq_func: Box<dyn Fn(*const u8, *const u8) -> bool>,
 }
 
 impl<
@@ -341,7 +341,9 @@ impl<
             verify_max_nodes: false,
             internals: Vec::<BuilderInternals<KeyType>>::new(),
             override_key_type: None,
-            key_eq_func: __internal_default_eq_comparison::<KeyType>,
+            key_eq_func: Box::new(|lhs: *const u8, rhs: *const u8| {
+                __internal_default_eq_comparison::<KeyType>(lhs, rhs)
+            }),
         };
 
         new_self.base.service_config.messaging_pattern = MessagingPattern::Blackboard(
@@ -678,7 +680,7 @@ impl<
                                     return false
                                 }
                                 // write offset index to map
-                                let res = unsafe {entry.map.__internal_insert(self.builder.internals[i].key.clone(), entry.entries.len() - 1, self.builder.key_eq_func)};
+                                let res = unsafe {entry.map.__internal_insert(self.builder.internals[i].key.clone(), entry.entries.len() - 1, &*self.builder.key_eq_func)};
                                 if res.is_err() {
                                     error!(from self, "Inserting the key-value pair into the blackboard management segment failed.");
                                     return false
@@ -728,7 +730,7 @@ impl<ServiceType: service::Service> Creator<u64, ServiceType> {
     #[doc(hidden)]
     pub fn __internal_set_key_eq_cmp_func(
         mut self,
-        key_eq_func: unsafe fn(*const u8, *const u8) -> bool,
+        key_eq_func: Box<dyn Fn(*const u8, *const u8) -> bool>,
     ) -> Self {
         self.builder.key_eq_func = key_eq_func;
         self
@@ -963,16 +965,6 @@ impl<ServiceType: service::Service> Opener<u64, ServiceType> {
     #[doc(hidden)]
     pub unsafe fn __internal_set_key_type_details(mut self, value: &TypeDetail) -> Self {
         self.builder.override_key_type = Some(value.clone());
-        self
-    }
-
-    // TODO: unsafe?
-    #[doc(hidden)]
-    pub fn __internal_set_key_eq_cmp_func(
-        mut self,
-        key_eq_func: unsafe fn(*const u8, *const u8) -> bool,
-    ) -> Self {
-        self.builder.key_eq_func = key_eq_func;
         self
     }
 }

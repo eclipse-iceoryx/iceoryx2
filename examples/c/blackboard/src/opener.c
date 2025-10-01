@@ -21,6 +21,10 @@
 #include <stdio.h>
 #include <string.h>
 
+bool key_cmp(const uint8_t* lhs, const uint8_t* rhs) {
+    return *(const uint64_t*) lhs == *(const uint64_t*) rhs;
+}
+
 // TODO [#817] see "RAII" in service_types example
 int main(void) {
     // Setup logging
@@ -78,6 +82,7 @@ int main(void) {
                           NULL,
                           &entry_handle_key_0,
                           0,
+                          key_cmp,
                           value_type_name_int,
                           strlen(value_type_name_int),
                           sizeof(int32_t),
@@ -93,6 +98,7 @@ int main(void) {
                           NULL,
                           &entry_handle_key_1,
                           1,
+                          key_cmp,
                           value_type_name_double,
                           strlen(value_type_name_double),
                           sizeof(double),

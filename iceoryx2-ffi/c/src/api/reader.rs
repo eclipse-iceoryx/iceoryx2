@@ -20,7 +20,7 @@ use crate::{
         iox2_unique_reader_id_h, iox2_unique_reader_id_t, AssertNonNullHandle, EntryHandleUnion,
         HandleToType, IntoCInt, KeyFfi,
     },
-    IOX2_OK,
+    iox2_service_blackboard_key_eq_cmp_func, IOX2_OK,
 };
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
@@ -217,6 +217,7 @@ pub unsafe extern "C" fn iox2_reader_entry(
     entry_handle_struct_ptr: *mut iox2_entry_handle_t,
     entry_handle_handle_ptr: *mut iox2_entry_handle_h,
     key: KeyFfi,
+    key_eq_func: iox2_service_blackboard_key_eq_cmp_func,
     value_type_name_str: *const c_char,
     value_type_name_len: c_size_t,
     value_size: c_size_t,
@@ -251,12 +252,11 @@ pub unsafe extern "C" fn iox2_reader_entry(
     let reader = &mut *reader_handle.as_type();
 
     match reader.service_type {
-        iox2_service_type_e::IPC => match reader
-            .value
-            .as_ref()
-            .ipc
-            .__internal_entry(&key, &value_type_details)
-        {
+        iox2_service_type_e::IPC => match reader.value.as_ref().ipc.__internal_entry_impl(
+            &key,
+            &|lhs: *const u8, rhs: *const u8| key_eq_func(lhs, rhs),
+            &value_type_details,
+        ) {
             Ok(handle) => {
                 let (entry_handle_struct_ptr, deleter) =
                     init_entry_handle_struct_ptr(entry_handle_struct_ptr);
@@ -269,12 +269,11 @@ pub unsafe extern "C" fn iox2_reader_entry(
             }
             Err(error) => return error.into_c_int(),
         },
-        iox2_service_type_e::LOCAL => match reader
-            .value
-            .as_ref()
-            .local
-            .__internal_entry(&key, &value_type_details)
-        {
+        iox2_service_type_e::LOCAL => match reader.value.as_ref().local.__internal_entry_impl(
+            &key,
+            &|lhs: *const u8, rhs: *const u8| key_eq_func(lhs, rhs),
+            &value_type_details,
+        ) {
             Ok(handle) => {
                 let (entry_handle_struct_ptr, deleter) =
                     init_entry_handle_struct_ptr(entry_handle_struct_ptr);

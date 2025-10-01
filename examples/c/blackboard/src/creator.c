@@ -21,6 +21,10 @@
 #include <stdio.h>
 #include <string.h>
 
+bool key_cmp(const uint8_t* lhs, const uint8_t* rhs) {
+    return *(const uint64_t*) lhs == *(const uint64_t*) rhs;
+}
+
 // TODO [#817] see "RAII" in service_types example
 int main(void) {
     // Setup logging
@@ -54,6 +58,13 @@ int main(void) {
             &service_builder_blackboard, key_type_name, strlen(key_type_name), sizeof(uint64_t), alignof(uint64_t))
         != IOX2_OK) {
         printf("Unable to set key type details!\n");
+        goto drop_service_name;
+    }
+
+    // set key eq comparison function
+    if (iox2_service_builder_blackboard_creator_set_key_eq_comparison_function(&service_builder_blackboard, key_cmp)
+        != IOX2_OK) {
+        printf("Unable to set the key eq comparison function!\n");
         goto drop_service_name;
     }
 
@@ -103,6 +114,7 @@ int main(void) {
                           NULL,
                           &entry_handle_mut_key_0,
                           0,
+                          key_cmp,
                           value_type_name_int,
                           strlen(value_type_name_int),
                           sizeof(int32_t),
@@ -117,6 +129,7 @@ int main(void) {
                           NULL,
                           &entry_handle_mut_key_1,
                           1,
+                          key_cmp,
                           value_type_name_double,
                           strlen(value_type_name_double),
                           sizeof(double),
