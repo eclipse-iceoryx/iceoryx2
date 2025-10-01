@@ -71,7 +71,7 @@ jobs:
           uname -a
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # ratchet:actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -236,7 +236,7 @@ jobs:
 
       - name: Download deployed GitHub Pages artifact
         if: steps.find-previous.outputs.found == 'true'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
           name: github-pages
           path: ./old-artifacts
