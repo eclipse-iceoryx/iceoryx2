@@ -27,7 +27,7 @@ runs:
   using: "composite"
   steps:
     - name: Setup Rust
-      uses: dtolnay/rust-toolchain@v1
+      uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 #ratchet v1
       with:
         toolchain: ${{ inputs.rust-toolchain }}
         components: ${{ inputs.rust-components }}
@@ -39,7 +39,7 @@ runs:
       shell: bash
     - name: Setup cache
       if: runner.os != 'Windows'
-      uses: actions/cache@v4
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 #ratchet v4
       with:
         path: |
           ~/.cargo/bin/
@@ -49,7 +49,7 @@ runs:
         key: ${{ inputs.cache-key }}-${{ hashFiles('version_info') }}
     - name: Setup cache
       if: runner.os == 'Windows'
-      uses: actions/cache@v4
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 #ratchet v4
       with:
         path: |
           C:/Users/runneradmin/.cargo/bin/
@@ -65,7 +65,7 @@ runs:
       shell: bash
     - name: Upload artifact
       if: runner.os != 'Windows'
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #ratchet v4
       with:
         name: ${{ inputs.artifact-upload-name }}
         path: ~/.cargo/bin/${{ inputs.artifact-bin-name }}
@@ -73,7 +73,7 @@ runs:
         if-no-files-found: error
     - name: Upload artifact
       if: runner.os == 'Windows'
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #ratchet v4
       with:
         name: ${{ inputs.artifact-upload-name }}
         path: C:/Users/runneradmin/.cargo/bin/${{ inputs.artifact-bin-name }}.exe
