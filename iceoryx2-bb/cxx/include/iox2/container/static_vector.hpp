@@ -31,9 +31,9 @@ namespace iox2 {
 namespace container {
 
 /// A resizable container with compile-time fixed static capacity and contiguous inplace storage.
-template <typename T, uint64_t N>
+template <typename T, uint64_t Capacity>
 class StaticVector {
-    static_assert(N > 0, "Static container with capacity 0 is not allowed.");
+    static_assert(Capacity > 0, "Static container with capacity 0 is not allowed.");
     // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
     static_assert(std::is_standard_layout<T>::value, "Containers can only be used with standard layout types.");
 
@@ -50,7 +50,8 @@ class StaticVector {
     using OptionalReference = Optional<std::reference_wrapper<T>>;
     using OptionalConstReference = Optional<std::reference_wrapper<T const>>;
 
-    // Unchecked element access
+    /// Unchecked element access.
+    /// Users of this class must ensure that all memory accesses stay within bounds of the accessed vector's memory.
     class UncheckedConstAccessor {
         friend class StaticVector;
 
@@ -85,6 +86,8 @@ class StaticVector {
         }
     };
 
+    // Mutable unchecked element access.
+    /// Users of this class must ensure that all memory accesses stay within bounds of the accessed vector's memory.
     class UncheckedAccessor {
         friend class StaticVector;
 
@@ -122,7 +125,7 @@ class StaticVector {
   private:
     template <typename, uint64_t>
     friend class StaticVector;
-    detail::RawByteStorage<T, N> m_storage;
+    detail::RawByteStorage<T, Capacity> m_storage;
 
   public:
     // constructors
@@ -130,13 +133,15 @@ class StaticVector {
     constexpr StaticVector(StaticVector const&) = default;
     constexpr StaticVector(StaticVector&&) = default;
 
-    template <uint64_t M, std::enable_if_t<(N >= M), bool> = true>
+    /// Copy construct from a vector with smaller capacity
+    template <uint64_t M, std::enable_if_t<(Capacity >= M), bool> = true>
     // NOLINTNEXTLINE(hicpp-explicit-conversions), conceptually a copy constructor
     constexpr StaticVector(StaticVector<T, M> const& rhs)
         : m_storage(rhs.m_storage) {
     }
 
-    template <uint64_t M, std::enable_if_t<(N >= M), bool> = true>
+    /// Construct from a C-style array
+    template <uint64_t M, std::enable_if_t<(Capacity >= M), bool> = true>
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,hicpp-avoid-c-arrays,modernize-avoid-c-arrays), static bounds
     constexpr explicit StaticVector(T const (&element_array)[M]) {
         for (auto& element : element_array) {
@@ -150,17 +155,22 @@ class StaticVector {
 #endif
         ~StaticVector() = default;
 
-    auto operator=(StaticVector const&) -> StaticVector& = delete;
-    auto operator=(StaticVector&&) -> StaticVector& = delete;
+    // assignment
+    auto operator=(StaticVector const&) -> StaticVector& = default;
+    auto operator=(StaticVector&&) -> StaticVector& = default;
 
+    /// Construct a new vector with `count` occurrences of a default constructed value.
+    /// @return Nullopt if `count` exceeds the vector capacity.
+    ///         Otherwise a vector containing the desired elements.
     static constexpr auto from_value(SizeType count)
         // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
         -> std::enable_if_t<std::is_default_constructible<T>::value, StaticVector> {
         return from_value(count, T {});
     }
 
+    /// Construct a new vector with `count` copies of `value`.
     static constexpr auto from_value(SizeType count, T const& value) -> Optional<StaticVector> {
-        if (count < N) {
+        if (count < Capacity) {
             StaticVector ret;
             ret.m_storage.insert_at(0, count, value);
             return ret;
@@ -169,6 +179,10 @@ class StaticVector {
         }
     }
 
+    /// Construct a vector from a range [`it_begin`, `it_end`).
+    /// Users must ensure that `it_end` is reachable from `it_begin` without causing undefined behaviour.
+    /// @return Nullopt if the range size exceeds the vector capacity.
+    ///         Otherwise a vector containing copies of the range elements.
     template <typename Iter,
               typename Sentinel,
               std::enable_if_t<
@@ -187,6 +201,10 @@ class StaticVector {
         return ret;
     }
 
+    /// Constructs a vector from a range [`begin(rng)`, `end(rng)`).
+    /// Users must ensure that `rng` is represents a valid range object.
+    /// @return Nullopt if the range size exceeds the vector capacity.
+    ///         Otherwise a vector containing copies of the range elements.
     template <typename Range>
     static constexpr auto from_range_unchecked(Range const& rng) -> Optional<StaticVector> {
         using std::begin;
@@ -194,19 +212,26 @@ class StaticVector {
         return from_range_unchecked(begin(rng), end(rng));
     }
 
+
+    /// Constructs a vector from the elements of the initializer list `init_list`.
+    /// @return Nullopt if the initializer list size exceeds the vector capacity.
+    ///         Otherwise a vector containing copies of the list elements.
     static constexpr auto from_initializer_list(std::initializer_list<T> init_list) -> Optional<StaticVector> {
-        if (init_list.size() > N) {
+        if (init_list.size() > Capacity) {
             return nullopt;
         } else {
             return from_range_unchecked(begin(init_list), end(init_list));
         }
     }
 
+    /// Attempts to construct a new element from the constructor arguments `args` at the back of the vector.
+    /// @return true on success.
+    ///         false if the operation would exceed the vector's capacity.
     template <typename... Args>
     constexpr auto try_emplace_back(Args&&... args) ->
         // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
         std::enable_if_t<std::is_constructible<T, Args...>::value, bool> {
-        if (m_storage.size() < N) {
+        if (m_storage.size() < Capacity) {
             m_storage.emplace_back(std::forward<Args>(args)...);
             return true;
         } else {
@@ -214,11 +239,15 @@ class StaticVector {
         }
     }
 
+    /// Attempts to construct a new element from the constructor arguments `args` at the specified `index`.
+    /// @return true on success.
+    ///         false if `index` is greater than the current size of the vector or
+    ///         if the operation would exceed the vector's capacity.
     template <typename... Args>
     constexpr auto try_emplace_at(SizeType index, Args&&... args) ->
         // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
         std::enable_if_t<std::is_constructible<T, Args...>::value, bool> {
-        if ((m_storage.size() < N) && (index <= m_storage.size())) {
+        if ((m_storage.size() < Capacity) && (index <= m_storage.size())) {
             m_storage.emplace_at(index, std::forward<Args>(args)...);
             return true;
         } else {
@@ -226,6 +255,9 @@ class StaticVector {
         }
     }
 
+    /// Attempts to erase the element at the specified `index`.
+    /// @return true on success.
+    ///         false if `index` is not the index of an existing element.
     constexpr auto try_erase_at(SizeType index) -> bool {
         if (index < m_storage.size()) {
             m_storage.erase_at(index);
@@ -235,6 +267,9 @@ class StaticVector {
         }
     }
 
+    /// Attempts to erase all elements in the index range [`begin_index`, `end_index`).
+    /// @return true on success.
+    ///         false if the index range is not a valid range of element indices.
     constexpr auto try_erase_at(SizeType begin_index, SizeType end_index) -> bool {
         if ((end_index <= m_storage.size()) && (begin_index <= end_index)) {
             m_storage.erase_at(begin_index, end_index);
@@ -244,16 +279,28 @@ class StaticVector {
         }
     }
 
+    /// Attempts to insert a single `value` at `index`.
+    /// This function will copy the input value into place.
+    /// @return true on success.
+    ///         false if `index` is greater than the current size of the vector.
     constexpr auto try_insert_at(SizeType index, T const& value) -> bool {
-        return try_emplace(index, value);
+        return try_emplace_at(index, value);
     }
 
+    /// Attempts to insert a single `value` at `index`.
+    /// This function will move the input value into place.
+    /// @return true on success.
+    ///         false if `index` is greater than the current size of the vector.
     constexpr auto try_insert_at(SizeType index, T&& value) -> bool {
-        return try_emplace(index, std::move(value));
+        return try_emplace_at(index, std::move(value));
     }
 
+    /// Attempts to insert `count` copies of `value` at `index`.
+    /// @return true on success.
+    ///         false if `index` is greater than the current size of the vector or
+    ///         if the operation would exceed the vector's capacity.
     constexpr auto try_insert_at(SizeType index, SizeType count, T const& value) -> bool {
-        if ((index <= m_storage.size()) && (m_storage.size() + count <= N)) {
+        if ((index <= m_storage.size()) && (m_storage.size() + count <= Capacity)) {
             m_storage.insert_at(index, count, value);
             return true;
         } else {
@@ -261,6 +308,11 @@ class StaticVector {
         }
     }
 
+    /// Attempts to insert the elements from the range [`it_begin`, `it_end`) at `index`.
+    /// Users must ensure that `it_end` is reachable from `it_begin` without causing undefined behaviour.
+    /// @return true on success.
+    ///         false if `index` is greater than the current size of the vector or
+    ///         if the operation would exceed the vector's capacity.
     template <typename Iter,
               typename Sentinel,
               std::enable_if_t<
@@ -285,22 +337,39 @@ class StaticVector {
         }
     }
 
+    /// Attempts to insert the elements from the initializer list `init_list` at `index`.
+    /// @return true on success.
+    ///         false if `index` is greater than the current size of the vector or
+    ///         if the operation would exceed the vector's capacity.
     constexpr auto try_insert_at_unchecked(SizeType index, std::initializer_list<T> init_list) {
         return try_insert_at_unchecked(index, init_list.begin(), init_list.end());
     }
 
+    /// Clears all elements from the vector.
+    /// After this operation, the vector will be empty.
     constexpr void clear() {
         m_storage.erase_at(0, m_storage.size());
     }
 
+    /// Attempts to insert a single `value` at the back of the vector.
+    /// This function will copy the input value into place.
+    /// @return true on success.
+    ///         false if `index` is greater than the current size of the vector.
     constexpr auto try_push_back(T const& value) -> bool {
         return try_emplace_back(value);
     }
 
+    /// Attempts to insert a single `value` at the back of the vector.
+    /// This function will move the input value into place.
+    /// @return true on success.
+    ///         false if `index` is greater than the current size of the vector.
     constexpr auto try_push_back(T&& value) -> bool {
         return try_emplace_back(std::move(value));
     }
 
+    /// Attempts to remove a single value from the back of the vector.
+    /// @return true on success.
+    ///         false if the vector is empty.
     constexpr auto try_pop_back() -> bool {
         if (m_storage.size() > 0) {
             m_storage.shrink_from_back(m_storage.size() - 1);
@@ -310,18 +379,24 @@ class StaticVector {
         }
     }
 
+    /// Retrieves the static capacity of the vector.
     static constexpr auto capacity() noexcept -> SizeType {
-        return N;
+        return Capacity;
     }
 
+    /// Retrieves the size of the vector.
     constexpr auto size() const noexcept -> SizeType {
         return m_storage.size();
     }
 
+    /// Checks whether the vector is currently empty.
     constexpr auto empty() const -> bool {
         return size() == 0;
     }
 
+    /// Attempts to retrieve the element at `index`.
+    /// @return Nullopt if `index` is not 0 <= `index` < size().
+    ///         Otherwise a reference to the element at the requested index.
     auto element_at(SizeType index) -> OptionalReference {
         if (index < m_storage.size()) {
             return *m_storage.pointer_from_index(index);
@@ -330,6 +405,9 @@ class StaticVector {
         }
     }
 
+    /// Attempts to retrieve the element at `index`.
+    /// @return Nullopt if `index` is not 0 <= `index` < size().
+    ///         Otherwise a reference to the element at the requested index.
     auto element_at(SizeType index) const -> OptionalConstReference {
         if (index < m_storage.size()) {
             return *m_storage.pointer_from_index(index);
@@ -338,6 +416,9 @@ class StaticVector {
         }
     }
 
+    /// Attempts to retrieve the first element.
+    /// @return Nullopt if size() == 0.
+    ///         Otherwise a reference to the first element.
     auto front_element() -> OptionalReference {
         if (!empty()) {
             return *m_storage.pointer_from_index(0);
@@ -346,7 +427,10 @@ class StaticVector {
         }
     }
 
-    auto front_element() const -> OptionalReference {
+    /// Attempts to retrieve the first element.
+    /// @return Nullopt if size() == 0.
+    ///         Otherwise a reference to the first element.
+    auto front_element() const -> OptionalConstReference {
         if (!empty()) {
             return *m_storage.pointer_from_index(0);
         } else {
@@ -354,6 +438,9 @@ class StaticVector {
         }
     }
 
+    /// Attempts to retrieve the last element.
+    /// @return Nullopt if size() == 0.
+    ///         Otherwise a reference to the last element.
     auto back_element() -> OptionalReference {
         if (!empty()) {
             return *m_storage.pointer_from_index(size() - 1);
@@ -362,6 +449,9 @@ class StaticVector {
         }
     }
 
+    /// Attempts to retrieve the last element.
+    /// @return Nullopt if size() == 0.
+    ///         Otherwise a reference to the last element.
     auto back_element() const -> OptionalConstReference {
         if (!empty()) {
             return *m_storage.pointer_from_index(size() - 1);
@@ -370,14 +460,17 @@ class StaticVector {
         }
     }
 
+    /// Unchecked mutable access to the vector contents.
     auto unchecked_access() -> UncheckedAccessor {
         return UncheckedAccessor { *this };
     }
 
+    /// Unchecked immutable access to the vector contents.
     auto unchecked_access() const -> UncheckedConstAccessor {
         return UncheckedConstAccessor { *this };
     }
 
+    // comparison operators
     friend auto operator==(StaticVector const& lhs, StaticVector const& rhs) -> bool {
         return std::equal(lhs.unchecked_access().begin(),
                           lhs.unchecked_access().end(),

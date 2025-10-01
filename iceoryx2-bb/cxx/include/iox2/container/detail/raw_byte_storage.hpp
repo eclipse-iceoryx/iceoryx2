@@ -87,8 +87,8 @@ class RawByteStorage {
         }
     }
 
-    constexpr auto operator=(RawByteStorage const&) -> RawByteStorage& = delete;
-    constexpr auto operator=(RawByteStorage&&) -> RawByteStorage& = delete;
+    constexpr auto operator=(RawByteStorage const&) -> RawByteStorage& = default;
+    constexpr auto operator=(RawByteStorage&&) -> RawByteStorage& = default;
 
     auto constexpr size() const noexcept -> uint64_t {
         return m_size;
