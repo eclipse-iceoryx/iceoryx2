@@ -29,26 +29,27 @@ pub unsafe fn strnlen(ptr: *const core::ffi::c_char, len: usize) -> usize {
 
 /// Adds escape characters to the string so that it can be used for console output.
 pub fn as_escaped_string(bytes: &[u8]) -> std::string::String {
-    std::string::String::from_utf8(
-        bytes
-            .iter()
-            .flat_map(|c| match *c {
-                b'\t' => vec![b'\\', b't'].into_iter(),
-                b'\r' => vec![b'\\', b'r'].into_iter(),
-                b'\n' => vec![b'\\', b'n'].into_iter(),
-                b'\x20'..=b'\x7e' => vec![*c].into_iter(),
-                _ => {
-                    let hex_digits: &[u8; 16] = b"0123456789abcdef";
-                    vec![
-                        b'\\',
-                        b'x',
-                        hex_digits[(c >> 4) as usize],
-                        hex_digits[(c & 0xf) as usize],
-                    ]
-                    .into_iter()
-                }
-            })
-            .collect::<Vec<u8>>(),
-    )
-    .unwrap()
+    unsafe {
+        std::string::String::from_utf8_unchecked(
+            bytes
+                .iter()
+                .flat_map(|c| match *c {
+                    b'\t' => vec![b'\\', b't'].into_iter(),
+                    b'\r' => vec![b'\\', b'r'].into_iter(),
+                    b'\n' => vec![b'\\', b'n'].into_iter(),
+                    b'\x20'..=b'\x7f' => vec![*c].into_iter(),
+                    _ => {
+                        let hex_digits: &[u8; 16] = b"0123456789abcdef";
+                        vec![
+                            b'\\',
+                            b'x',
+                            hex_digits[(c >> 4) as usize],
+                            hex_digits[(c & 0xf) as usize],
+                        ]
+                        .into_iter()
+                    }
+                })
+                .collect::<Vec<u8>>(),
+        )
+    }
 }
