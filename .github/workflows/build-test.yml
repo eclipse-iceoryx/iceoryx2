@@ -312,9 +312,6 @@ jobs:
           # NOTE: enable for MinGW
           # - toolchain: stable-gnu
           #  cmake-build-system-generator: '-G "MinGW Makefiles"'
-          - os: windows-2022 # todo (iox2-#1049): Use windows latest here
-            toolchain: stable
-            cmake-cxx-flags: '-DCMAKE_CXX_FLAGS="/MP"'
           - os: ubuntu-latest
             toolchain: stable
         exclude:
@@ -323,8 +320,6 @@ jobs:
           #   toolchain: stable-gnu
           # - os: macos-latest
           #   toolchain: stable-gnu
-          - os: windows-2022 # todo (iox2-#1049): Use windows latest here
-            cargo-features-flag: "--features libc_platform"
           - os: macos-latest
             cargo-features-flag: "--features libc_platform"
     uses: ./.github/workflows/x86_64_stable_workflow.yml
@@ -334,12 +329,12 @@ jobs:
       mode: ${{ matrix.mode }}
       cargo-features-flag: ${{ matrix.cargo-features-flag }}
 
-  x86_64_unstable:
+  x86_64-unstable:
     needs: [preflight-check, static-code-analysis, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' && github.ref != 'refs/heads/main' }}
     strategy:
       matrix:
-        os: [ubuntu-latest] # todo (iox2-#1049): Use windows latest here
+        os: [ubuntu-latest]
         toolchain: [nightly]
         mode:
           - name: "debug"
@@ -350,7 +345,7 @@ jobs:
       toolchain: ${{ matrix.toolchain }}
       mode: ${{ matrix.mode }}
 
-  x86_64_bazel:
+  x86_64-Bazel:
     needs: [preflight-check, static-code-analysis]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
@@ -494,15 +489,14 @@ jobs:
 
   # Have a sync point for all CI jobs that need to pass, will be enforced by Otterdog
   mandatory-checks:
-    needs:
-      [
-        static-code-analysis,
-        x86_64-stable,
-        x86_64_bazel,
-        x86_32,
-        python-bindings,
-        end-to-end-tests,
-      ]
+    needs: [
+            static-code-analysis,
+            x86_64-stable,
+            x86_64-Bazel,
+            x86_32,
+            python-bindings,
+            end-to-end-tests,
+            ]
     runs-on: ubuntu-latest
     steps:
       - name: Mandatory Checks Sync
