@@ -11,14 +11,10 @@ jobs:
       matrix:
         os: [windows-2022] # todo (iox2-#1049): Use windows latest here
         cargo-features-flag: [""]
-        includes:
-          - os: ubuntu-latest
-            cargo-features-flag: "--features libc_platform"
     uses: ./.github/workflows/x86_32_workflow.yml
     with: 
       os: ${{ matrix.os }}
       cargo-features-flag: ${{ matrix.cargo-features-flag }}
-      include: ${{ matrix.includes }}
 
   x86_32-nightly:
     strategy:
@@ -110,7 +106,7 @@ jobs:
   #   timeout-minutes: 30
   #   steps:
   #     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
-  #     - uses: uraimo/run-on-arch-action@v2
+  #     - uses: uraimo/run-on-arch-action@aa8e672a03e10b403401927ea2ceda57e1b68ac3 #ratchet v3
   #       name: Run commands
   #       with:
   #         arch: ${{ matrix.architecture }}
