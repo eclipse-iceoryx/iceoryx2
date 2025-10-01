@@ -11,13 +11,31 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2_bb_container::string::*;
-use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
+use iceoryx2_bb_testing::{assert_that, memory::RawMemory};
 use serde_test::{assert_tokens, Token};
 
 const SMALL_SUT_CAPACITY: usize = 4;
 const SUT_CAPACITY: usize = 129;
 type Sut = StaticString<SUT_CAPACITY>;
 type SmallSut = StaticString<SMALL_SUT_CAPACITY>;
+
+#[test]
+fn default_is_empty() {
+    let sut = Sut::default();
+
+    assert_that!(sut.is_empty(), eq true);
+}
+
+#[test]
+fn placement_default_works() {
+    let mut sut = RawMemory::<Sut>::new_filled(0xff);
+    unsafe { Sut::placement_default(sut.as_mut_ptr()) };
+    assert_that!(unsafe {sut.assume_init()}, len 0);
+
+    assert_that!(unsafe { sut.assume_init_mut() }.push_bytes(b"hello"), is_ok);
+    assert_that!(unsafe {sut.assume_init()}.as_bytes(), eq b"hello");
+}
 
 #[test]
 fn from_bytes_unchecked_works() {

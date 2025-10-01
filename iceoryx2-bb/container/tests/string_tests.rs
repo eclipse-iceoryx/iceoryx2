@@ -13,19 +13,14 @@
 #[generic_tests::define]
 mod string {
     use core::ops::DerefMut;
+    use std::cmp::Ordering;
     use std::hash::{Hash, Hasher};
 
-    use iceoryx2_bb_container::byte_string::*;
     use iceoryx2_bb_container::string::*;
-    use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
-    use iceoryx2_bb_testing::{assert_that, memory::RawMemory};
-    use serde_test::{assert_tokens, Token};
+    use iceoryx2_bb_testing::assert_that;
     use std::collections::hash_map::DefaultHasher;
 
     const SUT_CAPACITY: usize = 129;
-    const SUT_CAPACITY_ALT: usize = 65;
-    type Sut = FixedSizeByteString<SUT_CAPACITY>;
-    type SutAlt = FixedSizeByteString<SUT_CAPACITY_ALT>;
 
     trait StringTestFactory {
         type Sut: String;
@@ -179,6 +174,35 @@ mod string {
         for n in 0u8..u8::MAX {
             assert_that!(sut.find(&[n, n, n]), is_none);
         }
+    }
+
+    #[test]
+    fn find_of_non_existing_char_returns_none<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+        const CHAR_TO_FIND: u8 = 37;
+
+        for _ in 0..SUT_CAPACITY - 1 {
+            assert_that!(sut.push(44), is_ok);
+        }
+
+        assert_that!(sut.find(&[CHAR_TO_FIND]), is_none);
+    }
+
+    #[test]
+    fn find_returns_first_char_match_from_start<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+        const CHAR_TO_FIND: u8 = 37;
+
+        assert_that!(sut.push(44), is_ok);
+        assert_that!(sut.push(CHAR_TO_FIND), is_ok);
+        for _ in 0..SUT_CAPACITY - 3 {
+            assert_that!(sut.push(44), is_ok);
+        }
+        assert_that!(sut.push(CHAR_TO_FIND), is_ok);
+
+        assert_that!(sut.find(&[CHAR_TO_FIND]), eq Some(1));
     }
 
     #[test]
@@ -435,6 +459,7 @@ mod string {
 
         for n in 1u8..128u8 {
             assert_that!(sut.insert_bytes(0, &[n]), is_ok);
+            assert_that!(sut.len(), eq n as usize);
         }
     }
 
@@ -455,159 +480,450 @@ mod string {
         assert_that!(sut.pop(), is_none);
     }
 
-    /// cotninue
+    #[test]
+    fn push_bytes_with_invalid_characters_fails<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+
+        assert_that!(sut.push_bytes(&[1, 2, 0, 4]), eq Err(StringModificationError::InvalidCharacter));
+        for n in 128u8..u8::MAX {
+            assert_that!(sut.push_bytes(&[1, 2, n, 4]), eq Err(StringModificationError::InvalidCharacter));
+        }
+    }
 
     #[test]
-    fn remove_works<Factory: StringTestFactory>() {
-        let mut sut = Sut::from(b"hassel the hoff");
+    fn push_bytes_with_valid_characters_works<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+        let mut temp = vec![];
 
-        assert_that!(sut.remove(0), eq  b'h');
-        assert_that!(sut.remove(7), eq b'h');
-        assert_that!(sut.remove(12), eq b'f');
+        for n in 1u8..128u8 {
+            temp.push(n);
+            assert_that!(sut.push_bytes(&[n]), is_ok);
+            assert_that!(sut.len(), eq n as usize);
+            assert_that!(sut.as_bytes(), eq temp.as_slice());
+        }
+    }
 
-        assert_that!(sut, len 12);
-        assert_that!(sut, eq b"assel te hof");
-        assert_that!(sut.as_bytes_with_nul(), eq b"assel te hof\0");
+    #[test]
+    fn push_when_it_exceeds_the_capacity_fails<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+
+        for _ in 0..SUT_CAPACITY - 2 {
+            assert_that!(sut.push(87), is_ok);
+        }
+
+        assert_that!(sut.push_bytes(&[33,44,55,66]), eq Err(StringModificationError::InsertWouldExceedCapacity));
+    }
+
+    #[test]
+    fn push_multiple_valid_bytes_works<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+
+        assert_that!(sut.push_bytes(&[33, 44, 55, 66]), is_ok);
+        assert_that!(sut.len(), eq 4);
+        assert_that!(sut.as_bytes(), eq & [33, 44, 55, 66]);
+    }
+
+    #[test]
+    fn remove_first_character_works<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+
+        for n in 0..SUT_CAPACITY {
+            let byte = ((n % 80) + 20) as u8;
+            assert_that!(sut.push(byte), is_ok);
+        }
+
+        for n in 0..SUT_CAPACITY {
+            let byte = ((n % 80) + 20) as u8;
+            assert_that!(sut.len(), eq SUT_CAPACITY - n);
+            assert_that!(sut.remove(0), eq Some(byte));
+        }
+    }
+
+    #[test]
+    fn remove_last_character_works<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+
+        for n in 0..SUT_CAPACITY {
+            let byte = ((n % 80) + 20) as u8;
+            assert_that!(sut.push(byte), is_ok);
+        }
+
+        for n in (0..SUT_CAPACITY).rev() {
+            let byte = ((n % 80) + 20) as u8;
+            assert_that!(sut.remove(sut.len() - 1), eq Some(byte));
+        }
+    }
+
+    #[test]
+    fn remove_non_existing_entry_returns_none<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+
+        assert_that!(sut.remove(7), is_none);
+    }
+
+    #[test]
+    fn remove_non_existing_range_returns_false<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+
+        assert_that!(sut.remove_range(2, 4), eq false);
+    }
+
+    #[test]
+    fn remove_full_range_ends_up_in_empty_string<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+
+        for _ in 0..SUT_CAPACITY {
+            assert_that!(sut.push(43), is_ok);
+        }
+
+        assert_that!(sut.remove_range(0, SUT_CAPACITY), eq true);
+        assert_that!(sut.len(), eq 0);
+        assert_that!(sut.is_empty(), eq true);
+    }
+
+    #[test]
+    fn remove_range_from_start_works<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+
+        for n in 0..SUT_CAPACITY {
+            let byte = ((n % 80) + 20) as u8;
+            assert_that!(sut.push(byte), is_ok);
+        }
+
+        let number_of_removed_elements = SUT_CAPACITY / 2;
+        assert_that!(sut.remove_range(0, number_of_removed_elements), eq true);
+        assert_that!(sut.len(), eq SUT_CAPACITY - number_of_removed_elements);
+
+        for n in 0..SUT_CAPACITY - number_of_removed_elements {
+            let byte = (((n + SUT_CAPACITY - number_of_removed_elements - 1) % 80) + 20) as u8;
+            assert_that!(sut[n], eq byte);
+        }
+    }
+
+    #[test]
+    fn remove_range_from_center_works<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+
+        for n in 0..SUT_CAPACITY {
+            let byte = ((n % 80) + 20) as u8;
+            assert_that!(sut.push(byte), is_ok);
+        }
+
+        let number_of_removed_elements = 20;
+        assert_that!(sut.remove_range(10, number_of_removed_elements), eq true);
+        assert_that!(sut.len(), eq SUT_CAPACITY - number_of_removed_elements);
+
+        for n in 0..10 {
+            let byte = ((n % 80) + 20) as u8;
+            assert_that!(sut[n], eq byte);
+        }
+
+        for n in 10..SUT_CAPACITY - number_of_removed_elements {
+            let byte = (((n + SUT_CAPACITY - number_of_removed_elements - 9) % 80) + 20) as u8;
+            assert_that!(sut[n], eq byte);
+        }
     }
 
     #[test]
     fn retain_works<Factory: StringTestFactory>() {
-        let mut sut = Sut::from(b"live long and nibble");
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+        assert_that!(sut.push_bytes(b"live long and nibble"), is_ok);
 
         sut.retain(|c| c == b' ');
 
         assert_that!(sut, len 17);
-        assert_that!(sut, eq b"livelongandnibble");
         assert_that!(sut.as_bytes_with_nul(), eq b"livelongandnibble\0");
     }
 
     #[test]
-    fn remove_range_works<Factory: StringTestFactory>() {
-        let mut sut = Sut::from(b"bibbe di babbe di buu");
+    fn rfind_of_character_in_empty_string_returns_none<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let sut = factory.create_sut();
 
-        sut.remove_range(14, 3);
-        sut.remove_range(5, 3);
-
-        assert_that!(sut, len 15);
-        assert_that!(sut, eq b"bibbe babbe buu");
-        assert_that!(sut.as_bytes_with_nul(), eq b"bibbe babbe buu\0");
+        for n in 0u8..u8::MAX {
+            assert_that!(sut.rfind(&[n]), is_none);
+        }
     }
 
     #[test]
-    fn truncate_works<Factory: StringTestFactory>() {
-        let mut sut = unsafe { Sut::new_unchecked(b"droubadix") };
+    fn rfind_of_range_in_empty_string_returns_none<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let sut = factory.create_sut();
+
+        for n in 0u8..u8::MAX {
+            assert_that!(sut.rfind(&[n, n, n]), is_none);
+        }
+    }
+
+    #[test]
+    fn rfind_of_char_located_at_the_beginning_works<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+        const CHAR_TO_FIND: u8 = 37;
+
+        assert_that!(sut.push(CHAR_TO_FIND), is_ok);
+        for _ in 0..SUT_CAPACITY - 1 {
+            assert_that!(sut.push(44), is_ok);
+        }
+
+        assert_that!(sut.rfind(&[CHAR_TO_FIND]), eq Some(0));
+    }
+
+    #[test]
+    fn rfind_of_non_existing_char_returns_none<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+        const CHAR_TO_FIND: u8 = 37;
+
+        for _ in 0..SUT_CAPACITY - 1 {
+            assert_that!(sut.push(44), is_ok);
+        }
+
+        assert_that!(sut.rfind(&[CHAR_TO_FIND]), is_none);
+    }
+
+    #[test]
+    fn rfind_returns_first_char_match_from_end<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+        const CHAR_TO_FIND: u8 = 37;
+
+        assert_that!(sut.push(CHAR_TO_FIND), is_ok);
+        for _ in 0..SUT_CAPACITY - 3 {
+            assert_that!(sut.push(44), is_ok);
+        }
+        assert_that!(sut.push(CHAR_TO_FIND), is_ok);
+        assert_that!(sut.push(44), is_ok);
+
+        assert_that!(sut.rfind(&[CHAR_TO_FIND]), eq Some(SUT_CAPACITY - 2));
+    }
+
+    #[test]
+    fn rfind_of_char_located_in_the_middle_works<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+        const CHAR_TO_FIND: u8 = 37;
+
+        for _ in 0..(SUT_CAPACITY - 2) / 2 {
+            assert_that!(sut.push(44), is_ok);
+        }
+        assert_that!(sut.push(CHAR_TO_FIND), is_ok);
+        for _ in 0..(SUT_CAPACITY - 2) / 2 {
+            assert_that!(sut.push(44), is_ok);
+        }
+
+        assert_that!(sut.rfind(&[CHAR_TO_FIND]), eq Some((SUT_CAPACITY - 2)/2));
+    }
+
+    #[test]
+    fn rfind_of_char_located_at_the_end_works<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+        const CHAR_TO_FIND: u8 = 37;
+
+        for _ in 0..(SUT_CAPACITY - 2) / 2 {
+            assert_that!(sut.push(44), is_ok);
+        }
+        assert_that!(sut.push(CHAR_TO_FIND), is_ok);
+
+        assert_that!(sut.rfind(&[CHAR_TO_FIND]), eq Some((SUT_CAPACITY - 2)/2));
+    }
+
+    #[test]
+    fn rfind_of_range_located_at_the_beginning_works<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+        const RANGE_TO_FIND: [u8; 4] = [37, 38, 49, 40];
+
+        assert_that!(sut.push_bytes(&RANGE_TO_FIND), is_ok);
+        for _ in 0..(SUT_CAPACITY - 1) / 2 {
+            assert_that!(sut.push(44), is_ok);
+        }
+
+        assert_that!(sut.rfind(&RANGE_TO_FIND), eq Some(0));
+    }
+
+    #[test]
+    fn rfind_of_range_located_in_the_middle_works<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+        const RANGE_TO_FIND: [u8; 4] = [37, 38, 49, 40];
+
+        for _ in 0..(SUT_CAPACITY - 4) / 2 {
+            assert_that!(sut.push(44), is_ok);
+        }
+        assert_that!(sut.push_bytes(&RANGE_TO_FIND), is_ok);
+        for _ in 0..(SUT_CAPACITY - 4) / 2 {
+            assert_that!(sut.push(44), is_ok);
+        }
+
+        assert_that!(sut.rfind(&RANGE_TO_FIND), eq Some((SUT_CAPACITY - 4)/2));
+    }
+
+    #[test]
+    fn rfind_of_range_located_at_the_end_works<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+        const RANGE_TO_FIND: [u8; 4] = [37, 38, 49, 40];
+
+        for _ in 0..(SUT_CAPACITY - 1) / 2 {
+            assert_that!(sut.push(44), is_ok);
+        }
+        assert_that!(sut.push_bytes(&RANGE_TO_FIND), is_ok);
+
+        assert_that!(sut.rfind(&RANGE_TO_FIND), eq Some((SUT_CAPACITY - 1)/2));
+    }
+
+    #[test]
+    fn truncate_to_larger_string_does_nothing<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+        assert_that!(sut.push_bytes(b"blumbadix"), is_ok);
+        sut.truncate(40);
+
+        assert_that!(sut.len(), eq 9);
+        assert_that!(sut.as_bytes_with_nul(), eq b"blumbadix\0");
+    }
+
+    #[test]
+    fn truncate_to_smaller_string_works<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+        assert_that!(sut.push_bytes(b"droubadix"), is_ok);
         sut.truncate(4);
 
         assert_that!(sut, len 4);
-        assert_that!(sut, eq b"drou");
         assert_that!(sut.as_bytes_with_nul(), eq b"drou\0");
-
-        sut.truncate(6);
-        assert_that!(sut, len 4);
     }
 
     #[test]
-    fn rfind_works<Factory: StringTestFactory>() {
-        let sut = unsafe { Sut::new_unchecked(b"alubb_di:bubbx") };
+    fn strip_prefix_from_empty_string_does_nothing<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+        assert_that!(sut.strip_prefix(b"fubby"), eq false);
 
-        assert_that!(sut.rfind(b"bkasjdkasjdkasjdksjd"), is_none);
-
-        assert_that!(sut.rfind(b"b"), eq Some(12));
-        assert_that!(sut.rfind(b"alubb"), eq Some(0));
-        assert_that!(sut.rfind(b"bb"), eq Some(11));
-        assert_that!(sut.rfind(b"di"), eq Some(6));
-        assert_that!(sut.rfind(b"bubbx"), eq Some(9));
-        assert_that!(sut.rfind(b"x"), eq Some(13));
-        assert_that!(sut.rfind(b"a"), eq Some(0));
-
-        assert_that!(sut.rfind(b"."), eq None);
-        assert_that!(sut.rfind(b","), eq None);
-        assert_that!(sut.rfind(b"-"), eq None);
+        assert_that!(sut.as_bytes(), eq b"");
     }
 
     #[test]
-    fn strip_prefix_works<Factory: StringTestFactory>() {
-        let sut = unsafe { Sut::new_unchecked(b"msla:0123_lerata.fuu") };
+    fn strip_non_existing_prefix_does_nothing<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+        assert_that!(sut.push_bytes(b"funny little moo"), is_ok);
+        assert_that!(sut.strip_prefix(b"fubby"), eq false);
 
-        let mut sut_clone = sut.clone();
-        assert_that!(sut_clone.strip_prefix(b"bkasjdkas120ie19jdkasjdksjd"), eq false);
-        assert_that!(sut_clone, eq sut);
-
-        let mut sut_clone = sut.clone();
-        assert_that!(sut_clone.strip_prefix(b"msla:"), eq true);
-        assert_that!(sut_clone, eq b"0123_lerata.fuu");
-
-        let mut sut_clone = sut.clone();
-        assert_that!(sut_clone.strip_prefix(b"m"), eq true);
-        assert_that!(sut_clone, eq b"sla:0123_lerata.fuu");
-
-        let mut sut_clone = sut.clone();
-        assert_that!(sut_clone.strip_prefix(b"sla"), eq false);
-        assert_that!(sut_clone, eq sut);
-
-        let mut sut_clone = sut.clone();
-        assert_that!(sut_clone.strip_prefix(b"fuu"), eq false);
-        assert_that!(sut_clone, eq sut);
+        assert_that!(sut.as_bytes(), eq b"funny little moo");
     }
 
     #[test]
-    fn strip_suffix_works<Factory: StringTestFactory>() {
-        let sut = unsafe { Sut::new_unchecked(b"msla:0123_lerata.fuu") };
+    fn strip_existing_prefix_works<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+        assert_that!(sut.push_bytes(b"its a meee mario"), is_ok);
+        assert_that!(sut.strip_prefix(b"its a"), eq true);
 
-        let mut sut_clone = sut.clone();
-        assert_that!(sut_clone.strip_suffix(b"bkaslqwsd0jdkasjdkasjdksjd"), eq false);
-        assert_that!(sut_clone, eq sut);
+        assert_that!(sut.as_bytes(), eq b" meee mario");
+    }
 
-        let mut sut_clone = sut.clone();
-        assert_that!(sut_clone.strip_suffix(b".fuu"), eq true);
-        assert_that!(sut_clone, eq b"msla:0123_lerata");
+    #[test]
+    fn strip_existing_range_that_is_not_a_prefix_does_nothing<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+        assert_that!(sut.push_bytes(b"what does a hypnotoad sound like?"), is_ok);
+        assert_that!(sut.strip_prefix(b"hypnotoad"), eq false);
 
-        let mut sut_clone = sut.clone();
-        assert_that!(sut_clone.strip_suffix(b"u"), eq true);
-        assert_that!(sut_clone, eq b"msla:0123_lerata.fu");
+        assert_that!(sut.as_bytes(), eq b"what does a hypnotoad sound like?");
+    }
 
-        let mut sut_clone = sut.clone();
-        assert_that!(sut_clone.strip_suffix(b"fu"), eq false);
-        assert_that!(sut_clone, eq sut);
+    #[test]
+    fn strip_non_existing_suffix_does_nothing<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+        assert_that!(sut.push_bytes(b"all glory to the hypnotoad"), is_ok);
+        assert_that!(sut.strip_suffix(b"frog"), eq false);
 
-        let mut sut_clone = sut.clone();
-        assert_that!(sut_clone.strip_suffix(b"msla"), eq false);
-        assert_that!(sut_clone, eq sut);
+        assert_that!(sut.as_bytes(), eq b"all glory to the hypnotoad");
+    }
+
+    #[test]
+    fn strip_existing_suffix_works<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+        assert_that!(sut.push_bytes(b"all glory to the hasselhoff"), is_ok);
+        assert_that!(sut.strip_suffix(b"hasselhoff"), eq true);
+
+        assert_that!(sut.as_bytes(), eq b"all glory to the ");
+    }
+
+    #[test]
+    fn strip_existing_range_that_is_not_a_suffix_does_nothing<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+        assert_that!(sut.push_bytes(b"all glory to mario"), is_ok);
+        assert_that!(sut.strip_suffix(b"glory"), eq false);
+
+        assert_that!(sut.as_bytes(), eq b"all glory to mario");
+    }
+
+    #[test]
+    fn strip_suffix_from_empty_string_does_nothing<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+        assert_that!(sut.strip_suffix(b"fubby"), eq false);
+
+        assert_that!(sut.as_bytes(), eq b"");
     }
 
     #[test]
     fn ordering_works<Factory: StringTestFactory>() {
-        unsafe {
-            assert_that!(Sut::new_unchecked(b"fuubla").cmp(&Sut::new_unchecked(b"fuubla")), eq core::cmp::Ordering::Equal );
-            assert_that!(Sut::new_unchecked(b"fuubla").cmp(&Sut::new_unchecked(b"fuvbla")), eq core::cmp::Ordering::Less );
-            assert_that!(Sut::new_unchecked(b"fuubla").cmp(&Sut::new_unchecked(b"fuubaa")), eq core::cmp::Ordering::Greater );
-            assert_that!(Sut::new_unchecked(b"fuubla").cmp(&Sut::new_unchecked(b"fuubla123")), eq core::cmp::Ordering::Less );
-            assert_that!(Sut::new_unchecked(b"fuubla").cmp(&Sut::new_unchecked(b"fuu")), eq core::cmp::Ordering::Greater );
-        }
+        let factory = Factory::new();
+        let mut sut_small = factory.create_sut();
+        let mut sut_greater = factory.create_sut();
+
+        assert_that!(sut_small.push_bytes(b"bone_funny"), is_ok);
+        assert_that!(sut_greater.push_bytes(b"fone_bunny"), is_ok);
+
+        assert_that!(sut_small.cmp(&sut_small), eq Ordering::Equal);
+        assert_that!(sut_small.cmp(&sut_greater), eq Ordering::Less);
+        assert_that!(sut_greater.cmp(&sut_small), eq Ordering::Greater);
     }
 
     #[test]
     fn partial_ordering_works<Factory: StringTestFactory>() {
-        unsafe {
-            assert_that!(SutAlt::new_unchecked(b"darth_fuubla").partial_cmp(&Sut::new_unchecked(b"darth_fuubla")), eq Some(core::cmp::Ordering::Equal ));
-            assert_that!(SutAlt::new_unchecked(b"darth_fuubla").partial_cmp(&Sut::new_unchecked(b"darth_fuvbla")), eq Some(core::cmp::Ordering::Less ));
-            assert_that!(SutAlt::new_unchecked(b"darth_fuubla").partial_cmp(&Sut::new_unchecked(b"darth_fuubaa")), eq Some(core::cmp::Ordering::Greater ));
-            assert_that!(SutAlt::new_unchecked(b"darth_fuubla").partial_cmp(&Sut::new_unchecked(b"darth_fuubla123")), eq Some(core::cmp::Ordering::Less ));
-            assert_that!(SutAlt::new_unchecked(b"darth_fuubla").partial_cmp(&Sut::new_unchecked(b"darth_fuu")), eq Some(core::cmp::Ordering::Greater ));
-        }
-    }
+        let factory = Factory::new();
+        let mut sut_small = factory.create_sut();
+        let mut sut_greater = factory.create_sut();
 
-    #[test]
-    fn error_display_works<Factory: StringTestFactory>() {
-        assert_that!(format!("{}", StringModificationError::InsertWouldExceedCapacity), eq "StringModificationError::InsertWouldExceedCapacity");
-        assert_that!(format!("{}", StringModificationError::InvalidCharacter), eq "StringModificationError::InvalidCharacter");
+        assert_that!(sut_small.push_bytes(b"greater is smaller"), is_ok);
+        assert_that!(sut_greater.push_bytes(b"small is greater"), is_ok);
+
+        assert_that!(sut_small.partial_cmp(&sut_small), eq Some(Ordering::Equal));
+        assert_that!(sut_small.partial_cmp(&sut_greater), eq Some(Ordering::Less));
+        assert_that!(sut_greater.partial_cmp(&sut_small), eq Some(Ordering::Greater));
     }
 
     #[test]
     fn hash_works<Factory: StringTestFactory>() {
-        let sut_1 = Sut::from_bytes_truncated(b"hypnotoad forever");
-        let sut_1_1 = Sut::from_bytes_truncated(b"hypnotoad forever");
-        let sut_2 = Sut::from_bytes_truncated(b"the hoff rocks");
+        let factory = Factory::new();
+        let mut sut_1 = factory.create_sut();
+        let mut sut_1_1 = factory.create_sut();
+        let mut sut_2 = factory.create_sut();
+
+        assert_that!(sut_1.push_bytes(b"hypnotoad forever"), is_ok);
+        assert_that!(sut_1_1.push_bytes(b"hypnotoad forever"), is_ok);
+        assert_that!(sut_2.push_bytes(b"the hoff rocks"), is_ok);
 
         let mut hasher_1 = DefaultHasher::new();
         let mut hasher_1_1 = DefaultHasher::new();
@@ -626,103 +942,27 @@ mod string {
 
     #[test]
     fn deref_mut_works<Factory: StringTestFactory>() {
-        let mut sut = Sut::from_bytes_truncated(b"hello");
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+
+        assert_that!(sut.push_bytes(b"hello"), is_ok);
+
         sut.deref_mut()[0] = b'b';
 
-        assert_that!(sut, eq b"bello");
+        assert_that!(sut.as_bytes(), eq b"bello");
     }
 
     #[test]
-    fn str_slice_equality_works<Factory: StringTestFactory>() {
-        let hello = b"funzel";
-        let sut = Sut::from_bytes_truncated(b"funzel");
+    fn equality_works<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut_1 = factory.create_sut();
+        let mut sut_2 = factory.create_sut();
 
-        assert_that!(sut == hello.as_slice(), eq true);
-    }
+        assert_that!(sut_1.push_bytes(b"funzel"), is_ok);
+        assert_that!(sut_2.push_bytes(b"rafunzel"), is_ok);
 
-    #[test]
-    #[should_panic]
-    fn from_panics_when_capacity_is_exceeded<Factory: StringTestFactory>() {
-        let _ = FixedSizeByteString::<2>::from(b"hello");
-    }
-
-    #[test]
-    fn default_string_is_empty<Factory: StringTestFactory>() {
-        assert_that!(Sut::default(), is_empty);
-    }
-
-    #[test]
-    #[should_panic]
-    fn new_unchecked_panics_when_capacity_is_exceeded<Factory: StringTestFactory>() {
-        let _ = unsafe { FixedSizeByteString::<3>::new_unchecked(b"12345") };
-    }
-
-    #[test]
-    fn from_bytes_fails_when_capacity_is_exceeded<Factory: StringTestFactory>() {
-        let sut = FixedSizeByteString::<3>::from_bytes(b"12345");
-        assert_that!(sut, is_err);
-        assert_that!(
-            sut.err().unwrap(), eq
-            FixedSizeByteStringModificationError::InsertWouldExceedCapacity
-        );
-    }
-
-    #[test]
-    fn from_c_str_fails_when_capacity_is_exceeded<Factory: StringTestFactory>() {
-        let content = b"i like chocolate in my noodlesoup";
-        let sut = unsafe { FixedSizeByteString::<5>::from_c_str(content.as_ptr().cast()) };
-        assert_that!(sut, is_err);
-        assert_that!(sut.err().unwrap(), eq FixedSizeByteStringModificationError::InsertWouldExceedCapacity);
-    }
-
-    #[test]
-    #[should_panic]
-    fn insert_at_out_of_bounds_index_panics<Factory: StringTestFactory>() {
-        let mut sut = Sut::from_bytes_truncated(b"the hoff rocks");
-        let _ = sut.insert_bytes(123, b"but what about hypnotoad");
-    }
-
-    #[test]
-    fn insert_value_exceeding_capacity_fails<Factory: StringTestFactory>() {
-        let mut sut = FixedSizeByteString::<10>::from_bytes_truncated(b"lakirski");
-        let result = sut.insert_bytes(8, b" materialski");
-        assert_that!(result, is_err);
-        assert_that!(
-            result.err().unwrap(), eq
-            FixedSizeByteStringModificationError::InsertWouldExceedCapacity
-        );
-    }
-
-    #[test]
-    #[should_panic]
-    fn remove_out_of_bounds_index_panics<Factory: StringTestFactory>() {
-        let mut sut = Sut::from_bytes_truncated(b"Hypnotoad loves accounting and book keeping!");
-        sut.remove(90);
-    }
-
-    #[test]
-    #[should_panic]
-    fn remove_range_out_of_bounds_index_panics<Factory: StringTestFactory>() {
-        let mut sut = Sut::from_bytes_truncated(b"Who ate the last unicorn?");
-        sut.remove_range(48, 12);
-    }
-
-    #[test]
-    fn placement_default_works<Factory: StringTestFactory>() {
-        let mut sut = RawMemory::<Sut>::new_filled(0xff);
-        unsafe { Sut::placement_default(sut.as_mut_ptr()) };
-        assert_that!(unsafe {sut.assume_init()}, len 0);
-
-        assert_that!(unsafe { sut.assume_init_mut() }.push_bytes(b"hello"), is_ok);
-        assert_that!(unsafe {sut.assume_init()}.as_bytes(), eq b"hello");
-    }
-
-    #[test]
-    fn serialization_works<Factory: StringTestFactory>() {
-        let content = "Brother Hypnotoad is starring at you.";
-        let sut = Sut::from_bytes_truncated(content.as_bytes());
-
-        assert_tokens(&sut, &[Token::Str(content)]);
+        assert_that!(sut_1 == sut_1, eq true);
+        assert_that!(sut_1 == sut_2, eq false);
     }
 
     #[instantiate_tests(<StaticStringFactory>)]
