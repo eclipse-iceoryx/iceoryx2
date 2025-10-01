@@ -21,15 +21,12 @@ jobs:
       matrix:
         os: [ubuntu-latest] # [windows-latest, ubuntu-latest, macos-latest]
         toolchain: [stable] # [stable, 1.81.0, beta, nightly]
-        mode:
-          - name: "release"
-            arg: "--release"
-            cmake-build-type: "-DCMAKE_BUILD_TYPE=Release"
     uses: ./.github/workflows/x86_32_workflow.yml
     with: 
       os: ${{ matrix.os }}
       toolchain: ${{ matrix.toolchain }}
-      mode: ${{ matrix.mode }}
+      mode: "release"
+      cmake-build-type: "-DCMAKE_BUILD_TYPE=Release"
 
   x86_64-stable-nightly:
     strategy:
@@ -52,6 +49,12 @@ jobs:
           # NOTE: enable for MinGW
           # - toolchain: stable-gnu
           #  cmake-build-system-generator: '-G "MinGW Makefiles"'
+          - os: [ubuntu-latest, macos-latest]
+            mode:
+              - name: "release"
+                arg: "--release"
+                cmake-build-type: "-DCMAKE_BUILD_TYPE=Release" # required for Makefile Generators at config time
+                cmake-build-config: "--config Release" # required for Visual Studio at build and install time
           - os: windows-2022 # todo (iox2-#1049): Use windows latest here
             toolchain: stable
             cmake-cxx-flags: '-DCMAKE_CXX_FLAGS="/MP"'
@@ -67,7 +70,11 @@ jobs:
     with:
       os: ${{ matrix.os }}
       toolchain: ${{ matrix.toolchain }}
-      mode: ${{ matrix.mode }}
+      mode-name: ${{ matrix.mode.name }}
+      mode-arg: ${{ matrix.mode.arg }}
+      mode-cmake-build-type: ${{ matrix.mode.cmake-build-type }}
+      mode-cmake-build-config: ${{ matrix.mode.cmake-build-config }}
+      mode-cmake-cxx-flags: ${{ matrix.mode.mode-cmake-cxx-flags }}
       cargo-features-flag: ${{ matrix.cargo-features-flag }}
 
   x86_64_unstable-nightly:
@@ -84,7 +91,7 @@ jobs:
     with:
       os: ${{ matrix.os }}
       toolchain: ${{ matrix.toolchain }}
-      mode: ${{ matrix.mode }}
+      mode-arg: ${{ matrix.mode.arg }}
 
 
   ### TODO: does not work yet reliable on the GitHub CI, seems to end up in an infinite loop

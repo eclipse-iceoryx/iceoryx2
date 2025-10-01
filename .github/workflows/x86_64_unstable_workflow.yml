@@ -9,7 +9,7 @@ on:
       toolchain:
         required: true
         type: string
-      mode:
+      mode-arg:
         required: true
         type: string
 
@@ -51,7 +51,7 @@ jobs:
           uname -a
 
       - name: Run cargo build
-        run: cargo build --workspace --all-targets ${{ inputs.mode.arg }}
+        run: cargo build --workspace --all-targets ${{ inputs.mode-arg }}
 
       - name: Run cargo nextest
-        run: cargo nextest run --workspace --all-targets --no-fail-fast ${{ inputs.mode.arg }}
+        run: cargo nextest run --workspace --all-targets --no-fail-fast ${{ inputs.mode-arg }}
