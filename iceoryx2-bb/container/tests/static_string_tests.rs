@@ -12,6 +12,7 @@
 
 use iceoryx2_bb_container::string::*;
 use iceoryx2_bb_testing::assert_that;
+use serde_test::{assert_tokens, Token};
 
 const SMALL_SUT_CAPACITY: usize = 4;
 const SUT_CAPACITY: usize = 129;
@@ -224,4 +225,11 @@ fn from_c_str_fails_when_len_is_greater_than_capacity() {
     let value = Sut::from(b"I am toooo looong again");
     let sut = unsafe { SmallSut::from_c_str(value.as_ptr() as *mut core::ffi::c_char) };
     assert_that!(sut, eq Err(StringModificationError::InsertWouldExceedCapacity));
+}
+
+#[test]
+fn serialization_works() {
+    let sut = SmallSut::from(b"bee");
+
+    assert_tokens(&sut, &[Token::Str("bee")]);
 }

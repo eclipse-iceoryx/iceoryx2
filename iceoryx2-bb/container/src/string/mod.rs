@@ -199,6 +199,14 @@ pub trait String:
                 msg, as_escaped_string(bytes), self.capacity());
         }
 
+        for byte in bytes {
+            if 128 <= *byte || 0 == *byte {
+                fail!(from self, with StringModificationError::InvalidCharacter,
+                    "{} \"{}\" since it contains unsupported unicode points. Only unicode points less than 128 (U+0080) are supported",
+                    msg, as_escaped_string(bytes));
+            }
+        }
+
         unsafe { self.insert_bytes_unchecked(idx, bytes) };
 
         Ok(())
@@ -276,7 +284,7 @@ pub trait String:
 
         let removed_byte = unsafe { *self.data()[idx].as_ptr() };
 
-        self.remove_range(idx - 1, 1);
+        self.remove_range(idx, 1);
 
         Some(removed_byte)
     }
@@ -287,12 +295,14 @@ pub trait String:
             return false;
         }
 
-        unsafe {
-            core::ptr::copy(
-                self.data()[idx + len].as_ptr(),
-                self.data_mut()[idx].as_mut_ptr(),
-                self.len() - (idx + len),
-            );
+        if self.len() != idx + len {
+            unsafe {
+                core::ptr::copy(
+                    self.data()[idx + len].as_ptr(),
+                    self.data_mut()[idx].as_mut_ptr(),
+                    self.len() - (idx + len),
+                );
+            }
         }
 
         let new_len = self.len() - len;
