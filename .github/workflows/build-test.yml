@@ -283,15 +283,15 @@ jobs:
     with:
       os: ${{ matrix.os }}
       toolchain: ${{ matrix.toolchain }}
-      mode: "release"
-      cmake-build-type: "-DCMAKE_BUILD_TYPE=Release"
+      mode: "" # debug mode by default in cargo
+      cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug"
 
   x86_64-stable:
     needs: [preflight-check, static-code-analysis, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest] # todo (iox2-#1049): Use windows latest here
+        os: [ubuntu-latest, macos-latest, windows-2022] # todo (iox2-#1049): Use windows latest here
         # NOTE: enable for MinGW
         # toolchain: [stable, stable-gnu, 1.83.0]
         toolchain: [stable, 1.83.0]
@@ -302,17 +302,19 @@ jobs:
             cmake-build-config: "--config Debug" # required for Visual Studio at build and install time
         cargo-features-flag: ["", "--features libc_platform"]
         include:
-          # NOTE: enable for MinGW
-          # - toolchain: stable-gnu
-          #  cmake-build-system-generator: '-G "MinGW Makefiles"'
-          - os: ubuntu-latest
+          - os: ubuntu-latest # We want to have one Release build in the PR Pipeline on the main platform
             toolchain: stable
+            mode:
+              - name: "release"
+                arg: "--release"
+                cmake-build-type: "-DCMAKE_BUILD_TYPE=Release" # required for Makefile Generators at config time
+                cmake-build-config: "--config Release" # required for Visual Studio at build and install time
+          - os: windows-2022 # todo (iox2-#1049): Use windows latest here
+            toolchain: stable
+            cmake-cxx-flags: '-DCMAKE_CXX_FLAGS="/MP"'
         exclude:
-          # NOTE: enable for MinGW
-          # - os: ubuntu-latest
-          #   toolchain: stable-gnu
-          # - os: macos-latest
-          #   toolchain: stable-gnu
+          - os: windows-2022 # todo (iox2-#1049): Use windows latest here
+            cargo-features-flag: "--features libc_platform"
           - os: macos-latest
             cargo-features-flag: "--features libc_platform"
     uses: ./.github/workflows/x86_64_stable_workflow.yml
@@ -323,6 +325,7 @@ jobs:
       mode-arg: ${{ matrix.mode.arg }}
       mode-cmake-build-type: ${{ matrix.mode.cmake-build-type }}
       mode-cmake-build-config: ${{ matrix.mode.cmake-build-config }}
+      mode-cmake-cxx-flags: ${{ matrix.mode.mode-cmake-cxx-flags }}
       cargo-features-flag: ${{ matrix.cargo-features-flag }}
 
   x86_64-unstable:
