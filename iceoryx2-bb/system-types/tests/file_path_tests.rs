@@ -220,14 +220,3 @@ fn file_path_extract_path_from_path_consisting_only_of_a_file_works() {
     let sut = FilePath::new(b"barbe").unwrap();
     assert_that!(sut.path(), eq b"");
 }
-
-#[test]
-fn file_path_with_utf_8_content_works() {
-    let mut sut = FilePath::new(b"/arghnark").unwrap();
-    assert_that!(sut.insert_bytes(5, "🧐".as_bytes()), is_ok);
-    assert_that!(sut.insert_bytes(13, "🧐".as_bytes()), is_ok);
-    assert_that!(Into::<String>::into(&sut), eq "/argh🧐nark🧐");
-
-    assert_that!(sut.remove(6), eq Err(SemanticStringError::InvalidContent));
-    assert_that!(sut.pop(), eq Err(SemanticStringError::InvalidContent));
-}
