@@ -25,14 +25,14 @@ namespace detail {
 
 /// A class for storing at most N objects of type T in a contiguous storage.
 /// All operations on this class are unchecked.
-template <typename T, uint64_t N>
+template <typename T, uint64_t Capacity>
 class RawByteStorage {
     // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
     static_assert(std::is_standard_layout<T>::value, "Storage is only valid for standard layout types.");
 
   private:
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,hicpp-avoid-c-arrays,modernize-avoid-c-arrays) raw storage, will not be used as array
-    alignas(T) char m_bytes[sizeof(T) * N];
+    alignas(T) char m_bytes[sizeof(T) * Capacity];
     uint64_t m_size;
 
   public:
@@ -57,7 +57,7 @@ class RawByteStorage {
         }
     }
 
-    template <uint64_t M, std::enable_if_t<(N > M), bool> = true>
+    template <uint64_t M, std::enable_if_t<(Capacity > M), bool> = true>
     // NOLINTNEXTLINE(hicpp-explicit-conversions), conceptually a copy constructor
     constexpr RawByteStorage(RawByteStorage<T, M> const& rhs)
         : m_bytes {}
@@ -67,13 +67,13 @@ class RawByteStorage {
         }
     }
 
-    template <uint64_t M, std::enable_if_t<(N > M), bool> = true>
+    template <uint64_t M, std::enable_if_t<(Capacity > M), bool> = true>
     // NOLINTNEXTLINE(hicpp-explicit-conversions), conceptually a move constructor
-    constexpr RawByteStorage(RawByteStorage<T, M>&& rhs)
+    constexpr RawByteStorage(RawByteStorage<T, M>&& rhs) noexcept
         : m_bytes {}
         , m_size(rhs.size()) {
         for (uint64_t index = 0; index < m_size; ++index) {
-            new (pointer_from_index(index)) T(std::move(*rhs.pointer_from_index(index)));
+            new (pointer_from_index(index)) T(std::move_if_noexcept(*rhs.pointer_from_index(index)));
         }
     }
 
@@ -94,39 +94,26 @@ class RawByteStorage {
         return m_size;
     }
 
-    // @pre size() < (N - 1)
+    // @pre size() < (Capacity - 1)
     template <typename... Args>
     constexpr void emplace_back(Args&&... args) {
         new (pointer_from_index(size())) T(std::forward<Args>(args)...);
         ++m_size;
     }
 
-    // @pre (size() < (N - 1)) && (index <= size())
+    // @pre (size() < (Capacity - 1)) && (index <= size())
     template <typename... Args>
     constexpr void emplace_at(uint64_t index, Args&&... args) {
-        make_room_at(index, 1);
-        T& target = *pointer_from_index(index);
-        target = T(std::forward<Args>(args)...);
+        emplace_back(std::forward<Args>(args)...);
+        rotate_from_back(index, m_size - 1);
     }
 
-    // @pre (index <= size()) && (size() + count < N)
+    // @pre (index <= size()) && (size() + count < Capacity)
     constexpr void insert_at(uint64_t index, uint64_t count, T const& value) {
-        make_room_at(index, count);
         for (uint64_t i = 0; i < count; ++i) {
-            *pointer_from_index(index + i) = value;
+            emplace_back(value);
         }
-    }
-
-    // @pre (index <= size()) && (size() + gap_size < N)
-    constexpr void make_room_at(uint64_t index, uint64_t gap_size) {
-        uint64_t const old_size = m_size;
-        // construct new elements at the back
-        for (uint64_t i = 0; i < gap_size; ++i) {
-            T& source = *pointer_from_index(m_size - gap_size);
-            emplace_back(std::move(source));
-        }
-        // move remaining elements up
-        std::move_backward(pointer_from_index(index), pointer_from_index(old_size), pointer_from_index(m_size));
+        rotate_from_back(index, m_size - count);
     }
 
     // @pre (index < size())
