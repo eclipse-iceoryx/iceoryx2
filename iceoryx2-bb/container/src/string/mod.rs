@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::mem::MaybeUninit;
+use iceoryx2_bb_log::{fail, fatal_panic};
 use std::{
     fmt::Debug,
     hash::Hash,
@@ -18,56 +19,16 @@ use std::{
 };
 
 pub mod static_string;
+pub mod utils;
 
-use iceoryx2_bb_log::{fail, fatal_panic};
 pub use static_string::*;
-
-/// Returns the length of a c string
-///
-/// # Safety
-///
-///  * The string must be '\0' (null) terminated.
-///
-pub unsafe fn strnlen(ptr: *const core::ffi::c_char, len: usize) -> usize {
-    const NULL_TERMINATION: core::ffi::c_char = 0;
-    for i in 0..len {
-        if *ptr.add(i) == NULL_TERMINATION {
-            return i;
-        }
-    }
-
-    len
-}
-
-/// Adds escape characters to the string so that it can be used for console output.
-pub fn as_escaped_string(bytes: &[u8]) -> std::string::String {
-    std::string::String::from_utf8(
-        bytes
-            .iter()
-            .flat_map(|c| match *c {
-                b'\t' => vec![b'\\', b't'].into_iter(),
-                b'\r' => vec![b'\\', b'r'].into_iter(),
-                b'\n' => vec![b'\\', b'n'].into_iter(),
-                b'\x20'..=b'\x7e' => vec![*c].into_iter(),
-                _ => {
-                    let hex_digits: &[u8; 16] = b"0123456789abcdef";
-                    vec![
-                        b'\\',
-                        b'x',
-                        hex_digits[(c >> 4) as usize],
-                        hex_digits[(c & 0xf) as usize],
-                    ]
-                    .into_iter()
-                }
-            })
-            .collect::<Vec<u8>>(),
-    )
-    .unwrap()
-}
+pub use utils::*;
 
 /// Error which can occur when a [`String`] is modified.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum StringModificationError {
+    /// A string with an unsupported unicode code points greater or equal 128 (U+0080) was provided
+    InvalidCharacter,
     /// The content that shall be added would exceed the maximum capacity of the
     /// [`String`].
     InsertWouldExceedCapacity,
@@ -102,6 +63,20 @@ pub(crate) mod internal {
     }
 }
 
+/// A UTF-8 string trait.
+/// The string class uses Unicode (ISO/IEC 10646) terminology throughout its interface. In particular:
+/// - A code point is the numerical index assigned to a character in the Unicode standard.
+/// - A code unit is the basic component of a character encoding system. For UTF-8, the code unit has a size of 8-bits
+/// For example, the code point U+0041 represents the letter 'A' and can be encoded in a single 8-bit code unit in
+/// UTF-8. The code point U+1F4A9 requires four 8-bit code units in the UTF-8 encoding.
+///
+/// The NUL code point (U+0000) is not allowed anywhere in the string.
+///
+/// ## Note
+///
+/// Currently only Unicode code points less than 128 (U+0080) are supported.
+/// This restricts the valid contents of a string to those UTF8 strings
+/// that are also valid 7-bit ASCII strings. Full Unicode support will get added later.
 pub trait String:
     internal::StringView
     + Debug
@@ -301,7 +276,7 @@ pub trait String:
 
         let removed_byte = unsafe { *self.data()[idx].as_ptr() };
 
-        self.remove_range(idx, 1);
+        self.remove_range(idx - 1, 1);
 
         Some(removed_byte)
     }

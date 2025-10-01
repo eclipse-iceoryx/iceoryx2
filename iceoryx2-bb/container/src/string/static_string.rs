@@ -43,43 +43,10 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::{fail, fatal_panic};
 use serde::{de::Visitor, Deserialize, Deserializer, Serialize, Serializer};
 
-use crate::string::{as_escaped_string, internal::StringView, strnlen, String};
+use crate::string::{
+    as_escaped_string, internal::StringView, strnlen, String, StringModificationError,
+};
 
-/// Error which can occur when a [`StaticString`] is modified.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum StaticStringModificationError {
-    /// A string containing Unicode code points greater or equal 128 (U+0080) was provided
-    /// for insertion or creation.
-    InvalidCharacter,
-    /// The content that shall be added would exceed the maximum capacity of the
-    /// [`StaticString`].
-    InsertWouldExceedCapacity,
-}
-
-impl core::fmt::Display for StaticStringModificationError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "StaticStringModificationError::{self:?}")
-    }
-}
-
-impl core::error::Error for StaticStringModificationError {}
-
-/// A UTF-8 string with fixed static capacity and contiguous inplace storage.
-/// The string class uses Unicode (ISO/IEC 10646) terminology throughout its interface. In particular:
-/// - A code point is the numerical index assigned to a character in the Unicode standard.
-/// - A code unit is the basic component of a character encoding system. For UTF-8, the code unit has a size of 8-bits
-/// For example, the code point U+0041 represents the letter 'A' and can be encoded in a single 8-bit code unit in
-/// UTF-8. The code point U+1F4A9 requires four 8-bit code units in the UTF-8 encoding.
-///
-/// The NUL code point (U+0000) is not allowed anywhere in the string.
-///
-/// ## Note
-///
-/// Currently only Unicode code points less than 128 (U+0080) are supported.
-/// This restricts the valid contents of a string to those UTF8 strings
-/// that are also valid 7-bit ASCII strings. Full Unicode support will get added later.
-///
-/// `Capacity` - Maximum number of UTF-8 code units that the string can store, excluding the terminating NUL character.
 #[derive(PlacementDefault, ZeroCopySend, Clone, Copy)]
 #[repr(C)]
 pub struct StaticString<const CAPACITY: usize> {
@@ -246,12 +213,12 @@ impl<const CAPACITY: usize, const BYTE_CAPACITY: usize> From<&[u8; BYTE_CAPACITY
 }
 
 impl<const CAPACITY: usize> TryFrom<&str> for StaticString<CAPACITY> {
-    type Error = StaticStringModificationError;
+    type Error = StringModificationError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         if CAPACITY < value.len() {
             fail!(from "StaticString::from<&str>()",
-                with StaticStringModificationError::InsertWouldExceedCapacity,
+                with StringModificationError::InsertWouldExceedCapacity,
                 "The provided string \"{}\" does not fit into the StaticString with capacity {}",
                 value, CAPACITY);
         }
@@ -302,18 +269,16 @@ impl<const CAPACITY: usize> StaticString<CAPACITY> {
     ///  * `bytes` len must be smaller or equal than [`StaticString::capacity()`]
     ///
     pub unsafe fn from_bytes_unchecked(bytes: &[u8]) -> Self {
-        debug_assert!(CAPACITY < bytes.len());
-
-        Self::from_bytes_truncated(bytes)
+        debug_assert!(bytes.len() < CAPACITY);
+        let mut new_self = Self::new();
+        new_self.insert_bytes_unchecked(0, bytes);
+        new_self
     }
 
     /// Creates a new [`StaticString`] from a byte slice
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, StaticStringModificationError> {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, StringModificationError> {
         let mut new_self = Self::new();
-        fail!(from "StaticString", when new_self.push_bytes(bytes),
-                with StaticStringModificationError::InsertWouldExceedCapacity,
-                "Unbale to create from \"{}\" since it would exceed the capacity of {}.",
-                as_escaped_string(bytes), CAPACITY);
+        new_self.insert_bytes(0, bytes)?;
 
         Ok(new_self)
     }
@@ -322,16 +287,16 @@ impl<const CAPACITY: usize> StaticString<CAPACITY> {
     /// into the [`StaticString`] it will be truncated.
     pub fn from_bytes_truncated(bytes: &[u8]) -> Self {
         let mut new_self = Self::new();
-        new_self.len = core::cmp::min(bytes.len(), CAPACITY) as u64;
-        for (i, byte) in bytes.iter().enumerate().take(new_self.len()) {
-            new_self.data[i].write(*byte);
-        }
-
-        if new_self.len() < CAPACITY {
-            new_self.data[new_self.len()].write(0);
-        }
-
+        unsafe {
+            new_self.insert_bytes_unchecked(0, &bytes[0..core::cmp::min(bytes.len(), CAPACITY)])
+        };
         new_self
+    }
+
+    /// Creates a new [`StaticString`] from a string slice. If the string slice does not fit
+    /// into the [`StaticString`] an error will be returned.
+    pub fn from_str(s: &str) -> Result<Self, StringModificationError> {
+        Self::from_bytes(s.as_bytes())
     }
 
     /// Creates a new [`StaticString`] from a string slice. If the string slice does not fit
@@ -349,21 +314,13 @@ impl<const CAPACITY: usize> StaticString<CAPACITY> {
     ///
     pub unsafe fn from_c_str(
         ptr: *const core::ffi::c_char,
-    ) -> Result<Self, StaticStringModificationError> {
+    ) -> Result<Self, StringModificationError> {
         let string_length = strnlen(ptr, CAPACITY + 1);
         if CAPACITY < string_length {
-            return Err(StaticStringModificationError::InsertWouldExceedCapacity);
+            return Err(StringModificationError::InsertWouldExceedCapacity);
         }
 
-        let mut new_self = Self::new();
-        core::ptr::copy_nonoverlapping(
-            ptr,
-            new_self.as_mut_bytes().as_mut_ptr() as *mut core::ffi::c_char,
-            string_length,
-        );
-        new_self.len = string_length as u64;
-
-        Ok(new_self)
+        Self::from_bytes(core::slice::from_raw_parts(ptr.cast(), string_length))
     }
 }
 
