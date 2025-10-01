@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use std::alloc::Layout;
+use std::mem::MaybeUninit;
 use std::rc::Rc;
 
 use clap::Parser;
@@ -64,27 +66,21 @@ fn run_pinger<P: PayloadWriter>() -> Result<(), Box<dyn core::error::Error>> {
     let timeout_id = WaitSetAttachmentId::from_guard(&timeout_guard);
 
     // Create the payload on the heap
-    let mut payload_bytes = vec![0u8; std::mem::size_of::<P::PayloadType>()];
-    let payload_ptr = payload_bytes.as_mut_ptr() as *mut P::PayloadType;
+    let ptr = unsafe { std::alloc::alloc(Layout::new::<MaybeUninit<P::PayloadType>>()) }
+        as *mut MaybeUninit<P::PayloadType>;
     unsafe {
-        P::write_payload(&mut *payload_ptr);
+        P::write_payload(ptr.cast());
     }
 
-    // Relinquish ownership of the bytes
-    std::mem::forget(payload_bytes);
-
-    // Claim ownership with a Box and to use with Rc API
-    let payload_box = unsafe { Box::from_raw(payload_ptr) };
-
     // Wrap in Rc since on_event required to be FnMut as closure technically can run N times
-    let payload = Rc::from(payload_box);
+    let payload = Rc::from(ptr as *const P::PayloadType);
 
     let on_event = |id: WaitSetAttachmentId<ipc::Service>| {
         if id == pong_id {
             match pong_subscriber.receive() {
                 Ok(sample) => match sample {
                     Some(pong_sample) => {
-                        if *pong_sample.payload() == *payload {
+                        if pong_sample.payload() == unsafe { &**payload } {
                             pass_test();
                         } else {
                             fail_test(&format!(
@@ -110,13 +106,13 @@ fn run_pinger<P: PayloadWriter>() -> Result<(), Box<dyn core::error::Error>> {
         fail_test("Unexpected Event");
     };
 
-    let ping_sample = ping_publisher.loan_uninit()?;
+    let mut ping_sample = ping_publisher.loan_uninit()?;
 
     // The bytes of the payload are copied directly into shared memory, by-passing stack
     unsafe {
         std::ptr::copy_nonoverlapping(
-            payload.as_ref() as *const P::PayloadType as *const u8,
-            ping_sample.payload().as_ptr() as *mut u8,
+            *payload as *const u8,
+            ping_sample.payload_mut().as_mut_ptr().cast(),
             std::mem::size_of::<P::PayloadType>(),
         );
     }
@@ -126,6 +122,8 @@ fn run_pinger<P: PayloadWriter>() -> Result<(), Box<dyn core::error::Error>> {
     ping_notifier.notify()?;
 
     waitset.wait_and_process(on_event)?;
+
+    unsafe { std::alloc::dealloc(ptr as *mut u8, Layout::new::<MaybeUninit<P::PayloadType>>()) };
 
     Ok(())
 }

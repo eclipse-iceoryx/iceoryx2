@@ -62,13 +62,13 @@ fn run_ponger<P: PayloadWriter>() -> Result<(), Box<dyn core::error::Error>> {
             ping_listener.try_wait_all(|_| {}).unwrap();
 
             while let Ok(Some(ping_sample)) = ping_subscriber.receive() {
-                let pong_sample = pong_publisher.loan_uninit().unwrap();
+                let mut pong_sample = pong_publisher.loan_uninit().unwrap();
 
                 // Copy the received ping payload directly into the pong payload, by-passing stack
                 unsafe {
                     std::ptr::copy_nonoverlapping(
                         ping_sample.payload() as *const P::PayloadType as *const u8,
-                        pong_sample.payload().as_ptr() as *mut u8,
+                        pong_sample.payload_mut().as_mut_ptr().cast(),
                         std::mem::size_of::<P::PayloadType>(),
                     );
                 }

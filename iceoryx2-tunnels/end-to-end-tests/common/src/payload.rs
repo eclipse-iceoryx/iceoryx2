@@ -40,7 +40,7 @@ impl PayloadWriter for PrimitivePayload {
     type PayloadType = u64;
 
     unsafe fn write_payload(ptr: *mut Self::PayloadType) {
-        *ptr = 42;
+        ptr.write(42);
     }
 }
 
