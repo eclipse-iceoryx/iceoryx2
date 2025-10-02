@@ -173,7 +173,7 @@
 //!
 //! ```
 //! use iceoryx2::prelude::*;
-//! use iceoryx2_bb_container::byte_string::FixedSizeByteString;
+//! use iceoryx2_bb_container::string::*;
 //!
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let node = NodeBuilder::new().create::<ipc::Service>()?;
@@ -188,7 +188,7 @@
 //!     // add key-value pairs
 //!     .add::<i32>(0, -9)
 //!     .add::<bool>(5, true)
-//!     .add::<FixedSizeByteString<8>>(17, "Nalalala".try_into().unwrap())
+//!     .add::<StaticString<8>>(17, "Nalalala".try_into().unwrap())
 //!     .add_with_default::<u32>(2)
 //!     // create the service
 //!     .create()?;
