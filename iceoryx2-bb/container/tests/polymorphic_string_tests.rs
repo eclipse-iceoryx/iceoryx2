@@ -17,7 +17,7 @@ use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary_traits::allocator::AllocationError;
 use iceoryx2_bb_testing::assert_that;
 
-const SUT_CAPACITY: usize = 10;
+const SUT_CAPACITY: usize = 256;
 
 struct Test {
     raw_memory: UnsafeCell<Box<[u8; core::mem::size_of::<u8>() * (SUT_CAPACITY * 3)]>>,

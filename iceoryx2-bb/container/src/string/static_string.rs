@@ -280,7 +280,7 @@ impl<const CAPACITY: usize> StaticString<CAPACITY> {
     ///  * all unicode code points must be smaller 128 and not 0.
     ///
     pub unsafe fn from_bytes_unchecked(bytes: &[u8]) -> Self {
-        debug_assert!(bytes.len() < CAPACITY);
+        debug_assert!(bytes.len() <= CAPACITY);
         let mut new_self = Self::new();
         new_self.insert_bytes_unchecked(0, bytes);
         new_self

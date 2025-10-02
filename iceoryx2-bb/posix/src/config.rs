@@ -29,7 +29,7 @@ pub enum ClockMode {
 /// Defines how often a call is repeated when it was interrupted by SIGINT
 pub const EINTR_REPETITIONS: u64 = 10;
 
-pub const MAX_THREAD_NAME_LENGTH: usize = 15;
+pub const MAX_THREAD_NAME_LENGTH: usize = 16;
 pub const DEFAULT_SCHEDULER: Scheduler = Scheduler::Other;
 
 pub const ADAPTIVE_WAIT_YIELD_REPETITIONS: u64 = 10000;
