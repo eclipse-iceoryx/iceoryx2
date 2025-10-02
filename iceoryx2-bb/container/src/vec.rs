@@ -10,63 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! Contains vector variations that are similar to [`std::vec::Vec`].
-//!
-//!  * [`Vec`](crate::vec::Vec), run-time fixed-size vector that is not shared-memory compatible
-//!     since the memory resides in the heap.
-//!  * [`RelocatableVec`](crate::vec::RelocatableVec), run-time fixed size vector that uses by default heap memory.
-//!
-//! # Expert Examples
-//!
-//! ## Create [`RelocatableVec`](crate::vec::RelocatableVec) inside constructs which provides memory
-//!
-//! ```
-//! use iceoryx2_bb_container::vec::RelocatableVec;
-//! use iceoryx2_bb_elementary::math::align_to;
-//! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-//! use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
-//! use core::mem::MaybeUninit;
-//!
-//! const VEC_CAPACITY:usize = 12;
-//! struct MyConstruct {
-//!     vec: RelocatableVec<u128>,
-//!     vec_memory: [MaybeUninit<u128>; VEC_CAPACITY],
-//! }
-//!
-//! impl MyConstruct {
-//!     pub fn new() -> Self {
-//!         let mut new_self = Self {
-//!             vec: unsafe { RelocatableVec::new_uninit(VEC_CAPACITY) },
-//!             vec_memory: core::array::from_fn(|_| MaybeUninit::uninit()),
-//!         };
-//!
-//!         let allocator = BumpAllocator::new(new_self.vec_memory.as_mut_ptr().cast());
-//!         unsafe {
-//!             new_self.vec.init(&allocator).expect("Enough memory provided.")
-//!         };
-//!         new_self
-//!     }
-//! }
-//! ```
-//!
-//! ## Create [`RelocatableVec`](crate::vec::RelocatableVec) with allocator
-//!
-//! ```
-//! use iceoryx2_bb_container::vec::RelocatableVec;
-//! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-//! use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
-//! use core::ptr::NonNull;
-//!
-//! const VEC_CAPACITY:usize = 12;
-//! const MEM_SIZE: usize = RelocatableVec::<u128>::const_memory_size(VEC_CAPACITY);
-//! let mut memory = [0u8; MEM_SIZE];
-//!
-//! let bump_allocator = BumpAllocator::new(memory.as_mut_ptr());
-//!
-//! let mut vec = unsafe { RelocatableVec::<u128>::new_uninit(VEC_CAPACITY) };
-//! unsafe { vec.init(&bump_allocator).expect("vec init failed") };
-//! ```
-
 use core::{
     alloc::Layout,
     fmt::Debug,
