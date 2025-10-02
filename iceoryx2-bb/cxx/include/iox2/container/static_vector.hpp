@@ -69,19 +69,19 @@ class StaticVector {
         auto operator=(UncheckedConstAccessor const&) -> UncheckedConstAccessor& = delete;
         auto operator=(UncheckedConstAccessor&&) -> UncheckedConstAccessor& = delete;
 
-        constexpr auto operator[](SizeType index) const -> ConstReference {
+        constexpr auto operator[](SizeType index) const&& -> ConstReference {
             return *m_parent->m_storage.pointer_from_index(index);
         }
 
-        constexpr auto begin() const noexcept -> ConstIterator {
+        constexpr auto begin() const&& noexcept -> ConstIterator {
             return m_parent->m_storage.pointer_from_index(0);
         }
 
-        constexpr auto end() const noexcept -> ConstIterator {
+        constexpr auto end() const&& noexcept -> ConstIterator {
             return m_parent->m_storage.pointer_from_index(m_parent->m_storage.size());
         }
 
-        constexpr auto data() const noexcept -> ConstPointer {
+        constexpr auto data() const&& noexcept -> ConstPointer {
             return m_parent->m_storage.pointer_from_index(0);
         }
     };
@@ -105,19 +105,19 @@ class StaticVector {
         auto operator=(UncheckedAccessor const&) -> UncheckedAccessor& = delete;
         auto operator=(UncheckedAccessor&&) -> UncheckedAccessor& = delete;
 
-        constexpr auto operator[](SizeType index) -> Reference {
+        constexpr auto operator[](SizeType index) && -> Reference {
             return *m_parent->m_storage.pointer_from_index(index);
         }
 
-        constexpr auto begin() noexcept -> Iterator {
+        constexpr auto begin() && noexcept -> Iterator {
             return m_parent->m_storage.pointer_from_index(0);
         }
 
-        constexpr auto end() noexcept -> Iterator {
+        constexpr auto end() && noexcept -> Iterator {
             return m_parent->m_storage.pointer_from_index(this->m_parent->m_storage.size());
         }
 
-        constexpr auto data() noexcept -> Pointer {
+        constexpr auto data() && noexcept -> Pointer {
             return m_parent->m_storage.pointer_from_index(0);
         }
     };
