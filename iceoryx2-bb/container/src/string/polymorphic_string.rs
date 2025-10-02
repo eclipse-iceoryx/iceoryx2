@@ -1,0 +1,168 @@
+// Copyright (c) 2025 Contributors to the Eclipse Foundation
+//
+// See the NOTICE file(s) distributed with this work for additional
+// information regarding copyright ownership.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Apache Software License 2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+// which is available at https://opensource.org/licenses/MIT.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+use std::{
+    cmp::Ordering,
+    fmt::{Debug, Display},
+    hash::Hash,
+    mem::MaybeUninit,
+    ops::{Deref, DerefMut},
+};
+
+use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
+
+use crate::string::{internal::StringView, *};
+
+pub struct PolymorphicString<'a, Allocator: BaseAllocator> {
+    data_ptr: *mut MaybeUninit<u8>,
+    len: u64,
+    capacity: u64,
+    allocator: &'a Allocator,
+}
+
+impl<Allocator: BaseAllocator> internal::StringView for PolymorphicString<'_, Allocator> {
+    fn data(&self) -> &[MaybeUninit<u8>] {
+        unsafe { core::slice::from_raw_parts(self.data_ptr, self.capacity() + 1) }
+    }
+
+    unsafe fn data_mut(&mut self) -> &mut [MaybeUninit<u8>] {
+        core::slice::from_raw_parts_mut(self.data_ptr, self.capacity())
+    }
+
+    unsafe fn set_len(&mut self, len: u64) {
+        self.len = len;
+    }
+}
+
+impl<Allocator: BaseAllocator> Debug for PolymorphicString<'_, Allocator> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(
+            f,
+            "PolymorphicString::<{}> {{ capacity: {}, len: {}, data: \"{}\" }}",
+            core::any::type_name::<Allocator>(),
+            self.capacity,
+            self.len,
+            as_escaped_string(self.as_bytes())
+        )
+    }
+}
+
+unsafe impl<Allocator: BaseAllocator> Send for PolymorphicString<'_, Allocator> {}
+
+impl<Allocator: BaseAllocator> PartialOrd<PolymorphicString<'_, Allocator>>
+    for PolymorphicString<'_, Allocator>
+{
+    fn partial_cmp(&self, other: &PolymorphicString<'_, Allocator>) -> Option<Ordering> {
+        self.data()[..self.len as usize]
+            .iter()
+            .zip(other.data()[..other.len as usize].iter())
+            .map(|(lhs, rhs)| unsafe { lhs.assume_init_read().cmp(rhs.assume_init_ref()) })
+            .find(|&ord| ord != Ordering::Equal)
+            .or(Some(self.len.cmp(&other.len)))
+    }
+}
+
+impl<Allocator: BaseAllocator> Ord for PolymorphicString<'_, Allocator> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.partial_cmp(other).unwrap()
+    }
+}
+
+impl<Allocator: BaseAllocator> Hash for PolymorphicString<'_, Allocator> {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        state.write(self.as_bytes())
+    }
+}
+
+impl<Allocator: BaseAllocator> Deref for PolymorphicString<'_, Allocator> {
+    type Target = [u8];
+
+    fn deref(&self) -> &Self::Target {
+        self.as_bytes()
+    }
+}
+
+impl<Allocator: BaseAllocator> DerefMut for PolymorphicString<'_, Allocator> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.as_mut_bytes()
+    }
+}
+
+impl<Allocator: BaseAllocator> PartialEq<PolymorphicString<'_, Allocator>>
+    for PolymorphicString<'_, Allocator>
+{
+    fn eq(&self, other: &PolymorphicString<'_, Allocator>) -> bool {
+        *self.as_bytes() == *other.as_bytes()
+    }
+}
+
+impl<Allocator: BaseAllocator> Eq for PolymorphicString<'_, Allocator> {}
+
+impl<Allocator: BaseAllocator> PartialEq<&[u8]> for PolymorphicString<'_, Allocator> {
+    fn eq(&self, other: &&[u8]) -> bool {
+        *self.as_bytes() == **other
+    }
+}
+
+impl<Allocator: BaseAllocator> PartialEq<&str> for PolymorphicString<'_, Allocator> {
+    fn eq(&self, other: &&str) -> bool {
+        *self.as_bytes() == *other.as_bytes()
+    }
+}
+
+impl<Allocator: BaseAllocator> PartialEq<PolymorphicString<'_, Allocator>> for &str {
+    fn eq(&self, other: &PolymorphicString<'_, Allocator>) -> bool {
+        *self.as_bytes() == *other.as_bytes()
+    }
+}
+
+impl<const OTHER_CAPACITY: usize, Allocator: BaseAllocator> PartialEq<[u8; OTHER_CAPACITY]>
+    for PolymorphicString<'_, Allocator>
+{
+    fn eq(&self, other: &[u8; OTHER_CAPACITY]) -> bool {
+        *self.as_bytes() == *other
+    }
+}
+
+impl<const OTHER_CAPACITY: usize, Allocator: BaseAllocator> PartialEq<&[u8; OTHER_CAPACITY]>
+    for PolymorphicString<'_, Allocator>
+{
+    fn eq(&self, other: &&[u8; OTHER_CAPACITY]) -> bool {
+        *self.as_bytes() == **other
+    }
+}
+
+impl<Allocator: BaseAllocator> Display for PolymorphicString<'_, Allocator> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{}", as_escaped_string(self.as_bytes()))
+    }
+}
+
+impl<'a, Allocator: BaseAllocator> PolymorphicString<'a, Allocator> {
+    pub fn new(allocator: &'a Allocator, capacity: usize) -> Result<Self, AllocationError> {
+        todo!()
+    }
+
+    pub fn try_clone(&self) -> Result<Self, AllocationError> {
+        todo!()
+    }
+}
+
+impl<Allocator: BaseAllocator> String for PolymorphicString<'_, Allocator> {
+    fn capacity(&self) -> usize {
+        self.capacity as usize
+    }
+
+    fn len(&self) -> usize {
+        self.len as usize
+    }
+}

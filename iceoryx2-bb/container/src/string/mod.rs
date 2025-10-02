@@ -19,6 +19,9 @@ use core::{
 };
 use iceoryx2_bb_log::{fail, fatal_panic};
 
+/// Runtime fixed-capacity string where the user can provide a stateful allocator.
+pub mod polymorphic_string;
+
 /// Compile-time fixed-capacity string variant that is shared-memory compatible.
 pub mod static_string;
 

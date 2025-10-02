@@ -180,7 +180,7 @@ impl RelocatableContainer for RelocatableString {
         }
 
         let ptr = match allocator.allocate(Layout::from_size_align_unchecked(
-            core::mem::size_of::<u8>() * self.capacity as usize,
+            core::mem::size_of::<u8>() * (self.capacity as usize + 1),
             core::mem::align_of::<u8>(),
         )) {
             Ok(ptr) => ptr,
