@@ -1,5 +1,5 @@
 {
-  "checksum": "922fe34f164c06d92c3c090a8601115e6c5db83f4662fa03d4322d4c810f25ac",
+  "checksum": "b507fd5d8ff37b686bf1d60bc358f245fd5221810cf3b47afaff9cdf01eeb786",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -8993,17 +8993,39 @@
       ],
       "license_file": null
     },
-    "iceoryx2-tunnels-end-to-end-testing 0.7.0": {
-      "name": "iceoryx2-tunnels-end-to-end-testing",
+    "iceoryx2-tunnels-end-to-end-tests 0.7.0": {
+      "name": "iceoryx2-tunnels-end-to-end-tests",
       "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
-      "targets": [],
-      "library_target_name": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_tunnels_end_to_end_tests",
+            "crate_root": "common/src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_tunnels_end_to_end_tests",
       "common_attrs": {
         "compile_data_glob": [
           "**"
         ],
+        "deps": {
+          "common": [
+            {
+              "id": "clap 4.5.19",
+              "target": "clap"
+            }
+          ],
+          "selects": {}
+        },
         "edition": "2021",
         "version": "0.7.0"
       },
@@ -30062,7 +30084,7 @@
     "iceoryx2-pal-posix 0.7.0": "iceoryx2-pal/posix",
     "iceoryx2-pal-testing 0.7.0": "iceoryx2-pal/testing",
     "iceoryx2-services-discovery 0.7.0": "iceoryx2-services/discovery",
-    "iceoryx2-tunnels-end-to-end-testing 0.7.0": "iceoryx2-tunnels/end-to-end-testing",
+    "iceoryx2-tunnels-end-to-end-tests 0.7.0": "iceoryx2-tunnels/end-to-end-tests",
     "iceoryx2-tunnels-zenoh 0.7.0": "iceoryx2-tunnels/zenoh",
     "iceoryx2-userland-record-and-replay 0.7.0": "iceoryx2-userland/record-and-replay"
   },
