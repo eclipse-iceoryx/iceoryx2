@@ -77,6 +77,7 @@ use crate::vector::internal;
 pub use crate::vector::Vector;
 
 /// **Non-movable** relocatable shared-memory compatible vector with runtime fixed size capacity.
+#[repr(C)]
 pub struct RelocatableVec<T> {
     data_ptr: RelocatablePointer<MaybeUninit<T>>,
     capacity: u64,
@@ -156,7 +157,7 @@ impl<T> RelocatableVec<T> {
     fn verify_init(&self, source: &str) {
         debug_assert!(
                 self.data_ptr.is_initialized(),
-                "From: MetaVec<{}>::{}, Undefined behavior - the object was not initialized with 'init' before.",
+                "From: RelocatableVec<{}>::{}, Undefined behavior - the object was not initialized with 'init' before.",
                 core::any::type_name::<T>(), source
             );
     }

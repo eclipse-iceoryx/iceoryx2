@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Contributors to the Eclipse Foundation
+// Copyright (c) 2025 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -12,12 +12,12 @@
 
 //! Relocatable (inter-process shared memory compatible) string implementations.
 //!
-//! The [`StaticString`](crate::byte_string::StaticString) has a fixed capacity defined at compile time.
+//! The [`StaticString`](crate::string::StaticString) has a fixed capacity defined at compile time.
 //!
 //! # Example
 //!
 //! ```
-//! use iceoryx2_bb_container::byte_string::*;
+//! use iceoryx2_bb_container::string::*;
 //!
 //! const STRING_CAPACITY: usize = 123;
 //!

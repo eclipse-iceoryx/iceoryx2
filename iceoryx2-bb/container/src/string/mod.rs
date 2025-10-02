@@ -13,6 +13,7 @@
 use core::mem::MaybeUninit;
 use core::{
     fmt::Debug,
+    fmt::Display,
     hash::Hash,
     ops::{Deref, DerefMut},
 };
@@ -20,6 +21,9 @@ use iceoryx2_bb_log::{fail, fatal_panic};
 
 /// Compile-time fixed-capacity string variant that is shared-memory compatible.
 pub mod static_string;
+
+/// Runtime fixed-capacity shared-memory compatible string
+pub mod relocatable_string;
 
 /// String helper functions
 pub mod utils;
@@ -84,6 +88,7 @@ pub(crate) mod internal {
 pub trait String:
     internal::StringView
     + Debug
+    + Display
     + PartialOrd
     + Ord
     + Hash
