@@ -28,9 +28,9 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let reader = service.reader_builder().create()?;
 
-    let entry_handle_0 = reader.entry::<u64>(&0)?;
-    let entry_handle_5 = reader.entry::<StaticString<30>>(&5)?;
-    let entry_handle_9 = reader.entry::<f32>(&9)?;
+    let entry_handle_0 = reader.entry::<u64>(0)?;
+    let entry_handle_5 = reader.entry::<StaticString<30>>(5)?;
+    let entry_handle_9 = reader.entry::<f32>(9)?;
 
     while node.wait(CYCLE_TIME).is_ok() {
         println!("read values:");

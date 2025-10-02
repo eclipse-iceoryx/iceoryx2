@@ -44,7 +44,7 @@ use iceoryx2_bb_log::fail;
 pub struct PortFactoryReader<
     'factory,
     Service: service::Service,
-    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
+    KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
 > {
     pub(crate) factory: &'factory PortFactory<Service, KeyType>,
 }
@@ -52,7 +52,7 @@ pub struct PortFactoryReader<
 impl<
         'factory,
         Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
+        KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
     > PortFactoryReader<'factory, Service, KeyType>
 {
     pub(crate) fn new(factory: &'factory PortFactory<Service, KeyType>) -> Self {

@@ -29,7 +29,7 @@ use crate::service::*;
 use builder::RETRY_LIMIT;
 use core::alloc::Layout;
 use core::hash::Hash;
-use iceoryx2_bb_container::flatmap::{RelocatableFlatMap, __internal_default_eq_comparison};
+use iceoryx2_bb_container::flatmap::RelocatableFlatMap;
 use iceoryx2_bb_container::queue::RelocatableContainer;
 use iceoryx2_bb_container::string::*;
 use iceoryx2_bb_container::vector::relocatable_vec::*;
@@ -229,6 +229,29 @@ impl<const CAPACITY: usize> KeyMemory<CAPACITY> {
         };
         Ok(new_self)
     }
+
+    /// This function compares two KeyMemory<CAPACITY> for equality. It is passed to functions that
+    /// require a Fn(*const u8, *const u8) -> bool so key_eq_comparison cannot be unsafe. Still, there
+    /// are safety requirements:
+    ///
+    /// # Safety
+    ///
+    ///   * lhs and rhs must be valid pointers to valid KeyMemory<CAPACITY>
+    pub fn key_eq_comparison<T: Eq>(lhs: *const u8, rhs: *const u8) -> bool {
+        let lhs = unsafe { *(lhs as *const KeyMemory<CAPACITY>) };
+        let rhs = unsafe { *(rhs as *const KeyMemory<CAPACITY>) };
+        let res = unsafe { *(lhs.data.as_ptr() as *const T) == *(rhs.data.as_ptr() as *const T) };
+
+        // TODO: remove
+        println!(
+            "cmp_func lhs = {}, rhs = {}",
+            unsafe { *(lhs.data.as_ptr() as *const u64) },
+            unsafe { *(rhs.data.as_ptr() as *const u64) }
+        );
+        println!("cmp_func returns {res}");
+
+        res
+    }
 }
 
 #[doc(hidden)]
@@ -337,7 +360,7 @@ impl<
             internals: Vec::<BuilderInternals>::new(),
             override_key_type: None,
             key_eq_func: Box::new(|lhs: *const u8, rhs: *const u8| {
-                __internal_default_eq_comparison::<KeyType>(lhs, rhs)
+                KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::key_eq_comparison::<KeyType>(lhs, rhs)
             }),
             phantom: PhantomData,
         };
@@ -455,11 +478,14 @@ impl<
     /// Adds key-value pairs to the blackboard.
     pub fn add<ValueType: ZeroCopySend + Copy + 'static>(
         self,
-        key: KeyMemory<MAX_BLACKBOARD_KEY_SIZE>,
+        key: KeyType,
         value: ValueType,
     ) -> Self {
+        // TODO: error handling
+        let key_mem = KeyMemory::try_from(key).unwrap();
+
         let internals = BuilderInternals {
-            key,
+            key: key_mem,
             value_type_details: TypeDetail::new::<ValueType>(
                 message_type_details::TypeVariant::FixedSize,
             ),
@@ -478,7 +504,7 @@ impl<
     /// Adds key-value pairs to the blackboard where value is a default value.
     pub fn add_with_default<ValueType: ZeroCopySend + Copy + 'static + Default>(
         self,
-        key: KeyMemory<MAX_BLACKBOARD_KEY_SIZE>,
+        key: KeyType,
     ) -> Self {
         self.add(key, ValueType::default())
     }

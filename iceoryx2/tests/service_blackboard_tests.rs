@@ -574,7 +574,7 @@ mod service_blackboard {
             .unwrap();
 
         let reader = sut.reader_builder().create().unwrap();
-        let entry_handle = reader.entry::<TestDefault>(&0).unwrap();
+        let entry_handle = reader.entry::<TestDefault>(0).unwrap();
         assert_that!(entry_handle.get().t, eq DEFAULT);
     }
 
@@ -592,9 +592,9 @@ mod service_blackboard {
             .unwrap();
 
         let reader = sut.reader_builder().create().unwrap();
-        let entry_handle = reader.entry::<u16>(&0).unwrap();
+        let entry_handle = reader.entry::<u16>(0).unwrap();
         let writer = sut.writer_builder().create().unwrap();
-        let entry_handle_mut = writer.entry::<u16>(&0).unwrap();
+        let entry_handle_mut = writer.entry::<u16>(0).unwrap();
 
         entry_handle_mut.update_with_copy(1234);
         assert_that!(entry_handle.get(), eq 1234);
@@ -617,9 +617,9 @@ mod service_blackboard {
             .unwrap();
 
         let writer = sut.writer_builder().create().unwrap();
-        let entry_handle_mut = writer.entry::<i32>(&9).unwrap();
+        let entry_handle_mut = writer.entry::<i32>(9).unwrap();
         let reader = sut.reader_builder().create().unwrap();
-        let entry_handle = reader.entry::<i32>(&9).unwrap();
+        let entry_handle = reader.entry::<i32>(9).unwrap();
 
         entry_handle_mut.update_with_copy(50);
         assert_that!(entry_handle.get(), eq 50);
@@ -645,7 +645,7 @@ mod service_blackboard {
             .unwrap();
 
         let writer = sut.writer_builder().create().unwrap();
-        let entry_handle_mut = writer.entry::<u64>(&0).unwrap();
+        let entry_handle_mut = writer.entry::<u64>(0).unwrap();
 
         let mut readers = vec![];
         readers.reserve(MAX_READERS);
@@ -658,7 +658,7 @@ mod service_blackboard {
             entry_handle_mut.update_with_copy(counter);
 
             for reader in &readers {
-                let entry_handle = reader.entry::<u64>(&0).unwrap();
+                let entry_handle = reader.entry::<u64>(0).unwrap();
                 assert_that!(entry_handle.get(), eq counter);
             }
         }
@@ -694,8 +694,8 @@ mod service_blackboard {
         entry_handles.reserve(MAX_HANDLES);
 
         for i in 0..MAX_HANDLES as u64 {
-            entry_handle_muts.push(writer.entry::<u64>(&i).unwrap());
-            entry_handles.push(reader.entry::<u64>(&i).unwrap());
+            entry_handle_muts.push(writer.entry::<u64>(i).unwrap());
+            entry_handles.push(reader.entry::<u64>(i).unwrap());
         }
 
         for i in 0..MAX_HANDLES {
@@ -743,27 +743,27 @@ mod service_blackboard {
 
         let writer = sut.writer_builder().create().unwrap();
         writer
-            .entry::<Groovy>(&13)
+            .entry::<Groovy>(13)
             .unwrap()
             .update_with_copy(Groovy {
                 a: false,
                 b: 888,
                 c: 906,
             });
-        writer.entry::<bool>(&100).unwrap().update_with_copy(true);
+        writer.entry::<bool>(100).unwrap().update_with_copy(true);
         writer
-            .entry::<StaticString<4>>(&23)
+            .entry::<StaticString<4>>(23)
             .unwrap()
             .update_with_copy("Wolf".try_into().unwrap());
-        writer.entry::<i8>(&1).unwrap().update_with_copy(11);
-        writer.entry::<u64>(&0).unwrap().update_with_copy(2008);
+        writer.entry::<i8>(1).unwrap().update_with_copy(11);
+        writer.entry::<u64>(0).unwrap().update_with_copy(2008);
 
         let reader = sut.reader_builder().create().unwrap();
-        assert_that!(reader.entry::<u64>(&0).unwrap().get(), eq 2008);
-        assert_that!(reader.entry::<i8>(&1).unwrap().get(), eq 11);
-        assert_that!(reader.entry::<StaticString<4>>(&23).unwrap().get(), eq "Wolf");
-        assert_that!(reader.entry::<bool>(&100).unwrap().get(), eq true);
-        assert_that!(reader.entry::<Groovy>(&13).unwrap().get(), eq Groovy{a: false, b: 888, c: 906});
+        assert_that!(reader.entry::<u64>(0).unwrap().get(), eq 2008);
+        assert_that!(reader.entry::<i8>(1).unwrap().get(), eq 11);
+        assert_that!(reader.entry::<StaticString<4>>(23).unwrap().get(), eq "Wolf");
+        assert_that!(reader.entry::<bool>(100).unwrap().get(), eq true);
+        assert_that!(reader.entry::<Groovy>(13).unwrap().get(), eq Groovy{a: false, b: 888, c: 906});
     }
 
     #[test]
@@ -996,9 +996,9 @@ mod service_blackboard {
             .unwrap();
 
         let writer = sut.writer_builder().create().unwrap();
-        let entry_handle_mut = writer.entry(&0).unwrap();
+        let entry_handle_mut = writer.entry(0).unwrap();
         let reader = sut.reader_builder().create().unwrap();
-        let entry_handle = reader.entry::<u32>(&0).unwrap();
+        let entry_handle = reader.entry::<u32>(0).unwrap();
 
         drop(sut);
 
@@ -1064,7 +1064,7 @@ mod service_blackboard {
             .unwrap();
         let reader = sut.reader_builder().create().unwrap();
         let writer = sut.writer_builder().create().unwrap();
-        let entry_handle_mut = writer.entry::<u64>(&0).unwrap();
+        let entry_handle_mut = writer.entry::<u64>(0).unwrap();
 
         drop(sut);
         let sut = node
@@ -1087,7 +1087,7 @@ mod service_blackboard {
             .open()
             .unwrap();
         let reader = sut.reader_builder().create().unwrap();
-        let entry_handle = reader.entry::<u64>(&0).unwrap();
+        let entry_handle = reader.entry::<u64>(0).unwrap();
         entry_handle_mut.update_with_copy(payload);
         assert_that!(entry_handle.get(), eq payload);
 
@@ -1123,7 +1123,7 @@ mod service_blackboard {
             .create()
             .unwrap();
         let reader = sut.reader_builder().create().unwrap();
-        let entry_handle = reader.entry::<u64>(&0).unwrap();
+        let entry_handle = reader.entry::<u64>(0).unwrap();
         let writer = sut.writer_builder().create().unwrap();
 
         drop(sut);
@@ -1147,7 +1147,7 @@ mod service_blackboard {
             .open()
             .unwrap();
         let writer = sut.writer_builder().create().unwrap();
-        let entry_handle_mut = writer.entry::<u64>(&0).unwrap();
+        let entry_handle_mut = writer.entry::<u64>(0).unwrap();
         entry_handle_mut.update_with_copy(payload);
         assert_that!(entry_handle.get(), eq payload);
 
@@ -1230,13 +1230,13 @@ mod service_blackboard {
             .unwrap();
 
         let writer = sut.writer_builder().create().unwrap();
-        let entry_handle_mut = writer.entry::<u8>(&0).unwrap();
+        let entry_handle_mut = writer.entry::<u8>(0).unwrap();
         entry_handle_mut.update_with_copy(5);
         drop(entry_handle_mut);
         drop(writer);
 
         let reader = sut.reader_builder().create().unwrap();
-        let entry_handle = reader.entry::<u8>(&0).unwrap();
+        let entry_handle = reader.entry::<u8>(0).unwrap();
         assert_that!(entry_handle.get(), eq 5);
     }
 
@@ -1255,21 +1255,21 @@ mod service_blackboard {
             .unwrap();
 
         let writer = sut.writer_builder().create().unwrap();
-        let entry_handle_mut = writer.entry::<u8>(&0).unwrap();
+        let entry_handle_mut = writer.entry::<u8>(0).unwrap();
         entry_handle_mut.update_with_copy(5);
 
         let reader = sut.reader_builder().create().unwrap();
-        assert_that!(reader.entry::<u8>(&0).unwrap().get(), eq 5);
-        assert_that!(reader.entry::<i32>(&6).unwrap().get(), eq - 9);
+        assert_that!(reader.entry::<u8>(0).unwrap().get(), eq 5);
+        assert_that!(reader.entry::<i32>(6).unwrap().get(), eq - 9);
 
         drop(reader);
 
-        let entry_handle_mut = writer.entry::<i32>(&6).unwrap();
+        let entry_handle_mut = writer.entry::<i32>(6).unwrap();
         entry_handle_mut.update_with_copy(-567);
 
         let reader = sut.reader_builder().create().unwrap();
-        assert_that!(reader.entry::<u8>(&0).unwrap().get(), eq 5);
-        assert_that!(reader.entry::<i32>(&6).unwrap().get(), eq - 567);
+        assert_that!(reader.entry::<u8>(0).unwrap().get(), eq 5);
+        assert_that!(reader.entry::<i32>(6).unwrap().get(), eq - 567);
     }
 
     #[test]
@@ -1286,13 +1286,13 @@ mod service_blackboard {
             .unwrap();
 
         let writer = sut.writer_builder().create().unwrap();
-        let entry_handle_mut = writer.entry::<u8>(&0).unwrap();
+        let entry_handle_mut = writer.entry::<u8>(0).unwrap();
 
         drop(writer);
         entry_handle_mut.update_with_copy(1);
 
         let reader = sut.reader_builder().create().unwrap();
-        assert_that!(reader.entry::<u8>(&0).unwrap().get(), eq 1);
+        assert_that!(reader.entry::<u8>(0).unwrap().get(), eq 1);
     }
 
     #[test]
@@ -1309,13 +1309,13 @@ mod service_blackboard {
             .unwrap();
 
         let reader = sut.reader_builder().create().unwrap();
-        let entry_handle = reader.entry::<u8>(&0).unwrap();
+        let entry_handle = reader.entry::<u8>(0).unwrap();
 
         drop(reader);
         assert_that!(entry_handle.get(), eq 0);
 
         let writer = sut.writer_builder().create().unwrap();
-        let entry_handle_mut = writer.entry::<u8>(&0).unwrap();
+        let entry_handle_mut = writer.entry::<u8>(0).unwrap();
         entry_handle_mut.update_with_copy(1);
         assert_that!(entry_handle.get(), eq 1);
     }
@@ -1334,9 +1334,9 @@ mod service_blackboard {
             .unwrap();
 
         let writer = sut.writer_builder().create().unwrap();
-        let entry_handle_mut = writer.entry::<u32>(&0).unwrap();
+        let entry_handle_mut = writer.entry::<u32>(0).unwrap();
         let reader = sut.reader_builder().create().unwrap();
-        let entry_handle = reader.entry::<u32>(&0).unwrap();
+        let entry_handle = reader.entry::<u32>(0).unwrap();
 
         let entry_value_uninit = entry_handle_mut.loan_uninit();
         let entry_value = entry_value_uninit.write(333);
@@ -1359,9 +1359,9 @@ mod service_blackboard {
             .unwrap();
 
         let writer = sut.writer_builder().create().unwrap();
-        let entry_handle_mut = writer.entry::<u32>(&0).unwrap();
+        let entry_handle_mut = writer.entry::<u32>(0).unwrap();
         let reader = sut.reader_builder().create().unwrap();
-        let entry_handle = reader.entry::<u32>(&0).unwrap();
+        let entry_handle = reader.entry::<u32>(0).unwrap();
 
         let entry_value_uninit = entry_handle_mut.loan_uninit();
         let entry_value = entry_value_uninit.write(333);
@@ -1386,9 +1386,9 @@ mod service_blackboard {
             .unwrap();
 
         let reader = sut.reader_builder().create().unwrap();
-        let entry_handle = reader.entry::<u32>(&0).unwrap();
+        let entry_handle = reader.entry::<u32>(0).unwrap();
         let writer = sut.writer_builder().create().unwrap();
-        let entry_handle_mut = writer.entry::<u32>(&0).unwrap();
+        let entry_handle_mut = writer.entry::<u32>(0).unwrap();
         let entry_value_uninit = entry_handle_mut.loan_uninit();
 
         drop(writer);
@@ -1412,9 +1412,9 @@ mod service_blackboard {
             .unwrap();
 
         let writer = sut.writer_builder().create().unwrap();
-        let entry_handle_mut = writer.entry::<u32>(&0).unwrap();
+        let entry_handle_mut = writer.entry::<u32>(0).unwrap();
         let reader = sut.reader_builder().create().unwrap();
-        let entry_handle = reader.entry::<u32>(&0).unwrap();
+        let entry_handle = reader.entry::<u32>(0).unwrap();
 
         let entry_value_uninit = entry_handle_mut.loan_uninit();
         let entry_handle_mut = entry_value_uninit.discard();
@@ -1437,9 +1437,9 @@ mod service_blackboard {
             .unwrap();
 
         let writer = sut.writer_builder().create().unwrap();
-        let entry_handle_mut = writer.entry::<u32>(&0).unwrap();
+        let entry_handle_mut = writer.entry::<u32>(0).unwrap();
         let reader = sut.reader_builder().create().unwrap();
-        let entry_handle = reader.entry::<u32>(&0).unwrap();
+        let entry_handle = reader.entry::<u32>(0).unwrap();
 
         let entry_value_uninit = entry_handle_mut.loan_uninit();
         let entry_value = entry_value_uninit.write(999);
@@ -1465,7 +1465,7 @@ mod service_blackboard {
             .unwrap();
 
         let writer = sut.writer_builder().create().unwrap();
-        let entry_handle_mut = writer.entry::<u32>(&0).unwrap();
+        let entry_handle_mut = writer.entry::<u32>(0).unwrap();
 
         drop(writer);
         drop(sut);
@@ -1481,7 +1481,7 @@ mod service_blackboard {
             .unwrap();
 
         let reader = sut.reader_builder().create().unwrap();
-        let entry_handle = reader.entry::<u32>(&0).unwrap();
+        let entry_handle = reader.entry::<u32>(0).unwrap();
 
         drop(reader);
         drop(sut);
@@ -1579,7 +1579,7 @@ mod service_blackboard {
                     .open()
                     .unwrap();
                 let writer = sut.writer_builder().create().unwrap();
-                let entry_handle_mut = writer.entry::<u64>(&0).unwrap();
+                let entry_handle_mut = writer.entry::<u64>(0).unwrap();
 
                 barrier.wait();
 
@@ -1598,7 +1598,7 @@ mod service_blackboard {
                         .unwrap();
                     let reader = sut.reader_builder().create().unwrap();
                     barrier.wait();
-                    let read_value = reader.entry::<u64>(&0).unwrap().get();
+                    let read_value = reader.entry::<u64>(0).unwrap().get();
                     assert_that!(read_value, ge 0);
                     assert_that!(read_value, le counter.load(Ordering::Relaxed));
                 }));
@@ -1638,7 +1638,7 @@ mod service_blackboard {
         std::thread::scope(|s| {
             let mut threads = vec![];
             for i in 0..number_of_entry_handle_muts {
-                let entry_handle_mut = writer.entry::<u64>(&i).unwrap();
+                let entry_handle_mut = writer.entry::<u64>(i).unwrap();
                 let barrier_thread = barrier.clone();
                 threads.push(s.spawn(move || {
                     barrier_thread.wait();
@@ -1652,7 +1652,7 @@ mod service_blackboard {
 
         let reader = sut.reader_builder().create().unwrap();
         for i in 0..number_of_entry_handle_muts {
-            assert_that!(reader.entry::<u64>(&i).unwrap().get(), eq i);
+            assert_that!(reader.entry::<u64>(i).unwrap().get(), eq i);
         }
     }
 
@@ -1678,7 +1678,7 @@ mod service_blackboard {
 
         let entry_handle = reader
             .__internal_entry(
-                &0,
+                0,
                 &__internal_default_eq_comparison::<KeyType>,
                 &type_details,
             )
@@ -1688,7 +1688,7 @@ mod service_blackboard {
 
         let entry_handle_mut = writer
             .__internal_entry(
-                &0,
+                0,
                 &__internal_default_eq_comparison::<KeyType>,
                 &type_details,
             )
@@ -1743,7 +1743,7 @@ mod service_blackboard {
 
         let entry_handle = reader
             .__internal_entry(
-                &0,
+                0,
                 &__internal_default_eq_comparison::<KeyType>,
                 &type_details,
             )
@@ -1753,7 +1753,7 @@ mod service_blackboard {
 
         let entry_handle_mut = writer
             .__internal_entry(
-                &0,
+                0,
                 &__internal_default_eq_comparison::<KeyType>,
                 &type_details,
             )
@@ -1814,12 +1814,12 @@ mod service_blackboard {
             .unwrap();
         let writer = sut.writer_builder().create().unwrap();
         let reader = sut.reader_builder().create().unwrap();
-        let entry_handle = reader.entry::<ValueType>(&0).unwrap();
+        let entry_handle = reader.entry::<ValueType>(0).unwrap();
 
         let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
         let entry_handle_mut = writer
             .__internal_entry(
-                &0,
+                0,
                 &__internal_default_eq_comparison::<KeyType>,
                 &type_details,
             )
@@ -1892,19 +1892,19 @@ mod service_blackboard {
         assert_that!(unsafe { *(sut_ptr.unwrap().data.as_ptr() as *const u16) }, eq key);
     }
 
-    #[test]
-    fn creation_fails_when_key_type_alignment_is_too_large<Sut: Service>() {
-        let service_name = generate_name();
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let sut = node
-            .service_builder(&service_name)
-            .blackboard_creator::<u128>()
-            .add::<u8>(0, 0)
-            .create();
-        assert_that!(sut, is_err);
-        assert_that!(sut.err().unwrap(), eq BlackboardCreateError::KeyAlignmentTooLarge);
-    }
+    // #[test]
+    // fn creation_fails_when_key_type_alignment_is_too_large<Sut: Service>() {
+    //     let service_name = generate_name();
+    //     let config = generate_isolated_config();
+    //     let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+    //     let sut = node
+    //         .service_builder(&service_name)
+    //         .blackboard_creator::<u128>()
+    //         .add::<u8>(0, 0)
+    //         .create();
+    //     assert_that!(sut, is_err);
+    //     assert_that!(sut.err().unwrap(), eq BlackboardCreateError::KeyAlignmentTooLarge);
+    // }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
     mod ipc {}

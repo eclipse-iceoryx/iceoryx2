@@ -38,10 +38,10 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let writer = service.writer_builder().create()?;
 
-    let entry_handle_mut = writer.entry::<u64>(&0)?;
+    let entry_handle_mut = writer.entry::<u64>(0)?;
     let entry_id = entry_handle_mut.entry_id();
 
-    let interesting_entry_handle_mut = writer.entry::<u64>(&INTERESTING_KEY)?;
+    let interesting_entry_handle_mut = writer.entry::<u64>(INTERESTING_KEY)?;
     let interesting_entry_id = interesting_entry_handle_mut.entry_id();
 
     // notify with entry id

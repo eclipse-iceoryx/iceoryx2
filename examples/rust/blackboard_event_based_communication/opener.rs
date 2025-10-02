@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let listener = event_service.listener_builder().create()?;
 
     let reader = service.reader_builder().create()?;
-    let entry_handle = reader.entry::<u64>(&INTERESTING_KEY)?;
+    let entry_handle = reader.entry::<u64>(INTERESTING_KEY)?;
 
     // wait for entry id
     while node.wait(Duration::ZERO).is_ok() {

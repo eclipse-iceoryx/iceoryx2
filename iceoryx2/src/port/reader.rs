@@ -35,6 +35,7 @@
 //! # }
 //! ```
 
+use crate::constants::MAX_BLACKBOARD_KEY_SIZE;
 use crate::prelude::EventId;
 use crate::service::builder::blackboard::{BlackboardResources, KeyMemory};
 use crate::service::dynamic_config::blackboard::ReaderDetails;
@@ -43,7 +44,6 @@ use crate::service::{self, ServiceState};
 use core::fmt::Debug;
 use core::hash::Hash;
 use core::sync::atomic::Ordering;
-use iceoryx2_bb_container::flatmap::__internal_default_eq_comparison;
 use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
@@ -110,7 +110,7 @@ impl core::error::Error for ReaderCreateError {}
 #[derive(Debug)]
 pub struct Reader<
     Service: service::Service,
-    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
+    KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
 > {
     shared_state: Arc<ReaderSharedState<Service, KeyType>>,
     reader_id: UniqueReaderId,
@@ -118,7 +118,7 @@ pub struct Reader<
 
 impl<
         Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
+        KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
     > Reader<Service, KeyType>
 {
     pub(crate) fn new(
@@ -190,13 +190,13 @@ impl<
     /// ```
     pub fn entry<ValueType: Copy + ZeroCopySend>(
         &self,
-        key: &KeyType,
+        key: KeyType,
     ) -> Result<EntryHandle<Service, KeyType, ValueType>, EntryHandleError> {
         let msg = "Unable to create entry handle";
 
         let offset = self.get_entry_offset(
             key,
-            &__internal_default_eq_comparison::<KeyType>,
+            &KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::key_eq_comparison::<KeyType>,
             &TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
             msg,
         )?;
@@ -214,13 +214,13 @@ impl<
 
     fn get_entry_offset<F: Fn(*const u8, *const u8) -> bool>(
         &self,
-        key: &KeyType,
+        key: KeyType,
         key_eq_func: &F,
         type_details: &TypeDetail,
         msg: &str,
     ) -> Result<u64, EntryHandleError> {
         // create KeyMemory from key
-        let key_mem = match KeyMemory::try_from(key) {
+        let key_mem = match KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::try_from(key) {
             Ok(mem) => mem,
             // TODO: adapt error and msg
             Err(_) => {
@@ -363,7 +363,7 @@ impl<Service: service::Service> Reader<Service, u64> {
     #[doc(hidden)]
     pub fn __internal_entry<F: Fn(*const u8, *const u8) -> bool>(
         &self,
-        key: &u64,
+        key: u64,
         key_eq_func: &F,
         type_details: &TypeDetail,
     ) -> Result<__InternalEntryHandle<Service>, EntryHandleError> {

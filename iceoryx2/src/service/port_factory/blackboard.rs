@@ -63,7 +63,7 @@ use alloc::sync::Arc;
 #[derive(Debug)]
 pub struct PortFactory<
     Service: service::Service,
-    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
+    KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
 > {
     pub(crate) service: Arc<ServiceState<Service, BlackboardResources<Service>>>,
     // TODO: remove?
@@ -72,7 +72,7 @@ pub struct PortFactory<
 
 impl<
         Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
+        KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
     > crate::service::port_factory::PortFactory for PortFactory<Service, KeyType>
 {
     type Service = Service;
@@ -113,7 +113,7 @@ impl<
 
 impl<
         Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
+        KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
     > PortFactory<Service, KeyType>
 {
     pub(crate) fn new(service: ServiceState<Service, BlackboardResources<Service>>) -> Self {

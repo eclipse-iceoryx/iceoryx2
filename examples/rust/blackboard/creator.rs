@@ -33,9 +33,9 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let writer = service.writer_builder().create()?;
 
-    let entry_handle_mut_0 = writer.entry::<u64>(&0)?;
-    let mut entry_handle_mut_5 = writer.entry::<StaticString<30>>(&5)?;
-    let entry_handle_mut_9 = writer.entry::<f32>(&9)?;
+    let entry_handle_mut_0 = writer.entry::<u64>(0)?;
+    let mut entry_handle_mut_5 = writer.entry::<StaticString<30>>(5)?;
+    let entry_handle_mut_9 = writer.entry::<f32>(9)?;
 
     let mut counter = 0;
 
