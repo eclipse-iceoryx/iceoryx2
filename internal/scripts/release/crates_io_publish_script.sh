@@ -60,7 +60,7 @@ CRATES_TO_IGNORE=(
     iceoryx2-ffi-c
     iceoryx2-ffi-macros
     iceoryx2-ffi-python
-    iceoryx2-tunnels-end-to-end-testing
+    iceoryx2-tunnels-end-to-end-tests
 )
 
 if [[ "$#" -eq 0 ]]; then

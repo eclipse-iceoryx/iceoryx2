@@ -1,0 +1,31 @@
+[package]
+name = "iceoryx2-tunnels-end-to-end-tests"
+description = "iceoryx2: [internal] binaries for tunnel end-to-end tests"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+readme = "../README.md"
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[[bin]]
+name = "iceoryx2-tunnels-end-to-end-tests-pinger"
+path = "ping-pong/src/pinger.rs"
+
+[[bin]]
+name = "iceoryx2-tunnels-end-to-end-tests-ponger"
+path = "ping-pong/src/ponger.rs"
+
+[lib]
+name = "iceoryx2_tunnels_end_to_end_tests"
+path = "common/src/lib.rs"
+
+[dependencies]
+iceoryx2 = { workspace = true }
+iceoryx2-bb-log = { workspace = true }
+iceoryx2-bb-container = { workspace = true }
+
+clap = { workspace = true }
