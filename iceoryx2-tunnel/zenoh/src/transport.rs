@@ -24,6 +24,7 @@ pub enum CreationError {
     FailedToCreateDiscovery,
 }
 
+#[derive(Debug)]
 pub struct Transport {
     session: Session,
     discovery: Discovery,

@@ -28,6 +28,7 @@ impl From<SyncError> for DiscoveryError {
     }
 }
 
+#[derive(Debug)]
 pub struct DiscoveryTracker<S: Service>(RefCell<Tracker<S>>);
 
 impl<S: Service> DiscoveryTracker<S> {

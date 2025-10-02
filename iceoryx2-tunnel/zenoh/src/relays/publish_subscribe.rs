@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2::service::static_config::StaticConfig;
-use iceoryx2_bb_log::{error, fail};
+use iceoryx2_bb_log::{debug, error, fail};
 use zenoh::{
     bytes::ZBytes,
     handlers::{FifoChannel, FifoChannelHandler},
@@ -88,18 +88,21 @@ impl<'a> iceoryx2_tunnel_traits::RelayBuilder for Builder<'a> {
 
         fail!(
             from "publish_subscribe::RelayBuilder::create()",
-            when announce(self.session, self.static_config),
+            when announce_service(self.session, self.static_config),
             "Failed to announce service"
         );
 
         Ok(Relay {
+            static_config: self.static_config.clone(),
             publisher,
             subscriber,
         })
     }
 }
 
+#[derive(Debug)]
 pub struct Relay {
+    static_config: StaticConfig,
     publisher: Publisher<'static>,
     subscriber: Subscriber<FifoChannelHandler<Sample>>,
 }
@@ -109,6 +112,8 @@ impl iceoryx2_tunnel_traits::Relay for Relay {
     type IngestionError = PropagationError;
 
     fn propagate(&self, bytes: *const u8, len: usize) -> Result<(), Self::PropagationError> {
+        debug!(from "Relay::propagate", "Propagating PublishSubscribe({})", self.static_config.name());
+
         let payload = unsafe { ZBytes::from(core::slice::from_raw_parts(bytes, len)) };
         fail!(
             from "publish_subscribe::Relay::propagate",
@@ -124,6 +129,8 @@ impl iceoryx2_tunnel_traits::Relay for Relay {
         loan: &mut dyn FnMut(usize) -> (*mut u8, usize),
     ) -> Result<bool, Self::IngestionError> {
         for zenoh_sample in self.subscriber.drain() {
+            debug!(from "Relay::ingest", "Ingesting PublishSubscribe({})", self.static_config.name());
+
             let zenoh_payload = zenoh_sample.payload();
             let (loaned_ptr, loan_size) = loan(zenoh_payload.len());
 
@@ -149,7 +156,10 @@ impl iceoryx2_tunnel_traits::Relay for Relay {
     }
 }
 
-pub fn announce(session: &Session, static_config: &StaticConfig) -> Result<(), zenoh::Error> {
+pub fn announce_service(
+    session: &Session,
+    static_config: &StaticConfig,
+) -> Result<(), zenoh::Error> {
     let key = keys::service_details(static_config.service_id());
     let service_config_serialized = fail!(
         from "announce_service()",

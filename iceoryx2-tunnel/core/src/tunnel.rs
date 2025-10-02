@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::fmt::Debug;
 use std::collections::{HashMap, HashSet};
 
 use crate::ports::Ports;
@@ -44,9 +45,9 @@ pub enum DiscoveryError {
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub enum PropagationOrIngestionError {
-    FailedToPropagatePublishSubscribePayload,
-    FailedToIngestPublishSubscribePayload,
+pub enum RelayError {
+    FailedToPropagatePublishSubscribe,
+    FailedToIngestPublishSubscribe,
 }
 
 impl From<discovery::subscriber::CreationError> for CreationError {
@@ -67,15 +68,15 @@ impl From<discovery::tracker::DiscoveryError> for DiscoveryError {
     }
 }
 
-impl From<ports::publish_subscribe::PropagationError> for PropagationOrIngestionError {
+impl From<ports::publish_subscribe::PropagationError> for RelayError {
     fn from(_: ports::publish_subscribe::PropagationError) -> Self {
-        PropagationOrIngestionError::FailedToPropagatePublishSubscribePayload
+        RelayError::FailedToPropagatePublishSubscribe
     }
 }
 
-impl From<ports::publish_subscribe::IngestionError> for PropagationOrIngestionError {
+impl From<ports::publish_subscribe::IngestionError> for RelayError {
     fn from(_: ports::publish_subscribe::IngestionError) -> Self {
-        PropagationOrIngestionError::FailedToIngestPublishSubscribePayload
+        RelayError::FailedToIngestPublishSubscribe
     }
 }
 
@@ -92,6 +93,7 @@ impl From<PublishSubscribeOpenOrCreateError> for CreationError {
 }
 
 /// Struct to store different relay types by service id
+#[derive(Debug)]
 pub struct Relays<T: Transport> {
     publish_subscribe: HashMap<ServiceId, T::PublishSubscribeRelay>,
     event: HashMap<ServiceId, T::EventRelay>,
@@ -112,6 +114,7 @@ pub struct Config {
 }
 
 /// A generic tunnel implementation that works with any implemented Transport.
+#[derive(Debug)]
 pub struct Tunnel<S: Service, T: for<'a> Transport> {
     node: Node<S>,
     transport: T,
@@ -122,7 +125,7 @@ pub struct Tunnel<S: Service, T: for<'a> Transport> {
     tracker: Option<discovery::tracker::DiscoveryTracker<S>>,
 }
 
-impl<S: Service, T: for<'a> Transport> Tunnel<S, T> {
+impl<S: Service, T: for<'a> Transport + Debug> Tunnel<S, T> {
     /// Create a new tunnel instance that uses the specified Transport
     pub fn create(
         tunnel_config: &Config,
@@ -144,13 +147,13 @@ impl<S: Service, T: for<'a> Transport> Tunnel<S, T> {
 
         let (subscriber, tracker) = match &tunnel_config.discovery_service {
             Some(service_name) => {
-                debug!("Local Discovery via Subscriber");
+                debug!(from "Tunnel::create", "Local Discovery via Subscriber");
                 let subscriber =
                     discovery::subscriber::DiscoverySubscriber::create(&node, service_name)?;
                 (Some(subscriber), None)
             }
             None => {
-                debug!("Local Discovery via Tracker");
+                debug!(from "Tunnel::create","Local Discovery via Tracker");
 
                 let tracker = discovery::tracker::DiscoveryTracker::create(iceoryx_config);
                 (None, Some(tracker))
@@ -217,25 +220,34 @@ impl<S: Service, T: for<'a> Transport> Tunnel<S, T> {
         Ok(())
     }
 
-    /// Propagate payloads between iceoryx2 and the Transport
-    pub fn propagate(&mut self) -> Result<(), PropagationOrIngestionError> {
+    /// Relay payloads over the transport
+    pub fn relay(&mut self) -> Result<(), RelayError> {
         for (id, ports) in &self.ports {
             match ports {
                 Ports::PublishSubscribe(port) => {
                     let relay = match self.relays.publish_subscribe.get(id) {
                         Some(relay) => relay,
                         None => {
-                            warn!("No relay available for id {:?}. Skipping.", id);
+                            warn!(
+                                from "Tunnel::relay",
+                                "No relay available for id {:?}. Skipping.", id);
                             return Ok(());
                         }
                     };
 
-                    port.receive(self.node.id(), |ptr, len| {
-                        relay.propagate(ptr, len).unwrap();
-                    })
-                    .unwrap();
+                    fail!(
+                        from "Tunnel::relay",
+                        when port.receive(self.node.id(), |ptr, len| {
+                            relay.propagate(ptr, len).unwrap();
+                        }),
+                        "Failed to relay to transport"
+                    );
 
-                    port.send(|loan| relay.ingest(loan).unwrap()).unwrap();
+                    fail!(
+                        from "Tunnel::relay",
+                        when port.send(|loan| relay.ingest(loan).unwrap()),
+                        "Failed to relay from transport"
+                    );
                 }
                 Ports::Event(_) => todo!(),
             }
@@ -259,16 +271,23 @@ fn on_discovery<S: Service, T: Transport>(
 ) -> Result<(), CreationError> {
     match static_config.messaging_pattern() {
         MessagingPattern::PublishSubscribe(_) => {
-            debug!("Discovered: PublishSubscribe({})", static_config.name());
+            debug!(
+                from "Tunnel::on_discovery",
+                "Discovered PublishSubscribe({})",
+                static_config.name()
+            );
             setup_publish_subscribe(static_config, node, transport, services, ports, relays)
         }
         MessagingPattern::Event(_) => {
-            debug!("Discovered: Event({})", static_config.name());
+            debug!(
+                from "Tunnel::on_discovery",
+                "Discovered Event({})", static_config.name());
             Ok(())
         }
         _ => {
             // Not supported. Nothing to do.
             debug!(
+                from "Tunnel::on_discovery",
                 "Unsupported Discovery: {}({})",
                 static_config.messaging_pattern(),
                 static_config.name()

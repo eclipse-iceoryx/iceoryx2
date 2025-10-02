@@ -15,6 +15,7 @@ use iceoryx2::{
     service::Service,
 };
 
+#[derive(Debug)]
 pub(crate) struct Ports<S: Service> {
     pub(crate) notifier: Notifier<S>,
     pub(crate) listener: Listener<S>,

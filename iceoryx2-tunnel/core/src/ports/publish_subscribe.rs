@@ -24,6 +24,7 @@ use iceoryx2::service::builder::CustomPayloadMarker;
 use iceoryx2::service::port_factory::*;
 use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2::service::Service;
+use iceoryx2_bb_log::debug;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_log::fatal_panic;
 
@@ -60,6 +61,7 @@ impl From<SubscriberCreateError> for CreationError {
     }
 }
 
+#[derive(Debug)]
 pub(crate) struct Ports<S: Service> {
     pub(crate) static_config: StaticConfig,
     pub(crate) publisher: Publisher<S, [CustomPayloadMarker], CustomHeaderMarker>,
@@ -72,7 +74,7 @@ impl<S: Service> Ports<S> {
         service: &publish_subscribe::PortFactory<S, [CustomPayloadMarker], CustomHeaderMarker>,
     ) -> Result<Self, CreationError> {
         let publisher = fail!(
-            from "PublishSubscribePorts::new",
+            from "Ports::new",
             when service
                 .publisher_builder()
                 .allocation_strategy(AllocationStrategy::PowerOfTwo)
@@ -81,7 +83,7 @@ impl<S: Service> Ports<S> {
         );
 
         let subscriber = fail!(
-            from "PublishSubscribePorts::new",
+            from "Ports::new",
             when service.subscriber_builder().create(),
             "{}", &format!("Failed to create Subscriber for '{}'", service.name())
         );
@@ -102,6 +104,12 @@ impl<S: Service> Ports<S> {
         loop {
             match unsafe { self.subscriber.receive_custom_payload() } {
                 Ok(Some(sample)) => {
+                    debug!(
+                        from "Ports::receive",
+                        "Received PublishSubscribe({})",
+                        self.static_config.name()
+                    );
+
                     if sample.header().node_id() == *node_id {
                         // Ignore samples published by the gateway itself to prevent loopback.
                         continue;
@@ -152,17 +160,20 @@ impl<S: Service> Ports<S> {
 
                             (ptr, len)
                         }
-                        Err(e) => fatal_panic!("Failed to loan custom payload: {e}"),
+                        Err(e) => {
+                            fatal_panic!(from "Ports::send", "Failed to loan custom payload: {e}")
+                        }
                     };
 
                 (ptr, len)
             });
 
             if ingested {
+                debug!(from "Ports::send", "Sending: PublishSubscribe({})", self.static_config.name());
                 if let Some(sample) = loaned_sample {
                     let sample = unsafe { sample.assume_init() };
                     fail!(
-                        from "PublishSubscribePorts::send",
+                        from "Ports::send",
                         when sample.send(),
                         with IngestionError::FailedToSendSample,
                         "Failed to send ingested payload"

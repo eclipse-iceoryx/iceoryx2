@@ -52,6 +52,7 @@ impl<'a> iceoryx2_tunnel_traits::RelayBuilder for Builder<'a> {
     }
 }
 
+#[derive(Debug)]
 pub struct Relay {}
 
 impl iceoryx2_tunnel_traits::Relay for Relay {

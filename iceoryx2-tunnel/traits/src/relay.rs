@@ -14,6 +14,7 @@ use core::fmt::Debug;
 
 use iceoryx2::service::static_config::StaticConfig;
 
+// TODO: Rename to Ports?
 /// Relays data over the transport.
 ///
 /// A relay should be created for each messaging pattern.

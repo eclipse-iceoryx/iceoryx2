@@ -22,8 +22,8 @@ pub trait Transport: Sized {
     type CreationError: Debug;
     type Discovery: Discovery;
 
-    type PublishSubscribeRelay: Relay;
-    type EventRelay: Relay;
+    type PublishSubscribeRelay: Relay + Debug;
+    type EventRelay: Relay + Debug;
 
     type RelayFactory<'a>: RelayFactory<
         PublishSubscribeRelay = Self::PublishSubscribeRelay,

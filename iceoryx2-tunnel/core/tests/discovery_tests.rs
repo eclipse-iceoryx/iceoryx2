@@ -13,6 +13,7 @@
 #[generic_tests::define]
 mod tunnel_discovery_tests {
 
+    use core::fmt::Debug;
     use core::time::Duration;
 
     use iceoryx2::prelude::*;
@@ -37,7 +38,7 @@ mod tunnel_discovery_tests {
     }
 
     #[test]
-    fn discovers_services_via_subscriber<S: Service, T: Transport, U: Testing>() {
+    fn discovers_services_via_subscriber<S: Service, T: Transport + Debug, U: Testing>() {
         // === SETUP ==
         let iceoryx_config = generate_isolated_config();
         let service_name = generate_service_name();
@@ -78,7 +79,7 @@ mod tunnel_discovery_tests {
     }
 
     #[test]
-    fn discovers_services_via_tracker<S: Service, T: Transport, U: Testing>() {
+    fn discovers_services_via_tracker<S: Service, T: Transport + Debug, U: Testing>() {
         // === SETUP ==
         let iceoryx_config = generate_isolated_config();
         let service_name = generate_service_name();
@@ -106,7 +107,7 @@ mod tunnel_discovery_tests {
     }
 
     #[test]
-    fn discovers_services_via_transport<S: Service, T: Transport, U: Testing>() {
+    fn discovers_services_via_transport<S: Service, T: Transport + Debug, U: Testing>() {
         set_log_level(LogLevel::Debug);
         // === SETUP ===
         let service_name = generate_service_name();

@@ -12,6 +12,7 @@
 
 #[generic_tests::define]
 mod tunnel_publish_subscribe_tests {
+    use core::fmt::Debug;
     use core::time::Duration;
 
     use iceoryx2::prelude::*;
@@ -31,8 +32,10 @@ mod tunnel_publish_subscribe_tests {
         .unwrap()
     }
 
-    fn propagate_struct_payloads<S: Service, T: Transport, U: Testing>(number_of_payload: usize) {
-        const MAX_RETRIES: usize = 25;
+    fn propagate_struct_payloads<S: Service, T: Transport + Debug, U: Testing>(
+        number_of_payload: usize,
+    ) {
+        const MAX_ATTEMPTS: usize = 25;
         const TIMEOUT: Duration = Duration::from_millis(250);
 
         #[derive(Debug, Clone, PartialEq, ZeroCopySend)]
@@ -88,7 +91,7 @@ mod tunnel_publish_subscribe_tests {
                 Err("Failed to discover remote services")
             },
             TIMEOUT,
-            Some(MAX_RETRIES),
+            Some(MAX_ATTEMPTS),
         );
 
         // Wait for zenoh to wake up and process the discovered service
@@ -120,10 +123,6 @@ mod tunnel_publish_subscribe_tests {
             sample_sent_at_a.send().unwrap();
 
             // Propagate over tunnels
-            tunnel_a.propagate().unwrap();
-            tunnel_b.propagate().unwrap();
-
-            // Receive
             U::retry(
                 || {
                     match subscriber_b.receive().unwrap() {
@@ -138,20 +137,20 @@ mod tunnel_publish_subscribe_tests {
                             }
                         }
                         None => {
-                            tunnel_a.propagate().unwrap();
-                            tunnel_b.propagate().unwrap();
+                            tunnel_a.relay().unwrap();
+                            tunnel_b.relay().unwrap();
                             Err("failed to receive expected sample")
                         }
                     }
                 },
                 TIMEOUT,
-                Some(MAX_RETRIES),
+                Some(MAX_ATTEMPTS),
             );
         }
     }
 
     #[test]
-    fn propagates_one_struct_payload<S: Service, T: Transport, U: Testing>() {
+    fn propagates_one_struct_payload<S: Service, T: Transport + Debug, U: Testing>() {
         propagate_struct_payloads::<S, T, U>(1);
     }
 

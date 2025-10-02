@@ -36,6 +36,7 @@ impl From<ReceiveError> for DiscoveryError {
     }
 }
 
+#[derive(Debug)]
 pub struct DiscoverySubscriber<S: Service>(pub Subscriber<S, DiscoveryEvent, ()>);
 
 impl<S: Service> DiscoverySubscriber<S> {
