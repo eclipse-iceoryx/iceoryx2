@@ -17,7 +17,7 @@
 #
 
 env:
-  CI_ENABLED: false
+  CI_ENABLED: true
   # RUSTFLAGS: "-C debug-assertions"
 
 #
@@ -150,6 +150,7 @@ iox2_freebsd_setup_template: &IOX2_FREEBSD_SETUP
 #
 
 preflight_check_task:
+  only_if: false
   <<: *IOX2_CONTAINER_UBUNTU_22_04_X64
   set_toolchain_script: rustup default stable
   fingerprint_script:
@@ -332,9 +333,8 @@ windows_server_2019_x64_stable_release_task:
 # Pipeline 9
 
 freebsd_x64_min_version_debug_task:
-  # TODO commented out due to limited CI time
-  only_if: false
-  depends_on: preflight_check
+  # only_if: false
+  # depends_on: preflight_check
   <<: *IOX2_CONTAINER_FREEBSD_X64
   env:
     PATH: /root/.cargo/bin:$PATH
@@ -344,9 +344,8 @@ freebsd_x64_min_version_debug_task:
   <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
 
 freebsd_x64_stable_debug_task:
-  # TODO commented out due to limited CI time
-  only_if: false
-  depends_on: preflight_check
+  # only_if: false
+  # depends_on: preflight_check
   <<: *IOX2_CONTAINER_FREEBSD_X64
   env:
     PATH: /root/.cargo/bin:$PATH
