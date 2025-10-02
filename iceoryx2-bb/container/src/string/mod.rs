@@ -28,6 +28,7 @@ pub mod relocatable_string;
 /// String helper functions
 pub mod utils;
 
+pub use relocatable_string::*;
 pub use static_string::*;
 pub use utils::*;
 

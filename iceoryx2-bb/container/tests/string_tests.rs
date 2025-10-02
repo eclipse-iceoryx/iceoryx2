@@ -13,10 +13,13 @@
 #[generic_tests::define]
 mod string {
     use core::ops::DerefMut;
+    use std::cell::UnsafeCell;
     use std::cmp::Ordering;
     use std::hash::{Hash, Hasher};
 
-    use iceoryx2_bb_container::string::*;
+    use iceoryx2_bb_container::string::{RelocatableString, *};
+    use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
+    use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
     use iceoryx2_bb_testing::assert_that;
     use std::collections::hash_map::DefaultHasher;
 
@@ -40,6 +43,45 @@ mod string {
 
         fn create_sut(&self) -> Box<Self::Sut> {
             Box::new(Self::Sut::new())
+        }
+    }
+
+    struct RelocatableStringFactory {
+        raw_memory: UnsafeCell<Box<[u8; RelocatableString::const_memory_size(SUT_CAPACITY * 3)]>>,
+        allocator: UnsafeCell<Option<Box<BumpAllocator>>>,
+    }
+
+    impl RelocatableStringFactory {
+        fn allocator<'a>(&'a self) -> &'a BumpAllocator {
+            unsafe {
+                if (*self.allocator.get()).is_none() {
+                    *self.allocator.get() = Some(Box::new(BumpAllocator::new(
+                        (*self.raw_memory.get()).as_mut_ptr(),
+                    )))
+                }
+            };
+
+            unsafe { (*self.allocator.get()).as_ref().unwrap() }
+        }
+    }
+
+    impl StringTestFactory for RelocatableStringFactory {
+        type Sut = RelocatableString;
+
+        fn new() -> Self {
+            Self {
+                raw_memory: UnsafeCell::new(Box::new(
+                    [0u8; RelocatableString::const_memory_size(SUT_CAPACITY * 3)],
+                )),
+                allocator: UnsafeCell::new(None),
+            }
+        }
+
+        fn create_sut(&self) -> Box<Self::Sut> {
+            let mut sut = Box::new(unsafe { Self::Sut::new_uninit(SUT_CAPACITY) });
+            unsafe { sut.init(self.allocator()).unwrap() };
+
+            sut
         }
     }
 
@@ -976,6 +1018,9 @@ mod string {
         assert_that!(*sut_1 == *sut_1, eq true);
         assert_that!(*sut_1 == *sut_2, eq false);
     }
+
+    #[instantiate_tests(<RelocatableStringFactory>)]
+    mod relocatable_string {}
 
     #[instantiate_tests(<StaticStringFactory>)]
     mod static_string {}
