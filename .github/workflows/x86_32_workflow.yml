@@ -9,6 +9,9 @@ on:
       toolchain:
         required: true
         type: string
+      name:
+        required: true
+        type: string
       mode:
         required: true
         type: string
@@ -56,10 +59,10 @@ jobs:
           uname -a
 
       - name: Run cargo build
-        run: cargo build --workspace --exclude iceoryx2-ffi-python --all-targets --\${{ inputs.mode }} --target i686-unknown-linux-gnu
+        run: cargo build --workspace --exclude iceoryx2-ffi-python --all-targets --target i686-unknown-linux-gnu --\${{ inputs.mode }}
 
       - name: Run cargo nextest
-        run: cargo nextest run --workspace --exclude iceoryx2-ffi-python --all-targets --no-fail-fast --\${{ inputs.mode }} --target i686-unknown-linux-gnu
+        run: cargo nextest run --workspace --exclude iceoryx2-ffi-python --all-targets --no-fail-fast --target i686-unknown-linux-gnu --\${{ inputs.mode }}
 
       - name: Build iceoryx_hoofs
         run: internal/scripts/ci_build_and_install_iceoryx_hoofs.sh 32-bit-x86
@@ -74,7 +77,7 @@ jobs:
                 -DCMAKE_C_FLAGS="-m32 -malign-double" \
                 -DCMAKE_CXX_FLAGS="-m32 -malign-double" \
                 -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/iceoryx/install" \
-                -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/i686-unknown-linux-gnu/${{ inputs.mode }}" \
+                -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/i686-unknown-linux-gnu/${{ inputs.name }}" \
                 ${{ inputs.cmake-build-type }}
           cmake --build target/ff/cc/build
           cmake --install target/ff/cc/build
