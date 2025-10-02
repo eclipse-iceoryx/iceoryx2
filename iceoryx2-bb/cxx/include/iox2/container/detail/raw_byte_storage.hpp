@@ -156,8 +156,10 @@ class RawByteStorage {
     // @pre (end_index <= size()) && (begin_index <= end_index)
     constexpr void erase_at(uint64_t begin_index, uint64_t end_index) {
         uint64_t const range = end_index - begin_index;
-        remove_at(begin_index, range);
-        shrink_from_back(m_size - range);
+        if (range > 0) {
+            remove_at(begin_index, range);
+            shrink_from_back(m_size - range);
+        }
     }
 
     // @pre (index + range_size <= size())
