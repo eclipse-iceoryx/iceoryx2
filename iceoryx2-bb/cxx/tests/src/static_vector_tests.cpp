@@ -60,6 +60,136 @@ TEST(StaticVector, array_constructor_leaves_uninitialized_elements_up_to_capacit
     EXPECT_TRUE(!sut.element_at(G_TEST_ARRAY_SIZE).has_value());
 }
 
+TEST_F(StaticVectorFixture, from_value_default_constructs_count_elements) {
+    auto const opt_sut = iox2::container::StaticVector<Observable, 4>::from_value(4);
+    ASSERT_TRUE(opt_sut);
+    auto const& sut = *opt_sut;
+    ASSERT_EQ(sut.size(), 4);
+    EXPECT_EQ(sut.unchecked_access()[0].id, 0);
+    EXPECT_EQ(sut.unchecked_access()[1].id, 0);
+    EXPECT_EQ(sut.unchecked_access()[2].id, 0);
+    EXPECT_EQ(sut.unchecked_access()[3].id, 0);
+    ASSERT_EQ(Observable::s_counter.was_initialized, 1);
+    ASSERT_EQ(Observable::s_counter.was_copy_constructed, 4);
+    // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+    // there may be additional moves on compilers that fail to perform rvo
+    expected_count().was_initialized = 1;
+    expected_count().was_copy_constructed = 4;
+    expected_count().was_destructed = 5;
+    // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+}
+
+TEST_F(StaticVectorFixture, from_value_constructs_empty_vector_for_zero_elements) {
+    auto const sut = iox2::container::StaticVector<Observable, 4>::from_value(0);
+    ASSERT_TRUE(sut);
+    ASSERT_EQ(sut->size(), 0);
+    ASSERT_EQ(Observable::s_counter.was_initialized, 1);
+    ASSERT_EQ(Observable::s_counter.was_copy_constructed, 0);
+    // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+    // there may be additional moves on compilers that fail to perform rvo
+    expected_count().was_initialized = 1;
+    expected_count().was_copy_constructed = 0;
+    expected_count().was_destructed = 1;
+    // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+}
+
+TEST_F(StaticVectorFixture, from_value_fails_if_exceeding_capacity) {
+    ASSERT_FALSE((iox2::container::StaticVector<Observable, 4>::from_value(5)));
+}
+
+TEST_F(StaticVectorFixture, from_value_constructs_count_copies_of_element) {
+    int32_t const tracking_id = 99;
+    Observable const obj { tracking_id };
+    auto const sut = iox2::container::StaticVector<Observable, 4>::from_value(4, obj);
+    ASSERT_TRUE(sut);
+    ASSERT_EQ(sut->size(), 4);
+    EXPECT_EQ(sut->unchecked_access()[0].id, tracking_id);
+    EXPECT_EQ(sut->unchecked_access()[1].id, tracking_id);
+    EXPECT_EQ(sut->unchecked_access()[2].id, tracking_id);
+    EXPECT_EQ(sut->unchecked_access()[3].id, tracking_id);
+    ASSERT_EQ(Observable::s_counter.was_initialized, 1);
+    ASSERT_EQ(Observable::s_counter.was_copy_constructed, 4);
+    // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+    // there may be additional moves on compilers that fail to perform rvo
+    expected_count().was_initialized = 1;
+    expected_count().was_copy_constructed = 4;
+    expected_count().was_destructed = 5;
+    // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+}
+
+TEST_F(StaticVectorFixture, from_value_with_object_constructs_empty_vector_for_zero_elements) {
+    int32_t const tracking_id = 99;
+    Observable const obj { tracking_id };
+    auto const sut = iox2::container::StaticVector<Observable, 4>::from_value(0, obj);
+    ASSERT_TRUE(sut);
+    ASSERT_EQ(sut->size(), 0);
+    ASSERT_EQ(Observable::s_counter.was_initialized, 1);
+    ASSERT_EQ(Observable::s_counter.was_copy_constructed, 0);
+    // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+    // there may be additional moves on compilers that fail to perform rvo
+    expected_count().was_initialized = 1;
+    expected_count().was_copy_constructed = 0;
+    expected_count().was_destructed = 1;
+    // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+}
+
+TEST_F(StaticVectorFixture, from_value_with_object_fails_if_exceeding_capacity) {
+    int32_t const tracking_id = 99;
+    Observable const obj { tracking_id };
+    ASSERT_FALSE((iox2::container::StaticVector<Observable, 4>::from_value(5, obj)));
+    expected_count().was_initialized = 1;
+    expected_count().was_destructed = 1;
+}
+
+TEST(StaticVector, from_range_unchecked_constructs_from_range) {
+    auto const sut = iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_range_unchecked(
+        std::begin(G_TEST_ARRAY), std::end(G_TEST_ARRAY));
+    ASSERT_TRUE(sut);
+    ASSERT_EQ(sut->size(), G_TEST_ARRAY_SIZE);
+    EXPECT_EQ(sut->unchecked_access()[0], G_TEST_ARRAY[0]);
+    EXPECT_EQ(sut->unchecked_access()[1], G_TEST_ARRAY[1]);
+    EXPECT_EQ(sut->unchecked_access()[2], G_TEST_ARRAY[2]);
+    EXPECT_EQ(sut->unchecked_access()[3], G_TEST_ARRAY[3]);
+    EXPECT_EQ(sut->unchecked_access()[4], G_TEST_ARRAY[4]);
+}
+
+TEST(StaticVector, from_range_unchecked_fails_if_exceeding_capacity) {
+    auto const sut = iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE - 1>::from_range_unchecked(
+        std::begin(G_TEST_ARRAY), std::end(G_TEST_ARRAY));
+    ASSERT_FALSE(sut);
+}
+
+TEST(StaticVector, from_range_unchecked_constructs_from_range_object) {
+    auto const sut = iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_range_unchecked(G_TEST_ARRAY);
+    ASSERT_TRUE(sut);
+    ASSERT_EQ(sut->size(), G_TEST_ARRAY_SIZE);
+    EXPECT_EQ(sut->unchecked_access()[0], G_TEST_ARRAY[0]);
+    EXPECT_EQ(sut->unchecked_access()[1], G_TEST_ARRAY[1]);
+    EXPECT_EQ(sut->unchecked_access()[2], G_TEST_ARRAY[2]);
+    EXPECT_EQ(sut->unchecked_access()[3], G_TEST_ARRAY[3]);
+    EXPECT_EQ(sut->unchecked_access()[4], G_TEST_ARRAY[4]);
+}
+
+TEST(StaticVector, from_range_unchecked_fails_if_range_object_is_exceeding_capacity) {
+    auto const sut = iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE - 1>::from_range_unchecked(G_TEST_ARRAY);
+    ASSERT_FALSE(sut);
+}
+
+TEST(StaticVector, from_initializer_list_construction) {
+    auto const sut = iox2::container::StaticVector<int32_t, 4>::from_initializer_list({ 1, 2, 3, 4 });
+    ASSERT_TRUE(sut);
+    ASSERT_EQ(sut->size(), 4);
+    ASSERT_EQ(sut->unchecked_access()[0], 1);
+    ASSERT_EQ(sut->unchecked_access()[1], 2);
+    ASSERT_EQ(sut->unchecked_access()[2], 3);
+    ASSERT_EQ(sut->unchecked_access()[3], 4);
+}
+
+TEST(StaticVector, from_initializer_list_fails_if_exceeding_capacity) {
+    ASSERT_FALSE((iox2::container::StaticVector<int32_t, 3>::from_initializer_list({ 1, 2, 3, 4 })));
+    ASSERT_FALSE((iox2::container::StaticVector<int32_t, 4>::from_initializer_list({ 0, 0, 0, 0, 0 })));
+}
+
 TEST(StaticVector, try_push_back_inserts_elements_at_the_back_if_there_is_room) {
     iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut(G_TEST_ARRAY);
     int32_t const test_value = 99;
@@ -669,9 +799,10 @@ TEST(StaticVector, try_pop_back_removes_last_element) {
 }
 
 TEST(StaticVector, capacity_retuns_capacity) {
-    ASSERT_EQ((iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>{G_TEST_ARRAY}.capacity()), G_TEST_ARRAY_SIZE);
-    ASSERT_EQ((iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1>{}.capacity()), G_TEST_ARRAY_SIZE + 1);
-    ASSERT_EQ((iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 2>{}.capacity()), G_TEST_ARRAY_SIZE + 2);
+    ASSERT_EQ((iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> { G_TEST_ARRAY }.capacity()),
+              G_TEST_ARRAY_SIZE);
+    ASSERT_EQ((iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> {}.capacity()), G_TEST_ARRAY_SIZE + 1);
+    ASSERT_EQ((iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 2> {}.capacity()), G_TEST_ARRAY_SIZE + 2);
 }
 
 TEST(StaticVector, element_at_retrieves_mutable_reference_to_element_at_index) {
