@@ -125,7 +125,7 @@ pub struct Tunnel<S: Service, T: for<'a> Transport> {
     tracker: Option<discovery::tracker::DiscoveryTracker<S>>,
 }
 
-impl<S: Service, T: for<'a> Transport + Debug> Tunnel<S, T> {
+impl<S: Service, T: for<'a> Transport> Tunnel<S, T> {
     /// Create a new tunnel instance that uses the specified Transport
     pub fn create(
         tunnel_config: &Config,
