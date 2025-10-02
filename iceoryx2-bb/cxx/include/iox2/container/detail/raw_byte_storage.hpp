@@ -125,21 +125,21 @@ class RawByteStorage {
         return m_size;
     }
 
-    // @pre size() < (Capacity - 1)
+    // @pre size() < Capacity
     template <typename... Args>
     constexpr void emplace_back(Args&&... args) {
         new (pointer_from_index(size())) T(std::forward<Args>(args)...);
         ++m_size;
     }
 
-    // @pre (size() < (Capacity - 1)) && (index <= size())
+    // @pre (size() < Capacity) && (index <= size())
     template <typename... Args>
     constexpr void emplace_at(uint64_t index, Args&&... args) {
         emplace_back(std::forward<Args>(args)...);
         rotate_from_back(index, m_size - 1);
     }
 
-    // @pre (index <= size()) && (size() + count < Capacity)
+    // @pre (index <= size()) && (size() + count <= Capacity)
     constexpr void insert_at(uint64_t index, uint64_t count, T const& value) {
         for (uint64_t i = 0; i < count; ++i) {
             emplace_back(value);
