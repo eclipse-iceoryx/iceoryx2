@@ -25,13 +25,14 @@ jobs:
     with: 
       os: ${{ matrix.os }}
       toolchain: ${{ matrix.toolchain }}
+      name: "release"
       mode: "release"
       cmake-build-type: "-DCMAKE_BUILD_TYPE=Release"
 
   x86_64-stable-nightly:
     strategy:
       matrix:
-        os: [macos-latest, windows-2022] # todo (iox2-#1049): Use windows latest here
+        os: [ubuntu-latest, macos-latest, windows-2022] # todo (iox2-#1049): Use windows latest here
         # NOTE: enable for MinGW
         # toolchain: [stable, stable-gnu, 1.81.0]
         toolchain: [stable, 1.81.0]
@@ -42,9 +43,6 @@ jobs:
             cmake-build-config: "--config Release" # required for Visual Studio at build and install time
         cargo-features-flag: ["", "--features libc_platform"]
         include:
-          # NOTE: enable for MinGW
-          # - toolchain: stable-gnu
-          #  cmake-build-system-generator: '-G "MinGW Makefiles"'
           - os: windows-2022 # todo (iox2-#1049): Use windows latest here
             toolchain: stable
             cmake-cxx-flags: '-DCMAKE_CXX_FLAGS="/MP"'
@@ -61,7 +59,7 @@ jobs:
       mode-arg: ${{ matrix.mode.arg }}
       mode-cmake-build-type: ${{ matrix.mode.cmake-build-type }}
       mode-cmake-build-config: ${{ matrix.mode.cmake-build-config }}
-      mode-cmake-cxx-flags: ${{ matrix.mode.mode-cmake-cxx-flags }}
+      mode-cmake-cxx-flags: ${{ matrix.mode.cmake-cxx-flags }}
       cargo-features-flag: ${{ matrix.cargo-features-flag }}
 
   x86_64_unstable-nightly:

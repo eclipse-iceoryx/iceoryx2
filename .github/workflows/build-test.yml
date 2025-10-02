@@ -283,6 +283,7 @@ jobs:
     with:
       os: ${{ matrix.os }}
       toolchain: ${{ matrix.toolchain }}
+      name: "debug"
       mode: "" # debug mode by default in cargo
       cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug"
 
@@ -302,13 +303,6 @@ jobs:
             cmake-build-config: "--config Debug" # required for Visual Studio at build and install time
         cargo-features-flag: ["", "--features libc_platform"]
         include:
-          - os: ubuntu-latest # We want to have one Release build in the PR Pipeline on the main platform
-            toolchain: stable
-            mode:
-              - name: "release"
-                arg: "--release"
-                cmake-build-type: "-DCMAKE_BUILD_TYPE=Release" # required for Makefile Generators at config time
-                cmake-build-config: "--config Release" # required for Visual Studio at build and install time
           - os: windows-2022 # todo (iox2-#1049): Use windows latest here
             toolchain: stable
             cmake-cxx-flags: '-DCMAKE_CXX_FLAGS="/MP"'
@@ -325,7 +319,7 @@ jobs:
       mode-arg: ${{ matrix.mode.arg }}
       mode-cmake-build-type: ${{ matrix.mode.cmake-build-type }}
       mode-cmake-build-config: ${{ matrix.mode.cmake-build-config }}
-      mode-cmake-cxx-flags: ${{ matrix.mode.mode-cmake-cxx-flags }}
+      mode-cmake-cxx-flags: ${{ matrix.mode.cmake-cxx-flags }}
       cargo-features-flag: ${{ matrix.cargo-features-flag }}
 
   x86_64-unstable:
