@@ -10,19 +10,20 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::ops::DerefMut;
+use std::cell::UnsafeCell;
+use std::cmp::Ordering;
+use std::hash::{Hash, Hasher};
+
+use iceoryx2_bb_container::string::{RelocatableString, *};
+use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
+use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
+use iceoryx2_bb_testing::assert_that;
+use std::collections::hash_map::DefaultHasher;
+
 #[generic_tests::define]
 mod string {
-    use core::ops::DerefMut;
-    use std::cell::UnsafeCell;
-    use std::cmp::Ordering;
-    use std::hash::{Hash, Hasher};
-
-    use iceoryx2_bb_container::string::{RelocatableString, *};
-    use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-    use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
-    use iceoryx2_bb_testing::assert_that;
-    use std::collections::hash_map::DefaultHasher;
-
+    use super::*;
     const SUT_CAPACITY: usize = 129;
 
     trait StringTestFactory {
@@ -374,6 +375,17 @@ mod string {
     }
 
     #[test]
+    fn find_where_range_is_equal_to_sut_works<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+        const RANGE_TO_FIND: [u8; 5] = [37, 38, 49, 40, 44];
+
+        assert_that!(sut.push_bytes(&RANGE_TO_FIND), is_ok);
+
+        assert_that!(sut.find(&RANGE_TO_FIND), eq Some(0));
+    }
+
+    #[test]
     fn insert_of_valid_character_at_the_beginning_works<Factory: StringTestFactory>() {
         let factory = Factory::new();
         let mut sut = factory.create_sut();
@@ -593,7 +605,7 @@ mod string {
     }
 
     #[test]
-    fn push_when_it_exceeds_the_capacity_fails<Factory: StringTestFactory>() {
+    fn push_bytes_fails_when_it_exceeds_the_capacity<Factory: StringTestFactory>() {
         let factory = Factory::new();
         let mut sut = factory.create_sut();
 
@@ -661,6 +673,15 @@ mod string {
         let mut sut = factory.create_sut();
 
         assert_that!(sut.remove_range(2, 4), eq false);
+    }
+
+    #[test]
+    fn remove_non_existing_range_from_non_empty_string_returns_false<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+        assert_that!(sut.push_bytes(b"hui"), is_ok);
+
+        assert_that!(sut.remove_range(1, 5), eq false);
     }
 
     #[test]
@@ -874,6 +895,17 @@ mod string {
     }
 
     #[test]
+    fn rfind_where_range_is_equal_to_sut_works<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+        const RANGE_TO_FIND: [u8; 5] = [99, 55, 66, 40, 44];
+
+        assert_that!(sut.push_bytes(&RANGE_TO_FIND), is_ok);
+
+        assert_that!(sut.rfind(&RANGE_TO_FIND), eq Some(0));
+    }
+
+    #[test]
     fn truncate_to_larger_string_does_nothing<Factory: StringTestFactory>() {
         let factory = Factory::new();
         let mut sut = factory.create_sut();
@@ -893,6 +925,19 @@ mod string {
 
         assert_that!(sut, len 4);
         assert_that!(sut.as_bytes_with_nul(), eq b"drou\0");
+    }
+
+    #[test]
+    fn truncate_to_string_len_does_nothing<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+        assert_that!(sut.push_bytes(b"oh my frog"), is_ok);
+
+        for n in 10..SUT_CAPACITY {
+            assert_that!(sut.len(), eq n);
+            assert_that!(sut.push(21), is_ok);
+            sut.truncate(sut.len());
+        }
     }
 
     #[test]
@@ -1063,4 +1108,10 @@ mod string {
 
     #[instantiate_tests(<StaticStringFactory>)]
     mod static_string {}
+}
+
+#[test]
+fn error_display_works() {
+    assert_that!(format!("{}", StringModificationError::InsertWouldExceedCapacity), eq "StringModificationError::InsertWouldExceedCapacity");
+    assert_that!(format!("{}", StringModificationError::InvalidCharacter), eq "StringModificationError::InvalidCharacter");
 }

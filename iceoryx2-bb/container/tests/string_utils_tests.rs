@@ -51,9 +51,3 @@ fn as_escaped_string_does_not_escape_printable_characters() {
         assert_that!(as_escaped_string(value.as_bytes()), eq value);
     }
 }
-
-#[test]
-fn error_display_works() {
-    assert_that!(format!("{}", StringModificationError::InsertWouldExceedCapacity), eq "StringModificationError::InsertWouldExceedCapacity");
-    assert_that!(format!("{}", StringModificationError::InvalidCharacter), eq "StringModificationError::InvalidCharacter");
-}

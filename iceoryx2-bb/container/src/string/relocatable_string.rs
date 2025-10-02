@@ -15,7 +15,7 @@
 //!
 //! # Expert Examples
 //!
-//! ## Create [`RelocatableString`] inside constructs which provides memory
+//! ## Create [`RelocatableString`] inside construct which provides memory
 //!
 //! ```
 //! use iceoryx2_bb_container::string::*;
@@ -92,7 +92,7 @@ impl internal::StringView for RelocatableString {
 
     unsafe fn data_mut(&mut self) -> &mut [MaybeUninit<u8>] {
         self.verify_init("data_mut()");
-        core::slice::from_raw_parts_mut(self.data_ptr.as_mut_ptr(), self.capacity())
+        core::slice::from_raw_parts_mut(self.data_ptr.as_mut_ptr(), self.capacity() + 1)
     }
 
     unsafe fn set_len(&mut self, len: u64) {
@@ -200,7 +200,7 @@ impl RelocatableString {
             );
     }
 
-    /// Returns the required memory size for a vec with a specified capacity
+    /// Returns the required memory size for a string with a specified capacity
     pub const fn const_memory_size(capacity: usize) -> usize {
         unaligned_mem_size::<u8>(capacity + 1)
     }
@@ -222,7 +222,7 @@ impl RelocatableContainer for RelocatableString {
         let origin = "RelocatableString::init()";
         if self.data_ptr.is_initialized() {
             fatal_panic!(from origin,
-                "Memory already initialized, Initializing it twice may lead to undefined behavior.");
+                "Memory already initialized! Initializing it twice may lead to undefined behavior.");
         }
 
         let ptr = match allocator.allocate(Layout::from_size_align_unchecked(

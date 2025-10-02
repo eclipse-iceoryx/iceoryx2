@@ -64,7 +64,7 @@ use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
 use crate::string::*;
 
 /// Runtime fixed-size string variant with a polymorphic allocator, meaning an
-/// allocator with a state can be attached to the vector instead of using a
+/// allocator with a state can be attached to the string instead of using a
 /// stateless allocator like the heap-allocator.
 pub struct PolymorphicString<'a, Allocator: BaseAllocator> {
     data_ptr: *mut MaybeUninit<u8>,
@@ -79,7 +79,7 @@ impl<Allocator: BaseAllocator> internal::StringView for PolymorphicString<'_, Al
     }
 
     unsafe fn data_mut(&mut self) -> &mut [MaybeUninit<u8>] {
-        core::slice::from_raw_parts_mut(self.data_ptr, self.capacity())
+        core::slice::from_raw_parts_mut(self.data_ptr, self.capacity() + 1)
     }
 
     unsafe fn set_len(&mut self, len: u64) {

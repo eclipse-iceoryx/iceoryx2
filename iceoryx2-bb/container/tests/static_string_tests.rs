@@ -108,9 +108,7 @@ fn from_bytes_fails_when_len_exceeds_capacity() {
 
 #[test]
 fn from_bytes_truncated_works_with_empty_bytes() {
-    let sut = Sut::from_bytes(b"");
-    assert_that!(sut, is_ok);
-    let mut sut = sut.unwrap();
+    let mut sut = Sut::from_bytes_truncated(b"").unwrap();
 
     assert_that!(sut, is_empty);
     assert_that!(sut.is_full(), eq false);
@@ -125,7 +123,7 @@ fn from_bytes_truncated_works_with_empty_bytes() {
 
 #[test]
 fn from_bytes_truncated_works_with_len_smaller_than_capacity() {
-    let sut = Sut::from_bytes(b"bonjour world");
+    let sut = Sut::from_bytes_truncated(b"bonjour world");
     assert_that!(sut, is_ok);
     let mut sut = sut.unwrap();
 
@@ -142,7 +140,7 @@ fn from_bytes_truncated_works_with_len_smaller_than_capacity() {
 
 #[test]
 fn from_bytes_truncated_works_with_len_greater_than_capacity() {
-    let mut sut = SmallSut::from_bytes_truncated(b"peek a boo");
+    let mut sut = SmallSut::from_bytes_truncated(b"peek a boo").unwrap();
 
     assert_that!(sut, is_not_empty);
     assert_that!(sut.is_full(), eq true);
@@ -153,6 +151,12 @@ fn from_bytes_truncated_works_with_len_greater_than_capacity() {
     assert_that!(sut.as_mut_bytes(), eq b"peek");
     assert_that!(sut.as_bytes_with_nul(), eq b"peek\0");
     assert_that!(sut.pop(), eq Some(b'k'));
+}
+
+#[test]
+fn from_bytes_truncated_fails_with_invalid_characters() {
+    let sut = SmallSut::from_bytes_truncated(&[12, 0, 43]);
+    assert_that!(sut, eq Err(StringModificationError::InvalidCharacter));
 }
 
 #[test]
@@ -193,7 +197,7 @@ fn from_str_with_len_greater_than_capacity_fails() {
 
 #[test]
 fn from_str_truncated_with_len_smaller_capacity_works() {
-    let mut sut = Sut::from_str("a butterfly sits on nalas nose").unwrap();
+    let mut sut = Sut::from_str_truncated("a butterfly sits on nalas nose").unwrap();
 
     assert_that!(sut, is_not_empty);
     assert_that!(sut.is_full(), eq false);
@@ -208,7 +212,7 @@ fn from_str_truncated_with_len_smaller_capacity_works() {
 
 #[test]
 fn from_str_truncated_with_len_greater_than_capacity_truncates() {
-    let mut sut = SmallSut::from_str_truncated("the butterfly has a plan");
+    let mut sut = SmallSut::from_str_truncated("the butterfly has a plan").unwrap();
 
     assert_that!(sut, is_not_empty);
     assert_that!(sut.is_full(), eq true);
@@ -219,6 +223,12 @@ fn from_str_truncated_with_len_greater_than_capacity_truncates() {
     assert_that!(sut.as_mut_bytes(), eq b"the ");
     assert_that!(sut.as_bytes_with_nul(), eq b"the \0");
     assert_that!(sut.pop(), eq Some(b' '));
+}
+
+#[test]
+fn from_str_truncated_fails_with_invalid_characters() {
+    let sut = SmallSut::from_str_truncated("💩 ");
+    assert_that!(sut, eq Err(StringModificationError::InvalidCharacter));
 }
 
 #[test]

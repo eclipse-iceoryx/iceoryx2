@@ -100,7 +100,7 @@ use crate::{
 };
 
 /// Stores the name of a thread
-pub type ThreadName = StaticString<15>;
+pub type ThreadName = StaticString<MAX_THREAD_NAME_LENGTH>;
 
 enum_gen! { ThreadSpawnError
   entry:

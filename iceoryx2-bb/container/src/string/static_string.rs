@@ -13,6 +13,8 @@
 //! Relocatable (inter-process shared memory compatible) string implementations.
 //!
 //! The [`StaticString`](crate::string::StaticString) has a fixed capacity defined at compile time.
+//! It is memory-layout compatible to the C++ counterpart in the iceoryx2-bb-container C++ library
+//! and can be used for zero-copy cross-language communication.
 //!
 //! # Example
 //!
@@ -275,6 +277,7 @@ impl<const CAPACITY: usize> StaticString<CAPACITY> {
     /// # Safety
     ///
     ///  * `bytes` len must be smaller or equal than [`StaticString::capacity()`]
+    ///  * all unicode code points must be smaller 128 and not 0.
     ///
     pub unsafe fn from_bytes_unchecked(bytes: &[u8]) -> Self {
         debug_assert!(bytes.len() < CAPACITY);
@@ -293,17 +296,15 @@ impl<const CAPACITY: usize> StaticString<CAPACITY> {
 
     /// Creates a new [`StaticString`] from a byte slice. If the byte slice does not fit
     /// into the [`StaticString`] it will be truncated.
-    pub fn from_bytes_truncated(bytes: &[u8]) -> Self {
+    pub fn from_bytes_truncated(bytes: &[u8]) -> Result<Self, StringModificationError> {
         let mut new_self = Self::new();
-        unsafe {
-            new_self.insert_bytes_unchecked(0, &bytes[0..core::cmp::min(bytes.len(), CAPACITY)])
-        };
-        new_self
+        new_self.insert_bytes(0, &bytes[0..core::cmp::min(bytes.len(), CAPACITY)])?;
+        Ok(new_self)
     }
 
     /// Creates a new [`StaticString`] from a string slice. If the string slice does not fit
     /// into the [`StaticString`] it will be truncated.
-    pub fn from_str_truncated(s: &str) -> Self {
+    pub fn from_str_truncated(s: &str) -> Result<Self, StringModificationError> {
         Self::from_bytes_truncated(s.as_bytes())
     }
 

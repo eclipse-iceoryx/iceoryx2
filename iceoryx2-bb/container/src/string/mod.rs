@@ -39,7 +39,7 @@ pub use utils::*;
 /// Error which can occur when a [`String`] is modified.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum StringModificationError {
-    /// A string with an unsupported unicode code points greater or equal 128 (U+0080) was provided
+    /// A string with unsupported unicode code points greater or equal 128 (U+0080) was provided
     InvalidCharacter,
     /// The content that shall be added would exceed the maximum capacity of the
     /// [`String`].
@@ -54,6 +54,7 @@ impl core::fmt::Display for StringModificationError {
 
 impl core::error::Error for StringModificationError {}
 
+#[doc(hidden)]
 pub(crate) mod internal {
     use super::*;
 
@@ -64,13 +65,13 @@ pub(crate) mod internal {
         /// # Safety
         ///
         /// * user must ensure that any modification keeps the initialized data contiguous
-        /// * user must update len with [`VectorView::set_len()`] when adding/removing elements
+        /// * user must update len with [`StringView::set_len()`] when adding/removing elements
         unsafe fn data_mut(&mut self) -> &mut [MaybeUninit<u8>];
 
         /// # Safety
         ///
         /// * user must ensure that the len defines the number of initialized contiguous
-        ///   elements in [`VectorView::data_mut()`] and [`VectorView::data()`]
+        ///   elements in [`StringView::data_mut()`] and [`StringView::data()`]
         unsafe fn set_len(&mut self, len: u64);
     }
 }
@@ -381,8 +382,7 @@ pub trait String:
                 if v != pos {
                     return false;
                 }
-                self.remove_range(pos, bytes.len());
-                true
+                self.remove_range(pos, bytes.len())
             }
             None => false,
         }
