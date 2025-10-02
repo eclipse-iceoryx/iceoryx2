@@ -41,7 +41,7 @@
 //! ```
 
 use crate::prelude::EventId;
-use crate::service::builder::blackboard::BlackboardResources;
+use crate::service::builder::blackboard::{BlackboardResources, KeyMemory};
 use crate::service::dynamic_config::blackboard::WriterDetails;
 use crate::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use crate::service::{self, ServiceState};
@@ -58,6 +58,7 @@ use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::{
 use iceoryx2_bb_log::fail;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shared_memory::SharedMemory;
+use std::marker::PhantomData;
 
 extern crate alloc;
 use alloc::sync::Arc;
@@ -70,7 +71,9 @@ struct WriterSharedState<
     KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
 > {
     dynamic_writer_handle: Option<ContainerHandle>,
-    service_state: Arc<ServiceState<Service, BlackboardResources<Service, KeyType>>>,
+    service_state: Arc<ServiceState<Service, BlackboardResources<Service>>>,
+    // TODO: remove?
+    phantom: PhantomData<KeyType>,
 }
 
 impl<
@@ -126,7 +129,7 @@ impl<
     > Writer<Service, KeyType>
 {
     pub(crate) fn new(
-        service: Arc<ServiceState<Service, BlackboardResources<Service, KeyType>>>,
+        service: Arc<ServiceState<Service, BlackboardResources<Service>>>,
     ) -> Result<Self, WriterCreateError> {
         let origin = "Writer::new()";
         let msg = "Unable to create Writer port";
@@ -136,6 +139,7 @@ impl<
             shared_state: Arc::new(WriterSharedState {
                 service_state: service.clone(),
                 dynamic_writer_handle: None,
+                phantom: PhantomData,
             }),
             writer_id,
         };
@@ -221,6 +225,15 @@ impl<
         type_details: &TypeDetail,
         msg: &str,
     ) -> Result<u64, EntryHandleMutError> {
+        // create KeyMemory from key
+        let key_mem = match KeyMemory::try_from(key) {
+            Ok(mem) => mem,
+            // TODO: adapt error and msg
+            Err(_) => {
+                fail!(from self, with EntryHandleMutError::EntryDoesNotExist, "{} blub", msg);
+            }
+        };
+
         // check if key exists
         let index = match unsafe {
             self.shared_state
@@ -229,7 +242,7 @@ impl<
                 .mgmt
                 .get()
                 .map
-                .__internal_get(key, key_eq_func)
+                .__internal_get(&key_mem, key_eq_func)
         } {
             Some(i) => i,
             None => {

@@ -24,7 +24,7 @@ use crate::create_type_details;
 use core::ffi::{c_char, c_int, c_void};
 use core::mem::ManuallyDrop;
 use iceoryx2::service::builder::blackboard::{
-    BlackboardCreateError, BlackboardOpenError, BuilderInternals, Creator, Opener,
+    BlackboardCreateError, BlackboardOpenError, BuilderInternals, Creator, KeyMemory, Opener,
 };
 use iceoryx2::service::port_factory::blackboard::PortFactory;
 use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeName, TypeVariant};
@@ -609,8 +609,11 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
         }
     });
 
+    // TODO: error handling
+    let key_mem = KeyMemory::try_from(key).unwrap();
+
     let internals = BuilderInternals::new(
-        key,
+        key_mem,
         type_details.clone(),
         value_writer,
         value_size,

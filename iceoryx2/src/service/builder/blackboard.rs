@@ -16,7 +16,7 @@
 //!
 use self::attribute::{AttributeSpecifier, AttributeVerifier};
 use super::{OpenDynamicStorageFailure, ServiceState};
-use crate::constants::MAX_BLACKBOARD_KEY_ALIGNMENT;
+use crate::constants::{MAX_BLACKBOARD_KEY_ALIGNMENT, MAX_BLACKBOARD_KEY_SIZE};
 use crate::service;
 use crate::service::config_scheme::{blackboard_data_config, blackboard_mgmt_config};
 use crate::service::dynamic_config::blackboard::DynamicConfigSettings;
@@ -42,6 +42,7 @@ use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 use iceoryx2_cal::shared_memory::{SharedMemory, SharedMemoryBuilder};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
+use std::marker::PhantomData;
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 enum ServiceAvailabilityState {
@@ -169,7 +170,7 @@ pub enum KeyMemoryError {
 #[doc(hidden)]
 #[repr(C)]
 #[repr(align(8))]
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, ZeroCopySend)]
 pub struct KeyMemory<const CAPACITY: usize> {
     pub data: [u8; CAPACITY],
 }
@@ -231,8 +232,8 @@ impl<const CAPACITY: usize> KeyMemory<CAPACITY> {
 }
 
 #[doc(hidden)]
-pub struct BuilderInternals<KeyType> {
-    key: KeyType,
+pub struct BuilderInternals {
+    key: KeyMemory<MAX_BLACKBOARD_KEY_SIZE>,
     value_type_details: TypeDetail,
     value_writer: Box<dyn FnMut(*mut u8)>,
     internal_value_size: usize,
@@ -240,21 +241,21 @@ pub struct BuilderInternals<KeyType> {
     internal_value_cleanup_callback: Box<dyn FnMut()>,
 }
 
-impl<KeyType> Debug for BuilderInternals<KeyType> {
+impl Debug for BuilderInternals {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "")
     }
 }
 
-impl<KeyType> Drop for BuilderInternals<KeyType> {
+impl Drop for BuilderInternals {
     fn drop(&mut self) {
         (self.internal_value_cleanup_callback)();
     }
 }
 
-impl<KeyType> BuilderInternals<KeyType> {
+impl BuilderInternals {
     pub fn new(
-        key: KeyType,
+        key: KeyMemory<MAX_BLACKBOARD_KEY_SIZE>,
         value_type_details: TypeDetail,
         value_writer: Box<dyn FnMut(*mut u8)>,
         value_size: usize,
@@ -281,25 +282,18 @@ pub(crate) struct Entry {
 
 #[repr(C)]
 #[derive(Debug, ZeroCopySend)]
-pub(crate) struct Mgmt<KeyType: Eq + Clone + Debug + ZeroCopySend> {
-    pub(crate) map: RelocatableFlatMap<KeyType, usize>,
+pub(crate) struct Mgmt {
+    pub(crate) map: RelocatableFlatMap<KeyMemory<MAX_BLACKBOARD_KEY_SIZE>, usize>,
     pub(crate) entries: RelocatableVec<Entry>,
 }
 
 #[derive(Debug)]
-pub(crate) struct BlackboardResources<
-    ServiceType: service::Service,
-    KeyType: Send + Sync + Eq + Clone + Debug + 'static + ZeroCopySend,
-> {
-    pub(crate) mgmt: ServiceType::BlackboardMgmt<Mgmt<KeyType>>,
+pub(crate) struct BlackboardResources<ServiceType: service::Service> {
+    pub(crate) mgmt: ServiceType::BlackboardMgmt<Mgmt>,
     pub(crate) data: ServiceType::BlackboardPayload,
 }
 
-impl<
-        ServiceType: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static + ZeroCopySend,
-    > ServiceResource for BlackboardResources<ServiceType, KeyType>
-{
+impl<ServiceType: service::Service> ServiceResource for BlackboardResources<ServiceType> {
     fn acquire_ownership(&self) {
         self.data.acquire_ownership();
         self.mgmt.acquire_ownership();
@@ -313,9 +307,10 @@ struct Builder<
     base: builder::BuilderWithServiceType<ServiceType>,
     verify_max_readers: bool,
     verify_max_nodes: bool,
-    internals: Vec<BuilderInternals<KeyType>>,
+    internals: Vec<BuilderInternals>,
     override_key_type: Option<TypeDetail>,
     key_eq_func: Box<dyn Fn(*const u8, *const u8) -> bool>,
+    phantom: PhantomData<KeyType>,
 }
 
 impl<
@@ -339,11 +334,12 @@ impl<
             base,
             verify_max_readers: false,
             verify_max_nodes: false,
-            internals: Vec::<BuilderInternals<KeyType>>::new(),
+            internals: Vec::<BuilderInternals>::new(),
             override_key_type: None,
             key_eq_func: Box::new(|lhs: *const u8, rhs: *const u8| {
                 __internal_default_eq_comparison::<KeyType>(lhs, rhs)
             }),
+            phantom: PhantomData,
         };
 
         new_self.base.service_config.messaging_pattern = MessagingPattern::Blackboard(
@@ -459,7 +455,7 @@ impl<
     /// Adds key-value pairs to the blackboard.
     pub fn add<ValueType: ZeroCopySend + Copy + 'static>(
         self,
-        key: KeyType,
+        key: KeyMemory<MAX_BLACKBOARD_KEY_SIZE>,
         value: ValueType,
     ) -> Self {
         let internals = BuilderInternals {
@@ -482,13 +478,13 @@ impl<
     /// Adds key-value pairs to the blackboard where value is a default value.
     pub fn add_with_default<ValueType: ZeroCopySend + Copy + 'static + Default>(
         self,
-        key: KeyType,
+        key: KeyMemory<MAX_BLACKBOARD_KEY_SIZE>,
     ) -> Self {
         self.add(key, ValueType::default())
     }
 
     #[doc(hidden)]
-    pub fn __internal_add(mut self, builder_internals: BuilderInternals<KeyType>) -> Self {
+    pub fn __internal_add(mut self, builder_internals: BuilderInternals) -> Self {
         self.builder.internals.push(builder_internals);
         self
     }
@@ -634,7 +630,7 @@ impl<
                 // create the management segment
                 let capacity = self.builder.internals.len();
 
-                let mut mgmt_config = blackboard_mgmt_config::<ServiceType, Mgmt<KeyType>>(
+                let mut mgmt_config = blackboard_mgmt_config::<ServiceType, Mgmt>(
                     self.builder.base.shared_node.config(),
                 );
                 let mgmt_name = self
@@ -647,18 +643,18 @@ impl<
                 // The name is set to be able to remove the concept when a node dies. Safe since the
                 // same name is set in ServiceInternal::__internal_remove_node_from_service.
                 unsafe {
-                    <ServiceType::BlackboardMgmt<Mgmt<KeyType>> as DynamicStorage::<
-                        Mgmt<KeyType>,
+                    <ServiceType::BlackboardMgmt<Mgmt> as DynamicStorage::<
+                        Mgmt,
                     >>::__internal_set_type_name_in_config(&mut mgmt_config, mgmt_name)
                 };
 
                 let mgmt_storage = fail!(from self, when
-                    <ServiceType::BlackboardMgmt<Mgmt<KeyType>> as DynamicStorage<Mgmt<KeyType>,
+                    <ServiceType::BlackboardMgmt<Mgmt> as DynamicStorage<Mgmt,
                     >>::Builder::new(&name)
                         .config(&mgmt_config)
                         .has_ownership(false)
-                        .supplementary_size(RelocatableFlatMap::<KeyType, usize>::const_memory_size(capacity)+RelocatableVec::<Entry>::const_memory_size(capacity))
-                        .initializer(|entry: &mut Mgmt<KeyType>, allocator: &mut BumpAllocator| {
+                        .supplementary_size(RelocatableFlatMap::<KeyMemory<MAX_BLACKBOARD_KEY_SIZE>, usize>::const_memory_size(capacity)+RelocatableVec::<Entry>::const_memory_size(capacity))
+                        .initializer(|entry: &mut Mgmt, allocator: &mut BumpAllocator| {
                             if unsafe {entry.map.init(allocator)}.is_err() || unsafe {entry.entries.init(allocator).is_err()} {
                                 return false
                             }
@@ -687,7 +683,7 @@ impl<
                                 }
                             }
                             true})
-                        .create(Mgmt{ map: unsafe { RelocatableFlatMap::<KeyType, usize>::new_uninit(capacity) }, entries: unsafe {RelocatableVec::<Entry>::new_uninit(capacity)}}),
+                        .create(Mgmt{ map: unsafe { RelocatableFlatMap::<KeyMemory<MAX_BLACKBOARD_KEY_SIZE>, usize>::new_uninit(capacity) }, entries: unsafe {RelocatableVec::<Entry>::new_uninit(capacity)}}),
                             with BlackboardCreateError::ServiceInCorruptedState, "{} since the blackboard management segment could not be created. This could indicate a corrupted system.",
                             msg);
 
@@ -891,7 +887,7 @@ impl<
 
                     let name =
                         blackboard_name(self.builder.base.service_config.service_id().as_str());
-                    let mut mgmt_config = blackboard_mgmt_config::<ServiceType, Mgmt<KeyType>>(
+                    let mut mgmt_config = blackboard_mgmt_config::<ServiceType, Mgmt>(
                         self.builder.base.shared_node.config(),
                     );
                     let mgmt_name = self
@@ -904,14 +900,14 @@ impl<
                     // dies. Safe since the same name is set in
                     // ServiceInternal::__internal_remove_node_from_service.
                     unsafe {
-                        <ServiceType::BlackboardMgmt<Mgmt<KeyType>> as DynamicStorage<
-                            Mgmt<KeyType>,
+                        <ServiceType::BlackboardMgmt<Mgmt> as DynamicStorage<
+                            Mgmt,
                         >>::__internal_set_type_name_in_config(
                             &mut mgmt_config, mgmt_name
                         )
                     };
                     let mgmt_storage = fail!(from self, when
-                        <ServiceType::BlackboardMgmt<Mgmt<KeyType>> as DynamicStorage<Mgmt<KeyType>>
+                        <ServiceType::BlackboardMgmt<Mgmt> as DynamicStorage<Mgmt>
                         >::Builder::new(&name)
                             .config(&mgmt_config)
                             .has_ownership(false)

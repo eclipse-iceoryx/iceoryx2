@@ -51,6 +51,7 @@ use core::hash::Hash;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
+use std::marker::PhantomData;
 
 extern crate alloc;
 use alloc::sync::Arc;
@@ -64,7 +65,9 @@ pub struct PortFactory<
     Service: service::Service,
     KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
 > {
-    pub(crate) service: Arc<ServiceState<Service, BlackboardResources<Service, KeyType>>>,
+    pub(crate) service: Arc<ServiceState<Service, BlackboardResources<Service>>>,
+    // TODO: remove?
+    phantom: PhantomData<KeyType>,
 }
 
 impl<
@@ -113,11 +116,10 @@ impl<
         KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
     > PortFactory<Service, KeyType>
 {
-    pub(crate) fn new(
-        service: ServiceState<Service, BlackboardResources<Service, KeyType>>,
-    ) -> Self {
+    pub(crate) fn new(service: ServiceState<Service, BlackboardResources<Service>>) -> Self {
         Self {
             service: Arc::new(service),
+            phantom: PhantomData,
         }
     }
 
