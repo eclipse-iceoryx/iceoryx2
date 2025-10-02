@@ -223,7 +223,7 @@ fn from_str_truncated_with_len_greater_than_capacity_truncates() {
 
 #[test]
 fn from_c_str_works_for_empty_string() {
-    let value = Sut::from(b"");
+    let value = Sut::try_from(b"").unwrap();
     let sut = unsafe { Sut::from_c_str(value.as_ptr() as *mut core::ffi::c_char).unwrap() };
 
     assert_that!(sut, len 0);
@@ -232,7 +232,7 @@ fn from_c_str_works_for_empty_string() {
 
 #[test]
 fn from_c_str_works_when_len_is_smaller_than_capacity() {
-    let value = Sut::from(b"foo baha");
+    let value = Sut::try_from(b"foo baha").unwrap();
     let sut = unsafe { Sut::from_c_str(value.as_ptr() as *mut core::ffi::c_char).unwrap() };
 
     assert_that!(sut, len 8);
@@ -241,14 +241,53 @@ fn from_c_str_works_when_len_is_smaller_than_capacity() {
 
 #[test]
 fn from_c_str_fails_when_len_is_greater_than_capacity() {
-    let value = Sut::from(b"I am toooo looong again");
+    let value = Sut::try_from(b"I am toooo looong again").unwrap();
     let sut = unsafe { SmallSut::from_c_str(value.as_ptr() as *mut core::ffi::c_char) };
     assert_that!(sut, eq Err(StringModificationError::InsertWouldExceedCapacity));
 }
 
 #[test]
+fn eq_with_slice_works() {
+    let sut = Sut::try_from(b"roky").unwrap();
+    assert_that!(sut == b"roky", eq true);
+    assert_that!(sut == b"rokyf", eq false);
+}
+
+#[test]
 fn serialization_works() {
-    let sut = SmallSut::from(b"bee");
+    let sut = SmallSut::try_from(b"bee").unwrap();
 
     assert_tokens(&sut, &[Token::Str("bee")]);
+}
+
+#[test]
+fn try_from_str_fails_when_too_long() {
+    assert_that!(SmallSut::try_from("a very loooong string"), eq Err(StringModificationError::InsertWouldExceedCapacity));
+}
+
+#[test]
+fn try_from_str_fails_when_it_contains_invalid_characters() {
+    assert_that!(Sut::try_from("i am illegal - 😅"), eq Err(StringModificationError::InvalidCharacter));
+}
+
+#[test]
+fn try_from_str_with_valid_content_works() {
+    let sut = Sut::try_from("i am a bee").unwrap();
+    assert_that!(sut.as_bytes(), eq b"i am a bee");
+}
+
+#[test]
+fn try_from_u8_array_fails_when_too_long() {
+    assert_that!(SmallSut::try_from(b"a very loooong string"), eq Err(StringModificationError::InsertWouldExceedCapacity));
+}
+
+#[test]
+fn try_from_u8_array_fails_when_it_contains_invalid_characters() {
+    assert_that!(Sut::try_from(&[33,44,0,200]), eq Err(StringModificationError::InvalidCharacter));
+}
+
+#[test]
+fn try_from_u8_array_with_valid_content_works() {
+    let sut = Sut::try_from(b"i am a bee").unwrap();
+    assert_that!(sut.as_bytes(), eq b"i am a bee");
 }

@@ -463,6 +463,15 @@ mod string {
         }
     }
 
+    #[should_panic]
+    #[test]
+    fn insert_bytes_out_of_bounds_panics<Factory: StringTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+
+        sut.insert_bytes(4, &[2]).unwrap();
+    }
+
     #[test]
     fn pop_removes_the_last_element<Factory: StringTestFactory>() {
         let factory = Factory::new();
@@ -963,6 +972,9 @@ mod string {
 
         assert_that!(sut_1 == sut_1, eq true);
         assert_that!(sut_1 == sut_2, eq false);
+
+        assert_that!(*sut_1 == *sut_1, eq true);
+        assert_that!(*sut_1 == *sut_2, eq false);
     }
 
     #[instantiate_tests(<StaticStringFactory>)]

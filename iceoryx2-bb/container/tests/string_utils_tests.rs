@@ -36,9 +36,9 @@ fn strnlen_returns_max_len_when_string_is_longer_than_max_len() {
 
 #[test]
 fn as_escaped_string_escapes_all_escapable_characters() {
-    assert_that!(as_escaped_string(b"\\t"), eq "\\t");
-    assert_that!(as_escaped_string(b"\\r"), eq "\\r");
-    assert_that!(as_escaped_string(b"\\n"), eq "\\n");
+    assert_that!(as_escaped_string(b"\x09"), eq "\\t");
+    assert_that!(as_escaped_string(b"\x0d"), eq "\\r");
+    assert_that!(as_escaped_string(b"\x0A"), eq "\\n");
     assert_that!(as_escaped_string(b"\x20"), eq " ");
     assert_that!(as_escaped_string(b"\x7e"), eq "~");
     assert_that!(as_escaped_string(b"\x01"), eq "\\x01");

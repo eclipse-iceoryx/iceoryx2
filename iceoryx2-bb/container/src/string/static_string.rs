@@ -41,7 +41,7 @@ use core::{
 use iceoryx2_bb_derive_macros::{PlacementDefault, ZeroCopySend};
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_log::{fail, fatal_panic};
+use iceoryx2_bb_log::fail;
 use serde::{de::Visitor, Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::string::{
@@ -201,33 +201,35 @@ impl<const CAPACITY: usize> Display for StaticString<CAPACITY> {
     }
 }
 
-impl<const CAPACITY: usize, const BYTE_CAPACITY: usize> From<&[u8; BYTE_CAPACITY]>
-    for StaticString<CAPACITY>
-{
-    fn from(value: &[u8; BYTE_CAPACITY]) -> Self {
-        if CAPACITY < BYTE_CAPACITY {
-            fatal_panic!(from "StaticString::from<[u8; ..]>()", "The byte array does not fit into the StaticString");
-        }
-
-        let mut new_self = Self::new();
-        new_self.push_bytes(value).unwrap();
-        new_self
-    }
-}
-
 impl<const CAPACITY: usize> TryFrom<&str> for StaticString<CAPACITY> {
     type Error = StringModificationError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
+        Self::try_from(value.as_bytes())
+    }
+}
+
+impl<const CAPACITY: usize, const N: usize> TryFrom<&[u8; N]> for StaticString<CAPACITY> {
+    type Error = StringModificationError;
+
+    fn try_from(value: &[u8; N]) -> Result<Self, Self::Error> {
+        Self::try_from(value.as_slice())
+    }
+}
+
+impl<const CAPACITY: usize> TryFrom<&[u8]> for StaticString<CAPACITY> {
+    type Error = StringModificationError;
+
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
         if CAPACITY < value.len() {
-            fail!(from "StaticString::from<&str>()",
+            fail!(from "StaticString::from<&[u8]>()",
                 with StringModificationError::InsertWouldExceedCapacity,
                 "The provided string \"{}\" does not fit into the StaticString with capacity {}",
-                value, CAPACITY);
+                as_escaped_string(value), CAPACITY);
         }
 
         let mut new_self = Self::new();
-        new_self.push_bytes(value.as_bytes()).unwrap();
+        new_self.push_bytes(value)?;
         Ok(new_self)
     }
 }
