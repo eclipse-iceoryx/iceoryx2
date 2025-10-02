@@ -154,6 +154,362 @@ TEST_F(RawByteStorageFixtureStrict, copy_constructor_copies_all_elements) {
     // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
 }
 
+TEST_F(RawByteStorageFixtureStrict, copy_assignment_copies_all_elements_target_empty) {
+    constexpr uint64_t const STORAGE_CAPACITY = 5;
+    iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> obj;
+    int32_t const tracking_id1 = 100;
+    int32_t const tracking_id2 = 200;
+    int32_t const tracking_id3 = 300;
+    obj.emplace_back(tracking_id1);
+    obj.emplace_back(tracking_id2);
+    obj.emplace_back(tracking_id3);
+    {
+        iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
+        iox2::container::testing::opaque_use(&sut);
+        sut = obj;
+        ASSERT_EQ(Observable::s_counter.was_copy_assigned, 0);
+        ASSERT_EQ(Observable::s_counter.was_copy_constructed, 3);
+        ASSERT_EQ(sut.size(), 3);
+        EXPECT_EQ(sut.pointer_from_index(0)->id, tracking_id1);
+        EXPECT_EQ(sut.pointer_from_index(1)->id, tracking_id2);
+        EXPECT_EQ(sut.pointer_from_index(2)->id, tracking_id3);
+        ASSERT_EQ(Observable::s_counter.was_destructed, 0);
+    }
+    ASSERT_EQ(Observable::s_counter.was_destructed, 3);
+    ASSERT_EQ(obj.size(), 3);
+    EXPECT_EQ(obj.pointer_from_index(0)->id, tracking_id1);
+    EXPECT_EQ(obj.pointer_from_index(1)->id, tracking_id2);
+    EXPECT_EQ(obj.pointer_from_index(2)->id, tracking_id3);
+    // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers) testing
+    expected_count().was_initialized = 3;
+    expected_count().was_copy_assigned = 0;
+    expected_count().was_copy_constructed = 3;
+    expected_count().was_destructed = 6;
+    // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+}
+
+TEST_F(RawByteStorageFixtureStrict, copy_assignment_copies_all_elements_target_partially_filled) {
+    constexpr uint64_t const STORAGE_CAPACITY = 5;
+    iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> obj;
+    int32_t const tracking_id1 = 100;
+    int32_t const tracking_id2 = 200;
+    int32_t const tracking_id3 = 300;
+    obj.emplace_back(tracking_id1);
+    obj.emplace_back(tracking_id2);
+    obj.emplace_back(tracking_id3);
+    {
+        iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
+        sut.emplace_back();
+        sut.emplace_back();
+        iox2::container::testing::opaque_use(&sut);
+        sut = obj;
+        ASSERT_EQ(Observable::s_counter.was_copy_assigned, 2);
+        ASSERT_EQ(Observable::s_counter.was_copy_constructed, 1);
+        ASSERT_EQ(sut.size(), 3);
+        EXPECT_EQ(sut.pointer_from_index(0)->id, tracking_id1);
+        EXPECT_EQ(sut.pointer_from_index(1)->id, tracking_id2);
+        EXPECT_EQ(sut.pointer_from_index(2)->id, tracking_id3);
+        ASSERT_EQ(Observable::s_counter.was_destructed, 0);
+    }
+    ASSERT_EQ(Observable::s_counter.was_destructed, 3);
+    ASSERT_EQ(obj.size(), 3);
+    EXPECT_EQ(obj.pointer_from_index(0)->id, tracking_id1);
+    EXPECT_EQ(obj.pointer_from_index(1)->id, tracking_id2);
+    EXPECT_EQ(obj.pointer_from_index(2)->id, tracking_id3);
+    // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers) testing
+    expected_count().was_initialized = 5;
+    expected_count().was_copy_assigned = 2;
+    expected_count().was_copy_constructed = 1;
+    expected_count().was_destructed = 6;
+    // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+}
+
+TEST_F(RawByteStorageFixtureStrict, copy_assignment_copies_all_elements_target_filled) {
+    constexpr uint64_t const STORAGE_CAPACITY = 5;
+    iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> obj;
+    int32_t const tracking_id1 = 100;
+    int32_t const tracking_id2 = 200;
+    int32_t const tracking_id3 = 300;
+    obj.emplace_back(tracking_id1);
+    obj.emplace_back(tracking_id2);
+    obj.emplace_back(tracking_id3);
+    {
+        iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
+        sut.emplace_back();
+        sut.emplace_back();
+        sut.emplace_back();
+        iox2::container::testing::opaque_use(&sut);
+        sut = obj;
+        ASSERT_EQ(Observable::s_counter.was_copy_assigned, 3);
+        ASSERT_EQ(Observable::s_counter.was_copy_constructed, 0);
+        ASSERT_EQ(sut.size(), 3);
+        EXPECT_EQ(sut.pointer_from_index(0)->id, tracking_id1);
+        EXPECT_EQ(sut.pointer_from_index(1)->id, tracking_id2);
+        EXPECT_EQ(sut.pointer_from_index(2)->id, tracking_id3);
+        ASSERT_EQ(Observable::s_counter.was_destructed, 0);
+    }
+    ASSERT_EQ(Observable::s_counter.was_destructed, 3);
+    ASSERT_EQ(obj.size(), 3);
+    EXPECT_EQ(obj.pointer_from_index(0)->id, tracking_id1);
+    EXPECT_EQ(obj.pointer_from_index(1)->id, tracking_id2);
+    EXPECT_EQ(obj.pointer_from_index(2)->id, tracking_id3);
+    // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers) testing
+    expected_count().was_initialized = 6;
+    expected_count().was_copy_assigned = 3;
+    expected_count().was_copy_constructed = 0;
+    expected_count().was_destructed = 6;
+    // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+}
+
+TEST_F(RawByteStorageFixtureStrict, copy_assignment_copies_all_elements_target_bigger) {
+    constexpr uint64_t const STORAGE_CAPACITY = 5;
+    iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> obj;
+    int32_t const tracking_id1 = 100;
+    int32_t const tracking_id2 = 200;
+    int32_t const tracking_id3 = 300;
+    obj.emplace_back(tracking_id1);
+    obj.emplace_back(tracking_id2);
+    obj.emplace_back(tracking_id3);
+    {
+        iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
+        sut.emplace_back();
+        sut.emplace_back();
+        sut.emplace_back();
+        sut.emplace_back();
+        sut.emplace_back();
+        iox2::container::testing::opaque_use(&sut);
+        sut = obj;
+        ASSERT_EQ(Observable::s_counter.was_copy_assigned, 3);
+        ASSERT_EQ(Observable::s_counter.was_copy_constructed, 0);
+        ASSERT_EQ(sut.size(), 3);
+        EXPECT_EQ(sut.pointer_from_index(0)->id, tracking_id1);
+        EXPECT_EQ(sut.pointer_from_index(1)->id, tracking_id2);
+        EXPECT_EQ(sut.pointer_from_index(2)->id, tracking_id3);
+        ASSERT_EQ(Observable::s_counter.was_destructed, 2);
+    }
+    ASSERT_EQ(Observable::s_counter.was_destructed, 5);
+    ASSERT_EQ(obj.size(), 3);
+    EXPECT_EQ(obj.pointer_from_index(0)->id, tracking_id1);
+    EXPECT_EQ(obj.pointer_from_index(1)->id, tracking_id2);
+    EXPECT_EQ(obj.pointer_from_index(2)->id, tracking_id3);
+    // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers) testing
+    expected_count().was_initialized = 8;
+    expected_count().was_copy_assigned = 3;
+    expected_count().was_copy_constructed = 0;
+    expected_count().was_destructed = 8;
+    // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+}
+
+TEST_F(RawByteStorageFixtureStrict, copy_assignment_returns_reference_to_this) {
+    constexpr uint64_t const STORAGE_CAPACITY = 5;
+    iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> obj;
+    int32_t const tracking_id1 = 100;
+    int32_t const tracking_id2 = 200;
+    int32_t const tracking_id3 = 300;
+    obj.emplace_back(tracking_id1);
+    obj.emplace_back(tracking_id2);
+    obj.emplace_back(tracking_id3);
+    {
+        iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
+        iox2::container::testing::opaque_use(&sut);
+        ASSERT_EQ(&(sut = obj), &sut);
+    }
+    // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers) testing
+    expected_count().was_initialized = 3;
+    expected_count().was_copy_constructed = 3;
+    expected_count().was_destructed = 6;
+    // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+}
+
+TEST_F(RawByteStorageFixtureStrict, copy_assignment_self_assignment_is_noop) {
+    constexpr uint64_t const STORAGE_CAPACITY = 5;
+    iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
+    int32_t const tracking_id1 = 100;
+    int32_t const tracking_id2 = 200;
+    int32_t const tracking_id3 = 300;
+    sut.emplace_back(tracking_id1);
+    sut.emplace_back(tracking_id2);
+    sut.emplace_back(tracking_id3);
+    auto& alias_to_sut = sut;
+    iox2::container::testing::opaque_use(&alias_to_sut);
+    sut = alias_to_sut;
+    ASSERT_EQ(Observable::s_counter.was_copy_constructed, 0);
+    // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers) testing
+    expected_count().was_initialized = 3;
+    expected_count().was_destructed = 3;
+    // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+}
+
+TEST_F(RawByteStorageFixtureStrict, move_assignment_copies_all_elements_target_empty) {
+    constexpr uint64_t const STORAGE_CAPACITY = 5;
+    iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> obj;
+    int32_t const tracking_id1 = 100;
+    int32_t const tracking_id2 = 200;
+    int32_t const tracking_id3 = 300;
+    obj.emplace_back(tracking_id1);
+    obj.emplace_back(tracking_id2);
+    obj.emplace_back(tracking_id3);
+    {
+        iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
+        iox2::container::testing::opaque_use(&sut);
+        sut = std::move(obj);
+        ASSERT_EQ(Observable::s_counter.was_move_assigned, 0);
+        ASSERT_EQ(Observable::s_counter.was_move_constructed, 3);
+        ASSERT_EQ(sut.size(), 3);
+        EXPECT_EQ(sut.pointer_from_index(0)->id, tracking_id1);
+        EXPECT_EQ(sut.pointer_from_index(1)->id, tracking_id2);
+        EXPECT_EQ(sut.pointer_from_index(2)->id, tracking_id3);
+        ASSERT_EQ(Observable::s_counter.was_destructed, 0);
+    }
+    ASSERT_EQ(Observable::s_counter.was_destructed, 3);
+    // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers) testing
+    expected_count().was_initialized = 3;
+    expected_count().was_move_assigned = 0;
+    expected_count().was_move_constructed = 3;
+    expected_count().was_destructed = 6;
+    // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+}
+
+TEST_F(RawByteStorageFixtureStrict, move_assignment_copies_all_elements_target_partially_filled) {
+    constexpr uint64_t const STORAGE_CAPACITY = 5;
+    iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> obj;
+    int32_t const tracking_id1 = 100;
+    int32_t const tracking_id2 = 200;
+    int32_t const tracking_id3 = 300;
+    obj.emplace_back(tracking_id1);
+    obj.emplace_back(tracking_id2);
+    obj.emplace_back(tracking_id3);
+    {
+        iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
+        sut.emplace_back();
+        sut.emplace_back();
+        iox2::container::testing::opaque_use(&sut);
+        sut = std::move(obj);
+        ASSERT_EQ(Observable::s_counter.was_move_assigned, 2);
+        ASSERT_EQ(Observable::s_counter.was_move_constructed, 1);
+        ASSERT_EQ(sut.size(), 3);
+        EXPECT_EQ(sut.pointer_from_index(0)->id, tracking_id1);
+        EXPECT_EQ(sut.pointer_from_index(1)->id, tracking_id2);
+        EXPECT_EQ(sut.pointer_from_index(2)->id, tracking_id3);
+        ASSERT_EQ(Observable::s_counter.was_destructed, 0);
+    }
+    ASSERT_EQ(Observable::s_counter.was_destructed, 3);
+    // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers) testing
+    expected_count().was_initialized = 5;
+    expected_count().was_move_assigned = 2;
+    expected_count().was_move_constructed = 1;
+    expected_count().was_destructed = 6;
+    // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+}
+
+TEST_F(RawByteStorageFixtureStrict, move_assignment_copies_all_elements_target_filled) {
+    constexpr uint64_t const STORAGE_CAPACITY = 5;
+    iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> obj;
+    int32_t const tracking_id1 = 100;
+    int32_t const tracking_id2 = 200;
+    int32_t const tracking_id3 = 300;
+    obj.emplace_back(tracking_id1);
+    obj.emplace_back(tracking_id2);
+    obj.emplace_back(tracking_id3);
+    {
+        iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
+        sut.emplace_back();
+        sut.emplace_back();
+        sut.emplace_back();
+        iox2::container::testing::opaque_use(&sut);
+        sut = std::move(obj);
+        ASSERT_EQ(Observable::s_counter.was_move_assigned, 3);
+        ASSERT_EQ(Observable::s_counter.was_move_constructed, 0);
+        ASSERT_EQ(sut.size(), 3);
+        EXPECT_EQ(sut.pointer_from_index(0)->id, tracking_id1);
+        EXPECT_EQ(sut.pointer_from_index(1)->id, tracking_id2);
+        EXPECT_EQ(sut.pointer_from_index(2)->id, tracking_id3);
+        ASSERT_EQ(Observable::s_counter.was_destructed, 0);
+    }
+    ASSERT_EQ(Observable::s_counter.was_destructed, 3);
+    // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers) testing
+    expected_count().was_initialized = 6;
+    expected_count().was_move_assigned = 3;
+    expected_count().was_move_constructed = 0;
+    expected_count().was_destructed = 6;
+    // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+}
+
+TEST_F(RawByteStorageFixtureStrict, move_assignment_copies_all_elements_target_bigger) {
+    constexpr uint64_t const STORAGE_CAPACITY = 5;
+    iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> obj;
+    int32_t const tracking_id1 = 100;
+    int32_t const tracking_id2 = 200;
+    int32_t const tracking_id3 = 300;
+    obj.emplace_back(tracking_id1);
+    obj.emplace_back(tracking_id2);
+    obj.emplace_back(tracking_id3);
+    {
+        iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
+        sut.emplace_back();
+        sut.emplace_back();
+        sut.emplace_back();
+        sut.emplace_back();
+        sut.emplace_back();
+        iox2::container::testing::opaque_use(&sut);
+        sut = std::move(obj);
+        ASSERT_EQ(Observable::s_counter.was_move_assigned, 3);
+        ASSERT_EQ(Observable::s_counter.was_move_constructed, 0);
+        ASSERT_EQ(sut.size(), 3);
+        EXPECT_EQ(sut.pointer_from_index(0)->id, tracking_id1);
+        EXPECT_EQ(sut.pointer_from_index(1)->id, tracking_id2);
+        EXPECT_EQ(sut.pointer_from_index(2)->id, tracking_id3);
+        ASSERT_EQ(Observable::s_counter.was_destructed, 2);
+    }
+    ASSERT_EQ(Observable::s_counter.was_destructed, 5);
+    // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers) testing
+    expected_count().was_initialized = 8;
+    expected_count().was_move_assigned = 3;
+    expected_count().was_move_constructed = 0;
+    expected_count().was_destructed = 8;
+    // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+}
+
+TEST_F(RawByteStorageFixtureStrict, move_assignment_returns_reference_to_this) {
+    constexpr uint64_t const STORAGE_CAPACITY = 5;
+    iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> obj;
+    int32_t const tracking_id1 = 100;
+    int32_t const tracking_id2 = 200;
+    int32_t const tracking_id3 = 300;
+    obj.emplace_back(tracking_id1);
+    obj.emplace_back(tracking_id2);
+    obj.emplace_back(tracking_id3);
+    {
+        iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
+        iox2::container::testing::opaque_use(&sut);
+        ASSERT_EQ(&(sut = std::move(obj)), &sut);
+    }
+    // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers) testing
+    expected_count().was_initialized = 3;
+    expected_count().was_move_constructed = 3;
+    expected_count().was_destructed = 6;
+    // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+}
+
+TEST_F(RawByteStorageFixtureStrict, move_assignment_self_assignment_is_noop) {
+    constexpr uint64_t const STORAGE_CAPACITY = 5;
+    iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
+    int32_t const tracking_id1 = 100;
+    int32_t const tracking_id2 = 200;
+    int32_t const tracking_id3 = 300;
+    sut.emplace_back(tracking_id1);
+    sut.emplace_back(tracking_id2);
+    sut.emplace_back(tracking_id3);
+    auto& alias_to_sut = sut;
+    iox2::container::testing::opaque_use(&alias_to_sut);
+    sut = std::move(alias_to_sut);
+    ASSERT_EQ(Observable::s_counter.was_copy_constructed, 0);
+    // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers) testing
+    expected_count().was_initialized = 3;
+    expected_count().was_destructed = 3;
+    // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+}
+
 TEST_F(RawByteStorageFixtureStrict, copy_constructor_to_larger_target_capacity_copies_all_elements) {
     constexpr uint64_t const SOURCE_CAPACITY = 4;
     constexpr uint64_t const TARGET_CAPACITY = 5;
