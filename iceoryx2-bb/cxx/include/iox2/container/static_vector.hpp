@@ -164,19 +164,25 @@ class StaticVector {
     ///         Otherwise a vector containing the desired elements.
     static constexpr auto from_value(SizeType count)
         // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
-        -> std::enable_if_t<std::is_default_constructible<T>::value, StaticVector> {
-        return from_value(count, T {});
+        -> std::enable_if_t<std::is_default_constructible<T>::value, Optional<StaticVector>> {
+        if (count <= Capacity) {
+            return from_value(count, T {});
+        } else {
+            return nullopt;
+        }
     }
 
     /// Construct a new vector with `count` copies of `value`.
     static constexpr auto from_value(SizeType count, T const& value) -> Optional<StaticVector> {
-        if (count < Capacity) {
-            StaticVector ret;
-            ret.m_storage.insert_at(0, count, value);
-            return ret;
+        // we define ret here to encourage return-value-optimization
+        Optional<StaticVector> ret;
+        if (count <= Capacity) {
+            ret = StaticVector {};
+            ret->m_storage.insert_at(0, count, value);
         } else {
-            return nullopt;
+            ret = nullopt;
         }
+        return ret;
     }
 
     /// Construct a vector from a range [`it_begin`, `it_end`).
@@ -192,10 +198,12 @@ class StaticVector {
                       && std::is_convertible<decltype(std::declval<Iter>() == std::declval<Sentinel>()), bool>::value,
                   bool> = true>
     static constexpr auto from_range_unchecked(Iter it_begin, Sentinel it_end) -> Optional<StaticVector> {
-        StaticVector ret;
+        // we define ret here to encourage return-value-optimization
+        Optional<StaticVector> ret = StaticVector {};
         for (auto it = it_begin; it != it_end; ++it) {
-            if (!ret.try_push_back(*it)) {
-                return nullopt;
+            if (!ret->try_push_back(*it)) {
+                ret = nullopt;
+                break;
             }
         }
         return ret;
