@@ -31,6 +31,7 @@ pub mod relocatable_string;
 /// String helper functions
 pub mod utils;
 
+pub use polymorphic_string::*;
 pub use relocatable_string::*;
 pub use static_string::*;
 pub use utils::*;
@@ -234,12 +235,10 @@ pub trait String:
     ///    [`FixedSizeByteString::len()`]
     ///
     unsafe fn insert_bytes_unchecked(&mut self, idx: usize, bytes: &[u8]) {
+        let data = unsafe { self.data_mut() };
+        let ptr = data.as_mut_ptr();
         unsafe {
-            core::ptr::copy(
-                self.data()[idx].as_ptr(),
-                self.data_mut()[idx].as_mut_ptr().add(bytes.len()),
-                self.len() - idx,
-            );
+            core::ptr::copy(ptr.add(idx), ptr.add(idx + bytes.len()), self.len() - idx);
         }
 
         for (i, byte) in bytes.iter().enumerate() {
@@ -309,12 +308,10 @@ pub trait String:
         }
 
         if self.len() != idx + len {
+            let data = unsafe { self.data_mut() };
+            let ptr = data.as_mut_ptr();
             unsafe {
-                core::ptr::copy(
-                    self.data()[idx + len].as_ptr(),
-                    self.data_mut()[idx].as_mut_ptr(),
-                    self.len() - (idx + len),
-                );
+                core::ptr::copy(ptr.add(idx + len), ptr.add(idx), self.len() - (idx + len));
             }
         }
 

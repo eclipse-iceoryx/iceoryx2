@@ -47,7 +47,7 @@ mod string {
     }
 
     struct RelocatableStringFactory {
-        raw_memory: UnsafeCell<Box<[u8; RelocatableString::const_memory_size(SUT_CAPACITY * 3)]>>,
+        raw_memory: UnsafeCell<Box<[u8; RelocatableString::const_memory_size(SUT_CAPACITY) * 3]>>,
         allocator: UnsafeCell<Option<Box<BumpAllocator>>>,
     }
 
@@ -71,7 +71,7 @@ mod string {
         fn new() -> Self {
             Self {
                 raw_memory: UnsafeCell::new(Box::new(
-                    [0u8; RelocatableString::const_memory_size(SUT_CAPACITY * 3)],
+                    [0u8; RelocatableString::const_memory_size(SUT_CAPACITY) * 3],
                 )),
                 allocator: UnsafeCell::new(None),
             }
@@ -82,6 +82,42 @@ mod string {
             unsafe { sut.init(self.allocator()).unwrap() };
 
             sut
+        }
+    }
+
+    struct PolymorphicStringFactory {
+        raw_memory: UnsafeCell<Box<[u8; core::mem::size_of::<u8>() * ((SUT_CAPACITY + 1) * 3)]>>,
+        allocator: UnsafeCell<Option<Box<BumpAllocator>>>,
+    }
+
+    impl PolymorphicStringFactory {
+        fn allocator(&self) -> &'static BumpAllocator {
+            unsafe {
+                if (*self.allocator.get()).is_none() {
+                    *self.allocator.get() = Some(Box::new(BumpAllocator::new(
+                        (*self.raw_memory.get()).as_mut_ptr(),
+                    )))
+                }
+            };
+
+            unsafe { (*self.allocator.get()).as_ref().unwrap() }
+        }
+    }
+
+    impl StringTestFactory for PolymorphicStringFactory {
+        type Sut = PolymorphicString<'static, BumpAllocator>;
+
+        fn new() -> Self {
+            Self {
+                raw_memory: UnsafeCell::new(Box::new(
+                    [0u8; core::mem::size_of::<u8>() * ((SUT_CAPACITY + 1) * 3)],
+                )),
+                allocator: UnsafeCell::new(None),
+            }
+        }
+
+        fn create_sut(&self) -> Box<Self::Sut> {
+            Box::new(Self::Sut::new(self.allocator(), SUT_CAPACITY).unwrap())
         }
     }
 
@@ -1018,6 +1054,9 @@ mod string {
         assert_that!(*sut_1 == *sut_1, eq true);
         assert_that!(*sut_1 == *sut_2, eq false);
     }
+
+    #[instantiate_tests(<PolymorphicStringFactory>)]
+    mod polymorphic_string {}
 
     #[instantiate_tests(<RelocatableStringFactory>)]
     mod relocatable_string {}

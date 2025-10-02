@@ -150,7 +150,8 @@ impl RelocatableString {
 
     /// Returns the required memory size for a vec with a specified capacity
     pub const fn const_memory_size(capacity: usize) -> usize {
-        unaligned_mem_size::<u8>(capacity + 1)
+        let s = unaligned_mem_size::<u8>(capacity + 1);
+        s
     }
 }
 
