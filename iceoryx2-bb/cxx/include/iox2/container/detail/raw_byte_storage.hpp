@@ -87,8 +87,39 @@ class RawByteStorage {
         }
     }
 
-    constexpr auto operator=(RawByteStorage const&) -> RawByteStorage& = default;
-    constexpr auto operator=(RawByteStorage&&) -> RawByteStorage& = default;
+    constexpr auto operator=(RawByteStorage const& rhs) -> RawByteStorage& {
+        if (&rhs != this) {
+            for (uint64_t i = 0; i < std::min(m_size, rhs.m_size); ++i) {
+                *pointer_from_index(i) = *rhs.pointer_from_index(i);
+            }
+            for (uint64_t i = m_size; i < rhs.m_size; ++i) {
+                new (pointer_from_index(i)) T(*rhs.pointer_from_index(i));
+            }
+            for (uint64_t i = rhs.m_size; i < m_size; ++i) {
+                pointer_from_index(i)->~T();
+            }
+            m_size = rhs.m_size;
+        }
+        return *this;
+    }
+
+    constexpr auto operator=(RawByteStorage&& rhs) noexcept(std::is_nothrow_move_constructible_v<T>
+                                                            && std::is_nothrow_move_assignable_v<T>)
+        -> RawByteStorage& {
+        if (&rhs != this) {
+            for (uint64_t i = 0; i < std::min(m_size, rhs.m_size); ++i) {
+                *pointer_from_index(i) = std::move(*rhs.pointer_from_index(i));
+            }
+            for (uint64_t i = m_size; i < rhs.m_size; ++i) {
+                new (pointer_from_index(i)) T(std::move(*rhs.pointer_from_index(i)));
+            }
+            for (uint64_t i = rhs.m_size; i < m_size; ++i) {
+                pointer_from_index(i)->~T();
+            }
+            m_size = rhs.m_size;
+        }
+        return *this;
+    }
 
     auto constexpr size() const noexcept -> uint64_t {
         return m_size;
