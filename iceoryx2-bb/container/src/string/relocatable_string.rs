@@ -10,6 +10,58 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! Contains the [`RelocatableString`], a
+//! run-time fixed size string that is shared memory compatible
+//!
+//! # Expert Examples
+//!
+//! ## Create [`RelocatableString`] inside constructs which provides memory
+//!
+//! ```
+//! use iceoryx2_bb_container::string::*;
+//! use iceoryx2_bb_elementary::math::align_to;
+//! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
+//! use core::mem::MaybeUninit;
+//!
+//! const STRING_CAPACITY:usize = 12;
+//! struct MyConstruct {
+//!     my_str: RelocatableString,
+//!     str_memory: [MaybeUninit<u128>; STRING_CAPACITY + 1],
+//! }
+//!
+//! impl MyConstruct {
+//!     pub fn new() -> Self {
+//!         let mut new_self = Self {
+//!             my_str: unsafe { RelocatableString::new_uninit(STRING_CAPACITY) },
+//!             str_memory: core::array::from_fn(|_| MaybeUninit::uninit()),
+//!         };
+//!
+//!         let allocator = BumpAllocator::new(new_self.str_memory.as_mut_ptr().cast());
+//!         unsafe {
+//!             new_self.my_str.init(&allocator).expect("Enough memory provided.")
+//!         };
+//!         new_self
+//!     }
+//! }
+//! ```
+//!
+//! ## Create [`RelocatableString`] with allocator
+//!
+//! ```
+//! use iceoryx2_bb_container::string::*;
+//! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
+//! use core::ptr::NonNull;
+//!
+//! const STRING_CAPACITY:usize = 12;
+//! const MEM_SIZE: usize = RelocatableString::const_memory_size(STRING_CAPACITY);
+//! let mut memory = [0u8; MEM_SIZE];
+//!
+//! let bump_allocator = BumpAllocator::new(memory.as_mut_ptr());
+//!
+//! let mut my_str = unsafe { RelocatableString::new_uninit(STRING_CAPACITY) };
+//! unsafe { my_str.init(&bump_allocator).expect("string init failed") };
+//! ```
+
 use core::alloc::Layout;
 use core::cmp::Ordering;
 use core::fmt::{Debug, Display};
@@ -19,7 +71,7 @@ use core::ops::{Deref, DerefMut};
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
 use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
 use iceoryx2_bb_elementary_traits::pointer_trait::PointerTrait;
-use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
+pub use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_log::{fail, fatal_panic};
 
 use crate::string::{as_escaped_string, internal, String};

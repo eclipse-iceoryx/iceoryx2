@@ -185,7 +185,7 @@ impl<const CAPACITY: usize> iceoryx2_bb_container::semantic_string::SemanticStri
 }
 
 impl<const CAPACITY: usize> RestrictedFileName<CAPACITY> {
-    /// Returns the maximum length of [`$string`]
+    /// Returns the maximum length of the [`RestrictedFileName`]
     pub const fn max_len() -> usize {
         CAPACITY
     }

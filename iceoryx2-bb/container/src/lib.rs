@@ -38,7 +38,7 @@
 //! zero copy inter-process communication.
 //!
 //! ```
-//! use iceoryx2_bb_container::byte_string::*;
+//! use iceoryx2_bb_container::string::*;
 //! use iceoryx2_bb_container::vector::*;
 //!
 //! const TEXT_CAPACITY: usize = 123;
@@ -46,13 +46,13 @@
 //!
 //! #[repr(C)]
 //! struct MyMessageType {
-//!     some_text: FixedSizeByteString<TEXT_CAPACITY>,
+//!     some_text: StaticString<TEXT_CAPACITY>,
 //!     some_data: StaticVec<u64, DATA_CAPACITY>,
 //! }
 //!
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let my_message = MyMessageType {
-//!     some_text: FixedSizeByteString::from_bytes(b"Hello World")?,
+//!     some_text: StaticString::from_bytes(b"Hello World")?,
 //!     some_data: StaticVec::new(),
 //! };
 //! # Ok(())
@@ -94,7 +94,7 @@ extern crate alloc;
 pub mod queue;
 /// A container with persistent unique keys to access values.
 pub mod slotmap;
-/// Extends the [ByteString](crate::byte_string) so that custom string types with a semantic
+/// Extends the [StaticString](crate::string::StaticString) so that custom string types with a semantic
 /// ruleset on their content can be realized.
 #[macro_use]
 pub mod semantic_string;

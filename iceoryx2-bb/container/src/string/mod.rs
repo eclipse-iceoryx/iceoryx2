@@ -176,11 +176,11 @@ pub trait String:
     /// If the string has no more capacity left it fails otherwise it succeeds.
     ///
     /// ```
-    /// use iceoryx2_bb_container::byte_string::*;
+    /// use iceoryx2_bb_container::string::*;
     ///
     /// const STRING_CAPACITY: usize = 123;
     ///
-    /// let mut some_string = FixedSizeByteString::<STRING_CAPACITY>::from(b"helo");
+    /// let mut some_string = StaticString::<STRING_CAPACITY>::from_bytes(b"helo").unwrap();
     /// some_string.insert(3, 'l' as u8).unwrap();
     /// assert!(some_string == b"hello");
     /// ```
@@ -192,11 +192,11 @@ pub trait String:
     /// If the string has no more capacity left it fails otherwise it succeeds.
     ///
     /// ```
-    /// use iceoryx2_bb_container::byte_string::*;
+    /// use iceoryx2_bb_container::string::*;
     ///
     /// const STRING_CAPACITY: usize = 123;
     ///
-    /// let mut some_string = FixedSizeByteString::<STRING_CAPACITY>::from(b"ho");
+    /// let mut some_string = StaticString::<STRING_CAPACITY>::from_bytes(b"ho").unwrap();
     /// some_string.insert_bytes(1, b"ell").unwrap();
     /// assert!(some_string == b"hello");
     /// ```
@@ -230,9 +230,9 @@ pub trait String:
     ///
     /// # Safety
     ///
-    ///  * The 'idx' must by less than [`FixedSizeByteString::len()`].
-    ///  * The 'bytes.len()' must be less or equal than [`FixedSizeByteString::capacity()`] -
-    ///    [`FixedSizeByteString::len()`]
+    ///  * The 'idx' must by less than [`String::len()`].
+    ///  * The 'bytes.len()' must be less or equal than [`String::capacity()`] -
+    ///    [`String::len()`]
     ///
     unsafe fn insert_bytes_unchecked(&mut self, idx: usize, bytes: &[u8]) {
         let data = unsafe { self.data_mut() };
@@ -258,11 +258,11 @@ pub trait String:
     /// Removes the last character from the string and returns it. If the string is empty it
     /// returns none.
     /// ```
-    /// use iceoryx2_bb_container::byte_string::*;
+    /// use iceoryx2_bb_container::string::*;
     ///
     /// const STRING_CAPACITY: usize = 123;
     ///
-    /// let mut some_string = FixedSizeByteString::<STRING_CAPACITY>::from(b"hello!");
+    /// let mut some_string = StaticString::<STRING_CAPACITY>::from_bytes(b"hello!").unwrap();
     /// let char = some_string.pop().unwrap();
     ///
     /// assert!(char == '!' as u8);

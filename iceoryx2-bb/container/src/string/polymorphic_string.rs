@@ -10,6 +10,46 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! String implementation with a polymorphic stateful allocator.
+//!
+//! # Example
+//!
+//! ```no_run
+//! use iceoryx2_bb_elementary_traits::allocator::*;
+//! use iceoryx2_bb_container::string::*;
+//!
+//! # struct SomeAllocator {}
+//!
+//! # impl SomeAllocator {
+//! #     fn new() -> Self {
+//! #          Self {}
+//! #     }
+//! # }
+//! #
+//! # impl BaseAllocator for SomeAllocator {
+//! #     fn allocate(
+//! #         &self,
+//! #         layout: core::alloc::Layout,
+//! #     ) -> Result<core::ptr::NonNull<[u8]>, AllocationError> {
+//! #         todo!()
+//! #     }
+//! #
+//! #     unsafe fn deallocate(&self, _ptr: core::ptr::NonNull<u8>, _layout: core::alloc::Layout) {
+//! #         todo!()
+//! #     }
+//! # }
+//!
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
+//! let allocator = SomeAllocator::new();
+//! let capacity: usize = 123;
+//! let mut my_str =
+//!     PolymorphicString::<SomeAllocator>::new(&allocator, capacity)?;
+//!
+//! my_str.push_bytes(b"all glory to the hypnotoad"); // returns false, when capacity is exceeded
+//! # Ok(())
+//! # }
+//! ```
+
 use core::{
     alloc::Layout,
     cmp::Ordering,

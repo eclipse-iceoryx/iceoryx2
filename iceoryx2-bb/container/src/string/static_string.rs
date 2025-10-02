@@ -22,11 +22,11 @@
 //! const STRING_CAPACITY: usize = 123;
 //!
 //! let mut some_string = StaticString::<STRING_CAPACITY>::new();
-//! some_string.push_bytes(b"hello").uwrap();
+//! some_string.push_bytes(b"hello").unwrap();
 //! some_string.push('!' as u8).unwrap();
 //! some_string.push('!' as u8).unwrap();
 //!
-//! println!("removed byte {}", some_string.remove(0));
+//! println!("removed byte {:?}", some_string.remove(0));
 //! ```
 
 use core::str::FromStr;
