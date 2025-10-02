@@ -669,7 +669,7 @@ struct ThreadStartupArgs<'thread, T: Send + Debug + 'thread, F: FnOnce() -> T + 
 /// }
 ///
 /// let thread = ThreadBuilder::new()
-///                          .name(&ThreadName::from(b"some-name"))
+///                          .name(&ThreadName::from_bytes(b"some-name").unwrap())
 ///                          .spawn(some_func)
 ///                          .expect("Failed to create thread");
 ///
