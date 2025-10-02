@@ -22,7 +22,7 @@
 //! const STRING_CAPACITY: usize = 123;
 //!
 //! let mut some_string = StaticString::<STRING_CAPACITY>::new();
-//! some_string.push_bytes(b"hello").unwrap();
+//! some_string.push_bytes(b"hello").uwrap();
 //! some_string.push('!' as u8).unwrap();
 //! some_string.push('!' as u8).unwrap();
 //!
@@ -104,18 +104,13 @@ impl<const CAPACITY: usize, const CAPACITY_OTHER: usize> PartialOrd<StaticString
     for StaticString<CAPACITY>
 {
     fn partial_cmp(&self, other: &StaticString<CAPACITY_OTHER>) -> Option<Ordering> {
-        self.data[..self.len as usize]
-            .iter()
-            .zip(other.data[..other.len as usize].iter())
-            .map(|(lhs, rhs)| unsafe { lhs.assume_init_read().cmp(rhs.assume_init_ref()) })
-            .find(|&ord| ord != Ordering::Equal)
-            .or(Some(self.len.cmp(&other.len)))
+        self.as_bytes().partial_cmp(other.as_bytes())
     }
 }
 
 impl<const CAPACITY: usize> Ord for StaticString<CAPACITY> {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.partial_cmp(other).unwrap()
+        self.as_bytes().cmp(other.as_bytes())
     }
 }
 

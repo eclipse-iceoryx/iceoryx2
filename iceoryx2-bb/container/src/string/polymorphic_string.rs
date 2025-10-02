@@ -10,7 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::{
+use core::{
+    alloc::Layout,
     cmp::Ordering,
     fmt::{Debug, Display},
     hash::Hash,
@@ -20,8 +21,11 @@ use std::{
 
 use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
 
-use crate::string::{internal::StringView, *};
+use crate::string::*;
 
+/// Runtime fixed-size string variant with a polymorphic allocator, meaning an
+/// allocator with a state can be attached to the vector instead of using a
+/// stateless allocator like the heap-allocator.
 pub struct PolymorphicString<'a, Allocator: BaseAllocator> {
     data_ptr: *mut MaybeUninit<u8>,
     len: u64,
@@ -62,18 +66,13 @@ impl<Allocator: BaseAllocator> PartialOrd<PolymorphicString<'_, Allocator>>
     for PolymorphicString<'_, Allocator>
 {
     fn partial_cmp(&self, other: &PolymorphicString<'_, Allocator>) -> Option<Ordering> {
-        self.data()[..self.len as usize]
-            .iter()
-            .zip(other.data()[..other.len as usize].iter())
-            .map(|(lhs, rhs)| unsafe { lhs.assume_init_read().cmp(rhs.assume_init_ref()) })
-            .find(|&ord| ord != Ordering::Equal)
-            .or(Some(self.len.cmp(&other.len)))
+        Some(self.cmp(other))
     }
 }
 
 impl<Allocator: BaseAllocator> Ord for PolymorphicString<'_, Allocator> {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.partial_cmp(other).unwrap()
+        self.as_bytes().cmp(other.as_bytes())
     }
 }
 
@@ -148,12 +147,58 @@ impl<Allocator: BaseAllocator> Display for PolymorphicString<'_, Allocator> {
 }
 
 impl<'a, Allocator: BaseAllocator> PolymorphicString<'a, Allocator> {
+    /// Creates a new [`PolymorphicString`].
     pub fn new(allocator: &'a Allocator, capacity: usize) -> Result<Self, AllocationError> {
-        todo!()
+        let layout = Layout::array::<MaybeUninit<u8>>(capacity + 1)
+            .expect("Memory size for the array is smaller than isize::MAX");
+        let mut data_ptr = match allocator.allocate(layout) {
+            Ok(ptr) => ptr,
+            Err(e) => {
+                let origin = format!(
+                    "PolymorphicString::<{}>::new(.., {})",
+                    core::any::type_name::<Allocator>(),
+                    capacity
+                );
+                fail!(from origin, with e,
+                    "Failed to create new PolymorphicString due to a failure while allocating memory ({e:?}).");
+            }
+        };
+
+        Ok(Self {
+            data_ptr: unsafe { data_ptr.as_mut() }.as_mut_ptr().cast(),
+            len: 0,
+            capacity: capacity as _,
+            allocator,
+        })
     }
 
+    /// Same as clone but it can fail when the required memory could not be
+    /// allocated from the [`BaseAllocator`].
     pub fn try_clone(&self) -> Result<Self, AllocationError> {
-        todo!()
+        let layout = Layout::array::<MaybeUninit<u8>>(self.capacity as usize + 1)
+            .expect("Memory size for the array is smaller than isize::MAX");
+
+        let mut data_ptr = match self.allocator.allocate(layout) {
+            Ok(ptr) => ptr,
+            Err(e) => {
+                let origin = format!(
+                    "PolymorphicString::<{}>::try_clone()",
+                    core::any::type_name::<Allocator>(),
+                );
+                fail!(from origin, with e,
+                    "Failed to clone PolymorphicString due to a failure while allocating memory ({e:?}).");
+            }
+        };
+
+        let mut new_self = Self {
+            data_ptr: unsafe { data_ptr.as_mut() }.as_mut_ptr().cast(),
+            len: 0,
+            capacity: self.capacity,
+            allocator: self.allocator,
+        };
+
+        unsafe { new_self.insert_bytes_unchecked(0, self.as_bytes()) };
+        Ok(new_self)
     }
 }
 

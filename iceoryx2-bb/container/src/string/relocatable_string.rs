@@ -10,18 +10,17 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::string::internal::StringView;
+use core::alloc::Layout;
+use core::cmp::Ordering;
 use core::fmt::{Debug, Display};
+use core::hash::Hash;
 use core::mem::MaybeUninit;
+use core::ops::{Deref, DerefMut};
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
 use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
 use iceoryx2_bb_elementary_traits::pointer_trait::PointerTrait;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_log::{fail, fatal_panic};
-use std::alloc::Layout;
-use std::cmp::Ordering;
-use std::hash::Hash;
-use std::ops::{Deref, DerefMut};
 
 use crate::string::{as_escaped_string, internal, String};
 
@@ -65,18 +64,13 @@ unsafe impl Send for RelocatableString {}
 
 impl PartialOrd<RelocatableString> for RelocatableString {
     fn partial_cmp(&self, other: &RelocatableString) -> Option<Ordering> {
-        self.data()[..self.len as usize]
-            .iter()
-            .zip(other.data()[..other.len as usize].iter())
-            .map(|(lhs, rhs)| unsafe { lhs.assume_init_read().cmp(rhs.assume_init_ref()) })
-            .find(|&ord| ord != Ordering::Equal)
-            .or(Some(self.len.cmp(&other.len)))
+        Some(self.cmp(other))
     }
 }
 
 impl Ord for RelocatableString {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.partial_cmp(other).unwrap()
+        self.as_bytes().cmp(other.as_bytes())
     }
 }
 
