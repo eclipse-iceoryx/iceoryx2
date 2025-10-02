@@ -1,4 +1,4 @@
-# Cross-language Publish-Subscribe
+# Cross-Language Communication Basics
 
 > [!CAUTION]
 > Every payload you transmit with iceoryx2 must implement [`ZeroCopySend`] to
@@ -36,7 +36,7 @@ execute the following commands:
 Run the Rust subscriber application:
 
 ```sh
-cargo run --example publish_subscribe_cross_language_subscriber
+cargo run --example cross_language_communication_basics_subscriber
 ```
 
 ### Terminal 2
@@ -44,7 +44,7 @@ cargo run --example publish_subscribe_cross_language_subscriber
 Run the Rust publisher application:
 
 ```sh
-cargo run --example publish_subscribe_cross_language_publisher
+cargo run --example cross_language_communication_basics_publisher
 ```
 
 Feel free to also run the subscriber and publisher applications from other
