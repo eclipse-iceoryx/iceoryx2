@@ -10,13 +10,26 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-cmake_minimum_required(VERSION 3.22)
-project(example_c_publish_subscribe_cross_language LANGUAGES C)
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 
-find_package(iceoryx2-c 0.7.0 REQUIRED)
+cc_binary(
+    name = "example_c_cross_language_communication_basics_publisher",
+    srcs = [
+        "src/message_data.h",
+        "src/publisher.c",
+    ],
+    deps = [
+        "//:iceoryx2-c-static",
+    ],
+)
 
-add_executable(example_c_cross_language_publisher src/publisher.c)
-target_link_libraries(example_c_cross_language_publisher iceoryx2-c::static-lib)
-
-add_executable(example_c_cross_language_subscriber src/subscriber.c)
-target_link_libraries(example_c_cross_language_subscriber iceoryx2-c::static-lib)
+cc_binary(
+    name = "example_c_cross_language_communication_basics_subscriber",
+    srcs = [
+        "src/message_data.h",
+        "src/subscriber.c",
+    ],
+    deps = [
+        "//:iceoryx2-c-static",
+    ],
+)

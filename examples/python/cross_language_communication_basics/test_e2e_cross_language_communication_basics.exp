@@ -22,10 +22,10 @@ source examples/cross-language-end-to-end-tests/common.exp
 
 set timeout 10
 
-spawn python examples/python/publish_subscribe_cross_language/publisher.py
+spawn python examples/python/cross_language_communication_basics/publisher.py
 set id_publisher $spawn_id
 
-spawn python examples/python/publish_subscribe_cross_language/subscriber.py
+spawn python examples/python/cross_language_communication_basics/subscriber.py
 
 #### Test Assertion
 

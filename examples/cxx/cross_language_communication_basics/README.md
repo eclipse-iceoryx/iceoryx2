@@ -1,4 +1,4 @@
-# Cross-language Publish-Subscribe
+# Cross-Language Communication Basics
 
 > [!CAUTION]
 > Every payload you transmit with iceoryx2 must be compatible with shared
@@ -47,7 +47,7 @@ execute the following commands:
 Run the C++ subscriber application:
 
 ```sh
-./target/ff/cc/build/examples/cxx/publish_subscribe_cross_language/example_cxx_publish_subscribe_cross_language_subscriber
+./target/ff/cc/build/examples/cxx/cross_language_communication_basics/example_cxx_cross_language_communication_basics_subscriber
 ```
 
 ### Terminal 2
@@ -55,7 +55,7 @@ Run the C++ subscriber application:
 Run the C++ publisher application:
 
 ```sh
-./target/ff/cc/build/examples/cxx/publish_subscribe_cross_language/example_cxx_publish_subscribe_cross_language_publisher
+./target/ff/cc/build/examples/cxx/cross_language_communication_basics/example_cxx_cross_language_communication_basics_publisher
 ```
 
 Feel free to also run the subscriber and publisher applications from other

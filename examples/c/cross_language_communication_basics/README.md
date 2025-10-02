@@ -1,4 +1,4 @@
-# Cross-language Publish-Subscribe
+# Cross-Language Communication Basics
 
 > [!CAUTION]
 > Every payload you transmit with iceoryx2 must be compatible with shared

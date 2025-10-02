@@ -29,12 +29,12 @@ set(CMAKE_C_FLAGS "\
 ")
 
 add_subdirectory(blackboard)
+add_subdirectory(cross_language_communication_basics)
 add_subdirectory(discovery)
 add_subdirectory(domains)
 add_subdirectory(event)
 add_subdirectory(event_multiplexing)
 add_subdirectory(publish_subscribe)
-add_subdirectory(publish_subscribe_cross_language)
 add_subdirectory(publish_subscribe_with_user_header)
 add_subdirectory(request_response)
 add_subdirectory(service_attributes)

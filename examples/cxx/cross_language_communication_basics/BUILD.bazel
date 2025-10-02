@@ -13,23 +13,25 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 
 cc_binary(
-    name = "example_c_cross_language_publisher",
+    name = "example_cxx_cross_language_communication_basics_publisher",
     srcs = [
-        "src/message_data.h",
-        "src/publisher.c",
+        "src/publisher.cpp",
+        "src/message_data.hpp",
     ],
     deps = [
-        "//:iceoryx2-c-static",
+        "@iceoryx//:iceoryx_hoofs",
+        "//:iceoryx2-cxx-static",
     ],
 )
 
 cc_binary(
-    name = "example_c_cross_language_subscriber",
+    name = "example_cxx_cross_language_communication_basics_subscriber",
     srcs = [
-        "src/message_data.h",
-        "src/subscriber.c",
+        "src/subscriber.cpp",
+        "src/message_data.hpp",
     ],
     deps = [
-        "//:iceoryx2-c-static",
+        "@iceoryx//:iceoryx_hoofs",
+        "//:iceoryx2-cxx-static",
     ],
 )
