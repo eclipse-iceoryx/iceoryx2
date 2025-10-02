@@ -33,6 +33,8 @@ target_sources(iceoryx2-bb-containers-cxx INTERFACE
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/config.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/optional.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/static_string.hpp>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/static_vector.hpp>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/detail/raw_byte_storage.hpp>
     $<BUILD_INTERFACE:$<$<CXX_COMPILER_ID:MSVC>:${PROJECT_SOURCE_DIR}/iceoryx2-bb-containers-cxx.natvis>>
 )
 
