@@ -22,6 +22,9 @@
 * Add a Rust vector type with fixed compile-time capacity which has the same
   memory layout as the C++ vector
   [#1073](https://github.com/eclipse-iceoryx/iceoryx2/issues/1073)
+* Add a Rust string type with fixed compile-time capacity which has the same
+  memory layout as the C++ vector
+  [#1075](https://github.com/eclipse-iceoryx/iceoryx2/issues/1075)
 
 ### Bugfixes
 
@@ -93,3 +96,17 @@
    let vec_capacity: usize = 1234;
    let my_vec = PolymorphicVec::<MyType>::new(my_stateful_allocator, vec_capacity)?;
     ```
+
+3. Replaced the `FixedSizeByteString` with the `StaticString`
+
+   ```rust
+   // old
+   use iceoryx2_bb_container::byte_string::FixedSizeString;
+   const CAPACITY: usize = 1234;
+   let my_str = FixedSizeByteString::<CAPACITY>::new();
+
+   // new
+   use iceoryx2_bb_container::string::*;
+   const CAPACITY: usize = 1234;
+   let my_str = StaticString::<CAPACITY>::new();
+   ```
