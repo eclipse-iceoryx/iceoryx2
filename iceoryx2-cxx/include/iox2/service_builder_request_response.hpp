@@ -436,7 +436,7 @@ inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
     auto type_variant_request_payload =
         iox::IsSlice<RequestPayload>::VALUE ? iox2_type_variant_e_DYNAMIC : iox2_type_variant_e_FIXED_SIZE;
 
-    const auto* request_payload_type_name = internal::get_payload_type_name<RequestPayload>();
+    const auto* request_payload_type_name = internal::get_type_name<RequestPayload>();
     const auto request_payload_type_name_len = strlen(request_payload_type_name);
     const auto request_payload_type_size = sizeof(RequestValueType);
     const auto request_payload_type_align = alignof(RequestValueType);
@@ -458,7 +458,7 @@ inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
     auto type_variant_response_payload =
         iox::IsSlice<ResponsePayload>::VALUE ? iox2_type_variant_e_DYNAMIC : iox2_type_variant_e_FIXED_SIZE;
 
-    const auto* response_payload_type_name = internal::get_payload_type_name<ResponsePayload>();
+    const auto* response_payload_type_name = internal::get_type_name<ResponsePayload>();
     const auto response_payload_type_name_len = strlen(response_payload_type_name);
     const auto response_payload_type_size = sizeof(ResponseValueType);
     const auto response_payload_type_align = alignof(ResponseValueType);
@@ -477,7 +477,7 @@ inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
 
     // request header type details
     const auto request_header_layout = iox::Layout::from<RequestUserHeader>();
-    const auto* request_header_type_name = internal::get_user_header_type_name<RequestUserHeader>();
+    const auto* request_header_type_name = internal::get_type_name<RequestUserHeader>();
     const auto request_header_type_name_len = strlen(request_header_type_name);
     const auto request_header_type_size = request_header_layout.size();
     const auto request_header_type_align = request_header_layout.alignment();
@@ -496,7 +496,7 @@ inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
 
     // response header type details
     const auto response_header_layout = iox::Layout::from<ResponseUserHeader>();
-    const auto* response_header_type_name = internal::get_user_header_type_name<ResponseUserHeader>();
+    const auto* response_header_type_name = internal::get_type_name<ResponseUserHeader>();
     const auto response_header_type_name_len = strlen(response_header_type_name);
     const auto response_header_type_size = response_header_layout.size();
     const auto response_header_type_align = response_header_layout.alignment();

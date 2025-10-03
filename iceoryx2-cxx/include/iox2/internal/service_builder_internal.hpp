@@ -44,20 +44,14 @@ using FromSliceWithoutCustomizedInnerPayloadTypeName =
                          && !HasPayloadTypeNameMember<typename Payload::ValueType>::value,
                      const char*>;
 
-template <typename UserHeader, typename = void>
-struct HasUserHeaderTypeNameMember : std::false_type { };
-
-template <typename UserHeader>
-struct HasUserHeaderTypeNameMember<UserHeader, decltype((void) UserHeader::IOX2_TYPE_NAME)> : std::true_type { };
-
 template <typename PayloadType>
-auto get_payload_type_name() -> internal::FromCustomizedPayloadTypeName<PayloadType> {
+auto get_type_name() -> internal::FromCustomizedPayloadTypeName<PayloadType> {
     return PayloadType::IOX2_TYPE_NAME;
 }
 
 // NOLINTBEGIN(readability-function-size) : template alternative is less readable
 template <typename PayloadType>
-auto get_payload_type_name() -> internal::FromNonSlice<PayloadType> {
+auto get_type_name() -> internal::FromNonSlice<PayloadType> {
     if (std::is_same_v<PayloadType, uint8_t>) {
         return "u8";
     }
@@ -96,28 +90,13 @@ auto get_payload_type_name() -> internal::FromNonSlice<PayloadType> {
 // NOLINTEND(readability-function-size)
 
 template <typename PayloadType>
-auto get_payload_type_name() -> internal::FromSliceWithCustomizedInnerPayloadTypeName<PayloadType> {
+auto get_type_name() -> internal::FromSliceWithCustomizedInnerPayloadTypeName<PayloadType> {
     return PayloadType::ValueType::IOX2_TYPE_NAME;
 }
 
 template <typename PayloadType>
-auto get_payload_type_name() -> internal::FromSliceWithoutCustomizedInnerPayloadTypeName<PayloadType> {
-    return get_payload_type_name<typename PayloadType::ValueType>();
-}
-
-template <typename UserHeaderType>
-auto get_user_header_type_name() ->
-    typename std::enable_if_t<internal::HasUserHeaderTypeNameMember<UserHeaderType>::value, const char*> {
-    return UserHeaderType::IOX2_TYPE_NAME;
-}
-
-template <typename UserHeaderType>
-auto get_user_header_type_name() ->
-    typename std::enable_if_t<!internal::HasUserHeaderTypeNameMember<UserHeaderType>::value, const char*> {
-    if (std::is_void_v<UserHeaderType>) {
-        return "()"; // no user header provided
-    }
-    return typeid(UserHeaderType).name();
+auto get_type_name() -> internal::FromSliceWithoutCustomizedInnerPayloadTypeName<PayloadType> {
+    return get_type_name<typename PayloadType::ValueType>();
 }
 } // namespace iox2::internal
 

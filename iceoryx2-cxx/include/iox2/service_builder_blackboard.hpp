@@ -121,7 +121,7 @@ inline void ServiceBuilderBlackboardCreator<KeyType, S>::set_parameters() {
     m_max_nodes.and_then([&](auto value) { iox2_service_builder_blackboard_creator_set_max_nodes(&m_handle, value); });
 
     // key type details
-    const auto* type_name = internal::get_payload_type_name<KeyType>();
+    const auto* type_name = internal::get_type_name<KeyType>();
     const auto key_type_result = iox2_service_builder_blackboard_creator_set_key_type_details(
         &m_handle, type_name, strlen(type_name), sizeof(KeyType), alignof(KeyType));
     if (key_type_result != IOX2_OK) {
@@ -135,7 +135,7 @@ inline auto ServiceBuilderBlackboardCreator<KeyType, S>::add(KeyType key, ValueT
     -> ServiceBuilderBlackboardCreator&& {
     // NOLINTNEXTLINE(cppcoreguidelines-owning-memory): required by C API
     auto value_ptr = new ValueType(value);
-    const auto* type_name = internal::get_payload_type_name<ValueType>();
+    const auto* type_name = internal::get_type_name<ValueType>();
 
     iox2_service_builder_blackboard_creator_add(
         &m_handle,
@@ -208,7 +208,7 @@ inline void ServiceBuilderBlackboardOpener<KeyType, S>::set_parameters() {
     m_max_nodes.and_then([&](auto value) { iox2_service_builder_blackboard_opener_set_max_nodes(&m_handle, value); });
 
     // key type details
-    const auto* type_name = internal::get_payload_type_name<KeyType>();
+    const auto* type_name = internal::get_type_name<KeyType>();
     const auto key_type_result = iox2_service_builder_blackboard_opener_set_key_type_details(
         &m_handle, type_name, strlen(type_name), sizeof(KeyType), alignof(KeyType));
     if (key_type_result != IOX2_OK) {

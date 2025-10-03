@@ -170,7 +170,7 @@ inline void ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_paramete
     auto type_variant = iox::IsSlice<Payload>::VALUE ? iox2_type_variant_e_DYNAMIC : iox2_type_variant_e_FIXED_SIZE;
 
     // payload type details
-    const auto* payload_type_name = internal::get_payload_type_name<Payload>();
+    const auto* payload_type_name = internal::get_type_name<Payload>();
     const auto payload_type_name_len = strlen(payload_type_name);
     const auto payload_type_size = sizeof(ValueType);
     const auto payload_type_align = alignof(ValueType);
@@ -184,7 +184,7 @@ inline void ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_paramete
 
     // user header type details
     const auto header_layout = iox::Layout::from<UserHeader>();
-    const auto* user_header_type_name = internal::get_user_header_type_name<UserHeader>();
+    const auto* user_header_type_name = internal::get_type_name<UserHeader>();
     const auto user_header_type_name_len = strlen(user_header_type_name);
     const auto user_header_type_size = header_layout.size();
     const auto user_header_type_align = header_layout.alignment();
