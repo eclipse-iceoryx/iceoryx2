@@ -97,10 +97,16 @@ template <typename ValueType>
 inline auto Writer<S, KeyType>::entry(const KeyType& key)
     -> iox::expected<EntryHandleMut<S, KeyType, ValueType>, EntryHandleMutError> {
     iox2_entry_handle_mut_h entry_handle {};
-    const auto* type_name = internal::get_type_name<ValueType>();
+    const auto type_name = internal::get_type_name<ValueType>();
 
-    auto result = iox2_writer_entry(
-        &m_handle, nullptr, &entry_handle, key, type_name, strlen(type_name), sizeof(ValueType), alignof(ValueType));
+    auto result = iox2_writer_entry(&m_handle,
+                                    nullptr,
+                                    &entry_handle,
+                                    key,
+                                    type_name.unchecked_access().c_str(),
+                                    type_name.size(),
+                                    sizeof(ValueType),
+                                    alignof(ValueType));
 
     if (result == IOX2_OK) {
         return iox::ok(EntryHandleMut<S, KeyType, ValueType>(entry_handle));

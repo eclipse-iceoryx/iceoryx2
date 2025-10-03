@@ -121,9 +121,9 @@ inline void ServiceBuilderBlackboardCreator<KeyType, S>::set_parameters() {
     m_max_nodes.and_then([&](auto value) { iox2_service_builder_blackboard_creator_set_max_nodes(&m_handle, value); });
 
     // key type details
-    const auto* type_name = internal::get_type_name<KeyType>();
+    const auto type_name = internal::get_type_name<KeyType>();
     const auto key_type_result = iox2_service_builder_blackboard_creator_set_key_type_details(
-        &m_handle, type_name, strlen(type_name), sizeof(KeyType), alignof(KeyType));
+        &m_handle, type_name.unchecked_access().c_str(), type_name.size(), sizeof(KeyType), alignof(KeyType));
     if (key_type_result != IOX2_OK) {
         IOX_PANIC("This should never happen! Implementation failure while setting the Key-Type.");
     }
@@ -135,7 +135,7 @@ inline auto ServiceBuilderBlackboardCreator<KeyType, S>::add(KeyType key, ValueT
     -> ServiceBuilderBlackboardCreator&& {
     // NOLINTNEXTLINE(cppcoreguidelines-owning-memory): required by C API
     auto value_ptr = new ValueType(value);
-    const auto* type_name = internal::get_type_name<ValueType>();
+    const auto type_name = internal::get_type_name<ValueType>();
 
     iox2_service_builder_blackboard_creator_add(
         &m_handle,
@@ -149,8 +149,8 @@ inline auto ServiceBuilderBlackboardCreator<KeyType, S>::add(KeyType key, ValueT
                 value_ptr = nullptr;
             }
         },
-        type_name,
-        strlen(type_name),
+        type_name.unchecked_access().c_str(),
+        type_name.size(),
         sizeof(ValueType),
         alignof(ValueType));
 
@@ -208,9 +208,9 @@ inline void ServiceBuilderBlackboardOpener<KeyType, S>::set_parameters() {
     m_max_nodes.and_then([&](auto value) { iox2_service_builder_blackboard_opener_set_max_nodes(&m_handle, value); });
 
     // key type details
-    const auto* type_name = internal::get_type_name<KeyType>();
+    const auto type_name = internal::get_type_name<KeyType>();
     const auto key_type_result = iox2_service_builder_blackboard_opener_set_key_type_details(
-        &m_handle, type_name, strlen(type_name), sizeof(KeyType), alignof(KeyType));
+        &m_handle, type_name.unchecked_access().c_str(), type_name.size(), sizeof(KeyType), alignof(KeyType));
     if (key_type_result != IOX2_OK) {
         IOX_PANIC("This should never happen! Implementation failure while setting the Key-Type.");
     }

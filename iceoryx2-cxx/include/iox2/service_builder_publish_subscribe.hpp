@@ -170,13 +170,17 @@ inline void ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_paramete
     auto type_variant = iox::IsSlice<Payload>::VALUE ? iox2_type_variant_e_DYNAMIC : iox2_type_variant_e_FIXED_SIZE;
 
     // payload type details
-    const auto* payload_type_name = internal::get_type_name<Payload>();
-    const auto payload_type_name_len = strlen(payload_type_name);
+    const auto payload_type_name = internal::get_type_name<Payload>();
     const auto payload_type_size = sizeof(ValueType);
     const auto payload_type_align = alignof(ValueType);
 
-    const auto payload_result = iox2_service_builder_pub_sub_set_payload_type_details(
-        &m_handle, type_variant, payload_type_name, payload_type_name_len, payload_type_size, payload_type_align);
+    const auto payload_result =
+        iox2_service_builder_pub_sub_set_payload_type_details(&m_handle,
+                                                              type_variant,
+                                                              payload_type_name.unchecked_access().c_str(),
+                                                              payload_type_name.size(),
+                                                              payload_type_size,
+                                                              payload_type_align);
 
     if (payload_result != IOX2_OK) {
         IOX_PANIC("This should never happen! Implementation failure while setting the Payload-Type.");
@@ -184,16 +188,15 @@ inline void ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_paramete
 
     // user header type details
     const auto header_layout = iox::Layout::from<UserHeader>();
-    const auto* user_header_type_name = internal::get_type_name<UserHeader>();
-    const auto user_header_type_name_len = strlen(user_header_type_name);
+    const auto user_header_type_name = internal::get_type_name<UserHeader>();
     const auto user_header_type_size = header_layout.size();
     const auto user_header_type_align = header_layout.alignment();
 
     const auto user_header_result =
         iox2_service_builder_pub_sub_set_user_header_type_details(&m_handle,
                                                                   iox2_type_variant_e_FIXED_SIZE,
-                                                                  user_header_type_name,
-                                                                  user_header_type_name_len,
+                                                                  user_header_type_name.unchecked_access().c_str(),
+                                                                  user_header_type_name.size(),
                                                                   user_header_type_size,
                                                                   user_header_type_align);
 

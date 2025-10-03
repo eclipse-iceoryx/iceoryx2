@@ -436,18 +436,17 @@ inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
     auto type_variant_request_payload =
         iox::IsSlice<RequestPayload>::VALUE ? iox2_type_variant_e_DYNAMIC : iox2_type_variant_e_FIXED_SIZE;
 
-    const auto* request_payload_type_name = internal::get_type_name<RequestPayload>();
-    const auto request_payload_type_name_len = strlen(request_payload_type_name);
+    const auto request_payload_type_name = internal::get_type_name<RequestPayload>();
     const auto request_payload_type_size = sizeof(RequestValueType);
     const auto request_payload_type_align = alignof(RequestValueType);
 
-    const auto request_payload_result =
-        iox2_service_builder_request_response_set_request_payload_type_details(&m_handle,
-                                                                               type_variant_request_payload,
-                                                                               request_payload_type_name,
-                                                                               request_payload_type_name_len,
-                                                                               request_payload_type_size,
-                                                                               request_payload_type_align);
+    const auto request_payload_result = iox2_service_builder_request_response_set_request_payload_type_details(
+        &m_handle,
+        type_variant_request_payload,
+        request_payload_type_name.unchecked_access().c_str(),
+        request_payload_type_name.size(),
+        request_payload_type_size,
+        request_payload_type_align);
 
     if (request_payload_result != IOX2_OK) {
         IOX_PANIC("This should never happen! Implementation failure while setting the RequestPayload-Type.");
@@ -458,18 +457,17 @@ inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
     auto type_variant_response_payload =
         iox::IsSlice<ResponsePayload>::VALUE ? iox2_type_variant_e_DYNAMIC : iox2_type_variant_e_FIXED_SIZE;
 
-    const auto* response_payload_type_name = internal::get_type_name<ResponsePayload>();
-    const auto response_payload_type_name_len = strlen(response_payload_type_name);
+    const auto response_payload_type_name = internal::get_type_name<ResponsePayload>();
     const auto response_payload_type_size = sizeof(ResponseValueType);
     const auto response_payload_type_align = alignof(ResponseValueType);
 
-    const auto response_payload_result =
-        iox2_service_builder_request_response_set_response_payload_type_details(&m_handle,
-                                                                                type_variant_response_payload,
-                                                                                response_payload_type_name,
-                                                                                response_payload_type_name_len,
-                                                                                response_payload_type_size,
-                                                                                response_payload_type_align);
+    const auto response_payload_result = iox2_service_builder_request_response_set_response_payload_type_details(
+        &m_handle,
+        type_variant_response_payload,
+        response_payload_type_name.unchecked_access().c_str(),
+        response_payload_type_name.size(),
+        response_payload_type_size,
+        response_payload_type_align);
 
     if (response_payload_result != IOX2_OK) {
         IOX_PANIC("This should never happen! Implementation failure while setting the ResponsePayload-Type.");
@@ -477,18 +475,17 @@ inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
 
     // request header type details
     const auto request_header_layout = iox::Layout::from<RequestUserHeader>();
-    const auto* request_header_type_name = internal::get_type_name<RequestUserHeader>();
-    const auto request_header_type_name_len = strlen(request_header_type_name);
+    const auto request_header_type_name = internal::get_type_name<RequestUserHeader>();
     const auto request_header_type_size = request_header_layout.size();
     const auto request_header_type_align = request_header_layout.alignment();
 
-    const auto request_header_result =
-        iox2_service_builder_request_response_set_request_header_type_details(&m_handle,
-                                                                              iox2_type_variant_e_FIXED_SIZE,
-                                                                              request_header_type_name,
-                                                                              request_header_type_name_len,
-                                                                              request_header_type_size,
-                                                                              request_header_type_align);
+    const auto request_header_result = iox2_service_builder_request_response_set_request_header_type_details(
+        &m_handle,
+        iox2_type_variant_e_FIXED_SIZE,
+        request_header_type_name.unchecked_access().c_str(),
+        request_header_type_name.size(),
+        request_header_type_size,
+        request_header_type_align);
 
     if (request_header_result != IOX2_OK) {
         IOX_PANIC("This should never happen! Implementation failure while setting the Request-Header-Type.");
@@ -496,18 +493,17 @@ inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
 
     // response header type details
     const auto response_header_layout = iox::Layout::from<ResponseUserHeader>();
-    const auto* response_header_type_name = internal::get_type_name<ResponseUserHeader>();
-    const auto response_header_type_name_len = strlen(response_header_type_name);
+    const auto response_header_type_name = internal::get_type_name<ResponseUserHeader>();
     const auto response_header_type_size = response_header_layout.size();
     const auto response_header_type_align = response_header_layout.alignment();
 
-    const auto response_header_result =
-        iox2_service_builder_request_response_set_response_header_type_details(&m_handle,
-                                                                               iox2_type_variant_e_FIXED_SIZE,
-                                                                               response_header_type_name,
-                                                                               response_header_type_name_len,
-                                                                               response_header_type_size,
-                                                                               response_header_type_align);
+    const auto response_header_result = iox2_service_builder_request_response_set_response_header_type_details(
+        &m_handle,
+        iox2_type_variant_e_FIXED_SIZE,
+        response_header_type_name.unchecked_access().c_str(),
+        response_header_type_name.size(),
+        response_header_type_size,
+        response_header_type_align);
 
     if (response_header_result != IOX2_OK) {
         IOX_PANIC("This should never happen! Implementation failure while setting the Response-Header-Type.");
