@@ -512,7 +512,8 @@
 
 extern crate alloc;
 
-pub(crate) mod constants;
+/// Constants that define limits and properties of an iceoryx2 system
+pub mod constants;
 
 /// Handles iceoryx2s global configuration
 pub mod config;

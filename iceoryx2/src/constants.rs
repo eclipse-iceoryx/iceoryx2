@@ -10,12 +10,25 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+/// Defines the maximum length of a [`Service`](iceoryx2::service::Service)
 pub const MAX_SERVICE_NAME_LENGTH: usize = 255;
 
+/// Defines how many [`Attribute`](iceoryx2::service::attribute::Attribute)s a
+/// [`Service`](iceoryx2::service::Service) can have at most
 pub const MAX_ATTRIBUTES: usize = 8;
+
+/// Defines the maximum length of an [`AttributeKey`](iceoryx2::service::attribute::AttributeKey)
 pub const MAX_ATTRIBUTE_KEY_LENGTH: usize = 64;
+
+/// Defines the maximum length of an [`AttributeValue`](iceoryx2::service::attribute::AttributeValue)
 pub const MAX_ATTRIBUTE_VALUE_LENGTH: usize = 256;
+
+/// Defines the maximum length of a [`NodeName`](iceoryx2::node::node_name::NodeName)
 pub const MAX_NODE_NAME_LENGTH: usize = 128;
+
+/// Defines the maximum length of a [`TypeName`](iceoryx2::service::static_config::message_type_details::TypeName)
 pub const MAX_TYPE_NAME_LENGTH: usize = 256;
 
+/// The maximum alignment the [`MessagingPattern::Blackboard`](iceoryx2::service::static_config::messaging_pattern::MessagingPattern::Blackboard)
+/// support for the keytype.
 pub const MAX_BLACKBOARD_KEY_ALIGNMENT: usize = 8;
