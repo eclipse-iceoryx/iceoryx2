@@ -492,6 +492,12 @@ class StaticVector {
     }
 };
 
+template <typename>
+struct IsStaticVector : std::false_type { };
+
+template <typename T, uint64_t N>
+struct IsStaticVector<StaticVector<T, N>> : std::true_type { };
+
 } // namespace container
 } // namespace iox2
 

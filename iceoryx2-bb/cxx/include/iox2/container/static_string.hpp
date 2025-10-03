@@ -459,6 +459,12 @@ class StaticString {
     }
 };
 
+template <typename>
+struct IsStaticString : std::false_type { };
+
+template <uint64_t N>
+struct IsStaticString<StaticString<N>> : std::true_type { };
+
 } // namespace container
 } // namespace iox2
 

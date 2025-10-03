@@ -14,6 +14,8 @@
 #define IOX2_SERVICE_BUILDER_INTERNAL_HPP
 
 #include "iox/slice.hpp"
+#include "iox2/container/static_string.hpp"
+#include "iox2/container/static_vector.hpp"
 #include "iox2/payload_info.hpp"
 
 #include <typeinfo>
@@ -29,8 +31,16 @@ template <typename Payload>
 using FromCustomizedPayloadTypeName = std::enable_if_t<HasPayloadTypeNameMember<Payload>::value, const char*>;
 
 template <typename Payload>
-using FromNonSlice =
-    std::enable_if_t<!HasPayloadTypeNameMember<Payload>::value && !iox::IsSlice<Payload>::VALUE, const char*>;
+using FromNonSlice = std::enable_if_t<!HasPayloadTypeNameMember<Payload>::value && !iox::IsSlice<Payload>::VALUE
+                                          && !iox2::container::IsStaticVector<Payload>::value
+                                          && !iox2::container::IsStaticString<Payload>::value,
+                                      const char*>;
+
+template <typename Payload>
+using FromStaticVector = std::enable_if_t<iox2::container::IsStaticVector<Payload>::value, const char*>;
+
+template <typename Payload>
+using FromStaticString = std::enable_if_t<iox2::container::IsStaticString<Payload>::value, const char*>;
 
 template <typename Payload>
 using FromSliceWithCustomizedInnerPayloadTypeName =
@@ -47,6 +57,16 @@ using FromSliceWithoutCustomizedInnerPayloadTypeName =
 template <typename PayloadType>
 auto get_type_name() -> internal::FromCustomizedPayloadTypeName<PayloadType> {
     return PayloadType::IOX2_TYPE_NAME;
+}
+
+template <typename PayloadType>
+auto get_type_name() -> internal::FromStaticString<PayloadType> {
+    return "iceoryx2_bb_container::string::static_string::StaticString";
+}
+
+template <typename PayloadType>
+auto get_type_name() -> internal::FromStaticVector<PayloadType> {
+    return "iceoryx2_bb_container::vector::static_vec::StaticVec";
 }
 
 // NOLINTBEGIN(readability-function-size) : template alternative is less readable
