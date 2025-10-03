@@ -124,7 +124,7 @@ mod semantic_string {
     fn remove_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
         let mut sut = Sut::new(b"a01234").unwrap();
         let result = sut.remove(2);
-        assert_that!(result, eq Ok(b'1'));
+        assert_that!(result, eq Ok(Some(b'1')));
 
         assert_that!(sut, len 5);
         assert_that!(sut.as_bytes(), eq b"a0234");

@@ -13,14 +13,14 @@
 use core::time::Duration;
 
 use iceoryx2::prelude::*;
-use iceoryx2_bb_container::{byte_string::FixedSizeByteString, queue::FixedSizeQueue, vector::*};
+use iceoryx2_bb_container::{queue::FixedSizeQueue, string::*, vector::*};
 
 // For both data types we derive from PlacementDefault to allow in memory initialization
 // without any copy. Avoids stack overflows when data type is larger than the available stack.
 #[derive(Debug, Default, PlacementDefault, ZeroCopySend)]
 #[repr(C)]
 pub struct ComplexData {
-    name: FixedSizeByteString<4>,
+    name: StaticString<4>,
     data: StaticVec<u64, 4>,
 }
 
@@ -30,10 +30,10 @@ pub struct ComplexData {
 #[repr(C)]
 pub struct ComplexDataType {
     plain_old_data: u64,
-    text: FixedSizeByteString<8>,
+    text: StaticString<8>,
     vec_of_data: StaticVec<u64, 4>,
     vec_of_complex_data: StaticVec<ComplexData, 404857>,
-    a_queue_of_things: FixedSizeQueue<FixedSizeByteString<4>, 2>,
+    a_queue_of_things: FixedSizeQueue<StaticString<4>, 2>,
 }
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
@@ -64,10 +64,10 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
         let payload = sample.payload_mut();
         payload.plain_old_data = counter;
-        payload.text = FixedSizeByteString::from_bytes(b"hello")?;
+        payload.text = StaticString::from_bytes(b"hello")?;
         payload.vec_of_data.push(counter);
         payload.vec_of_complex_data.push(ComplexData {
-            name: FixedSizeByteString::from_bytes(b"bla")?,
+            name: StaticString::from_bytes(b"bla")?,
             data: {
                 let mut v = StaticVec::new();
                 v.fill(counter);
@@ -76,7 +76,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         });
         payload
             .a_queue_of_things
-            .push(FixedSizeByteString::from_bytes(b"buh")?);
+            .push(StaticString::from_bytes(b"buh")?);
 
         sample.send()?;
         println!("{counter} :: send");

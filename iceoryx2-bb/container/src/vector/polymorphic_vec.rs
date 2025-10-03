@@ -188,7 +188,7 @@ impl<'a, T, Allocator: BaseAllocator> PolymorphicVec<'a, T, Allocator> {
 
 impl<'a, T: Clone, Allocator: BaseAllocator> PolymorphicVec<'a, T, Allocator> {
     /// Same as clone but it can fail when the required memory could not be
-    /// allocated.
+    /// allocated from the [`BaseAllocator`].
     pub fn try_clone(&self) -> Result<Self, AllocationError> {
         let layout = Layout::array::<MaybeUninit<T>>(self.capacity as _)
             .expect("Memory size for the array is smaller than isize::MAX");
@@ -213,10 +213,7 @@ impl<'a, T: Clone, Allocator: BaseAllocator> PolymorphicVec<'a, T, Allocator> {
             allocator: self.allocator,
         };
 
-        for element in self.iter() {
-            new_self.push(element.clone());
-        }
-
+        new_self.extend_from_slice(self.as_slice());
         Ok(new_self)
     }
 }

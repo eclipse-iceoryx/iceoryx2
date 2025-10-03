@@ -27,7 +27,7 @@ use std::time::Instant;
 #[test]
 fn thread_set_name_works() {
     let barrier = Arc::new(Barrier::new(2));
-    let name = ThreadName::from(b"oh-a-thread");
+    let name = ThreadName::try_from(b"oh-a-thread").unwrap();
     let thread = {
         let barrier = barrier.clone();
         ThreadBuilder::new()

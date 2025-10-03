@@ -35,7 +35,8 @@ mod recorder_replayer {
     fn generate_type_detail(variant: TypeVariant, size: usize, alignment: usize) -> TypeDetail {
         iceoryx2::testing::create_custom_type_detail(
             variant,
-            TypeNameString::from_str_truncated(&UniqueSystemId::new().unwrap().value().to_string()),
+            TypeNameString::from_str_truncated(&UniqueSystemId::new().unwrap().value().to_string())
+                .unwrap(),
             size,
             alignment,
         )

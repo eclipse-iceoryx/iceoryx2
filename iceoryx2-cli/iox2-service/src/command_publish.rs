@@ -124,7 +124,7 @@ pub fn publish(options: PublishOptions, _format: Format) -> Result<()> {
     iceoryx2::testing::type_detail_set_alignment(&mut payload_type, options.type_alignment);
     iceoryx2::testing::type_detail_set_name(
         &mut payload_type,
-        TypeNameString::from_str_truncated(options.type_name.as_str()),
+        TypeNameString::from_str_truncated(options.type_name.as_str())?,
     );
 
     let mut header_type = TypeDetail::new::<()>(TypeVariant::FixedSize);
@@ -132,7 +132,7 @@ pub fn publish(options: PublishOptions, _format: Format) -> Result<()> {
     iceoryx2::testing::type_detail_set_alignment(&mut header_type, options.header_type_alignment);
     iceoryx2::testing::type_detail_set_name(
         &mut header_type,
-        TypeNameString::from_str_truncated(options.header_type_name.as_str()),
+        TypeNameString::from_str_truncated(options.header_type_name.as_str())?,
     );
 
     let service = unsafe {

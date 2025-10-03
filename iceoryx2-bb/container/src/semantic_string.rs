@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 //! The [`SemanticString`](crate::semantic_string::SemanticString) is a trait for
-//! [`FixedSizeByteString`](crate::byte_string::FixedSizeByteString) to create
+//! [`StaticString`](crate::string::StaticString) to create
 //! strong string types with semantic content contracts. They can be created
 //! with the help of the [`semantic_string`](crate::semantic_string!) macro.
 //!
@@ -31,7 +31,7 @@
 //! semantic_string! {
 //!   // Name of the type
 //!   name: GroupName,
-//!   // The underlying capacity of the FixedSizeByteString
+//!   // The underlying capacity of the StaticString
 //!   capacity: GROUP_NAME_LENGTH,
 //!   // Callable that shall return true when the provided string contains invalid content
 //!   invalid_content: |string: &[u8]| {
@@ -64,8 +64,7 @@
 //! }
 //! ```
 
-use crate::byte_string::FixedSizeByteStringModificationError;
-use crate::byte_string::{as_escaped_string, strnlen, FixedSizeByteString};
+use crate::string::*;
 use core::fmt::{Debug, Display};
 use core::hash::Hash;
 use core::ops::Deref;
@@ -80,9 +79,14 @@ pub enum SemanticStringError {
     ExceedsMaximumLength,
 }
 
-impl From<FixedSizeByteStringModificationError> for SemanticStringError {
-    fn from(_value: FixedSizeByteStringModificationError) -> Self {
-        SemanticStringError::ExceedsMaximumLength
+impl From<StringModificationError> for SemanticStringError {
+    fn from(value: StringModificationError) -> Self {
+        match value {
+            StringModificationError::InsertWouldExceedCapacity => {
+                SemanticStringError::ExceedsMaximumLength
+            }
+            StringModificationError::InvalidCharacter => SemanticStringError::InvalidContent,
+        }
     }
 }
 
@@ -100,13 +104,13 @@ pub mod internal {
 
     pub trait SemanticStringAccessor<const CAPACITY: usize> {
         unsafe fn new_empty() -> Self;
-        unsafe fn get_mut_string(&mut self) -> &mut FixedSizeByteString<CAPACITY>;
+        unsafe fn get_mut_string(&mut self) -> &mut StaticString<CAPACITY>;
         fn is_invalid_content(string: &[u8]) -> bool;
         fn does_contain_invalid_characters(string: &[u8]) -> bool;
     }
 }
 
-/// Trait that defines the methods a [`FixedSizeByteString`] with context semantics, a
+/// Trait that defines the methods a [`StaticString`] with context semantics, a
 /// [`SemanticString`] shares. A new [`SemanticString`] can be created with the [`crate::semantic_string!`]
 /// macro. For the usage, see [`mod@crate::semantic_string`].
 pub trait SemanticString<const CAPACITY: usize>:
@@ -119,8 +123,8 @@ pub trait SemanticString<const CAPACITY: usize>:
     + Eq
     + Hash
 {
-    /// Returns a reference to the underlying [`FixedSizeByteString`]
-    fn as_string(&self) -> &FixedSizeByteString<CAPACITY>;
+    /// Returns a reference to the underlying [`StaticString`]
+    fn as_string(&self) -> &StaticString<CAPACITY>;
 
     /// Creates a new content. If it contains invalid characters or exceeds the maximum supported
     /// length of the system or contains illegal strings it fails.
@@ -254,7 +258,7 @@ pub trait SemanticString<const CAPACITY: usize>:
             return Ok(None);
         }
 
-        Ok(Some(self.remove(self.len() - 1)?))
+        self.remove(self.len() - 1)
     }
 
     /// Adds a single byte at the end. When the capacity is exceeded, the byte is an
@@ -271,16 +275,17 @@ pub trait SemanticString<const CAPACITY: usize>:
 
     /// Removes a byte at a specific position and returns it.
     /// If the removal would create an illegal content it fails.
-    fn remove(&mut self, idx: usize) -> Result<u8, SemanticStringError> {
-        let value = unsafe { self.get_mut_string().remove(idx) };
+    fn remove(&mut self, idx: usize) -> Result<Option<u8>, SemanticStringError> {
+        let mut temp = *self.as_string();
+        let value = temp.remove(idx);
 
-        if Self::is_invalid_content(self.as_bytes()) {
-            unsafe { self.get_mut_string().insert(idx, value).unwrap() };
+        if Self::is_invalid_content(temp.as_bytes()) {
             fail!(from self, with SemanticStringError::InvalidContent,
                 "Unable to remove character at position {} since it would result in an illegal content.",
                 idx);
         }
 
+        unsafe { *self.get_mut_string() = temp };
         Ok(value)
     }
 
@@ -303,7 +308,7 @@ pub trait SemanticString<const CAPACITY: usize>:
     /// If the removal would create an illegal content it fails.
     fn retain<F: FnMut(u8) -> bool>(&mut self, f: F) -> Result<(), SemanticStringError> {
         let mut temp = *self.as_string();
-        let f = temp.retain_impl(f);
+        temp.retain(f);
 
         if Self::is_invalid_content(temp.as_bytes()) {
             fail!(from self, with SemanticStringError::InvalidContent,
@@ -311,7 +316,8 @@ pub trait SemanticString<const CAPACITY: usize>:
                 temp);
         }
 
-        unsafe { self.get_mut_string().retain(f) };
+        unsafe { *self.get_mut_string() = temp };
+
         Ok(())
     }
 
@@ -325,7 +331,7 @@ pub trait SemanticString<const CAPACITY: usize>:
         }
 
         if Self::is_invalid_content(temp.as_bytes()) {
-            let mut prefix = FixedSizeByteString::<123>::new();
+            let mut prefix = StaticString::<123>::new();
             unsafe { prefix.insert_bytes_unchecked(0, bytes) };
             fail!(from self, with SemanticStringError::InvalidContent,
                 "Unable to strip prefix \"{}\" from string since it would result in the illegal content \"{}\".",
@@ -347,7 +353,7 @@ pub trait SemanticString<const CAPACITY: usize>:
         }
 
         if Self::is_invalid_content(temp.as_bytes()) {
-            let mut prefix = FixedSizeByteString::<123>::new();
+            let mut prefix = StaticString::<123>::new();
             unsafe { prefix.insert_bytes_unchecked(0, bytes) };
             fail!(from self, with SemanticStringError::InvalidContent,
                 "Unable to strip prefix \"{}\" from string since it would result in the illegal content \"{}\".",
@@ -382,7 +388,7 @@ macro_rules! semantic_string {
     {$(#[$documentation:meta])*
      /// Name of the struct
      name: $string_name:ident,
-     /// Capacity of the underlying FixedSizeByteString
+     /// Capacity of the underlying StaticString
      capacity: $capacity:expr,
      /// Callable that gets a [`&[u8]`] as input and shall return true when the slice contains
      /// invalid content.
@@ -397,7 +403,7 @@ macro_rules! semantic_string {
         #[repr(C)]
         #[derive(Debug, Clone, Eq, PartialOrd, Ord, ZeroCopySend)]
         pub struct $string_name {
-            value: iceoryx2_bb_container::byte_string::FixedSizeByteString<$capacity>
+            value: iceoryx2_bb_container::string::StaticString<$capacity>
         }
 
         // BEGIN: serde
@@ -443,7 +449,7 @@ macro_rules! semantic_string {
         // END: serde
 
         impl iceoryx2_bb_container::semantic_string::SemanticString<$capacity> for $string_name {
-            fn as_string(&self) -> &iceoryx2_bb_container::byte_string::FixedSizeByteString<$capacity> {
+            fn as_string(&self) -> &iceoryx2_bb_container::string::StaticString<$capacity> {
                 &self.value
             }
 
@@ -453,11 +459,12 @@ macro_rules! semantic_string {
 
             unsafe fn new_unchecked(bytes: &[u8]) -> Self {
                 Self {
-                    value: iceoryx2_bb_container::byte_string::FixedSizeByteString::new_unchecked(bytes),
+                    value: iceoryx2_bb_container::string::StaticString::from_bytes_unchecked(bytes),
                 }
             }
 
             unsafe fn insert_bytes_unchecked(&mut self, idx: usize, bytes: &[u8]) {
+                use iceoryx2_bb_container::string::String;
                 self.value.insert_bytes_unchecked(idx, bytes);
             }
         }
@@ -568,6 +575,7 @@ macro_rules! semantic_string {
             type Target = [u8];
 
             fn deref(&self) -> &Self::Target {
+                use iceoryx2_bb_container::string::String;
                 self.value.as_bytes()
             }
         }
@@ -575,11 +583,11 @@ macro_rules! semantic_string {
         impl iceoryx2_bb_container::semantic_string::internal::SemanticStringAccessor<$capacity> for $string_name {
             unsafe fn new_empty() -> Self {
                 Self {
-                    value: iceoryx2_bb_container::byte_string::FixedSizeByteString::new(),
+                    value: iceoryx2_bb_container::string::StaticString::new(),
                 }
             }
 
-            unsafe fn get_mut_string(&mut self) -> &mut iceoryx2_bb_container::byte_string::FixedSizeByteString<$capacity> {
+            unsafe fn get_mut_string(&mut self) -> &mut iceoryx2_bb_container::string::StaticString<$capacity> {
                 &mut self.value
             }
 

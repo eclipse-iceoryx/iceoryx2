@@ -24,7 +24,7 @@ mod service_blackboard {
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::Service;
     use iceoryx2::testing::*;
-    use iceoryx2_bb_container::byte_string::FixedSizeByteString;
+    use iceoryx2_bb_container::string::*;
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
@@ -727,7 +727,7 @@ mod service_blackboard {
             .blackboard_creator::<u64>()
             .add::<u64>(0, 0)
             .add::<i8>(1, -5)
-            .add::<FixedSizeByteString<4>>(23, "Nala".try_into().unwrap())
+            .add::<StaticString<4>>(23, "Nala".try_into().unwrap())
             .add::<bool>(100, false)
             .add::<Groovy>(
                 13,
@@ -751,7 +751,7 @@ mod service_blackboard {
             });
         writer.entry::<bool>(&100).unwrap().update_with_copy(true);
         writer
-            .entry::<FixedSizeByteString<4>>(&23)
+            .entry::<StaticString<4>>(&23)
             .unwrap()
             .update_with_copy("Wolf".try_into().unwrap());
         writer.entry::<i8>(&1).unwrap().update_with_copy(11);
@@ -760,7 +760,7 @@ mod service_blackboard {
         let reader = sut.reader_builder().create().unwrap();
         assert_that!(reader.entry::<u64>(&0).unwrap().get(), eq 2008);
         assert_that!(reader.entry::<i8>(&1).unwrap().get(), eq 11);
-        assert_that!(reader.entry::<FixedSizeByteString<4>>(&23).unwrap().get(), eq "Wolf");
+        assert_that!(reader.entry::<StaticString<4>>(&23).unwrap().get(), eq "Wolf");
         assert_that!(reader.entry::<bool>(&100).unwrap().get(), eq true);
         assert_that!(reader.entry::<Groovy>(&13).unwrap().get(), eq Groovy{a: false, b: 888, c: 906});
     }

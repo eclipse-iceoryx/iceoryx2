@@ -85,7 +85,7 @@
 use core::{cell::UnsafeCell, fmt::Debug, marker::PhantomData};
 
 use crate::handle_errno;
-use iceoryx2_bb_container::byte_string::FixedSizeByteString;
+use iceoryx2_bb_container::string::*;
 use iceoryx2_bb_elementary::{enum_gen, scope_guard::ScopeGuardBuilder};
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_pal_posix::posix::CPU_SETSIZE;
@@ -100,7 +100,7 @@ use crate::{
 };
 
 /// Stores the name of a thread
-pub type ThreadName = FixedSizeByteString<15>;
+pub type ThreadName = StaticString<{ MAX_THREAD_NAME_LENGTH - 1 }>;
 
 enum_gen! { ThreadSpawnError
   entry:
@@ -669,7 +669,7 @@ struct ThreadStartupArgs<'thread, T: Send + Debug + 'thread, F: FnOnce() -> T + 
 /// }
 ///
 /// let thread = ThreadBuilder::new()
-///                          .name(&ThreadName::from(b"some-name"))
+///                          .name(&ThreadName::from_bytes(b"some-name").unwrap())
 ///                          .spawn(some_func)
 ///                          .expect("Failed to create thread");
 ///

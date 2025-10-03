@@ -32,7 +32,6 @@ pub use iceoryx2_bb_container::semantic_string::SemanticString;
 use crate::file_name::FileName;
 use crate::path::Path;
 use core::hash::{Hash, Hasher};
-use iceoryx2_bb_container::byte_string::FixedSizeByteString;
 use iceoryx2_bb_container::semantic_string;
 use iceoryx2_bb_container::semantic_string::SemanticStringError;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
@@ -97,9 +96,12 @@ semantic_string! {
 impl FilePath {
     /// Creates a new [`FilePath`] from a given [`Path`] and [`FileName`]
     pub fn from_path_and_file(path: &Path, file: &FileName) -> Result<Self, SemanticStringError> {
+        use iceoryx2_bb_container::string::String;
         let msg = "Unable to create FilePath from path and file";
         let mut new_self = Self {
-            value: unsafe { FixedSizeByteString::new_unchecked(path.as_bytes()) },
+            value: unsafe {
+                iceoryx2_bb_container::string::StaticString::from_bytes_unchecked(path.as_bytes())
+            },
         };
 
         if !path.is_empty() && path.as_bytes()[path.len() - 1] != PATH_SEPARATOR {

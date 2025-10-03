@@ -12,8 +12,8 @@
 
 use iceoryx2::prelude::{PlacementDefault, ZeroCopySend};
 use iceoryx2_bb_container::{
-    byte_string::FixedSizeByteString,
     queue::FixedSizeQueue,
+    string::*,
     vector::{StaticVec, Vector},
 };
 
@@ -49,7 +49,7 @@ impl PayloadWriter for PrimitivePayload {
 #[derive(Debug, PartialEq, Default, PlacementDefault, ZeroCopySend)]
 #[repr(C)]
 pub struct ComplexData {
-    name: FixedSizeByteString<4>,
+    name: StaticString<4>,
     data: StaticVec<u64, 4>,
 }
 
@@ -57,10 +57,10 @@ pub struct ComplexData {
 #[repr(C)]
 pub struct ComplexType {
     plain_old_data: u64,
-    text: FixedSizeByteString<8>,
+    text: StaticString<8>,
     vec_of_data: StaticVec<u64, 4>,
     vec_of_complex_data: StaticVec<ComplexData, 404857>,
-    a_queue_of_things: FixedSizeQueue<FixedSizeByteString<4>, 2>,
+    a_queue_of_things: FixedSizeQueue<StaticString<4>, 2>,
 }
 
 pub struct ComplexPayload;
@@ -71,10 +71,10 @@ impl PayloadWriter for ComplexPayload {
     unsafe fn write_payload(ptr: *mut Self::PayloadType) {
         Self::PayloadType::placement_default(ptr);
         (*ptr).plain_old_data = 0;
-        (*ptr).text = FixedSizeByteString::from_bytes(b"hello").unwrap();
+        (*ptr).text = StaticString::from_bytes(b"hello").unwrap();
         (*ptr).vec_of_data.push(42);
         (*ptr).vec_of_complex_data.push(ComplexData {
-            name: FixedSizeByteString::from_bytes(b"bla").unwrap(),
+            name: StaticString::from_bytes(b"bla").unwrap(),
             data: {
                 let mut v = StaticVec::new();
                 v.fill(42);
@@ -83,6 +83,6 @@ impl PayloadWriter for ComplexPayload {
         });
         (*ptr)
             .a_queue_of_things
-            .push(FixedSizeByteString::from_bytes(b"buh").unwrap());
+            .push(StaticString::from_bytes(b"buh").unwrap());
     }
 }

@@ -13,6 +13,7 @@
 use core::ffi::c_char;
 
 use iceoryx2::service::static_config::message_type_details::*;
+use iceoryx2_bb_container::string::*;
 
 use crate::{iox2_type_variant_e, IOX2_TYPE_NAME_LENGTH};
 

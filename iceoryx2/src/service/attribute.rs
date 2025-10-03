@@ -99,11 +99,10 @@
 
 use core::ops::Deref;
 
-use iceoryx2_bb_container::{semantic_string::SemanticString, vector::static_vec::*};
+use iceoryx2_bb_container::{semantic_string::SemanticString, vector::*};
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_log::fatal_panic;
 use serde::{Deserialize, Serialize};
 
 use crate::constants::MAX_ATTRIBUTES;
@@ -281,6 +280,7 @@ impl AttributeVerifier {
 
     /// Verifies if the [`AttributeSet`] contains all required keys and key-value pairs.
     pub fn verify_requirements(&self, rhs: &AttributeSet) -> Result<(), &str> {
+        use iceoryx2_bb_container::string::String;
         // Implementation utilizes nested loops, however since MAX_ATTRIBUTES is small and
         // the method is not expected to be used in a hot path, performance should be fine.
 
@@ -294,7 +294,7 @@ impl AttributeVerifier {
                 .any(|attr| attr.key() == *key && attr.value() == *value);
 
             if !attribute_present {
-                return Err(key.as_string().as_str().unwrap());
+                return Err(key.as_string().as_str());
             }
         }
 
@@ -303,9 +303,7 @@ impl AttributeVerifier {
             let key_exists = rhs.iter().any(|attr| attr.key == *key);
 
             if !key_exists {
-                let key_str = fatal_panic!(from self,
-                    when key.as_string().as_str(),
-                    "This should never happen! The underlying attribute key does not contain a valid UTF-8 string.");
+                let key_str = key.as_string().as_str();
                 return Err(key_str);
             }
         }

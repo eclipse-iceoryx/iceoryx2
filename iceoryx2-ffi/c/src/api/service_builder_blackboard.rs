@@ -543,9 +543,9 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
     let mut type_details = TypeDetail::new::<()>(TypeVariant::FixedSize);
     iceoryx2::testing::type_detail_set_name(
         &mut type_details,
-        TypeNameString::from_bytes_truncated(core::slice::from_raw_parts(
+        TypeNameString::from_bytes_unchecked(core::slice::from_raw_parts(
             type_name.cast(),
-            type_name_len,
+            type_name_len.min(TypeNameString::capacity()),
         )),
     );
     iceoryx2::testing::type_detail_set_size(&mut type_details, type_size);
