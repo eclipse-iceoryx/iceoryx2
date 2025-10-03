@@ -120,7 +120,7 @@ mod vector {
         let mut sut = factory.create_sut();
 
         for number in 0..SUT_CAPACITY {
-            assert_that!(sut.push(LifetimeTracker::new_with_value(number)), eq true);
+            assert_that!(sut.push(LifetimeTracker::new_with_value(number)), is_ok);
 
             for idx in 0..number + 1 {
                 assert_that!(sut[idx].value, eq idx);
@@ -139,7 +139,7 @@ mod vector {
             assert_that!(sut.len(), eq n);
             assert_that!(sut.is_full(), eq false);
 
-            sut.push(LifetimeTracker::new());
+            assert_that!(sut.push(LifetimeTracker::new()), is_ok);
 
             assert_that!(sut.is_empty(), eq false);
         }
@@ -153,11 +153,11 @@ mod vector {
         let mut sut = factory.create_sut();
 
         for number in 0..SUT_CAPACITY {
-            assert_that!(sut.push(LifetimeTracker::new_with_value(2 * number)), eq true);
+            assert_that!(sut.push(LifetimeTracker::new_with_value(2 * number)), is_ok);
         }
 
         for number in 0..SUT_CAPACITY {
-            assert_that!(sut.push(LifetimeTracker::new_with_value(number)), eq false);
+            assert_that!(sut.push(LifetimeTracker::new_with_value(number)), eq Err(VectorModificationError::InsertWouldExceedCapacity));
 
             for idx in 0..SUT_CAPACITY {
                 assert_that!(sut[idx].value, eq 2 * idx);
@@ -175,7 +175,7 @@ mod vector {
             for _ in 0..5 {
                 let element = push_counter * 4 + 1;
                 push_counter += 1;
-                assert_that!(sut.push(LifetimeTracker::new_with_value(element)), eq true);
+                assert_that!(sut.push(LifetimeTracker::new_with_value(element)), is_ok);
             }
 
             for i in 0..3 {
@@ -199,7 +199,10 @@ mod vector {
         let mut sut = factory.create_sut();
 
         for number in 0..SUT_CAPACITY {
-            assert_that!(sut.push(LifetimeTracker::new_with_value(4 * number + 1)), eq true);
+            assert_that!(
+                sut.push(LifetimeTracker::new_with_value(4 * number + 1)),
+                is_ok
+            );
         }
 
         for number in (0..SUT_CAPACITY).rev() {
@@ -219,7 +222,10 @@ mod vector {
         let mut sut = factory.create_sut();
 
         for number in 0..half_capacity {
-            assert_that!(sut.push(LifetimeTracker::new_with_value(4 * number + 3)), eq true);
+            assert_that!(
+                sut.push(LifetimeTracker::new_with_value(4 * number + 3)),
+                is_ok
+            );
         }
 
         sut.truncate(SUT_CAPACITY);
@@ -237,7 +243,10 @@ mod vector {
         let mut sut = factory.create_sut();
 
         for number in 0..SUT_CAPACITY {
-            assert_that!(sut.push(LifetimeTracker::new_with_value(5 * number + 7)), eq true);
+            assert_that!(
+                sut.push(LifetimeTracker::new_with_value(5 * number + 7)),
+                is_ok
+            );
         }
         assert_that!(tracker.number_of_living_instances(), eq SUT_CAPACITY);
 
@@ -258,7 +267,7 @@ mod vector {
         let mut sut = factory.create_sut();
 
         for number in 0..SUT_CAPACITY {
-            assert_that!(sut.push(LifetimeTracker::new_with_value(number)), eq true);
+            assert_that!(sut.push(LifetimeTracker::new_with_value(number)), is_ok);
         }
 
         sut.truncate(half_capacity);
@@ -275,7 +284,10 @@ mod vector {
         let factory = Factory::new();
         let mut sut = factory.create_sut();
 
-        assert_that!(sut.resize(half_capacity, LifetimeTracker::new_with_value(TEST_VALUE)), eq true);
+        assert_that!(
+            sut.resize(half_capacity, LifetimeTracker::new_with_value(TEST_VALUE)),
+            is_ok
+        );
 
         assert_that!(sut.len(), eq half_capacity);
 
@@ -292,11 +304,11 @@ mod vector {
         let mut sut = factory.create_sut();
 
         for number in 0..SUT_CAPACITY {
-            sut.push(LifetimeTracker::new_with_value(number));
+            assert_that!(sut.push(LifetimeTracker::new_with_value(number)), is_ok);
         }
 
         let stub_element = LifetimeTracker::new_with_value(0);
-        assert_that!(sut.resize(half_capacity, stub_element), eq true);
+        assert_that!(sut.resize(half_capacity, stub_element), is_ok);
         assert_that!(tracker.number_of_living_instances(), eq half_capacity);
 
         assert_that!(sut.len(), eq half_capacity);
@@ -318,7 +330,7 @@ mod vector {
     fn resize_fails_if_len_greater_than_capacity<Factory: VectorTestFactory>() {
         let factory = Factory::new();
         let mut sut = factory.create_sut();
-        assert_that!(sut.resize(SUT_CAPACITY + 1, LifetimeTracker::new()), eq false);
+        assert_that!(sut.resize(SUT_CAPACITY + 1, LifetimeTracker::new()), eq Err(VectorModificationError::InsertWouldExceedCapacity));
     }
 
     #[test]
@@ -328,9 +340,12 @@ mod vector {
         let factory = Factory::new();
         let mut sut = factory.create_sut();
 
-        assert_that!(sut.resize_with(half_capacity, || {
-         LifetimeTracker::new_with_value(TEST_VALUE)
-     }), eq true);
+        assert_that!(
+            sut.resize_with(half_capacity, || {
+                LifetimeTracker::new_with_value(TEST_VALUE)
+            }),
+            is_ok
+        );
 
         assert_that!(sut.len(), eq half_capacity);
 
@@ -347,10 +362,13 @@ mod vector {
         let mut sut = factory.create_sut();
 
         for number in 0..SUT_CAPACITY {
-            sut.push(LifetimeTracker::new_with_value(number));
+            assert_that!(sut.push(LifetimeTracker::new_with_value(number)), is_ok);
         }
 
-        assert_that!(sut.resize_with(half_capacity, || LifetimeTracker::new()), eq true);
+        assert_that!(
+            sut.resize_with(half_capacity, || LifetimeTracker::new()),
+            is_ok
+        );
         assert_that!(tracker.number_of_living_instances(), eq half_capacity);
 
         assert_that!(sut.len(), eq half_capacity);
@@ -373,10 +391,13 @@ mod vector {
         let mut sut = factory.create_sut();
 
         let mut counter = 0;
-        assert_that!(sut.resize_with(half_capacity, || {
-            counter += 1;
-            LifetimeTracker::new()
-        }), eq true);
+        assert_that!(
+            sut.resize_with(half_capacity, || {
+                counter += 1;
+                LifetimeTracker::new()
+            }),
+            is_ok
+        );
 
         assert_that!(counter, eq half_capacity);
     }
@@ -385,7 +406,7 @@ mod vector {
     fn resize_with_fails_if_len_greater_than_capacity<Factory: VectorTestFactory>() {
         let factory = Factory::new();
         let mut sut = factory.create_sut();
-        assert_that!(sut.resize_with(SUT_CAPACITY + 1, || LifetimeTracker::new()), eq false);
+        assert_that!(sut.resize_with(SUT_CAPACITY + 1, || LifetimeTracker::new()), eq Err(VectorModificationError::InsertWouldExceedCapacity));
     }
 
     #[test]
@@ -402,7 +423,7 @@ mod vector {
         let mut sut = factory.create_sut();
 
         for _ in 0..half_capacity {
-            sut.push(LifetimeTracker::new());
+            assert_that!(sut.push(LifetimeTracker::new()), is_ok);
         }
 
         assert_that!(sut.remove(half_capacity), is_none);
@@ -415,7 +436,10 @@ mod vector {
         let mut sut = factory.create_sut();
 
         for number in 0..SUT_CAPACITY {
-            sut.push(LifetimeTracker::new_with_value(number * 13));
+            assert_that!(
+                sut.push(LifetimeTracker::new_with_value(number * 13)),
+                is_ok
+            );
         }
 
         for number in 0..SUT_CAPACITY {
@@ -438,7 +462,10 @@ mod vector {
         let mut sut = factory.create_sut();
 
         for number in 0..SUT_CAPACITY {
-            sut.push(LifetimeTracker::new_with_value(number * 17));
+            assert_that!(
+                sut.push(LifetimeTracker::new_with_value(number * 17)),
+                is_ok
+            );
         }
 
         assert_that!(sut.remove(half_capacity).unwrap().value, eq half_capacity * 17 );
@@ -459,7 +486,10 @@ mod vector {
         const TEST_VALUE: usize = 91782389;
         let factory = Factory::new();
         let mut sut = factory.create_sut();
-        assert_that!(sut.insert(0, LifetimeTracker::new_with_value(TEST_VALUE)), eq true);
+        assert_that!(
+            sut.insert(0, LifetimeTracker::new_with_value(TEST_VALUE)),
+            is_ok
+        );
 
         assert_that!(sut[0].value, eq TEST_VALUE);
     }
@@ -468,7 +498,7 @@ mod vector {
     fn insert_second_element_of_empty_vec_fails<Factory: VectorTestFactory>() {
         let factory = Factory::new();
         let mut sut = factory.create_sut();
-        assert_that!(sut.insert(1, LifetimeTracker::new()), eq false);
+        assert_that!(sut.insert(1, LifetimeTracker::new()), eq Err(VectorModificationError::OutOfBounds));
     }
 
     #[test]
@@ -477,7 +507,10 @@ mod vector {
         let mut sut = factory.create_sut();
 
         for number in 0..SUT_CAPACITY {
-            assert_that!(sut.insert(0, LifetimeTracker::new_with_value(number)), eq true);
+            assert_that!(
+                sut.insert(0, LifetimeTracker::new_with_value(number)),
+                is_ok
+            );
             assert_that!(sut.len(), eq number + 1);
         }
 
@@ -492,7 +525,10 @@ mod vector {
         let mut sut = factory.create_sut();
 
         for number in 0..SUT_CAPACITY {
-            assert_that!(sut.insert(number, LifetimeTracker::new_with_value(number)), eq true);
+            assert_that!(
+                sut.insert(number, LifetimeTracker::new_with_value(number)),
+                is_ok
+            );
             assert_that!(sut.len(), eq number + 1);
         }
 
@@ -509,10 +545,13 @@ mod vector {
         let mut sut = factory.create_sut();
 
         for number in 0..SUT_CAPACITY - 1 {
-            sut.push(LifetimeTracker::new_with_value(number));
+            assert_that!(sut.push(LifetimeTracker::new_with_value(number)), is_ok);
         }
 
-        assert_that!(sut.insert(half_capacity, LifetimeTracker::new_with_value(TEST_VALUE)), eq true);
+        assert_that!(
+            sut.insert(half_capacity, LifetimeTracker::new_with_value(TEST_VALUE)),
+            is_ok
+        );
         assert_that!(sut.len(), eq SUT_CAPACITY);
 
         for number in 0..half_capacity {
@@ -532,10 +571,10 @@ mod vector {
         let mut sut = factory.create_sut();
 
         for _ in 0..SUT_CAPACITY {
-            sut.push(LifetimeTracker::new());
+            assert_that!(sut.push(LifetimeTracker::new()), is_ok);
         }
 
-        assert_that!(sut.insert(0, LifetimeTracker::new()), eq false);
+        assert_that!(sut.insert(0, LifetimeTracker::new()), eq Err(VectorModificationError::InsertWouldExceedCapacity));
     }
 
     #[test]
@@ -554,7 +593,7 @@ mod vector {
         let mut sut = factory.create_sut();
 
         for number in 0..SUT_CAPACITY {
-            sut.push(LifetimeTracker::new_with_value(number));
+            assert_that!(sut.push(LifetimeTracker::new_with_value(number)), is_ok);
         }
 
         sut.clear();
@@ -574,7 +613,7 @@ mod vector {
         let mut sut = factory.create_sut();
 
         for number in 0..SUT_CAPACITY {
-            sut.push(LifetimeTracker::new_with_value(number));
+            assert_that!(sut.push(LifetimeTracker::new_with_value(number)), is_ok);
         }
 
         for (n, element) in sut.as_slice().iter().enumerate() {
@@ -588,7 +627,7 @@ mod vector {
         let mut sut = factory.create_sut();
 
         for number in 0..SUT_CAPACITY {
-            sut.push(LifetimeTracker::new_with_value(number));
+            assert_that!(sut.push(LifetimeTracker::new_with_value(number)), is_ok);
         }
 
         for element in sut.as_mut_slice() {
@@ -605,7 +644,7 @@ mod vector {
         let factory = Factory::new();
         let mut sut = factory.create_sut();
 
-        assert_that!(sut.extend_from_slice(&core::array::from_fn::<LifetimeTracker, {SUT_CAPACITY + 1}, _>(|_| LifetimeTracker::new())), eq false);
+        assert_that!(sut.extend_from_slice(&core::array::from_fn::<LifetimeTracker, {SUT_CAPACITY + 1}, _>(|_| LifetimeTracker::new())), eq Err(VectorModificationError::InsertWouldExceedCapacity));
     }
 
     #[test]
@@ -614,7 +653,12 @@ mod vector {
         let factory = Factory::new();
         let mut sut = factory.create_sut();
 
-        assert_that!(sut.extend_from_slice(&core::array::from_fn::<LifetimeTracker, SUT_CAPACITY, _>(|_| LifetimeTracker::new_with_value(TEST_VALUE))), eq true);
+        assert_that!(
+            sut.extend_from_slice(&core::array::from_fn::<LifetimeTracker, SUT_CAPACITY, _>(
+                |_| LifetimeTracker::new_with_value(TEST_VALUE)
+            )),
+            is_ok
+        );
         for value in sut.iter() {
             assert_that!(value.value, eq TEST_VALUE);
         }
@@ -628,10 +672,15 @@ mod vector {
         let mut sut = factory.create_sut();
 
         for n in 0..HALF_CAPACITY {
-            sut.push(LifetimeTracker::new_with_value(n));
+            assert_that!(sut.push(LifetimeTracker::new_with_value(n)), is_ok);
         }
 
-        assert_that!(sut.extend_from_slice(&core::array::from_fn::<LifetimeTracker, HALF_CAPACITY, _>(|_| LifetimeTracker::new_with_value(TEST_VALUE))), eq true);
+        assert_that!(
+            sut.extend_from_slice(&core::array::from_fn::<LifetimeTracker, HALF_CAPACITY, _>(
+                |_| LifetimeTracker::new_with_value(TEST_VALUE)
+            )),
+            is_ok
+        );
         for n in 0..HALF_CAPACITY {
             assert_that!(sut[n].value, eq n);
         }
@@ -648,7 +697,7 @@ mod vector {
         let mut sut = factory.create_sut();
 
         for number in 0..SUT_CAPACITY {
-            sut.push(LifetimeTracker::new_with_value(number));
+            assert_that!(sut.push(LifetimeTracker::new_with_value(number)), is_ok);
         }
 
         drop(sut);

@@ -65,7 +65,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         let payload = sample.payload_mut();
         payload.plain_old_data = counter;
         payload.text = StaticString::from_bytes(b"hello")?;
-        payload.vec_of_data.push(counter);
+        payload.vec_of_data.push(counter)?;
         payload.vec_of_complex_data.push(ComplexData {
             name: StaticString::from_bytes(b"bla")?,
             data: {
@@ -73,7 +73,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
                 v.fill(counter);
                 v
             },
-        });
+        })?;
         payload
             .a_queue_of_things
             .push(StaticString::from_bytes(b"buh")?);

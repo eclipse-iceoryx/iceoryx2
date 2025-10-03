@@ -35,10 +35,11 @@ use core::{
 use iceoryx2_bb_elementary_traits::{
     placement_default::PlacementDefault, zero_copy_send::ZeroCopySend,
 };
+use iceoryx2_bb_log::fail;
 use serde::{de::Visitor, Deserialize, Serialize};
 
-use crate::vector::internal;
 pub use crate::vector::Vector;
+use crate::vector::{internal, VectorModificationError};
 
 /// Relocatable shared-memory compatible vector with compile time fixed size
 /// capacity. It is memory-layout compatible to the C++ container in the
@@ -118,7 +119,7 @@ impl<'de, T: Deserialize<'de>, const CAPACITY: usize> Visitor<'de>
         let mut new_vec = Self::Value::new();
 
         while let Some(element) = seq.next_element()? {
-            if !new_vec.push(element) {
+            if !new_vec.push(element).is_ok() {
                 return Err(<A::Error as serde::de::Error>::custom(format!(
                     "the array can hold at most {CAPACITY} elements"
                 )));
@@ -185,6 +186,26 @@ impl<T: PartialEq, const CAPACITY: usize> PartialEq for StaticVec<T, CAPACITY> {
         }
 
         true
+    }
+}
+
+impl<T: Clone, const CAPACITY: usize> TryFrom<&[T]> for StaticVec<T, CAPACITY> {
+    type Error = VectorModificationError;
+    fn try_from(value: &[T]) -> Result<Self, Self::Error> {
+        if CAPACITY < value.len() {
+            let origin = format!(
+                "StaticVec::<{}, {}>::try_from()",
+                core::any::type_name::<T>(),
+                CAPACITY
+            );
+            fail!(from origin, with VectorModificationError::InsertWouldExceedCapacity,
+                "Failed to create the vector since the slice len {} is greater than the vectors capacity.",
+                value.len());
+        }
+
+        let mut new_self = Self::new();
+        new_self.extend_from_slice(value)?;
+        Ok(new_self)
     }
 }
 

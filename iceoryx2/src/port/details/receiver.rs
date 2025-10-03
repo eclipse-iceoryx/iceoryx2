@@ -236,7 +236,10 @@ impl<Service: service::Service> Receiver<Service> {
                 }
 
                 if keep_connection {
-                    if !unsafe { &mut *to_be_removed_connections.get() }.push(key) {
+                    if unsafe { &mut *to_be_removed_connections.get() }
+                        .push(key)
+                        .is_err()
+                    {
                         warn!(from self,
                             "Expired connection buffer exceeded. A sender disconnected with undelivered samples that will be discarded. Increase the expired connection buffer to mitigate the problem.");
                         connection_storage.remove(key);
@@ -346,7 +349,7 @@ impl<Service: service::Service> Receiver<Service> {
                     let connection = match connection_storage.get(*connection_key) {
                         Some(connection) => connection,
                         None => {
-                            clean_connections.push((n, *connection_key));
+                            unsafe { clean_connections.push_unchecked((n, *connection_key)) };
                             continue;
                         }
                     };
@@ -363,7 +366,7 @@ impl<Service: service::Service> Receiver<Service> {
                         ret_val = Some((details, absolute_address));
                         break;
                     } else {
-                        clean_connections.push((n, *connection_key));
+                        unsafe { clean_connections.push_unchecked((n, *connection_key)) };
                     }
                 }
 

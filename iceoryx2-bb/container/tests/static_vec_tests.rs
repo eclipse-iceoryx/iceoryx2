@@ -33,8 +33,8 @@ fn two_vectors_with_same_content_are_equal() {
     let mut sut2 = StaticVec::<usize, SUT_CAPACITY>::new();
 
     for n in 0..SUT_CAPACITY {
-        sut1.push(4 * n + 3);
-        sut2.insert(n, 4 * n + 3);
+        assert_that!(sut1.push(4 * n + 3), is_ok);
+        assert_that!(sut2.insert(n, 4 * n + 3), is_ok);
     }
 
     assert_that!(sut1, eq sut2);
@@ -46,8 +46,8 @@ fn two_vectors_with_different_content_are_not_equal() {
     let mut sut2 = StaticVec::<usize, SUT_CAPACITY>::new();
 
     for n in 0..SUT_CAPACITY {
-        sut1.push(4 * n + 3);
-        sut2.insert(n, 4 * n + 3);
+        assert_that!(sut1.push(4 * n + 3), is_ok);
+        assert_that!(sut2.insert(n, 4 * n + 3), is_ok);
     }
 
     sut2[5] = 0;
@@ -61,8 +61,8 @@ fn two_vectors_with_different_len_are_not_equal() {
     let mut sut2 = StaticVec::<usize, SUT_CAPACITY>::new();
 
     for n in 0..SUT_CAPACITY {
-        sut1.push(4 * n + 3);
-        sut2.insert(n, 4 * n + 3);
+        assert_that!(sut1.push(4 * n + 3), is_ok);
+        assert_that!(sut2.insert(n, 4 * n + 3), is_ok);
     }
 
     sut2.pop();
@@ -84,10 +84,10 @@ fn placement_default_works() {
 #[test]
 fn serialization_works() {
     let mut sut = StaticVec::<usize, SUT_CAPACITY>::new();
-    sut.push(44617);
-    sut.push(123123);
-    sut.push(89712);
-    sut.push(99101);
+    assert_that!(sut.push(44617), is_ok);
+    assert_that!(sut.push(123123), is_ok);
+    assert_that!(sut.push(89712), is_ok);
+    assert_that!(sut.push(99101), is_ok);
 
     assert_tokens(
         &sut,
@@ -108,7 +108,7 @@ fn valid_after_move() {
 
     for i in 0..sut.capacity() {
         let element = i * 2 + 3;
-        assert_that!(sut.push(element), eq true);
+        assert_that!(sut.push(element), is_ok);
     }
 
     let mut sut2 = sut;
@@ -134,7 +134,7 @@ fn clone_clones_filled_vec() {
     let mut sut1 = StaticVec::<usize, SUT_CAPACITY>::new();
     for i in 0..sut1.capacity() {
         let element = i * 2 + 3;
-        assert_that!(sut1.push(element), eq true);
+        assert_that!(sut1.push(element), is_ok);
     }
 
     let sut2 = sut1.clone();
