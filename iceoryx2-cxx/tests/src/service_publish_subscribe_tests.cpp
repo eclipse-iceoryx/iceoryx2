@@ -1009,9 +1009,11 @@ TYPED_TEST(ServicePublishSubscribeTest, create_with_attributes_sets_attributes) 
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto attribute_specifier = AttributeSpecifier();
+    attribute_specifier.define(key, value).expect("");
     auto service_create = node.service_builder(service_name)
                               .template publish_subscribe<uint64_t>()
-                              .create_with_attributes(AttributeSpecifier().define(key, value))
+                              .create_with_attributes(attribute_specifier)
                               .expect("");
 
     auto service_open = node.service_builder(service_name).template publish_subscribe<uint64_t>().open().expect("");
@@ -1037,23 +1039,25 @@ TYPED_TEST(ServicePublishSubscribeTest, open_fails_when_attributes_are_incompati
     auto missing_key = Attribute::Key("no he is singing a song!");
     const auto service_name = iox2_testing::generate_service_name();
 
+    auto attribute_verifier = AttributeVerifier();
+    attribute_verifier.require(key, value).expect("");
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
     auto service_create = node.service_builder(service_name)
                               .template publish_subscribe<uint64_t>()
-                              .open_or_create_with_attributes(AttributeVerifier().require(key, value))
+                              .open_or_create_with_attributes(attribute_verifier)
                               .expect("");
 
-    auto service_open_or_create =
-        node.service_builder(service_name)
-            .template publish_subscribe<uint64_t>()
-            .open_or_create_with_attributes(AttributeVerifier().require(key, value).require_key(missing_key));
+    attribute_verifier.require_key(missing_key).expect("");
+    auto service_open_or_create = node.service_builder(service_name)
+                                      .template publish_subscribe<uint64_t>()
+                                      .open_or_create_with_attributes(attribute_verifier);
 
     ASSERT_THAT(service_open_or_create.has_error(), Eq(true));
     ASSERT_THAT(service_open_or_create.error(), Eq(PublishSubscribeOpenOrCreateError::OpenIncompatibleAttributes));
 
     auto service_open = node.service_builder(service_name)
                             .template publish_subscribe<uint64_t>()
-                            .open_with_attributes(AttributeVerifier().require(key, value).require_key(missing_key));
+                            .open_with_attributes(attribute_verifier);
 
     ASSERT_THAT(service_open.has_error(), Eq(true));
     ASSERT_THAT(service_open.error(), Eq(PublishSubscribeOpenError::IncompatibleAttributes));

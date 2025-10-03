@@ -16,6 +16,7 @@
 #include "iox/assertions.hpp"
 #include "iox/into.hpp"
 #include "iox2/allocation_strategy.hpp"
+#include "iox2/attribute_error.hpp"
 #include "iox2/callback_progression.hpp"
 #include "iox2/client_error.hpp"
 #include "iox2/config_creation_error.hpp"
@@ -2243,6 +2244,33 @@ constexpr auto from<int, iox2::NodeCleanupFailure>(const int value) noexcept -> 
 
     IOX_UNREACHABLE();
 }
+
+template <>
+constexpr auto from<int, iox2::AttributeVerificationError>(const int value) noexcept
+    -> iox2::AttributeVerificationError {
+    const auto error = static_cast<iox2_attribute_verification_error_e>(value);
+    switch (error) {
+    case iox2_attribute_verification_error_e_NON_EXISTING_KEY:
+        return iox2::AttributeVerificationError::NonExistingKey;
+    case iox2_attribute_verification_error_e_INCOMPATIBLE_ATTRIBUTE:
+        return iox2::AttributeVerificationError::IncompatibleAttribute;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<int, iox2::AttributeDefinitionError>(const int value) noexcept -> iox2::AttributeDefinitionError {
+    const auto error = static_cast<iox2_attribute_definition_error_e>(value);
+    switch (error) {
+    case iox2_attribute_definition_error_e_EXCEEDS_MAX_SUPPORTED_ATTRIBUTES:
+        return iox2::AttributeDefinitionError::ExceedsMaxSupportedAttributes;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+
 } // namespace iox
 
 #endif
