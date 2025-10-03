@@ -99,10 +99,11 @@
 
 use core::ops::Deref;
 
-use iceoryx2_bb_container::{semantic_string::SemanticString, vector::*};
+use iceoryx2_bb_container::vector::*;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_log::fail;
 use serde::{Deserialize, Serialize};
 
 use crate::constants::MAX_ATTRIBUTES;
@@ -175,6 +176,49 @@ pub type AttributeValue = value::FixedString;
 type KeyStorage = StaticVec<AttributeKey, MAX_ATTRIBUTES>;
 type AttributeStorage = StaticVec<Attribute, MAX_ATTRIBUTES>;
 
+/// Failures that can occur when the [`AttributeVerifier`] fails the verification.
+#[derive(Debug, Eq, PartialEq, Clone)]
+pub enum AttributeVerificationError {
+    /// A key defined via [`AttributeVerifier::require_key()`] is missing.
+    NonExistingKey(AttributeKey),
+    /// A key defined via [`AttributeVerifier::require()`] has the wrong value.
+    IncompatibleAttribute((AttributeKey, AttributeValue)),
+}
+
+impl core::fmt::Display for AttributeVerificationError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            AttributeVerificationError::NonExistingKey(key) => {
+                write!(f, "AttributeVerificationError::NonExistingKey({:?})", key)
+            }
+            AttributeVerificationError::IncompatibleAttribute((key, value)) => {
+                write!(
+                    f,
+                    "AttributeVerificationError::IncompatibleAttribute(({:?}, {:?}))",
+                    key, value
+                )
+            }
+        }
+    }
+}
+
+impl core::error::Error for AttributeVerificationError {}
+
+/// Failures that can occur when defining [`Attribute`]s with [`AttributeSpecifier::define()`].
+#[derive(Debug, Eq, PartialEq, Copy, Clone)]
+pub enum AttributeDefinitionError {
+    /// The new [`Attribute`] would exceed the maximum supported number of [`Attribute`]s
+    ExceedsMaxSupportedAttributes,
+}
+
+impl core::fmt::Display for AttributeDefinitionError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "AttributeDefinitionError::{self:?}")
+    }
+}
+
+impl core::error::Error for AttributeDefinitionError {}
+
 /// Represents a single service attribute (key-value) pair that can be defined when the service
 /// is being created.
 #[derive(Debug, Eq, PartialEq, Clone, PartialOrd, Ord, ZeroCopySend, Serialize, Deserialize)]
@@ -222,9 +266,13 @@ impl AttributeSpecifier {
     }
 
     /// Defines a value for a specific key. A key is allowed to have multiple values.
-    pub fn define(mut self, key: &AttributeKey, value: &AttributeValue) -> Self {
-        self.0.add(key, value);
-        self
+    pub fn define(
+        mut self,
+        key: &AttributeKey,
+        value: &AttributeValue,
+    ) -> Result<Self, AttributeDefinitionError> {
+        self.0.add(key, value)?;
+        Ok(self)
     }
 
     /// Returns the underlying [`AttributeSet`]
@@ -257,15 +305,32 @@ impl AttributeVerifier {
     }
 
     /// Requires a value for a specific key. A key is allowed to have multiple values.
-    pub fn require(mut self, key: &AttributeKey, value: &AttributeValue) -> Self {
-        self.required_attributes.add(key, value);
-        self
+    pub fn require(
+        mut self,
+        key: &AttributeKey,
+        value: &AttributeValue,
+    ) -> Result<Self, AttributeDefinitionError> {
+        if AttributeSet::capacity() <= self.required_attributes.len() + self.required_keys.len()
+            || self.required_attributes.add(key, value).is_err()
+        {
+            fail!(from self, with AttributeDefinitionError::ExceedsMaxSupportedAttributes,
+                "Unable to require the attribute {}={} since it would exceed the maximum number of supported attributes of {}.",
+                key, value, MAX_ATTRIBUTES);
+        }
+        Ok(self)
     }
 
     /// Requires that a specific key is defined.
-    pub fn require_key(mut self, key: &AttributeKey) -> Self {
-        self.required_keys.push(key.clone());
-        self
+    pub fn require_key(mut self, key: &AttributeKey) -> Result<Self, AttributeDefinitionError> {
+        if AttributeSet::capacity() <= self.required_attributes.len() + self.required_keys.len()
+            || self.required_keys.push(key.clone()).is_err()
+        {
+            fail!(from self, with AttributeDefinitionError::ExceedsMaxSupportedAttributes,
+                "Unable to require the key {} since it would exceed the maximum number of supported attributes of {}.",
+                key, MAX_ATTRIBUTES);
+        }
+
+        Ok(self)
     }
 
     /// Returns the underlying required [`AttributeSet`]
@@ -279,22 +344,28 @@ impl AttributeVerifier {
     }
 
     /// Verifies if the [`AttributeSet`] contains all required keys and key-value pairs.
-    pub fn verify_requirements(&self, rhs: &AttributeSet) -> Result<(), &str> {
-        use iceoryx2_bb_container::string::String;
+    pub fn verify_requirements(
+        &self,
+        rhs: &AttributeSet,
+    ) -> Result<(), AttributeVerificationError> {
+        let msg = "The verification of attribute requirements failed";
         // Implementation utilizes nested loops, however since MAX_ATTRIBUTES is small and
         // the method is not expected to be used in a hot path, performance should be fine.
 
         // Check if the required key-value pair exists in the target AttributeSet.
         for attribute in self.required_attributes().iter() {
-            let key = &attribute.key();
-            let value = &attribute.value();
+            let key = attribute.key();
+            let value = attribute.value();
 
             let attribute_present = rhs
                 .iter()
-                .any(|attr| attr.key() == *key && attr.value() == *value);
+                .any(|attr| attr.key() == key && attr.value() == value);
 
             if !attribute_present {
-                return Err(key.as_string().as_str());
+                fail!(from self,
+                    with AttributeVerificationError::IncompatibleAttribute((key.clone(), value.clone())),
+                    "{msg} due to the incompatible attribute {} = {}.",
+                    key, value);
             }
         }
 
@@ -303,8 +374,9 @@ impl AttributeVerifier {
             let key_exists = rhs.iter().any(|attr| attr.key == *key);
 
             if !key_exists {
-                let key_str = key.as_string().as_str();
-                return Err(key_str);
+                fail!(from self,
+                    with AttributeVerificationError::NonExistingKey(key.clone()),
+                    "{msg} due to a missing key {}.", key);
             }
         }
 
@@ -330,9 +402,18 @@ impl AttributeSet {
         Self(AttributeStorage::new())
     }
 
-    pub(crate) fn add(&mut self, key: &AttributeKey, value: &AttributeValue) {
-        self.0.push(Attribute::new(key, value));
+    pub(crate) fn add(
+        &mut self,
+        key: &AttributeKey,
+        value: &AttributeValue,
+    ) -> Result<(), AttributeDefinitionError> {
+        fail!(from self,
+            when self.0.push(Attribute::new(key, value)),
+            with AttributeDefinitionError::ExceedsMaxSupportedAttributes,
+            "Failed to add attribute {}={} since this would exceed the max number of supported attributes {}.",
+            key, value, self.0.capacity());
         self.0.sort();
+        Ok(())
     }
 
     /// Returns the number of [`Attribute`]s stored inside the [`AttributeSet`].
