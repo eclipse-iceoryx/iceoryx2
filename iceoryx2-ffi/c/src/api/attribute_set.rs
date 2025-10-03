@@ -14,17 +14,63 @@
 
 use alloc::ffi::CString;
 use core::ffi::c_char;
+use iceoryx2::service::attribute::AttributeDefinitionError;
+use iceoryx2::service::attribute::AttributeVerificationError;
+use iceoryx2_ffi_macros::CStrRepr;
 
 use iceoryx2::service::attribute::{Attribute, AttributeKey, AttributeSet};
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary::CallbackProgression;
+use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
+
+use crate::api::IntoCInt;
+use crate::IOX2_OK;
 
 use super::{
     iox2_attribute_h_ref, iox2_callback_context, iox2_callback_progression_e, AssertNonNullHandle,
     HandleToType,
 };
+
+#[repr(C)]
+#[derive(Copy, Clone, CStrRepr)]
+pub enum iox2_attribute_verification_error_e {
+    #[CStr = "non existing key"]
+    NON_EXISTING_KEY = IOX2_OK as isize + 1,
+    #[CStr = "incompatible attribute"]
+    INCOMPATIBLE_ATTRIBUTE,
+}
+
+impl IntoCInt for AttributeVerificationError {
+    fn into_c_int(self) -> std::ffi::c_int {
+        (match self {
+            AttributeVerificationError::IncompatibleAttribute(_) => {
+                iox2_attribute_verification_error_e::INCOMPATIBLE_ATTRIBUTE
+            }
+            AttributeVerificationError::NonExistingKey(_) => {
+                iox2_attribute_verification_error_e::NON_EXISTING_KEY
+            }
+        }) as std::ffi::c_int
+    }
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, CStrRepr)]
+pub enum iox2_attribute_definition_error_e {
+    #[CStr = "non existing key"]
+    EXCEEDS_MAX_SUPPORTED_ATTRIBUTES = IOX2_OK as isize + 1,
+}
+
+impl IntoCInt for AttributeDefinitionError {
+    fn into_c_int(self) -> std::ffi::c_int {
+        (match self {
+            AttributeDefinitionError::ExceedsMaxSupportedAttributes => {
+                iox2_attribute_definition_error_e::EXCEEDS_MAX_SUPPORTED_ATTRIBUTES
+            }
+        }) as std::ffi::c_int
+    }
+}
 
 // BEGIN types definition
 #[repr(C)]
@@ -90,6 +136,48 @@ pub type iox2_attribute_set_get_callback =
 // END type definition
 
 // BEGIN C API
+
+/// Returns a string literal describing the provided [`iox2_attribute_definition_error_e`].
+///
+/// # Arguments
+///
+/// * `error` - The error value for which a description should be returned
+///
+/// # Returns
+///
+/// A pointer to a null-terminated string containing the error message.
+/// The string is stored in the .rodata section of the binary.
+///
+/// # Safety
+///
+/// The returned pointer must not be modified or freed and is valid as long as the program runs.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_attribute_definition_error_create_error_string(
+    error: iox2_attribute_definition_error_e,
+) -> *const c_char {
+    error.as_const_cstr().as_ptr() as *const c_char
+}
+
+/// Returns a string literal describing the provided [`iox2_attribute_verification_error_e`].
+///
+/// # Arguments
+///
+/// * `error` - The error value for which a description should be returned
+///
+/// # Returns
+///
+/// A pointer to a null-terminated string containing the error message.
+/// The string is stored in the .rodata section of the binary.
+///
+/// # Safety
+///
+/// The returned pointer must not be modified or freed and is valid as long as the program runs.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_attribute_verification_error_create_error_string(
+    error: iox2_attribute_verification_error_e,
+) -> *const c_char {
+    error.as_const_cstr().as_ptr() as *const c_char
+}
 
 /// This function create a new attribute_set by cloning an already existing one!
 ///

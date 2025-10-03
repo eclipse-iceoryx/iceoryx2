@@ -23,7 +23,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
             // the opening of the service will fail since the
             // `camera_resolution` attribute is `1920x1080` and not `3840x2160`
             &AttributeVerifier::new()
-                .require(&"camera_resolution".try_into()?, &"3840x2160".try_into()?),
+                .require(&"camera_resolution".try_into()?, &"3840x2160".try_into()?)?,
         )
         .map_err(|e| println!("camera_resolution: 3840x2160 -> {:?}", e));
 
@@ -32,7 +32,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .publish_subscribe::<u64>()
         .open_with_attributes(
             // the opening of the service will fail since the key is not defined.
-            &AttributeVerifier::new().require_key(&"camera_type".try_into()?),
+            &AttributeVerifier::new().require_key(&"camera_type".try_into()?)?,
         )
         .map_err(|e| println!("camera_type -> {:?}", e));
 

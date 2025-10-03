@@ -12,10 +12,10 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::api::{AssertNonNullHandle, HandleToType, IOX2_OK};
+use crate::api::{AssertNonNullHandle, HandleToType, IntoCInt, IOX2_OK};
 
 use iceoryx2::prelude::*;
-use iceoryx2::service::attribute::{AttributeKey, AttributeValue};
+use iceoryx2::service::attribute::{AttributeKey, AttributeValue, AttributeVerificationError};
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
@@ -153,6 +153,8 @@ pub unsafe extern "C" fn iox2_attribute_verifier_drop(handle: iox2_attribute_ver
 
 /// Defines a attribute (key / value pair) that is required.
 ///
+/// Returns IOX2_OK on success, an [`iox2_attribute_definition_error_e`] otherwise.
+///
 /// # Safety
 ///
 /// * The `handle` must point to an initialized [`iox2_attribute_verifier_h`].
@@ -163,7 +165,7 @@ pub unsafe extern "C" fn iox2_attribute_verifier_require(
     handle: iox2_attribute_verifier_h_ref,
     key: *const c_char,
     value: *const c_char,
-) {
+) -> c_int {
     debug_assert!(!handle.is_null());
     debug_assert!(!key.is_null());
     debug_assert!(!value.is_null());
@@ -175,12 +177,23 @@ pub unsafe extern "C" fn iox2_attribute_verifier_require(
 
     let attribute_verifier_struct = &mut *handle.as_type();
     let attribute_verifier = ManuallyDrop::take(&mut attribute_verifier_struct.value.as_mut().0);
-    attribute_verifier_struct.set(AttributeVerifierType::from(
-        attribute_verifier.require(&key.unwrap(), &value.unwrap()),
-    ));
+
+    let attribute_verifier_clone = attribute_verifier.clone();
+    match attribute_verifier_clone.require(&key.unwrap(), &value.unwrap()) {
+        Ok(v) => {
+            attribute_verifier_struct.set(AttributeVerifierType::from(v));
+            IOX2_OK
+        }
+        Err(e) => {
+            attribute_verifier_struct.set(AttributeVerifierType::from(attribute_verifier));
+            e.into_c_int()
+        }
+    }
 }
 
 /// Defines a key that must be present.
+///
+/// Returns IOX2_OK on success, an [`iox2_attribute_definition_error_e`] otherwise.
 ///
 /// # Safety
 ///
@@ -190,7 +203,7 @@ pub unsafe extern "C" fn iox2_attribute_verifier_require(
 pub unsafe extern "C" fn iox2_attribute_verifier_require_key(
     handle: iox2_attribute_verifier_h_ref,
     key: *const c_char,
-) {
+) -> c_int {
     debug_assert!(!handle.is_null());
     debug_assert!(!key.is_null());
 
@@ -200,9 +213,18 @@ pub unsafe extern "C" fn iox2_attribute_verifier_require_key(
 
     let attribute_verifier_struct = &mut *handle.as_type();
     let attribute_verifier = ManuallyDrop::take(&mut attribute_verifier_struct.value.as_mut().0);
-    attribute_verifier_struct.set(AttributeVerifierType::from(
-        attribute_verifier.require_key(&key.unwrap()),
-    ));
+
+    let attribute_verifier_clone = attribute_verifier.clone();
+    match attribute_verifier_clone.require_key(&key.unwrap()) {
+        Ok(v) => {
+            attribute_verifier_struct.set(AttributeVerifierType::from(v));
+            IOX2_OK
+        }
+        Err(e) => {
+            attribute_verifier_struct.set(AttributeVerifierType::from(attribute_verifier));
+            e.into_c_int()
+        }
+    }
 }
 
 /// Returnes a [`iox2_attribute_set_ptr`] to the underlying attribute set.
@@ -227,6 +249,8 @@ pub unsafe extern "C" fn iox2_attribute_verifier_attributes(
 
 /// Verifies if the [`iox2_attribute_set_ptr`] contains all required keys and key-value pairs.
 ///
+/// Returns IOX2_OK on success, an [`iox2_attribute_verification_error_e`] otherwise.
+///
 /// # Safety
 ///
 /// * The `handle` must point to an initialized [`iox2_attribute_verifier_h`].
@@ -239,26 +263,34 @@ pub unsafe extern "C" fn iox2_attribute_verifier_verify_requirements(
     rhs: iox2_attribute_set_ptr,
     incompatible_key_buffer: *mut c_char,
     incompatible_key_buffer_len: usize,
-) -> bool {
+) -> c_int {
     debug_assert!(!handle.is_null());
     debug_assert!(!rhs.is_null());
 
     let attribute_verifier_struct = &mut *handle.as_type();
     let attribute_verifier = &attribute_verifier_struct.value.as_ref().0;
 
-    match attribute_verifier.verify_requirements(&*rhs) {
-        Ok(()) => true,
-        Err(incompatible_key) => {
-            if let Ok(incompatible_key) = CString::new(incompatible_key) {
-                if incompatible_key_buffer_len != 0 && !incompatible_key_buffer.is_null() {
-                    core::ptr::copy_nonoverlapping(
-                        incompatible_key.as_bytes_with_nul().as_ptr(),
-                        incompatible_key_buffer.cast(),
-                        incompatible_key_buffer_len.min(incompatible_key.as_bytes_with_nul().len()),
-                    );
-                }
+    let write_key = |incompatible_key: AttributeKey| {
+        if let Ok(incompatible_key) = CString::new(incompatible_key.as_bytes()) {
+            if incompatible_key_buffer_len != 0 && !incompatible_key_buffer.is_null() {
+                core::ptr::copy_nonoverlapping(
+                    incompatible_key.as_bytes_with_nul().as_ptr(),
+                    incompatible_key_buffer.cast(),
+                    incompatible_key_buffer_len.min(incompatible_key.as_bytes_with_nul().len()),
+                );
             }
-            false
+        }
+    };
+
+    match attribute_verifier.verify_requirements(&*rhs) {
+        Ok(()) => IOX2_OK,
+        Err(e) => {
+            let error_value = e.clone().into_c_int();
+            match e {
+                AttributeVerificationError::NonExistingKey(key) => write_key(key),
+                AttributeVerificationError::IncompatibleAttribute((key, _)) => write_key(key),
+            }
+            error_value
         }
     }
 }
