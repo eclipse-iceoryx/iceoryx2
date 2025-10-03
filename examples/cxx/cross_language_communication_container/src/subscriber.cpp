@@ -37,8 +37,7 @@ auto main() -> int {
     while (node.wait(CYCLE_TIME).has_value()) {
         auto sample = subscriber.receive().expect("receive succeeds");
         while (sample.has_value()) {
-            // std::cout << "received: " << sample->payload() << ", user_header: " << sample->user_header() <<
-            // std::endl;
+            std::cout << "received: " << sample->payload() << ", user_header: " << sample->user_header() << std::endl;
             sample = subscriber.receive().expect("receive succeeds");
         }
     }

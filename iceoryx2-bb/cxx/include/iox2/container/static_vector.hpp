@@ -24,6 +24,7 @@
 #include <cstring>
 #include <functional>
 #include <initializer_list>
+#include <iostream>
 #include <memory>
 #include <type_traits>
 
@@ -493,5 +494,18 @@ class StaticVector {
 
 } // namespace container
 } // namespace iox2
+
+template <typename T, uint64_t N>
+auto operator<<(std::ostream& stream, const iox2::container::StaticVector<T, N>& value) -> std::ostream& {
+    stream << "StaticVector::<" << N << "> { m_size: " << value.size() << ", m_data: [ ";
+    if (!value.empty()) {
+        stream << value.unchecked_access()[0];
+    }
+    for (uint64_t n = 1; n < value.size(); ++n) {
+        stream << ", " << value.unchecked_access()[n];
+    }
+    stream << " ] }";
+    return stream;
+}
 
 #endif

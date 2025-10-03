@@ -41,7 +41,7 @@ auto main() -> int {
         sample.user_header_mut() =
             *container::StaticString<64>::from_utf8("Why are Kermit and Miss Piggy no longer together?");
 
-        auto initialized_sample = sample.write_payload(*container::StaticVector<uint64_t, 32>::from_value(counter, 2));
+        auto initialized_sample = sample.write_payload(*container::StaticVector<uint64_t, 32>::from_value(2, counter));
 
         send(std::move(initialized_sample)).expect("send successful");
 

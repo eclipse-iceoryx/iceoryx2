@@ -21,6 +21,7 @@
 #include <cstdint>
 #include <cstring>
 #include <functional>
+#include <iostream>
 #include <memory>
 #include <type_traits>
 
@@ -460,5 +461,12 @@ class StaticString {
 
 } // namespace container
 } // namespace iox2
+
+template <uint64_t N>
+auto operator<<(std::ostream& stream, const iox2::container::StaticString<N>& value) -> std::ostream& {
+    stream << "StaticString::<" << N << "> { m_size: " << value.size() << ", m_string: \""
+           << value.unchecked_access().c_str() << "\" }";
+    return stream;
+}
 
 #endif
