@@ -37,13 +37,14 @@ auto main() -> int {
     while (node.wait(CYCLE_TIME).has_value()) {
         counter += 1;
 
-        auto sample = publisher.loan_uninit().expect("acquire sample");
-        sample.user_header_mut() =
-            *container::StaticString<64>::from_utf8("Why are Kermit and Miss Piggy no longer together?");
+        // auto sample = publisher.loan_uninit().expect("acquire sample");
+        // sample.user_header_mut() =
+        //     *container::StaticString<64>::from_utf8("Why are Kermit and Miss Piggy no longer together?");
 
-        auto initialized_sample = sample.write_payload(*container::StaticVector<uint64_t, 32>::from_value(2, counter));
+        // auto initialized_sample = sample.write_payload(*container::StaticVector<uint64_t, 32>::from_value(2,
+        // counter));
 
-        send(std::move(initialized_sample)).expect("send successful");
+        // send(std::move(initialized_sample)).expect("send successful");
 
         std::cout << "Send sample " << counter << "..." << std::endl;
     }

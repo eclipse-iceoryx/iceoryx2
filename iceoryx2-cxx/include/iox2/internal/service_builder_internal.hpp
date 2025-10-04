@@ -19,6 +19,7 @@
 #include "iox2/payload_info.hpp"
 #include "iox2/type_name.hpp"
 
+#include <cstdio>
 #include <typeinfo>
 
 namespace iox2::internal {
@@ -62,12 +63,23 @@ auto get_type_name() -> internal::FromCustomizedPayloadTypeName<PayloadType> {
 
 template <typename PayloadType>
 auto get_type_name() -> internal::FromStaticString<PayloadType> {
-    return *TypeName::from_utf8("iceoryx2_bb_container::string::static_string::StaticString");
+    char type_name[TypeName::capacity()] { 0 };
+    snprintf(type_name,
+             TypeName::capacity(),
+             "iceoryx2_bb_container::string::static_string::StaticString<%llu>",
+             static_cast<long long unsigned int>(PayloadType::capacity()));
+    return *TypeName::from_utf8_null_terminated_unchecked(type_name);
 }
 
 template <typename PayloadType>
 auto get_type_name() -> internal::FromStaticVector<PayloadType> {
-    return *TypeName::from_utf8("iceoryx2_bb_container::vector::static_vec::StaticVec");
+    char type_name[TypeName::capacity()] { 0 };
+    snprintf(type_name,
+             TypeName::capacity(),
+             "iceoryx2_bb_container::string::static_vec::StaticVec<%s, %llu>",
+             "u64",
+             static_cast<long long unsigned int>(PayloadType::capacity()));
+    return *TypeName::from_utf8_null_terminated_unchecked(type_name);
 }
 
 // NOLINTBEGIN(readability-function-size) : template alternative is less readable
