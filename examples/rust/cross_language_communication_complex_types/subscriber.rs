@@ -11,9 +11,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::time::Duration;
+use examples_common::ComplexType;
 use iceoryx2::prelude::*;
-use iceoryx2_bb_container::string::*;
-use iceoryx2_bb_container::vector::*;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
@@ -22,29 +21,18 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let node = NodeBuilder::new().create::<ipc::Service>()?;
 
     let service = node
-        .service_builder(&"CrossLanguageContainer".try_into()?)
-        .publish_subscribe::<StaticVec<u64, 32>>()
-        .user_header::<StaticString<64>>()
+        .service_builder(&"CrossLanguageComplexData".try_into()?)
+        .publish_subscribe::<ComplexType>()
         .open_or_create()?;
 
-    let publisher = service.publisher_builder().create()?;
+    let subscriber = service.subscriber_builder().create()?;
 
-    let mut counter: u64 = 0;
+    println!("Subscriber ready to receive data!");
 
     while node.wait(CYCLE_TIME).is_ok() {
-        counter += 1;
-        let mut sample = publisher.loan_uninit()?;
-
-        sample
-            .user_header_mut()
-            .push_bytes(b"Are Hypnotoad and Kermit related like Fry and the Professor?")?;
-        let sample = sample.write_payload(StaticVec::try_from(
-            [counter, counter + 1, counter + 2].as_slice(),
-        )?);
-
-        sample.send()?;
-
-        println!("Send sample {counter} ...");
+        while let Some(sample) = subscriber.receive()? {
+            println!("received: {}", sample.some_matrix[2][5]);
+        }
     }
 
     println!("exit");

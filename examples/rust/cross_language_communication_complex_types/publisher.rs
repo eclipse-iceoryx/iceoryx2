@@ -11,9 +11,11 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::time::Duration;
+use examples_common::ComplexType;
 use iceoryx2::prelude::*;
 use iceoryx2_bb_container::string::*;
 use iceoryx2_bb_container::vector::*;
+use std::str::FromStr;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
@@ -22,9 +24,8 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let node = NodeBuilder::new().create::<ipc::Service>()?;
 
     let service = node
-        .service_builder(&"CrossLanguageContainer".try_into()?)
-        .publish_subscribe::<StaticVec<u64, 32>>()
-        .user_header::<StaticString<64>>()
+        .service_builder(&"CrossLanguageComplexData".try_into()?)
+        .publish_subscribe::<ComplexType>()
         .open_or_create()?;
 
     let publisher = service.publisher_builder().create()?;
@@ -34,13 +35,19 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     while node.wait(CYCLE_TIME).is_ok() {
         counter += 1;
         let mut sample = publisher.loan_uninit()?;
+        unsafe { ComplexType::placement_default(sample.payload_mut().as_mut_ptr()) };
+        let mut sample = unsafe { sample.assume_init() };
 
-        sample
-            .user_header_mut()
-            .push_bytes(b"Are Hypnotoad and Kermit related like Fry and the Professor?")?;
-        let sample = sample.write_payload(StaticVec::try_from(
-            [counter, counter + 1, counter + 2].as_slice(),
-        )?);
+        sample.address_book.push((
+            StaticString::from_str("Kermit")?,
+            StaticString::from_str("The Frog")?,
+        ))?;
+        sample.some_matrix.resize(8, StaticVec::new())?;
+        for row in sample.some_matrix.iter_mut() {
+            row.resize(8, 0.0)?;
+        }
+        sample.some_matrix[2][5] = counter as f64 * 0.8912;
+        sample.some_value = 5;
 
         sample.send()?;
 

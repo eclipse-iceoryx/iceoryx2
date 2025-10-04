@@ -10,10 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+mod cross_language_complex_type;
 mod custom_header;
 mod pubsub_event;
 mod transmission_data;
 
+pub use cross_language_complex_type::ComplexType;
 pub use custom_header::CustomHeader;
 pub use pubsub_event::PubSubEvent;
 pub use transmission_data::TransmissionData;

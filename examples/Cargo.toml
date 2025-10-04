@@ -73,6 +73,16 @@ path = "rust/cross_language_communication_container/publisher.rs"
 name = "cross_language_communication_container_subscriber"
 path = "rust/cross_language_communication_container/subscriber.rs"
 
+# cross_language_communication_complex_types
+
+[[example]]
+name = "cross_language_communication_complex_types_publisher"
+path = "rust/cross_language_communication_complex_types/publisher.rs"
+
+[[example]]
+name = "cross_language_communication_complex_types_subscriber"
+path = "rust/cross_language_communication_complex_types/subscriber.rs"
+
 # discovery
 
 [[example]]
