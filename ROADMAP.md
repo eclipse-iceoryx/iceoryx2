@@ -166,6 +166,8 @@ The list is sorted by priority
 * [ ] VxWorks
 * [ ] BareMetal
 * [ ] Sandbox Mode (only process internal communication)
+* [ ] RTEMS
+* [ ] Redox OS
 
 ### Hardware Support
 
