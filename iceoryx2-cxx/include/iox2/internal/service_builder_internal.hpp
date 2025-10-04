@@ -23,6 +23,9 @@
 #include <typeinfo>
 
 namespace iox2::internal {
+template <typename>
+auto get_type_name() -> TypeName;
+
 template <typename Payload, typename = void>
 struct HasPayloadTypeNameMember : std::false_type { };
 
@@ -57,12 +60,12 @@ using FromSliceWithoutCustomizedInnerPayloadTypeName =
                      TypeName>;
 
 template <typename PayloadType>
-auto get_type_name() -> internal::FromCustomizedPayloadTypeName<PayloadType> {
+auto get_type_name_impl() -> internal::FromCustomizedPayloadTypeName<PayloadType> {
     return *TypeName::from_utf8_null_terminated_unchecked(PayloadType::IOX2_TYPE_NAME);
 }
 
 template <typename PayloadType>
-auto get_type_name() -> internal::FromStaticString<PayloadType> {
+auto get_type_name_impl() -> internal::FromStaticString<PayloadType> {
     char type_name[TypeName::capacity()] { 0 };
     snprintf(type_name,
              TypeName::capacity(),
@@ -72,19 +75,19 @@ auto get_type_name() -> internal::FromStaticString<PayloadType> {
 }
 
 template <typename PayloadType>
-auto get_type_name() -> internal::FromStaticVector<PayloadType> {
+auto get_type_name_impl() -> internal::FromStaticVector<PayloadType> {
     char type_name[TypeName::capacity()] { 0 };
     snprintf(type_name,
              TypeName::capacity(),
-             "iceoryx2_bb_container::string::static_vec::StaticVec<%s, %llu>",
-             "u64",
+             "iceoryx2_bb_container::vector::static_vec::StaticVec<%s, %llu>",
+             get_type_name<typename PayloadType::ValueType>().unchecked_access().c_str(),
              static_cast<long long unsigned int>(PayloadType::capacity()));
     return *TypeName::from_utf8_null_terminated_unchecked(type_name);
 }
 
 // NOLINTBEGIN(readability-function-size) : template alternative is less readable
 template <typename PayloadType>
-auto get_type_name() -> internal::FromNonSlice<PayloadType> {
+auto get_type_name_impl() -> internal::FromNonSlice<PayloadType> {
     if (std::is_same_v<PayloadType, uint8_t>) {
         return *TypeName::from_utf8("u8");
     }
@@ -124,14 +127,20 @@ auto get_type_name() -> internal::FromNonSlice<PayloadType> {
 // NOLINTEND(readability-function-size)
 
 template <typename PayloadType>
-auto get_type_name() -> internal::FromSliceWithCustomizedInnerPayloadTypeName<PayloadType> {
+auto get_type_name_impl() -> internal::FromSliceWithCustomizedInnerPayloadTypeName<PayloadType> {
     return *TypeName::from_utf8_null_terminated_unchecked(PayloadType::ValueType::IOX2_TYPE_NAME);
 }
 
 template <typename PayloadType>
-auto get_type_name() -> internal::FromSliceWithoutCustomizedInnerPayloadTypeName<PayloadType> {
-    return get_type_name<typename PayloadType::ValueType>();
+auto get_type_name_impl() -> internal::FromSliceWithoutCustomizedInnerPayloadTypeName<PayloadType> {
+    return get_type_name_impl<typename PayloadType::ValueType>();
 }
+
+template <typename PayloadType>
+auto get_type_name() -> TypeName {
+    return get_type_name_impl<PayloadType>();
+}
+
 } // namespace iox2::internal
 
 #endif
