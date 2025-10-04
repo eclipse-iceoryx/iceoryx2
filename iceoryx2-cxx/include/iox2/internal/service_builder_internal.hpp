@@ -88,6 +88,9 @@ auto get_type_name_impl() -> internal::FromStaticVector<PayloadType> {
 // NOLINTBEGIN(readability-function-size) : template alternative is less readable
 template <typename PayloadType>
 auto get_type_name_impl() -> internal::FromNonSlice<PayloadType> {
+    if (std::is_same_v<PayloadType, void>) {
+        return *TypeName::from_utf8("()");
+    }
     if (std::is_same_v<PayloadType, uint8_t>) {
         return *TypeName::from_utf8("u8");
     }

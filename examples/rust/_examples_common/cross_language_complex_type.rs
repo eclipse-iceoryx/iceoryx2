@@ -14,6 +14,13 @@ use iceoryx2::prelude::*;
 use iceoryx2_bb_container::string::*;
 use iceoryx2_bb_container::vector::*;
 
+#[derive(Debug, Default, PlacementDefault, ZeroCopySend)]
+#[repr(C)]
+pub struct FullName {
+    pub first_name: StaticString<256>,
+    pub last_name: StaticString<256>,
+}
+
 // We derive from PlacementDefault to allow in memory initialization
 // without any copy. Avoids stack overflows when data type is larger than the
 // available stack.
@@ -22,7 +29,7 @@ use iceoryx2_bb_container::vector::*;
 #[type_name("ComplexType")]
 #[repr(C)]
 pub struct ComplexType {
-    pub address_book: StaticVec<(StaticString<256>, StaticString<256>), 16384>,
+    pub address_book: StaticVec<FullName, 16384>,
     pub some_matrix: StaticVec<StaticVec<f64, 8>, 8>,
     pub some_value: u16,
     pub another_value: u32,

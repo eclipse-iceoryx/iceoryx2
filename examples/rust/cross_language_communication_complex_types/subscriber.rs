@@ -21,7 +21,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let node = NodeBuilder::new().create::<ipc::Service>()?;
 
     let service = node
-        .service_builder(&"CrossLanguageComplexData".try_into()?)
+        .service_builder(&"CrossLanguageComplexTypes".try_into()?)
         .publish_subscribe::<ComplexType>()
         .open_or_create()?;
 

@@ -12,6 +12,7 @@
 
 use core::time::Duration;
 use examples_common::ComplexType;
+use examples_common::FullName;
 use iceoryx2::prelude::*;
 use iceoryx2_bb_container::string::*;
 use iceoryx2_bb_container::vector::*;
@@ -24,7 +25,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let node = NodeBuilder::new().create::<ipc::Service>()?;
 
     let service = node
-        .service_builder(&"CrossLanguageComplexData".try_into()?)
+        .service_builder(&"CrossLanguageComplexTypes".try_into()?)
         .publish_subscribe::<ComplexType>()
         .open_or_create()?;
 
@@ -38,10 +39,10 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         unsafe { ComplexType::placement_default(sample.payload_mut().as_mut_ptr()) };
         let mut sample = unsafe { sample.assume_init() };
 
-        sample.address_book.push((
-            StaticString::from_str("Kermit")?,
-            StaticString::from_str("The Frog")?,
-        ))?;
+        sample.address_book.push(FullName {
+            first_name: StaticString::from_str("Kermit")?,
+            last_name: StaticString::from_str("The Frog")?,
+        })?;
         sample.some_matrix.resize(8, StaticVec::new())?;
         for row in sample.some_matrix.iter_mut() {
             row.resize(8, 0.0)?;
