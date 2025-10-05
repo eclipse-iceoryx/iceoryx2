@@ -15,10 +15,12 @@ load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 cc_binary(
     name = "example_cxx_cross_language_communication_complex_types_publisher",
     srcs = [
+        "src/complex_type.hpp",
         "src/publisher.cpp",
     ],
     deps = [
         "@iceoryx//:iceoryx_hoofs",
+        "//iceoryx2-bb/cxx:iceoryx2-bb-containers-cxx",
         "//:iceoryx2-cxx-static",
     ],
 )
@@ -26,10 +28,12 @@ cc_binary(
 cc_binary(
     name = "example_cxx_cross_language_communication_complex_types_subscriber",
     srcs = [
+        "src/complex_type.hpp",
         "src/subscriber.cpp",
     ],
     deps = [
         "@iceoryx//:iceoryx_hoofs",
+        "//iceoryx2-bb/cxx:iceoryx2-bb-containers-cxx",
         "//:iceoryx2-cxx-static",
     ],
 )
