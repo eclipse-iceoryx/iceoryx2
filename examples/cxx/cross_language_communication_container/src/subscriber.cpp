@@ -25,8 +25,8 @@ auto main() -> int {
     auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
 
     auto service = node.service_builder(ServiceName::create("CrossLanguageContainer").expect("valid service name"))
-                       .publish_subscribe<iox2::container::StaticVector<uint64_t, 32>>()
-                       .user_header<iox2::container::StaticString<64>>()
+                       .publish_subscribe<iox2::container::StaticVector<uint64_t, 32>>() // NOLINT
+                       .user_header<iox2::container::StaticString<64>>()                 // NOLINT
                        .open_or_create()
                        .expect("successful service creation/opening");
 

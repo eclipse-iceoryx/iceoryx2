@@ -507,8 +507,8 @@ auto operator<<(std::ostream& stream, const iox2::container::StaticVector<T, N>&
     if (!value.empty()) {
         stream << value.unchecked_access()[0];
     }
-    for (uint64_t n = 1; n < value.size(); ++n) {
-        stream << ", " << value.unchecked_access()[n];
+    for (uint64_t idx = 1; idx < value.size(); ++idx) {
+        stream << ", " << value.unchecked_access()[idx];
     }
     stream << " ] }";
     return stream;

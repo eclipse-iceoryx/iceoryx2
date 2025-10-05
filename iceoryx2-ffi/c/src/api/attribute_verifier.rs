@@ -153,7 +153,8 @@ pub unsafe extern "C" fn iox2_attribute_verifier_drop(handle: iox2_attribute_ver
 
 /// Defines a attribute (key / value pair) that is required.
 ///
-/// Returns IOX2_OK on success, an [`iox2_attribute_definition_error_e`] otherwise.
+/// Returns IOX2_OK on success, an
+/// [`iox2_attribute_definition_error_e`](crate::iox2_attribute_definition_error_e) otherwise.
 ///
 /// # Safety
 ///
@@ -193,7 +194,8 @@ pub unsafe extern "C" fn iox2_attribute_verifier_require(
 
 /// Defines a key that must be present.
 ///
-/// Returns IOX2_OK on success, an [`iox2_attribute_definition_error_e`] otherwise.
+/// Returns IOX2_OK on success, an
+/// [`iox2_attribute_definition_error_e`](crate::iox2_attribute_definition_error_e) otherwise.
 ///
 /// # Safety
 ///
@@ -249,7 +251,8 @@ pub unsafe extern "C" fn iox2_attribute_verifier_attributes(
 
 /// Verifies if the [`iox2_attribute_set_ptr`] contains all required keys and key-value pairs.
 ///
-/// Returns IOX2_OK on success, an [`iox2_attribute_verification_error_e`] otherwise.
+/// Returns IOX2_OK on success, an
+/// [`iox2_attribute_verification_error_e`](crate::iox2_attribute_verification_error_e) otherwise.
 ///
 /// # Safety
 ///

@@ -152,7 +152,8 @@ pub unsafe extern "C" fn iox2_attribute_specifier_drop(handle: iox2_attribute_sp
 
 /// Defines a attribute (key / value pair).
 ///
-/// Returns IOX2_OK on success, an [`iox2_attribute_definition_error_e`] otherwise.
+/// Returns IOX2_OK on success, an
+/// [`iox2_attribute_definition_error_e`](crate::iox2_attribute_definition_error_e) otherwise.
 ///
 /// # Safety
 ///

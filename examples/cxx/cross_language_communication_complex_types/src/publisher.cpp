@@ -40,14 +40,14 @@ auto main() -> int {
 
         auto& payload = sample.payload_mut();
         payload.address_book.try_emplace_back(FullName {
-            *container::StaticString<256>::from_utf8("Lisa"),
-            *container::StaticString<256>::from_utf8("The Log"),
+            *container::StaticString<256>::from_utf8("Lisa"),    // NOLINT
+            *container::StaticString<256>::from_utf8("The Log"), // NOLINT
         });
-        payload.some_matrix.try_insert_at(0, 8, container::StaticVector<double, 8>());
+        payload.some_matrix.try_insert_at(0, 8, container::StaticVector<double, 8>()); //NOLINT
         for (uint64_t idx = 0; idx < payload.some_matrix.size(); ++idx) {
-            payload.some_matrix.unchecked_access()[idx].try_insert_at(0, 8, 0.0);
+            payload.some_matrix.unchecked_access()[idx].try_insert_at(0, 8, 0.0); //NOLINT
         }
-        payload.some_matrix.unchecked_access()[2].unchecked_access()[5] = counter * 1.2123;
+        payload.some_matrix.unchecked_access()[2].unchecked_access()[5] = counter * 1.2123; //NOLINT
 
         auto initialized_sample = assume_init(std::move(sample));
         send(std::move(initialized_sample)).expect("send successful");

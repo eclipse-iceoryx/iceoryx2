@@ -19,16 +19,16 @@
 #include <cstdint>
 
 struct FullName {
-    iox2::container::StaticString<256> first_name;
-    iox2::container::StaticString<256> last_name;
+    iox2::container::StaticString<256> first_name; // NOLINT
+    iox2::container::StaticString<256> last_name;  // NOLINT
 };
 
 struct ComplexType {
     // IOX2_TYPE_NAME is equivalent to the payload type name used on the Rust side
     static constexpr const char* IOX2_TYPE_NAME = "ComplexType";
 
-    iox2::container::StaticVector<FullName, 16384> address_book;
-    iox2::container::StaticVector<iox2::container::StaticVector<double, 8>, 8> some_matrix;
+    iox2::container::StaticVector<FullName, 16384> address_book;                            // NOLINT
+    iox2::container::StaticVector<iox2::container::StaticVector<double, 8>, 8> some_matrix; // NOLINT
     uint16_t some_value;
     uint32_t another_value;
 };

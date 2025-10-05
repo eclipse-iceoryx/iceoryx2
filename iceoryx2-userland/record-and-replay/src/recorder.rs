@@ -20,7 +20,7 @@
 //! ```
 //! use iceoryx2::prelude::*;
 //! use iceoryx2_userland_record_and_replay::prelude::*;
-//! use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeNameString};
+//! use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeName};
 //! use iceoryx2::service::static_config::message_type_details::TypeVariant;
 //! use core::time::Duration;
 //!

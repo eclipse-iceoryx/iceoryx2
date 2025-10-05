@@ -13,7 +13,6 @@
 #include "complex_type.hpp"
 #include "iox2/iceoryx2.hpp"
 
-#include <cstdint>
 #include <iostream>
 
 constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1);
@@ -35,7 +34,8 @@ auto main() -> int {
     while (node.wait(CYCLE_TIME).has_value()) {
         auto sample = subscriber.receive().expect("receive succeeds");
         while (sample.has_value()) {
-            std::cout << "received: " << sample->payload().some_matrix.unchecked_access()[2].unchecked_access()[5]
+            std::cout << "received: "
+                      << sample->payload().some_matrix.unchecked_access()[2].unchecked_access()[5] // NOLINT
                       << std::endl;
             sample = subscriber.receive().expect("receive succeeds");
         }

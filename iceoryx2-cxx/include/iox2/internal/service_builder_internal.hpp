@@ -66,23 +66,29 @@ auto get_type_name_impl() -> internal::FromCustomizedPayloadTypeName<PayloadType
 
 template <typename PayloadType>
 auto get_type_name_impl() -> internal::FromStaticString<PayloadType> {
+    // std::array is not available in this safety-critical context
+    // NOLINTNEXTLINE
     char type_name[TypeName::capacity()] { 0 };
+    // std::to_string() is not available in this safety-critical context
+    // NOLINTNEXTLINE
     snprintf(type_name,
              TypeName::capacity(),
              "iceoryx2_bb_container::string::static_string::StaticString<%llu>",
              static_cast<long long unsigned int>(PayloadType::capacity()));
-    return *TypeName::from_utf8_null_terminated_unchecked(type_name);
+    return *TypeName::from_utf8_null_terminated_unchecked(&type_name[0]);
 }
 
 template <typename PayloadType>
 auto get_type_name_impl() -> internal::FromStaticVector<PayloadType> {
+    // std::array is not available in this safety-critical context
+    // NOLINTNEXTLINE
     char type_name[TypeName::capacity()] { 0 };
     snprintf(type_name,
              TypeName::capacity(),
              "iceoryx2_bb_container::vector::static_vec::StaticVec<%s, %llu>",
              get_type_name<typename PayloadType::ValueType>().unchecked_access().c_str(),
              static_cast<long long unsigned int>(PayloadType::capacity()));
-    return *TypeName::from_utf8_null_terminated_unchecked(type_name);
+    return *TypeName::from_utf8_null_terminated_unchecked(&type_name[0]);
 }
 
 // NOLINTBEGIN(readability-function-size) : template alternative is less readable
