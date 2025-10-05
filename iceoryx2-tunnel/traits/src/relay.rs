@@ -15,10 +15,7 @@ use core::fmt::Debug;
 use iceoryx2::service::static_config::StaticConfig;
 
 // TODO: Rename to Ports?
-/// Relays data over the transport.
-///
-/// A relay should be created for each messaging pattern.
-pub trait Relay {
+pub trait PublishSubscribeRelay {
     type PropagationError: Debug;
     type IngestionError: Debug;
 
@@ -29,70 +26,35 @@ pub trait Relay {
     ) -> Result<bool, Self::IngestionError>;
 }
 
-/// Builds a relay for a specific messaging pattern.
-///
-/// Allows for the transport to decide how to support
-/// propagation of data on different messaging patterns.
+pub trait EventRelay {
+    type PropagationError: Debug;
+    type IngestionError: Debug;
+
+    fn propagate(&self) -> Result<(), Self::PropagationError>;
+    fn ingest(&self) -> Result<(), Self::IngestionError>;
+}
+
 pub trait RelayBuilder {
     type CreationError: Debug;
-    type Relay: Relay;
+    type Relay;
 
     fn create(self) -> Result<Self::Relay, Self::CreationError>;
 }
 
-/// Factory for creating relay builders for different messaging patterns.
-///
-/// This trait defines the messaging patterns that a transport implementation
-/// must support. Each builder method accepts a [`StaticConfig`] and returns
-/// a builder that can create the corresponding relay.
-///
-/// The associated types use Generic Associated Types (GATs) to allow each
-/// builder to have its own independent lifetime tied to the `StaticConfig`
-/// it borrows. This means:
-///
-/// - Multiple builders can be created from the same factory
-/// - Each builder can borrow a different `StaticConfig` with its own lifetime
-/// - The factory (and any resources it holds) must outlive all builders it creates
 pub trait RelayFactory {
-    type PublishSubscribeRelay: Relay;
-    type EventRelay: Relay;
+    type PublishSubscribeRelay: PublishSubscribeRelay;
+    type EventRelay: EventRelay;
 
-    /// Builder for publish-subscribe messaging pattern.
-    ///
-    /// The `'config` lifetime parameter allows each call to `publish_subscribe()`
-    /// to have its own independent lifetime tied to the borrowed `StaticConfig`.
-    ///
-    /// The `where Self: 'config` constraint ensures the factory and its resources
-    /// outlive the builder.
     type PublishSubscribeBuilder<'config>: RelayBuilder<Relay = Self::PublishSubscribeRelay>
         + Debug
         + 'config
     where
         Self: 'config;
 
-    /// Builder for event messaging pattern.
-    ///
-    /// The `'config` lifetime parameter allows each call to `event()`
-    /// to have its own independent lifetime tied to the borrowed `StaticConfig`.
-    ///
-    /// The `where Self: 'config` constraint ensures the factory and its resources
-    /// outlive the builder.
     type EventBuilder<'config>: RelayBuilder<Relay = Self::EventRelay> + Debug + 'config
     where
         Self: 'config;
 
-    /// Creates a builder for the publish-subscribe messaging pattern.
-    ///
-    /// # Arguments
-    ///
-    /// * `static_config` - Configuration for the service. The returned builder
-    ///   will borrow this config for its lifetime `'config`.
-    ///
-    /// # Lifetime
-    ///
-    /// The `where Self: 'config` constraint ensures that the factory (and any
-    /// resources it holds, like a session) outlives the `static_config`
-    /// and the returned builder.
     fn publish_subscribe<'config>(
         &self,
         static_config: &'config StaticConfig,
@@ -100,18 +62,6 @@ pub trait RelayFactory {
     where
         Self: 'config;
 
-    /// Creates a builder for the event messaging pattern.
-    ///
-    /// # Arguments
-    ///
-    /// * `static_config` - Configuration for the service. The returned builder
-    ///   will borrow this config for its lifetime `'config`.
-    ///
-    /// # Lifetime
-    ///
-    /// The `where Self: 'config` constraint ensures that the factory (and any
-    /// resources it holds, like a session) outlives the `static_config`
-    /// and the returned builder.
     fn event<'config>(&self, static_config: &'config StaticConfig) -> Self::EventBuilder<'config>
     where
         Self: 'config;

@@ -12,6 +12,7 @@
 
 use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2_bb_log::{debug, error, fail};
+use iceoryx2_tunnel_traits::{PublishSubscribeRelay, RelayBuilder};
 use zenoh::{
     bytes::ZBytes,
     handlers::{FifoChannel, FifoChannelHandler},
@@ -58,7 +59,7 @@ impl<'a> Builder<'a> {
     }
 }
 
-impl<'a> iceoryx2_tunnel_traits::RelayBuilder for Builder<'a> {
+impl<'a> RelayBuilder for Builder<'a> {
     type CreationError = CreationError;
     type Relay = Relay;
 
@@ -107,7 +108,7 @@ pub struct Relay {
     subscriber: Subscriber<FifoChannelHandler<Sample>>,
 }
 
-impl iceoryx2_tunnel_traits::Relay for Relay {
+impl iceoryx2_tunnel_traits::PublishSubscribeRelay for Relay {
     type PropagationError = PropagationError;
     type IngestionError = PropagationError;
 

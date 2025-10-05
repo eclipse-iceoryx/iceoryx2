@@ -15,7 +15,9 @@ use std::collections::{HashMap, HashSet};
 
 use crate::ports::Ports;
 use crate::{discovery, ports};
-use iceoryx2_tunnel_traits::{Discovery, Relay, RelayBuilder, RelayFactory, Transport};
+use iceoryx2_tunnel_traits::{
+    Discovery, PublishSubscribeRelay, RelayBuilder, RelayFactory, Transport,
+};
 
 use iceoryx2::node::{Node, NodeBuilder, NodeCreationFailure};
 use iceoryx2::prelude::PortFactory;

@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2::service::static_config::StaticConfig;
+use iceoryx2_tunnel_traits::EventRelay;
 use zenoh::Session;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -55,18 +56,15 @@ impl<'a> iceoryx2_tunnel_traits::RelayBuilder for Builder<'a> {
 #[derive(Debug)]
 pub struct Relay {}
 
-impl iceoryx2_tunnel_traits::Relay for Relay {
+impl EventRelay for Relay {
     type PropagationError = PropagationError;
     type IngestionError = IngestionError;
 
-    fn propagate(&self, bytes: *const u8, len: usize) -> Result<(), Self::PropagationError> {
+    fn propagate(&self) -> Result<(), Self::PropagationError> {
         todo!()
     }
 
-    fn ingest(
-        &self,
-        loan: &mut dyn FnMut(usize) -> (*mut u8, usize),
-    ) -> Result<bool, Self::IngestionError> {
+    fn ingest(&self) -> Result<(), Self::IngestionError> {
         todo!()
     }
 }

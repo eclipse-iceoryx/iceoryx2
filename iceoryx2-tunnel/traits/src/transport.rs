@@ -12,7 +12,7 @@
 
 use core::fmt::Debug;
 
-use crate::{Discovery, Relay, RelayFactory};
+use crate::{Discovery, EventRelay, PublishSubscribeRelay, RelayFactory};
 
 /// Abstraction of the transport over which data is propagated.
 ///
@@ -22,8 +22,8 @@ pub trait Transport: Sized {
     type CreationError: Debug;
     type Discovery: Discovery;
 
-    type PublishSubscribeRelay: Relay + Debug;
-    type EventRelay: Relay + Debug;
+    type PublishSubscribeRelay: PublishSubscribeRelay + Debug;
+    type EventRelay: EventRelay + Debug;
 
     type RelayFactory<'a>: RelayFactory<
         PublishSubscribeRelay = Self::PublishSubscribeRelay,
