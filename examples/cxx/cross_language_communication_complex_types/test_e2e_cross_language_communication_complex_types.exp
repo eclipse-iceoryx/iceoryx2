@@ -22,14 +22,14 @@ source examples/cross-language-end-to-end-tests/common.exp
 
 set timeout 10
 
-spawn target/ff/cc/build/examples/cxx/cross_language_complex_types/example_cxx_cross_language_complex_types_publisher
+spawn target/ff/cc/build/examples/cxx/cross_language_communication_complex_types/example_cxx_cross_language_communication_complex_types_publisher
 set id_publisher $spawn_id
 
-spawn target/ff/cc/build/examples/cxx/cross_language_complex_types/example_cxx_cross_language_complex_types_subscriber
+spawn target/ff/cc/build/examples/cxx/cross_language_communication_complex_types/example_cxx_cross_language_communication_complex_types_subscriber
 
 #### Test Assertion
 
 expect_output_from $id_publisher "Send sample*"
-expect_output "received: TransmissionData { x: 3, y: 9, funky: 2436.36 }*"
+expect_output "received: 2.4246"
 
 show_test_passed

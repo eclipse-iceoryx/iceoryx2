@@ -43,7 +43,7 @@ pub enum iox2_attribute_verification_error_e {
 }
 
 impl IntoCInt for AttributeVerificationError {
-    fn into_c_int(self) -> std::ffi::c_int {
+    fn into_c_int(self) -> core::ffi::c_int {
         (match self {
             AttributeVerificationError::IncompatibleAttribute(_) => {
                 iox2_attribute_verification_error_e::INCOMPATIBLE_ATTRIBUTE
@@ -51,7 +51,7 @@ impl IntoCInt for AttributeVerificationError {
             AttributeVerificationError::NonExistingKey(_) => {
                 iox2_attribute_verification_error_e::NON_EXISTING_KEY
             }
-        }) as std::ffi::c_int
+        }) as core::ffi::c_int
     }
 }
 
@@ -63,12 +63,12 @@ pub enum iox2_attribute_definition_error_e {
 }
 
 impl IntoCInt for AttributeDefinitionError {
-    fn into_c_int(self) -> std::ffi::c_int {
+    fn into_c_int(self) -> core::ffi::c_int {
         (match self {
             AttributeDefinitionError::ExceedsMaxSupportedAttributes => {
                 iox2_attribute_definition_error_e::EXCEEDS_MAX_SUPPORTED_ATTRIBUTES
             }
-        }) as std::ffi::c_int
+        }) as core::ffi::c_int
     }
 }
 

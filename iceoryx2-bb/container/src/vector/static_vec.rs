@@ -119,7 +119,7 @@ impl<'de, T: Deserialize<'de>, const CAPACITY: usize> Visitor<'de>
         let mut new_vec = Self::Value::new();
 
         while let Some(element) = seq.next_element()? {
-            if !new_vec.push(element).is_ok() {
+            if new_vec.push(element).is_err() {
                 return Err(<A::Error as serde::de::Error>::custom(format!(
                     "the array can hold at most {CAPACITY} elements"
                 )));

@@ -35,7 +35,7 @@ int main(void) {
     }
 
     // create service name
-    const char* service_name_value = "My/Funk/ServiceName";
+    const char* service_name_value = "CrossLanguageBasics";
     iox2_service_name_h service_name = NULL;
     if (iox2_service_name_new(NULL, service_name_value, strlen(service_name_value), &service_name) != IOX2_OK) {
         printf("Unable to create service name!\n");

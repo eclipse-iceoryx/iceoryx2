@@ -22,10 +22,10 @@ source examples/cross-language-end-to-end-tests/common.exp
 
 set timeout 10
 
-spawn target/ff/cc/build/examples/c/cross_language_communication_basics/example_c_cross_language_publisher
+spawn target/ff/cc/build/examples/c/cross_language_communication_basics/example_c_cross_language_communication_basics_publisher
 set id_publisher $spawn_id
 
-spawn target/ff/cc/build/examples/c/cross_language_communication_basics/example_c_cross_language_subscriber
+spawn target/ff/cc/build/examples/c/cross_language_communication_basics/example_c_cross_language_communication_basics_subscriber
 
 #### Test Assertion
 

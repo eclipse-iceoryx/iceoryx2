@@ -177,6 +177,7 @@ type KeyStorage = StaticVec<AttributeKey, MAX_ATTRIBUTES>;
 type AttributeStorage = StaticVec<Attribute, MAX_ATTRIBUTES>;
 
 /// Failures that can occur when the [`AttributeVerifier`] fails the verification.
+#[allow(clippy::large_enum_variant)] // safety context forbids use of Box
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum AttributeVerificationError {
     /// A key defined via [`AttributeVerifier::require_key()`] is missing.
@@ -344,6 +345,7 @@ impl AttributeVerifier {
     }
 
     /// Verifies if the [`AttributeSet`] contains all required keys and key-value pairs.
+    #[allow(clippy::result_large_err)] // safety context forbids use of Box
     pub fn verify_requirements(
         &self,
         rhs: &AttributeSet,
