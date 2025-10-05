@@ -14,6 +14,10 @@
 > cause undefined behavior and may result in segmentation faults. Take a look
 > at the [publish subscribe example](../publish_subscribe) to see how `ctypes`
 > can be transferred.
+>
+> **Only fixed-size integers (like `ctypes.c_uint8_t`), `ctypes.c_float`,**
+> **`ctypes.c_double`, and the types in the `iceoryx2-bb-container` library**
+> **are cross-language compatible!**
 
 This example demonstrates the dynamic memory request-response messaging pattern
 between two separate processes using iceoryx2. A service with the request and

@@ -17,8 +17,15 @@
 > compatible with shared memory. See the
 > [complex data type example](../complex_data_types) for guidance on how to
 > use them.
+>
+> **Only fixed-size integers (like `u8`), floating-point types (`f32` and**
+> **`f64`), and the types in the `iceoryx2-bb-container` library are**
+> **cross-language compatible!**
 
-This example illustrates a robust cross-language ..
+This example illustrates how the iceoryx2-bb-container C++ and Rust libraries
+can be used for cross-language communication. We use a `StaticVec<u64>` with a
+fixed capacity as payload and add a `StaticString` with a fixed capacity as the
+user header.
 
 ## How to Run
 
@@ -48,12 +55,13 @@ cargo run --example cross_language_communication_containers_publisher
 > [API of the Service builder](https://docs.rs/iceoryx2/latest/iceoryx2/service/index.html)
 > to set them for a single service.
 
-## Containers
+## How to enable cross-language communication
 
-> [!TIP]
-> You can also send dynamic data between Python, Rust and C++ applications (see
-> [Publish-Subscribe With Dynamic Data](../publish_subscribe_dynamic_data)). If
-> you send `iox::Slice`s of `(u)int{8|16|32|64}_t`, `float`, `double` or
-> `bool`, the payload type name is automatically translated to the Rust
-> equivalent. For other slice types, you have to set `IOX2_TYPE_NAME` for the
-> inner type to the Rust equivalent to enable the communication.
+To enable cross-language communication with containers like `StaticVec`, the
+contained type must itself be cross-language compatible. This applies to all
+fixed-size integer and floating-point types such as `u8`, `i16`, `f32`, and
+`f64`. Types like `char` and `bool` are not supported because their sizes differ
+across languages.
+
+iceoryx2 verifies before connecting that the type name, size, and alignment of
+the payload match, preventing the use of non–cross-language-compatible types.

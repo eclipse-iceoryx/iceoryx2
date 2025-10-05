@@ -17,6 +17,10 @@
 > compatible with shared memory. See the
 > [complex data type example](../complex_data_types) for guidance on how to
 > use them.
+>
+> **Only fixed-size integers (like `u8`), floating-point types (`f32` and**
+> **`f64`), and the types in the `iceoryx2-bb-container` library are**
+> **cross-language compatible!**
 
 This example illustrates a robust cross-language publisher-subscriber
 communication pattern. You can find compatible applications in the
@@ -59,7 +63,7 @@ languages efficiently.
 > [API of the Service builder](https://docs.rs/iceoryx2/latest/iceoryx2/service/index.html)
 > to set them for a single service.
 
-## How to enable cross-language publish-subscribe communication
+## How to enable cross-language communication
 
 To communicate with each other, publisher and subscriber applications must share
 the same service configuration, including the payload and the user header type

@@ -17,8 +17,10 @@
 > compatible with shared memory. See the
 > [complex data type example](../complex_data_types) for guidance on how to
 > use them.
-
-This example illustrates a robust cross-language ..
+>
+> **Only fixed-size integers (like `u8`), floating-point types (`f32` and**
+> **`f64`), and the types in the `iceoryx2-bb-container` library are**
+> **cross-language compatible!**
 
 ## How to Run
 
@@ -47,13 +49,3 @@ cargo run --example cross_language_communication_complex_types_publisher
 > to set the limits globally or refer to the
 > [API of the Service builder](https://docs.rs/iceoryx2/latest/iceoryx2/service/index.html)
 > to set them for a single service.
-
-## Containers
-
-> [!TIP]
-> You can also send dynamic data between Python, Rust and C++ applications (see
-> [Publish-Subscribe With Dynamic Data](../publish_subscribe_dynamic_data)). If
-> you send `iox::Slice`s of `(u)int{8|16|32|64}_t`, `float`, `double` or
-> `bool`, the payload type name is automatically translated to the Rust
-> equivalent. For other slice types, you have to set `IOX2_TYPE_NAME` for the
-> inner type to the Rust equivalent to enable the communication.

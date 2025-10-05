@@ -8,6 +8,10 @@
 > * have a uniform memory representation, ensuring that shared structs have the
 >     same data layout
 > * not use pointers to manage their internal structure
+>
+> **Only fixed-size integers (like `uint8_t`), `float`, `double`, and the**
+> **types in the `iceoryx2-bb-container` library are cross-language**
+> **compatible!**
 
 This example illustrates a robust publisher-subscriber communication pattern
 between two separate processes. The publisher sends two messages every second,

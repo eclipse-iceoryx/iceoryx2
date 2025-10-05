@@ -15,14 +15,15 @@
 > that are compatible with shared memory. See the
 > [complex data type example](../complex_data_types) for guidance on how to
 > use them.
+>
+> **Only fixed-size integers (like `uint8_t`), `float`, `double`, and the**
+> **types in the `iceoryx2-bb-container` library are cross-language
+> **compatible!**
 
-This example illustrates a robust cross-language publisher-subscriber
-communication pattern. You can find compatible applications in the
-cross-language examples for every language that iceoryx2 supports. The publisher
-applications of the cross-language examples send a message every second, each
-containing `TransmissionData` and the `CustomHeader`. On the receiving end, the
-subscriber applications of the cross-language examples print the received
-payload and the user header to the console whenever new data arrives.
+This example illustrates how the iceoryx2-bb-container C++ and Rust libraries
+can be used for cross-language communication. We use a `StaticVector<uint64_t>`
+with a fixed capacity as payload and add a `StaticString` with a fixed capacity
+as the user header.
 
 ## How to Build
 
@@ -70,44 +71,13 @@ languages efficiently.
 > [API of the Service builder](https://docs.rs/iceoryx2/latest/iceoryx2/service/index.html)
 > to set them for a single service.
 
-## How to enable cross-language publish-subscribe communication
+## How to enable cross-language communication
 
-To communicate with each other, publisher and subscriber applications must share
-the same service configuration, including the payload and the user header type
-name.
+To enable cross-language communication with containers like `StaticVec`, the
+contained type must itself be cross-language compatible. This applies to all
+fixed-size integer such as `uint8_t`, `int16_t`, and `float`, and `double`.
+Types like `char` and `bool` are not supported because their sizes differ across
+languages.
 
-To allow cross-language communication involving C++ applications, iceoryx2
-provides the possibility to customize the payload and the user header type name
-by setting `IOX2_TYPE_NAME` in the sent C++ data struct and user header, e.g.
-
-```cxx
-struct TransmissionData {
-    static constexpr const char* IOX2_TYPE_NAME = "TransmissionData";
-    std::int32_t x;
-    std::int32_t y;
-    double funky;
-};
-
-struct CustomHeader {
-    static constexpr const char* IOX2_TYPE_NAME = "CustomHeader";
-    int32_t version;
-    uint64_t timestamp;
-};
-```
-
-When the type names are set to the same value, and the structure has the same
-memory layout, the C++ applications and applications written in other supported
-languages can communicate.
-
-> [!NOTE]
-> For the communication with Rust applications, you don't need to provide
-> `IOX2_TYPE_NAME` for `(u)int{8|16|32|64}_t`, `float`, `double` and `bool`
-> payloads.
-> These types are automatically translated into the Rust equivalents.
-
-You can also send dynamic data between Python, C++ and Rust applications (see
-[Publish-Subscribe With Dynamic Data](../publish_subscribe_dynamic_data)). If
-you send `iox::Slice`s of `(u)int{8|16|32|64}_t`, `float`, `double` or `bool`,
-the payload type name is automatically translated to the Rust equivalent. For
-other slice types, you have to set `IOX2_TYPE_NAME` for the inner type to the
-Rust equivalent to enable the communication.
+iceoryx2 verifies before connecting that the type name, size, and alignment of
+the payload match, preventing the use of non–cross-language-compatible types.

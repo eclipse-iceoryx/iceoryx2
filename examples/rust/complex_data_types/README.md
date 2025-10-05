@@ -11,6 +11,10 @@
 > * does not use pointers to manage their internal structure
 > * and its members don't implement `Drop` explicitly
 > * has a `'static` lifetime
+>
+> **Only fixed-size integers (like `u8`), floating-point types (`f32` and**
+> **`f64`), and the types in the `iceoryx2-bb-container` library are**
+> **cross-language compatible!**
 
 This example demonstrates how the zero-copy compatible versions of `Vec` or
 `String` can be sent.

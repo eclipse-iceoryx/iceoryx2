@@ -12,6 +12,10 @@
 >
 > Any other python data type, except `ctypes` or `ctypes.Structure`s, like will
 > cause undefined behavior and may result in segmentation faults.
+>
+> **Only fixed-size integers (like `ctypes.c_uint8_t`), `ctypes.c_float`,**
+> **`ctypes.c_double`, and the types in the `iceoryx2-bb-container` library**
+> **are cross-language compatible!**
 
 This example illustrates a robust publisher-subscriber communication pattern
 between two separate processes. The publisher sends a message every second,
