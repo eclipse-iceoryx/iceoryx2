@@ -22,6 +22,16 @@
 > **`f64`), and the types in the `iceoryx2-bb-container` library are**
 > **cross-language compatible!**
 
+This example illustrates how to define complex cross-language-compatible structs
+using iceoryx2 containers. We define a `FullName` struct that contains the first
+and last names as `StaticString` types and use it to build an address book, a
+`StaticVec` of `FullName`.
+
+For fun, we also add a member called `some_matrix`, which consists of a
+`StaticVec` of `StaticVec<f64>`, along with a few other members. It is
+essential that the members have the same declaration order and types in every
+language; otherwise, you’ll dive headfirst into undefined behavior—or worse.
+
 ## How to Run
 
 To observe the dynamic communication in action, open two separate terminals and
