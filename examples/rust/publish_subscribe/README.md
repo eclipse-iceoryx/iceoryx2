@@ -17,6 +17,10 @@
 > compatible with shared memory. See the
 > [complex data type example](../complex_data_types) for guidance on how to
 > use them.
+>
+> **Only fixed-size integers (like `u8`), floating-point types (`f32` and**
+> **`f64`), and the types in the `iceoryx2-bb-container` library are**
+> **cross-language compatible!**
 
 This example illustrates a robust publisher-subscriber messaging pattern
 between two separate processes. The publisher sends a message every second,

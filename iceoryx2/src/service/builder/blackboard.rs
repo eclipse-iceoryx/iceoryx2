@@ -668,7 +668,7 @@ impl<
                                 (*self.builder.internals[i].value_writer)(mem.data_ptr);
                                 // write offset to value in payload_shm to entries vector
                                 let res = entry.entries.push(Entry{type_details: self.builder.internals[i].value_type_details.clone(), offset: IoxAtomicU64::new(mem.offset.offset() as u64)});
-                                if !res {
+                                if res.is_err() {
                                     error!(from self, "Writing the value offset to the blackboard management segment failed.");
                                     return false
                                 }

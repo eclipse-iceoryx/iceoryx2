@@ -27,7 +27,7 @@ mod recorder_replayer {
         testing,
     };
 
-    use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeNameString};
+    use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeName};
     use iceoryx2_bb_posix::testing::generate_file_name;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU8;
@@ -35,7 +35,7 @@ mod recorder_replayer {
     fn generate_type_detail(variant: TypeVariant, size: usize, alignment: usize) -> TypeDetail {
         iceoryx2::testing::create_custom_type_detail(
             variant,
-            TypeNameString::from_str_truncated(&UniqueSystemId::new().unwrap().value().to_string())
+            TypeName::from_str_truncated(&UniqueSystemId::new().unwrap().value().to_string())
                 .unwrap(),
             size,
             alignment,

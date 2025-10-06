@@ -29,10 +29,10 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
                 .define(
                     &"dds_service_mapping".try_into()?,
                     &"my_funky_service_name".try_into()?,
-                )
-                .define(&"tcp_serialization_format".try_into()?, &"cdr".try_into()?)
-                .define(&"someip_service_mapping".try_into()?, &"1/2/3".try_into()?)
-                .define(&"camera_resolution".try_into()?, &"1920x1080".try_into()?),
+                )?
+                .define(&"tcp_serialization_format".try_into()?, &"cdr".try_into()?)?
+                .define(&"someip_service_mapping".try_into()?, &"1/2/3".try_into()?)?
+                .define(&"camera_resolution".try_into()?, &"1920x1080".try_into()?)?,
         )?;
 
     let publisher = service.publisher_builder().create()?;

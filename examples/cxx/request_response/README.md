@@ -15,6 +15,10 @@
 > that are compatible with shared memory. See the
 > [complex data type example](../complex_data_types) for guidance on how to
 > use them.
+>
+> **Only fixed-size integers (like `uint8_t`), `float`, `double`, and the**
+> **types in the `iceoryx2-bb-container` library are cross-language**
+> **compatible!**
 
 This example demonstrates the request-response messaging pattern between two
 separate processes using iceoryx2. A key feature of request-response in

@@ -53,6 +53,36 @@ path = "rust/blackboard_event_based_communication/creator.rs"
 name = "complex_data_types"
 path = "rust/complex_data_types/complex_data_types.rs"
 
+# cross_language_communication_basics
+
+[[example]]
+name = "cross_language_communication_basics_publisher"
+path = "rust/cross_language_communication_basics/publisher.rs"
+
+[[example]]
+name = "cross_language_communication_basics_subscriber"
+path = "rust/cross_language_communication_basics/subscriber.rs"
+
+# cross_language_communication_container
+
+[[example]]
+name = "cross_language_communication_container_publisher"
+path = "rust/cross_language_communication_container/publisher.rs"
+
+[[example]]
+name = "cross_language_communication_container_subscriber"
+path = "rust/cross_language_communication_container/subscriber.rs"
+
+# cross_language_communication_complex_types
+
+[[example]]
+name = "cross_language_communication_complex_types_publisher"
+path = "rust/cross_language_communication_complex_types/publisher.rs"
+
+[[example]]
+name = "cross_language_communication_complex_types_subscriber"
+path = "rust/cross_language_communication_complex_types/subscriber.rs"
+
 # discovery
 
 [[example]]
@@ -159,16 +189,6 @@ path = "rust/publish_subscribe_with_user_header/publisher.rs"
 name = "publish_subscribe_user_header_subscriber"
 path = "rust/publish_subscribe_with_user_header/subscriber.rs"
 
-# publish_subscribe_cross_language
-
-[[example]]
-name = "publish_subscribe_cross_language_publisher"
-path = "rust/publish_subscribe_cross_language/publisher.rs"
-
-[[example]]
-name = "publish_subscribe_cross_language_subscriber"
-path = "rust/publish_subscribe_cross_language/subscriber.rs"
-
 # request_response
 
 [[example]]
@@ -216,4 +236,3 @@ path = "rust/service_types/ipc_publisher.rs"
 [[example]]
 name = "service_types_local_pubsub"
 path = "rust/service_types/local_pubsub.rs"
-

@@ -14,8 +14,9 @@ use pyo3::prelude::*;
 
 use crate::{
     attribute_key::AttributeKey, attribute_set::AttributeSet, attribute_value::AttributeValue,
+    error::AttributeDefinitionError,
 };
-use iceoryx2::prelude::SemanticString;
+use iceoryx2::{prelude::SemanticString, service::attribute::AttributeVerificationError};
 
 #[pyclass(str = "{0:?}")]
 /// Represents a single service attribute (key-value) pair that can be defined when the service
@@ -37,17 +38,21 @@ impl AttributeVerifier {
     }
 
     /// Requires a value for a specific key. A key is allowed to have multiple values.
-    pub fn require(&self, key: &AttributeKey, value: &AttributeValue) -> Self {
+    pub fn require(&self, key: &AttributeKey, value: &AttributeValue) -> PyResult<Self> {
         let this = self.0.clone();
-        let this = this.require(&key.0, &value.0);
-        AttributeVerifier(this)
+        let this = this
+            .require(&key.0, &value.0)
+            .map_err(|e| AttributeDefinitionError::new_err(format!("{e:?}")))?;
+        Ok(AttributeVerifier(this))
     }
 
     /// Requires that a specific key is defined.
-    pub fn require_key(&self, key: &AttributeKey) -> Self {
+    pub fn require_key(&self, key: &AttributeKey) -> PyResult<Self> {
         let this = self.0.clone();
-        let this = this.require_key(&key.0);
-        AttributeVerifier(this)
+        let this = this
+            .require_key(&key.0)
+            .map_err(|e| AttributeDefinitionError::new_err(format!("{e:?}")))?;
+        Ok(AttributeVerifier(this))
     }
 
     #[getter]
@@ -66,13 +71,13 @@ impl AttributeVerifier {
         ret_val
     }
 
-    /// Verifies if the `AttributeSet` contains all required keys and key-value pairs. If it does
-    /// not satisfy the requirements it returns the first
+    /// Verifies if the `AttributeSet` contains all required keys and key-value pairs.
     pub fn verify_requirements(&self, rhs: &AttributeSet) -> Option<AttributeKey> {
         match self.0.verify_requirements(&rhs.0) {
             Ok(()) => None,
-            Err(e) => Some(AttributeKey(
-                iceoryx2::service::attribute::AttributeKey::new(e.as_bytes()).unwrap(),
+            Err(AttributeVerificationError::IncompatibleAttribute((key, _)))
+            | Err(AttributeVerificationError::NonExistingKey(key)) => Some(AttributeKey(
+                iceoryx2::service::attribute::AttributeKey::new(key.as_bytes()).unwrap(),
             )),
         }
     }

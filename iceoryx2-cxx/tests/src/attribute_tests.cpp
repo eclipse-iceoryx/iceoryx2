@@ -23,7 +23,8 @@ using namespace iox2;
 TEST(AttributeVerifier, require_is_listed_in_attributes) {
     auto key = Attribute::Key("some_key");
     auto value = Attribute::Value("oh my god, its a value");
-    auto attribute_verifier = AttributeVerifier().require(key, value);
+    auto attribute_verifier = AttributeVerifier();
+    attribute_verifier.require(key, value).expect("");
 
     auto attributes = attribute_verifier.attributes();
 
@@ -35,7 +36,9 @@ TEST(AttributeVerifier, require_is_listed_in_attributes) {
 TEST(AttributeVerifier, required_keys_are_listed_in_keys) {
     auto key_1 = Attribute::Key("where is my key");
     auto key_2 = Attribute::Key("Nala, find my keys!");
-    auto attribute_verifier = AttributeVerifier().require_key(key_1).require_key(key_2);
+    auto attribute_verifier = AttributeVerifier();
+    attribute_verifier.require_key(key_1).expect("");
+    attribute_verifier.require_key(key_2).expect("");
 
     auto keys = attribute_verifier.keys();
 
@@ -47,7 +50,8 @@ TEST(AttributeVerifier, required_keys_are_listed_in_keys) {
 TEST(AttributeVerifier, verify_requirements_successful_for_compatible_setups) {
     auto key = Attribute::Key("the secret to happiness");
     auto value = Attribute::Value("is on the nose of an iceoryx");
-    auto attribute_verifier = AttributeVerifier().require(key, value);
+    auto attribute_verifier = AttributeVerifier();
+    attribute_verifier.require(key, value).expect("");
 
     auto attributes = attribute_verifier.attributes();
 
@@ -60,8 +64,11 @@ TEST(AttributeVerifier, verify_requirements_returns_key_for_incompatible_setups)
     auto key = Attribute::Key("is there a fireoryx");
     auto value = Attribute::Value("or a windoryx");
     auto missing_key = Attribute::Key("or a earthoryx");
-    auto incompatible_attribute_verifier = AttributeVerifier().require(key, value);
-    auto attribute_verifier = AttributeVerifier().require(key, value).require_key(missing_key);
+    auto incompatible_attribute_verifier = AttributeVerifier();
+    incompatible_attribute_verifier.require(key, value).expect("");
+    auto attribute_verifier = AttributeVerifier();
+    attribute_verifier.require(key, value).expect("");
+    attribute_verifier.require_key(missing_key).expect("");
 
     auto incompatible_attributes = incompatible_attribute_verifier.attributes();
 
@@ -77,7 +84,9 @@ TEST(AttributeSpecifier, all_defined_attributes_are_set) {
     auto key_2 = Attribute::Key("wouldn't it be cool if");
     auto value_2 = Attribute::Value("scotty must debug some ancient iceoryx2 technology");
 
-    auto attribute_specifier = AttributeSpecifier().define(key_1, value_1).define(key_2, value_2);
+    auto attribute_specifier = AttributeSpecifier();
+    attribute_specifier.define(key_1, value_1).expect("");
+    attribute_specifier.define(key_2, value_2).expect("");
     auto attributes = attribute_specifier.attributes();
 
     ASSERT_THAT(attributes.number_of_attributes(), Eq(2));
@@ -92,8 +101,10 @@ TEST(AttributeSet, all_key_values_can_be_listed) {
     auto value_1 = Attribute::Value("be with you");
     auto value_2 = Attribute::Value("or not be with you");
 
-    auto attribute_specifer = AttributeSpecifier().define(key, value_1).define(key, value_2);
-    auto attributes = attribute_specifer.attributes();
+    auto attribute_specifier = AttributeSpecifier();
+    attribute_specifier.define(key, value_1).expect("");
+    attribute_specifier.define(key, value_2).expect("");
+    auto attributes = attribute_specifier.attributes();
 
     ASSERT_THAT(attributes.number_of_attributes(), Eq(2));
     ASSERT_THAT(attributes[0].key(), Eq(key));
@@ -107,8 +118,10 @@ TEST(AttributeSet, all_key_values_can_be_acquired) {
     std::vector<Attribute::Value> values = { Attribute::Value("by one iceoryx"),
                                              Attribute::Value("reindeers are retired") };
 
-    auto attribute_specifer = AttributeSpecifier().define(key, values[0]).define(key, values[1]);
-    auto attributes = attribute_specifer.attributes();
+    auto attribute_specifier = AttributeSpecifier();
+    attribute_specifier.define(key, values[0]).expect("");
+    attribute_specifier.define(key, values[1]).expect("");
+    auto attributes = attribute_specifier.attributes();
 
     auto counter = 0;
 
@@ -125,8 +138,10 @@ TEST(AttributeSet, get_key_value_len_works) {
     auto value_1 = Attribute::Value("you");
     auto value_2 = Attribute::Value("want");
 
-    auto attribute_specifer = AttributeSpecifier().define(key, value_1).define(key, value_2);
-    auto attributes = attribute_specifer.attributes();
+    auto attribute_specifier = AttributeSpecifier();
+    attribute_specifier.define(key, value_1).expect("");
+    attribute_specifier.define(key, value_2).expect("");
+    auto attributes = attribute_specifier.attributes();
 
     ASSERT_THAT(attributes.number_of_key_values(key), Eq(2));
     ASSERT_THAT(attributes.number_of_key_values(empty_key), Eq(0));
@@ -138,8 +153,10 @@ TEST(AttributeSet, get_key_value_at_works) {
     auto value_1 = Attribute::Value("fuu you");
     auto value_2 = Attribute::Value("blue want");
 
-    auto attribute_specifer = AttributeSpecifier().define(key, value_1).define(key, value_2);
-    auto attributes = attribute_specifer.attributes();
+    auto attribute_specifier = AttributeSpecifier();
+    attribute_specifier.define(key, value_1).expect("");
+    attribute_specifier.define(key, value_2).expect("");
+    auto attributes = attribute_specifier.attributes();
 
     auto v_1 = attributes.key_value(key, 0);
     auto v_2 = attributes.key_value(key, 1);
@@ -164,8 +181,10 @@ TEST(AttributeSet, to_owned_works) {
     auto value_1 = Attribute::Value("shiny and bright");
     auto value_2 = Attribute::Value("with spice aroma");
 
-    auto attribute_specifer = AttributeSpecifier().define(key, value_1).define(key, value_2);
-    auto attributes = attribute_specifer.attributes();
+    auto attribute_specifier = AttributeSpecifier();
+    attribute_specifier.define(key, value_1).expect("");
+    attribute_specifier.define(key, value_2).expect("");
+    auto attributes = attribute_specifier.attributes();
     auto attributes_owned = attributes.to_owned();
 
     ASSERT_THAT(attributes_owned.number_of_attributes(), Eq(2));

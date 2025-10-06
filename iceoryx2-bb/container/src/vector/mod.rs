@@ -20,9 +20,28 @@ pub mod relocatable_vec;
 /// Compile-time fixed-capacity shared-memory compatible vector
 pub mod static_vec;
 
+use iceoryx2_bb_log::fail;
 pub use polymorphic_vec::*;
 pub use relocatable_vec::*;
 pub use static_vec::*;
+
+/// Error which can occur when a [`Vector`] is modified.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum VectorModificationError {
+    /// An element shall be modified that is not contained in the vector.
+    OutOfBounds,
+    /// The content that shall be added would exceed the maximum capacity of the
+    /// [`Vector`].
+    InsertWouldExceedCapacity,
+}
+
+impl core::fmt::Display for VectorModificationError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "VectorModificationError::{self:?}")
+    }
+}
+
+impl core::error::Error for VectorModificationError {}
 
 pub(crate) mod internal {
     use super::*;
@@ -76,12 +95,18 @@ pub trait Vector<T>: Deref<Target = [T]> + DerefMut + internal::VectorView<T> {
     }
 
     /// Append all elements from other via [`Clone`].
-    fn extend_from_slice(&mut self, other: &[T]) -> bool
+    fn extend_from_slice(&mut self, other: &[T]) -> Result<(), VectorModificationError>
     where
         T: Clone,
     {
         if self.capacity() < self.len() + other.len() {
-            return false;
+            let origin = format!(
+                "Vector::<{}>::extend_from_slice()",
+                core::any::type_name::<T>()
+            );
+            fail!(from origin, with VectorModificationError::InsertWouldExceedCapacity,
+                "Unable to extend vector from slice with length {} since it would exceed the vectors capacity of {}.",
+                other.len(), self.capacity());
         }
 
         let len = self.len();
@@ -92,19 +117,46 @@ pub trait Vector<T>: Deref<Target = [T]> + DerefMut + internal::VectorView<T> {
 
         unsafe { self.set_len(self.len() as u64 + other.len() as u64) };
 
-        true
+        Ok(())
+    }
+
+    /// Append all elements from other via [`Clone`].
+    ///
+    /// # Safety
+    ///
+    /// * [`Vector::capacity()`] < [`Vector::len()`] + `other.len()`
+    ///
+    unsafe fn extend_from_slice_unchecked(&mut self, other: &[T])
+    where
+        T: Clone,
+    {
+        let len = self.len();
+        let data = unsafe { self.data_mut() };
+        for (i, element) in other.iter().enumerate() {
+            data[i + len].write(element.clone());
+        }
+
+        unsafe { self.set_len(self.len() as u64 + other.len() as u64) };
     }
 
     /// Inserts an element at the provided index and shifting all elements
     /// after the index to the right.
-    fn insert(&mut self, index: usize, element: T) -> bool {
+    fn insert(&mut self, index: usize, element: T) -> Result<(), VectorModificationError> {
         if self.is_full() {
-            return false;
+            let origin = format!("Vector::<{}>::insert()", core::any::type_name::<T>());
+
+            fail!(from origin, with VectorModificationError::InsertWouldExceedCapacity,
+                "Failed to insert element into vector since it would exceed the vectors capacity of {}.",
+                self.capacity());
         }
 
         let len = self.len();
         if index > len {
-            return false;
+            let origin = format!("Vector::<{}>::insert()", core::any::type_name::<T>());
+
+            fail!(from origin, with VectorModificationError::OutOfBounds,
+                "Failed to insert element into vector of length {} since the index {} is out-of-bounds.",
+                self.len(), index);
         }
 
         let data = unsafe { self.data_mut() };
@@ -115,7 +167,8 @@ pub trait Vector<T>: Deref<Target = [T]> + DerefMut + internal::VectorView<T> {
 
         data[index].write(element);
         unsafe { self.set_len(len as u64 + 1) };
-        true
+
+        Ok(())
     }
 
     /// Returns true if the vector is empty, otherwise false
@@ -146,16 +199,30 @@ pub trait Vector<T>: Deref<Target = [T]> + DerefMut + internal::VectorView<T> {
     }
 
     /// Adds an element at the end of the vector. If the vector is full and the element cannot be
-    /// added it returns false, otherwise true.
-    fn push(&mut self, value: T) -> bool {
+    /// added it returns [`VectorModificationError::InsertWouldExceedCapacity`].
+    fn push(&mut self, value: T) -> Result<(), VectorModificationError> {
         if self.is_full() {
-            return false;
+            let origin = format!("Vector::<{}>::push()", core::any::type_name::<T>());
+
+            fail!(from origin, with VectorModificationError::InsertWouldExceedCapacity,
+                "Failed to push element into vector since it would exceed the vectors capacity of {}.",
+                self.capacity());
         }
 
+        unsafe { self.push_unchecked(value) };
+        Ok(())
+    }
+
+    /// Adds an element at the end of the vector.
+    ///
+    /// # Safety
+    ///
+    /// * [`Vector::len()`] < [`Vector::capacity()`]
+    ///
+    unsafe fn push_unchecked(&mut self, value: T) {
         let len = self.len();
         unsafe { self.data_mut()[len].write(value) };
         unsafe { self.set_len(len as u64 + 1) };
-        true
     }
 
     /// Removes the element at the provided index and returns it.
@@ -177,7 +244,7 @@ pub trait Vector<T>: Deref<Target = [T]> + DerefMut + internal::VectorView<T> {
     }
 
     /// Fill the remaining space of the vector with value.
-    fn resize(&mut self, new_len: usize, value: T) -> bool
+    fn resize(&mut self, new_len: usize, value: T) -> Result<(), VectorModificationError>
     where
         T: Clone,
     {
@@ -185,10 +252,18 @@ pub trait Vector<T>: Deref<Target = [T]> + DerefMut + internal::VectorView<T> {
     }
 
     /// Fill the remaining space of the vector with value.
-    fn resize_with<F: FnMut() -> T>(&mut self, new_len: usize, mut f: F) -> bool {
+    fn resize_with<F: FnMut() -> T>(
+        &mut self,
+        new_len: usize,
+        mut f: F,
+    ) -> Result<(), VectorModificationError> {
         let capacity = self.capacity();
         if capacity < new_len {
-            return false;
+            let origin = format!("Vector::<{}>::resize_with()", core::any::type_name::<T>());
+
+            fail!(from origin, with VectorModificationError::InsertWouldExceedCapacity,
+                "Failed to resize vector to {} since it would exceed the vectors capacity of {}.",
+                new_len, self.capacity());
         }
 
         if new_len < self.len() {
@@ -203,7 +278,7 @@ pub trait Vector<T>: Deref<Target = [T]> + DerefMut + internal::VectorView<T> {
             unsafe { self.set_len(new_len as u64) };
         }
 
-        true
+        Ok(())
     }
 
     /// Truncates the vector to `len` and drops all elements right of `len`

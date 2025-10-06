@@ -72,15 +72,18 @@ impl PayloadWriter for ComplexPayload {
         Self::PayloadType::placement_default(ptr);
         (*ptr).plain_old_data = 0;
         (*ptr).text = StaticString::from_bytes(b"hello").unwrap();
-        (*ptr).vec_of_data.push(42);
-        (*ptr).vec_of_complex_data.push(ComplexData {
-            name: StaticString::from_bytes(b"bla").unwrap(),
-            data: {
-                let mut v = StaticVec::new();
-                v.fill(42);
-                v
-            },
-        });
+        (*ptr).vec_of_data.push(42).unwrap();
+        (*ptr)
+            .vec_of_complex_data
+            .push(ComplexData {
+                name: StaticString::from_bytes(b"bla").unwrap(),
+                data: {
+                    let mut v = StaticVec::new();
+                    v.fill(42);
+                    v
+                },
+            })
+            .unwrap();
         (*ptr)
             .a_queue_of_things
             .push(StaticString::from_bytes(b"buh").unwrap());

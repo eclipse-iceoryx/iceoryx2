@@ -21,6 +21,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(iceoryx_hoofs ${ICEORYX_HOOFS_VERSION} REQUIRED)
 find_package(iceoryx2-c REQUIRED)
+find_package(iceoryx2-bb-cxx REQUIRED)
 
 find_package(iceoryx2-cmake-modules REQUIRED)
 include(Iceoryx2OptionAndParamMacros)
@@ -106,11 +107,12 @@ set_target_properties(iceoryx2-cxx-object-lib
 
 target_link_libraries(iceoryx2-cxx-object-lib
     PUBLIC
+    iceoryx2-bb-cxx::iceoryx2-bb-containers-cxx
     iceoryx_hoofs::iceoryx_hoofs
     iceoryx2-c::includes-only
     iceoryx2-cxx::includes-only-cxx
     ${ICEORYX2_SANITIZER_FLAGS}
-    ${ICEORYX2_COVERAGE_FLAGS} 
+    ${ICEORYX2_COVERAGE_FLAGS}
 )
 
 # static lib
@@ -127,6 +129,7 @@ set_target_properties(static-lib-cxx
 
 target_link_libraries(static-lib-cxx
     PUBLIC
+    iceoryx2-bb-cxx::iceoryx2-bb-containers-cxx
     iceoryx_hoofs::iceoryx_hoofs
     iceoryx2-c::static-lib
     iceoryx2-cxx::includes-only-cxx
@@ -146,6 +149,7 @@ set_target_properties(shared-lib-cxx
 
 target_link_libraries(shared-lib-cxx
     PUBLIC
+    iceoryx2-bb-cxx::iceoryx2-bb-containers-cxx
     iceoryx_hoofs::iceoryx_hoofs
     iceoryx2-c::shared-lib
     iceoryx2-cxx::includes-only-cxx

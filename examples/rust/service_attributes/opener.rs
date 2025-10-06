@@ -26,8 +26,8 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
             // define attributes that the service requires
             // if no attributes are defined the service accepts any attribute
             &AttributeVerifier::new()
-                .require(&"camera_resolution".try_into()?, &"1920x1080".try_into()?)
-                .require_key(&"dds_service_mapping".try_into()?),
+                .require(&"camera_resolution".try_into()?, &"1920x1080".try_into()?)?
+                .require_key(&"dds_service_mapping".try_into()?)?,
         )?;
 
     let subscriber = service.subscriber_builder().create()?;

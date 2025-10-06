@@ -12,7 +12,7 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::api::{AssertNonNullHandle, HandleToType, IOX2_OK};
+use crate::api::{AssertNonNullHandle, HandleToType, IntoCInt, IOX2_OK};
 
 use iceoryx2::prelude::*;
 use iceoryx2::service::attribute::{AttributeKey, AttributeValue};
@@ -152,6 +152,9 @@ pub unsafe extern "C" fn iox2_attribute_specifier_drop(handle: iox2_attribute_sp
 
 /// Defines a attribute (key / value pair).
 ///
+/// Returns IOX2_OK on success, an
+/// [`iox2_attribute_definition_error_e`](crate::iox2_attribute_definition_error_e) otherwise.
+///
 /// # Safety
 ///
 /// * The `handle` must point to an initialized [`iox2_attribute_specifier_h`].
@@ -162,7 +165,7 @@ pub unsafe extern "C" fn iox2_attribute_specifier_define(
     handle: iox2_attribute_specifier_h_ref,
     key: *const c_char,
     value: *const c_char,
-) {
+) -> c_int {
     debug_assert!(!handle.is_null());
     debug_assert!(!key.is_null());
     debug_assert!(!value.is_null());
@@ -174,9 +177,18 @@ pub unsafe extern "C" fn iox2_attribute_specifier_define(
 
     let attribute_specifier_struct = &mut *handle.as_type();
     let attribute_specifier = ManuallyDrop::take(&mut attribute_specifier_struct.value.as_mut().0);
-    attribute_specifier_struct.set(AttributeSpecifierType::from(
-        attribute_specifier.define(&key.unwrap(), &value.unwrap()),
-    ));
+
+    let attribute_specifier_clone = attribute_specifier.clone();
+    match attribute_specifier_clone.define(&key.unwrap(), &value.unwrap()) {
+        Ok(v) => {
+            attribute_specifier_struct.set(AttributeSpecifierType::from(v));
+            IOX2_OK
+        }
+        Err(e) => {
+            attribute_specifier_struct.set(AttributeSpecifierType::from(attribute_specifier));
+            e.into_c_int()
+        }
+    }
 }
 
 /// Returnes a [`iox2_attribute_set_ptr`] to the underlying attribute set.

@@ -15,6 +15,7 @@
 include(CMakeFindDependencyMacro)
 
 find_dependency(iceoryx_hoofs)
+find_dependency(iceoryx2-bb-cxx)
 find_dependency(iceoryx2-c)
 
 include("${CMAKE_CURRENT_LIST_DIR}/@TARGETS_EXPORT_NAME@.cmake")

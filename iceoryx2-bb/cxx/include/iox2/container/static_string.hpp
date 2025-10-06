@@ -13,7 +13,6 @@
 #ifndef IOX2_INCLUDE_GUARD_CONTAINER_STATIC_STRING_HPP
 #define IOX2_INCLUDE_GUARD_CONTAINER_STATIC_STRING_HPP
 
-#include "iox2/container/config.hpp"
 #include "iox2/container/optional.hpp"
 
 #include <algorithm>
@@ -21,7 +20,7 @@
 #include <cstdint>
 #include <cstring>
 #include <functional>
-#include <memory>
+#include <ostream>
 #include <type_traits>
 
 namespace iox2 {
@@ -458,7 +457,20 @@ class StaticString {
     }
 };
 
+template <typename>
+struct IsStaticString : std::false_type { };
+
+template <uint64_t N>
+struct IsStaticString<StaticString<N>> : std::true_type { };
+
 } // namespace container
 } // namespace iox2
+
+template <uint64_t N>
+auto operator<<(std::ostream& stream, const iox2::container::StaticString<N>& value) -> std::ostream& {
+    stream << "StaticString::<" << N << "> { m_size: " << value.size() << ", m_string: \""
+           << value.unchecked_access().c_str() << "\" }";
+    return stream;
+}
 
 #endif

@@ -29,7 +29,7 @@
 //! ```
 //! use iceoryx2::prelude::*;
 //! use iceoryx2_userland_record_and_replay::prelude::*;
-//! use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeNameString};
+//! use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeName};
 //! use iceoryx2::service::static_config::message_type_details::TypeVariant;
 //! use core::time::Duration;
 //!
@@ -65,7 +65,7 @@
 //! The whole recorded file is loaded into memory. Useful, when the data is not that large.
 //!
 //! ```no_run
-//! use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeNameString};
+//! use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeName};
 //! use iceoryx2::service::static_config::message_type_details::TypeVariant;
 //! use iceoryx2::prelude::*;
 //! use iceoryx2_userland_record_and_replay::prelude::*;
@@ -96,7 +96,7 @@
 //! The recorded file is opened and the records are read one-by-one.
 //!
 //! ```no_run
-//! use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeNameString};
+//! use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeName};
 //! use iceoryx2::service::static_config::message_type_details::TypeVariant;
 //! use iceoryx2::prelude::*;
 //! use iceoryx2_userland_record_and_replay::prelude::*;

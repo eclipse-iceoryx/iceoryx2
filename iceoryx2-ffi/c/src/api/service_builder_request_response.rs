@@ -27,7 +27,7 @@ use iceoryx2::service::{
     builder::request_response::{
         Builder, RequestResponseCreateError, RequestResponseOpenOrCreateError,
     },
-    static_config::message_type_details::TypeNameString,
+    static_config::message_type_details::TypeName,
 };
 use iceoryx2::{prelude::*, service::builder::request_response::RequestResponseOpenError};
 use iceoryx2_bb_elementary_traits::AsCStr;
@@ -214,7 +214,7 @@ pub(crate) unsafe fn create_type_details(
         return Err(iox2_type_detail_error_e::INVALID_TYPE_NAME as c_int);
     };
 
-    let type_name = if let Ok(type_name) = TypeNameString::try_from(type_name.as_str()) {
+    let type_name = if let Ok(type_name) = TypeName::try_from(type_name.as_str()) {
         type_name
     } else {
         return Err(iox2_type_detail_error_e::INVALID_TYPE_NAME as c_int);

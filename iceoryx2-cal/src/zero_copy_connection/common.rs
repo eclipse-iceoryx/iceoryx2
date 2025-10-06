@@ -324,10 +324,12 @@ pub mod details {
             fatal_panic!(from self, when unsafe {self.channels.init(allocator)},
                 "{} since the channels vector allocation failed. - This is an implementation bug!", msg);
             for n in 0..self.channels.capacity() {
-                self.channels.push(Channel::new(
-                    submission_queue_capacity,
-                    completion_queue_capacity,
-                ));
+                unsafe {
+                    self.channels.push_unchecked(Channel::new(
+                        submission_queue_capacity,
+                        completion_queue_capacity,
+                    ))
+                };
                 self.channels[n].init(allocator);
             }
 
@@ -336,9 +338,13 @@ pub mod details {
                         "{} since the used chunk list vector allocation failed. - This is an implementation bug!", msg);
 
             for n in 0..self.segment_details.capacity() {
-                if !self.segment_details.push(SegmentDetails::new_uninit(
-                    self.number_of_samples_per_segment,
-                )) {
+                if self
+                    .segment_details
+                    .push(SegmentDetails::new_uninit(
+                        self.number_of_samples_per_segment,
+                    ))
+                    .is_err()
+                {
                     fatal_panic!(from self,
                         "{} since the used chunk list could not be added. - This is an implementation bug!", msg);
                 }

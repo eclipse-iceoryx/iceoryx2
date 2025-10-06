@@ -33,7 +33,7 @@ fn double_init_call_causes_panic() {
 fn panic_is_called_in_debug_mode_if_vec_is_not_initialized() {
     const CAPACITY: usize = 12;
     let mut sut = unsafe { RelocatableVec::<u8>::new_uninit(CAPACITY) };
-    sut.push(0);
+    assert_that!(sut.push(0), is_ok);
 }
 
 #[test]
@@ -50,8 +50,8 @@ fn two_vectors_with_same_content_are_equal() {
     unsafe { sut_2.init(&bump_allocator_2).unwrap() };
 
     for n in 0..SUT_CAPACITY {
-        sut_1.push(4 * n + 3);
-        sut_2.insert(n, 4 * n + 3);
+        assert_that!(sut_1.push(4 * n + 3), is_ok);
+        assert_that!(sut_2.insert(n, 4 * n + 3), is_ok);
     }
 
     assert_that!(sut_1, eq sut_2);
@@ -71,8 +71,8 @@ fn two_vectors_with_different_content_are_not_equal() {
     unsafe { sut_2.init(&bump_allocator_2).unwrap() };
 
     for n in 0..SUT_CAPACITY {
-        sut_1.push(4 * n + 3);
-        sut_2.insert(n, 4 * n + 3);
+        assert_that!(sut_1.push(4 * n + 3), is_ok);
+        assert_that!(sut_2.insert(n, 4 * n + 3), is_ok);
     }
 
     sut_2[5] = 0;
@@ -94,8 +94,8 @@ fn two_vectors_with_different_len_are_not_equal() {
     unsafe { sut_2.init(&bump_allocator_2).unwrap() };
 
     for n in 0..SUT_CAPACITY {
-        sut_1.push(4 * n + 3);
-        sut_2.insert(n, 4 * n + 3);
+        assert_that!(sut_1.push(4 * n + 3), is_ok);
+        assert_that!(sut_2.insert(n, 4 * n + 3), is_ok);
     }
 
     sut_2.pop();

@@ -71,7 +71,7 @@ fn try_clone_clones_filled_vec() {
     let mut sut = test.create_sut(3).unwrap();
 
     for n in 0..3 {
-        sut.push(LifetimeTracker::new_with_value(n + 2));
+        assert_that!(sut.push(LifetimeTracker::new_with_value(n + 2)), is_ok);
     }
 
     let sut_clone = sut.try_clone().unwrap();
@@ -91,7 +91,7 @@ fn two_vectors_with_same_content_are_equal() {
     let mut sut1 = test.create_sut(4).unwrap();
 
     for n in 0..4 {
-        sut1.push(LifetimeTracker::new_with_value(4 * n + 2));
+        assert_that!(sut1.push(LifetimeTracker::new_with_value(4 * n + 2)), is_ok);
     }
     let sut2 = sut1.try_clone().unwrap();
 
@@ -104,7 +104,7 @@ fn two_vectors_with_different_content_are_not_equal() {
     let mut sut1 = test.create_sut(4).unwrap();
 
     for n in 0..4 {
-        sut1.push(LifetimeTracker::new_with_value(4 * n + 2));
+        assert_that!(sut1.push(LifetimeTracker::new_with_value(4 * n + 2)), is_ok);
     }
     let mut sut2 = sut1.try_clone().unwrap();
 
@@ -119,7 +119,7 @@ fn two_vectors_with_different_len_are_not_equal() {
     let mut sut1 = test.create_sut(4).unwrap();
 
     for n in 0..4 {
-        sut1.push(LifetimeTracker::new_with_value(4 * n + 2));
+        assert_that!(sut1.push(LifetimeTracker::new_with_value(4 * n + 2)), is_ok);
     }
     let mut sut2 = sut1.try_clone().unwrap();
     sut2.pop();

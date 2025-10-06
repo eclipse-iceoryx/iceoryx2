@@ -14,11 +14,18 @@
 #define IOX2_SERVICE_BUILDER_INTERNAL_HPP
 
 #include "iox/slice.hpp"
+#include "iox2/container/static_string.hpp"
+#include "iox2/container/static_vector.hpp"
 #include "iox2/payload_info.hpp"
+#include "iox2/type_name.hpp"
 
+#include <cstdio>
 #include <typeinfo>
 
 namespace iox2::internal {
+template <typename>
+auto get_type_name() -> TypeName;
+
 template <typename Payload, typename = void>
 struct HasPayloadTypeNameMember : std::false_type { };
 
@@ -26,99 +33,132 @@ template <typename Payload>
 struct HasPayloadTypeNameMember<Payload, decltype((void) Payload::IOX2_TYPE_NAME)> : std::true_type { };
 
 template <typename Payload>
-using FromCustomizedPayloadTypeName = std::enable_if_t<HasPayloadTypeNameMember<Payload>::value, const char*>;
+using FromCustomizedPayloadTypeName = std::enable_if_t<HasPayloadTypeNameMember<Payload>::value, TypeName>;
 
 template <typename Payload>
-using FromNonSlice =
-    std::enable_if_t<!HasPayloadTypeNameMember<Payload>::value && !iox::IsSlice<Payload>::VALUE, const char*>;
+using FromNonSlice = std::enable_if_t<!HasPayloadTypeNameMember<Payload>::value && !iox::IsSlice<Payload>::VALUE
+                                          && !iox2::container::IsStaticVector<Payload>::value
+                                          && !iox2::container::IsStaticString<Payload>::value,
+                                      TypeName>;
+
+template <typename Payload>
+using FromStaticVector = std::enable_if_t<iox2::container::IsStaticVector<Payload>::value, TypeName>;
+
+template <typename Payload>
+using FromStaticString = std::enable_if_t<iox2::container::IsStaticString<Payload>::value, TypeName>;
 
 template <typename Payload>
 using FromSliceWithCustomizedInnerPayloadTypeName =
     std::enable_if_t<!HasPayloadTypeNameMember<Payload>::value && iox::IsSlice<Payload>::VALUE
                          && HasPayloadTypeNameMember<typename Payload::ValueType>::value,
-                     const char*>;
+                     TypeName>;
 
 template <typename Payload>
 using FromSliceWithoutCustomizedInnerPayloadTypeName =
     std::enable_if_t<!HasPayloadTypeNameMember<Payload>::value && iox::IsSlice<Payload>::VALUE
                          && !HasPayloadTypeNameMember<typename Payload::ValueType>::value,
-                     const char*>;
-
-template <typename UserHeader, typename = void>
-struct HasUserHeaderTypeNameMember : std::false_type { };
-
-template <typename UserHeader>
-struct HasUserHeaderTypeNameMember<UserHeader, decltype((void) UserHeader::IOX2_TYPE_NAME)> : std::true_type { };
+                     TypeName>;
 
 template <typename PayloadType>
-auto get_payload_type_name() -> internal::FromCustomizedPayloadTypeName<PayloadType> {
-    return PayloadType::IOX2_TYPE_NAME;
+auto get_type_name_impl() -> internal::FromCustomizedPayloadTypeName<PayloadType> {
+    return *TypeName::from_utf8_null_terminated_unchecked(PayloadType::IOX2_TYPE_NAME);
+}
+
+template <typename PayloadType>
+auto get_type_name_impl() -> internal::FromStaticString<PayloadType> {
+    // std::array is not available in this safety-critical context
+    // NOLINTNEXTLINE
+    char type_name[TypeName::capacity()] { 0 };
+    // std::to_string() is not available in this safety-critical context
+    // NOLINTNEXTLINE
+    snprintf(&type_name[0],
+             TypeName::capacity(),
+             "iceoryx2_bb_container::string::static_string::StaticString<%llu>",
+             static_cast<long long unsigned int>(PayloadType::capacity()));
+    return *TypeName::from_utf8_null_terminated_unchecked(&type_name[0]);
+}
+
+template <typename PayloadType>
+auto get_type_name_impl() -> internal::FromStaticVector<PayloadType> {
+    // std::array is not available in this safety-critical context
+    // NOLINTNEXTLINE
+    char type_name[TypeName::capacity()] { 0 };
+    // std::to_string() is not available in this safety-critical context
+    // NOLINTNEXTLINE
+    snprintf(&type_name[0],
+             TypeName::capacity(),
+             "iceoryx2_bb_container::vector::static_vec::StaticVec<%s, %llu>",
+             get_type_name<typename PayloadType::ValueType>().unchecked_access().c_str(),
+             static_cast<long long unsigned int>(PayloadType::capacity()));
+    return *TypeName::from_utf8_null_terminated_unchecked(&type_name[0]);
 }
 
 // NOLINTBEGIN(readability-function-size) : template alternative is less readable
 template <typename PayloadType>
-auto get_payload_type_name() -> internal::FromNonSlice<PayloadType> {
+auto get_type_name_impl() -> internal::FromNonSlice<PayloadType> {
+    if (std::is_same_v<PayloadType, void>) {
+        return *TypeName::from_utf8("()");
+    }
     if (std::is_same_v<PayloadType, uint8_t>) {
-        return "u8";
+        return *TypeName::from_utf8("u8");
     }
     if (std::is_same_v<PayloadType, uint16_t>) {
-        return "u16";
+        return *TypeName::from_utf8("u16");
     }
     if (std::is_same_v<PayloadType, uint32_t>) {
-        return "u32";
+        return *TypeName::from_utf8("u32");
     }
     if (std::is_same_v<PayloadType, uint64_t>) {
-        return "u64";
+        return *TypeName::from_utf8("u64");
     }
     if (std::is_same_v<PayloadType, int8_t>) {
-        return "i8";
+        return *TypeName::from_utf8("i8");
     }
     if (std::is_same_v<PayloadType, int16_t>) {
-        return "i16";
+        return *TypeName::from_utf8("i16");
     }
     if (std::is_same_v<PayloadType, int32_t>) {
-        return "i32";
+        return *TypeName::from_utf8("i32");
     }
     if (std::is_same_v<PayloadType, int64_t>) {
-        return "i64";
+        return *TypeName::from_utf8("i64");
     }
     if (std::is_same_v<PayloadType, float>) {
-        return "f32";
+        return *TypeName::from_utf8("f32");
     }
     if (std::is_same_v<PayloadType, double>) {
-        return "f64";
+        return *TypeName::from_utf8("f64");
     }
-    if (std::is_same_v<PayloadType, bool>) {
-        return "bool";
-    }
-    return typeid(typename PayloadInfo<PayloadType>::ValueType).name();
+
+    // std::array is not available in this safety-critical context
+    // NOLINTNEXTLINE
+    char type_name[TypeName::capacity()] { 0 };
+    // std::to_string() is not available in this safety-critical context
+    // NOLINTNEXTLINE
+    snprintf(&type_name[0],
+             TypeName::capacity(),
+             "__cxx__abi__%s",
+             typeid(typename PayloadInfo<PayloadType>::ValueType).name());
+
+    return *TypeName::from_utf8_null_terminated_unchecked(&type_name[0]);
 }
 // NOLINTEND(readability-function-size)
 
 template <typename PayloadType>
-auto get_payload_type_name() -> internal::FromSliceWithCustomizedInnerPayloadTypeName<PayloadType> {
-    return PayloadType::ValueType::IOX2_TYPE_NAME;
+auto get_type_name_impl() -> internal::FromSliceWithCustomizedInnerPayloadTypeName<PayloadType> {
+    return *TypeName::from_utf8_null_terminated_unchecked(PayloadType::ValueType::IOX2_TYPE_NAME);
 }
 
 template <typename PayloadType>
-auto get_payload_type_name() -> internal::FromSliceWithoutCustomizedInnerPayloadTypeName<PayloadType> {
-    return get_payload_type_name<typename PayloadType::ValueType>();
+auto get_type_name_impl() -> internal::FromSliceWithoutCustomizedInnerPayloadTypeName<PayloadType> {
+    return get_type_name_impl<typename PayloadType::ValueType>();
 }
 
-template <typename UserHeaderType>
-auto get_user_header_type_name() ->
-    typename std::enable_if_t<internal::HasUserHeaderTypeNameMember<UserHeaderType>::value, const char*> {
-    return UserHeaderType::IOX2_TYPE_NAME;
+template <typename PayloadType>
+auto get_type_name() -> TypeName {
+    return get_type_name_impl<PayloadType>();
 }
 
-template <typename UserHeaderType>
-auto get_user_header_type_name() ->
-    typename std::enable_if_t<!internal::HasUserHeaderTypeNameMember<UserHeaderType>::value, const char*> {
-    if (std::is_void_v<UserHeaderType>) {
-        return "()"; // no user header provided
-    }
-    return typeid(UserHeaderType).name();
-}
 } // namespace iox2::internal
 
 #endif

@@ -13,6 +13,7 @@
 #ifndef IOX2_ATTRIBUTE_VERIFIER_HPP
 #define IOX2_ATTRIBUTE_VERIFIER_HPP
 
+#include "attribute_error.hpp"
 #include "iox/expected.hpp"
 #include "iox/vector.hpp"
 #include "iox2/attribute.hpp"
@@ -34,10 +35,11 @@ class AttributeVerifier {
     auto operator=(AttributeVerifier&&) noexcept -> AttributeVerifier&;
 
     /// Requires a value for a specific key. A key is allowed to have multiple values.
-    auto require(const Attribute::Key& key, const Attribute::Value& value) -> AttributeVerifier&&;
+    auto require(const Attribute::Key& key, const Attribute::Value& value)
+        -> iox::expected<void, AttributeDefinitionError>;
 
     /// Requires that a specific key is defined.
-    auto require_key(const Attribute::Key& key) -> AttributeVerifier&&;
+    auto require_key(const Attribute::Key& key) -> iox::expected<void, AttributeDefinitionError>;
 
     /// Returns the underlying required [`AttributeSet`]
     auto attributes() const -> AttributeSetView;

@@ -17,9 +17,7 @@ use iceoryx2::port::publisher::Publisher;
 use iceoryx2::prelude::*;
 use iceoryx2::sample_mut_uninit::SampleMutUninit;
 use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
-use iceoryx2::service::static_config::message_type_details::{
-    TypeDetail, TypeNameString, TypeVariant,
-};
+use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeName, TypeVariant};
 use iceoryx2_cli::Format;
 use iceoryx2_userland_record_and_replay::hex_conversion::hex_string_to_bytes;
 use std::ptr::copy_nonoverlapping;
@@ -124,7 +122,7 @@ pub fn publish(options: PublishOptions, _format: Format) -> Result<()> {
     iceoryx2::testing::type_detail_set_alignment(&mut payload_type, options.type_alignment);
     iceoryx2::testing::type_detail_set_name(
         &mut payload_type,
-        TypeNameString::from_str_truncated(options.type_name.as_str())?,
+        TypeName::from_str_truncated(options.type_name.as_str())?,
     );
 
     let mut header_type = TypeDetail::new::<()>(TypeVariant::FixedSize);
@@ -132,7 +130,7 @@ pub fn publish(options: PublishOptions, _format: Format) -> Result<()> {
     iceoryx2::testing::type_detail_set_alignment(&mut header_type, options.header_type_alignment);
     iceoryx2::testing::type_detail_set_name(
         &mut header_type,
-        TypeNameString::from_str_truncated(options.header_type_name.as_str())?,
+        TypeName::from_str_truncated(options.header_type_name.as_str())?,
     );
 
     let service = unsafe {

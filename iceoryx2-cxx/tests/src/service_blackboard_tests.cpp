@@ -1487,10 +1487,12 @@ TYPED_TEST(ServiceBlackboardTest, create_with_attributes_sets_attributes) {
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto attribute_specifier = AttributeSpecifier();
+    attribute_specifier.define(key, value).expect("");
     auto service_create = node.service_builder(service_name)
                               .template blackboard_creator<uint64_t>()
                               .template add_with_default<uint64_t>(0)
-                              .create_with_attributes(AttributeSpecifier().define(key, value))
+                              .create_with_attributes(attribute_specifier)
                               .expect("");
 
     auto service_open = node.service_builder(service_name).template blackboard_opener<uint64_t>().open().expect("");
@@ -1517,15 +1519,20 @@ TYPED_TEST(ServiceBlackboardTest, open_fails_when_attributes_are_incompatible) {
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto attribute_specifier = AttributeSpecifier();
+    attribute_specifier.define(key, value).expect("");
     auto service_create = node.service_builder(service_name)
                               .template blackboard_creator<uint64_t>()
                               .template add_with_default<uint64_t>(0)
-                              .create_with_attributes(AttributeSpecifier().define(key, value))
+                              .create_with_attributes(attribute_specifier)
                               .expect("");
 
+    auto attribute_verifier = AttributeVerifier();
+    attribute_verifier.require(key, value).expect("");
+    attribute_verifier.require_key(missing_key).expect("");
     auto service_open = node.service_builder(service_name)
                             .template blackboard_opener<uint64_t>()
-                            .open_with_attributes(AttributeVerifier().require(key, value).require_key(missing_key));
+                            .open_with_attributes(attribute_verifier);
 
     ASSERT_THAT(service_open.has_error(), Eq(true));
     ASSERT_THAT(service_open.error(), Eq(BlackboardOpenError::IncompatibleAttributes));

@@ -27,9 +27,7 @@ use iceoryx2::service::builder::blackboard::{
     BlackboardCreateError, BlackboardOpenError, BuilderInternals, Creator, Opener,
 };
 use iceoryx2::service::port_factory::blackboard::PortFactory;
-use iceoryx2::service::static_config::message_type_details::{
-    TypeDetail, TypeNameString, TypeVariant,
-};
+use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeName, TypeVariant};
 use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::*;
 use iceoryx2_ffi_macros::CStrRepr;
@@ -543,9 +541,9 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
     let mut type_details = TypeDetail::new::<()>(TypeVariant::FixedSize);
     iceoryx2::testing::type_detail_set_name(
         &mut type_details,
-        TypeNameString::from_bytes_unchecked(core::slice::from_raw_parts(
+        TypeName::from_bytes_unchecked(core::slice::from_raw_parts(
             type_name.cast(),
-            type_name_len.min(TypeNameString::capacity()),
+            type_name_len.min(TypeName::capacity()),
         )),
     );
     iceoryx2::testing::type_detail_set_size(&mut type_details, type_size);

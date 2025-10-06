@@ -179,7 +179,7 @@ impl<'a, T, Allocator: BaseAllocator> PolymorphicVec<'a, T, Allocator> {
         let mut new_self = Self::new(allocator, capacity)?;
 
         for n in 0..capacity {
-            new_self.push(func(n));
+            unsafe { new_self.push_unchecked(func(n)) };
         }
 
         Ok(new_self)
@@ -213,7 +213,7 @@ impl<'a, T: Clone, Allocator: BaseAllocator> PolymorphicVec<'a, T, Allocator> {
             allocator: self.allocator,
         };
 
-        new_self.extend_from_slice(self.as_slice());
+        unsafe { new_self.extend_from_slice_unchecked(self.as_slice()) };
         Ok(new_self)
     }
 }

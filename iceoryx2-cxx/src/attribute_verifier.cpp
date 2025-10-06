@@ -43,14 +43,23 @@ auto AttributeVerifier::operator=(AttributeVerifier&& rhs) noexcept -> Attribute
     return *this;
 }
 
-auto AttributeVerifier::require(const Attribute::Key& key, const Attribute::Value& value) -> AttributeVerifier&& {
-    iox2_attribute_verifier_require(&m_handle, key.c_str(), value.c_str());
-    return std::move(*this);
+auto AttributeVerifier::require(const Attribute::Key& key, const Attribute::Value& value)
+    -> iox::expected<void, AttributeDefinitionError> {
+    auto result = iox2_attribute_verifier_require(&m_handle, key.c_str(), value.c_str());
+    if (result == IOX2_OK) {
+        return iox::ok();
+    }
+
+    return iox::err(iox::into<AttributeDefinitionError>(result));
 }
 
-auto AttributeVerifier::require_key(const Attribute::Key& key) -> AttributeVerifier&& {
-    iox2_attribute_verifier_require_key(&m_handle, key.c_str());
-    return std::move(*this);
+auto AttributeVerifier::require_key(const Attribute::Key& key) -> iox::expected<void, AttributeDefinitionError> {
+    auto result = iox2_attribute_verifier_require_key(&m_handle, key.c_str());
+    if (result == IOX2_OK) {
+        return iox::ok();
+    }
+
+    return iox::err(iox::into<AttributeDefinitionError>(result));
 }
 
 auto AttributeVerifier::attributes() const -> AttributeSetView {
@@ -73,7 +82,8 @@ auto AttributeVerifier::keys() const -> iox::vector<Attribute::Key, IOX2_MAX_ATT
 auto AttributeVerifier::verify_requirements(const AttributeSetView& rhs) const -> iox::expected<void, Attribute::Key> {
     // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays, modernize-avoid-c-arrays) used as an uninitialized buffer
     char buffer[Attribute::Key::capacity()];
-    if (iox2_attribute_verifier_verify_requirements(&m_handle, rhs.m_handle, &buffer[0], Attribute::Key::capacity())) {
+    if (iox2_attribute_verifier_verify_requirements(&m_handle, rhs.m_handle, &buffer[0], Attribute::Key::capacity())
+        == IOX2_OK) {
         return iox::ok();
     }
 

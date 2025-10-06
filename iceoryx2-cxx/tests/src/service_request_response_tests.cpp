@@ -1066,9 +1066,11 @@ TYPED_TEST(ServiceRequestResponseTest, create_with_attributes_sets_attributes) {
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto attribute_specifier = AttributeSpecifier();
+    attribute_specifier.define(key, value).expect("");
     auto service_create = node.service_builder(service_name)
                               .template request_response<uint64_t, uint64_t>()
-                              .create_with_attributes(AttributeSpecifier().define(key, value))
+                              .create_with_attributes(attribute_specifier)
                               .expect("");
 
     auto service_open =
@@ -1096,22 +1098,24 @@ TYPED_TEST(ServiceRequestResponseTest, open_fails_when_attributes_are_incompatib
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto attribute_verifier = AttributeVerifier();
+    attribute_verifier.require(key, value).expect("");
     auto service_create = node.service_builder(service_name)
                               .template request_response<uint64_t, uint64_t>()
-                              .open_or_create_with_attributes(AttributeVerifier().require(key, value))
+                              .open_or_create_with_attributes(attribute_verifier)
                               .expect("");
 
-    auto service_open_or_create =
-        node.service_builder(service_name)
-            .template request_response<uint64_t, uint64_t>()
-            .open_or_create_with_attributes(AttributeVerifier().require(key, value).require_key(missing_key));
+    attribute_verifier.require_key(missing_key).expect("");
+    auto service_open_or_create = node.service_builder(service_name)
+                                      .template request_response<uint64_t, uint64_t>()
+                                      .open_or_create_with_attributes(attribute_verifier);
 
     ASSERT_THAT(service_open_or_create.has_error(), Eq(true));
     ASSERT_THAT(service_open_or_create.error(), Eq(RequestResponseOpenOrCreateError::OpenIncompatibleAttributes));
 
     auto service_open = node.service_builder(service_name)
                             .template request_response<uint64_t, uint64_t>()
-                            .open_with_attributes(AttributeVerifier().require(key, value).require_key(missing_key));
+                            .open_with_attributes(attribute_verifier);
 
     ASSERT_THAT(service_open.has_error(), Eq(true));
     ASSERT_THAT(service_open.error(), Eq(RequestResponseOpenError::IncompatibleAttributes));
@@ -1751,12 +1755,6 @@ TYPED_TEST(ServiceRequestResponseTest,
         ASSERT_THAT(static_config.response_message_type_details().payload().type_name(), StrEq("f64"));
     }
     {
-        auto service = node.service_builder(service_name).template request_response<bool, bool>().create().expect("");
-        auto static_config = service.static_config();
-        ASSERT_THAT(static_config.request_message_type_details().payload().type_name(), StrEq("bool"));
-        ASSERT_THAT(static_config.response_message_type_details().payload().type_name(), StrEq("bool"));
-    }
-    {
         auto service = node.service_builder(service_name)
                            .template request_response<iox::Slice<uint8_t>, iox::Slice<uint8_t>>()
                            .create()
@@ -1845,15 +1843,6 @@ TYPED_TEST(ServiceRequestResponseTest,
         auto static_config = service.static_config();
         ASSERT_THAT(static_config.request_message_type_details().payload().type_name(), StrEq("f64"));
         ASSERT_THAT(static_config.response_message_type_details().payload().type_name(), StrEq("f64"));
-    }
-    {
-        auto service = node.service_builder(service_name)
-                           .template request_response<iox::Slice<bool>, iox::Slice<bool>>()
-                           .create()
-                           .expect("");
-        auto static_config = service.static_config();
-        ASSERT_THAT(static_config.request_message_type_details().payload().type_name(), StrEq("bool"));
-        ASSERT_THAT(static_config.response_message_type_details().payload().type_name(), StrEq("bool"));
     }
 }
 

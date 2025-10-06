@@ -51,14 +51,14 @@ pub enum TypeVariant {
 }
 
 /// A fixed-size string type used to store type names.
-pub type TypeNameString = StaticString<MAX_TYPE_NAME_LENGTH>;
+pub type TypeName = StaticString<MAX_TYPE_NAME_LENGTH>;
 
 /// Contains all type details required to connect to a [`crate::service::Service`]
 #[derive(Default, Debug, Clone, Eq, Hash, PartialEq, ZeroCopySend, Serialize, Deserialize)]
 #[repr(C)]
 pub struct TypeDetail {
     pub(crate) variant: TypeVariant,
-    pub(crate) type_name: TypeNameString,
+    pub(crate) type_name: TypeName,
     pub(crate) size: usize,
     pub(crate) alignment: usize,
 }
@@ -72,7 +72,7 @@ impl TypeDetail {
             type_name: unsafe {
                 fatal_panic!(
                     from "TypeDetail::__internal_new::<T>()",
-                    when TypeNameString::try_from(T::type_name()),
+                    when TypeName::try_from(T::type_name()),
                     "Name of type T does not fit into fixed-size TypeNameString"
                 )
             },
@@ -87,7 +87,7 @@ impl TypeDetail {
     }
 
     /// Contains the name of the underlying type.
-    pub fn type_name(&self) -> &TypeNameString {
+    pub fn type_name(&self) -> &TypeName {
         &self.type_name
     }
 

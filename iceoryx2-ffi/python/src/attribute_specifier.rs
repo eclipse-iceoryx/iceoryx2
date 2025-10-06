@@ -14,6 +14,7 @@ use pyo3::prelude::*;
 
 use crate::{
     attribute_key::AttributeKey, attribute_set::AttributeSet, attribute_value::AttributeValue,
+    error::AttributeDefinitionError,
 };
 
 #[pyclass(str = "{0:?}")]
@@ -36,10 +37,12 @@ impl AttributeSpecifier {
     }
 
     /// Defines a value for a specific key. A key is allowed to have multiple values.
-    pub fn define(&self, key: &AttributeKey, value: &AttributeValue) -> Self {
+    pub fn define(&self, key: &AttributeKey, value: &AttributeValue) -> PyResult<Self> {
         let this = self.0.clone();
-        let this = this.define(&key.0, &value.0);
-        AttributeSpecifier(this)
+        let this = this
+            .define(&key.0, &value.0)
+            .map_err(|e| AttributeDefinitionError::new_err(format!("{e:?}")))?;
+        Ok(AttributeSpecifier(this))
     }
 
     #[getter]

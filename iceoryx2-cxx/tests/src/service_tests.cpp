@@ -139,19 +139,22 @@ TYPED_TEST(ServiceTest, list_works_with_attributes) {
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
 
+    auto attribute_specifier = AttributeSpecifier();
+    attribute_specifier.define(key_1, value_1).expect("");
+    attribute_specifier.define(key_2, value_2).expect("");
     auto sut_1 = node.service_builder(service_name_1)
                      .template publish_subscribe<uint64_t>()
-                     .create_with_attributes(AttributeSpecifier().define(key_1, value_1).define(key_2, value_2))
+                     .create_with_attributes(attribute_specifier)
                      .expect("");
     auto sut_2 = node.service_builder(service_name_2).event().create().expect("");
     auto sut_3 = node.service_builder(service_name_3)
                      .template request_response<uint64_t, uint64_t>()
-                     .create_with_attributes(AttributeSpecifier().define(key_1, value_1).define(key_2, value_2))
+                     .create_with_attributes(attribute_specifier)
                      .expect("");
     auto sut_4 = node.service_builder(service_name_4)
                      .template blackboard_creator<uint64_t>()
                      .template add_with_default<uint64_t>(0)
-                     .create_with_attributes(AttributeSpecifier().define(key_1, value_1).define(key_2, value_2))
+                     .create_with_attributes(attribute_specifier)
                      .expect("");
 
     auto counter = 0;
@@ -248,9 +251,12 @@ TYPED_TEST(ServiceTest, details_works) {
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
 
+    auto attribute_specifier = AttributeSpecifier();
+    attribute_specifier.define(key_1, value_1).expect("");
+    attribute_specifier.define(key_2, value_2).expect("");
     auto sut = node.service_builder(service_name_1)
                    .template publish_subscribe<uint64_t>()
-                   .create_with_attributes(AttributeSpecifier().define(key_1, value_1).define(key_2, value_2))
+                   .create_with_attributes(attribute_specifier)
                    .expect("");
 
     auto result =

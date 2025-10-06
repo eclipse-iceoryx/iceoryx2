@@ -15,6 +15,20 @@ use pyo3::exceptions::PyException;
 
 create_exception!(
     iceoryx2_ffi_python,
+    AttributeVerificationError,
+    PyException,
+    "Errors caused when verifying attribute requirements."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    AttributeDefinitionError,
+    PyException,
+    "Errors caused when adding an attribute to the AttributeSet."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
     ConfigCreationError,
     PyException,
     "Errors caused by creating a new config."
