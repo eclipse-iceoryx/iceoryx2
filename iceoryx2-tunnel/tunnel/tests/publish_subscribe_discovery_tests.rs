@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #[generic_tests::define]
-mod tunnel_discovery_tests {
+mod publish_subscribe_discovery_tests {
 
     use core::fmt::Debug;
     use core::time::Duration;

@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2::node::Node;
+use iceoryx2::node::NodeId;
 use iceoryx2::port::publisher::PublisherCreateError;
 use iceoryx2::port::subscriber::SubscriberCreateError;
 use iceoryx2::prelude::AllocationStrategy;
@@ -37,10 +38,12 @@ pub enum CreationError {
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub enum PropagationError {}
+pub enum ReceiveError {
+    Error,
+}
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub enum IngestionError {
+pub enum SendError {
     FailedToSendSample,
 }
 
@@ -74,7 +77,7 @@ impl<S: Service> Ports<S> {
         let port_config = static_config.publish_subscribe();
         let service = unsafe {
             fail!(
-                from "Tunnel::setup_publish_subscribe()",
+                from "Ports::new",
                 when node.service_builder(static_config.name())
                         .publish_subscribe::<Payload>()
                         .user_header::<Header>()
@@ -123,11 +126,11 @@ impl<S: Service> Ports<S> {
     /// Receive data from the ports
     pub(crate) fn receive<PropagateFn>(
         &self,
-        node_id: &iceoryx2::node::NodeId,
+        node_id: &NodeId,
         mut propagate: PropagateFn,
-    ) -> Result<(), PropagationError>
+    ) -> Result<(), ReceiveError>
     where
-        // Propagation function provided by the caller.
+        // TODO: Handle failed propagation
         PropagateFn: FnMut(Sample<S>),
     {
         loop {
@@ -157,7 +160,7 @@ impl<S: Service> Ports<S> {
         Ok(())
     }
 
-    pub(crate) fn send<IngestFn>(&self, mut ingest: IngestFn) -> Result<(), IngestionError>
+    pub(crate) fn send<IngestFn>(&self, mut ingest: IngestFn) -> Result<(), SendError>
     where
         IngestFn: for<'a> FnMut(&'a mut LoanFn<'a, S>) -> Option<SampleMut<S>>,
     {
@@ -185,7 +188,7 @@ impl<S: Service> Ports<S> {
                 fail!(
                     from "Ports::send",
                     when sample.send(),
-                    with IngestionError::FailedToSendSample,
+                    with SendError::FailedToSendSample,
                     "Failed to send ingested payload"
                 );
             } else {

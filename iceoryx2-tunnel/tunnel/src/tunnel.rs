@@ -45,8 +45,7 @@ pub enum DiscoveryError {
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum RelayError {
-    FailedToPropagatePublishSubscribe,
-    FailedToIngestPublishSubscribe,
+    Error,
 }
 
 impl From<discovery::subscriber::CreationError> for CreationError {
@@ -67,15 +66,15 @@ impl From<discovery::tracker::DiscoveryError> for DiscoveryError {
     }
 }
 
-impl From<ports::publish_subscribe::PropagationError> for RelayError {
-    fn from(_: ports::publish_subscribe::PropagationError) -> Self {
-        RelayError::FailedToPropagatePublishSubscribe
+impl From<ports::publish_subscribe::ReceiveError> for RelayError {
+    fn from(_: ports::publish_subscribe::ReceiveError) -> Self {
+        RelayError::Error
     }
 }
 
-impl From<ports::publish_subscribe::IngestionError> for RelayError {
-    fn from(_: ports::publish_subscribe::IngestionError) -> Self {
-        RelayError::FailedToIngestPublishSubscribe
+impl From<ports::publish_subscribe::SendError> for RelayError {
+    fn from(_: ports::publish_subscribe::SendError) -> Self {
+        RelayError::Error
     }
 }
 
@@ -117,7 +116,7 @@ pub struct Tunnel<S: Service, B: for<'a> Backend<S>> {
     node: Node<S>,
     backend: B,
     services: HashSet<ServiceId>,
-    ports: HashMap<ServiceId, Ports<S>>,
+    ports: HashMap<ServiceId, Ports<S>>, // TODO: Organize by port type
     relays: Relays<S, B>,
     subscriber: Option<discovery::subscriber::DiscoverySubscriber<S>>,
     tracker: Option<discovery::tracker::DiscoveryTracker<S>>,
@@ -281,7 +280,7 @@ fn on_discovery<S: Service, B: Backend<S>>(
             debug!(
                 from "Tunnel::on_discovery",
                 "Discovered Event({})", static_config.name());
-            Ok(())
+            setup_event(static_config, node, backend, services, ports, relays)
         }
         _ => {
             // Not supported. Nothing to do.
@@ -322,6 +321,28 @@ fn setup_publish_subscribe<S: Service, B: Backend<S>>(
     services.insert(service_id.clone());
     ports.insert(service_id.clone(), Ports::PublishSubscribe(port));
     relays.publish_subscribe.insert(service_id.clone(), relay);
+
+    Ok(())
+}
+
+fn setup_event<S: Service, B: Backend<S>>(
+    static_config: &StaticConfig,
+    node: &Node<S>,
+    backend: &B,
+    services: &mut HashSet<ServiceId>,
+    ports: &mut HashMap<ServiceId, Ports<S>>,
+    relays: &mut Relays<S, B>,
+) -> Result<(), CreationError> {
+    let service_id = static_config.service_id();
+    if services.contains(service_id) {
+        return Ok(());
+    }
+
+    // TODO: Use fail!
+    let port = ports::event::Ports::new(static_config, &node).unwrap();
+
+    services.insert(service_id.clone());
+    ports.insert(service_id.clone(), Ports::Event(port));
 
     Ok(())
 }
