@@ -75,6 +75,14 @@ pub enum SharedMemoryCreateError {
     InternalError,
 }
 
+impl core::fmt::Display for SharedMemoryCreateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "SharedMemoryCreateError::{self:?}")
+    }
+}
+
+impl core::error::Error for SharedMemoryCreateError {}
+
 /// Failure returned by [`SharedMemoryBuilder::open()`]
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum SharedMemoryOpenError {
@@ -87,6 +95,14 @@ pub enum SharedMemoryOpenError {
     VersionMismatch,
     InternalError,
 }
+
+impl core::fmt::Display for SharedMemoryOpenError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "SharedMemoryOpenError::{self:?}")
+    }
+}
+
+impl core::error::Error for SharedMemoryOpenError {}
 
 /// Represents a pointer pointing to some [`SharedMemory`]. Consists of the actual data pointer and
 /// an [`PointerOffset`] which can be used in combination with a

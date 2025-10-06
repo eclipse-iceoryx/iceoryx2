@@ -27,7 +27,6 @@ pub mod reactor;
 pub mod resizable_shared_memory;
 pub mod serialize;
 pub mod shared_memory;
-pub mod shared_memory_directory;
 pub mod shm_allocator;
 pub mod static_storage;
 pub mod zero_copy_connection;

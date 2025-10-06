@@ -35,6 +35,14 @@ pub enum StaticStorageCreateError {
     InternalError,
 }
 
+impl core::fmt::Display for StaticStorageCreateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "StaticStorageCreateError::{self:?}")
+    }
+}
+
+impl core::error::Error for StaticStorageCreateError {}
+
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum StaticStorageOpenError {
     DoesNotExist,
@@ -42,6 +50,14 @@ pub enum StaticStorageOpenError {
     InitializationNotYetFinalized,
     InternalError,
 }
+
+impl core::fmt::Display for StaticStorageOpenError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "StaticStorageOpenError::{self:?}")
+    }
+}
+
+impl core::error::Error for StaticStorageOpenError {}
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum StaticStorageReadError {
@@ -51,12 +67,28 @@ pub enum StaticStorageReadError {
     CreationNotComplete,
 }
 
+impl core::fmt::Display for StaticStorageReadError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "StaticStorageReadError::{self:?}")
+    }
+}
+
+impl core::error::Error for StaticStorageReadError {}
+
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum StaticStorageUnlockError {
     InsufficientPermissions,
     NoSpaceLeft,
     InternalError,
 }
+
+impl core::fmt::Display for StaticStorageUnlockError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "StaticStorageUnlockError::{self:?}")
+    }
+}
+
+impl core::error::Error for StaticStorageUnlockError {}
 
 /// A custom configuration which can be used by the [`StaticStorageBuilder`] to create a
 /// [`StaticStorage`] with implementation specific settings.

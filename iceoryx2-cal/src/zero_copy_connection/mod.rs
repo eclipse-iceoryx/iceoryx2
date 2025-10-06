@@ -35,6 +35,14 @@ pub enum ZeroCopyPortRemoveError {
     DoesNotExist,
 }
 
+impl core::fmt::Display for ZeroCopyPortRemoveError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "ZeroCopyPortRemoveError::{self:?}")
+    }
+}
+
+impl core::error::Error for ZeroCopyPortRemoveError {}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ZeroCopyCreationError {
     InternalError,

@@ -89,6 +89,14 @@ pub enum DynamicStorageCreateError {
     InternalError,
 }
 
+impl core::fmt::Display for DynamicStorageCreateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "DynamicStorageCreateError::{self:?}")
+    }
+}
+
+impl core::error::Error for DynamicStorageCreateError {}
+
 /// Describes failures when opening a new [`DynamicStorage`]
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum DynamicStorageOpenError {
@@ -98,12 +106,28 @@ pub enum DynamicStorageOpenError {
     InternalError,
 }
 
+impl core::fmt::Display for DynamicStorageOpenError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "DynamicStorageOpenError::{self:?}")
+    }
+}
+
+impl core::error::Error for DynamicStorageOpenError {}
+
 enum_gen! {
     DynamicStorageOpenOrCreateError
   mapping:
     DynamicStorageOpenError,
     DynamicStorageCreateError
 }
+
+impl core::fmt::Display for DynamicStorageOpenOrCreateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "DynamicStorageOpenOrCreateError::{self:?}")
+    }
+}
+
+impl core::error::Error for DynamicStorageOpenOrCreateError {}
 
 /// Builder for the [`DynamicStorage`]. T is not allowed to implement the [`Drop`] trait.
 pub trait DynamicStorageBuilder<'builder, T: Send + Sync, D: DynamicStorage<T>>:

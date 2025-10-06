@@ -102,6 +102,14 @@ pub enum MonitoringCreateTokenError {
     InternalError,
 }
 
+impl core::fmt::Display for MonitoringCreateTokenError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "MonitoringCreateTokenError::{self:?}")
+    }
+}
+
+impl core::error::Error for MonitoringCreateTokenError {}
+
 /// Represents the possible errors that can occur when a new [`MonitoringCleaner`] is created with
 /// [`MonitoringBuilder::cleaner()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -113,6 +121,14 @@ pub enum MonitoringCreateCleanerError {
     InternalError,
 }
 
+impl core::fmt::Display for MonitoringCreateCleanerError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "MonitoringCreateCleanerError::{self:?}")
+    }
+}
+
+impl core::error::Error for MonitoringCreateCleanerError {}
+
 /// Represents the possible errors that can occur when a new [`MonitoringMonitor`] is created with
 /// [`MonitoringBuilder::monitor()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -122,6 +138,14 @@ pub enum MonitoringCreateMonitorError {
     InternalError,
 }
 
+impl core::fmt::Display for MonitoringCreateMonitorError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "MonitoringCreateMonitorError::{self:?}")
+    }
+}
+
+impl core::error::Error for MonitoringCreateMonitorError {}
+
 /// Represents the possible errors that can occur when the [`State`] is acquired via
 /// [`MonitoringMonitor::state()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -129,6 +153,14 @@ pub enum MonitoringStateError {
     Interrupt,
     InternalError,
 }
+
+impl core::fmt::Display for MonitoringStateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "MonitoringStateError::{self:?}")
+    }
+}
+
+impl core::error::Error for MonitoringStateError {}
 
 /// The token enables a process to be monitored by another process.
 pub trait MonitoringToken: NamedConcept {}

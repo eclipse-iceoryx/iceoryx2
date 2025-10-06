@@ -118,6 +118,14 @@ enum_gen! {
     SharedMemoryCreateError
 }
 
+impl core::fmt::Display for ResizableShmAllocationError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "ResizableShmAllocationError::{self:?}")
+    }
+}
+
+impl core::error::Error for ResizableShmAllocationError {}
+
 /// Creates a [`ResizableSharedMemoryView`] to an existing [`ResizableSharedMemory`] and maps the
 /// [`ResizableSharedMemory`] read-only into the process space.
 pub trait ResizableSharedMemoryViewBuilder<
