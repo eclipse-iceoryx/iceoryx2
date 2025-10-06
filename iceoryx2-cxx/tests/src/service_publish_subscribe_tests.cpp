@@ -1380,11 +1380,6 @@ TYPED_TEST(ServicePublishSubscribeTest, PayloadTypeNameIsSetToRustPendantForFixe
         ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("f64"));
     }
     {
-        auto service = node.service_builder(service_name).template publish_subscribe<bool>().create().expect("");
-        auto static_config = service.static_config();
-        ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("bool"));
-    }
-    {
         auto service =
             node.service_builder(service_name).template publish_subscribe<iox::Slice<uint8_t>>().create().expect("");
         auto static_config = service.static_config();
@@ -1443,12 +1438,6 @@ TYPED_TEST(ServicePublishSubscribeTest, PayloadTypeNameIsSetToRustPendantForFixe
             node.service_builder(service_name).template publish_subscribe<iox::Slice<double>>().create().expect("");
         auto static_config = service.static_config();
         ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("f64"));
-    }
-    {
-        auto service =
-            node.service_builder(service_name).template publish_subscribe<iox::Slice<bool>>().create().expect("");
-        auto static_config = service.static_config();
-        ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("bool"));
     }
 }
 

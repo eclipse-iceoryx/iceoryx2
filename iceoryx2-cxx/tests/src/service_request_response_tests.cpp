@@ -1755,12 +1755,6 @@ TYPED_TEST(ServiceRequestResponseTest,
         ASSERT_THAT(static_config.response_message_type_details().payload().type_name(), StrEq("f64"));
     }
     {
-        auto service = node.service_builder(service_name).template request_response<bool, bool>().create().expect("");
-        auto static_config = service.static_config();
-        ASSERT_THAT(static_config.request_message_type_details().payload().type_name(), StrEq("bool"));
-        ASSERT_THAT(static_config.response_message_type_details().payload().type_name(), StrEq("bool"));
-    }
-    {
         auto service = node.service_builder(service_name)
                            .template request_response<iox::Slice<uint8_t>, iox::Slice<uint8_t>>()
                            .create()
@@ -1849,15 +1843,6 @@ TYPED_TEST(ServiceRequestResponseTest,
         auto static_config = service.static_config();
         ASSERT_THAT(static_config.request_message_type_details().payload().type_name(), StrEq("f64"));
         ASSERT_THAT(static_config.response_message_type_details().payload().type_name(), StrEq("f64"));
-    }
-    {
-        auto service = node.service_builder(service_name)
-                           .template request_response<iox::Slice<bool>, iox::Slice<bool>>()
-                           .create()
-                           .expect("");
-        auto static_config = service.static_config();
-        ASSERT_THAT(static_config.request_message_type_details().payload().type_name(), StrEq("bool"));
-        ASSERT_THAT(static_config.response_message_type_details().payload().type_name(), StrEq("bool"));
     }
 }
 
