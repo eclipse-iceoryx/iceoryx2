@@ -164,7 +164,7 @@ TYPED_TEST(WaitSetTest, interval_attachment_blocks_for_at_least_timeout) {
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
 
     ASSERT_THAT(callback_called, Eq(true));
-    ASSERT_THAT(elapsed, Ge(TIMEOUT.toMilliseconds()));
+    ASSERT_THAT(elapsed, Ge(static_cast<decltype(elapsed)>(TIMEOUT.toMilliseconds())));
 }
 
 TYPED_TEST(WaitSetTest, deadline_attachment_blocks_for_at_least_timeout) {
@@ -186,7 +186,7 @@ TYPED_TEST(WaitSetTest, deadline_attachment_blocks_for_at_least_timeout) {
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
 
     ASSERT_THAT(callback_called, Eq(true));
-    ASSERT_THAT(elapsed, Ge(TIMEOUT.toMilliseconds()));
+    ASSERT_THAT(elapsed, Ge(static_cast<decltype(elapsed)>(TIMEOUT.toMilliseconds())));
 }
 
 TYPED_TEST(WaitSetTest, does_not_block_longer_than_provided_timeout) {
@@ -207,7 +207,7 @@ TYPED_TEST(WaitSetTest, does_not_block_longer_than_provided_timeout) {
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
 
     ASSERT_THAT(callback_called, Eq(false));
-    ASSERT_THAT(elapsed, Ge(TIMEOUT.toMilliseconds()));
+    ASSERT_THAT(elapsed, Ge(static_cast<decltype(elapsed)>(TIMEOUT.toMilliseconds())));
 }
 
 TYPED_TEST(WaitSetTest, blocks_until_interval_when_user_timeout_is_larger) {
@@ -226,7 +226,7 @@ TYPED_TEST(WaitSetTest, blocks_until_interval_when_user_timeout_is_larger) {
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
 
     ASSERT_THAT(callback_called, Eq(true));
-    ASSERT_THAT(elapsed, Ge(TIMEOUT.toMilliseconds()));
+    ASSERT_THAT(elapsed, Ge(static_cast<decltype(elapsed)>(TIMEOUT.toMilliseconds())));
 }
 
 
