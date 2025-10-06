@@ -50,6 +50,13 @@ jobs:
           internal/scripts/ci_prepare_ubuntu.sh
           uname -a
 
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad # ratchet:mozilla-actions/sccache-action@v0.0.9
+      - name: Set C/C++ caching env vars
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+
       - name: Run cargo build
         run: cargo build --workspace --all-targets ${{ inputs.mode-arg }}
 
