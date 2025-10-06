@@ -17,7 +17,7 @@ use zenoh::Wait;
 
 pub struct Testing;
 
-impl iceoryx2_tunnel_traits::testing::Testing for Testing {
+impl iceoryx2_tunnel_backend::traits::testing::Testing for Testing {
     fn sync(id: String, timeout: Duration) -> bool {
         let start_time = std::time::Instant::now();
 

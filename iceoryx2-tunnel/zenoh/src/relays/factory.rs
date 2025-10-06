@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2::service::{static_config::StaticConfig, Service};
+use iceoryx2_tunnel_backend::traits::RelayFactory;
 use zenoh::Session;
 
 use crate::relays::{event, publish_subscribe};
@@ -33,7 +34,7 @@ impl<'session, S: Service> Factory<'session, S> {
     }
 }
 
-impl<'session, S: Service> iceoryx2_tunnel_traits::RelayFactory<S> for Factory<'session, S> {
+impl<'session, S: Service> RelayFactory<S> for Factory<'session, S> {
     type PublishSubscribeRelay = publish_subscribe::Relay<S>;
     type EventRelay = event::Relay;
 

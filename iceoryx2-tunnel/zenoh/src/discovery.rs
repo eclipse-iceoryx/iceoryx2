@@ -68,7 +68,7 @@ impl Discovery {
     }
 }
 
-impl iceoryx2_tunnel_traits::Discovery for Discovery {
+impl iceoryx2_tunnel_backend::traits::Discovery for Discovery {
     type DiscoveryError = DiscoveryError;
 
     fn discover<

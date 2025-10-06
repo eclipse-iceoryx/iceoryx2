@@ -32,7 +32,7 @@ pub struct Transport<S: Service> {
     _phantom: core::marker::PhantomData<S>,
 }
 
-impl<S: Service> iceoryx2_tunnel_traits::Transport<S> for Transport<S> {
+impl<S: Service> iceoryx2_tunnel_backend::traits::Transport<S> for Transport<S> {
     type Config = Config;
     type CreationError = CreationError;
     type Discovery = Discovery;
@@ -73,7 +73,7 @@ impl<S: Service> iceoryx2_tunnel_traits::Transport<S> for Transport<S> {
         Self::RelayFactory::new(&self.session)
     }
 
-    fn discovery(&self) -> &impl iceoryx2_tunnel_traits::Discovery {
+    fn discovery(&self) -> &impl iceoryx2_tunnel_backend::traits::Discovery {
         &self.discovery
     }
 }

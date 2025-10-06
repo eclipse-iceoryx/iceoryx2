@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2::service::static_config::StaticConfig;
-use iceoryx2_tunnel_traits::EventRelay;
+use iceoryx2_tunnel_backend::traits::{EventRelay, RelayBuilder};
 use zenoh::Session;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -44,7 +44,7 @@ impl<'a> Builder<'a> {
     }
 }
 
-impl<'a> iceoryx2_tunnel_traits::RelayBuilder for Builder<'a> {
+impl<'a> RelayBuilder for Builder<'a> {
     type CreationError = CreationError;
     type Relay = Relay;
 

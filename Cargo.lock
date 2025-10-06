@@ -1511,7 +1511,7 @@ dependencies = [
  "iceoryx2-pal-posix",
  "iceoryx2-pal-testing",
  "iceoryx2-services-discovery",
- "iceoryx2-tunnel-core",
+ "iceoryx2-tunnel",
  "iceoryx2-userland-record-and-replay",
  "ron",
  "serde",
@@ -1623,7 +1623,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "iceoryx2-tunnel-core"
+name = "iceoryx2-tunnel"
 version = "0.7.0"
 dependencies = [
  "generic-tests",
@@ -1632,12 +1632,20 @@ dependencies = [
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
  "iceoryx2-services-discovery",
- "iceoryx2-tunnel-traits",
+ "iceoryx2-tunnel-backend",
  "iceoryx2-tunnel-zenoh",
 ]
 
 [[package]]
-name = "iceoryx2-tunnels-end-to-end-tests"
+name = "iceoryx2-tunnel-backend"
+version = "0.7.0"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-testing",
+]
+
+[[package]]
+name = "iceoryx2-tunnel-end-to-end-tests"
 version = "0.7.0"
 dependencies = [
  "clap",
@@ -1647,20 +1655,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "iceoryx2-tunnel-traits"
-version = "0.7.0"
-dependencies = [
- "iceoryx2",
- "iceoryx2-bb-testing",
-]
-
-[[package]]
 name = "iceoryx2-tunnel-zenoh"
 version = "0.7.0"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-log",
- "iceoryx2-tunnel-traits",
+ "iceoryx2-tunnel-backend",
  "serde_json",
  "zenoh",
 ]

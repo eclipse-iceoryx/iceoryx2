@@ -15,7 +15,7 @@ use iceoryx2::service::builder::CustomHeaderMarker;
 use iceoryx2::service::builder::CustomPayloadMarker;
 use iceoryx2::service::{static_config::StaticConfig, Service};
 use iceoryx2_bb_log::{debug, error, fail};
-use iceoryx2_tunnel_traits::{PublishSubscribeRelay, RelayBuilder};
+use iceoryx2_tunnel_backend::traits::{PublishSubscribeRelay, RelayBuilder};
 use zenoh::{
     bytes::ZBytes,
     handlers::{FifoChannel, FifoChannelHandler},
