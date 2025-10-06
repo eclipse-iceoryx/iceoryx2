@@ -16,10 +16,7 @@ use iceoryx2::service::Service;
 
 use crate::traits::{Discovery, EventRelay, PublishSubscribeRelay, RelayFactory};
 
-/// Abstraction of the transport over which data is propagated.
-///
-/// Enables implementations to define custom initialization logic.
-pub trait Transport<S: Service>: Sized {
+pub trait Backend<S: Service>: Sized {
     type Config: Default + Debug;
     type CreationError: Debug;
     type Discovery: Discovery;

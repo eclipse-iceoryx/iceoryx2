@@ -24,7 +24,7 @@ mod tunnel_discovery_tests {
     use iceoryx2_services_discovery::service_discovery::Service as DiscoveryService;
     use iceoryx2_tunnel::Tunnel;
     use iceoryx2_tunnel_backend::traits::testing::Testing;
-    use iceoryx2_tunnel_backend::traits::Transport;
+    use iceoryx2_tunnel_backend::traits::Backend;
 
     // TODO: Move to iceoryx2::testing
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
@@ -38,7 +38,7 @@ mod tunnel_discovery_tests {
     }
 
     #[test]
-    fn discovers_services_via_subscriber<S: Service, T: Transport<S> + Debug, U: Testing>() {
+    fn discovers_services_via_subscriber<S: Service, T: Backend<S> + Debug, U: Testing>() {
         // === SETUP ==
         let iceoryx_config = generate_isolated_config();
         let service_name = generate_service_name();
@@ -79,7 +79,7 @@ mod tunnel_discovery_tests {
     }
 
     #[test]
-    fn discovers_services_via_tracker<S: Service, T: Transport<S> + Debug, U: Testing>() {
+    fn discovers_services_via_tracker<S: Service, T: Backend<S> + Debug, U: Testing>() {
         // === SETUP ==
         let iceoryx_config = generate_isolated_config();
         let service_name = generate_service_name();
@@ -107,27 +107,24 @@ mod tunnel_discovery_tests {
     }
 
     #[test]
-    fn discovers_services_via_transport<S: Service, T: Transport<S> + Debug, U: Testing>() {
-        set_log_level(LogLevel::Debug);
+    fn discovers_services_via_backend<S: Service, B: Backend<S> + Debug, U: Testing>() {
         // === SETUP ===
         let service_name = generate_service_name();
 
         // Host A
         let iceoryx_config_a = generate_isolated_config();
-        let transport_config_a = T::Config::default();
+        let backend_config_a = B::Config::default();
         let tunnel_config_a = iceoryx2_tunnel::Config::default();
         let mut tunnel_a =
-            Tunnel::<S, T>::create(&tunnel_config_a, &iceoryx_config_a, &transport_config_a)
-                .unwrap();
+            Tunnel::<S, B>::create(&tunnel_config_a, &iceoryx_config_a, &backend_config_a).unwrap();
         assert_that!(tunnel_a.tunneled_services().len(), eq 0);
 
         // Host B
         let iceoryx_config_b = generate_isolated_config();
-        let transport_config_b = T::Config::default();
+        let backend_config_b = B::Config::default();
         let tunnel_config_b = iceoryx2_tunnel::Config::default();
         let mut tunnel_b =
-            Tunnel::<S, T>::create(&tunnel_config_b, &iceoryx_config_b, &transport_config_b)
-                .unwrap();
+            Tunnel::<S, B>::create(&tunnel_config_b, &iceoryx_config_b, &backend_config_b).unwrap();
         assert_that!(tunnel_b.tunneled_services().len(), eq 0);
 
         // Create a service on Host B
@@ -144,7 +141,7 @@ mod tunnel_discovery_tests {
             .unwrap();
 
         // === TEST ===
-        tunnel_a.discover_over_transport().unwrap();
+        tunnel_a.discover_over_backend().unwrap();
         assert_that!(tunnel_a.tunneled_services().len(), eq 0);
 
         tunnel_b.discover_over_iceoryx().unwrap();
@@ -155,7 +152,7 @@ mod tunnel_discovery_tests {
         const MAX_RETRIES: usize = 5;
         U::retry(
             || {
-                tunnel_a.discover_over_transport().unwrap();
+                tunnel_a.discover_over_backend().unwrap();
 
                 let service_discovered = tunnel_a.tunneled_services().len() == 1;
 
@@ -173,15 +170,15 @@ mod tunnel_discovery_tests {
     }
 
     #[cfg(feature = "tunnel_zenoh")]
-    mod zenoh_transport {
+    mod zenoh_backend {
         use iceoryx2::service::ipc::Service as Ipc;
         use iceoryx2::service::local::Service as Local;
         use iceoryx2_tunnel_zenoh::testing;
-        use iceoryx2_tunnel_zenoh::Transport;
+        use iceoryx2_tunnel_zenoh::ZenohBackend;
 
-        #[instantiate_tests(<Ipc, Transport<Ipc>, testing::Testing>)]
+        #[instantiate_tests(<Ipc, ZenohBackend<Ipc>, testing::Testing>)]
         mod ipc {}
-        #[instantiate_tests(<Local, Transport<Local>, testing::Testing>)]
+        #[instantiate_tests(<Local, ZenohBackend<Local>, testing::Testing>)]
         mod local {}
     }
 }

@@ -23,7 +23,7 @@ mod tunnel_publish_subscribe_tests {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::test_fail;
     use iceoryx2_tunnel::Tunnel;
-    use iceoryx2_tunnel_backend::traits::{testing::Testing, Transport};
+    use iceoryx2_tunnel_backend::traits::{testing::Testing, Backend};
 
     fn generate_service_name() -> ServiceName {
         ServiceName::new(&format!(
@@ -33,7 +33,7 @@ mod tunnel_publish_subscribe_tests {
         .unwrap()
     }
 
-    fn propagate_struct_payloads<S: Service, T: Transport<S>, U: Testing>(num: usize) {
+    fn propagate_struct_payloads<S: Service, T: Backend<S>, U: Testing>(num: usize) {
         set_log_level(LogLevel::Debug);
 
         const MAX_ATTEMPTS: usize = 25;
@@ -52,11 +52,10 @@ mod tunnel_publish_subscribe_tests {
 
         // --- Host A ---
         let iceoryx_config_a = generate_isolated_config();
-        let transport_config_a = T::Config::default();
+        let backend_config_a = T::Config::default();
         let tunnel_config_a = iceoryx2_tunnel::Config::default();
         let mut tunnel_a =
-            Tunnel::<S, T>::create(&tunnel_config_a, &iceoryx_config_a, &transport_config_a)
-                .unwrap();
+            Tunnel::<S, T>::create(&tunnel_config_a, &iceoryx_config_a, &backend_config_a).unwrap();
 
         let node_a = NodeBuilder::new()
             .config(&iceoryx_config_a)
@@ -75,16 +74,15 @@ mod tunnel_publish_subscribe_tests {
 
         // --- Host B ---
         let iceoryx_config_b = generate_isolated_config();
-        let transport_config_b = T::Config::default();
+        let backend_config_b = T::Config::default();
         let tunnel_config_b = iceoryx2_tunnel::Config::default();
         let mut tunnel_b =
-            Tunnel::<S, T>::create(&tunnel_config_b, &iceoryx_config_b, &transport_config_b)
-                .unwrap();
+            Tunnel::<S, T>::create(&tunnel_config_b, &iceoryx_config_b, &backend_config_b).unwrap();
 
         // Wait for tunnel on host b to discover the service on host A
         U::retry(
             || {
-                tunnel_b.discover_over_transport().unwrap();
+                tunnel_b.discover_over_backend().unwrap();
                 let service_discovered = tunnel_b.tunneled_services().len() == 1;
                 if service_discovered {
                     return Ok(());
@@ -150,7 +148,7 @@ mod tunnel_publish_subscribe_tests {
         }
     }
 
-    fn propagate_slice_payloads<S: Service, T: Transport<S>, U: Testing>(num: usize) {
+    fn propagate_slice_payloads<S: Service, T: Backend<S>, U: Testing>(num: usize) {
         const MAX_ATTEMPTS: usize = 25;
         const TIMEOUT: Duration = Duration::from_millis(250);
         const PAYLOAD_DATA_LENGTH: usize = 256;
@@ -160,11 +158,10 @@ mod tunnel_publish_subscribe_tests {
 
         // --- Host A ---
         let iceoryx_config_a = generate_isolated_config();
-        let transport_config_a = T::Config::default();
+        let backend_config_a = T::Config::default();
         let tunnel_config_a = iceoryx2_tunnel::Config::default();
         let mut tunnel_a =
-            Tunnel::<S, T>::create(&tunnel_config_a, &iceoryx_config_a, &transport_config_a)
-                .unwrap();
+            Tunnel::<S, T>::create(&tunnel_config_a, &iceoryx_config_a, &backend_config_a).unwrap();
 
         let node_a = NodeBuilder::new()
             .config(&iceoryx_config_a)
@@ -187,16 +184,15 @@ mod tunnel_publish_subscribe_tests {
 
         // --- Host B ---
         let iceoryx_config_b = generate_isolated_config();
-        let transport_config_b = T::Config::default();
+        let backend_config_b = T::Config::default();
         let tunnel_config_b = iceoryx2_tunnel::Config::default();
         let mut tunnel_b =
-            Tunnel::<S, T>::create(&tunnel_config_b, &iceoryx_config_b, &transport_config_b)
-                .unwrap();
+            Tunnel::<S, T>::create(&tunnel_config_b, &iceoryx_config_b, &backend_config_b).unwrap();
 
         // Wait for tunnel on host b to discover the service on host A
         U::retry(
             || {
-                tunnel_b.discover_over_transport().unwrap();
+                tunnel_b.discover_over_backend().unwrap();
                 let service_discovered = tunnel_b.tunneled_services().len() == 1;
                 if service_discovered {
                     return Ok(());
@@ -264,37 +260,37 @@ mod tunnel_publish_subscribe_tests {
     }
 
     #[test]
-    fn propagates_struct_payload<S: Service, T: Transport<S>, U: Testing>() {
-        propagate_struct_payloads::<S, T, U>(1);
+    fn propagates_struct_payload<S: Service, B: Backend<S>, U: Testing>() {
+        propagate_struct_payloads::<S, B, U>(1);
     }
 
     #[test]
-    fn propagates_struct_payload_many<S: Service, T: Transport<S>, U: Testing>() {
-        propagate_struct_payloads::<S, T, U>(10);
+    fn propagates_struct_payload_many<S: Service, B: Backend<S>, U: Testing>() {
+        propagate_struct_payloads::<S, B, U>(10);
     }
 
     #[test]
-    fn propagates_slice_payload<S: Service, T: Transport<S>, U: Testing>() {
-        propagate_slice_payloads::<S, T, U>(1);
+    fn propagates_slice_payload<S: Service, B: Backend<S>, U: Testing>() {
+        propagate_slice_payloads::<S, B, U>(1);
     }
 
     #[test]
-    fn propagates_slice_payload_many<S: Service, T: Transport<S>, U: Testing>() {
-        propagate_slice_payloads::<S, T, U>(10);
+    fn propagates_slice_payload_many<S: Service, B: Backend<S>, U: Testing>() {
+        propagate_slice_payloads::<S, B, U>(10);
     }
 
     #[test]
-    fn propagated_payloads_do_not_loop_back<S: Service, T: Transport<S>, U: Testing>() {
+    fn propagated_payloads_do_not_loop_back<S: Service, T: Backend<S>, U: Testing>() {
         const PAYLOAD_DATA: &str = "WhenItRegisters";
 
         // === SETUP ===
         let service_name = generate_service_name();
 
-        let transport_config = T::Config::default();
+        let backend_config = T::Config::default();
         let iceoryx_config = generate_isolated_config();
         let tunnel_config = iceoryx2_tunnel::Config::default();
         let mut tunnel =
-            Tunnel::<S, T>::create(&tunnel_config, &iceoryx_config, &transport_config).unwrap();
+            Tunnel::<S, T>::create(&tunnel_config, &iceoryx_config, &backend_config).unwrap();
 
         // Publisher
         let node = NodeBuilder::new()
@@ -341,15 +337,15 @@ mod tunnel_publish_subscribe_tests {
     }
 
     #[cfg(feature = "tunnel_zenoh")]
-    mod zenoh_transport {
+    mod zenoh_backend {
         use iceoryx2::service::ipc::Service as Ipc;
         use iceoryx2::service::local::Service as Local;
         use iceoryx2_tunnel_zenoh::testing;
-        use iceoryx2_tunnel_zenoh::Transport;
+        use iceoryx2_tunnel_zenoh::ZenohBackend;
 
-        #[instantiate_tests(<Ipc, Transport<Ipc>, testing::Testing>)]
+        #[instantiate_tests(<Ipc, ZenohBackend<Ipc>, testing::Testing>)]
         mod ipc {}
-        #[instantiate_tests(<Local, Transport<Local>, testing::Testing>)]
+        #[instantiate_tests(<Local, ZenohBackend<Local>, testing::Testing>)]
         mod local {}
     }
 }

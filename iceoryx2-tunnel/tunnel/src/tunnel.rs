@@ -23,7 +23,7 @@ use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2::service::Service;
 use iceoryx2_bb_log::{debug, fail, warn};
 use iceoryx2_tunnel_backend::traits::{
-    Discovery, PublishSubscribeRelay, RelayBuilder, RelayFactory, Transport,
+    Backend, Discovery, PublishSubscribeRelay, RelayBuilder, RelayFactory,
 };
 use iceoryx2_tunnel_backend::types::publish_subscribe::LoanFn;
 
@@ -31,7 +31,7 @@ use iceoryx2_tunnel_backend::types::publish_subscribe::LoanFn;
 pub enum CreationError {
     FailedToCreateNodeNode,
     FailedToCreateService,
-    FailedToCreateTransport,
+    FailedToCreateBackend,
     FailedToCreateSubscriber,
     FailedToCreateTracker,
 }
@@ -40,7 +40,7 @@ pub enum CreationError {
 pub enum DiscoveryError {
     FailedToDiscoverOverSubscriber,
     FailedToDiscoverOverTracker,
-    FailedToDiscoverOverTransport,
+    FailedToDiscoverOverBackend,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -93,12 +93,12 @@ impl From<PublishSubscribeOpenOrCreateError> for CreationError {
 
 /// Struct to store different relay types by service id
 #[derive(Debug)]
-pub struct Relays<S: Service, T: Transport<S>> {
-    publish_subscribe: HashMap<ServiceId, T::PublishSubscribeRelay>,
-    event: HashMap<ServiceId, T::EventRelay>,
+pub struct Relays<S: Service, B: Backend<S>> {
+    publish_subscribe: HashMap<ServiceId, B::PublishSubscribeRelay>,
+    event: HashMap<ServiceId, B::EventRelay>,
 }
 
-impl<S: Service, T: Transport<S>> Relays<S, T> {
+impl<S: Service, B: Backend<S>> Relays<S, B> {
     pub fn new() -> Self {
         Self {
             publish_subscribe: HashMap::new(),
@@ -112,24 +112,22 @@ pub struct Config {
     pub discovery_service: Option<String>,
 }
 
-/// A generic tunnel implementation that works with any implemented Transport.
 #[derive(Debug)]
-pub struct Tunnel<S: Service, T: for<'a> Transport<S>> {
+pub struct Tunnel<S: Service, B: for<'a> Backend<S>> {
     node: Node<S>,
-    transport: T,
+    backend: B,
     services: HashSet<ServiceId>,
     ports: HashMap<ServiceId, Ports<S>>,
-    relays: Relays<S, T>,
+    relays: Relays<S, B>,
     subscriber: Option<discovery::subscriber::DiscoverySubscriber<S>>,
     tracker: Option<discovery::tracker::DiscoveryTracker<S>>,
 }
 
-impl<S: Service, T: for<'a> Transport<S>> Tunnel<S, T> {
-    /// Create a new tunnel instance that uses the specified Transport
+impl<S: Service, B: for<'a> Backend<S>> Tunnel<S, B> {
     pub fn create(
         tunnel_config: &Config,
         iceoryx_config: &iceoryx2::config::Config,
-        transport_config: &<T as Transport<S>>::Config,
+        backend_config: &<B as Backend<S>>::Config,
     ) -> Result<Self, CreationError> {
         let node = fail!(
             from "Tunnel::create",
@@ -137,11 +135,11 @@ impl<S: Service, T: for<'a> Transport<S>> Tunnel<S, T> {
             "failed to create node"
         );
 
-        let transport = fail!(
+        let backend = fail!(
             from "Tunnel::create",
-            when Transport::create(transport_config),
-            with CreationError::FailedToCreateTransport,
-            "failed to instantiate the transport"
+            when Backend::create(backend_config),
+            with CreationError::FailedToCreateBackend,
+            "failed to instantiate the backend"
         );
 
         let (subscriber, tracker) = match &tunnel_config.discovery_service {
@@ -161,7 +159,7 @@ impl<S: Service, T: for<'a> Transport<S>> Tunnel<S, T> {
 
         Ok(Self {
             node,
-            transport,
+            backend,
             services: HashSet::new(),
             ports: HashMap::new(),
             relays: Relays::new(),
@@ -170,22 +168,20 @@ impl<S: Service, T: for<'a> Transport<S>> Tunnel<S, T> {
         })
     }
 
-    /// Discover services both over iceoryx2 and over the transport.
     pub fn discover(&mut self) -> Result<(), DiscoveryError> {
         // TODO: Handle errors
         self.discover_over_iceoryx().unwrap();
-        self.discover_over_transport().unwrap();
+        self.discover_over_backend().unwrap();
 
         Ok(())
     }
 
-    /// Discover services over iceoryx2.
     pub fn discover_over_iceoryx(&mut self) -> Result<(), DiscoveryError> {
         if let Some(subscriber) = &mut self.subscriber {
             fail!(
                 from "Tunnel::discover_over_iceoryx",
                 when subscriber.discover(&mut |static_config| {
-                    on_discovery(static_config, &mut self.node, &self.transport, &mut self.services, &mut self.ports, &mut self.relays).unwrap();
+                    on_discovery(static_config, &mut self.node, &self.backend, &mut self.services, &mut self.ports, &mut self.relays).unwrap();
                     Ok(())
                 }),
                 "Failed to discover services via Subscriber"
@@ -195,7 +191,7 @@ impl<S: Service, T: for<'a> Transport<S>> Tunnel<S, T> {
             fail!(
                 from "Tunnel::discover_over_iceoryx",
                 when tracker.discover(&mut |static_config| {
-                    on_discovery(static_config, &mut self.node, &self.transport, &mut self.services, &mut self.ports, &mut self.relays).unwrap();
+                    on_discovery(static_config, &mut self.node, &self.backend, &mut self.services, &mut self.ports, &mut self.relays).unwrap();
                     Ok(())
                 }),
                 "Failed to discover services via Tracker"
@@ -205,22 +201,19 @@ impl<S: Service, T: for<'a> Transport<S>> Tunnel<S, T> {
         Ok(())
     }
 
-    /// Discover services over the transport.
-    pub fn discover_over_transport(&mut self) -> Result<(), DiscoveryError> {
+    pub fn discover_over_backend(&mut self) -> Result<(), DiscoveryError> {
         fail!(
-            from "Tunnel::discover_over_transport",
-            when self.transport.discovery().discover(&mut |static_config| {
-                on_discovery(static_config, &self.node, &self.transport, &mut self.services, &mut self.ports, &mut self.relays).unwrap();
+            from "Tunnel::discover_over_backend",
+            when self.backend.discovery().discover(&mut |static_config| {
+                on_discovery(static_config, &self.node, &self.backend, &mut self.services, &mut self.ports, &mut self.relays).unwrap();
                 Ok(())
             }),
-            with DiscoveryError::FailedToDiscoverOverTransport,
-            "Failed to discover services via Transport"
+            with DiscoveryError::FailedToDiscoverOverBackend,
+            "Failed to discover services via Backend"
         );
         Ok(())
     }
 
-    /// Relay payloads over the transport
-    ///
     /// TODO: Consider the ordering ...
     pub fn relay(&mut self) -> Result<(), RelayError> {
         for (id, ports) in &self.ports {
@@ -267,13 +260,13 @@ impl<S: Service, T: for<'a> Transport<S>> Tunnel<S, T> {
     }
 }
 
-fn on_discovery<S: Service, T: Transport<S>>(
+fn on_discovery<S: Service, B: Backend<S>>(
     static_config: &StaticConfig,
     node: &Node<S>,
-    transport: &T,
+    backend: &B,
     services: &mut HashSet<ServiceId>,
     ports: &mut HashMap<ServiceId, Ports<S>>,
-    relays: &mut Relays<S, T>,
+    relays: &mut Relays<S, B>,
 ) -> Result<(), CreationError> {
     match static_config.messaging_pattern() {
         MessagingPattern::PublishSubscribe(_) => {
@@ -282,7 +275,7 @@ fn on_discovery<S: Service, T: Transport<S>>(
                 "Discovered PublishSubscribe({})",
                 static_config.name()
             );
-            setup_publish_subscribe(static_config, node, transport, services, ports, relays)
+            setup_publish_subscribe(static_config, node, backend, services, ports, relays)
         }
         MessagingPattern::Event(_) => {
             debug!(
@@ -303,13 +296,13 @@ fn on_discovery<S: Service, T: Transport<S>>(
     }
 }
 
-fn setup_publish_subscribe<S: Service, T: Transport<S>>(
+fn setup_publish_subscribe<S: Service, B: Backend<S>>(
     static_config: &StaticConfig,
     node: &Node<S>,
-    transport: &T,
+    backend: &B,
     services: &mut HashSet<ServiceId>,
     ports: &mut HashMap<ServiceId, Ports<S>>,
-    relays: &mut Relays<S, T>,
+    relays: &mut Relays<S, B>,
 ) -> Result<(), CreationError> {
     let service_id = static_config.service_id();
     if services.contains(service_id) {
@@ -320,7 +313,7 @@ fn setup_publish_subscribe<S: Service, T: Transport<S>>(
     let port = ports::publish_subscribe::Ports::new(static_config, &node).unwrap();
 
     // TODO: Use fail!
-    let relay = transport
+    let relay = backend
         .relay_builder()
         .publish_subscribe(static_config)
         .create()

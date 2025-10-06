@@ -12,6 +12,7 @@
 
 use iceoryx2::service::Service;
 use iceoryx2_bb_log::fail;
+use iceoryx2_tunnel_backend::traits::Backend;
 use zenoh::{Config, Session, Wait};
 
 use crate::{
@@ -26,13 +27,13 @@ pub enum CreationError {
 }
 
 #[derive(Debug)]
-pub struct Transport<S: Service> {
+pub struct ZenohBackend<S: Service> {
     session: Session,
     discovery: Discovery,
     _phantom: core::marker::PhantomData<S>,
 }
 
-impl<S: Service> iceoryx2_tunnel_backend::traits::Transport<S> for Transport<S> {
+impl<S: Service> Backend<S> for ZenohBackend<S> {
     type Config = Config;
     type CreationError = CreationError;
     type Discovery = Discovery;
@@ -48,7 +49,7 @@ impl<S: Service> iceoryx2_tunnel_backend::traits::Transport<S> for Transport<S> 
     fn create(config: &Self::Config) -> Result<Self, Self::CreationError> {
         let session = zenoh::open(config.clone()).wait();
         let session = fail!(
-            from "ZenohTransport::create()",
+            from "ZenohBackend::create()",
             when session,
             with Self::CreationError::FailedToCreateSession,
             "Failed to create zenoh session"
@@ -56,7 +57,7 @@ impl<S: Service> iceoryx2_tunnel_backend::traits::Transport<S> for Transport<S> 
 
         let discovery = Discovery::create(&session);
         let discovery = fail!(
-            from "Tunnel::create()",
+            from "ZenohBackend::create()",
             when discovery,
             with CreationError::FailedToCreateDiscovery,
             "Failed to create zenoh discovery"
