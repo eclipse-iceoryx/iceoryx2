@@ -10,5 +10,4 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub mod traits;
-pub mod types;
+pub mod publish_subscribe;

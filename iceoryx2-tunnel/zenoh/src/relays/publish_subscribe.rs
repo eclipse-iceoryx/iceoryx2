@@ -10,12 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::sample_mut::SampleMut;
 use iceoryx2::service::builder::CustomHeaderMarker;
 use iceoryx2::service::builder::CustomPayloadMarker;
 use iceoryx2::service::{static_config::StaticConfig, Service};
 use iceoryx2_bb_log::{debug, error, fail};
 use iceoryx2_tunnel_backend::traits::{PublishSubscribeRelay, RelayBuilder};
+use iceoryx2_tunnel_backend::types::publish_subscribe::LoanFn;
+use iceoryx2_tunnel_backend::types::publish_subscribe::SampleMut;
 use zenoh::{
     bytes::ZBytes,
     handlers::{FifoChannel, FifoChannelHandler},
@@ -140,19 +141,10 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
         Ok(())
     }
 
-    fn ingest<F>(
+    fn ingest(
         &self,
-        loan: &mut F,
-    ) -> Result<Option<SampleMut<S, [CustomPayloadMarker], CustomHeaderMarker>>, Self::IngestionError>
-    where
-        F: FnMut(
-            usize,
-        ) -> iceoryx2::sample_mut_uninit::SampleMutUninit<
-            S,
-            [core::mem::MaybeUninit<CustomPayloadMarker>],
-            CustomHeaderMarker,
-        >,
-    {
+        loan: &mut LoanFn<'_, S>,
+    ) -> Result<Option<SampleMut<S>>, Self::IngestionError> {
         for zenoh_sample in self.subscriber.drain() {
             debug!(from "Relay::ingest", "Ingesting PublishSubscribe({})", self.static_config.name());
 

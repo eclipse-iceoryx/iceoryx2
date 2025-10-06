@@ -13,23 +13,19 @@
 use core::fmt::Debug;
 use std::collections::{HashMap, HashSet};
 
-use crate::ports::publish_subscribe::LoanFn;
 use crate::ports::Ports;
 use crate::{discovery, ports};
-use iceoryx2_tunnel_backend::traits::{
-    Discovery, PublishSubscribeRelay, RelayBuilder, RelayFactory, Transport,
-};
-
 use iceoryx2::node::{Node, NodeBuilder, NodeCreationFailure};
-use iceoryx2::prelude::PortFactory;
 use iceoryx2::service::builder::publish_subscribe::PublishSubscribeOpenOrCreateError;
-use iceoryx2::service::builder::CustomHeaderMarker;
-use iceoryx2::service::builder::CustomPayloadMarker;
 use iceoryx2::service::service_id::ServiceId;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
 use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2::service::Service;
 use iceoryx2_bb_log::{debug, fail, warn};
+use iceoryx2_tunnel_backend::traits::{
+    Discovery, PublishSubscribeRelay, RelayBuilder, RelayFactory, Transport,
+};
+use iceoryx2_tunnel_backend::types::publish_subscribe::LoanFn;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
@@ -316,40 +312,12 @@ fn setup_publish_subscribe<S: Service, T: Transport<S>>(
     relays: &mut Relays<S, T>,
 ) -> Result<(), CreationError> {
     let service_id = static_config.service_id();
-
     if services.contains(service_id) {
         return Ok(());
     }
 
-    let port_config = static_config.publish_subscribe();
-    let service = unsafe {
-        fail!(
-            from "Tunnel::setup_publish_subscribe()",
-            when node.service_builder(static_config.name())
-                    .publish_subscribe::<[CustomPayloadMarker]>()
-                    .user_header::<CustomHeaderMarker>()
-                    .__internal_set_user_header_type_details(
-                        &port_config.message_type_details().user_header,
-                    )
-                    .__internal_set_payload_type_details(
-                        &port_config.message_type_details().payload,
-                    )
-                    .enable_safe_overflow(port_config.has_safe_overflow())
-                    .history_size(port_config.history_size())
-                    .max_nodes(port_config.max_nodes())
-                    .max_publishers(port_config.max_publishers())
-                    .max_subscribers(port_config.max_subscribers())
-                    .subscriber_max_buffer_size(port_config.subscriber_max_buffer_size())
-                    .subscriber_max_borrowed_samples(
-                        port_config.subscriber_max_borrowed_samples(),
-                    )
-                    .open_or_create(),
-            "{}", format!("Failed to open or create publish-subscribe service '{}'", static_config.name())
-        )
-    };
-
     // TODO: Use fail!
-    let port = ports::publish_subscribe::Ports::new(static_config, &service).unwrap();
+    let port = ports::publish_subscribe::Ports::new(static_config, &node).unwrap();
 
     // TODO: Use fail!
     let relay = transport
@@ -358,11 +326,9 @@ fn setup_publish_subscribe<S: Service, T: Transport<S>>(
         .create()
         .unwrap();
 
-    services.insert(service.service_id().clone());
-    ports.insert(service.service_id().clone(), Ports::PublishSubscribe(port));
-    relays
-        .publish_subscribe
-        .insert(service.service_id().clone(), relay);
+    services.insert(service_id.clone());
+    ports.insert(service_id.clone(), Ports::PublishSubscribe(port));
+    relays.publish_subscribe.insert(service_id.clone(), relay);
 
     Ok(())
 }

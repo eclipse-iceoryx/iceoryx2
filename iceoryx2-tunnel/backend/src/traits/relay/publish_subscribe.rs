@@ -11,30 +11,20 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::fmt::Debug;
-use std::mem::MaybeUninit;
 
-use iceoryx2::sample_mut::SampleMut;
-use iceoryx2::sample_mut_uninit::SampleMutUninit;
-use iceoryx2::service::builder::CustomHeaderMarker;
-use iceoryx2::service::builder::CustomPayloadMarker;
-use iceoryx2::{sample::Sample, service::Service};
+use iceoryx2::service::Service;
+
+use crate::types::publish_subscribe::LoanFn;
+use crate::types::publish_subscribe::Sample;
+use crate::types::publish_subscribe::SampleMut;
 
 pub trait PublishSubscribeRelay<S: Service> {
     type PropagationError: Debug;
     type IngestionError: Debug;
 
-    fn propagate(
+    fn propagate(&self, sample: Sample<S>) -> Result<(), Self::PropagationError>;
+    fn ingest(
         &self,
-        sample: Sample<S, [CustomPayloadMarker], CustomHeaderMarker>,
-    ) -> Result<(), Self::PropagationError>;
-
-    fn ingest<F>(
-        &self,
-        loan: &mut F,
-    ) -> Result<Option<SampleMut<S, [CustomPayloadMarker], CustomHeaderMarker>>, Self::IngestionError>
-    where
-        F: FnMut(
-            usize,
-        )
-            -> SampleMutUninit<S, [MaybeUninit<CustomPayloadMarker>], CustomHeaderMarker>;
+        loan: &mut LoanFn<'_, S>,
+    ) -> Result<Option<SampleMut<S>>, Self::IngestionError>;
 }
