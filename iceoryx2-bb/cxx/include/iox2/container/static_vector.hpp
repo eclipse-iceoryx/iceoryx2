@@ -13,7 +13,6 @@
 #ifndef IOX2_INCLUDE_GUARD_CONTAINER_STATIC_VECTOR_HPP
 #define IOX2_INCLUDE_GUARD_CONTAINER_STATIC_VECTOR_HPP
 
-#include "iox2/container/config.hpp"
 #include "iox2/container/optional.hpp"
 
 #include "iox2/container/detail/raw_byte_storage.hpp"
@@ -24,8 +23,7 @@
 #include <cstring>
 #include <functional>
 #include <initializer_list>
-#include <iostream>
-#include <memory>
+#include <ostream>
 #include <type_traits>
 
 namespace iox2 {

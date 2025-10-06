@@ -58,7 +58,7 @@ impl IntoCInt for AttributeVerificationError {
 #[repr(C)]
 #[derive(Copy, Clone, CStrRepr)]
 pub enum iox2_attribute_definition_error_e {
-    #[CStr = "non existing key"]
+    #[CStr = "exceeds max supported attributes"]
     EXCEEDS_MAX_SUPPORTED_ATTRIBUTES = IOX2_OK as isize + 1,
 }
 

@@ -13,7 +13,6 @@
 #ifndef IOX2_INCLUDE_GUARD_CONTAINER_STATIC_STRING_HPP
 #define IOX2_INCLUDE_GUARD_CONTAINER_STATIC_STRING_HPP
 
-#include "iox2/container/config.hpp"
 #include "iox2/container/optional.hpp"
 
 #include <algorithm>
@@ -21,8 +20,7 @@
 #include <cstdint>
 #include <cstring>
 #include <functional>
-#include <iostream>
-#include <memory>
+#include <ostream>
 #include <type_traits>
 
 namespace iox2 {

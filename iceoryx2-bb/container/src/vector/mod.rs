@@ -106,7 +106,7 @@ pub trait Vector<T>: Deref<Target = [T]> + DerefMut + internal::VectorView<T> {
             );
             fail!(from origin, with VectorModificationError::InsertWouldExceedCapacity,
                 "Unable to extend vector from slice with length {} since it would exceed the vectors capacity of {}.",
-                other.len(), self.len());
+                other.len(), self.capacity());
         }
 
         let len = self.len();
@@ -199,7 +199,7 @@ pub trait Vector<T>: Deref<Target = [T]> + DerefMut + internal::VectorView<T> {
     }
 
     /// Adds an element at the end of the vector. If the vector is full and the element cannot be
-    /// added it returns false, otherwise true.
+    /// added it returns [`VectorModificationError::InsertWouldExceedCapacity`].
     fn push(&mut self, value: T) -> Result<(), VectorModificationError> {
         if self.is_full() {
             let origin = format!("Vector::<{}>::push()", core::any::type_name::<T>());
@@ -213,8 +213,7 @@ pub trait Vector<T>: Deref<Target = [T]> + DerefMut + internal::VectorView<T> {
         Ok(())
     }
 
-    /// Adds an element at the end of the vector. If the vector is full and the element cannot be
-    /// added it returns false, otherwise true.
+    /// Adds an element at the end of the vector.
     ///
     /// # Safety
     ///

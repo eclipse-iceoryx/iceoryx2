@@ -204,7 +204,7 @@ impl<T: Clone, const CAPACITY: usize> TryFrom<&[T]> for StaticVec<T, CAPACITY> {
         }
 
         let mut new_self = Self::new();
-        new_self.extend_from_slice(value)?;
+        unsafe { new_self.extend_from_slice_unchecked(value) };
         Ok(new_self)
     }
 }

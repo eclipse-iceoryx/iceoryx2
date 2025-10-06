@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::mem::MaybeUninit;
-use iceoryx2_bb_container::vector::static_vec::*;
+use iceoryx2_bb_container::vector::{static_vec::*, VectorModificationError};
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_testing::{assert_that, lifetime_tracker::LifetimeTracker};
 use serde_test::{assert_tokens, Token};
@@ -147,4 +147,24 @@ fn clone_clones_filled_vec() {
         assert_that!(sut1[i], eq element);
         assert_that!(sut2[i], eq element);
     }
+}
+
+#[test]
+fn try_from_succeeds_when_slice_len_is_smaller_or_equal_capacity() {
+    let sut = StaticVec::<u64, SUT_CAPACITY>::try_from([123u64; SUT_CAPACITY].as_slice()).unwrap();
+
+    assert_that!(sut.is_empty(), eq false);
+    assert_that!(sut.len(), eq SUT_CAPACITY);
+    assert_that!(sut.is_full(), eq true);
+
+    for element in sut.iter() {
+        assert_that!(*element, eq 123);
+    }
+}
+
+#[test]
+fn try_from_fails_when_slice_len_is_greater_than_capacity() {
+    let sut = StaticVec::<u64, SUT_CAPACITY>::try_from([123u64; SUT_CAPACITY + 1].as_slice());
+
+    assert_that!(sut, eq Err(VectorModificationError::InsertWouldExceedCapacity));
 }

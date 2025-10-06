@@ -17,7 +17,7 @@
 > use them.
 >
 > **Only fixed-size integers (like `uint8_t`), `float`, `double`, and the**
-> **types in the `iceoryx2-bb-container` library are cross-language
+> **types in the `iceoryx2-bb-container` library are cross-language**
 > **compatible!**
 
 This example illustrates how to define complex cross-language-compatible structs
@@ -26,7 +26,7 @@ and last names as `StaticString` types and use it to build an address book, a
 `StaticVector` of `FullName`.
 
 For fun, we also add a member called `some_matrix`, which consists of a
-`StaticVector` of `StaticVector<f64>`, along with a few other members. It is
+`StaticVector` of `StaticVector<double>`, along with a few other members. It is
 essential that the members have the same declaration order and types in every
 language; otherwise, you’ll dive headfirst into undefined behavior—or worse.
 
@@ -53,7 +53,7 @@ execute the following commands:
 Run the C++ subscriber application:
 
 ```sh
-./target/ff/cc/build/examples/cxx/cross_language_communication_basics/example_cxx_cross_language_communication_basics_subscriber
+./target/ff/cc/build/examples/cxx/cross_language_communication_complex_types/example_cxx_cross_language_communication_complex_types_subscriber
 ```
 
 ### Terminal 2
@@ -61,7 +61,7 @@ Run the C++ subscriber application:
 Run the C++ publisher application:
 
 ```sh
-./target/ff/cc/build/examples/cxx/cross_language_communication_basics/example_cxx_cross_language_communication_basics_publisher
+./target/ff/cc/build/examples/cxx/cross_language_communication_complex_types/example_cxx_cross_language_communication_complex_types_publisher
 ```
 
 Feel free to also run the subscriber and publisher applications from other

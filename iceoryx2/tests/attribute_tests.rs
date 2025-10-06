@@ -197,7 +197,7 @@ mod attribute {
     }
 
     #[test]
-    fn attribute_set_verify_requirements_fails_when_key_is_wrong() {
+    fn attribute_set_verify_requirements_fails_when_value_is_wrong() {
         let sut_verifier = AttributeVerifier::new()
             .require(
                 &"schwifler".try_into().unwrap(),

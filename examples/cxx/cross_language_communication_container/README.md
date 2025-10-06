@@ -17,7 +17,7 @@
 > use them.
 >
 > **Only fixed-size integers (like `uint8_t`), `float`, `double`, and the**
-> **types in the `iceoryx2-bb-container` library are cross-language
+> **types in the `iceoryx2-bb-container` library are cross-language**
 > **compatible!**
 
 This example illustrates how the iceoryx2-bb-container C++ and Rust libraries
@@ -48,7 +48,7 @@ execute the following commands:
 Run the C++ subscriber application:
 
 ```sh
-./target/ff/cc/build/examples/cxx/cross_language_communication_basics/example_cxx_cross_language_communication_basics_subscriber
+./target/ff/cc/build/examples/cxx/cross_language_communication_container/example_cxx_cross_language_communication_container_subscriber
 ```
 
 ### Terminal 2
@@ -56,7 +56,7 @@ Run the C++ subscriber application:
 Run the C++ publisher application:
 
 ```sh
-./target/ff/cc/build/examples/cxx/cross_language_communication_basics/example_cxx_cross_language_communication_basics_publisher
+./target/ff/cc/build/examples/cxx/cross_language_communication_container/example_cxx_cross_language_communication_container_publisher
 ```
 
 Feel free to also run the subscriber and publisher applications from other

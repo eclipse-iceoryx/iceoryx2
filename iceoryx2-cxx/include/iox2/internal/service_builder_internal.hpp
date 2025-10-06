@@ -71,7 +71,7 @@ auto get_type_name_impl() -> internal::FromStaticString<PayloadType> {
     char type_name[TypeName::capacity()] { 0 };
     // std::to_string() is not available in this safety-critical context
     // NOLINTNEXTLINE
-    snprintf(type_name,
+    snprintf(&type_name[0],
              TypeName::capacity(),
              "iceoryx2_bb_container::string::static_string::StaticString<%llu>",
              static_cast<long long unsigned int>(PayloadType::capacity()));
@@ -83,7 +83,9 @@ auto get_type_name_impl() -> internal::FromStaticVector<PayloadType> {
     // std::array is not available in this safety-critical context
     // NOLINTNEXTLINE
     char type_name[TypeName::capacity()] { 0 };
-    snprintf(type_name,
+    // std::to_string() is not available in this safety-critical context
+    // NOLINTNEXTLINE
+    snprintf(&type_name[0],
              TypeName::capacity(),
              "iceoryx2_bb_container::vector::static_vec::StaticVec<%s, %llu>",
              get_type_name<typename PayloadType::ValueType>().unchecked_access().c_str(),
@@ -127,11 +129,18 @@ auto get_type_name_impl() -> internal::FromNonSlice<PayloadType> {
     if (std::is_same_v<PayloadType, double>) {
         return *TypeName::from_utf8("f64");
     }
-    if (std::is_same_v<PayloadType, bool>) {
-        return *TypeName::from_utf8("bool");
-    }
 
-    return *TypeName::from_utf8_null_terminated_unchecked(typeid(typename PayloadInfo<PayloadType>::ValueType).name());
+    // std::array is not available in this safety-critical context
+    // NOLINTNEXTLINE
+    char type_name[TypeName::capacity()] { 0 };
+    // std::to_string() is not available in this safety-critical context
+    // NOLINTNEXTLINE
+    snprintf(&type_name[0],
+             TypeName::capacity(),
+             "__cxx__abi__%s",
+             typeid(typename PayloadInfo<PayloadType>::ValueType).name());
+
+    return *TypeName::from_utf8_null_terminated_unchecked(&type_name[0]);
 }
 // NOLINTEND(readability-function-size)
 

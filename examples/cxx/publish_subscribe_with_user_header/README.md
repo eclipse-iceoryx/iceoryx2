@@ -17,7 +17,7 @@
 > use them.
 >
 > **Only fixed-size integers (like `uint8_t`), `float`, `double`, and the**
-> **types in the `iceoryx2-bb-container` library are cross-language
+> **types in the `iceoryx2-bb-container` library are cross-language**
 > **compatible!**
 
 This example illustrates a publisher-subscriber communication pattern between

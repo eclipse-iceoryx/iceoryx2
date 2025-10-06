@@ -37,7 +37,7 @@ execute the following commands:
 Run the Rust subscriber application:
 
 ```sh
-cargo run --example cross_language_communication_containers_subscriber
+cargo run --example cross_language_communication_container_subscriber
 ```
 
 ### Terminal 2
@@ -45,7 +45,7 @@ cargo run --example cross_language_communication_containers_subscriber
 Run the Rust publisher application:
 
 ```sh
-cargo run --example cross_language_communication_containers_publisher
+cargo run --example cross_language_communication_container_publisher
 ```
 
 > [!TIP]
