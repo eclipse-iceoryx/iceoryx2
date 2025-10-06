@@ -1681,7 +1681,7 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_same_header
 }
 
 TYPED_TEST(ServiceRequestResponseTest,
-           payload_type_name_is_set_to_rust_equivalent_for_fixed_size_integers_and_bool_and_slices) {
+           payload_type_name_is_set_to_rust_equivalent_for_fixed_size_integers_floats_and_slices) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name = iox2_testing::generate_service_name();
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
