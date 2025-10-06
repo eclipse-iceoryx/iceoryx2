@@ -38,7 +38,7 @@ mod tunnel_discovery_tests {
     }
 
     #[test]
-    fn discovers_services_via_subscriber<S: Service, T: Transport + Debug, U: Testing>() {
+    fn discovers_services_via_subscriber<S: Service, T: Transport<S> + Debug, U: Testing>() {
         // === SETUP ==
         let iceoryx_config = generate_isolated_config();
         let service_name = generate_service_name();
@@ -79,7 +79,7 @@ mod tunnel_discovery_tests {
     }
 
     #[test]
-    fn discovers_services_via_tracker<S: Service, T: Transport + Debug, U: Testing>() {
+    fn discovers_services_via_tracker<S: Service, T: Transport<S> + Debug, U: Testing>() {
         // === SETUP ==
         let iceoryx_config = generate_isolated_config();
         let service_name = generate_service_name();
@@ -107,7 +107,7 @@ mod tunnel_discovery_tests {
     }
 
     #[test]
-    fn discovers_services_via_transport<S: Service, T: Transport + Debug, U: Testing>() {
+    fn discovers_services_via_transport<S: Service, T: Transport<S> + Debug, U: Testing>() {
         set_log_level(LogLevel::Debug);
         // === SETUP ===
         let service_name = generate_service_name();
@@ -173,9 +173,15 @@ mod tunnel_discovery_tests {
     }
 
     #[cfg(feature = "tunnel_zenoh")]
-    #[instantiate_tests(<iceoryx2::service::ipc::Service, iceoryx2_tunnel_zenoh::Transport, iceoryx2_tunnel_zenoh::testing::Testing>)]
-    mod ipc_zenoh {}
-    #[cfg(feature = "tunnel_zenoh")]
-    #[instantiate_tests(<iceoryx2::service::local::Service, iceoryx2_tunnel_zenoh::Transport, iceoryx2_tunnel_zenoh::testing::Testing>)]
-    mod local_zenoh {}
+    mod zenoh_transport {
+        use iceoryx2::service::ipc::Service as Ipc;
+        use iceoryx2::service::local::Service as Local;
+        use iceoryx2_tunnel_zenoh::testing;
+        use iceoryx2_tunnel_zenoh::Transport;
+
+        #[instantiate_tests(<Ipc, Transport<Ipc>, testing::Testing>)]
+        mod ipc {}
+        #[instantiate_tests(<Local, Transport<Local>, testing::Testing>)]
+        mod local {}
+    }
 }

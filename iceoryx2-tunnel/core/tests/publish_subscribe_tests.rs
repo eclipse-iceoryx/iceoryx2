@@ -33,7 +33,9 @@ mod tunnel_publish_subscribe_tests {
         .unwrap()
     }
 
-    fn propagate_struct_payloads<S: Service, T: Transport, U: Testing>(num: usize) {
+    fn propagate_struct_payloads<S: Service, T: Transport<S>, U: Testing>(num: usize) {
+        set_log_level(LogLevel::Debug);
+
         const MAX_ATTEMPTS: usize = 25;
         const TIMEOUT: Duration = Duration::from_millis(250);
 
@@ -148,9 +150,7 @@ mod tunnel_publish_subscribe_tests {
         }
     }
 
-    fn propagate_slice_payloads<S: Service, T: Transport, U: Testing>(num: usize) {
-        set_log_level(LogLevel::Debug);
-
+    fn propagate_slice_payloads<S: Service, T: Transport<S>, U: Testing>(num: usize) {
         const MAX_ATTEMPTS: usize = 25;
         const TIMEOUT: Duration = Duration::from_millis(250);
         const PAYLOAD_DATA_LENGTH: usize = 256;
@@ -264,27 +264,27 @@ mod tunnel_publish_subscribe_tests {
     }
 
     #[test]
-    fn propagates_struct_payload<S: Service, T: Transport, U: Testing>() {
+    fn propagates_struct_payload<S: Service, T: Transport<S>, U: Testing>() {
         propagate_struct_payloads::<S, T, U>(1);
     }
 
     #[test]
-    fn propagates_struct_payload_many<S: Service, T: Transport, U: Testing>() {
+    fn propagates_struct_payload_many<S: Service, T: Transport<S>, U: Testing>() {
         propagate_struct_payloads::<S, T, U>(10);
     }
 
     #[test]
-    fn propagates_slice_payload<S: Service, T: Transport, U: Testing>() {
+    fn propagates_slice_payload<S: Service, T: Transport<S>, U: Testing>() {
         propagate_slice_payloads::<S, T, U>(1);
     }
 
     #[test]
-    fn propagates_slice_payload_many<S: Service, T: Transport, U: Testing>() {
+    fn propagates_slice_payload_many<S: Service, T: Transport<S>, U: Testing>() {
         propagate_slice_payloads::<S, T, U>(10);
     }
 
     #[test]
-    fn propagated_payloads_do_not_loop_back<S: Service, T: Transport, U: Testing>() {
+    fn propagated_payloads_do_not_loop_back<S: Service, T: Transport<S>, U: Testing>() {
         const PAYLOAD_DATA: &str = "WhenItRegisters";
 
         // === SETUP ===
@@ -341,9 +341,15 @@ mod tunnel_publish_subscribe_tests {
     }
 
     #[cfg(feature = "tunnel_zenoh")]
-    #[instantiate_tests(<iceoryx2::service::ipc::Service, iceoryx2_tunnel_zenoh::Transport, iceoryx2_tunnel_zenoh::testing::Testing>)]
-    mod ipc_zenoh {}
-    #[cfg(feature = "tunnel_zenoh")]
-    #[instantiate_tests(<iceoryx2::service::local::Service, iceoryx2_tunnel_zenoh::Transport, iceoryx2_tunnel_zenoh::testing::Testing>)]
-    mod local_zenoh {}
+    mod zenoh_transport {
+        use iceoryx2::service::ipc::Service as Ipc;
+        use iceoryx2::service::local::Service as Local;
+        use iceoryx2_tunnel_zenoh::testing;
+        use iceoryx2_tunnel_zenoh::Transport;
+
+        #[instantiate_tests(<Ipc, Transport<Ipc>, testing::Testing>)]
+        mod ipc {}
+        #[instantiate_tests(<Local, Transport<Local>, testing::Testing>)]
+        mod local {}
+    }
 }

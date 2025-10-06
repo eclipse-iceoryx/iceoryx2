@@ -17,6 +17,8 @@ use iceoryx2::port::publisher::PublisherCreateError;
 use iceoryx2::port::subscriber::Subscriber;
 use iceoryx2::port::subscriber::SubscriberCreateError;
 use iceoryx2::prelude::AllocationStrategy;
+use iceoryx2::sample::Sample;
+use iceoryx2::sample_mut::SampleMut;
 use iceoryx2::sample_mut_uninit::SampleMutUninit;
 use iceoryx2::service::builder::publish_subscribe::*;
 use iceoryx2::service::builder::CustomHeaderMarker;
@@ -96,11 +98,15 @@ impl<S: Service> Ports<S> {
     }
 
     /// Receive data from the ports
-    pub(crate) fn receive<F: FnMut(*const u8, usize)>(
+    pub(crate) fn receive<PropagateFn>(
         &self,
         node_id: &iceoryx2::node::NodeId,
-        mut process_received: F,
-    ) -> Result<(), PropagationError> {
+        mut propagate: PropagateFn,
+    ) -> Result<(), PropagationError>
+    where
+        // Propagation function provided by the caller.
+        PropagateFn: FnMut(Sample<S, [CustomPayloadMarker], CustomHeaderMarker>),
+    {
         loop {
             match unsafe { self.subscriber.receive_custom_payload() } {
                 Ok(Some(sample)) => {
@@ -114,10 +120,8 @@ impl<S: Service> Ports<S> {
                         // Ignore samples published by the gateway itself to prevent loopback.
                         continue;
                     }
-                    let ptr = sample.payload().as_ptr() as *const u8;
-                    let len = sample.len();
 
-                    process_received(ptr, len);
+                    propagate(sample);
                 }
                 Ok(None) => break,
                 Err(e) => {
@@ -130,11 +134,13 @@ impl<S: Service> Ports<S> {
         Ok(())
     }
 
-    /// Send data on the ports
-    pub(crate) fn send<F>(&self, mut loan: F) -> Result<(), IngestionError>
+    // TODO: Pass ownership to ingest, then reclaim it..?
+    pub(crate) fn send<IngestFn>(&self, mut ingest: IngestFn) -> Result<(), IngestionError>
     where
-        S: Service,
-        F: FnMut(&mut dyn FnMut(usize) -> (*mut u8, usize)) -> bool,
+        IngestFn: for<'a> FnMut(
+            &'a mut LoanFn<'a, S>,
+        )
+            -> Option<SampleMut<S, [CustomPayloadMarker], CustomHeaderMarker>>,
     {
         let type_details = self
             .static_config
@@ -142,43 +148,27 @@ impl<S: Service> Ports<S> {
             .message_type_details();
 
         loop {
-            let mut loaned_sample: Option<
-                SampleMutUninit<S, [MaybeUninit<CustomPayloadMarker>], CustomHeaderMarker>,
-            > = None;
-
-            let ingested = loan(&mut |number_of_bytes| {
+            let initialized_sample = ingest(&mut |number_of_bytes| {
                 let number_of_elements = number_of_bytes / type_details.payload.size();
 
-                let (ptr, len) =
-                    match unsafe { self.publisher.loan_custom_payload(number_of_elements) } {
-                        Ok(mut sample) => {
-                            let payload = sample.payload_mut();
-                            let ptr = payload.as_mut_ptr() as *mut u8;
-                            let len = payload.len();
-
-                            loaned_sample = Some(sample);
-
-                            (ptr, len)
-                        }
-                        Err(e) => {
-                            fatal_panic!(from "Ports::send", "Failed to loan custom payload: {e}")
-                        }
-                    };
-
-                (ptr, len)
+                match unsafe { self.publisher.loan_custom_payload(number_of_elements) } {
+                    Ok(sample_to_initialize) => {
+                        return sample_to_initialize;
+                    }
+                    Err(e) => {
+                        fatal_panic!(from "Ports::send", "Failed to loan custom payload: {e}")
+                    }
+                }
             });
 
-            if ingested {
+            if let Some(sample) = initialized_sample {
                 debug!(from "Ports::send", "Sending: PublishSubscribe({})", self.static_config.name());
-                if let Some(sample) = loaned_sample {
-                    let sample = unsafe { sample.assume_init() };
-                    fail!(
-                        from "Ports::send",
-                        when sample.send(),
-                        with IngestionError::FailedToSendSample,
-                        "Failed to send ingested payload"
-                    );
-                }
+                fail!(
+                    from "Ports::send",
+                    when sample.send(),
+                    with IngestionError::FailedToSendSample,
+                    "Failed to send ingested payload"
+                );
             } else {
                 break;
             }
@@ -187,3 +177,9 @@ impl<S: Service> Ports<S> {
         Ok(())
     }
 }
+
+pub type LoanFn<'a, S> = dyn FnMut(
+        usize,
+    )
+        -> SampleMutUninit<S, [core::mem::MaybeUninit<CustomPayloadMarker>], CustomHeaderMarker>
+    + 'a;

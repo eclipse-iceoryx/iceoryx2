@@ -12,20 +12,23 @@
 
 use core::fmt::Debug;
 
+use iceoryx2::service::Service;
+
 use crate::{Discovery, EventRelay, PublishSubscribeRelay, RelayFactory};
 
 /// Abstraction of the transport over which data is propagated.
 ///
 /// Enables implementations to define custom initialization logic.
-pub trait Transport: Sized {
+pub trait Transport<S: Service>: Sized {
     type Config: Default + Debug;
     type CreationError: Debug;
     type Discovery: Discovery;
 
-    type PublishSubscribeRelay: PublishSubscribeRelay + Debug;
+    type PublishSubscribeRelay: PublishSubscribeRelay<S> + Debug;
     type EventRelay: EventRelay + Debug;
 
     type RelayFactory<'a>: RelayFactory<
+        S,
         PublishSubscribeRelay = Self::PublishSubscribeRelay,
         EventRelay = Self::EventRelay,
     >

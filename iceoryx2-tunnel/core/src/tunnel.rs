@@ -13,6 +13,7 @@
 use core::fmt::Debug;
 use std::collections::{HashMap, HashSet};
 
+use crate::ports::publish_subscribe::LoanFn;
 use crate::ports::Ports;
 use crate::{discovery, ports};
 use iceoryx2_tunnel_traits::{
@@ -96,12 +97,12 @@ impl From<PublishSubscribeOpenOrCreateError> for CreationError {
 
 /// Struct to store different relay types by service id
 #[derive(Debug)]
-pub struct Relays<T: Transport> {
+pub struct Relays<S: Service, T: Transport<S>> {
     publish_subscribe: HashMap<ServiceId, T::PublishSubscribeRelay>,
     event: HashMap<ServiceId, T::EventRelay>,
 }
 
-impl<T: Transport> Relays<T> {
+impl<S: Service, T: Transport<S>> Relays<S, T> {
     pub fn new() -> Self {
         Self {
             publish_subscribe: HashMap::new(),
@@ -117,22 +118,22 @@ pub struct Config {
 
 /// A generic tunnel implementation that works with any implemented Transport.
 #[derive(Debug)]
-pub struct Tunnel<S: Service, T: for<'a> Transport> {
+pub struct Tunnel<S: Service, T: for<'a> Transport<S>> {
     node: Node<S>,
     transport: T,
     services: HashSet<ServiceId>,
     ports: HashMap<ServiceId, Ports<S>>,
-    relays: Relays<T>,
+    relays: Relays<S, T>,
     subscriber: Option<discovery::subscriber::DiscoverySubscriber<S>>,
     tracker: Option<discovery::tracker::DiscoveryTracker<S>>,
 }
 
-impl<S: Service, T: for<'a> Transport> Tunnel<S, T> {
+impl<S: Service, T: for<'a> Transport<S>> Tunnel<S, T> {
     /// Create a new tunnel instance that uses the specified Transport
     pub fn create(
         tunnel_config: &Config,
         iceoryx_config: &iceoryx2::config::Config,
-        transport_config: &<T as Transport>::Config,
+        transport_config: &<T as Transport<S>>::Config,
     ) -> Result<Self, CreationError> {
         let node = fail!(
             from "Tunnel::create",
@@ -239,16 +240,21 @@ impl<S: Service, T: for<'a> Transport> Tunnel<S, T> {
 
                     fail!(
                         from "Tunnel::relay",
-                        when port.receive(self.node.id(), |ptr, len| {
-                            relay.propagate(ptr, len).unwrap();
+                        when port.receive(self.node.id(), |sample| {
+                            // TODO: Handle error properly
+                            relay.propagate(sample).unwrap();
                         }),
-                        "Failed to relay to transport"
+                        "Failed to receive and propagate samples"
                     );
 
                     fail!(
                         from "Tunnel::relay",
-                        when port.send(|loan| relay.ingest(loan).unwrap()),
-                        "Failed to relay from transport"
+
+                        when port.send(|loan: &mut LoanFn<_>| {
+                            // TODO: Handle error properly
+                            relay.ingest(&mut |size| loan(size)).unwrap()
+                        }),
+                        "Failed to send ingested samples"
                     );
                 }
                 Ports::Event(_) => todo!(),
@@ -263,13 +269,13 @@ impl<S: Service, T: for<'a> Transport> Tunnel<S, T> {
     }
 }
 
-fn on_discovery<S: Service, T: Transport>(
+fn on_discovery<S: Service, T: Transport<S>>(
     static_config: &StaticConfig,
     node: &Node<S>,
     transport: &T,
     services: &mut HashSet<ServiceId>,
     ports: &mut HashMap<ServiceId, Ports<S>>,
-    relays: &mut Relays<T>,
+    relays: &mut Relays<S, T>,
 ) -> Result<(), CreationError> {
     match static_config.messaging_pattern() {
         MessagingPattern::PublishSubscribe(_) => {
@@ -299,13 +305,13 @@ fn on_discovery<S: Service, T: Transport>(
     }
 }
 
-fn setup_publish_subscribe<S: Service, T: Transport>(
+fn setup_publish_subscribe<S: Service, T: Transport<S>>(
     static_config: &StaticConfig,
     node: &Node<S>,
     transport: &T,
     services: &mut HashSet<ServiceId>,
     ports: &mut HashMap<ServiceId, Ports<S>>,
-    relays: &mut Relays<T>,
+    relays: &mut Relays<S, T>,
 ) -> Result<(), CreationError> {
     let service_id = static_config.service_id();
 

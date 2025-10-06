@@ -11,19 +11,36 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::fmt::Debug;
+use std::mem::MaybeUninit;
 
-use iceoryx2::service::static_config::StaticConfig;
+use iceoryx2::sample_mut::SampleMut;
+use iceoryx2::sample_mut_uninit::SampleMutUninit;
+use iceoryx2::service::builder::CustomHeaderMarker;
+use iceoryx2::service::builder::CustomPayloadMarker;
+use iceoryx2::{
+    sample::Sample,
+    service::{static_config::StaticConfig, Service},
+};
 
 // TODO: Rename to Ports?
-pub trait PublishSubscribeRelay {
+pub trait PublishSubscribeRelay<S: Service> {
     type PropagationError: Debug;
     type IngestionError: Debug;
 
-    fn propagate(&self, bytes: *const u8, len: usize) -> Result<(), Self::PropagationError>;
-    fn ingest(
+    fn propagate(
         &self,
-        loan: &mut dyn FnMut(usize) -> (*mut u8, usize),
-    ) -> Result<bool, Self::IngestionError>;
+        sample: Sample<S, [CustomPayloadMarker], CustomHeaderMarker>,
+    ) -> Result<(), Self::PropagationError>;
+
+    fn ingest<F>(
+        &self,
+        loan: &mut F,
+    ) -> Result<Option<SampleMut<S, [CustomPayloadMarker], CustomHeaderMarker>>, Self::IngestionError>
+    where
+        F: FnMut(
+            usize,
+        )
+            -> SampleMutUninit<S, [MaybeUninit<CustomPayloadMarker>], CustomHeaderMarker>;
 }
 
 pub trait EventRelay {
@@ -41,8 +58,8 @@ pub trait RelayBuilder {
     fn create(self) -> Result<Self::Relay, Self::CreationError>;
 }
 
-pub trait RelayFactory {
-    type PublishSubscribeRelay: PublishSubscribeRelay;
+pub trait RelayFactory<S: Service> {
+    type PublishSubscribeRelay: PublishSubscribeRelay<S>;
     type EventRelay: EventRelay;
 
     type PublishSubscribeBuilder<'config>: RelayBuilder<Relay = Self::PublishSubscribeRelay>

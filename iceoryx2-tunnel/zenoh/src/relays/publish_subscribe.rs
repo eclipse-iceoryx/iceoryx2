@@ -10,7 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::service::static_config::StaticConfig;
+use iceoryx2::sample_mut::SampleMut;
+use iceoryx2::service::builder::CustomHeaderMarker;
+use iceoryx2::service::builder::CustomPayloadMarker;
+use iceoryx2::service::{static_config::StaticConfig, Service};
 use iceoryx2_bb_log::{debug, error, fail};
 use iceoryx2_tunnel_traits::{PublishSubscribeRelay, RelayBuilder};
 use zenoh::{
@@ -45,23 +48,25 @@ impl From<Box<dyn std::error::Error + Send + Sync>> for CreationError {
 }
 
 #[derive(Debug)]
-pub struct Builder<'a> {
+pub struct Builder<'a, S: Service> {
     session: &'a Session,
     static_config: &'a StaticConfig,
+    _phantom: core::marker::PhantomData<S>,
 }
 
-impl<'a> Builder<'a> {
-    pub fn new(session: &'a Session, static_config: &'a StaticConfig) -> Builder<'a> {
+impl<'a, S: Service> Builder<'a, S> {
+    pub fn new(session: &'a Session, static_config: &'a StaticConfig) -> Builder<'a, S> {
         Builder {
             session,
             static_config,
+            _phantom: core::marker::PhantomData::default(),
         }
     }
 }
 
-impl<'a> RelayBuilder for Builder<'a> {
+impl<'a, S: Service> RelayBuilder for Builder<'a, S> {
     type CreationError = CreationError;
-    type Relay = Relay;
+    type Relay = Relay<S>;
 
     fn create(self) -> Result<Self::Relay, Self::CreationError> {
         let key = keys::publish_subscribe(self.static_config.service_id());
@@ -97,23 +102,32 @@ impl<'a> RelayBuilder for Builder<'a> {
             static_config: self.static_config.clone(),
             publisher,
             subscriber,
+            _phantom: core::marker::PhantomData::default(),
         })
     }
 }
 
 #[derive(Debug)]
-pub struct Relay {
+pub struct Relay<S: Service> {
     static_config: StaticConfig,
     publisher: Publisher<'static>,
     subscriber: Subscriber<FifoChannelHandler<Sample>>,
+    _phantom: core::marker::PhantomData<S>,
 }
 
-impl iceoryx2_tunnel_traits::PublishSubscribeRelay for Relay {
+impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
     type PropagationError = PropagationError;
     type IngestionError = PropagationError;
 
-    fn propagate(&self, bytes: *const u8, len: usize) -> Result<(), Self::PropagationError> {
+    fn propagate(
+        &self,
+        sample: iceoryx2::sample::Sample<S, [CustomPayloadMarker], CustomHeaderMarker>,
+    ) -> Result<(), Self::PropagationError> {
         debug!(from "Relay::propagate", "Propagating PublishSubscribe({})", self.static_config.name());
+
+        let payload = sample.payload();
+        let bytes = payload.as_ptr() as *mut u8; // TODO: Can this be non-mut ?
+        let len = payload.len();
 
         let payload = unsafe { ZBytes::from(core::slice::from_raw_parts(bytes, len)) };
         fail!(
@@ -122,38 +136,51 @@ impl iceoryx2_tunnel_traits::PublishSubscribeRelay for Relay {
             with PropagationError::FailedToPutPayload,
             "Failed to propagate payload over relay"
         );
+
         Ok(())
     }
 
-    fn ingest(
+    fn ingest<F>(
         &self,
-        loan: &mut dyn FnMut(usize) -> (*mut u8, usize),
-    ) -> Result<bool, Self::IngestionError> {
+        loan: &mut F,
+    ) -> Result<Option<SampleMut<S, [CustomPayloadMarker], CustomHeaderMarker>>, Self::IngestionError>
+    where
+        F: FnMut(
+            usize,
+        ) -> iceoryx2::sample_mut_uninit::SampleMutUninit<
+            S,
+            [core::mem::MaybeUninit<CustomPayloadMarker>],
+            CustomHeaderMarker,
+        >,
+    {
         for zenoh_sample in self.subscriber.drain() {
             debug!(from "Relay::ingest", "Ingesting PublishSubscribe({})", self.static_config.name());
 
             let zenoh_payload = zenoh_sample.payload();
-            let (loaned_ptr, loan_size) = loan(zenoh_payload.len());
+            let mut sample = loan(zenoh_payload.len());
+            let payload = sample.payload_mut();
 
             assert!(
-                loan_size >= zenoh_payload.len(),
+                payload.len() >= zenoh_payload.len(),
                 "loan_size ({}) is too small for received payload ({})",
-                loan_size,
+                payload.len(),
                 zenoh_payload.len()
             );
 
+            // TODO: Is there a safe iceoryx2 API to copy these bytes?
             unsafe {
                 core::ptr::copy_nonoverlapping(
                     zenoh_payload.to_bytes().as_ptr(),
-                    loaned_ptr,
+                    payload.as_mut_ptr().cast(),
                     zenoh_payload.len(),
                 );
             }
+            let sample = unsafe { sample.assume_init() };
 
-            return Ok(true);
+            return Ok(Some(sample));
         }
 
-        Ok(false)
+        Ok(None)
     }
 }
 

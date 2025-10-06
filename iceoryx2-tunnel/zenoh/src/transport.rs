@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use iceoryx2::service::Service;
 use iceoryx2_bb_log::fail;
 use zenoh::{Config, Session, Wait};
 
@@ -25,21 +26,22 @@ pub enum CreationError {
 }
 
 #[derive(Debug)]
-pub struct Transport {
+pub struct Transport<S: Service> {
     session: Session,
     discovery: Discovery,
+    _phantom: core::marker::PhantomData<S>,
 }
 
-impl iceoryx2_tunnel_traits::Transport for Transport {
+impl<S: Service> iceoryx2_tunnel_traits::Transport<S> for Transport<S> {
     type Config = Config;
     type CreationError = CreationError;
     type Discovery = Discovery;
 
-    type PublishSubscribeRelay = publish_subscribe::Relay;
+    type PublishSubscribeRelay = publish_subscribe::Relay<S>;
     type EventRelay = event::Relay;
 
     type RelayFactory<'a>
-        = Factory<'a>
+        = Factory<'a, S>
     where
         Self: 'a;
 
@@ -60,7 +62,11 @@ impl iceoryx2_tunnel_traits::Transport for Transport {
             "Failed to create zenoh discovery"
         );
 
-        Ok(Self { session, discovery })
+        Ok(Self {
+            session,
+            discovery,
+            _phantom: core::marker::PhantomData::default(),
+        })
     }
 
     fn relay_builder(&self) -> Self::RelayFactory<'_> {
