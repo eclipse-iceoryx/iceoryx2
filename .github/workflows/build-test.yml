@@ -228,6 +228,13 @@ jobs:
           internal/scripts/ci_prepare_ubuntu.sh
           uname -a
 
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad # ratchet:mozilla-actions/sccache-action@v0.0.9
+      - name: Set C/C++ caching env vars
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+
       - name: Run end-to-end tests
         run: |
           internal/scripts/ci_build_and_run_end_to_end_tests.sh
@@ -248,6 +255,13 @@ jobs:
         uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
         with:
           toolchain: stable
+
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad # ratchet:mozilla-actions/sccache-action@v0.0.9
+      - name: Set C/C++ caching env vars
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
 
       - name: Build tunnel CLI
         run: cargo build --release -p iceoryx2-cli --bin iox2-tunnel
@@ -362,6 +376,13 @@ jobs:
           internal/scripts/ci_prepare_ubuntu.sh
           uname -a
 
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad # ratchet:mozilla-actions/sccache-action@v0.0.9
+      - name: Set C/C++ caching env vars
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+
       - name: Set up Bazel
         uses: bazel-contrib/setup-bazel@f3f50ea6791b9b0f4c4eeabba4507422426462f5 # ratchet:bazel-contrib/setup-bazel@0.9.1
 
@@ -446,6 +467,13 @@ jobs:
           artifact-bin-name: grcov
           artifact-upload-name: ${{ runner.os }}-grcov
 
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad # ratchet:mozilla-actions/sccache-action@v0.0.9
+      - name: Set C/C++ caching env vars
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+
       - name: Generate raw coverage results
         run: ./internal/scripts/generate-cov-report.sh --generate
 
@@ -482,14 +510,15 @@ jobs:
 
   # Have a sync point for all CI jobs that need to pass, will be enforced by Otterdog
   mandatory-checks:
-    needs: [
-            static-code-analysis,
-            x86_64-stable,
-            x86_64-Bazel,
-            x86_32,
-            python-bindings,
-            end-to-end-tests,
-            ]
+    needs:
+      [
+        static-code-analysis,
+        x86_64-stable,
+        x86_64-Bazel,
+        x86_32,
+        python-bindings,
+        end-to-end-tests,
+      ]
     runs-on: ubuntu-latest
     steps:
       - name: Mandatory Checks Sync
