@@ -39,7 +39,7 @@ pub fn conformance_test_module(_attr: TokenStream, item: TokenStream) -> TokenSt
 
         #[macro_export]
         macro_rules! #macro_name {
-            ($module_path:path, $service_type:ty) => { // TODO: replace $service_type:ty with the number of generics of the functions or try to figure out how variadics work with macros
+            ($module_path:path, $($sut_type:ty),+) => {
                 mod #mod_ident {
                     use $module_path::*;
                     #(#conformance_test_fns)*
@@ -66,7 +66,7 @@ fn collect_conformance_test_functions(
                         conformance_test_fns.push(quote! {
                             #[test]
                             fn #fn_ident() {
-                                #mod_ident::#fn_ident::<$service_type>();
+                                #mod_ident::#fn_ident::<$($sut_type),+>();
                             }
                         });
                     }

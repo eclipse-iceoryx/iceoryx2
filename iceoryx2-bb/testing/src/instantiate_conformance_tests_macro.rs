@@ -16,7 +16,7 @@
 
 #[macro_export]
 macro_rules! instantiate_conformance_tests {
-    ($module_path:path, $sut_type:ty) => {
-        $module_path!($module_path, $sut_type);
+    ($module_path:path, $($sut_type:ty),+) => {
+        $module_path!($module_path, $($sut_type),+);
     };
 }
