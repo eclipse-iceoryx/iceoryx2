@@ -36,7 +36,7 @@ impl<'session, S: Service> Factory<'session, S> {
 
 impl<'session, S: Service> RelayFactory<S> for Factory<'session, S> {
     type PublishSubscribeRelay = publish_subscribe::Relay<S>;
-    type EventRelay = event::Relay;
+    type EventRelay = event::Relay<S>;
 
     type PublishSubscribeBuilder<'config>
         = publish_subscribe::Builder<'config, S>
@@ -44,7 +44,7 @@ impl<'session, S: Service> RelayFactory<S> for Factory<'session, S> {
         Self: 'config;
 
     type EventBuilder<'config>
-        = event::Builder<'config>
+        = event::Builder<'config, S>
     where
         Self: 'config;
 

@@ -104,63 +104,63 @@ mod event_discovery_tests {
 
     #[test]
     fn discovers_services_via_backend<S: Service, B: Backend<S> + Debug, U: Testing>() {
-        // // === SETUP ===
-        // let service_name = generate_service_name();
+        // === SETUP ===
+        let service_name = generate_service_name();
 
-        // // Host A
-        // let iceoryx_config_a = generate_isolated_config();
-        // let backend_config_a = B::Config::default();
-        // let tunnel_config_a = iceoryx2_tunnel::Config::default();
-        // let mut tunnel_a =
-        //     Tunnel::<S, B>::create(&tunnel_config_a, &iceoryx_config_a, &backend_config_a).unwrap();
-        // assert_that!(tunnel_a.tunneled_services().len(), eq 0);
+        // Host A
+        let iceoryx_config_a = generate_isolated_config();
+        let backend_config_a = B::Config::default();
+        let tunnel_config_a = iceoryx2_tunnel::Config::default();
+        let mut tunnel_a =
+            Tunnel::<S, B>::create(&tunnel_config_a, &iceoryx_config_a, &backend_config_a).unwrap();
+        assert_that!(tunnel_a.tunneled_services().len(), eq 0);
 
-        // // Host B
-        // let iceoryx_config_b = generate_isolated_config();
-        // let backend_config_b = B::Config::default();
-        // let tunnel_config_b = iceoryx2_tunnel::Config::default();
-        // let mut tunnel_b =
-        //     Tunnel::<S, B>::create(&tunnel_config_b, &iceoryx_config_b, &backend_config_b).unwrap();
-        // assert_that!(tunnel_b.tunneled_services().len(), eq 0);
+        // Host B
+        let iceoryx_config_b = generate_isolated_config();
+        let backend_config_b = B::Config::default();
+        let tunnel_config_b = iceoryx2_tunnel::Config::default();
+        let mut tunnel_b =
+            Tunnel::<S, B>::create(&tunnel_config_b, &iceoryx_config_b, &backend_config_b).unwrap();
+        assert_that!(tunnel_b.tunneled_services().len(), eq 0);
 
-        // // Create a service on Host B
-        // let node_b = NodeBuilder::new()
-        //     .config(&iceoryx_config_b)
-        //     .create::<S>()
-        //     .unwrap();
-        // let service_b = node_b
-        //     .service_builder(&service_name)
-        //     .event()
-        //     .open_or_create()
-        //     .unwrap();
+        // Create a service on Host B
+        let node_b = NodeBuilder::new()
+            .config(&iceoryx_config_b)
+            .create::<S>()
+            .unwrap();
+        let service_b = node_b
+            .service_builder(&service_name)
+            .event()
+            .open_or_create()
+            .unwrap();
 
-        // // === TEST ===
-        // tunnel_a.discover_over_backend().unwrap();
-        // assert_that!(tunnel_a.tunneled_services().len(), eq 1);
+        // === TEST ===
+        tunnel_a.discover_over_backend().unwrap();
+        assert_that!(tunnel_a.tunneled_services().len(), eq 0);
 
-        // tunnel_b.discover_over_iceoryx().unwrap();
-        // assert_that!(tunnel_b.tunneled_services().len(), eq 1);
-        // assert_that!(tunnel_b.tunneled_services().contains(service_b.service_id()), eq true);
+        tunnel_b.discover_over_iceoryx().unwrap();
+        assert_that!(tunnel_b.tunneled_services().len(), eq 1);
+        assert_that!(tunnel_b.tunneled_services().contains(service_b.service_id()), eq true);
 
-        // const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(250);
-        // const MAX_RETRIES: usize = 5;
-        // U::retry(
-        //     || {
-        //         tunnel_a.discover_over_backend().unwrap();
+        const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(250);
+        const MAX_RETRIES: usize = 5;
+        U::retry(
+            || {
+                tunnel_a.discover_over_backend().unwrap();
 
-        //         let service_discovered = tunnel_a.tunneled_services().len() == 1;
+                let service_discovered = tunnel_a.tunneled_services().len() == 1;
 
-        //         if service_discovered {
-        //             return Ok(());
-        //         }
-        //         Err("Failed to discover remote services")
-        //     },
-        //     TIME_BETWEEN_RETRIES,
-        //     Some(MAX_RETRIES),
-        // );
+                if service_discovered {
+                    return Ok(());
+                }
+                Err("Failed to discover remote services")
+            },
+            TIME_BETWEEN_RETRIES,
+            Some(MAX_RETRIES),
+        );
 
-        // assert_that!(tunnel_a.tunneled_services().len(), eq 1);
-        // assert_that!(tunnel_a.tunneled_services().contains(service_b.service_id()), eq true);
+        assert_that!(tunnel_a.tunneled_services().len(), eq 1);
+        assert_that!(tunnel_a.tunneled_services().contains(service_b.service_id()), eq true);
     }
 
     #[cfg(feature = "tunnel_zenoh")]

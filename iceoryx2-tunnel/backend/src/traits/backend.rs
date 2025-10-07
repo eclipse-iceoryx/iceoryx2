@@ -22,7 +22,7 @@ pub trait Backend<S: Service>: Sized {
     type Discovery: Discovery;
 
     type PublishSubscribeRelay: PublishSubscribeRelay<S> + Debug;
-    type EventRelay: EventRelay + Debug;
+    type EventRelay: EventRelay<S> + Debug;
 
     type RelayFactory<'a>: RelayFactory<
         S,

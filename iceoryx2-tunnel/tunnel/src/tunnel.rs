@@ -341,8 +341,16 @@ fn setup_event<S: Service, B: Backend<S>>(
     // TODO: Use fail!
     let port = ports::event::Ports::new(static_config, &node).unwrap();
 
+    // TODO: Use fail!
+    let relay = backend
+        .relay_builder()
+        .event(static_config)
+        .create()
+        .unwrap();
+
     services.insert(service_id.clone());
     ports.insert(service_id.clone(), Ports::Event(port));
+    relays.event.insert(service_id.clone(), relay);
 
     Ok(())
 }

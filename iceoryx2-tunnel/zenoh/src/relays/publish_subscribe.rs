@@ -13,7 +13,7 @@
 use iceoryx2::service::builder::CustomHeaderMarker;
 use iceoryx2::service::builder::CustomPayloadMarker;
 use iceoryx2::service::{static_config::StaticConfig, Service};
-use iceoryx2_bb_log::{debug, error, fail};
+use iceoryx2_bb_log::{debug, fail};
 use iceoryx2_tunnel_backend::traits::{PublishSubscribeRelay, RelayBuilder};
 use iceoryx2_tunnel_backend::types::publish_subscribe::LoanFn;
 use iceoryx2_tunnel_backend::types::publish_subscribe::SampleMut;
@@ -27,6 +27,7 @@ use zenoh::{
 };
 
 use crate::keys;
+use crate::relays::announce_service;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
@@ -48,6 +49,7 @@ impl From<Box<dyn std::error::Error + Send + Sync>> for CreationError {
     }
 }
 
+// TODO: Revise lifetimes - config and session lifetimes are different
 #[derive(Debug)]
 pub struct Builder<'a, S: Service> {
     session: &'a Session,
@@ -70,33 +72,39 @@ impl<'a, S: Service> RelayBuilder for Builder<'a, S> {
     type Relay = Relay<S>;
 
     fn create(self) -> Result<Self::Relay, Self::CreationError> {
+        debug!(
+            from "publish_subscribe::RelayBuilder::create",
+            "{}",
+            format!("Creating publish-subscribe relay for service {}", self.static_config.name())
+        );
+
         let key = keys::publish_subscribe(self.static_config.service_id());
 
         let publisher = fail!(
-            from "publish_subscribe::RelayBuilder::create()",
+            from "publish_subscribe::RelayBuilder::create",
             when self.session
                 .declare_publisher(key.clone())
                 .allowed_destination(Locality::Remote)
                 .reliability(Reliability::Reliable)
                 .wait(),
-            "Failed to create zenoh publisher for payloads"
+            "Failed to create zenoh publisher for publish-subscribe payloads"
         );
 
         // TODO(correctness): Make handler type and properties configurable
         let subscriber = fail!(
-            from "publish_subscribe::RelayBuilder::create()",
+            from "publish_subscribe::RelayBuilder::create",
             when self.session
                 .declare_subscriber(key.clone())
                 .with(FifoChannel::new(10))
                 .allowed_origin(Locality::Remote)
                 .wait(),
-            "Failed to create zenoh subscriber for payloads"
+            "Failed to create zenoh subscriber for publish-subscribe payloads"
         );
 
         fail!(
-            from "publish_subscribe::RelayBuilder::create()",
+            from "publish_subscribe::RelayBuilder::create",
             when announce_service(self.session, self.static_config),
-            "Failed to announce service"
+            "Failed to annnounce service on Zenoh"
         );
 
         Ok(Relay {
@@ -124,7 +132,11 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
         &self,
         sample: iceoryx2::sample::Sample<S, [CustomPayloadMarker], CustomHeaderMarker>,
     ) -> Result<(), Self::PropagationError> {
-        debug!(from "Relay::propagate", "Propagating PublishSubscribe({})", self.static_config.name());
+        debug!(
+            from "publish_subscribe::Relay::propagate",
+            "Propagating publish-subscribe payload from service '{}'",
+            self.static_config.name()
+        );
 
         let payload = sample.payload();
         let bytes = payload.as_ptr() as *mut u8; // TODO: Can this be non-mut ?
@@ -146,7 +158,11 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
         loan: &mut LoanFn<'_, S>,
     ) -> Result<Option<SampleMut<S>>, Self::IngestionError> {
         for zenoh_sample in self.subscriber.drain() {
-            debug!(from "Relay::ingest", "Ingesting PublishSubscribe({})", self.static_config.name());
+            debug!(
+                from "publish_subscribe::Relay::ingest",
+                "Ingesting publish-subscribe payload from service '{}'",
+                self.static_config.name()
+            );
 
             let zenoh_payload = zenoh_sample.payload();
             let mut sample = loan(zenoh_payload.len());
@@ -174,47 +190,4 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
 
         Ok(None)
     }
-}
-
-pub fn announce_service(
-    session: &Session,
-    static_config: &StaticConfig,
-) -> Result<(), zenoh::Error> {
-    let key = keys::service_details(static_config.service_id());
-    let service_config_serialized = fail!(
-        from "announce_service()",
-        when serde_json::to_string(&static_config),
-        "failed to serialize service config"
-    );
-
-    // Notify all current hosts.
-    fail!(
-        from "announce_service()",
-        when session
-            .put(key.clone(), service_config_serialized.clone())
-            .allowed_destination(Locality::Remote)
-            .wait(),
-        "failed to share service details with remote hosts"
-    );
-
-    // Set up a queryable to respond to future hosts.
-    fail!(
-        from "announce_service()",
-        when session
-            .declare_queryable(key.clone())
-            .callback(move |query| {
-                let _ = query
-                    .reply(key.clone(), service_config_serialized.clone())
-                    .wait()
-                    .inspect_err(|e| {
-                        error!("Failed to announce service {}: {}", key, e);
-                    });
-            })
-            .allowed_origin(Locality::Remote)
-            .background()
-            .wait(),
-        "failed to set up queryable to share service details with remote hosts"
-    );
-
-    Ok(())
 }

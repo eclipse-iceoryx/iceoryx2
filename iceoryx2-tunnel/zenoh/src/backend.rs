@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2::service::Service;
-use iceoryx2_bb_log::fail;
+use iceoryx2_bb_log::{debug, fail};
 use iceoryx2_tunnel_backend::traits::Backend;
 use zenoh::{Config, Session, Wait};
 
@@ -39,7 +39,7 @@ impl<S: Service> Backend<S> for ZenohBackend<S> {
     type Discovery = Discovery;
 
     type PublishSubscribeRelay = publish_subscribe::Relay<S>;
-    type EventRelay = event::Relay;
+    type EventRelay = event::Relay<S>;
 
     type RelayFactory<'a>
         = Factory<'a, S>
@@ -47,9 +47,14 @@ impl<S: Service> Backend<S> for ZenohBackend<S> {
         Self: 'a;
 
     fn create(config: &Self::Config) -> Result<Self, Self::CreationError> {
+        debug!(
+            from "ZenohBackend::create",
+            "Creating Zenoh tunnel backend"
+        );
+
         let session = zenoh::open(config.clone()).wait();
         let session = fail!(
-            from "ZenohBackend::create()",
+            from "ZenohBackend::create",
             when session,
             with Self::CreationError::FailedToCreateSession,
             "Failed to create zenoh session"
@@ -57,7 +62,7 @@ impl<S: Service> Backend<S> for ZenohBackend<S> {
 
         let discovery = Discovery::create(&session);
         let discovery = fail!(
-            from "ZenohBackend::create()",
+            from "ZenohBackend::create",
             when discovery,
             with CreationError::FailedToCreateDiscovery,
             "Failed to create zenoh discovery"

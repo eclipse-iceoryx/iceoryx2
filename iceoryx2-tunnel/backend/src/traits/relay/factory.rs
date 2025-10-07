@@ -25,7 +25,7 @@ pub trait RelayBuilder {
 
 pub trait RelayFactory<S: Service> {
     type PublishSubscribeRelay: PublishSubscribeRelay<S>;
-    type EventRelay: EventRelay;
+    type EventRelay: EventRelay<S>;
 
     type PublishSubscribeBuilder<'config>: RelayBuilder<Relay = Self::PublishSubscribeRelay>
         + Debug

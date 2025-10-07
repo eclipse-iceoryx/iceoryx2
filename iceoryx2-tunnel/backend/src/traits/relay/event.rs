@@ -12,7 +12,9 @@
 
 use core::fmt::Debug;
 
-pub trait EventRelay {
+use iceoryx2::service::Service;
+
+pub trait EventRelay<S: Service> {
     type PropagationError: Debug;
     type IngestionError: Debug;
 
