@@ -7,6 +7,11 @@ analogy shall continue for other messaging patterns later on.
 
 ## Terminology
 
+* **HIR** - "High-Level Intermediate Representation" is the primary IR used in
+  most of rustc. It is a compiler-friendly representation of the abstract syntax
+  tree (AST) that is generated after parsing, macro expansion, and name
+  resolution. More [here](https://rustc-dev-guide.rust-lang.org/hir.html).
+
 ## Overview
 
 A high-level pitch of the feature:
@@ -31,8 +36,8 @@ practice it means:
 * `async fn abc() -> bool` signature is turned into
   `fn abc() -> impl core::future::Future<Output=bool>`. This basically means
   each async fn is a anonymous type that implements `core::future::Future`
-* `await` is turned be the compiler into a generated state machine that simply
-  decomposes to all states (continues and returns) in a function using `Future`
+* `await` is turned by the compiler into a generated state machine that simply
+  decomposes to all states (continues and returns) in a function using the `Future`
   trait API. For a small example, see the code below:
 
 ```rust
@@ -61,20 +66,20 @@ fn some_other_async_fn() -> impl core::future::Future<Output=()> {
 fn abc() -> impl core::future::Future<Output=bool> {
 
   let future = some_other_async_fn();
-  let mut _hidden_satte = 0;
+  let mut _hidden_state = 0;
 
-  if _hidden_satte == 0 {
+  if _hidden_state == 0 {
     match future.poll(...) {
       core::task::Poll::Pending => return Pending
       core::task::Poll::Ready(_) => {
         ///
-        _hidden_satte = 1;
+        _hidden_state = 1;
       }
     }
   }
 
-  /// And for next .awaits, continue the idea
-  /// Compiler will ofc generate something totally different but thats the idea behind
+  /// And for next .awaits, continue the idea. Compiler will ofc generate
+  // something totally different but thats the idea behind
 
   true
 }
@@ -127,6 +132,8 @@ once there is reply for it.
 
 * **R1: Async API look and feel** \* The new `async` API shall provide the same
   look and feel as standard one
+* **R2: Async API is implemented as `no_std`** \* The implementation should
+  compile with `no_std` to comply with the code base
 
 ## Use Cases
 
@@ -198,7 +205,7 @@ The main idea is to split source code into two parts:
 2. All the other API that do need `Event` implementation, but the rest is
     purely `runtime` independent and can be pure `async`
 
-To facilitate above, below class diagram is showing one of the solution
+To facilitate above, below class diagram is showing one of the solutions
 
 ![Class Diagram](new_classes.svg)
 
@@ -208,7 +215,15 @@ The next step is to provide a way to build objects that provide `async` API.
 
 There are two approaches that can be chosen for implementation:
 
-#### 1. Use custom event for each pair (messaging patern, data type) based on `ServiceName`
+#### 1. Use custom event for each pair (messaging patern, data type) based on `ServiceName`. Example
+
+* User request Pub-Sub for service `ServiceNameA`. We need to create event in
+  new service so we create service `ServiceNameA/__internal_pubsub_event` and
+  `event` in it.
+
+* User request Req-Resp for service `ServiceNameA`. We need to create event in
+  new service so we create service `ServiceNameA/__internal_reqresp_event` and
+  `event` in it.
 
 ##### Pros
 
@@ -232,8 +247,9 @@ There are two approaches that can be chosen for implementation:
 * limit a service to only single messaging pattern as using event will cause no
   way to use it again
 
-Considering above, continuation is done based on option 1. Below shows only
-small snippet where extension for creating object can be placed.
+Considering above, the continuation of the proposal is based on option 1. The
+small snippet below shows where the extension for creating the object can be
+placed
 
 ![Port factory](port_factory.svg)
 
