@@ -84,17 +84,10 @@ jobs:
   static-code-analysis-rust:
     needs: preflight-check
     if: ${{ needs.changes.outputs.source-code == 'true' }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macOS-latest]
-        cargo-features-flag: [""]
-        include:
-          - os: ubuntu-latest
-            cargo-features-flag: "--features libc_platform"
     uses: ./.github/workflows/static_code_analysis_workflow.yml
-    with:
-      os: ${{ matrix.os }}
-      cargo-features-flag: ${{ matrix.cargo-features-flag }}
+    with: 
+      os: ubuntu-latest
+      cargo-features-flag: ""
 
   static-code-analysis-cpp:
     needs: preflight-check
@@ -132,6 +125,22 @@ jobs:
     steps:
       - name: Static code analysis sync point
         run: echo "Nothing to see, move along!"
+
+  # This job runs after the basic check with Ubuntu passed
+  static-code-analysis-rust-build:
+    needs: [preflight-check, static-code-analysis, cargo-nextest]
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    strategy:
+      matrix:
+        os: [macOS-latest]
+        cargo-features-flag: [""]
+        include:
+          - os: ubuntu-latest
+            cargo-features-flag: "--features libc_platform"
+    uses: ./.github/workflows/static_code_analysis_workflow.yml
+    with: 
+      os: ${{ matrix.os }}
+      cargo-features-flag: ${{ matrix.cargo-features-flag }}
 
   cargo-nextest:
     needs: preflight-check
