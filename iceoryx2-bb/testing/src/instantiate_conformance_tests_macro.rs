@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Contributors to the Eclipse Foundation
+// Copyright (c) 2025 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -14,7 +14,9 @@
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 
-pub use iceoryx2_pal_testing::*;
-
-pub mod instantiate_conformance_tests_macro;
-pub mod lifetime_tracker;
+#[macro_export]
+macro_rules! instantiate_conformance_tests {
+    ($module_path:path, $sut_type:ty) => {
+        $module_path!($module_path, $sut_type);
+    };
+}

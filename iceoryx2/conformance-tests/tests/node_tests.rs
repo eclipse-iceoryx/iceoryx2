@@ -10,25 +10,32 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_conformance_tests::node;
-use iceoryx2_conformance_tests::node_tests;
+use iceoryx2_bb_testing::instantiate_conformance_tests;
 
 mod ipc {
-    use super::*;
-    node_tests!(iceoryx2::service::ipc::Service);
+    super::instantiate_conformance_tests!(
+        iceoryx2_conformance_tests::node,
+        iceoryx2::service::ipc::Service
+    );
 }
 
 mod local {
-    use super::*;
-    node_tests!(iceoryx2::service::local::Service);
+    super::instantiate_conformance_tests!(
+        iceoryx2_conformance_tests::node,
+        iceoryx2::service::local::Service
+    );
 }
 
 mod ipc_threadsafe {
-    use super::*;
-    node_tests!(iceoryx2::service::ipc_threadsafe::Service);
+    super::instantiate_conformance_tests!(
+        iceoryx2_conformance_tests::node,
+        iceoryx2::service::ipc_threadsafe::Service
+    );
 }
 
 mod local_threadsafe {
-    use super::*;
-    node_tests!(iceoryx2::service::local_threadsafe::Service);
+    super::instantiate_conformance_tests!(
+        iceoryx2_conformance_tests::node,
+        iceoryx2::service::local_threadsafe::Service
+    );
 }
