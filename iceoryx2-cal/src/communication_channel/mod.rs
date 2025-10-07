@@ -89,6 +89,14 @@ pub enum CommunicationChannelSendError {
     InternalFailure,
 }
 
+impl core::fmt::Display for CommunicationChannelSendError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "CommunicationChannelSendError::{self:?}")
+    }
+}
+
+impl core::error::Error for CommunicationChannelSendError {}
+
 /// Describes failures when receiving data
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum CommunicationChannelReceiveError {
@@ -96,6 +104,14 @@ pub enum CommunicationChannelReceiveError {
     MessageCorrupt,
     InternalFailure,
 }
+
+impl core::fmt::Display for CommunicationChannelReceiveError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "CommunicationChannelReceiveError::{self:?}")
+    }
+}
+
+impl core::error::Error for CommunicationChannelReceiveError {}
 
 /// Describes failures when creating the [`CommunicationChannel`]
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
@@ -106,6 +122,14 @@ pub enum CommunicationChannelCreateError {
     InternalFailure,
 }
 
+impl core::fmt::Display for CommunicationChannelCreateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "CommunicationChannelCreateError::{self:?}")
+    }
+}
+
+impl core::error::Error for CommunicationChannelCreateError {}
+
 /// Describes failures when opening the [`CommunicationChannel`]
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum CommunicationChannelOpenError {
@@ -113,6 +137,14 @@ pub enum CommunicationChannelOpenError {
     AnotherInstanceIsAlreadyConnected,
     DoesNotExist,
 }
+
+impl core::fmt::Display for CommunicationChannelOpenError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "CommunicationChannelOpenError::{self:?}")
+    }
+}
+
+impl core::error::Error for CommunicationChannelOpenError {}
 
 /// Creates a [`CommunicationChannel`].
 pub trait CommunicationChannelCreator<T, C: CommunicationChannel<T> + Sized>:

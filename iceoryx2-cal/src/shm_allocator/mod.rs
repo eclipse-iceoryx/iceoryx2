@@ -33,6 +33,14 @@ enum_gen! {
     AllocationError
 }
 
+impl core::fmt::Display for ShmAllocationError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "ShmAllocationError::{self:?}")
+    }
+}
+
+impl core::error::Error for ShmAllocationError {}
+
 /// Describes generically an [`AllocationStrategy`], meaning how the memory is increased when the
 /// available memory is insufficient.
 #[derive(Clone, Copy, Eq, PartialEq, Debug, Default)]
@@ -57,6 +65,14 @@ pub enum ShmAllocatorInitError {
     /// The [`ShmAllocator`] requires more memory to initialize than available.
     AllocationFailed,
 }
+
+impl core::fmt::Display for ShmAllocatorInitError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "ShmAllocatorInitError::{self:?}")
+    }
+}
+
+impl core::error::Error for ShmAllocatorInitError {}
 
 /// Returned by [`ShmAllocator::resize_hint()`] and [`ShmAllocator::initial_setup_hint()`].
 /// It contains a payload size and [`ShmAllocator`] configuration suggestion for the given

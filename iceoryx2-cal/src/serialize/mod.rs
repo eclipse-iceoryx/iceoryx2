@@ -48,11 +48,27 @@ pub enum SerializeError {
     InternalError,
 }
 
+impl core::fmt::Display for SerializeError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "SerializeError::{self:?}")
+    }
+}
+
+impl core::error::Error for SerializeError {}
+
 /// Failure emitted by [`Serialize::deserialize()`]
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum DeserializeError {
     InternalError,
 }
+
+impl core::fmt::Display for DeserializeError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "DeserializeError::{self:?}")
+    }
+}
+
+impl core::error::Error for DeserializeError {}
 
 /// Serialize and deserialize constructs which implement [`serde::Serialize`] and
 /// [`serde::de::DeserializeOwned`]

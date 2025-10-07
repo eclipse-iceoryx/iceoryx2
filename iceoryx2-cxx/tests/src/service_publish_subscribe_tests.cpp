@@ -1325,7 +1325,7 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_with_same_heade
     EXPECT_EQ(sut_open.error(), PublishSubscribeOpenError::IncompatibleTypes);
 }
 
-TYPED_TEST(ServicePublishSubscribeTest, PayloadTypeNameIsSetToRustPendantForFixedSizeIntegersAndBoolAndSlicesOfThem) {
+TYPED_TEST(ServicePublishSubscribeTest, PayloadTypeNameIsSetToRustPendantForFixedSizeIntegersFloatsAndSlicesOfThem) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name = iox2_testing::generate_service_name();
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");

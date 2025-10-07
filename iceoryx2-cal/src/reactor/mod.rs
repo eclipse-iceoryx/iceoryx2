@@ -27,6 +27,14 @@ pub enum ReactorCreateError {
     InternalError,
 }
 
+impl core::fmt::Display for ReactorCreateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "ReactorCreateError::{self:?}")
+    }
+}
+
+impl core::error::Error for ReactorCreateError {}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReactorAttachError {
     AlreadyAttached,
@@ -35,12 +43,28 @@ pub enum ReactorAttachError {
     InternalError,
 }
 
+impl core::fmt::Display for ReactorAttachError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "ReactorAttachError::{self:?}")
+    }
+}
+
+impl core::error::Error for ReactorAttachError {}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReactorWaitError {
     Interrupt,
     InsufficientPermissions,
     InternalError,
 }
+
+impl core::fmt::Display for ReactorWaitError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "ReactorWaitError::{self:?}")
+    }
+}
+
+impl core::error::Error for ReactorWaitError {}
 
 pub trait ReactorGuard<'reactor, 'attachment> {
     fn file_descriptor(&self) -> &FileDescriptor;

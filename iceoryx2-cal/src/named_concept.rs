@@ -27,11 +27,27 @@ pub enum NamedConceptDoesExistError {
     InternalError,
 }
 
+impl core::fmt::Display for NamedConceptDoesExistError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "NamedConceptDoesExistError::{self:?}")
+    }
+}
+
+impl core::error::Error for NamedConceptDoesExistError {}
+
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum NamedConceptRemoveError {
     InsufficientPermissions,
     InternalError,
 }
+
+impl core::fmt::Display for NamedConceptRemoveError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "NamedConceptRemoveError::{self:?}")
+    }
+}
+
+impl core::error::Error for NamedConceptRemoveError {}
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum NamedConceptListError {
@@ -39,11 +55,27 @@ pub enum NamedConceptListError {
     InternalError,
 }
 
+impl core::fmt::Display for NamedConceptListError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "NamedConceptListError::{self:?}")
+    }
+}
+
+impl core::error::Error for NamedConceptListError {}
+
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum NamedConceptPathHintRemoveError {
     InsufficientPermissions,
     InternalError,
 }
+
+impl core::fmt::Display for NamedConceptPathHintRemoveError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "NamedConceptPathHintRemoveError::{self:?}")
+    }
+}
+
+impl core::error::Error for NamedConceptPathHintRemoveError {}
 
 /// Every [`NamedConcept`] must have a custom configuration that at least allows the user to define
 /// a custom [`NamedConceptConfiguration::suffix()`] for all file names that are transparent during

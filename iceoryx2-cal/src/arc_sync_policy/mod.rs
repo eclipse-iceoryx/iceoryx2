@@ -68,6 +68,14 @@ pub enum ArcSyncPolicyCreationError {
     InternalFailure,
 }
 
+impl core::fmt::Display for ArcSyncPolicyCreationError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "ArcSyncPolicyCreationError::{self:?}")
+    }
+}
+
+impl core::error::Error for ArcSyncPolicyCreationError {}
+
 /// The [`LockGuard`] provides access to the underlying object.
 pub trait LockGuard<'parent, T: Send>: Deref<Target = T> {}
 
