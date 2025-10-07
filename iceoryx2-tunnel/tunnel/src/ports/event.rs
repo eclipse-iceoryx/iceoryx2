@@ -55,12 +55,12 @@ pub enum NotifyError {
 }
 
 #[derive(Debug)]
-pub(crate) struct Ports<S: Service> {
+pub(crate) struct EventPorts<S: Service> {
     pub(crate) notifier: Notifier<S>,
     pub(crate) listener: Listener<S>,
 }
 
-impl<S: Service> Ports<S> {
+impl<S: Service> EventPorts<S> {
     pub(crate) fn new(static_config: &StaticConfig, node: &Node<S>) -> Result<Self, CreationError> {
         let event_config = static_config.event();
         let service = fail!(
@@ -90,7 +90,7 @@ impl<S: Service> Ports<S> {
             &format!("Failed to create Listener for '{}'", service.name())
         );
 
-        Ok(Ports { notifier, listener })
+        Ok(EventPorts { notifier, listener })
     }
 
     pub(crate) fn try_wait_all<PropagateFn>(

@@ -12,11 +12,3 @@
 
 pub(crate) mod event;
 pub(crate) mod publish_subscribe;
-
-use iceoryx2::service::Service;
-
-#[derive(Debug)]
-pub(crate) enum Ports<S: Service> {
-    PublishSubscribe(publish_subscribe::Ports<S>),
-    Event(event::Ports<S>),
-}

@@ -66,13 +66,13 @@ impl From<SubscriberCreateError> for CreationError {
 }
 
 #[derive(Debug)]
-pub(crate) struct Ports<S: Service> {
+pub(crate) struct PublishSubscribePorts<S: Service> {
     pub(crate) static_config: StaticConfig,
     pub(crate) publisher: Publisher<S>,
     pub(crate) subscriber: Subscriber<S>,
 }
 
-impl<S: Service> Ports<S> {
+impl<S: Service> PublishSubscribePorts<S> {
     pub(crate) fn new(static_config: &StaticConfig, node: &Node<S>) -> Result<Self, CreationError> {
         let port_config = static_config.publish_subscribe();
         let service = unsafe {
@@ -116,7 +116,7 @@ impl<S: Service> Ports<S> {
             "{}", &format!("Failed to create Subscriber for '{}'", service.name())
         );
 
-        Ok(Ports {
+        Ok(PublishSubscribePorts {
             static_config: static_config.clone(),
             publisher,
             subscriber,

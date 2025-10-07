@@ -13,7 +13,8 @@
 use core::fmt::Debug;
 use std::collections::{HashMap, HashSet};
 
-use crate::ports::Ports;
+use crate::ports::event::EventPorts;
+use crate::ports::publish_subscribe::PublishSubscribePorts;
 use crate::{discovery, ports};
 use iceoryx2::node::{Node, NodeBuilder, NodeCreationFailure};
 use iceoryx2::service::builder::publish_subscribe::PublishSubscribeOpenOrCreateError;
@@ -102,7 +103,21 @@ impl From<PublishSubscribeOpenOrCreateError> for CreationError {
     }
 }
 
-/// Struct to store different relay types by service id
+#[derive(Debug)]
+pub(crate) struct Ports<S: Service> {
+    pub(crate) publish_subscribe: HashMap<ServiceId, PublishSubscribePorts<S>>,
+    pub(crate) event: HashMap<ServiceId, EventPorts<S>>,
+}
+
+impl<S: Service> Ports<S> {
+    pub fn new() -> Self {
+        Self {
+            publish_subscribe: HashMap::new(),
+            event: HashMap::new(),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Relays<S: Service, B: Backend<S>> {
     publish_subscribe: HashMap<ServiceId, B::PublishSubscribeRelay>,
@@ -127,8 +142,7 @@ pub struct Config {
 pub struct Tunnel<S: Service, B: for<'a> Backend<S>> {
     node: Node<S>,
     backend: B,
-    services: HashSet<ServiceId>,
-    ports: HashMap<ServiceId, Ports<S>>, // TODO: Organize by port type
+    ports: Ports<S>,
     relays: Relays<S, B>,
     subscriber: Option<discovery::subscriber::DiscoverySubscriber<S>>,
     tracker: Option<discovery::tracker::DiscoveryTracker<S>>,
@@ -171,8 +185,7 @@ impl<S: Service, B: for<'a> Backend<S>> Tunnel<S, B> {
         Ok(Self {
             node,
             backend,
-            services: HashSet::new(),
-            ports: HashMap::new(),
+            ports: Ports::new(),
             relays: Relays::new(),
             subscriber: subscriber,
             tracker: tracker,
@@ -188,11 +201,12 @@ impl<S: Service, B: for<'a> Backend<S>> Tunnel<S, B> {
     }
 
     pub fn discover_over_iceoryx(&mut self) -> Result<(), DiscoveryError> {
+        let tunneled_services = self.tunneled_services();
         if let Some(subscriber) = &mut self.subscriber {
             fail!(
                 from "Tunnel::discover_over_iceoryx",
                 when subscriber.discover(&mut |static_config| {
-                    on_discovery(static_config, &mut self.node, &self.backend, &mut self.services, &mut self.ports, &mut self.relays).unwrap();
+                    on_discovery(static_config, &mut self.node, &self.backend, &tunneled_services, &mut self.ports, &mut self.relays).unwrap();
                     Ok(())
                 }),
                 "Failed to discover services via Subscriber"
@@ -202,7 +216,7 @@ impl<S: Service, B: for<'a> Backend<S>> Tunnel<S, B> {
             fail!(
                 from "Tunnel::discover_over_iceoryx",
                 when tracker.discover(&mut |static_config| {
-                    on_discovery(static_config, &mut self.node, &self.backend, &mut self.services, &mut self.ports, &mut self.relays).unwrap();
+                    on_discovery(static_config, &mut self.node, &self.backend, &tunneled_services, &mut self.ports, &mut self.relays).unwrap();
                     Ok(())
                 }),
                 "Failed to discover services via Tracker"
@@ -213,10 +227,11 @@ impl<S: Service, B: for<'a> Backend<S>> Tunnel<S, B> {
     }
 
     pub fn discover_over_backend(&mut self) -> Result<(), DiscoveryError> {
+        let tunneled_services = self.tunneled_services();
         fail!(
             from "Tunnel::discover_over_backend",
             when self.backend.discovery().discover(&mut |static_config| {
-                on_discovery(static_config, &self.node, &self.backend, &mut self.services, &mut self.ports, &mut self.relays).unwrap();
+                on_discovery(static_config, &self.node, &self.backend, &tunneled_services, &mut self.ports, &mut self.relays).unwrap();
                 Ok(())
             }),
             with DiscoveryError::FailedToDiscoverOverBackend,
@@ -228,74 +243,75 @@ impl<S: Service, B: for<'a> Backend<S>> Tunnel<S, B> {
     /// TODO: Consider the ordering ...
     /// TODO: Refactor duplicate logic
     pub fn relay(&mut self) -> Result<(), RelayError> {
-        for (id, ports) in &self.ports {
-            match ports {
-                Ports::PublishSubscribe(port) => {
-                    let relay = match self.relays.publish_subscribe.get(id) {
-                        Some(relay) => relay,
-                        None => {
-                            warn!(
+        for (id, port) in &self.ports.publish_subscribe {
+            let relay = match self.relays.publish_subscribe.get(id) {
+                Some(relay) => relay,
+                None => {
+                    warn!(
                                 from "Tunnel::relay",
                                 "No relay available for id {:?}. Skipping.", id);
-                            return Ok(());
-                        }
-                    };
-
-                    fail!(
-                        from "Tunnel::relay",
-                        when port.receive(self.node.id(), |sample| {
-                            // TODO: Handle error properly
-                            relay.propagate(sample).unwrap();
-                        }),
-                        "Failed to receive and propagate samples"
-                    );
-
-                    fail!(
-                        from "Tunnel::relay",
-
-                        when port.send(|loan: &mut LoanFn<_>| {
-                            // TODO: Handle error properly
-                            relay.ingest(&mut |size| loan(size)).unwrap()
-                        }),
-                        "Failed to send ingested samples"
-                    );
+                    return Ok(());
                 }
-                Ports::Event(port) => {
-                    let relay = match self.relays.event.get(id) {
-                        Some(relay) => relay,
-                        None => {
-                            warn!(
+            };
+
+            fail!(
+                from "Tunnel::relay",
+                when port.receive(self.node.id(), |sample| {
+                    // TODO: Handle error properly
+                    relay.propagate(sample).unwrap();
+                }),
+                "Failed to receive and propagate samples"
+            );
+
+            fail!(
+                from "Tunnel::relay",
+                when port.send(|loan: &mut LoanFn<_>| {
+                    // TODO: Handle error properly
+                    relay.ingest(&mut |size| loan(size)).unwrap()
+                }),
+                "Failed to send ingested samples"
+            );
+        }
+
+        for (id, port) in &self.ports.event {
+            let relay = match self.relays.event.get(id) {
+                Some(relay) => relay,
+                None => {
+                    warn!(
                                 from "Tunnel::relay",
                                 "No relay available for id {:?}. Skipping.", id);
-                            return Ok(());
-                        }
-                    };
-
-                    fail!(
-                        from "Tunnel::relay",
-                        when port.try_wait_all(|id| {
-                            // TODO: Handle error properly
-                            relay.propagate(id).unwrap();
-                        }),
-                        "Failed to wait for events"
-                    );
-
-                    // TODO: Use fail!
-                    // TODO: Invert order?
-                    relay
-                        .ingest(&mut |id| {
-                            port.notify(id).unwrap();
-                        })
-                        .unwrap();
+                    return Ok(());
                 }
-            }
+            };
+
+            fail!(
+                from "Tunnel::relay",
+                when port.try_wait_all(|id| {
+                    // TODO: Handle error properly
+                    relay.propagate(id).unwrap();
+                }),
+                "Failed to wait for events"
+            );
+
+            // TODO: Use fail!
+            // TODO: Invert order?
+            relay
+                .ingest(&mut |id| {
+                    port.notify(id).unwrap();
+                })
+                .unwrap();
         }
 
         Ok(())
     }
 
-    pub fn tunneled_services(&self) -> &HashSet<ServiceId> {
-        &self.services
+    pub fn tunneled_services(&self) -> HashSet<ServiceId> {
+        self.ports
+            .publish_subscribe
+            .keys()
+            .chain(self.ports.event.keys())
+            .cloned()
+            .collect()
     }
 }
 
@@ -303,10 +319,15 @@ fn on_discovery<S: Service, B: Backend<S>>(
     static_config: &StaticConfig,
     node: &Node<S>,
     backend: &B,
-    services: &mut HashSet<ServiceId>,
-    ports: &mut HashMap<ServiceId, Ports<S>>,
+    services: &HashSet<ServiceId>,
+    ports: &mut Ports<S>,
     relays: &mut Relays<S, B>,
 ) -> Result<(), CreationError> {
+    if services.contains(static_config.service_id()) {
+        // Nothing to do.
+        return Ok(());
+    }
+
     match static_config.messaging_pattern() {
         MessagingPattern::PublishSubscribe(_) => {
             debug!(
@@ -314,13 +335,13 @@ fn on_discovery<S: Service, B: Backend<S>>(
                 "Discovered PublishSubscribe({})",
                 static_config.name()
             );
-            setup_publish_subscribe(static_config, node, backend, services, ports, relays)
+            setup_publish_subscribe(static_config, node, backend, ports, relays)
         }
         MessagingPattern::Event(_) => {
             debug!(
                 from "Tunnel::on_discovery",
                 "Discovered Event({})", static_config.name());
-            setup_event(static_config, node, backend, services, ports, relays)
+            setup_event(static_config, node, backend, ports, relays)
         }
         _ => {
             // Not supported. Nothing to do.
@@ -339,17 +360,13 @@ fn setup_publish_subscribe<S: Service, B: Backend<S>>(
     static_config: &StaticConfig,
     node: &Node<S>,
     backend: &B,
-    services: &mut HashSet<ServiceId>,
-    ports: &mut HashMap<ServiceId, Ports<S>>,
+    ports: &mut Ports<S>,
     relays: &mut Relays<S, B>,
 ) -> Result<(), CreationError> {
     let service_id = static_config.service_id();
-    if services.contains(service_id) {
-        return Ok(());
-    }
 
     // TODO: Use fail!
-    let port = ports::publish_subscribe::Ports::new(static_config, &node).unwrap();
+    let port = PublishSubscribePorts::new(static_config, &node).unwrap();
 
     // TODO: Use fail!
     let relay = backend
@@ -358,8 +375,7 @@ fn setup_publish_subscribe<S: Service, B: Backend<S>>(
         .create()
         .unwrap();
 
-    services.insert(service_id.clone());
-    ports.insert(service_id.clone(), Ports::PublishSubscribe(port));
+    ports.publish_subscribe.insert(service_id.clone(), port);
     relays.publish_subscribe.insert(service_id.clone(), relay);
 
     Ok(())
@@ -369,17 +385,13 @@ fn setup_event<S: Service, B: Backend<S>>(
     static_config: &StaticConfig,
     node: &Node<S>,
     backend: &B,
-    services: &mut HashSet<ServiceId>,
-    ports: &mut HashMap<ServiceId, Ports<S>>,
+    ports: &mut Ports<S>,
     relays: &mut Relays<S, B>,
 ) -> Result<(), CreationError> {
     let service_id = static_config.service_id();
-    if services.contains(service_id) {
-        return Ok(());
-    }
 
     // TODO: Use fail!
-    let port = ports::event::Ports::new(static_config, &node).unwrap();
+    let port = EventPorts::new(static_config, &node).unwrap();
 
     // TODO: Use fail!
     let relay = backend
@@ -388,8 +400,7 @@ fn setup_event<S: Service, B: Backend<S>>(
         .create()
         .unwrap();
 
-    services.insert(service_id.clone());
-    ports.insert(service_id.clone(), Ports::Event(port));
+    ports.event.insert(service_id.clone(), port);
     relays.event.insert(service_id.clone(), relay);
 
     Ok(())
