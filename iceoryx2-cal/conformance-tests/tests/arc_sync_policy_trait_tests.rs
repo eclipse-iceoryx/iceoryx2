@@ -10,23 +10,22 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_cal_conformance_tests::arc_sync_policy_trait;
-use iceoryx2_cal_conformance_tests::arc_sync_policy_trait_tests;
+use iceoryx2_bb_testing::instantiate_conformance_tests;
 
 mod mutex_protected {
-    use super::*;
-    arc_sync_policy_trait_tests!(
+    super::instantiate_conformance_tests!(
+        iceoryx2_cal_conformance_tests::arc_sync_policy_trait,
         iceoryx2_cal::arc_sync_policy::mutex_protected::MutexProtected<
-            iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64,
+        iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64,
         >
     );
 }
 
 mod single_threaded {
-    use super::*;
-    arc_sync_policy_trait_tests!(
+    super::instantiate_conformance_tests!(
+        iceoryx2_cal_conformance_tests::arc_sync_policy_trait,
         iceoryx2_cal::arc_sync_policy::single_threaded::SingleThreaded<
-            iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64,
+        iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64,
         >
     );
 }

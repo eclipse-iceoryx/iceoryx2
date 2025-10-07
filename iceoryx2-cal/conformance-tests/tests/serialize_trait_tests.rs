@@ -10,20 +10,25 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_cal_conformance_tests::serialize_trait;
-use iceoryx2_cal_conformance_tests::serialize_trait_tests;
+use iceoryx2_bb_testing::instantiate_conformance_tests;
 
 mod toml {
-    use super::*;
-    serialize_trait_tests!(iceoryx2_cal::serialize::toml::Toml);
+    super::instantiate_conformance_tests!(
+        iceoryx2_cal_conformance_tests::serialize_trait,
+        iceoryx2_cal::serialize::toml::Toml
+    );
 }
 
 mod cdr {
-    use super::*;
-    serialize_trait_tests!(iceoryx2_cal::serialize::cdr::Cdr);
+    super::instantiate_conformance_tests!(
+        iceoryx2_cal_conformance_tests::serialize_trait,
+        iceoryx2_cal::serialize::cdr::Cdr
+    );
 }
 
 mod postcard {
-    use super::*;
-    serialize_trait_tests!(iceoryx2_cal::serialize::postcard::Postcard);
+    super::instantiate_conformance_tests!(
+        iceoryx2_cal_conformance_tests::serialize_trait,
+        iceoryx2_cal::serialize::postcard::Postcard
+    );
 }

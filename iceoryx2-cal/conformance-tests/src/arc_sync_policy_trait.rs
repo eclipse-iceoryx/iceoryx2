@@ -18,7 +18,7 @@ pub mod arc_sync_policy_trait {
 
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_testing::assert_that;
-    use iceoryx2_cal::arc_sync_policy::{self, ArcSyncPolicy};
+    use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
     use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 
     #[conformance_test]
