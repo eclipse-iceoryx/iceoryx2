@@ -202,22 +202,19 @@ impl<const CAPACITY: usize> KeyMemory<CAPACITY> {
     /// # Safety
     ///
     ///   * see Safety section of core::ptr::copy_nonoverlapping
-    pub unsafe fn try_from_ptr(
-        ptr: *const u8,
-        value_layout: Layout,
-    ) -> Result<Self, KeyMemoryError> {
+    pub unsafe fn try_from_ptr(ptr: *const u8, key_layout: Layout) -> Result<Self, KeyMemoryError> {
         static_assert_eq::<{ align_of::<KeyMemory<1>>() }, MAX_BLACKBOARD_KEY_ALIGNMENT>();
 
         let origin = "KeyMemory::try_from_ptr()";
         let msg = "Unable to create KeyMemory";
 
-        if value_layout.size() > CAPACITY {
+        if key_layout.size() > CAPACITY {
             fail!(from origin, with KeyMemoryError::ValueTooLarge,
-                "{} since the passed value size is too large. The size must be <= {}.", msg, CAPACITY);
+                "{} since the passed key size is too large. The size must be <= {}.", msg, CAPACITY);
         }
-        if value_layout.align() > MAX_BLACKBOARD_KEY_ALIGNMENT {
+        if key_layout.align() > MAX_BLACKBOARD_KEY_ALIGNMENT {
             fail!(from origin, with KeyMemoryError::ValueAlignmentTooLarge,
-                "{} since the alignment of the passed value is too large. The alignment must be <= {}.",
+                "{} since the alignment of the passed key is too large. The alignment must be <= {}.",
                 msg, MAX_BLACKBOARD_KEY_ALIGNMENT);
         }
 
@@ -225,11 +222,12 @@ impl<const CAPACITY: usize> KeyMemory<CAPACITY> {
             data: [0; CAPACITY],
         };
         unsafe {
-            core::ptr::copy_nonoverlapping(ptr, new_self.data.as_mut_ptr(), value_layout.size())
+            core::ptr::copy_nonoverlapping(ptr, new_self.data.as_mut_ptr(), key_layout.size())
         };
         Ok(new_self)
     }
 
+    // TODO: Adapt documentation
     /// This function compares two KeyMemory<CAPACITY> for equality. It is passed to functions that
     /// require a Fn(*const u8, *const u8) -> bool so key_eq_comparison cannot be unsafe. Still, there
     /// are safety requirements:
@@ -237,7 +235,7 @@ impl<const CAPACITY: usize> KeyMemory<CAPACITY> {
     /// # Safety
     ///
     ///   * lhs and rhs must be valid pointers to valid KeyMemory<CAPACITY>
-    pub fn key_eq_comparison<T: Eq>(lhs: *const u8, rhs: *const u8) -> bool {
+    pub fn default_key_eq_comparison<T: Eq>(lhs: *const u8, rhs: *const u8) -> bool {
         let lhs = unsafe { *(lhs as *const KeyMemory<CAPACITY>) };
         let rhs = unsafe { *(rhs as *const KeyMemory<CAPACITY>) };
         let res = unsafe { *(lhs.data.as_ptr() as *const T) == *(rhs.data.as_ptr() as *const T) };
@@ -248,7 +246,22 @@ impl<const CAPACITY: usize> KeyMemory<CAPACITY> {
             unsafe { *(lhs.data.as_ptr() as *const u64) },
             unsafe { *(rhs.data.as_ptr() as *const u64) }
         );
-        println!("cmp_func returns {res}");
+        println!("default_key_eq_comparison returns {res}");
+
+        res
+    }
+
+    pub fn key_eq_comparison<F: Fn(*const u8, *const u8) -> bool>(
+        lhs: *const u8,
+        rhs: *const u8,
+        eq_func: &F,
+    ) -> bool {
+        let lhs = unsafe { *(lhs as *const KeyMemory<CAPACITY>) };
+        let rhs = unsafe { *(rhs as *const KeyMemory<CAPACITY>) };
+        let res = eq_func(lhs.data.as_ptr(), rhs.data.as_ptr());
+
+        // TODO: remove
+        println!("key_eq_comparison returns {res}");
 
         res
     }
@@ -360,7 +373,7 @@ impl<
             internals: Vec::<BuilderInternals>::new(),
             override_key_type: None,
             key_eq_func: Box::new(|lhs: *const u8, rhs: *const u8| {
-                KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::key_eq_comparison::<KeyType>(lhs, rhs)
+                KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::default_key_eq_comparison::<KeyType>(lhs, rhs)
             }),
             phantom: PhantomData,
         };
@@ -754,6 +767,7 @@ impl<ServiceType: service::Service> Creator<u64, ServiceType> {
         mut self,
         key_eq_func: Box<dyn Fn(*const u8, *const u8) -> bool>,
     ) -> Self {
+        // TODO: use key_eq_comparison in FFI binding
         self.builder.key_eq_func = key_eq_func;
         self
     }

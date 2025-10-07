@@ -69,11 +69,14 @@ int main(void) {
     }
 
     // add key-value pairs
+    uint64_t key_0 = 0;
     const char* value_type_name_int = "int32_t";
     int32_t value_key_0 = 3;
 
     iox2_service_builder_blackboard_creator_add(&service_builder_blackboard,
-                                                0,
+                                                (const uint8_t*) &key_0,
+                                                sizeof(uint64_t),
+                                                alignof(uint64_t),
                                                 &value_key_0,
                                                 NULL,
                                                 value_type_name_int,
@@ -81,12 +84,15 @@ int main(void) {
                                                 sizeof(int32_t),
                                                 alignof(int32_t));
 
+    uint64_t key_1 = 1;
     const char* value_type_name_double = "double";
     const double START_VALUE = 1.1;
     double value_key_1 = START_VALUE;
 
     iox2_service_builder_blackboard_creator_add(&service_builder_blackboard,
-                                                1,
+                                                (const uint8_t*) &key_1,
+                                                sizeof(uint64_t),
+                                                alignof(uint64_t),
                                                 &value_key_1,
                                                 NULL,
                                                 value_type_name_double,

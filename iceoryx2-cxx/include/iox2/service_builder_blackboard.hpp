@@ -147,7 +147,9 @@ inline auto ServiceBuilderBlackboardCreator<KeyType, S>::add(KeyType key, ValueT
 
     iox2_service_builder_blackboard_creator_add(
         &m_handle,
-        key,
+        reinterpret_cast<uint8_t*>(&key), // TODO: void ptr?
+        sizeof(KeyType),
+        alignof(KeyType),
         value_ptr,
         [](void* value) {
             auto* value_ptr = static_cast<ValueType*>(value);

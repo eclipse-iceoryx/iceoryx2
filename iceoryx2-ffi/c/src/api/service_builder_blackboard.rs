@@ -21,8 +21,10 @@ use crate::api::{
     HandleToType, IntoCInt, KeyFfi, PortFactoryBlackboardUnion, ServiceBuilderUnion, IOX2_OK,
 };
 use crate::create_type_details;
-use core::ffi::{c_char, c_int, c_void};
+use core::alloc::Layout;
+use core::ffi::{c_char, c_int, c_uchar, c_void};
 use core::mem::ManuallyDrop;
+use iceoryx2::constants::MAX_BLACKBOARD_KEY_SIZE;
 use iceoryx2::service::builder::blackboard::{
     BlackboardCreateError, BlackboardOpenError, BuilderInternals, Creator, KeyMemory, Opener,
 };
@@ -345,6 +347,8 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_set_key_eq_comp
 
     let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
 
+    let eq_func = Box::new(move |lhs: *const u8, rhs: *const u8| key_eq_func(lhs, rhs));
+
     match service_builder_struct.service_type {
         iox2_service_type_e::IPC => {
             let service_builder =
@@ -353,7 +357,7 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_set_key_eq_comp
             let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
             service_builder_struct.set(ServiceBuilderUnion::new_ipc_blackboard_creator(
                 service_builder.__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
-                    key_eq_func(lhs, rhs)
+                    KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::key_eq_comparison(lhs, rhs, &*eq_func)
                 })),
             ));
         }
@@ -363,9 +367,9 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_set_key_eq_comp
 
             let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
             service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_creator(
-                service_builder.__internal_set_key_eq_cmp_func(Box::new(
-                    move |lhs: *const u8, rhs: *const u8| key_eq_func(lhs, rhs),
-                )),
+                service_builder.__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
+                    KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::key_eq_comparison(lhs, rhs, &*eq_func)
+                })),
             ));
         }
     }
@@ -569,7 +573,9 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_opener_set_max_nodes(
 #[no_mangle]
 pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
     service_builder_handle: iox2_service_builder_blackboard_creator_h_ref,
-    key: KeyFfi,
+    key: *const c_uchar,
+    key_size: usize,
+    key_align: usize,
     value_ptr: *mut c_void,
     release_callback: iox2_service_blackboard_creator_add_release_callback,
     type_name: *const c_char,
@@ -609,8 +615,11 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
         }
     });
 
+    // TODO: remove key_size + align and use the set key type instead? or remove key type setter?
+    let key_layout = Layout::from_size_align(key_size, key_align).unwrap(); // TODO: error handling
+
     // TODO: error handling
-    let key_mem = KeyMemory::try_from(key).unwrap();
+    let key_mem = KeyMemory::try_from_ptr(key, key_layout).unwrap();
 
     let internals = BuilderInternals::new(
         key_mem,

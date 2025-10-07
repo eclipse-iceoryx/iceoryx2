@@ -196,7 +196,7 @@ impl<
 
         let offset = self.get_entry_offset(
             key,
-            &KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::key_eq_comparison::<KeyType>,
+            &KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::default_key_eq_comparison::<KeyType>,
             &TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
             msg,
         )?;
