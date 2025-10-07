@@ -336,6 +336,20 @@ jobs:
       mode-cmake-cxx-flags: ${{ matrix.mode.cmake-cxx-flags }}
       cargo-features-flag: ${{ matrix.cargo-features-flag }}
 
+  x86_64-stable-release:
+    needs: [preflight-check, static-code-analysis, cargo-nextest]
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    uses: ./.github/workflows/x86_64_stable_workflow.yml
+    with:
+      os: ubuntu-latest
+      toolchain: stable
+      mode-name: "release"
+      mode-arg: "--release"
+      mode-cmake-build-type: "-DCMAKE_BUILD_TYPE=Release"
+      mode-cmake-build-config: "--config Release"
+      mode-cmake-cxx-flags: ""
+      cargo-features-flag: ""
+
   x86_64-unstable:
     needs: [preflight-check, static-code-analysis, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' && github.ref != 'refs/heads/main' }}
