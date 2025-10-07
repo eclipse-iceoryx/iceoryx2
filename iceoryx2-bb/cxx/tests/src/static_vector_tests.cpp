@@ -73,9 +73,10 @@ TEST_F(StaticVectorFixture, from_value_default_constructs_count_elements) {
     ASSERT_EQ(Observable::s_counter.was_copy_constructed, 4);
     // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
     // there may be additional moves on compilers that fail to perform rvo
+    expected_count().was_move_constructed = Observable::s_counter.was_move_constructed;
     expected_count().was_initialized = 1;
     expected_count().was_copy_constructed = 4;
-    expected_count().was_destructed = 5;
+    expected_count().was_destructed = 5 + Observable::s_counter.was_move_constructed;
     // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
 }
 
@@ -87,9 +88,10 @@ TEST_F(StaticVectorFixture, from_value_constructs_empty_vector_for_zero_elements
     ASSERT_EQ(Observable::s_counter.was_copy_constructed, 0);
     // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
     // there may be additional moves on compilers that fail to perform rvo
+    expected_count().was_move_constructed = Observable::s_counter.was_move_constructed;
     expected_count().was_initialized = 1;
     expected_count().was_copy_constructed = 0;
-    expected_count().was_destructed = 1;
+    expected_count().was_destructed = 1 + Observable::s_counter.was_move_constructed;
     // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
 }
 
@@ -111,9 +113,10 @@ TEST_F(StaticVectorFixture, from_value_constructs_count_copies_of_element) {
     ASSERT_EQ(Observable::s_counter.was_copy_constructed, 4);
     // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
     // there may be additional moves on compilers that fail to perform rvo
+    expected_count().was_move_constructed = Observable::s_counter.was_move_constructed;
     expected_count().was_initialized = 1;
     expected_count().was_copy_constructed = 4;
-    expected_count().was_destructed = 5;
+    expected_count().was_destructed = 5 + Observable::s_counter.was_move_constructed;
     // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
 }
 
@@ -127,9 +130,10 @@ TEST_F(StaticVectorFixture, from_value_with_object_constructs_empty_vector_for_z
     ASSERT_EQ(Observable::s_counter.was_copy_constructed, 0);
     // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
     // there may be additional moves on compilers that fail to perform rvo
+    expected_count().was_move_constructed = Observable::s_counter.was_move_constructed;
     expected_count().was_initialized = 1;
     expected_count().was_copy_constructed = 0;
-    expected_count().was_destructed = 1;
+    expected_count().was_destructed = 1 + Observable::s_counter.was_move_constructed;
     // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
 }
 
