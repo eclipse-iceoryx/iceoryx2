@@ -10,11 +10,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use std::collections::HashSet;
+
+use iceoryx2::prelude::EventId;
 use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2::service::Service;
 use iceoryx2_bb_log::debug;
 use iceoryx2_bb_log::fail;
 use iceoryx2_tunnel_backend::traits::{EventRelay, RelayBuilder};
+use iceoryx2_tunnel_backend::types::event::NotifyFn;
 use zenoh::handlers::FifoChannel;
 use zenoh::handlers::FifoChannelHandler;
 use zenoh::pubsub::Publisher;
@@ -107,7 +111,6 @@ impl<'a, S: Service> RelayBuilder for Builder<'a, S> {
         );
 
         Ok(Relay {
-            static_config: self.static_config.clone(),
             notifier,
             listener,
             _phantom: core::marker::PhantomData::default(),
@@ -117,7 +120,6 @@ impl<'a, S: Service> RelayBuilder for Builder<'a, S> {
 
 #[derive(Debug)]
 pub struct Relay<S: Service> {
-    static_config: StaticConfig,
     notifier: Publisher<'static>,
     listener: Subscriber<FifoChannelHandler<Sample>>,
     _phantom: core::marker::PhantomData<S>,
@@ -127,11 +129,36 @@ impl<S: Service> EventRelay<S> for Relay<S> {
     type PropagationError = PropagationError;
     type IngestionError = IngestionError;
 
-    fn propagate(&self) -> Result<(), Self::PropagationError> {
-        todo!()
+    fn propagate(&self, event_id: EventId) -> Result<(), Self::PropagationError> {
+        fail!(
+            from "event::Relay::propagate",
+            when self.notifier.put(event_id.as_value().to_ne_bytes()).wait(),
+            with PropagationError::Error,
+            "Failed to propagate notification"
+        );
+
+        Ok(())
     }
 
-    fn ingest(&self) -> Result<(), Self::IngestionError> {
-        todo!()
+    fn ingest(&self, notify: &mut NotifyFn<'_>) -> Result<(), Self::IngestionError> {
+        // Collect all notified ids
+        let mut received_ids: HashSet<EventId> = HashSet::new();
+        while let Ok(Some(sample)) = self.listener.try_recv() {
+            let payload = sample.payload();
+            if payload.len() == std::mem::size_of::<usize>() {
+                let id: usize =
+                    unsafe { payload.to_bytes().as_ptr().cast::<usize>().read_unaligned() };
+                received_ids.insert(EventId::new(id));
+            } else {
+                // Error, invalid event id. Skip.
+            }
+        }
+
+        // Propagate notifications received - once per event id
+        for event_id in received_ids {
+            notify(event_id);
+        }
+
+        Ok(())
     }
 }

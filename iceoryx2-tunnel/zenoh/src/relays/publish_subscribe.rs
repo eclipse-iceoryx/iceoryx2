@@ -165,13 +165,13 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
             );
 
             let zenoh_payload = zenoh_sample.payload();
-            let mut sample = loan(zenoh_payload.len());
-            let payload = sample.payload_mut();
+            let mut iceoryx_sample = loan(zenoh_payload.len());
+            let iceoryx_payload = iceoryx_sample.payload_mut();
 
             assert!(
-                payload.len() >= zenoh_payload.len(),
+                iceoryx_payload.len() >= zenoh_payload.len(),
                 "loan_size ({}) is too small for received payload ({})",
-                payload.len(),
+                iceoryx_payload.len(),
                 zenoh_payload.len()
             );
 
@@ -179,13 +179,13 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
             unsafe {
                 core::ptr::copy_nonoverlapping(
                     zenoh_payload.to_bytes().as_ptr(),
-                    payload.as_mut_ptr().cast(),
+                    iceoryx_payload.as_mut_ptr().cast(),
                     zenoh_payload.len(),
                 );
             }
-            let sample = unsafe { sample.assume_init() };
+            let initialized_sample = unsafe { iceoryx_sample.assume_init() };
 
-            return Ok(Some(sample));
+            return Ok(Some(initialized_sample));
         }
 
         Ok(None)

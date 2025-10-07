@@ -10,16 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::fmt::Debug;
+use iceoryx2::prelude::EventId;
 
-use iceoryx2::{prelude::EventId, service::Service};
-
-use crate::types::event::NotifyFn;
-
-pub trait EventRelay<S: Service> {
-    type PropagationError: Debug;
-    type IngestionError: Debug;
-
-    fn propagate(&self, event_id: EventId) -> Result<(), Self::PropagationError>;
-    fn ingest(&self, notify: &mut NotifyFn<'_>) -> Result<(), Self::IngestionError>;
-}
+pub type NotifyFn<'a> = dyn FnMut(EventId) + 'a;

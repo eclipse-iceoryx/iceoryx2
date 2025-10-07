@@ -10,10 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::collections::HashSet;
-
 use iceoryx2::{
-    node::{Node, NodeId},
+    node::Node,
     port::{
         listener::{Listener, ListenerCreateError},
         notifier::{Notifier, NotifierCreateError},
@@ -58,7 +56,6 @@ pub enum NotifyError {
 
 #[derive(Debug)]
 pub(crate) struct Ports<S: Service> {
-    pub(crate) static_config: StaticConfig,
     pub(crate) notifier: Notifier<S>,
     pub(crate) listener: Listener<S>,
 }
@@ -93,11 +90,7 @@ impl<S: Service> Ports<S> {
             &format!("Failed to create Listener for '{}'", service.name())
         );
 
-        Ok(Ports {
-            static_config: static_config.clone(),
-            notifier,
-            listener,
-        })
+        Ok(Ports { notifier, listener })
     }
 
     pub(crate) fn try_wait_all<PropagateFn>(

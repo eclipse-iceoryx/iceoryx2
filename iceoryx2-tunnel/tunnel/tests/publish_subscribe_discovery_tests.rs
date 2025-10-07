@@ -31,14 +31,14 @@ mod publish_subscribe_discovery_tests {
 
     fn generate_service_name() -> ServiceName {
         ServiceName::new(&format!(
-            "test_tunnel_discovery_{}",
+            "publish_subscribe_discovery_tests_{}",
             UniqueSystemId::new().unwrap().value()
         ))
         .unwrap()
     }
 
     #[test]
-    fn discovers_services_via_subscriber<S: Service, T: Backend<S> + Debug, U: Testing>() {
+    fn discovers_services_via_subscriber<S: Service, B: Backend<S> + Debug, T: Testing>() {
         // === SETUP ==
         let iceoryx_config = generate_isolated_config();
         let service_name = generate_service_name();
@@ -68,7 +68,7 @@ mod publish_subscribe_discovery_tests {
             discovery_service: Some("iox2://discovery/services/".into()),
         };
         let mut tunnel =
-            Tunnel::<S, T>::create(&tunnel_config, &iceoryx_config, &T::Config::default()).unwrap();
+            Tunnel::<S, B>::create(&tunnel_config, &iceoryx_config, &B::Config::default()).unwrap();
 
         // === TEST ===
         discovery_service.spin(|_| {}, |_| {}).unwrap();
@@ -79,7 +79,7 @@ mod publish_subscribe_discovery_tests {
     }
 
     #[test]
-    fn discovers_services_via_tracker<S: Service, T: Backend<S> + Debug, U: Testing>() {
+    fn discovers_services_via_tracker<S: Service, B: Backend<S> + Debug, T: Testing>() {
         // === SETUP ==
         let iceoryx_config = generate_isolated_config();
         let service_name = generate_service_name();
@@ -97,7 +97,7 @@ mod publish_subscribe_discovery_tests {
 
         let tunnel_config = iceoryx2_tunnel::Config::default();
         let mut tunnel =
-            Tunnel::<S, T>::create(&tunnel_config, &iceoryx_config, &T::Config::default()).unwrap();
+            Tunnel::<S, B>::create(&tunnel_config, &iceoryx_config, &B::Config::default()).unwrap();
 
         // === TEST ===
         tunnel.discover_over_iceoryx().unwrap();
@@ -107,7 +107,7 @@ mod publish_subscribe_discovery_tests {
     }
 
     #[test]
-    fn discovers_services_via_backend<S: Service, B: Backend<S> + Debug, U: Testing>() {
+    fn discovers_services_via_backend<S: Service, B: Backend<S> + Debug, T: Testing>() {
         // === SETUP ===
         let service_name = generate_service_name();
 
@@ -150,7 +150,7 @@ mod publish_subscribe_discovery_tests {
 
         const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(250);
         const MAX_RETRIES: usize = 5;
-        U::retry(
+        T::retry(
             || {
                 tunnel_a.discover_over_backend().unwrap();
 

@@ -23,7 +23,7 @@ use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2::service::Service;
 use iceoryx2_bb_log::{debug, fail, warn};
 use iceoryx2_tunnel_backend::traits::{
-    Backend, Discovery, PublishSubscribeRelay, RelayBuilder, RelayFactory,
+    Backend, Discovery, EventRelay, PublishSubscribeRelay, RelayBuilder, RelayFactory,
 };
 use iceoryx2_tunnel_backend::types::publish_subscribe::LoanFn;
 
@@ -66,14 +66,26 @@ impl From<discovery::tracker::DiscoveryError> for DiscoveryError {
     }
 }
 
+impl From<ports::publish_subscribe::SendError> for RelayError {
+    fn from(_: ports::publish_subscribe::SendError) -> Self {
+        RelayError::Error
+    }
+}
+
 impl From<ports::publish_subscribe::ReceiveError> for RelayError {
     fn from(_: ports::publish_subscribe::ReceiveError) -> Self {
         RelayError::Error
     }
 }
 
-impl From<ports::publish_subscribe::SendError> for RelayError {
-    fn from(_: ports::publish_subscribe::SendError) -> Self {
+impl From<ports::event::NotifyError> for RelayError {
+    fn from(_: ports::event::NotifyError) -> Self {
+        RelayError::Error
+    }
+}
+
+impl From<ports::event::WaitError> for RelayError {
+    fn from(_: ports::event::WaitError) -> Self {
         RelayError::Error
     }
 }
@@ -214,6 +226,7 @@ impl<S: Service, B: for<'a> Backend<S>> Tunnel<S, B> {
     }
 
     /// TODO: Consider the ordering ...
+    /// TODO: Refactor duplicate logic
     pub fn relay(&mut self) -> Result<(), RelayError> {
         for (id, ports) in &self.ports {
             match ports {
@@ -247,7 +260,34 @@ impl<S: Service, B: for<'a> Backend<S>> Tunnel<S, B> {
                         "Failed to send ingested samples"
                     );
                 }
-                Ports::Event(_) => todo!(),
+                Ports::Event(port) => {
+                    let relay = match self.relays.event.get(id) {
+                        Some(relay) => relay,
+                        None => {
+                            warn!(
+                                from "Tunnel::relay",
+                                "No relay available for id {:?}. Skipping.", id);
+                            return Ok(());
+                        }
+                    };
+
+                    fail!(
+                        from "Tunnel::relay",
+                        when port.try_wait_all(|id| {
+                            // TODO: Handle error properly
+                            relay.propagate(id).unwrap();
+                        }),
+                        "Failed to wait for events"
+                    );
+
+                    // TODO: Use fail!
+                    // TODO: Invert order?
+                    relay
+                        .ingest(&mut |id| {
+                            port.notify(id).unwrap();
+                        })
+                        .unwrap();
+                }
             }
         }
 
