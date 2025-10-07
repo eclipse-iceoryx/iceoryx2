@@ -103,7 +103,7 @@ inline auto Writer<S, KeyType>::entry(const KeyType& key)
                                     nullptr,
                                     &entry_handle,
                                     key,
-                                    internal::default_key_eq_cmp_func,
+                                    internal::default_key_eq_cmp_func<KeyType>,
                                     type_name.unchecked_access().c_str(),
                                     type_name.size(),
                                     sizeof(ValueType),

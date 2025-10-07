@@ -131,7 +131,7 @@ inline void ServiceBuilderBlackboardCreator<KeyType, S>::set_parameters() {
 
     // key eq comparison function
     const auto key_cmp_result = iox2_service_builder_blackboard_creator_set_key_eq_comparison_function(
-        &m_handle, internal::default_key_eq_cmp_func);
+        &m_handle, internal::default_key_eq_cmp_func<KeyType>);
     if (key_cmp_result != IOX2_OK) {
         IOX_PANIC("This should never happen! Implementation failure while setting the key eq comparison function.");
     }
