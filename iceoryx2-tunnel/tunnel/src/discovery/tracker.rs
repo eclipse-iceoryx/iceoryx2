@@ -12,7 +12,10 @@
 
 use core::cell::RefCell;
 
-use iceoryx2::service::Service;
+use iceoryx2::{
+    config::Config,
+    service::{static_config::StaticConfig, Service},
+};
 use iceoryx2_services_discovery::service_discovery::{SyncError, Tracker};
 
 use iceoryx2_tunnel_backend::traits::Discovery;
@@ -32,7 +35,7 @@ impl From<SyncError> for DiscoveryError {
 pub struct DiscoveryTracker<S: Service>(RefCell<Tracker<S>>);
 
 impl<S: Service> DiscoveryTracker<S> {
-    pub fn create(iceoryx_config: &iceoryx2::config::Config) -> Self {
+    pub fn create(iceoryx_config: &Config) -> Self {
         let tracker = Tracker::new(iceoryx_config);
         DiscoveryTracker(RefCell::new(tracker))
     }
@@ -41,9 +44,7 @@ impl<S: Service> DiscoveryTracker<S> {
 impl<S: Service> Discovery for DiscoveryTracker<S> {
     type DiscoveryError = DiscoveryError;
 
-    fn discover<
-        F: FnMut(&iceoryx2::service::static_config::StaticConfig) -> Result<(), Self::DiscoveryError>,
-    >(
+    fn discover<F: FnMut(&StaticConfig) -> Result<(), Self::DiscoveryError>>(
         &self,
         process_discovery: &mut F,
     ) -> Result<(), Self::DiscoveryError> {

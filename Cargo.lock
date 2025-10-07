@@ -1658,8 +1658,11 @@ dependencies = [
 name = "iceoryx2-tunnel-zenoh"
 version = "0.7.0"
 dependencies = [
+ "generic-tests",
  "iceoryx2",
  "iceoryx2-bb-log",
+ "iceoryx2-bb-posix",
+ "iceoryx2-bb-testing",
  "iceoryx2-tunnel-backend",
  "serde_json",
  "zenoh",

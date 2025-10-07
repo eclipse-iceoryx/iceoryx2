@@ -12,7 +12,7 @@
 
 pub mod backend;
 pub mod discovery;
-mod keys;
+pub mod keys;
 pub mod relays;
 
 // TODO: Move to a separate crate?
