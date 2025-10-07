@@ -38,6 +38,9 @@
     [#1045](https://github.com/eclipse-iceoryx/iceoryx2/issues/1045)
 * LocalService in C language binding uses IPC configuration
     [#1059](https://github.com/eclipse-iceoryx/iceoryx2/issues/1059)
+* Trait `std::fmt::Debug` is not implemented for `sigset_t` in libc
+    [#1087](https://github.com/eclipse-iceoryx/iceoryx2/issues/1087)
+*
 
 ### Refactoring
 
