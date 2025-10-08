@@ -18,6 +18,7 @@ mod writer {
     use iceoryx2::port::writer::*;
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::blackboard::KeyMemory;
+    use iceoryx2::service::builder::CustomKeyMarker;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::Service;
     use iceoryx2::testing::*;
@@ -238,7 +239,7 @@ mod writer {
 
         let sut = unsafe {
             node.service_builder(&service_name)
-                .blackboard_creator::<KeyType>()
+                .blackboard_creator::<CustomKeyMarker>()
                 .__internal_set_key_type_details(&TypeDetail::new::<KeyType>(
                     TypeVariant::FixedSize,
                 ))
@@ -288,7 +289,7 @@ mod writer {
 
         let sut = unsafe {
             node.service_builder(&service_name)
-                .blackboard_creator::<KeyType>()
+                .blackboard_creator::<CustomKeyMarker>()
                 .__internal_set_key_type_details(&TypeDetail::new::<KeyType>(
                     TypeVariant::FixedSize,
                 ))
@@ -340,7 +341,7 @@ mod writer {
 
         let sut = unsafe {
             node.service_builder(&service_name)
-                .blackboard_creator::<KeyType>()
+                .blackboard_creator::<CustomKeyMarker>()
                 .__internal_set_key_type_details(&TypeDetail::new::<KeyType>(
                     TypeVariant::FixedSize,
                 ))
@@ -392,7 +393,7 @@ mod writer {
 
         let sut = unsafe {
             node.service_builder(&service_name)
-                .blackboard_creator::<KeyType>()
+                .blackboard_creator::<CustomKeyMarker>()
                 .__internal_set_key_type_details(&TypeDetail::new::<KeyType>(
                     TypeVariant::FixedSize,
                 ))
@@ -458,7 +459,7 @@ mod writer {
 
         let sut = unsafe {
             node.service_builder(&service_name)
-                .blackboard_creator::<KeyType>()
+                .blackboard_creator::<CustomKeyMarker>()
                 .__internal_set_key_type_details(&TypeDetail::new::<KeyType>(
                     TypeVariant::FixedSize,
                 ))
@@ -513,7 +514,7 @@ mod writer {
 
         let sut = unsafe {
             node.service_builder(&service_name)
-                .blackboard_creator::<KeyType>()
+                .blackboard_creator::<CustomKeyMarker>()
                 .__internal_set_key_type_details(&TypeDetail::new::<KeyType>(
                     TypeVariant::FixedSize,
                 ))

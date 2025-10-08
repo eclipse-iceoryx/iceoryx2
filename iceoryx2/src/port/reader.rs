@@ -38,6 +38,7 @@
 use crate::constants::MAX_BLACKBOARD_KEY_SIZE;
 use crate::prelude::EventId;
 use crate::service::builder::blackboard::{BlackboardResources, KeyMemory};
+use crate::service::builder::CustomKeyMarker;
 use crate::service::dynamic_config::blackboard::ReaderDetails;
 use crate::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use crate::service::{self, ServiceState};
@@ -363,8 +364,8 @@ impl<
     }
 }
 
-// TODO [#817] replace u64 with CustomKeyMarker
-impl<Service: service::Service> Reader<Service, u64> {
+// TODO: make internal methods unsafe?
+impl<Service: service::Service> Reader<Service, CustomKeyMarker> {
     #[doc(hidden)]
     pub fn __internal_entry(
         &self,
@@ -414,7 +415,7 @@ pub struct __InternalEntryHandle<Service: service::Service> {
     atomic_mgmt_ptr: *const UnrestrictedAtomicMgmt,
     data_ptr: *const u8,
     entry_id: EventId,
-    _shared_state: Arc<ReaderSharedState<Service, u64>>,
+    _shared_state: Arc<ReaderSharedState<Service, CustomKeyMarker>>,
 }
 
 impl<Service: service::Service> __InternalEntryHandle<Service> {

@@ -760,9 +760,7 @@ impl<
     }
 }
 
-// TODO [#817] replace u64 with CustomKeyMarker
-impl<ServiceType: service::Service> Creator<u64, ServiceType> {
-    // impl<ServiceType: service::Service> Creator<CustomKeyMarker, ServiceType> {
+impl<ServiceType: service::Service> Creator<CustomKeyMarker, ServiceType> {
     #[doc(hidden)]
     pub unsafe fn __internal_set_key_type_details(mut self, value: &TypeDetail) -> Self {
         self.builder.override_key_type = Some(value.clone());
@@ -1048,9 +1046,7 @@ impl<
     }
 }
 
-// TODO [#817] replace u64 with CustomKeyMarker
-impl<ServiceType: service::Service> Opener<u64, ServiceType> {
-    // impl<ServiceType: service::Service> Opener<CustomKeyMarker, ServiceType> {
+impl<ServiceType: service::Service> Opener<CustomKeyMarker, ServiceType> {
     #[doc(hidden)]
     pub unsafe fn __internal_set_key_type_details(mut self, value: &TypeDetail) -> Self {
         self.builder.override_key_type = Some(value.clone());

@@ -43,6 +43,7 @@
 use crate::constants::MAX_BLACKBOARD_KEY_SIZE;
 use crate::prelude::EventId;
 use crate::service::builder::blackboard::{BlackboardResources, KeyMemory};
+use crate::service::builder::CustomKeyMarker;
 use crate::service::dynamic_config::blackboard::WriterDetails;
 use crate::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use crate::service::{self, ServiceState};
@@ -599,8 +600,8 @@ impl<
     }
 }
 
-// TODO [#817] replace u64 with CustomKeyMarker
-impl<Service: service::Service> Writer<Service, u64> {
+// TODO: make internal methods unsafe?
+impl<Service: service::Service> Writer<Service, CustomKeyMarker> {
     #[doc(hidden)]
     pub fn __internal_entry(
         &self,
@@ -656,7 +657,7 @@ pub struct __InternalEntryHandleMut<Service: service::Service> {
     atomic_mgmt_ptr: *const UnrestrictedAtomicMgmt,
     data_ptr: *mut u8,
     entry_id: EventId,
-    _shared_state: Arc<WriterSharedState<Service, u64>>,
+    _shared_state: Arc<WriterSharedState<Service, CustomKeyMarker>>,
 }
 
 impl<Service: service::Service> Drop for __InternalEntryHandleMut<Service> {
@@ -670,7 +671,7 @@ impl<Service: service::Service> __InternalEntryHandleMut<Service> {
         atomic_mgmt_ptr: *const UnrestrictedAtomicMgmt,
         data_ptr: *mut u8,
         entry_id: EventId,
-        writer_state: Arc<WriterSharedState<Service, u64>>,
+        writer_state: Arc<WriterSharedState<Service, CustomKeyMarker>>,
     ) -> Result<Self, EntryHandleMutError> {
         match unsafe { (*atomic_mgmt_ptr).__internal_acquire_producer() } {
             Ok(_) => Ok(Self {

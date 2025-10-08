@@ -1674,7 +1674,7 @@ mod service_blackboard {
         let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
         let service = unsafe {
             node.service_builder(&service_name)
-                .blackboard_creator::<KeyType>()
+                .blackboard_creator::<CustomKeyMarker>()
                 .__internal_set_key_type_details(&TypeDetail::new::<KeyType>(
                     TypeVariant::FixedSize,
                 ))
@@ -1752,7 +1752,7 @@ mod service_blackboard {
         let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
         let service = unsafe {
             node.service_builder(&service_name)
-                .blackboard_creator::<KeyType>()
+                .blackboard_creator::<CustomKeyMarker>()
                 .__internal_set_key_type_details(&TypeDetail::new::<KeyType>(
                     TypeVariant::FixedSize,
                 ))
@@ -1834,6 +1834,7 @@ mod service_blackboard {
         type ValueType = u32;
         let default_value = ValueType::default();
         let value_ptr: *const ValueType = &default_value;
+        let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
 
         let service_name = generate_name();
         let config = generate_isolated_config();
@@ -1841,7 +1842,7 @@ mod service_blackboard {
 
         let sut = unsafe {
             node.service_builder(&service_name)
-                .blackboard_creator::<KeyType>()
+                .blackboard_creator::<CustomKeyMarker>()
                 .__internal_set_key_type_details(&TypeDetail::new::<KeyType>(
                     TypeVariant::FixedSize,
                 ))
@@ -1862,15 +1863,12 @@ mod service_blackboard {
         };
         let writer = sut.writer_builder().create().unwrap();
         let reader = sut.reader_builder().create().unwrap();
-        let entry_handle = reader.entry::<ValueType>(key).unwrap();
+        let entry_handle = reader
+            .__internal_entry(key_ptr as *const u8, key_layout, &type_details)
+            .unwrap();
 
-        let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
         let entry_handle_mut = writer
-            .__internal_entry(
-                key_ptr as *const u8,
-                Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap(),
-                &type_details,
-            )
+            .__internal_entry(key_ptr as *const u8, key_layout, &type_details)
             .unwrap();
         let entry_value_uninit =
             entry_handle_mut.loan_uninit(type_details.size(), type_details.alignment());
@@ -1889,7 +1887,16 @@ mod service_blackboard {
             entry_handle_mut.__internal_update_write_cell();
         }
 
-        assert_that!(entry_handle.get(), eq write_value);
+        let mut read_value: ValueType = 9;
+        let read_value_ptr: *mut ValueType = &mut read_value;
+        unsafe {
+            entry_handle.get(
+                read_value_ptr as *mut u8,
+                size_of::<ValueType>(),
+                align_of::<ValueType>(),
+            );
+        }
+        assert_that!(read_value, eq write_value);
     }
 
     #[test]
