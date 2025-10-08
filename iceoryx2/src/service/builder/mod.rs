@@ -79,10 +79,11 @@ pub struct CustomHeaderMarker {}
 pub struct CustomPayloadMarker(u8);
 
 #[repr(C)]
-#[derive(ZeroCopySend, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(ZeroCopySend, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[doc(hidden)]
-pub struct CustomKeyMarker(u64);
+pub struct CustomKeyMarker(u8);
 
+// TODO: remove?
 #[repr(C)]
 #[derive(ZeroCopySend, Clone, Copy)]
 #[doc(hidden)]

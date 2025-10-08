@@ -1657,11 +1657,25 @@ mod service_blackboard {
         }
     }
 
-    // TODO [#817] move the following tests to testing.rs and replace u64 with CustomKeyMarker
+    #[repr(C)]
+    #[derive(ZeroCopySend)]
+    struct Foo {
+        a: u8,
+        b: u32,
+    }
+
+    fn cmp_for_foo(lhs: *const u8, rhs: *const u8) -> bool {
+        unsafe {
+            (*lhs.cast::<Foo>()).a == (*rhs.cast::<Foo>()).a
+                && (*lhs.cast::<Foo>()).b == (*rhs.cast::<Foo>()).b
+        }
+    }
+
+    // TODO [#817] move the custom key type tests to testing.rs
     #[test]
     fn loan_uninit_and_write_works_with_custom_key_type<S: Service>() {
-        type KeyType = u64;
-        let key = 0;
+        type KeyType = Foo;
+        let key = Foo { a: 0, b: 0 };
         let key_ptr: *const KeyType = &key;
         let key_layout =
             Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap();
@@ -1678,10 +1692,8 @@ mod service_blackboard {
                 .__internal_set_key_type_details(&TypeDetail::new::<KeyType>(
                     TypeVariant::FixedSize,
                 ))
-                .__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
-                    KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::default_key_eq_comparison::<KeyType>(
-                        lhs, rhs,
-                    )
+                .__internal_set_key_eq_cmp_func(Box::new(move |lhs: *const u8, rhs: *const u8| {
+                    KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::key_eq_comparison(lhs, rhs, &cmp_for_foo)
                 }))
                 .__internal_add(
                     key_ptr as *const u8,
@@ -1738,8 +1750,8 @@ mod service_blackboard {
 
     #[test]
     fn write_and_update_internal_cell_works_with_custom_key_type<S: Service>() {
-        type KeyType = u64;
-        let key = 0;
+        type KeyType = Foo;
+        let key = Foo { a: 3, b: 17 };
         let key_ptr: *const KeyType = &key;
         let key_layout =
             Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap();
@@ -1757,9 +1769,7 @@ mod service_blackboard {
                     TypeVariant::FixedSize,
                 ))
                 .__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
-                    KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::default_key_eq_comparison::<KeyType>(
-                        lhs, rhs,
-                    )
+                    KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::key_eq_comparison(lhs, rhs, &cmp_for_foo)
                 }))
                 .__internal_add(
                     key_ptr as *const u8,
@@ -1826,8 +1836,8 @@ mod service_blackboard {
     fn entry_handle_mut_can_be_reused_after_entry_value_uninit_was_discarded_with_custom_key_type<
         Sut: Service,
     >() {
-        type KeyType = u64;
-        let key = 0;
+        type KeyType = Foo;
+        let key = Foo { a: 89, b: 0 };
         let key_ptr: *const KeyType = &key;
         let key_layout =
             Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap();
@@ -1847,9 +1857,7 @@ mod service_blackboard {
                     TypeVariant::FixedSize,
                 ))
                 .__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
-                    KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::default_key_eq_comparison::<KeyType>(
-                        lhs, rhs,
-                    )
+                    KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::key_eq_comparison(lhs, rhs, &cmp_for_foo)
                 }))
                 .__internal_add(
                     key_ptr as *const u8,
