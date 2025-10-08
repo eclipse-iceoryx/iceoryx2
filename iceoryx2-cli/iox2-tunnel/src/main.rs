@@ -23,6 +23,7 @@ mod supported_platform {
 
     #[cfg(not(debug_assertions))]
     use human_panic::setup_panic;
+    use iceoryx2_bb_log::fail;
     #[cfg(debug_assertions)]
     extern crate better_panic;
 
@@ -39,9 +40,10 @@ mod supported_platform {
     use iceoryx2_bb_log::warn;
     use iceoryx2_bb_log::LogLevel;
 
-    use iceoryx2_tunnels_zenoh::Scope;
-    use iceoryx2_tunnels_zenoh::Tunnel;
-    use iceoryx2_tunnels_zenoh::TunnelConfig;
+    use iceoryx2_tunnel::Tunnel;
+
+    #[cfg(feature = "tunnel_zenoh")]
+    use iceoryx2_tunnel_zenoh::ZenohBackend;
 
     pub fn main() -> anyhow::Result<()> {
         #[cfg(not(debug_assertions))]
@@ -69,52 +71,71 @@ mod supported_platform {
             }
         };
 
+        // TODO(#XYZ): Organize into separate modules per-transport
         if let Some(transport) = cli.transport {
             match transport {
                 Transport::Zenoh(zenoh_options) => {
-                    let tunnel_config = TunnelConfig {
-                        discovery_service: cli.discovery_service,
-                    };
-
-                    let iox_config = iceoryx2::config::Config::default();
-
-                    let zenoh_config = match zenoh_options.zenoh_config {
-                        Some(path) => zenoh::Config::from_file(&path).map_err(|e| {
-                            anyhow::anyhow!("failed to read zenoh config file '{path}': {e}")
-                        })?,
-                        None => zenoh::Config::default(),
-                    };
-
-                    let mut tunnel =
-                        Tunnel::<ipc::Service>::create(&tunnel_config, &iox_config, &zenoh_config)?;
-                    let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
-
-                    if cli.reactive {
-                        // TODO(functionality): Make tunnel (or its endpoints) attachable to waitset
-                        unimplemented!("Reactive mode is not yet supported.");
-                    } else {
-                        let rate = cli.poll.unwrap_or(100);
-                        info!("Polling rate {}ms", rate);
-
-                        let guard =
-                            waitset.attach_interval(core::time::Duration::from_millis(rate))?;
-                        let tick = WaitSetAttachmentId::from_guard(&guard);
-
-                        let on_event = |id: WaitSetAttachmentId<ipc::Service>| {
-                            if id == tick {
-                                let _ = tunnel.discover(Scope::Both).inspect_err(|e| {
-                                    warn!("Error encountered whilst discoverying services: {}", e);
-                                });
-                                let _ = tunnel.propagate().inspect_err(|e| {
-                                    warn!(
-                                        "Error encountered whilst propagating between hosts: {e}"
-                                    );
-                                });
-                            }
-                            CallbackProgression::Continue
+                    #[cfg(feature = "tunnel_zenoh")]
+                    {
+                        let tunnel_config = iceoryx2_tunnel::Config {
+                            discovery_service: cli.discovery_service,
+                        };
+                        let iceoryx_config = iceoryx2::config::Config::default();
+                        let zenoh_config = match zenoh_options.zenoh_config {
+                            Some(path) => zenoh::Config::from_file(&path).map_err(|e| {
+                                anyhow::anyhow!("failed to read zenoh config file '{path}': {e}")
+                            })?,
+                            None => zenoh::Config::default(),
                         };
 
-                        waitset.wait_and_process(on_event)?;
+                        let tunnel = Tunnel::<ipc::Service, ZenohBackend<ipc::Service>>::create(
+                            &tunnel_config,
+                            &iceoryx_config,
+                            &zenoh_config,
+                        );
+                        let mut tunnel = fail!(
+                            from "iox2-tunnel",
+                            when tunnel,
+                            ""
+                        );
+
+                        let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+
+                        if cli.reactive {
+                            // TODO(functionality): Make tunnel (or its endpoints) attachable to waitset
+                            unimplemented!("Reactive mode is not yet supported.");
+                        } else {
+                            let rate = cli.poll.unwrap_or(100);
+                            info!("Polling rate {}ms", rate);
+
+                            let guard =
+                                waitset.attach_interval(core::time::Duration::from_millis(rate))?;
+                            let tick = WaitSetAttachmentId::from_guard(&guard);
+
+                            let on_event = |id: WaitSetAttachmentId<ipc::Service>| {
+                                if id == tick {
+                                    let _ = tunnel.discover().inspect_err(|e| {
+                                        warn!(
+                                            "Error encountered whilst discoverying services: {}",
+                                            e
+                                        );
+                                    });
+                                    let _ = tunnel.propagate().inspect_err(|e| {
+                                        warn!(
+                                            "Error encountered whilst propagating between hosts: {e}"
+                                        );
+                                    });
+                                }
+                                CallbackProgression::Continue
+                            };
+
+                            waitset.wait_and_process(on_event)?;
+                        }
+                    }
+                    #[cfg(not(feature = "tunnel_zenoh"))]
+                    {
+                        println!("Zenoh transport is not available. Please rebuild with the 'tunnel_zenoh' feature enabled.");
+                        return Ok(());
                     }
                 }
             }

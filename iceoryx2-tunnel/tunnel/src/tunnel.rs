@@ -34,6 +34,14 @@ pub enum CreationError {
     DiscoverySubscriberCreation,
 }
 
+impl core::fmt::Display for CreationError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "CreationError::{self:?}")
+    }
+}
+
+impl core::error::Error for CreationError {}
+
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum DiscoveryError {
     DiscoveryOverBackend,
@@ -45,6 +53,14 @@ pub enum DiscoveryError {
     EventRelayCreation,
 }
 
+impl core::fmt::Display for DiscoveryError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "DiscoveryError::{self:?}")
+    }
+}
+
+impl core::error::Error for DiscoveryError {}
+
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum PropagateError {
     PayloadPropagation,
@@ -52,6 +68,14 @@ pub enum PropagateError {
     EventPropagation,
     EventIngestion,
 }
+
+impl core::fmt::Display for PropagateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "PropagateError::{self:?}")
+    }
+}
+
+impl core::error::Error for PropagateError {}
 
 #[derive(Debug)]
 pub(crate) struct Ports<S: Service> {
