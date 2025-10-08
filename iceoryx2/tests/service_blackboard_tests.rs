@@ -15,12 +15,14 @@ mod service_blackboard {
     use core::alloc::Layout;
     use core::ptr::copy_nonoverlapping;
     use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+    use iceoryx2::constants::MAX_BLACKBOARD_KEY_SIZE;
     use iceoryx2::port::reader::*;
     use iceoryx2::port::writer::*;
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::blackboard::{
         BlackboardCreateError, BlackboardOpenError, KeyMemory, KeyMemoryError,
     };
+    use iceoryx2::service::builder::CustomKeyMarker;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::Service;
     use iceoryx2::testing::*;
@@ -1664,16 +1666,33 @@ mod service_blackboard {
         let key_layout =
             Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap();
         type ValueType = u64;
+        let default_value = ValueType::default();
+        let value_ptr: *const ValueType = &default_value;
 
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
-        let service = node
-            .service_builder(&service_name)
-            .blackboard_creator::<KeyType>()
-            .add_with_default::<ValueType>(key)
-            .create()
-            .unwrap();
+        let service = unsafe {
+            node.service_builder(&service_name)
+                .blackboard_creator::<KeyType>()
+                .__internal_set_key_type_details(&TypeDetail::new::<KeyType>(
+                    TypeVariant::FixedSize,
+                ))
+                .__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
+                    KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::default_key_eq_comparison::<KeyType>(
+                        lhs, rhs,
+                    )
+                }))
+                .__internal_add(
+                    key_ptr as *const u8,
+                    key_layout,
+                    value_ptr as *mut u8,
+                    TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
+                    Box::new(|| {}),
+                )
+                .create()
+                .unwrap()
+        };
         let writer = service.writer_builder().create().unwrap();
         let reader = service.reader_builder().create().unwrap();
 
@@ -1703,7 +1722,7 @@ mod service_blackboard {
                 align_of::<ValueType>(),
             );
         }
-        assert_that!(read_value, eq 0);
+        assert_that!(read_value, eq default_value);
 
         // after calling update, the new value is accessible
         let _entry_handle_mut = entry_value_uninit.update();
@@ -1725,16 +1744,33 @@ mod service_blackboard {
         let key_layout =
             Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap();
         type ValueType = u64;
+        let default_value = ValueType::default();
+        let value_ptr: *const ValueType = &default_value;
 
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
-        let service = node
-            .service_builder(&service_name)
-            .blackboard_creator::<KeyType>()
-            .add_with_default::<ValueType>(key)
-            .create()
-            .unwrap();
+        let service = unsafe {
+            node.service_builder(&service_name)
+                .blackboard_creator::<KeyType>()
+                .__internal_set_key_type_details(&TypeDetail::new::<KeyType>(
+                    TypeVariant::FixedSize,
+                ))
+                .__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
+                    KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::default_key_eq_comparison::<KeyType>(
+                        lhs, rhs,
+                    )
+                }))
+                .__internal_add(
+                    key_ptr as *const u8,
+                    key_layout,
+                    value_ptr as *mut u8,
+                    TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
+                    Box::new(|| {}),
+                )
+                .create()
+                .unwrap()
+        };
         let writer = service.writer_builder().create().unwrap();
         let reader = service.reader_builder().create().unwrap();
 
@@ -1770,7 +1806,7 @@ mod service_blackboard {
                 align_of::<ValueType>(),
             );
         }
-        assert_that!(read_value, eq 0);
+        assert_that!(read_value, eq default_value);
 
         // after calling update, the new value is accessible
         unsafe {
@@ -1793,18 +1829,37 @@ mod service_blackboard {
         type KeyType = u64;
         let key = 0;
         let key_ptr: *const KeyType = &key;
+        let key_layout =
+            Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap();
         type ValueType = u32;
+        let default_value = ValueType::default();
+        let value_ptr: *const ValueType = &default_value;
 
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
-        let sut = node
-            .service_builder(&service_name)
-            .blackboard_creator::<KeyType>()
-            .add::<ValueType>(key, 0)
-            .create()
-            .unwrap();
+        let sut = unsafe {
+            node.service_builder(&service_name)
+                .blackboard_creator::<KeyType>()
+                .__internal_set_key_type_details(&TypeDetail::new::<KeyType>(
+                    TypeVariant::FixedSize,
+                ))
+                .__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
+                    KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::default_key_eq_comparison::<KeyType>(
+                        lhs, rhs,
+                    )
+                }))
+                .__internal_add(
+                    key_ptr as *const u8,
+                    key_layout,
+                    value_ptr as *mut u8,
+                    TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
+                    Box::new(|| {}),
+                )
+                .create()
+                .unwrap()
+        };
         let writer = sut.writer_builder().create().unwrap();
         let reader = sut.reader_builder().create().unwrap();
         let entry_handle = reader.entry::<ValueType>(key).unwrap();

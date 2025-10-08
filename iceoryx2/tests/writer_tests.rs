@@ -14,8 +14,10 @@
 mod writer {
     use core::alloc::Layout;
     use core::sync::atomic::{AtomicU64, Ordering};
+    use iceoryx2::constants::MAX_BLACKBOARD_KEY_SIZE;
     use iceoryx2::port::writer::*;
     use iceoryx2::prelude::*;
+    use iceoryx2::service::builder::blackboard::KeyMemory;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::Service;
     use iceoryx2::testing::*;
@@ -224,18 +226,37 @@ mod writer {
         type KeyType = u64;
         let key = 0;
         let key_ptr: *const KeyType = &key;
+        let key_layout =
+            Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap();
         type ValueType = u64;
+        let default_value = ValueType::default();
+        let value_ptr: *const ValueType = &default_value;
 
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
-        let sut = node
-            .service_builder(&service_name)
-            .blackboard_creator::<KeyType>()
-            .add::<ValueType>(key, 0)
-            .create()
-            .unwrap();
+        let sut = unsafe {
+            node.service_builder(&service_name)
+                .blackboard_creator::<KeyType>()
+                .__internal_set_key_type_details(&TypeDetail::new::<KeyType>(
+                    TypeVariant::FixedSize,
+                ))
+                .__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
+                    KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::default_key_eq_comparison::<KeyType>(
+                        lhs, rhs,
+                    )
+                }))
+                .__internal_add(
+                    key_ptr as *const u8,
+                    key_layout,
+                    value_ptr as *mut u8,
+                    TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
+                    Box::new(|| {}),
+                )
+                .create()
+                .unwrap()
+        };
         let writer = sut.writer_builder().create().unwrap();
 
         let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
@@ -251,25 +272,46 @@ mod writer {
     #[test]
     fn handle_cannot_be_acquired_for_non_existing_key_with_custom_key_type<Sut: Service>() {
         type KeyType = u64;
-        let key = 9;
+        let key = 0;
         let key_ptr: *const KeyType = &key;
+        let invalid_key = 9;
+        let invalid_key_ptr: *const KeyType = &invalid_key;
+        let key_layout =
+            Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap();
         type ValueType = u64;
+        let default_value = ValueType::default();
+        let value_ptr: *const ValueType = &default_value;
 
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
-        let sut = node
-            .service_builder(&service_name)
-            .blackboard_creator::<KeyType>()
-            .add::<ValueType>(0, 0)
-            .create()
-            .unwrap();
+        let sut = unsafe {
+            node.service_builder(&service_name)
+                .blackboard_creator::<KeyType>()
+                .__internal_set_key_type_details(&TypeDetail::new::<KeyType>(
+                    TypeVariant::FixedSize,
+                ))
+                .__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
+                    KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::default_key_eq_comparison::<KeyType>(
+                        lhs, rhs,
+                    )
+                }))
+                .__internal_add(
+                    key_ptr as *const u8,
+                    key_layout,
+                    value_ptr as *mut u8,
+                    TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
+                    Box::new(|| {}),
+                )
+                .create()
+                .unwrap()
+        };
         let writer = sut.writer_builder().create().unwrap();
 
         let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
         let entry_handle_mut = writer.__internal_entry(
-            key_ptr as *const u8,
+            invalid_key_ptr as *const u8,
             Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap(),
             &type_details,
         );
@@ -286,17 +328,37 @@ mod writer {
         type KeyType = u64;
         let key = 0;
         let key_ptr: *const KeyType = &key;
+        let key_layout =
+            Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap();
+        type ValueType = u64;
+        let default_value = ValueType::default();
+        let value_ptr: *const ValueType = &default_value;
 
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
-        let sut = node
-            .service_builder(&service_name)
-            .blackboard_creator::<KeyType>()
-            .add::<u64>(key, 0)
-            .create()
-            .unwrap();
+        let sut = unsafe {
+            node.service_builder(&service_name)
+                .blackboard_creator::<KeyType>()
+                .__internal_set_key_type_details(&TypeDetail::new::<KeyType>(
+                    TypeVariant::FixedSize,
+                ))
+                .__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
+                    KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::default_key_eq_comparison::<KeyType>(
+                        lhs, rhs,
+                    )
+                }))
+                .__internal_add(
+                    key_ptr as *const u8,
+                    key_layout,
+                    value_ptr as *mut u8,
+                    TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
+                    Box::new(|| {}),
+                )
+                .create()
+                .unwrap()
+        };
         let writer = sut.writer_builder().create().unwrap();
 
         let type_details = TypeDetail::new::<i64>(TypeVariant::FixedSize);
@@ -318,18 +380,37 @@ mod writer {
         type KeyType = u64;
         let key = 0;
         let key_ptr: *const KeyType = &key;
+        let key_layout =
+            Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap();
         type ValueType = u64;
+        let default_value = ValueType::default();
+        let value_ptr: *const ValueType = &default_value;
 
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
-        let sut = node
-            .service_builder(&service_name)
-            .blackboard_creator::<KeyType>()
-            .add::<ValueType>(key, 0)
-            .create()
-            .unwrap();
+        let sut = unsafe {
+            node.service_builder(&service_name)
+                .blackboard_creator::<KeyType>()
+                .__internal_set_key_type_details(&TypeDetail::new::<KeyType>(
+                    TypeVariant::FixedSize,
+                ))
+                .__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
+                    KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::default_key_eq_comparison::<KeyType>(
+                        lhs, rhs,
+                    )
+                }))
+                .__internal_add(
+                    key_ptr as *const u8,
+                    key_layout,
+                    value_ptr as *mut u8,
+                    TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
+                    Box::new(|| {}),
+                )
+                .create()
+                .unwrap()
+        };
         let writer = sut.writer_builder().create().unwrap();
 
         let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
@@ -365,18 +446,37 @@ mod writer {
         type KeyType = u64;
         let key = 0;
         let key_ptr: *const KeyType = &key;
+        let key_layout =
+            Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap();
         type ValueType = u8;
+        let default_value = ValueType::default();
+        let value_ptr: *const ValueType = &default_value;
 
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
-        let sut = node
-            .service_builder(&service_name)
-            .blackboard_creator::<KeyType>()
-            .add::<ValueType>(key, 0)
-            .create()
-            .unwrap();
+        let sut = unsafe {
+            node.service_builder(&service_name)
+                .blackboard_creator::<KeyType>()
+                .__internal_set_key_type_details(&TypeDetail::new::<KeyType>(
+                    TypeVariant::FixedSize,
+                ))
+                .__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
+                    KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::default_key_eq_comparison::<KeyType>(
+                        lhs, rhs,
+                    )
+                }))
+                .__internal_add(
+                    key_ptr as *const u8,
+                    key_layout,
+                    value_ptr as *mut u8,
+                    TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
+                    Box::new(|| {}),
+                )
+                .create()
+                .unwrap()
+        };
         let writer = sut.writer_builder().create().unwrap();
 
         let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
@@ -401,18 +501,37 @@ mod writer {
         type KeyType = u64;
         let key = 0;
         let key_ptr: *const KeyType = &key;
+        let key_layout =
+            Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap();
         type ValueType = u32;
+        let default_value = ValueType::default();
+        let value_ptr: *const ValueType = &default_value;
 
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
-        let sut = node
-            .service_builder(&service_name)
-            .blackboard_creator::<KeyType>()
-            .add::<ValueType>(key, 0)
-            .create()
-            .unwrap();
+        let sut = unsafe {
+            node.service_builder(&service_name)
+                .blackboard_creator::<KeyType>()
+                .__internal_set_key_type_details(&TypeDetail::new::<KeyType>(
+                    TypeVariant::FixedSize,
+                ))
+                .__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
+                    KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::default_key_eq_comparison::<KeyType>(
+                        lhs, rhs,
+                    )
+                }))
+                .__internal_add(
+                    key_ptr as *const u8,
+                    key_layout,
+                    value_ptr as *mut u8,
+                    TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
+                    Box::new(|| {}),
+                )
+                .create()
+                .unwrap()
+        };
         let writer = sut.writer_builder().create().unwrap();
 
         let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
