@@ -125,13 +125,13 @@ pub struct Relay<S: Service> {
 }
 
 impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
-    type PropagationError = PropagationError;
-    type IngestionError = PropagationError;
+    type SendError = PropagationError;
+    type ReceiveError = PropagationError;
 
-    fn propagate(
+    fn send(
         &self,
         sample: iceoryx2::sample::Sample<S, [CustomPayloadMarker], CustomHeaderMarker>,
-    ) -> Result<(), Self::PropagationError> {
+    ) -> Result<(), Self::SendError> {
         debug!(
             from "publish_subscribe::Relay::propagate",
             "Propagating publish-subscribe payload from service '{}'",
@@ -153,10 +153,10 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
         Ok(())
     }
 
-    fn ingest(
+    fn receive(
         &self,
         loan: &mut LoanFn<'_, S>,
-    ) -> Result<Option<SampleMut<S>>, Self::IngestionError> {
+    ) -> Result<Option<SampleMut<S>>, Self::ReceiveError> {
         for zenoh_sample in self.subscriber.drain() {
             debug!(
                 from "publish_subscribe::Relay::ingest",

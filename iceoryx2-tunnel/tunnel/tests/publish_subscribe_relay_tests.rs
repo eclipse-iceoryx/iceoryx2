@@ -134,8 +134,8 @@ mod publish_subscribe_relay_tests {
                             }
                         }
                         None => {
-                            tunnel_a.relay().unwrap();
-                            tunnel_b.relay().unwrap();
+                            tunnel_a.propagate().unwrap();
+                            tunnel_b.propagate().unwrap();
                             Err("Failed to receive expected sample")
                         }
                     }
@@ -245,8 +245,8 @@ mod publish_subscribe_relay_tests {
                             }
                         }
                         None => {
-                            tunnel_a.relay().unwrap();
-                            tunnel_b.relay().unwrap();
+                            tunnel_a.propagate().unwrap();
+                            tunnel_b.propagate().unwrap();
                             Err("failed to receive expected sample")
                         }
                     }
@@ -326,7 +326,7 @@ mod publish_subscribe_relay_tests {
         while let Ok(Some(_)) = subscriber.receive() {}
 
         // Propagate
-        tunnel.relay().unwrap();
+        tunnel.propagate().unwrap();
 
         // Receive - Sample should not loop back and be received again
         if subscriber.receive().unwrap().is_some() {

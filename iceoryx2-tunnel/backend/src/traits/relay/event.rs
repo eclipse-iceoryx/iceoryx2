@@ -17,9 +17,9 @@ use iceoryx2::{prelude::EventId, service::Service};
 use crate::types::event::NotifyFn;
 
 pub trait EventRelay<S: Service> {
-    type PropagationError: Debug;
-    type IngestionError: Debug;
+    type SendError: Debug;
+    type ReceiveError: Debug;
 
-    fn propagate(&self, event_id: EventId) -> Result<(), Self::PropagationError>;
-    fn ingest(&self, notify: &mut NotifyFn<'_>) -> Result<(), Self::IngestionError>;
+    fn send(&self, event_id: EventId) -> Result<(), Self::SendError>;
+    fn receive(&self, notify: &mut NotifyFn<'_>) -> Result<(), Self::ReceiveError>;
 }

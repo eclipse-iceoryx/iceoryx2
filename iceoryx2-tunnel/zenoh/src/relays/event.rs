@@ -126,10 +126,10 @@ pub struct Relay<S: Service> {
 }
 
 impl<S: Service> EventRelay<S> for Relay<S> {
-    type PropagationError = PropagationError;
-    type IngestionError = IngestionError;
+    type SendError = PropagationError;
+    type ReceiveError = IngestionError;
 
-    fn propagate(&self, event_id: EventId) -> Result<(), Self::PropagationError> {
+    fn send(&self, event_id: EventId) -> Result<(), Self::SendError> {
         fail!(
             from "event::Relay::propagate",
             when self.notifier.put(event_id.as_value().to_ne_bytes()).wait(),
@@ -140,7 +140,7 @@ impl<S: Service> EventRelay<S> for Relay<S> {
         Ok(())
     }
 
-    fn ingest(&self, notify: &mut NotifyFn<'_>) -> Result<(), Self::IngestionError> {
+    fn receive(&self, notify: &mut NotifyFn<'_>) -> Result<(), Self::ReceiveError> {
         // Collect all notified ids
         let mut received_ids: HashSet<EventId> = HashSet::new();
         while let Ok(Some(sample)) = self.listener.try_recv() {

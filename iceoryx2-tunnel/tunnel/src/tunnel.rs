@@ -45,7 +45,7 @@ pub enum DiscoveryError {
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub enum RelayError {
+pub enum PropagateError {
     Error,
 }
 
@@ -67,27 +67,27 @@ impl From<discovery::tracker::DiscoveryError> for DiscoveryError {
     }
 }
 
-impl From<ports::publish_subscribe::SendError> for RelayError {
+impl From<ports::publish_subscribe::SendError> for PropagateError {
     fn from(_: ports::publish_subscribe::SendError) -> Self {
-        RelayError::Error
+        PropagateError::Error
     }
 }
 
-impl From<ports::publish_subscribe::ReceiveError> for RelayError {
+impl From<ports::publish_subscribe::ReceiveError> for PropagateError {
     fn from(_: ports::publish_subscribe::ReceiveError) -> Self {
-        RelayError::Error
+        PropagateError::Error
     }
 }
 
-impl From<ports::event::NotifyError> for RelayError {
+impl From<ports::event::NotifyError> for PropagateError {
     fn from(_: ports::event::NotifyError) -> Self {
-        RelayError::Error
+        PropagateError::Error
     }
 }
 
-impl From<ports::event::WaitError> for RelayError {
+impl From<ports::event::WaitError> for PropagateError {
     fn from(_: ports::event::WaitError) -> Self {
-        RelayError::Error
+        PropagateError::Error
     }
 }
 
@@ -242,32 +242,32 @@ impl<S: Service, B: for<'a> Backend<S>> Tunnel<S, B> {
 
     /// TODO: Consider the ordering ...
     /// TODO: Refactor duplicate logic
-    pub fn relay(&mut self) -> Result<(), RelayError> {
+    pub fn propagate(&mut self) -> Result<(), PropagateError> {
         for (id, port) in &self.ports.publish_subscribe {
             let relay = match self.relays.publish_subscribe.get(id) {
                 Some(relay) => relay,
                 None => {
                     warn!(
-                                from "Tunnel::relay",
+                                from "Tunnel::propagate",
                                 "No relay available for id {:?}. Skipping.", id);
                     return Ok(());
                 }
             };
 
             fail!(
-                from "Tunnel::relay",
+                from "Tunnel::propagate",
                 when port.receive(self.node.id(), |sample| {
                     // TODO: Handle error properly
-                    relay.propagate(sample).unwrap();
+                    relay.send(sample).unwrap();
                 }),
                 "Failed to receive and propagate samples"
             );
 
             fail!(
-                from "Tunnel::relay",
+                from "Tunnel::propagate",
                 when port.send(|loan: &mut LoanFn<_>| {
                     // TODO: Handle error properly
-                    relay.ingest(&mut |size| loan(size)).unwrap()
+                    relay.receive(&mut |size| loan(size)).unwrap()
                 }),
                 "Failed to send ingested samples"
             );
@@ -285,21 +285,21 @@ impl<S: Service, B: for<'a> Backend<S>> Tunnel<S, B> {
             };
 
             fail!(
-                from "Tunnel::relay",
-                when port.try_wait_all(|id| {
+                from "Tunnel::propagate",
+                when port.receive(|id| {
                     // TODO: Handle error properly
-                    relay.propagate(id).unwrap();
+                    relay.send(id).unwrap();
                 }),
                 "Failed to wait for events"
             );
 
-            // TODO: Use fail!
-            // TODO: Invert order?
-            relay
-                .ingest(&mut |id| {
-                    port.notify(id).unwrap();
-                })
-                .unwrap();
+            fail!(
+                from "Tunnel::propagate",
+                when relay.receive(&mut |id| {
+                    port.send(id).unwrap();
+                }).map_err(|_| PropagateError::Error),
+                "Failed to receive events from relay"
+            );
         }
 
         Ok(())

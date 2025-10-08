@@ -93,10 +93,7 @@ impl<S: Service> EventPorts<S> {
         Ok(EventPorts { notifier, listener })
     }
 
-    pub(crate) fn try_wait_all<PropagateFn>(
-        &self,
-        mut propagate: PropagateFn,
-    ) -> Result<(), WaitError>
+    pub(crate) fn receive<PropagateFn>(&self, mut propagate: PropagateFn) -> Result<(), WaitError>
     where
         // TODO: Handle failed propagation
         PropagateFn: FnMut(EventId),
@@ -114,7 +111,7 @@ impl<S: Service> EventPorts<S> {
         Ok(())
     }
 
-    pub(crate) fn notify(&self, event_id: EventId) -> Result<(), NotifyError> {
+    pub(crate) fn send(&self, event_id: EventId) -> Result<(), NotifyError> {
         fail!(
             from "Ports::notify",
             when self.notifier.__internal_notify(event_id, true),

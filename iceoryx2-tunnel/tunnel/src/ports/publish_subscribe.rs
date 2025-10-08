@@ -123,7 +123,6 @@ impl<S: Service> PublishSubscribePorts<S> {
         })
     }
 
-    /// Receive data from the ports
     pub(crate) fn receive<PropagateFn>(
         &self,
         node_id: &NodeId,

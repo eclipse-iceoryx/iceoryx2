@@ -19,12 +19,10 @@ use crate::types::publish_subscribe::Sample;
 use crate::types::publish_subscribe::SampleMut;
 
 pub trait PublishSubscribeRelay<S: Service> {
-    type PropagationError: Debug;
-    type IngestionError: Debug;
+    type SendError: Debug;
+    type ReceiveError: Debug;
 
-    fn propagate(&self, sample: Sample<S>) -> Result<(), Self::PropagationError>;
-    fn ingest(
-        &self,
-        loan: &mut LoanFn<'_, S>,
-    ) -> Result<Option<SampleMut<S>>, Self::IngestionError>;
+    fn send(&self, sample: Sample<S>) -> Result<(), Self::SendError>;
+    fn receive(&self, loan: &mut LoanFn<'_, S>)
+        -> Result<Option<SampleMut<S>>, Self::ReceiveError>;
 }
