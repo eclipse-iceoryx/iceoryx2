@@ -10,8 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[generic_tests::define]
-mod node {
+use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod node {
     use core::time::Duration;
     use std::collections::{HashSet, VecDeque};
     use std::sync::Barrier;
@@ -23,6 +26,7 @@ mod node {
     use iceoryx2::prelude::*;
     use iceoryx2::service::Service;
     use iceoryx2::testing::*;
+    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing::{assert_that, test_fail};
@@ -38,7 +42,7 @@ mod node {
         fn new(name: &NodeName, id: &NodeId, config: &Config) -> Self {
             Self {
                 name: name.clone(),
-                id: id.clone(),
+                id: *id,
                 config: config.clone(),
             }
         }
@@ -81,16 +85,16 @@ mod node {
         NodeName::new(&(prefix.to_string() + &i.to_string())).unwrap()
     }
 
-    #[test]
-    fn node_without_name_can_be_created<S: Service>() {
+    #[conformance_test]
+    pub fn node_without_name_can_be_created<S: Service>() {
         let config = generate_isolated_config();
         let sut = NodeBuilder::new().config(&config).create::<S>().unwrap();
 
         assert_that!(*sut.name(), eq NodeName::new("").unwrap());
     }
 
-    #[test]
-    fn node_with_name_can_be_created<S: Service>() {
+    #[conformance_test]
+    pub fn node_with_name_can_be_created<S: Service>() {
         let config = generate_isolated_config();
         let node_name = NodeName::new("photons taste like chicken").unwrap();
         let sut = NodeBuilder::new()
@@ -102,8 +106,8 @@ mod node {
         assert_that!(*sut.name(), eq node_name);
     }
 
-    #[test]
-    fn multiple_nodes_with_the_same_name_can_be_created<S: Service>() {
+    #[conformance_test]
+    pub fn multiple_nodes_with_the_same_name_can_be_created<S: Service>() {
         const NUMBER_OF_NODES: usize = 16;
         let config = generate_isolated_config();
         let node_name = NodeName::new("but what does an electron taste like?").unwrap();
@@ -124,15 +128,15 @@ mod node {
         }
     }
 
-    #[test]
-    fn without_custom_config_global_config_is_used<S: Service>() {
+    #[conformance_test]
+    pub fn without_custom_config_global_config_is_used<S: Service>() {
         let sut = NodeBuilder::new().create::<S>().unwrap();
 
         assert_that!(*sut.config(), eq * Config::global_config());
     }
 
-    #[test]
-    fn nodes_can_be_listed<S: Service>() {
+    #[conformance_test]
+    pub fn nodes_can_be_listed<S: Service>() {
         const NUMBER_OF_NODES: usize = 16;
         let config = generate_isolated_config();
 
@@ -152,8 +156,8 @@ mod node {
         assert_node_presence::<S>(&node_details, &config);
     }
 
-    #[test]
-    fn when_node_goes_out_of_scope_it_cleans_up<S: Service>() {
+    #[conformance_test]
+    pub fn when_node_goes_out_of_scope_it_cleans_up<S: Service>() {
         const NUMBER_OF_NODES: usize = 16;
         let config = generate_isolated_config();
 
@@ -177,8 +181,8 @@ mod node {
         }
     }
 
-    #[test]
-    fn id_is_unique<S: Service>() {
+    #[conformance_test]
+    pub fn id_is_unique<S: Service>() {
         const NUMBER_OF_NODES: usize = 16;
         let config = generate_isolated_config();
 
@@ -196,12 +200,12 @@ mod node {
                     .create::<S>()
                     .unwrap(),
             );
-            assert_that!(node_ids.insert(nodes.last().unwrap().id().clone()), eq true);
+            assert_that!(node_ids.insert(*nodes.last().unwrap().id()), eq true);
         }
     }
 
-    #[test]
-    fn nodes_with_disjunct_config_are_separated<S: Service>() {
+    #[conformance_test]
+    pub fn nodes_with_disjunct_config_are_separated<S: Service>() {
         const NUMBER_OF_NODES: usize = 16;
 
         let mut nodes_1 = VecDeque::new();
@@ -246,16 +250,16 @@ mod node {
         }
     }
 
-    #[test]
-    fn node_creation_failure_display_works<S: Service>() {
+    #[conformance_test]
+    pub fn node_creation_failure_display_works<S: Service>() {
         assert_that!(
             format!("{}", NodeCreationFailure::InsufficientPermissions), eq "NodeCreationFailure::InsufficientPermissions");
         assert_that!(
             format!("{}", NodeCreationFailure::InternalError), eq "NodeCreationFailure::InternalError");
     }
 
-    #[test]
-    fn node_list_failure_display_works<S: Service>() {
+    #[conformance_test]
+    pub fn node_list_failure_display_works<S: Service>() {
         assert_that!(
             format!("{}", NodeListFailure::InsufficientPermissions), eq "NodeListFailure::InsufficientPermissions");
         assert_that!(
@@ -264,8 +268,8 @@ mod node {
             format!("{}", NodeListFailure::InternalError), eq "NodeListFailure::InternalError");
     }
 
-    #[test]
-    fn node_cleanup_failure_display_works<S: Service>() {
+    #[conformance_test]
+    pub fn node_cleanup_failure_display_works<S: Service>() {
         assert_that!(
             format!("{}", NodeCleanupFailure::InsufficientPermissions), eq "NodeCleanupFailure::InsufficientPermissions");
         assert_that!(
@@ -274,8 +278,8 @@ mod node {
             format!("{}", NodeCleanupFailure::InternalError), eq "NodeCleanupFailure::InternalError");
     }
 
-    #[test]
-    fn concurrent_node_creation_and_listing_works<S: Service>() {
+    #[conformance_test]
+    pub fn concurrent_node_creation_and_listing_works<S: Service>() {
         let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
         let number_of_creators = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024);
         const NUMBER_OF_ITERATIONS: usize = 100;
@@ -330,8 +334,8 @@ mod node {
         });
     }
 
-    #[test]
-    fn node_listing_stops_when_callback_progression_signals_stop<S: Service>() {
+    #[conformance_test]
+    pub fn node_listing_stops_when_callback_progression_signals_stop<S: Service>() {
         let config = generate_isolated_config();
         let node_1 = NodeBuilder::new().config(&config).create::<S>().unwrap();
         let _node_2 = NodeBuilder::new().config(&config).create::<S>().unwrap();
@@ -346,8 +350,8 @@ mod node {
         assert_that!(node_counter, eq 1);
     }
 
-    #[test]
-    fn i_am_not_dead<S: Service>() {
+    #[conformance_test]
+    pub fn i_am_not_dead<S: Service>() {
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
 
@@ -367,8 +371,8 @@ mod node {
         }
     }
 
-    #[test]
-    fn signal_handling_mechanism_can_be_configured<S: Service>() {
+    #[conformance_test]
+    pub fn signal_handling_mechanism_can_be_configured<S: Service>() {
         let config = generate_isolated_config();
         let node_1 = NodeBuilder::new()
             .signal_handling_mode(SignalHandlingMode::Disabled)
@@ -386,23 +390,11 @@ mod node {
         assert_that!(node_2.signal_handling_mode(), eq SignalHandlingMode::HandleTerminationRequests);
     }
 
-    #[test]
-    fn by_default_termination_signals_are_handled<S: Service>() {
+    #[conformance_test]
+    pub fn by_default_termination_signals_are_handled<S: Service>() {
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
 
         assert_that!(node.signal_handling_mode(), eq SignalHandlingMode::HandleTerminationRequests);
     }
-
-    #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
-    mod ipc {}
-
-    #[instantiate_tests(<iceoryx2::service::local::Service>)]
-    mod local {}
-
-    #[instantiate_tests(<iceoryx2::service::ipc_threadsafe::Service>)]
-    mod ipc_threadsafe {}
-
-    #[instantiate_tests(<iceoryx2::service::local_threadsafe::Service>)]
-    mod local_threadsafe {}
 }

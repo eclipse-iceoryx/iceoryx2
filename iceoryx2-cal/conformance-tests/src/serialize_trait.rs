@@ -10,8 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[generic_tests::define]
-mod serialize {
+use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod serialize_trait {
+    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::serialize::Serialize;
 
@@ -22,8 +26,8 @@ mod serialize {
         value3: bool,
     }
 
-    #[test]
-    fn serialize_deserialize_works<Sut: Serialize>() {
+    #[conformance_test]
+    pub fn serialize_deserialize_works<Sut: Serialize>() {
         let test_object = TestStruct {
             value1: "hello world".to_string(),
             value2: 192381,
@@ -37,13 +41,4 @@ mod serialize {
         assert_that!(deserialized, is_ok);
         assert_that!(deserialized.unwrap(), eq test_object);
     }
-
-    #[instantiate_tests(<iceoryx2_cal::serialize::toml::Toml>)]
-    mod toml {}
-
-    #[instantiate_tests(<iceoryx2_cal::serialize::cdr::Cdr>)]
-    mod cdr {}
-
-    #[instantiate_tests(<iceoryx2_cal::serialize::postcard::Postcard>)]
-    mod postcard {}
 }
