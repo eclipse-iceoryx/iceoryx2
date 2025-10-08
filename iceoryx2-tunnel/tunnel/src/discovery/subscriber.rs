@@ -20,15 +20,15 @@ use iceoryx2_tunnel_backend::types::discovery::ProcessDiscoveryFn;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
-    FailedToCreateServiceName,
-    FailedToCreateService,
-    FailedToCreateSubscriber,
+    ServiceName,
+    Service,
+    Subscriber,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum DiscoveryError {
-    FailedToReceiveDiscoveryEvent,
-    FailedToProcessDiscovery,
+    ReceivingFromIceoryx,
+    DiscoveryProcessing,
 }
 
 #[derive(Debug)]
@@ -39,7 +39,7 @@ impl<S: Service> DiscoverySubscriber<S> {
         let service_name = fail!(
             from "Tunnel::<S, T>::create_discovery_subscriber",
             when service_name.try_into(),
-            with CreationError::FailedToCreateServiceName,
+            with CreationError::ServiceName,
             "{}", &format!("Failed to create ServiceName '{}'", service_name)
         );
 
@@ -48,14 +48,14 @@ impl<S: Service> DiscoverySubscriber<S> {
             when node.service_builder(&service_name)
                     .publish_subscribe::<DiscoveryEvent>()
                     .open_or_create(),
-            with CreationError::FailedToCreateService,
+            with CreationError::Service,
             "{}", &format!("Failed to open DiscoveryService with ServiceName '{}'", service_name)
         );
 
         let subscriber = fail!(
             from "Tunnel::<S, T>::create_discovery_subscriber",
             when service.subscriber_builder().create(),
-            with CreationError::FailedToCreateSubscriber,
+            with CreationError::Subscriber,
             "{}", &format!("Failed to create DiscoverySubscriber with ServiceName '{}'", service_name)
         );
 
@@ -77,7 +77,7 @@ impl<S: Service> Discovery for DiscoverySubscriber<S> {
                     if let DiscoveryEvent::Added(static_config) = sample.payload() {
                         fail!(from "DiscoverySubscriber::discover",
                             when process_discovery(static_config),
-                            with DiscoveryError::FailedToProcessDiscovery,
+                            with DiscoveryError::DiscoveryProcessing,
                             "Failed to process discovery event"
                         );
                     }
@@ -85,7 +85,7 @@ impl<S: Service> Discovery for DiscoverySubscriber<S> {
                 Ok(None) => break Ok(()),
                 Err(_) => {
                     fail!(from "DiscoverySubscriber::discover",
-                        with DiscoveryError::FailedToReceiveDiscoveryEvent,
+                        with DiscoveryError::ReceivingFromIceoryx,
                         "Failed to receive from discovery subscriber"
                     );
                 }

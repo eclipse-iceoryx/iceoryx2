@@ -22,20 +22,20 @@ use iceoryx2_bb_log::fail;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
-    FailedToCreateService,
-    FailedToCreateNotifier,
-    FailedToCreateListener,
+    Service,
+    Notifier,
+    Listener,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum SendError {
-    FailedToIngestEvent,
-    FailedToSendNotification,
+    EventIngestion,
+    NotificationDelivery,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum ReceiveError {
-    FailedToPropagateNotification,
+    NotificationPropagation,
 }
 
 #[derive(Debug)]
@@ -58,14 +58,14 @@ impl<S: Service> EventPorts<S> {
                 .max_notifiers(event_config.max_notifiers())
                 .event_id_max_value(event_config.event_id_max_value())
                 .open_or_create(),
-            with CreationError::FailedToCreateService,
+            with CreationError::Service,
             "{}", format!("Failed to open or create service {}({})", static_config.messaging_pattern(), static_config.name())
         );
 
         let notifier = fail!(
             from "create_notifier()",
             when service.notifier_builder().create(),
-            with CreationError::FailedToCreateNotifier,
+            with CreationError::Notifier,
             "{}",
             &format!("Failed to create Notifier for {}({})", static_config.messaging_pattern(), static_config.name())
         );
@@ -73,7 +73,7 @@ impl<S: Service> EventPorts<S> {
         let listener = fail!(
             from "create_listener()",
             when service.listener_builder().create(),
-            with CreationError::FailedToCreateListener,
+            with CreationError::Listener,
             "{}",
             &format!("Failed to create Listener for {}({})", static_config.messaging_pattern(),static_config.name())
         );
@@ -93,7 +93,7 @@ impl<S: Service> EventPorts<S> {
             let event_id = fail!(
                 from "EventPorts::send",
                 when ingest(),
-                with SendError::FailedToIngestEvent,
+                with SendError::EventIngestion,
                 "Failed to ingest event from backend"
             );
 
@@ -102,7 +102,7 @@ impl<S: Service> EventPorts<S> {
                     fail!(
                         from "EventPorts::send",
                         when self.notifier.__internal_notify(event_id, true),
-                        with SendError::FailedToSendNotification,
+                        with SendError::NotificationDelivery,
                         "Failed to send notification"
                     );
                 }
@@ -138,7 +138,7 @@ impl<S: Service> EventPorts<S> {
             fail!(
                 from "EventPorts::receive",
                 when propagate(event_id),
-                with ReceiveError::FailedToPropagateNotification,
+                with ReceiveError::NotificationPropagation,
                 "Failed to propagate received event to backend"
             );
         }

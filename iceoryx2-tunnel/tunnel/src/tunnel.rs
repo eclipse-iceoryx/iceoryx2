@@ -29,29 +29,28 @@ use iceoryx2_tunnel_backend::types::publish_subscribe::LoanFn;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
-    FailedToCreateNode,
-    FailedToCreateBackend,
-    FailedToCreateDiscoverySubscriber,
+    NodeCreation,
+    BackendCreation,
+    DiscoverySubscriberCreation,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum DiscoveryError {
-    FailedToDiscover,
-    FailedToDiscoverOverSubscriber,
-    FailedToDiscoverOverTracker,
-    FailedToDiscoverOverBackend,
-    FailedToCreatePublishSubscribePorts,
-    FailedToCreatePublishSubscribeRelay,
-    FailedToCreateEventPorts,
-    FailedToCreateEventRelay,
+    DiscoveryOverBackend,
+    DiscoveryOverService,
+    DiscoveryOverTracker,
+    PublishSubscribePortCreation,
+    PublishSubscribeRelayCreation,
+    EventPortsCreation,
+    EventRelayCreation,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum PropagateError {
-    FailedToPropagatePublishSubscribePayloadToBackend,
-    FailedToPropagatePublishSubscribePayloadToIceoryx,
-    FailedToPropagateEventToBackend,
-    FailedToPropagateEventToIceoryx,
+    PayloadPropagation,
+    PayloadIngestion,
+    EventPropagation,
+    EventIngestion,
 }
 
 #[derive(Debug)]
@@ -69,7 +68,7 @@ impl<S: Service> Ports<S> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Relays<S: Service, B: Backend<S>> {
     publish_subscribe: HashMap<ServiceId, B::PublishSubscribeRelay>,
     event: HashMap<ServiceId, B::EventRelay>,
@@ -110,14 +109,14 @@ impl<S: Service, B: for<'a> Backend<S>> Tunnel<S, B> {
         let node = fail!(
             from "Tunnel::create",
             when NodeBuilder::new().config(iceoryx_config).create::<S>(),
-            with CreationError::FailedToCreateNode,
+            with CreationError::NodeCreation,
             "Failed to create Node"
         );
 
         let backend = fail!(
             from "Tunnel::create",
             when Backend::create(backend_config),
-            with CreationError::FailedToCreateBackend,
+            with CreationError::BackendCreation,
             "Failed to create provided Backend"
         );
 
@@ -127,7 +126,7 @@ impl<S: Service, B: for<'a> Backend<S>> Tunnel<S, B> {
                 let subscriber = fail!(
                     from "Tunnel::create",
                     when discovery::subscriber::DiscoverySubscriber::create(&node, service_name),
-                    with CreationError::FailedToCreateDiscoverySubscriber,
+                    with CreationError::DiscoverySubscriberCreation,
                     "Failed to create discovery subscriber"
                 );
                 (Some(subscriber), None)
@@ -144,24 +143,14 @@ impl<S: Service, B: for<'a> Backend<S>> Tunnel<S, B> {
             backend,
             ports: Ports::new(),
             relays: Relays::new(),
-            subscriber: subscriber,
-            tracker: tracker,
+            subscriber,
+            tracker,
         })
     }
 
     pub fn discover(&mut self) -> Result<(), DiscoveryError> {
-        fail!(
-            from "Tunnel::discover",
-            when self.discover_over_iceoryx(),
-            with DiscoveryError::FailedToDiscover,
-            "Failed to discover services over iceoryx"
-        );
-        fail!(
-            from "Tunnel::discover",
-            when self.discover_over_backend(),
-            with DiscoveryError::FailedToDiscover,
-            "Failed to discover services over backend"
-        );
+        self.discover_over_iceoryx()?;
+        self.discover_over_backend()?;
 
         Ok(())
     }
@@ -172,9 +161,9 @@ impl<S: Service, B: for<'a> Backend<S>> Tunnel<S, B> {
             fail!(
                 from "Tunnel::discover_over_iceoryx",
                 when subscriber.discover(&mut |static_config| {
-                    on_discovery(static_config, &mut self.node, &self.backend, &tunneled_services, &mut self.ports, &mut self.relays)
+                    on_discovery(static_config, &self.node, &self.backend, &tunneled_services, &mut self.ports, &mut self.relays)
                 }),
-                with DiscoveryError::FailedToDiscoverOverSubscriber,
+                with DiscoveryError::DiscoveryOverService,
                 "Failed to discover services via subscriber to discovery service"
             );
         }
@@ -182,9 +171,9 @@ impl<S: Service, B: for<'a> Backend<S>> Tunnel<S, B> {
             fail!(
                 from "Tunnel::discover_over_iceoryx",
                 when tracker.discover(&mut |static_config| {
-                    on_discovery(static_config, &mut self.node, &self.backend, &tunneled_services, &mut self.ports, &mut self.relays)
+                    on_discovery(static_config, &self.node, &self.backend, &tunneled_services, &mut self.ports, &mut self.relays)
                 }),
-                with DiscoveryError::FailedToDiscoverOverTracker,
+                with DiscoveryError::DiscoveryOverTracker,
                 "Failed to discover services via discovery tracker"
             );
         }
@@ -199,7 +188,7 @@ impl<S: Service, B: for<'a> Backend<S>> Tunnel<S, B> {
             when self.backend.discovery().discover(&mut |static_config| {
                 on_discovery(static_config, &self.node, &self.backend, &tunneled_services, &mut self.ports, &mut self.relays)
             }),
-            with DiscoveryError::FailedToDiscoverOverBackend,
+            with DiscoveryError::DiscoveryOverBackend,
             "Failed to discover services via Backend"
         );
         Ok(())
@@ -209,11 +198,7 @@ impl<S: Service, B: for<'a> Backend<S>> Tunnel<S, B> {
         for (service_id, port) in &self.ports.publish_subscribe {
             match self.relays.publish_subscribe.get(service_id) {
                 Some(relay) => {
-                    fail!(
-                        from "Tunnel::propagate",
-                        when propagate_publish_subscribe_payloads::<S, B>(self.node.id(), port, relay),
-                        "Failed to propagate publish subscribe payloads"
-                    );
+                    propagate_publish_subscribe_payloads::<S, B>(self.node.id(), port, relay)?;
                 }
                 None => {
                     warn!(from "Tunnel::propagate", "No relay available for {:?}", service_id);
@@ -225,11 +210,7 @@ impl<S: Service, B: for<'a> Backend<S>> Tunnel<S, B> {
         for (service_id, port) in &self.ports.event {
             match self.relays.event.get(service_id) {
                 Some(relay) => {
-                    fail!(
-                        from "Tunnel::propagate",
-                        when propagate_events::<S, B>(port, relay),
-                        "Failed to propagate publish subscribe payloads"
-                    );
+                    propagate_events::<S, B>(port, relay)?;
                 }
                 None => {
                     warn!(from "Tunnel::propagate", "No relay available for {:?}", service_id);
@@ -300,8 +281,8 @@ fn setup_publish_subscribe<S: Service, B: Backend<S>>(
 
     let port = fail!(
         from "setup_publish_subscribe",
-        when PublishSubscribePorts::new(static_config, &node),
-        with DiscoveryError::FailedToCreatePublishSubscribePorts,
+        when PublishSubscribePorts::new(static_config, node),
+        with DiscoveryError::PublishSubscribePortCreation,
         "Failed to create publish-subscribe ports"
     );
 
@@ -311,7 +292,7 @@ fn setup_publish_subscribe<S: Service, B: Backend<S>>(
             .relay_builder()
             .publish_subscribe(static_config)
             .create(),
-        with DiscoveryError::FailedToCreatePublishSubscribeRelay,
+        with DiscoveryError::PublishSubscribeRelayCreation,
         "Failed to create publish-subscribe relay"
     );
 
@@ -332,8 +313,8 @@ fn setup_event<S: Service, B: Backend<S>>(
 
     let port = fail!(
         from "setup_event",
-        when EventPorts::new(static_config, &node),
-        with DiscoveryError::FailedToCreateEventPorts,
+        when EventPorts::new(static_config, node),
+        with DiscoveryError::EventPortsCreation,
         "Failed to create event ports"
     );
 
@@ -343,7 +324,7 @@ fn setup_event<S: Service, B: Backend<S>>(
             .relay_builder()
             .event(static_config)
             .create(),
-        with DiscoveryError::FailedToCreateEventRelay,
+        with DiscoveryError::EventRelayCreation,
         "Failed to create event relay"
     );
 
@@ -370,7 +351,7 @@ fn propagate_publish_subscribe_payloads<S: Service, B: Backend<S>>(
 
             relay.send(sample)
         }),
-        with PropagateError::FailedToPropagatePublishSubscribePayloadToBackend,
+        with PropagateError::PayloadPropagation,
         "Failed to receive publish-subscribe payload for propagation"
     );
     fail!(
@@ -386,7 +367,7 @@ fn propagate_publish_subscribe_payloads<S: Service, B: Backend<S>>(
 
             loan(size)})
         }),
-        with PropagateError::FailedToPropagatePublishSubscribePayloadToIceoryx,
+        with PropagateError::PayloadIngestion,
         "Failed to ingest publish-subscribe payload received from backend"
     );
 
@@ -408,7 +389,7 @@ fn propagate_events<S: Service, B: Backend<S>>(
             );
             relay.send(id)
         }),
-        with PropagateError::FailedToPropagateEventToBackend,
+        with PropagateError::EventPropagation,
         "Failed to receive events for propagation"
     );
 
@@ -427,7 +408,7 @@ fn propagate_events<S: Service, B: Backend<S>>(
             }
             event_id
         }),
-        with PropagateError::FailedToPropagateEventToIceoryx,
+        with PropagateError::EventIngestion,
         "Failed to ingest event received from backend"
     );
 

@@ -19,8 +19,8 @@ use iceoryx2_tunnel_backend::{traits::Discovery, types::discovery::ProcessDiscov
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum DiscoveryError {
-    FailedToSynchronizeTracker,
-    FailedToProcessDiscovery,
+    TrackerSynchronization,
+    DiscoveryProcessing,
 }
 
 #[derive(Debug)]
@@ -44,7 +44,7 @@ impl<S: Service> Discovery for DiscoveryTracker<S> {
         let (added, _removed) = fail!(
             from "DiscoveryTracker::discover",
             when tracker.sync(),
-            with DiscoveryError::FailedToSynchronizeTracker,
+            with DiscoveryError::TrackerSynchronization,
             "Failed to synchronize tracker"
         );
 
@@ -54,7 +54,7 @@ impl<S: Service> Discovery for DiscoveryTracker<S> {
                     fail!(
                         from "DiscoveryTracker::discover",
                         when process_discovery(&service_details.static_details),
-                        with DiscoveryError::FailedToProcessDiscovery,
+                        with DiscoveryError::DiscoveryProcessing,
                         "Failed to process discovery event"
                     );
                 }

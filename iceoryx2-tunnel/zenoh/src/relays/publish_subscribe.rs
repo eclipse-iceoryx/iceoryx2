@@ -31,19 +31,19 @@ use crate::relays::announce_service;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
-    FailedToDeclarePublisher,
-    FailedToDeclareSubscriber,
-    FailedToAnnounceService,
+    PublisherDeclaration,
+    SubscriberDeclaration,
+    ServiceAnouncement,
 }
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum SendError {
-    FailedToPutPayload,
+    PayloadPut,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum ReceiveError {
-    FailedToReceiveSample,
-    FailedToLoanSample,
+    SampleReceive,
+    IceoryxLoan,
 }
 
 #[derive(Debug)]
@@ -58,7 +58,7 @@ impl<'a, S: Service> Builder<'a, S> {
         Builder {
             session,
             static_config,
-            _phantom: core::marker::PhantomData::default(),
+            _phantom: core::marker::PhantomData,
         }
     }
 }
@@ -83,7 +83,7 @@ impl<'a, S: Service> RelayBuilder for Builder<'a, S> {
                 .allowed_destination(Locality::Remote)
                 .reliability(Reliability::Reliable)
                 .wait(),
-            with CreationError::FailedToDeclarePublisher,
+            with CreationError::PublisherDeclaration,
             "Failed to create zenoh publisher for publish-subscribe payloads"
         );
 
@@ -95,14 +95,14 @@ impl<'a, S: Service> RelayBuilder for Builder<'a, S> {
                 .with(FifoChannel::new(10))
                 .allowed_origin(Locality::Remote)
                 .wait(),
-            with CreationError::FailedToDeclareSubscriber,
+            with CreationError::SubscriberDeclaration,
             "Failed to create zenoh subscriber for publish-subscribe payloads"
         );
 
         fail!(
             from "publish_subscribe::RelayBuilder::create",
             when announce_service(self.session, self.static_config),
-            with CreationError::FailedToAnnounceService,
+            with CreationError::ServiceAnouncement,
             "Failed to annnounce service on Zenoh"
         );
 
@@ -110,7 +110,7 @@ impl<'a, S: Service> RelayBuilder for Builder<'a, S> {
             static_config: self.static_config.clone(),
             publisher,
             subscriber,
-            _phantom: core::marker::PhantomData::default(),
+            _phantom: core::marker::PhantomData,
         })
     }
 }
@@ -145,7 +145,7 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
         fail!(
             from "publish_subscribe::Relay::propagate",
             when self.publisher.put(payload).wait(),
-            with SendError::FailedToPutPayload,
+            with SendError::PayloadPut,
             "Failed to propagate propagate publish-subscribe payload to zenoh"
         );
 
@@ -159,7 +159,7 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
         let zenoh_sample = fail!(
             from "publish_subscribe::Relay::ingest",
             when self.subscriber.try_recv(),
-            with ReceiveError::FailedToReceiveSample,
+            with ReceiveError::SampleReceive,
             "Failed to receive sample from Zenoh"
         );
 
@@ -175,7 +175,7 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
             let mut iceoryx_sample = fail!(
                 from "publish_subscribe::Relay::ingest",
                 when loan(zenoh_payload.len()),
-                with ReceiveError::FailedToLoanSample,
+                with ReceiveError::IceoryxLoan,
                 "Failed to loan sample from iceoryx"
             );
             let iceoryx_payload = iceoryx_sample.payload_mut();

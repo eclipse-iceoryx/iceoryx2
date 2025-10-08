@@ -25,8 +25,8 @@ use zenoh::{
 use crate::keys;
 
 pub enum CreationError {
-    FailedToCreateQuerier,
-    FailedToMakeInitialDiscoveryServiceQuery,
+    QuerierCreation,
+    DiscoveryQuery,
 }
 
 #[derive(Debug)]
@@ -37,9 +37,9 @@ pub struct Discovery {
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum DiscoveryError {
-    FailedToProcessDiscovery,
-    FailedToMakeDiscoveryServiceQuery,
-    FailedToReceiveReplyFromDiscoveryServiceQuery,
+    DiscoveryProcessing,
+    DiscoveryQuery,
+    QueryReplyReceive,
 }
 
 impl Discovery {
@@ -50,7 +50,7 @@ impl Discovery {
                     .declare_querier(keys::service_discovery())
                     .allowed_destination(Locality::Remote)
                     .wait(),
-            with CreationError::FailedToCreateQuerier,
+            with CreationError::QuerierCreation,
             "Failed to create querier for service discovery"
         );
 
@@ -58,7 +58,7 @@ impl Discovery {
         let replies = fail!(
             from "Discovery::create()",
             when querier.get().wait(),
-            with CreationError::FailedToMakeInitialDiscoveryServiceQuery,
+            with CreationError::DiscoveryQuery,
             "Failed to make query for service discovery"
         );
 
@@ -85,7 +85,7 @@ impl iceoryx2_tunnel_backend::traits::Discovery for Discovery {
                             fail!(
                                 from &self,
                                 when process_discovery(&service_details),
-                                with DiscoveryError::FailedToProcessDiscovery,
+                                with DiscoveryError::DiscoveryProcessing,
                                 "Failed to process discovery event"
                             )
                         }
@@ -100,7 +100,7 @@ impl iceoryx2_tunnel_backend::traits::Discovery for Discovery {
                 Err(e) => fail!(
                     from "Discovery::discover",
                     when Err(e),
-                    with DiscoveryError::FailedToReceiveReplyFromDiscoveryServiceQuery,
+                    with DiscoveryError::QueryReplyReceive,
                     "Errorneous reply received from zenoh discovery query"
                 ),
             }
@@ -113,7 +113,7 @@ impl iceoryx2_tunnel_backend::traits::Discovery for Discovery {
         let next_query = fail!(
             from &self,
             when self.querier.get().wait(),
-            with DiscoveryError::FailedToMakeDiscoveryServiceQuery,
+            with DiscoveryError::DiscoveryQuery,
             "Failed to query Zenoh for services"
         );
         *self.replies.borrow_mut() = next_query;

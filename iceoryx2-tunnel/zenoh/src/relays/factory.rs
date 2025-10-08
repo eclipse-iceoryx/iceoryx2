@@ -29,7 +29,7 @@ impl<'session, S: Service> Factory<'session, S> {
     pub fn new(session: &'session Session) -> Self {
         Factory {
             session,
-            _phantom: core::marker::PhantomData::default(),
+            _phantom: core::marker::PhantomData,
         }
     }
 }

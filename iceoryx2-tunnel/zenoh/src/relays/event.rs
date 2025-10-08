@@ -31,21 +31,21 @@ use crate::relays::announce_service;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
-    FailedToDeclarePublisher,
-    FailedToDeclareSubscriber,
-    FailedToAnnounceService,
+    PublisherDeclaration,
+    SubscriberDeclaration,
+    ServiceAnouncement,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum SendError {
-    FailedToPutEvent,
+    EventPut,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum ReceiveError {
-    FailedToReceiveEvent,
-    FailedToIngestEvent,
-    ReceivedInvalidEventId,
+    EventReceive,
+    EventIngestion,
+    InvalidEvent,
 }
 
 #[derive(Debug)]
@@ -60,7 +60,7 @@ impl<'a, S: Service> Builder<'a, S> {
         Builder {
             session,
             static_config,
-            _phantom: core::marker::PhantomData::default(),
+            _phantom: core::marker::PhantomData,
         }
     }
 }
@@ -85,7 +85,7 @@ impl<'a, S: Service> RelayBuilder for Builder<'a, S> {
                 .allowed_destination(Locality::Remote)
                 .reliability(Reliability::Reliable)
                 .wait(),
-            with CreationError::FailedToDeclarePublisher,
+            with CreationError::PublisherDeclaration,
             "Failed to create zenoh publisher for notifications"
         );
 
@@ -97,20 +97,20 @@ impl<'a, S: Service> RelayBuilder for Builder<'a, S> {
             .with(FifoChannel::new(10))
             .allowed_origin(Locality::Remote)
             .wait(),
-        with CreationError::FailedToDeclareSubscriber,
+        with CreationError::SubscriberDeclaration,
         "Failed to create zenoh subscriber for notifications");
 
         fail!(
             from "event::RelayBuilder::create",
             when announce_service(self.session, self.static_config),
-            with CreationError::FailedToAnnounceService,
+            with CreationError::ServiceAnouncement,
             "Failed to annnounce service on Zenoh"
         );
 
         Ok(Relay {
             notifier,
             listener,
-            _phantom: core::marker::PhantomData::default(),
+            _phantom: core::marker::PhantomData,
         })
     }
 }
@@ -130,7 +130,7 @@ impl<S: Service> EventRelay<S> for Relay<S> {
         fail!(
             from "event::Relay::propagate",
             when self.notifier.put(event_id.as_value().to_ne_bytes()).wait(),
-            with SendError::FailedToPutEvent,
+            with SendError::EventPut,
             "Failed to propagate notification to zenoh"
         );
 
@@ -138,19 +138,26 @@ impl<S: Service> EventRelay<S> for Relay<S> {
     }
 
     fn receive(&self) -> Result<Option<EventId>, Self::ReceiveError> {
-        match self.listener.try_recv() {
-            Ok(Some(sample)) => {
+        let sample = fail!(
+            from "event::Relay::receive",
+            when self.listener.try_recv(),
+            with ReceiveError::EventReceive,
+            "Failed to receive event from zenoh"
+        );
+
+        match sample {
+            Some(sample) => {
                 let payload = sample.payload();
                 if payload.len() == std::mem::size_of::<usize>() {
                     let id: usize =
                         unsafe { payload.to_bytes().as_ptr().cast::<usize>().read_unaligned() };
-                    return Ok(Some(EventId::new(id)));
+
+                    Ok(Some(EventId::new(id)))
                 } else {
-                    return Err(ReceiveError::ReceivedInvalidEventId);
+                    Err(ReceiveError::InvalidEvent)
                 }
             }
-            Ok(None) => return Ok(None),
-            Err(_) => todo!(),
+            None => Ok(None),
         }
     }
 }

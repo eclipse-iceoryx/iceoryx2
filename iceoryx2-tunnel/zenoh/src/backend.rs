@@ -22,8 +22,8 @@ use crate::{
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
-    FailedToCreateSession,
-    FailedToCreateDiscovery,
+    Session,
+    Discovery,
 }
 
 #[derive(Debug)]
@@ -56,7 +56,7 @@ impl<S: Service> Backend<S> for ZenohBackend<S> {
         let session = fail!(
             from "ZenohBackend::create",
             when session,
-            with Self::CreationError::FailedToCreateSession,
+            with Self::CreationError::Session,
             "Failed to create zenoh session"
         );
 
@@ -64,14 +64,14 @@ impl<S: Service> Backend<S> for ZenohBackend<S> {
         let discovery = fail!(
             from "ZenohBackend::create",
             when discovery,
-            with CreationError::FailedToCreateDiscovery,
+            with CreationError::Discovery,
             "Failed to create zenoh discovery"
         );
 
         Ok(Self {
             session,
             discovery,
-            _phantom: core::marker::PhantomData::default(),
+            _phantom: core::marker::PhantomData,
         })
     }
 

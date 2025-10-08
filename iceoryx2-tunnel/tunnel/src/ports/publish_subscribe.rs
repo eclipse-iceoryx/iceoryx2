@@ -29,20 +29,20 @@ use iceoryx2_tunnel_backend::types::publish_subscribe::Subscriber;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
-    FailedToCreateService,
-    FailedToCreatePublisher,
-    FailedToCreateSubscriber,
+    Service,
+    Publisher,
+    Subscriber,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum SendError {
-    FailedToSendSample,
-    FailedToIngestPayload,
+    SampleDelivery,
+    PayloadIngestion,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum ReceiveError {
-    FailedToPropagateSample,
+    SamplePropagation,
 }
 
 #[derive(Debug)]
@@ -77,7 +77,7 @@ impl<S: Service> PublishSubscribePorts<S> {
                             port_config.subscriber_max_borrowed_samples(),
                         )
                         .open_or_create(),
-                with CreationError::FailedToCreateService,
+                with CreationError::Service,
                 "{}", format!("Failed to open or create service {}({})", static_config.messaging_pattern(), static_config.name())
             )
         };
@@ -88,14 +88,14 @@ impl<S: Service> PublishSubscribePorts<S> {
                 .publisher_builder()
                 .allocation_strategy(AllocationStrategy::PowerOfTwo)
                 .create(),
-            with CreationError::FailedToCreatePublisher,
+            with CreationError::Publisher,
             "{}", &format!("Failed to create Publisher for {}({})", static_config.messaging_pattern(), static_config.name())
         );
 
         let subscriber = fail!(
             from "Ports::new",
             when service.subscriber_builder().create(),
-            with CreationError::FailedToCreateSubscriber,
+            with CreationError::Subscriber,
             "{}", &format!("Failed to create Subscriber for {}({})", static_config.messaging_pattern(), static_config.name())
         );
 
@@ -122,9 +122,7 @@ impl<S: Service> PublishSubscribePorts<S> {
                 let number_of_elements = number_of_bytes / type_details.payload.size();
 
                 match unsafe { self.publisher.loan_custom_payload(number_of_elements) } {
-                    Ok(sample_to_initialize) => {
-                        return Ok(sample_to_initialize);
-                    }
+                    Ok(sample_to_initialize) => Ok(sample_to_initialize),
                     Err(e) => {
                         // This should never happen?
                         fatal_panic!(from "PublishSubscribePorts::send", "Failed to loan custom payload: {e}")
@@ -135,7 +133,7 @@ impl<S: Service> PublishSubscribePorts<S> {
             let sample = fail!(
                 from "PublishSubscribePorts::send",
                 when sample,
-                with SendError::FailedToIngestPayload,
+                with SendError::PayloadIngestion,
                 "Failed to ingest payload from backend"
             );
 
@@ -145,7 +143,7 @@ impl<S: Service> PublishSubscribePorts<S> {
                     fail!(
                         from "Ports::send",
                         when sample.send(),
-                        with SendError::FailedToSendSample,
+                        with SendError::SampleDelivery,
                         "Failed to send ingested payload"
                     );
                 }
@@ -181,7 +179,7 @@ impl<S: Service> PublishSubscribePorts<S> {
                     fail!(
                         from "PublishSubscribePorts::receive",
                         when propagate(sample),
-                        with ReceiveError::FailedToPropagateSample,
+                        with ReceiveError::SamplePropagation,
                         "Failed to propagate sample"
                     );
                 }
