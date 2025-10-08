@@ -610,7 +610,7 @@ impl<Service: service::Service> Writer<Service, u64> {
     ) -> Result<__InternalEntryHandleMut<Service>, EntryHandleMutError> {
         let msg = "Unable to create entry handle";
 
-        // create KeyMemory from key
+        // create KeyMemory from key ptr
         let key_mem = unsafe {
             match KeyMemory::try_from_ptr(key, key_layout) {
                 Ok(mem) => mem,

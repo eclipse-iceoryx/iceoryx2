@@ -158,12 +158,6 @@ template <typename PayloadType>
 auto get_type_name() -> TypeName {
     return get_type_name_impl<PayloadType>();
 }
-
-// TODO
-template <typename T>
-auto default_key_eq_cmp_func(const uint8_t* lhs, const uint8_t* rhs) -> bool {
-    return *reinterpret_cast<const T*>(lhs) == *reinterpret_cast<const T*>(rhs);
-}
 } // namespace iox2::internal
 
 #endif

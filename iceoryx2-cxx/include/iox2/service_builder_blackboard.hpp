@@ -18,7 +18,6 @@
 #include "iox2/attribute_specifier.hpp"
 #include "iox2/attribute_verifier.hpp"
 #include "iox2/internal/iceoryx2.hpp"
-#include "iox2/internal/service_builder_internal.hpp"
 #include "iox2/port_factory_blackboard.hpp"
 #include "iox2/service_builder_blackboard_error.hpp"
 #include "iox2/service_type.hpp"
@@ -109,6 +108,13 @@ class ServiceBuilderBlackboardOpener {
 
     iox2_service_builder_blackboard_opener_h m_handle = nullptr;
 };
+
+namespace internal {
+    template <typename T>
+    auto default_key_eq_cmp_func(const uint8_t* lhs, const uint8_t* rhs) -> bool {
+        return *reinterpret_cast<const T*>(lhs) == *reinterpret_cast<const T*>(rhs);
+    }
+}
 
 template <typename KeyType, ServiceType S>
 inline ServiceBuilderBlackboardCreator<KeyType, S>::ServiceBuilderBlackboardCreator(iox2_service_builder_h handle)

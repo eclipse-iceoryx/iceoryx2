@@ -76,13 +76,15 @@ int main(void) {
         goto drop_service;
     }
 
+    uint64_t key_0 = 0;
     const char* value_type_name_int = "int32_t";
     iox2_entry_handle_h entry_handle_key_0 = NULL;
     if (iox2_reader_entry(&reader,
                           NULL,
                           &entry_handle_key_0,
-                          0,
-                          key_cmp,
+                          (const uint8_t*) &key_0,
+                          sizeof(uint64_t),
+                          alignof(uint64_t),
                           value_type_name_int,
                           strlen(value_type_name_int),
                           sizeof(int32_t),
@@ -92,13 +94,15 @@ int main(void) {
         goto drop_reader;
     }
 
+    uint64_t key_1 = 1;
     const char* value_type_name_double = "double";
     iox2_entry_handle_h entry_handle_key_1 = NULL;
     if (iox2_reader_entry(&reader,
                           NULL,
                           &entry_handle_key_1,
-                          1,
-                          key_cmp,
+                          (const uint8_t*) &key_1,
+                          sizeof(uint64_t),
+                          alignof(uint64_t),
                           value_type_name_double,
                           strlen(value_type_name_double),
                           sizeof(double),

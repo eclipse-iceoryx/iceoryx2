@@ -20,9 +20,10 @@ use crate::{
         iox2_unique_reader_id_h, iox2_unique_reader_id_t, AssertNonNullHandle, EntryHandleUnion,
         HandleToType, IntoCInt, KeyFfi,
     },
-    iox2_service_blackboard_key_eq_cmp_func, IOX2_OK,
+    IOX2_OK,
 };
-use core::ffi::{c_char, c_int};
+use core::alloc::Layout;
+use core::ffi::{c_char, c_int, c_uchar};
 use core::mem::ManuallyDrop;
 use iceoryx2::port::reader::{EntryHandleError, Reader};
 use iceoryx2_bb_elementary::static_assert::*;
@@ -216,8 +217,9 @@ pub unsafe extern "C" fn iox2_reader_entry(
     reader_handle: iox2_reader_h_ref,
     entry_handle_struct_ptr: *mut iox2_entry_handle_t,
     entry_handle_handle_ptr: *mut iox2_entry_handle_h,
-    key: KeyFfi,
-    key_eq_func: iox2_service_blackboard_key_eq_cmp_func,
+    key: *const c_uchar,
+    key_size: c_size_t,
+    key_alignment: c_size_t,
     value_type_name_str: *const c_char,
     value_type_name_len: c_size_t,
     value_size: c_size_t,
@@ -251,41 +253,50 @@ pub unsafe extern "C" fn iox2_reader_entry(
     };
     let reader = &mut *reader_handle.as_type();
 
+    // TODO: use stored key type information?
+    let key_layout = Layout::from_size_align(key_size, key_alignment).unwrap(); // TODO: error handling
+
     match reader.service_type {
-        iox2_service_type_e::IPC => match reader.value.as_ref().ipc.__internal_entry(
-            key,
-            &|lhs: *const u8, rhs: *const u8| key_eq_func(lhs, rhs),
-            &value_type_details,
-        ) {
-            Ok(handle) => {
-                let (entry_handle_struct_ptr, deleter) =
-                    init_entry_handle_struct_ptr(entry_handle_struct_ptr);
-                (*entry_handle_struct_ptr).init(
-                    reader.service_type,
-                    EntryHandleUnion::new_ipc(handle),
-                    deleter,
-                );
-                *entry_handle_handle_ptr = (*entry_handle_struct_ptr).as_handle();
+        iox2_service_type_e::IPC => {
+            match reader
+                .value
+                .as_ref()
+                .ipc
+                .__internal_entry(key, key_layout, &value_type_details)
+            {
+                Ok(handle) => {
+                    let (entry_handle_struct_ptr, deleter) =
+                        init_entry_handle_struct_ptr(entry_handle_struct_ptr);
+                    (*entry_handle_struct_ptr).init(
+                        reader.service_type,
+                        EntryHandleUnion::new_ipc(handle),
+                        deleter,
+                    );
+                    *entry_handle_handle_ptr = (*entry_handle_struct_ptr).as_handle();
+                }
+                Err(error) => return error.into_c_int(),
             }
-            Err(error) => return error.into_c_int(),
-        },
-        iox2_service_type_e::LOCAL => match reader.value.as_ref().local.__internal_entry(
-            key,
-            &|lhs: *const u8, rhs: *const u8| key_eq_func(lhs, rhs),
-            &value_type_details,
-        ) {
-            Ok(handle) => {
-                let (entry_handle_struct_ptr, deleter) =
-                    init_entry_handle_struct_ptr(entry_handle_struct_ptr);
-                (*entry_handle_struct_ptr).init(
-                    reader.service_type,
-                    EntryHandleUnion::new_local(handle),
-                    deleter,
-                );
-                *entry_handle_handle_ptr = (*entry_handle_struct_ptr).as_handle();
+        }
+        iox2_service_type_e::LOCAL => {
+            match reader
+                .value
+                .as_ref()
+                .local
+                .__internal_entry(key, key_layout, &value_type_details)
+            {
+                Ok(handle) => {
+                    let (entry_handle_struct_ptr, deleter) =
+                        init_entry_handle_struct_ptr(entry_handle_struct_ptr);
+                    (*entry_handle_struct_ptr).init(
+                        reader.service_type,
+                        EntryHandleUnion::new_local(handle),
+                        deleter,
+                    );
+                    *entry_handle_handle_ptr = (*entry_handle_struct_ptr).as_handle();
+                }
+                Err(error) => return error.into_c_int(),
             }
-            Err(error) => return error.into_c_int(),
-        },
+        }
     }
 
     IOX2_OK

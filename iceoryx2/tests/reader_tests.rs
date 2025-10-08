@@ -12,12 +12,12 @@
 //
 #[generic_tests::define]
 mod reader {
+    use core::alloc::Layout;
     use iceoryx2::port::reader::*;
     use iceoryx2::prelude::*;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::Service;
     use iceoryx2::testing::*;
-    use iceoryx2_bb_container::flatmap::__internal_default_eq_comparison;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use std::collections::HashSet;
@@ -123,7 +123,12 @@ mod reader {
     #[test]
     fn handle_can_be_acquired_for_existing_key_value_pair_with_custom_key_type<Sut: Service>() {
         type KeyType = u64;
+        let key = 0;
+        let key_ptr: *const KeyType = &key;
+        let key_layout =
+            Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap();
         type ValueType = u64;
+
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -131,17 +136,13 @@ mod reader {
         let sut = node
             .service_builder(&service_name)
             .blackboard_creator::<KeyType>()
-            .add::<ValueType>(0, 0)
+            .add::<ValueType>(key, 0)
             .create()
             .unwrap();
         let reader = sut.reader_builder().create().unwrap();
 
         let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
-        let entry_handle = reader.__internal_entry(
-            0,
-            &__internal_default_eq_comparison::<KeyType>,
-            &type_details,
-        );
+        let entry_handle = reader.__internal_entry(key_ptr as *const u8, key_layout, &type_details);
         assert_that!(entry_handle, is_ok);
         let mut read_value: ValueType = 9;
         let read_value_ptr: *mut ValueType = &mut read_value;
@@ -159,6 +160,10 @@ mod reader {
     #[test]
     fn handle_cannot_be_acquired_for_non_existing_key_with_custom_key_type<Sut: Service>() {
         type KeyType = u64;
+        let key = 9;
+        let key_ptr: *const KeyType = &key;
+        let key_layout =
+            Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap();
         type ValueType = u64;
 
         let service_name = generate_name();
@@ -174,11 +179,7 @@ mod reader {
         let reader = sut.reader_builder().create().unwrap();
 
         let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
-        let entry_handle = reader.__internal_entry(
-            9,
-            &__internal_default_eq_comparison::<KeyType>,
-            &type_details,
-        );
+        let entry_handle = reader.__internal_entry(key_ptr as *const u8, key_layout, &type_details);
         assert_that!(entry_handle, is_err);
         assert_that!(
             entry_handle.err().unwrap(),
@@ -190,6 +191,10 @@ mod reader {
     #[test]
     fn handle_cannot_be_acquired_for_wrong_value_type_with_custom_key_type<Sut: Service>() {
         type KeyType = u64;
+        let key = 0;
+        let key_ptr: *const KeyType = &key;
+        let key_layout =
+            Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap();
 
         let service_name = generate_name();
         let config = generate_isolated_config();
@@ -198,17 +203,13 @@ mod reader {
         let sut = node
             .service_builder(&service_name)
             .blackboard_creator::<KeyType>()
-            .add::<u64>(0, 0)
+            .add::<u64>(key, 0)
             .create()
             .unwrap();
         let reader = sut.reader_builder().create().unwrap();
 
         let type_details = TypeDetail::new::<i64>(TypeVariant::FixedSize);
-        let entry_handle = reader.__internal_entry(
-            0,
-            &__internal_default_eq_comparison::<KeyType>,
-            &type_details,
-        );
+        let entry_handle = reader.__internal_entry(key_ptr as *const u8, key_layout, &type_details);
         assert_that!(entry_handle, is_err);
         assert_that!(
             entry_handle.err().unwrap(),
