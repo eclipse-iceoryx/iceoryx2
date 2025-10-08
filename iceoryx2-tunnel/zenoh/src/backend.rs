@@ -26,6 +26,14 @@ pub enum CreationError {
     Discovery,
 }
 
+impl core::fmt::Display for CreationError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "CreationError::{self:?}")
+    }
+}
+
+impl core::error::Error for CreationError {}
+
 #[derive(Debug)]
 pub struct ZenohBackend<S: Service> {
     session: Session,

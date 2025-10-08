@@ -35,16 +35,41 @@ pub enum CreationError {
     SubscriberDeclaration,
     ServiceAnouncement,
 }
+
+impl core::fmt::Display for CreationError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "CreationError::{self:?}")
+    }
+}
+
+impl core::error::Error for CreationError {}
+
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum SendError {
     PayloadPut,
 }
+
+impl core::fmt::Display for SendError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "SendError::{self:?}")
+    }
+}
+
+impl core::error::Error for SendError {}
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum ReceiveError {
     SampleReceive,
     IceoryxLoan,
 }
+
+impl core::fmt::Display for ReceiveError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "ReceiveError::{self:?}")
+    }
+}
+
+impl core::error::Error for ReceiveError {}
 
 #[derive(Debug)]
 pub struct Builder<'a, S: Service> {

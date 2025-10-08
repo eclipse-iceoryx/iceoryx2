@@ -25,11 +25,27 @@ pub enum CreationError {
     Subscriber,
 }
 
+impl core::fmt::Display for CreationError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "CreationError::{self:?}")
+    }
+}
+
+impl core::error::Error for CreationError {}
+
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum DiscoveryError {
     ReceivingFromIceoryx,
     DiscoveryProcessing,
 }
+
+impl core::fmt::Display for DiscoveryError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "DiscoveryError::{self:?}")
+    }
+}
+
+impl core::error::Error for DiscoveryError {}
 
 #[derive(Debug)]
 pub struct DiscoverySubscriber<S: Service>(pub Subscriber<S, DiscoveryEvent, ()>);

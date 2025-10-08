@@ -24,22 +24,39 @@ use zenoh::{
 
 use crate::keys;
 
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
     QuerierCreation,
     DiscoveryQuery,
 }
 
-#[derive(Debug)]
-pub struct Discovery {
-    querier: Querier<'static>,
-    replies: RefCell<FifoChannelHandler<Reply>>,
+impl core::fmt::Display for CreationError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "CreationError::{self:?}")
+    }
 }
+
+impl core::error::Error for CreationError {}
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum DiscoveryError {
     DiscoveryProcessing,
     DiscoveryQuery,
     QueryReplyReceive,
+}
+
+impl core::fmt::Display for DiscoveryError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "DiscoveryError::{self:?}")
+    }
+}
+
+impl core::error::Error for DiscoveryError {}
+
+#[derive(Debug)]
+pub struct Discovery {
+    querier: Querier<'static>,
+    replies: RefCell<FifoChannelHandler<Reply>>,
 }
 
 impl Discovery {

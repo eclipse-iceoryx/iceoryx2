@@ -27,16 +27,40 @@ pub enum CreationError {
     Listener,
 }
 
+impl core::fmt::Display for CreationError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "CreationError::{self:?}")
+    }
+}
+
+impl core::error::Error for CreationError {}
+
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum SendError {
     EventIngestion,
     NotificationDelivery,
 }
 
+impl core::fmt::Display for SendError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "SendError::{self:?}")
+    }
+}
+
+impl core::error::Error for SendError {}
+
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum ReceiveError {
     NotificationPropagation,
 }
+
+impl core::fmt::Display for ReceiveError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "ReceiveError::{self:?}")
+    }
+}
+
+impl core::error::Error for ReceiveError {}
 
 #[derive(Debug)]
 pub(crate) struct EventPorts<S: Service> {
