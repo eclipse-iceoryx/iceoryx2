@@ -26,6 +26,7 @@ use crate::service::port_factory::blackboard;
 use crate::service::static_config::message_type_details::TypeDetail;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
 use crate::service::*;
+use alloc::sync::Arc;
 use builder::RETRY_LIMIT;
 use core::alloc::Layout;
 use core::hash::Hash;
@@ -43,6 +44,7 @@ use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 use iceoryx2_cal::shared_memory::{SharedMemory, SharedMemoryBuilder};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 use std::marker::PhantomData;
+use tiny_fn::tiny_fn;
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 enum ServiceAvailabilityState {
@@ -323,10 +325,24 @@ pub(crate) struct Mgmt {
     pub(crate) entries: RelocatableVec<Entry>,
 }
 
-#[derive(Debug)]
+tiny_fn! {
+    struct KeyEq = Fn(lhs: *const u8, rhs: *const u8) -> bool;
+}
+
 pub(crate) struct BlackboardResources<ServiceType: service::Service> {
     pub(crate) mgmt: ServiceType::BlackboardMgmt<Mgmt>,
     pub(crate) data: ServiceType::BlackboardPayload,
+    // pub(crate) key_eq_func: Box<dyn Fn(*const u8, *const u8) -> bool>,
+    // pub(crate) key_eq_func: Option<Box<dyn Fn(*const u8, *const u8) -> bool>>,
+    // pub(crate) key_eq_func: KeyEq<'static>,
+    pub(crate) key_eq_func: Arc<dyn Fn(*const u8, *const u8) -> bool>,
+}
+
+impl<ServiceType: service::Service> Debug for BlackboardResources<ServiceType> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // TODO
+        write!(f, "")
+    }
 }
 
 impl<ServiceType: service::Service> ServiceResource for BlackboardResources<ServiceType> {
@@ -346,6 +362,9 @@ struct Builder<
     internals: Vec<BuilderInternals>,
     override_key_type: Option<TypeDetail>,
     key_eq_func: Box<dyn Fn(*const u8, *const u8) -> bool>,
+    // key_eq_func: KeyEq<'static>,
+    // key_eq_func: Option<Box<dyn Fn(*const u8, *const u8) -> bool>>,
+    // key_eq_func: Arc<dyn Fn(*const u8, *const u8) -> bool>,
     phantom: PhantomData<KeyType>,
 }
 
@@ -372,6 +391,12 @@ impl<
             verify_max_nodes: false,
             internals: Vec::<BuilderInternals>::new(),
             override_key_type: None,
+            // key_eq_func: Some(Box::new(|lhs: *const u8, rhs: *const u8| {
+            // KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::default_key_eq_comparison::<KeyType>(lhs, rhs)
+            // })),
+            // key_eq_func: KeyEq::new(|lhs: *const u8, rhs: *const u8| {
+            //     KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::default_key_eq_comparison::<KeyType>(lhs, rhs)
+            // }),
             key_eq_func: Box::new(|lhs: *const u8, rhs: *const u8| {
                 KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::default_key_eq_comparison::<KeyType>(lhs, rhs)
             }),
@@ -563,7 +588,7 @@ impl<
     }
 
     fn create_impl(
-        &mut self,
+        mut self,
         attributes: &AttributeSpecifier,
     ) -> Result<blackboard::PortFactory<ServiceType, KeyType>, BlackboardCreateError> {
         let msg = "Unable to create blackboard service";
@@ -715,7 +740,7 @@ impl<
                                     return false
                                 }
                                 // write offset index to map
-                                let res = unsafe {entry.map.__internal_insert(self.builder.internals[i].key.clone(), entry.entries.len() - 1, &*self.builder.key_eq_func)};
+                                let res = unsafe {entry.map.__internal_insert(self.builder.internals[i].key.clone(), entry.entries.len() - 1, &self.builder.key_eq_func)};
                                 if res.is_err() {
                                     error!(from self, "Inserting the key-value pair into the blackboard management segment failed.");
                                     return false
@@ -745,6 +770,8 @@ impl<
                         BlackboardResources {
                             mgmt: mgmt_storage,
                             data: payload_shm,
+                            // key_eq_func: Box::new(Box::into_raw(self.builder.key_eq_func)),
+                            key_eq_func: Arc::new(self.builder.key_eq_func),
                         },
                     ),
                 ))
@@ -869,7 +896,7 @@ impl<
     }
 
     fn open_impl(
-        &mut self,
+        mut self,
         attributes: &AttributeVerifier,
     ) -> Result<blackboard::PortFactory<ServiceType, KeyType>, BlackboardOpenError> {
         let msg = "Unable to open blackboard service";
@@ -987,6 +1014,7 @@ impl<
                             BlackboardResources {
                                 mgmt: mgmt_storage,
                                 data: payload_shm,
+                                key_eq_func: Arc::new(self.builder.key_eq_func),
                             },
                         ),
                     ));

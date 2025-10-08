@@ -127,7 +127,7 @@ impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
         Ok(())
     }
 
-    pub(crate) unsafe fn get_impl<F: Fn(*const u8, *const u8) -> bool>(
+    pub(crate) unsafe fn get_impl<F: Fn(*const u8, *const u8) -> bool + ?Sized>(
         &self,
         id: &K,
         eq_func: &F,
@@ -137,7 +137,7 @@ impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
         self.get_ref_impl(id, eq_func).cloned()
     }
 
-    pub(crate) unsafe fn get_ref_impl<F: Fn(*const u8, *const u8) -> bool>(
+    pub(crate) unsafe fn get_ref_impl<F: Fn(*const u8, *const u8) -> bool + ?Sized>(
         &self,
         id: &K,
         eq_func: &F,
@@ -500,7 +500,7 @@ impl<K: Eq, V: Clone> RelocatableFlatMap<K, V> {
     //    [`RelocatableFlatMap`] instance and from every process that uses the
     //    [`RelocatableFlatMap`] instance
     //
-    pub unsafe fn __internal_get<F: Fn(*const u8, *const u8) -> bool>(
+    pub unsafe fn __internal_get<F: Fn(*const u8, *const u8) -> bool + ?Sized>(
         &self,
         id: &K,
         eq_func: &F,

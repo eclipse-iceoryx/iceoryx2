@@ -46,6 +46,7 @@ use crate::service::builder::blackboard::{BlackboardResources, KeyMemory};
 use crate::service::dynamic_config::blackboard::WriterDetails;
 use crate::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use crate::service::{self, ServiceState};
+use core::alloc::Layout;
 use core::fmt::Debug;
 use core::hash::Hash;
 use core::sync::atomic::Ordering;
@@ -202,9 +203,17 @@ impl<
     ) -> Result<EntryHandleMut<Service, KeyType, ValueType>, EntryHandleMutError> {
         let msg = "Unable to create entry handle";
 
+        // create KeyMemory from key
+        let key_mem = match KeyMemory::try_from(key) {
+            Ok(mem) => mem,
+            // TODO: adapt error and msg
+            Err(_) => {
+                fail!(from self, with EntryHandleMutError::EntryDoesNotExist, "{} blub", msg);
+            }
+        };
+
         let offset = self.get_entry_offset(
-            key,
-            &KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::default_key_eq_comparison::<KeyType>,
+            &key_mem,
             &TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
             msg,
         )?;
@@ -218,22 +227,12 @@ impl<
         }
     }
 
-    fn get_entry_offset<F: Fn(*const u8, *const u8) -> bool>(
+    fn get_entry_offset(
         &self,
-        key: KeyType,
-        key_eq_func: &F,
+        key_mem: &KeyMemory<MAX_BLACKBOARD_KEY_SIZE>,
         type_details: &TypeDetail,
         msg: &str,
     ) -> Result<u64, EntryHandleMutError> {
-        // create KeyMemory from key
-        let key_mem = match KeyMemory::try_from(key) {
-            Ok(mem) => mem,
-            // TODO: adapt error and msg
-            Err(_) => {
-                fail!(from self, with EntryHandleMutError::EntryDoesNotExist, "{} blub", msg);
-            }
-        };
-
         // check if key exists
         let index = match unsafe {
             self.shared_state
@@ -242,7 +241,14 @@ impl<
                 .mgmt
                 .get()
                 .map
-                .__internal_get(&key_mem, key_eq_func)
+                .__internal_get(
+                    key_mem,
+                    self.shared_state
+                        .service_state
+                        .additional_resource
+                        .key_eq_func
+                        .as_ref(),
+                )
         } {
             Some(i) => i,
             None => {
@@ -594,17 +600,28 @@ impl<
 }
 
 // TODO [#817] replace u64 with CustomKeyMarker
-// TODO: replace key with key_ptr
 impl<Service: service::Service> Writer<Service, u64> {
     #[doc(hidden)]
-    pub fn __internal_entry<F: Fn(*const u8, *const u8) -> bool>(
+    pub fn __internal_entry(
         &self,
-        key: u64,
-        key_eq_func: &F,
+        key: *const u8,
+        key_layout: Layout,
         type_details: &TypeDetail,
     ) -> Result<__InternalEntryHandleMut<Service>, EntryHandleMutError> {
         let msg = "Unable to create entry handle";
-        let offset = self.get_entry_offset(key, key_eq_func, type_details, msg)?;
+
+        // create KeyMemory from key
+        let key_mem = unsafe {
+            match KeyMemory::try_from_ptr(key, key_layout) {
+                Ok(mem) => mem,
+                // TODO: adapt error and msg
+                Err(_) => {
+                    fail!(from self, with EntryHandleMutError::EntryDoesNotExist, "{} blub", msg);
+                }
+            }
+        };
+
+        let offset = self.get_entry_offset(&key_mem, type_details, msg)?;
 
         let atomic_mgmt_ptr = (self
             .shared_state

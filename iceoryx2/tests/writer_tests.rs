@@ -12,13 +12,13 @@
 //
 #[generic_tests::define]
 mod writer {
+    use core::alloc::Layout;
     use core::sync::atomic::{AtomicU64, Ordering};
     use iceoryx2::port::writer::*;
     use iceoryx2::prelude::*;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::Service;
     use iceoryx2::testing::*;
-    use iceoryx2_bb_container::flatmap::__internal_default_eq_comparison;
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
@@ -222,6 +222,8 @@ mod writer {
     #[test]
     fn handle_can_be_acquired_for_existing_key_value_pair_with_custom_key_type<Sut: Service>() {
         type KeyType = u64;
+        let key = 0;
+        let key_ptr: *const KeyType = &key;
         type ValueType = u64;
 
         let service_name = generate_name();
@@ -231,15 +233,15 @@ mod writer {
         let sut = node
             .service_builder(&service_name)
             .blackboard_creator::<KeyType>()
-            .add::<ValueType>(0, 0)
+            .add::<ValueType>(key, 0)
             .create()
             .unwrap();
         let writer = sut.writer_builder().create().unwrap();
 
         let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
         let entry_handle_mut = writer.__internal_entry(
-            0,
-            &__internal_default_eq_comparison::<KeyType>,
+            key_ptr as *const u8,
+            Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap(),
             &type_details,
         );
         assert_that!(entry_handle_mut, is_ok);
@@ -249,6 +251,8 @@ mod writer {
     #[test]
     fn handle_cannot_be_acquired_for_non_existing_key_with_custom_key_type<Sut: Service>() {
         type KeyType = u64;
+        let key = 9;
+        let key_ptr: *const KeyType = &key;
         type ValueType = u64;
 
         let service_name = generate_name();
@@ -265,8 +269,8 @@ mod writer {
 
         let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
         let entry_handle_mut = writer.__internal_entry(
-            9,
-            &__internal_default_eq_comparison::<KeyType>,
+            key_ptr as *const u8,
+            Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap(),
             &type_details,
         );
         assert_that!(entry_handle_mut, is_err);
@@ -280,6 +284,8 @@ mod writer {
     #[test]
     fn handle_cannot_be_acquired_for_wrong_value_type_with_custom_key_type<Sut: Service>() {
         type KeyType = u64;
+        let key = 0;
+        let key_ptr: *const KeyType = &key;
 
         let service_name = generate_name();
         let config = generate_isolated_config();
@@ -288,15 +294,15 @@ mod writer {
         let sut = node
             .service_builder(&service_name)
             .blackboard_creator::<KeyType>()
-            .add::<u64>(0, 0)
+            .add::<u64>(key, 0)
             .create()
             .unwrap();
         let writer = sut.writer_builder().create().unwrap();
 
         let type_details = TypeDetail::new::<i64>(TypeVariant::FixedSize);
         let entry_handle_mut = writer.__internal_entry(
-            0,
-            &__internal_default_eq_comparison::<KeyType>,
+            key_ptr as *const u8,
+            Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap(),
             &type_details,
         );
         assert_that!(entry_handle_mut, is_err);
@@ -310,6 +316,8 @@ mod writer {
     #[test]
     fn entry_handle_mut_cannot_be_acquired_twice_with_custom_key_type<Sut: Service>() {
         type KeyType = u64;
+        let key = 0;
+        let key_ptr: *const KeyType = &key;
         type ValueType = u64;
 
         let service_name = generate_name();
@@ -319,21 +327,21 @@ mod writer {
         let sut = node
             .service_builder(&service_name)
             .blackboard_creator::<KeyType>()
-            .add::<ValueType>(0, 0)
+            .add::<ValueType>(key, 0)
             .create()
             .unwrap();
         let writer = sut.writer_builder().create().unwrap();
 
         let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
         let entry_handle_mut1 = writer.__internal_entry(
-            0,
-            &__internal_default_eq_comparison::<KeyType>,
+            key_ptr as *const u8,
+            Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap(),
             &type_details,
         );
         assert_that!(entry_handle_mut1, is_ok);
         let entry_handle_mut2 = writer.__internal_entry(
-            0,
-            &__internal_default_eq_comparison::<KeyType>,
+            key_ptr as *const u8,
+            Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap(),
             &type_details,
         );
         assert_that!(entry_handle_mut2, is_err);
@@ -344,8 +352,8 @@ mod writer {
 
         drop(entry_handle_mut1);
         let entry_handle_mut2 = writer.__internal_entry(
-            0,
-            &__internal_default_eq_comparison::<KeyType>,
+            key_ptr as *const u8,
+            Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap(),
             &type_details,
         );
         assert_that!(entry_handle_mut2, is_ok);
@@ -355,6 +363,8 @@ mod writer {
     #[test]
     fn entry_handle_mut_prevents_another_writer_with_custom_key_type<Sut: Service>() {
         type KeyType = u64;
+        let key = 0;
+        let key_ptr: *const KeyType = &key;
         type ValueType = u8;
 
         let service_name = generate_name();
@@ -364,15 +374,15 @@ mod writer {
         let sut = node
             .service_builder(&service_name)
             .blackboard_creator::<KeyType>()
-            .add::<ValueType>(0, 0)
+            .add::<ValueType>(key, 0)
             .create()
             .unwrap();
         let writer = sut.writer_builder().create().unwrap();
 
         let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
         let _entry_handle_mut = writer.__internal_entry(
-            0,
-            &__internal_default_eq_comparison::<KeyType>,
+            key_ptr as *const u8,
+            Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap(),
             &type_details,
         );
 
@@ -389,6 +399,8 @@ mod writer {
         Sut: Service,
     >() {
         type KeyType = u64;
+        let key = 0;
+        let key_ptr: *const KeyType = &key;
         type ValueType = u32;
 
         let service_name = generate_name();
@@ -398,7 +410,7 @@ mod writer {
         let sut = node
             .service_builder(&service_name)
             .blackboard_creator::<KeyType>()
-            .add::<ValueType>(0, 0)
+            .add::<ValueType>(key, 0)
             .create()
             .unwrap();
         let writer = sut.writer_builder().create().unwrap();
@@ -406,8 +418,8 @@ mod writer {
         let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
         let entry_handle_mut = writer
             .__internal_entry(
-                0,
-                &__internal_default_eq_comparison::<KeyType>,
+                key_ptr as *const u8,
+                Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap(),
                 &type_details,
             )
             .unwrap();
