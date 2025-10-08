@@ -53,7 +53,6 @@ impl From<Box<dyn std::error::Error + Send + Sync>> for CreationError {
     }
 }
 
-// TODO: Revise lifetimes - config and session lifetimes are different
 #[derive(Debug)]
 pub struct Builder<'a, S: Service> {
     session: &'a Session,
@@ -140,7 +139,10 @@ impl<S: Service> EventRelay<S> for Relay<S> {
         Ok(())
     }
 
-    fn receive(&self, notify: &mut NotifyFn<'_>) -> Result<(), Self::ReceiveError> {
+    fn receive(
+        &self,
+        send_notification_to_iceoryx: &mut NotifyFn<'_>,
+    ) -> Result<(), Self::ReceiveError> {
         // Collect all notified ids
         let mut received_ids: HashSet<EventId> = HashSet::new();
         while let Ok(Some(sample)) = self.listener.try_recv() {
@@ -156,7 +158,7 @@ impl<S: Service> EventRelay<S> for Relay<S> {
 
         // Propagate notifications received - once per event id
         for event_id in received_ids {
-            notify(event_id);
+            send_notification_to_iceoryx(event_id);
         }
 
         Ok(())

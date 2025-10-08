@@ -16,7 +16,7 @@ use std::collections::{HashMap, HashSet};
 use crate::ports::event::EventPorts;
 use crate::ports::publish_subscribe::PublishSubscribePorts;
 use crate::{discovery, ports};
-use iceoryx2::node::{Node, NodeBuilder, NodeCreationFailure};
+use iceoryx2::node::{Node, NodeBuilder, NodeCreationFailure, NodeId};
 use iceoryx2::service::builder::publish_subscribe::PublishSubscribeOpenOrCreateError;
 use iceoryx2::service::service_id::ServiceId;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
@@ -240,66 +240,37 @@ impl<S: Service, B: for<'a> Backend<S>> Tunnel<S, B> {
         Ok(())
     }
 
-    /// TODO: Consider the ordering ...
-    /// TODO: Refactor duplicate logic
     pub fn propagate(&mut self) -> Result<(), PropagateError> {
-        for (id, port) in &self.ports.publish_subscribe {
-            let relay = match self.relays.publish_subscribe.get(id) {
-                Some(relay) => relay,
+        for (service_id, port) in &self.ports.publish_subscribe {
+            match self.relays.publish_subscribe.get(service_id) {
+                Some(relay) => {
+                    fail!(
+                        from "Tunnel::propagate",
+                        when propagate_publish_subscribe_payloads::<S, B>(self.node.id(), port, relay),
+                        "Failed to propagate publish subscribe payloads"
+                    );
+                }
                 None => {
-                    warn!(
-                                from "Tunnel::propagate",
-                                "No relay available for id {:?}. Skipping.", id);
+                    warn!(from "Tunnel::propagate", "No relay available for id {:?}. Skipping.", service_id);
                     return Ok(());
                 }
             };
-
-            fail!(
-                from "Tunnel::propagate",
-                when port.receive(self.node.id(), |sample| {
-                    // TODO: Handle error properly
-                    relay.send(sample).unwrap();
-                }),
-                "Failed to receive and propagate samples"
-            );
-
-            fail!(
-                from "Tunnel::propagate",
-                when port.send(|loan: &mut LoanFn<_>| {
-                    // TODO: Handle error properly
-                    relay.receive(&mut |size| loan(size)).unwrap()
-                }),
-                "Failed to send ingested samples"
-            );
         }
 
-        for (id, port) in &self.ports.event {
-            let relay = match self.relays.event.get(id) {
-                Some(relay) => relay,
+        for (service_id, port) in &self.ports.event {
+            match self.relays.event.get(service_id) {
+                Some(relay) => {
+                    fail!(
+                        from "Tunnel::propagate",
+                        when propagate_events::<S, B>(port, relay),
+                        "Failed to propagate publish subscribe payloads"
+                    );
+                }
                 None => {
-                    warn!(
-                                from "Tunnel::relay",
-                                "No relay available for id {:?}. Skipping.", id);
+                    warn!(from "Tunnel::propagate", "No relay available for id {:?}. Skipping.", service_id);
                     return Ok(());
                 }
             };
-
-            fail!(
-                from "Tunnel::propagate",
-                when port.receive(|id| {
-                    // TODO: Handle error properly
-                    relay.send(id).unwrap();
-                }),
-                "Failed to wait for events"
-            );
-
-            fail!(
-                from "Tunnel::propagate",
-                when relay.receive(&mut |id| {
-                    port.send(id).unwrap();
-                }).map_err(|_| PropagateError::Error),
-                "Failed to receive events from relay"
-            );
         }
 
         Ok(())
@@ -402,6 +373,54 @@ fn setup_event<S: Service, B: Backend<S>>(
 
     ports.event.insert(service_id.clone(), port);
     relays.event.insert(service_id.clone(), relay);
+
+    Ok(())
+}
+
+fn propagate_publish_subscribe_payloads<S: Service, B: Backend<S>>(
+    node_id: &NodeId,
+    port: &PublishSubscribePorts<S>,
+    relay: &B::PublishSubscribeRelay,
+) -> Result<(), PropagateError> {
+    fail!(
+        from "propagate_publish_subscribe_payloads",
+        when port.receive(node_id, |sample| {
+            // TODO: Handle error properly
+            relay.send(sample).unwrap();
+        }),
+        "Failed to receive and propagate samples"
+    );
+    fail!(
+        from "propagate_publish_subscribe_payloads",
+        when port.send(|loan: &mut LoanFn<_>| {
+            // TODO: Handle error properly
+            relay.receive(&mut |size| loan(size)).unwrap()
+        }),
+        "Failed to send ingested samples"
+    );
+
+    Ok(())
+}
+fn propagate_events<S: Service, B: Backend<S>>(
+    port: &EventPorts<S>,
+    relay: &B::EventRelay,
+) -> Result<(), PropagateError> {
+    fail!(
+        from "propagate_events",
+        when port.receive(|id| {
+            // TODO: Handle error properly
+            relay.send(id).unwrap();
+        }),
+        "Failed to wait for events"
+    );
+
+    fail!(
+        from "propagate_events",
+        when relay.receive(&mut |id| {
+            port.send(id).unwrap();
+        }).map_err(|_| PropagateError::Error),
+        "Failed to receive events from relay"
+    );
 
     Ok(())
 }

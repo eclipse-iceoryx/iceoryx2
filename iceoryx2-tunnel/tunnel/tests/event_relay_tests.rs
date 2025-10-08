@@ -240,6 +240,7 @@ mod event_relay_tests {
         assert_that!(sample, is_none);
     }
 
+    // TODO: Fix flaky
     #[test]
     fn multiple_events_are_consolidated_by_id<S: Service, B: Backend<S>, T: Testing>() {
         const MAX_ATTEMPTS: usize = 25;
