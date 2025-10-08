@@ -12,7 +12,8 @@
 
 use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 
-#[conformance_test_module] // TODO: due to some limitations, it might be necessary to pass the parent module path the the test suite
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
 pub mod node {
     use core::time::Duration;
     use std::collections::{HashSet, VecDeque};
@@ -41,7 +42,7 @@ pub mod node {
         fn new(name: &NodeName, id: &NodeId, config: &Config) -> Self {
             Self {
                 name: name.clone(),
-                id: id.clone(),
+                id: *id,
                 config: config.clone(),
             }
         }
@@ -199,7 +200,7 @@ pub mod node {
                     .create::<S>()
                     .unwrap(),
             );
-            assert_that!(node_ids.insert(nodes.last().unwrap().id().clone()), eq true);
+            assert_that!(node_ids.insert(*nodes.last().unwrap().id()), eq true);
         }
     }
 

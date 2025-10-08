@@ -29,7 +29,7 @@ pub fn conformance_test_module(_attr: TokenStream, item: TokenStream) -> TokenSt
     let mod_ident = &input.ident;
 
     // collect all functions with #[conformance_test] attribute
-    let conformance_test_fns = collect_conformance_test_functions(&input, &mod_ident);
+    let conformance_test_fns = collect_conformance_test_functions(&input, mod_ident);
 
     let macro_name = syn::Ident::new(&format!("{}", mod_ident), mod_ident.span());
 
