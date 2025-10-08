@@ -14,9 +14,14 @@ use core::fmt::Debug;
 
 use crate::types::discovery::ProcessDiscoveryFn;
 
+/// Discovery functionality to discover services utilizing the backend
+/// communication mechanism.
 pub trait Discovery {
+    /// Error type that can occur during discovery operations.
     type DiscoveryError: Debug;
 
+    /// Discovers entities and processes them using the provided discovery
+    /// function.
     fn discover<ProcessDiscoveryError>(
         &self,
         process_discovery: &mut ProcessDiscoveryFn<ProcessDiscoveryError>,

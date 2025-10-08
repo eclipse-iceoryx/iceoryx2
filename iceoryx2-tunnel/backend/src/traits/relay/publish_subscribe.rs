@@ -18,11 +18,19 @@ use crate::types::publish_subscribe::LoanFn;
 use crate::types::publish_subscribe::Sample;
 use crate::types::publish_subscribe::SampleMut;
 
+/// Relay for exchanging publish-subscribe samples between iceoryx and the
+/// backend.
 pub trait PublishSubscribeRelay<S: Service> {
+    /// Error type returned when sending fails
     type SendError: Debug;
+    /// Error type returned when receiving fails
     type ReceiveError: Debug;
 
+    /// Send a sample via the backend communication mechanism.
     fn send(&self, sample: Sample<S>) -> Result<(), Self::SendError>;
+
+    /// Receive a sample via the backend communication mechanism and ingest it
+    /// into a memory loan obtained from the provided loan function.
     fn receive<LoanError>(
         &self,
         loan: &mut LoanFn<'_, S, LoanError>,

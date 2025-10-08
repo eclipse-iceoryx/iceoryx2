@@ -14,10 +14,17 @@ use core::fmt::Debug;
 
 use iceoryx2::{prelude::EventId, service::Service};
 
+/// Relay for exchanging events between iceoryx and the backend.
 pub trait EventRelay<S: Service> {
+    /// Error type returned when sending an event fails
     type SendError: Debug;
+    /// Error type returned when receiving an event fails
     type ReceiveError: Debug;
 
+    /// Send an event with the specified ID via the backend communication
+    /// mechanism.
     fn send(&self, event_id: EventId) -> Result<(), Self::SendError>;
+
+    /// Receive an event via the backend communication mechanism.
     fn receive(&self) -> Result<Option<EventId>, Self::ReceiveError>;
 }

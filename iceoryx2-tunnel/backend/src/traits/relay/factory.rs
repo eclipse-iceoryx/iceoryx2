@@ -16,27 +16,43 @@ use iceoryx2::service::{static_config::StaticConfig, Service};
 use crate::traits::EventRelay;
 use crate::traits::PublishSubscribeRelay;
 
+/// Builder trait for constructing relay types provided by the backend
+/// implementation.
 pub trait RelayBuilder {
+    /// The error type returned when relay creation fails
     type CreationError: Debug;
+    /// The type of relay that this builder creates
     type Relay;
 
+    /// Consumes the builder and attempts to create a relay instance.
+    ///
+    /// # Returns
+    /// - `Ok(Self::Relay)` if the relay was successfully created
+    /// - `Err(Self::CreationError)` if creation failed
     fn create(self) -> Result<Self::Relay, Self::CreationError>;
 }
 
+/// Factory for creating relay builders  for supported messaging patterns.
 pub trait RelayFactory<S: Service> {
+    /// The publish-subscribe relay type that this factory creates
     type PublishSubscribeRelay: PublishSubscribeRelay<S>;
+    /// The event relay type that this factory creates
     type EventRelay: EventRelay<S>;
 
+    /// Builder type for creating publish-subscribe relays
     type PublishSubscribeBuilder<'config>: RelayBuilder<Relay = Self::PublishSubscribeRelay>
         + Debug
         + 'config
     where
         Self: 'config;
 
+    /// Builder type for creating event relays
     type EventBuilder<'config>: RelayBuilder<Relay = Self::EventRelay> + Debug + 'config
     where
         Self: 'config;
 
+    /// Creates a builder for publish-subscribe relays using the provided
+    /// static configuration.
     fn publish_subscribe<'config>(
         &self,
         static_config: &'config StaticConfig,
@@ -44,6 +60,8 @@ pub trait RelayFactory<S: Service> {
     where
         Self: 'config;
 
+    /// Creates a builder for event relays using the provided static
+    /// configuration.
     fn event<'config>(&self, static_config: &'config StaticConfig) -> Self::EventBuilder<'config>
     where
         Self: 'config;
