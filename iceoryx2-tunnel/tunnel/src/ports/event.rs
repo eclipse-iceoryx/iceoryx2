@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use std::collections::HashSet;
+
 use iceoryx2::{
     node::Node,
     port::{listener::Listener, notifier::Notifier},
@@ -27,6 +29,7 @@ pub enum CreationError {
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum SendError {
+    FailedToIngestEvent,
     FailedToSendNotification,
 }
 
@@ -82,16 +85,35 @@ impl<S: Service> EventPorts<S> {
         })
     }
 
-    pub(crate) fn send(&self, event_id: EventId) -> Result<(), SendError> {
-        fail!(
-            from "EventPorts::notify",
-            when self.notifier.__internal_notify(event_id, true),
-            with SendError::FailedToSendNotification,
-            "Failed to send notification"
-        );
+    pub(crate) fn send<IngestFn, IngestError>(&self, mut ingest: IngestFn) -> Result<(), SendError>
+    where
+        IngestFn: for<'a> FnMut() -> Result<Option<EventId>, IngestError>,
+    {
+        loop {
+            let event_id = fail!(
+                from "EventPorts::send",
+                when ingest(),
+                with SendError::FailedToIngestEvent,
+                "Failed to ingest event from backend"
+            );
+
+            match event_id {
+                Some(event_id) => {
+                    fail!(
+                        from "EventPorts::send",
+                        when self.notifier.__internal_notify(event_id, true),
+                        with SendError::FailedToSendNotification,
+                        "Failed to send notification"
+                    );
+                }
+                None => break,
+            }
+        }
+
         Ok(())
     }
 
+    // TODO(#XYZ): Preserve ordering of events received over the backend.
     pub(crate) fn receive<PropagateFn, E>(
         &self,
         mut propagate: PropagateFn,
@@ -99,19 +121,26 @@ impl<S: Service> EventPorts<S> {
     where
         PropagateFn: FnMut(EventId) -> Result<(), E>,
     {
-        // let mut notified_ids: HashSet<usize> = HashSet::new();
+        let mut received_ids: HashSet<EventId> = HashSet::new();
+
+        // Consolidate pending event ids
         while let Ok(event_id) = self.listener.try_wait_one() {
             match event_id {
                 Some(event_id) => {
-                    fail!(
-                        from "EventPorts::receive",
-                        when propagate(event_id),
-                        with ReceiveError::FailedToPropagateNotification,
-                        "Failed to propagate received event to backend"
-                    );
+                    received_ids.insert(event_id);
                 }
                 None => break,
             }
+        }
+
+        // Notify all ids once
+        for event_id in received_ids {
+            fail!(
+                from "EventPorts::receive",
+                when propagate(event_id),
+                with ReceiveError::FailedToPropagateNotification,
+                "Failed to propagate received event to backend"
+            );
         }
 
         Ok(())

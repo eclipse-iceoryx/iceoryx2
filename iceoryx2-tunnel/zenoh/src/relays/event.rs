@@ -10,15 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::collections::HashSet;
-
 use iceoryx2::prelude::EventId;
 use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2::service::Service;
 use iceoryx2_bb_log::debug;
 use iceoryx2_bb_log::fail;
 use iceoryx2_tunnel_backend::traits::{EventRelay, RelayBuilder};
-use iceoryx2_tunnel_backend::types::event::NotifyFn;
 use zenoh::handlers::FifoChannel;
 use zenoh::handlers::FifoChannelHandler;
 use zenoh::pubsub::Publisher;
@@ -46,7 +43,9 @@ pub enum SendError {
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum ReceiveError {
+    FailedToReceiveEvent,
     FailedToIngestEvent,
+    ReceivedInvalidEventId,
 }
 
 #[derive(Debug)]
@@ -138,33 +137,20 @@ impl<S: Service> EventRelay<S> for Relay<S> {
         Ok(())
     }
 
-    fn receive<NotifyError>(
-        &self,
-        send_notification_to_iceoryx: &mut NotifyFn<'_, NotifyError>,
-    ) -> Result<(), Self::ReceiveError> {
-        // Collect all notified ids
-        let mut received_ids: HashSet<EventId> = HashSet::new();
-        while let Ok(Some(sample)) = self.listener.try_recv() {
-            let payload = sample.payload();
-            if payload.len() == std::mem::size_of::<usize>() {
-                let id: usize =
-                    unsafe { payload.to_bytes().as_ptr().cast::<usize>().read_unaligned() };
-                received_ids.insert(EventId::new(id));
-            } else {
-                // Error, invalid event id. Skip.
+    fn receive(&self) -> Result<Option<EventId>, Self::ReceiveError> {
+        match self.listener.try_recv() {
+            Ok(Some(sample)) => {
+                let payload = sample.payload();
+                if payload.len() == std::mem::size_of::<usize>() {
+                    let id: usize =
+                        unsafe { payload.to_bytes().as_ptr().cast::<usize>().read_unaligned() };
+                    return Ok(Some(EventId::new(id)));
+                } else {
+                    return Err(ReceiveError::ReceivedInvalidEventId);
+                }
             }
+            Ok(None) => return Ok(None),
+            Err(_) => todo!(),
         }
-
-        // Propagate notifications received - once per event id
-        for event_id in received_ids {
-            fail!(
-                from "event::Relay::receive",
-                when send_notification_to_iceoryx(event_id),
-                with ReceiveError::FailedToIngestEvent,
-                "Failed to send notification to iceoryx"
-            );
-        }
-
-        Ok(())
     }
 }

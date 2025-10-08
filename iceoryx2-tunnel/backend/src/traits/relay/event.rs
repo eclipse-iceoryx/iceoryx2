@@ -14,15 +14,10 @@ use core::fmt::Debug;
 
 use iceoryx2::{prelude::EventId, service::Service};
 
-use crate::types::event::NotifyFn;
-
 pub trait EventRelay<S: Service> {
     type SendError: Debug;
     type ReceiveError: Debug;
 
     fn send(&self, event_id: EventId) -> Result<(), Self::SendError>;
-    fn receive<NotifyError>(
-        &self,
-        send_notification_to_iceoryx: &mut NotifyFn<'_, NotifyError>,
-    ) -> Result<(), Self::ReceiveError>;
+    fn receive(&self) -> Result<Option<EventId>, Self::ReceiveError>;
 }

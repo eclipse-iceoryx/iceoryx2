@@ -406,7 +406,6 @@ fn propagate_events<S: Service, B: Backend<S>>(
                 port.static_config.messaging_pattern(),
                 port.static_config.name()
             );
-
             relay.send(id)
         }),
         with PropagateError::FailedToPropagateEventToBackend,
@@ -415,15 +414,18 @@ fn propagate_events<S: Service, B: Backend<S>>(
 
     fail!(
         from "propagate_events",
-        when relay.receive(&mut |id| {
-            debug!(
-                from "propagate_events",
-                "Ingesting into {}({})",
-                port.static_config.messaging_pattern(),
-                port.static_config.name()
-            );
+        when port.send(|| {
+            let event_id = relay.receive();
 
-            port.send(id)
+            if let Ok(Some(_)) = event_id{
+                debug!(
+                    from "propagate_events",
+                    "Ingesting into {}({})",
+                    port.static_config.messaging_pattern(),
+                    port.static_config.name()
+                );
+            }
+            event_id
         }),
         with PropagateError::FailedToPropagateEventToIceoryx,
         "Failed to ingest event received from backend"

@@ -136,19 +136,20 @@ impl<S: Service> PublishSubscribePorts<S> {
                 from "PublishSubscribePorts::send",
                 when sample,
                 with SendError::FailedToIngestPayload,
-                "Failed to ingest payload data from backend"
+                "Failed to ingest payload from backend"
             );
 
-            if let Some(sample) = sample {
-                debug!(from "PublishSubscribePorts::send", "Sending: PublishSubscribe({})", self.static_config.name());
-                fail!(
-                    from "Ports::send",
-                    when sample.send(),
-                    with SendError::FailedToSendSample,
-                    "Failed to send ingested payload"
-                );
-            } else {
-                break;
+            match sample {
+                Some(sample) => {
+                    debug!(from "PublishSubscribePorts::send", "Sending: PublishSubscribe({})", self.static_config.name());
+                    fail!(
+                        from "Ports::send",
+                        when sample.send(),
+                        with SendError::FailedToSendSample,
+                        "Failed to send ingested payload"
+                    );
+                }
+                None => break,
             }
         }
 
