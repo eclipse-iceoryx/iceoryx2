@@ -31,6 +31,7 @@ CRATES_TO_PUBLISH=(
     iceoryx2-pal-concurrency-sync
     iceoryx2-pal-posix
     iceoryx2-pal-os-api
+    iceoryx2-bb-conformance-test-macros
     iceoryx2-bb-elementary-traits
     iceoryx2-bb-testing
     iceoryx2-bb-log
@@ -44,8 +45,10 @@ CRATES_TO_PUBLISH=(
     iceoryx2-bb-threadsafe
     iceoryx2-bb-memory
     iceoryx2-cal
+    iceoryx2-cal-conformance-tests
     iceoryx2-bb-trait-tests
     iceoryx2
+    iceoryx2-conformance-tests
     iceoryx2-services-discovery
     iceoryx2-userland-record-and-replay
     iceoryx2-tunnel-backend
