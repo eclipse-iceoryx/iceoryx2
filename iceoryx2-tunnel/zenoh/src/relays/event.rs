@@ -70,12 +70,6 @@ impl<'a, S: Service> RelayBuilder for Builder<'a, S> {
     type Relay = Relay<S>;
 
     fn create(self) -> Result<Self::Relay, Self::CreationError> {
-        debug!(
-            from "event::RelayBuilder::create",
-            "{}",
-            format!("Creating event relay for service {}", self.static_config.name())
-        );
-
         let key = keys::event(self.static_config.service_id());
 
         let notifier = fail!(
@@ -108,6 +102,7 @@ impl<'a, S: Service> RelayBuilder for Builder<'a, S> {
         );
 
         Ok(Relay {
+            static_config: self.static_config.clone(),
             notifier,
             listener,
             _phantom: core::marker::PhantomData,
@@ -117,6 +112,7 @@ impl<'a, S: Service> RelayBuilder for Builder<'a, S> {
 
 #[derive(Debug)]
 pub struct Relay<S: Service> {
+    static_config: StaticConfig,
     notifier: Publisher<'static>,
     listener: Subscriber<FifoChannelHandler<Sample>>,
     _phantom: core::marker::PhantomData<S>,
@@ -127,8 +123,15 @@ impl<S: Service> EventRelay<S> for Relay<S> {
     type ReceiveError = ReceiveError;
 
     fn send(&self, event_id: EventId) -> Result<(), Self::SendError> {
+        debug!(
+            from "event::Relay::send",
+            "Sending {}({})",
+            self.static_config.messaging_pattern(),
+            self.static_config.name()
+        );
+
         fail!(
-            from "event::Relay::propagate",
+            from "event::Relay::send",
             when self.notifier.put(event_id.as_value().to_ne_bytes()).wait(),
             with SendError::EventPut,
             "Failed to propagate notification to zenoh"
@@ -147,6 +150,12 @@ impl<S: Service> EventRelay<S> for Relay<S> {
 
         match sample {
             Some(sample) => {
+                debug!(
+                    from "event::Relay::receive",
+                    "Ingesting {}({})",
+                    self.static_config.messaging_pattern(),
+                    self.static_config.name()
+                );
                 let payload = sample.payload();
                 if payload.len() == std::mem::size_of::<usize>() {
                     let id: usize =

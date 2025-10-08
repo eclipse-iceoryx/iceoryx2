@@ -68,12 +68,6 @@ impl<'a, S: Service> RelayBuilder for Builder<'a, S> {
     type Relay = Relay<S>;
 
     fn create(self) -> Result<Self::Relay, Self::CreationError> {
-        debug!(
-            from "publish_subscribe::RelayBuilder::create",
-            "{}",
-            format!("Creating publish-subscribe relay for service {}", self.static_config.name())
-        );
-
         let key = keys::publish_subscribe(self.static_config.service_id());
 
         let publisher = fail!(
@@ -132,8 +126,9 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
         sample: iceoryx2::sample::Sample<S, [CustomPayloadMarker], CustomHeaderMarker>,
     ) -> Result<(), Self::SendError> {
         debug!(
-            from "publish_subscribe::Relay::propagate",
-            "Propagating publish-subscribe payload from service '{}'",
+            from "publish_subscribe::Relay::send",
+            "Sending {}({})",
+            self.static_config.messaging_pattern(),
             self.static_config.name()
         );
 
@@ -143,7 +138,7 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
 
         let payload = unsafe { ZBytes::from(core::slice::from_raw_parts(bytes, len)) };
         fail!(
-            from "publish_subscribe::Relay::propagate",
+            from "publish_subscribe::Relay::send",
             when self.publisher.put(payload).wait(),
             with SendError::PayloadPut,
             "Failed to propagate propagate publish-subscribe payload to zenoh"
@@ -157,7 +152,7 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
         loan: &mut LoanFn<'_, S, LoanError>,
     ) -> Result<Option<SampleMut<S>>, Self::ReceiveError> {
         let zenoh_sample = fail!(
-            from "publish_subscribe::Relay::ingest",
+            from "publish_subscribe::Relay::receive",
             when self.subscriber.try_recv(),
             with ReceiveError::SampleReceive,
             "Failed to receive sample from Zenoh"
@@ -165,15 +160,16 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
 
         if let Some(zenoh_sample) = zenoh_sample {
             debug!(
-                from "publish_subscribe::Relay::ingest",
-                "Ingesting publish-subscribe payload from service '{}'",
+                from "publish_subscribe::Relay::receive",
+                "Ingesting {}({})",
+                self.static_config.messaging_pattern(),
                 self.static_config.name()
             );
 
             let zenoh_payload = zenoh_sample.payload();
 
             let mut iceoryx_sample = fail!(
-                from "publish_subscribe::Relay::ingest",
+                from "publish_subscribe::Relay::receive",
                 when loan(zenoh_payload.len()),
                 with ReceiveError::IceoryxLoan,
                 "Failed to loan sample from iceoryx"

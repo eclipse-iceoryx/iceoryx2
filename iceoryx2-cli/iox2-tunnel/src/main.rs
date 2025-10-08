@@ -94,9 +94,9 @@ mod supported_platform {
                             &zenoh_config,
                         );
                         let mut tunnel = fail!(
-                            from "iox2-tunnel",
+                            from "iox2 tunnel",
                             when tunnel,
-                            ""
+                            "Failed to create Tunnel"
                         );
 
                         let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
@@ -106,7 +106,7 @@ mod supported_platform {
                             unimplemented!("Reactive mode is not yet supported.");
                         } else {
                             let rate = cli.poll.unwrap_or(100);
-                            info!("Polling rate {}ms", rate);
+                            info!(from "iox2 tunnel", "Polling rate {}ms", rate);
 
                             let guard =
                                 waitset.attach_interval(core::time::Duration::from_millis(rate))?;

@@ -21,7 +21,7 @@ use iceoryx2::service::service_id::ServiceId;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
 use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2::service::Service;
-use iceoryx2_bb_log::{debug, fail, warn};
+use iceoryx2_bb_log::{debug, fail, info, warn};
 use iceoryx2_tunnel_backend::traits::{
     Backend, Discovery, EventRelay, PublishSubscribeRelay, RelayBuilder, RelayFactory,
 };
@@ -128,7 +128,10 @@ impl<S: Service, B: for<'a> Backend<S>> Tunnel<S, B> {
         iceoryx_config: &iceoryx2::config::Config,
         backend_config: &<B as Backend<S>>::Config,
     ) -> Result<Self, CreationError> {
-        debug!(from "Tunnel::create", "Creating tunnel with configuration:\n{:?}\n{:?}\n{:?}", &tunnel_config, &iceoryx_config, &backend_config);
+        debug!(
+            from "Tunnel::create", 
+            "Creating Tunnel:\n{:?}\n{:?}\n{:?}", 
+            &tunnel_config, &iceoryx_config, &backend_config);
 
         let node = fail!(
             from "Tunnel::create",
@@ -146,7 +149,7 @@ impl<S: Service, B: for<'a> Backend<S>> Tunnel<S, B> {
 
         let (subscriber, tracker) = match &tunnel_config.discovery_service {
             Some(service_name) => {
-                debug!(from "Tunnel::create", "Local Discovery via Subscriber");
+                info!(from "Tunnel::create", "Local Discovery via Subscriber");
                 let subscriber = fail!(
                     from "Tunnel::create",
                     when discovery::subscriber::DiscoverySubscriber::create(&node, service_name),
@@ -156,7 +159,7 @@ impl<S: Service, B: for<'a> Backend<S>> Tunnel<S, B> {
                 (Some(subscriber), None)
             }
             None => {
-                debug!(from "Tunnel::create","Local Discovery via Tracker");
+                info!(from "Tunnel::create","Local Discovery via Tracker");
                 let tracker = discovery::tracker::DiscoveryTracker::create(iceoryx_config);
                 (None, Some(tracker))
             }
@@ -269,9 +272,9 @@ fn on_discovery<S: Service, B: Backend<S>>(
         return Ok(());
     }
 
-    debug!(
-        from "Tunnel::on_discovery",
-        "Discovered service {}({})",
+    info!(
+        from "Tunnel::discover",
+        "Discovered {}({})",
         static_config.messaging_pattern(),
         static_config.name()
     );
@@ -283,9 +286,9 @@ fn on_discovery<S: Service, B: Backend<S>>(
         MessagingPattern::Event(_) => setup_event(static_config, node, backend, ports, relays),
         _ => {
             // Not supported. Nothing to do.
-            debug!(
-                from "Tunnel::on_discovery",
-                "Skipping unsupported discovery {}({})",
+            info!(
+                from "Tunnel::discover",
+                "Unsupported discovery {}({})",
                 static_config.messaging_pattern(),
                 static_config.name()
             );
@@ -363,37 +366,40 @@ fn propagate_publish_subscribe_payloads<S: Service, B: Backend<S>>(
     port: &PublishSubscribePorts<S>,
     relay: &B::PublishSubscribeRelay,
 ) -> Result<(), PropagateError> {
-    fail!(
+    let propagated = fail!(
         from "propagate_publish_subscribe_payloads",
         when port.receive(node_id, |sample| {
-            debug!(
-                from "propagate_publish_subscribe_payloads",
-                "Propagating from {}({})",
-                port.static_config.messaging_pattern(),
-                port.static_config.name()
-            );
-
             relay.send(sample)
         }),
         with PropagateError::PayloadPropagation,
         "Failed to receive publish-subscribe payload for propagation"
     );
-    fail!(
+    if propagated {
+        info!(
+            from "Tunnel::propagate",
+            "Propagated {}({})",
+            port.static_config.messaging_pattern(),
+            port.static_config.name()
+        );
+    }
+
+    let ingested = fail!(
         from "propagate_publish_subscribe_payloads",
         when port.send(|loan: &mut LoanFn<_, _>| {
             relay.receive::<_>(&mut |size| {
-            debug!(
-                from "propagate_publish_subscribe_payloads",
-                "Ingesting into {}({})",
-                port.static_config.messaging_pattern(),
-                port.static_config.name()
-            );
-
             loan(size)})
         }),
         with PropagateError::PayloadIngestion,
         "Failed to ingest publish-subscribe payload received from backend"
     );
+    if ingested {
+        info!(
+            from "Tunnel::propagate",
+            "Ingested {}({})",
+            port.static_config.messaging_pattern(),
+            port.static_config.name()
+        );
+    }
 
     Ok(())
 }
@@ -402,39 +408,39 @@ fn propagate_events<S: Service, B: Backend<S>>(
     port: &EventPorts<S>,
     relay: &B::EventRelay,
 ) -> Result<(), PropagateError> {
-    fail!(
+    let propagated = fail!(
         from "propagate_events",
         when port.receive(|id| {
-            debug!(
-                from "propagate_events",
-                "Propagating from {}({})",
-                port.static_config.messaging_pattern(),
-                port.static_config.name()
-            );
             relay.send(id)
         }),
         with PropagateError::EventPropagation,
         "Failed to receive events for propagation"
     );
+    if propagated {
+        info!(
+            from "Tunnel::propagate",
+            "Propagated {}({})",
+            port.static_config.messaging_pattern(),
+            port.static_config.name()
+        );
+    }
 
-    fail!(
+    let ingested = fail!(
         from "propagate_events",
         when port.send(|| {
-            let event_id = relay.receive();
-
-            if let Ok(Some(_)) = event_id{
-                debug!(
-                    from "propagate_events",
-                    "Ingesting into {}({})",
-                    port.static_config.messaging_pattern(),
-                    port.static_config.name()
-                );
-            }
-            event_id
+            relay.receive()
         }),
         with PropagateError::EventIngestion,
         "Failed to ingest event received from backend"
     );
+    if ingested {
+        info!(
+            from "Tunnel::propagate",
+            "Ingested {}({})",
+            port.static_config.messaging_pattern(),
+            port.static_config.name()
+        );
+    }
 
     Ok(())
 }

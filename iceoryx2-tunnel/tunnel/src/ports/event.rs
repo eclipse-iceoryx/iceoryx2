@@ -18,7 +18,7 @@ use iceoryx2::{
     prelude::EventId,
     service::{static_config::StaticConfig, Service},
 };
-use iceoryx2_bb_log::fail;
+use iceoryx2_bb_log::{debug, fail};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
@@ -85,10 +85,14 @@ impl<S: Service> EventPorts<S> {
         })
     }
 
-    pub(crate) fn send<IngestFn, IngestError>(&self, mut ingest: IngestFn) -> Result<(), SendError>
+    pub(crate) fn send<IngestFn, IngestError>(
+        &self,
+        mut ingest: IngestFn,
+    ) -> Result<bool, SendError>
     where
         IngestFn: for<'a> FnMut() -> Result<Option<EventId>, IngestError>,
     {
+        let mut ingested = false;
         loop {
             let event_id = fail!(
                 from "EventPorts::send",
@@ -99,28 +103,39 @@ impl<S: Service> EventPorts<S> {
 
             match event_id {
                 Some(event_id) => {
+                    debug!(
+                        from "EventPorts::send",
+                        "Sending {}({})",
+                        self.static_config.messaging_pattern(),
+                        self.static_config.name()
+                    );
+
                     fail!(
                         from "EventPorts::send",
                         when self.notifier.__internal_notify(event_id, true),
                         with SendError::NotificationDelivery,
                         "Failed to send notification"
                     );
+
+                    ingested = true;
                 }
                 None => break,
             }
         }
 
-        Ok(())
+        Ok(ingested)
     }
 
     // TODO(#XYZ): Preserve ordering of events received over the backend.
     pub(crate) fn receive<PropagateFn, E>(
         &self,
         mut propagate: PropagateFn,
-    ) -> Result<(), ReceiveError>
+    ) -> Result<bool, ReceiveError>
     where
         PropagateFn: FnMut(EventId) -> Result<(), E>,
     {
+        let mut propagated = false;
+
         let mut received_ids: HashSet<EventId> = HashSet::new();
 
         // Consolidate pending event ids
@@ -135,14 +150,22 @@ impl<S: Service> EventPorts<S> {
 
         // Notify all ids once
         for event_id in received_ids {
+            debug!(
+                from "PublishSubscribePorts::receive",
+                "Received {}({})",
+                self.static_config.messaging_pattern(),
+                self.static_config.name()
+            );
             fail!(
                 from "EventPorts::receive",
                 when propagate(event_id),
                 with ReceiveError::NotificationPropagation,
                 "Failed to propagate received event to backend"
             );
+
+            propagated = true;
         }
 
-        Ok(())
+        Ok(propagated)
     }
 }

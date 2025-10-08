@@ -106,12 +106,17 @@ impl<S: Service> PublishSubscribePorts<S> {
         })
     }
 
-    pub(crate) fn send<IngestFn, IngestError>(&self, mut ingest: IngestFn) -> Result<(), SendError>
+    pub(crate) fn send<IngestFn, IngestError>(
+        &self,
+        mut ingest: IngestFn,
+    ) -> Result<bool, SendError>
     where
         IngestFn: for<'a> FnMut(
             &'a mut LoanFn<'a, S, LoanError>,
         ) -> Result<Option<SampleMut<S>>, IngestError>,
     {
+        let mut ingested = false;
+
         let type_details = self
             .static_config
             .publish_subscribe()
@@ -139,35 +144,46 @@ impl<S: Service> PublishSubscribePorts<S> {
 
             match sample {
                 Some(sample) => {
-                    debug!(from "PublishSubscribePorts::send", "Sending: PublishSubscribe({})", self.static_config.name());
+                    debug!(
+                        from "PublishSubscribePorts::send",
+                        "Sending {}({})",
+                        self.static_config.messaging_pattern(),
+                        self.static_config.name()
+                    );
+
                     fail!(
                         from "Ports::send",
                         when sample.send(),
                         with SendError::SampleDelivery,
                         "Failed to send ingested payload"
                     );
+
+                    ingested = true;
                 }
                 None => break,
             }
         }
 
-        Ok(())
+        Ok(ingested)
     }
 
     pub(crate) fn receive<PropagateFn, E>(
         &self,
         node_id: &NodeId,
         mut propagate: PropagateFn,
-    ) -> Result<(), ReceiveError>
+    ) -> Result<bool, ReceiveError>
     where
         PropagateFn: FnMut(Sample<S>) -> Result<(), E>,
     {
+        let mut propagated = false;
+
         loop {
             match unsafe { self.subscriber.receive_custom_payload() } {
                 Ok(Some(sample)) => {
                     debug!(
                         from "PublishSubscribePorts::receive",
-                        "Received PublishSubscribe({})",
+                        "Received {}({})",
+                        self.static_config.messaging_pattern(),
                         self.static_config.name()
                     );
 
@@ -182,6 +198,8 @@ impl<S: Service> PublishSubscribePorts<S> {
                         with ReceiveError::SamplePropagation,
                         "Failed to propagate sample"
                     );
+
+                    propagated = true;
                 }
                 Ok(None) => break,
                 Err(e) => {
@@ -191,6 +209,6 @@ impl<S: Service> PublishSubscribePorts<S> {
             }
         }
 
-        Ok(())
+        Ok(propagated)
     }
 }
