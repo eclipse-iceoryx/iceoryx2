@@ -42,6 +42,7 @@ pub enum SendError {
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum ReceiveError {
+    FailedToReceiveSample,
     FailedToLoanSample,
 }
 
@@ -155,7 +156,14 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
         &self,
         loan: &mut LoanFn<'_, S, LoanError>,
     ) -> Result<Option<SampleMut<S>>, Self::ReceiveError> {
-        for zenoh_sample in self.subscriber.drain() {
+        let zenoh_sample = fail!(
+            from "publish_subscribe::Relay::ingest",
+            when self.subscriber.try_recv(),
+            with ReceiveError::FailedToReceiveSample,
+            "Failed to receive sample from Zenoh"
+        );
+
+        if let Some(zenoh_sample) = zenoh_sample {
             debug!(
                 from "publish_subscribe::Relay::ingest",
                 "Ingesting publish-subscribe payload from service '{}'",
@@ -163,6 +171,7 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
             );
 
             let zenoh_payload = zenoh_sample.payload();
+
             let mut iceoryx_sample = fail!(
                 from "publish_subscribe::Relay::ingest",
                 when loan(zenoh_payload.len()),
@@ -178,7 +187,6 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
                 zenoh_payload.len()
             );
 
-            // TODO: Is there a safe iceoryx2 API to copy these bytes?
             unsafe {
                 core::ptr::copy_nonoverlapping(
                     zenoh_payload.to_bytes().as_ptr(),
@@ -189,7 +197,7 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
             let initialized_sample = unsafe { iceoryx_sample.assume_init() };
 
             return Ok(Some(initialized_sample));
-        }
+        };
 
         Ok(None)
     }

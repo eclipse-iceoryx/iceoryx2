@@ -14,7 +14,7 @@ use core::cell::RefCell;
 
 use iceoryx2::{config::Config, service::Service};
 use iceoryx2_bb_log::{fail, fatal_panic};
-use iceoryx2_services_discovery::service_discovery::{SyncError, Tracker};
+use iceoryx2_services_discovery::service_discovery::Tracker;
 use iceoryx2_tunnel_backend::{traits::Discovery, types::discovery::ProcessDiscoveryFn};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
