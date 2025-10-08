@@ -14,6 +14,7 @@ use core::cell::RefCell;
 
 use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2_bb_log::{fail, warn};
+use iceoryx2_tunnel_backend::types::discovery::ProcessDiscoveryFn;
 use zenoh::{
     handlers::FifoChannelHandler,
     query::{Querier, Reply},
@@ -25,7 +26,7 @@ use crate::keys;
 
 pub enum CreationError {
     FailedToCreateQuerier,
-    FailedToMakeInitialQuery,
+    FailedToMakeInitialDiscoveryServiceQuery,
 }
 
 #[derive(Debug)]
@@ -36,9 +37,9 @@ pub struct Discovery {
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum DiscoveryError {
-    FailedToProcessDiscoveredServices,
-    FailedToMakeQuery,
-    FailedToReceiveReply,
+    FailedToProcessDiscovery,
+    FailedToMakeDiscoveryServiceQuery,
+    FailedToReceiveReplyFromDiscoveryServiceQuery,
 }
 
 impl Discovery {
@@ -57,7 +58,7 @@ impl Discovery {
         let replies = fail!(
             from "Discovery::create()",
             when querier.get().wait(),
-            with CreationError::FailedToMakeInitialQuery,
+            with CreationError::FailedToMakeInitialDiscoveryServiceQuery,
             "Failed to make query for service discovery"
         );
 
@@ -71,12 +72,10 @@ impl Discovery {
 impl iceoryx2_tunnel_backend::traits::Discovery for Discovery {
     type DiscoveryError = DiscoveryError;
 
-    fn discover<
-        F: FnMut(&iceoryx2::service::static_config::StaticConfig) -> Result<(), Self::DiscoveryError>,
-    >(
+    fn discover<ProcessDiscoveryError>(
         &self,
-        process_discovery: &mut F,
-    ) -> Result<(), Self::DiscoveryError> {
+        process_discovery: &mut ProcessDiscoveryFn<ProcessDiscoveryError>,
+    ) -> Result<(), DiscoveryError> {
         // Drain all replies from previous query
         for reply in self.replies.borrow_mut().drain() {
             match reply.result() {
@@ -86,13 +85,13 @@ impl iceoryx2_tunnel_backend::traits::Discovery for Discovery {
                             fail!(
                                 from &self,
                                 when process_discovery(&service_details),
-                                with DiscoveryError::FailedToProcessDiscoveredServices,
-                                "Failed to process discovered services"
+                                with DiscoveryError::FailedToProcessDiscovery,
+                                "Failed to process discovery event"
                             )
                         }
                         Err(e) => {
                             warn!(
-                                "skipping discovered service config, unable to deserialize: {}",
+                                "Skipping discovered service config, unable to deserialize: {}",
                                 e
                             );
                         }
@@ -101,8 +100,8 @@ impl iceoryx2_tunnel_backend::traits::Discovery for Discovery {
                 Err(e) => fail!(
                     from "Discovery::discover",
                     when Err(e),
-                    with DiscoveryError::FailedToReceiveReply,
-                    "errorneous reply received from zenoh discovery query"
+                    with DiscoveryError::FailedToReceiveReplyFromDiscoveryServiceQuery,
+                    "Errorneous reply received from zenoh discovery query"
                 ),
             }
         }
@@ -114,8 +113,8 @@ impl iceoryx2_tunnel_backend::traits::Discovery for Discovery {
         let next_query = fail!(
             from &self,
             when self.querier.get().wait(),
-            with DiscoveryError::FailedToMakeQuery,
-            "failed to query Zenoh for service details on remote hosts"
+            with DiscoveryError::FailedToMakeDiscoveryServiceQuery,
+            "Failed to query Zenoh for services"
         );
         *self.replies.borrow_mut() = next_query;
 

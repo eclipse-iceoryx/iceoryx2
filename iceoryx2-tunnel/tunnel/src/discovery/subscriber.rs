@@ -11,12 +11,12 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2::node::Node;
-use iceoryx2::port::ReceiveError;
 use iceoryx2::{port::subscriber::Subscriber, service::Service};
 use iceoryx2_bb_log::fail;
 use iceoryx2_services_discovery::service_discovery::Discovery as DiscoveryEvent;
 
 use iceoryx2_tunnel_backend::traits::Discovery;
+use iceoryx2_tunnel_backend::types::discovery::ProcessDiscoveryFn;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
@@ -28,12 +28,7 @@ pub enum CreationError {
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum DiscoveryError {
     FailedToReceiveDiscoveryEvent,
-}
-
-impl From<ReceiveError> for DiscoveryError {
-    fn from(_: ReceiveError) -> Self {
-        DiscoveryError::FailedToReceiveDiscoveryEvent
-    }
+    FailedToProcessDiscovery,
 }
 
 #[derive(Debug)]
@@ -71,24 +66,26 @@ impl<S: Service> DiscoverySubscriber<S> {
 impl<S: Service> Discovery for DiscoverySubscriber<S> {
     type DiscoveryError = DiscoveryError;
 
-    fn discover<
-        F: FnMut(&iceoryx2::service::static_config::StaticConfig) -> Result<(), Self::DiscoveryError>,
-    >(
+    fn discover<ProcessDiscoveryError>(
         &self,
-        process_discovery: &mut F,
+        process_discovery: &mut ProcessDiscoveryFn<ProcessDiscoveryError>,
     ) -> Result<(), Self::DiscoveryError> {
         let subscriber = &self.0;
         loop {
             match subscriber.receive() {
                 Ok(Some(sample)) => {
                     if let DiscoveryEvent::Added(static_config) = sample.payload() {
-                        process_discovery(static_config)?;
+                        fail!(from "DiscoverySubscriber::discover",
+                            when process_discovery(static_config),
+                            with DiscoveryError::FailedToProcessDiscovery,
+                            "Failed to process discovery event"
+                        );
                     }
                 }
                 Ok(None) => break Ok(()),
-                Err(e) => {
-                    fail!(from "DiscoverySubscriber<S>::discover",
-                        with e.into(),
+                Err(_) => {
+                    fail!(from "DiscoverySubscriber::discover",
+                        with DiscoveryError::FailedToReceiveDiscoveryEvent,
                         "Failed to receive from discovery subscriber"
                     );
                 }

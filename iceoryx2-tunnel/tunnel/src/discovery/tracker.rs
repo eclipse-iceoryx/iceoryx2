@@ -12,23 +12,15 @@
 
 use core::cell::RefCell;
 
-use iceoryx2::{
-    config::Config,
-    service::{static_config::StaticConfig, Service},
-};
+use iceoryx2::{config::Config, service::Service};
+use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_services_discovery::service_discovery::{SyncError, Tracker};
-
-use iceoryx2_tunnel_backend::traits::Discovery;
+use iceoryx2_tunnel_backend::{traits::Discovery, types::discovery::ProcessDiscoveryFn};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum DiscoveryError {
     FailedToSynchronizeTracker,
-}
-
-impl From<SyncError> for DiscoveryError {
-    fn from(_: SyncError) -> Self {
-        DiscoveryError::FailedToSynchronizeTracker
-    }
+    FailedToProcessDiscovery,
 }
 
 #[derive(Debug)]
@@ -44,15 +36,35 @@ impl<S: Service> DiscoveryTracker<S> {
 impl<S: Service> Discovery for DiscoveryTracker<S> {
     type DiscoveryError = DiscoveryError;
 
-    fn discover<F: FnMut(&StaticConfig) -> Result<(), Self::DiscoveryError>>(
+    fn discover<ProcessDiscoveryError>(
         &self,
-        process_discovery: &mut F,
+        process_discovery: &mut ProcessDiscoveryFn<ProcessDiscoveryError>,
     ) -> Result<(), Self::DiscoveryError> {
         let tracker = &mut self.0.borrow_mut();
-        let (added, _removed) = tracker.sync().unwrap();
+        let (added, _removed) = fail!(
+            from "DiscoveryTracker::discover",
+            when tracker.sync(),
+            with DiscoveryError::FailedToSynchronizeTracker,
+            "Failed to synchronize tracker"
+        );
 
         for id in added {
-            process_discovery(&tracker.get(&id).unwrap().static_details)?;
+            match &tracker.get(&id) {
+                Some(service_details) => {
+                    fail!(
+                        from "DiscoveryTracker::discover",
+                        when process_discovery(&service_details.static_details),
+                        with DiscoveryError::FailedToProcessDiscovery,
+                        "Failed to process discovery event"
+                    );
+                }
+                None => {
+                    fatal_panic!(
+                        from "DiscoveryTracker::discover",
+                        "This should never happen. Service discovered by tracker is not retrievable."
+                    )
+                }
+            }
         }
 
         Ok(())

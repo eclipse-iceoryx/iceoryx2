@@ -10,14 +10,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::service::static_config::StaticConfig;
-
 use core::fmt::Debug;
+
+use crate::types::discovery::ProcessDiscoveryFn;
 
 pub trait Discovery {
     type DiscoveryError: Debug;
 
-    fn discover<F>(&self, setup_relays: &mut F) -> Result<(), Self::DiscoveryError>
-    where
-        F: FnMut(&StaticConfig) -> Result<(), Self::DiscoveryError>;
+    fn discover<ProcessDiscoveryError>(
+        &self,
+        process_discovery: &mut ProcessDiscoveryFn<ProcessDiscoveryError>,
+    ) -> Result<(), Self::DiscoveryError>;
 }

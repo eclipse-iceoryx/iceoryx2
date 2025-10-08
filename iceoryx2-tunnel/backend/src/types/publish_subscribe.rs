@@ -26,4 +26,4 @@ pub type SampleMutUninit<S> =
 pub type Publisher<S> = iceoryx2::port::publisher::Publisher<S, Payload, Header>;
 pub type Subscriber<S> = iceoryx2::port::subscriber::Subscriber<S, Payload, Header>;
 
-pub type LoanFn<'a, S> = dyn FnMut(usize) -> SampleMutUninit<S> + 'a;
+pub type LoanFn<'a, S, LoanError> = dyn FnMut(usize) -> Result<SampleMutUninit<S>, LoanError> + 'a;

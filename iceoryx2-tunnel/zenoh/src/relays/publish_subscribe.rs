@@ -31,25 +31,20 @@ use crate::relays::announce_service;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
-    FailedToCreateEndpoint,
+    FailedToDeclarePublisher,
+    FailedToDeclareSubscriber,
+    FailedToAnnounceService,
 }
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub enum PropagationError {
+pub enum SendError {
     FailedToPutPayload,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub enum IngestionError {
-    Error,
+pub enum ReceiveError {
+    FailedToLoanSample,
 }
 
-impl From<Box<dyn std::error::Error + Send + Sync>> for CreationError {
-    fn from(_: Box<dyn std::error::Error + Send + Sync>) -> Self {
-        CreationError::FailedToCreateEndpoint
-    }
-}
-
-// TODO: Revise lifetimes - config and session lifetimes are different
 #[derive(Debug)]
 pub struct Builder<'a, S: Service> {
     session: &'a Session,
@@ -87,6 +82,7 @@ impl<'a, S: Service> RelayBuilder for Builder<'a, S> {
                 .allowed_destination(Locality::Remote)
                 .reliability(Reliability::Reliable)
                 .wait(),
+            with CreationError::FailedToDeclarePublisher,
             "Failed to create zenoh publisher for publish-subscribe payloads"
         );
 
@@ -98,12 +94,14 @@ impl<'a, S: Service> RelayBuilder for Builder<'a, S> {
                 .with(FifoChannel::new(10))
                 .allowed_origin(Locality::Remote)
                 .wait(),
+            with CreationError::FailedToDeclareSubscriber,
             "Failed to create zenoh subscriber for publish-subscribe payloads"
         );
 
         fail!(
             from "publish_subscribe::RelayBuilder::create",
             when announce_service(self.session, self.static_config),
+            with CreationError::FailedToAnnounceService,
             "Failed to annnounce service on Zenoh"
         );
 
@@ -125,8 +123,8 @@ pub struct Relay<S: Service> {
 }
 
 impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
-    type SendError = PropagationError;
-    type ReceiveError = PropagationError;
+    type SendError = SendError;
+    type ReceiveError = ReceiveError;
 
     fn send(
         &self,
@@ -139,23 +137,23 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
         );
 
         let payload = sample.payload();
-        let bytes = payload.as_ptr() as *mut u8; // TODO: Can this be non-mut ?
+        let bytes = payload.as_ptr() as *mut u8;
         let len = payload.len();
 
         let payload = unsafe { ZBytes::from(core::slice::from_raw_parts(bytes, len)) };
         fail!(
             from "publish_subscribe::Relay::propagate",
             when self.publisher.put(payload).wait(),
-            with PropagationError::FailedToPutPayload,
-            "Failed to propagate payload over relay"
+            with SendError::FailedToPutPayload,
+            "Failed to propagate propagate publish-subscribe payload to zenoh"
         );
 
         Ok(())
     }
 
-    fn receive(
+    fn receive<LoanError>(
         &self,
-        loan: &mut LoanFn<'_, S>,
+        loan: &mut LoanFn<'_, S, LoanError>,
     ) -> Result<Option<SampleMut<S>>, Self::ReceiveError> {
         for zenoh_sample in self.subscriber.drain() {
             debug!(
@@ -165,7 +163,12 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
             );
 
             let zenoh_payload = zenoh_sample.payload();
-            let mut iceoryx_sample = loan(zenoh_payload.len());
+            let mut iceoryx_sample = fail!(
+                from "publish_subscribe::Relay::ingest",
+                when loan(zenoh_payload.len()),
+                with ReceiveError::FailedToLoanSample,
+                "Failed to loan sample from iceoryx"
+            );
             let iceoryx_payload = iceoryx_sample.payload_mut();
 
             assert!(

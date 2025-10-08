@@ -12,4 +12,4 @@
 
 use iceoryx2::prelude::EventId;
 
-pub type NotifyFn<'a> = dyn FnMut(EventId) + 'a;
+pub type NotifyFn<'a, NotifyError = ()> = dyn FnMut(EventId) -> Result<(), NotifyError> + 'a;

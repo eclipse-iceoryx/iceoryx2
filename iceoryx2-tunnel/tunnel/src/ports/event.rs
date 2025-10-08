@@ -12,50 +12,32 @@
 
 use iceoryx2::{
     node::Node,
-    port::{
-        listener::{Listener, ListenerCreateError},
-        notifier::{Notifier, NotifierCreateError},
-    },
-    prelude::{EventId, PortFactory},
-    service::{builder::event::EventOpenOrCreateError, static_config::StaticConfig, Service},
+    port::{listener::Listener, notifier::Notifier},
+    prelude::EventId,
+    service::{static_config::StaticConfig, Service},
 };
 use iceoryx2_bb_log::fail;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
-    Error,
-}
-
-impl From<EventOpenOrCreateError> for CreationError {
-    fn from(_: EventOpenOrCreateError) -> Self {
-        CreationError::Error
-    }
-}
-
-impl From<NotifierCreateError> for CreationError {
-    fn from(_: NotifierCreateError) -> Self {
-        CreationError::Error
-    }
-}
-
-impl From<ListenerCreateError> for CreationError {
-    fn from(_: ListenerCreateError) -> Self {
-        CreationError::Error
-    }
+    FailedToCreateService,
+    FailedToCreateNotifier,
+    FailedToCreateListener,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub enum WaitError {
-    Error,
+pub enum SendError {
+    FailedToSendNotification,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub enum NotifyError {
-    Error,
+pub enum ReceiveError {
+    FailedToPropagateNotification,
 }
 
 #[derive(Debug)]
 pub(crate) struct EventPorts<S: Service> {
+    pub(crate) static_config: StaticConfig,
     pub(crate) notifier: Notifier<S>,
     pub(crate) listener: Listener<S>,
 }
@@ -64,7 +46,7 @@ impl<S: Service> EventPorts<S> {
     pub(crate) fn new(static_config: &StaticConfig, node: &Node<S>) -> Result<Self, CreationError> {
         let event_config = static_config.event();
         let service = fail!(
-            from "Ports::new",
+            from "EventPorts::new",
             when node
                 .service_builder(static_config.name())
                 .event()
@@ -73,51 +55,65 @@ impl<S: Service> EventPorts<S> {
                 .max_notifiers(event_config.max_notifiers())
                 .event_id_max_value(event_config.event_id_max_value())
                 .open_or_create(),
-            "Failed to open or create event service"
+            with CreationError::FailedToCreateService,
+            "{}", format!("Failed to open or create service {}({})", static_config.messaging_pattern(), static_config.name())
         );
 
         let notifier = fail!(
             from "create_notifier()",
             when service.notifier_builder().create(),
+            with CreationError::FailedToCreateNotifier,
             "{}",
-            &format!("Failed to create Notifier for '{}'", service.name())
+            &format!("Failed to create Notifier for {}({})", static_config.messaging_pattern(), static_config.name())
         );
 
         let listener = fail!(
             from "create_listener()",
             when service.listener_builder().create(),
+            with CreationError::FailedToCreateListener,
             "{}",
-            &format!("Failed to create Listener for '{}'", service.name())
+            &format!("Failed to create Listener for {}({})", static_config.messaging_pattern(),static_config.name())
         );
 
-        Ok(EventPorts { notifier, listener })
+        Ok(EventPorts {
+            static_config: static_config.clone(),
+            notifier,
+            listener,
+        })
     }
 
-    pub(crate) fn receive<PropagateFn>(&self, mut propagate: PropagateFn) -> Result<(), WaitError>
+    pub(crate) fn send(&self, event_id: EventId) -> Result<(), SendError> {
+        fail!(
+            from "EventPorts::notify",
+            when self.notifier.__internal_notify(event_id, true),
+            with SendError::FailedToSendNotification,
+            "Failed to send notification"
+        );
+        Ok(())
+    }
+
+    pub(crate) fn receive<PropagateFn, E>(
+        &self,
+        mut propagate: PropagateFn,
+    ) -> Result<(), ReceiveError>
     where
-        // TODO: Handle failed propagation
-        PropagateFn: FnMut(EventId),
+        PropagateFn: FnMut(EventId) -> Result<(), E>,
     {
         // let mut notified_ids: HashSet<usize> = HashSet::new();
         while let Ok(event_id) = self.listener.try_wait_one() {
             match event_id {
                 Some(event_id) => {
-                    propagate(event_id);
+                    fail!(
+                        from "EventPorts::receive",
+                        when propagate(event_id),
+                        with ReceiveError::FailedToPropagateNotification,
+                        "Failed to propagate received event to backend"
+                    );
                 }
                 None => break,
             }
         }
 
-        Ok(())
-    }
-
-    pub(crate) fn send(&self, event_id: EventId) -> Result<(), NotifyError> {
-        fail!(
-            from "Ports::notify",
-            when self.notifier.__internal_notify(event_id, true),
-            with NotifyError::Error,
-            "Failed to propagate remote notification"
-        );
         Ok(())
     }
 }

@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub mod discovery;
-pub mod event;
-pub mod publish_subscribe;
+use iceoryx2::service::static_config::StaticConfig;
+
+pub type ProcessDiscoveryFn<'a, ProcessDiscoveryError = ()> =
+    dyn FnMut(&StaticConfig) -> Result<(), ProcessDiscoveryError> + 'a;

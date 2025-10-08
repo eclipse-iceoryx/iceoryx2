@@ -12,11 +12,8 @@
 
 use iceoryx2::node::Node;
 use iceoryx2::node::NodeId;
-use iceoryx2::port::publisher::PublisherCreateError;
-use iceoryx2::port::subscriber::SubscriberCreateError;
+use iceoryx2::port::LoanError;
 use iceoryx2::prelude::AllocationStrategy;
-use iceoryx2::service::builder::publish_subscribe::*;
-use iceoryx2::service::port_factory::*;
 use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2::service::Service;
 use iceoryx2_bb_log::debug;
@@ -38,31 +35,14 @@ pub enum CreationError {
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub enum ReceiveError {
-    Error,
+pub enum SendError {
+    FailedToSendSample,
+    FailedToIngestPayload,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub enum SendError {
-    FailedToSendSample,
-}
-
-impl From<PublishSubscribeOpenOrCreateError> for CreationError {
-    fn from(_: PublishSubscribeOpenOrCreateError) -> Self {
-        CreationError::FailedToCreateService
-    }
-}
-
-impl From<PublisherCreateError> for CreationError {
-    fn from(_: PublisherCreateError) -> Self {
-        CreationError::FailedToCreatePublisher
-    }
-}
-
-impl From<SubscriberCreateError> for CreationError {
-    fn from(_: SubscriberCreateError) -> Self {
-        CreationError::FailedToCreateSubscriber
-    }
+pub enum ReceiveError {
+    FailedToPropagateSample,
 }
 
 #[derive(Debug)]
@@ -77,7 +57,7 @@ impl<S: Service> PublishSubscribePorts<S> {
         let port_config = static_config.publish_subscribe();
         let service = unsafe {
             fail!(
-                from "Ports::new",
+                from "PublishSubscribePorts::new",
                 when node.service_builder(static_config.name())
                         .publish_subscribe::<Payload>()
                         .user_header::<Header>()
@@ -97,23 +77,26 @@ impl<S: Service> PublishSubscribePorts<S> {
                             port_config.subscriber_max_borrowed_samples(),
                         )
                         .open_or_create(),
-                "{}", format!("Failed to open or create publish-subscribe service '{}'", static_config.name())
+                with CreationError::FailedToCreateService,
+                "{}", format!("Failed to open or create service {}({})", static_config.messaging_pattern(), static_config.name())
             )
         };
 
         let publisher = fail!(
-            from "Ports::new",
+            from "PublishSubscribePorts::new",
             when service
                 .publisher_builder()
                 .allocation_strategy(AllocationStrategy::PowerOfTwo)
                 .create(),
-            "{}", &format!("Failed to create Publisher for '{}'", service.name())
+            with CreationError::FailedToCreatePublisher,
+            "{}", &format!("Failed to create Publisher for {}({})", static_config.messaging_pattern(), static_config.name())
         );
 
         let subscriber = fail!(
             from "Ports::new",
             when service.subscriber_builder().create(),
-            "{}", &format!("Failed to create Subscriber for '{}'", service.name())
+            with CreationError::FailedToCreateSubscriber,
+            "{}", &format!("Failed to create Subscriber for {}({})", static_config.messaging_pattern(), static_config.name())
         );
 
         Ok(PublishSubscribePorts {
@@ -123,20 +106,68 @@ impl<S: Service> PublishSubscribePorts<S> {
         })
     }
 
-    pub(crate) fn receive<PropagateFn>(
+    pub(crate) fn send<IngestFn, IngestError>(&self, mut ingest: IngestFn) -> Result<(), SendError>
+    where
+        IngestFn: for<'a> FnMut(
+            &'a mut LoanFn<'a, S, LoanError>,
+        ) -> Result<Option<SampleMut<S>>, IngestError>,
+    {
+        let type_details = self
+            .static_config
+            .publish_subscribe()
+            .message_type_details();
+
+        loop {
+            let sample = ingest(&mut |number_of_bytes| {
+                let number_of_elements = number_of_bytes / type_details.payload.size();
+
+                match unsafe { self.publisher.loan_custom_payload(number_of_elements) } {
+                    Ok(sample_to_initialize) => {
+                        return Ok(sample_to_initialize);
+                    }
+                    Err(e) => {
+                        // This should never happen?
+                        fatal_panic!(from "PublishSubscribePorts::send", "Failed to loan custom payload: {e}")
+                    }
+                }
+            });
+
+            let sample = fail!(
+                from "PublishSubscribePorts::send",
+                when sample,
+                with SendError::FailedToIngestPayload,
+                "Failed to ingest payload data from backend"
+            );
+
+            if let Some(sample) = sample {
+                debug!(from "PublishSubscribePorts::send", "Sending: PublishSubscribe({})", self.static_config.name());
+                fail!(
+                    from "Ports::send",
+                    when sample.send(),
+                    with SendError::FailedToSendSample,
+                    "Failed to send ingested payload"
+                );
+            } else {
+                break;
+            }
+        }
+
+        Ok(())
+    }
+
+    pub(crate) fn receive<PropagateFn, E>(
         &self,
         node_id: &NodeId,
         mut propagate: PropagateFn,
     ) -> Result<(), ReceiveError>
     where
-        // TODO: Handle failed propagation
-        PropagateFn: FnMut(Sample<S>),
+        PropagateFn: FnMut(Sample<S>) -> Result<(), E>,
     {
         loop {
             match unsafe { self.subscriber.receive_custom_payload() } {
                 Ok(Some(sample)) => {
                     debug!(
-                        from "Ports::receive",
+                        from "PublishSubscribePorts::receive",
                         "Received PublishSubscribe({})",
                         self.static_config.name()
                     );
@@ -146,52 +177,18 @@ impl<S: Service> PublishSubscribePorts<S> {
                         continue;
                     }
 
-                    propagate(sample);
+                    fail!(
+                        from "PublishSubscribePorts::receive",
+                        when propagate(sample),
+                        with ReceiveError::FailedToPropagateSample,
+                        "Failed to propagate sample"
+                    );
                 }
                 Ok(None) => break,
                 Err(e) => {
-                    // TODO: Use fail!
-                    fatal_panic!("Failed to receive custom payload: {}", e)
+                    // This should never happen?
+                    fatal_panic!(from "PublishSubscribePorts::receive", "Failed to receive custom payload: {}", e)
                 }
-            }
-        }
-
-        Ok(())
-    }
-
-    pub(crate) fn send<IngestFn>(&self, mut ingest: IngestFn) -> Result<(), SendError>
-    where
-        IngestFn: for<'a> FnMut(&'a mut LoanFn<'a, S>) -> Option<SampleMut<S>>,
-    {
-        let type_details = self
-            .static_config
-            .publish_subscribe()
-            .message_type_details();
-
-        loop {
-            let initialized_sample = ingest(&mut |number_of_bytes| {
-                let number_of_elements = number_of_bytes / type_details.payload.size();
-
-                match unsafe { self.publisher.loan_custom_payload(number_of_elements) } {
-                    Ok(sample_to_initialize) => {
-                        return sample_to_initialize;
-                    }
-                    Err(e) => {
-                        fatal_panic!(from "Ports::send", "Failed to loan custom payload: {e}")
-                    }
-                }
-            });
-
-            if let Some(sample) = initialized_sample {
-                debug!(from "Ports::send", "Sending: PublishSubscribe({})", self.static_config.name());
-                fail!(
-                    from "Ports::send",
-                    when sample.send(),
-                    with SendError::FailedToSendSample,
-                    "Failed to send ingested payload"
-                );
-            } else {
-                break;
             }
         }
 

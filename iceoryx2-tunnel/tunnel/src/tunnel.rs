@@ -13,11 +13,10 @@
 use core::fmt::Debug;
 use std::collections::{HashMap, HashSet};
 
+use crate::discovery;
 use crate::ports::event::EventPorts;
 use crate::ports::publish_subscribe::PublishSubscribePorts;
-use crate::{discovery, ports};
-use iceoryx2::node::{Node, NodeBuilder, NodeCreationFailure, NodeId};
-use iceoryx2::service::builder::publish_subscribe::PublishSubscribeOpenOrCreateError;
+use iceoryx2::node::{Node, NodeBuilder, NodeId};
 use iceoryx2::service::service_id::ServiceId;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
 use iceoryx2::service::static_config::StaticConfig;
@@ -30,77 +29,29 @@ use iceoryx2_tunnel_backend::types::publish_subscribe::LoanFn;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
-    FailedToCreateNodeNode,
-    FailedToCreateService,
+    FailedToCreateNode,
     FailedToCreateBackend,
-    FailedToCreateSubscriber,
-    FailedToCreateTracker,
+    FailedToCreateDiscoverySubscriber,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum DiscoveryError {
+    FailedToDiscover,
     FailedToDiscoverOverSubscriber,
     FailedToDiscoverOverTracker,
     FailedToDiscoverOverBackend,
+    FailedToCreatePublishSubscribePorts,
+    FailedToCreatePublishSubscribeRelay,
+    FailedToCreateEventPorts,
+    FailedToCreateEventRelay,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum PropagateError {
-    Error,
-}
-
-impl From<discovery::subscriber::CreationError> for CreationError {
-    fn from(_: discovery::subscriber::CreationError) -> Self {
-        CreationError::FailedToCreateSubscriber
-    }
-}
-
-impl From<discovery::subscriber::DiscoveryError> for DiscoveryError {
-    fn from(_: discovery::subscriber::DiscoveryError) -> Self {
-        DiscoveryError::FailedToDiscoverOverSubscriber
-    }
-}
-
-impl From<discovery::tracker::DiscoveryError> for DiscoveryError {
-    fn from(_: discovery::tracker::DiscoveryError) -> Self {
-        DiscoveryError::FailedToDiscoverOverTracker
-    }
-}
-
-impl From<ports::publish_subscribe::SendError> for PropagateError {
-    fn from(_: ports::publish_subscribe::SendError) -> Self {
-        PropagateError::Error
-    }
-}
-
-impl From<ports::publish_subscribe::ReceiveError> for PropagateError {
-    fn from(_: ports::publish_subscribe::ReceiveError) -> Self {
-        PropagateError::Error
-    }
-}
-
-impl From<ports::event::NotifyError> for PropagateError {
-    fn from(_: ports::event::NotifyError) -> Self {
-        PropagateError::Error
-    }
-}
-
-impl From<ports::event::WaitError> for PropagateError {
-    fn from(_: ports::event::WaitError) -> Self {
-        PropagateError::Error
-    }
-}
-
-impl From<NodeCreationFailure> for CreationError {
-    fn from(_: NodeCreationFailure) -> Self {
-        CreationError::FailedToCreateNodeNode
-    }
-}
-
-impl From<PublishSubscribeOpenOrCreateError> for CreationError {
-    fn from(_: PublishSubscribeOpenOrCreateError) -> Self {
-        CreationError::FailedToCreateService
-    }
+    FailedToPropagatePublishSubscribePayloadToBackend,
+    FailedToPropagatePublishSubscribePayloadToIceoryx,
+    FailedToPropagateEventToBackend,
+    FailedToPropagateEventToIceoryx,
 }
 
 #[derive(Debug)]
@@ -154,29 +105,35 @@ impl<S: Service, B: for<'a> Backend<S>> Tunnel<S, B> {
         iceoryx_config: &iceoryx2::config::Config,
         backend_config: &<B as Backend<S>>::Config,
     ) -> Result<Self, CreationError> {
+        debug!(from "Tunnel::create", "Creating tunnel with configuration:\n{:?}\n{:?}\n{:?}", &tunnel_config, &iceoryx_config, &backend_config);
+
         let node = fail!(
             from "Tunnel::create",
             when NodeBuilder::new().config(iceoryx_config).create::<S>(),
-            "failed to create node"
+            with CreationError::FailedToCreateNode,
+            "Failed to create Node"
         );
 
         let backend = fail!(
             from "Tunnel::create",
             when Backend::create(backend_config),
             with CreationError::FailedToCreateBackend,
-            "failed to instantiate the backend"
+            "Failed to create provided Backend"
         );
 
         let (subscriber, tracker) = match &tunnel_config.discovery_service {
             Some(service_name) => {
                 debug!(from "Tunnel::create", "Local Discovery via Subscriber");
-                let subscriber =
-                    discovery::subscriber::DiscoverySubscriber::create(&node, service_name)?;
+                let subscriber = fail!(
+                    from "Tunnel::create",
+                    when discovery::subscriber::DiscoverySubscriber::create(&node, service_name),
+                    with CreationError::FailedToCreateDiscoverySubscriber,
+                    "Failed to create discovery subscriber"
+                );
                 (Some(subscriber), None)
             }
             None => {
                 debug!(from "Tunnel::create","Local Discovery via Tracker");
-
                 let tracker = discovery::tracker::DiscoveryTracker::create(iceoryx_config);
                 (None, Some(tracker))
             }
@@ -193,9 +150,18 @@ impl<S: Service, B: for<'a> Backend<S>> Tunnel<S, B> {
     }
 
     pub fn discover(&mut self) -> Result<(), DiscoveryError> {
-        // TODO: Handle errors
-        self.discover_over_iceoryx().unwrap();
-        self.discover_over_backend().unwrap();
+        fail!(
+            from "Tunnel::discover",
+            when self.discover_over_iceoryx(),
+            with DiscoveryError::FailedToDiscover,
+            "Failed to discover services over iceoryx"
+        );
+        fail!(
+            from "Tunnel::discover",
+            when self.discover_over_backend(),
+            with DiscoveryError::FailedToDiscover,
+            "Failed to discover services over backend"
+        );
 
         Ok(())
     }
@@ -206,20 +172,20 @@ impl<S: Service, B: for<'a> Backend<S>> Tunnel<S, B> {
             fail!(
                 from "Tunnel::discover_over_iceoryx",
                 when subscriber.discover(&mut |static_config| {
-                    on_discovery(static_config, &mut self.node, &self.backend, &tunneled_services, &mut self.ports, &mut self.relays).unwrap();
-                    Ok(())
+                    on_discovery(static_config, &mut self.node, &self.backend, &tunneled_services, &mut self.ports, &mut self.relays)
                 }),
-                "Failed to discover services via Subscriber"
+                with DiscoveryError::FailedToDiscoverOverSubscriber,
+                "Failed to discover services via subscriber to discovery service"
             );
         }
         if let Some(tracker) = &mut self.tracker {
             fail!(
                 from "Tunnel::discover_over_iceoryx",
                 when tracker.discover(&mut |static_config| {
-                    on_discovery(static_config, &mut self.node, &self.backend, &tunneled_services, &mut self.ports, &mut self.relays).unwrap();
-                    Ok(())
+                    on_discovery(static_config, &mut self.node, &self.backend, &tunneled_services, &mut self.ports, &mut self.relays)
                 }),
-                "Failed to discover services via Tracker"
+                with DiscoveryError::FailedToDiscoverOverTracker,
+                "Failed to discover services via discovery tracker"
             );
         }
 
@@ -231,8 +197,7 @@ impl<S: Service, B: for<'a> Backend<S>> Tunnel<S, B> {
         fail!(
             from "Tunnel::discover_over_backend",
             when self.backend.discovery().discover(&mut |static_config| {
-                on_discovery(static_config, &self.node, &self.backend, &tunneled_services, &mut self.ports, &mut self.relays).unwrap();
-                Ok(())
+                on_discovery(static_config, &self.node, &self.backend, &tunneled_services, &mut self.ports, &mut self.relays)
             }),
             with DiscoveryError::FailedToDiscoverOverBackend,
             "Failed to discover services via Backend"
@@ -251,7 +216,7 @@ impl<S: Service, B: for<'a> Backend<S>> Tunnel<S, B> {
                     );
                 }
                 None => {
-                    warn!(from "Tunnel::propagate", "No relay available for id {:?}. Skipping.", service_id);
+                    warn!(from "Tunnel::propagate", "No relay available for {:?}", service_id);
                     return Ok(());
                 }
             };
@@ -267,7 +232,7 @@ impl<S: Service, B: for<'a> Backend<S>> Tunnel<S, B> {
                     );
                 }
                 None => {
-                    warn!(from "Tunnel::propagate", "No relay available for id {:?}. Skipping.", service_id);
+                    warn!(from "Tunnel::propagate", "No relay available for {:?}", service_id);
                     return Ok(());
                 }
             };
@@ -293,32 +258,29 @@ fn on_discovery<S: Service, B: Backend<S>>(
     services: &HashSet<ServiceId>,
     ports: &mut Ports<S>,
     relays: &mut Relays<S, B>,
-) -> Result<(), CreationError> {
+) -> Result<(), DiscoveryError> {
     if services.contains(static_config.service_id()) {
         // Nothing to do.
         return Ok(());
     }
 
+    debug!(
+        from "Tunnel::on_discovery",
+        "Discovered service {}({})",
+        static_config.messaging_pattern(),
+        static_config.name()
+    );
+
     match static_config.messaging_pattern() {
         MessagingPattern::PublishSubscribe(_) => {
-            debug!(
-                from "Tunnel::on_discovery",
-                "Discovered PublishSubscribe({})",
-                static_config.name()
-            );
             setup_publish_subscribe(static_config, node, backend, ports, relays)
         }
-        MessagingPattern::Event(_) => {
-            debug!(
-                from "Tunnel::on_discovery",
-                "Discovered Event({})", static_config.name());
-            setup_event(static_config, node, backend, ports, relays)
-        }
+        MessagingPattern::Event(_) => setup_event(static_config, node, backend, ports, relays),
         _ => {
             // Not supported. Nothing to do.
             debug!(
                 from "Tunnel::on_discovery",
-                "Unsupported Discovery: {}({})",
+                "Skipping unsupported discovery {}({})",
                 static_config.messaging_pattern(),
                 static_config.name()
             );
@@ -333,18 +295,25 @@ fn setup_publish_subscribe<S: Service, B: Backend<S>>(
     backend: &B,
     ports: &mut Ports<S>,
     relays: &mut Relays<S, B>,
-) -> Result<(), CreationError> {
+) -> Result<(), DiscoveryError> {
     let service_id = static_config.service_id();
 
-    // TODO: Use fail!
-    let port = PublishSubscribePorts::new(static_config, &node).unwrap();
+    let port = fail!(
+        from "setup_publish_subscribe",
+        when PublishSubscribePorts::new(static_config, &node),
+        with DiscoveryError::FailedToCreatePublishSubscribePorts,
+        "Failed to create publish-subscribe ports"
+    );
 
-    // TODO: Use fail!
-    let relay = backend
-        .relay_builder()
-        .publish_subscribe(static_config)
-        .create()
-        .unwrap();
+    let relay = fail!(
+        from "setup_publish_subscribe",
+        when backend
+            .relay_builder()
+            .publish_subscribe(static_config)
+            .create(),
+        with DiscoveryError::FailedToCreatePublishSubscribeRelay,
+        "Failed to create publish-subscribe relay"
+    );
 
     ports.publish_subscribe.insert(service_id.clone(), port);
     relays.publish_subscribe.insert(service_id.clone(), relay);
@@ -358,18 +327,25 @@ fn setup_event<S: Service, B: Backend<S>>(
     backend: &B,
     ports: &mut Ports<S>,
     relays: &mut Relays<S, B>,
-) -> Result<(), CreationError> {
+) -> Result<(), DiscoveryError> {
     let service_id = static_config.service_id();
 
-    // TODO: Use fail!
-    let port = EventPorts::new(static_config, &node).unwrap();
+    let port = fail!(
+        from "setup_event",
+        when EventPorts::new(static_config, &node),
+        with DiscoveryError::FailedToCreateEventPorts,
+        "Failed to create event ports"
+    );
 
-    // TODO: Use fail!
-    let relay = backend
-        .relay_builder()
-        .event(static_config)
-        .create()
-        .unwrap();
+    let relay = fail!(
+        from "setup_event",
+        when backend
+            .relay_builder()
+            .event(static_config)
+            .create(),
+        with DiscoveryError::FailedToCreateEventRelay,
+        "Failed to create event relay"
+    );
 
     ports.event.insert(service_id.clone(), port);
     relays.event.insert(service_id.clone(), relay);
@@ -385,22 +361,38 @@ fn propagate_publish_subscribe_payloads<S: Service, B: Backend<S>>(
     fail!(
         from "propagate_publish_subscribe_payloads",
         when port.receive(node_id, |sample| {
-            // TODO: Handle error properly
-            relay.send(sample).unwrap();
+            debug!(
+                from "propagate_publish_subscribe_payloads",
+                "Propagating from {}({})",
+                port.static_config.messaging_pattern(),
+                port.static_config.name()
+            );
+
+            relay.send(sample)
         }),
-        "Failed to receive and propagate samples"
+        with PropagateError::FailedToPropagatePublishSubscribePayloadToBackend,
+        "Failed to receive publish-subscribe payload for propagation"
     );
     fail!(
         from "propagate_publish_subscribe_payloads",
-        when port.send(|loan: &mut LoanFn<_>| {
-            // TODO: Handle error properly
-            relay.receive(&mut |size| loan(size)).unwrap()
+        when port.send(|loan: &mut LoanFn<_, _>| {
+            relay.receive::<_>(&mut |size| {
+            debug!(
+                from "propagate_publish_subscribe_payloads",
+                "Ingesting into {}({})",
+                port.static_config.messaging_pattern(),
+                port.static_config.name()
+            );
+
+            loan(size)})
         }),
-        "Failed to send ingested samples"
+        with PropagateError::FailedToPropagatePublishSubscribePayloadToIceoryx,
+        "Failed to ingest publish-subscribe payload received from backend"
     );
 
     Ok(())
 }
+
 fn propagate_events<S: Service, B: Backend<S>>(
     port: &EventPorts<S>,
     relay: &B::EventRelay,
@@ -408,18 +400,33 @@ fn propagate_events<S: Service, B: Backend<S>>(
     fail!(
         from "propagate_events",
         when port.receive(|id| {
-            // TODO: Handle error properly
-            relay.send(id).unwrap();
+            debug!(
+                from "propagate_events",
+                "Propagating from {}({})",
+                port.static_config.messaging_pattern(),
+                port.static_config.name()
+            );
+
+            relay.send(id)
         }),
-        "Failed to wait for events"
+        with PropagateError::FailedToPropagateEventToBackend,
+        "Failed to receive events for propagation"
     );
 
     fail!(
         from "propagate_events",
         when relay.receive(&mut |id| {
-            port.send(id).unwrap();
-        }).map_err(|_| PropagateError::Error),
-        "Failed to receive events from relay"
+            debug!(
+                from "propagate_events",
+                "Ingesting into {}({})",
+                port.static_config.messaging_pattern(),
+                port.static_config.name()
+            );
+
+            port.send(id)
+        }),
+        with PropagateError::FailedToPropagateEventToIceoryx,
+        "Failed to ingest event received from backend"
     );
 
     Ok(())

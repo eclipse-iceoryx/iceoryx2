@@ -21,8 +21,8 @@ pub trait EventRelay<S: Service> {
     type ReceiveError: Debug;
 
     fn send(&self, event_id: EventId) -> Result<(), Self::SendError>;
-    fn receive(
+    fn receive<NotifyError>(
         &self,
-        send_notification_to_iceoryx: &mut NotifyFn<'_>,
+        send_notification_to_iceoryx: &mut NotifyFn<'_, NotifyError>,
     ) -> Result<(), Self::ReceiveError>;
 }

@@ -23,6 +23,8 @@ pub trait PublishSubscribeRelay<S: Service> {
     type ReceiveError: Debug;
 
     fn send(&self, sample: Sample<S>) -> Result<(), Self::SendError>;
-    fn receive(&self, loan: &mut LoanFn<'_, S>)
-        -> Result<Option<SampleMut<S>>, Self::ReceiveError>;
+    fn receive<LoanError>(
+        &self,
+        loan: &mut LoanFn<'_, S, LoanError>,
+    ) -> Result<Option<SampleMut<S>>, Self::ReceiveError>;
 }

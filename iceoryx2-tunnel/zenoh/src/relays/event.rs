@@ -34,23 +34,19 @@ use crate::relays::announce_service;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
-    Error,
+    FailedToDeclarePublisher,
+    FailedToDeclareSubscriber,
+    FailedToAnnounceService,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub enum PropagationError {
-    Error,
+pub enum SendError {
+    FailedToPutEvent,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub enum IngestionError {
-    Error,
-}
-
-impl From<Box<dyn std::error::Error + Send + Sync>> for CreationError {
-    fn from(_: Box<dyn std::error::Error + Send + Sync>) -> Self {
-        CreationError::Error
-    }
+pub enum ReceiveError {
+    FailedToIngestEvent,
 }
 
 #[derive(Debug)]
@@ -90,6 +86,7 @@ impl<'a, S: Service> RelayBuilder for Builder<'a, S> {
                 .allowed_destination(Locality::Remote)
                 .reliability(Reliability::Reliable)
                 .wait(),
+            with CreationError::FailedToDeclarePublisher,
             "Failed to create zenoh publisher for notifications"
         );
 
@@ -101,11 +98,13 @@ impl<'a, S: Service> RelayBuilder for Builder<'a, S> {
             .with(FifoChannel::new(10))
             .allowed_origin(Locality::Remote)
             .wait(),
+        with CreationError::FailedToDeclareSubscriber,
         "Failed to create zenoh subscriber for notifications");
 
         fail!(
             from "event::RelayBuilder::create",
             when announce_service(self.session, self.static_config),
+            with CreationError::FailedToAnnounceService,
             "Failed to annnounce service on Zenoh"
         );
 
@@ -125,23 +124,23 @@ pub struct Relay<S: Service> {
 }
 
 impl<S: Service> EventRelay<S> for Relay<S> {
-    type SendError = PropagationError;
-    type ReceiveError = IngestionError;
+    type SendError = SendError;
+    type ReceiveError = ReceiveError;
 
     fn send(&self, event_id: EventId) -> Result<(), Self::SendError> {
         fail!(
             from "event::Relay::propagate",
             when self.notifier.put(event_id.as_value().to_ne_bytes()).wait(),
-            with PropagationError::Error,
-            "Failed to propagate notification"
+            with SendError::FailedToPutEvent,
+            "Failed to propagate notification to zenoh"
         );
 
         Ok(())
     }
 
-    fn receive(
+    fn receive<NotifyError>(
         &self,
-        send_notification_to_iceoryx: &mut NotifyFn<'_>,
+        send_notification_to_iceoryx: &mut NotifyFn<'_, NotifyError>,
     ) -> Result<(), Self::ReceiveError> {
         // Collect all notified ids
         let mut received_ids: HashSet<EventId> = HashSet::new();
@@ -158,7 +157,12 @@ impl<S: Service> EventRelay<S> for Relay<S> {
 
         // Propagate notifications received - once per event id
         for event_id in received_ids {
-            send_notification_to_iceoryx(event_id);
+            fail!(
+                from "event::Relay::receive",
+                when send_notification_to_iceoryx(event_id),
+                with ReceiveError::FailedToIngestEvent,
+                "Failed to send notification to iceoryx"
+            );
         }
 
         Ok(())
