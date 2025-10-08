@@ -576,7 +576,7 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
     key: *const c_uchar,
     key_size: usize,
     key_align: usize,
-    value_ptr: *mut c_void,
+    value_ptr: *mut c_void, // TODO: *mut u8?
     release_callback: iox2_service_blackboard_creator_add_release_callback,
     type_name: *const c_char,
     type_name_len: usize,
@@ -585,6 +585,9 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
 ) {
     service_builder_handle.assert_non_null();
     debug_assert!(!value_ptr.is_null());
+
+    // TODO: remove key_size + align and use the set key type instead? or remove key type setter?
+    let key_layout = Layout::from_size_align(key_size, key_align).unwrap(); // TODO: error handling
 
     let mut type_details = TypeDetail::new::<()>(TypeVariant::FixedSize);
     iceoryx2::testing::type_detail_set_name(
@@ -597,38 +600,11 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
     iceoryx2::testing::type_detail_set_size(&mut type_details, type_size);
     iceoryx2::testing::type_detail_set_alignment(&mut type_details, type_align);
 
-    let value_writer = Box::new(move |raw_memory_ptr: *mut u8| {
-        let ptrs = __internal_calculate_atomic_mgmt_and_payload_ptr(raw_memory_ptr, type_align);
-        core::ptr::copy_nonoverlapping(
-            value_ptr,
-            ptrs.atomic_payload_ptr as *mut c_void,
-            type_size,
-        );
-    });
-    let value_size =
-        UnrestrictedAtomicMgmt::__internal_get_unrestricted_atomic_size(type_size, type_align);
-    let value_alignment =
-        UnrestrictedAtomicMgmt::__internal_get_unrestricted_atomic_alignment(type_align);
     let value_cleanup = Box::new(move || {
         if let Some(callback) = release_callback {
             callback(value_ptr);
         }
     });
-
-    // TODO: remove key_size + align and use the set key type instead? or remove key type setter?
-    let key_layout = Layout::from_size_align(key_size, key_align).unwrap(); // TODO: error handling
-
-    // TODO: error handling
-    let key_mem = KeyMemory::try_from_ptr(key, key_layout).unwrap();
-
-    let internals = BuilderInternals::new(
-        key_mem,
-        type_details.clone(),
-        value_writer,
-        value_size,
-        value_alignment,
-        value_cleanup,
-    );
 
     let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
 
@@ -639,7 +615,13 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
 
             let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
             service_builder_struct.set(ServiceBuilderUnion::new_ipc_blackboard_creator(
-                service_builder.__internal_add(internals),
+                service_builder.__internal_add(
+                    key,
+                    key_layout,
+                    value_ptr as *mut u8,
+                    type_details.clone(),
+                    value_cleanup,
+                ),
             ));
         }
         iox2_service_type_e::LOCAL => {
@@ -648,7 +630,13 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
 
             let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
             service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_creator(
-                service_builder.__internal_add(internals),
+                service_builder.__internal_add(
+                    key,
+                    key_layout,
+                    value_ptr as *mut u8,
+                    type_details.clone(),
+                    value_cleanup,
+                ),
             ));
         }
     }

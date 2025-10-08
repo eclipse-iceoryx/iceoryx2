@@ -18,6 +18,7 @@ use self::attribute::{AttributeSpecifier, AttributeVerifier};
 use super::{OpenDynamicStorageFailure, ServiceState};
 use crate::constants::{MAX_BLACKBOARD_KEY_ALIGNMENT, MAX_BLACKBOARD_KEY_SIZE};
 use crate::service;
+use crate::service::builder::CustomKeyMarker;
 use crate::service::config_scheme::{blackboard_data_config, blackboard_mgmt_config};
 use crate::service::dynamic_config::blackboard::DynamicConfigSettings;
 use crate::service::dynamic_config::MessagingPatternSettings;
@@ -37,14 +38,13 @@ use iceoryx2_bb_container::vector::relocatable_vec::*;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::static_assert::static_assert_eq;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::UnrestrictedAtomic;
+use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::*;
 use iceoryx2_bb_log::{error, fatal_panic};
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 use iceoryx2_cal::shared_memory::{SharedMemory, SharedMemoryBuilder};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 use std::marker::PhantomData;
-use tiny_fn::tiny_fn;
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 enum ServiceAvailabilityState {
@@ -325,16 +325,10 @@ pub(crate) struct Mgmt {
     pub(crate) entries: RelocatableVec<Entry>,
 }
 
-tiny_fn! {
-    struct KeyEq = Fn(lhs: *const u8, rhs: *const u8) -> bool;
-}
-
 pub(crate) struct BlackboardResources<ServiceType: service::Service> {
     pub(crate) mgmt: ServiceType::BlackboardMgmt<Mgmt>,
     pub(crate) data: ServiceType::BlackboardPayload,
-    // pub(crate) key_eq_func: Box<dyn Fn(*const u8, *const u8) -> bool>,
-    // pub(crate) key_eq_func: Option<Box<dyn Fn(*const u8, *const u8) -> bool>>,
-    // pub(crate) key_eq_func: KeyEq<'static>,
+    // TODO: use Rc?
     pub(crate) key_eq_func: Arc<dyn Fn(*const u8, *const u8) -> bool>,
 }
 
@@ -362,9 +356,6 @@ struct Builder<
     internals: Vec<BuilderInternals>,
     override_key_type: Option<TypeDetail>,
     key_eq_func: Box<dyn Fn(*const u8, *const u8) -> bool>,
-    // key_eq_func: KeyEq<'static>,
-    // key_eq_func: Option<Box<dyn Fn(*const u8, *const u8) -> bool>>,
-    // key_eq_func: Arc<dyn Fn(*const u8, *const u8) -> bool>,
     phantom: PhantomData<KeyType>,
 }
 
@@ -391,12 +382,6 @@ impl<
             verify_max_nodes: false,
             internals: Vec::<BuilderInternals>::new(),
             override_key_type: None,
-            // key_eq_func: Some(Box::new(|lhs: *const u8, rhs: *const u8| {
-            // KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::default_key_eq_comparison::<KeyType>(lhs, rhs)
-            // })),
-            // key_eq_func: KeyEq::new(|lhs: *const u8, rhs: *const u8| {
-            //     KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::default_key_eq_comparison::<KeyType>(lhs, rhs)
-            // }),
             key_eq_func: Box::new(|lhs: *const u8, rhs: *const u8| {
                 KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::default_key_eq_comparison::<KeyType>(lhs, rhs)
             }),
@@ -515,7 +500,7 @@ impl<
 
     /// Adds key-value pairs to the blackboard.
     pub fn add<ValueType: ZeroCopySend + Copy + 'static>(
-        self,
+        mut self,
         key: KeyType,
         value: ValueType,
     ) -> Self {
@@ -536,7 +521,9 @@ impl<
             internal_value_alignment: core::mem::align_of::<UnrestrictedAtomic<ValueType>>(),
             internal_value_cleanup_callback: Box::new(|| {}),
         };
-        self.__internal_add(internals)
+        self.builder.internals.push(internals);
+
+        self
     }
 
     /// Adds key-value pairs to the blackboard where value is a default value.
@@ -545,12 +532,6 @@ impl<
         key: KeyType,
     ) -> Self {
         self.add(key, ValueType::default())
-    }
-
-    #[doc(hidden)]
-    pub fn __internal_add(mut self, builder_internals: BuilderInternals) -> Self {
-        self.builder.internals.push(builder_internals);
-        self
     }
 
     /// Validates configuration and overrides the invalid setting with meaningful values.
@@ -770,7 +751,6 @@ impl<
                         BlackboardResources {
                             mgmt: mgmt_storage,
                             data: payload_shm,
-                            // key_eq_func: Box::new(Box::into_raw(self.builder.key_eq_func)),
                             key_eq_func: Arc::new(self.builder.key_eq_func),
                         },
                     ),
@@ -782,6 +762,7 @@ impl<
 
 // TODO [#817] replace u64 with CustomKeyMarker
 impl<ServiceType: service::Service> Creator<u64, ServiceType> {
+    // impl<ServiceType: service::Service> Creator<CustomKeyMarker, ServiceType> {
     #[doc(hidden)]
     pub unsafe fn __internal_set_key_type_details(mut self, value: &TypeDetail) -> Self {
         self.builder.override_key_type = Some(value.clone());
@@ -794,8 +775,51 @@ impl<ServiceType: service::Service> Creator<u64, ServiceType> {
         mut self,
         key_eq_func: Box<dyn Fn(*const u8, *const u8) -> bool>,
     ) -> Self {
-        // TODO: use key_eq_comparison in FFI binding
         self.builder.key_eq_func = key_eq_func;
+        self
+    }
+
+    #[doc(hidden)]
+    pub unsafe fn __internal_add(
+        mut self,
+        key: *const u8,
+        key_layout: Layout,
+        value: *mut u8,
+        value_details: TypeDetail,
+        value_cleanup: Box<dyn FnMut()>,
+    ) -> Self {
+        // TODO: error handling
+        let key_mem = KeyMemory::try_from_ptr(key, key_layout).unwrap();
+
+        let value_writer = Box::new(move |raw_memory_ptr: *mut u8| {
+            let ptrs = __internal_calculate_atomic_mgmt_and_payload_ptr(
+                raw_memory_ptr,
+                value_details.alignment,
+            );
+            core::ptr::copy_nonoverlapping(
+                value,
+                ptrs.atomic_payload_ptr as *mut u8,
+                value_details.size,
+            );
+        });
+        let value_size = UnrestrictedAtomicMgmt::__internal_get_unrestricted_atomic_size(
+            value_details.size,
+            value_details.alignment,
+        );
+        let value_alignment = UnrestrictedAtomicMgmt::__internal_get_unrestricted_atomic_alignment(
+            value_details.alignment,
+        );
+
+        let internals = BuilderInternals::new(
+            key_mem,
+            value_details,
+            value_writer,
+            value_size,
+            value_alignment,
+            value_cleanup,
+        );
+
+        self.builder.internals.push(internals);
         self
     }
 }
@@ -1026,6 +1050,7 @@ impl<
 
 // TODO [#817] replace u64 with CustomKeyMarker
 impl<ServiceType: service::Service> Opener<u64, ServiceType> {
+    // impl<ServiceType: service::Service> Opener<CustomKeyMarker, ServiceType> {
     #[doc(hidden)]
     pub unsafe fn __internal_set_key_type_details(mut self, value: &TypeDetail) -> Self {
         self.builder.override_key_type = Some(value.clone());
