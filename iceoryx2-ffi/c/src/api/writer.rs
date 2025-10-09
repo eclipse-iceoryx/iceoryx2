@@ -18,7 +18,6 @@ use crate::api::{
     EntryHandleMutUnion, HandleToType, IntoCInt, KeyFfi, IOX2_OK,
 };
 use crate::create_type_details;
-use core::alloc::Layout;
 use core::ffi::{c_char, c_int, c_uchar};
 use core::mem::ManuallyDrop;
 use iceoryx2::port::writer::{EntryHandleMutError, Writer};

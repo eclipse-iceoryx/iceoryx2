@@ -199,9 +199,8 @@ impl<
         // create KeyMemory from key
         let key_mem = match KeyMemory::try_from(key) {
             Ok(mem) => mem,
-            // TODO: adapt error and msg
             Err(_) => {
-                fail!(from self, with EntryHandleError::EntryDoesNotExist, "{} blub", msg);
+                fatal_panic!(from self, "This should never happen! Key with invalid layout passed.");
             }
         };
 
@@ -388,9 +387,8 @@ impl<Service: service::Service> Reader<Service, CustomKeyMarker> {
         let key_mem = unsafe {
             match KeyMemory::try_from_ptr(key, key_layout) {
                 Ok(mem) => mem,
-                // TODO: adapt error and msg
                 Err(_) => {
-                    fail!(from self, with EntryHandleError::EntryDoesNotExist, "{} blub", msg);
+                    fatal_panic!(from self, "This should never happen! Key with invalid layout set.");
                 }
             }
         };

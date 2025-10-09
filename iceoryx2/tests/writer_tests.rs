@@ -12,7 +12,6 @@
 //
 #[generic_tests::define]
 mod writer {
-    use core::alloc::Layout;
     use core::sync::atomic::{AtomicU64, Ordering};
     use iceoryx2::constants::MAX_BLACKBOARD_KEY_SIZE;
     use iceoryx2::port::writer::*;
@@ -243,8 +242,6 @@ mod writer {
             b: -62759340,
         };
         let key_ptr: *const KeyType = &key;
-        let key_layout =
-            Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap();
         type ValueType = u64;
         let default_value = ValueType::default();
         let value_ptr: *const ValueType = &default_value;
@@ -285,8 +282,6 @@ mod writer {
         let key_ptr: *const KeyType = &key;
         let invalid_key = Foo { a: 9, b: 9 };
         let invalid_key_ptr: *const KeyType = &invalid_key;
-        let key_layout =
-            Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap();
         type ValueType = u64;
         let default_value = ValueType::default();
         let value_ptr: *const ValueType = &default_value;
@@ -329,8 +324,6 @@ mod writer {
         type KeyType = Foo;
         let key = Foo { a: 1, b: -452 };
         let key_ptr: *const KeyType = &key;
-        let key_layout =
-            Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap();
         type ValueType = u64;
         let default_value = ValueType::default();
         let value_ptr: *const ValueType = &default_value;
@@ -373,8 +366,6 @@ mod writer {
         type KeyType = Foo;
         let key = Foo { a: 23, b: 4 };
         let key_ptr: *const KeyType = &key;
-        let key_layout =
-            Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap();
         type ValueType = u64;
         let default_value = ValueType::default();
         let value_ptr: *const ValueType = &default_value;
@@ -423,8 +414,6 @@ mod writer {
         type KeyType = Foo;
         let key = Foo { a: 0, b: 0 };
         let key_ptr: *const KeyType = &key;
-        let key_layout =
-            Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap();
         type ValueType = u8;
         let default_value = ValueType::default();
         let value_ptr: *const ValueType = &default_value;
@@ -470,8 +459,6 @@ mod writer {
         type KeyType = Foo;
         let key = Foo { a: 89, b: -98 };
         let key_ptr: *const KeyType = &key;
-        let key_layout =
-            Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap();
         type ValueType = u32;
         let default_value = ValueType::default();
         let value_ptr: *const ValueType = &default_value;

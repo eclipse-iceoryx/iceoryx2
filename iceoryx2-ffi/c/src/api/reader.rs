@@ -22,7 +22,6 @@ use crate::{
     },
     IOX2_OK,
 };
-use core::alloc::Layout;
 use core::ffi::{c_char, c_int, c_uchar};
 use core::mem::ManuallyDrop;
 use iceoryx2::port::reader::{EntryHandleError, Reader};

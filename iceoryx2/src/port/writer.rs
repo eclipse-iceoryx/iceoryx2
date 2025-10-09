@@ -57,7 +57,7 @@ use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::{
     Producer, UnrestrictedAtomic, UnrestrictedAtomicMgmt,
 };
-use iceoryx2_bb_log::fail;
+use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shared_memory::SharedMemory;
 use std::marker::PhantomData;
@@ -207,9 +207,8 @@ impl<
         // create KeyMemory from key
         let key_mem = match KeyMemory::try_from(key) {
             Ok(mem) => mem,
-            // TODO: adapt error and msg
             Err(_) => {
-                fail!(from self, with EntryHandleMutError::EntryDoesNotExist, "{} blub", msg);
+                fatal_panic!(from self, "This should never happen! Key with invalid layout passed.");
             }
         };
 
@@ -624,9 +623,8 @@ impl<Service: service::Service> Writer<Service, CustomKeyMarker> {
         let key_mem = unsafe {
             match KeyMemory::try_from_ptr(key, key_layout) {
                 Ok(mem) => mem,
-                // TODO: adapt error and msg
                 Err(_) => {
-                    fail!(from self, with EntryHandleMutError::EntryDoesNotExist, "{} blub", msg);
+                    fatal_panic!(from self, "This should never happen! Key with invalid layout set.");
                 }
             }
         };

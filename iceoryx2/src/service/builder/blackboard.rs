@@ -785,15 +785,25 @@ impl<ServiceType: service::Service> Creator<CustomKeyMarker, ServiceType> {
         value_details: TypeDetail,
         value_cleanup: Box<dyn FnMut()>,
     ) -> Self {
-        if self.builder.override_key_type.is_none() {
-            // TODO: error handling, fatal: set_key_type must be called before (safety documentation)
-        }
-        let key_type_details = self.builder.override_key_type.clone().unwrap();
-        let key_layout =
-            Layout::from_size_align(key_type_details.size, key_type_details.alignment).unwrap(); // TODO: error handling, fatal
-
-        // TODO: error handling
-        let key_mem = KeyMemory::try_from_ptr(key, key_layout).unwrap();
+        let key_type_details = match self.builder.override_key_type.clone() {
+            None => {
+                fatal_panic!(from self, "The key type details were not set when __internal_add was called!")
+            }
+            Some(details) => details,
+        };
+        let key_layout = match Layout::from_size_align(
+            key_type_details.size,
+            key_type_details.alignment,
+        ) {
+            Ok(layout) => layout,
+            Err(_) => {
+                fatal_panic!(from self, "This should never happen! Key size/alignment is invalid!")
+            }
+        };
+        let key_mem = match KeyMemory::try_from_ptr(key, key_layout) {
+            Ok(mem) => mem,
+            Err(_) => fatal_panic!(from self, "The key type has the wrong size/alignment!"),
+        };
 
         let value_writer = Box::new(move |raw_memory_ptr: *mut u8| {
             let ptrs = __internal_calculate_atomic_mgmt_and_payload_ptr(
