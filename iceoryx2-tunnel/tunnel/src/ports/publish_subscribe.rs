@@ -14,7 +14,7 @@ use iceoryx2::node::{Node, NodeId};
 use iceoryx2::port::LoanError;
 use iceoryx2::prelude::AllocationStrategy;
 use iceoryx2::service::{static_config::StaticConfig, Service};
-use iceoryx2_bb_log::{fail, fatal_panic, trace};
+use iceoryx2_bb_log::{fail, trace};
 use iceoryx2_tunnel_backend::types::publish_subscribe::{
     Header, LoanFn, Payload, Publisher, Sample, SampleMut, Subscriber,
 };
@@ -50,6 +50,7 @@ impl core::error::Error for SendError {}
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum ReceiveError {
+    CustomPayloadReceive,
     SamplePropagation,
 }
 
@@ -144,13 +145,14 @@ impl<S: Service> PublishSubscribePorts<S> {
             let sample = ingest(&mut |number_of_bytes| {
                 let number_of_elements = number_of_bytes / type_details.payload.size();
 
-                match unsafe { self.publisher.loan_custom_payload(number_of_elements) } {
-                    Ok(sample_to_initialize) => Ok(sample_to_initialize),
-                    Err(e) => {
-                        // This should never happen?
-                        fatal_panic!(from "PublishSubscribePorts::send", "Failed to loan custom payload: {e}")
-                    }
-                }
+                let sample = unsafe { self.publisher.loan_custom_payload(number_of_elements) };
+                let sample = fail!(
+                    from self,
+                    when sample,
+                    "Failed to loan custom payload for ingestion from backend"
+                );
+
+                Ok(sample)
             });
 
             let sample = fail!(
@@ -196,8 +198,16 @@ impl<S: Service> PublishSubscribePorts<S> {
         let mut propagated = false;
 
         loop {
-            match unsafe { self.subscriber.receive_custom_payload() } {
-                Ok(Some(sample)) => {
+            let sample = unsafe { self.subscriber.receive_custom_payload() };
+            let sample = fail!(
+                from self,
+                when sample,
+                with ReceiveError::CustomPayloadReceive,
+                "Failed to receive custom payload to propagate to backend"
+            );
+
+            match sample {
+                Some(sample) => {
                     trace!(
                         from self,
                         "Received {}({})",
@@ -206,7 +216,7 @@ impl<S: Service> PublishSubscribePorts<S> {
                     );
 
                     if sample.header().node_id() == *node_id {
-                        // Ignore samples published by the gateway itself to prevent loopback.
+                        // Ignore samples published by the gateway itself to avoid loopback.
                         continue;
                     }
 
@@ -219,11 +229,7 @@ impl<S: Service> PublishSubscribePorts<S> {
 
                     propagated = true;
                 }
-                Ok(None) => break,
-                Err(e) => {
-                    // This should never happen?
-                    fatal_panic!(from "PublishSubscribePorts::receive", "Failed to receive custom payload: {}", e)
-                }
+                None => break,
             }
         }
 
