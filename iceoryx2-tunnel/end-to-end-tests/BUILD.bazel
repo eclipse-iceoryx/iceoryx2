@@ -20,7 +20,7 @@ filegroup(
 )
 
 rust_library(
-    name = "iceoryx2-tunnels-end-to-end-tests",
+    name = "iceoryx2-tunnel-end-to-end-tests",
     srcs = glob(["common/src/*.rs"]),
     deps = [
         "//iceoryx2:iceoryx2",
@@ -31,27 +31,27 @@ rust_library(
 )
 
 rust_binary(
-    name = "iceoryx2-tunnels-end-to-end-tests-pinger",
+    name = "iceoryx2-tunnel-end-to-end-tests-pinger",
     srcs = [
         "ping-pong/src/pinger.rs",
     ],
     deps = [
         "//iceoryx2:iceoryx2",
         "//iceoryx2-bb/log:iceoryx2-bb-log",
-        ":iceoryx2-tunnels-end-to-end-tests",
+        ":iceoryx2-tunnel-end-to-end-tests",
         "@crate_index//:clap",
     ],
 )
 
 rust_binary(
-    name = "iceoryx2-tunnels-end-to-end-tests-ponger",
+    name = "iceoryx2-tunnel-end-to-end-tests-ponger",
     srcs = [
         "ping-pong/src/ponger.rs",
     ],
     deps = [
         "//iceoryx2:iceoryx2",
         "//iceoryx2-bb/log:iceoryx2-bb-log",
-        ":iceoryx2-tunnels-end-to-end-tests",
+        ":iceoryx2-tunnel-end-to-end-tests",
         "@crate_index//:clap",
     ],
 )
