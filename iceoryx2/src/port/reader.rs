@@ -224,7 +224,7 @@ impl<
     fn get_entry_offset(
         &self,
         key_mem: &KeyMemory<MAX_BLACKBOARD_KEY_SIZE>,
-        type_details: &TypeDetail,
+        value_type_details: &TypeDetail,
         msg: &str,
     ) -> Result<u64, EntryHandleError> {
         // check if key exists
@@ -260,7 +260,7 @@ impl<
             .entries[index];
 
         // check if ValueType matches
-        if *type_details != entry.type_details {
+        if *value_type_details != entry.type_details {
             fail!(from self, with EntryHandleError::EntryDoesNotExist,
                 "{} since no entry with the given key and value type exists.", msg);
         }
@@ -363,13 +363,15 @@ impl<
     }
 }
 
-// TODO: make internal methods unsafe?
+/// # Safety
+///
+///   * key must be a valid pointer to a value of the set key type
 impl<Service: service::Service> Reader<Service, CustomKeyMarker> {
     #[doc(hidden)]
-    pub fn __internal_entry(
+    pub unsafe fn __internal_entry(
         &self,
         key: *const u8,
-        type_details: &TypeDetail,
+        value_type_details: &TypeDetail,
     ) -> Result<__InternalEntryHandle<Service>, EntryHandleError> {
         let msg = "Unable to create entry handle";
 
@@ -393,7 +395,7 @@ impl<Service: service::Service> Reader<Service, CustomKeyMarker> {
             }
         };
 
-        let offset = self.get_entry_offset(&key_mem, type_details, msg)?;
+        let offset = self.get_entry_offset(&key_mem, value_type_details, msg)?;
 
         let atomic_mgmt_ptr = (self
             .shared_state
@@ -404,7 +406,7 @@ impl<Service: service::Service> Reader<Service, CustomKeyMarker> {
             + offset) as *const UnrestrictedAtomicMgmt;
 
         let data_ptr = atomic_mgmt_ptr as usize + core::mem::size_of::<UnrestrictedAtomicMgmt>();
-        let data_ptr = align(data_ptr, type_details.alignment);
+        let data_ptr = align(data_ptr, value_type_details.alignment);
 
         Ok(__InternalEntryHandle {
             atomic_mgmt_ptr,

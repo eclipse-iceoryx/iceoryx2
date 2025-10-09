@@ -1779,15 +1779,19 @@ mod service_blackboard {
 
         let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
 
-        let entry_handle = reader
-            .__internal_entry(key_ptr as *const u8, &type_details)
-            .unwrap();
+        let entry_handle = unsafe {
+            reader
+                .__internal_entry(key_ptr as *const u8, &type_details)
+                .unwrap()
+        };
         let mut read_value: ValueType = 9;
         let read_value_ptr: *mut ValueType = &mut read_value;
 
-        let entry_handle_mut = writer
-            .__internal_entry(key_ptr as *const u8, &type_details)
-            .unwrap();
+        let entry_handle_mut = unsafe {
+            writer
+                .__internal_entry(key_ptr as *const u8, &type_details)
+                .unwrap()
+        };
         let entry_value_uninit =
             entry_handle_mut.loan_uninit(type_details.size(), type_details.alignment());
         let write_ptr = entry_value_uninit.write_cell();
@@ -1856,15 +1860,19 @@ mod service_blackboard {
 
         let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
 
-        let entry_handle = reader
-            .__internal_entry(key_ptr as *const u8, &type_details)
-            .unwrap();
+        let entry_handle = unsafe {
+            reader
+                .__internal_entry(key_ptr as *const u8, &type_details)
+                .unwrap()
+        };
         let mut read_value: ValueType = 9;
         let read_value_ptr: *mut ValueType = &mut read_value;
 
-        let entry_handle_mut = writer
-            .__internal_entry(key_ptr as *const u8, &type_details)
-            .unwrap();
+        let entry_handle_mut = unsafe {
+            writer
+                .__internal_entry(key_ptr as *const u8, &type_details)
+                .unwrap()
+        };
         let write_value: ValueType = 5;
         let write_value_ptr: *const ValueType = &write_value;
 
@@ -1942,13 +1950,17 @@ mod service_blackboard {
         };
         let writer = sut.writer_builder().create().unwrap();
         let reader = sut.reader_builder().create().unwrap();
-        let entry_handle = reader
-            .__internal_entry(key_ptr as *const u8, &type_details)
-            .unwrap();
+        let entry_handle = unsafe {
+            reader
+                .__internal_entry(key_ptr as *const u8, &type_details)
+                .unwrap()
+        };
 
-        let entry_handle_mut = writer
-            .__internal_entry(key_ptr as *const u8, &type_details)
-            .unwrap();
+        let entry_handle_mut = unsafe {
+            writer
+                .__internal_entry(key_ptr as *const u8, &type_details)
+                .unwrap()
+        };
         let entry_value_uninit =
             entry_handle_mut.loan_uninit(type_details.size(), type_details.alignment());
         let entry_handle_mut = entry_value_uninit.discard();

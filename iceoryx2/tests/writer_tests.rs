@@ -271,7 +271,8 @@ mod writer {
         let writer = sut.writer_builder().create().unwrap();
 
         let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
-        let entry_handle_mut = writer.__internal_entry(key_ptr as *const u8, &type_details);
+        let entry_handle_mut =
+            unsafe { writer.__internal_entry(key_ptr as *const u8, &type_details) };
         assert_that!(entry_handle_mut, is_ok);
     }
 
@@ -311,7 +312,8 @@ mod writer {
         let writer = sut.writer_builder().create().unwrap();
 
         let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
-        let entry_handle_mut = writer.__internal_entry(invalid_key_ptr as *const u8, &type_details);
+        let entry_handle_mut =
+            unsafe { writer.__internal_entry(invalid_key_ptr as *const u8, &type_details) };
         assert_that!(entry_handle_mut, is_err);
         assert_that!(
             entry_handle_mut.err().unwrap(),
@@ -353,7 +355,8 @@ mod writer {
         let writer = sut.writer_builder().create().unwrap();
 
         let type_details = TypeDetail::new::<i64>(TypeVariant::FixedSize);
-        let entry_handle_mut = writer.__internal_entry(key_ptr as *const u8, &type_details);
+        let entry_handle_mut =
+            unsafe { writer.__internal_entry(key_ptr as *const u8, &type_details) };
         assert_that!(entry_handle_mut, is_err);
         assert_that!(
             entry_handle_mut.err().unwrap(),
@@ -395,9 +398,11 @@ mod writer {
         let writer = sut.writer_builder().create().unwrap();
 
         let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
-        let entry_handle_mut1 = writer.__internal_entry(key_ptr as *const u8, &type_details);
+        let entry_handle_mut1 =
+            unsafe { writer.__internal_entry(key_ptr as *const u8, &type_details) };
         assert_that!(entry_handle_mut1, is_ok);
-        let entry_handle_mut2 = writer.__internal_entry(key_ptr as *const u8, &type_details);
+        let entry_handle_mut2 =
+            unsafe { writer.__internal_entry(key_ptr as *const u8, &type_details) };
         assert_that!(entry_handle_mut2, is_err);
         assert_that!(
             entry_handle_mut2.err().unwrap(),
@@ -405,7 +410,8 @@ mod writer {
         );
 
         drop(entry_handle_mut1);
-        let entry_handle_mut2 = writer.__internal_entry(key_ptr as *const u8, &type_details);
+        let entry_handle_mut2 =
+            unsafe { writer.__internal_entry(key_ptr as *const u8, &type_details) };
         assert_that!(entry_handle_mut2, is_ok);
     }
 
@@ -443,7 +449,8 @@ mod writer {
         let writer = sut.writer_builder().create().unwrap();
 
         let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
-        let _entry_handle_mut = writer.__internal_entry(key_ptr as *const u8, &type_details);
+        let _entry_handle_mut =
+            unsafe { writer.__internal_entry(key_ptr as *const u8, &type_details) };
 
         drop(writer);
 
@@ -488,9 +495,11 @@ mod writer {
         let writer = sut.writer_builder().create().unwrap();
 
         let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
-        let entry_handle_mut = writer
-            .__internal_entry(key_ptr as *const u8, &type_details)
-            .unwrap();
+        let entry_handle_mut = unsafe {
+            writer
+                .__internal_entry(key_ptr as *const u8, &type_details)
+                .unwrap()
+        };
 
         let entry_value_uninit =
             entry_handle_mut.loan_uninit(type_details.size(), type_details.alignment());

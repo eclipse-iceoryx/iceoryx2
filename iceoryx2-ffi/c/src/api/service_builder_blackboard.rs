@@ -21,17 +21,15 @@ use crate::api::{
     HandleToType, IntoCInt, KeyFfi, PortFactoryBlackboardUnion, ServiceBuilderUnion, IOX2_OK,
 };
 use crate::create_type_details;
-use core::alloc::Layout;
 use core::ffi::{c_char, c_int, c_uchar, c_void};
 use core::mem::ManuallyDrop;
 use iceoryx2::constants::MAX_BLACKBOARD_KEY_SIZE;
 use iceoryx2::service::builder::blackboard::{
-    BlackboardCreateError, BlackboardOpenError, BuilderInternals, Creator, KeyMemory, Opener,
+    BlackboardCreateError, BlackboardOpenError, Creator, KeyMemory, Opener,
 };
 use iceoryx2::service::port_factory::blackboard::PortFactory;
 use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeName, TypeVariant};
 use iceoryx2_bb_elementary_traits::AsCStr;
-use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::*;
 use iceoryx2_ffi_macros::CStrRepr;
 
 // BEGIN types definition

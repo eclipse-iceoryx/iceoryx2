@@ -229,10 +229,9 @@ impl<const CAPACITY: usize> KeyMemory<CAPACITY> {
         Ok(new_self)
     }
 
-    // TODO: Adapt documentation
     /// This function compares two KeyMemory<CAPACITY> for equality. It is passed to functions that
-    /// require a Fn(*const u8, *const u8) -> bool so key_eq_comparison cannot be unsafe. Still, there
-    /// are safety requirements:
+    /// require a Fn(*const u8, *const u8) -> bool so default_key_eq_comparison cannot be unsafe. Still,
+    /// there are safety requirements:
     ///
     /// # Safety
     ///
@@ -240,19 +239,16 @@ impl<const CAPACITY: usize> KeyMemory<CAPACITY> {
     pub fn default_key_eq_comparison<T: Eq>(lhs: *const u8, rhs: *const u8) -> bool {
         let lhs = unsafe { *(lhs as *const KeyMemory<CAPACITY>) };
         let rhs = unsafe { *(rhs as *const KeyMemory<CAPACITY>) };
-        let res = unsafe { *(lhs.data.as_ptr() as *const T) == *(rhs.data.as_ptr() as *const T) };
-
-        // TODO: remove
-        println!(
-            "cmp_func lhs = {}, rhs = {}",
-            unsafe { *(lhs.data.as_ptr() as *const u64) },
-            unsafe { *(rhs.data.as_ptr() as *const u64) }
-        );
-        println!("default_key_eq_comparison returns {res}");
-
-        res
+        unsafe { *(lhs.data.as_ptr() as *const T) == *(rhs.data.as_ptr() as *const T) }
     }
 
+    /// This function compares two KeyMemory<CAPACITY> for equality using the given compare function.
+    /// It is passed to functions that require a Fn(*const u8, *const u8) -> bool so key_eq_comparison
+    /// cannot be unsafe. Still, there are safety requirements:
+    ///
+    /// # Safety
+    ///
+    ///   * lhs and rhs must be valid pointers to valid KeyMemory<CAPACITY>
     pub fn key_eq_comparison<F: Fn(*const u8, *const u8) -> bool>(
         lhs: *const u8,
         rhs: *const u8,
@@ -260,12 +256,7 @@ impl<const CAPACITY: usize> KeyMemory<CAPACITY> {
     ) -> bool {
         let lhs = unsafe { *(lhs as *const KeyMemory<CAPACITY>) };
         let rhs = unsafe { *(rhs as *const KeyMemory<CAPACITY>) };
-        let res = eq_func(lhs.data.as_ptr(), rhs.data.as_ptr());
-
-        // TODO: remove
-        println!("key_eq_comparison returns {res}");
-
-        res
+        eq_func(lhs.data.as_ptr(), rhs.data.as_ptr())
     }
 }
 
@@ -767,9 +758,8 @@ impl<ServiceType: service::Service> Creator<CustomKeyMarker, ServiceType> {
         self
     }
 
-    // TODO: unsafe?
     #[doc(hidden)]
-    pub fn __internal_set_key_eq_cmp_func(
+    pub unsafe fn __internal_set_key_eq_cmp_func(
         mut self,
         key_eq_func: Box<dyn Fn(*const u8, *const u8) -> bool>,
     ) -> Self {

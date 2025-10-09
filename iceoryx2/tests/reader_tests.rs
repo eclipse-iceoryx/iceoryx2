@@ -12,7 +12,6 @@
 //
 #[generic_tests::define]
 mod reader {
-    use core::alloc::Layout;
     use iceoryx2::constants::MAX_BLACKBOARD_KEY_SIZE;
     use iceoryx2::port::reader::*;
     use iceoryx2::prelude::*;
@@ -170,7 +169,7 @@ mod reader {
         let reader = sut.reader_builder().create().unwrap();
 
         let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
-        let entry_handle = reader.__internal_entry(key_ptr as *const u8, &type_details);
+        let entry_handle = unsafe { reader.__internal_entry(key_ptr as *const u8, &type_details) };
         assert_that!(entry_handle, is_ok);
         let mut read_value: ValueType = 9;
         let read_value_ptr: *mut ValueType = &mut read_value;
@@ -220,7 +219,8 @@ mod reader {
         let reader = sut.reader_builder().create().unwrap();
 
         let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
-        let entry_handle = reader.__internal_entry(invalid_key_ptr as *const u8, &type_details);
+        let entry_handle =
+            unsafe { reader.__internal_entry(invalid_key_ptr as *const u8, &type_details) };
         assert_that!(entry_handle, is_err);
         assert_that!(
             entry_handle.err().unwrap(),
@@ -262,7 +262,7 @@ mod reader {
         let reader = sut.reader_builder().create().unwrap();
 
         let type_details = TypeDetail::new::<i64>(TypeVariant::FixedSize);
-        let entry_handle = reader.__internal_entry(key_ptr as *const u8, &type_details);
+        let entry_handle = unsafe { reader.__internal_entry(key_ptr as *const u8, &type_details) };
         assert_that!(entry_handle, is_err);
         assert_that!(
             entry_handle.err().unwrap(),
