@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::fmt::Debug;
+use core::error::Error;
 
 use iceoryx2::service::Service;
 
@@ -22,9 +22,9 @@ use crate::types::publish_subscribe::SampleMut;
 /// backend.
 pub trait PublishSubscribeRelay<S: Service> {
     /// Error type returned when sending fails
-    type SendError: Debug;
+    type SendError: Error;
     /// Error type returned when receiving fails
-    type ReceiveError: Debug;
+    type ReceiveError: Error;
 
     /// Send a sample via the backend communication mechanism.
     fn send(&self, sample: Sample<S>) -> Result<(), Self::SendError>;

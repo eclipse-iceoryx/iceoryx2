@@ -19,6 +19,7 @@ use crate::relays::{event, publish_subscribe};
 /// Factory for creating relay builders.
 ///
 /// The factory holds a reference to a Session and can be used in multiple builders.
+#[derive(Debug)]
 pub struct Factory<'session, S: Service> {
     /// Reference to the Zenoh session. The session must outlive the Factory.
     session: &'session Session,

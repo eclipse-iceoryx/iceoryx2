@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::error::Error;
 use core::fmt::Debug;
 
 use iceoryx2::service::Service;
@@ -37,10 +38,10 @@ pub trait Backend<S: Service>: Sized {
     type Config: Default + Debug;
 
     /// Error type that can occur during backend creation
-    type CreationError: Debug;
+    type CreationError: Error;
 
     /// Discovery implentation for finding services using the backend mechanism
-    type Discovery: Discovery;
+    type Discovery: Discovery + Debug;
 
     /// Relay implementation for the publish-subscribe messaging pattern
     type PublishSubscribeRelay: PublishSubscribeRelay<S> + Debug;
@@ -50,10 +51,10 @@ pub trait Backend<S: Service>: Sized {
 
     /// Factory type for creating relay instances
     type RelayFactory<'a>: RelayFactory<
-        S,
-        PublishSubscribeRelay = Self::PublishSubscribeRelay,
-        EventRelay = Self::EventRelay,
-    >
+            S,
+            PublishSubscribeRelay = Self::PublishSubscribeRelay,
+            EventRelay = Self::EventRelay,
+        > + Debug
     where
         Self: 'a;
 

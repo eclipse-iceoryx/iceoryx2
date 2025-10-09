@@ -10,7 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::error::Error;
 use core::fmt::Debug;
+
 use iceoryx2::service::{static_config::StaticConfig, Service};
 
 use crate::traits::EventRelay;
@@ -20,9 +22,9 @@ use crate::traits::PublishSubscribeRelay;
 /// implementation.
 pub trait RelayBuilder {
     /// The error type returned when relay creation fails
-    type CreationError: Debug;
+    type CreationError: Error;
     /// The type of relay that this builder creates
-    type Relay;
+    type Relay: Debug;
 
     /// Consumes the builder and attempts to create a relay instance.
     ///

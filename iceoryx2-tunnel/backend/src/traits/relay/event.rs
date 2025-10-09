@@ -10,16 +10,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::fmt::Debug;
+use core::error::Error;
 
 use iceoryx2::{prelude::EventId, service::Service};
 
 /// Relay for exchanging events between iceoryx and the backend.
 pub trait EventRelay<S: Service> {
     /// Error type returned when sending an event fails
-    type SendError: Debug;
+    type SendError: Error;
     /// Error type returned when receiving an event fails
-    type ReceiveError: Debug;
+    type ReceiveError: Error;
 
     /// Send an event with the specified ID via the backend communication
     /// mechanism.

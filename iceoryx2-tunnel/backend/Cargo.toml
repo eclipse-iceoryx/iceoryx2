@@ -11,10 +11,6 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 version = { workspace = true }
 
-[lib]
-name = "iceoryx2_tunnel_backend"
-path = "src/lib.rs"
-
 [dependencies]
 iceoryx2 = { workspace = true }
 

@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::fmt::Debug;
+use core::error::Error;
 
 use crate::types::discovery::ProcessDiscoveryFn;
 
@@ -18,7 +18,7 @@ use crate::types::discovery::ProcessDiscoveryFn;
 /// communication mechanism.
 pub trait Discovery {
     /// Error type that can occur during discovery operations.
-    type DiscoveryError: Debug;
+    type DiscoveryError: Error;
 
     /// Discovers entities and processes them using the provided discovery
     /// function.
