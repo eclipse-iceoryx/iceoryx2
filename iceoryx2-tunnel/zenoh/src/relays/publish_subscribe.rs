@@ -204,7 +204,7 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
             );
             let iceoryx_payload = iceoryx_sample.payload_mut();
 
-            assert!(
+            debug_assert!(
                 iceoryx_payload.len() >= zenoh_payload.len(),
                 "loan_size ({}) is too small for received payload ({})",
                 iceoryx_payload.len(),
