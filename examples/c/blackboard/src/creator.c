@@ -75,8 +75,6 @@ int main(void) {
 
     iox2_service_builder_blackboard_creator_add(&service_builder_blackboard,
                                                 (const uint8_t*) &key_0,
-                                                sizeof(struct Foo),
-                                                alignof(struct Foo),
                                                 &value_key_0,
                                                 NULL,
                                                 value_type_name_int,
@@ -94,8 +92,6 @@ int main(void) {
 
     iox2_service_builder_blackboard_creator_add(&service_builder_blackboard,
                                                 (const uint8_t*) &key_1,
-                                                sizeof(struct Foo),
-                                                alignof(struct Foo),
                                                 &value_key_1,
                                                 NULL,
                                                 value_type_name_double,

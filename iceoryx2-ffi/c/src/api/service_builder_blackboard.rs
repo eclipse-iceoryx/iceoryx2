@@ -574,8 +574,6 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_opener_set_max_nodes(
 pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
     service_builder_handle: iox2_service_builder_blackboard_creator_h_ref,
     key: *const c_uchar,
-    key_size: usize,
-    key_align: usize,
     value_ptr: *mut c_void, // TODO: *mut u8?
     release_callback: iox2_service_blackboard_creator_add_release_callback,
     type_name: *const c_char,
@@ -585,9 +583,6 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
 ) {
     service_builder_handle.assert_non_null();
     debug_assert!(!value_ptr.is_null());
-
-    // TODO: remove key_size + align and use the set key type instead? or remove key type setter?
-    let key_layout = Layout::from_size_align(key_size, key_align).unwrap(); // TODO: error handling
 
     let mut type_details = TypeDetail::new::<()>(TypeVariant::FixedSize);
     iceoryx2::testing::type_detail_set_name(
@@ -617,7 +612,6 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
             service_builder_struct.set(ServiceBuilderUnion::new_ipc_blackboard_creator(
                 service_builder.__internal_add(
                     key,
-                    key_layout,
                     value_ptr as *mut u8,
                     type_details.clone(),
                     value_cleanup,
@@ -632,7 +626,6 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
             service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_creator(
                 service_builder.__internal_add(
                     key,
-                    key_layout,
                     value_ptr as *mut u8,
                     type_details.clone(),
                     value_cleanup,

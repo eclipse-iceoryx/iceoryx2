@@ -264,7 +264,6 @@ mod writer {
                 }))
                 .__internal_add(
                     key_ptr as *const u8,
-                    key_layout,
                     value_ptr as *mut u8,
                     TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
                     Box::new(|| {}),
@@ -311,7 +310,6 @@ mod writer {
                 }))
                 .__internal_add(
                     key_ptr as *const u8,
-                    key_layout,
                     value_ptr as *mut u8,
                     TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
                     Box::new(|| {}),
@@ -360,7 +358,6 @@ mod writer {
                 }))
                 .__internal_add(
                     key_ptr as *const u8,
-                    key_layout,
                     value_ptr as *mut u8,
                     TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
                     Box::new(|| {}),
@@ -409,7 +406,6 @@ mod writer {
                 }))
                 .__internal_add(
                     key_ptr as *const u8,
-                    key_layout,
                     value_ptr as *mut u8,
                     TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
                     Box::new(|| {}),
@@ -472,7 +468,6 @@ mod writer {
                 }))
                 .__internal_add(
                     key_ptr as *const u8,
-                    key_layout,
                     value_ptr as *mut u8,
                     TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
                     Box::new(|| {}),
@@ -524,7 +519,6 @@ mod writer {
                 }))
                 .__internal_add(
                     key_ptr as *const u8,
-                    key_layout,
                     value_ptr as *mut u8,
                     TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
                     Box::new(|| {}),

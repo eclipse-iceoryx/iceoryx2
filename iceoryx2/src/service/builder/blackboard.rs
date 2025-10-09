@@ -781,11 +781,17 @@ impl<ServiceType: service::Service> Creator<CustomKeyMarker, ServiceType> {
     pub unsafe fn __internal_add(
         mut self,
         key: *const u8,
-        key_layout: Layout,
         value: *mut u8,
         value_details: TypeDetail,
         value_cleanup: Box<dyn FnMut()>,
     ) -> Self {
+        if self.builder.override_key_type.is_none() {
+            // TODO: error handling, fatal: set_key_type must be called before (safety documentation)
+        }
+        let key_type_details = self.builder.override_key_type.clone().unwrap();
+        let key_layout =
+            Layout::from_size_align(key_type_details.size, key_type_details.alignment).unwrap(); // TODO: error handling, fatal
+
         // TODO: error handling
         let key_mem = KeyMemory::try_from_ptr(key, key_layout).unwrap();
 
