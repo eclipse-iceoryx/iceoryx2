@@ -47,7 +47,7 @@ auto main() -> int {
                     auto response = active_request->loan_uninit().expect("loan successful");
                     auto initialized_response = response.write_payload(
                         TransmissionData { counter * (iter + 1), counter + iter, counter * 0.1234 }); // NOLINT
-                    std::cout << "send response: " << *initialized_response << std::endl;
+                    std::cout << "send response: " << initialized_response.payload() << std::endl;
                     send(std::move(initialized_response)).expect("send successful");
                 }
             } else {

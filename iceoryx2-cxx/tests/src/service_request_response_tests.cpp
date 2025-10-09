@@ -359,22 +359,19 @@ TYPED_TEST(ServiceRequestResponseTest, loan_send_receive_works) {
     EXPECT_THAT(request.payload().p, Eq(3));
 
     auto pending_response = send(std::move(request)).expect("");
-    EXPECT_THAT(pending_response->p, Eq(3));
-    EXPECT_THAT((*pending_response).p, Eq(3));
+    EXPECT_THAT(pending_response.payload().p, Eq(3));
 
     auto active_request = sut_server.receive().expect("");
     ASSERT_TRUE(active_request.has_value());
-    EXPECT_THAT(active_request.value()->p, Eq(3));
-    EXPECT_THAT((*active_request.value()).p, Eq(3));
+    EXPECT_THAT(active_request.value().payload().p, Eq(3));
 
     auto response = active_request->loan().expect("");
-    response->p = 0;
+    response.payload_mut().p = 0;
     send(std::move(response)).expect("");
 
     auto received_response = pending_response.receive().expect("");
     ASSERT_TRUE(received_response.has_value());
-    EXPECT_THAT(received_response.value()->p, Eq(0));
-    EXPECT_THAT((*received_response.value()).p, Eq(0));
+    EXPECT_THAT(received_response.value().payload().p, Eq(0));
 }
 
 TYPED_TEST(ServiceRequestResponseTest, loan_request_default_constructs_request_header) {
@@ -949,7 +946,7 @@ TYPED_TEST(ServiceRequestResponseTest, send_receive_with_user_header_works) {
     EXPECT_THAT(active_request->user_header(), Eq(request_user_header));
 
     auto response = active_request->loan().expect("");
-    *response = 2;
+    response.payload_mut() = 2;
     response.user_header_mut() = response_user_header;
     send(std::move(response)).expect("");
 

@@ -126,6 +126,22 @@ template <ServiceType Service,
           typename RequestUserHeader,
           typename ResponsePayload,
           typename ResponseUserHeader>
+inline auto PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::operator=(
+    PendingResponse&& rhs) noexcept -> PendingResponse& {
+    if (this != &rhs) {
+        drop();
+        m_handle = std::move(rhs.m_handle);
+        rhs.m_handle = nullptr;
+    }
+
+    return *this;
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader>
 inline PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
     ~PendingResponse() noexcept {
     drop();

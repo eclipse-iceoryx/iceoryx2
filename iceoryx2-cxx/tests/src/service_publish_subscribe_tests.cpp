@@ -242,7 +242,7 @@ TYPED_TEST(ServicePublishSubscribeTest, send_copy_receive_works) {
     auto sample = sut_subscriber.receive().expect("");
 
     ASSERT_TRUE(sample.has_value());
-    ASSERT_THAT(**sample, Eq(payload));
+    ASSERT_THAT(sample->payload(), Eq(payload));
 }
 
 TYPED_TEST(ServicePublishSubscribeTest, loan_send_receive_works) {
@@ -258,12 +258,12 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_send_receive_works) {
 
     auto sample = sut_publisher.loan().expect("");
     const uint64_t payload = 781891729871;
-    *sample = payload;
+    sample.payload_mut() = payload;
     send(std::move(sample)).expect("");
     auto recv_sample = sut_subscriber.receive().expect("");
 
     ASSERT_TRUE(recv_sample.has_value());
-    ASSERT_THAT(**recv_sample, Eq(payload));
+    ASSERT_THAT(recv_sample->payload(), Eq(payload));
 }
 
 TYPED_TEST(ServicePublishSubscribeTest, loan_uninit_send_receive_works) {
@@ -284,7 +284,7 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_uninit_send_receive_works) {
     auto recv_sample = sut_subscriber.receive().expect("");
 
     ASSERT_TRUE(recv_sample.has_value());
-    ASSERT_THAT(**recv_sample, Eq(payload));
+    ASSERT_THAT(recv_sample->payload(), Eq(payload));
 }
 
 struct DummyData {
@@ -564,7 +564,7 @@ TYPED_TEST(ServicePublishSubscribeTest, update_connections_delivers_history) {
     sample = sut_subscriber.receive().expect("");
 
     ASSERT_TRUE(sample.has_value());
-    ASSERT_THAT(**sample, Eq(payload));
+    ASSERT_THAT(sample->payload(), Eq(payload));
 }
 
 TYPED_TEST(ServicePublishSubscribeTest, setting_service_properties_works) {
@@ -732,7 +732,7 @@ TYPED_TEST(ServicePublishSubscribeTest, send_receive_with_user_header_works) {
 
     auto sample = sut_publisher.loan().expect("");
     const uint64_t payload = 781891729871;
-    *sample = payload;
+    sample.payload_mut() = payload;
     for (uint64_t idx = 0; idx < TestHeader::CAPACITY; ++idx) {
         sample.user_header_mut().value.at(idx) = 4 * idx + 3;
     }
@@ -740,7 +740,7 @@ TYPED_TEST(ServicePublishSubscribeTest, send_receive_with_user_header_works) {
     auto recv_sample = sut_subscriber.receive().expect("");
 
     ASSERT_TRUE(recv_sample.has_value());
-    ASSERT_THAT(**recv_sample, Eq(payload));
+    ASSERT_THAT(recv_sample->payload(), Eq(payload));
 
     for (uint64_t idx = 0; idx < TestHeader::CAPACITY; ++idx) {
         ASSERT_THAT(recv_sample->user_header().value.at(idx), Eq((4 * idx) + 3));
