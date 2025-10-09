@@ -120,7 +120,7 @@ impl iceoryx2_tunnel_backend::traits::Discovery for Discovery {
                     from self,
                     when Err(e),
                     with DiscoveryError::QueryReplyReceive,
-                    "Errorneous reply received from zenoh discovery query"
+                    "Erroneous reply received from zenoh discovery query"
                 ),
             }
         }

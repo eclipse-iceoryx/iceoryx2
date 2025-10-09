@@ -40,7 +40,8 @@ pub trait Backend<S: Service>: Sized {
     /// Error type that can occur during backend creation
     type CreationError: Error;
 
-    /// Discovery implentation for finding services using the backend mechanism
+    /// Discovery implementation for finding services using the backend
+    /// communication mechanism
     type Discovery: Discovery + Debug;
 
     /// Relay implementation for the publish-subscribe messaging pattern

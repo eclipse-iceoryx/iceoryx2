@@ -117,7 +117,7 @@ impl<'a, S: Service> RelayBuilder for Builder<'a, S> {
             from self,
             when announce_service(self.session, self.static_config),
             with CreationError::ServiceAnouncement,
-            "Failed to annnounce service on Zenoh"
+            "Failed to announce service on Zenoh"
         );
 
         Ok(Relay {

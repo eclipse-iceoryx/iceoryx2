@@ -90,8 +90,6 @@ mod publish_subscribe_relay_tests {
             TIMEOUT,
             Some(MAX_ATTEMPTS),
         );
-
-        // Wait for zenoh to wake up and process the discovered service
         T::sync(service_a.service_id().as_str().to_string(), TIMEOUT);
 
         // Create a subscribe to connect to the tunneled service
@@ -200,8 +198,6 @@ mod publish_subscribe_relay_tests {
             TIMEOUT,
             Some(MAX_ATTEMPTS),
         );
-
-        // Wait for zenoh to wake up and process the discovered service
         T::sync(service_a.service_id().as_str().to_string(), TIMEOUT);
 
         // Create a subscribe to connect to the tunneled service

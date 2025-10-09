@@ -82,8 +82,6 @@ mod event_relay_tests {
             TIMEOUT,
             Some(MAX_ATTEMPTS),
         );
-
-        // Wait for Zenoh's backgorund thread to establish match...
         T::sync(service_a.service_id().as_str().to_string(), TIMEOUT);
 
         // Create a listener to connect to the discovered service
