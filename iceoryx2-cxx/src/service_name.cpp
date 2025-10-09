@@ -16,7 +16,7 @@
 #include <cstring>
 
 namespace iox2 {
-auto ServiceNameView::to_string() const -> iox::string<IOX2_NODE_NAME_LENGTH> {
+auto ServiceNameView::to_string() const -> iox::string<IOX2_SERVICE_NAME_LENGTH> {
     size_t len = 0;
     const auto* chars = iox2_service_name_as_chars(m_ptr, &len);
     return { iox::TruncateToCapacity, chars, len };
