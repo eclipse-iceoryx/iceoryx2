@@ -100,10 +100,10 @@ impl iceoryx2_tunnel_backend::traits::Discovery for Discovery {
             match reply.result() {
                 Ok(sample) => {
                     match serde_json::from_slice::<StaticConfig>(&sample.payload().to_bytes()) {
-                        Ok(service_details) => {
+                        Ok(static_config) => {
                             fail!(
                                 from &self,
-                                when process_discovery(&service_details),
+                                when process_discovery(&static_config),
                                 with DiscoveryError::DiscoveryProcessing,
                                 "Failed to process discovery event"
                             )

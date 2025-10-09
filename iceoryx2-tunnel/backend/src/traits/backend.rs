@@ -17,22 +17,70 @@ use iceoryx2::service::Service;
 
 use crate::traits::{Discovery, EventRelay, PublishSubscribeRelay, RelayFactory};
 
-/// Defines the core functionality for tunnel backends utilizing an arbitrary
+/// Core interface for tunnel backends that extend iceoryx2 over another
 /// communication mechanism.
+///
+/// A `Backend` implementation provides the infrastructure for tunneling
+/// iceoryx2 services over alternative transport layers (such as network
+/// protocols, IPC mechanisms, or custom communication channels). It manages
+/// service discovery and creates relays for different messaging patterns.
 ///
 /// # Type Parameters
 ///
-/// * `S` - The service type that implements the `Service` trait
+/// * `S` - The iceoryx2 service type being tunneled
 ///
-/// # Associated Types
+/// # Architecture
 ///
-/// * `Config` - Configuration type for the backend
-/// * `CreationError` - Error type returned during backend creation
-/// * `Discovery` - Discovery implemenation using the backend mechanism
-/// * `PublishSubscribeRelay` - Relay type for the publish-subscribe messaging pattern
-/// * `EventRelay` - Relay type for the event messaging pattern
-/// * `RelayFactory` - Factory type for creating relay instances
+/// A backend implementation requires implementing several interconnected traits:
 ///
+/// ```text
+/// MyBackend (Backend trait)
+///   ├── MyConfig (configuration)
+///   ├── MyDiscovery (Discovery trait)
+///   ├── MyRelayFactory (RelayFactory trait)
+///   │   ├── MyPublishSubscribeRelay (PublishSubscribeRelay trait)
+///   │   │   └── MyPublishSubscribeBuilder (RelayBuilder trait)
+///   │   └── MyEventRelay (EventRelay trait)
+///   │       └── MyEventBuilder (RelayBuilder trait)
+///   └── MyError (error types)
+/// ```
+///
+/// Each component has specific responsibilities:
+/// - **Config**: Backend-specific connection and initialization settings
+/// - **Discovery**: Query the backend for available services
+/// - **Relays**: Handle actual data transmission for each messaging pattern
+/// - **Builders**: Construct relays with appropriate configuration
+///
+/// # Example: Basic Backend Structure
+///
+/// ```ignore
+/// use iceoryx2::service::ipc::Service;
+/// use iceoryx2_tunnel_backend::traits::Backend;
+///
+/// struct MyBackend {
+///     // Your transport-specific state, e.g.:
+///     // connection: TcpStream,
+///     // discovery: ServiceRegistry,
+/// }
+///
+/// impl Backend<Service> for MyBackend {
+///     // ... associated types ...
+///     
+///     fn create(config: &Self::Config) -> Result<Self, Self::CreationError> {
+///         // Establish connection to your backend transport
+///         // let connection = TcpStream::connect(&config.endpoint)?;
+///         
+///         // Initialize your backend with the connection
+///         // Ok(Self { connection, ... })
+///         # unimplemented!()
+///     }
+///     
+///     // ... implement discovery() and relay_builder() ...
+/// }
+/// ```
+///
+/// See individual trait documentation for [`Discovery`], [`PublishSubscribeRelay`],
+/// and [`EventRelay`] for implementation details.
 pub trait Backend<S: Service>: Sized {
     /// Configuration type for the backend initialization
     type Config: Default + Debug;
@@ -60,18 +108,9 @@ pub trait Backend<S: Service>: Sized {
         Self: 'a;
 
     /// Creates a new backend instance with the provided configuration.
-    ///
-    /// # Arguments
-    ///
-    /// * `config` - Configuration parameters for initializing the backend
-    ///
-    /// # Returns
-    ///
-    /// Returns `Ok(Self)` with the created backend instance on success,
-    /// or `Err(Self::CreationError)` if the backend creation fails.
     fn create(config: &Self::Config) -> Result<Self, Self::CreationError>;
 
-    /// Returns a reference to the discovery implementations.
+    /// Returns a reference to the [`Discovery`] implementation.
     fn discovery(&self) -> &impl Discovery;
 
     /// Creates a new relay factory instance.
