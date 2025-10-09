@@ -40,7 +40,8 @@
     [#1059](https://github.com/eclipse-iceoryx/iceoryx2/issues/1059)
 * Trait `std::fmt::Debug` is not implemented for `sigset_t` in libc
     [#1087](https://github.com/eclipse-iceoryx/iceoryx2/issues/1087)
-*
+* Use `IOX2_SERVICE_NAME_LENGTH` in `ServiceName::to_string()`
+    [#1095](https://github.com/eclipse-iceoryx/iceoryx2/issues/1095)
 
 ### Refactoring
 

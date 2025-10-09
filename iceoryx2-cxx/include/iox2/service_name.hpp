@@ -31,7 +31,7 @@ class ServiceNameView {
     ~ServiceNameView() = default;
 
     /// Returns a [`iox::string`] containing the [`ServiceName`].
-    auto to_string() const -> iox::string<IOX2_NODE_NAME_LENGTH>;
+    auto to_string() const -> iox::string<IOX2_SERVICE_NAME_LENGTH>;
 
     /// Creates a copy of the corresponding [`ServiceName`] and returns it.
     auto to_owned() const -> ServiceName;
