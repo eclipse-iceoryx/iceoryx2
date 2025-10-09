@@ -150,7 +150,7 @@ impl<S: Service> EventPorts<S> {
         Ok(ingested)
     }
 
-    // TODO(#XYZ): Preserve ordering of events received over the backend.
+    // TODO(#1103): Preserve ordering of events received over the backend.
     pub(crate) fn receive<PropagateFn, E>(
         &self,
         mut propagate: PropagateFn,
