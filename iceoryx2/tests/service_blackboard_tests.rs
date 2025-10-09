@@ -1658,7 +1658,7 @@ mod service_blackboard {
     }
 
     #[repr(C)]
-    #[derive(ZeroCopySend)]
+    #[derive(ZeroCopySend, Debug, Hash, PartialEq, Eq, Clone, Copy)]
     struct Foo {
         a: u8,
         b: u32,
@@ -1669,6 +1669,42 @@ mod service_blackboard {
             (*lhs.cast::<Foo>()).a == (*rhs.cast::<Foo>()).a
                 && (*lhs.cast::<Foo>()).b == (*rhs.cast::<Foo>()).b
         }
+    }
+
+    #[test]
+    fn simple_communication_with_key_struct_works<Sut: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let key_1 = Foo { a: 9, b: 99 };
+        let key_2 = Foo { a: 9, b: 999 };
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<Foo>()
+            .add::<i32>(key_1, -3)
+            .add::<u32>(key_2, 3)
+            .create()
+            .unwrap();
+
+        let writer = sut.writer_builder().create().unwrap();
+        let entry_handle_mut_1 = writer.entry::<i32>(key_1).unwrap();
+        let entry_handle_mut_2 = writer.entry::<u32>(key_2).unwrap();
+        let reader = sut.reader_builder().create().unwrap();
+        let entry_handle_1 = reader.entry::<i32>(key_1).unwrap();
+        let entry_handle_2 = reader.entry::<u32>(key_2).unwrap();
+
+        assert_that!(entry_handle_1.get(), eq - 3);
+        assert_that!(entry_handle_2.get(), eq 3);
+
+        entry_handle_mut_1.update_with_copy(50);
+        assert_that!(entry_handle_1.get(), eq 50);
+        assert_that!(entry_handle_2.get(), eq 3);
+
+        entry_handle_mut_2.update_with_copy(12);
+        assert_that!(entry_handle_1.get(), eq 50);
+        assert_that!(entry_handle_2.get(), eq 12);
     }
 
     // TODO [#817] move the custom key type tests to testing.rs

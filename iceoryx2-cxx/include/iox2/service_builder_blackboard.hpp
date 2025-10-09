@@ -110,11 +110,11 @@ class ServiceBuilderBlackboardOpener {
 };
 
 namespace internal {
-    template <typename T>
-    auto default_key_eq_cmp_func(const uint8_t* lhs, const uint8_t* rhs) -> bool {
-        return *reinterpret_cast<const T*>(lhs) == *reinterpret_cast<const T*>(rhs);
-    }
+template <typename T>
+auto default_key_eq_cmp_func(const uint8_t* lhs, const uint8_t* rhs) -> bool {
+    return (*reinterpret_cast<const T*>(lhs)) == (*reinterpret_cast<const T*>(rhs));
 }
+} // namespace internal
 
 template <typename KeyType, ServiceType S>
 inline ServiceBuilderBlackboardCreator<KeyType, S>::ServiceBuilderBlackboardCreator(iox2_service_builder_h handle)
