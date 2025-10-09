@@ -14,7 +14,6 @@ mod backend;
 mod discovery;
 mod relay;
 
-// TODO: Move to separate crate?
 pub mod testing;
 
 pub use backend::*;

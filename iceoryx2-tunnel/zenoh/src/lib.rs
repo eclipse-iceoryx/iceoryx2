@@ -15,7 +15,6 @@ pub mod discovery;
 pub mod keys;
 pub mod relays;
 
-// TODO: Move to a separate crate?
 pub mod testing;
 
 pub use backend::*;
