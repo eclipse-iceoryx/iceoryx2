@@ -33,9 +33,6 @@ class Response {
     Response(const Response&) noexcept = delete;
     auto operator=(const Response&) noexcept -> Response& = delete;
 
-    auto operator*() const -> const ResponsePayload&;
-    auto operator->() const -> const ResponsePayload*;
-
     /// Returns a reference to the [`ResponseHeader`].
     auto header() const -> ResponseHeader;
 
@@ -86,16 +83,6 @@ inline auto Response<Service, ResponsePayload, ResponseUserHeader>::operator=(Re
 template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
 inline Response<Service, ResponsePayload, ResponseUserHeader>::~Response() noexcept {
     drop();
-}
-
-template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
-inline auto Response<Service, ResponsePayload, ResponseUserHeader>::operator*() const -> const ResponsePayload& {
-    return payload();
-}
-
-template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
-inline auto Response<Service, ResponsePayload, ResponseUserHeader>::operator->() const -> const ResponsePayload* {
-    return &payload();
 }
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>

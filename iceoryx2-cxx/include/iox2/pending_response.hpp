@@ -47,9 +47,6 @@ class PendingResponse {
     PendingResponse(const PendingResponse&) = delete;
     auto operator=(const PendingResponse&) -> PendingResponse& = delete;
 
-    auto operator*() const -> const RequestPayload&;
-    auto operator->() const -> const RequestPayload*;
-
     /// Receives a [`Response`] from one of the [`Server`]s that
     /// received the [`RequestMut`].
     auto receive()
@@ -129,47 +126,9 @@ template <ServiceType Service,
           typename RequestUserHeader,
           typename ResponsePayload,
           typename ResponseUserHeader>
-inline auto PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::operator=(
-    PendingResponse&& rhs) noexcept -> PendingResponse& {
-    if (this != &rhs) {
-        drop();
-        m_handle = std::move(rhs.m_handle);
-        rhs.m_handle = nullptr;
-    }
-
-    return *this;
-}
-
-template <ServiceType Service,
-          typename RequestPayload,
-          typename RequestUserHeader,
-          typename ResponsePayload,
-          typename ResponseUserHeader>
 inline PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
     ~PendingResponse() noexcept {
     drop();
-}
-
-template <ServiceType Service,
-          typename RequestPayload,
-          typename RequestUserHeader,
-          typename ResponsePayload,
-          typename ResponseUserHeader>
-inline auto
-PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::operator*() const
-    -> const RequestPayload& {
-    return payload();
-}
-
-template <ServiceType Service,
-          typename RequestPayload,
-          typename RequestUserHeader,
-          typename ResponsePayload,
-          typename ResponseUserHeader>
-inline auto
-PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::operator->() const
-    -> const RequestPayload* {
-    return &payload();
 }
 
 template <ServiceType Service,
