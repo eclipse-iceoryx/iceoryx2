@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2::service::Service;
-use iceoryx2_bb_log::{debug, fail};
+use iceoryx2_bb_log::{fail, trace};
 use iceoryx2_tunnel_backend::traits::Backend;
 use zenoh::{Config, Session, Wait};
 
@@ -57,9 +57,9 @@ impl<S: Service> Backend<S> for ZenohBackend<S> {
     fn create(config: &Self::Config) -> Result<Self, Self::CreationError> {
         let origin = "ZenohBackend::create";
 
-        debug!(
+        trace!(
             from origin,
-            "Creating Zenoh tunnel backend"
+            "Initializing Zenoh backend"
         );
 
         let session = zenoh::open(config.clone()).wait();

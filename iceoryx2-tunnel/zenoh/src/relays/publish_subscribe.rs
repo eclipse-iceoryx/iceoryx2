@@ -10,13 +10,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::service::builder::CustomHeaderMarker;
-use iceoryx2::service::builder::CustomPayloadMarker;
-use iceoryx2::service::{static_config::StaticConfig, Service};
-use iceoryx2_bb_log::{debug, fail};
-use iceoryx2_tunnel_backend::traits::{PublishSubscribeRelay, RelayBuilder};
-use iceoryx2_tunnel_backend::types::publish_subscribe::LoanFn;
-use iceoryx2_tunnel_backend::types::publish_subscribe::SampleMut;
+use iceoryx2::service::{
+    builder::{CustomHeaderMarker, CustomPayloadMarker},
+    static_config::StaticConfig,
+    Service,
+};
+use iceoryx2_bb_log::{fail, trace};
+use iceoryx2_tunnel_backend::{
+    traits::{PublishSubscribeRelay, RelayBuilder},
+    types::publish_subscribe::{LoanFn, SampleMut},
+};
 use zenoh::{
     bytes::ZBytes,
     handlers::{FifoChannel, FifoChannelHandler},
@@ -150,7 +153,7 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
         &self,
         sample: iceoryx2::sample::Sample<S, [CustomPayloadMarker], CustomHeaderMarker>,
     ) -> Result<(), Self::SendError> {
-        debug!(
+        trace!(
             from self,
             "Sending {}({})",
             self.static_config.messaging_pattern(),
@@ -184,7 +187,7 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
         );
 
         if let Some(zenoh_sample) = zenoh_sample {
-            debug!(
+            trace!(
                 from self,
                 "Ingesting {}({})",
                 self.static_config.messaging_pattern(),

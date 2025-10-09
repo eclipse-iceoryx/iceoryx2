@@ -10,22 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::node::Node;
-use iceoryx2::node::NodeId;
+use iceoryx2::node::{Node, NodeId};
 use iceoryx2::port::LoanError;
 use iceoryx2::prelude::AllocationStrategy;
-use iceoryx2::service::static_config::StaticConfig;
-use iceoryx2::service::Service;
-use iceoryx2_bb_log::debug;
-use iceoryx2_bb_log::fail;
-use iceoryx2_bb_log::fatal_panic;
-use iceoryx2_tunnel_backend::types::publish_subscribe::Header;
-use iceoryx2_tunnel_backend::types::publish_subscribe::LoanFn;
-use iceoryx2_tunnel_backend::types::publish_subscribe::Payload;
-use iceoryx2_tunnel_backend::types::publish_subscribe::Publisher;
-use iceoryx2_tunnel_backend::types::publish_subscribe::Sample;
-use iceoryx2_tunnel_backend::types::publish_subscribe::SampleMut;
-use iceoryx2_tunnel_backend::types::publish_subscribe::Subscriber;
+use iceoryx2::service::{static_config::StaticConfig, Service};
+use iceoryx2_bb_log::{fail, fatal_panic, trace};
+use iceoryx2_tunnel_backend::types::publish_subscribe::{
+    Header, LoanFn, Payload, Publisher, Sample, SampleMut, Subscriber,
+};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
@@ -170,7 +162,7 @@ impl<S: Service> PublishSubscribePorts<S> {
 
             match sample {
                 Some(sample) => {
-                    debug!(
+                    trace!(
                         from self,
                         "Sending {}({})",
                         self.static_config.messaging_pattern(),
@@ -206,7 +198,7 @@ impl<S: Service> PublishSubscribePorts<S> {
         loop {
             match unsafe { self.subscriber.receive_custom_payload() } {
                 Ok(Some(sample)) => {
-                    debug!(
+                    trace!(
                         from self,
                         "Received {}({})",
                         self.static_config.messaging_pattern(),

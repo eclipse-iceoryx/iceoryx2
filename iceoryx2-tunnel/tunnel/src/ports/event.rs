@@ -18,7 +18,7 @@ use iceoryx2::{
     prelude::EventId,
     service::{static_config::StaticConfig, Service},
 };
-use iceoryx2_bb_log::{debug, fail};
+use iceoryx2_bb_log::{fail, trace};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
@@ -127,7 +127,7 @@ impl<S: Service> EventPorts<S> {
 
             match event_id {
                 Some(event_id) => {
-                    debug!(
+                    trace!(
                         from self,
                         "Sending {}({})",
                         self.static_config.messaging_pattern(),
@@ -173,7 +173,7 @@ impl<S: Service> EventPorts<S> {
 
         // Notify all ids once
         for event_id in received_ids {
-            debug!(
+            trace!(
                 from self,
                 "Received {}({})",
                 self.static_config.messaging_pattern(),

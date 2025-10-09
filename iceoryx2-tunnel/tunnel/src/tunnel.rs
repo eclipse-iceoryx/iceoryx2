@@ -13,19 +13,20 @@
 use core::fmt::Debug;
 use std::collections::{HashMap, HashSet};
 
-use crate::discovery;
-use crate::ports::event::EventPorts;
-use crate::ports::publish_subscribe::PublishSubscribePorts;
 use iceoryx2::node::{Node, NodeBuilder, NodeId};
 use iceoryx2::service::service_id::ServiceId;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
 use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2::service::Service;
-use iceoryx2_bb_log::{debug, fail, info, warn};
+use iceoryx2_bb_log::{fail, info, trace, warn};
 use iceoryx2_tunnel_backend::traits::{
     Backend, Discovery, EventRelay, PublishSubscribeRelay, RelayBuilder, RelayFactory,
 };
 use iceoryx2_tunnel_backend::types::publish_subscribe::LoanFn;
+
+use crate::discovery;
+use crate::ports::event::EventPorts;
+use crate::ports::publish_subscribe::PublishSubscribePorts;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
@@ -131,7 +132,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
     ) -> Result<Self, CreationError> {
         let origin = "Tunnel::create";
 
-        debug!(
+        trace!(
             from origin,
             "Creating Tunnel:\n{:?}\n{:?}\n{:?}", 
             &tunnel_config, &iceoryx_config, &backend_config);

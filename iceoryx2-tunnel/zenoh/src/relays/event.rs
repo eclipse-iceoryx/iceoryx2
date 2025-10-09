@@ -13,18 +13,13 @@
 use iceoryx2::prelude::EventId;
 use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2::service::Service;
-use iceoryx2_bb_log::debug;
-use iceoryx2_bb_log::fail;
+use iceoryx2_bb_log::{fail, trace};
 use iceoryx2_tunnel_backend::traits::{EventRelay, RelayBuilder};
-use zenoh::handlers::FifoChannel;
-use zenoh::handlers::FifoChannelHandler;
-use zenoh::pubsub::Publisher;
-use zenoh::pubsub::Subscriber;
+use zenoh::handlers::{FifoChannel, FifoChannelHandler};
+use zenoh::pubsub::{Publisher, Subscriber};
 use zenoh::qos::Reliability;
-use zenoh::sample::Locality;
-use zenoh::sample::Sample;
-use zenoh::Session;
-use zenoh::Wait;
+use zenoh::sample::{Locality, Sample};
+use zenoh::{Session, Wait};
 
 use crate::keys;
 use crate::relays::announce_service;
@@ -147,7 +142,7 @@ impl<S: Service> EventRelay<S> for Relay<S> {
     type ReceiveError = ReceiveError;
 
     fn send(&self, event_id: EventId) -> Result<(), Self::SendError> {
-        debug!(
+        trace!(
             from self,
             "Sending {}({})",
             self.static_config.messaging_pattern(),
@@ -174,7 +169,7 @@ impl<S: Service> EventRelay<S> for Relay<S> {
 
         match sample {
             Some(sample) => {
-                debug!(
+                trace!(
                     from self,
                     "Ingesting {}({})",
                     self.static_config.messaging_pattern(),
