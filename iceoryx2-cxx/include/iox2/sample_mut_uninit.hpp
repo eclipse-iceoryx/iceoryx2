@@ -33,18 +33,6 @@ class SampleMutUninit {
     SampleMutUninit(const SampleMutUninit&) = delete;
     auto operator=(const SampleMutUninit&) -> SampleMutUninit& = delete;
 
-    /// Returns a const reference to the payload of the [`Sample`]
-    auto operator*() const -> const Payload&;
-
-    /// Returns a reference to the payload of the [`Sample`]
-    auto operator*() -> Payload&;
-
-    /// Returns a const pointer to the payload of the [`Sample`]
-    auto operator->() const -> const Payload*;
-
-    /// Returns a pointer to the payload of the [`Sample`]
-    auto operator->() -> Payload*;
-
     /// Returns a reference to the [`Header`] of the [`Sample`].
     auto header() const -> HeaderPublishSubscribe;
 
@@ -102,26 +90,6 @@ class SampleMutUninit {
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto assume_init(SampleMutUninit<S, Payload, UserHeader>&& self) -> SampleMut<S, Payload, UserHeader> {
     return std::move(self.m_sample);
-}
-
-template <ServiceType S, typename Payload, typename UserHeader>
-inline auto SampleMutUninit<S, Payload, UserHeader>::operator*() const -> const Payload& {
-    return payload();
-}
-
-template <ServiceType S, typename Payload, typename UserHeader>
-inline auto SampleMutUninit<S, Payload, UserHeader>::operator*() -> Payload& {
-    return payload_mut();
-}
-
-template <ServiceType S, typename Payload, typename UserHeader>
-inline auto SampleMutUninit<S, Payload, UserHeader>::operator->() const -> const Payload* {
-    return &payload();
-}
-
-template <ServiceType S, typename Payload, typename UserHeader>
-inline auto SampleMutUninit<S, Payload, UserHeader>::operator->() -> Payload* {
-    return &payload_mut();
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>

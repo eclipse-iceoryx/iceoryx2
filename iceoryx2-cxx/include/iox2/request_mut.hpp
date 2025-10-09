@@ -43,18 +43,6 @@ class RequestMut {
     RequestMut(const RequestMut&) = delete;
     auto operator=(const RequestMut&) -> RequestMut& = delete;
 
-    /// Returns a const reference to the request payload
-    auto operator*() const -> const RequestPayload&;
-
-    /// Returns a reference to the request payload
-    auto operator*() -> RequestPayload&;
-
-    /// Returns a const pointer to the request payload
-    auto operator->() const -> const RequestPayload*;
-
-    /// Returns a pointer to the request payload
-    auto operator->() -> RequestPayload*;
-
     /// Returns a reference to the iceoryx2 internal [`RequestHeader`]
     auto header() const -> RequestHeader;
 
@@ -149,48 +137,6 @@ template <ServiceType Service,
 inline RequestMut<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
     ~RequestMut() noexcept {
     drop();
-}
-
-template <ServiceType Service,
-          typename RequestPayload,
-          typename RequestUserHeader,
-          typename ResponsePayload,
-          typename ResponseUserHeader>
-inline auto
-RequestMut<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::operator*() const
-    -> const RequestPayload& {
-    return payload();
-}
-
-template <ServiceType Service,
-          typename RequestPayload,
-          typename RequestUserHeader,
-          typename ResponsePayload,
-          typename ResponseUserHeader>
-inline auto RequestMut<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::operator*()
-    -> RequestPayload& {
-    return payload_mut();
-}
-
-template <ServiceType Service,
-          typename RequestPayload,
-          typename RequestUserHeader,
-          typename ResponsePayload,
-          typename ResponseUserHeader>
-inline auto
-RequestMut<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::operator->() const
-    -> const RequestPayload* {
-    return &payload();
-}
-
-template <ServiceType Service,
-          typename RequestPayload,
-          typename RequestUserHeader,
-          typename ResponsePayload,
-          typename ResponseUserHeader>
-inline auto RequestMut<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::operator->()
-    -> RequestPayload* {
-    return &payload_mut();
 }
 
 template <ServiceType Service,

@@ -71,7 +71,7 @@
 
 ### API Breaking Changes
 
-1. Replaced the `FixedSizeVec` with the `StaticVec`
+1. **Rust:** Replaced the `FixedSizeVec` with the `StaticVec`
 
    ```rust
    // old
@@ -85,7 +85,7 @@
    let my_vec = StaticVec::<MyType, VEC_CAPACITY>::new();
    ```
 
-2. Replaced `Vec` with the `PolymorphicVec`
+2. **Rust:** Replaced `Vec` with the `PolymorphicVec`
 
     ```rust
    // old
@@ -100,7 +100,7 @@
    let my_vec = PolymorphicVec::<MyType>::new(my_stateful_allocator, vec_capacity)?;
     ```
 
-3. Replaced the `FixedSizeByteString` with the `StaticString`
+3. **Rust:** Replaced the `FixedSizeByteString` with the `StaticString`
 
    ```rust
    // old
@@ -112,4 +112,33 @@
    use iceoryx2_bb_container::string::*;
    const CAPACITY: usize = 1234;
    let my_str = StaticString::<CAPACITY>::new();
+   ```
+
+4. **C++:** Remove `operator*` and `operator->` from `ActiveRequest`,
+   `PendingResponse`, `RequestMut`, `RequestMutUninit`, `Response`,
+   `ResponseMut`, `Sample`, `SampleMut`, `SampleMutUninit` since it lead
+   to easy confusions and bugs when used in combination with `optional` or
+   `expected`. See `sample.has_value()` and `sample->has_value()` that work
+   on different objects.
+
+   ```cxx
+   // old
+   auto sample = publisher.loan().expect("");
+   sample->some_member = 123;
+
+   // new
+   auto sample = publisher.loan().expect("");
+   sample.payload_mut().some_member = 123;
+   ```
+
+   ```cxx
+   // old
+   auto sample = publisher.loan().expect("");
+   *sample = 123;
+   std::cout << *sample << std::endl;
+
+   // new
+   auto sample = publisher.loan().expect("");
+   sample.payload_mut() = 123;
+   std::cout << sample.payload() << std::endl;
    ```

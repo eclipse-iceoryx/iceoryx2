@@ -55,18 +55,6 @@ class SampleMut {
     SampleMut(const SampleMut&) = delete;
     auto operator=(const SampleMut&) -> SampleMut& = delete;
 
-    /// Returns a const reference to the payload of the [`Sample`]
-    auto operator*() const -> const Payload&;
-
-    /// Returns a reference to the payload of the [`Sample`]
-    auto operator*() -> Payload&;
-
-    /// Returns a const pointer to the payload of the [`Sample`]
-    auto operator->() const -> const Payload*;
-
-    /// Returns a pointer to the payload of the [`Sample`]
-    auto operator->() -> Payload*;
-
     /// Returns a reference to the [`Header`] of the [`Sample`].
     auto header() const -> HeaderPublishSubscribe;
 
@@ -146,26 +134,6 @@ inline auto SampleMut<S, Payload, UserHeader>::operator=(SampleMut&& rhs) noexce
 template <ServiceType S, typename Payload, typename UserHeader>
 inline SampleMut<S, Payload, UserHeader>::~SampleMut() noexcept {
     drop();
-}
-
-template <ServiceType S, typename Payload, typename UserHeader>
-inline auto SampleMut<S, Payload, UserHeader>::operator*() const -> const Payload& {
-    return payload();
-}
-
-template <ServiceType S, typename Payload, typename UserHeader>
-inline auto SampleMut<S, Payload, UserHeader>::operator*() -> Payload& {
-    return payload_mut();
-}
-
-template <ServiceType S, typename Payload, typename UserHeader>
-inline auto SampleMut<S, Payload, UserHeader>::operator->() const -> const Payload* {
-    return &payload();
-}
-
-template <ServiceType S, typename Payload, typename UserHeader>
-inline auto SampleMut<S, Payload, UserHeader>::operator->() -> Payload* {
-    return &payload_mut();
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>

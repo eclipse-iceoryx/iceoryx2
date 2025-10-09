@@ -43,11 +43,6 @@ class ResponseMut {
     ResponseMut(const ResponseMut&) = delete;
     auto operator=(const ResponseMut&) -> ResponseMut& = delete;
 
-    auto operator*() const -> const ResponsePayload&;
-    auto operator*() -> ResponsePayload&;
-    auto operator->() const -> const ResponsePayload*;
-    auto operator->() -> ResponsePayload*;
-
     /// Returns a reference to the [`ResponseHeader`].
     auto header() const -> ResponseHeader;
 
@@ -124,26 +119,6 @@ inline auto ResponseMut<Service, ResponsePayload, ResponseUserHeader>::operator=
 template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
 inline ResponseMut<Service, ResponsePayload, ResponseUserHeader>::~ResponseMut() noexcept {
     drop();
-}
-
-template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
-inline auto ResponseMut<Service, ResponsePayload, ResponseUserHeader>::operator*() const -> const ResponsePayload& {
-    return payload();
-}
-
-template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
-inline auto ResponseMut<Service, ResponsePayload, ResponseUserHeader>::operator*() -> ResponsePayload& {
-    return payload_mut();
-}
-
-template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
-inline auto ResponseMut<Service, ResponsePayload, ResponseUserHeader>::operator->() const -> const ResponsePayload* {
-    return &payload();
-}
-
-template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
-inline auto ResponseMut<Service, ResponsePayload, ResponseUserHeader>::operator->() -> ResponsePayload* {
-    return &payload_mut();
 }
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>

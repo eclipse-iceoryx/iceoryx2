@@ -47,12 +47,6 @@ class Sample {
     auto operator=(const Sample&) -> Sample& = delete;
 
     /// Returns a reference to the payload of the [`Sample`]
-    auto operator*() const -> const Payload&;
-
-    /// Returns a pointer to the payload of the [`Sample`]
-    auto operator->() const -> const Payload*;
-
-    /// Returns a reference to the payload of the [`Sample`]
     template <typename T = Payload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
     auto payload() const -> const ValueType&;
 
@@ -117,16 +111,6 @@ inline auto Sample<S, Payload, UserHeader>::operator=(Sample&& rhs) noexcept -> 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline Sample<S, Payload, UserHeader>::~Sample() {
     drop();
-}
-
-template <ServiceType S, typename Payload, typename UserHeader>
-inline auto Sample<S, Payload, UserHeader>::operator*() const -> const Payload& {
-    return payload();
-}
-
-template <ServiceType S, typename Payload, typename UserHeader>
-inline auto Sample<S, Payload, UserHeader>::operator->() const -> const Payload* {
-    return &payload();
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>

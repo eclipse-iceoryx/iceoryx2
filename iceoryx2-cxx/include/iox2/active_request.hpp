@@ -40,9 +40,6 @@ class ActiveRequest {
     ActiveRequest(const ActiveRequest&) = delete;
     auto operator=(const ActiveRequest&) noexcept -> ActiveRequest& = delete;
 
-    auto operator*() const -> const RequestPayload&;
-    auto operator->() const -> const RequestPayload*;
-
     /// Loans uninitialized memory for a [`ResponseMutUninit`] where the user can write its payload to.
     template <typename T = ResponsePayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
     auto loan_uninit() -> iox::expected<ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>, LoanError>;
@@ -146,28 +143,6 @@ template <ServiceType Service,
 inline ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
     ~ActiveRequest() noexcept {
     drop();
-}
-
-template <ServiceType Service,
-          typename RequestPayload,
-          typename RequestUserHeader,
-          typename ResponsePayload,
-          typename ResponseUserHeader>
-inline auto
-ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::operator*() const
-    -> const RequestPayload& {
-    return payload();
-}
-
-template <ServiceType Service,
-          typename RequestPayload,
-          typename RequestUserHeader,
-          typename ResponsePayload,
-          typename ResponseUserHeader>
-inline auto
-ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::operator->() const
-    -> const RequestPayload* {
-    return &payload();
 }
 
 template <ServiceType Service,

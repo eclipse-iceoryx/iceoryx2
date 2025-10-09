@@ -109,7 +109,7 @@ void handle_incoming_events(Listener<ServiceType::Ipc>& listener,
                 std::cout << service_name.to_string().c_str() << ": publisher disconnected!" << std::endl;
             } else if (event_id == iox::into<EventId>(PubSubEvent::SentSample)) {
                 subscriber.receive().expect("").and_then([&](auto& sample) {
-                    std::cout << service_name.to_string().c_str() << ": Received sample " << *sample << " ..."
+                    std::cout << service_name.to_string().c_str() << ": Received sample " << sample.payload() << " ..."
                               << std::endl;
                 });
             }
