@@ -12,6 +12,7 @@
 
 #[generic_tests::define]
 mod event_relay_tests {
+    use core::fmt::Debug;
     use core::time::Duration;
 
     use iceoryx2::prelude::*;
@@ -30,7 +31,7 @@ mod event_relay_tests {
         .unwrap()
     }
 
-    fn propagate_events<S: Service, B: Backend<S>, T: Testing>(num: usize) {
+    fn propagate_events<S: Service, B: Backend<S> + Debug, T: Testing>(num: usize) {
         const TIMEOUT: Duration = Duration::from_millis(250);
         const MAX_ATTEMPTS: usize = 25;
 
@@ -121,17 +122,17 @@ mod event_relay_tests {
     }
 
     #[test]
-    fn propagates_event<S: Service, B: Backend<S>, T: Testing>() {
+    fn propagates_event<S: Service, B: Backend<S> + Debug, T: Testing>() {
         propagate_events::<S, B, T>(1);
     }
 
     #[test]
-    fn propagates_event_many<S: Service, B: Backend<S>, T: Testing>() {
+    fn propagates_event_many<S: Service, B: Backend<S> + Debug, T: Testing>() {
         propagate_events::<S, B, T>(10);
     }
 
     #[test]
-    fn propagated_events_do_not_loop_back<S: Service, B: Backend<S>, T: Testing>() {
+    fn propagated_events_do_not_loop_back<S: Service, B: Backend<S> + Debug, T: Testing>() {
         const MAX_ATTEMPTS: usize = 25;
         const TIMEOUT: Duration = Duration::from_millis(250);
 
@@ -242,7 +243,7 @@ mod event_relay_tests {
 
     // TODO: Fix flaky
     #[test]
-    fn multiple_events_are_consolidated_by_id<S: Service, B: Backend<S>, T: Testing>() {
+    fn multiple_events_are_consolidated_by_id<S: Service, B: Backend<S> + Debug, T: Testing>() {
         const MAX_ATTEMPTS: usize = 25;
         const TIMEOUT: Duration = Duration::from_millis(250);
 

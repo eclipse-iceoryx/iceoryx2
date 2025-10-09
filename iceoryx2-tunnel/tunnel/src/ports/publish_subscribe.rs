@@ -78,10 +78,12 @@ pub(crate) struct PublishSubscribePorts<S: Service> {
 
 impl<S: Service> PublishSubscribePorts<S> {
     pub(crate) fn new(static_config: &StaticConfig, node: &Node<S>) -> Result<Self, CreationError> {
+        let origin = "PublishSubscribePorts::new";
+
         let port_config = static_config.publish_subscribe();
         let service = unsafe {
             fail!(
-                from "PublishSubscribePorts::new",
+                from origin,
                 when node.service_builder(static_config.name())
                         .publish_subscribe::<Payload>()
                         .user_header::<Header>()
@@ -102,25 +104,25 @@ impl<S: Service> PublishSubscribePorts<S> {
                         )
                         .open_or_create(),
                 with CreationError::Service,
-                "{}", format!("Failed to open or create service {}({})", static_config.messaging_pattern(), static_config.name())
+                "Failed to open or create service {}({})", static_config.messaging_pattern(), static_config.name()
             )
         };
 
         let publisher = fail!(
-            from "PublishSubscribePorts::new",
+            from origin,
             when service
                 .publisher_builder()
                 .allocation_strategy(AllocationStrategy::PowerOfTwo)
                 .create(),
             with CreationError::Publisher,
-            "{}", &format!("Failed to create Publisher for {}({})", static_config.messaging_pattern(), static_config.name())
+            "Failed to create Publisher for {}({})", static_config.messaging_pattern(), static_config.name()
         );
 
         let subscriber = fail!(
-            from "Ports::new",
+            from origin,
             when service.subscriber_builder().create(),
             with CreationError::Subscriber,
-            "{}", &format!("Failed to create Subscriber for {}({})", static_config.messaging_pattern(), static_config.name())
+            "Failed to create Subscriber for {}({})", static_config.messaging_pattern(), static_config.name()
         );
 
         Ok(PublishSubscribePorts {
@@ -160,7 +162,7 @@ impl<S: Service> PublishSubscribePorts<S> {
             });
 
             let sample = fail!(
-                from "PublishSubscribePorts::send",
+                from self,
                 when sample,
                 with SendError::PayloadIngestion,
                 "Failed to ingest payload from backend"
@@ -169,14 +171,14 @@ impl<S: Service> PublishSubscribePorts<S> {
             match sample {
                 Some(sample) => {
                     debug!(
-                        from "PublishSubscribePorts::send",
+                        from self,
                         "Sending {}({})",
                         self.static_config.messaging_pattern(),
                         self.static_config.name()
                     );
 
                     fail!(
-                        from "Ports::send",
+                        from self,
                         when sample.send(),
                         with SendError::SampleDelivery,
                         "Failed to send ingested payload"
@@ -205,7 +207,7 @@ impl<S: Service> PublishSubscribePorts<S> {
             match unsafe { self.subscriber.receive_custom_payload() } {
                 Ok(Some(sample)) => {
                     debug!(
-                        from "PublishSubscribePorts::receive",
+                        from self,
                         "Received {}({})",
                         self.static_config.messaging_pattern(),
                         self.static_config.name()
@@ -217,7 +219,7 @@ impl<S: Service> PublishSubscribePorts<S> {
                     }
 
                     fail!(
-                        from "PublishSubscribePorts::receive",
+                        from self,
                         when propagate(sample),
                         with ReceiveError::SamplePropagation,
                         "Failed to propagate sample"

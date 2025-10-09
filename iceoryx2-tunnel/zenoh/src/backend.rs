@@ -55,14 +55,16 @@ impl<S: Service> Backend<S> for ZenohBackend<S> {
         Self: 'a;
 
     fn create(config: &Self::Config) -> Result<Self, Self::CreationError> {
+        let origin = "ZenohBackend::create";
+
         debug!(
-            from "ZenohBackend::create",
+            from origin,
             "Creating Zenoh tunnel backend"
         );
 
         let session = zenoh::open(config.clone()).wait();
         let session = fail!(
-            from "ZenohBackend::create",
+            from origin,
             when session,
             with Self::CreationError::Session,
             "Failed to create zenoh session"
@@ -70,7 +72,7 @@ impl<S: Service> Backend<S> for ZenohBackend<S> {
 
         let discovery = Discovery::create(&session);
         let discovery = fail!(
-            from "ZenohBackend::create",
+            from origin,
             when discovery,
             with CreationError::Discovery,
             "Failed to create zenoh discovery"

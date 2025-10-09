@@ -96,7 +96,7 @@ impl<'a, S: Service> RelayBuilder for Builder<'a, S> {
         let key = keys::publish_subscribe(self.static_config.service_id());
 
         let publisher = fail!(
-            from "publish_subscribe::RelayBuilder::create",
+            from self,
             when self.session
                 .declare_publisher(key.clone())
                 .allowed_destination(Locality::Remote)
@@ -108,7 +108,7 @@ impl<'a, S: Service> RelayBuilder for Builder<'a, S> {
 
         // TODO(correctness): Make handler type and properties configurable
         let subscriber = fail!(
-            from "publish_subscribe::RelayBuilder::create",
+            from self,
             when self.session
                 .declare_subscriber(key.clone())
                 .with(FifoChannel::new(10))
@@ -119,7 +119,7 @@ impl<'a, S: Service> RelayBuilder for Builder<'a, S> {
         );
 
         fail!(
-            from "publish_subscribe::RelayBuilder::create",
+            from self,
             when announce_service(self.session, self.static_config),
             with CreationError::ServiceAnouncement,
             "Failed to annnounce service on Zenoh"
@@ -151,7 +151,7 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
         sample: iceoryx2::sample::Sample<S, [CustomPayloadMarker], CustomHeaderMarker>,
     ) -> Result<(), Self::SendError> {
         debug!(
-            from "publish_subscribe::Relay::send",
+            from self,
             "Sending {}({})",
             self.static_config.messaging_pattern(),
             self.static_config.name()
@@ -163,7 +163,7 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
 
         let payload = unsafe { ZBytes::from(core::slice::from_raw_parts(bytes, len)) };
         fail!(
-            from "publish_subscribe::Relay::send",
+            from self,
             when self.publisher.put(payload).wait(),
             with SendError::PayloadPut,
             "Failed to propagate propagate publish-subscribe payload to zenoh"
@@ -177,7 +177,7 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
         loan: &mut LoanFn<'_, S, LoanError>,
     ) -> Result<Option<SampleMut<S>>, Self::ReceiveError> {
         let zenoh_sample = fail!(
-            from "publish_subscribe::Relay::receive",
+            from self,
             when self.subscriber.try_recv(),
             with ReceiveError::SampleReceive,
             "Failed to receive sample from Zenoh"
@@ -185,7 +185,7 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
 
         if let Some(zenoh_sample) = zenoh_sample {
             debug!(
-                from "publish_subscribe::Relay::receive",
+                from self,
                 "Ingesting {}({})",
                 self.static_config.messaging_pattern(),
                 self.static_config.name()
@@ -194,7 +194,7 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
             let zenoh_payload = zenoh_sample.payload();
 
             let mut iceoryx_sample = fail!(
-                from "publish_subscribe::Relay::receive",
+                from self,
                 when loan(zenoh_payload.len()),
                 with ReceiveError::IceoryxLoan,
                 "Failed to loan sample from iceoryx"

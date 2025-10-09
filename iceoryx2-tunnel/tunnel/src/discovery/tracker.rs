@@ -50,7 +50,7 @@ impl<S: Service> Discovery for DiscoveryTracker<S> {
     ) -> Result<(), Self::DiscoveryError> {
         let tracker = &mut self.0.borrow_mut();
         let (added, _removed) = fail!(
-            from "DiscoveryTracker::discover",
+            from self,
             when tracker.sync(),
             with DiscoveryError::TrackerSynchronization,
             "Failed to synchronize tracker"
@@ -60,7 +60,7 @@ impl<S: Service> Discovery for DiscoveryTracker<S> {
             match &tracker.get(&id) {
                 Some(service_details) => {
                     fail!(
-                        from "DiscoveryTracker::discover",
+                        from self,
                         when process_discovery(&service_details.static_details),
                         with DiscoveryError::DiscoveryProcessing,
                         "Failed to process discovery event"

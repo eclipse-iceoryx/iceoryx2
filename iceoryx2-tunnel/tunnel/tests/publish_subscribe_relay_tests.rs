@@ -33,7 +33,7 @@ mod publish_subscribe_relay_tests {
         .unwrap()
     }
 
-    fn propagate_struct_payloads<S: Service, B: Backend<S>, T: Testing>(num: usize) {
+    fn propagate_struct_payloads<S: Service, B: Backend<S> + Debug, T: Testing>(num: usize) {
         const MAX_ATTEMPTS: usize = 25;
         const TIMEOUT: Duration = Duration::from_millis(250);
 
@@ -146,7 +146,7 @@ mod publish_subscribe_relay_tests {
         }
     }
 
-    fn propagate_slice_payloads<S: Service, B: Backend<S>, T: Testing>(num: usize) {
+    fn propagate_slice_payloads<S: Service, B: Backend<S> + Debug, T: Testing>(num: usize) {
         const MAX_ATTEMPTS: usize = 25;
         const TIMEOUT: Duration = Duration::from_millis(250);
         const PAYLOAD_DATA_LENGTH: usize = 256;
@@ -258,27 +258,27 @@ mod publish_subscribe_relay_tests {
     }
 
     #[test]
-    fn propagates_struct_payload<S: Service, B: Backend<S>, T: Testing>() {
+    fn propagates_struct_payload<S: Service, B: Backend<S> + Debug, T: Testing>() {
         propagate_struct_payloads::<S, B, T>(1);
     }
 
     #[test]
-    fn propagates_struct_payload_many<S: Service, B: Backend<S>, T: Testing>() {
+    fn propagates_struct_payload_many<S: Service, B: Backend<S> + Debug, T: Testing>() {
         propagate_struct_payloads::<S, B, T>(10);
     }
 
     #[test]
-    fn propagates_slice_payload<S: Service, B: Backend<S>, T: Testing>() {
+    fn propagates_slice_payload<S: Service, B: Backend<S> + Debug, T: Testing>() {
         propagate_slice_payloads::<S, B, T>(1);
     }
 
     #[test]
-    fn propagates_slice_payload_many<S: Service, B: Backend<S>, T: Testing>() {
+    fn propagates_slice_payload_many<S: Service, B: Backend<S> + Debug, T: Testing>() {
         propagate_slice_payloads::<S, B, T>(10);
     }
 
     #[test]
-    fn propagated_payloads_do_not_loop_back<S: Service, B: Backend<S>, T: Testing>() {
+    fn propagated_payloads_do_not_loop_back<S: Service, B: Backend<S> + Debug, T: Testing>() {
         const PAYLOAD_DATA: &str = "WhenItRegisters";
 
         // === SETUP ===

@@ -97,7 +97,7 @@ impl<'a, S: Service> RelayBuilder for Builder<'a, S> {
         let key = keys::event(self.static_config.service_id());
 
         let notifier = fail!(
-            from "event::RelayBuilder::create",
+            from self,
             when self.session
                 .declare_publisher(key.clone())
                 .allowed_destination(Locality::Remote)
@@ -109,7 +109,7 @@ impl<'a, S: Service> RelayBuilder for Builder<'a, S> {
 
         // TODO(correctness): Make handler type and properties configurable
         let listener = fail!(
-        from "event::RelayBuilder::create",
+        from self,
         when self.session
             .declare_subscriber(key.clone())
             .with(FifoChannel::new(10))
@@ -119,7 +119,7 @@ impl<'a, S: Service> RelayBuilder for Builder<'a, S> {
         "Failed to create zenoh subscriber for notifications");
 
         fail!(
-            from "event::RelayBuilder::create",
+            from self,
             when announce_service(self.session, self.static_config),
             with CreationError::ServiceAnouncement,
             "Failed to annnounce service on Zenoh"
@@ -148,14 +148,14 @@ impl<S: Service> EventRelay<S> for Relay<S> {
 
     fn send(&self, event_id: EventId) -> Result<(), Self::SendError> {
         debug!(
-            from "event::Relay::send",
+            from self,
             "Sending {}({})",
             self.static_config.messaging_pattern(),
             self.static_config.name()
         );
 
         fail!(
-            from "event::Relay::send",
+            from self,
             when self.notifier.put(event_id.as_value().to_ne_bytes()).wait(),
             with SendError::EventPut,
             "Failed to propagate notification to zenoh"
@@ -166,7 +166,7 @@ impl<S: Service> EventRelay<S> for Relay<S> {
 
     fn receive(&self) -> Result<Option<EventId>, Self::ReceiveError> {
         let sample = fail!(
-            from "event::Relay::receive",
+            from self,
             when self.listener.try_recv(),
             with ReceiveError::EventReceive,
             "Failed to receive event from zenoh"
@@ -175,7 +175,7 @@ impl<S: Service> EventRelay<S> for Relay<S> {
         match sample {
             Some(sample) => {
                 debug!(
-                    from "event::Relay::receive",
+                    from self,
                     "Ingesting {}({})",
                     self.static_config.messaging_pattern(),
                     self.static_config.name()

@@ -61,8 +61,10 @@ pub struct Discovery {
 
 impl Discovery {
     pub fn create(session: &Session) -> Result<Self, CreationError> {
+        let origin = "Discovery::create()";
+
         let querier = fail!(
-            from "Discovery::create()",
+            from origin,
             when session
                     .declare_querier(keys::service_discovery())
                     .allowed_destination(Locality::Remote)
@@ -73,7 +75,7 @@ impl Discovery {
 
         // Make query immediately - replies processed in first `discover()` call
         let replies = fail!(
-            from "Discovery::create()",
+            from origin,
             when querier.get().wait(),
             with CreationError::DiscoveryQuery,
             "Failed to make query for service discovery"
@@ -115,7 +117,7 @@ impl iceoryx2_tunnel_backend::traits::Discovery for Discovery {
                     }
                 }
                 Err(e) => fail!(
-                    from "Discovery::discover",
+                    from self,
                     when Err(e),
                     with DiscoveryError::QueryReplyReceive,
                     "Errorneous reply received from zenoh discovery query"

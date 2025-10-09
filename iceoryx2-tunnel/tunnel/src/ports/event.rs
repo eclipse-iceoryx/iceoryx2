@@ -71,9 +71,11 @@ pub(crate) struct EventPorts<S: Service> {
 
 impl<S: Service> EventPorts<S> {
     pub(crate) fn new(static_config: &StaticConfig, node: &Node<S>) -> Result<Self, CreationError> {
+        let origin = "EventPorts::new";
+
         let event_config = static_config.event();
         let service = fail!(
-            from "EventPorts::new",
+            from origin,
             when node
                 .service_builder(static_config.name())
                 .event()
@@ -83,23 +85,21 @@ impl<S: Service> EventPorts<S> {
                 .event_id_max_value(event_config.event_id_max_value())
                 .open_or_create(),
             with CreationError::Service,
-            "{}", format!("Failed to open or create service {}({})", static_config.messaging_pattern(), static_config.name())
+            "Failed to open or create service {}({})", static_config.messaging_pattern(), static_config.name()
         );
 
         let notifier = fail!(
-            from "create_notifier()",
+            from origin,
             when service.notifier_builder().create(),
             with CreationError::Notifier,
-            "{}",
-            &format!("Failed to create Notifier for {}({})", static_config.messaging_pattern(), static_config.name())
+            "Failed to create Notifier for {}({})", static_config.messaging_pattern(), static_config.name()
         );
 
         let listener = fail!(
-            from "create_listener()",
+            from origin,
             when service.listener_builder().create(),
             with CreationError::Listener,
-            "{}",
-            &format!("Failed to create Listener for {}({})", static_config.messaging_pattern(),static_config.name())
+            "Failed to create Listener for {}({})", static_config.messaging_pattern(),static_config.name()
         );
 
         Ok(EventPorts {
@@ -119,7 +119,7 @@ impl<S: Service> EventPorts<S> {
         let mut ingested = false;
         loop {
             let event_id = fail!(
-                from "EventPorts::send",
+                from self,
                 when ingest(),
                 with SendError::EventIngestion,
                 "Failed to ingest event from backend"
@@ -128,14 +128,14 @@ impl<S: Service> EventPorts<S> {
             match event_id {
                 Some(event_id) => {
                     debug!(
-                        from "EventPorts::send",
+                        from self,
                         "Sending {}({})",
                         self.static_config.messaging_pattern(),
                         self.static_config.name()
                     );
 
                     fail!(
-                        from "EventPorts::send",
+                        from self,
                         when self.notifier.__internal_notify(event_id, true),
                         with SendError::NotificationDelivery,
                         "Failed to send notification"
@@ -159,7 +159,6 @@ impl<S: Service> EventPorts<S> {
         PropagateFn: FnMut(EventId) -> Result<(), E>,
     {
         let mut propagated = false;
-
         let mut received_ids: HashSet<EventId> = HashSet::new();
 
         // Consolidate pending event ids
@@ -175,13 +174,13 @@ impl<S: Service> EventPorts<S> {
         // Notify all ids once
         for event_id in received_ids {
             debug!(
-                from "PublishSubscribePorts::receive",
+                from self,
                 "Received {}({})",
                 self.static_config.messaging_pattern(),
                 self.static_config.name()
             );
             fail!(
-                from "EventPorts::receive",
+                from self,
                 when propagate(event_id),
                 with ReceiveError::NotificationPropagation,
                 "Failed to propagate received event to backend"
