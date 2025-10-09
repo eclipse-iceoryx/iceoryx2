@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/iceoryx2.h"
+#include "transmission_data.h"
 
 #ifdef _WIN64
 #define alignof __alignof
@@ -20,10 +21,6 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-
-bool key_cmp(const uint8_t* lhs, const uint8_t* rhs) {
-    return *(const uint64_t*) lhs == *(const uint64_t*) rhs;
-}
 
 // TODO [#817] see "RAII" in service_types example
 int main(void) {
@@ -53,9 +50,9 @@ int main(void) {
         iox2_service_builder_blackboard_opener(service_builder);
 
     // set key type
-    const char* key_type_name = "uint64_t";
+    const char* key_type_name = "Foo";
     if (iox2_service_builder_blackboard_opener_set_key_type_details(
-            &service_builder_blackboard, key_type_name, strlen(key_type_name), sizeof(uint64_t), alignof(uint64_t))
+            &service_builder_blackboard, key_type_name, strlen(key_type_name), sizeof(struct Foo), alignof(struct Foo))
         != IOX2_OK) {
         printf("Unable to set key type details!\n");
         goto drop_service_name;
@@ -76,15 +73,18 @@ int main(void) {
         goto drop_service;
     }
 
-    uint64_t key_0 = 0;
+    struct Foo key_0;
+    key_0.x = 0;
+    key_0.y = -4;
+    key_0.z = 4;
     const char* value_type_name_int = "int32_t";
     iox2_entry_handle_h entry_handle_key_0 = NULL;
     if (iox2_reader_entry(&reader,
                           NULL,
                           &entry_handle_key_0,
                           (const uint8_t*) &key_0,
-                          sizeof(uint64_t),
-                          alignof(uint64_t),
+                          sizeof(struct Foo),
+                          alignof(struct Foo),
                           value_type_name_int,
                           strlen(value_type_name_int),
                           sizeof(int32_t),
@@ -94,15 +94,18 @@ int main(void) {
         goto drop_reader;
     }
 
-    uint64_t key_1 = 1;
+    struct Foo key_1;
+    key_1.x = 1;
+    key_1.y = -4;
+    key_1.z = 4;
     const char* value_type_name_double = "double";
     iox2_entry_handle_h entry_handle_key_1 = NULL;
     if (iox2_reader_entry(&reader,
                           NULL,
                           &entry_handle_key_1,
                           (const uint8_t*) &key_1,
-                          sizeof(uint64_t),
-                          alignof(uint64_t),
+                          sizeof(struct Foo),
+                          alignof(struct Foo),
                           value_type_name_double,
                           strlen(value_type_name_double),
                           sizeof(double),
