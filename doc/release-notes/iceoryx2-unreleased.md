@@ -13,6 +13,8 @@
 
 * `iox2 config explain` cli command for config descriptions
   [#832](https://github.com/eclipse-iceoryx/iceoryx2/issues/832)
+* Add traits to facilitate implementation of custom tunnelling mechanisms
+  [#845](https://github.com/eclipse-iceoryx/iceoryx2/issues/845)
 * Add a C++ string container type with fixed compile-time capacity
   [#938](https://github.com/eclipse-iceoryx/iceoryx2/issues/938)
 * Add a C++ vector container type with fixed compile-time capacity
@@ -50,7 +52,8 @@
     conflicts when merging.
 -->
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+* Decoupled tunnel implementation from tunelling mechanism
+  [#845](https://github.com/eclipse-iceoryx/iceoryx2/issues/845)
 
 ### Workflow
 
@@ -142,4 +145,25 @@
    auto sample = publisher.loan().expect("");
    sample.payload_mut() = 123;
    std::cout << sample.payload() << std::endl;
+   ```
+
+5. **Rust:** Changed the signature for Tunnel creation to take a concrete
+   backend implementation
+
+   ```rust
+   // old
+   let zenoh_config = zenoh::Config::default(); // coupled to zenoh
+   let tunnel_config = iceoryx2_tunnel::TunnelConfig::default();
+   let iceoryx_config = iceoryx2::config::Config::default();
+
+   let mut tunnel = 
+       Tunnel::<Service>::create(&tunnel_config, &iceoryx_config, &zenoh_config).unwrap();
+
+   // new
+   let backend_config = Backend::Config::default();
+   let tunnel_config = iceoryx2_tunnel::Config::default();
+   let iceoryx_config = iceoryx2::config::Config::default();
+   
+   let mut tunnel =
+       Tunnel::<Service, Backend>::create(&tunnel_config, &iceoryx_config, &backend_config).unwrap();
    ```
