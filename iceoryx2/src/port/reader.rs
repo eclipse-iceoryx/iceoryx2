@@ -370,10 +370,19 @@ impl<Service: service::Service> Reader<Service, CustomKeyMarker> {
     pub fn __internal_entry(
         &self,
         key: *const u8,
-        key_layout: Layout,
         type_details: &TypeDetail,
     ) -> Result<__InternalEntryHandle<Service>, EntryHandleError> {
         let msg = "Unable to create entry handle";
+
+        let key_type_details = self
+            .shared_state
+            .service_state
+            .static_config
+            .blackboard()
+            .type_details();
+        let key_layout = unsafe {
+            Layout::from_size_align_unchecked(key_type_details.size, key_type_details.alignment)
+        };
 
         // create KeyMemory from key ptr
         let key_mem = unsafe {

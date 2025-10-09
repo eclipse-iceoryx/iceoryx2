@@ -218,8 +218,6 @@ pub unsafe extern "C" fn iox2_reader_entry(
     entry_handle_struct_ptr: *mut iox2_entry_handle_t,
     entry_handle_handle_ptr: *mut iox2_entry_handle_h,
     key: *const c_uchar,
-    key_size: c_size_t,
-    key_alignment: c_size_t,
     value_type_name_str: *const c_char,
     value_type_name_len: c_size_t,
     value_size: c_size_t,
@@ -253,16 +251,13 @@ pub unsafe extern "C" fn iox2_reader_entry(
     };
     let reader = &mut *reader_handle.as_type();
 
-    // TODO: use stored key type information?
-    let key_layout = Layout::from_size_align(key_size, key_alignment).unwrap(); // TODO: error handling
-
     match reader.service_type {
         iox2_service_type_e::IPC => {
             match reader
                 .value
                 .as_ref()
                 .ipc
-                .__internal_entry(key, key_layout, &value_type_details)
+                .__internal_entry(key, &value_type_details)
             {
                 Ok(handle) => {
                     let (entry_handle_struct_ptr, deleter) =
@@ -282,7 +277,7 @@ pub unsafe extern "C" fn iox2_reader_entry(
                 .value
                 .as_ref()
                 .local
-                .__internal_entry(key, key_layout, &value_type_details)
+                .__internal_entry(key, &value_type_details)
             {
                 Ok(handle) => {
                     let (entry_handle_struct_ptr, deleter) =

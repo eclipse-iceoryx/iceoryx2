@@ -1746,7 +1746,7 @@ mod service_blackboard {
         let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
 
         let entry_handle = reader
-            .__internal_entry(key_ptr as *const u8, key_layout, &type_details)
+            .__internal_entry(key_ptr as *const u8, &type_details)
             .unwrap();
         let mut read_value: ValueType = 9;
         let read_value_ptr: *mut ValueType = &mut read_value;
@@ -1821,7 +1821,7 @@ mod service_blackboard {
         let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
 
         let entry_handle = reader
-            .__internal_entry(key_ptr as *const u8, key_layout, &type_details)
+            .__internal_entry(key_ptr as *const u8, &type_details)
             .unwrap();
         let mut read_value: ValueType = 9;
         let read_value_ptr: *mut ValueType = &mut read_value;
@@ -1905,7 +1905,7 @@ mod service_blackboard {
         let writer = sut.writer_builder().create().unwrap();
         let reader = sut.reader_builder().create().unwrap();
         let entry_handle = reader
-            .__internal_entry(key_ptr as *const u8, key_layout, &type_details)
+            .__internal_entry(key_ptr as *const u8, &type_details)
             .unwrap();
 
         let entry_handle_mut = writer

@@ -141,8 +141,6 @@ mod reader {
         type KeyType = Foo;
         let key = Foo { a: -13, b: 13 };
         let key_ptr: *const KeyType = &key;
-        let key_layout =
-            Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap();
         type ValueType = u64;
         let default_value = ValueType::default();
         let value_ptr: *const ValueType = &default_value;
@@ -172,7 +170,7 @@ mod reader {
         let reader = sut.reader_builder().create().unwrap();
 
         let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
-        let entry_handle = reader.__internal_entry(key_ptr as *const u8, key_layout, &type_details);
+        let entry_handle = reader.__internal_entry(key_ptr as *const u8, &type_details);
         assert_that!(entry_handle, is_ok);
         let mut read_value: ValueType = 9;
         let read_value_ptr: *mut ValueType = &mut read_value;
@@ -193,8 +191,6 @@ mod reader {
         let key_ptr: *const KeyType = &key;
         let invalid_key = Foo { a: -54, b: 534 };
         let invalid_key_ptr: *const KeyType = &invalid_key;
-        let key_layout =
-            Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap();
         type ValueType = u64;
         let default_value = ValueType::default();
         let value_ptr: *const ValueType = &default_value;
@@ -224,8 +220,7 @@ mod reader {
         let reader = sut.reader_builder().create().unwrap();
 
         let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
-        let entry_handle =
-            reader.__internal_entry(invalid_key_ptr as *const u8, key_layout, &type_details);
+        let entry_handle = reader.__internal_entry(invalid_key_ptr as *const u8, &type_details);
         assert_that!(entry_handle, is_err);
         assert_that!(
             entry_handle.err().unwrap(),
@@ -238,8 +233,6 @@ mod reader {
         type KeyType = Foo;
         let key = Foo { a: 0, b: 0 };
         let key_ptr: *const KeyType = &key;
-        let key_layout =
-            Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap();
         type ValueType = u64;
         let default_value = ValueType::default();
         let value_ptr: *const ValueType = &default_value;
@@ -269,7 +262,7 @@ mod reader {
         let reader = sut.reader_builder().create().unwrap();
 
         let type_details = TypeDetail::new::<i64>(TypeVariant::FixedSize);
-        let entry_handle = reader.__internal_entry(key_ptr as *const u8, key_layout, &type_details);
+        let entry_handle = reader.__internal_entry(key_ptr as *const u8, &type_details);
         assert_that!(entry_handle, is_err);
         assert_that!(
             entry_handle.err().unwrap(),
