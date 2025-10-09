@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2::node::Node;
+use iceoryx2::prelude::ServiceName;
 use iceoryx2::{port::subscriber::Subscriber, service::Service};
 use iceoryx2_bb_log::fail;
 use iceoryx2_services_discovery::service_discovery::Discovery as DiscoveryEvent;
@@ -20,7 +21,6 @@ use iceoryx2_tunnel_backend::types::discovery::ProcessDiscoveryFn;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
-    ServiceName,
     Service,
     Subscriber,
 }
@@ -51,28 +51,21 @@ impl core::error::Error for DiscoveryError {}
 pub struct DiscoverySubscriber<S: Service>(pub Subscriber<S, DiscoveryEvent, ()>);
 
 impl<S: Service> DiscoverySubscriber<S> {
-    pub fn create(node: &Node<S>, service_name: &str) -> Result<Self, CreationError> {
-        let service_name = fail!(
-            from "Tunnel::<S, T>::create_discovery_subscriber",
-            when service_name.try_into(),
-            with CreationError::ServiceName,
-            "{}", &format!("Failed to create ServiceName '{}'", service_name)
-        );
-
+    pub fn create(node: &Node<S>, service_name: ServiceName) -> Result<Self, CreationError> {
         let service = fail!(
             from "Tunnel::<S, T>::create_discovery_subscriber",
             when node.service_builder(&service_name)
                     .publish_subscribe::<DiscoveryEvent>()
-                    .open_or_create(),
+                    .open(),
             with CreationError::Service,
-            "{}", &format!("Failed to open DiscoveryService with ServiceName '{}'", service_name)
+            "Failed to open discovery service with name {}", service_name
         );
 
         let subscriber = fail!(
             from "Tunnel::<S, T>::create_discovery_subscriber",
             when service.subscriber_builder().create(),
             with CreationError::Subscriber,
-            "{}", &format!("Failed to create DiscoverySubscriber with ServiceName '{}'", service_name)
+            "Failed to create subscriber for discovery service with name {}", service_name
         );
 
         Ok(Self(subscriber))

@@ -29,9 +29,10 @@ use iceoryx2_tunnel_backend::types::publish_subscribe::LoanFn;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
-    NodeCreation,
-    BackendCreation,
-    DiscoverySubscriberCreation,
+    Node,
+    ServiceName,
+    Backend,
+    DiscoverySubscriber,
 }
 
 impl core::fmt::Display for CreationError {
@@ -136,26 +137,35 @@ impl<S: Service, B: for<'a> Backend<S>> Tunnel<S, B> {
         let node = fail!(
             from "Tunnel::create",
             when NodeBuilder::new().config(iceoryx_config).create::<S>(),
-            with CreationError::NodeCreation,
+            with CreationError::Node,
             "Failed to create Node"
         );
 
         let backend = fail!(
             from "Tunnel::create",
             when Backend::create(backend_config),
-            with CreationError::BackendCreation,
+            with CreationError::Backend,
             "Failed to create provided Backend"
         );
 
         let (subscriber, tracker) = match &tunnel_config.discovery_service {
             Some(service_name) => {
                 info!(from "Tunnel::create", "Local Discovery via Subscriber");
+
+                let service_name = fail!(
+                    from "Tunnel::create",
+                    when service_name.as_str().try_into(),
+                    with CreationError::ServiceName,
+                    "Failed to create service name {}", service_name
+                );
+
                 let subscriber = fail!(
                     from "Tunnel::create",
                     when discovery::subscriber::DiscoverySubscriber::create(&node, service_name),
-                    with CreationError::DiscoverySubscriberCreation,
+                    with CreationError::DiscoverySubscriber,
                     "Failed to create discovery subscriber"
                 );
+
                 (Some(subscriber), None)
             }
             None => {
