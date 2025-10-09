@@ -103,8 +103,6 @@ inline auto Writer<S, KeyType>::entry(const KeyType& key)
                                     nullptr,
                                     &entry_handle,
                                     reinterpret_cast<const uint8_t*>(&key),
-                                    sizeof(KeyType),
-                                    alignof(KeyType),
                                     type_name.unchecked_access().c_str(),
                                     type_name.size(),
                                     sizeof(ValueType),

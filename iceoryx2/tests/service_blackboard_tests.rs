@@ -1752,7 +1752,7 @@ mod service_blackboard {
         let read_value_ptr: *mut ValueType = &mut read_value;
 
         let entry_handle_mut = writer
-            .__internal_entry(key_ptr as *const u8, key_layout, &type_details)
+            .__internal_entry(key_ptr as *const u8, &type_details)
             .unwrap();
         let entry_value_uninit =
             entry_handle_mut.loan_uninit(type_details.size(), type_details.alignment());
@@ -1827,7 +1827,7 @@ mod service_blackboard {
         let read_value_ptr: *mut ValueType = &mut read_value;
 
         let entry_handle_mut = writer
-            .__internal_entry(key_ptr as *const u8, key_layout, &type_details)
+            .__internal_entry(key_ptr as *const u8, &type_details)
             .unwrap();
         let write_value: ValueType = 5;
         let write_value_ptr: *const ValueType = &write_value;
@@ -1909,7 +1909,7 @@ mod service_blackboard {
             .unwrap();
 
         let entry_handle_mut = writer
-            .__internal_entry(key_ptr as *const u8, key_layout, &type_details)
+            .__internal_entry(key_ptr as *const u8, &type_details)
             .unwrap();
         let entry_value_uninit =
             entry_handle_mut.loan_uninit(type_details.size(), type_details.alignment());
