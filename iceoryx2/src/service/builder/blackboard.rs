@@ -325,8 +325,11 @@ pub(crate) struct BlackboardResources<ServiceType: service::Service> {
 
 impl<ServiceType: service::Service> Debug for BlackboardResources<ServiceType> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // TODO
-        write!(f, "")
+        write!(
+            f,
+            "BlackboardResources {{ mgmt: {:?}, data: {:?} }}",
+            self.mgmt, self.data
+        )
     }
 }
 
@@ -347,7 +350,7 @@ struct Builder<
     internals: Vec<BuilderInternals>,
     override_key_type: Option<TypeDetail>,
     key_eq_func: Box<dyn Fn(*const u8, *const u8) -> bool>,
-    phantom: PhantomData<KeyType>,
+    _key: PhantomData<KeyType>,
 }
 
 impl<
@@ -355,9 +358,16 @@ impl<
         ServiceType: service::Service,
     > Debug for Builder<KeyType, ServiceType>
 {
-    // TODO
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "")
+        write!(
+            f,
+            "Builder<{}, {}> {{ verify_max_readers: {}, verify_max_nodes: {}, internals: {:?} }}",
+            core::any::type_name::<KeyType>(),
+            core::any::type_name::<ServiceType>(),
+            self.verify_max_readers,
+            self.verify_max_nodes,
+            self.internals
+        )
     }
 }
 
@@ -376,7 +386,7 @@ impl<
             key_eq_func: Box::new(|lhs: *const u8, rhs: *const u8| {
                 KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::default_key_eq_comparison::<KeyType>(lhs, rhs)
             }),
-            phantom: PhantomData,
+            _key: PhantomData,
         };
 
         new_self.base.service_config.messaging_pattern = MessagingPattern::Blackboard(

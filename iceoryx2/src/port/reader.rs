@@ -69,8 +69,7 @@ struct ReaderSharedState<
 > {
     dynamic_reader_handle: Option<ContainerHandle>,
     service_state: Arc<ServiceState<Service, BlackboardResources<Service>>>,
-    // TODO: remove?
-    phantom: PhantomData<KeyType>,
+    _key: PhantomData<KeyType>,
 }
 
 impl<
@@ -134,7 +133,7 @@ impl<
             shared_state: Arc::new(ReaderSharedState {
                 dynamic_reader_handle: None,
                 service_state: service.clone(),
-                phantom: PhantomData,
+                _key: PhantomData,
             }),
             reader_id,
         };

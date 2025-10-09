@@ -66,8 +66,7 @@ pub struct PortFactory<
     KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
 > {
     pub(crate) service: Arc<ServiceState<Service, BlackboardResources<Service>>>,
-    // TODO: remove?
-    phantom: PhantomData<KeyType>,
+    _key: PhantomData<KeyType>,
 }
 
 impl<
@@ -119,7 +118,7 @@ impl<
     pub(crate) fn new(service: ServiceState<Service, BlackboardResources<Service>>) -> Self {
         Self {
             service: Arc::new(service),
-            phantom: PhantomData,
+            _key: PhantomData,
         }
     }
 

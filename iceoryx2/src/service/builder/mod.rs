@@ -83,12 +83,6 @@ pub struct CustomPayloadMarker(u8);
 #[doc(hidden)]
 pub struct CustomKeyMarker(u8);
 
-// TODO: remove?
-#[repr(C)]
-#[derive(ZeroCopySend, Clone, Copy)]
-#[doc(hidden)]
-pub struct CustomValueMarker {}
-
 enum_gen! {
 #[doc(hidden)]
     OpenDynamicStorageFailure

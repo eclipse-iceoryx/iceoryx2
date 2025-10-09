@@ -74,8 +74,7 @@ struct WriterSharedState<
 > {
     dynamic_writer_handle: Option<ContainerHandle>,
     service_state: Arc<ServiceState<Service, BlackboardResources<Service>>>,
-    // TODO: remove?
-    phantom: PhantomData<KeyType>,
+    _key: PhantomData<KeyType>,
 }
 
 impl<
@@ -141,7 +140,7 @@ impl<
             shared_state: Arc::new(WriterSharedState {
                 service_state: service.clone(),
                 dynamic_writer_handle: None,
-                phantom: PhantomData,
+                _key: PhantomData,
             }),
             writer_id,
         };
