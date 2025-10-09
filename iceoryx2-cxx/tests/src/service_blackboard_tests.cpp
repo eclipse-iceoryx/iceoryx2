@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include "iox2/container/static_string.hpp"
 #include "iox2/entry_value.hpp"
 #include "iox2/node.hpp"
 #include "iox2/port_factory_blackboard.hpp"
@@ -1605,32 +1606,35 @@ TYPED_TEST(ServiceBlackboardTest, same_entry_id_for_same_key) {
     ASSERT_NE(entry_handle_0.entry_id(), entry_handle_1.entry_id());
 }
 
+constexpr uint64_t const STRING_CAPACITY = 25;
+struct Foo {
+    Foo() = default;
+    // NOLINTNEXTLINE(readability-identifier-length), come on, its a test
+    Foo(uint32_t a, int16_t b, uint8_t c, const container::StaticString<STRING_CAPACITY>& d)
+        : m_a { a }
+        , m_b { b }
+        , m_c { c }
+        , m_d { d } {
+    }
+
+    auto operator==(const Foo& rhs) const -> bool {
+        return m_a == rhs.m_a && m_b == rhs.m_b && m_c == rhs.m_c && m_d == rhs.m_d;
+    }
+
+  private:
+    uint32_t m_a { 0 };
+    int16_t m_b { 0 };
+    uint8_t m_c { 0 };
+    container::StaticString<STRING_CAPACITY> m_d;
+};
+
 TYPED_TEST(ServiceBlackboardTest, simple_communication_with_key_struct_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr int32_t VALUE_1 = 50;
     constexpr int32_t VALUE_2 = -12;
 
-    struct Foo {
-        Foo() = default;
-        // NOLINTNEXTLINE(readability-identifier-length), come on, its a test
-        Foo(uint32_t a, int16_t b, uint8_t c)
-            : m_a { a }
-            , m_b { b }
-            , m_c { c } {
-        }
-
-        auto operator==(const Foo& rhs) const -> bool {
-            return m_a == rhs.m_a && m_b == rhs.m_b && m_c == rhs.m_c;
-        }
-
-      private:
-        uint32_t m_a { 0 };
-        int16_t m_b { 0 };
-        uint8_t m_c { 0 };
-    };
-
-    auto key_1 = Foo(2, -3, 0);
-    auto key_2 = Foo(2, -2, 0);
+    auto key_1 = Foo(2, -3, 0, container::StaticString<STRING_CAPACITY>::from_utf8("hatschu").value());
+    auto key_2 = Foo(2, -3, 0, container::StaticString<STRING_CAPACITY>::from_utf8("hatschuu").value());
 
     const auto service_name = iox2_testing::generate_service_name();
 
@@ -1661,4 +1665,20 @@ TYPED_TEST(ServiceBlackboardTest, simple_communication_with_key_struct_works) {
     ASSERT_THAT(entry_handle_2.get(), Eq(VALUE_2));
 }
 
+TYPED_TEST(ServiceBlackboardTest, adding_key_struct_twice_fails) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    auto key = Foo(2, -3, 0, container::StaticString<STRING_CAPACITY>::from_utf8("huiuiui").value());
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template blackboard_creator<Foo>()
+                       .template add<int32_t>(key, -3)
+                       .template add<uint32_t>(key, 3)
+                       .create();
+    ASSERT_TRUE(service.has_error());
+    ASSERT_THAT(service.error(), Eq(BlackboardCreateError::ServiceInCorruptedState));
+}
 } // namespace

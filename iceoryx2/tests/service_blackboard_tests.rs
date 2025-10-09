@@ -1662,6 +1662,7 @@ mod service_blackboard {
     struct Foo {
         a: u8,
         b: u32,
+        c: StaticString<25>,
     }
 
     fn cmp_for_foo(lhs: *const u8, rhs: *const u8) -> bool {
@@ -1677,8 +1678,16 @@ mod service_blackboard {
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
-        let key_1 = Foo { a: 9, b: 99 };
-        let key_2 = Foo { a: 9, b: 999 };
+        let key_1 = Foo {
+            a: 9,
+            b: 99,
+            c: StaticString::try_from("NalalalaWolf").unwrap(),
+        };
+        let key_2 = Foo {
+            a: 9,
+            b: 999,
+            c: StaticString::try_from("NalalalaWolf").unwrap(),
+        };
 
         let sut = node
             .service_builder(&service_name)
@@ -1707,14 +1716,39 @@ mod service_blackboard {
         assert_that!(entry_handle_2.get(), eq 12);
     }
 
+    #[test]
+    fn adding_key_struct_twice_fails<Sut: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let key = Foo {
+            a: 9,
+            b: 99,
+            c: StaticString::try_from("huiuiui").unwrap(),
+        };
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<Foo>()
+            .add::<i32>(key, -3)
+            .add::<u32>(key, 3)
+            .create();
+
+        assert_that!(sut, is_err);
+        assert_that!(sut.err().unwrap(), eq BlackboardCreateError::ServiceInCorruptedState);
+    }
+
     // TODO [#817] move the custom key type tests to testing.rs
     #[test]
     fn loan_uninit_and_write_works_with_custom_key_type<S: Service>() {
         type KeyType = Foo;
-        let key = Foo { a: 0, b: 0 };
+        let key = Foo {
+            a: 0,
+            b: 0,
+            c: StaticString::new(),
+        };
         let key_ptr: *const KeyType = &key;
-        let key_layout =
-            Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap();
         type ValueType = u64;
         let default_value = ValueType::default();
         let value_ptr: *const ValueType = &default_value;
@@ -1786,10 +1820,12 @@ mod service_blackboard {
     #[test]
     fn write_and_update_internal_cell_works_with_custom_key_type<S: Service>() {
         type KeyType = Foo;
-        let key = Foo { a: 3, b: 17 };
+        let key = Foo {
+            a: 3,
+            b: 17,
+            c: StaticString::try_from("yeeehaw").unwrap(),
+        };
         let key_ptr: *const KeyType = &key;
-        let key_layout =
-            Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap();
         type ValueType = u64;
         let default_value = ValueType::default();
         let value_ptr: *const ValueType = &default_value;
@@ -1871,10 +1907,12 @@ mod service_blackboard {
         Sut: Service,
     >() {
         type KeyType = Foo;
-        let key = Foo { a: 89, b: 0 };
+        let key = Foo {
+            a: 89,
+            b: 0,
+            c: StaticString::try_from("EvilHuhn").unwrap(),
+        };
         let key_ptr: *const KeyType = &key;
-        let key_layout =
-            Layout::from_size_align(size_of::<KeyType>(), align_of::<KeyType>()).unwrap();
         type ValueType = u32;
         let default_value = ValueType::default();
         let value_ptr: *const ValueType = &default_value;
