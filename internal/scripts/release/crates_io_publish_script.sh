@@ -48,7 +48,9 @@ CRATES_TO_PUBLISH=(
     iceoryx2
     iceoryx2-services-discovery
     iceoryx2-userland-record-and-replay
-    iceoryx2-tunnels-zenoh
+    iceoryx2-tunnel-backend
+    iceoryx2-tunnel-zenoh
+    iceoryx2-tunnel
     iceoryx2-cli
 )
 CRATES_TO_IGNORE=(
@@ -60,7 +62,7 @@ CRATES_TO_IGNORE=(
     iceoryx2-ffi-c
     iceoryx2-ffi-macros
     iceoryx2-ffi-python
-    iceoryx2-tunnels-end-to-end-tests
+    iceoryx2-tunnel-end-to-end-tests
 )
 
 if [[ "$#" -eq 0 ]]; then

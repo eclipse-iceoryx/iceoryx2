@@ -1,5 +1,5 @@
 {
-  "checksum": "a9eba255d6132f9add6d4ac282153ff3f47a082064fea3b1f15f4d31984941bf",
+  "checksum": "2e2d718f287c00f59f18e18793b42082f4810e557e590744df4bcfc6202633c0",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -8414,6 +8414,14 @@
         "compile_data_glob": [
           "**"
         ],
+        "crate_features": {
+          "common": [
+            "default",
+            "iceoryx2-tunnel-zenoh",
+            "tunnel_zenoh"
+          ],
+          "selects": {}
+        },
         "deps": {
           "common": [
             {
@@ -8476,7 +8484,7 @@
           "selects": {
             "cfg(not(target_os = \"freebsd\"))": [
               {
-                "id": "zenoh 1.3.4",
+                "id": "zenoh 1.5.1",
                 "target": "zenoh"
               }
             ]
@@ -8993,15 +9001,100 @@
       ],
       "license_file": null
     },
-    "iceoryx2-tunnels-end-to-end-tests 0.7.0": {
-      "name": "iceoryx2-tunnels-end-to-end-tests",
+    "iceoryx2-tunnel 0.7.0": {
+      "name": "iceoryx2-tunnel",
       "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
         {
           "Library": {
-            "crate_name": "iceoryx2_tunnels_end_to_end_tests",
+            "crate_name": "iceoryx2_tunnel",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_tunnel",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "iceoryx2-tunnel-zenoh",
+            "tunnel_zenoh"
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "proc_macro_deps_dev": {
+          "common": [
+            {
+              "id": "generic-tests 0.1.2",
+              "target": "generic_tests"
+            }
+          ],
+          "selects": {}
+        },
+        "version": "0.7.0"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-tunnel-backend 0.7.0": {
+      "name": "iceoryx2-tunnel-backend",
+      "version": "0.7.0",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_tunnel_backend",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_tunnel_backend",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "edition": "2021",
+        "version": "0.7.0"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-tunnel-end-to-end-tests 0.7.0": {
+      "name": "iceoryx2-tunnel-end-to-end-tests",
+      "version": "0.7.0",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_tunnel_end_to_end_tests",
             "crate_root": "common/src/lib.rs",
             "srcs": {
               "allow_empty": true,
@@ -9012,7 +9105,7 @@
           }
         }
       ],
-      "library_target_name": "iceoryx2_tunnels_end_to_end_tests",
+      "library_target_name": "iceoryx2_tunnel_end_to_end_tests",
       "common_attrs": {
         "compile_data_glob": [
           "**"
@@ -9036,15 +9129,15 @@
       ],
       "license_file": null
     },
-    "iceoryx2-tunnels-zenoh 0.7.0": {
-      "name": "iceoryx2-tunnels-zenoh",
+    "iceoryx2-tunnel-zenoh 0.7.0": {
+      "name": "iceoryx2-tunnel-zenoh",
       "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
         {
           "Library": {
-            "crate_name": "iceoryx2_tunnels_zenoh",
+            "crate_name": "iceoryx2_tunnel_zenoh",
             "crate_root": "src/lib.rs",
             "srcs": {
               "allow_empty": true,
@@ -9055,7 +9148,7 @@
           }
         }
       ],
-      "library_target_name": "iceoryx2_tunnels_zenoh",
+      "library_target_name": "iceoryx2_tunnel_zenoh",
       "common_attrs": {
         "compile_data_glob": [
           "**"
@@ -9067,7 +9160,7 @@
               "target": "serde_json"
             },
             {
-              "id": "zenoh 1.3.4",
+              "id": "zenoh 1.5.1",
               "target": "zenoh"
             }
           ],
@@ -10745,14 +10838,14 @@
       ],
       "license_file": "LICENSE-APACHE"
     },
-    "keyed-set 1.0.0": {
+    "keyed-set 1.1.0": {
       "name": "keyed-set",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "package_url": "https://github.com/p-avital/keyed-set-rs",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/keyed-set/1.0.0/download",
-          "sha256": "0a3ec39d2dc17953a1540d63906a112088f79b2e46833b4ed65bc9de3904ae34"
+          "url": "https://static.crates.io/crates/keyed-set/1.1.0/download",
+          "sha256": "89d255a6b6ecd77bb93ce91de984d7039bff7503f500eb4851a1269732f22baf"
         }
       },
       "targets": [
@@ -10784,10 +10877,11 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "1.0.0"
+        "version": "1.1.0"
       },
-      "license": "EPL-2.0",
+      "license": "EPL-2.0 OR Apache-2.0",
       "license_ids": [
+        "Apache-2.0",
         "EPL-2.0"
       ],
       "license_file": null
@@ -16394,14 +16488,14 @@
       ],
       "license_file": "LICENSE"
     },
-    "ringbuffer-spsc 0.1.13": {
+    "ringbuffer-spsc 0.1.15": {
       "name": "ringbuffer-spsc",
-      "version": "0.1.13",
+      "version": "0.1.15",
       "package_url": "https://github.com/Mallets/ringbuffer-spsc",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/ringbuffer-spsc/0.1.13/download",
-          "sha256": "3ac1597578561cb821dd07711c03cbfaec071eb5a0e526f7f05c86cc4c149d78"
+          "url": "https://static.crates.io/crates/ringbuffer-spsc/0.1.15/download",
+          "sha256": "8d3e7aa0a681b232e7cd7f856a53b10603df88ca74b79a8d8088845185492e35"
         }
       },
       "targets": [
@@ -16437,10 +16531,11 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.1.13"
+        "version": "0.1.15"
       },
-      "license": "EPL-2.0",
+      "license": "EPL-2.0 OR Apache-2.0",
       "license_ids": [
+        "Apache-2.0",
         "EPL-2.0"
       ],
       "license_file": "LICENSE"
@@ -20957,14 +21052,14 @@
       ],
       "license_file": "LICENSE"
     },
-    "token-cell 1.5.0": {
+    "token-cell 2.0.0": {
       "name": "token-cell",
-      "version": "1.5.0",
+      "version": "2.0.0",
       "package_url": "https://github.com/p-avital/token-cell-rs",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/token-cell/1.5.0/download",
-          "sha256": "f4a2b964fdb303b08a4eab04d7c1bad2bca33f8eee334ccd28802f1041c6eb87"
+          "url": "https://static.crates.io/crates/token-cell/2.0.0/download",
+          "sha256": "e9c7b0772e96c7fa6646b16c116753b3d1db503400209237230aa992c9e3a269"
         }
       },
       "targets": [
@@ -20996,10 +21091,11 @@
           ],
           "selects": {}
         },
-        "version": "1.5.0"
+        "version": "2.0.0"
       },
-      "license": "EPL-2.0",
+      "license": "EPL-2.0 OR Apache-2.0",
       "license_ids": [
+        "Apache-2.0",
         "EPL-2.0"
       ],
       "license_file": null
@@ -22937,14 +23033,14 @@
       ],
       "license_file": "LICENSE-APACHE"
     },
-    "validated_struct 2.1.1": {
+    "validated_struct 2.2.0": {
       "name": "validated_struct",
-      "version": "2.1.1",
+      "version": "2.2.0",
       "package_url": "https://github.com/p-avital/validated-struct-rs",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/validated_struct/2.1.1/download",
-          "sha256": "0251cab911130b095b8190d5480729c5e6a05e36e617658039e4bfcfd879c153"
+          "url": "https://static.crates.io/crates/validated_struct/2.2.0/download",
+          "sha256": "869a93e8a7286e339e1128630051d82babbcd75d585975af07b9f3327220e60e"
         }
       },
       "targets": [
@@ -22995,28 +23091,29 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "validated_struct_macros 2.1.1",
+              "id": "validated_struct_macros 2.2.0",
               "target": "validated_struct_macros"
             }
           ],
           "selects": {}
         },
-        "version": "2.1.1"
+        "version": "2.2.0"
       },
-      "license": "EPL-2.0",
+      "license": "EPL-2.0 OR Apache-2.0",
       "license_ids": [
+        "Apache-2.0",
         "EPL-2.0"
       ],
       "license_file": null
     },
-    "validated_struct_macros 2.1.1": {
+    "validated_struct_macros 2.2.0": {
       "name": "validated_struct_macros",
-      "version": "2.1.1",
+      "version": "2.2.0",
       "package_url": "https://github.com/p-avital/validated-struct-macros-rs",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/validated_struct_macros/2.1.1/download",
-          "sha256": "dcba0282a9f9297af06b91ff22615e7f77f0ab66f75fc95898960d1604fc7fd7"
+          "url": "https://static.crates.io/crates/validated_struct_macros/2.2.0/download",
+          "sha256": "8c44ce98e7227a04eeb4cf9c784109a5c9710e54849ceb4f09f8597247897f1e"
         }
       },
       "targets": [
@@ -23072,10 +23169,11 @@
           ],
           "selects": {}
         },
-        "version": "2.1.1"
+        "version": "2.2.0"
       },
-      "license": "EPL-2.0",
+      "license": "EPL-2.0 OR Apache-2.0",
       "license_ids": [
+        "Apache-2.0",
         "EPL-2.0"
       ],
       "license_file": null
@@ -27045,14 +27143,14 @@
       ],
       "license_file": "LICENSE"
     },
-    "zenoh 1.3.4": {
+    "zenoh 1.5.1": {
       "name": "zenoh",
-      "version": "1.3.4",
+      "version": "1.5.1",
       "package_url": "https://github.com/eclipse-zenoh/zenoh",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/zenoh/1.3.4/download",
-          "sha256": "a2efb72fce1cf299cdd716ec9b300c16952d82594910629eb13c8dd1f357a2a3"
+          "url": "https://static.crates.io/crates/zenoh/1.5.1/download",
+          "sha256": "3427f6680d4de3f71bd823e49df91c43d97a90475bed4ace0e6fc60c93a82401"
         }
       },
       "targets": [
@@ -27095,6 +27193,7 @@
             "transport_compression",
             "transport_multilink",
             "transport_quic",
+            "transport_quic_datagram",
             "transport_tcp",
             "transport_tls",
             "transport_udp",
@@ -27199,67 +27298,71 @@
               "target": "vec_map"
             },
             {
-              "id": "zenoh 1.3.4",
+              "id": "zenoh 1.5.1",
               "target": "build_script_build"
             },
             {
-              "id": "zenoh-buffers 1.3.4",
+              "id": "zenoh-buffers 1.5.1",
               "target": "zenoh_buffers"
             },
             {
-              "id": "zenoh-codec 1.3.4",
+              "id": "zenoh-codec 1.5.1",
               "target": "zenoh_codec"
             },
             {
-              "id": "zenoh-collections 1.3.4",
+              "id": "zenoh-collections 1.5.1",
               "target": "zenoh_collections"
             },
             {
-              "id": "zenoh-config 1.3.4",
+              "id": "zenoh-config 1.5.1",
               "target": "zenoh_config"
             },
             {
-              "id": "zenoh-core 1.3.4",
+              "id": "zenoh-core 1.5.1",
               "target": "zenoh_core"
             },
             {
-              "id": "zenoh-keyexpr 1.3.4",
+              "id": "zenoh-keyexpr 1.5.1",
               "target": "zenoh_keyexpr"
             },
             {
-              "id": "zenoh-link 1.3.4",
+              "id": "zenoh-link 1.5.1",
               "target": "zenoh_link"
             },
             {
-              "id": "zenoh-plugin-trait 1.3.4",
+              "id": "zenoh-link-commons 1.5.1",
+              "target": "zenoh_link_commons"
+            },
+            {
+              "id": "zenoh-plugin-trait 1.5.1",
               "target": "zenoh_plugin_trait"
             },
             {
-              "id": "zenoh-protocol 1.3.4",
+              "id": "zenoh-protocol 1.5.1",
               "target": "zenoh_protocol"
             },
             {
-              "id": "zenoh-result 1.3.4",
+              "id": "zenoh-result 1.5.1",
               "target": "zenoh_result"
             },
             {
-              "id": "zenoh-runtime 1.3.4",
+              "id": "zenoh-runtime 1.5.1",
               "target": "zenoh_runtime"
             },
             {
-              "id": "zenoh-sync 1.3.4",
+              "id": "zenoh-sync 1.5.1",
               "target": "zenoh_sync"
             },
             {
-              "id": "zenoh-task 1.3.4",
+              "id": "zenoh-task 1.5.1",
               "target": "zenoh_task"
             },
             {
-              "id": "zenoh-transport 1.3.4",
+              "id": "zenoh-transport 1.5.1",
               "target": "zenoh_transport"
             },
             {
-              "id": "zenoh-util 1.3.4",
+              "id": "zenoh-util 1.5.1",
               "target": "zenoh_util"
             }
           ],
@@ -27277,13 +27380,13 @@
               "target": "paste"
             },
             {
-              "id": "zenoh-macros 1.3.4",
+              "id": "zenoh-macros 1.5.1",
               "target": "zenoh_macros"
             }
           ],
           "selects": {}
         },
-        "version": "1.3.4"
+        "version": "1.5.1"
       },
       "build_script_attrs": {
         "compile_data_glob": [
@@ -27309,14 +27412,14 @@
       ],
       "license_file": null
     },
-    "zenoh-buffers 1.3.4": {
+    "zenoh-buffers 1.5.1": {
       "name": "zenoh-buffers",
-      "version": "1.3.4",
+      "version": "1.5.1",
       "package_url": "https://github.com/eclipse-zenoh/zenoh",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/zenoh-buffers/1.3.4/download",
-          "sha256": "8842fecec1706cdf38d785feb63d1129278dbebfbd81bf50d54775b1593940bf"
+          "url": "https://static.crates.io/crates/zenoh-buffers/1.5.1/download",
+          "sha256": "9acc6037e456d7baf880a7379f7a0cbcf637cc64ec6a2cf9ee26914823e91738"
         }
       },
       "targets": [
@@ -27347,14 +27450,14 @@
         "deps": {
           "common": [
             {
-              "id": "zenoh-collections 1.3.4",
+              "id": "zenoh-collections 1.5.1",
               "target": "zenoh_collections"
             }
           ],
           "selects": {}
         },
         "edition": "2021",
-        "version": "1.3.4"
+        "version": "1.5.1"
       },
       "license": "EPL-2.0 OR Apache-2.0",
       "license_ids": [
@@ -27363,14 +27466,14 @@
       ],
       "license_file": null
     },
-    "zenoh-codec 1.3.4": {
+    "zenoh-codec 1.5.1": {
       "name": "zenoh-codec",
-      "version": "1.3.4",
+      "version": "1.5.1",
       "package_url": "https://github.com/eclipse-zenoh/zenoh",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/zenoh-codec/1.3.4/download",
-          "sha256": "a8c72cec335108131a1fd1aa5ac31423eb0b0e66ae16873890f79a5453c6d174"
+          "url": "https://static.crates.io/crates/zenoh-codec/1.5.1/download",
+          "sha256": "61054e59ad67c2cc8002de54a1797accc9a52c305bd50ed7a4589a33e698f345"
         }
       },
       "targets": [
@@ -27411,18 +27514,18 @@
               "target": "uhlc"
             },
             {
-              "id": "zenoh-buffers 1.3.4",
+              "id": "zenoh-buffers 1.5.1",
               "target": "zenoh_buffers"
             },
             {
-              "id": "zenoh-protocol 1.3.4",
+              "id": "zenoh-protocol 1.5.1",
               "target": "zenoh_protocol"
             }
           ],
           "selects": {}
         },
         "edition": "2021",
-        "version": "1.3.4"
+        "version": "1.5.1"
       },
       "license": "EPL-2.0 OR Apache-2.0",
       "license_ids": [
@@ -27431,14 +27534,14 @@
       ],
       "license_file": null
     },
-    "zenoh-collections 1.3.4": {
+    "zenoh-collections 1.5.1": {
       "name": "zenoh-collections",
-      "version": "1.3.4",
+      "version": "1.5.1",
       "package_url": "https://github.com/eclipse-zenoh/zenoh",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/zenoh-collections/1.3.4/download",
-          "sha256": "79657ff5c4979a53b11ab96cd83f714245644eba75d139aa7ce370df3125223d"
+          "url": "https://static.crates.io/crates/zenoh-collections/1.5.1/download",
+          "sha256": "959ea6f76c697adb778eefc358fb77a140add8ad800d08bd92b2ad19eb088017"
         }
       },
       "targets": [
@@ -27477,7 +27580,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "1.3.4"
+        "version": "1.5.1"
       },
       "license": "EPL-2.0 OR Apache-2.0",
       "license_ids": [
@@ -27486,14 +27589,14 @@
       ],
       "license_file": null
     },
-    "zenoh-config 1.3.4": {
+    "zenoh-config 1.5.1": {
       "name": "zenoh-config",
-      "version": "1.3.4",
+      "version": "1.5.1",
       "package_url": "https://github.com/eclipse-zenoh/zenoh",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/zenoh-config/1.3.4/download",
-          "sha256": "2ef77c529f5aca77f8ff6947ce7e074bda2fb88a2f49b43e5a59430cde9f3b1f"
+          "url": "https://static.crates.io/crates/zenoh-config/1.5.1/download",
+          "sha256": "9f41025fbb26212dc2b94815aef1591f4a7fd223e25dc8f63042e6d192752cc7"
         }
       },
       "targets": [
@@ -27565,27 +27668,27 @@
               "target": "uhlc"
             },
             {
-              "id": "validated_struct 2.1.1",
+              "id": "validated_struct 2.2.0",
               "target": "validated_struct"
             },
             {
-              "id": "zenoh-core 1.3.4",
+              "id": "zenoh-core 1.5.1",
               "target": "zenoh_core"
             },
             {
-              "id": "zenoh-keyexpr 1.3.4",
+              "id": "zenoh-keyexpr 1.5.1",
               "target": "zenoh_keyexpr"
             },
             {
-              "id": "zenoh-protocol 1.3.4",
+              "id": "zenoh-protocol 1.5.1",
               "target": "zenoh_protocol"
             },
             {
-              "id": "zenoh-result 1.3.4",
+              "id": "zenoh-result 1.5.1",
               "target": "zenoh_result"
             },
             {
-              "id": "zenoh-util 1.3.4",
+              "id": "zenoh-util 1.5.1",
               "target": "zenoh_util"
             }
           ],
@@ -27595,13 +27698,13 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "zenoh-macros 1.3.4",
+              "id": "zenoh-macros 1.5.1",
               "target": "zenoh_macros"
             }
           ],
           "selects": {}
         },
-        "version": "1.3.4"
+        "version": "1.5.1"
       },
       "license": "EPL-2.0 OR Apache-2.0",
       "license_ids": [
@@ -27610,14 +27713,14 @@
       ],
       "license_file": null
     },
-    "zenoh-core 1.3.4": {
+    "zenoh-core 1.5.1": {
       "name": "zenoh-core",
-      "version": "1.3.4",
+      "version": "1.5.1",
       "package_url": "https://github.com/eclipse-zenoh/zenoh",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/zenoh-core/1.3.4/download",
-          "sha256": "bad8f92497145fcf03e96062f6d0172a6a29824f79ccfc2cd05737249f5a3342"
+          "url": "https://static.crates.io/crates/zenoh-core/1.5.1/download",
+          "sha256": "41c94383c2eddf191ce04dc792e901487045640ff66614c55ae7fdb9c15bd037"
         }
       },
       "targets": [
@@ -27657,18 +27760,18 @@
               "target": "tokio"
             },
             {
-              "id": "zenoh-result 1.3.4",
+              "id": "zenoh-result 1.5.1",
               "target": "zenoh_result"
             },
             {
-              "id": "zenoh-runtime 1.3.4",
+              "id": "zenoh-runtime 1.5.1",
               "target": "zenoh_runtime"
             }
           ],
           "selects": {}
         },
         "edition": "2021",
-        "version": "1.3.4"
+        "version": "1.5.1"
       },
       "license": "EPL-2.0 OR Apache-2.0",
       "license_ids": [
@@ -27677,14 +27780,14 @@
       ],
       "license_file": null
     },
-    "zenoh-crypto 1.3.4": {
+    "zenoh-crypto 1.5.1": {
       "name": "zenoh-crypto",
-      "version": "1.3.4",
+      "version": "1.5.1",
       "package_url": "https://github.com/eclipse-zenoh/zenoh",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/zenoh-crypto/1.3.4/download",
-          "sha256": "51be3cdbc7224d3358777c08cc2b7f81f5a80a23bb30a76c522180c6d78d6dd2"
+          "url": "https://static.crates.io/crates/zenoh-crypto/1.5.1/download",
+          "sha256": "a1e7a9ab1b9b4d1735a9cd6a92049780f3d846be25c0f76a973e6fb2709db506"
         }
       },
       "targets": [
@@ -27729,14 +27832,14 @@
               "target": "sha3"
             },
             {
-              "id": "zenoh-result 1.3.4",
+              "id": "zenoh-result 1.5.1",
               "target": "zenoh_result"
             }
           ],
           "selects": {}
         },
         "edition": "2021",
-        "version": "1.3.4"
+        "version": "1.5.1"
       },
       "license": "EPL-2.0 OR Apache-2.0",
       "license_ids": [
@@ -27745,14 +27848,14 @@
       ],
       "license_file": null
     },
-    "zenoh-keyexpr 1.3.4": {
+    "zenoh-keyexpr 1.5.1": {
       "name": "zenoh-keyexpr",
-      "version": "1.3.4",
+      "version": "1.5.1",
       "package_url": "https://github.com/eclipse-zenoh/zenoh",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/zenoh-keyexpr/1.3.4/download",
-          "sha256": "1abcafb3db8374ce1ff85540a16439b87676283b72a54c8976140c94d61e7570"
+          "url": "https://static.crates.io/crates/zenoh-keyexpr/1.5.1/download",
+          "sha256": "555447f0f7b3414511c829b238402ad08e0b03a9293c3251b0b01a0354b8d9e2"
         }
       },
       "targets": [
@@ -27789,7 +27892,7 @@
               "target": "getrandom"
             },
             {
-              "id": "keyed-set 1.0.0",
+              "id": "keyed-set 1.1.0",
               "target": "keyed_set"
             },
             {
@@ -27805,11 +27908,11 @@
               "target": "serde"
             },
             {
-              "id": "token-cell 1.5.0",
+              "id": "token-cell 2.0.0",
               "target": "token_cell"
             },
             {
-              "id": "zenoh-result 1.3.4",
+              "id": "zenoh-result 1.5.1",
               "target": "zenoh_result"
             }
           ],
@@ -27823,7 +27926,7 @@
           }
         },
         "edition": "2021",
-        "version": "1.3.4"
+        "version": "1.5.1"
       },
       "license": "EPL-2.0 OR Apache-2.0",
       "license_ids": [
@@ -27832,14 +27935,14 @@
       ],
       "license_file": null
     },
-    "zenoh-link 1.3.4": {
+    "zenoh-link 1.5.1": {
       "name": "zenoh-link",
-      "version": "1.3.4",
+      "version": "1.5.1",
       "package_url": "https://github.com/eclipse-zenoh/zenoh",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/zenoh-link/1.3.4/download",
-          "sha256": "7227527cf2eba60bfc2156cdd2c314922a6cfd39f94882cc3942691186cacca5"
+          "url": "https://static.crates.io/crates/zenoh-link/1.5.1/download",
+          "sha256": "7f06ab3c0426b4a37ccf3b198f17f2e2fba6dac8d0946d96b8cbfc1983225ea9"
         }
       },
       "targets": [
@@ -27864,12 +27967,14 @@
         "crate_features": {
           "common": [
             "transport_quic",
+            "transport_quic_datagram",
             "transport_tcp",
             "transport_tls",
             "transport_udp",
             "transport_unixsock-stream",
             "transport_ws",
             "zenoh-link-quic",
+            "zenoh-link-quic_datagram",
             "zenoh-link-tcp",
             "zenoh-link-tls",
             "zenoh-link-udp",
@@ -27881,50 +27986,54 @@
         "deps": {
           "common": [
             {
-              "id": "zenoh-config 1.3.4",
+              "id": "zenoh-config 1.5.1",
               "target": "zenoh_config"
             },
             {
-              "id": "zenoh-link-commons 1.3.4",
+              "id": "zenoh-link-commons 1.5.1",
               "target": "zenoh_link_commons"
             },
             {
-              "id": "zenoh-link-quic 1.3.4",
+              "id": "zenoh-link-quic 1.5.1",
               "target": "zenoh_link_quic"
             },
             {
-              "id": "zenoh-link-tcp 1.3.4",
+              "id": "zenoh-link-quic_datagram 1.5.1",
+              "target": "zenoh_link_quic_datagram"
+            },
+            {
+              "id": "zenoh-link-tcp 1.5.1",
               "target": "zenoh_link_tcp"
             },
             {
-              "id": "zenoh-link-tls 1.3.4",
+              "id": "zenoh-link-tls 1.5.1",
               "target": "zenoh_link_tls"
             },
             {
-              "id": "zenoh-link-udp 1.3.4",
+              "id": "zenoh-link-udp 1.5.1",
               "target": "zenoh_link_udp"
             },
             {
-              "id": "zenoh-link-unixsock_stream 1.3.4",
+              "id": "zenoh-link-unixsock_stream 1.5.1",
               "target": "zenoh_link_unixsock_stream"
             },
             {
-              "id": "zenoh-link-ws 1.3.4",
+              "id": "zenoh-link-ws 1.5.1",
               "target": "zenoh_link_ws"
             },
             {
-              "id": "zenoh-protocol 1.3.4",
+              "id": "zenoh-protocol 1.5.1",
               "target": "zenoh_protocol"
             },
             {
-              "id": "zenoh-result 1.3.4",
+              "id": "zenoh-result 1.5.1",
               "target": "zenoh_result"
             }
           ],
           "selects": {}
         },
         "edition": "2021",
-        "version": "1.3.4"
+        "version": "1.5.1"
       },
       "license": "EPL-2.0 OR Apache-2.0",
       "license_ids": [
@@ -27933,14 +28042,14 @@
       ],
       "license_file": null
     },
-    "zenoh-link-commons 1.3.4": {
+    "zenoh-link-commons 1.5.1": {
       "name": "zenoh-link-commons",
-      "version": "1.3.4",
+      "version": "1.5.1",
       "package_url": "https://github.com/eclipse-zenoh/zenoh",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/zenoh-link-commons/1.3.4/download",
-          "sha256": "e2966132e2478f23d2cdc4359f22e7616b51212d67f9c7e60cd597b68dfce64a"
+          "url": "https://static.crates.io/crates/zenoh-link-commons/1.5.1/download",
+          "sha256": "ba5bc55882893ecdbf0de2effc1487f4d91efb21f2d5a1242cc8cae13f9f97ff"
         }
       },
       "targets": [
@@ -27964,12 +28073,17 @@
         ],
         "crate_features": {
           "common": [
+            "quic",
             "tls"
           ],
           "selects": {}
         },
         "deps": {
           "common": [
+            {
+              "id": "base64 0.22.1",
+              "target": "base64"
+            },
             {
               "id": "flume 0.11.1",
               "target": "flume"
@@ -27979,16 +28093,36 @@
               "target": "futures"
             },
             {
+              "id": "quinn 0.11.7",
+              "target": "quinn"
+            },
+            {
               "id": "rustls 0.23.27",
               "target": "rustls"
+            },
+            {
+              "id": "rustls-pemfile 2.2.0",
+              "target": "rustls_pemfile"
+            },
+            {
+              "id": "rustls-pki-types 1.11.0",
+              "target": "rustls_pki_types"
             },
             {
               "id": "rustls-webpki 0.102.8",
               "target": "webpki"
             },
             {
+              "id": "secrecy 0.8.0",
+              "target": "secrecy"
+            },
+            {
               "id": "serde 1.0.219",
               "target": "serde"
+            },
+            {
+              "id": "socket2 0.5.9",
+              "target": "socket2"
             },
             {
               "id": "time 0.3.41",
@@ -28007,31 +28141,43 @@
               "target": "tracing"
             },
             {
-              "id": "zenoh-buffers 1.3.4",
+              "id": "webpki-roots 0.26.11",
+              "target": "webpki_roots"
+            },
+            {
+              "id": "x509-parser 0.16.0",
+              "target": "x509_parser"
+            },
+            {
+              "id": "zenoh-buffers 1.5.1",
               "target": "zenoh_buffers"
             },
             {
-              "id": "zenoh-codec 1.3.4",
+              "id": "zenoh-codec 1.5.1",
               "target": "zenoh_codec"
             },
             {
-              "id": "zenoh-core 1.3.4",
+              "id": "zenoh-config 1.5.1",
+              "target": "zenoh_config"
+            },
+            {
+              "id": "zenoh-core 1.5.1",
               "target": "zenoh_core"
             },
             {
-              "id": "zenoh-protocol 1.3.4",
+              "id": "zenoh-protocol 1.5.1",
               "target": "zenoh_protocol"
             },
             {
-              "id": "zenoh-result 1.3.4",
+              "id": "zenoh-result 1.5.1",
               "target": "zenoh_result"
             },
             {
-              "id": "zenoh-runtime 1.3.4",
+              "id": "zenoh-runtime 1.5.1",
               "target": "zenoh_runtime"
             },
             {
-              "id": "zenoh-util 1.3.4",
+              "id": "zenoh-util 1.5.1",
               "target": "zenoh_util"
             }
           ],
@@ -28047,7 +28193,7 @@
           ],
           "selects": {}
         },
-        "version": "1.3.4"
+        "version": "1.5.1"
       },
       "license": "EPL-2.0 OR Apache-2.0",
       "license_ids": [
@@ -28056,14 +28202,14 @@
       ],
       "license_file": null
     },
-    "zenoh-link-quic 1.3.4": {
+    "zenoh-link-quic 1.5.1": {
       "name": "zenoh-link-quic",
-      "version": "1.3.4",
+      "version": "1.5.1",
       "package_url": "https://github.com/eclipse-zenoh/zenoh",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/zenoh-link-quic/1.3.4/download",
-          "sha256": "5169f109688fb592a6822860fc6e8e28b581a56dbf2e5d63908560795d4c5633"
+          "url": "https://static.crates.io/crates/zenoh-link-quic/1.5.1/download",
+          "sha256": "9d99d4d013a42733c82aefc67bdbb3199835f3c63659a8826baebf86567e1748"
         }
       },
       "targets": [
@@ -28104,10 +28250,6 @@
               "target": "rustls_pemfile"
             },
             {
-              "id": "rustls-pki-types 1.11.0",
-              "target": "rustls_pki_types"
-            },
-            {
               "id": "rustls-webpki 0.102.8",
               "target": "webpki"
             },
@@ -28136,31 +28278,27 @@
               "target": "webpki_roots"
             },
             {
-              "id": "x509-parser 0.16.0",
-              "target": "x509_parser"
-            },
-            {
-              "id": "zenoh-config 1.3.4",
+              "id": "zenoh-config 1.5.1",
               "target": "zenoh_config"
             },
             {
-              "id": "zenoh-core 1.3.4",
+              "id": "zenoh-core 1.5.1",
               "target": "zenoh_core"
             },
             {
-              "id": "zenoh-link-commons 1.3.4",
+              "id": "zenoh-link-commons 1.5.1",
               "target": "zenoh_link_commons"
             },
             {
-              "id": "zenoh-protocol 1.3.4",
+              "id": "zenoh-protocol 1.5.1",
               "target": "zenoh_protocol"
             },
             {
-              "id": "zenoh-result 1.3.4",
+              "id": "zenoh-result 1.5.1",
               "target": "zenoh_result"
             },
             {
-              "id": "zenoh-util 1.3.4",
+              "id": "zenoh-util 1.5.1",
               "target": "zenoh_util"
             }
           ],
@@ -28176,7 +28314,7 @@
           ],
           "selects": {}
         },
-        "version": "1.3.4"
+        "version": "1.5.1"
       },
       "license": "EPL-2.0 OR Apache-2.0",
       "license_ids": [
@@ -28185,14 +28323,115 @@
       ],
       "license_file": null
     },
-    "zenoh-link-tcp 1.3.4": {
-      "name": "zenoh-link-tcp",
-      "version": "1.3.4",
+    "zenoh-link-quic_datagram 1.5.1": {
+      "name": "zenoh-link-quic_datagram",
+      "version": "1.5.1",
       "package_url": "https://github.com/eclipse-zenoh/zenoh",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/zenoh-link-tcp/1.3.4/download",
-          "sha256": "308095b785d8609ee6372d3a57753a13a506141f86b4645f43a5fb1df3c6b9b0"
+          "url": "https://static.crates.io/crates/zenoh-link-quic_datagram/1.5.1/download",
+          "sha256": "95bc5c225833f371f19bf01a6e644e85613a9c053d47da3f24f547bd5df1597c"
+        }
+      },
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "zenoh_link_quic_datagram",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "zenoh_link_quic_datagram",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "deps": {
+          "common": [
+            {
+              "id": "quinn 0.11.7",
+              "target": "quinn"
+            },
+            {
+              "id": "rustls 0.23.27",
+              "target": "rustls"
+            },
+            {
+              "id": "rustls-webpki 0.102.8",
+              "target": "webpki"
+            },
+            {
+              "id": "time 0.3.41",
+              "target": "time"
+            },
+            {
+              "id": "tokio 1.45.0",
+              "target": "tokio"
+            },
+            {
+              "id": "tokio-util 0.7.15",
+              "target": "tokio_util"
+            },
+            {
+              "id": "tracing 0.1.40",
+              "target": "tracing"
+            },
+            {
+              "id": "zenoh-core 1.5.1",
+              "target": "zenoh_core"
+            },
+            {
+              "id": "zenoh-link-commons 1.5.1",
+              "target": "zenoh_link_commons"
+            },
+            {
+              "id": "zenoh-protocol 1.5.1",
+              "target": "zenoh_protocol"
+            },
+            {
+              "id": "zenoh-result 1.5.1",
+              "target": "zenoh_result"
+            },
+            {
+              "id": "zenoh-util 1.5.1",
+              "target": "zenoh_util"
+            }
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "proc_macro_deps": {
+          "common": [
+            {
+              "id": "async-trait 0.1.88",
+              "target": "async_trait"
+            }
+          ],
+          "selects": {}
+        },
+        "version": "1.5.1"
+      },
+      "license": "EPL-2.0 OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "EPL-2.0"
+      ],
+      "license_file": null
+    },
+    "zenoh-link-tcp 1.5.1": {
+      "name": "zenoh-link-tcp",
+      "version": "1.5.1",
+      "package_url": "https://github.com/eclipse-zenoh/zenoh",
+      "repository": {
+        "Http": {
+          "url": "https://static.crates.io/crates/zenoh-link-tcp/1.5.1/download",
+          "sha256": "15685d53a5364611cb22034c1a63d6ceb3be6d89b31f3d94c20e770c10627b1c"
         }
       },
       "targets": [
@@ -28233,23 +28472,23 @@
               "target": "tracing"
             },
             {
-              "id": "zenoh-config 1.3.4",
+              "id": "zenoh-config 1.5.1",
               "target": "zenoh_config"
             },
             {
-              "id": "zenoh-core 1.3.4",
+              "id": "zenoh-core 1.5.1",
               "target": "zenoh_core"
             },
             {
-              "id": "zenoh-link-commons 1.3.4",
+              "id": "zenoh-link-commons 1.5.1",
               "target": "zenoh_link_commons"
             },
             {
-              "id": "zenoh-protocol 1.3.4",
+              "id": "zenoh-protocol 1.5.1",
               "target": "zenoh_protocol"
             },
             {
-              "id": "zenoh-result 1.3.4",
+              "id": "zenoh-result 1.5.1",
               "target": "zenoh_result"
             }
           ],
@@ -28265,7 +28504,7 @@
           ],
           "selects": {}
         },
-        "version": "1.3.4"
+        "version": "1.5.1"
       },
       "license": "EPL-2.0 OR Apache-2.0",
       "license_ids": [
@@ -28274,14 +28513,14 @@
       ],
       "license_file": null
     },
-    "zenoh-link-tls 1.3.4": {
+    "zenoh-link-tls 1.5.1": {
       "name": "zenoh-link-tls",
-      "version": "1.3.4",
+      "version": "1.5.1",
       "package_url": "https://github.com/eclipse-zenoh/zenoh",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/zenoh-link-tls/1.3.4/download",
-          "sha256": "3b50ce1925acc304660e2fbd7a28b03835bf8a6049f9c438c613a89cecdc36a5"
+          "url": "https://static.crates.io/crates/zenoh-link-tls/1.5.1/download",
+          "sha256": "d1e59f64bd7c3257c710e05bddc695207f9261d66ad9c699346c8704f0298f3f"
         }
       },
       "targets": [
@@ -28366,27 +28605,27 @@
               "target": "x509_parser"
             },
             {
-              "id": "zenoh-config 1.3.4",
+              "id": "zenoh-config 1.5.1",
               "target": "zenoh_config"
             },
             {
-              "id": "zenoh-core 1.3.4",
+              "id": "zenoh-core 1.5.1",
               "target": "zenoh_core"
             },
             {
-              "id": "zenoh-link-commons 1.3.4",
+              "id": "zenoh-link-commons 1.5.1",
               "target": "zenoh_link_commons"
             },
             {
-              "id": "zenoh-protocol 1.3.4",
+              "id": "zenoh-protocol 1.5.1",
               "target": "zenoh_protocol"
             },
             {
-              "id": "zenoh-result 1.3.4",
+              "id": "zenoh-result 1.5.1",
               "target": "zenoh_result"
             },
             {
-              "id": "zenoh-runtime 1.3.4",
+              "id": "zenoh-runtime 1.5.1",
               "target": "zenoh_runtime"
             }
           ],
@@ -28402,7 +28641,7 @@
           ],
           "selects": {}
         },
-        "version": "1.3.4"
+        "version": "1.5.1"
       },
       "license": "EPL-2.0 OR Apache-2.0",
       "license_ids": [
@@ -28411,14 +28650,14 @@
       ],
       "license_file": null
     },
-    "zenoh-link-udp 1.3.4": {
+    "zenoh-link-udp 1.5.1": {
       "name": "zenoh-link-udp",
-      "version": "1.3.4",
+      "version": "1.5.1",
       "package_url": "https://github.com/eclipse-zenoh/zenoh",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/zenoh-link-udp/1.3.4/download",
-          "sha256": "8417bffa57fd8cb5d0845dd1abcfe370ed8f61753686b58eef998254e7b3e7c6"
+          "url": "https://static.crates.io/crates/zenoh-link-udp/1.5.1/download",
+          "sha256": "f9542387f1c7846868917c46a49a804931a1b8505113c43b67a7ba1a951f1802"
         }
       },
       "targets": [
@@ -28459,35 +28698,48 @@
               "target": "tracing"
             },
             {
-              "id": "zenoh-buffers 1.3.4",
+              "id": "zenoh-buffers 1.5.1",
               "target": "zenoh_buffers"
             },
             {
-              "id": "zenoh-core 1.3.4",
+              "id": "zenoh-core 1.5.1",
               "target": "zenoh_core"
             },
             {
-              "id": "zenoh-link-commons 1.3.4",
+              "id": "zenoh-link-commons 1.5.1",
               "target": "zenoh_link_commons"
             },
             {
-              "id": "zenoh-protocol 1.3.4",
+              "id": "zenoh-protocol 1.5.1",
               "target": "zenoh_protocol"
             },
             {
-              "id": "zenoh-result 1.3.4",
+              "id": "zenoh-result 1.5.1",
               "target": "zenoh_result"
             },
             {
-              "id": "zenoh-sync 1.3.4",
+              "id": "zenoh-sync 1.5.1",
               "target": "zenoh_sync"
             },
             {
-              "id": "zenoh-util 1.3.4",
+              "id": "zenoh-util 1.5.1",
               "target": "zenoh_util"
             }
           ],
-          "selects": {}
+          "selects": {
+            "cfg(target_family = \"unix\")": [
+              {
+                "id": "libc 0.2.172",
+                "target": "libc"
+              }
+            ],
+            "cfg(target_family = \"windows\")": [
+              {
+                "id": "windows-sys 0.59.0",
+                "target": "windows_sys"
+              }
+            ]
+          }
         },
         "edition": "2021",
         "proc_macro_deps": {
@@ -28499,7 +28751,7 @@
           ],
           "selects": {}
         },
-        "version": "1.3.4"
+        "version": "1.5.1"
       },
       "license": "EPL-2.0 OR Apache-2.0",
       "license_ids": [
@@ -28508,14 +28760,14 @@
       ],
       "license_file": null
     },
-    "zenoh-link-unixsock_stream 1.3.4": {
+    "zenoh-link-unixsock_stream 1.5.1": {
       "name": "zenoh-link-unixsock_stream",
-      "version": "1.3.4",
+      "version": "1.5.1",
       "package_url": "https://github.com/eclipse-zenoh/zenoh",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/zenoh-link-unixsock_stream/1.3.4/download",
-          "sha256": "7077ee5c33d2eb52d6ee7873927ad8a732c8c8a1b50c6171b96ddf37cfcb1ada"
+          "url": "https://static.crates.io/crates/zenoh-link-unixsock_stream/1.5.1/download",
+          "sha256": "f926b122f75a3a48c56952b5cddfc65310c0b4675a6e1d108407462c724f5295"
         }
       },
       "targets": [
@@ -28560,23 +28812,23 @@
               "target": "uuid"
             },
             {
-              "id": "zenoh-core 1.3.4",
+              "id": "zenoh-core 1.5.1",
               "target": "zenoh_core"
             },
             {
-              "id": "zenoh-link-commons 1.3.4",
+              "id": "zenoh-link-commons 1.5.1",
               "target": "zenoh_link_commons"
             },
             {
-              "id": "zenoh-protocol 1.3.4",
+              "id": "zenoh-protocol 1.5.1",
               "target": "zenoh_protocol"
             },
             {
-              "id": "zenoh-result 1.3.4",
+              "id": "zenoh-result 1.5.1",
               "target": "zenoh_result"
             },
             {
-              "id": "zenoh-runtime 1.3.4",
+              "id": "zenoh-runtime 1.5.1",
               "target": "zenoh_runtime"
             }
           ],
@@ -28592,7 +28844,7 @@
           ],
           "selects": {}
         },
-        "version": "1.3.4"
+        "version": "1.5.1"
       },
       "license": "EPL-2.0 OR Apache-2.0",
       "license_ids": [
@@ -28601,14 +28853,14 @@
       ],
       "license_file": null
     },
-    "zenoh-link-ws 1.3.4": {
+    "zenoh-link-ws 1.5.1": {
       "name": "zenoh-link-ws",
-      "version": "1.3.4",
+      "version": "1.5.1",
       "package_url": "https://github.com/eclipse-zenoh/zenoh",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/zenoh-link-ws/1.3.4/download",
-          "sha256": "7b5e7b13d5c1b67a2202f6d2d225d037c9ec15f6c12a20f7af99d4a1f0f3fbd0"
+          "url": "https://static.crates.io/crates/zenoh-link-ws/1.5.1/download",
+          "sha256": "74f3eb57da2d98504b0f6c355179dc66aae2bd11c5b3ccb38c0b1794fc4c0dbd"
         }
       },
       "targets": [
@@ -28657,27 +28909,27 @@
               "target": "url"
             },
             {
-              "id": "zenoh-core 1.3.4",
+              "id": "zenoh-core 1.5.1",
               "target": "zenoh_core"
             },
             {
-              "id": "zenoh-link-commons 1.3.4",
+              "id": "zenoh-link-commons 1.5.1",
               "target": "zenoh_link_commons"
             },
             {
-              "id": "zenoh-protocol 1.3.4",
+              "id": "zenoh-protocol 1.5.1",
               "target": "zenoh_protocol"
             },
             {
-              "id": "zenoh-result 1.3.4",
+              "id": "zenoh-result 1.5.1",
               "target": "zenoh_result"
             },
             {
-              "id": "zenoh-runtime 1.3.4",
+              "id": "zenoh-runtime 1.5.1",
               "target": "zenoh_runtime"
             },
             {
-              "id": "zenoh-util 1.3.4",
+              "id": "zenoh-util 1.5.1",
               "target": "zenoh_util"
             }
           ],
@@ -28693,7 +28945,7 @@
           ],
           "selects": {}
         },
-        "version": "1.3.4"
+        "version": "1.5.1"
       },
       "license": "EPL-2.0 OR Apache-2.0",
       "license_ids": [
@@ -28702,14 +28954,14 @@
       ],
       "license_file": null
     },
-    "zenoh-macros 1.3.4": {
+    "zenoh-macros 1.5.1": {
       "name": "zenoh-macros",
-      "version": "1.3.4",
+      "version": "1.5.1",
       "package_url": "https://github.com/eclipse-zenoh/zenoh",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/zenoh-macros/1.3.4/download",
-          "sha256": "dcd9d20407128f32b02032737af0e26a7960d11e1db8a3e1b88c14675b851a01"
+          "url": "https://static.crates.io/crates/zenoh-macros/1.5.1/download",
+          "sha256": "c5f1aab2de6a19e91de22c0dc7e439158c677b1d44198d8a3e242d32b7f06d4b"
         }
       },
       "targets": [
@@ -28758,18 +29010,18 @@
               "target": "syn"
             },
             {
-              "id": "zenoh-keyexpr 1.3.4",
+              "id": "zenoh-keyexpr 1.5.1",
               "target": "zenoh_keyexpr"
             },
             {
-              "id": "zenoh-macros 1.3.4",
+              "id": "zenoh-macros 1.5.1",
               "target": "build_script_build"
             }
           ],
           "selects": {}
         },
         "edition": "2021",
-        "version": "1.3.4"
+        "version": "1.5.1"
       },
       "build_script_attrs": {
         "compile_data_glob": [
@@ -28786,14 +29038,14 @@
       ],
       "license_file": null
     },
-    "zenoh-plugin-trait 1.3.4": {
+    "zenoh-plugin-trait 1.5.1": {
       "name": "zenoh-plugin-trait",
-      "version": "1.3.4",
+      "version": "1.5.1",
       "package_url": "https://github.com/eclipse-zenoh/zenoh",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/zenoh-plugin-trait/1.3.4/download",
-          "sha256": "3a331b76b19c3153e446b6a3d19eee5ef7dae8fddbed3b548b0e8b875f3bf480"
+          "url": "https://static.crates.io/crates/zenoh-plugin-trait/1.5.1/download",
+          "sha256": "c922e9afe24e8b1722cd3eb1e1ca4d4d548dfe2356a49663a8fa41edd724bc35"
         }
       },
       "targets": [
@@ -28834,19 +29086,19 @@
               "target": "tracing"
             },
             {
-              "id": "zenoh-config 1.3.4",
+              "id": "zenoh-config 1.5.1",
               "target": "zenoh_config"
             },
             {
-              "id": "zenoh-keyexpr 1.3.4",
+              "id": "zenoh-keyexpr 1.5.1",
               "target": "zenoh_keyexpr"
             },
             {
-              "id": "zenoh-result 1.3.4",
+              "id": "zenoh-result 1.5.1",
               "target": "zenoh_result"
             },
             {
-              "id": "zenoh-util 1.3.4",
+              "id": "zenoh-util 1.5.1",
               "target": "zenoh_util"
             }
           ],
@@ -28856,13 +29108,13 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "zenoh-macros 1.3.4",
+              "id": "zenoh-macros 1.5.1",
               "target": "zenoh_macros"
             }
           ],
           "selects": {}
         },
-        "version": "1.3.4"
+        "version": "1.5.1"
       },
       "license": "EPL-2.0 OR Apache-2.0",
       "license_ids": [
@@ -28871,14 +29123,14 @@
       ],
       "license_file": null
     },
-    "zenoh-protocol 1.3.4": {
+    "zenoh-protocol 1.5.1": {
       "name": "zenoh-protocol",
-      "version": "1.3.4",
+      "version": "1.5.1",
       "package_url": "https://github.com/eclipse-zenoh/zenoh",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/zenoh-protocol/1.3.4/download",
-          "sha256": "524ba254d2f2046a02b4d61cf002a91575c190139fb43f5799875dc410f9dc52"
+          "url": "https://static.crates.io/crates/zenoh-protocol/1.5.1/download",
+          "sha256": "b44f25959e11eb4f499abd4a771b6d9f1f4e7d5987937c38b8c67d86b01cb814"
         }
       },
       "targets": [
@@ -28902,7 +29154,8 @@
         ],
         "crate_features": {
           "common": [
-            "std"
+            "std",
+            "unstable"
           ],
           "selects": {}
         },
@@ -28921,22 +29174,22 @@
               "target": "uhlc"
             },
             {
-              "id": "zenoh-buffers 1.3.4",
+              "id": "zenoh-buffers 1.5.1",
               "target": "zenoh_buffers"
             },
             {
-              "id": "zenoh-keyexpr 1.3.4",
+              "id": "zenoh-keyexpr 1.5.1",
               "target": "zenoh_keyexpr"
             },
             {
-              "id": "zenoh-result 1.3.4",
+              "id": "zenoh-result 1.5.1",
               "target": "zenoh_result"
             }
           ],
           "selects": {}
         },
         "edition": "2021",
-        "version": "1.3.4"
+        "version": "1.5.1"
       },
       "license": "EPL-2.0 OR Apache-2.0",
       "license_ids": [
@@ -28945,14 +29198,14 @@
       ],
       "license_file": null
     },
-    "zenoh-result 1.3.4": {
+    "zenoh-result 1.5.1": {
       "name": "zenoh-result",
-      "version": "1.3.4",
+      "version": "1.5.1",
       "package_url": "https://github.com/eclipse-zenoh/zenoh",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/zenoh-result/1.3.4/download",
-          "sha256": "6ea304c480ce94299e33a272d427e39ca4e7571df54781944ae9f61d040a2473"
+          "url": "https://static.crates.io/crates/zenoh-result/1.5.1/download",
+          "sha256": "b9ff9ee9d66b67134b7127ebbd974a75995a82b749e0eac1a9225f7b19ee5dc5"
         }
       },
       "targets": [
@@ -28991,7 +29244,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "1.3.4"
+        "version": "1.5.1"
       },
       "license": "EPL-2.0 OR Apache-2.0",
       "license_ids": [
@@ -29000,14 +29253,14 @@
       ],
       "license_file": null
     },
-    "zenoh-runtime 1.3.4": {
+    "zenoh-runtime 1.5.1": {
       "name": "zenoh-runtime",
-      "version": "1.3.4",
+      "version": "1.5.1",
       "package_url": "https://github.com/eclipse-zenoh/zenoh",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/zenoh-runtime/1.3.4/download",
-          "sha256": "9c27f670253d4a9b50fef9c18719b6f1cc6e2a14927edb1f12a0e9d32b82883c"
+          "url": "https://static.crates.io/crates/zenoh-runtime/1.5.1/download",
+          "sha256": "d3a108f59311a215ce4c5e0dc0d172865c8856eb03148ee86933da3e15d05e5d"
         }
       },
       "targets": [
@@ -29052,7 +29305,7 @@
               "target": "tracing"
             },
             {
-              "id": "zenoh-result 1.3.4",
+              "id": "zenoh-result 1.5.1",
               "target": "zenoh_result"
             }
           ],
@@ -29062,13 +29315,13 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "zenoh-macros 1.3.4",
+              "id": "zenoh-macros 1.5.1",
               "target": "zenoh_macros"
             }
           ],
           "selects": {}
         },
-        "version": "1.3.4"
+        "version": "1.5.1"
       },
       "license": "EPL-2.0 OR Apache-2.0",
       "license_ids": [
@@ -29077,14 +29330,14 @@
       ],
       "license_file": null
     },
-    "zenoh-sync 1.3.4": {
+    "zenoh-sync 1.5.1": {
       "name": "zenoh-sync",
-      "version": "1.3.4",
+      "version": "1.5.1",
       "package_url": "https://github.com/eclipse-zenoh/zenoh",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/zenoh-sync/1.3.4/download",
-          "sha256": "88b405394b98685284bfb0a9f57eade1628313fdaf0ee8d4bb85ae1800d5bcc6"
+          "url": "https://static.crates.io/crates/zenoh-sync/1.5.1/download",
+          "sha256": "66a8c05fb9228ff3398e0ac8c8d460abbbc5d53e4ee47c97c28ea33bc684e3f2"
         }
       },
       "targets": [
@@ -29125,22 +29378,22 @@
               "target": "tokio"
             },
             {
-              "id": "zenoh-buffers 1.3.4",
+              "id": "zenoh-buffers 1.5.1",
               "target": "zenoh_buffers"
             },
             {
-              "id": "zenoh-collections 1.3.4",
+              "id": "zenoh-collections 1.5.1",
               "target": "zenoh_collections"
             },
             {
-              "id": "zenoh-core 1.3.4",
+              "id": "zenoh-core 1.5.1",
               "target": "zenoh_core"
             }
           ],
           "selects": {}
         },
         "edition": "2021",
-        "version": "1.3.4"
+        "version": "1.5.1"
       },
       "license": "EPL-2.0 OR Apache-2.0",
       "license_ids": [
@@ -29149,14 +29402,14 @@
       ],
       "license_file": null
     },
-    "zenoh-task 1.3.4": {
+    "zenoh-task 1.5.1": {
       "name": "zenoh-task",
-      "version": "1.3.4",
+      "version": "1.5.1",
       "package_url": "https://github.com/eclipse-zenoh/zenoh",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/zenoh-task/1.3.4/download",
-          "sha256": "8b0d2fa950b0f821449ab725f4f89a33d360f1e9a8f4858b5551dfc065a3b1e3"
+          "url": "https://static.crates.io/crates/zenoh-task/1.5.1/download",
+          "sha256": "d037689edce4a17f91e0049a2050662419ae3f70678a30a759c92ede62450dc6"
         }
       },
       "targets": [
@@ -29197,18 +29450,18 @@
               "target": "tracing"
             },
             {
-              "id": "zenoh-core 1.3.4",
+              "id": "zenoh-core 1.5.1",
               "target": "zenoh_core"
             },
             {
-              "id": "zenoh-runtime 1.3.4",
+              "id": "zenoh-runtime 1.5.1",
               "target": "zenoh_runtime"
             }
           ],
           "selects": {}
         },
         "edition": "2021",
-        "version": "1.3.4"
+        "version": "1.5.1"
       },
       "license": "EPL-2.0 OR Apache-2.0",
       "license_ids": [
@@ -29217,14 +29470,14 @@
       ],
       "license_file": null
     },
-    "zenoh-transport 1.3.4": {
+    "zenoh-transport 1.5.1": {
       "name": "zenoh-transport",
-      "version": "1.3.4",
+      "version": "1.5.1",
       "package_url": "https://github.com/eclipse-zenoh/zenoh",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/zenoh-transport/1.3.4/download",
-          "sha256": "d76839964ebe311fde4c3a7e8847b82ddbeb2c5822253c3037e5bebeed98e8da"
+          "url": "https://static.crates.io/crates/zenoh-transport/1.5.1/download",
+          "sha256": "574fd48eb855ec99523700d1411ef4aec5714f4bc19bbbb9aae6b641cd9a38fe"
         }
       },
       "targets": [
@@ -29255,6 +29508,7 @@
             "transport_compression",
             "transport_multilink",
             "transport_quic",
+            "transport_quic_datagram",
             "transport_tcp",
             "transport_tls",
             "transport_udp",
@@ -29286,7 +29540,7 @@
               "target": "rand"
             },
             {
-              "id": "ringbuffer-spsc 0.1.13",
+              "id": "ringbuffer-spsc 0.1.15",
               "target": "ringbuffer_spsc"
             },
             {
@@ -29314,51 +29568,55 @@
               "target": "tracing"
             },
             {
-              "id": "zenoh-buffers 1.3.4",
+              "id": "zenoh-buffers 1.5.1",
               "target": "zenoh_buffers"
             },
             {
-              "id": "zenoh-codec 1.3.4",
+              "id": "zenoh-codec 1.5.1",
               "target": "zenoh_codec"
             },
             {
-              "id": "zenoh-config 1.3.4",
+              "id": "zenoh-config 1.5.1",
               "target": "zenoh_config"
             },
             {
-              "id": "zenoh-core 1.3.4",
+              "id": "zenoh-core 1.5.1",
               "target": "zenoh_core"
             },
             {
-              "id": "zenoh-crypto 1.3.4",
+              "id": "zenoh-crypto 1.5.1",
               "target": "zenoh_crypto"
             },
             {
-              "id": "zenoh-link 1.3.4",
+              "id": "zenoh-link 1.5.1",
               "target": "zenoh_link"
             },
             {
-              "id": "zenoh-protocol 1.3.4",
+              "id": "zenoh-link-commons 1.5.1",
+              "target": "zenoh_link_commons"
+            },
+            {
+              "id": "zenoh-protocol 1.5.1",
               "target": "zenoh_protocol"
             },
             {
-              "id": "zenoh-result 1.3.4",
+              "id": "zenoh-result 1.5.1",
               "target": "zenoh_result"
             },
             {
-              "id": "zenoh-runtime 1.3.4",
+              "id": "zenoh-runtime 1.5.1",
               "target": "zenoh_runtime"
             },
             {
-              "id": "zenoh-sync 1.3.4",
+              "id": "zenoh-sync 1.5.1",
               "target": "zenoh_sync"
             },
             {
-              "id": "zenoh-task 1.3.4",
+              "id": "zenoh-task 1.5.1",
               "target": "zenoh_task"
             },
             {
-              "id": "zenoh-util 1.3.4",
+              "id": "zenoh-util 1.5.1",
               "target": "zenoh_util"
             }
           ],
@@ -29378,7 +29636,7 @@
           ],
           "selects": {}
         },
-        "version": "1.3.4"
+        "version": "1.5.1"
       },
       "license": "EPL-2.0 OR Apache-2.0",
       "license_ids": [
@@ -29387,14 +29645,14 @@
       ],
       "license_file": null
     },
-    "zenoh-util 1.3.4": {
+    "zenoh-util 1.5.1": {
       "name": "zenoh-util",
-      "version": "1.3.4",
+      "version": "1.5.1",
       "package_url": "https://github.com/eclipse-zenoh/zenoh",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/zenoh-util/1.3.4/download",
-          "sha256": "009e5a85088e52a3af410b5f6bbd4044c68d7bf0e0de282d9643b9338d3e5848"
+          "url": "https://static.crates.io/crates/zenoh-util/1.5.1/download",
+          "sha256": "558ffebb7e7d5249f45e8e3d006da64e44cf11913eec606e501ef2e22736dbc2"
         }
       },
       "targets": [
@@ -29467,11 +29725,11 @@
               "target": "tracing_subscriber"
             },
             {
-              "id": "zenoh-core 1.3.4",
+              "id": "zenoh-core 1.5.1",
               "target": "zenoh_core"
             },
             {
-              "id": "zenoh-result 1.3.4",
+              "id": "zenoh-result 1.5.1",
               "target": "zenoh_result"
             }
           ],
@@ -29504,7 +29762,7 @@
           ],
           "selects": {}
         },
-        "version": "1.3.4"
+        "version": "1.5.1"
       },
       "license": "EPL-2.0 OR Apache-2.0",
       "license_ids": [
@@ -30084,8 +30342,10 @@
     "iceoryx2-pal-posix 0.7.0": "iceoryx2-pal/posix",
     "iceoryx2-pal-testing 0.7.0": "iceoryx2-pal/testing",
     "iceoryx2-services-discovery 0.7.0": "iceoryx2-services/discovery",
-    "iceoryx2-tunnels-end-to-end-tests 0.7.0": "iceoryx2-tunnels/end-to-end-tests",
-    "iceoryx2-tunnels-zenoh 0.7.0": "iceoryx2-tunnels/zenoh",
+    "iceoryx2-tunnel 0.7.0": "iceoryx2-tunnel/tunnel",
+    "iceoryx2-tunnel-backend 0.7.0": "iceoryx2-tunnel/backend",
+    "iceoryx2-tunnel-end-to-end-tests 0.7.0": "iceoryx2-tunnel/end-to-end-tests",
+    "iceoryx2-tunnel-zenoh 0.7.0": "iceoryx2-tunnel/zenoh",
     "iceoryx2-userland-record-and-replay 0.7.0": "iceoryx2-userland/record-and-replay"
   },
   "conditions": {
@@ -30261,6 +30521,15 @@
       "wasm32-unknown-unknown",
       "wasm32-wasip1"
     ],
+    "cfg(target_family = \"unix\")": [
+      "aarch64-apple-darwin",
+      "aarch64-unknown-linux-gnu",
+      "x86_64-unknown-linux-gnu",
+      "x86_64-unknown-nixos-gnu"
+    ],
+    "cfg(target_family = \"windows\")": [
+      "x86_64-pc-windows-msvc"
+    ],
     "cfg(target_os = \"android\")": [],
     "cfg(target_os = \"haiku\")": [],
     "cfg(target_os = \"hermit\")": [],
@@ -30345,7 +30614,7 @@
     "tiny-fn 0.1.7",
     "toml 0.8.19",
     "windows-sys 0.48.0",
-    "zenoh 1.3.4"
+    "zenoh 1.5.1"
   ],
   "direct_dev_deps": [
     "generic-tests 0.1.2",

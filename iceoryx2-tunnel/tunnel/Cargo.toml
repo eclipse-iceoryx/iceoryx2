@@ -1,0 +1,32 @@
+[package]
+name = "iceoryx2-tunnel"
+description = "iceoryx2: the generic tunnel implementation"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+readme = "README.md"
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[lib]
+name = "iceoryx2_tunnel"
+path = "src/lib.rs"
+
+[features]
+default = ["tunnel_zenoh"]
+tunnel_zenoh = ["iceoryx2-tunnel-zenoh"]
+
+[dependencies]
+iceoryx2 = { workspace = true }
+iceoryx2-bb-log = { workspace = true }
+iceoryx2-tunnel-backend = { workspace = true }
+iceoryx2-tunnel-zenoh = { workspace = true, optional = true }
+iceoryx2-services-discovery = { workspace = true }
+
+[dev-dependencies]
+iceoryx2-bb-testing = { workspace = true }
+generic-tests = { workspace = true }
+iceoryx2-bb-posix = { workspace = true }

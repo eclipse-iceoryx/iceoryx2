@@ -293,22 +293,25 @@ jobs:
         run: cargo build --release -p iceoryx2-cli --bin iox2-tunnel
 
       - name: Build test binaries
-        run: cargo build --release -p iceoryx2-tunnels-end-to-end-tests
+        run: cargo build --release -p iceoryx2-tunnel-end-to-end-tests
 
       - name: Build test docker image
-        run: docker build -f iceoryx2-tunnels/end-to-end-tests/Dockerfile -t end-to-end-tests:latest .
+        run: docker build -f iceoryx2-tunnel/end-to-end-tests/Dockerfile -t end-to-end-tests:${{ github.sha }} .
 
       - name: Run end-to-end tests
-        run: |
+        run: |    
+          export IMAGE_TAG=${{ github.sha }}
+
           export PAYLOAD_TYPE=primitive
-          docker compose -f iceoryx2-tunnels/end-to-end-tests/docker-compose.yml up \
+          docker compose -f iceoryx2-tunnel/end-to-end-tests/docker-compose.yml up \
             --abort-on-container-exit \
             --exit-code-from pinger
 
           export PAYLOAD_TYPE=complex
-          docker compose -f iceoryx2-tunnels/end-to-end-tests/docker-compose.yml up \
+          docker compose -f iceoryx2-tunnel/end-to-end-tests/docker-compose.yml up \
             --abort-on-container-exit \
             --exit-code-from pinger
+
 
   x86_32:
     needs: [preflight-check, static-code-analysis, cargo-nextest]
