@@ -12,6 +12,8 @@
 
 use core::error::Error;
 
+use iceoryx2::service::static_config::StaticConfig;
+
 use crate::types::discovery::ProcessDiscoveryFn;
 
 /// Service discovery interface for finding services over the backend
@@ -43,6 +45,7 @@ use crate::types::discovery::ProcessDiscoveryFn;
 /// ```no_run
 /// use iceoryx2_tunnel_backend::traits::Discovery;
 /// use iceoryx2_tunnel_backend::types::discovery::ProcessDiscoveryFn;
+/// use iceoryx2::service::static_config::StaticConfig;
 ///
 /// struct MyDiscovery {
 ///     // Discovery state
@@ -57,8 +60,25 @@ use crate::types::discovery::ProcessDiscoveryFn;
 /// }
 /// impl core::error::Error for MyDiscoveryError {}
 ///
+/// #[derive(Debug)]
+/// struct MyAnnouncementError;
+/// impl core::fmt::Display for MyAnnouncementError {
+///     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+///         write!(f, "discovery failed")
+///     }
+/// }
+/// impl core::error::Error for MyAnnouncementError {}
+///
 /// impl Discovery for MyDiscovery {
 ///     type DiscoveryError = MyDiscoveryError;
+///     type AnnouncementError = MyAnnouncementError;
+///
+///     fn announce(&self, static_config: &StaticConfig)
+///         -> Result<(), Self::AnnouncementError> {
+///         // Make the service described by the provided static config
+///         // discoverable over the backend
+///         Ok(())
+///     }
 ///
 ///     fn discover<ProcessDiscoveryError>(
 ///         &self,
@@ -66,7 +86,7 @@ use crate::types::discovery::ProcessDiscoveryFn;
 ///     ) -> Result<(), Self::DiscoveryError> {
 ///         // Query backend for available services
 ///         // For each service found, call process_discovery with its
-///         // static_config
+///         // static config
 ///         Ok(())
 ///     }
 /// }
@@ -81,6 +101,25 @@ use crate::types::discovery::ProcessDiscoveryFn;
 pub trait Discovery {
     /// Error type that can occur during discovery operations.
     type DiscoveryError: Error;
+
+    /// Error type that can occur during announcement operations.
+    type AnnouncementError: Error;
+
+    /// Announces a service to make it discoverable by other hosts.
+    ///
+    /// This method broadcasts a service on the host over the backend's
+    /// communication mechanism, making it available for discovery by other
+    /// hosts.
+    ///
+    /// # Parameters
+    ///
+    /// * `static_config` - The static configuration of the service to announce.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err(AnnouncementError)` if unable to announce the service via
+    /// the backend.
+    fn announce(&self, static_config: &StaticConfig) -> Result<(), Self::AnnouncementError>;
 
     /// Discovers available services and processes each one with the provided
     /// callback.

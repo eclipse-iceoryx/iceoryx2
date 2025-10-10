@@ -30,7 +30,6 @@ use zenoh::{
 };
 
 use crate::keys;
-use crate::relays::announce_service;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
@@ -119,13 +118,6 @@ impl<'a, S: Service> RelayBuilder for Builder<'a, S> {
                 .wait(),
             with CreationError::SubscriberDeclaration,
             "Failed to create zenoh subscriber for publish-subscribe payloads"
-        );
-
-        fail!(
-            from self,
-            when announce_service(self.session, self.static_config),
-            with CreationError::ServiceAnouncement,
-            "Failed to announce service on Zenoh"
         );
 
         Ok(Relay {

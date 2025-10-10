@@ -31,6 +31,17 @@ impl core::fmt::Display for DiscoveryError {
 
 impl core::error::Error for DiscoveryError {}
 
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub enum AnnouncementError {}
+
+impl core::fmt::Display for AnnouncementError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "AnnouncementError::{self:?}")
+    }
+}
+
+impl core::error::Error for AnnouncementError {}
+
 #[derive(Debug)]
 pub struct DiscoveryTracker<S: Service>(RefCell<Tracker<S>>);
 
@@ -43,6 +54,15 @@ impl<S: Service> DiscoveryTracker<S> {
 
 impl<S: Service> Discovery for DiscoveryTracker<S> {
     type DiscoveryError = DiscoveryError;
+    type AnnouncementError = AnnouncementError;
+
+    fn announce(
+        &self,
+        _static_config: &iceoryx2::service::static_config::StaticConfig,
+    ) -> Result<(), Self::AnnouncementError> {
+        // NOOP - iceoryx2 handles discovery internally
+        Ok(())
+    }
 
     fn discover<ProcessDiscoveryError>(
         &self,

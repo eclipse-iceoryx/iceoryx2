@@ -53,6 +53,7 @@ pub enum DiscoveryError {
     PublishSubscribeRelayCreation,
     EventPortsCreation,
     EventRelayCreation,
+    DiscoveryAnnouncement,
 }
 
 impl core::fmt::Display for DiscoveryError {
@@ -329,6 +330,7 @@ fn setup_publish_subscribe<S: Service, B: Backend<S> + Debug>(
         with DiscoveryError::PublishSubscribePortCreation,
         "Failed to create publish-subscribe ports"
     );
+    ports.publish_subscribe.insert(service_id.clone(), port);
 
     let relay = fail!(
         from origin,
@@ -339,9 +341,14 @@ fn setup_publish_subscribe<S: Service, B: Backend<S> + Debug>(
         with DiscoveryError::PublishSubscribeRelayCreation,
         "Failed to create publish-subscribe relay"
     );
-
-    ports.publish_subscribe.insert(service_id.clone(), port);
     relays.publish_subscribe.insert(service_id.clone(), relay);
+
+    fail!(
+        from origin,
+        when backend.discovery().announce(static_config),
+        with DiscoveryError::DiscoveryAnnouncement,
+        "Failed to announce service over backend"
+    );
 
     Ok(())
 }
@@ -363,6 +370,7 @@ fn setup_event<S: Service, B: Backend<S> + Debug>(
         with DiscoveryError::EventPortsCreation,
         "Failed to create event ports"
     );
+    ports.event.insert(service_id.clone(), port);
 
     let relay = fail!(
         from origin,
@@ -373,9 +381,14 @@ fn setup_event<S: Service, B: Backend<S> + Debug>(
         with DiscoveryError::EventRelayCreation,
         "Failed to create event relay"
     );
-
-    ports.event.insert(service_id.clone(), port);
     relays.event.insert(service_id.clone(), relay);
+
+    fail!(
+        from origin,
+        when backend.discovery().announce(static_config),
+        with DiscoveryError::DiscoveryAnnouncement,
+        "Failed to announce service over backend"
+    );
 
     Ok(())
 }

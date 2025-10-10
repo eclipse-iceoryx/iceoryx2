@@ -49,10 +49,10 @@ impl<S: Service> Backend<S> for ZenohBackend<S> {
     type PublishSubscribeRelay = publish_subscribe::Relay<S>;
     type EventRelay = event::Relay<S>;
 
-    type RelayFactory<'a>
-        = Factory<'a, S>
+    type RelayFactory<'b>
+        = Factory<'b, S>
     where
-        Self: 'a;
+        Self: 'b;
 
     fn create(config: &Self::Config) -> Result<Self, Self::CreationError> {
         let origin = "ZenohBackend::create";

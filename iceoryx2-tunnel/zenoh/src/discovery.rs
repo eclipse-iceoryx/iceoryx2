@@ -13,7 +13,7 @@
 use core::cell::RefCell;
 
 use iceoryx2::service::static_config::StaticConfig;
-use iceoryx2_bb_log::{fail, warn};
+use iceoryx2_bb_log::{error, fail, warn};
 use iceoryx2_tunnel_backend::types::discovery::ProcessDiscoveryFn;
 use zenoh::{
     handlers::FifoChannelHandler,
@@ -53,8 +53,24 @@ impl core::fmt::Display for DiscoveryError {
 
 impl core::error::Error for DiscoveryError {}
 
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub enum AnnouncementError {
+    Serialization,
+    NotifyingKnownHosts,
+    QueryableDeclaration,
+}
+
+impl core::fmt::Display for AnnouncementError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "AnnouncementError::{self:?}")
+    }
+}
+
+impl core::error::Error for AnnouncementError {}
+
 #[derive(Debug)]
 pub struct Discovery {
+    session: Session,
     querier: Querier<'static>,
     replies: RefCell<FifoChannelHandler<Reply>>,
 }
@@ -82,6 +98,7 @@ impl Discovery {
         );
 
         Ok(Self {
+            session: session.clone(),
             querier,
             replies: RefCell::new(replies),
         })
@@ -90,6 +107,50 @@ impl Discovery {
 
 impl iceoryx2_tunnel_backend::traits::Discovery for Discovery {
     type DiscoveryError = DiscoveryError;
+    type AnnouncementError = AnnouncementError;
+
+    fn announce(&self, static_config: &StaticConfig) -> Result<(), Self::AnnouncementError> {
+        let key = keys::service_details(static_config.service_id());
+        let service_config_serialized = fail!(
+            from self,
+            when serde_json::to_string(&static_config),
+            with AnnouncementError::Serialization,
+            "Failed to serialize service config"
+        );
+
+        // Notify all current hosts.
+        fail!(
+            from self,
+            when self.session
+                .put(key.clone(), service_config_serialized.clone())
+                .allowed_destination(Locality::Remote)
+                .wait(),
+            with AnnouncementError::NotifyingKnownHosts,
+            "Failed to notify known hosts of discovery"
+        );
+
+        // Set up a queryable to respond to future hosts.
+        fail!(
+            from self,
+            when self.session
+                .declare_queryable(key.clone())
+                .callback(move |query| {
+                    let _ = query
+                        .reply(key.clone(), service_config_serialized.clone())
+                        .wait()
+                        .inspect_err(|e| {
+                            error!("Failed to announce service {}: {}", key, e);
+                        });
+                })
+                .allowed_origin(Locality::Remote)
+                .background()
+                .wait(),
+            with AnnouncementError::QueryableDeclaration,
+            "Failed to declare queryable for future hosts to discover service"
+        );
+
+        Ok(())
+    }
 
     fn discover<ProcessDiscoveryError>(
         &self,
