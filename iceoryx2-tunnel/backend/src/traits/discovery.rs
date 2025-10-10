@@ -117,8 +117,8 @@ pub trait Discovery {
     ///
     /// # Errors
     ///
-    /// Returns `Err(AnnouncementError)` if unable to announce the service via
-    /// the backend.
+    /// Returns an error if the operation cannot be completed. Implementations
+    /// should provide error types that distinguish between failure modes
     fn announce(&self, static_config: &StaticConfig) -> Result<(), Self::AnnouncementError>;
 
     /// Discovers available services and processes each one with the provided
@@ -136,8 +136,8 @@ pub trait Discovery {
     ///
     /// # Errors
     ///
-    /// Returns `Err(DiscoveryError)` if unable to retrieve services via the
-    /// Backend.
+    /// Returns an error if the operation cannot be completed. Implementations
+    /// should provide error types that distinguish between failure modes
     fn discover<ProcessDiscoveryError>(
         &self,
         process_discovery: &mut ProcessDiscoveryFn<ProcessDiscoveryError>,

@@ -82,8 +82,8 @@ pub trait RelayBuilder {
     ///
     /// # Errors
     ///
-    /// Returns an error if the configuration is invalid, required resources
-    /// are unavailable, or the backend connection cannot be established.
+    /// Returns an error if the operation cannot be completed. Implementations
+    /// should provide error types that distinguish between failure modes
     fn create(self) -> Result<Self::Relay, Self::CreationError>;
 }
 

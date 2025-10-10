@@ -120,9 +120,8 @@ pub trait EventRelay<S: Service> {
     ///
     /// # Errors
     ///
-    /// Returns an error that should describe the failure reason, for example,
-    /// the backend connection is unavailable, network transmission fails,
-    /// serialization fails, etc.
+    /// Returns an error if the operation cannot be completed. Implementations
+    /// should provide error types that distinguish between failure modes
     fn send(&self, event_id: EventId) -> Result<(), Self::SendError>;
 
     /// Attempts to receive an event notification from the backend.
@@ -133,8 +132,7 @@ pub trait EventRelay<S: Service> {
     ///
     /// # Errors
     ///
-    /// Returns an error that should describe the failure reason, for example,
-    /// the backend connection is unavailable, network transmission fails,
-    /// deserialization fails, etc.
+    /// Returns an error if the operation cannot be completed. Implementations
+    /// should provide error types that distinguish between failure modes
     fn receive(&self) -> Result<Option<EventId>, Self::ReceiveError>;
 }

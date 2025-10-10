@@ -140,9 +140,8 @@ pub trait PublishSubscribeRelay<S: Service> {
     ///
     /// # Errors
     ///
-    /// Returns an error if the backend connection is unavailable,
-    /// serialization fails, the transmission buffer is full, or network
-    /// communication fails.
+    /// Returns an error if the operation cannot be completed. Implementations
+    /// should provide error types that distinguish between failure modes
     fn send(&self, sample: Sample<S>) -> Result<(), Self::SendError>;
 
     /// Attempts to receive a sample from the backend.
@@ -160,6 +159,12 @@ pub trait PublishSubscribeRelay<S: Service> {
     /// * `loan` - Function to allocate shared memory of the requested size.
     ///   Returns `SampleMutUninit` for the relay to initialize.
     ///
+    /// # Type Parameters
+    ///
+    /// * `LoanError` - Error type that the loan function may return if memory
+    ///   allocation fails. This error will be wrapped in `Self::ReceiveError`
+    ///   if the loan fails.
+    ///
     /// # Returns
     ///
     /// * `Ok(Some(SampleMut))` - A sample was received and ingested
@@ -167,14 +172,8 @@ pub trait PublishSubscribeRelay<S: Service> {
     ///
     /// # Errors
     ///
-    /// Returns an error if the backend connection fails, deserialization
-    /// fails, the loan function returns an error, or the allocated memory is
-    /// too small for the incoming sample.
-    ///
-    /// Returns an error that should describe the failure reason, for example,
-    /// the backend connection is unavailable, network transmission fails,
-    /// deserialization fails, the loan function returns an error, the
-    /// allocated memory is too small, etc.
+    /// Returns an error if the operation cannot be completed. Implementations
+    /// should provide error types that distinguish between failure modes
     ///
     /// # Examples
     ///
@@ -206,6 +205,13 @@ pub trait PublishSubscribeRelay<S: Service> {
     /// # Ok(())
     /// # }
     /// ```
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Some(SampleMut))` - A sample was successfully received and placed
+    ///   into loaned memory
+    /// * `Ok(None)` - No samples are currently available (non-blocking)
+    /// * `Err(_)` - An error occurred during the receive operation
     fn receive<LoanError>(
         &self,
         loan: &mut LoanFn<'_, S, LoanError>,
