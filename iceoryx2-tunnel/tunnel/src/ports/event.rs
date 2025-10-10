@@ -99,7 +99,7 @@ impl<S: Service> EventPorts<S> {
             from origin,
             when service.listener_builder().create(),
             with CreationError::Listener,
-            "Failed to create Listener for {}({})", static_config.messaging_pattern(),static_config.name()
+            "Failed to create Listener for {}({})", static_config.messaging_pattern(), static_config.name()
         );
 
         Ok(EventPorts {

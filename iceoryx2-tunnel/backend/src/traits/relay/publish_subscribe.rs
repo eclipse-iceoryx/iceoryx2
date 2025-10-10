@@ -20,24 +20,24 @@ use crate::types::publish_subscribe::SampleMut;
 
 /// Relay for tunneling iceoryx2 publish-subscribe samples through a backend.
 ///
-/// `PublishSubscribeRelay` enables bi-directional transmission of samples
-/// between local iceoryx2 services and remote services via the
-/// backend's communication mechanism.
+/// [`PublishSubscribeRelay`] enables bi-directional transmission of [`Sample`]s
+/// between local iceoryx2 [`Service`]s and remote [`Service`]s via the
+/// [`Backend`](crate::traits::Backend) communication mechanism.
 ///
 /// # Type Parameters
 ///
-/// * `S` - The iceoryx2 service type
+/// * `S` - The iceoryx2 [`Service`] type
 ///
 /// # Memory Management
 ///
-/// Received samples are ingested into iceoryx2 shared memory using a loan
+/// Received [`Sample`]s are ingested into iceoryx2 shared memory using a loan
 /// function, which allocates memory from the local shared
 /// memory pool. This enables efficient zero-copy delivery to local
 /// participants.
 ///
 /// # Examples
 ///
-/// Sending a sample over the backend:
+/// Sending a [`Sample`] over the [`Backend`](crate::traits::Backend):
 ///
 /// ```no_run
 /// # use iceoryx2_tunnel_backend::traits::PublishSubscribeRelay;
@@ -50,7 +50,7 @@ use crate::types::publish_subscribe::SampleMut;
 /// # }
 /// ```
 ///
-/// Receiving remote samples into loaned memory from the backend:
+/// Receiving remote [`Sample`]s into loaned memory from the [`Backend`](crate::traits::Backend):
 ///
 /// ```no_run
 /// # use iceoryx2_tunnel_backend::traits::PublishSubscribeRelay;
@@ -72,7 +72,7 @@ use crate::types::publish_subscribe::SampleMut;
 /// # }
 /// ```
 ///
-/// Implementing a custom PublishSubscribeRelay:
+/// Implementing a custom [`PublishSubscribeRelay`]:
 ///
 /// ```no_run
 /// use iceoryx2::service::ipc::Service;
@@ -133,31 +133,27 @@ pub trait PublishSubscribeRelay<S: Service> {
     /// Error type returned when receiving fails.
     type ReceiveError: Error;
 
-    /// Sends a sample through the backend.
+    /// Sends a [`Sample`] via the backend communication mechanism.
     ///
-    /// Transmits the sample's payload and header to remote endpoints. The
-    /// sample is consumed by this operation.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the operation cannot be completed. Implementations
-    /// should provide error types that distinguish between failure modes
+    /// Transmits the [`Sample`]'s payload and header to remote endpoints. The
+    /// [`Sample`] is consumed by this operation.
     fn send(&self, sample: Sample<S>) -> Result<(), Self::SendError>;
 
-    /// Attempts to receive a sample from the backend.
+    /// Attempts to receive a [`Sample`] via the backend communication mechanism.
     ///
-    /// Checks for incoming samples without blocking. If a sample is available,
+    /// Checks for incoming [`Sample`]s without blocking. If a [`Sample`] is available,
     /// it allocates shared memory via the provided loan function and
-    /// deserializes the sample data into that memory.
+    /// deserializes the [`Sample`] data into that memory.
     ///
     /// The loan function must allocate enough memory to hold the incoming
-    /// sample's payload. The relay should initialize this memory with the
+    /// [`Sample`]'s payload. The relay should initialize this memory with the
     /// received data.
     ///
     /// # Parameters
     ///
     /// * `loan` - Function to allocate shared memory of the requested size.
-    ///   Returns `SampleMutUninit` for the relay to initialize.
+    ///   Returns a [`SampleMutUninit`](iceoryx2::sample_mut_uninit::SampleMutUninit)
+    ///   for the relay to initialize.
     ///
     /// # Type Parameters
     ///
@@ -167,51 +163,9 @@ pub trait PublishSubscribeRelay<S: Service> {
     ///
     /// # Returns
     ///
-    /// * `Ok(Some(SampleMut))` - A sample was received and ingested
-    /// * `Ok(None)` - No samples are currently available
+    /// * [`SampleMut`] - A [`Sample`] was successfully received and initialized
+    /// * [`None`] when no [`Sample`]s to be received
     ///
-    /// # Errors
-    ///
-    /// Returns an error if the operation cannot be completed. Implementations
-    /// should provide error types that distinguish between failure modes
-    ///
-    /// # Examples
-    ///
-    /// Receiving with error handling:
-    ///
-    /// ```no_run
-    /// # use iceoryx2_tunnel_backend::traits::PublishSubscribeRelay;
-    /// # use iceoryx2::service::ipc::Service;
-    /// # fn example<R: PublishSubscribeRelay<Service>, LoanError>(relay: &R)
-    /// #     -> Result<(), R::ReceiveError> {
-    /// let mut loan_fn = |size: usize| {
-    ///     // Loan an uninitialized sample from iceoryx2 and
-    ///     // return it to the relay to be initialized
-    /// #   unimplemented!()
-    /// };
-    ///
-    /// match relay.receive::<LoanError>(&mut loan_fn) {
-    ///     Ok(Some(sample)) => {
-    ///         // Deliver the initialized sample
-    ///         println!("Received: {:?}", sample.payload());
-    ///     }
-    ///     Ok(None) => {
-    ///         // No data available
-    ///     }
-    ///     Err(e) => {
-    ///         eprintln!("Receive error: {}", e);
-    ///     }
-    /// }
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// # Returns
-    ///
-    /// * `Ok(Some(SampleMut))` - A sample was successfully received and placed
-    ///   into loaned memory
-    /// * `Ok(None)` - No samples are currently available (non-blocking)
-    /// * `Err(_)` - An error occurred during the receive operation
     fn receive<LoanError>(
         &self,
         loan: &mut LoanFn<'_, S, LoanError>,

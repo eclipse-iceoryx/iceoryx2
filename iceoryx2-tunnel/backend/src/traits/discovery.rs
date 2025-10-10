@@ -16,17 +16,21 @@ use iceoryx2::service::static_config::StaticConfig;
 
 use crate::types::discovery::ProcessDiscoveryFn;
 
-/// Service discovery interface for finding services over the backend
+/// Service discovery interface for discoverying and announcing
+/// [`Service`](iceoryx2::service::Service)s over the [`Backend`](crate::traits::Backend)
 /// communication mechanism.
 ///
-/// `Discovery` enables enumeration and inspection of available iceoryx2
-/// services that are accessible via the backend. Implementations
-/// query the backend's communication layer to find active services and
-/// provide their static configurations.
+/// [`Discovery`] enables mechansms to instrospect available iceoryx2
+/// [`Service`](iceoryx2::service::Service)s that are accessible via the
+/// [`Backend`](crate::traits::Backend) and announce local services
+/// so they can be discovered remotely. Implementations query the
+/// [`Backend`](crate::traits::Backend)'s communication layer to find active
+/// [`Service`](iceoryx2::service::Service) and provide their [`StaticConfig`]s
+/// to be processed by the caller.
 ///
 /// # Examples
 ///
-/// Using discovery to list available services:
+/// Using [`Discovery`] to list available [`Service`](iceoryx2::service::Service)s:
 ///
 /// ```no_run
 /// use iceoryx2_tunnel_backend::traits::Discovery;
@@ -40,7 +44,7 @@ use crate::types::discovery::ProcessDiscoveryFn;
 /// }
 /// ```
 ///
-/// Implementing discovery for a custom backend:
+/// Implementing a custom [`Discovery`]:
 ///
 /// ```no_run
 /// use iceoryx2_tunnel_backend::traits::Discovery;
@@ -91,13 +95,6 @@ use crate::types::discovery::ProcessDiscoveryFn;
 ///     }
 /// }
 /// ```
-///
-/// # Errors
-///
-/// The `discover` method returns `DiscoveryError` when the backend
-/// communication fails or when the backend fails to retrieve available
-/// services. The provided `process_discovery` callback may also return errors,
-/// which are propagated to the caller.
 pub trait Discovery {
     /// Error type that can occur during discovery operations.
     type DiscoveryError: Error;
@@ -105,39 +102,30 @@ pub trait Discovery {
     /// Error type that can occur during announcement operations.
     type AnnouncementError: Error;
 
-    /// Announces a service to make it discoverable by other hosts.
+    /// Announces a [`Service`](iceoryx2::service::Service) to make it
+    /// discoverable by other hosts.
     ///
-    /// This method broadcasts a service on the host over the backend's
-    /// communication mechanism, making it available for discovery by other
-    /// hosts.
+    /// This method broadcasts a [`Service`](iceoryx2::service::Service) available
+    /// on the host over the [`Backend`](crate::traits::Backend)'s communication
+    /// mechanism, making it available for discovery remotely.
     ///
     /// # Parameters
     ///
-    /// * `static_config` - The static configuration of the service to announce.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the operation cannot be completed. Implementations
-    /// should provide error types that distinguish between failure modes
+    /// * `static_config` - The [`StaticConfig`] of the service to announce.
     fn announce(&self, static_config: &StaticConfig) -> Result<(), Self::AnnouncementError>;
 
     /// Discovers available services and processes each one with the provided
-    /// callback.
+    /// `process_discovery` callback.
     ///
     /// This method queries the backend's communication mechanism for all
-    /// accessible services, then invokes `process_discovery` for each
-    /// service's static configuration. Discovery continues until all services
-    /// are processed or an error occurs.
+    /// accessible [`Service`](iceoryx2::service::Service)s, then invokes
+    /// `process_discovery` for each discovered [`StaticConfig`].
+    /// Discovery continues until all services are processed or an error occurs.
     ///
     /// # Parameters
     ///
-    /// * `process_discovery` - Callback invoked for each discovered service,
-    ///   receiving the service's `StaticConfig`.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the operation cannot be completed. Implementations
-    /// should provide error types that distinguish between failure modes
+    /// * `process_discovery` - Callback provided by the caller to process the
+    ///   [`StaticConfig`] of each discovered [`Service`](iceoryx2::service::Service).
     fn discover<ProcessDiscoveryError>(
         &self,
         process_discovery: &mut ProcessDiscoveryFn<ProcessDiscoveryError>,

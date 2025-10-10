@@ -20,38 +20,39 @@ use crate::traits::{Discovery, EventRelay, PublishSubscribeRelay, RelayFactory};
 /// Core interface for tunnel backends that extend iceoryx2 over another
 /// communication mechanism.
 ///
-/// A `Backend` implementation provides the infrastructure for tunneling
+/// A [`Backend`] implementation provides the infrastructure for tunneling
 /// iceoryx2 services over alternative transport layers (such as network
 /// protocols, IPC mechanisms, or custom communication channels). It manages
 /// service discovery and creates relays for different messaging patterns.
 ///
 /// # Type Parameters
 ///
-/// * `S` - The iceoryx2 service type being tunneled
+/// * `S` - The [`iceoryx2::service::Service`] type being tunneled
 ///
 /// # Architecture
 ///
-/// A backend implementation requires implementing several interconnected traits:
+/// A [`Backend`] implementation requires implementing several interconnected traits:
 ///
 /// ```text
-/// MyBackend (Backend trait)
-///   ├── MyConfig (configuration)
-///   ├── MyDiscovery (Discovery trait)
-///   ├── MyRelayFactory (RelayFactory trait)
-///   │   ├── MyPublishSubscribeRelay (PublishSubscribeRelay trait)
-///   │   │   └── MyPublishSubscribeBuilder (RelayBuilder trait)
-///   │   └── MyEventRelay (EventRelay trait)
-///   │       └── MyEventBuilder (RelayBuilder trait)
-///   └── MyError (error types)
+/// Backend
+///   ├── Config
+///   ├── Discovery
+///   ├── RelayFactory
+///   │   ├── PublishSubscribeRelay
+///   │   │   └── PublishSubscribeBuilder
+///   │   └── EventRelay
+///   │       └── EventBuilder
+///   └── Error
 /// ```
 ///
 /// Each component has specific responsibilities:
 /// - **Config**: Backend-specific connection and initialization settings
-/// - **Discovery**: Query the backend for available services
-/// - **Relays**: Handle actual data transmission for each messaging pattern
+/// - **Discovery**: Mechanisms to query the backend communication mechanism for remote services and announce local [`Service`]s
+/// - **Relays**: Handle data transmission for each messaging pattern between the backend and iceoryx2
+/// - **Factory**: Create [`RelayBuilder`](crate::traits::RelayBuilder) instances for specific relay types
 /// - **Builders**: Construct relays with appropriate configuration
 ///
-/// # Example: Basic Backend Structure
+/// # Example: Basic [`Backend`] Structure
 ///
 /// ```ignore
 /// use iceoryx2::service::ipc::Service;
@@ -88,14 +89,14 @@ pub trait Backend<S: Service>: Sized {
     /// Error type that can occur during backend creation
     type CreationError: Error;
 
-    /// Discovery implementation for finding services using the backend
+    /// [`Discovery`] implementation for finding services using the [`Backend`]
     /// communication mechanism
     type Discovery: Discovery + Debug;
 
-    /// Relay implementation for the publish-subscribe messaging pattern
+    /// [`PublishSubscribeRelay`] implementation for the publish-subscribe messaging pattern
     type PublishSubscribeRelay: PublishSubscribeRelay<S> + Debug;
 
-    /// Relay implementation for the event messaging pattern
+    /// [`EventRelay`] implementation for the event messaging pattern
     type EventRelay: EventRelay<S> + Debug;
 
     /// Factory type for creating relay instances
@@ -107,15 +108,15 @@ pub trait Backend<S: Service>: Sized {
     where
         Self: 'a;
 
-    /// Creates a new backend instance with the provided configuration.
+    /// Creates a new [`Backend`] instance with the provided configuration.
     fn create(config: &Self::Config) -> Result<Self, Self::CreationError>;
 
     /// Returns a reference to the [`Discovery`] implementation.
     fn discovery(&self) -> &impl Discovery;
 
-    /// Creates a new relay factory instance.
+    /// Creates a new [`RelayFactory`] instance.
     ///
-    /// The relay factory is used to create specific relay builders for
-    /// the supported messaging patterns.
+    /// The [`RelayFactory`] is used to create specific builder instances for
+    /// relays for the supported messaging patterns.
     fn relay_builder(&self) -> Self::RelayFactory<'_>;
 }

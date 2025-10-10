@@ -14,19 +14,19 @@ use core::error::Error;
 
 use iceoryx2::{prelude::EventId, service::Service};
 
-/// Relay for tunneling iceoryx2 events through a backend.
+/// Relay for tunneling iceoryx2 events through a [`Backend`](crate::traits::Backend).
 ///
-/// `EventRelay` provides bidirectional transmission of event notifications
-/// between local iceoryx2 services and remote services via the backend's
-/// communication mechanism.
+/// [`EventRelay`] provides bidirectional transmission of event notifications
+/// between local iceoryx2 [`Service`]s and remote [`Service`]s via the
+/// [`Backend`](crate::traits::Backend) communication mechanism.
 ///
 /// # Type Parameters
 ///
-/// * `S` - The iceoryx2 service type
+/// * `S` - The iceoryx2 [`Service`] type
 ///
 /// # Examples
 ///
-/// Sending local event over the backend:
+/// Sending local event over the [`Backend`](crate::traits::Backend):
 ///
 /// ```no_run
 /// # use iceoryx2::prelude::EventId;
@@ -39,7 +39,7 @@ use iceoryx2::{prelude::EventId, service::Service};
 /// # }
 /// ```
 ///
-/// Receiving remote events from the backend:
+/// Receiving remote events from the [`Backend`](crate::traits::Backend):
 ///
 /// ```no_run
 /// # use iceoryx2_tunnel_backend::traits::EventRelay;
@@ -61,7 +61,7 @@ use iceoryx2::{prelude::EventId, service::Service};
 /// # }
 /// ```
 ///
-/// Implementing a custom EventRelay:
+/// Implementing an [`EventRelay`]:
 ///
 /// ```no_run
 /// use iceoryx2::prelude::EventId;
@@ -115,24 +115,20 @@ pub trait EventRelay<S: Service> {
 
     /// Sends an event notification through the backend.
     ///
-    /// Transmits the specified event ID to remote endpoints via the backend's
-    /// communication mechanism. The send operation should be non-blocking.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the operation cannot be completed. Implementations
-    /// should provide error types that distinguish between failure modes
+    /// Transmits the specified [`EventId`] to remote endpoints via the
+    /// [`Backend`](crate::traits::Backend) communication mechanism.
+    /// The send operation should be non-blocking.
     fn send(&self, event_id: EventId) -> Result<(), Self::SendError>;
 
     /// Attempts to receive an event notification from the backend.
     ///
     /// Checks for incoming event notifications without blocking. Returns
-    /// `Some(EventId)` if an event is available, or `None` if no events
+    /// [`EventId`] if an event is available, or [`None`] if no events
     /// are pending.
     ///
-    /// # Errors
+    /// # Returns
     ///
-    /// Returns an error if the operation cannot be completed. Implementations
-    /// should provide error types that distinguish between failure modes
+    /// * [`EventId`] received via the backend communication mechanism
+    /// * [`None`] when no [`EventId`]s to be received
     fn receive(&self) -> Result<Option<EventId>, Self::ReceiveError>;
 }

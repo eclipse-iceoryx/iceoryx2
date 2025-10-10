@@ -20,13 +20,13 @@ use crate::traits::PublishSubscribeRelay;
 
 /// Builder pattern for constructing relay instances.
 ///
-/// `RelayBuilder` follows the builder pattern to configure and create relay
-/// instances. Builders are obtained from a `RelayFactory` and consumed upon
-/// calling `create()`.
+/// [`RelayBuilder`] follows the builder pattern to configure and create relay
+/// instances. [`RelayBuilder`] instances are obtained from a [`RelayFactory`] and consumed upon
+/// calling [`RelayBuilder::create()`].
 ///
 /// # Examples
 ///
-/// Using a builder:
+/// Building a relay with a [`RelayBuilder`]:
 ///
 /// ```no_run
 /// # use iceoryx2_tunnel_backend::traits::RelayBuilder;
@@ -36,7 +36,7 @@ use crate::traits::PublishSubscribeRelay;
 /// # }
 /// ```
 ///
-/// Implementing a custom builder:
+/// Implementing a [`RelayBuilder`]:
 ///
 /// ```no_run
 /// use iceoryx2_tunnel_backend::traits::RelayBuilder;
@@ -75,32 +75,31 @@ pub trait RelayBuilder {
     /// The type of relay that this builder creates.
     type Relay: Debug;
 
-    /// Consumes the builder and attempts to create a relay instance.
+    /// Consumes the [`RelayBuilder`] and attempts to create a [`RelayBuilder::Relay`] instance.
     ///
-    /// Validates the builder's configuration and constructs the relay. This
-    /// method consumes the builder, ensuring it can only be used once.
+    /// Validates the [`RelayBuilder`]'s configuration and constructs the [`RelayBuilder::Relay`]. This
+    /// method consumes the [`RelayBuilder`], ensuring it can only be used once.
     ///
-    /// # Errors
+    /// # Returns
     ///
-    /// Returns an error if the operation cannot be completed. Implementations
-    /// should provide error types that distinguish between failure modes
+    /// A relay that can communicate over the backend communication mechanism
     fn create(self) -> Result<Self::Relay, Self::CreationError>;
 }
 
 /// Factory for creating relay builders for supported messaging patterns.
 ///
-/// `RelayFactory` produces builders for the messaging patterns supported by
-/// iceoryx2 (publish-subscribe and events). Each builder is configured with
-/// the service's static configuration and can be further customized before
-/// creating the final relay instance.
+/// [`RelayFactory`] produces [`RelayBuilder`]s for the supported [`MessagingPattern`](iceoryx2::service::messaging_pattern::MessagingPattern)s.
+/// Each [`RelayBuilder`] is configured with the [`Service`]'s [`StaticConfig`] and can be further customized before
+/// creating the relay.
 ///
 /// # Type Parameters
 ///
-/// * `S` - The iceoryx2 service type
+/// * `S` - The iceoryx2 [`Service`]
 ///
 /// # Examples
 ///
-/// Creating a publish-subscribe relay:
+/// Creating a
+/// [`MessagingPattern::PublishSubscribe`](iceoryx2::service::messaging_pattern::MessagingPattern::PublishSubscribe) relay:
 ///
 /// ```no_run
 /// # use iceoryx2::service::{Service, static_config::StaticConfig};
@@ -115,7 +114,7 @@ pub trait RelayBuilder {
 /// # }
 /// ```
 ///
-/// Creating an event relay:
+/// Creating an [`MessagingPattern::Event`](iceoryx2::service::messaging_pattern::MessagingPattern::Event) relay:
 ///
 /// ```no_run
 /// # use iceoryx2::service::{Service, static_config::StaticConfig};
@@ -130,31 +129,38 @@ pub trait RelayBuilder {
 /// # }
 /// ```
 pub trait RelayFactory<S: Service> {
-    /// The publish-subscribe relay type that this factory creates.
+    /// The [`PublishSubscribe`](iceoryx2::service::messaging_pattern::MessagingPattern::PublishSubscribe)
+    /// to be built by [`RelayBuilder`]s created by the [`RelayFactory`]
     type PublishSubscribeRelay: PublishSubscribeRelay<S>;
 
-    /// The event relay type that this factory creates.
+    /// The [`Event`](iceoryx2::service::messaging_pattern::MessagingPattern::Event)
+    /// to be built by [`RelayBuilder`]s created by the [`RelayFactory`]
     type EventRelay: EventRelay<S>;
 
-    /// Builder type for creating publish-subscribe relays.
+    /// [RelayBuilder] type for creating [`PublishSubscribe`](iceoryx2::service::messaging_pattern::MessagingPattern::PublishSubscribe)
+    /// relays.
     type PublishSubscribeBuilder<'a>: RelayBuilder<Relay = Self::PublishSubscribeRelay> + Debug + 'a
     where
         Self: 'a;
 
-    /// Builder type for creating event relays.
+    /// [RelayBuilder] type for creating [`Event`](iceoryx2::service::messaging_pattern::MessagingPattern::Event)
+    /// relays.
     type EventBuilder<'a>: RelayBuilder<Relay = Self::EventRelay> + Debug + 'a
     where
         Self: 'a;
 
-    /// Creates a builder for publish-subscribe relays.
-    ///
-    /// Returns a builder configured with the service's static configuration.
-    /// The builder can be further customized before calling `create()`.
+    /// Creates a [`RelayBuilder`] for [`PublishSubscribe`](iceoryx2::service::messaging_pattern::MessagingPattern::PublishSubscribe)
+    /// relays.
     ///
     /// # Parameters
     ///
-    /// * `static_config` - The service's static configuration containing
-    ///   service name, messaging pattern details, and other metadata
+    /// * `static_config` - The [`Service`]'s [`StaticConfig`] for which a builder will be created
+    ///
+    /// # Returns
+    ///
+    /// A [`RelayBuilder`] configured with the [`Service`]'s [`StaticConfig`].
+    /// The [`RelayBuilder`] can be further customized before calling [`RelayBuilder::create()`].
+    ///
     fn publish_subscribe<'a>(
         &self,
         static_config: &'a StaticConfig,
@@ -162,15 +168,17 @@ pub trait RelayFactory<S: Service> {
     where
         Self: 'a;
 
-    /// Creates a builder for event relays.
-    ///
-    /// Returns a builder configured with the service's static configuration.
-    /// The builder can be further customized before calling `create()`.
+    /// Creates a [`RelayBuilder`] for [`Event`](iceoryx2::service::messaging_pattern::MessagingPattern::Event)
+    /// relays.
     ///
     /// # Parameters
     ///
-    /// * `static_config` - The service's static configuration containing
-    ///   service name, event details, and other metadata
+    /// * `static_config` - The [`Service`]'s [`StaticConfig`] for which a builder will be created
+    ///
+    /// # Returns
+    ///
+    /// A [`RelayBuilder`] configured with the [`Service`]'s [`StaticConfig`].
+    /// The [`RelayBuilder`] can be further customized before calling [`RelayBuilder::create()`].
     fn event<'a>(&self, static_config: &'a StaticConfig) -> Self::EventBuilder<'a>
     where
         Self: 'a;
