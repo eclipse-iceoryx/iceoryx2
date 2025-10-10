@@ -27,6 +27,11 @@ auto main() -> int {
     auto service = node.service_builder(ServiceName::create("CrossLanguageContainer").expect("valid service name"))
                        .publish_subscribe<iox2::container::StaticVector<uint64_t, 32>>() // NOLINT
                        .user_header<iox2::container::StaticString<64>>()                 // NOLINT
+                       // add some QoS, disable safe overflow and the subscriber shall get the
+                       // last 5 samples when connecting to the service
+                       .history_size(5)               // NOLINT
+                       .subscriber_max_buffer_size(5) // NOLINT
+                       .enable_safe_overflow(false)
                        .open_or_create()
                        .expect("successful service creation/opening");
 

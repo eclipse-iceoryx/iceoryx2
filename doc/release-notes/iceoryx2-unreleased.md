@@ -117,9 +117,9 @@
 
 4. **C++:** Remove `operator*` and `operator->` from `ActiveRequest`,
    `PendingResponse`, `RequestMut`, `RequestMutUninit`, `Response`,
-   `ResponseMut`, `Sample`, `SampleMut`, `SampleMutUninit` since it lead
-   to easy confusions and bugs when used in combination with `optional` or
-   `expected`. See `sample.has_value()` and `sample->has_value()` that work
+   `ResponseMut`, `Sample`, `SampleMut`, `SampleMutUninit` since these can
+   easily lead to confusion and bugs when used in combination with `optional`
+   or `expected`. See `sample.has_value()` and `sample->has_value()` that work
    on different objects.
 
    ```cxx

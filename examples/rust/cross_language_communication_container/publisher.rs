@@ -25,6 +25,11 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .service_builder(&"CrossLanguageContainer".try_into()?)
         .publish_subscribe::<StaticVec<u64, 32>>()
         .user_header::<StaticString<64>>()
+        // add some QoS, disable safe overflow and the subscriber shall get the
+        // last 5 samples when connecting to the service
+        .history_size(5)
+        .subscriber_max_buffer_size(5)
+        .enable_safe_overflow(false)
         .open_or_create()?;
 
     let publisher = service.publisher_builder().create()?;
