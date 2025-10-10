@@ -181,16 +181,17 @@ impl<const CAPACITY: usize> KeyMemory<CAPACITY> {
     pub fn try_from<T: Copy>(value: T) -> Result<Self, KeyMemoryError> {
         static_assert_eq::<{ align_of::<KeyMemory<1>>() }, MAX_BLACKBOARD_KEY_ALIGNMENT>();
 
-        // // TODO
-        // static_assert with T and todo to uncomment once available in Rust
-        // until then fatal panic in add
         let origin = "KeyMemory::try_from()";
         let msg = "Unable to create KeyMemory";
 
+        // Replace if block with below compile-time assertion once available for generic parameters
+        // static_assert_le::<{ size_of::<T>() }, CAPACITY>();
         if size_of::<T>() > CAPACITY {
             fail!(from origin, with KeyMemoryError::ValueTooLarge,
                 "{} since the passed value is too large. Its size must be <= {}.", msg, CAPACITY);
         }
+        // Replace if block with below compile-time assertion once available for generic parameters
+        // static_assert_le::<{ align_of::<T>() }, MAX_BLACKBOARD_KEY_ALIGNMENT>();
         if align_of::<T>() > MAX_BLACKBOARD_KEY_ALIGNMENT {
             fail!(from origin, with KeyMemoryError::ValueAlignmentTooLarge,
                 "{} since the alignment of the passed value is too large. The alignment must be <= {}.",
@@ -507,8 +508,13 @@ impl<
         key: KeyType,
         value: ValueType,
     ) -> Self {
-        // TODO: error handling
-        let key_mem = KeyMemory::try_from(key).unwrap();
+        let key_mem = match KeyMemory::try_from(key) {
+            Err(_) => {
+                fatal_panic!(from self,
+                    "This should never happen! Calling add() with a key type that has an invalid layout.")
+            }
+            Ok(mem) => mem,
+        };
 
         let internals = BuilderInternals {
             key: key_mem,
@@ -802,7 +808,6 @@ impl<ServiceType: service::Service> Creator<CustomKeyMarker, ServiceType> {
                 fatal_panic!(from self, "This should never happen! Key size/alignment is invalid!")
             }
         };
-        // TODO: check with static_assert in C++
         let key_mem = match KeyMemory::try_from_ptr(key, key_layout) {
             Ok(mem) => mem,
             Err(_) => fatal_panic!(from self, "The key type has the wrong size/alignment!"),
