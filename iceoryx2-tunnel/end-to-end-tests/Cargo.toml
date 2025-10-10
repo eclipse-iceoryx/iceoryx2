@@ -1,5 +1,5 @@
 [package]
-name = "iceoryx2-tunnels-end-to-end-tests"
+name = "iceoryx2-tunnel-end-to-end-tests"
 description = "iceoryx2: [internal] binaries for tunnel end-to-end tests"
 categories = { workspace = true }
 edition = { workspace = true }
@@ -12,15 +12,15 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [[bin]]
-name = "iceoryx2-tunnels-end-to-end-tests-pinger"
+name = "iceoryx2-tunnel-end-to-end-tests-pinger"
 path = "ping-pong/src/pinger.rs"
 
 [[bin]]
-name = "iceoryx2-tunnels-end-to-end-tests-ponger"
+name = "iceoryx2-tunnel-end-to-end-tests-ponger"
 path = "ping-pong/src/ponger.rs"
 
 [lib]
-name = "iceoryx2_tunnels_end_to_end_tests"
+name = "iceoryx2_tunnel_end_to_end_tests"
 path = "common/src/lib.rs"
 
 [dependencies]

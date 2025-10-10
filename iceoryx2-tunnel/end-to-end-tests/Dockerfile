@@ -9,13 +9,13 @@ RUN apt-get update && apt-get install -y \
 RUN mkdir -p /usr/local/bin
 
 COPY target/release/iox2-tunnel \
-     target/release/iceoryx2-tunnels-end-to-end-tests-pinger \
-     target/release/iceoryx2-tunnels-end-to-end-tests-ponger \
+     target/release/iceoryx2-tunnel-end-to-end-tests-pinger \
+     target/release/iceoryx2-tunnel-end-to-end-tests-ponger \
      /usr/local/bin/
 
 RUN chmod +x /usr/local/bin/iox2-tunnel \
-      /usr/local/bin/iceoryx2-tunnels-end-to-end-tests-pinger \
-      /usr/local/bin/iceoryx2-tunnels-end-to-end-tests-ponger
+      /usr/local/bin/iceoryx2-tunnel-end-to-end-tests-pinger \
+      /usr/local/bin/iceoryx2-tunnel-end-to-end-tests-ponger
 
 USER testuser
 WORKDIR /home/testuser
