@@ -210,21 +210,12 @@ impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
 }
 
 #[doc(hidden)]
-// TODO: safety
+// This function is passed to functions that require a Fn(*const u8, *const u8) -> bool so it cannot be
+// unsafe. It is meant to be used only flatmap internal where the type, lhs and rhs are pointing to, is
+// known and valid.
 pub fn __internal_default_eq_comparison<T: Eq>(lhs: *const u8, rhs: *const u8) -> bool {
     unsafe { *lhs.cast::<T>() == *rhs.cast::<T>() }
 }
-
-//
-//  user:
-//
-// uint64_t;
-// bool eq_func(uint8_t* lhs, uint8_t* rhs) {
-//     return *(*uint64_t)lhs == *(*uint64_t)rhs;
-// }
-//
-// iox2_builder_set_equality_fn(builder_handle, eq_func);
-//
 
 #[doc(hidden)]
 pub fn __internal_eq_comparison_wrapper<T: Eq, F: Fn(*const u8, *const u8) -> bool + ?Sized>(
@@ -250,7 +241,6 @@ impl<K: Eq, V: Clone> FlatMap<K, V> {
     /// Inserts a new key-value pair into the [`FlatMap`]. On success, the method returns [`Ok`],
     /// otherwise a [`FlatMapError`] describing the failure.
     pub fn insert(&mut self, id: K, value: V) -> Result<(), FlatMapError> {
-        // TODO: safety explanation for __internal_default_eq_comparison (also in other methods using this function)
         unsafe { self.insert_impl(id, value, &__internal_default_eq_comparison::<K>) }
     }
 

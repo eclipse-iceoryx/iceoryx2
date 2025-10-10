@@ -31,6 +31,7 @@ use alloc::rc::Rc;
 use builder::RETRY_LIMIT;
 use core::alloc::Layout;
 use core::hash::Hash;
+use core::marker::PhantomData;
 use iceoryx2_bb_container::flatmap::RelocatableFlatMap;
 use iceoryx2_bb_container::queue::RelocatableContainer;
 use iceoryx2_bb_container::string::*;
@@ -44,7 +45,6 @@ use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 use iceoryx2_cal::shared_memory::{SharedMemory, SharedMemoryBuilder};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
-use std::marker::PhantomData;
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 enum ServiceAvailabilityState {
@@ -130,8 +130,6 @@ pub enum BlackboardCreateError {
     HangsInCreation,
     /// No key-value pairs have been provided. At least one is required.
     NoEntriesProvided,
-    /// The alignment of the key type is greater than the maximum allowed alignment.
-    KeyAlignmentTooLarge,
 }
 
 impl core::fmt::Display for BlackboardCreateError {
@@ -178,7 +176,7 @@ pub struct KeyMemory<const CAPACITY: usize> {
 }
 
 impl<const CAPACITY: usize> KeyMemory<CAPACITY> {
-    pub fn try_from<T: Copy>(value: T) -> Result<Self, KeyMemoryError> {
+    pub fn try_from<T: Copy>(value: &T) -> Result<Self, KeyMemoryError> {
         static_assert_eq::<{ align_of::<KeyMemory<1>>() }, MAX_BLACKBOARD_KEY_ALIGNMENT>();
 
         let origin = "KeyMemory::try_from()";
@@ -201,7 +199,7 @@ impl<const CAPACITY: usize> KeyMemory<CAPACITY> {
         let mut new_self = Self {
             data: [0; CAPACITY],
         };
-        unsafe { core::ptr::copy_nonoverlapping(&value, new_self.data.as_mut_ptr() as *mut T, 1) };
+        unsafe { core::ptr::copy_nonoverlapping(value, new_self.data.as_mut_ptr() as *mut T, 1) };
         Ok(new_self)
     }
 
@@ -233,9 +231,10 @@ impl<const CAPACITY: usize> KeyMemory<CAPACITY> {
         Ok(new_self)
     }
 
-    /// This function compares two KeyMemory<CAPACITY> for equality. It is passed to functions that
-    /// require a Fn(*const u8, *const u8) -> bool so default_key_eq_comparison cannot be unsafe. Still,
-    /// there are safety requirements:
+    /// This function compares two KeyMemory<CAPACITY> for equality and is only for blackboard internal
+    /// usage. It is passed to functions that require a Fn(*const u8, *const u8) -> bool so
+    /// default_key_eq_comparison cannot be marked unsafe. Still, there are safety requirements which are
+    /// guaranteed by the by the blackboard implementation:
     ///
     /// # Safety
     ///
@@ -327,7 +326,7 @@ pub(crate) struct BlackboardResources<ServiceType: service::Service> {
 }
 
 impl<ServiceType: service::Service> Debug for BlackboardResources<ServiceType> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "BlackboardResources {{ mgmt: {:?}, data: {:?} }}",
@@ -344,7 +343,7 @@ impl<ServiceType: service::Service> ServiceResource for BlackboardResources<Serv
 }
 
 struct Builder<
-    KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash + 'static,
+    KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
     ServiceType: service::Service,
 > {
     base: builder::BuilderWithServiceType<ServiceType>,
@@ -357,7 +356,7 @@ struct Builder<
 }
 
 impl<
-        KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash + 'static,
+        KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
         ServiceType: service::Service,
     > Debug for Builder<KeyType, ServiceType>
 {
@@ -375,7 +374,7 @@ impl<
 }
 
 impl<
-        KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash + 'static,
+        KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
         ServiceType: service::Service,
     > Builder<KeyType, ServiceType>
 {
@@ -473,14 +472,14 @@ impl<
 /// See [`crate::service`]
 #[derive(Debug)]
 pub struct Creator<
-    KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash + 'static,
+    KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
     ServiceType: service::Service,
 > {
     builder: Builder<KeyType, ServiceType>,
 }
 
 impl<
-        KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash + 'static,
+        KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
         ServiceType: service::Service,
     > Creator<KeyType, ServiceType>
 {
@@ -508,7 +507,7 @@ impl<
         key: KeyType,
         value: ValueType,
     ) -> Self {
-        let key_mem = match KeyMemory::try_from(key) {
+        let key_mem = match KeyMemory::try_from(&key) {
             Err(_) => {
                 fatal_panic!(from self,
                     "This should never happen! Calling add() with a key type that has an invalid layout.")
@@ -582,11 +581,6 @@ impl<
         attributes: &AttributeSpecifier,
     ) -> Result<blackboard::PortFactory<ServiceType, KeyType>, BlackboardCreateError> {
         let msg = "Unable to create blackboard service";
-
-        if align_of::<KeyType>() > MAX_BLACKBOARD_KEY_ALIGNMENT {
-            fail!(from self, with BlackboardCreateError::KeyAlignmentTooLarge,
-                "{} since the alignment of the key type is greater than {MAX_BLACKBOARD_KEY_ALIGNMENT}.", msg);
-        }
 
         self.adjust_configuration_to_meaningful_values();
 
@@ -730,7 +724,7 @@ impl<
                                     return false
                                 }
                                 // write offset index to map
-                                let res = unsafe {entry.map.__internal_insert(self.builder.internals[i].key.clone(), entry.entries.len() - 1, &self.builder.key_eq_func)};
+                                let res = unsafe {entry.map.__internal_insert(self.builder.internals[i].key, entry.entries.len() - 1, &self.builder.key_eq_func)};
                                 if res.is_err() {
                                     error!(from self, "Inserting the key-value pair into the blackboard management segment failed.");
                                     return false
@@ -818,11 +812,7 @@ impl<ServiceType: service::Service> Creator<CustomKeyMarker, ServiceType> {
                 raw_memory_ptr,
                 value_details.alignment,
             );
-            core::ptr::copy_nonoverlapping(
-                value,
-                ptrs.atomic_payload_ptr as *mut u8,
-                value_details.size,
-            );
+            core::ptr::copy_nonoverlapping(value, ptrs.atomic_payload_ptr, value_details.size);
         });
         let value_size = UnrestrictedAtomicMgmt::__internal_get_unrestricted_atomic_size(
             value_details.size,
@@ -853,14 +843,14 @@ impl<ServiceType: service::Service> Creator<CustomKeyMarker, ServiceType> {
 /// See [`crate::service`]
 #[derive(Debug)]
 pub struct Opener<
-    KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash + 'static,
+    KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
     ServiceType: service::Service,
 > {
     builder: Builder<KeyType, ServiceType>,
 }
 
 impl<
-        KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash + 'static,
+        KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
         ServiceType: service::Service,
     > Opener<KeyType, ServiceType>
 {

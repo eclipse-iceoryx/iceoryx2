@@ -158,6 +158,7 @@ template <typename PayloadType>
 auto get_type_name() -> TypeName {
     return get_type_name_impl<PayloadType>();
 }
+
 } // namespace iox2::internal
 
 #endif

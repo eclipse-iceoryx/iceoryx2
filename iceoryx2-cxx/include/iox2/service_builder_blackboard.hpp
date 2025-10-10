@@ -113,6 +113,7 @@ class ServiceBuilderBlackboardOpener {
 namespace internal {
 template <typename T>
 auto default_key_eq_cmp_func(const uint8_t* lhs, const uint8_t* rhs) -> bool {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast): C API requires to pass uint8_t* instead of T*
     return (*reinterpret_cast<const T*>(lhs)) == (*reinterpret_cast<const T*>(rhs));
 }
 } // namespace internal
@@ -120,6 +121,7 @@ auto default_key_eq_cmp_func(const uint8_t* lhs, const uint8_t* rhs) -> bool {
 template <typename KeyType, ServiceType S>
 inline ServiceBuilderBlackboardCreator<KeyType, S>::ServiceBuilderBlackboardCreator(iox2_service_builder_h handle)
     : m_handle { iox2_service_builder_blackboard_creator(handle) } {
+    static_assert(std::is_trivially_copyable_v<KeyType>);
     // set key type details so that these are available in add()
     const auto type_name = internal::get_type_name<KeyType>();
     const auto key_type_result = iox2_service_builder_blackboard_creator_set_key_type_details(
@@ -136,11 +138,8 @@ inline void ServiceBuilderBlackboardCreator<KeyType, S>::set_parameters() {
     m_max_nodes.and_then([&](auto value) { iox2_service_builder_blackboard_creator_set_max_nodes(&m_handle, value); });
 
     // key eq comparison function
-    const auto key_cmp_result = iox2_service_builder_blackboard_creator_set_key_eq_comparison_function(
-        &m_handle, internal::default_key_eq_cmp_func<KeyType>);
-    if (key_cmp_result != IOX2_OK) {
-        IOX_PANIC("This should never happen! Implementation failure while setting the key eq comparison function.");
-    }
+    iox2_service_builder_blackboard_creator_set_key_eq_comparison_function(&m_handle,
+                                                                           internal::default_key_eq_cmp_func<KeyType>);
 }
 
 template <typename KeyType, ServiceType S>
@@ -156,7 +155,7 @@ inline auto ServiceBuilderBlackboardCreator<KeyType, S>::add(KeyType key, ValueT
 
     iox2_service_builder_blackboard_creator_add(
         &m_handle,
-        reinterpret_cast<uint8_t*>(&key), // TODO: void ptr?
+        &key,
         value_ptr,
         [](void* value) {
             auto* value_ptr = static_cast<ValueType*>(value);

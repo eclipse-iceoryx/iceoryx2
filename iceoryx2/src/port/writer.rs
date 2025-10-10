@@ -50,6 +50,7 @@ use crate::service::{self, ServiceState};
 use core::alloc::Layout;
 use core::fmt::Debug;
 use core::hash::Hash;
+use core::marker::PhantomData;
 use core::sync::atomic::Ordering;
 use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -60,7 +61,6 @@ use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::{
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shared_memory::SharedMemory;
-use std::marker::PhantomData;
 
 extern crate alloc;
 use alloc::sync::Arc;
@@ -199,7 +199,7 @@ impl<
     /// ```
     pub fn entry<ValueType: Copy + ZeroCopySend>(
         &self,
-        key: KeyType,
+        key: &KeyType,
     ) -> Result<EntryHandleMut<Service, KeyType, ValueType>, EntryHandleMutError> {
         let msg = "Unable to create entry handle";
 
@@ -598,11 +598,11 @@ impl<
     }
 }
 
-/// # Safety
-///
-///   * key must be a valid pointer to a value of the set key type
 impl<Service: service::Service> Writer<Service, CustomKeyMarker> {
     #[doc(hidden)]
+    /// # Safety
+    ///
+    ///   * key must be a valid pointer to a value of the set key type
     pub unsafe fn __internal_entry(
         &self,
         key: *const u8,

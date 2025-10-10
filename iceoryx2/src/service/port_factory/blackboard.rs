@@ -48,10 +48,10 @@ use crate::service::service_name::ServiceName;
 use crate::service::{self, dynamic_config, static_config, ServiceState};
 use core::fmt::Debug;
 use core::hash::Hash;
+use core::marker::PhantomData;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
-use std::marker::PhantomData;
 
 extern crate alloc;
 use alloc::sync::Arc;

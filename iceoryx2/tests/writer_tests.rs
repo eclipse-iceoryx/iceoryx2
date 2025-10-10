@@ -49,7 +49,7 @@ mod writer {
             .unwrap();
 
         let writer = sut.writer_builder().create().unwrap();
-        let entry_handle_mut = writer.entry::<u64>(0);
+        let entry_handle_mut = writer.entry::<u64>(&0);
         assert_that!(entry_handle_mut, is_ok);
     }
 
@@ -67,7 +67,7 @@ mod writer {
             .unwrap();
 
         let writer = sut.writer_builder().create().unwrap();
-        let entry_handle_mut = writer.entry::<u64>(9);
+        let entry_handle_mut = writer.entry::<u64>(&9);
         assert_that!(entry_handle_mut, is_err);
         assert_that!(
             entry_handle_mut.err().unwrap(),
@@ -89,7 +89,7 @@ mod writer {
             .unwrap();
 
         let writer = sut.writer_builder().create().unwrap();
-        let entry_handle_mut = writer.entry::<i64>(0);
+        let entry_handle_mut = writer.entry::<i64>(&0);
         assert_that!(entry_handle_mut, is_err);
         assert_that!(
             entry_handle_mut.err().unwrap(),
@@ -111,9 +111,9 @@ mod writer {
             .unwrap();
 
         let writer = sut.writer_builder().create().unwrap();
-        let entry_handle_mut1 = writer.entry::<u64>(0);
+        let entry_handle_mut1 = writer.entry::<u64>(&0);
         assert_that!(entry_handle_mut1, is_ok);
-        let entry_handle_mut2 = writer.entry::<u64>(0);
+        let entry_handle_mut2 = writer.entry::<u64>(&0);
         assert_that!(entry_handle_mut2, is_err);
         assert_that!(
             entry_handle_mut2.err().unwrap(),
@@ -121,7 +121,7 @@ mod writer {
         );
 
         drop(entry_handle_mut1);
-        let entry_handle_mut2 = writer.entry::<u64>(0);
+        let entry_handle_mut2 = writer.entry::<u64>(&0);
         assert_that!(entry_handle_mut2, is_ok);
     }
 
@@ -139,7 +139,7 @@ mod writer {
             .unwrap();
 
         let writer = sut.writer_builder().create().unwrap();
-        let _entry_handle_mut = writer.entry::<u8>(0).unwrap();
+        let _entry_handle_mut = writer.entry::<u8>(&0).unwrap();
 
         drop(writer);
 
@@ -164,7 +164,7 @@ mod writer {
             .unwrap();
 
         let writer = sut.writer_builder().create().unwrap();
-        let entry_handle_mut = writer.entry::<u32>(0).unwrap();
+        let entry_handle_mut = writer.entry::<u32>(&0).unwrap();
         let entry_value_uninit = entry_handle_mut.loan_uninit();
 
         drop(writer);

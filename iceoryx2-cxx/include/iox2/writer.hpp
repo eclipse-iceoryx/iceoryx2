@@ -102,7 +102,7 @@ inline auto Writer<S, KeyType>::entry(const KeyType& key)
     auto result = iox2_writer_entry(&m_handle,
                                     nullptr,
                                     &entry_handle,
-                                    reinterpret_cast<const uint8_t*>(&key),
+                                    &key,
                                     type_name.unchecked_access().c_str(),
                                     type_name.size(),
                                     sizeof(ValueType),

@@ -15,10 +15,10 @@
 use super::{iox2_attribute_specifier_h_ref, iox2_attribute_verifier_h_ref, iox2_type_variant_e};
 use crate::api::{
     c_size_t, iox2_port_factory_blackboard_h, iox2_port_factory_blackboard_t,
-    iox2_service_blackboard_key_eq_cmp_func, iox2_service_builder_blackboard_creator_h,
-    iox2_service_builder_blackboard_creator_h_ref, iox2_service_builder_blackboard_opener_h,
-    iox2_service_builder_blackboard_opener_h_ref, iox2_service_type_e, AssertNonNullHandle,
-    HandleToType, IntoCInt, KeyFfi, PortFactoryBlackboardUnion, ServiceBuilderUnion, IOX2_OK,
+    iox2_service_builder_blackboard_creator_h, iox2_service_builder_blackboard_creator_h_ref,
+    iox2_service_builder_blackboard_opener_h, iox2_service_builder_blackboard_opener_h_ref,
+    iox2_service_type_e, AssertNonNullHandle, HandleToType, IntoCInt, KeyFfi,
+    PortFactoryBlackboardUnion, ServiceBuilderUnion, IOX2_OK,
 };
 use crate::create_type_details;
 use core::ffi::{c_char, c_int, c_uchar, c_void};
@@ -34,7 +34,11 @@ use iceoryx2_ffi_macros::CStrRepr;
 
 // BEGIN types definition
 
+// Function to release the value_ptr passed to [`iox2_service_builder_blackboard_creator_add`]
 pub type iox2_service_blackboard_creator_add_release_callback = Option<extern "C" fn(*mut c_void)>;
+// Function to compare keys
+pub type iox2_service_blackboard_key_eq_cmp_func =
+    unsafe extern "C" fn(*const c_uchar, *const c_uchar) -> bool;
 
 #[repr(C)]
 #[derive(Copy, Clone, CStrRepr)]
@@ -82,8 +86,6 @@ pub enum iox2_blackboard_create_error_e {
     C_HANGS_IN_CREATION,
     #[CStr = "no entries provided"]
     C_NO_ENTRIES_PROVIDED,
-    #[CStr = "key alignment too large"]
-    C_KEY_ALIGNMENT_TOO_LARGE,
 }
 
 impl IntoCInt for BlackboardOpenError {
@@ -150,9 +152,6 @@ impl IntoCInt for BlackboardCreateError {
             }
             BlackboardCreateError::NoEntriesProvided => {
                 iox2_blackboard_create_error_e::C_NO_ENTRIES_PROVIDED
-            }
-            BlackboardCreateError::KeyAlignmentTooLarge => {
-                iox2_blackboard_create_error_e::C_KEY_ALIGNMENT_TOO_LARGE
             }
         }) as c_int
     }
@@ -336,11 +335,23 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_opener_set_key_type_det
     IOX2_OK
 }
 
+/// Sets the key eqaulity comparison function.
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_blackboard_creator_h_ref`]
+///   obtained by
+///   [`iox2_service_builder_blackboard_creator`](crate::iox2_service_builder_blackboard_creator).
+/// * `key_eq_func` - The function to compare blackboard keys.
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be a valid handle
 #[no_mangle]
 pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_set_key_eq_comparison_function(
     service_builder_handle: iox2_service_builder_blackboard_creator_h_ref,
     key_eq_func: iox2_service_blackboard_key_eq_cmp_func,
-) -> c_int {
+) {
     service_builder_handle.assert_non_null();
 
     let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
@@ -371,8 +382,6 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_set_key_eq_comp
             ));
         }
     }
-
-    IOX2_OK
 }
 
 /// Sets the max readers for the creator
@@ -571,8 +580,8 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_opener_set_max_nodes(
 #[no_mangle]
 pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
     service_builder_handle: iox2_service_builder_blackboard_creator_h_ref,
-    key: *const c_uchar,
-    value_ptr: *mut c_void, // TODO: *mut u8?
+    key: *const c_void,
+    value_ptr: *mut c_void,
     release_callback: iox2_service_blackboard_creator_add_release_callback,
     type_name: *const c_char,
     type_name_len: usize,
@@ -609,7 +618,7 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
             let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
             service_builder_struct.set(ServiceBuilderUnion::new_ipc_blackboard_creator(
                 service_builder.__internal_add(
-                    key,
+                    key as *const u8,
                     value_ptr as *mut u8,
                     type_details.clone(),
                     value_cleanup,
@@ -623,7 +632,7 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
             let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
             service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_creator(
                 service_builder.__internal_add(
-                    key,
+                    key as *const u8,
                     value_ptr as *mut u8,
                     type_details.clone(),
                     value_cleanup,

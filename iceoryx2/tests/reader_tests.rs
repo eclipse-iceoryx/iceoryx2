@@ -72,7 +72,7 @@ mod reader {
             .unwrap();
 
         let reader = sut.reader_builder().create().unwrap();
-        let entry_handle = reader.entry::<ValueType>(0);
+        let entry_handle = reader.entry::<ValueType>(&0);
         assert_that!(entry_handle, is_ok);
         assert_that!(entry_handle.unwrap().get(), eq 0);
     }
@@ -91,7 +91,7 @@ mod reader {
             .unwrap();
 
         let reader = sut.reader_builder().create().unwrap();
-        let entry_handle = reader.entry::<u64>(9);
+        let entry_handle = reader.entry::<u64>(&9);
         assert_that!(entry_handle, is_err);
         assert_that!(
             entry_handle.err().unwrap(),
@@ -113,7 +113,7 @@ mod reader {
             .unwrap();
 
         let reader = sut.reader_builder().create().unwrap();
-        let entry_handle = reader.entry::<i64>(0);
+        let entry_handle = reader.entry::<i64>(&0);
         assert_that!(entry_handle, is_err);
         assert_that!(
             entry_handle.err().unwrap(),

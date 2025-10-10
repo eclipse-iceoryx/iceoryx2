@@ -13,6 +13,7 @@
 #ifndef IOX2_EXAMPLES_TRANSMISSION_DATA_H
 #define IOX2_EXAMPLES_TRANSMISSION_DATA_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 struct Foo {

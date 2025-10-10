@@ -59,11 +59,7 @@ int main(void) {
     }
 
     // set key eq comparison function
-    if (iox2_service_builder_blackboard_creator_set_key_eq_comparison_function(&service_builder_blackboard, key_cmp)
-        != IOX2_OK) {
-        printf("Unable to set the key eq comparison function!\n");
-        goto drop_service_name;
-    }
+    iox2_service_builder_blackboard_creator_set_key_eq_comparison_function(&service_builder_blackboard, key_cmp);
 
     // add key-value pairs
     struct Foo key_0;
@@ -74,7 +70,7 @@ int main(void) {
     int32_t value_key_0 = 3;
 
     iox2_service_builder_blackboard_creator_add(&service_builder_blackboard,
-                                                (const uint8_t*) &key_0,
+                                                &key_0,
                                                 &value_key_0,
                                                 NULL,
                                                 value_type_name_int,
@@ -91,7 +87,7 @@ int main(void) {
     double value_key_1 = START_VALUE;
 
     iox2_service_builder_blackboard_creator_add(&service_builder_blackboard,
-                                                (const uint8_t*) &key_1,
+                                                &key_1,
                                                 &value_key_1,
                                                 NULL,
                                                 value_type_name_double,
@@ -118,7 +114,7 @@ int main(void) {
     if (iox2_writer_entry(&writer,
                           NULL,
                           &entry_handle_mut_key_0,
-                          (const uint8_t*) &key_0,
+                          &key_0,
                           value_type_name_int,
                           strlen(value_type_name_int),
                           sizeof(int32_t),
@@ -132,7 +128,7 @@ int main(void) {
     if (iox2_writer_entry(&writer,
                           NULL,
                           &entry_handle_mut_key_1,
-                          (const uint8_t*) &key_1,
+                          &key_1,
                           value_type_name_double,
                           strlen(value_type_name_double),
                           sizeof(double),
