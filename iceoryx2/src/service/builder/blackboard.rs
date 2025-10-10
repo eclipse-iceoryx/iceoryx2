@@ -27,7 +27,7 @@ use crate::service::port_factory::blackboard;
 use crate::service::static_config::message_type_details::TypeDetail;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
 use crate::service::*;
-use alloc::sync::Arc;
+use alloc::rc::Rc;
 use builder::RETRY_LIMIT;
 use core::alloc::Layout;
 use core::hash::Hash;
@@ -181,6 +181,9 @@ impl<const CAPACITY: usize> KeyMemory<CAPACITY> {
     pub fn try_from<T: Copy>(value: T) -> Result<Self, KeyMemoryError> {
         static_assert_eq::<{ align_of::<KeyMemory<1>>() }, MAX_BLACKBOARD_KEY_ALIGNMENT>();
 
+        // // TODO
+        // static_assert with T and todo to uncomment once available in Rust
+        // until then fatal panic in add
         let origin = "KeyMemory::try_from()";
         let msg = "Unable to create KeyMemory";
 
@@ -319,8 +322,7 @@ pub(crate) struct Mgmt {
 pub(crate) struct BlackboardResources<ServiceType: service::Service> {
     pub(crate) mgmt: ServiceType::BlackboardMgmt<Mgmt>,
     pub(crate) data: ServiceType::BlackboardPayload,
-    // TODO: use Rc?
-    pub(crate) key_eq_func: Arc<dyn Fn(*const u8, *const u8) -> bool>,
+    pub(crate) key_eq_func: Rc<dyn Fn(*const u8, *const u8) -> bool>,
 }
 
 impl<ServiceType: service::Service> Debug for BlackboardResources<ServiceType> {
@@ -752,7 +754,7 @@ impl<
                         BlackboardResources {
                             mgmt: mgmt_storage,
                             data: payload_shm,
-                            key_eq_func: Arc::new(self.builder.key_eq_func),
+                            key_eq_func: Rc::new(self.builder.key_eq_func),
                         },
                     ),
                 ))
@@ -800,6 +802,7 @@ impl<ServiceType: service::Service> Creator<CustomKeyMarker, ServiceType> {
                 fatal_panic!(from self, "This should never happen! Key size/alignment is invalid!")
             }
         };
+        // TODO: check with static_assert in C++
         let key_mem = match KeyMemory::try_from_ptr(key, key_layout) {
             Ok(mem) => mem,
             Err(_) => fatal_panic!(from self, "The key type has the wrong size/alignment!"),
@@ -1052,7 +1055,7 @@ impl<
                             BlackboardResources {
                                 mgmt: mgmt_storage,
                                 data: payload_shm,
-                                key_eq_func: Arc::new(self.builder.key_eq_func),
+                                key_eq_func: Rc::new(self.builder.key_eq_func),
                             },
                         ),
                     ));
