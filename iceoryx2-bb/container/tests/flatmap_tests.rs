@@ -235,8 +235,8 @@ mod flat_map {
         a: u32,
     }
 
-    fn cmp_for_foo(lhs: &Foo, rhs: &Foo) -> bool {
-        lhs.a == rhs.a
+    fn cmp_for_foo(lhs: *const u8, rhs: *const u8) -> bool {
+        unsafe { (*lhs.cast::<Foo>()).a == (*rhs.cast::<Foo>()).a }
     }
 
     #[test]
@@ -247,14 +247,14 @@ mod flat_map {
         unsafe {
             let res = map.__internal_insert(key, -9, &cmp_for_foo);
             assert_that!(res, is_ok);
-            assert_that!(map.__internal_contains(&key, & cmp_for_foo), eq true);
+            assert_that!(map.__internal_contains(&key, &cmp_for_foo), eq true);
         }
         assert_that!(map, len 1);
 
         unsafe {
             let res = map.__internal_insert(key, 19, &cmp_for_foo);
             assert_that!(res, is_err);
-            assert_that!(map.__internal_contains(&key, & cmp_for_foo), eq true);
+            assert_that!(map.__internal_contains(&key, &cmp_for_foo), eq true);
         }
         assert_that!(map, len 1);
     }
@@ -267,7 +267,7 @@ mod flat_map {
                 unsafe { map.__internal_insert(Foo { a: i }, i, &cmp_for_foo) },
                 is_ok
             );
-            assert_that!(unsafe{map.__internal_contains(&Foo { a: i }, & cmp_for_foo)}, eq true);
+            assert_that!(unsafe{map.__internal_contains(&Foo { a: i }, &cmp_for_foo)}, eq true);
         }
         assert_that!(map.is_full(), eq true);
         unsafe {
@@ -275,7 +275,7 @@ mod flat_map {
                 map.__internal_insert(Foo { a: CAPACITY as u32 }, CAPACITY as u32, &cmp_for_foo);
             assert_that!(res, is_err);
             assert_that!(res.unwrap_err(), eq FlatMapError::IsFull);
-            assert_that!(map.__internal_contains(&Foo { a: CAPACITY as u32 }, & cmp_for_foo), eq false);
+            assert_that!(map.__internal_contains(&Foo { a: CAPACITY as u32 }, &cmp_for_foo), eq false);
         }
         assert_that!(map, len CAPACITY);
     }
@@ -348,13 +348,13 @@ mod flat_map {
             assert_that!(map, is_empty);
 
             assert_that!(map.__internal_insert(key_1, 1, &cmp_for_foo), is_ok);
-            assert_that!(map.__internal_contains(&key_1, & cmp_for_foo), eq true);
+            assert_that!(map.__internal_contains(&key_1, &cmp_for_foo), eq true);
 
             assert_eq!(map.__internal_remove(&key_0, &cmp_for_foo), None);
             assert_that!(map, is_not_empty);
             assert_eq!(map.__internal_remove(&key_1, &cmp_for_foo), Some(1));
             assert_that!(map, is_empty);
-            assert_that!(map.__internal_contains(&key_1, & cmp_for_foo), eq false);
+            assert_that!(map.__internal_contains(&key_1, &cmp_for_foo), eq false);
         }
     }
 

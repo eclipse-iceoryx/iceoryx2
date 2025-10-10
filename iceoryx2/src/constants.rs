@@ -29,6 +29,10 @@ pub const MAX_NODE_NAME_LENGTH: usize = 128;
 /// Defines the maximum length of a [`TypeName`](crate::service::static_config::message_type_details::TypeName)
 pub const MAX_TYPE_NAME_LENGTH: usize = 256;
 
+/// The maximum size the [`MessagingPattern::Blackboard`](crate::service::static_config::messaging_pattern::MessagingPattern::Blackboard)
+/// supports for the keytype.
+pub const MAX_BLACKBOARD_KEY_SIZE: usize = 64;
+
 /// The maximum alignment the [`MessagingPattern::Blackboard`](crate::service::static_config::messaging_pattern::MessagingPattern::Blackboard)
-/// support for the keytype.
+/// supports for the keytype.
 pub const MAX_BLACKBOARD_KEY_ALIGNMENT: usize = 8;

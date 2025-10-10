@@ -17,6 +17,8 @@ pub const IOX2_NODE_NAME_LENGTH: usize = 128;
 pub const IOX2_SERVICE_NAME_LENGTH: usize = 255;
 pub const IOX2_SERVICE_ID_LENGTH: usize = 64;
 pub const IOX2_TYPE_NAME_LENGTH: usize = 256;
+pub const IOX2_MAX_BLACKBOARD_KEY_SIZE: usize = 64;
+pub const IOX2_MAX_BLACKBOARD_KEY_ALIGNMENT: usize = 8;
 
 pub const IOX2_IS_IPC_LISTENER_FD_BASED: bool = true;
 pub const IOX2_IS_LOCAL_LISTENER_FD_BASED: bool = true;

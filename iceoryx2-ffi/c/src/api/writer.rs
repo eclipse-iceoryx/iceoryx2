@@ -18,7 +18,7 @@ use crate::api::{
     EntryHandleMutUnion, HandleToType, IntoCInt, KeyFfi, IOX2_OK,
 };
 use crate::create_type_details;
-use core::ffi::{c_char, c_int};
+use core::ffi::{c_char, c_int, c_void};
 use core::mem::ManuallyDrop;
 use iceoryx2::port::writer::{EntryHandleMutError, Writer};
 use iceoryx2_bb_elementary::static_assert::*;
@@ -218,7 +218,7 @@ pub unsafe extern "C" fn iox2_writer_entry(
     writer_handle: iox2_writer_h_ref,
     entry_handle_mut_struct_ptr: *mut iox2_entry_handle_mut_t,
     entry_handle_mut_handle_ptr: *mut iox2_entry_handle_mut_h,
-    key: KeyFfi,
+    key: *const c_void,
     value_type_name_str: *const c_char,
     value_type_name_len: c_size_t,
     value_size: c_size_t,
@@ -255,42 +255,46 @@ pub unsafe extern "C" fn iox2_writer_entry(
     let writer = &mut *writer_handle.as_type();
 
     match writer.service_type {
-        iox2_service_type_e::IPC => match writer
-            .value
-            .as_ref()
-            .ipc
-            .__internal_entry(&key, &value_type_details)
-        {
-            Ok(handle) => {
-                let (entry_handle_mut_struct_ptr, deleter) =
-                    init_entry_handle_mut_struct_ptr(entry_handle_mut_struct_ptr);
-                (*entry_handle_mut_struct_ptr).init(
-                    writer.service_type,
-                    EntryHandleMutUnion::new_ipc(handle),
-                    deleter,
-                );
-                *entry_handle_mut_handle_ptr = (*entry_handle_mut_struct_ptr).as_handle();
+        iox2_service_type_e::IPC => {
+            match writer
+                .value
+                .as_ref()
+                .ipc
+                .__internal_entry(key as *const u8, &value_type_details)
+            {
+                Ok(handle) => {
+                    let (entry_handle_mut_struct_ptr, deleter) =
+                        init_entry_handle_mut_struct_ptr(entry_handle_mut_struct_ptr);
+                    (*entry_handle_mut_struct_ptr).init(
+                        writer.service_type,
+                        EntryHandleMutUnion::new_ipc(handle),
+                        deleter,
+                    );
+                    *entry_handle_mut_handle_ptr = (*entry_handle_mut_struct_ptr).as_handle();
+                }
+                Err(error) => return error.into_c_int(),
             }
-            Err(error) => return error.into_c_int(),
-        },
-        iox2_service_type_e::LOCAL => match writer
-            .value
-            .as_ref()
-            .local
-            .__internal_entry(&key, &value_type_details)
-        {
-            Ok(handle) => {
-                let (entry_handle_mut_struct_ptr, deleter) =
-                    init_entry_handle_mut_struct_ptr(entry_handle_mut_struct_ptr);
-                (*entry_handle_mut_struct_ptr).init(
-                    writer.service_type,
-                    EntryHandleMutUnion::new_local(handle),
-                    deleter,
-                );
-                *entry_handle_mut_handle_ptr = (*entry_handle_mut_struct_ptr).as_handle();
+        }
+        iox2_service_type_e::LOCAL => {
+            match writer
+                .value
+                .as_ref()
+                .local
+                .__internal_entry(key as *const u8, &value_type_details)
+            {
+                Ok(handle) => {
+                    let (entry_handle_mut_struct_ptr, deleter) =
+                        init_entry_handle_mut_struct_ptr(entry_handle_mut_struct_ptr);
+                    (*entry_handle_mut_struct_ptr).init(
+                        writer.service_type,
+                        EntryHandleMutUnion::new_local(handle),
+                        deleter,
+                    );
+                    *entry_handle_mut_handle_ptr = (*entry_handle_mut_struct_ptr).as_handle();
+                }
+                Err(error) => return error.into_c_int(),
             }
-            Err(error) => return error.into_c_int(),
-        },
+        }
     }
 
     IOX2_OK

@@ -40,13 +40,17 @@
 //! # }
 //! ```
 
+use crate::constants::MAX_BLACKBOARD_KEY_SIZE;
 use crate::prelude::EventId;
-use crate::service::builder::blackboard::BlackboardResources;
+use crate::service::builder::blackboard::{BlackboardResources, KeyMemory};
+use crate::service::builder::CustomKeyMarker;
 use crate::service::dynamic_config::blackboard::WriterDetails;
 use crate::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use crate::service::{self, ServiceState};
+use core::alloc::Layout;
 use core::fmt::Debug;
 use core::hash::Hash;
+use core::marker::PhantomData;
 use core::sync::atomic::Ordering;
 use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -54,7 +58,7 @@ use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::{
     Producer, UnrestrictedAtomic, UnrestrictedAtomicMgmt,
 };
-use iceoryx2_bb_log::fail;
+use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shared_memory::SharedMemory;
 
@@ -69,7 +73,8 @@ struct WriterSharedState<
     KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
 > {
     dynamic_writer_handle: Option<ContainerHandle>,
-    service_state: Arc<ServiceState<Service, BlackboardResources<Service, KeyType>>>,
+    service_state: Arc<ServiceState<Service, BlackboardResources<Service>>>,
+    _key: PhantomData<KeyType>,
 }
 
 impl<
@@ -113,7 +118,7 @@ impl core::error::Error for WriterCreateError {}
 #[derive(Debug)]
 pub struct Writer<
     Service: service::Service,
-    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
+    KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
 > {
     shared_state: Arc<WriterSharedState<Service, KeyType>>,
     writer_id: UniqueWriterId,
@@ -121,11 +126,11 @@ pub struct Writer<
 
 impl<
         Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
+        KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
     > Writer<Service, KeyType>
 {
     pub(crate) fn new(
-        service: Arc<ServiceState<Service, BlackboardResources<Service, KeyType>>>,
+        service: Arc<ServiceState<Service, BlackboardResources<Service>>>,
     ) -> Result<Self, WriterCreateError> {
         let origin = "Writer::new()";
         let msg = "Unable to create Writer port";
@@ -135,6 +140,7 @@ impl<
             shared_state: Arc::new(WriterSharedState {
                 service_state: service.clone(),
                 dynamic_writer_handle: None,
+                _key: PhantomData,
             }),
             writer_id,
         };
@@ -197,8 +203,16 @@ impl<
     ) -> Result<EntryHandleMut<Service, KeyType, ValueType>, EntryHandleMutError> {
         let msg = "Unable to create entry handle";
 
+        // create KeyMemory from key
+        let key_mem = match KeyMemory::try_from(key) {
+            Ok(mem) => mem,
+            Err(_) => {
+                fatal_panic!(from self, "This should never happen! Key with invalid layout passed.");
+            }
+        };
+
         let offset = self.get_entry_offset(
-            key,
+            &key_mem,
             &TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
             msg,
         )?;
@@ -214,8 +228,8 @@ impl<
 
     fn get_entry_offset(
         &self,
-        key: &KeyType,
-        type_details: &TypeDetail,
+        key_mem: &KeyMemory<MAX_BLACKBOARD_KEY_SIZE>,
+        value_type_details: &TypeDetail,
         msg: &str,
     ) -> Result<u64, EntryHandleMutError> {
         // check if key exists
@@ -226,7 +240,14 @@ impl<
                 .mgmt
                 .get()
                 .map
-                .get(key)
+                .__internal_get(
+                    key_mem,
+                    self.shared_state
+                        .service_state
+                        .additional_resource
+                        .key_eq_func
+                        .as_ref(),
+                )
         } {
             Some(i) => i,
             None => {
@@ -244,7 +265,7 @@ impl<
             .entries[index];
 
         // check if ValueType matches
-        if *type_details != entry.type_details {
+        if *value_type_details != entry.type_details {
             fail!(from self, with EntryHandleMutError::EntryDoesNotExist,
                 "{} since no entry with the given key and value type exists.", msg);
         }
@@ -577,16 +598,39 @@ impl<
     }
 }
 
-// TODO [#817] replace u64 with CustomKeyMarker
-impl<Service: service::Service> Writer<Service, u64> {
+impl<Service: service::Service> Writer<Service, CustomKeyMarker> {
     #[doc(hidden)]
-    pub fn __internal_entry(
+    /// # Safety
+    ///
+    ///   * key must be a valid pointer to a value of the set key type
+    pub unsafe fn __internal_entry(
         &self,
-        key: &u64,
-        type_details: &TypeDetail,
+        key: *const u8,
+        value_type_details: &TypeDetail,
     ) -> Result<__InternalEntryHandleMut<Service>, EntryHandleMutError> {
         let msg = "Unable to create entry handle";
-        let offset = self.get_entry_offset(key, type_details, msg)?;
+
+        let key_type_details = self
+            .shared_state
+            .service_state
+            .static_config
+            .blackboard()
+            .type_details();
+        let key_layout = unsafe {
+            Layout::from_size_align_unchecked(key_type_details.size, key_type_details.alignment)
+        };
+
+        // create KeyMemory from key ptr
+        let key_mem = unsafe {
+            match KeyMemory::try_from_ptr(key, key_layout) {
+                Ok(mem) => mem,
+                Err(_) => {
+                    fatal_panic!(from self, "This should never happen! Key with invalid layout set.");
+                }
+            }
+        };
+
+        let offset = self.get_entry_offset(&key_mem, value_type_details, msg)?;
 
         let atomic_mgmt_ptr = (self
             .shared_state
@@ -597,7 +641,7 @@ impl<Service: service::Service> Writer<Service, u64> {
             + offset) as *const UnrestrictedAtomicMgmt;
 
         let data_ptr = atomic_mgmt_ptr as usize + core::mem::size_of::<UnrestrictedAtomicMgmt>();
-        let data_ptr = align(data_ptr, type_details.alignment);
+        let data_ptr = align(data_ptr, value_type_details.alignment);
 
         match __InternalEntryHandleMut::new(
             atomic_mgmt_ptr,
@@ -621,7 +665,7 @@ pub struct __InternalEntryHandleMut<Service: service::Service> {
     atomic_mgmt_ptr: *const UnrestrictedAtomicMgmt,
     data_ptr: *mut u8,
     entry_id: EventId,
-    _shared_state: Arc<WriterSharedState<Service, u64>>,
+    _shared_state: Arc<WriterSharedState<Service, CustomKeyMarker>>,
 }
 
 impl<Service: service::Service> Drop for __InternalEntryHandleMut<Service> {
@@ -635,7 +679,7 @@ impl<Service: service::Service> __InternalEntryHandleMut<Service> {
         atomic_mgmt_ptr: *const UnrestrictedAtomicMgmt,
         data_ptr: *mut u8,
         entry_id: EventId,
-        writer_state: Arc<WriterSharedState<Service, u64>>,
+        writer_state: Arc<WriterSharedState<Service, CustomKeyMarker>>,
     ) -> Result<Self, EntryHandleMutError> {
         match unsafe { (*atomic_mgmt_ptr).__internal_acquire_producer() } {
             Ok(_) => Ok(Self {

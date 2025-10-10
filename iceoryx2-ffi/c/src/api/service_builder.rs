@@ -26,7 +26,7 @@ use iceoryx2::service::builder::{
     publish_subscribe::Builder as ServiceBuilderPubSub,
     request_response::Builder as ServiceBuilderRequestResponse, Builder as ServiceBuilderBase,
 };
-use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
+use iceoryx2::service::builder::{CustomHeaderMarker, CustomKeyMarker, CustomPayloadMarker};
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
@@ -38,7 +38,7 @@ use core::mem::MaybeUninit;
 pub(super) type UserHeaderFfi = CustomHeaderMarker;
 pub(super) type PayloadFfi = [CustomPayloadMarker];
 pub(super) type UninitPayloadFfi = [MaybeUninit<CustomPayloadMarker>];
-pub(super) type KeyFfi = u64;
+pub(super) type KeyFfi = CustomKeyMarker;
 
 pub(super) union ServiceBuilderUnionNested<S: Service> {
     pub(super) base: ManuallyDrop<ServiceBuilderBase<S>>,

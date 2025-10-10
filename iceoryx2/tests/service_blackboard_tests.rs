@@ -15,12 +15,14 @@ mod service_blackboard {
     use core::alloc::Layout;
     use core::ptr::copy_nonoverlapping;
     use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+    use iceoryx2::constants::MAX_BLACKBOARD_KEY_SIZE;
     use iceoryx2::port::reader::*;
     use iceoryx2::port::writer::*;
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::blackboard::{
         BlackboardCreateError, BlackboardOpenError, KeyMemory, KeyMemoryError,
     };
+    use iceoryx2::service::builder::CustomKeyMarker;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::Service;
     use iceoryx2::testing::*;
@@ -1655,30 +1657,141 @@ mod service_blackboard {
         }
     }
 
-    // TODO [#817] move the following tests to testing.rs and replace u64 with CustomKeyMarker
+    #[repr(C)]
+    #[derive(ZeroCopySend, Debug, Hash, PartialEq, Eq, Clone, Copy)]
+    struct Foo {
+        a: u8,
+        b: u32,
+        c: StaticString<25>,
+    }
+
+    fn cmp_for_foo(lhs: *const u8, rhs: *const u8) -> bool {
+        unsafe {
+            (*lhs.cast::<Foo>()).a == (*rhs.cast::<Foo>()).a
+                && (*lhs.cast::<Foo>()).b == (*rhs.cast::<Foo>()).b
+        }
+    }
+
+    #[test]
+    fn simple_communication_with_key_struct_works<Sut: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let key_1 = Foo {
+            a: 9,
+            b: 99,
+            c: StaticString::try_from("NalalalaWolf").unwrap(),
+        };
+        let key_2 = Foo {
+            a: 9,
+            b: 999,
+            c: StaticString::try_from("NalalalaWolf").unwrap(),
+        };
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<Foo>()
+            .add::<i32>(key_1, -3)
+            .add::<u32>(key_2, 3)
+            .create()
+            .unwrap();
+
+        let writer = sut.writer_builder().create().unwrap();
+        let entry_handle_mut_1 = writer.entry::<i32>(&key_1).unwrap();
+        let entry_handle_mut_2 = writer.entry::<u32>(&key_2).unwrap();
+        let reader = sut.reader_builder().create().unwrap();
+        let entry_handle_1 = reader.entry::<i32>(&key_1).unwrap();
+        let entry_handle_2 = reader.entry::<u32>(&key_2).unwrap();
+
+        assert_that!(entry_handle_1.get(), eq - 3);
+        assert_that!(entry_handle_2.get(), eq 3);
+
+        entry_handle_mut_1.update_with_copy(50);
+        assert_that!(entry_handle_1.get(), eq 50);
+        assert_that!(entry_handle_2.get(), eq 3);
+
+        entry_handle_mut_2.update_with_copy(12);
+        assert_that!(entry_handle_1.get(), eq 50);
+        assert_that!(entry_handle_2.get(), eq 12);
+    }
+
+    #[test]
+    fn adding_key_struct_twice_fails<Sut: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let key = Foo {
+            a: 9,
+            b: 99,
+            c: StaticString::try_from("huiuiui").unwrap(),
+        };
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<Foo>()
+            .add::<i32>(key, -3)
+            .add::<u32>(key, 3)
+            .create();
+
+        assert_that!(sut, is_err);
+        assert_that!(sut.err().unwrap(), eq BlackboardCreateError::ServiceInCorruptedState);
+    }
+
+    // TODO [#817] move the custom key type tests to testing.rs
     #[test]
     fn loan_uninit_and_write_works_with_custom_key_type<S: Service>() {
+        type KeyType = Foo;
+        let key = Foo {
+            a: 0,
+            b: 0,
+            c: StaticString::new(),
+        };
+        let key_ptr: *const KeyType = &key;
         type ValueType = u64;
+        let default_value = ValueType::default();
+        let value_ptr: *const ValueType = &default_value;
 
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
-        let service = node
-            .service_builder(&service_name)
-            .blackboard_creator::<u64>()
-            .add_with_default::<ValueType>(0)
-            .create()
-            .unwrap();
+        let service = unsafe {
+            node.service_builder(&service_name)
+                .blackboard_creator::<CustomKeyMarker>()
+                .__internal_set_key_type_details(&TypeDetail::new::<KeyType>(
+                    TypeVariant::FixedSize,
+                ))
+                .__internal_set_key_eq_cmp_func(Box::new(move |lhs: *const u8, rhs: *const u8| {
+                    KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::key_eq_comparison(lhs, rhs, &cmp_for_foo)
+                }))
+                .__internal_add(
+                    key_ptr as *const u8,
+                    value_ptr as *mut u8,
+                    TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
+                    Box::new(|| {}),
+                )
+                .create()
+                .unwrap()
+        };
         let writer = service.writer_builder().create().unwrap();
         let reader = service.reader_builder().create().unwrap();
 
         let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
 
-        let entry_handle = reader.__internal_entry(&0, &type_details).unwrap();
+        let entry_handle = unsafe {
+            reader
+                .__internal_entry(key_ptr as *const u8, &type_details)
+                .unwrap()
+        };
         let mut read_value: ValueType = 9;
         let read_value_ptr: *mut ValueType = &mut read_value;
 
-        let entry_handle_mut = writer.__internal_entry(&0, &type_details).unwrap();
+        let entry_handle_mut = unsafe {
+            writer
+                .__internal_entry(key_ptr as *const u8, &type_details)
+                .unwrap()
+        };
         let entry_value_uninit =
             entry_handle_mut.loan_uninit(type_details.size(), type_details.alignment());
         let write_ptr = entry_value_uninit.write_cell();
@@ -1694,7 +1807,7 @@ mod service_blackboard {
                 align_of::<ValueType>(),
             );
         }
-        assert_that!(read_value, eq 0);
+        assert_that!(read_value, eq default_value);
 
         // after calling update, the new value is accessible
         let _entry_handle_mut = entry_value_uninit.update();
@@ -1710,27 +1823,56 @@ mod service_blackboard {
 
     #[test]
     fn write_and_update_internal_cell_works_with_custom_key_type<S: Service>() {
+        type KeyType = Foo;
+        let key = Foo {
+            a: 3,
+            b: 17,
+            c: StaticString::try_from("yeeehaw").unwrap(),
+        };
+        let key_ptr: *const KeyType = &key;
         type ValueType = u64;
+        let default_value = ValueType::default();
+        let value_ptr: *const ValueType = &default_value;
 
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
-        let service = node
-            .service_builder(&service_name)
-            .blackboard_creator::<u64>()
-            .add_with_default::<ValueType>(0)
-            .create()
-            .unwrap();
+        let service = unsafe {
+            node.service_builder(&service_name)
+                .blackboard_creator::<CustomKeyMarker>()
+                .__internal_set_key_type_details(&TypeDetail::new::<KeyType>(
+                    TypeVariant::FixedSize,
+                ))
+                .__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
+                    KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::key_eq_comparison(lhs, rhs, &cmp_for_foo)
+                }))
+                .__internal_add(
+                    key_ptr as *const u8,
+                    value_ptr as *mut u8,
+                    TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
+                    Box::new(|| {}),
+                )
+                .create()
+                .unwrap()
+        };
         let writer = service.writer_builder().create().unwrap();
         let reader = service.reader_builder().create().unwrap();
 
         let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
 
-        let entry_handle = reader.__internal_entry(&0, &type_details).unwrap();
+        let entry_handle = unsafe {
+            reader
+                .__internal_entry(key_ptr as *const u8, &type_details)
+                .unwrap()
+        };
         let mut read_value: ValueType = 9;
         let read_value_ptr: *mut ValueType = &mut read_value;
 
-        let entry_handle_mut = writer.__internal_entry(&0, &type_details).unwrap();
+        let entry_handle_mut = unsafe {
+            writer
+                .__internal_entry(key_ptr as *const u8, &type_details)
+                .unwrap()
+        };
         let write_value: ValueType = 5;
         let write_value_ptr: *const ValueType = &write_value;
 
@@ -1752,7 +1894,7 @@ mod service_blackboard {
                 align_of::<ValueType>(),
             );
         }
-        assert_that!(read_value, eq 0);
+        assert_that!(read_value, eq default_value);
 
         // after calling update, the new value is accessible
         unsafe {
@@ -1772,24 +1914,53 @@ mod service_blackboard {
     fn entry_handle_mut_can_be_reused_after_entry_value_uninit_was_discarded_with_custom_key_type<
         Sut: Service,
     >() {
+        type KeyType = Foo;
+        let key = Foo {
+            a: 89,
+            b: 0,
+            c: StaticString::try_from("EvilHuhn").unwrap(),
+        };
+        let key_ptr: *const KeyType = &key;
         type ValueType = u32;
+        let default_value = ValueType::default();
+        let value_ptr: *const ValueType = &default_value;
+        let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
 
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
-        let sut = node
-            .service_builder(&service_name)
-            .blackboard_creator::<u64>()
-            .add::<ValueType>(0, 0)
-            .create()
-            .unwrap();
+        let sut = unsafe {
+            node.service_builder(&service_name)
+                .blackboard_creator::<CustomKeyMarker>()
+                .__internal_set_key_type_details(&TypeDetail::new::<KeyType>(
+                    TypeVariant::FixedSize,
+                ))
+                .__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
+                    KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::key_eq_comparison(lhs, rhs, &cmp_for_foo)
+                }))
+                .__internal_add(
+                    key_ptr as *const u8,
+                    value_ptr as *mut u8,
+                    TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
+                    Box::new(|| {}),
+                )
+                .create()
+                .unwrap()
+        };
         let writer = sut.writer_builder().create().unwrap();
         let reader = sut.reader_builder().create().unwrap();
-        let entry_handle = reader.entry::<ValueType>(&0).unwrap();
+        let entry_handle = unsafe {
+            reader
+                .__internal_entry(key_ptr as *const u8, &type_details)
+                .unwrap()
+        };
 
-        let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
-        let entry_handle_mut = writer.__internal_entry(&0, &type_details).unwrap();
+        let entry_handle_mut = unsafe {
+            writer
+                .__internal_entry(key_ptr as *const u8, &type_details)
+                .unwrap()
+        };
         let entry_value_uninit =
             entry_handle_mut.loan_uninit(type_details.size(), type_details.alignment());
         let entry_handle_mut = entry_value_uninit.discard();
@@ -1807,14 +1978,23 @@ mod service_blackboard {
             entry_handle_mut.__internal_update_write_cell();
         }
 
-        assert_that!(entry_handle.get(), eq write_value);
+        let mut read_value: ValueType = 9;
+        let read_value_ptr: *mut ValueType = &mut read_value;
+        unsafe {
+            entry_handle.get(
+                read_value_ptr as *mut u8,
+                size_of::<ValueType>(),
+                align_of::<ValueType>(),
+            );
+        }
+        assert_that!(read_value, eq write_value);
     }
 
     #[test]
     fn key_memory_creation_fails_when_value_is_too_large<Sut: Service>() {
         let key: u16 = 256;
 
-        let sut_value = KeyMemory::<1>::try_from(key);
+        let sut_value = KeyMemory::<1>::try_from(&key);
         assert_that!(sut_value, is_err);
         assert_that!(sut_value.err().unwrap(), eq KeyMemoryError::ValueTooLarge);
 
@@ -1832,7 +2012,7 @@ mod service_blackboard {
         struct Key {}
         let key = Key {};
 
-        let sut_value = KeyMemory::<1>::try_from(key);
+        let sut_value = KeyMemory::<1>::try_from(&key);
         assert_that!(sut_value, is_err);
         assert_that!(sut_value.err().unwrap(), eq KeyMemoryError::ValueAlignmentTooLarge);
 
@@ -1847,7 +2027,7 @@ mod service_blackboard {
     fn key_memory_creation_works_when_value_size_and_alignment_fit<Sut: Service>() {
         let key: u16 = 256;
 
-        let sut_value = KeyMemory::<2>::try_from(key);
+        let sut_value = KeyMemory::<2>::try_from(&key);
         assert_that!(sut_value, is_ok);
         assert_that!(unsafe { *(sut_value.unwrap().data.as_ptr() as *const u16) }, eq key);
 
@@ -1856,6 +2036,19 @@ mod service_blackboard {
         };
         assert_that!(sut_ptr, is_ok);
         assert_that!(unsafe { *(sut_ptr.unwrap().data.as_ptr() as *const u16) }, eq key);
+    }
+
+    #[test]
+    #[should_panic]
+    fn creation_fails_when_key_type_layout_is_invalid<Sut: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let _sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<u128>()
+            .add::<u8>(0, 0)
+            .create();
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
