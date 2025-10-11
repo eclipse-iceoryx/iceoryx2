@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::{file::AccessMode, file_descriptor::FileDescriptor};
+use crate::{file::AccessMode, file_descriptor::FileDescriptor, system_configuration::SystemInfo};
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_system_types::file_path::FilePath;
@@ -34,6 +34,16 @@ pub enum MemoryMappingCreationError {
     FileDoesNotExist,
     FileTooBig,
     OpenReturnedBrokedFileDescriptor,
+    UnknownFailure(i32),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MemoryMappingPermissionUpdateError {
+    SizeNotAlignedToPageSize,
+    AddressNotAlignedToPageSize,
+    InsufficientPermissions,
+    InsufficientMemory,
+    InvalidAddressRange,
     UnknownFailure(i32),
 }
 
@@ -324,8 +334,14 @@ impl Drop for MemoryMapping {
 }
 
 impl MemoryMapping {
-    pub fn protect(&self, addr: usize) -> ProtectBuilder {
-        todo!()
+    pub fn set_permission(&mut self, addr: usize) -> ProtectBuilder {
+        ProtectBuilder {
+            mapping_base_address: self.base_address as usize,
+            mapping_size: self.size,
+            size: 0,
+            addr,
+            permissions: MappingPermission::None,
+        }
     }
 
     pub fn file_descriptor(&self) -> &Option<FileDescriptor> {
@@ -349,18 +365,70 @@ impl MemoryMapping {
     }
 }
 
-pub struct ProtectBuilder {}
+#[derive(Debug)]
+pub struct ProtectBuilder {
+    mapping_base_address: usize,
+    mapping_size: usize,
+    size: usize,
+    addr: usize,
+    permissions: MappingPermission,
+}
 
 impl ProtectBuilder {
     pub fn size(mut self, value: usize) -> Self {
-        todo!()
+        self.size = value;
+        self
     }
 
     pub fn mapping_permission(mut self, value: MappingPermission) -> Self {
-        todo!()
+        self.permissions = value;
+        self
     }
 
-    pub fn apply(self) {
-        todo!()
+    pub fn apply(self) -> Result<(), MemoryMappingPermissionUpdateError> {
+        let msg = "Failed to adjust the permissions of the memory mapping";
+        let page_size = SystemInfo::PageSize.value();
+        if self.size % page_size != 0 {
+            fail!(from self, with MemoryMappingPermissionUpdateError::SizeNotAlignedToPageSize,
+                "{msg} since the size is not aligned to the page size of {page_size}.");
+        }
+
+        if self.addr % page_size != 0 {
+            fail!(from self, with MemoryMappingPermissionUpdateError::AddressNotAlignedToPageSize,
+                "{msg} since the address {:#x?} is not aligned to the page size of {page_size}.", self.addr);
+        }
+
+        if self.addr < self.mapping_base_address
+            || self.mapping_base_address + self.mapping_size < self.addr + self.size
+        {
+            fail!(from self, with MemoryMappingPermissionUpdateError::InvalidAddressRange,
+                "{msg} since it contains an address range outside of the mapped memory range.");
+        }
+
+        if unsafe {
+            posix::mprotect(
+                self.addr as *mut posix::void,
+                self.size,
+                self.permissions as _,
+            )
+        } == -1
+        {
+            match Errno::get() {
+                Errno::EACCES => {
+                    fail!(from self, with MemoryMappingPermissionUpdateError::InsufficientPermissions,
+                        "{msg} due to insufficient permissions.");
+                }
+                Errno::EAGAIN | Errno::ENOMEM => {
+                    fail!(from self, with MemoryMappingPermissionUpdateError::InsufficientMemory,
+                        "{msg} due to insufficient memory.");
+                }
+                e => {
+                    fail!(from self, with MemoryMappingPermissionUpdateError::UnknownFailure(e as _),
+                        "{msg} due to an unknown failure ({e:?}).");
+                }
+            }
+        }
+
+        Ok(())
     }
 }
