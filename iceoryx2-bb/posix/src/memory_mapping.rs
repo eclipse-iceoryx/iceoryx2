@@ -10,56 +10,186 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::{file::AccessMode, file_descriptor::FileDescriptor, system_configuration::SystemInfo};
-use iceoryx2_bb_container::semantic_string::SemanticString;
+//! Safe abstraction of the POSIX calls `mmap`, `munmap` and `mprotect`.
+//!
+//! # Examples
+//!
+//! ## Mapping Anonymous Memory (`malloc` equivalent)
+//!
+//! ```
+//! use iceoryx2_bb_log::set_log_level;
+//! use iceoryx2_bb_posix::memory_mapping::*;
+//!
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
+//! let mut mmap = MemoryMappingBuilder::from_anonymous()
+//!     .initial_mapping_permission(MappingPermission::ReadWrite)
+//!     .size(8192)
+//!     .create()?;
+//!
+//! // access memory
+//! let some_ptr = mmap.base_address_mut();
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## Opening A File And Mapping It Into Memory
+//!
+//! ```no_run
+//! use iceoryx2_bb_posix::memory_mapping::*;
+//!
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
+//! let mmap = MemoryMappingBuilder::from_file(&FilePath::new(b"some_mapable_file")?)
+//!     .file_access_mode(AccessMode::ReadWrite)
+//!     .mapping_behavior(MappingBehavior::Shared)
+//!     .initial_mapping_permission(MappingPermission::ReadWrite)
+//!     .size(8192)
+//!     .create()?;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## Mapping [`FileDescriptor`] Contents Into Memory
+//!
+//! ```no_run
+//! use iceoryx2_bb_posix::memory_mapping::*;
+//! use iceoryx2_bb_posix::file_descriptor::FileDescriptor;
+//!
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
+//! # let file_descriptor = FileDescriptor::new(12).unwrap();
+//! let mmap = MemoryMappingBuilder::from_fd(file_descriptor)
+//!     .mapping_behavior(MappingBehavior::Private)
+//!     .initial_mapping_permission(MappingPermission::ReadWrite)
+//!     .size(8192)
+//!     .create()?;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## Update Permissions To Mapped Memory (`mprotect`)
+//!
+//! ```
+//! use iceoryx2_bb_posix::memory_mapping::*;
+//!
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
+//! let mut mmap = MemoryMappingBuilder::from_anonymous()
+//!     .initial_mapping_permission(MappingPermission::ReadWrite)
+//!     .size(8192)
+//!     .create()?;
+//!
+//! mmap.set_permission(4096)
+//!     .size(4096)
+//!     .apply(MappingPermission::Read)?;
+//!
+//! # Ok(())
+//! # }
+//! ```
+
+pub use crate::access_mode::AccessMode;
+pub use iceoryx2_bb_container::semantic_string::SemanticString;
+pub use iceoryx2_bb_system_types::file_path::FilePath;
+
+use crate::{file_descriptor::FileDescriptor, system_configuration::SystemInfo};
 use iceoryx2_bb_log::{fail, fatal_panic};
-use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_pal_posix::posix::{self, Errno, MAP_FAILED};
 
+/// Error that can occur when a new [`MemoryMapping`] is created with [`MemoryMappingBuilder::create()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MemoryMappingCreationError {
+    /// Insufficient permissions to open the file or map the mapping.
     InsufficientPermissions,
+    /// The size was not set, or set to zero.
     MappingSizeIsZero,
+    /// Exceeds the limit of mapped regions.
     ExceedsTheMaximumNumberOfMappedRegions,
+    /// A [`FileDescriptor`] was provided that does not support `mmap`.
     FileDescriptorDoesNotSupportMemoryMappings,
+    /// Inssufficient resources to map the memory into the process.
     InsufficientResources,
+    /// The provided size was larger than the corresponding file.
     MappingLargerThanCorrespondingFile,
+    /// An address hint was provided but it could not be enforced.
     FailedToEnforceAddressHint,
+    /// The corresponding device does not support synchronized IO
     SynchronizedIONotSupported,
+    /// An interrupt signal was raised.
     InterruptSignal,
+    /// The provided [`FilePath`] is actually a [`Directory`](crate::directory::Directory).
     FileIsADirectory,
+    /// There are too many symbolic links in the provided [`FilePath`].
     TooManySymbolicLinksInPath,
+    /// The process wide limit of [`FileDescriptor`]s was reached.
     PerProcessFileHandleLimitReached,
+    /// The system wide limit of [`FileDescriptor`]s was reached.
     SystemWideFileHandleLimitReached,
+    /// The file does not exist.
     FileDoesNotExist,
+    /// The file is larger than what `off_t` can represent.
     FileTooBig,
+    /// The POSIX `open` call returned a [`FileDescriptor`] that is not valid. Should never happen!
     OpenReturnedBrokedFileDescriptor,
+    /// An unknown failure occurred.
     UnknownFailure(i32),
 }
 
+impl core::fmt::Display for MemoryMappingCreationError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "MemoryMappingCreationError::{self:?}")
+    }
+}
+
+impl core::error::Error for MemoryMappingCreationError {}
+
+/// Error that can occur when the [`MappingPermission`] is updated with
+/// [`MemoryMapping::set_permission()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MemoryMappingPermissionUpdateError {
+    /// The size was not a multiple of the [`SystemInfo::PageSize`]
     SizeNotAlignedToPageSize,
-    AddressNotAlignedToPageSize,
+    /// The address offset was not a multiple of the [`SystemInfo::PageSize`]
+    AddressOffsetNotAlignedToPageSize,
+    /// Insufficient permissions to update the [`MappingPermission`]
     InsufficientPermissions,
+    /// Insufficient memory to update the [`MappingPermission`]
     InsufficientMemory,
+    /// The size and address offset are larger than the mapped memory range
     InvalidAddressRange,
+    /// The size was either not set or set to zero.
+    SizeIsZero,
+    /// An unknown failure occurred.
     UnknownFailure(i32),
 }
 
+impl core::fmt::Display for MemoryMappingPermissionUpdateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "MemoryMappingPermissionUpdateError::{self:?}")
+    }
+}
+
+impl core::error::Error for MemoryMappingPermissionUpdateError {}
+
+/// Defines the access permission of the process to the [`MemoryMapping`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(i32)]
 pub enum MappingPermission {
+    /// The process can only read, writing memory will terminate the process.
     Read = posix::PROT_READ,
+    /// The process can only write, reading memory will terminate the process.
     Write = posix::PROT_WRITE,
+    /// The process can read and write
     ReadWrite = posix::PROT_READ | posix::PROT_WRITE,
+    /// The process can execute the contents of the memory
     Exec = posix::PROT_EXEC,
+    /// Read and execute the contents
     ReadExec = posix::PROT_READ | posix::PROT_EXEC,
+    /// Write and execute the contents
     WriteExec = posix::PROT_WRITE | posix::PROT_EXEC,
+    /// Provide all permissions to the mapping
     ReadWriteExec = posix::PROT_READ | posix::PROT_WRITE | posix::PROT_EXEC,
+    /// Just map the memory but do not grant any access permission
     None = posix::PROT_NONE,
 }
 
+/// Defines the memory synchronization behavior
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(i32)]
 pub enum MappingBehavior {
@@ -99,6 +229,52 @@ impl MemoryMappingBuilderSettings {
     }
 }
 
+/// Helper struct to create a new [`MemoryMapping`] based on an existing
+/// file.
+pub struct FileMappingBuilder {
+    file_path: FilePath,
+    access_mode: AccessMode,
+    settings: MemoryMappingBuilderSettings,
+}
+
+impl FileMappingBuilder {
+    /// Defines the [`AccessMode`] under which the file shall be opened.
+    pub fn file_access_mode(mut self, access_mode: AccessMode) -> Self {
+        self.access_mode = access_mode;
+        self
+    }
+
+    /// Defines the [`MappingBehavior`] under which the memory shall be mapped
+    /// into the process space.
+    pub fn mapping_behavior(mut self, value: MappingBehavior) -> MemoryMappingBuilder {
+        self.settings.mapping_behavior = value;
+        MemoryMappingBuilder {
+            settings: self.settings,
+            origin: MappingOrigin::File((self.file_path, self.access_mode)),
+        }
+    }
+}
+
+/// Helper struct to create a new [`MemoryMapping`] based on an existing
+/// [`FileDescriptor`].
+pub struct FileDescriptorMappingBuilder {
+    file_descriptor: FileDescriptor,
+    settings: MemoryMappingBuilderSettings,
+}
+
+impl FileDescriptorMappingBuilder {
+    /// Defines the [`MappingBehavior`] under which the memory shall be mapped
+    /// into the process space.
+    pub fn mapping_behavior(mut self, value: MappingBehavior) -> MemoryMappingBuilder {
+        self.settings.mapping_behavior = value;
+        MemoryMappingBuilder {
+            settings: self.settings,
+            origin: MappingOrigin::FileDescriptor(self.file_descriptor),
+        }
+    }
+}
+
+/// Builder to create a new [`MemoryMapping`].
 #[derive(Debug)]
 pub struct MemoryMappingBuilder {
     settings: MemoryMappingBuilderSettings,
@@ -106,6 +282,7 @@ pub struct MemoryMappingBuilder {
 }
 
 impl MemoryMappingBuilder {
+    /// Creates an anonymous [`MemoryMapping`]. Is equivalent to `malloc`
     pub fn from_anonymous() -> Self {
         Self {
             settings: MemoryMappingBuilderSettings::new(),
@@ -113,55 +290,66 @@ impl MemoryMappingBuilder {
         }
     }
 
-    pub fn from_fd(file_descriptor: FileDescriptor) -> Self {
-        Self {
+    /// Opens an existing file and maps its content into the process space
+    pub fn from_file(file_path: &FilePath) -> FileMappingBuilder {
+        FileMappingBuilder {
+            file_path: file_path.clone(),
+            access_mode: AccessMode::None,
             settings: MemoryMappingBuilderSettings::new(),
-            origin: MappingOrigin::FileDescriptor(file_descriptor),
         }
     }
 
-    pub fn from_file(file_path: &FilePath, value: AccessMode) -> Self {
-        Self {
+    /// Maps the contents of the file descriptor into the process space
+    pub fn from_fd(file_descriptor: FileDescriptor) -> FileDescriptorMappingBuilder {
+        FileDescriptorMappingBuilder {
+            file_descriptor,
             settings: MemoryMappingBuilderSettings::new(),
-            origin: MappingOrigin::File((file_path.clone(), value)),
         }
     }
 
-    pub fn mapping_behavior(mut self, value: MappingBehavior) -> Self {
-        self.settings.mapping_behavior = value;
-        self
-    }
-
+    /// Defines the initial [`MappingPermission`]s that shall be used for the
+    /// [`MemoryMapping`]
     pub fn initial_mapping_permission(mut self, value: MappingPermission) -> Self {
         self.settings.mapping_permission = value;
         self
     }
 
+    /// Provides an optional address hint to which the memory shall be mapped to.
+    /// It is just a hint and the operating system is allowed to use a different
+    /// address if it is not available. With
+    /// [`MemoryMappingBuilder::enforce_mapping_address_hint()`] it will be enforced.
     pub fn mapping_address_hint(mut self, value: usize) -> Self {
         self.settings.address_hint = value;
         self
     }
 
+    /// Tries to enforce the provided address hint. If it is not possible to enforce
+    /// it, the creation of the [`MemoryMapping`] will fail.
     pub fn enforce_mapping_address_hint(mut self, value: bool) -> Self {
         self.settings.enforce_address_hint = value;
         self
     }
 
+    /// Defines the size of the [`MemoryMapping`]
     pub fn size(mut self, value: usize) -> Self {
         self.settings.size = value;
         self
     }
 
+    /// Defines the optional offset for the [`MemoryMapping`]
     pub fn offset(mut self, value: isize) -> Self {
         self.settings.offset = value;
         self
     }
 
+    /// Tries to create a new [`MemoryMapping`].
     pub fn create(self) -> Result<MemoryMapping, MemoryMappingCreationError> {
         match self.origin {
-            MappingOrigin::Anonymous => {
-                Self::create_mapping(&self.settings, posix::MAP_ANONYMOUS, None)
-            }
+            MappingOrigin::Anonymous => Self::create_mapping(
+                &self.settings,
+                posix::MAP_ANONYMOUS | posix::MAP_PRIVATE,
+                None,
+            ),
             MappingOrigin::FileDescriptor(file_descriptor) => Self::create_mapping(
                 &self.settings,
                 self.settings.mapping_behavior as _,
@@ -316,6 +504,10 @@ impl MemoryMappingBuilder {
     }
 }
 
+/// A memory mapping that was created with [`MemoryMappingBuilder`]. Abstraction
+/// over `mmap`.
+///
+/// When it goes out of scope all resources are cleaned up.
 #[derive(Debug)]
 pub struct MemoryMapping {
     file_descriptor: Option<FileDescriptor>,
@@ -334,58 +526,66 @@ impl Drop for MemoryMapping {
 }
 
 impl MemoryMapping {
-    pub fn set_permission(&mut self, addr: usize) -> ProtectBuilder {
+    /// Updates the permissions of a region of the [`MemoryMapping`]. The start
+    /// offset must be a multiple of page size.
+    pub fn set_permission(&mut self, start_offset: usize) -> ProtectBuilder {
         ProtectBuilder {
             mapping_base_address: self.base_address as usize,
             mapping_size: self.size,
             size: 0,
-            addr,
-            permissions: MappingPermission::None,
+            start_offset,
         }
     }
 
+    /// Returns a [`FileDescriptor`] when it is not an anonymous [`MemoryMapping`].
     pub fn file_descriptor(&self) -> &Option<FileDescriptor> {
         &self.file_descriptor
     }
 
+    /// Returns the const base address of the [`MemoryMapping`]
     pub fn base_address(&self) -> *const u8 {
         self.base_address
     }
 
+    /// Returns the mutable base address of the [`MemoryMapping`]
     pub fn base_address_mut(&mut self) -> *mut u8 {
         self.base_address
     }
 
+    /// Returns the [`FilePath`] if the [`MemoryMapping`] was created from a
+    /// file
     pub fn file_path(&self) -> &Option<FilePath> {
         &self.file_path
     }
 
+    /// Returns the size of the [`MemoryMapping`]
     pub fn size(&self) -> usize {
         self.size
     }
 }
 
+/// Helper struct to update the [`MappingPermission`]s of a part of the
+/// [`MemoryMapping`].
 #[derive(Debug)]
 pub struct ProtectBuilder {
     mapping_base_address: usize,
     mapping_size: usize,
     size: usize,
-    addr: usize,
-    permissions: MappingPermission,
+    start_offset: usize,
 }
 
 impl ProtectBuilder {
+    /// Defines the size of the memory range. Must be a multiple of the page size.
     pub fn size(mut self, value: usize) -> Self {
         self.size = value;
         self
     }
 
-    pub fn mapping_permission(mut self, value: MappingPermission) -> Self {
-        self.permissions = value;
-        self
-    }
-
-    pub fn apply(self) -> Result<(), MemoryMappingPermissionUpdateError> {
+    /// Applies the defined [`MappingPermission`]s to the memory range.
+    pub fn apply(
+        self,
+        mapping_permission: MappingPermission,
+    ) -> Result<(), MemoryMappingPermissionUpdateError> {
         let msg = "Failed to adjust the permissions of the memory mapping";
         let page_size = SystemInfo::PageSize.value();
         if self.size % page_size != 0 {
@@ -393,23 +593,27 @@ impl ProtectBuilder {
                 "{msg} since the size is not aligned to the page size of {page_size}.");
         }
 
-        if self.addr % page_size != 0 {
-            fail!(from self, with MemoryMappingPermissionUpdateError::AddressNotAlignedToPageSize,
-                "{msg} since the address {:#x?} is not aligned to the page size of {page_size}.", self.addr);
+        if self.start_offset % page_size != 0 {
+            fail!(from self, with MemoryMappingPermissionUpdateError::AddressOffsetNotAlignedToPageSize,
+                "{msg} since the start offset {} is not aligned to the page size of {page_size}.",
+                self.start_offset);
         }
 
-        if self.addr < self.mapping_base_address
-            || self.mapping_base_address + self.mapping_size < self.addr + self.size
-        {
+        if self.mapping_size < self.start_offset + self.size {
             fail!(from self, with MemoryMappingPermissionUpdateError::InvalidAddressRange,
                 "{msg} since it contains an address range outside of the mapped memory range.");
         }
 
+        if self.size == 0 {
+            fail!(from self, with MemoryMappingPermissionUpdateError::SizeIsZero,
+                "{msg} since the provided size is zero.");
+        }
+
         if unsafe {
             posix::mprotect(
-                self.addr as *mut posix::void,
+                (self.mapping_base_address + self.start_offset) as *mut posix::void,
                 self.size,
-                self.permissions as _,
+                mapping_permission as _,
             )
         } == -1
         {
