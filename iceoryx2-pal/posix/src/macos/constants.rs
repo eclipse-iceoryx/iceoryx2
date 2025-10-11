@@ -53,6 +53,8 @@ pub const PROT_EXEC: int = crate::internal::PROT_EXEC as _;
 pub const MCL_CURRENT: int = crate::internal::MCL_CURRENT as _;
 pub const MCL_FUTURE: int = crate::internal::MCL_FUTURE as _;
 pub const MAP_SHARED: int = crate::internal::MAP_SHARED as _;
+pub const MAP_PRIVATE: int = crate::internal::MAP_PRIVATE as _;
+pub const MAP_ANONYMOUS: int = crate::internal::MAP_ANONYMOUS as _;
 pub const MAP_FAILED: *mut void = u64::MAX as *mut void;
 
 pub const PTHREAD_BARRIER_SERIAL_THREAD: int = int::MAX;

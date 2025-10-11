@@ -51,6 +51,8 @@ pub const PROT_EXEC: int = 8;
 pub const MCL_CURRENT: int = 16;
 pub const MCL_FUTURE: int = 32;
 pub const MAP_SHARED: int = 64;
+pub const MAP_ANONYMOUS: int = 128;
+pub const MAP_PRIVATE: int = 256;
 pub const MAP_FAILED: *mut void = core::ptr::null_mut::<void>();
 
 pub const PTHREAD_MUTEX_NORMAL: int = 1;
