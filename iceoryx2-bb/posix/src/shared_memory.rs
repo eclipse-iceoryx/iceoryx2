@@ -98,7 +98,6 @@ enum_gen! { SharedMemoryCreationError
     InsufficientMemory,
     InsufficientMemoryToBeMemoryLocked,
     UnsupportedSizeOfZero,
-    UnsupportedMemoryMappingOffsetValue,
     InsufficientPermissions,
     MappedRegionLimitReached,
     PerProcessFileHandleLimitReached,
@@ -107,7 +106,6 @@ enum_gen! { SharedMemoryCreationError
     InvalidName,
     AlreadyExist,
     DoesNotExist,
-    UnableToMapAtEnforcedBaseAddress,
     UnknownError(i32)
   mapping:
     FileTruncateError,
