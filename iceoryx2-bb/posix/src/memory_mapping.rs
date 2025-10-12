@@ -23,7 +23,7 @@
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let mut mmap = MemoryMappingBuilder::from_anonymous()
 //!     .initial_mapping_permission(MappingPermission::ReadWrite)
-//!     .size(8192)
+//!     .size(65536)
 //!     .create()?;
 //!
 //! // access memory
@@ -42,7 +42,7 @@
 //!     .file_access_mode(AccessMode::ReadWrite)
 //!     .mapping_behavior(MappingBehavior::Shared)
 //!     .initial_mapping_permission(MappingPermission::ReadWrite)
-//!     .size(8192)
+//!     .size(65536)
 //!     .create()?;
 //! # Ok(())
 //! # }
@@ -59,7 +59,7 @@
 //! let mmap = MemoryMappingBuilder::from_file_descriptor(file_descriptor)
 //!     .mapping_behavior(MappingBehavior::Private)
 //!     .initial_mapping_permission(MappingPermission::ReadWrite)
-//!     .size(8192)
+//!     .size(65536)
 //!     .create()?;
 //! # Ok(())
 //! # }
@@ -73,11 +73,12 @@
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let mut mmap = MemoryMappingBuilder::from_anonymous()
 //!     .initial_mapping_permission(MappingPermission::ReadWrite)
-//!     .size(8192)
+//!     .size(65536)
 //!     .create()?;
 //!
-//! mmap.set_permission(4096)
-//!     .size(4096)
+//! // update permission from 0 to 32768
+//! mmap.set_permission(0)
+//!     .size(32768)
 //!     .apply(MappingPermission::Read)?;
 //!
 //! # Ok(())
