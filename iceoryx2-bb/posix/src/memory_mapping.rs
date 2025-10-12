@@ -56,7 +56,7 @@
 //!
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! # let file_descriptor = FileDescriptor::new(12).unwrap();
-//! let mmap = MemoryMappingBuilder::from_fd(file_descriptor)
+//! let mmap = MemoryMappingBuilder::from_file_descriptor(file_descriptor)
 //!     .mapping_behavior(MappingBehavior::Private)
 //!     .initial_mapping_permission(MappingPermission::ReadWrite)
 //!     .size(8192)
@@ -89,7 +89,7 @@ pub use iceoryx2_bb_container::semantic_string::SemanticString;
 pub use iceoryx2_bb_system_types::file_path::FilePath;
 
 use crate::{file_descriptor::FileDescriptor, system_configuration::SystemInfo};
-use iceoryx2_bb_log::{fail, fatal_panic};
+use iceoryx2_bb_log::{fail, fatal_panic, trace};
 use iceoryx2_pal_posix::posix::{self, Errno, MAP_FAILED};
 
 /// Error that can occur when a new [`MemoryMapping`] is created with [`MemoryMappingBuilder::create()`].
@@ -300,7 +300,7 @@ impl MemoryMappingBuilder {
     }
 
     /// Maps the contents of the file descriptor into the process space
-    pub fn from_fd(file_descriptor: FileDescriptor) -> FileDescriptorMappingBuilder {
+    pub fn from_file_descriptor(file_descriptor: FileDescriptor) -> FileDescriptorMappingBuilder {
         FileDescriptorMappingBuilder {
             file_descriptor,
             settings: MemoryMappingBuilderSettings::new(),
@@ -358,7 +358,7 @@ impl MemoryMappingBuilder {
             MappingOrigin::File((ref file_path, access_mode)) => {
                 let msg = "Unable to create memory mapping since the corresponding file could not be opened";
                 let mem_fd = unsafe {
-                    posix::open(file_path.as_c_str(), access_mode as i32 | posix::O_SYNC)
+                    posix::open(file_path.as_c_str(), access_mode.as_oflag() | posix::O_SYNC)
                 };
 
                 if mem_fd == -1 {
@@ -421,6 +421,8 @@ impl MemoryMappingBuilder {
                             "{msg} since open returned a broken file descriptor.");
                     }
                 };
+
+                trace!(from self, "opened file");
 
                 Self::create_mapping(
                     &self.settings,
@@ -500,6 +502,8 @@ impl MemoryMappingBuilder {
                 settings.address_hint);
         }
 
+        trace!(from mapping, "mapped");
+
         Ok(mapping)
     }
 }
@@ -522,6 +526,7 @@ impl Drop for MemoryMapping {
             fatal_panic!(from self,
                 "This should never happen! Unable to unmap a mapped memory region.");
         }
+        trace!(from self, "removed");
     }
 }
 
