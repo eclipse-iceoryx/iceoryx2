@@ -44,10 +44,10 @@ pub const F_SETLK: int = 64;
 pub const F_SETLKW: int = 128;
 pub const F_GETFD: int = 256;
 
-pub const PROT_NONE: int = 1;
-pub const PROT_READ: int = 2;
-pub const PROT_WRITE: int = 4;
-pub const PROT_EXEC: int = 8;
+pub const PROT_NONE: int = windows_sys::Win32::System::Memory::PAGE_NOACCESS as _;
+pub const PROT_READ: int = windows_sys::Win32::System::Memory::PAGE_READONLY as _;
+pub const PROT_WRITE: int = windows_sys::Win32::System::Memory::PAGE_WRITECOPY as _;
+pub const PROT_EXEC: int = windows_sys::Win32::System::Memory::PAGE_EXECUTE as _;
 pub const MCL_CURRENT: int = 16;
 pub const MCL_FUTURE: int = 32;
 pub const MAP_SHARED: int = 64;
