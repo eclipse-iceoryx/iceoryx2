@@ -210,6 +210,7 @@ pub enum MappingBehavior {
     Private = posix::MAP_PRIVATE,
 }
 
+#[allow(clippy::large_enum_variant)] // `Box` is not allowed in a mission-critical context
 #[derive(Debug)]
 enum MappingOrigin {
     FileDescriptor(FileDescriptor),
