@@ -67,6 +67,9 @@ use crate::file::{FileStatError, FileTruncateError};
 use crate::file_descriptor::*;
 use crate::handle_errno;
 use crate::memory_lock::{MemoryLock, MemoryLockCreationError};
+use crate::memory_mapping::{
+    MappingBehavior, MemoryMapping, MemoryMappingBuilder, MemoryMappingCreationError,
+};
 use crate::signal::SignalHandler;
 use crate::system_configuration::Limit;
 use iceoryx2_bb_container::semantic_string::*;
@@ -110,7 +113,8 @@ enum_gen! { SharedMemoryCreationError
     FileTruncateError,
     FileStatError,
     MemoryLockCreationError,
-    SharedMemoryRemoveError
+    SharedMemoryRemoveError,
+    MemoryMappingCreationError
 }
 
 enum_gen! { SharedMemoryRemoveError
@@ -180,6 +184,27 @@ impl SharedMemoryBuilder {
         Self::open(self)
     }
 
+    fn create_memory_mapping(
+        file_descriptor: FileDescriptor,
+        config: &SharedMemoryBuilder,
+    ) -> Result<MemoryMapping, SharedMemoryCreationError> {
+        match MemoryMappingBuilder::from_file_descriptor(file_descriptor)
+            .mapping_behavior(MappingBehavior::Shared)
+            .initial_mapping_permission(config.access_mode.into())
+            .mapping_address_hint(config.enforce_base_address.unwrap_or(0) as usize)
+            .enforce_mapping_address_hint(config.enforce_base_address.is_some())
+            .offset(config.mapping_offset)
+            .size(config.size)
+            .create()
+        {
+            Ok(mapping) => Ok(mapping),
+            Err(e) => {
+                fail!(from config, with e.into(),
+                        "Failed to create shared memory since the memory mapping failed ({e:?}).");
+            }
+        }
+    }
+
     fn open(mut self) -> Result<SharedMemory, SharedMemoryCreationError> {
         let msg = "Unable to open shared memory";
         let fd = SharedMemory::shm_open(&self.name, &self)?;
@@ -189,23 +214,13 @@ impl SharedMemoryBuilder {
         .size();
         self.size = actual_shm_size as usize;
 
-        let base_address = fail!(from self, when SharedMemory::mmap(&fd, &self),
-                        "{} since the memory could not be mapped.", msg);
-
-        if self.enforce_base_address.is_some()
-            && self.enforce_base_address.unwrap() != base_address as u64
-        {
-            fail!(from self, with SharedMemoryCreationError::UnableToMapAtEnforcedBaseAddress,
-                "{} since the memory was mapped at {:X} which is not enforced base address.", msg, base_address as u64);
-        }
+        let memory_mapping = Self::create_memory_mapping(fd, &self)?;
 
         let shm = SharedMemory {
             name: self.name,
-            base_address: base_address as *mut u8,
-            size: actual_shm_size as usize,
             has_ownership: IoxAtomicBool::new(false),
             memory_lock: None,
-            file_descriptor: fd,
+            memory_mapping,
             mapping_offset: self.mapping_offset,
         };
 
@@ -267,7 +282,7 @@ impl SharedMemoryCreationBuilder {
         }
 
         let shm_created;
-        let fd = match self
+        let mut fd = match self
             .config
             .creation_mode
             .expect("CreationMode must be set on creation")
@@ -304,18 +319,8 @@ impl SharedMemoryCreationBuilder {
             }
         };
 
-        let mut shm = SharedMemory {
-            name: self.config.name.clone(),
-            base_address: core::ptr::null_mut::<u8>(),
-            size: self.config.size,
-            has_ownership: IoxAtomicBool::new(self.config.has_ownership),
-            memory_lock: None,
-            file_descriptor: fd,
-            mapping_offset: self.config.mapping_offset,
-        };
-
         if !shm_created {
-            let actual_shm_size = fail!(from self.config, when shm.metadata(),
+            let actual_shm_size = fail!(from self.config, when fd.metadata(),
                     "{} since a failure occurred while acquiring the file attributes.", msg)
             .size();
             if self.config.size > actual_shm_size as usize {
@@ -323,39 +328,45 @@ impl SharedMemoryCreationBuilder {
                     "{} since the actual size {} is not equal to the configured size {}.", msg, actual_shm_size, self.config.size);
             }
 
-            shm.base_address = fail!(from self.config, when SharedMemory::mmap(&shm.file_descriptor, &self.config),
-                                    "{} since the memory could not be mapped.", msg)
-                as *mut u8;
+            self.config.size = actual_shm_size as _;
+            let memory_mapping = SharedMemoryBuilder::create_memory_mapping(fd, &self.config)?;
+
+            let shm = SharedMemory {
+                name: self.config.name.clone(),
+                has_ownership: IoxAtomicBool::new(self.config.has_ownership),
+                memory_lock: None,
+                memory_mapping,
+                mapping_offset: self.config.mapping_offset,
+            };
 
             trace!(from shm, "open");
             return Ok(shm);
         }
 
-        fail!(from self.config, when shm.truncate(self.config.size), "{} since the shared memory truncation failed.", msg);
+        fail!(from self.config, when fd.truncate(self.config.size), "{} since the shared memory truncation failed.", msg);
 
-        shm.base_address = fail!(from self.config, when SharedMemory::mmap(&shm.file_descriptor, &self.config),
-                                    "{} since the memory could not be mapped.", msg)
-            as *mut u8;
-
-        if self.config.enforce_base_address.is_some()
-            && self.config.enforce_base_address.unwrap() != shm.base_address as u64
-        {
-            fail!(from self.config, with SharedMemoryCreationError::UnableToMapAtEnforcedBaseAddress,
-                "{} since the memory was mapped at {:X} which is not enforced base address.", msg, shm.base_address as u64);
-        }
-
-        let actual_shm_size = fail!(from self.config, when shm.metadata(),
+        let actual_shm_size = fail!(from self.config, when fd.metadata(),
                 "{} since a failure occurred while acquiring the file attributes.", msg)
         .size();
         if (actual_shm_size as usize) < self.config.size {
             fail!(from self.config, with SharedMemoryCreationError::SizeDoesNotFit,
                 "{} since the actual size {} is less than to the configured size {}.", msg, actual_shm_size, self.config.size);
         }
-        shm.size = actual_shm_size as _;
+
+        self.config.size = actual_shm_size as _;
+        let memory_mapping = SharedMemoryBuilder::create_memory_mapping(fd, &self.config)?;
+
+        let mut shm = SharedMemory {
+            name: self.config.name.clone(),
+            has_ownership: IoxAtomicBool::new(self.config.has_ownership),
+            memory_lock: None,
+            memory_mapping,
+            mapping_offset: self.config.mapping_offset,
+        };
 
         if self.config.is_memory_locked {
             shm.memory_lock = Some(
-                fail!(from self.config, when unsafe { MemoryLock::new(shm.base_address.cast(), shm.size) },
+                fail!(from self.config, when unsafe { MemoryLock::new(shm.memory_mapping.base_address().cast(), shm.memory_mapping.size()) },
                         "{} since the memory lock failed.", msg),
             )
         }
@@ -363,7 +374,11 @@ impl SharedMemoryCreationBuilder {
         if self.config.zero_memory {
             if POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING {
                 let memset_call = || unsafe {
-                    posix::memset(shm.base_address as *mut posix::void, 0, self.config.size);
+                    posix::memset(
+                        shm.memory_mapping.base_address_mut().cast(),
+                        0,
+                        self.config.size,
+                    );
                 };
                 match SignalHandler::call_and_fetch(memset_call) {
                     None => (),
@@ -373,7 +388,13 @@ impl SharedMemoryCreationBuilder {
                     }
                 }
             } else {
-                unsafe { posix::memset(shm.base_address as *mut posix::void, 0, self.config.size) };
+                unsafe {
+                    posix::memset(
+                        shm.memory_mapping.base_address_mut().cast(),
+                        0,
+                        self.config.size,
+                    )
+                };
             }
         }
 
@@ -386,23 +407,14 @@ impl SharedMemoryCreationBuilder {
 #[derive(Debug)]
 pub struct SharedMemory {
     name: FileName,
-    size: usize,
-    base_address: *mut u8,
     has_ownership: IoxAtomicBool,
-    file_descriptor: FileDescriptor,
+    memory_mapping: MemoryMapping,
     memory_lock: Option<MemoryLock>,
     mapping_offset: isize,
 }
 
 impl Drop for SharedMemory {
     fn drop(&mut self) {
-        if !self.base_address.is_null() {
-            if unsafe { posix::munmap(self.base_address as *mut posix::void, self.size) } != 0 {
-                fatal_panic!(from self, "This should never happen! Unable to unmap since the base address or range is invalid.");
-            }
-            trace!(from self, "close");
-        }
-
         if self.has_ownership() {
             match self.set_permission(Permission::OWNER_ALL) {
                 Ok(()) => match Self::shm_unlink(&self.name) {
@@ -501,7 +513,7 @@ impl SharedMemory {
     /// page size, this implies that it is aligned with every possible type.
     /// No further alignment required!
     pub fn base_address(&self) -> NonNull<u8> {
-        match NonNull::new(self.base_address) {
+        match NonNull::new(self.memory_mapping.base_address().cast_mut()) {
             Some(v) => v,
             None => {
                 fatal_panic!(from self,
@@ -512,17 +524,17 @@ impl SharedMemory {
 
     /// returns the size of the shared memory
     pub fn size(&self) -> usize {
-        self.size
+        self.memory_mapping.size()
     }
 
     /// returns a slice to the memory
     pub fn as_slice(&self) -> &[u8] {
-        unsafe { core::slice::from_raw_parts(self.base_address, self.size) }
+        self.memory_mapping.as_slice()
     }
 
     /// returns a mutable slice to the memory
     pub fn as_mut_slice(&mut self) -> &mut [u8] {
-        unsafe { core::slice::from_raw_parts_mut(self.base_address, self.size) }
+        self.memory_mapping.as_mut_slice()
     }
 
     fn shm_create(
@@ -585,35 +597,6 @@ impl SharedMemory {
         );
     }
 
-    fn mmap(
-        file_descriptor: &FileDescriptor,
-        config: &SharedMemoryBuilder,
-    ) -> Result<*mut posix::void, SharedMemoryCreationError> {
-        let base_address = unsafe {
-            posix::mmap(
-                core::ptr::null_mut::<posix::void>(),
-                config.size,
-                config.access_mode.as_protflag(),
-                posix::MAP_SHARED,
-                file_descriptor.native_handle(),
-                config.mapping_offset as _,
-            )
-        };
-
-        if !core::ptr::eq(base_address, posix::MAP_FAILED) {
-            return Ok(base_address);
-        }
-
-        let msg = "Unable to map shared memory";
-        handle_errno!(SharedMemoryCreationError, from config,
-            Errno::EAGAIN => (InsufficientMemoryToBeMemoryLocked, "{} since a previous mlockall() enforces all mappings to be memory locked but this mapping cannot be locked due to insufficient memory.", msg),
-            Errno::EINVAL => (UnsupportedMemoryMappingOffsetValue, "{} since the value {} is not supported as a mapping offset.", msg, config.mapping_offset),
-            Errno::ENOMEM => (InsufficientMemory, "{} since the system is out-of-memory or does not the support a shared memory with the size of {}.", msg, config.size),
-            Errno::EMFILE => (MappedRegionLimitReached, "{} since the number of mapped regions would exceed the process or system limit.", msg),
-            v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
-        );
-    }
-
     fn shm_unlink(name: &FileName) -> Result<bool, SharedMemoryRemoveError> {
         let file_path =
             FilePath::from_path_and_file(&Path::new(&[PATH_SEPARATOR; 1]).unwrap(), name).unwrap();
@@ -639,7 +622,10 @@ impl SharedMemory {
 
 impl FileDescriptorBased for SharedMemory {
     fn file_descriptor(&self) -> &FileDescriptor {
-        &self.file_descriptor
+        self.memory_mapping
+            .file_descriptor()
+            .as_ref()
+            .expect("Memory mapping is based on a file descriptor")
     }
 }
 

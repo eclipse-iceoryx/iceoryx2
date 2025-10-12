@@ -114,8 +114,8 @@ fn mapping_file_works() {
 
     assert_that!(sut.base_address() as usize, eq sut.base_address_mut() as usize);
     assert_that!(sut.size(), eq MEMORY_SIZE);
-    assert_that!(sut.file_descriptor(), is_none);
-    assert_that!(sut.file_path(), is_none);
+    assert_that!(sut.file_descriptor(), is_some);
+    assert_that!(*sut.file_path(), eq Some(file_path));
 }
 
 #[test]
@@ -149,7 +149,7 @@ fn mapping_file_descriptor_works() {
 
     assert_that!(sut.base_address() as usize, eq sut.base_address_mut() as usize);
     assert_that!(sut.size(), eq MEMORY_SIZE);
-    assert_that!(sut.file_descriptor(), is_none);
+    assert_that!(sut.file_descriptor(), is_some);
     assert_that!(sut.file_path(), is_none);
 }
 

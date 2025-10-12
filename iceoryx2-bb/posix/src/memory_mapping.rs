@@ -93,7 +93,7 @@ use iceoryx2_bb_log::{fail, fatal_panic, trace};
 use iceoryx2_pal_posix::posix::{self, Errno, MAP_FAILED};
 
 /// Error that can occur when a new [`MemoryMapping`] is created with [`MemoryMappingBuilder::create()`].
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum MemoryMappingCreationError {
     /// Insufficient permissions to open the file or map the mapping.
     InsufficientPermissions,
@@ -141,7 +141,7 @@ impl core::error::Error for MemoryMappingCreationError {}
 
 /// Error that can occur when the [`MappingPermission`] is updated with
 /// [`MemoryMapping::set_permission()`].
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum MemoryMappingPermissionUpdateError {
     /// The size was not a multiple of the [`SystemInfo::PageSize`]
     SizeNotAlignedToPageSize,
@@ -187,6 +187,17 @@ pub enum MappingPermission {
     ReadWriteExec = posix::PROT_READ | posix::PROT_WRITE | posix::PROT_EXEC,
     /// Just map the memory but do not grant any access permission
     None = posix::PROT_NONE,
+}
+
+impl From<AccessMode> for MappingPermission {
+    fn from(value: AccessMode) -> Self {
+        match value {
+            AccessMode::None => MappingPermission::None,
+            AccessMode::Read => MappingPermission::Read,
+            AccessMode::Write => MappingPermission::Write,
+            AccessMode::ReadWrite => MappingPermission::ReadWrite,
+        }
+    }
 }
 
 /// Defines the memory synchronization behavior
@@ -349,11 +360,13 @@ impl MemoryMappingBuilder {
                 &self.settings,
                 posix::MAP_ANONYMOUS | posix::MAP_PRIVATE,
                 None,
+                None,
             ),
             MappingOrigin::FileDescriptor(file_descriptor) => Self::create_mapping(
                 &self.settings,
                 self.settings.mapping_behavior as _,
                 Some(file_descriptor),
+                None,
             ),
             MappingOrigin::File((ref file_path, access_mode)) => {
                 let msg = "Unable to create memory mapping since the corresponding file could not be opened";
@@ -428,6 +441,7 @@ impl MemoryMappingBuilder {
                     &self.settings,
                     self.settings.mapping_behavior as _,
                     Some(fd),
+                    Some(file_path.clone()),
                 )
             }
         }
@@ -437,6 +451,7 @@ impl MemoryMappingBuilder {
         settings: &MemoryMappingBuilderSettings,
         mapping_behavior: i32,
         file_descriptor: Option<FileDescriptor>,
+        file_path: Option<FilePath>,
     ) -> Result<MemoryMapping, MemoryMappingCreationError> {
         let fd_value = if let Some(fd) = &file_descriptor {
             unsafe { fd.native_handle() }
@@ -490,10 +505,11 @@ impl MemoryMappingBuilder {
         }
 
         let mapping = MemoryMapping {
-            file_descriptor: None,
-            file_path: None,
+            file_descriptor,
+            file_path,
             base_address: ret_val.cast(),
             size: settings.size,
+            offset: settings.offset,
         };
 
         if settings.enforce_address_hint && ret_val as usize != settings.address_hint {
@@ -518,6 +534,7 @@ pub struct MemoryMapping {
     file_path: Option<FilePath>,
     base_address: *mut u8,
     size: usize,
+    offset: isize,
 }
 
 impl Drop for MemoryMapping {
@@ -557,6 +574,16 @@ impl MemoryMapping {
         self.base_address
     }
 
+    /// Returns a const slice to the underlying memory
+    pub fn as_slice(&self) -> &[u8] {
+        unsafe { core::slice::from_raw_parts(self.base_address(), self.size()) }
+    }
+
+    /// Returns a mutable slice to the underlying memory
+    pub fn as_mut_slice(&mut self) -> &mut [u8] {
+        unsafe { core::slice::from_raw_parts_mut(self.base_address_mut(), self.size()) }
+    }
+
     /// Returns the [`FilePath`] if the [`MemoryMapping`] was created from a
     /// file
     pub fn file_path(&self) -> &Option<FilePath> {
@@ -566,6 +593,11 @@ impl MemoryMapping {
     /// Returns the size of the [`MemoryMapping`]
     pub fn size(&self) -> usize {
         self.size
+    }
+
+    /// Returns the offset of the [`MemoryMapping`]
+    pub fn offset(&self) -> isize {
+        self.offset
     }
 }
 
