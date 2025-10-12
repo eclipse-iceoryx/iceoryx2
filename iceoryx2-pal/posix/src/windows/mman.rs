@@ -47,7 +47,7 @@ use windows_sys::Win32::{
 use super::win32_handle_translator::{FdHandleEntry, FileHandle, HandleTranslator, ShmHandle};
 
 struct FileMappingsSet {
-    mappings: UnsafeCell<[isize; 1024]>,
+    mappings: UnsafeCell<[(isize, HANDLE); 1024]>,
     mtx: Mutex,
 }
 
@@ -57,7 +57,7 @@ unsafe impl Sync for FileMappingsSet {}
 impl FileMappingsSet {
     const fn new() -> Self {
         Self {
-            mappings: UnsafeCell::new([0; 1024]),
+            mappings: UnsafeCell::new([(0, 0); 1024]),
             mtx: Mutex::new(),
         }
     }
@@ -87,12 +87,13 @@ impl FileMappingsSet {
         &MAPPING
     }
 
-    fn insert(&self, value: isize) -> bool {
+    fn insert(&self, value: isize, handle: HANDLE) -> bool {
         self.lock();
         let mappings_ref = unsafe { &mut *self.mappings.get() };
         for element in mappings_ref {
-            if *element == 0 {
-                *element = value;
+            if element.0 == 0 {
+                element.0 = value;
+                element.1 = handle;
                 self.unlock();
                 return true;
             }
@@ -102,19 +103,21 @@ impl FileMappingsSet {
         false
     }
 
-    fn remove(&self, value: isize) -> bool {
+    fn remove(&self, value: isize) -> Option<(isize, HANDLE)> {
         self.lock();
         let mappings_ref = unsafe { &mut *self.mappings.get() };
         for element in mappings_ref {
-            if *element == value {
-                *element = 0;
+            if element.0 == value {
+                let ret_val = *element;
+                element.0 = 0;
+                element.1 = 0;
                 self.unlock();
-                return true;
+                return Some(ret_val);
             }
         }
 
         self.unlock();
-        false
+        None
     }
 }
 
@@ -439,15 +442,16 @@ pub unsafe fn mmap(
         }
     }
 
-    let map_file = |handle| {
-        let (map_result, _) = win32call! { MapViewOfFile(handle, FILE_MAP_ALL_ACCESS, 0, 0, len)};
-        match map_result {
-            0 => {
-                Errno::set(Errno::ENOMEM);
-                core::ptr::null_mut::<void>()
-            }
-            lpaddress => {
-                if win32call! { VirtualAlloc(lpaddress as *const void, len, MEM_COMMIT, PAGE_READWRITE) }.0
+    match HandleTranslator::get_instance().get(fd) {
+        Some(FdHandleEntry::SharedMemory(win_handle)) => {
+            let (map_result, _) = win32call! { MapViewOfFile(win_handle.handle.handle, FILE_MAP_ALL_ACCESS, 0, 0, len)};
+            match map_result {
+                0 => {
+                    Errno::set(Errno::ENOMEM);
+                    core::ptr::null_mut::<void>()
+                }
+                lpaddress => {
+                    if win32call! { VirtualAlloc(lpaddress as *const void, len, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE) }.0
                         .is_null()
                     {
                         win32call! { UnmapViewOfFile(lpaddress) };
@@ -455,20 +459,43 @@ pub unsafe fn mmap(
                         return core::ptr::null_mut::<void>();
                     }
 
-                if !FileMappingsSet::get_instance().insert(lpaddress) {
-                    win32call! { UnmapViewOfFile(lpaddress) };
-                    Errno::set(Errno::EMFILE);
-                    return core::ptr::null_mut::<void>();
-                }
+                    if !FileMappingsSet::get_instance().insert(lpaddress, 0) {
+                        win32call! { UnmapViewOfFile(lpaddress) };
+                        Errno::set(Errno::EMFILE);
+                        return core::ptr::null_mut::<void>();
+                    }
 
-                lpaddress as *mut void
+                    lpaddress as *mut void
+                }
             }
         }
-    };
+        Some(FdHandleEntry::File(fd)) => {
+            let max_size_low: u32 = (len & 0xFFFFFFFF) as u32;
+            let max_size_high: u32 = ((len >> 32) & 0xFFFFFFFF) as u32;
+            let file_view = win32call! { CreateFileMappingA(
+                fd.handle,
+                core::ptr::null(),
+                PAGE_READWRITE | SEC_RESERVE,
+                max_size_high,
+                max_size_low,
+                core::ptr::null(),
+            ) }
+            .0;
 
-    match HandleTranslator::get_instance().get(fd) {
-        Some(FdHandleEntry::SharedMemory(win_handle)) => map_file(win_handle.handle.handle),
-        Some(FdHandleEntry::File(fd)) => map_file(fd.handle),
+            let lpaddress =
+                win32call! { MapViewOfFile(file_view, FILE_MAP_ALL_ACCESS, 0, 0, len)}.0;
+            if lpaddress == 0 {
+                return core::ptr::null_mut();
+            }
+
+            if !FileMappingsSet::get_instance().insert(lpaddress, file_view) {
+                win32call! { UnmapViewOfFile(lpaddress) };
+                Errno::set(Errno::EMFILE);
+                return core::ptr::null_mut::<void>();
+            }
+
+            lpaddress as *mut void
+        }
         _ => {
             Errno::set(Errno::EINVAL);
             return core::ptr::null_mut::<void>();
@@ -477,14 +504,21 @@ pub unsafe fn mmap(
 }
 
 pub unsafe fn munmap(addr: *mut void, len: size_t) -> int {
-    if win32call! {VirtualFree(addr, len, MEM_DECOMMIT)}.0 == 0 {
-        return -1;
-    }
-
-    if FileMappingsSet::get_instance().remove(addr as isize) {
+    if let Some((addr, handle)) = FileMappingsSet::get_instance().remove(addr as isize) {
         let (has_unmapped, _) = win32call! { UnmapViewOfFile(addr as _) };
         if has_unmapped == FALSE {
             Errno::set(Errno::EINVAL);
+            return -1;
+        }
+
+        if handle != 0 {
+            if win32call! { CloseHandle(handle)}.0 == FALSE {
+                Errno::set(Errno::EINVAL);
+                return -1;
+            }
+        }
+    } else {
+        if win32call! {VirtualFree(addr, len, MEM_DECOMMIT)}.0 == 0 {
             return -1;
         }
     }
