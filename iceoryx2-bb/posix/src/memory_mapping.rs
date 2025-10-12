@@ -473,7 +473,7 @@ impl MemoryMappingBuilder {
                 settings.mapping_permission as _,
                 mapping_behavior,
                 fd_value,
-                settings.offset as i64,
+                settings.offset as _,
             )
         };
 
