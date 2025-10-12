@@ -16,6 +16,7 @@ use iceoryx2_bb_posix::{
     file::{CreationMode, FileBuilder},
     file_descriptor::FileDescriptorBased,
     memory_mapping::*,
+    system_configuration::SystemInfo,
     unique_system_id::UniqueSystemId,
 };
 use iceoryx2_bb_system_types::file_name::FileName;
@@ -37,48 +38,48 @@ fn generate_file_name() -> FilePath {
 
 #[test]
 fn mapping_anonymous_memory_works() {
-    const MEMORY_SIZE: usize = 8192;
+    let memory_size: usize = SystemInfo::PageSize.value() * 2;
     let mut sut = MemoryMappingBuilder::from_anonymous()
         .initial_mapping_permission(MappingPermission::ReadWrite)
-        .size(MEMORY_SIZE)
+        .size(memory_size)
         .create()
         .unwrap();
 
-    for i in 0..MEMORY_SIZE {
+    for i in 0..memory_size {
         unsafe { sut.base_address_mut().add(i).write((i % 255) as u8) };
         assert_that!(unsafe { *sut.base_address_mut().add(i) }, eq(i % 255) as u8);
     }
 
     assert_that!(sut.base_address() as usize, eq sut.base_address_mut() as usize);
-    assert_that!(sut.size(), eq MEMORY_SIZE);
+    assert_that!(sut.size(), eq memory_size);
     assert_that!(sut.file_descriptor(), is_none);
     assert_that!(sut.file_path(), is_none);
 }
 
 #[test]
 fn setting_permission_to_read_works() {
-    const MEMORY_SIZE: usize = 8192;
+    let memory_size: usize = SystemInfo::PageSize.value() * 2;
     let mut sut = MemoryMappingBuilder::from_anonymous()
         .initial_mapping_permission(MappingPermission::ReadWrite)
-        .size(MEMORY_SIZE)
+        .size(memory_size)
         .create()
         .unwrap();
 
-    for i in 0..MEMORY_SIZE {
+    for i in 0..memory_size {
         unsafe { sut.base_address_mut().add(i).write((i % 255) as u8) };
         assert_that!(unsafe { *sut.base_address_mut().add(i) }, eq(i % 255) as u8);
     }
 
     sut.set_permission(0)
-        .size(MEMORY_SIZE / 2)
+        .size(memory_size / 2)
         .apply(MappingPermission::Read)
         .unwrap();
 
-    for i in 0..MEMORY_SIZE / 2 {
+    for i in 0..memory_size / 2 {
         assert_that!(unsafe { *sut.base_address_mut().add(i) }, eq(i % 255) as u8);
     }
 
-    for i in MEMORY_SIZE / 2..MEMORY_SIZE {
+    for i in memory_size / 2..memory_size {
         assert_that!(unsafe { *sut.base_address_mut().add(i) }, eq(i % 255) as u8);
         unsafe { sut.base_address_mut().add(i).write(0) };
         assert_that!(unsafe { *sut.base_address_mut().add(i) }, eq 0);
@@ -87,7 +88,7 @@ fn setting_permission_to_read_works() {
 
 #[test]
 fn mapping_file_works() {
-    const MEMORY_SIZE: usize = 8192;
+    let memory_size: usize = SystemInfo::PageSize.value() * 2;
     let file_path = generate_file_name();
     let mut file = FileBuilder::new(&file_path)
         .has_ownership(true)
@@ -95,7 +96,7 @@ fn mapping_file_works() {
         .create()
         .unwrap();
 
-    for i in 0..MEMORY_SIZE {
+    for i in 0..memory_size {
         file.write_at(i as _, &[(i % 255) as u8]).unwrap();
     }
 
@@ -103,24 +104,24 @@ fn mapping_file_works() {
         .file_access_mode(AccessMode::ReadWrite)
         .mapping_behavior(MappingBehavior::Shared)
         .initial_mapping_permission(MappingPermission::ReadWrite)
-        .size(MEMORY_SIZE)
+        .size(memory_size)
         .create()
         .unwrap();
 
-    for i in 0..MEMORY_SIZE {
+    for i in 0..memory_size {
         unsafe { sut.base_address_mut().add(i).write((i % 255) as u8) };
         assert_that!(unsafe { *sut.base_address_mut().add(i) }, eq(i % 255) as u8);
     }
 
     assert_that!(sut.base_address() as usize, eq sut.base_address_mut() as usize);
-    assert_that!(sut.size(), eq MEMORY_SIZE);
+    assert_that!(sut.size(), eq memory_size);
     assert_that!(sut.file_descriptor(), is_some);
     assert_that!(*sut.file_path(), eq Some(file_path));
 }
 
 #[test]
 fn mapping_file_descriptor_works() {
-    const MEMORY_SIZE: usize = 8192;
+    let memory_size: usize = SystemInfo::PageSize.value() * 2;
     let file_path = generate_file_name();
     let mut file = FileBuilder::new(&file_path)
         .has_ownership(true)
@@ -128,7 +129,7 @@ fn mapping_file_descriptor_works() {
         .create()
         .unwrap();
 
-    for i in 0..MEMORY_SIZE {
+    for i in 0..memory_size {
         file.write_at(i as _, &[(i % 123) as u8]).unwrap();
     }
 
@@ -138,17 +139,17 @@ fn mapping_file_descriptor_works() {
     let mut sut = MemoryMappingBuilder::from_file_descriptor(fd)
         .mapping_behavior(MappingBehavior::Shared)
         .initial_mapping_permission(MappingPermission::ReadWrite)
-        .size(MEMORY_SIZE)
+        .size(memory_size)
         .create()
         .unwrap();
 
-    for i in 0..MEMORY_SIZE {
+    for i in 0..memory_size {
         unsafe { sut.base_address_mut().add(i).write((i % 123) as u8) };
         assert_that!(unsafe { *sut.base_address_mut().add(i) }, eq(i % 123) as u8);
     }
 
     assert_that!(sut.base_address() as usize, eq sut.base_address_mut() as usize);
-    assert_that!(sut.size(), eq MEMORY_SIZE);
+    assert_that!(sut.size(), eq memory_size);
     assert_that!(sut.file_descriptor(), is_some);
     assert_that!(sut.file_path(), is_none);
 }
@@ -164,16 +165,16 @@ fn mapping_size_of_zero_fails() {
 
 #[test]
 fn update_permissions_offset_fails_when_offset_is_not_multiple_of_page_size() {
-    const MEMORY_SIZE: usize = 8192;
+    let memory_size: usize = SystemInfo::PageSize.value() * 2;
     let mut sut = MemoryMappingBuilder::from_anonymous()
         .initial_mapping_permission(MappingPermission::ReadWrite)
-        .size(MEMORY_SIZE)
+        .size(memory_size)
         .create()
         .unwrap();
 
     let result = sut
         .set_permission(123)
-        .size(4096)
+        .size(SystemInfo::PageSize.value())
         .apply(MappingPermission::Read);
 
     assert_that!(result.err(), eq Some(MemoryMappingPermissionUpdateError::AddressOffsetNotAlignedToPageSize));
@@ -181,10 +182,10 @@ fn update_permissions_offset_fails_when_offset_is_not_multiple_of_page_size() {
 
 #[test]
 fn update_permissions_offset_fails_when_size_is_not_multiple_of_page_size() {
-    const MEMORY_SIZE: usize = 8192;
+    let memory_size: usize = SystemInfo::PageSize.value() * 2;
     let mut sut = MemoryMappingBuilder::from_anonymous()
         .initial_mapping_permission(MappingPermission::ReadWrite)
-        .size(MEMORY_SIZE)
+        .size(memory_size)
         .create()
         .unwrap();
 
@@ -198,10 +199,10 @@ fn update_permissions_offset_fails_when_size_is_not_multiple_of_page_size() {
 
 #[test]
 fn update_permissions_offset_fails_when_size_is_zero() {
-    const MEMORY_SIZE: usize = 8192;
+    let memory_size: usize = SystemInfo::PageSize.value() * 2;
     let mut sut = MemoryMappingBuilder::from_anonymous()
         .initial_mapping_permission(MappingPermission::ReadWrite)
-        .size(MEMORY_SIZE)
+        .size(memory_size)
         .create()
         .unwrap();
 
@@ -212,16 +213,16 @@ fn update_permissions_offset_fails_when_size_is_zero() {
 
 #[test]
 fn update_permissions_offset_fails_when_range_is_greater_than_mapped_range() {
-    const MEMORY_SIZE: usize = 8192;
+    let memory_size: usize = SystemInfo::PageSize.value() * 2;
     let mut sut = MemoryMappingBuilder::from_anonymous()
         .initial_mapping_permission(MappingPermission::ReadWrite)
-        .size(MEMORY_SIZE)
+        .size(memory_size)
         .create()
         .unwrap();
 
     let result = sut
         .set_permission(0)
-        .size(MEMORY_SIZE * 2)
+        .size(memory_size * 2)
         .apply(MappingPermission::Read);
 
     assert_that!(result.err(), eq Some(MemoryMappingPermissionUpdateError::InvalidAddressRange));
@@ -229,12 +230,12 @@ fn update_permissions_offset_fails_when_range_is_greater_than_mapped_range() {
 
 #[test]
 fn fails_when_it_is_not_mapped_to_address_hint() {
-    const MEMORY_SIZE: usize = 8192;
+    let memory_size: usize = SystemInfo::PageSize.value() * 2;
     let sut = MemoryMappingBuilder::from_anonymous()
         .initial_mapping_permission(MappingPermission::ReadWrite)
         .mapping_address_hint(1)
         .enforce_mapping_address_hint(true)
-        .size(MEMORY_SIZE)
+        .size(memory_size)
         .create();
 
     assert_that!(sut.err(), eq Some(MemoryMappingCreationError::FailedToEnforceAddressHint));
