@@ -14,7 +14,7 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(unused_variables)]
 
-use std::cell::UnsafeCell;
+use core::cell::UnsafeCell;
 
 use crate::posix::{
     constants::*, settings::*, to_dir_search_string, types::*, Errno, MemZeroedStruct,
@@ -451,7 +451,7 @@ pub unsafe fn mmap(
                     core::ptr::null_mut::<void>()
                 }
                 lpaddress => {
-                    if win32call! { VirtualAlloc(lpaddress as *const void, len, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE) }.0
+                    if win32call!{  VirtualAlloc(lpaddress as *const void, len, MEM_COMMIT, PAGE_READWRITE)}.0
                         .is_null()
                     {
                         win32call! { UnmapViewOfFile(lpaddress) };
@@ -498,7 +498,7 @@ pub unsafe fn mmap(
         }
         _ => {
             Errno::set(Errno::EINVAL);
-            return core::ptr::null_mut::<void>();
+            core::ptr::null_mut::<void>()
         }
     }
 }
@@ -511,16 +511,12 @@ pub unsafe fn munmap(addr: *mut void, len: size_t) -> int {
             return -1;
         }
 
-        if handle != 0 {
-            if win32call! { CloseHandle(handle)}.0 == FALSE {
-                Errno::set(Errno::EINVAL);
-                return -1;
-            }
-        }
-    } else {
-        if win32call! {VirtualFree(addr, len, MEM_DECOMMIT)}.0 == 0 {
+        if handle != 0 && win32call! { CloseHandle(handle)}.0 == FALSE {
+            Errno::set(Errno::EINVAL);
             return -1;
         }
+    } else if win32call! {VirtualFree(addr, len, MEM_DECOMMIT)}.0 == 0 {
+        return -1;
     }
 
     0

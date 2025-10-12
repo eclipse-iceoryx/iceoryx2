@@ -389,7 +389,7 @@ impl<Service: service::Service> __InternalEntryHandle<Service> {
     ///
     ///   * see Safety section of core::ptr::copy_nonoverlapping
     pub unsafe fn get(&self, value_ptr: *mut u8, value_size: usize, value_alignment: usize) {
-        (&*self.atomic_mgmt_ptr).load(value_ptr, value_size, value_alignment, self.data_ptr);
+        (*self.atomic_mgmt_ptr).load(value_ptr, value_size, value_alignment, self.data_ptr);
     }
 
     /// Returns an ID corresponding to the entry which can be used in an event based communication
