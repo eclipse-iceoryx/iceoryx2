@@ -10,21 +10,24 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_EXAMPLES_TRANSMISSION_DATA_H
-#define IOX2_EXAMPLES_TRANSMISSION_DATA_H
+#ifndef IOX2_EXAMPLES_BLACKBOARD_COMPLEX_KEY_H
+#define IOX2_EXAMPLES_BLACKBOARD_COMPLEX_KEY_H
 
 #include <stdbool.h>
 #include <stdint.h>
 
-struct Foo {
+// IOX2_KEY_TYPE_NAME is equivalent to the key type name used on the Rust side
+// NOLINTNEXTLINE, C idiomatic way for compile time const variables
+#define IOX2_KEY_TYPE_NAME "BlackboardKey"
+struct BlackboardKey {
     uint32_t x;
     int64_t y;
     uint16_t z;
 };
 
 bool key_cmp(const void* lhs, const void* rhs) {
-    const struct Foo LHS = *(const struct Foo*) lhs;
-    const struct Foo RHS = *(const struct Foo*) rhs;
+    const struct BlackboardKey LHS = *((const struct BlackboardKey*) lhs);
+    const struct BlackboardKey RHS = *((const struct BlackboardKey*) rhs);
     return LHS.x == RHS.x && LHS.y == RHS.y && LHS.z == RHS.z;
 }
 

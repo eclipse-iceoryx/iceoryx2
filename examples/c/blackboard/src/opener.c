@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/iceoryx2.h"
-#include "transmission_data.h"
+#include "blackboard_complex_key.h"
 
 #if defined(_WIN32) || defined(WIN32) || defined(__WIN32__) || defined(_WIN64)
 #define alignof __alignof
@@ -95,9 +95,11 @@ int main(void) {
         iox2_service_builder_blackboard_opener(service_builder);
 
     // set key type
-    const char* key_type_name = "Foo";
-    if (iox2_service_builder_blackboard_opener_set_key_type_details(
-            &service_builder_blackboard, key_type_name, strlen(key_type_name), sizeof(struct Foo), alignof(struct Foo))
+    if (iox2_service_builder_blackboard_opener_set_key_type_details(&service_builder_blackboard,
+                                                                    IOX2_KEY_TYPE_NAME,
+                                                                    strlen(IOX2_KEY_TYPE_NAME),
+                                                                    sizeof(struct BlackboardKey),
+                                                                    alignof(struct BlackboardKey))
         != IOX2_OK) {
         printf("Unable to set key type details!\n");
         goto end;
@@ -118,11 +120,12 @@ int main(void) {
         goto end;
     }
 
-    struct Foo key_0;
+    struct BlackboardKey key_0;
     key_0.x = 0;
     key_0.y = -4;
     key_0.z = 4;
-    const char* value_type_name_int = "int32_t";
+    // for cross-language communication, the name must be equivalent to the value type name used on the Rust side
+    const char* value_type_name_int = "i32";
     iox2_entry_handle_h entry_handle_key_0 = NULL;
     if (iox2_reader_entry(&reader,
                           NULL,
@@ -137,11 +140,12 @@ int main(void) {
         goto end;
     }
 
-    struct Foo key_1;
+    struct BlackboardKey key_1;
     key_1.x = 1;
     key_1.y = -4;
     key_1.z = 4;
-    const char* value_type_name_double = "double";
+    // for cross-language communication, the name must be equivalent to the value type name used on the Rust side
+    const char* value_type_name_double = "f64";
     iox2_entry_handle_h entry_handle_key_1 = NULL;
     if (iox2_reader_entry(&reader,
                           NULL,

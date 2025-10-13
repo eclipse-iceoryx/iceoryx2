@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include "blackboard_complex_key.h"
 #include "iox2/iceoryx2.h"
-#include "transmission_data.h"
 
 #if defined(_WIN32) || defined(WIN32) || defined(__WIN32__) || defined(_WIN64)
 #define alignof __alignof
@@ -96,9 +96,11 @@ int main(void) {
         iox2_service_builder_blackboard_creator(service_builder);
 
     // set key type
-    const char* key_type_name = "Foo";
-    if (iox2_service_builder_blackboard_creator_set_key_type_details(
-            &service_builder_blackboard, key_type_name, strlen(key_type_name), sizeof(struct Foo), alignof(struct Foo))
+    if (iox2_service_builder_blackboard_creator_set_key_type_details(&service_builder_blackboard,
+                                                                     IOX2_KEY_TYPE_NAME,
+                                                                     strlen(IOX2_KEY_TYPE_NAME),
+                                                                     sizeof(struct BlackboardKey),
+                                                                     alignof(struct BlackboardKey))
         != IOX2_OK) {
         printf("Unable to set key type details!\n");
         goto end;
@@ -108,11 +110,12 @@ int main(void) {
     iox2_service_builder_blackboard_creator_set_key_eq_comparison_function(&service_builder_blackboard, key_cmp);
 
     // add key-value pairs
-    struct Foo key_0;
+    struct BlackboardKey key_0;
     key_0.x = 0;
     key_0.y = -4;
     key_0.z = 4;
-    const char* value_type_name_int = "int32_t";
+    // for cross-language communication, the name must be equivalent to the value type name used on the Rust side
+    const char* value_type_name_int = "i32";
     int32_t value_key_0 = 3;
 
     iox2_service_builder_blackboard_creator_add(&service_builder_blackboard,
@@ -124,11 +127,12 @@ int main(void) {
                                                 sizeof(int32_t),
                                                 alignof(int32_t));
 
-    struct Foo key_1;
+    struct BlackboardKey key_1;
     key_1.x = 1;
     key_1.y = -4;
     key_1.z = 4;
-    const char* value_type_name_double = "double";
+    // for cross-language communication, the name must be equivalent to the value type name used on the Rust side
+    const char* value_type_name_double = "f64";
     const double INITIAL_VALUE = 1.1;
     double value_key_1 = INITIAL_VALUE;
 
