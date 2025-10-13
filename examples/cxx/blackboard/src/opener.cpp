@@ -15,6 +15,7 @@
 #include "iox2/node.hpp"
 #include "iox2/service_name.hpp"
 #include "iox2/service_type.hpp"
+#include "blackboard_complex_key.hpp"
 
 #include <iostream>
 
@@ -26,13 +27,15 @@ auto main() -> int {
     auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
 
     auto service = node.service_builder(ServiceName::create("My/Funk/ServiceName").expect("valid service name"))
-                       .blackboard_opener<uint64_t>()
+                       .blackboard_opener<BlackboardKey>()
                        .open()
                        .expect("successful service opening");
 
+    auto key_0 = BlackboardKey { 0, -4, 4 };
+    auto key_1 = BlackboardKey { 1, -4, 4 };
     auto reader = service.reader_builder().create().expect("successful reader creation");
-    auto entry_handle_key_0 = reader.template entry<uint64_t>(0).expect("successful entry handle creation");
-    auto entry_handle_key_1 = reader.template entry<double>(1).expect("successful entry handle creation");
+    auto entry_handle_key_0 = reader.template entry<int32_t>(key_0).expect("successful entry handle creation");
+    auto entry_handle_key_1 = reader.template entry<double>(key_1).expect("successful entry handle creation");
 
     while (node.wait(CYCLE_TIME).has_value()) {
         std::cout << "Read value " << entry_handle_key_0.get() << " for key 0..." << std::endl;
