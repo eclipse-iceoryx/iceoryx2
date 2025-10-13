@@ -78,7 +78,7 @@
 //!
 //! // update permission from 0 to 32768
 //! mmap.set_permission(0)
-//!     .size(32768)
+//!     .region_size(32768)
 //!     .apply(MappingPermission::Read)?;
 //!
 //! # Ok(())
@@ -147,7 +147,7 @@ pub enum MemoryMappingPermissionUpdateError {
     /// The size was not a multiple of the [`SystemInfo::PageSize`]
     SizeNotAlignedToPageSize,
     /// The address offset was not a multiple of the [`SystemInfo::PageSize`]
-    AddressOffsetNotAlignedToPageSize,
+    RegionOffsetNotAlignedToPageSize,
     /// Insufficient permissions to update the [`MappingPermission`]
     InsufficientPermissions,
     /// Insufficient memory to update the [`MappingPermission`]
@@ -155,7 +155,7 @@ pub enum MemoryMappingPermissionUpdateError {
     /// The size and address offset are larger than the mapped memory range
     InvalidAddressRange,
     /// The size was either not set or set to zero.
-    SizeIsZero,
+    RegionSizeIsZero,
     /// An unknown failure occurred.
     UnknownFailure(i32),
 }
@@ -556,7 +556,7 @@ impl MemoryMapping {
         ProtectBuilder {
             mapping_base_address: self.base_address as usize,
             mapping_size: self.size,
-            size: 0,
+            region_size: 0,
             region_offset,
         }
     }
@@ -609,14 +609,14 @@ impl MemoryMapping {
 pub struct ProtectBuilder {
     mapping_base_address: usize,
     mapping_size: usize,
-    size: usize,
+    region_size: usize,
     region_offset: usize,
 }
 
 impl ProtectBuilder {
     /// Defines the size of the memory range. Must be a multiple of the page size.
-    pub fn size(mut self, value: usize) -> Self {
-        self.size = value;
+    pub fn region_size(mut self, value: usize) -> Self {
+        self.region_size = value;
         self
     }
 
@@ -627,33 +627,33 @@ impl ProtectBuilder {
     ) -> Result<(), MemoryMappingPermissionUpdateError> {
         let msg = "Failed to adjust the permissions of the memory mapping";
         let page_size = SystemInfo::PageSize.value();
-        if self.size % page_size != 0 {
+        if self.region_size % page_size != 0 {
             fail!(from self, with MemoryMappingPermissionUpdateError::SizeNotAlignedToPageSize,
-                "{msg} since the size is not aligned to the page size of {page_size}.");
+                "{msg} since the region size is not aligned to the page size of {page_size}.");
         }
 
         if self.region_offset % page_size != 0 {
-            fail!(from self, with MemoryMappingPermissionUpdateError::AddressOffsetNotAlignedToPageSize,
-                "{msg} since the start offset {} is not aligned to the page size of {page_size}.",
+            fail!(from self, with MemoryMappingPermissionUpdateError::RegionOffsetNotAlignedToPageSize,
+                "{msg} since the region offset {} is not aligned to the page size of {page_size}.",
                 self.region_offset);
         }
 
         if self.region_offset >= self.mapping_size
-            || self.mapping_size - self.region_offset < self.size
+            || self.mapping_size - self.region_offset < self.region_size
         {
             fail!(from self, with MemoryMappingPermissionUpdateError::InvalidAddressRange,
                 "{msg} since it contains an address range outside of the mapped memory range.");
         }
 
-        if self.size == 0 {
-            fail!(from self, with MemoryMappingPermissionUpdateError::SizeIsZero,
+        if self.region_size == 0 {
+            fail!(from self, with MemoryMappingPermissionUpdateError::RegionSizeIsZero,
                 "{msg} since the provided size is zero.");
         }
 
         if unsafe {
             posix::mprotect(
                 (self.mapping_base_address + self.region_offset) as *mut posix::void,
-                self.size,
+                self.region_size,
                 mapping_permission as _,
             )
         } == -1

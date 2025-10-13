@@ -71,7 +71,7 @@ fn setting_permission_to_read_works() {
     }
 
     sut.set_permission(0)
-        .size(memory_size / 2)
+        .region_size(memory_size / 2)
         .apply(MappingPermission::Read)
         .unwrap();
 
@@ -174,10 +174,10 @@ fn update_permissions_offset_fails_when_offset_is_not_multiple_of_page_size() {
 
     let result = sut
         .set_permission(123)
-        .size(SystemInfo::PageSize.value())
+        .region_size(SystemInfo::PageSize.value())
         .apply(MappingPermission::Read);
 
-    assert_that!(result.err(), eq Some(MemoryMappingPermissionUpdateError::AddressOffsetNotAlignedToPageSize));
+    assert_that!(result.err(), eq Some(MemoryMappingPermissionUpdateError::RegionOffsetNotAlignedToPageSize));
 }
 
 #[test]
@@ -191,7 +191,7 @@ fn update_permissions_offset_fails_when_size_is_not_multiple_of_page_size() {
 
     let result = sut
         .set_permission(0)
-        .size(456)
+        .region_size(456)
         .apply(MappingPermission::Read);
 
     assert_that!(result.err(), eq Some(MemoryMappingPermissionUpdateError::SizeNotAlignedToPageSize));
@@ -208,7 +208,7 @@ fn update_permissions_offset_fails_when_size_is_zero() {
 
     let result = sut.set_permission(0).apply(MappingPermission::Read);
 
-    assert_that!(result.err(), eq Some(MemoryMappingPermissionUpdateError::SizeIsZero));
+    assert_that!(result.err(), eq Some(MemoryMappingPermissionUpdateError::RegionSizeIsZero));
 }
 
 #[test]
@@ -222,7 +222,7 @@ fn update_permissions_offset_fails_when_range_is_greater_than_mapped_range() {
 
     let result = sut
         .set_permission(0)
-        .size(memory_size * 2)
+        .region_size(memory_size * 2)
         .apply(MappingPermission::Read);
 
     assert_that!(result.err(), eq Some(MemoryMappingPermissionUpdateError::InvalidAddressRange));
