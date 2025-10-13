@@ -47,7 +47,9 @@ members = [
     "benchmarks/request-response",
     "benchmarks/publish-subscribe",
     "benchmarks/event",
-    "benchmarks/queue"
+    "benchmarks/queue",
+
+    "component-tests/rust"
 ]
 
 [workspace.package]

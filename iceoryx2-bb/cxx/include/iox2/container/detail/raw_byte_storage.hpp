@@ -190,6 +190,32 @@ class RawByteStorage {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast), required for storage access
         return reinterpret_cast<T const*>(m_bytes + (idx * sizeof(T)));
     }
+
+    // Memory layout metrics.
+    // Contains all relevant metrics to verify the exact layout of the storage in memory.
+    struct StorageMemoryLayoutMetrics {
+        size_t storage_alignment;
+        size_t storage_size;
+        size_t sizeof_bytes;
+        size_t offset_bytes;
+        size_t sizeof_size;
+        size_t offset_size;
+        bool size_is_unsigned;
+    };
+
+    constexpr auto static_memory_layout_metrics() noexcept -> StorageMemoryLayoutMetrics {
+        using Self = std::remove_reference_t<decltype(*this)>;
+        StorageMemoryLayoutMetrics ret;
+        ret.storage_alignment = alignof(Self);
+        ret.storage_size = sizeof(Self);
+        ret.sizeof_bytes = sizeof(m_bytes);
+        ret.offset_bytes = offsetof(Self, m_bytes);
+        ret.sizeof_size = sizeof(m_size);
+        ret.offset_size = offsetof(Self, m_size);
+        // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
+        ret.size_is_unsigned = std::is_unsigned<decltype(m_size)>::value;
+        return ret;
+    }
 };
 } // namespace detail
 } // namespace container

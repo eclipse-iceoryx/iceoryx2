@@ -1,0 +1,24 @@
+[package]
+name = "component-tests_rust"
+description = "iceoryx2: component tests"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[dependencies]
+iceoryx2-services-discovery = { workspace = true }
+iceoryx2 = { workspace = true }
+iceoryx2-bb-container = { workspace = true }
+iceoryx2-bb-derive-macros = { workspace = true }
+iceoryx2-bb-elementary = { workspace = true }
+iceoryx2-bb-elementary-traits = { workspace = true }
+iceoryx2-bb-log = { workspace = true }
+iceoryx2-bb-system-types = { workspace = true }
+
+[dev-dependencies]
+clap = { workspace = true }
