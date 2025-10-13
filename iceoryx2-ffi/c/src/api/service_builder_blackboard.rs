@@ -21,7 +21,7 @@ use crate::api::{
     PortFactoryBlackboardUnion, ServiceBuilderUnion, IOX2_OK,
 };
 use crate::create_type_details;
-use core::ffi::{c_char, c_int, c_uchar, c_void};
+use core::ffi::{c_char, c_int, c_void};
 use core::mem::ManuallyDrop;
 use iceoryx2::constants::MAX_BLACKBOARD_KEY_SIZE;
 use iceoryx2::service::builder::blackboard::{
@@ -38,7 +38,7 @@ use iceoryx2_ffi_macros::CStrRepr;
 pub type iox2_service_blackboard_creator_add_release_callback = Option<extern "C" fn(*mut c_void)>;
 // Function to compare keys
 pub type iox2_service_blackboard_key_eq_cmp_func =
-    unsafe extern "C" fn(*const c_uchar, *const c_uchar) -> bool;
+    unsafe extern "C" fn(*const c_void, *const c_void) -> bool;
 
 #[repr(C)]
 #[derive(Copy, Clone, CStrRepr)]
@@ -356,7 +356,9 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_set_key_eq_comp
 
     let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
 
-    let eq_func = Box::new(move |lhs: *const u8, rhs: *const u8| key_eq_func(lhs, rhs));
+    let eq_func = Box::new(move |lhs: *const u8, rhs: *const u8| {
+        key_eq_func(lhs as *const c_void, rhs as *const c_void)
+    });
 
     match service_builder_struct.service_type {
         iox2_service_type_e::IPC => {

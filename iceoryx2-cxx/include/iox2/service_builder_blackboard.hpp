@@ -112,8 +112,8 @@ class ServiceBuilderBlackboardOpener {
 
 namespace internal {
 template <typename T>
-auto default_key_eq_cmp_func(const uint8_t* lhs, const uint8_t* rhs) -> bool {
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast): C API requires to pass uint8_t* instead of T*
+auto default_key_eq_cmp_func(const void* lhs, const void* rhs) -> bool {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast): C API requires to pass void* instead of T*
     return (*reinterpret_cast<const T*>(lhs)) == (*reinterpret_cast<const T*>(rhs));
 }
 } // namespace internal

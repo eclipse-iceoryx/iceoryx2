@@ -22,10 +22,10 @@ struct Foo {
     uint16_t z;
 };
 
-bool key_cmp(const uint8_t* lhs, const uint8_t* rhs) {
-    const struct Foo* lhs_foo = (const struct Foo*) lhs; // NOLINT
-    const struct Foo* rhs_foo = (const struct Foo*) rhs; // NOLINT
-    return lhs_foo->x == rhs_foo->x && lhs_foo->y == rhs_foo->y && lhs_foo->z == rhs_foo->z;
+bool key_cmp(const void* lhs, const void* rhs) {
+    const struct Foo LHS = *(const struct Foo*) lhs;
+    const struct Foo RHS = *(const struct Foo*) rhs;
+    return LHS.x == RHS.x && LHS.y == RHS.y && LHS.z == RHS.z;
 }
 
 #endif
