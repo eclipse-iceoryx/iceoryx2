@@ -71,8 +71,8 @@ semantic_string! {
   },
   invalid_characters: |value: &[u8]| {
     for (index, character) in value.iter().enumerate() {
-        #[cfg(target_os = "windows")]
         if index != 1 { // paths like C:\fuu must be allowed
+            #[cfg(target_os = "windows")]
             if *character == b':' {
                 return true
             }

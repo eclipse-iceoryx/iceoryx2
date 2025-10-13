@@ -104,7 +104,7 @@ pub enum MemoryMappingCreationError {
     ExceedsTheMaximumNumberOfMappedRegions,
     /// A [`FileDescriptor`] was provided that does not support `mmap`.
     FileDescriptorDoesNotSupportMemoryMappings,
-    /// Inssufficient resources to map the memory into the process.
+    /// Insufficient resources to map the memory into the process.
     InsufficientResources,
     /// The provided size was larger than the corresponding file.
     MappingLargerThanCorrespondingFile,
@@ -552,12 +552,12 @@ impl Drop for MemoryMapping {
 impl MemoryMapping {
     /// Updates the permissions of a region of the [`MemoryMapping`]. The start
     /// offset must be a multiple of page size.
-    pub fn set_permission(&mut self, start_offset: usize) -> ProtectBuilder {
+    pub fn set_permission(&mut self, region_offset: usize) -> ProtectBuilder {
         ProtectBuilder {
             mapping_base_address: self.base_address as usize,
             mapping_size: self.size,
             size: 0,
-            start_offset,
+            region_offset,
         }
     }
 
@@ -610,7 +610,7 @@ pub struct ProtectBuilder {
     mapping_base_address: usize,
     mapping_size: usize,
     size: usize,
-    start_offset: usize,
+    region_offset: usize,
 }
 
 impl ProtectBuilder {
@@ -632,13 +632,15 @@ impl ProtectBuilder {
                 "{msg} since the size is not aligned to the page size of {page_size}.");
         }
 
-        if self.start_offset % page_size != 0 {
+        if self.region_offset % page_size != 0 {
             fail!(from self, with MemoryMappingPermissionUpdateError::AddressOffsetNotAlignedToPageSize,
                 "{msg} since the start offset {} is not aligned to the page size of {page_size}.",
-                self.start_offset);
+                self.region_offset);
         }
 
-        if self.mapping_size < self.start_offset + self.size {
+        if self.region_offset >= self.mapping_size
+            || self.mapping_size - self.region_offset < self.size
+        {
             fail!(from self, with MemoryMappingPermissionUpdateError::InvalidAddressRange,
                 "{msg} since it contains an address range outside of the mapped memory range.");
         }
@@ -650,7 +652,7 @@ impl ProtectBuilder {
 
         if unsafe {
             posix::mprotect(
-                (self.mapping_base_address + self.start_offset) as *mut posix::void,
+                (self.mapping_base_address + self.region_offset) as *mut posix::void,
                 self.size,
                 mapping_permission as _,
             )
