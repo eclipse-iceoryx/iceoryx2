@@ -8,6 +8,10 @@
 > * have a uniform memory representation, ensuring that shared structs have the
 >     same data layout
 > * not use pointers to manage their internal structure
+>
+> **Only fixed-size integers (like `uint8_t`), `float`, `double`, and the**
+> **types in the `iceoryx2-bb-container` library are cross-language**
+> **compatible!**
 
 This example illustrates the blackboard messaging pattern. A writer updates the
 values in the blackboard every second and a reader reads and prints them to the
