@@ -49,14 +49,19 @@ semantic_string! {
     false
   },
   invalid_characters: |string: &[u8]| {
-    for value in string {
-        match value {
+    for (index, character) in string.iter().enumerate() {
+        #[cfg(target_os = "windows")]
+        if index != 1 { // paths like C:\fuu must be allowed
+            if *character == b':' {
+                return true
+            }
+        }
+
+        match character {
             // linux & windows
             0 => return true,
             // windows only
             1..=31 => return true,
-            #[cfg(target_os = "windows")]
-            b':' => return true,
             b'<' => return true,
             b'>' => return true,
             b'"' => return true,
