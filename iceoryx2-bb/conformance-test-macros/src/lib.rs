@@ -27,11 +27,10 @@ pub fn conformance_test(_attr: TokenStream, item: TokenStream) -> TokenStream {
 pub fn conformance_test_module(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as ItemMod);
     let mod_ident = &input.ident;
+    let macro_name = mod_ident;
 
     // collect all functions with #[conformance_test] attribute
     let conformance_test_fns = collect_conformance_test_functions(&input, mod_ident);
-
-    let macro_name = syn::Ident::new(&format!("{}", mod_ident), mod_ident.span());
 
     // generate the declarative macro
     let output = quote! {
