@@ -16,6 +16,7 @@ cc_binary(
     name = "example_cxx_blackboard_creator",
     srcs = [
         "src/creator.cpp",
+        "src/blackboard_complex_key.hpp"
     ],
     deps = [
         "@iceoryx//:iceoryx_hoofs",
@@ -27,6 +28,7 @@ cc_binary(
     name = "example_cxx_blackboard_opener",
     srcs = [
         "src/opener.cpp",
+        "src/blackboard_complex_key.hpp"
     ],
     deps = [
         "@iceoryx//:iceoryx_hoofs",

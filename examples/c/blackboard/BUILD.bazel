@@ -16,6 +16,7 @@ cc_binary(
     name = "example_c_creator",
     srcs = [
         "src/creator.c",
+        "src/blackboard_complex_key.h",
     ],
     deps = [
         "//:iceoryx2-c-static",
@@ -26,6 +27,7 @@ cc_binary(
     name = "example_c_opener",
     srcs = [
         "src/opener.c",
+        "src/blackboard_complex_key.h",
     ],
     deps = [
         "//:iceoryx2-c-static",
