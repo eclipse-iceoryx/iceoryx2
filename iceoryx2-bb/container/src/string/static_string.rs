@@ -279,11 +279,27 @@ impl<const CAPACITY: usize> StaticString<CAPACITY> {
     ///  * `bytes` len must be smaller or equal than [`StaticString::capacity()`]
     ///  * all unicode code points must be smaller 128 and not 0.
     ///
-    pub unsafe fn from_bytes_unchecked(bytes: &[u8]) -> Self {
+    pub const unsafe fn from_bytes_unchecked_restricted(bytes: &[u8], len: usize) -> Self {
         debug_assert!(bytes.len() <= CAPACITY);
+        debug_assert!(len <= bytes.len());
+
         let mut new_self = Self::new();
-        new_self.insert_bytes_unchecked(0, bytes);
+        core::ptr::copy_nonoverlapping(bytes.as_ptr(), new_self.data.as_mut_ptr().cast(), len);
+        new_self.data[len].write(0);
+        new_self.len = len as u64;
         new_self
+    }
+
+    /// Creates a new [`StaticString`]. The user has to ensure that the string can hold the
+    /// bytes.
+    ///
+    /// # Safety
+    ///
+    ///  * `bytes` len must be smaller or equal than [`StaticString::capacity()`]
+    ///  * all unicode code points must be smaller 128 and not 0.
+    ///
+    pub const unsafe fn from_bytes_unchecked(bytes: &[u8]) -> Self {
+        Self::from_bytes_unchecked_restricted(bytes, bytes.len())
     }
 
     /// Creates a new [`StaticString`] from a byte slice
@@ -329,6 +345,11 @@ impl<const CAPACITY: usize> StaticString<CAPACITY> {
     /// Returns the capacity of the [`StaticString`]
     pub const fn capacity() -> usize {
         CAPACITY
+    }
+
+    /// Returns a slice to the underlying bytes
+    pub const fn as_bytes_const(&self) -> &[u8] {
+        unsafe { core::slice::from_raw_parts(self.data.as_ptr().cast(), self.len as usize) }
     }
 }
 

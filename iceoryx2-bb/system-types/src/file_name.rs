@@ -186,6 +186,19 @@ impl<const CAPACITY: usize> iceoryx2_bb_container::semantic_string::SemanticStri
 }
 
 impl<const CAPACITY: usize> RestrictedFileName<CAPACITY> {
+    /// Creates a new instance.
+    ///
+    /// # Safety
+    ///
+    /// * The provided slice must have a length smaller or equal to the capacity. `value.len() < Self::max_len()`
+    /// * The contents of the slice must follow the content contract
+    ///
+    pub const unsafe fn new_unchecked_const(value: &[u8]) -> RestrictedFileName<CAPACITY> {
+        Self {
+            value: iceoryx2_bb_container::string::StaticString::from_bytes_unchecked(value),
+        }
+    }
+
     /// Returns the maximum length of the [`RestrictedFileName`]
     pub const fn max_len() -> usize {
         CAPACITY
