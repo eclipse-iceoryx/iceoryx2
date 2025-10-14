@@ -109,7 +109,7 @@ impl FilePath {
             required_len += 1;
         }
 
-        if Self::max_len() < required_len {
+        if PATH_LENGTH < required_len {
             fail!(from "FilePath::from_path_and_file()",
                 with SemanticStringError::ExceedsMaximumLength,
                 "{} since the concatination of \"{}\" and \"{}\" would exceed the maximum supported length of {}.",
@@ -126,7 +126,7 @@ impl FilePath {
     /// * [`Path::len()`] + [`FileName::len`] + 1 <= [`FilePath::len()`]
     ///
     pub const unsafe fn from_path_and_file_unchecked(path: &Path, file: &FileName) -> Self {
-        let mut buffer = [0u8; Self::max_len()];
+        let mut buffer = [0u8; PATH_LENGTH];
         let mut buffer_len = path.as_bytes_const().len();
 
         core::ptr::copy_nonoverlapping(

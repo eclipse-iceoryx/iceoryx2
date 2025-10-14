@@ -285,7 +285,7 @@ impl<const CAPACITY: usize> StaticString<CAPACITY> {
 
         let mut new_self = Self::new();
         core::ptr::copy_nonoverlapping(bytes.as_ptr(), new_self.data.as_mut_ptr().cast(), len);
-        new_self.data[len].write(0);
+        core::ptr::write::<u8>(new_self.data.as_mut_ptr().add(len).cast(), 0);
         new_self.len = len as u64;
         new_self
     }
