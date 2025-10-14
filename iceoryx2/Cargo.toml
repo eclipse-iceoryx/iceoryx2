@@ -12,6 +12,12 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [features]
+default = ["std"]
+std = [
+  "iceoryx2-bb-log/std",
+  "iceoryx2-bb-log/logger_console"
+]
+
 # Enables https://crates.io/crates/log as default logger
 logger_log = ["iceoryx2-bb-log/logger_log"]
 # Enables https://crates.io/crates/tracing as default logger

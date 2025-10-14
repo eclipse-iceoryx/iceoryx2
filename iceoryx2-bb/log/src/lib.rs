@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![cfg_attr(not(any(test, feature = "std")), no_std)]
 #![warn(clippy::alloc_instead_of_core)]
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
@@ -142,6 +143,21 @@
 //! }
 //! ```
 
+#[cfg(all(feature = "logger_buffer", not(feature = "std")))]
+compile_error!("The 'logger_buffer' feature requires the 'std' feature to be enabled");
+
+#[cfg(all(feature = "logger_file", not(feature = "std")))]
+compile_error!("The 'logger_file' feature requires the 'std' feature to be enabled");
+
+#[cfg(all(feature = "logger_console", not(feature = "std")))]
+compile_error!("The 'logger_console' feature requires the 'std' feature to be enabled");
+
+#[cfg(all(feature = "logger_log", not(feature = "std")))]
+compile_error!("The 'logger_log' feature requires the 'std' feature to be enabled");
+
+#[cfg(all(feature = "logger_tracing", not(feature = "std")))]
+compile_error!("The 'logger_tracing' feature requires the 'std' feature to be enabled");
+
 extern crate alloc;
 
 #[macro_use]
@@ -150,12 +166,12 @@ pub mod log;
 pub mod fail;
 pub mod logger;
 
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU8;
+#[cfg(feature = "std")]
+pub use from_env::{set_log_level_from_env_or, set_log_level_from_env_or_default};
+
+use iceoryx2_pal_concurrency_sync::{iox_atomic::IoxAtomicU8, once::Once};
 
 use core::{fmt::Arguments, sync::atomic::Ordering};
-use std::sync::Once;
-
-use std::env;
 
 #[cfg(feature = "logger_tracing")]
 static DEFAULT_LOGGER: logger::tracing::Logger = logger::tracing::Logger::new();
@@ -163,8 +179,23 @@ static DEFAULT_LOGGER: logger::tracing::Logger = logger::tracing::Logger::new();
 #[cfg(feature = "logger_log")]
 static DEFAULT_LOGGER: logger::log::Logger = logger::log::Logger::new();
 
-#[cfg(not(any(feature = "logger_log", feature = "logger_tracing")))]
+#[cfg(feature = "logger_file")]
+static DEFAULT_LOGGER: logger::file::Logger = logger::file::Logger::new();
+
+#[cfg(feature = "logger_buffer")]
+static DEFAULT_LOGGER: logger::buffer::Logger = logger::buffer::Logger::new();
+
+#[cfg(feature = "logger_console")]
 static DEFAULT_LOGGER: logger::console::Logger = logger::console::Logger::new();
+
+#[cfg(not(any(
+    feature = "logger_tracing",
+    feature = "logger_log",
+    feature = "logger_file",
+    feature = "logger_buffer",
+    feature = "logger_console"
+)))]
+static DEFAULT_LOGGER: logger::null::Logger = logger::null::Logger::new();
 
 const DEFAULT_LOG_LEVEL: LogLevel = LogLevel::Info;
 
@@ -187,43 +218,6 @@ pub enum LogLevel {
     Warn = 3,
     Error = 4,
     Fatal = 5,
-}
-
-impl LogLevel {
-    fn from_str_fuzzy(log_level_string: &str, log_level_fallback: LogLevel) -> LogLevel {
-        match log_level_string.to_lowercase().as_str() {
-            "trace" => LogLevel::Trace,
-            "debug" => LogLevel::Debug,
-            "info" => LogLevel::Info,
-            "warn" => LogLevel::Warn,
-            "error" => LogLevel::Error,
-            "fatal" => LogLevel::Fatal,
-            _ => {
-                eprintln!(
-                    "Invalid value for 'IOX2_LOG_LEVEL' environment variable!\
-                \nFound: {log_level_string:?}\
-                \nAllowed is one of: fatal, error, warn, info, debug, trace\
-                \nSetting log level as : {log_level_fallback:?}"
-                );
-                log_level_fallback
-            }
-        }
-    }
-}
-
-/// Sets the log level by reading environment variable "IOX2_LOG_LEVEL" or default it with LogLevel::INFO
-pub fn set_log_level_from_env_or_default() {
-    set_log_level_from_env_or(DEFAULT_LOG_LEVEL);
-}
-
-/// Sets the log level by reading environment variable "IOX2_LOG_LEVEL", and if the environment variable
-/// doesn't exit it sets it with a user-defined logging level
-pub fn set_log_level_from_env_or(v: LogLevel) {
-    let log_level = env::var("IOX2_LOG_LEVEL")
-        .ok()
-        .map(|s| LogLevel::from_str_fuzzy(&s, v))
-        .unwrap_or(v);
-    set_log_level(log_level);
 }
 
 /// Sets the current log level. This is ignored for external frameworks like `log` or `tracing`.
@@ -268,6 +262,50 @@ pub fn get_logger() -> &'static dyn Log {
     #[allow(static_mut_refs)]
     unsafe {
         *LOGGER.as_ref().unwrap()
+    }
+}
+
+#[cfg(feature = "std")]
+mod from_env {
+    use super::{set_log_level, LogLevel, DEFAULT_LOG_LEVEL};
+    use std::env;
+
+    fn get_log_level_from_str_fuzzy(
+        log_level_string: &str,
+        log_level_fallback: LogLevel,
+    ) -> LogLevel {
+        match log_level_string.to_lowercase().as_str() {
+            "trace" => LogLevel::Trace,
+            "debug" => LogLevel::Debug,
+            "info" => LogLevel::Info,
+            "warn" => LogLevel::Warn,
+            "error" => LogLevel::Error,
+            "fatal" => LogLevel::Fatal,
+            _ => {
+                eprintln!(
+                    "Invalid value for 'IOX2_LOG_LEVEL' environment variable!\
+                    \nFound: {log_level_string:?}\
+                    \nAllowed is one of: fatal, error, warn, info, debug, trace\
+                    \nSetting log level as : {log_level_fallback:?}"
+                );
+                log_level_fallback
+            }
+        }
+    }
+
+    /// Sets the log level by reading environment variable "IOX2_LOG_LEVEL" or default it with LogLevel::INFO
+    pub fn set_log_level_from_env_or_default() {
+        set_log_level_from_env_or(DEFAULT_LOG_LEVEL);
+    }
+
+    /// Sets the log level by reading environment variable "IOX2_LOG_LEVEL", and if the environment variable
+    /// doesn't exit it sets it with a user-defined logging level
+    pub fn set_log_level_from_env_or(v: LogLevel) {
+        let log_level = env::var("IOX2_LOG_LEVEL")
+            .ok()
+            .map(|s| get_log_level_from_str_fuzzy(&s, v))
+            .unwrap_or(v);
+        set_log_level(log_level);
     }
 }
 

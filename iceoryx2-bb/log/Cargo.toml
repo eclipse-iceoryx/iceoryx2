@@ -11,6 +11,12 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [features]
+default = ["std"]
+std = []
+
+logger_buffer = []
+logger_file = []
+logger_console = []
 # Enables https://crates.io/crates/log as default logger
 logger_log = ["dep:log"]
 # Enables https://crates.io/crates/tracing as default logger
