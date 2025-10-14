@@ -65,6 +65,7 @@ void drop_res(struct res* const value) { // NOLINT
         iox2_node_drop(value->node);
     }
 }
+
 int main(void) {
     // Setup logging
     iox2_set_log_level_from_env_or(iox2_log_level_e_INFO);
@@ -105,7 +106,7 @@ int main(void) {
         goto end;
     }
 
-    // create service
+    // open service
     iox2_port_factory_blackboard_h service = NULL;
     if (iox2_service_builder_blackboard_open(service_builder_blackboard, NULL, &service) != IOX2_OK) {
         printf("Unable to open service!\n");

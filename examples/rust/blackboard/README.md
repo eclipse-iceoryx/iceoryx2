@@ -28,10 +28,9 @@ console. The key-value pairs must be defined via the the service builder:
 
 ```rust
 node.service_builder(&service_name)
-    .blackboard_creator::<u32>()
-    .add_with_default::<u64>(0)
-    .add::<FixedSizeByteString<30>>(5, "Groovy".try_into()?)
-    .add_with_default::<f32>(9)
+    .blackboard_creator::<BlackboardKey>()
+    .add::<i32>(key_0, 3)
+    .add::<f64>(key_1, INITIAL_VALUE_1)
     .create()?;
 ```
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2024 Contributors to the Eclipse Foundation
+// Copyright (c) 2025 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -18,9 +18,9 @@
 struct BlackboardKey {
     // IOX2_TYPE_NAME is equivalent to the key type name used on the Rust side
     static constexpr const char* IOX2_TYPE_NAME = "BlackboardKey";
-    std::uint32_t x;
-    std::int64_t y;
-    std::uint16_t z;
+    std::uint32_t x; // NOLINT
+    std::int64_t y; // NOLINT
+    std::uint16_t z; // NOLINT
 
     auto operator==(const BlackboardKey& rhs) const -> bool {
         return x == rhs.x && y == rhs.y && z == rhs.z;
