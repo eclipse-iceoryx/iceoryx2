@@ -123,9 +123,11 @@ impl FilePath {
     ///
     /// # Safety
     ///
-    /// * [`Path::len()`] + [`FileName::len`] + 1 <= [`FilePath::len()`]
+    /// * [`Path::len()`] + [`FileName::len()`] + 1 <= [`FilePath::max_len()`]
     ///
     pub const unsafe fn from_path_and_file_unchecked(path: &Path, file: &FileName) -> Self {
+        debug_assert!(path.as_bytes_const().len() + file.as_bytes_const().len() + 1 < PATH_LENGTH);
+
         let mut buffer = [0u8; PATH_LENGTH];
         let mut buffer_len = path.as_bytes_const().len();
 

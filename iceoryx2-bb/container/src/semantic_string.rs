@@ -478,6 +478,7 @@ macro_rules! semantic_string {
             /// * The contents of the slice must follow the content contract
             ///
             pub const unsafe fn new_unchecked_const(value: &[u8]) -> $string_name {
+                core::debug_assert!(value.len() <= $capacity);
                 $string_name {
                     value: iceoryx2_bb_container::string::StaticString::from_bytes_unchecked(value),
                 }

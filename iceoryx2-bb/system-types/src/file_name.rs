@@ -174,12 +174,15 @@ impl<const CAPACITY: usize> iceoryx2_bb_container::semantic_string::SemanticStri
     }
 
     unsafe fn new_unchecked(bytes: &[u8]) -> Self {
+        debug_assert!(bytes.len() <= CAPACITY);
+
         Self {
             value: iceoryx2_bb_container::string::StaticString::from_bytes_unchecked(bytes),
         }
     }
 
     unsafe fn insert_bytes_unchecked(&mut self, idx: usize, bytes: &[u8]) {
+        debug_assert!(bytes.len() + self.len() <= CAPACITY);
         use iceoryx2_bb_container::string::String;
         self.value.insert_bytes_unchecked(idx, bytes);
     }
@@ -194,6 +197,7 @@ impl<const CAPACITY: usize> RestrictedFileName<CAPACITY> {
     /// * The contents of the slice must follow the content contract
     ///
     pub const unsafe fn new_unchecked_const(value: &[u8]) -> RestrictedFileName<CAPACITY> {
+        debug_assert!(value.len() <= CAPACITY);
         Self {
             value: iceoryx2_bb_container::string::StaticString::from_bytes_unchecked(value),
         }

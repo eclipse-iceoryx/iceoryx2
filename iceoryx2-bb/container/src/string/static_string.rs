@@ -299,6 +299,8 @@ impl<const CAPACITY: usize> StaticString<CAPACITY> {
     ///  * all unicode code points must be smaller 128 and not 0.
     ///
     pub const unsafe fn from_bytes_unchecked(bytes: &[u8]) -> Self {
+        debug_assert!(bytes.len() <= CAPACITY);
+
         Self::from_bytes_unchecked_restricted(bytes, bytes.len())
     }
 
