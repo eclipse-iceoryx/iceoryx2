@@ -27,6 +27,9 @@
 * Add a Rust string type with fixed compile-time capacity which has the same
   memory layout as the C++ vector
   [#1075](https://github.com/eclipse-iceoryx/iceoryx2/issues/1075)
+* Add unchecked, compile time const creation functions to `SemanticString` and
+  system types like, `FileName`, `Path`, `FilePath`, ...
+  [#1109](https://github.com/eclipse-iceoryx/iceoryx2/issues/1109)
 
 ### Bugfixes
 
