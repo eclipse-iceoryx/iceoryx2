@@ -56,6 +56,8 @@ pub const PROT_EXEC: int = libc::PROT_EXEC as _;
 pub const MCL_CURRENT: int = libc::MCL_CURRENT as _;
 pub const MCL_FUTURE: int = libc::MCL_FUTURE as _;
 pub const MAP_SHARED: int = libc::MAP_SHARED as _;
+pub const MAP_PRIVATE: int = libc::MAP_PRIVATE as _;
+pub const MAP_ANONYMOUS: int = libc::MAP_ANONYMOUS as _;
 pub const MAP_FAILED: *mut void = u64::MAX as *mut void;
 
 pub const PTHREAD_BARRIER_SERIAL_THREAD: int = libc::PTHREAD_BARRIER_SERIAL_THREAD as _;

@@ -16,7 +16,8 @@
 
 use windows_sys::Win32::{
     Foundation::{
-        CloseHandle, ERROR_FILE_NOT_FOUND, ERROR_NO_MORE_FILES, FALSE, INVALID_HANDLE_VALUE, TRUE,
+        CloseHandle, DuplicateHandle, DUPLICATE_SAME_ACCESS, ERROR_FILE_NOT_FOUND,
+        ERROR_NO_MORE_FILES, FALSE, HANDLE, INVALID_HANDLE_VALUE, TRUE,
     },
     Networking::WinSock::{
         closesocket, WSADuplicateSocketA, WSASocketA, INVALID_SOCKET, SOCKET_ERROR,
@@ -34,15 +35,20 @@ use windows_sys::Win32::{
         },
         ProcessStatus::GetModuleFileNameExA,
         SystemInformation::{GetSystemInfo, SYSTEM_INFO},
-        Threading::{GetCurrentProcessId, OpenProcess, PROCESS_QUERY_INFORMATION, PROCESS_VM_READ},
+        Threading::{
+            GetCurrentProcess, GetCurrentProcessId, OpenProcess, PROCESS_QUERY_INFORMATION,
+            PROCESS_VM_READ,
+        },
         IO::OVERLAPPED,
     },
 };
 
-use crate::{
-    posix::shm_set_size,
-    posix::MemZeroedStruct,
-    posix::{constants::*, types::*, win32_handle_translator::FdHandleEntry, Errno},
+use crate::posix::{
+    constants::*,
+    shm_set_size,
+    types::*,
+    win32_handle_translator::{FdHandleEntry, FileHandle},
+    Errno, MemZeroedStruct,
 };
 
 use super::{
@@ -168,6 +174,14 @@ pub unsafe fn dup(fildes: int) -> int {
                 fd: duplicated_socket,
                 recv_timeout: None,
                 send_timeout: None,
+            }))
+        }
+        Some(FdHandleEntry::File(fd)) => {
+            let mut duplicate: HANDLE = 0;
+            win32call! { DuplicateHandle(GetCurrentProcess(), fd.handle, GetCurrentProcess(), &mut duplicate, 0, FALSE, DUPLICATE_SAME_ACCESS)};
+            HandleTranslator::get_instance().add(FdHandleEntry::File(FileHandle {
+                handle: duplicate,
+                lock_state: F_UNLCK,
             }))
         }
         _ => {

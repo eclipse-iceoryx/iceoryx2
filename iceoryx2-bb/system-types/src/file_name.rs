@@ -44,6 +44,7 @@ fn invalid_characters(value: &[u8]) -> bool {
             b'/' => return true,
             // windows only
             1..=31 => return true,
+            #[cfg(target_os = "windows")]
             b':' => return true,
             b'\\' => return true,
             b'<' => return true,

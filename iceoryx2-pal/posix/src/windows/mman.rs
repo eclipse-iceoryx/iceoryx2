@@ -14,16 +14,22 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(unused_variables)]
 
+use core::cell::UnsafeCell;
+
 use crate::posix::{
     constants::*, settings::*, to_dir_search_string, types::*, Errno, MemZeroedStruct,
 };
 use crate::win32call;
 
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU32;
+use iceoryx2_pal_concurrency_sync::mutex::Mutex;
+use iceoryx2_pal_concurrency_sync::WaitAction;
 use iceoryx2_pal_configuration::PATH_SEPARATOR;
 use windows_sys::Win32::Foundation::ERROR_FILE_EXISTS;
 use windows_sys::Win32::Storage::FileSystem::{
     FindClose, FindFirstFileA, FindNextFileA, FILE_ATTRIBUTE_DIRECTORY, WIN32_FIND_DATAA,
 };
+use windows_sys::Win32::System::Threading::{WaitOnAddress, WakeByAddressSingle, INFINITE};
 use windows_sys::Win32::{
     Foundation::{
         CloseHandle, ERROR_ACCESS_DENIED, ERROR_ALREADY_EXISTS, ERROR_FILE_NOT_FOUND, FALSE,
@@ -39,6 +45,81 @@ use windows_sys::Win32::{
 };
 
 use super::win32_handle_translator::{FdHandleEntry, FileHandle, HandleTranslator, ShmHandle};
+
+struct FileMappingsSet {
+    mappings: UnsafeCell<[(isize, HANDLE); 1024]>,
+    mtx: Mutex,
+}
+
+unsafe impl Send for FileMappingsSet {}
+unsafe impl Sync for FileMappingsSet {}
+
+impl FileMappingsSet {
+    const fn new() -> Self {
+        Self {
+            mappings: UnsafeCell::new([(0, 0); 1024]),
+            mtx: Mutex::new(),
+        }
+    }
+
+    fn lock(&self) {
+        self.mtx.lock(|atomic, value| {
+            unsafe {
+                WaitOnAddress(
+                    (atomic as *const IoxAtomicU32).cast(),
+                    (value as *const u32).cast(),
+                    4,
+                    INFINITE,
+                );
+            }
+            WaitAction::Continue
+        });
+    }
+
+    fn unlock(&self) {
+        self.mtx.unlock(|atomic| unsafe {
+            WakeByAddressSingle((atomic as *const IoxAtomicU32).cast());
+        });
+    }
+
+    fn get_instance() -> &'static Self {
+        static MAPPING: FileMappingsSet = FileMappingsSet::new();
+        &MAPPING
+    }
+
+    fn insert(&self, value: isize, handle: HANDLE) -> bool {
+        self.lock();
+        let mappings_ref = unsafe { &mut *self.mappings.get() };
+        for element in mappings_ref {
+            if element.0 == 0 {
+                element.0 = value;
+                element.1 = handle;
+                self.unlock();
+                return true;
+            }
+        }
+
+        self.unlock();
+        false
+    }
+
+    fn remove(&self, value: isize) -> Option<(isize, HANDLE)> {
+        self.lock();
+        let mappings_ref = unsafe { &mut *self.mappings.get() };
+        for element in mappings_ref {
+            if element.0 == value {
+                let ret_val = *element;
+                element.0 = 0;
+                element.1 = 0;
+                self.unlock();
+                return Some(ret_val);
+            }
+        }
+
+        self.unlock();
+        None
+    }
+}
 
 const MAX_SUPPORTED_SHM_SIZE: u64 = 128 * 1024 * 1024 * 1024;
 
@@ -346,40 +427,105 @@ pub unsafe fn mmap(
         return core::ptr::null_mut::<void>();
     }
 
-    let win_handle = match HandleTranslator::get_instance().get(fd) {
-        Some(FdHandleEntry::SharedMemory(v)) => v,
-        _ => {
-            Errno::set(Errno::EINVAL);
-            return core::ptr::null_mut::<void>();
-        }
-    };
-
-    let (map_result, _) =
-        win32call! { MapViewOfFile(win_handle.handle.handle, FILE_MAP_ALL_ACCESS, 0, 0, len)};
-    match map_result {
-        0 => {
-            Errno::set(Errno::ENOMEM);
-            core::ptr::null_mut::<void>()
-        }
-        lpaddress => {
-            if VirtualAlloc(lpaddress as *const void, len, MEM_COMMIT, PAGE_READWRITE).is_null() {
+    if fd == -1 {
+        if flags == MAP_ANONYMOUS | MAP_PRIVATE {
+            let addr =
+                win32call! { VirtualAlloc(core::ptr::null(), len, MEM_COMMIT, PAGE_READWRITE) }.0;
+            if addr.is_null() {
                 Errno::set(Errno::ENOMEM);
                 return core::ptr::null_mut::<void>();
             }
+            return addr as *mut void;
+        } else {
+            Errno::set(Errno::EINVAL);
+            return core::ptr::null_mut::<void>();
+        }
+    }
+
+    match HandleTranslator::get_instance().get(fd) {
+        Some(FdHandleEntry::SharedMemory(win_handle)) => {
+            let (map_result, _) = win32call! { MapViewOfFile(win_handle.handle.handle, FILE_MAP_ALL_ACCESS, 0, 0, len)};
+            match map_result {
+                0 => {
+                    Errno::set(Errno::ENOMEM);
+                    core::ptr::null_mut::<void>()
+                }
+                lpaddress => {
+                    if win32call!{  VirtualAlloc(lpaddress as *const void, len, MEM_COMMIT, PAGE_READWRITE)}.0
+                        .is_null()
+                    {
+                        win32call! { UnmapViewOfFile(lpaddress) };
+                        Errno::set(Errno::ENOMEM);
+                        return core::ptr::null_mut::<void>();
+                    }
+
+                    if !FileMappingsSet::get_instance().insert(lpaddress, 0) {
+                        win32call! { UnmapViewOfFile(lpaddress) };
+                        Errno::set(Errno::EMFILE);
+                        return core::ptr::null_mut::<void>();
+                    }
+
+                    lpaddress as *mut void
+                }
+            }
+        }
+        Some(FdHandleEntry::File(fd)) => {
+            let max_size_low: u32 = (len & 0xFFFFFFFF) as u32;
+            let max_size_high: u32 = ((len >> 32) & 0xFFFFFFFF) as u32;
+            let file_view = win32call! { CreateFileMappingA(
+                fd.handle,
+                core::ptr::null(),
+                PAGE_READWRITE | SEC_RESERVE,
+                max_size_high,
+                max_size_low,
+                core::ptr::null(),
+            ) }
+            .0;
+
+            let lpaddress =
+                win32call! { MapViewOfFile(file_view, FILE_MAP_ALL_ACCESS, 0, 0, len)}.0;
+            if lpaddress == 0 {
+                return core::ptr::null_mut();
+            }
+
+            if !FileMappingsSet::get_instance().insert(lpaddress, file_view) {
+                win32call! { UnmapViewOfFile(lpaddress) };
+                Errno::set(Errno::EMFILE);
+                return core::ptr::null_mut::<void>();
+            }
+
             lpaddress as *mut void
+        }
+        _ => {
+            Errno::set(Errno::EINVAL);
+            core::ptr::null_mut::<void>()
         }
     }
 }
 
 pub unsafe fn munmap(addr: *mut void, len: size_t) -> int {
-    let (has_unmapped, _) = win32call! { UnmapViewOfFile(addr as _) };
-    if has_unmapped == FALSE {
-        Errno::set(Errno::EINVAL);
+    if let Some((addr, handle)) = FileMappingsSet::get_instance().remove(addr as isize) {
+        let (has_unmapped, _) = win32call! { UnmapViewOfFile(addr as _) };
+        if has_unmapped == FALSE {
+            Errno::set(Errno::EINVAL);
+            return -1;
+        }
+
+        if handle != 0 && win32call! { CloseHandle(handle)}.0 == FALSE {
+            Errno::set(Errno::EINVAL);
+            return -1;
+        }
+    } else if win32call! {VirtualFree(addr, len, MEM_DECOMMIT)}.0 == 0 {
         return -1;
     }
+
     0
 }
 
 pub unsafe fn mprotect(addr: *mut void, len: size_t, prot: int) -> int {
-    -1
+    if win32call! { VirtualProtect(addr.cast(), len, prot as _, core::ptr::null_mut()) }.0 == 0 {
+        0
+    } else {
+        -1
+    }
 }
