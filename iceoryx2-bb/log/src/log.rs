@@ -38,16 +38,16 @@
 #[macro_export(local_inner_macros)]
 macro_rules! trace {
     ($($e:expr),*) => {
-        $crate::__internal_print_log_msg($crate::LogLevel::Trace, std::format_args!(""), std::format_args!($($e),*))
+        $crate::__internal_print_log_msg($crate::LogLevel::Trace, core::format_args!(""), core::format_args!($($e),*))
     };
     (from $o:expr, $($e:expr),*) => {
-        $crate::__internal_print_log_msg($crate::LogLevel::Trace, std::format_args!("{:?}", $o), std::format_args!($($e),*))
+        $crate::__internal_print_log_msg($crate::LogLevel::Trace, core::format_args!("{:?}", $o), core::format_args!($($e),*))
     };
     (from $o:expr, when $call:expr, $($e:expr),*) => {
         {
             let result = $call;
             if result.is_err() {
-                $crate::__internal_print_log_msg($crate::LogLevel::Trace, std::format_args!("{:?}", $o), std::format_args!($($e),*))
+                $crate::__internal_print_log_msg($crate::LogLevel::Trace, core::format_args!("{:?}", $o), core::format_args!($($e),*))
             }
         }
     }
@@ -79,16 +79,16 @@ macro_rules! trace {
 #[macro_export(local_inner_macros)]
 macro_rules! debug {
     ($($e:expr),*) => {
-        $crate::__internal_print_log_msg($crate::LogLevel::Debug, std::format_args!(""), std::format_args!($($e),*))
+        $crate::__internal_print_log_msg($crate::LogLevel::Debug, core::format_args!(""), core::format_args!($($e),*))
     };
     (from $o:expr, $($e:expr),*) => {
-        $crate::__internal_print_log_msg($crate::LogLevel::Debug, std::format_args!("{:?}", $o), std::format_args!($($e),*))
+        $crate::__internal_print_log_msg($crate::LogLevel::Debug, core::format_args!("{:?}", $o), core::format_args!($($e),*))
     };
     (from $o:expr, when $call:expr, $($e:expr),*) => {
         {
             let result = $call;
             if result.is_err() {
-                $crate::__internal_print_log_msg($crate::LogLevel::Debug, std::format_args!("{:?}", $o), std::format_args!($($e),*))
+                $crate::__internal_print_log_msg($crate::LogLevel::Debug, core::format_args!("{:?}", $o), core::format_args!($($e),*))
             }
         }
     }
@@ -120,16 +120,16 @@ macro_rules! debug {
 #[macro_export(local_inner_macros)]
 macro_rules! info {
     ($($e:expr),*) => {
-        $crate::__internal_print_log_msg($crate::LogLevel::Info, std::format_args!(""), std::format_args!($($e),*))
+        $crate::__internal_print_log_msg($crate::LogLevel::Info, core::format_args!(""), core::format_args!($($e),*))
     };
     (from $o:expr, $($e:expr),*) => {
-        $crate::__internal_print_log_msg($crate::LogLevel::Info, std::format_args!("{:?}", $o), std::format_args!($($e),*))
+        $crate::__internal_print_log_msg($crate::LogLevel::Info, core::format_args!("{:?}", $o), core::format_args!($($e),*))
     };
     (from $o:expr, when $call:expr, $($e:expr),*) => {
         {
             let result = $call;
             if result.is_err() {
-                $crate::__internal_print_log_msg($crate::LogLevel::Info, std::format_args!("{:?}", $o), std::format_args!($($e),*))
+                $crate::__internal_print_log_msg($crate::LogLevel::Info, core::format_args!("{:?}", $o), core::format_args!($($e),*))
             }
         }
     }
@@ -161,16 +161,16 @@ macro_rules! info {
 #[macro_export(local_inner_macros)]
 macro_rules! warn {
     ($($e:expr),*) => {
-        $crate::__internal_print_log_msg($crate::LogLevel::Warn, std::format_args!(""), std::format_args!($($e),*))
+        $crate::__internal_print_log_msg($crate::LogLevel::Warn, core::format_args!(""), core::format_args!($($e),*))
     };
     (from $o:expr, $($e:expr),*) => {
-        $crate::__internal_print_log_msg($crate::LogLevel::Warn, std::format_args!("{:?}", $o), std::format_args!($($e),*))
+        $crate::__internal_print_log_msg($crate::LogLevel::Warn, core::format_args!("{:?}", $o), core::format_args!($($e),*))
     };
     (from $o:expr, when $call:expr, $($e:expr),*) => {
         {
             let result = $call;
             if result.is_err() {
-                $crate::__internal_print_log_msg($crate::LogLevel::Warn, std::format_args!("{:?}", $o), std::format_args!($($e),*))
+                $crate::__internal_print_log_msg($crate::LogLevel::Warn, core::format_args!("{:?}", $o), core::format_args!($($e),*))
             }
         }
     }
@@ -202,16 +202,16 @@ macro_rules! warn {
 #[macro_export(local_inner_macros)]
 macro_rules! error {
     ($($e:expr),*) => {
-        $crate::__internal_print_log_msg($crate::LogLevel::Error, std::format_args!(""), std::format_args!($($e),*))
+        $crate::__internal_print_log_msg($crate::LogLevel::Error, core::format_args!(""), core::format_args!($($e),*))
     };
     (from $o:expr, $($e:expr),*) => {
-        $crate::__internal_print_log_msg($crate::LogLevel::Error, std::format_args!("{:?}", $o), std::format_args!($($e),*))
+        $crate::__internal_print_log_msg($crate::LogLevel::Error, core::format_args!("{:?}", $o), core::format_args!($($e),*))
     };
     (from $o:expr, when $call:expr, $($e:expr),*) => {
         {
             let result = $call;
             if result.is_err() {
-                $crate::__internal_print_log_msg($crate::LogLevel::Error, std::format_args!("{:?}", $o), std::format_args!($($e),*))
+                $crate::__internal_print_log_msg($crate::LogLevel::Error, core::format_args!("{:?}", $o), core::format_args!($($e),*))
             }
         }
     }
@@ -244,22 +244,22 @@ macro_rules! error {
 macro_rules! fatal_panic {
     ($($e:expr),*) => {
         {
-            $crate::__internal_print_log_msg($crate::LogLevel::Fatal, std::format_args!(""), std::format_args!($($e),*));
-            std::panic!($($e),*);
+            $crate::__internal_print_log_msg($crate::LogLevel::Fatal, core::format_args!(""), core::format_args!($($e),*));
+            core::panic!($($e),*);
         }
     };
     (from $o:expr, $($e:expr),*) => {
         {
-            $crate::__internal_print_log_msg($crate::LogLevel::Fatal, std::format_args!("{:?}", $o), std::format_args!($($e),*));
-            std::panic!("From: {:?} ::: {}", $o, std::format_args!($($e),*));
+            $crate::__internal_print_log_msg($crate::LogLevel::Fatal, core::format_args!("{:?}", $o), core::format_args!($($e),*));
+            core::panic!("From: {:?} ::: {}", $o, core::format_args!($($e),*));
         }
     };
     (from $o:expr, when $call:expr, $($e:expr),*) => {
         {
             let result = $call;
             if result.is_err() {
-                $crate::__internal_print_log_msg($crate::LogLevel::Fatal, std::format_args!("{:?}", $o), std::format_args!($($e),*));
-                std::panic!("From: {:?} ::: {}", $o, std::format_args!($($e),*));
+                $crate::__internal_print_log_msg($crate::LogLevel::Fatal, core::format_args!("{:?}", $o), core::format_args!($($e),*));
+                core::panic!("From: {:?} ::: {}", $o, core::format_args!($($e),*));
             }
             result.ok().unwrap()
         }
