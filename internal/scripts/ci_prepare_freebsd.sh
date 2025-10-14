@@ -18,7 +18,7 @@ export ASSUME_ALWAYS_YES=yes
 pkg install python3 bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --no-modify-path
 export PATH=$PATH:$HOME/.cargo/bin
-rustup toolchain add beta nightly 1.81.0 stable
+rustup toolchain add beta nightly 1.83.0 stable
 rustup component add clippy rustfmt
 rustup default stable
 cargo install cargo-nextest --locked
