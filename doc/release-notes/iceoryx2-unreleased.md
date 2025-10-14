@@ -27,6 +27,9 @@
 * Add a Rust string type with fixed compile-time capacity which has the same
   memory layout as the C++ vector
   [#1075](https://github.com/eclipse-iceoryx/iceoryx2/issues/1075)
+* Add unchecked, compile time const creation functions to `SemanticString` and
+  system types like, `FileName`, `Path`, `FilePath`, ...
+  [#1109](https://github.com/eclipse-iceoryx/iceoryx2/issues/1109)
 
 ### Bugfixes
 
@@ -54,6 +57,8 @@
 
 * Decoupled tunnel implementation from tunelling mechanism
   [#845](https://github.com/eclipse-iceoryx/iceoryx2/issues/845)
+* Updated all dependencies and increased MSRV to 1.83
+    [#1105](https://github.com/eclipse-iceoryx/iceoryx2/issues/1105)
 
 ### Workflow
 
@@ -156,14 +161,14 @@
    let tunnel_config = iceoryx2_tunnel::TunnelConfig::default();
    let iceoryx_config = iceoryx2::config::Config::default();
 
-   let mut tunnel = 
+   let mut tunnel =
        Tunnel::<Service>::create(&tunnel_config, &iceoryx_config, &zenoh_config).unwrap();
 
    // new
    let backend_config = Backend::Config::default();
    let tunnel_config = iceoryx2_tunnel::Config::default();
    let iceoryx_config = iceoryx2::config::Config::default();
-   
+
    let mut tunnel =
        Tunnel::<Service, Backend>::create(&tunnel_config, &iceoryx_config, &backend_config).unwrap();
    ```

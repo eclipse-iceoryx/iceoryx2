@@ -14,7 +14,6 @@ use core::time::Duration;
 
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_posix::config::*;
-use iceoryx2_bb_posix::directory::Directory;
 use iceoryx2_bb_posix::file::{File, FileBuilder};
 use iceoryx2_bb_posix::file_descriptor::FileDescriptorManagement;
 use iceoryx2_bb_posix::shared_memory::Permission;
@@ -36,8 +35,8 @@ fn generate_file_path() -> FilePath {
     )
     .unwrap();
 
-    Directory::create(&test_directory(), Permission::OWNER_ALL).unwrap();
-    FilePath::from_path_and_file(&test_directory(), &file).unwrap()
+    create_test_directory();
+    FilePath::from_path_and_file(&TEST_DIRECTORY, &file).unwrap()
 }
 
 #[test]

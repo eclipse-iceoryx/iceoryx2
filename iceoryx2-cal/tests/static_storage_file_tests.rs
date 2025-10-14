@@ -56,7 +56,7 @@ fn static_storage_file_path_is_created_when_it_does_not_exist() {
     let storage_name = generate_name();
     let config = generate_isolated_config::<Storage>();
     let content = "some more funky content".to_string();
-    let non_existing_path = FilePath::from_path_and_file(&test_directory(), &generate_name())
+    let non_existing_path = FilePath::from_path_and_file(&TEST_DIRECTORY, &generate_name())
         .unwrap()
         .clone();
 
@@ -91,7 +91,7 @@ fn static_storage_file_custom_path_and_suffix_list_storage_works() {
         .suffix(unsafe { &FileName::new_unchecked(b".blubbme") })
         .path_hint(
             &FilePath::from_path_and_file(
-                &test_directory(),
+                &TEST_DIRECTORY,
                 &FileName::new(b"non_existing").unwrap(),
             )
             .unwrap()
@@ -113,8 +113,7 @@ fn static_storage_file_custom_path_and_suffix_list_storage_works() {
 
     let mut some_files = vec![];
     for _i in 0..NUMBER_OF_STORAGES {
-        let storage_name =
-            FilePath::from_path_and_file(&test_directory(), &generate_name()).unwrap();
+        let storage_name = FilePath::from_path_and_file(&TEST_DIRECTORY, &generate_name()).unwrap();
         FileBuilder::new(&storage_name)
             .creation_mode(CreationMode::PurgeAndCreate)
             .create()

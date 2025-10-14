@@ -75,7 +75,7 @@ use iceoryx2_bb_elementary::{lazy_singleton::*, CallbackProgression};
 use iceoryx2_bb_posix::{
     file::{FileBuilder, FileOpenError},
     shared_memory::AccessMode,
-    system_configuration::get_global_config_path,
+    system_configuration::GLOBAL_CONFIG_PATH,
 };
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
@@ -572,7 +572,7 @@ impl Config {
         origin: &str,
         msg: &str,
     ) -> Result<FilePath, ConfigIterationFailure> {
-        let mut global_config = get_global_config_path();
+        let mut global_config = GLOBAL_CONFIG_PATH;
         fail!(from origin,
                 when global_config.add_path_entry(&Self::relative_config_path()),
                 with ConfigIterationFailure::TooLongUserConfigDirectory,

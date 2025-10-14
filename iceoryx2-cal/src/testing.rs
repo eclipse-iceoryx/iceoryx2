@@ -15,7 +15,7 @@ use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_elementary::math::ToB64;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_posix::{
-    config::test_directory,
+    config::TEST_DIRECTORY,
     directory::{Directory, DirectoryCreateError},
     file::Permission,
     unique_system_id::UniqueSystemId,
@@ -53,16 +53,16 @@ fn generate_prefix() -> FileName {
 }
 
 pub fn generate_isolated_config<T: NamedConceptMgmt>() -> T::Configuration {
-    match Directory::create(&test_directory(), Permission::OWNER_ALL) {
+    match Directory::create(&TEST_DIRECTORY, Permission::OWNER_ALL) {
         Ok(_) | Err(DirectoryCreateError::DirectoryAlreadyExists) => (),
         Err(e) => fatal_panic!(
             "Failed to create test directory {} due to {:?}.",
-            test_directory(),
+            TEST_DIRECTORY,
             e
         ),
     };
 
     T::Configuration::default()
         .prefix(&generate_prefix())
-        .path_hint(&test_directory())
+        .path_hint(&TEST_DIRECTORY)
 }

@@ -103,27 +103,58 @@ semantic_string! {
 impl FilePath {
     /// Creates a new [`FilePath`] from a given [`Path`] and [`FileName`]
     pub fn from_path_and_file(path: &Path, file: &FileName) -> Result<Self, SemanticStringError> {
-        use iceoryx2_bb_container::string::String;
         let msg = "Unable to create FilePath from path and file";
-        let mut new_self = Self {
-            value: unsafe {
-                iceoryx2_bb_container::string::StaticString::from_bytes_unchecked(path.as_bytes())
-            },
-        };
-
+        let mut required_len = path.len() + file.len();
         if !path.is_empty() && path.as_bytes()[path.len() - 1] != PATH_SEPARATOR {
-            fail!(from "FilePath::from_path_and_file()", when new_self.value.push(PATH_SEPARATOR),
-                with SemanticStringError::ExceedsMaximumLength,
-                "{} since the concatination would exceed the maximum supported length of {}.",
-                msg, PATH_LENGTH);
+            required_len += 1;
         }
 
-        fail!(from "FilePath::from_path_and_file()", when new_self.value.push_bytes(file.as_bytes()),
+        if PATH_LENGTH < required_len {
+            fail!(from "FilePath::from_path_and_file()",
                 with SemanticStringError::ExceedsMaximumLength,
-                "{} since the concatination would exceed the maximum supported length of {}.",
-                msg, PATH_LENGTH);
+                "{} since the concatination of \"{}\" and \"{}\" would exceed the maximum supported length of {}.",
+                msg, path, file, PATH_LENGTH);
+        }
 
-        Ok(new_self)
+        Ok(unsafe { Self::from_path_and_file_unchecked(path, file) })
+    }
+
+    /// Creates a new [`FilePath`] from a given [`Path`] and [`FileName`]
+    ///
+    /// # Safety
+    ///
+    /// * [`Path::len()`] + [`FileName::len()`] + 1 <= [`FilePath::max_len()`]
+    ///
+    pub const unsafe fn from_path_and_file_unchecked(path: &Path, file: &FileName) -> Self {
+        debug_assert!(path.as_bytes_const().len() + file.as_bytes_const().len() + 1 < PATH_LENGTH);
+
+        let mut buffer = [0u8; PATH_LENGTH];
+        let mut buffer_len = path.as_bytes_const().len();
+
+        core::ptr::copy_nonoverlapping(
+            path.as_bytes_const().as_ptr(),
+            buffer.as_mut_ptr(),
+            buffer_len,
+        );
+
+        if 0 < buffer_len && path.as_bytes_const()[buffer_len - 1] != PATH_SEPARATOR {
+            core::ptr::copy_nonoverlapping(&PATH_SEPARATOR, buffer.as_mut_ptr().add(buffer_len), 1);
+            buffer_len += 1;
+        }
+
+        let file_len = file.as_bytes_const().len();
+        core::ptr::copy_nonoverlapping(
+            file.as_bytes_const().as_ptr(),
+            buffer.as_mut_ptr().add(buffer_len),
+            file_len,
+        );
+        buffer_len += file_len;
+
+        Self {
+            value: iceoryx2_bb_container::string::StaticString::from_bytes_unchecked_restricted(
+                &buffer, buffer_len,
+            ),
+        }
     }
 
     /// Returns the last file part ([`FileName`]) of the path.

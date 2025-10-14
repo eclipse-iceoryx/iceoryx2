@@ -21,7 +21,7 @@ RUN echo "#### Installing dependencies" \
   && rustup toolchain add \
        beta \
        nightly \
-       1.81.0 \
+       1.83.0 \
   && echo "#### Adding more components like 'clippy', 'rustfmt', etc." \
   && rustup component add \
        clippy \

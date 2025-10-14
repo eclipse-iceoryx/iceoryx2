@@ -122,7 +122,7 @@ pub fn show_current_config() -> Result<()> {
 }
 
 pub fn generate_global() -> Result<()> {
-    let mut global_config_path = get_global_config_path();
+    let mut global_config_path = GLOBAL_CONFIG_PATH;
     global_config_path.add_path_entry(&iceoryx2::config::Config::relative_config_path())?;
     let filepath = FilePath::from_path_and_file(
         &global_config_path,

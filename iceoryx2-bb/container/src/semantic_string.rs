@@ -470,9 +470,27 @@ macro_rules! semantic_string {
         }
 
         impl $string_name {
-            /// Returns the maximum length of [`$string`]
+            /// Creates a new instance.
+            ///
+            /// # Safety
+            ///
+            /// * The provided slice must have a length smaller or equal to the capacity. `value.len() < Self::max_len()`
+            /// * The contents of the slice must follow the content contract
+            ///
+            pub const unsafe fn new_unchecked_const(value: &[u8]) -> $string_name {
+                core::debug_assert!(value.len() <= $capacity);
+                $string_name {
+                    value: iceoryx2_bb_container::string::StaticString::from_bytes_unchecked(value),
+                }
+            }
+
+            /// Returns the maximum supported length
             pub const fn max_len() -> usize {
                 $capacity
+            }
+
+            pub const fn as_bytes_const(&self) -> &[u8] {
+                self.value.as_bytes_const()
             }
         }
 
