@@ -14,6 +14,7 @@ use core::fmt::Debug;
 
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_log::{fail, fatal_panic};
+use iceoryx2_bb_posix::config::TEMP_DIRECTORY;
 use iceoryx2_bb_posix::directory::{Directory, DirectoryRemoveError};
 pub use iceoryx2_bb_system_types::file_name::FileName;
 pub use iceoryx2_bb_system_types::file_path::FilePath;
@@ -224,7 +225,7 @@ pub trait NamedConceptMgmt: Debug {
 
     /// The default path hint for every zero copy connection
     fn default_path_hint() -> Path {
-        iceoryx2_bb_posix::config::temp_directory()
+        TEMP_DIRECTORY
     }
 
     /// Removes the path hint directory. Will be realized only when the concept actually uses

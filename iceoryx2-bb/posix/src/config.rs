@@ -18,7 +18,6 @@ use core::time::Duration;
 use iceoryx2_bb_system_types::{file_name::FileName, path::Path, user_name::UserName};
 
 use crate::{scheduler::Scheduler, system_configuration::*};
-use iceoryx2_bb_container::semantic_string::SemanticString;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ClockMode {
@@ -37,18 +36,12 @@ pub const ADAPTIVE_WAIT_INITIAL_REPETITIONS: u64 = 100 + ADAPTIVE_WAIT_YIELD_REP
 pub const ADAPTIVE_WAIT_INITIAL_WAITING_TIME: Duration = Duration::from_micros(100);
 pub const ADAPTIVE_WAIT_FINAL_WAITING_TIME: Duration = Duration::from_millis(10);
 
-// directories
-pub fn temp_directory() -> Path {
-    unsafe { Path::new_unchecked(iceoryx2_pal_configuration::TEMP_DIRECTORY) }
-}
-
-pub fn test_directory() -> Path {
-    unsafe { Path::new_unchecked(iceoryx2_pal_configuration::TEST_DIRECTORY) }
-}
-
-pub fn shared_memory_directory() -> Path {
-    unsafe { Path::new_unchecked(iceoryx2_pal_configuration::SHARED_MEMORY_DIRECTORY) }
-}
+pub const TEMP_DIRECTORY: Path =
+    unsafe { Path::new_unchecked_const(iceoryx2_pal_configuration::TEMP_DIRECTORY) };
+pub const TEST_DIRECTORY: Path =
+    unsafe { Path::new_unchecked_const(iceoryx2_pal_configuration::TEST_DIRECTORY) };
+pub const SHARED_MEMORY_DIRECTORY: Path =
+    unsafe { Path::new_unchecked_const(iceoryx2_pal_configuration::SHARED_MEMORY_DIRECTORY) };
 
 // TODO unable to verify?
 pub const ACL_LIST_CAPACITY: u32 = 25;

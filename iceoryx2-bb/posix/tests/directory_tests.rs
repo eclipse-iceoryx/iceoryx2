@@ -92,7 +92,7 @@ impl TestFixture {
     }
 
     fn generate_path_in_test_directory(&mut self) -> Path {
-        let mut directory = test_directory();
+        let mut directory = TEST_DIRECTORY;
         directory.push(PATH_SEPARATOR).unwrap();
         directory.push_bytes(b"dir_tests_").unwrap();
         directory
@@ -113,13 +113,13 @@ impl TestFixture {
 #[test]
 fn directory_test_directory_does_exist() {
     create_test_directory();
-    assert_that!(Directory::does_exist(&test_directory()).unwrap(), eq true);
+    assert_that!(Directory::does_exist(&TEST_DIRECTORY).unwrap(), eq true);
 }
 
 #[test]
 fn directory_non_existing_directory_does_not_exist() {
     create_test_directory();
-    let mut non_existant_path = Path::new(&test_directory()).unwrap();
+    let mut non_existant_path = TEST_DIRECTORY;
     non_existant_path.push_bytes(b"i_do_not_exist").unwrap();
     assert_that!(!Directory::does_exist(&non_existant_path).unwrap(), eq true);
 }
@@ -130,7 +130,7 @@ fn directory_file_is_not_a_directory() {
 
     let not_a_directory_entry = FileName::new(b"not_a_directory").unwrap();
     let not_a_directory_path =
-        FilePath::from_path_and_file(&test_directory(), &not_a_directory_entry).unwrap();
+        FilePath::from_path_and_file(&TEST_DIRECTORY, &not_a_directory_entry).unwrap();
 
     FileBuilder::new(&not_a_directory_path)
         .creation_mode(CreationMode::PurgeAndCreate)

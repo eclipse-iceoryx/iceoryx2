@@ -20,7 +20,7 @@ mod waitset {
     use iceoryx2::prelude::{WaitSetBuilder, *};
     use iceoryx2::testing::*;
     use iceoryx2::waitset::{WaitSetAttachmentError, WaitSetRunError};
-    use iceoryx2_bb_posix::config::test_directory;
+    use iceoryx2_bb_posix::config::TEST_DIRECTORY;
     use iceoryx2_bb_posix::directory::Directory;
     use iceoryx2_bb_posix::file::Permission;
     use iceoryx2_bb_posix::unix_datagram_socket::{
@@ -45,7 +45,7 @@ mod waitset {
     }
 
     fn generate_uds_name() -> FilePath {
-        let mut path = test_directory();
+        let mut path = TEST_DIRECTORY;
         Directory::create(&path, Permission::OWNER_ALL).unwrap();
         let _ = path.add_path_entry(
             &Path::new(

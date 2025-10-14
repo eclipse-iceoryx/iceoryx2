@@ -336,7 +336,7 @@ impl User {
                         "{} since the user home dir path \"{}\" contains invalid path symbols.", msg, home_dir_raw);
         let mut config_dir = home_dir.clone();
         fail!(from origin,
-              when config_dir.add_path_entry(&get_user_config_path()),
+              when config_dir.add_path_entry(&USER_CONFIG_PATH),
               with UserError::ConfigPathIsTooLong,
               "{} since the user config directory path is too long.", msg);
 

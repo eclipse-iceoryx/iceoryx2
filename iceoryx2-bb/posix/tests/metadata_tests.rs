@@ -30,7 +30,7 @@ use iceoryx2_pal_posix::posix::POSIX_SUPPORT_USERS_AND_GROUPS;
 fn metadata_reads_basic_stats_correctly() {
     create_test_directory();
     let file_name =
-        FilePath::from_path_and_file(&test_directory(), &FileName::new(b"meta_test").unwrap())
+        FilePath::from_path_and_file(&TEST_DIRECTORY, &FileName::new(b"meta_test").unwrap())
             .unwrap();
 
     let mut file = FileBuilder::new(&file_name)
@@ -53,7 +53,7 @@ fn metadata_reads_owner_and_permission_stats_correctly() {
 
     create_test_directory();
     let file_name =
-        FilePath::from_path_and_file(&test_directory(), &FileName::new(b"meta_test_123").unwrap())
+        FilePath::from_path_and_file(&TEST_DIRECTORY, &FileName::new(b"meta_test_123").unwrap())
             .unwrap();
 
     let mut file = FileBuilder::new(&file_name)

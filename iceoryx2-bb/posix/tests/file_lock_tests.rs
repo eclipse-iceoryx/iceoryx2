@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2_bb_container::semantic_string::SemanticString;
-use iceoryx2_bb_posix::config;
+use iceoryx2_bb_posix::config::TEST_DIRECTORY;
 use iceoryx2_bb_posix::file::*;
 use iceoryx2_bb_posix::file_lock::*;
 use iceoryx2_bb_posix::process::*;
@@ -37,7 +37,7 @@ fn generate_file_name() -> FilePath {
     )
     .unwrap();
 
-    FilePath::from_path_and_file(&config::test_directory(), &file).unwrap()
+    FilePath::from_path_and_file(&TEST_DIRECTORY, &file).unwrap()
 }
 
 struct TestFixture<'a> {

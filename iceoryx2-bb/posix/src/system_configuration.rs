@@ -14,23 +14,16 @@
 //! [`Feature`]s.
 
 use enum_iterator::Sequence;
-use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_log::{fatal_panic, warn};
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_pal_posix::{posix::MemZeroedStruct, *};
 
 /// The global config path of the system, where all config files shall be stored.
-pub fn get_global_config_path() -> Path {
-    fatal_panic!(from "get_global_config_path",
-        when Path::new(iceoryx2_pal_configuration::GLOBAL_CONFIG_PATH),
-        "This should never happen! The underlying platform GLOBAL_CONFIG_PATH variable contains a path with invalid characters.")
-}
+pub const GLOBAL_CONFIG_PATH: Path =
+    unsafe { Path::new_unchecked_const(iceoryx2_pal_configuration::GLOBAL_CONFIG_PATH) };
 
-pub fn get_user_config_path() -> Path {
-    fatal_panic!(from "get_user_config_path",
-        when Path::new(iceoryx2_pal_configuration::USER_CONFIG_PATH),
-        "This should never happen! The underlying platform USER_CONFIG_PATH variable contains a path with invalid characters.")
-}
+pub const USER_CONFIG_PATH: Path =
+    unsafe { Path::new_unchecked_const(iceoryx2_pal_configuration::USER_CONFIG_PATH) };
 
 /// Generic information about the POSIX system.
 /// ```

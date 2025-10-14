@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::config::test_directory;
+use crate::config::TEST_DIRECTORY;
 use crate::directory::{Directory, DirectoryCreateError};
 use crate::permission::Permission;
 use crate::process_state::ProcessGuard;
@@ -25,11 +25,11 @@ pub fn __internal_process_guard_staged_death(state: ProcessGuard) {
 }
 
 pub fn create_test_directory() {
-    match Directory::create(&test_directory(), Permission::OWNER_ALL) {
+    match Directory::create(&TEST_DIRECTORY, Permission::OWNER_ALL) {
         Ok(_) | Err(DirectoryCreateError::DirectoryAlreadyExists) => (),
         Err(e) => fatal_panic!(
             "Failed to create test directory {} due to {:?}.",
-            test_directory(),
+            TEST_DIRECTORY,
             e
         ),
     };
@@ -47,5 +47,5 @@ pub fn generate_file_name() -> FilePath {
     )
     .unwrap();
 
-    FilePath::from_path_and_file(&test_directory(), &file).unwrap()
+    FilePath::from_path_and_file(&TEST_DIRECTORY, &file).unwrap()
 }
