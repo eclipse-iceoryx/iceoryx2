@@ -126,34 +126,37 @@ impl Path {
         Ok(())
     }
 
-    pub fn is_absolute(&self) -> bool {
+    pub const fn is_absolute(&self) -> bool {
         #[cfg(not(target_os = "windows"))]
         {
-            if self.as_bytes().is_empty() {
+            if self.as_bytes_const().is_empty() {
                 return false;
             }
 
-            self.as_bytes()[0] == PATH_SEPARATOR
+            self.as_bytes_const()[0] == PATH_SEPARATOR
         }
         #[cfg(target_os = "windows")]
         {
-            if self.len() < 3 {
+            if self.as_bytes_const().len() < 3 {
                 return false;
             }
 
-            let has_drive_letter = (b'a' <= self.as_bytes()[0] && self.as_bytes()[0] <= b'z')
-                || (b'A' <= self.as_bytes()[0] && self.as_bytes()[0] <= b'Z');
+            let has_drive_letter = (b'a' <= self.as_bytes_const()[0]
+                && self.as_bytes_const()[0] <= b'z')
+                || (b'A' <= self.as_bytes_const()[0] && self.as_bytes_const()[0] <= b'Z');
 
-            has_drive_letter && self.as_bytes()[1] == b':' && (self.as_bytes()[2] == PATH_SEPARATOR)
+            has_drive_letter
+                && self.as_bytes_const()[1] == b':'
+                && (self.as_bytes_const()[2] == PATH_SEPARATOR)
         }
     }
 
-    pub fn new_root_path() -> Path {
-        Path::new(ROOT).expect("the root path is always valid")
+    pub const fn new_root_path() -> Path {
+        unsafe { Path::new_unchecked_const(ROOT) }
     }
 
-    pub fn new_empty() -> Path {
-        Path::new(b"").expect("the empty path is always valid")
+    pub const fn new_empty() -> Path {
+        unsafe { Path::new_unchecked_const(b"") }
     }
 
     pub fn new_normalized(value: &[u8]) -> Result<Path, SemanticStringError> {
