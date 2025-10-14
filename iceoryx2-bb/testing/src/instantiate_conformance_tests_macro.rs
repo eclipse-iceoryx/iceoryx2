@@ -14,6 +14,15 @@
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 
+/// This macro is used to instantiate conformance tests for a given set of system-under-test (SUT) types.
+///
+/// It generates a call to the specified module, passing the provided SUT types as arguments to the macro
+/// defined within that module.
+///
+/// # Parameters
+///
+/// - `$module_path`: The path to the parent module where the conformance test module is defined.
+/// - `$($sut_type:ty),+`: A comma-separated list of one or more system-under-test (SUT) types.
 #[macro_export]
 macro_rules! instantiate_conformance_tests {
     ($module_path:path, $($sut_type:ty),+) => {
