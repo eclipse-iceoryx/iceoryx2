@@ -10,21 +10,25 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[generic_tests::define]
-mod resizable_shared_memory {
+use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod resizable_shared_memory_trait {
     use core::alloc::Layout;
 
+    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::named_concept::*;
-    use iceoryx2_cal::resizable_shared_memory::{self, *};
+    use iceoryx2_cal::resizable_shared_memory::*;
     use iceoryx2_cal::shm_allocator::{AllocationError, AllocationStrategy, ShmAllocationError};
     use iceoryx2_cal::testing::*;
     use iceoryx2_cal::{shared_memory::SharedMemory, shm_allocator::pool_allocator::PoolAllocator};
 
-    type DefaultAllocator = PoolAllocator;
+    pub type DefaultAllocator = PoolAllocator;
 
-    #[test]
-    fn create_and_open_works<
+    #[conformance_test]
+    pub fn create_and_open_works<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
@@ -59,8 +63,8 @@ mod resizable_shared_memory {
         assert_that!(unsafe{ *ptr_view }, eq test_value_2);
     }
 
-    #[test]
-    fn allocate_more_layout_than_hinted_when_no_other_chunks_are_in_use_releases_smaller_segment<
+    #[conformance_test]
+    pub fn allocate_more_layout_than_hinted_when_no_other_chunks_are_in_use_releases_smaller_segment<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
@@ -83,8 +87,8 @@ mod resizable_shared_memory {
         assert_that!(sut.number_of_active_segments(), eq 3);
     }
 
-    #[test]
-    fn allocate_more_layout_than_hinted_when_other_chunks_are_in_use_does_not_releases_smaller_segment<
+    #[conformance_test]
+    pub fn allocate_more_layout_than_hinted_when_other_chunks_are_in_use_does_not_releases_smaller_segment<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
@@ -109,8 +113,8 @@ mod resizable_shared_memory {
         assert_that!(sut.number_of_active_segments(), eq 4);
     }
 
-    #[test]
-    fn allocate_more_than_hinted_works<
+    #[conformance_test]
+    pub fn allocate_more_than_hinted_works<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
@@ -154,8 +158,8 @@ mod resizable_shared_memory {
         assert_that!(unsafe{ *ptr_view_2 }, eq test_value_2);
     }
 
-    #[test]
-    fn deallocate_removes_unused_segments_on_creator_side<
+    #[conformance_test]
+    pub fn deallocate_removes_unused_segments_on_creator_side<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
@@ -179,8 +183,8 @@ mod resizable_shared_memory {
         assert_that!(sut_creator.number_of_active_segments(), eq 1);
     }
 
-    #[test]
-    fn unregister_removes_unused_segments_on_viewer_side<
+    #[conformance_test]
+    pub fn unregister_removes_unused_segments_on_viewer_side<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
@@ -204,7 +208,7 @@ mod resizable_shared_memory {
         assert_that!(sut_creator.number_of_active_segments(), eq 1);
     }
 
-    fn allocate_more_than_hinted_with_increasing_chunk_size_works<
+    pub fn allocate_more_than_hinted_with_increasing_chunk_size_works<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >(
@@ -253,8 +257,8 @@ mod resizable_shared_memory {
         }
     }
 
-    #[test]
-    fn allocate_more_than_hinted_with_increasing_chunk_size_and_best_fit_strategy_works<
+    #[conformance_test]
+    pub fn allocate_more_than_hinted_with_increasing_chunk_size_and_best_fit_strategy_works<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
@@ -263,8 +267,8 @@ mod resizable_shared_memory {
         );
     }
 
-    #[test]
-    fn allocate_more_than_hinted_with_increasing_chunk_size_and_power_of_two_strategy_works<
+    #[conformance_test]
+    pub fn allocate_more_than_hinted_with_increasing_chunk_size_and_power_of_two_strategy_works<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
@@ -273,7 +277,7 @@ mod resizable_shared_memory {
         );
     }
 
-    fn allocate_with_sufficient_chunk_hint_and_increasing_size<
+    pub fn allocate_with_sufficient_chunk_hint_and_increasing_size<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >(
@@ -322,8 +326,8 @@ mod resizable_shared_memory {
         }
     }
 
-    #[test]
-    fn allocate_with_sufficient_chunk_hint_and_increasing_size_strategy_power_of_two<
+    #[conformance_test]
+    pub fn allocate_with_sufficient_chunk_hint_and_increasing_size_strategy_power_of_two<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
@@ -332,8 +336,8 @@ mod resizable_shared_memory {
         )
     }
 
-    #[test]
-    fn allocate_with_sufficient_chunk_hint_and_increasing_size_strategy_best_fit<
+    #[conformance_test]
+    pub fn allocate_with_sufficient_chunk_hint_and_increasing_size_strategy_best_fit<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
@@ -342,7 +346,7 @@ mod resizable_shared_memory {
         )
     }
 
-    fn allocate_with_sufficient_chunk_hint_and_increasing_alignment<
+    pub fn allocate_with_sufficient_chunk_hint_and_increasing_alignment<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >(
@@ -393,8 +397,8 @@ mod resizable_shared_memory {
         }
     }
 
-    #[test]
-    fn allocate_with_sufficient_chunk_hint_and_increasing_alignment_strategy_power_of_two<
+    #[conformance_test]
+    pub fn allocate_with_sufficient_chunk_hint_and_increasing_alignment_strategy_power_of_two<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
@@ -403,8 +407,8 @@ mod resizable_shared_memory {
         )
     }
 
-    #[test]
-    fn allocate_with_sufficient_chunk_hint_and_increasing_alignment_strategy_best_fit<
+    #[conformance_test]
+    pub fn allocate_with_sufficient_chunk_hint_and_increasing_alignment_strategy_best_fit<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
@@ -413,8 +417,8 @@ mod resizable_shared_memory {
         )
     }
 
-    #[test]
-    fn deallocate_last_segment_does_not_release_it<
+    #[conformance_test]
+    pub fn deallocate_last_segment_does_not_release_it<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
@@ -436,8 +440,8 @@ mod resizable_shared_memory {
         assert_that!(result.err().unwrap(), eq ResizableShmAllocationError::ShmAllocationError(ShmAllocationError::AllocationError(AllocationError::OutOfMemory)));
     }
 
-    #[test]
-    fn static_allocation_strategy_does_not_resize_available_chunks<
+    #[conformance_test]
+    pub fn static_allocation_strategy_does_not_resize_available_chunks<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
@@ -456,8 +460,8 @@ mod resizable_shared_memory {
         assert_that!(result, is_err);
     }
 
-    #[test]
-    fn static_allocation_strategy_does_not_increase_available_chunks<
+    #[conformance_test]
+    pub fn static_allocation_strategy_does_not_increase_available_chunks<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
@@ -478,8 +482,8 @@ mod resizable_shared_memory {
         assert_that!(result, is_err);
     }
 
-    #[test]
-    fn list_works<
+    #[conformance_test]
+    pub fn list_works<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
@@ -506,8 +510,8 @@ mod resizable_shared_memory {
         }
     }
 
-    #[test]
-    fn list_works_when_the_start_segment_is_no_longer_used<
+    #[conformance_test]
+    pub fn list_works_when_the_start_segment_is_no_longer_used<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
@@ -545,8 +549,8 @@ mod resizable_shared_memory {
         }
     }
 
-    #[test]
-    fn does_exist_works<
+    #[conformance_test]
+    pub fn does_exist_works<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
@@ -571,8 +575,8 @@ mod resizable_shared_memory {
         }
     }
 
-    #[test]
-    fn does_exist_works_when_the_start_segment_is_no_longer_used<
+    #[conformance_test]
+    pub fn does_exist_works_when_the_start_segment_is_no_longer_used<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
@@ -608,8 +612,8 @@ mod resizable_shared_memory {
         }
     }
 
-    #[test]
-    fn remove_works<
+    #[conformance_test]
+    pub fn remove_works<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
@@ -637,8 +641,8 @@ mod resizable_shared_memory {
         }
     }
 
-    #[test]
-    fn remove_with_multiple_segments_works<
+    #[conformance_test]
+    pub fn remove_with_multiple_segments_works<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
@@ -676,8 +680,8 @@ mod resizable_shared_memory {
         }
     }
 
-    #[test]
-    fn open_when_zero_segment_not_available_works<
+    #[conformance_test]
+    pub fn open_when_zero_segment_not_available_works<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
@@ -713,8 +717,8 @@ mod resizable_shared_memory {
         assert_that!(unsafe { *(translated_chunk as *const u32) }, eq TEST_VALUE);
     }
 
-    #[test]
-    fn creator_releases_resizable_shared_memory_when_it_goes_out_of_scope<
+    #[conformance_test]
+    pub fn creator_releases_resizable_shared_memory_when_it_goes_out_of_scope<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
@@ -734,8 +738,8 @@ mod resizable_shared_memory {
         assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(false));
     }
 
-    #[test]
-    fn view_does_not_releases_resizable_shared_memory_when_it_goes_out_of_scope<
+    #[conformance_test]
+    pub fn view_does_not_releases_resizable_shared_memory_when_it_goes_out_of_scope<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
@@ -762,8 +766,8 @@ mod resizable_shared_memory {
         assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(false));
     }
 
-    #[test]
-    fn when_max_number_of_reallocations_is_exceeded_another_allocation_fails<
+    #[conformance_test]
+    pub fn when_max_number_of_reallocations_is_exceeded_another_allocation_fails<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
@@ -794,8 +798,8 @@ mod resizable_shared_memory {
         );
     }
 
-    #[test]
-    fn register_offset_in_view_maps_required_segments<
+    #[conformance_test]
+    pub fn register_offset_in_view_maps_required_segments<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
@@ -860,8 +864,8 @@ mod resizable_shared_memory {
         assert_that!(unsafe { *(tr_chunk_4 as *mut u64) }, eq value_4);
     }
 
-    #[test]
-    fn unregister_offset_in_view_releases_unused_segments<
+    #[conformance_test]
+    pub fn unregister_offset_in_view_releases_unused_segments<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
@@ -903,8 +907,8 @@ mod resizable_shared_memory {
         assert_that!(sut_viewer.number_of_active_segments(), eq 1);
     }
 
-    #[test]
-    fn unregister_offset_in_reverse_order_in_view_releases_unused_segments<
+    #[conformance_test]
+    pub fn unregister_offset_in_reverse_order_in_view_releases_unused_segments<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
@@ -946,8 +950,8 @@ mod resizable_shared_memory {
         assert_that!(sut_viewer.number_of_active_segments(), eq 1);
     }
 
-    #[test]
-    fn register_segment_that_was_resized_on_the_first_allocation_leads_to_a_unmap_of_the_old_segment_on_viewer_side<
+    #[conformance_test]
+    pub fn register_segment_that_was_resized_on_the_first_allocation_leads_to_a_unmap_of_the_old_segment_on_viewer_side<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
@@ -983,10 +987,4 @@ mod resizable_shared_memory {
 
         assert_that!(sut_viewer.number_of_active_segments(), eq 1);
     }
-
-    #[instantiate_tests(<iceoryx2_cal::shared_memory::posix::Memory<DefaultAllocator>, resizable_shared_memory::dynamic::DynamicMemory<DefaultAllocator, iceoryx2_cal::shared_memory::posix::Memory<DefaultAllocator>>>)]
-    mod posix {}
-
-    #[instantiate_tests(<iceoryx2_cal::shared_memory::process_local::Memory<DefaultAllocator>, resizable_shared_memory::dynamic::DynamicMemory<DefaultAllocator, iceoryx2_cal::shared_memory::process_local::Memory<DefaultAllocator>>>)]
-    mod process_local {}
 }

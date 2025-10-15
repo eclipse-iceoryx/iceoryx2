@@ -18,4 +18,5 @@ pub mod event_signal_mechanism_trait;
 pub mod event_trait;
 pub mod monitoring_trait;
 pub mod reactor_trait;
+pub mod resizable_shared_memory_trait;
 pub mod serialize_trait;
