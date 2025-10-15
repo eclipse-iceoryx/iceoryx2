@@ -26,6 +26,7 @@ rust_library(
         "//iceoryx2-cal:iceoryx2-cal",
         "//iceoryx2-bb/container:iceoryx2-bb-container",
         "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
+        "//iceoryx2-bb/memory:iceoryx2-bb-memory",
         "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
         "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
@@ -44,6 +45,7 @@ rust_test_suite(
     deps = [
         ":iceoryx2-cal-conformance-tests",
         "//iceoryx2-cal:iceoryx2-cal",
+        "//iceoryx2-bb/lock-free:iceoryx2-bb-lock-free",
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
         "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
         "@crate_index//:cdr",

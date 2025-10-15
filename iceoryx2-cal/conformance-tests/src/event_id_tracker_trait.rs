@@ -10,11 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[generic_tests::define]
-mod event_id_tracker {
+use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod event_id_tracker_trait {
     use std::collections::HashSet;
 
-    use iceoryx2_bb_lock_free::mpmc::bit_set::RelocatableBitSet;
+    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::event::{id_tracker::IdTracker, TriggerId};
 
@@ -34,8 +37,8 @@ mod event_id_tracker {
         )
     }
 
-    #[test]
-    fn max_trigger_id_must_be_at_least_capacity<Sut: IdTracker>() {
+    #[conformance_test]
+    pub fn max_trigger_id_must_be_at_least_capacity<Sut: IdTracker>() {
         const CAPACITY: usize = 5234;
         let mut memory = memory();
 
@@ -44,8 +47,8 @@ mod event_id_tracker {
         assert_that!(sut.trigger_id_max().as_value(), lt CAPACITY);
     }
 
-    #[test]
-    fn add_and_acquire_works<Sut: IdTracker>() {
+    #[conformance_test]
+    pub fn add_and_acquire_works<Sut: IdTracker>() {
         let mut memory = memory();
         const CAPACITY: usize = 1234;
 
@@ -61,8 +64,8 @@ mod event_id_tracker {
         }
     }
 
-    #[test]
-    fn add_until_full_and_then_acquire_works<Sut: IdTracker>() {
+    #[conformance_test]
+    pub fn add_until_full_and_then_acquire_works<Sut: IdTracker>() {
         let mut memory = memory();
         const CAPACITY: usize = 1234;
 
@@ -84,8 +87,8 @@ mod event_id_tracker {
         assert_that!(unsafe { sut.acquire() }, is_none);
     }
 
-    #[test]
-    fn add_and_acquire_all_works<Sut: IdTracker>() {
+    #[conformance_test]
+    pub fn add_and_acquire_all_works<Sut: IdTracker>() {
         let mut memory = memory();
         const CAPACITY: usize = 3234;
 
@@ -112,8 +115,8 @@ mod event_id_tracker {
         assert_that!(ids, len CAPACITY);
     }
 
-    #[test]
-    fn add_acquire_and_acquire_all_works<Sut: IdTracker>() {
+    #[conformance_test]
+    pub fn add_acquire_and_acquire_all_works<Sut: IdTracker>() {
         let mut memory = memory();
         const CAPACITY: usize = 234;
 
@@ -142,8 +145,8 @@ mod event_id_tracker {
         assert_that!(ids, len CAPACITY);
     }
 
-    #[test]
-    fn add_max_trigger_id_and_acquire_works<Sut: IdTracker>() {
+    #[conformance_test]
+    pub fn add_max_trigger_id_and_acquire_works<Sut: IdTracker>() {
         let mut memory = memory();
         const CAPACITY: usize = 1234;
 
@@ -156,7 +159,4 @@ mod event_id_tracker {
         assert_that!(unsafe { sut.acquire() }, eq Some(id));
         assert_that!(unsafe { sut.acquire() }, is_none);
     }
-
-    #[instantiate_tests(<RelocatableBitSet>)]
-    mod bitset {}
 }
