@@ -10,18 +10,22 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[generic_tests::define]
-mod signal_mechanism {
+use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod event_signal_mechanism_trait {
     use core::{sync::atomic::AtomicU64, time::Duration};
     use std::sync::Barrier;
 
+    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_posix::clock::Time;
     use iceoryx2_bb_testing::{assert_that, watchdog::Watchdog};
-    use iceoryx2_cal::event::signal_mechanism::{semaphore::Semaphore, SignalMechanism};
+    use iceoryx2_cal::event::signal_mechanism::SignalMechanism;
     const TIMEOUT: Duration = Duration::from_millis(25);
 
-    #[test]
-    fn notified_signal_does_not_block<Sut: SignalMechanism>() {
+    #[conformance_test]
+    pub fn notified_signal_does_not_block<Sut: SignalMechanism>() {
         let _watchdog = Watchdog::new();
         let mut sut = Sut::new();
         unsafe {
@@ -38,8 +42,8 @@ mod signal_mechanism {
         }
     }
 
-    #[test]
-    fn try_wait_does_not_block_works<Sut: SignalMechanism>() {
+    #[conformance_test]
+    pub fn try_wait_does_not_block_works<Sut: SignalMechanism>() {
         let mut sut = Sut::new();
         unsafe {
             assert_that!(sut.init(), is_ok);
@@ -51,7 +55,7 @@ mod signal_mechanism {
         }
     }
 
-    fn wait_blocks<Sut: SignalMechanism, F: FnOnce(&Sut) -> bool + Send>(wait_call: F) {
+    pub fn wait_blocks<Sut: SignalMechanism, F: FnOnce(&Sut) -> bool + Send>(wait_call: F) {
         let _watchdog = Watchdog::new();
         let mut sut = Sut::new();
         let barrier = Barrier::new(2);
@@ -78,21 +82,21 @@ mod signal_mechanism {
         }
     }
 
-    #[test]
-    fn timed_wait_blocks<Sut: SignalMechanism>() {
+    #[conformance_test]
+    pub fn timed_wait_blocks<Sut: SignalMechanism>() {
         wait_blocks(|sut: &Sut| unsafe { sut.timed_wait(Duration::from_secs(999)).unwrap() });
     }
 
-    #[test]
-    fn blocking_wait_blocks<Sut: SignalMechanism>() {
+    #[conformance_test]
+    pub fn blocking_wait_blocks<Sut: SignalMechanism>() {
         wait_blocks(|sut: &Sut| unsafe {
             sut.blocking_wait().unwrap();
             true
         });
     }
 
-    #[test]
-    fn timed_wait_blocks_at_least_for_timeout<Sut: SignalMechanism>() {
+    #[conformance_test]
+    pub fn timed_wait_blocks_at_least_for_timeout<Sut: SignalMechanism>() {
         let _watchdog = Watchdog::new();
         let mut sut = Sut::new();
         unsafe {
@@ -103,7 +107,4 @@ mod signal_mechanism {
             assert_that!(now.elapsed().unwrap(), time_at_least TIMEOUT);
         }
     }
-
-    #[instantiate_tests(<Semaphore>)]
-    mod semaphore {}
 }
