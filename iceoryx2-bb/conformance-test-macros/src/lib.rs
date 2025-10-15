@@ -94,16 +94,28 @@ fn collect_conformance_test_functions(
     if let Some((_brace, items)) = &module.content {
         for item in items {
             if let syn::Item::Fn(func) = item {
-                for attr in &func.attrs {
-                    if attr.path().is_ident("conformance_test") {
-                        let fn_ident = func.sig.ident.clone();
-                        conformance_test_fns.push(quote! {
-                            #[test]
-                            fn #fn_ident() {
-                                #mod_ident::#fn_ident::<$($sut_type),+>();
-                            }
-                        });
-                    }
+                let fn_ident = &func.sig.ident;
+                let fn_attrs = &func.attrs;
+
+                // check if the function has #[conformance_test]
+                if fn_attrs
+                    .iter()
+                    .any(|attr| attr.path().is_ident("conformance_test"))
+                {
+                    // collect all attributes except #[conformance_test]
+                    let test_attrs = fn_attrs
+                        .iter()
+                        .filter(|attr| !attr.path().is_ident("conformance_test"))
+                        .collect::<Vec<_>>();
+
+                    // generate the new test function
+                    conformance_test_fns.push(quote! {
+                        #(#test_attrs)*
+                        #[test]
+                        fn #fn_ident() {
+                            #mod_ident::#fn_ident::<$($sut_type),+>();
+                        }
+                    });
                 }
             }
         }
