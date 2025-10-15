@@ -10,8 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[generic_tests::define]
-mod reactor {
+use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod reactor_trait {
+    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_posix::file_descriptor::FileDescriptorBased;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::event::unix_datagram_socket::*;
@@ -50,8 +54,8 @@ mod reactor {
         }
     }
 
-    #[test]
-    fn attach_and_detach_works<Sut: Reactor>() {
+    #[conformance_test]
+    pub fn attach_and_detach_works<Sut: Reactor>() {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
         let config = generate_isolated_config::<unix_datagram_socket::EventImpl>();
 
@@ -83,8 +87,8 @@ mod reactor {
         assert_that!(sut.len(), eq 0);
     }
 
-    #[test]
-    fn attach_the_same_attachment_twice_fails<Sut: Reactor>() {
+    #[conformance_test]
+    pub fn attach_the_same_attachment_twice_fails<Sut: Reactor>() {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
         let config = generate_isolated_config::<unix_datagram_socket::EventImpl>();
 
@@ -100,8 +104,8 @@ mod reactor {
         assert_that!(result.err(), eq Some(ReactorAttachError::AlreadyAttached));
     }
 
-    #[test]
-    fn try_wait_does_not_block_when_triggered_single<Sut: Reactor>() {
+    #[conformance_test]
+    pub fn try_wait_does_not_block_when_triggered_single<Sut: Reactor>() {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
 
         let attachment = NotifierListenerPair::new();
@@ -119,8 +123,8 @@ mod reactor {
         assert_that!(triggered_fds[0], eq unsafe { attachment. listener.file_descriptor().native_handle() });
     }
 
-    #[test]
-    fn timed_wait_does_not_block_when_triggered_single<Sut: Reactor>() {
+    #[conformance_test]
+    pub fn timed_wait_does_not_block_when_triggered_single<Sut: Reactor>() {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
 
         let attachment = NotifierListenerPair::new();
@@ -141,8 +145,8 @@ mod reactor {
         assert_that!(triggered_fds[0], eq unsafe { attachment. listener.file_descriptor().native_handle() });
     }
 
-    #[test]
-    fn blocking_wait_does_not_block_when_triggered_single<Sut: Reactor>() {
+    #[conformance_test]
+    pub fn blocking_wait_does_not_block_when_triggered_single<Sut: Reactor>() {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
 
         let attachment = NotifierListenerPair::new();
@@ -160,8 +164,8 @@ mod reactor {
         assert_that!(triggered_fds[0], eq unsafe { attachment. listener.file_descriptor().native_handle() });
     }
 
-    #[test]
-    fn try_wait_activates_as_long_as_there_is_data_to_read<Sut: Reactor>() {
+    #[conformance_test]
+    pub fn try_wait_activates_as_long_as_there_is_data_to_read<Sut: Reactor>() {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
 
         let attachment = NotifierListenerPair::new();
@@ -190,8 +194,8 @@ mod reactor {
         assert_that!(triggered_fds, is_empty);
     }
 
-    #[test]
-    fn timed_wait_activates_as_long_as_there_is_data_to_read<Sut: Reactor>() {
+    #[conformance_test]
+    pub fn timed_wait_activates_as_long_as_there_is_data_to_read<Sut: Reactor>() {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
 
         let attachment = NotifierListenerPair::new();
@@ -223,8 +227,8 @@ mod reactor {
         assert_that!(triggered_fds, is_empty);
     }
 
-    #[test]
-    fn blocking_wait_activates_as_long_as_there_is_data_to_read<Sut: Reactor>() {
+    #[conformance_test]
+    pub fn blocking_wait_activates_as_long_as_there_is_data_to_read<Sut: Reactor>() {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
 
         let attachment = NotifierListenerPair::new();
@@ -253,8 +257,8 @@ mod reactor {
         assert_that!(triggered_fds, is_empty);
     }
 
-    #[test]
-    fn try_wait_does_not_block_when_triggered_many<Sut: Reactor>() {
+    #[conformance_test]
+    pub fn try_wait_does_not_block_when_triggered_many<Sut: Reactor>() {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
 
         let mut attachments = vec![];
@@ -281,8 +285,8 @@ mod reactor {
         }
     }
 
-    #[test]
-    fn timed_wait_does_not_block_when_triggered_many<Sut: Reactor>() {
+    #[conformance_test]
+    pub fn timed_wait_does_not_block_when_triggered_many<Sut: Reactor>() {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
 
         let mut attachments = vec![];
@@ -312,8 +316,8 @@ mod reactor {
         }
     }
 
-    #[test]
-    fn blocking_wait_does_not_block_when_triggered_many<Sut: Reactor>() {
+    #[conformance_test]
+    pub fn blocking_wait_does_not_block_when_triggered_many<Sut: Reactor>() {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
 
         let mut attachments = vec![];
@@ -340,8 +344,8 @@ mod reactor {
         }
     }
 
-    #[test]
-    fn timed_wait_blocks_for_at_least_timeout<Sut: Reactor>() {
+    #[conformance_test]
+    pub fn timed_wait_blocks_for_at_least_timeout<Sut: Reactor>() {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
 
         let attachment = NotifierListenerPair::new();
@@ -362,8 +366,8 @@ mod reactor {
         assert_that!(triggered_fds, len 0);
     }
 
-    #[test]
-    fn try_wait_triggers_until_all_data_is_consumed<Sut: Reactor>() {
+    #[conformance_test]
+    pub fn try_wait_triggers_until_all_data_is_consumed<Sut: Reactor>() {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
 
         let mut attachments = vec![];
@@ -402,8 +406,8 @@ mod reactor {
         assert_that!(triggered_fds, len 0);
     }
 
-    #[test]
-    fn timed_wait_triggers_until_all_data_is_consumed<Sut: Reactor>() {
+    #[conformance_test]
+    pub fn timed_wait_triggers_until_all_data_is_consumed<Sut: Reactor>() {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
 
         let mut attachments = vec![];
@@ -445,8 +449,8 @@ mod reactor {
         assert_that!(triggered_fds, len 0);
     }
 
-    #[test]
-    fn blocking_wait_triggers_until_all_data_is_consumed<Sut: Reactor>() {
+    #[conformance_test]
+    pub fn blocking_wait_triggers_until_all_data_is_consumed<Sut: Reactor>() {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
 
         let mut attachments = vec![];
@@ -485,8 +489,8 @@ mod reactor {
         assert_that!(triggered_fds, len 0);
     }
 
-    #[test]
-    fn timed_wait_blocks_until_triggered<Sut: Reactor>() {
+    #[conformance_test]
+    pub fn timed_wait_blocks_until_triggered<Sut: Reactor>() {
         let name = generate_name();
         let barrier = Barrier::new(2);
         let counter = AtomicU64::new(0);
@@ -529,8 +533,8 @@ mod reactor {
         });
     }
 
-    #[test]
-    fn blocking_wait_blocks_until_triggered<Sut: Reactor>() {
+    #[conformance_test]
+    pub fn blocking_wait_blocks_until_triggered<Sut: Reactor>() {
         let name = generate_name();
         let barrier = Barrier::new(2);
         let counter = AtomicU64::new(0);
@@ -570,11 +574,4 @@ mod reactor {
             assert_that!(counter_old, eq 0);
         });
     }
-
-    #[instantiate_tests(<iceoryx2_cal::reactor::posix_select::Reactor>)]
-    mod posix_select {}
-
-    #[cfg(target_os = "linux")]
-    #[instantiate_tests(<iceoryx2_cal::reactor::epoll::Epoll>)]
-    mod epoll {}
 }

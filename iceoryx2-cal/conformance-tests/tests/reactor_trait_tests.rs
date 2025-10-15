@@ -10,12 +10,19 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub mod arc_sync_policy_trait;
-pub mod communication_channel_trait;
-pub mod dynamic_storage_trait;
-pub mod event_id_tracker_trait;
-pub mod event_signal_mechanism_trait;
-pub mod event_trait;
-pub mod monitoring_trait;
-pub mod reactor_trait;
-pub mod serialize_trait;
+use iceoryx2_bb_testing::instantiate_conformance_tests;
+
+mod posix_select {
+    super::instantiate_conformance_tests!(
+        iceoryx2_cal_conformance_tests::reactor_trait,
+        iceoryx2_cal::reactor::posix_select::Reactor
+    );
+}
+
+#[cfg(target_os = "linux")]
+mod epoll {
+    super::instantiate_conformance_tests!(
+        iceoryx2_cal_conformance_tests::reactor_trait,
+        iceoryx2_cal::reactor::epoll::Epoll
+    );
+}
