@@ -434,7 +434,7 @@ pub mod dynamic_storage_trait {
         let barrier_2 = barrier_1.clone();
 
         std::thread::scope(|s| {
-            let tstorage_name = storage_name.clone();
+            let tstorage_name = storage_name;
             let config_1 = config.clone();
             s.spawn(move || {
                 barrier_1.wait();
@@ -451,7 +451,7 @@ pub mod dynamic_storage_trait {
                     .unwrap();
             });
 
-            let tstorage_name = storage_name.clone();
+            let tstorage_name = storage_name;
             let config_2 = config.clone();
             s.spawn(move || {
                 barrier_2.wait();
@@ -484,7 +484,7 @@ pub mod dynamic_storage_trait {
         let _watchdog = Watchdog::new();
 
         std::thread::scope(|s| {
-            let tstorage_name = storage_name.clone();
+            let tstorage_name = storage_name;
             let config_1 = config.clone();
             let barrier_1 = barrier.clone();
             s.spawn(move || {
@@ -837,7 +837,7 @@ pub mod dynamic_storage_trait {
                     .create(TestData::new(123))
                     .unwrap(),
             );
-            testdata_storages_names.push(storage_name.clone());
+            testdata_storages_names.push(storage_name);
 
             u64_storages.push(
                 WrongTypeSut::Builder::new(&storage_name)

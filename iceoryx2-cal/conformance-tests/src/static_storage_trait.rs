@@ -337,7 +337,7 @@ pub mod static_storage_trait {
 
         for _i in 0..NUMBER_OF_STORAGES {
             let storage_name = generate_name();
-            storage_names.push(storage_name.clone());
+            storage_names.push(storage_name);
 
             let mut content = "some \nfuu\n cont\tent".to_string();
             storages.push(
@@ -349,7 +349,7 @@ pub mod static_storage_trait {
 
         for _i in 0..NUMBER_OF_LOCKED_STORAGES {
             let storage_name = generate_name();
-            locked_storage_names.push(storage_name.clone());
+            locked_storage_names.push(storage_name);
             locked_storages.push(Sut::Builder::new(&storage_name).create_locked().unwrap());
         }
 
