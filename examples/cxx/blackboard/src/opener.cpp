@@ -10,12 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include "blackboard_complex_key.hpp"
 #include "iox/duration.hpp"
 #include "iox2/log.hpp"
 #include "iox2/node.hpp"
 #include "iox2/service_name.hpp"
 #include "iox2/service_type.hpp"
-#include "blackboard_complex_key.hpp"
 
 #include <iostream>
 

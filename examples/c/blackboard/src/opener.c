@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/iceoryx2.h"
 #include "blackboard_complex_key.h"
+#include "iox2/iceoryx2.h"
 
 #if defined(_WIN32) || defined(WIN32) || defined(__WIN32__) || defined(_WIN64)
 #define alignof __alignof
