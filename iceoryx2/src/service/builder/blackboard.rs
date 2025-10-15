@@ -16,8 +16,9 @@
 //!
 use self::attribute::{AttributeSpecifier, AttributeVerifier};
 use super::{OpenDynamicStorageFailure, ServiceState};
-use crate::constants::MAX_BLACKBOARD_KEY_ALIGNMENT;
+use crate::constants::{MAX_BLACKBOARD_KEY_ALIGNMENT, MAX_BLACKBOARD_KEY_SIZE};
 use crate::service;
+use crate::service::builder::CustomKeyMarker;
 use crate::service::config_scheme::{blackboard_data_config, blackboard_mgmt_config};
 use crate::service::dynamic_config::blackboard::DynamicConfigSettings;
 use crate::service::dynamic_config::MessagingPatternSettings;
@@ -26,9 +27,11 @@ use crate::service::port_factory::blackboard;
 use crate::service::static_config::message_type_details::TypeDetail;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
 use crate::service::*;
+use alloc::rc::Rc;
 use builder::RETRY_LIMIT;
 use core::alloc::Layout;
 use core::hash::Hash;
+use core::marker::PhantomData;
 use iceoryx2_bb_container::flatmap::RelocatableFlatMap;
 use iceoryx2_bb_container::queue::RelocatableContainer;
 use iceoryx2_bb_container::string::*;
@@ -36,7 +39,7 @@ use iceoryx2_bb_container::vector::relocatable_vec::*;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::static_assert::static_assert_eq;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::UnrestrictedAtomic;
+use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::*;
 use iceoryx2_bb_log::{error, fatal_panic};
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
@@ -167,22 +170,26 @@ pub enum KeyMemoryError {
 #[doc(hidden)]
 #[repr(C)]
 #[repr(align(8))]
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, ZeroCopySend)]
 pub struct KeyMemory<const CAPACITY: usize> {
     pub data: [u8; CAPACITY],
 }
 
 impl<const CAPACITY: usize> KeyMemory<CAPACITY> {
-    pub fn try_from<T: Copy>(value: T) -> Result<Self, KeyMemoryError> {
+    pub fn try_from<T: Copy>(value: &T) -> Result<Self, KeyMemoryError> {
         static_assert_eq::<{ align_of::<KeyMemory<1>>() }, MAX_BLACKBOARD_KEY_ALIGNMENT>();
 
         let origin = "KeyMemory::try_from()";
         let msg = "Unable to create KeyMemory";
 
+        // Replace if block with below compile-time assertion once available for generic parameters
+        // static_assert_le::<{ size_of::<T>() }, CAPACITY>();
         if size_of::<T>() > CAPACITY {
             fail!(from origin, with KeyMemoryError::ValueTooLarge,
                 "{} since the passed value is too large. Its size must be <= {}.", msg, CAPACITY);
         }
+        // Replace if block with below compile-time assertion once available for generic parameters
+        // static_assert_le::<{ align_of::<T>() }, MAX_BLACKBOARD_KEY_ALIGNMENT>();
         if align_of::<T>() > MAX_BLACKBOARD_KEY_ALIGNMENT {
             fail!(from origin, with KeyMemoryError::ValueAlignmentTooLarge,
                 "{} since the alignment of the passed value is too large. The alignment must be <= {}.",
@@ -192,29 +199,26 @@ impl<const CAPACITY: usize> KeyMemory<CAPACITY> {
         let mut new_self = Self {
             data: [0; CAPACITY],
         };
-        unsafe { core::ptr::copy_nonoverlapping(&value, new_self.data.as_mut_ptr() as *mut T, 1) };
+        unsafe { core::ptr::copy_nonoverlapping(value, new_self.data.as_mut_ptr() as *mut T, 1) };
         Ok(new_self)
     }
 
     /// # Safety
     ///
     ///   * see Safety section of core::ptr::copy_nonoverlapping
-    pub unsafe fn try_from_ptr(
-        ptr: *const u8,
-        value_layout: Layout,
-    ) -> Result<Self, KeyMemoryError> {
+    pub unsafe fn try_from_ptr(ptr: *const u8, key_layout: Layout) -> Result<Self, KeyMemoryError> {
         static_assert_eq::<{ align_of::<KeyMemory<1>>() }, MAX_BLACKBOARD_KEY_ALIGNMENT>();
 
         let origin = "KeyMemory::try_from_ptr()";
         let msg = "Unable to create KeyMemory";
 
-        if value_layout.size() > CAPACITY {
+        if key_layout.size() > CAPACITY {
             fail!(from origin, with KeyMemoryError::ValueTooLarge,
-                "{} since the passed value size is too large. The size must be <= {}.", msg, CAPACITY);
+                "{} since the passed key size is too large. The size must be <= {}.", msg, CAPACITY);
         }
-        if value_layout.align() > MAX_BLACKBOARD_KEY_ALIGNMENT {
+        if key_layout.align() > MAX_BLACKBOARD_KEY_ALIGNMENT {
             fail!(from origin, with KeyMemoryError::ValueAlignmentTooLarge,
-                "{} since the alignment of the passed value is too large. The alignment must be <= {}.",
+                "{} since the alignment of the passed key is too large. The alignment must be <= {}.",
                 msg, MAX_BLACKBOARD_KEY_ALIGNMENT);
         }
 
@@ -222,15 +226,46 @@ impl<const CAPACITY: usize> KeyMemory<CAPACITY> {
             data: [0; CAPACITY],
         };
         unsafe {
-            core::ptr::copy_nonoverlapping(ptr, new_self.data.as_mut_ptr(), value_layout.size())
+            core::ptr::copy_nonoverlapping(ptr, new_self.data.as_mut_ptr(), key_layout.size())
         };
         Ok(new_self)
+    }
+
+    /// This function compares two KeyMemory<CAPACITY> for equality and is only for blackboard internal
+    /// usage. It is passed to functions that require a Fn(*const u8, *const u8) -> bool so
+    /// default_key_eq_comparison cannot be marked unsafe. Still, there are safety requirements which are
+    /// guaranteed by the by the blackboard implementation:
+    ///
+    /// # Safety
+    ///
+    ///   * lhs and rhs must be valid pointers to valid KeyMemory<CAPACITY>
+    pub fn default_key_eq_comparison<T: Eq>(lhs: *const u8, rhs: *const u8) -> bool {
+        let lhs = unsafe { *(lhs as *const KeyMemory<CAPACITY>) };
+        let rhs = unsafe { *(rhs as *const KeyMemory<CAPACITY>) };
+        unsafe { *(lhs.data.as_ptr() as *const T) == *(rhs.data.as_ptr() as *const T) }
+    }
+
+    /// This function compares two KeyMemory<CAPACITY> for equality using the given compare function.
+    /// It is passed to functions that require a Fn(*const u8, *const u8) -> bool so key_eq_comparison
+    /// cannot be unsafe. Still, there are safety requirements:
+    ///
+    /// # Safety
+    ///
+    ///   * lhs and rhs must be valid pointers to valid KeyMemory<CAPACITY>
+    pub fn key_eq_comparison<F: Fn(*const u8, *const u8) -> bool>(
+        lhs: *const u8,
+        rhs: *const u8,
+        eq_func: &F,
+    ) -> bool {
+        let lhs = unsafe { *(lhs as *const KeyMemory<CAPACITY>) };
+        let rhs = unsafe { *(rhs as *const KeyMemory<CAPACITY>) };
+        eq_func(lhs.data.as_ptr(), rhs.data.as_ptr())
     }
 }
 
 #[doc(hidden)]
-pub struct BuilderInternals<KeyType> {
-    key: KeyType,
+pub struct BuilderInternals {
+    key: KeyMemory<MAX_BLACKBOARD_KEY_SIZE>,
     value_type_details: TypeDetail,
     value_writer: Box<dyn FnMut(*mut u8)>,
     internal_value_size: usize,
@@ -238,26 +273,26 @@ pub struct BuilderInternals<KeyType> {
     internal_value_cleanup_callback: Box<dyn FnMut()>,
 }
 
-impl<KeyType> Debug for BuilderInternals<KeyType> {
+impl Debug for BuilderInternals {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "")
     }
 }
 
-impl<KeyType> Drop for BuilderInternals<KeyType> {
+impl Drop for BuilderInternals {
     fn drop(&mut self) {
         (self.internal_value_cleanup_callback)();
     }
 }
 
-impl<KeyType> BuilderInternals<KeyType> {
+impl BuilderInternals {
     pub fn new(
-        key: KeyType,
+        key: KeyMemory<MAX_BLACKBOARD_KEY_SIZE>,
         value_type_details: TypeDetail,
         value_writer: Box<dyn FnMut(*mut u8)>,
         value_size: usize,
         value_alignment: usize,
-        vale_cleanup_callback: Box<dyn FnMut()>,
+        value_cleanup_callback: Box<dyn FnMut()>,
     ) -> Self {
         Self {
             key,
@@ -265,7 +300,7 @@ impl<KeyType> BuilderInternals<KeyType> {
             value_writer,
             internal_value_size: value_size,
             internal_value_alignment: value_alignment,
-            internal_value_cleanup_callback: vale_cleanup_callback,
+            internal_value_cleanup_callback: value_cleanup_callback,
         }
     }
 }
@@ -279,45 +314,67 @@ pub(crate) struct Entry {
 
 #[repr(C)]
 #[derive(Debug, ZeroCopySend)]
-pub(crate) struct Mgmt<KeyType: Eq + Clone + Debug + ZeroCopySend> {
-    pub(crate) map: RelocatableFlatMap<KeyType, usize>,
+pub(crate) struct Mgmt {
+    pub(crate) map: RelocatableFlatMap<KeyMemory<MAX_BLACKBOARD_KEY_SIZE>, usize>,
     pub(crate) entries: RelocatableVec<Entry>,
 }
 
-#[derive(Debug)]
-pub(crate) struct BlackboardResources<
-    ServiceType: service::Service,
-    KeyType: Send + Sync + Eq + Clone + Debug + 'static + ZeroCopySend,
-> {
-    pub(crate) mgmt: ServiceType::BlackboardMgmt<Mgmt<KeyType>>,
+pub(crate) struct BlackboardResources<ServiceType: service::Service> {
+    pub(crate) mgmt: ServiceType::BlackboardMgmt<Mgmt>,
     pub(crate) data: ServiceType::BlackboardPayload,
+    pub(crate) key_eq_func: Rc<dyn Fn(*const u8, *const u8) -> bool>,
 }
 
-impl<
-        ServiceType: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static + ZeroCopySend,
-    > ServiceResource for BlackboardResources<ServiceType, KeyType>
-{
+impl<ServiceType: service::Service> Debug for BlackboardResources<ServiceType> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(
+            f,
+            "BlackboardResources {{ mgmt: {:?}, data: {:?} }}",
+            self.mgmt, self.data
+        )
+    }
+}
+
+impl<ServiceType: service::Service> ServiceResource for BlackboardResources<ServiceType> {
     fn acquire_ownership(&self) {
         self.data.acquire_ownership();
         self.mgmt.acquire_ownership();
     }
 }
 
-#[derive(Debug)]
 struct Builder<
-    KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend + Hash,
+    KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
     ServiceType: service::Service,
 > {
     base: builder::BuilderWithServiceType<ServiceType>,
     verify_max_readers: bool,
     verify_max_nodes: bool,
-    internals: Vec<BuilderInternals<KeyType>>,
+    internals: Vec<BuilderInternals>,
     override_key_type: Option<TypeDetail>,
+    key_eq_func: Box<dyn Fn(*const u8, *const u8) -> bool>,
+    _key: PhantomData<KeyType>,
 }
 
 impl<
-        KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend + Hash,
+        KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
+        ServiceType: service::Service,
+    > Debug for Builder<KeyType, ServiceType>
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(
+            f,
+            "Builder<{}, {}> {{ verify_max_readers: {}, verify_max_nodes: {}, internals: {:?} }}",
+            core::any::type_name::<KeyType>(),
+            core::any::type_name::<ServiceType>(),
+            self.verify_max_readers,
+            self.verify_max_nodes,
+            self.internals
+        )
+    }
+}
+
+impl<
+        KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
         ServiceType: service::Service,
     > Builder<KeyType, ServiceType>
 {
@@ -326,8 +383,12 @@ impl<
             base,
             verify_max_readers: false,
             verify_max_nodes: false,
-            internals: Vec::<BuilderInternals<KeyType>>::new(),
+            internals: Vec::<BuilderInternals>::new(),
             override_key_type: None,
+            key_eq_func: Box::new(|lhs: *const u8, rhs: *const u8| {
+                KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::default_key_eq_comparison::<KeyType>(lhs, rhs)
+            }),
+            _key: PhantomData,
         };
 
         new_self.base.service_config.messaging_pattern = MessagingPattern::Blackboard(
@@ -411,14 +472,14 @@ impl<
 /// See [`crate::service`]
 #[derive(Debug)]
 pub struct Creator<
-    KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend + Hash,
+    KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
     ServiceType: service::Service,
 > {
     builder: Builder<KeyType, ServiceType>,
 }
 
 impl<
-        KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend + Hash,
+        KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
         ServiceType: service::Service,
     > Creator<KeyType, ServiceType>
 {
@@ -442,12 +503,20 @@ impl<
 
     /// Adds key-value pairs to the blackboard.
     pub fn add<ValueType: ZeroCopySend + Copy + 'static>(
-        self,
+        mut self,
         key: KeyType,
         value: ValueType,
     ) -> Self {
+        let key_mem = match KeyMemory::try_from(&key) {
+            Err(_) => {
+                fatal_panic!(from self,
+                    "This should never happen! Calling add() with a key type that has an invalid layout.")
+            }
+            Ok(mem) => mem,
+        };
+
         let internals = BuilderInternals {
-            key,
+            key: key_mem,
             value_type_details: TypeDetail::new::<ValueType>(
                 message_type_details::TypeVariant::FixedSize,
             ),
@@ -460,35 +529,17 @@ impl<
             internal_value_alignment: core::mem::align_of::<UnrestrictedAtomic<ValueType>>(),
             internal_value_cleanup_callback: Box::new(|| {}),
         };
-        self.__internal_add(internals)
-    }
+        self.builder.internals.push(internals);
 
-    #[doc(hidden)]
-    pub fn __internal_add(mut self, builder_internals: BuilderInternals<KeyType>) -> Self {
-        self.builder.internals.push(builder_internals);
         self
     }
 
     /// Adds key-value pairs to the blackboard where value is a default value.
     pub fn add_with_default<ValueType: ZeroCopySend + Copy + 'static + Default>(
-        mut self,
+        self,
         key: KeyType,
     ) -> Self {
-        self.builder.internals.push(BuilderInternals {
-            key,
-            value_type_details: TypeDetail::new::<ValueType>(
-                message_type_details::TypeVariant::FixedSize,
-            ),
-            value_writer: Box::new(move |mem: *mut u8| {
-                let mem: *mut UnrestrictedAtomic<ValueType> =
-                    mem as *mut UnrestrictedAtomic<ValueType>;
-                unsafe { mem.write(UnrestrictedAtomic::<ValueType>::new(ValueType::default())) };
-            }),
-            internal_value_size: core::mem::size_of::<UnrestrictedAtomic<ValueType>>(),
-            internal_value_alignment: core::mem::align_of::<UnrestrictedAtomic<ValueType>>(),
-            internal_value_cleanup_callback: Box::new(|| {}),
-        });
-        self
+        self.add(key, ValueType::default())
     }
 
     /// Validates configuration and overrides the invalid setting with meaningful values.
@@ -526,12 +577,12 @@ impl<
     }
 
     fn create_impl(
-        &mut self,
+        mut self,
         attributes: &AttributeSpecifier,
     ) -> Result<blackboard::PortFactory<ServiceType, KeyType>, BlackboardCreateError> {
-        self.adjust_configuration_to_meaningful_values();
-
         let msg = "Unable to create blackboard service";
+
+        self.adjust_configuration_to_meaningful_values();
 
         match self.builder.is_service_available(msg)? {
             Some(_) => {
@@ -627,7 +678,7 @@ impl<
                 // create the management segment
                 let capacity = self.builder.internals.len();
 
-                let mut mgmt_config = blackboard_mgmt_config::<ServiceType, Mgmt<KeyType>>(
+                let mut mgmt_config = blackboard_mgmt_config::<ServiceType, Mgmt>(
                     self.builder.base.shared_node.config(),
                 );
                 let mgmt_name = self
@@ -640,18 +691,18 @@ impl<
                 // The name is set to be able to remove the concept when a node dies. Safe since the
                 // same name is set in ServiceInternal::__internal_remove_node_from_service.
                 unsafe {
-                    <ServiceType::BlackboardMgmt<Mgmt<KeyType>> as DynamicStorage::<
-                        Mgmt<KeyType>,
+                    <ServiceType::BlackboardMgmt<Mgmt> as DynamicStorage::<
+                        Mgmt,
                     >>::__internal_set_type_name_in_config(&mut mgmt_config, mgmt_name)
                 };
 
                 let mgmt_storage = fail!(from self, when
-                    <ServiceType::BlackboardMgmt<Mgmt<KeyType>> as DynamicStorage<Mgmt<KeyType>,
+                    <ServiceType::BlackboardMgmt<Mgmt> as DynamicStorage<Mgmt,
                     >>::Builder::new(&name)
                         .config(&mgmt_config)
                         .has_ownership(false)
-                        .supplementary_size(RelocatableFlatMap::<KeyType, usize>::const_memory_size(capacity)+RelocatableVec::<Entry>::const_memory_size(capacity))
-                        .initializer(|entry: &mut Mgmt<KeyType>, allocator: &mut BumpAllocator| {
+                        .supplementary_size(RelocatableFlatMap::<KeyMemory<MAX_BLACKBOARD_KEY_SIZE>, usize>::const_memory_size(capacity)+RelocatableVec::<Entry>::const_memory_size(capacity))
+                        .initializer(|entry: &mut Mgmt, allocator: &mut BumpAllocator| {
                             if unsafe {entry.map.init(allocator)}.is_err() || unsafe {entry.entries.init(allocator).is_err()} {
                                 return false
                             }
@@ -673,14 +724,14 @@ impl<
                                     return false
                                 }
                                 // write offset index to map
-                                let res = unsafe {entry.map.insert(self.builder.internals[i].key.clone(), entry.entries.len() - 1)};
+                                let res = unsafe {entry.map.__internal_insert(self.builder.internals[i].key, entry.entries.len() - 1, &self.builder.key_eq_func)};
                                 if res.is_err() {
                                     error!(from self, "Inserting the key-value pair into the blackboard management segment failed.");
                                     return false
                                 }
                             }
                             true})
-                        .create(Mgmt{ map: unsafe { RelocatableFlatMap::<KeyType, usize>::new_uninit(capacity) }, entries: unsafe {RelocatableVec::<Entry>::new_uninit(capacity)}}),
+                        .create(Mgmt{ map: unsafe { RelocatableFlatMap::<KeyMemory<MAX_BLACKBOARD_KEY_SIZE>, usize>::new_uninit(capacity) }, entries: unsafe {RelocatableVec::<Entry>::new_uninit(capacity)}}),
                             with BlackboardCreateError::ServiceInCorruptedState, "{} since the blackboard management segment could not be created. This could indicate a corrupted system.",
                             msg);
 
@@ -703,6 +754,7 @@ impl<
                         BlackboardResources {
                             mgmt: mgmt_storage,
                             data: payload_shm,
+                            key_eq_func: Rc::new(self.builder.key_eq_func),
                         },
                     ),
                 ))
@@ -711,11 +763,75 @@ impl<
     }
 }
 
-// TODO [#817] replace u64 with CustomKeyMarker
-impl<ServiceType: service::Service> Creator<u64, ServiceType> {
+impl<ServiceType: service::Service> Creator<CustomKeyMarker, ServiceType> {
     #[doc(hidden)]
     pub unsafe fn __internal_set_key_type_details(mut self, value: &TypeDetail) -> Self {
         self.builder.override_key_type = Some(value.clone());
+        self
+    }
+
+    #[doc(hidden)]
+    pub unsafe fn __internal_set_key_eq_cmp_func(
+        mut self,
+        key_eq_func: Box<dyn Fn(*const u8, *const u8) -> bool>,
+    ) -> Self {
+        self.builder.key_eq_func = key_eq_func;
+        self
+    }
+
+    #[doc(hidden)]
+    pub unsafe fn __internal_add(
+        mut self,
+        key: *const u8,
+        value: *mut u8,
+        value_details: TypeDetail,
+        value_cleanup: Box<dyn FnMut()>,
+    ) -> Self {
+        let key_type_details = match self.builder.override_key_type.clone() {
+            None => {
+                fatal_panic!(from self, "The key type details were not set when __internal_add was called!")
+            }
+            Some(details) => details,
+        };
+        let key_layout = match Layout::from_size_align(
+            key_type_details.size,
+            key_type_details.alignment,
+        ) {
+            Ok(layout) => layout,
+            Err(_) => {
+                fatal_panic!(from self, "This should never happen! Key size/alignment is invalid!")
+            }
+        };
+        let key_mem = match KeyMemory::try_from_ptr(key, key_layout) {
+            Ok(mem) => mem,
+            Err(_) => fatal_panic!(from self, "The key type has the wrong size/alignment!"),
+        };
+
+        let value_writer = Box::new(move |raw_memory_ptr: *mut u8| {
+            let ptrs = __internal_calculate_atomic_mgmt_and_payload_ptr(
+                raw_memory_ptr,
+                value_details.alignment,
+            );
+            core::ptr::copy_nonoverlapping(value, ptrs.atomic_payload_ptr, value_details.size);
+        });
+        let value_size = UnrestrictedAtomicMgmt::__internal_get_unrestricted_atomic_size(
+            value_details.size,
+            value_details.alignment,
+        );
+        let value_alignment = UnrestrictedAtomicMgmt::__internal_get_unrestricted_atomic_alignment(
+            value_details.alignment,
+        );
+
+        let internals = BuilderInternals::new(
+            key_mem,
+            value_details,
+            value_writer,
+            value_size,
+            value_alignment,
+            value_cleanup,
+        );
+
+        self.builder.internals.push(internals);
         self
     }
 }
@@ -727,14 +843,14 @@ impl<ServiceType: service::Service> Creator<u64, ServiceType> {
 /// See [`crate::service`]
 #[derive(Debug)]
 pub struct Opener<
-    KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend + Hash,
+    KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
     ServiceType: service::Service,
 > {
     builder: Builder<KeyType, ServiceType>,
 }
 
 impl<
-        KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend + Hash,
+        KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
         ServiceType: service::Service,
     > Opener<KeyType, ServiceType>
 {
@@ -816,7 +932,7 @@ impl<
     }
 
     fn open_impl(
-        &mut self,
+        mut self,
         attributes: &AttributeVerifier,
     ) -> Result<blackboard::PortFactory<ServiceType, KeyType>, BlackboardOpenError> {
         let msg = "Unable to open blackboard service";
@@ -874,7 +990,7 @@ impl<
 
                     let name =
                         blackboard_name(self.builder.base.service_config.service_id().as_str());
-                    let mut mgmt_config = blackboard_mgmt_config::<ServiceType, Mgmt<KeyType>>(
+                    let mut mgmt_config = blackboard_mgmt_config::<ServiceType, Mgmt>(
                         self.builder.base.shared_node.config(),
                     );
                     let mgmt_name = self
@@ -887,14 +1003,14 @@ impl<
                     // dies. Safe since the same name is set in
                     // ServiceInternal::__internal_remove_node_from_service.
                     unsafe {
-                        <ServiceType::BlackboardMgmt<Mgmt<KeyType>> as DynamicStorage<
-                            Mgmt<KeyType>,
+                        <ServiceType::BlackboardMgmt<Mgmt> as DynamicStorage<
+                            Mgmt,
                         >>::__internal_set_type_name_in_config(
                             &mut mgmt_config, mgmt_name
                         )
                     };
                     let mgmt_storage = fail!(from self, when
-                        <ServiceType::BlackboardMgmt<Mgmt<KeyType>> as DynamicStorage<Mgmt<KeyType>>
+                        <ServiceType::BlackboardMgmt<Mgmt> as DynamicStorage<Mgmt>
                         >::Builder::new(&name)
                             .config(&mgmt_config)
                             .has_ownership(false)
@@ -934,6 +1050,7 @@ impl<
                             BlackboardResources {
                                 mgmt: mgmt_storage,
                                 data: payload_shm,
+                                key_eq_func: Rc::new(self.builder.key_eq_func),
                             },
                         ),
                     ));
@@ -943,8 +1060,7 @@ impl<
     }
 }
 
-// TODO [#817] replace u64 with CustomKeyMarker
-impl<ServiceType: service::Service> Opener<u64, ServiceType> {
+impl<ServiceType: service::Service> Opener<CustomKeyMarker, ServiceType> {
     #[doc(hidden)]
     pub unsafe fn __internal_set_key_type_details(mut self, value: &TypeDetail) -> Self {
         self.builder.override_key_type = Some(value.clone());

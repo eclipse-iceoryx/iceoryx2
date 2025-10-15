@@ -17,18 +17,26 @@
 #include "iox/expected.hpp"
 #include "iox2/attribute_specifier.hpp"
 #include "iox2/attribute_verifier.hpp"
-#include "iox2/internal/service_builder_internal.hpp"
+#include "iox2/internal/iceoryx2.hpp"
 #include "iox2/port_factory_blackboard.hpp"
 #include "iox2/service_builder_blackboard_error.hpp"
 #include "iox2/service_type.hpp"
 
 #include <cstdint>
+#include <type_traits>
 
 namespace iox2 {
 /// Builder to create new [`MessagingPattern::Blackboard`] based [`Service`]s
 template <typename KeyType, ServiceType S>
 class ServiceBuilderBlackboardCreator {
   public:
+    static_assert(std::is_trivially_copyable_v<KeyType>, "The blackboard supports only trivially copyable key types.");
+    static_assert(std::alignment_of<KeyType>() <= IOX2_MAX_BLACKBOARD_KEY_ALIGNMENT,
+                  "The blackboard supports only key types with an alignment <= IOX2_MAX_BLACKBOARD_KEY_ALIGNMENT.");
+    static_assert(sizeof(KeyType) <= IOX2_MAX_BLACKBOARD_KEY_SIZE,
+                  "The blackboard supports only key types with a size <= IOX2_MAX_BLACKBOARD_KEY_SIZE.");
+
+
     /// Defines how many [`Reader`]s shall be supported at most.
 #ifdef DOXYGEN_MACRO_FIX
     auto max_readers(const uint64_t value) -> decltype(auto);
@@ -109,9 +117,24 @@ class ServiceBuilderBlackboardOpener {
     iox2_service_builder_blackboard_opener_h m_handle = nullptr;
 };
 
+namespace internal {
+template <typename T>
+auto default_key_eq_cmp_func(const void* lhs, const void* rhs) -> bool {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast): C API requires to pass void* instead of T*
+    return (*reinterpret_cast<const T*>(lhs)) == (*reinterpret_cast<const T*>(rhs));
+}
+} // namespace internal
+
 template <typename KeyType, ServiceType S>
 inline ServiceBuilderBlackboardCreator<KeyType, S>::ServiceBuilderBlackboardCreator(iox2_service_builder_h handle)
     : m_handle { iox2_service_builder_blackboard_creator(handle) } {
+    // set key type details so that these are available in add()
+    const auto type_name = internal::get_type_name<KeyType>();
+    const auto key_type_result = iox2_service_builder_blackboard_creator_set_key_type_details(
+        &m_handle, type_name.unchecked_access().c_str(), type_name.size(), sizeof(KeyType), alignof(KeyType));
+    if (key_type_result != IOX2_OK) {
+        IOX_PANIC("This should never happen! Implementation failure while setting the key type.");
+    }
 }
 
 template <typename KeyType, ServiceType S>
@@ -120,13 +143,9 @@ inline void ServiceBuilderBlackboardCreator<KeyType, S>::set_parameters() {
         [&](auto value) { iox2_service_builder_blackboard_creator_set_max_readers(&m_handle, value); });
     m_max_nodes.and_then([&](auto value) { iox2_service_builder_blackboard_creator_set_max_nodes(&m_handle, value); });
 
-    // key type details
-    const auto type_name = internal::get_type_name<KeyType>();
-    const auto key_type_result = iox2_service_builder_blackboard_creator_set_key_type_details(
-        &m_handle, type_name.unchecked_access().c_str(), type_name.size(), sizeof(KeyType), alignof(KeyType));
-    if (key_type_result != IOX2_OK) {
-        IOX_PANIC("This should never happen! Implementation failure while setting the Key-Type.");
-    }
+    // key eq comparison function
+    iox2_service_builder_blackboard_creator_set_key_eq_comparison_function(&m_handle,
+                                                                           internal::default_key_eq_cmp_func<KeyType>);
 }
 
 template <typename KeyType, ServiceType S>
@@ -139,7 +158,7 @@ inline auto ServiceBuilderBlackboardCreator<KeyType, S>::add(KeyType key, ValueT
 
     iox2_service_builder_blackboard_creator_add(
         &m_handle,
-        key,
+        &key,
         value_ptr,
         [](void* value) {
             auto* value_ptr = static_cast<ValueType*>(value);

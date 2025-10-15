@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/iceoryx2.h"
+#include "transmission_data.h"
 
 #ifdef _WIN64
 #define alignof __alignof
@@ -24,7 +25,7 @@
 // TODO [#817] see "RAII" in service_types example
 int main(void) {
     // Setup logging
-    iox2_set_log_level_from_env_or(iox2_log_level_e_TRACE);
+    iox2_set_log_level_from_env_or(iox2_log_level_e_INFO);
 
     // create new node
     iox2_node_builder_h node_builder_handle = iox2_node_builder_new(NULL);
@@ -49,9 +50,9 @@ int main(void) {
         iox2_service_builder_blackboard_opener(service_builder);
 
     // set key type
-    const char* key_type_name = "uint64_t";
+    const char* key_type_name = "Foo";
     if (iox2_service_builder_blackboard_opener_set_key_type_details(
-            &service_builder_blackboard, key_type_name, strlen(key_type_name), sizeof(uint64_t), alignof(uint64_t))
+            &service_builder_blackboard, key_type_name, strlen(key_type_name), sizeof(struct Foo), alignof(struct Foo))
         != IOX2_OK) {
         printf("Unable to set key type details!\n");
         goto drop_service_name;
@@ -72,12 +73,16 @@ int main(void) {
         goto drop_service;
     }
 
+    struct Foo key_0;
+    key_0.x = 0;
+    key_0.y = -4;
+    key_0.z = 4;
     const char* value_type_name_int = "int32_t";
     iox2_entry_handle_h entry_handle_key_0 = NULL;
     if (iox2_reader_entry(&reader,
                           NULL,
                           &entry_handle_key_0,
-                          0,
+                          &key_0,
                           value_type_name_int,
                           strlen(value_type_name_int),
                           sizeof(int32_t),
@@ -87,12 +92,16 @@ int main(void) {
         goto drop_reader;
     }
 
+    struct Foo key_1;
+    key_1.x = 1;
+    key_1.y = -4;
+    key_1.z = 4;
     const char* value_type_name_double = "double";
     iox2_entry_handle_h entry_handle_key_1 = NULL;
     if (iox2_reader_entry(&reader,
                           NULL,
                           &entry_handle_key_1,
-                          1,
+                          &key_1,
                           value_type_name_double,
                           strlen(value_type_name_double),
                           sizeof(double),

@@ -48,6 +48,12 @@ pub enum iox2_constants_max_type_name_length_e {
 
 #[repr(C)]
 #[derive(Copy, Clone)]
+pub enum iox2_constants_max_blackboard_key_size_e {
+    VALUE = iceoryx2::constants::MAX_BLACKBOARD_KEY_SIZE as _,
+}
+
+#[repr(C)]
+#[derive(Copy, Clone)]
 pub enum iox2_constants_max_blackboard_key_alignment_e {
     VALUE = iceoryx2::constants::MAX_BLACKBOARD_KEY_ALIGNMENT as _,
 }

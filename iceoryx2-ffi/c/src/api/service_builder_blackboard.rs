@@ -23,18 +23,22 @@ use crate::api::{
 use crate::create_type_details;
 use core::ffi::{c_char, c_int, c_void};
 use core::mem::ManuallyDrop;
+use iceoryx2::constants::MAX_BLACKBOARD_KEY_SIZE;
 use iceoryx2::service::builder::blackboard::{
-    BlackboardCreateError, BlackboardOpenError, BuilderInternals, Creator, Opener,
+    BlackboardCreateError, BlackboardOpenError, Creator, KeyMemory, Opener,
 };
 use iceoryx2::service::port_factory::blackboard::PortFactory;
 use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeName, TypeVariant};
 use iceoryx2_bb_elementary_traits::AsCStr;
-use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::*;
 use iceoryx2_ffi_macros::CStrRepr;
 
 // BEGIN types definition
 
+// Function to release the value_ptr passed to [`iox2_service_builder_blackboard_creator_add`]
 pub type iox2_service_blackboard_creator_add_release_callback = Option<extern "C" fn(*mut c_void)>;
+// Function to compare keys
+pub type iox2_service_blackboard_key_eq_cmp_func =
+    unsafe extern "C" fn(*const c_void, *const c_void) -> bool;
 
 #[repr(C)]
 #[derive(Copy, Clone, CStrRepr)]
@@ -331,6 +335,57 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_opener_set_key_type_det
     IOX2_OK
 }
 
+/// Sets the key eqaulity comparison function.
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_blackboard_creator_h_ref`]
+///   obtained by
+///   [`iox2_service_builder_blackboard_creator`](crate::iox2_service_builder_blackboard_creator).
+/// * `key_eq_func` - The function to compare blackboard keys.
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be a valid handle
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_set_key_eq_comparison_function(
+    service_builder_handle: iox2_service_builder_blackboard_creator_h_ref,
+    key_eq_func: iox2_service_blackboard_key_eq_cmp_func,
+) {
+    service_builder_handle.assert_non_null();
+
+    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+
+    let eq_func = Box::new(move |lhs: *const u8, rhs: *const u8| {
+        key_eq_func(lhs as *const c_void, rhs as *const c_void)
+    });
+
+    match service_builder_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
+            service_builder_struct.set(ServiceBuilderUnion::new_ipc_blackboard_creator(
+                service_builder.__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
+                    KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::key_eq_comparison(lhs, rhs, &*eq_func)
+                })),
+            ));
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
+            service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_creator(
+                service_builder.__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
+                    KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::key_eq_comparison(lhs, rhs, &*eq_func)
+                })),
+            ));
+        }
+    }
+}
+
 /// Sets the max readers for the creator
 ///
 /// # Arguments
@@ -527,7 +582,7 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_opener_set_max_nodes(
 #[no_mangle]
 pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
     service_builder_handle: iox2_service_builder_blackboard_creator_h_ref,
-    key: KeyFfi,
+    key: *const c_void,
     value_ptr: *mut c_void,
     release_callback: iox2_service_blackboard_creator_add_release_callback,
     type_name: *const c_char,
@@ -549,32 +604,11 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
     iceoryx2::testing::type_detail_set_size(&mut type_details, type_size);
     iceoryx2::testing::type_detail_set_alignment(&mut type_details, type_align);
 
-    let value_writer = Box::new(move |raw_memory_ptr: *mut u8| {
-        let ptrs = __internal_calculate_atomic_mgmt_and_payload_ptr(raw_memory_ptr, type_align);
-        core::ptr::copy_nonoverlapping(
-            value_ptr,
-            ptrs.atomic_payload_ptr as *mut c_void,
-            type_size,
-        );
-    });
-    let value_size =
-        UnrestrictedAtomicMgmt::__internal_get_unrestricted_atomic_size(type_size, type_align);
-    let value_alignment =
-        UnrestrictedAtomicMgmt::__internal_get_unrestricted_atomic_alignment(type_align);
     let value_cleanup = Box::new(move || {
         if let Some(callback) = release_callback {
             callback(value_ptr);
         }
     });
-
-    let internals = BuilderInternals::new(
-        key,
-        type_details.clone(),
-        value_writer,
-        value_size,
-        value_alignment,
-        value_cleanup,
-    );
 
     let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
 
@@ -585,7 +619,12 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
 
             let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
             service_builder_struct.set(ServiceBuilderUnion::new_ipc_blackboard_creator(
-                service_builder.__internal_add(internals),
+                service_builder.__internal_add(
+                    key as *const u8,
+                    value_ptr as *mut u8,
+                    type_details.clone(),
+                    value_cleanup,
+                ),
             ));
         }
         iox2_service_type_e::LOCAL => {
@@ -594,7 +633,12 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
 
             let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
             service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_creator(
-                service_builder.__internal_add(internals),
+                service_builder.__internal_add(
+                    key as *const u8,
+                    value_ptr as *mut u8,
+                    type_details.clone(),
+                    value_cleanup,
+                ),
             ));
         }
     }

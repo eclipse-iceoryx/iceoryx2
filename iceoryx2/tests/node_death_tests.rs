@@ -706,7 +706,7 @@ mod node_death_tests {
         config.global.node.cleanup_dead_nodes_on_creation = false;
 
         #[repr(C)]
-        #[derive(ZeroCopySend, Debug, Clone, PartialEq, Eq, Hash)]
+        #[derive(ZeroCopySend, Debug, Clone, Copy, PartialEq, Eq, Hash)]
         #[type_name("SoSpecial")]
         struct SpecialKey(u64);
 
