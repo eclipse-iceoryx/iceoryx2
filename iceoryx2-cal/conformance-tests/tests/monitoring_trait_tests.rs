@@ -10,11 +10,18 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub mod arc_sync_policy_trait;
-pub mod communication_channel_trait;
-pub mod dynamic_storage_trait;
-pub mod event_id_tracker_trait;
-pub mod event_signal_mechanism_trait;
-pub mod event_trait;
-pub mod monitoring_trait;
-pub mod serialize_trait;
+use iceoryx2_bb_testing::instantiate_conformance_tests;
+
+mod file_lock {
+    super::instantiate_conformance_tests!(
+        iceoryx2_cal_conformance_tests::monitoring_trait,
+        iceoryx2_cal::monitoring::file_lock::FileLockMonitoring
+    );
+}
+
+mod process_local {
+    super::instantiate_conformance_tests!(
+        iceoryx2_cal_conformance_tests::monitoring_trait,
+        iceoryx2_cal::monitoring::process_local::ProcessLocalMonitoring
+    );
+}
