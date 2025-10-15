@@ -25,8 +25,12 @@ rust_library(
     deps = [
         "//iceoryx2-cal:iceoryx2-cal",
         "//iceoryx2-bb/container:iceoryx2-bb-container",
+        "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
+        "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
         "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
+        "//iceoryx2-pal/testing:iceoryx2-pal-testing",
+        "//iceoryx2-pal/posix:iceoryx2-pal-posix",
         "@crate_index//:serde",
     ],
     proc_macro_deps = [

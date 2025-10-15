@@ -12,4 +12,5 @@
 
 pub mod arc_sync_policy_trait;
 pub mod communication_channel_trait;
+pub mod dynamic_storage_trait;
 pub mod serialize_trait;

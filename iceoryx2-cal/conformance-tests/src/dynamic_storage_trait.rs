@@ -10,9 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[generic_tests::define]
-mod dynamic_storage {
+use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod dynamic_storage_trait {
     use core::sync::atomic::{AtomicI64, Ordering};
+    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_elementary_traits::allocator::*;
     use iceoryx2_bb_system_types::file_name::FileName;
@@ -29,7 +33,7 @@ mod dynamic_storage {
     const TIMEOUT: Duration = Duration::from_millis(100);
 
     #[derive(Debug)]
-    struct TestData {
+    pub struct TestData {
         value: AtomicI64,
         supplementary_ptr: *mut u8,
         supplementary_len: usize,
@@ -59,8 +63,11 @@ mod dynamic_storage {
     unsafe impl Send for TestData {}
     unsafe impl Sync for TestData {}
 
-    #[test]
-    fn create_and_read_works<Sut: DynamicStorage<TestData>, WrongTypeSut: DynamicStorage<u64>>() {
+    #[conformance_test]
+    pub fn create_and_read_works<
+        Sut: DynamicStorage<TestData>,
+        WrongTypeSut: DynamicStorage<u64>,
+    >() {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -87,8 +94,11 @@ mod dynamic_storage {
         assert_that!(sut2.get().value.load(Ordering::Relaxed), eq 456);
     }
 
-    #[test]
-    fn open_non_existing_fails<Sut: DynamicStorage<TestData>, WrongTypeSut: DynamicStorage<u64>>() {
+    #[conformance_test]
+    pub fn open_non_existing_fails<
+        Sut: DynamicStorage<TestData>,
+        WrongTypeSut: DynamicStorage<u64>,
+    >() {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -98,8 +108,8 @@ mod dynamic_storage {
         assert_that!(sut.err().unwrap(), eq DynamicStorageOpenError::DoesNotExist);
     }
 
-    #[test]
-    fn when_storage_goes_out_of_scope_storage_is_removed<
+    #[conformance_test]
+    pub fn when_storage_goes_out_of_scope_storage_is_removed<
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
@@ -117,8 +127,8 @@ mod dynamic_storage {
         assert_that!(sut.err().unwrap(), eq DynamicStorageOpenError::DoesNotExist);
     }
 
-    #[test]
-    fn cannot_create_same_storage_twice<
+    #[conformance_test]
+    pub fn cannot_create_same_storage_twice<
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
@@ -139,8 +149,8 @@ mod dynamic_storage {
         );
     }
 
-    #[test]
-    fn after_storage_is_opened_creator_can_be_dropped<
+    #[conformance_test]
+    pub fn after_storage_is_opened_creator_can_be_dropped<
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
@@ -177,8 +187,8 @@ mod dynamic_storage {
         assert_that!(sut, is_ok);
     }
 
-    #[test]
-    fn create_and_multiple_openers_works<
+    #[conformance_test]
+    pub fn create_and_multiple_openers_works<
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
@@ -216,8 +226,11 @@ mod dynamic_storage {
         }
     }
 
-    #[test]
-    fn release_ownership_works<Sut: DynamicStorage<TestData>, WrongTypeSut: DynamicStorage<u64>>() {
+    #[conformance_test]
+    pub fn release_ownership_works<
+        Sut: DynamicStorage<TestData>,
+        WrongTypeSut: DynamicStorage<u64>,
+    >() {
         test_requires!(Sut::does_support_persistency());
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
@@ -246,8 +259,8 @@ mod dynamic_storage {
         assert_that!(sut2.err().unwrap(), eq DynamicStorageOpenError::DoesNotExist);
     }
 
-    #[test]
-    fn create_non_owning_storage_works<
+    #[conformance_test]
+    pub fn create_non_owning_storage_works<
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
@@ -279,8 +292,11 @@ mod dynamic_storage {
         assert_that!(sut2.err().unwrap(), eq DynamicStorageOpenError::DoesNotExist);
     }
 
-    #[test]
-    fn acquire_ownership_works<Sut: DynamicStorage<TestData>, WrongTypeSut: DynamicStorage<u64>>() {
+    #[conformance_test]
+    pub fn acquire_ownership_works<
+        Sut: DynamicStorage<TestData>,
+        WrongTypeSut: DynamicStorage<u64>,
+    >() {
         test_requires!(Sut::does_support_persistency());
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
@@ -298,8 +314,8 @@ mod dynamic_storage {
         assert_that!(Sut::does_exist_cfg(&storage_name, &config).unwrap(), eq false);
     }
 
-    #[test]
-    fn does_exist_works<Sut: DynamicStorage<TestData>, WrongTypeSut: DynamicStorage<u64>>() {
+    #[conformance_test]
+    pub fn does_exist_works<Sut: DynamicStorage<TestData>, WrongTypeSut: DynamicStorage<u64>>() {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -322,8 +338,8 @@ mod dynamic_storage {
         assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(false));
     }
 
-    #[test]
-    fn has_ownership_works<Sut: DynamicStorage<TestData>, WrongTypeSut: DynamicStorage<u64>>() {
+    #[conformance_test]
+    pub fn has_ownership_works<Sut: DynamicStorage<TestData>, WrongTypeSut: DynamicStorage<u64>>() {
         test_requires!(Sut::does_support_persistency());
 
         let storage_name = generate_name();
@@ -349,8 +365,8 @@ mod dynamic_storage {
         assert_that!(unsafe { Sut::remove_cfg(&storage_name, &config) }, eq Ok(true));
     }
 
-    #[test]
-    fn create_and_initialize_works<
+    #[conformance_test]
+    pub fn create_and_initialize_works<
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
@@ -405,8 +421,8 @@ mod dynamic_storage {
     }
 
     #[ignore] // TODO: iox2-671 enable this test when the concurrency issue is fixed.
-    #[test]
-    fn initialization_blocks_other_openers<
+    #[conformance_test]
+    pub fn initialization_blocks_other_openers<
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
@@ -456,8 +472,8 @@ mod dynamic_storage {
         }
     }
 
-    #[test]
-    fn initialization_timeout_blocks_for_at_least_timeout<
+    #[conformance_test]
+    pub fn initialization_timeout_blocks_for_at_least_timeout<
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
@@ -498,8 +514,8 @@ mod dynamic_storage {
         });
     }
 
-    #[test]
-    fn create_fails_when_initialization_fails<
+    #[conformance_test]
+    pub fn create_fails_when_initialization_fails<
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
@@ -522,8 +538,8 @@ mod dynamic_storage {
         assert_that!(unsafe { <Sut as NamedConceptMgmt>::remove_cfg(&storage_name, &config) }, eq Ok(false));
     }
 
-    #[test]
-    fn list_storages_works<Sut: DynamicStorage<TestData>, WrongTypeSut: DynamicStorage<u64>>() {
+    #[conformance_test]
+    pub fn list_storages_works<Sut: DynamicStorage<TestData>, WrongTypeSut: DynamicStorage<u64>>() {
         let mut sut_names = vec![];
         let mut suts = vec![];
         const LIMIT: usize = 5;
@@ -569,8 +585,8 @@ mod dynamic_storage {
         assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len 0);
     }
 
-    #[test]
-    fn custom_suffix_keeps_storages_separated<
+    #[conformance_test]
+    pub fn custom_suffix_keeps_storages_separated<
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
@@ -624,8 +640,8 @@ mod dynamic_storage {
         assert_that!(unsafe {<Sut as NamedConceptMgmt>::remove_cfg(&sut_name, &config_2)}, eq Ok(false));
     }
 
-    #[test]
-    fn defaults_for_configuration_are_set_correctly<
+    #[conformance_test]
+    pub fn defaults_for_configuration_are_set_correctly<
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
@@ -635,8 +651,11 @@ mod dynamic_storage {
         assert_that!(*config.get_prefix(), eq Sut::default_prefix());
     }
 
-    #[test]
-    fn open_or_create_works<Sut: DynamicStorage<TestData>, WrongTypeSut: DynamicStorage<u64>>() {
+    #[conformance_test]
+    pub fn open_or_create_works<
+        Sut: DynamicStorage<TestData>,
+        WrongTypeSut: DynamicStorage<u64>,
+    >() {
         let sut_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -657,8 +676,8 @@ mod dynamic_storage {
         assert_that!(Sut::does_exist_cfg(&sut_name, &config), eq Ok(false));
     }
 
-    #[test]
-    fn by_default_when_storage_is_removed_it_calls_drop<
+    #[conformance_test]
+    pub fn by_default_when_storage_is_removed_it_calls_drop<
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
@@ -678,8 +697,8 @@ mod dynamic_storage {
         assert_that!(state.number_of_living_instances(), eq 0);
     }
 
-    #[test]
-    fn when_drop_on_destruction_is_disabled_remove_does_not_call_drop<
+    #[conformance_test]
+    pub fn when_drop_on_destruction_is_disabled_remove_does_not_call_drop<
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
@@ -700,8 +719,8 @@ mod dynamic_storage {
         assert_that!(state.number_of_living_instances(), eq 1);
     }
 
-    #[test]
-    fn when_storage_is_persistent_it_does_not_call_drop<
+    #[conformance_test]
+    pub fn when_storage_is_persistent_it_does_not_call_drop<
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
@@ -723,8 +742,8 @@ mod dynamic_storage {
         assert_that!(unsafe { Sut::remove_cfg(&storage_name, &config) }, eq Ok(true));
     }
 
-    #[test]
-    fn explicit_remove_of_persistent_storage_calls_drop<
+    #[conformance_test]
+    pub fn explicit_remove_of_persistent_storage_calls_drop<
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
@@ -746,8 +765,8 @@ mod dynamic_storage {
         assert_that!(state.number_of_living_instances(), eq 0);
     }
 
-    #[test]
-    fn remove_storage_with_unfinished_initialization_does_call_drop<
+    #[conformance_test]
+    pub fn remove_storage_with_unfinished_initialization_does_call_drop<
         Sut: DynamicStorage<TestData> + 'static,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
@@ -773,8 +792,8 @@ mod dynamic_storage {
         }
     }
 
-    #[test]
-    fn dynamic_storage_with_wrong_type_does_not_exist<
+    #[conformance_test]
+    pub fn dynamic_storage_with_wrong_type_does_not_exist<
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
@@ -791,8 +810,8 @@ mod dynamic_storage {
         assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(false));
     }
 
-    #[test]
-    fn different_types_are_separated_also_in_list<
+    #[conformance_test]
+    pub fn different_types_are_separated_also_in_list<
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
@@ -855,8 +874,8 @@ mod dynamic_storage {
         }
     }
 
-    #[test]
-    fn opening_dynamic_storage_with_wrong_type_fails<
+    #[conformance_test]
+    pub fn opening_dynamic_storage_with_wrong_type_fails<
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
@@ -877,8 +896,8 @@ mod dynamic_storage {
         assert_that!(sut.err().unwrap(), eq DynamicStorageOpenError::DoesNotExist);
     }
 
-    #[test]
-    fn removing_dynamic_storage_with_wrong_type_fails<
+    #[conformance_test]
+    pub fn removing_dynamic_storage_with_wrong_type_fails<
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
@@ -894,12 +913,4 @@ mod dynamic_storage {
             .unwrap();
         assert_that!(unsafe { WrongTypeSut::remove_cfg(&storage_name, &wrong_type_config) }, eq Ok(false));
     }
-
-    #[instantiate_tests(<iceoryx2_cal::dynamic_storage::posix_shared_memory::Storage<TestData>,
-                         iceoryx2_cal::dynamic_storage::posix_shared_memory::Storage<u64>>)]
-    mod posix_shared_memory {}
-
-    #[instantiate_tests(<iceoryx2_cal::dynamic_storage::process_local::Storage<TestData>,
-                         iceoryx2_cal::dynamic_storage::process_local::Storage<u64>>)]
-    mod process_local {}
 }
