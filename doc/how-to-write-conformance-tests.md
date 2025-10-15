@@ -38,7 +38,7 @@ pub mod my_module {
 > module name must match the module name determined by the file name. The parent
 > module name is also required to reconstruct the fully qualified path in the
 > generated declarative macro that will run the tests. Since clippy complains
-> about repeating module names, this warning needs to deactivated.
+> about repeating module names, this warning needs to be deactivated.
 
 ### Step 2: Write Test Functions
 
