@@ -10,16 +10,20 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[generic_tests::define]
-mod monitoring {
+use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod monitoring_trait {
+    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_system_types::file_name::*;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::monitoring::*;
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::testing::*;
 
-    #[test]
-    fn create_works<Sut: Monitoring>() {
+    #[conformance_test]
+    pub fn create_works<Sut: Monitoring>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -28,8 +32,8 @@ mod monitoring {
         assert_that!(*sut_token.as_ref().unwrap().name(), eq name);
     }
 
-    #[test]
-    fn create_same_token_twice_fails<Sut: Monitoring>() {
+    #[conformance_test]
+    pub fn create_same_token_twice_fails<Sut: Monitoring>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -44,8 +48,8 @@ mod monitoring {
         );
     }
 
-    #[test]
-    fn token_removes_resources_when_going_out_of_scope<Sut: Monitoring>() {
+    #[conformance_test]
+    pub fn token_removes_resources_when_going_out_of_scope<Sut: Monitoring>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -57,8 +61,8 @@ mod monitoring {
         assert_that!(sut_token_2, is_ok);
     }
 
-    #[test]
-    fn create_cleaner_fails_when_token_does_not_exist<Sut: Monitoring>() {
+    #[conformance_test]
+    pub fn create_cleaner_fails_when_token_does_not_exist<Sut: Monitoring>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -73,8 +77,8 @@ mod monitoring {
         target_os = "macos",
         target_os = "nto"
     )))]
-    #[test]
-    fn monitor_works<Sut: Monitoring>() {
+    #[conformance_test]
+    pub fn monitor_works<Sut: Monitoring>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -89,8 +93,8 @@ mod monitoring {
         assert_that!(sut_monitor.state().unwrap(), eq State::DoesNotExist);
     }
 
-    #[test]
-    fn list_monitoring_token_works<Sut: Monitoring>() {
+    #[conformance_test]
+    pub fn list_monitoring_token_works<Sut: Monitoring>() {
         let mut sut_names = vec![];
         const LIMIT: usize = 10;
         let config = generate_isolated_config::<Sut>();
@@ -118,16 +122,16 @@ mod monitoring {
             }
         }
 
-        for i in 0..LIMIT {
-            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(&sut_names[i], &config)}, eq Ok(true));
-            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(&sut_names[i], &config)}, eq Ok(false));
+        for sut_name in sut_names.iter().take(LIMIT) {
+            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(sut_name, &config)}, eq Ok(true));
+            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(sut_name, &config)}, eq Ok(false));
         }
 
         assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len 0);
     }
 
-    #[test]
-    fn custom_suffix_keeps_monitoring_token_separated<Sut: Monitoring>() {
+    #[conformance_test]
+    pub fn custom_suffix_keeps_monitoring_token_separated<Sut: Monitoring>() {
         let config = generate_isolated_config::<Sut>();
         let config_1 = config
             .clone()
@@ -176,17 +180,11 @@ mod monitoring {
         assert_that!(unsafe {<Sut as NamedConceptMgmt>::remove_cfg(&sut_name, &config_2)}, eq Ok(false));
     }
 
-    #[test]
-    fn defaults_for_configuration_are_set_correctly<Sut: Monitoring>() {
+    #[conformance_test]
+    pub fn defaults_for_configuration_are_set_correctly<Sut: Monitoring>() {
         let config = <Sut as NamedConceptMgmt>::Configuration::default();
         assert_that!(*config.get_suffix(), eq Sut::default_suffix());
         assert_that!(*config.get_path_hint(), eq Sut::default_path_hint());
         assert_that!(*config.get_prefix(), eq Sut::default_prefix());
     }
-
-    #[instantiate_tests(<iceoryx2_cal::monitoring::file_lock::FileLockMonitoring>)]
-    mod file_lock {}
-
-    #[instantiate_tests(<iceoryx2_cal::monitoring::process_local::ProcessLocalMonitoring>)]
-    mod process_local {}
 }

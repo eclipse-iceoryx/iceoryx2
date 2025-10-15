@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "iceoryx2-bb/lock-free/",
     "iceoryx2-bb/threadsafe/",
+    "iceoryx2-bb/conformance-test-macros",
     "iceoryx2-bb/container",
     "iceoryx2-bb/derive-macros",
     "iceoryx2-bb/elementary",
@@ -20,7 +21,10 @@ members = [
     "iceoryx2-ffi/ffi-macros",
 
     "iceoryx2-cal",
+    "iceoryx2-cal/conformance-tests",
     "iceoryx2",
+    "iceoryx2/conformance-tests",
+
     "iceoryx2-pal/concurrency-sync",
     "iceoryx2-pal/posix/",
     "iceoryx2-pal/configuration/",
@@ -67,6 +71,7 @@ version = "0.7.0"
 [workspace.dependencies]
 iceoryx2-bb-threadsafe = { version = "0.7.0", path = "iceoryx2-bb/threadsafe/" }
 iceoryx2-bb-lock-free = { version = "0.7.0", path = "iceoryx2-bb/lock-free/" }
+iceoryx2-bb-conformance-test-macros = { version = "0.7.0", path = "iceoryx2-bb/conformance-test-macros"}
 iceoryx2-bb-container = { version = "0.7.0", path = "iceoryx2-bb/container/" }
 iceoryx2-bb-derive-macros = { version = "0.7.0", path = "iceoryx2-bb/derive-macros/" }
 iceoryx2-bb-elementary = { version = "0.7.0", path = "iceoryx2-bb/elementary/" }
@@ -84,7 +89,9 @@ iceoryx2-pal-os-api = { version = "0.7.0", path = "iceoryx2-pal/os-api/" }
 iceoryx2-pal-configuration = { version = "0.7.0", path = "iceoryx2-pal/configuration/" }
 iceoryx2-pal-testing = { version = "0.7.0", path = "iceoryx2-pal/testing/" }
 iceoryx2-cal = { version = "0.7.0", path = "iceoryx2-cal" }
+iceoryx2-cal-conformance-tests = { version = "0.7.0", path = "iceoryx2-cal/conformance-tests"}
 iceoryx2 = { version = "0.7.0", path = "iceoryx2/" }
+iceoryx2-conformance-tests = { version = "0.7.0", path = "iceoryx2/conformance-tests"}
 iceoryx2-cli = { version = "0.7.0", path = "iceoryx2_cli/"}
 iceoryx2-ffi-c = { version = "0.7.0", path = "iceoryx2-ffi/c" }
 iceoryx2-ffi-python = { version = "0.7.0", path = "iceoryx2-ffi/python" }

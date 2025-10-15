@@ -10,10 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[generic_tests::define]
-mod static_storage {
-    use core::sync::atomic::{AtomicU64, Ordering};
+use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod static_storage_trait {
+    use core::sync::atomic::Ordering;
     use core::time::Duration;
+    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_system_types::file_name::FileName;
@@ -22,6 +26,7 @@ mod static_storage {
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::static_storage::StaticStorageCreateError;
     use iceoryx2_cal::static_storage::*;
+    use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
     use std::sync::Barrier;
     use std::sync::Mutex;
 
@@ -42,8 +47,8 @@ mod static_storage {
         file
     }
 
-    #[test]
-    fn create_and_read_works<Sut: StaticStorage>() {
+    #[conformance_test]
+    pub fn create_and_read_works<Sut: StaticStorage>() {
         let _test_guard = TEST_MUTEX.lock();
         let storage_name = generate_name();
 
@@ -70,8 +75,8 @@ mod static_storage {
         assert_that!(read_content, eq content);
     }
 
-    #[test]
-    fn open_non_existing_fails<Sut: StaticStorage>() {
+    #[conformance_test]
+    pub fn open_non_existing_fails<Sut: StaticStorage>() {
         let storage_name = generate_name();
 
         let _test_guard = TEST_MUTEX.lock();
@@ -84,8 +89,8 @@ mod static_storage {
         );
     }
 
-    #[test]
-    fn when_storage_guard_goes_out_of_scope_storage_is_removed<Sut: StaticStorage>() {
+    #[conformance_test]
+    pub fn when_storage_guard_goes_out_of_scope_storage_is_removed<Sut: StaticStorage>() {
         let _test_guard = TEST_MUTEX.lock();
         let storage_name = generate_name();
 
@@ -99,8 +104,8 @@ mod static_storage {
         assert_that!(result.err().unwrap(), eq StaticStorageOpenError::DoesNotExist);
     }
 
-    #[test]
-    fn cannot_create_same_storage_twice<Sut: StaticStorage>() {
+    #[conformance_test]
+    pub fn cannot_create_same_storage_twice<Sut: StaticStorage>() {
         let _test_guard = TEST_MUTEX.lock();
         let storage_name = generate_name();
 
@@ -117,8 +122,8 @@ mod static_storage {
         );
     }
 
-    #[test]
-    fn after_reader_is_created_guard_can_be_dropped<Sut: StaticStorage>() {
+    #[conformance_test]
+    pub fn after_reader_is_created_guard_can_be_dropped<Sut: StaticStorage>() {
         let _test_guard = TEST_MUTEX.lock();
         let storage_name = generate_name();
 
@@ -152,8 +157,8 @@ mod static_storage {
         assert_that!(storage_guard, is_ok);
     }
 
-    #[test]
-    fn last_open_reader_drops_storage<Sut: StaticStorage>() {
+    #[conformance_test]
+    pub fn last_open_reader_drops_storage<Sut: StaticStorage>() {
         let _test_guard = TEST_MUTEX.lock();
         let storage_name = generate_name();
 
@@ -175,8 +180,8 @@ mod static_storage {
         );
     }
 
-    #[test]
-    fn read_same_storage_multiple_times_works<Sut: StaticStorage>() {
+    #[conformance_test]
+    pub fn read_same_storage_multiple_times_works<Sut: StaticStorage>() {
         let _test_guard = TEST_MUTEX.lock();
         let storage_name = generate_name();
 
@@ -208,8 +213,8 @@ mod static_storage {
         assert_that!(read_content, eq content);
     }
 
-    #[test]
-    fn read_with_insufficient_buffer_fails<Sut: StaticStorage>() {
+    #[conformance_test]
+    pub fn read_with_insufficient_buffer_fails<Sut: StaticStorage>() {
         let _test_guard = TEST_MUTEX.lock();
         let storage_name = generate_name();
 
@@ -233,8 +238,8 @@ mod static_storage {
         );
     }
 
-    #[test]
-    fn list_all_storages_works<Sut: StaticStorage>() {
+    #[conformance_test]
+    pub fn list_all_storages_works<Sut: StaticStorage>() {
         let _test_guard = TEST_MUTEX.lock();
         const NUMBER_OF_STORAGES: u64 = 12;
 
@@ -277,15 +282,15 @@ mod static_storage {
         assert_that!(<Sut as NamedConceptMgmt>::list().unwrap(), len 0);
     }
 
-    #[test]
-    fn concurrent_create_same_locked_storage_multiple_times_fails_for_all_but_one<
+    #[conformance_test]
+    pub fn concurrent_create_same_locked_storage_multiple_times_fails_for_all_but_one<
         Sut: StaticStorage,
     >() {
         let _watch_dog = Watchdog::new();
         const NUMBER_OF_THREADS: usize = 4;
         const NUMBER_OF_ITERATIONS: usize = 1000;
 
-        let success_counter = AtomicU64::new(0);
+        let success_counter = IoxAtomicU64::new(0);
         let barrier_enter = Barrier::new(NUMBER_OF_THREADS);
         let barrier_exit = Barrier::new(NUMBER_OF_THREADS);
         let storage_name = generate_name();
@@ -319,8 +324,8 @@ mod static_storage {
         });
     }
 
-    #[test]
-    fn does_exist_works<Sut: StaticStorage>() {
+    #[conformance_test]
+    pub fn does_exist_works<Sut: StaticStorage>() {
         let _test_guard = TEST_MUTEX.lock();
         const NUMBER_OF_STORAGES: u64 = 12;
         const NUMBER_OF_LOCKED_STORAGES: u64 = 12;
@@ -368,8 +373,8 @@ mod static_storage {
         }
     }
 
-    #[test]
-    fn create_locked_works<Sut: StaticStorage>() {
+    #[conformance_test]
+    pub fn create_locked_works<Sut: StaticStorage>() {
         let _test_guard = TEST_MUTEX.lock();
         let storage_name = generate_name();
 
@@ -407,8 +412,8 @@ mod static_storage {
         assert_that!(read_content, eq content);
     }
 
-    #[test]
-    fn open_locked_with_timeout_works<Sut: StaticStorage>() {
+    #[conformance_test]
+    pub fn open_locked_with_timeout_works<Sut: StaticStorage>() {
         const TIMEOUT: Duration = Duration::from_millis(100);
         let _test_guard = TEST_MUTEX.lock();
         let storage_name = generate_name();
@@ -426,8 +431,8 @@ mod static_storage {
         assert_that!(start.elapsed().unwrap(), ge TIMEOUT);
     }
 
-    #[test]
-    fn releasing_ownership_works<Sut: StaticStorage>() {
+    #[conformance_test]
+    pub fn releasing_ownership_works<Sut: StaticStorage>() {
         let _test_guard = TEST_MUTEX.lock();
         let storage_name = generate_name();
 
@@ -445,8 +450,8 @@ mod static_storage {
         assert_that!(Sut::does_exist(&storage_name), eq Ok(false));
     }
 
-    #[test]
-    fn create_without_ownership_works<Sut: StaticStorage>() {
+    #[conformance_test]
+    pub fn create_without_ownership_works<Sut: StaticStorage>() {
         let _test_guard = TEST_MUTEX.lock();
         let storage_name = generate_name();
 
@@ -464,8 +469,8 @@ mod static_storage {
         assert_that!(Sut::does_exist(&storage_name), eq Ok(false));
     }
 
-    #[test]
-    fn acquire_ownership_works<Sut: StaticStorage>() {
+    #[conformance_test]
+    pub fn acquire_ownership_works<Sut: StaticStorage>() {
         let _test_guard = TEST_MUTEX.lock();
         let storage_name = generate_name();
 
@@ -482,8 +487,8 @@ mod static_storage {
         assert_that!(Sut::does_exist(&storage_name), eq Ok(false));
     }
 
-    #[test]
-    fn custom_suffix_keeps_storages_separated<Sut: StaticStorage>() {
+    #[conformance_test]
+    pub fn custom_suffix_keeps_storages_separated<Sut: StaticStorage>() {
         let _test_guard = TEST_MUTEX.lock();
 
         let config_1 = <Sut as NamedConceptMgmt>::Configuration::default()
@@ -533,17 +538,11 @@ mod static_storage {
         assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(&storage_name, &config_2)}, eq Ok(false));
     }
 
-    #[test]
-    fn defaults_for_configuration_are_set_correctly<Sut: StaticStorage>() {
+    #[conformance_test]
+    pub fn defaults_for_configuration_are_set_correctly<Sut: StaticStorage>() {
         let config = <Sut as NamedConceptMgmt>::Configuration::default();
         assert_that!(*config.get_suffix(), eq Sut::default_suffix());
         assert_that!(*config.get_path_hint(), eq Sut::default_path_hint());
         assert_that!(*config.get_prefix(), eq Sut::default_prefix());
     }
-
-    #[instantiate_tests(<iceoryx2_cal::static_storage::file::Storage>)]
-    mod file {}
-
-    #[instantiate_tests(<iceoryx2_cal::static_storage::process_local::Storage>)]
-    mod process_local {}
 }

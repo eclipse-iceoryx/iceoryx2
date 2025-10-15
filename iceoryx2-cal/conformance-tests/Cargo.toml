@@ -1,0 +1,32 @@
+[package]
+name = "iceoryx2-cal-conformance-tests"
+description = "iceoryx2: Conformance tests for iceoryx2-cal components and extensions"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[dependencies]
+iceoryx2-bb-conformance-test-macros = { workspace = true }
+iceoryx2-bb-container = { workspace = true }
+iceoryx2-bb-elementary-traits = { workspace = true }
+iceoryx2-bb-memory = { workspace = true }
+iceoryx2-bb-posix = { workspace = true }
+iceoryx2-bb-system-types = { workspace = true }
+iceoryx2-bb-testing = { workspace = true }
+iceoryx2-cal = { workspace = true }
+iceoryx2-pal-concurrency-sync = { workspace = true }
+iceoryx2-pal-posix = { workspace = true }
+iceoryx2-pal-testing = { workspace = true }
+lazy_static = { workspace = true }
+serde = { workspace = true }
+
+[dev-dependencies]
+iceoryx2-bb-lock-free = { workspace = true }
+cdr = { workspace = true }
+postcard = { workspace = true }
+toml = { workspace = true }

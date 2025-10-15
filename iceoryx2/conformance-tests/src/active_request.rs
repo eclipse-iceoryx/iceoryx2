@@ -10,8 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[generic_tests::define]
-mod active_request {
+use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod active_request {
     use iceoryx2::port::client::Client;
     use iceoryx2::port::server::Server;
     use iceoryx2::service::port_factory::request_response::PortFactory;
@@ -21,6 +24,7 @@ mod active_request {
         prelude::ZeroCopySend,
         service::Service,
     };
+    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_testing::assert_that;
 
     struct TestFixture<Sut: Service> {
@@ -55,8 +59,8 @@ mod active_request {
         }
     }
 
-    #[test]
-    fn is_connected_until_pending_response_is_dropped<Sut: Service>() {
+    #[conformance_test]
+    pub fn is_connected_until_pending_response_is_dropped<Sut: Service>() {
         let test = TestFixture::<Sut>::new();
         let pending_response = test.client.send_copy(123).unwrap();
 
@@ -67,8 +71,8 @@ mod active_request {
         assert_that!(sut.is_connected(), eq false);
     }
 
-    #[test]
-    fn is_connected_until_pending_response_is_dropped_multiple_connections<Sut: Service>() {
+    #[conformance_test]
+    pub fn is_connected_until_pending_response_is_dropped_multiple_connections<Sut: Service>() {
         let test = TestFixture::<Sut>::new();
         let pending_response_1 = test.client.send_copy(123).unwrap();
         let pending_response_2 = test.client.send_copy(123).unwrap();
@@ -101,8 +105,8 @@ mod active_request {
         assert_that!(sut_3.is_connected(), eq false);
     }
 
-    #[test]
-    fn keeps_being_connected_when_client_goes_out_of_scope<Sut: Service>() {
+    #[conformance_test]
+    pub fn keeps_being_connected_when_client_goes_out_of_scope<Sut: Service>() {
         let test = TestFixture::<Sut>::new();
         let client2 = test.service.client_builder().create().unwrap();
         let pending_response = client2.send_copy(123).unwrap();
@@ -117,8 +121,8 @@ mod active_request {
         assert_that!(sut.is_connected(), eq false);
     }
 
-    #[test]
-    fn drop_closes_connection_to_pending_response<Sut: Service>() {
+    #[conformance_test]
+    pub fn drop_closes_connection_to_pending_response<Sut: Service>() {
         let test = TestFixture::<Sut>::new();
         let pending_response = test.client.send_copy(123).unwrap();
 
@@ -129,8 +133,8 @@ mod active_request {
         assert_that!(pending_response.is_connected(), eq false);
     }
 
-    #[test]
-    fn loan_uninit_and_send_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn loan_uninit_and_send_works<Sut: Service>() {
         let test = TestFixture::<Sut>::new();
         let pending_response = test.client.send_copy(123).unwrap();
 
@@ -143,8 +147,8 @@ mod active_request {
         assert_that!(pending_response.has_response(), eq true);
     }
 
-    #[test]
-    fn send_copy_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn send_copy_works<Sut: Service>() {
         let test = TestFixture::<Sut>::new();
         let pending_response = test.client.send_copy(123).unwrap();
 
@@ -156,8 +160,8 @@ mod active_request {
         assert_that!(pending_response.has_response(), eq true);
     }
 
-    #[test]
-    fn loan_send_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn loan_send_works<Sut: Service>() {
         let test = TestFixture::<Sut>::new();
         let pending_response = test.client.send_copy(123).unwrap();
 
@@ -187,8 +191,8 @@ mod active_request {
         }
     }
 
-    #[test]
-    fn loaned_response_has_default_constructed_header<Sut: Service>() {
+    #[conformance_test]
+    pub fn loaned_response_has_default_constructed_header<Sut: Service>() {
         type UserHeader = CustomUserHeader<44491, 55592>;
         let config = generate_isolated_config();
         let service_name = generate_service_name();
@@ -210,8 +214,8 @@ mod active_request {
         assert_that!(*sut.user_header(), eq UserHeader::default());
     }
 
-    #[test]
-    fn loaned_uninitialized_response_has_default_constructed_header<Sut: Service>() {
+    #[conformance_test]
+    pub fn loaned_uninitialized_response_has_default_constructed_header<Sut: Service>() {
         type UserHeader = CustomUserHeader<1144491, 1155592>;
         let config = generate_isolated_config();
         let service_name = generate_service_name();
@@ -233,8 +237,8 @@ mod active_request {
         assert_that!(*sut.user_header(), eq UserHeader::default());
     }
 
-    #[test]
-    fn loaned_slice_response_has_default_constructed_header<Sut: Service>() {
+    #[conformance_test]
+    pub fn loaned_slice_response_has_default_constructed_header<Sut: Service>() {
         type UserHeader = CustomUserHeader<474491, 575592>;
         let config = generate_isolated_config();
         let service_name = generate_service_name();
@@ -256,8 +260,8 @@ mod active_request {
         assert_that!(*sut.user_header(), eq UserHeader::default());
     }
 
-    #[test]
-    fn loaned_uninitialized_slice_response_has_default_constructed_header<Sut: Service>() {
+    #[conformance_test]
+    pub fn loaned_uninitialized_slice_response_has_default_constructed_header<Sut: Service>() {
         type UserHeader = CustomUserHeader<47774491, 57577592>;
         let config = generate_isolated_config();
         let service_name = generate_service_name();
@@ -279,8 +283,8 @@ mod active_request {
         assert_that!(*sut.user_header(), eq UserHeader::default());
     }
 
-    #[test]
-    fn origin_is_correctly_set<Sut: Service>() {
+    #[conformance_test]
+    pub fn origin_is_correctly_set<Sut: Service>() {
         let test = TestFixture::<Sut>::new();
         let _pending_response = test.client.send_copy(123).unwrap();
         let sut = test.server.receive().unwrap().unwrap();
@@ -289,8 +293,8 @@ mod active_request {
         assert_that!(sut.header().client_id(), eq test.client.id());
     }
 
-    #[test]
-    fn payload_and_user_header_are_correctly_set<Sut: Service>() {
+    #[conformance_test]
+    pub fn payload_and_user_header_are_correctly_set<Sut: Service>() {
         const USER_HEADER: u64 = 910283129;
         const PAYLOAD: u64 = 125894612937;
         let test = TestFixture::<Sut>::new();
@@ -304,16 +308,4 @@ mod active_request {
         assert_that!(*sut.user_header(), eq USER_HEADER);
         assert_that!(*sut.payload(), eq PAYLOAD);
     }
-
-    #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
-    mod ipc {}
-
-    #[instantiate_tests(<iceoryx2::service::local::Service>)]
-    mod local {}
-
-    #[instantiate_tests(<iceoryx2::service::ipc_threadsafe::Service>)]
-    mod ipc_threadsafe {}
-
-    #[instantiate_tests(<iceoryx2::service::local_threadsafe::Service>)]
-    mod local_threadsafe {}
 }

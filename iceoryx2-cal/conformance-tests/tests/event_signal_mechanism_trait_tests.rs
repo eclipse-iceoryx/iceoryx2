@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Contributors to the Eclipse Foundation
+// Copyright (c) 2025 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -10,11 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![warn(clippy::alloc_instead_of_core)]
-#![warn(clippy::std_instead_of_alloc)]
-#![warn(clippy::std_instead_of_core)]
+use iceoryx2_bb_testing::instantiate_conformance_tests;
 
-pub use iceoryx2_pal_testing::*;
-
-pub mod instantiate_conformance_tests_macro;
-pub mod lifetime_tracker;
+mod semaphore {
+    super::instantiate_conformance_tests!(
+        iceoryx2_cal_conformance_tests::event_signal_mechanism_trait,
+        iceoryx2_cal::event::signal_mechanism::semaphore::Semaphore
+    );
+}

@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Contributors to the Eclipse Foundation
+// Copyright (c) 2025 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -10,11 +10,5 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![warn(clippy::alloc_instead_of_core)]
-#![warn(clippy::std_instead_of_alloc)]
-#![warn(clippy::std_instead_of_core)]
-
-pub use iceoryx2_pal_testing::*;
-
-pub mod instantiate_conformance_tests_macro;
-pub mod lifetime_tracker;
+pub mod active_request;
+pub mod node;

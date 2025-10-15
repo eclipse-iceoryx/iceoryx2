@@ -1,5 +1,5 @@
 {
-  "checksum": "2e2d718f287c00f59f18e18793b42082f4810e557e590744df4bcfc6202633c0",
+  "checksum": "910ca22eccea45dd6d894ea0d743baad64b71533c8f78b544fe74ffc5e1c0259",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -7753,6 +7753,57 @@
       ],
       "license_file": null
     },
+    "iceoryx2-bb-conformance-test-macros 0.7.0": {
+      "name": "iceoryx2-bb-conformance-test-macros",
+      "version": "0.7.0",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "ProcMacro": {
+            "crate_name": "iceoryx2_bb_conformance_test_macros",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_bb_conformance_test_macros",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "deps": {
+          "common": [
+            {
+              "id": "proc-macro2 1.0.86",
+              "target": "proc_macro2"
+            },
+            {
+              "id": "quote 1.0.37",
+              "target": "quote"
+            },
+            {
+              "id": "syn 2.0.87",
+              "target": "syn"
+            }
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "0.7.0"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
     "iceoryx2-bb-container 0.7.0": {
       "name": "iceoryx2-bb-container",
       "version": "0.7.0",
@@ -8390,6 +8441,70 @@
       ],
       "license_file": null
     },
+    "iceoryx2-cal-conformance-tests 0.7.0": {
+      "name": "iceoryx2-cal-conformance-tests",
+      "version": "0.7.0",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_cal_conformance_tests",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_cal_conformance_tests",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "deps": {
+          "common": [
+            {
+              "id": "lazy_static 1.5.0",
+              "target": "lazy_static"
+            },
+            {
+              "id": "serde 1.0.219",
+              "target": "serde"
+            }
+          ],
+          "selects": {}
+        },
+        "deps_dev": {
+          "common": [
+            {
+              "id": "cdr 0.2.4",
+              "target": "cdr"
+            },
+            {
+              "id": "postcard 1.1.3",
+              "target": "postcard"
+            },
+            {
+              "id": "toml 0.8.19",
+              "target": "toml"
+            }
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "0.7.0"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
     "iceoryx2-cli 0.7.0": {
       "name": "iceoryx2-cli",
       "version": "0.7.0",
@@ -8499,6 +8614,40 @@
           ],
           "selects": {}
         },
+        "edition": "2021",
+        "version": "0.7.0"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-conformance-tests 0.7.0": {
+      "name": "iceoryx2-conformance-tests",
+      "version": "0.7.0",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_conformance_tests",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_conformance_tests",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
         "edition": "2021",
         "version": "0.7.0"
       },
@@ -30318,6 +30467,7 @@
     "benchmark-request-response 0.7.0": "benchmarks/request-response",
     "example 0.7.0": "examples",
     "iceoryx2 0.7.0": "iceoryx2",
+    "iceoryx2-bb-conformance-test-macros 0.7.0": "iceoryx2-bb/conformance-test-macros",
     "iceoryx2-bb-container 0.7.0": "iceoryx2-bb/container",
     "iceoryx2-bb-derive-macros 0.7.0": "iceoryx2-bb/derive-macros",
     "iceoryx2-bb-elementary 0.7.0": "iceoryx2-bb/elementary",
@@ -30332,7 +30482,9 @@
     "iceoryx2-bb-threadsafe 0.7.0": "iceoryx2-bb/threadsafe",
     "iceoryx2-bb-trait-tests 0.7.0": "iceoryx2-bb/trait-tests",
     "iceoryx2-cal 0.7.0": "iceoryx2-cal",
+    "iceoryx2-cal-conformance-tests 0.7.0": "iceoryx2-cal/conformance-tests",
     "iceoryx2-cli 0.7.0": "iceoryx2-cli",
+    "iceoryx2-conformance-tests 0.7.0": "iceoryx2/conformance-tests",
     "iceoryx2-ffi-c 0.7.0": "iceoryx2-ffi/c",
     "iceoryx2-ffi-macros 0.7.0": "iceoryx2-ffi/ffi-macros",
     "iceoryx2-ffi-python 0.7.0": "iceoryx2-ffi/python",

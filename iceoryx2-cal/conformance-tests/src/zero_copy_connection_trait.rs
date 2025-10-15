@@ -10,14 +10,18 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[generic_tests::define]
-mod zero_copy_connection {
+use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod zero_copy_connection_trait {
     use core::sync::atomic::Ordering;
     use core::time::Duration;
     use std::collections::HashSet;
     use std::sync::{Arc, Barrier, Mutex};
     use std::time::Instant;
 
+    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_posix::barrier::*;
     use iceoryx2_bb_system_types::file_name::FileName;
@@ -27,15 +31,14 @@ mod zero_copy_connection {
     use iceoryx2_cal::named_concept::{NamedConceptBuilder, NamedConceptMgmt};
     use iceoryx2_cal::shm_allocator::{PointerOffset, SegmentId};
     use iceoryx2_cal::testing::{generate_isolated_config, generate_name};
-    use iceoryx2_cal::zero_copy_connection::{self};
     use iceoryx2_cal::zero_copy_connection::{ChannelId, *};
 
     const TIMEOUT: Duration = Duration::from_millis(25);
     const SAMPLE_SIZE: usize = 123;
     const NUMBER_OF_SAMPLES: usize = 2345;
 
-    #[test]
-    fn create_non_existing_connection_works<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn create_non_existing_connection_works<Sut: ZeroCopyConnection>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -55,8 +58,8 @@ mod zero_copy_connection {
         );
     }
 
-    #[test]
-    fn establish_connection_works<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn establish_connection_works<Sut: ZeroCopyConnection>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -79,8 +82,8 @@ mod zero_copy_connection {
         assert_that!(!sut_receiver.is_connected(), eq true);
     }
 
-    #[test]
-    fn builder_sets_default_values<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn builder_sets_default_values<Sut: ZeroCopyConnection>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -115,8 +118,8 @@ mod zero_copy_connection {
         assert_that!(sut_receiver.number_of_channels(), eq DEFAULT_NUMBER_OF_CHANNELS);
     }
 
-    #[test]
-    fn setting_number_of_channels_works<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn setting_number_of_channels_works<Sut: ZeroCopyConnection>() {
         const NUMBER_OF_CHANNELS: usize = 12;
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
@@ -136,8 +139,8 @@ mod zero_copy_connection {
         assert_that!(sut_receiver.number_of_channels(), eq NUMBER_OF_CHANNELS);
     }
 
-    #[test]
-    fn multi_connections_fail<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn multi_connections_fail<Sut: ZeroCopyConnection>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -173,8 +176,8 @@ mod zero_copy_connection {
         );
     }
 
-    #[test]
-    fn when_sender_goes_out_of_scope_another_sender_can_connect<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn when_sender_goes_out_of_scope_another_sender_can_connect<Sut: ZeroCopyConnection>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -197,8 +200,8 @@ mod zero_copy_connection {
         assert_that!(sut_sender, is_ok);
     }
 
-    #[test]
-    fn when_receiver_goes_out_of_scope_another_receiver_can_connect<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn when_receiver_goes_out_of_scope_another_receiver_can_connect<Sut: ZeroCopyConnection>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -221,8 +224,8 @@ mod zero_copy_connection {
         assert_that!(sut_receiver, is_ok);
     }
 
-    #[test]
-    fn connection_is_cleaned_up_when_unused<Sut: ZeroCopyConnection + NamedConceptMgmt>() {
+    #[conformance_test]
+    pub fn connection_is_cleaned_up_when_unused<Sut: ZeroCopyConnection + NamedConceptMgmt>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -243,8 +246,8 @@ mod zero_copy_connection {
         assert_that!(Sut::does_exist_cfg(&name, &config), eq Ok(false));
     }
 
-    #[test]
-    fn connecting_with_incompatible_buffer_size_fails<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn connecting_with_incompatible_buffer_size_fails<Sut: ZeroCopyConnection>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -264,8 +267,8 @@ mod zero_copy_connection {
         assert_that!(sut_receiver, is_err);
     }
 
-    #[test]
-    fn connecting_with_incompatible_borrow_max_fails<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn connecting_with_incompatible_borrow_max_fails<Sut: ZeroCopyConnection>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -285,8 +288,8 @@ mod zero_copy_connection {
         assert_that!(sut_receiver, is_err);
     }
 
-    #[test]
-    fn connecting_with_incompatible_overflow_setting_fails<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn connecting_with_incompatible_overflow_setting_fails<Sut: ZeroCopyConnection>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -309,8 +312,8 @@ mod zero_copy_connection {
         );
     }
 
-    #[test]
-    fn connecting_with_incompatible_number_of_samples_fails<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn connecting_with_incompatible_number_of_samples_fails<Sut: ZeroCopyConnection>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -328,8 +331,8 @@ mod zero_copy_connection {
         assert_that!(sut_receiver, is_err);
     }
 
-    #[test]
-    fn connecting_with_incompatible_number_of_channels_fails<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn connecting_with_incompatible_number_of_channels_fails<Sut: ZeroCopyConnection>() {
         const NUMBER_OF_CHANNELS: usize = 5;
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
@@ -355,8 +358,8 @@ mod zero_copy_connection {
         assert_that!(sut_receiver.err(), eq Some(ZeroCopyCreationError::IncompatibleNumberOfChannels));
     }
 
-    #[test]
-    fn connecting_with_compatible_number_of_channels_works<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn connecting_with_compatible_number_of_channels_works<Sut: ZeroCopyConnection>() {
         const NUMBER_OF_CHANNELS: usize = 9;
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
@@ -375,8 +378,8 @@ mod zero_copy_connection {
         assert_that!(sut_receiver, is_ok);
     }
 
-    #[test]
-    fn send_receive_and_retrieval_works<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn send_receive_and_retrieval_works<Sut: ZeroCopyConnection>() {
         let id = ChannelId::new(0);
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
@@ -410,8 +413,8 @@ mod zero_copy_connection {
         assert_that!(retrieval, is_none);
     }
 
-    #[test]
-    fn send_receive_and_retrieval_works_for_multiple_channels<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn send_receive_and_retrieval_works_for_multiple_channels<Sut: ZeroCopyConnection>() {
         const NUMBER_OF_CHANNELS: usize = 7;
         const ITERATIONS: usize = 5;
         let name = generate_name();
@@ -457,8 +460,8 @@ mod zero_copy_connection {
         }
     }
 
-    #[test]
-    fn same_offset_can_be_sent_received_and_reclaimed_via_multiple_channels_in_parallel<
+    #[conformance_test]
+    pub fn same_offset_can_be_sent_received_and_reclaimed_via_multiple_channels_in_parallel<
         Sut: ZeroCopyConnection,
     >() {
         const NUMBER_OF_CHANNELS: usize = 7;
@@ -502,12 +505,9 @@ mod zero_copy_connection {
             }
 
             // release the received samples
-            for channel_id in 0..NUMBER_OF_CHANNELS {
+            for (channel_id, sample) in samples.iter().enumerate().take(NUMBER_OF_CHANNELS) {
                 let id = ChannelId::new(channel_id);
-                assert_that!(
-                    sut_receiver.release(samples[channel_id].unwrap(), id),
-                    is_ok
-                );
+                assert_that!(sut_receiver.release(sample.unwrap(), id), is_ok);
             }
 
             // reclaim them
@@ -520,8 +520,8 @@ mod zero_copy_connection {
         }
     }
 
-    #[test]
-    fn when_data_was_sent_receiver_has_data<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn when_data_was_sent_receiver_has_data<Sut: ZeroCopyConnection>() {
         let id = ChannelId::new(0);
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
@@ -547,8 +547,8 @@ mod zero_copy_connection {
         assert_that!(sut_receiver.has_data(id), eq true);
     }
 
-    #[test]
-    fn data_can_be_received_only_via_the_same_channel<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn data_can_be_received_only_via_the_same_channel<Sut: ZeroCopyConnection>() {
         const ITERATIONS: usize = 8;
         const NUMBER_OF_CHANNELS: usize = 4;
         let name = generate_name();
@@ -612,8 +612,8 @@ mod zero_copy_connection {
         }
     }
 
-    #[test]
-    fn send_until_buffer_is_full_works<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn send_until_buffer_is_full_works<Sut: ZeroCopyConnection>() {
         let id = ChannelId::new(0);
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
@@ -639,8 +639,8 @@ mod zero_copy_connection {
         assert_that!(result.err().unwrap(), eq ZeroCopySendError::ReceiveBufferFull);
     }
 
-    #[test]
-    fn send_until_overflow_works<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn send_until_overflow_works<Sut: ZeroCopyConnection>() {
         let id = ChannelId::new(0);
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
@@ -671,8 +671,8 @@ mod zero_copy_connection {
         }
     }
 
-    #[test]
-    fn receive_can_acquire_data_with_late_connection<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn receive_can_acquire_data_with_late_connection<Sut: ZeroCopyConnection>() {
         let id = ChannelId::new(0);
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
@@ -709,8 +709,8 @@ mod zero_copy_connection {
         }
     }
 
-    #[test]
-    fn new_connection_has_empty_receive_buffer<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn new_connection_has_empty_receive_buffer<Sut: ZeroCopyConnection>() {
         let id = ChannelId::new(0);
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
@@ -725,8 +725,8 @@ mod zero_copy_connection {
         assert_that!(sample, is_none);
     }
 
-    #[test]
-    fn receiver_cannot_borrow_more_samples_than_set_up<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn receiver_cannot_borrow_more_samples_than_set_up<Sut: ZeroCopyConnection>() {
         let id = ChannelId::new(0);
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
@@ -781,8 +781,8 @@ mod zero_copy_connection {
         }
     }
 
-    #[test]
-    fn blocking_send_blocks<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn blocking_send_blocks<Sut: ZeroCopyConnection>() {
         let id = ChannelId::new(0);
         let _watchdog = Watchdog::new();
         let name = generate_name();
@@ -841,8 +841,8 @@ mod zero_copy_connection {
         });
     }
 
-    #[test]
-    fn sent_samples_can_be_acquired<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn sent_samples_can_be_acquired<Sut: ZeroCopyConnection>() {
         const NUMBER_OF_CHANNELS: usize = 6;
         const BUFFER_SIZE: usize = 10;
         let name = generate_name();
@@ -889,8 +889,8 @@ mod zero_copy_connection {
         };
     }
 
-    #[test]
-    fn send_samples_can_be_acquired_with_overflow<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn send_samples_can_be_acquired_with_overflow<Sut: ZeroCopyConnection>() {
         let id = ChannelId::new(0);
         const BUFFER_SIZE: usize = 10;
         let name = generate_name();
@@ -940,8 +940,8 @@ mod zero_copy_connection {
         }
     }
 
-    #[test]
-    fn send_and_reclaimed_samples_cannot_be_acquired<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn send_and_reclaimed_samples_cannot_be_acquired<Sut: ZeroCopyConnection>() {
         let id = ChannelId::new(0);
         const BUFFER_SIZE: usize = 10;
         let name = generate_name();
@@ -986,8 +986,8 @@ mod zero_copy_connection {
         assert_that!(sample_acquired, eq false);
     }
 
-    #[test]
-    fn send_samples_can_be_acquired_when_receiver_is_dropped<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn send_samples_can_be_acquired_when_receiver_is_dropped<Sut: ZeroCopyConnection>() {
         let id = ChannelId::new(0);
         const BUFFER_SIZE: usize = 10;
         let name = generate_name();
@@ -1035,8 +1035,8 @@ mod zero_copy_connection {
         }
     }
 
-    #[test]
-    fn list_connections_works<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn list_connections_works<Sut: ZeroCopyConnection>() {
         let mut sut_names = vec![];
         const LIMIT: usize = 8;
         let config = generate_isolated_config::<Sut>();
@@ -1072,16 +1072,16 @@ mod zero_copy_connection {
 
         assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len LIMIT);
 
-        for i in 0..LIMIT {
-            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(&sut_names[i], &config)}, eq Ok(true));
-            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(&sut_names[i], &config)}, eq Ok(false));
+        for sut_name in sut_names.iter().take(LIMIT) {
+            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(sut_name, &config)}, eq Ok(true));
+            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(sut_name, &config)}, eq Ok(false));
         }
 
         assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len 0);
     }
 
-    #[test]
-    fn custom_suffix_keeps_connections_separated<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn custom_suffix_keeps_connections_separated<Sut: ZeroCopyConnection>() {
         let config = generate_isolated_config::<Sut>();
         let config_1 = config
             .clone()
@@ -1132,16 +1132,16 @@ mod zero_copy_connection {
         assert_that!(unsafe {<Sut as NamedConceptMgmt>::remove_cfg(&sut_name, &config_2)}, eq Ok(false));
     }
 
-    #[test]
-    fn defaults_for_configuration_are_set_correctly<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn defaults_for_configuration_are_set_correctly<Sut: ZeroCopyConnection>() {
         let config = <Sut as NamedConceptMgmt>::Configuration::default();
         assert_that!(*config.get_suffix(), eq Sut::default_suffix());
         assert_that!(*config.get_path_hint(), eq Sut::default_path_hint());
         assert_that!(*config.get_prefix(), eq Sut::default_prefix());
     }
 
-    #[test]
-    fn sender_and_receiver_must_have_same_segment_id_requirements<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn sender_and_receiver_must_have_same_segment_id_requirements<Sut: ZeroCopyConnection>() {
         const BUFFER_SIZE: usize = 10;
         const NUMBER_OF_SEGMENTS: u8 = 123;
         let name = generate_name();
@@ -1180,8 +1180,8 @@ mod zero_copy_connection {
 
     #[cfg(debug_assertions)]
     #[should_panic]
-    #[test]
-    fn send_pointer_offset_with_out_of_bounds_segment_id_fails<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn send_pointer_offset_with_out_of_bounds_segment_id_fails<Sut: ZeroCopyConnection>() {
         let id = ChannelId::new(0);
         const BUFFER_SIZE: usize = 10;
         const NUMBER_OF_SEGMENTS: u8 = 123;
@@ -1213,8 +1213,8 @@ mod zero_copy_connection {
 
     #[cfg(debug_assertions)]
     #[should_panic]
-    #[test]
-    fn release_pointer_offset_with_out_of_bounds_segment_id_fails<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn release_pointer_offset_with_out_of_bounds_segment_id_fails<Sut: ZeroCopyConnection>() {
         let id = ChannelId::new(0);
         const BUFFER_SIZE: usize = 10;
         const NUMBER_OF_SEGMENTS: u8 = 123;
@@ -1244,8 +1244,8 @@ mod zero_copy_connection {
     }
 
     #[cfg(not(debug_assertions))]
-    #[test]
-    fn receive_pointer_offset_with_out_of_bounds_segment_id_fails<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn receive_pointer_offset_with_out_of_bounds_segment_id_fails<Sut: ZeroCopyConnection>() {
         const BUFFER_SIZE: usize = 10;
         const NUMBER_OF_SEGMENTS: u8 = 123;
         let name = generate_name();
@@ -1284,8 +1284,8 @@ mod zero_copy_connection {
         assert_that!(sut_sender.reclaim(ChannelId::new(0)).err(), eq Some(ZeroCopyReclaimError::ReceiverReturnedCorruptedPointerOffset));
     }
 
-    #[test]
-    fn setting_number_of_supported_shared_memory_segments_to_zero_sets_it_to_one<
+    #[conformance_test]
+    pub fn setting_number_of_supported_shared_memory_segments_to_zero_sets_it_to_one<
         Sut: ZeroCopyConnection,
     >() {
         const BUFFER_SIZE: usize = 10;
@@ -1305,8 +1305,8 @@ mod zero_copy_connection {
         assert_that!(sut_sender.max_supported_shared_memory_segments(), eq 1);
     }
 
-    #[test]
-    fn receiver_cannot_borrow_more_samples_then_set_up_for_multiple_segments<
+    #[conformance_test]
+    pub fn receiver_cannot_borrow_more_samples_then_set_up_for_multiple_segments<
         Sut: ZeroCopyConnection,
     >() {
         let id = ChannelId::new(0);
@@ -1365,8 +1365,8 @@ mod zero_copy_connection {
         assert_that!(sut_receiver.receive(id).err(), eq Some(ZeroCopyReceiveError::ReceiveWouldExceedMaxBorrowValue));
     }
 
-    #[test]
-    fn receive_with_multiple_segments_and_channels_works<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn receive_with_multiple_segments_and_channels_works<Sut: ZeroCopyConnection>() {
         const BUFFER_SIZE: usize = 10;
         const NUMBER_OF_SEGMENTS: u8 = 10;
         const NUMBER_OF_CHANNELS: usize = 4;
@@ -1426,8 +1426,8 @@ mod zero_copy_connection {
         }
     }
 
-    #[test]
-    fn reclaim_works_with_multiple_segments<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn reclaim_works_with_multiple_segments<Sut: ZeroCopyConnection>() {
         let id = ChannelId::new(0);
         const BUFFER_SIZE: usize = 10;
         const NUMBER_OF_SEGMENTS: u8 = 10;
@@ -1487,8 +1487,8 @@ mod zero_copy_connection {
         }
     }
 
-    #[test]
-    fn acquire_used_offsets_works_with_multiple_segments<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn acquire_used_offsets_works_with_multiple_segments<Sut: ZeroCopyConnection>() {
         let id = ChannelId::new(0);
         const BUFFER_SIZE: usize = 10;
         const NUMBER_OF_SEGMENTS: u8 = 10;
@@ -1536,8 +1536,8 @@ mod zero_copy_connection {
 
     #[cfg(debug_assertions)]
     #[should_panic]
-    #[test]
-    fn panic_when_same_offset_is_sent_twice_over_same_channel<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn panic_when_same_offset_is_sent_twice_over_same_channel<Sut: ZeroCopyConnection>() {
         let id = ChannelId::new(0);
         const BUFFER_SIZE: usize = 10;
         const NUMBER_OF_SEGMENTS: u8 = 10;
@@ -1572,8 +1572,8 @@ mod zero_copy_connection {
         sut_sender.try_send(offset, SAMPLE_SIZE, id).unwrap();
     }
 
-    #[test]
-    fn overflow_works_with_multiple_segments<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn overflow_works_with_multiple_segments<Sut: ZeroCopyConnection>() {
         let id = ChannelId::new(0);
         const NUMBER_OF_SEGMENTS: u8 = 98;
         let name = generate_name();
@@ -1616,8 +1616,8 @@ mod zero_copy_connection {
         assert_that!(returned_sample, eq Some(overflow_sample));
     }
 
-    #[test]
-    fn explicitly_releasing_first_sender_then_receiver_removes_connection<
+    #[conformance_test]
+    pub fn explicitly_releasing_first_sender_then_receiver_removes_connection<
         Sut: ZeroCopyConnection,
     >() {
         let name = generate_name();
@@ -1644,8 +1644,8 @@ mod zero_copy_connection {
         assert_that!(Sut::does_exist_cfg(&name, &config), eq Ok(false));
     }
 
-    #[test]
-    fn explicitly_releasing_first_receiver_then_sender_removes_connection<
+    #[conformance_test]
+    pub fn explicitly_releasing_first_receiver_then_sender_removes_connection<
         Sut: ZeroCopyConnection,
     >() {
         let name = generate_name();
@@ -1674,8 +1674,8 @@ mod zero_copy_connection {
 
     #[cfg(debug_assertions)]
     #[should_panic]
-    #[test]
-    fn panics_on_out_of_bounds_channel_id_in_try_send<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn panics_on_out_of_bounds_channel_id_in_try_send<Sut: ZeroCopyConnection>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -1692,8 +1692,8 @@ mod zero_copy_connection {
 
     #[cfg(debug_assertions)]
     #[should_panic]
-    #[test]
-    fn panics_on_out_of_bounds_channel_id_in_blocking_send<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn panics_on_out_of_bounds_channel_id_in_blocking_send<Sut: ZeroCopyConnection>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -1710,8 +1710,8 @@ mod zero_copy_connection {
 
     #[cfg(debug_assertions)]
     #[should_panic]
-    #[test]
-    fn panics_on_out_of_bounds_channel_id_in_reclaim<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn panics_on_out_of_bounds_channel_id_in_reclaim<Sut: ZeroCopyConnection>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -1728,8 +1728,8 @@ mod zero_copy_connection {
 
     #[cfg(debug_assertions)]
     #[should_panic]
-    #[test]
-    fn panics_on_out_of_bounds_channel_id_in_receive<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn panics_on_out_of_bounds_channel_id_in_receive<Sut: ZeroCopyConnection>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -1746,8 +1746,8 @@ mod zero_copy_connection {
 
     #[cfg(debug_assertions)]
     #[should_panic]
-    #[test]
-    fn panics_on_out_of_bounds_channel_id_in_release<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn panics_on_out_of_bounds_channel_id_in_release<Sut: ZeroCopyConnection>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -1764,8 +1764,8 @@ mod zero_copy_connection {
 
     #[cfg(debug_assertions)]
     #[should_panic]
-    #[test]
-    fn panics_on_out_of_bounds_channel_id_in_has_data<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn panics_on_out_of_bounds_channel_id_in_has_data<Sut: ZeroCopyConnection>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -1780,8 +1780,8 @@ mod zero_copy_connection {
         let _ = sut_receiver.has_data(ChannelId::new(1));
     }
 
-    #[test]
-    fn removing_port_from_non_existing_connection_leads_to_error<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn removing_port_from_non_existing_connection_leads_to_error<Sut: ZeroCopyConnection>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -1790,8 +1790,8 @@ mod zero_copy_connection {
     }
 
     #[ignore] // TODO: iox2-671 enable this test when the concurrency issue is fixed.
-    #[test]
-    fn concurrent_creation_and_destruction_works<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn concurrent_creation_and_destruction_works<Sut: ZeroCopyConnection>() {
         const ITERATIONS: usize = 1000;
         let barrier_1 = Arc::new(Barrier::new(2));
         let barrier_2 = barrier_1.clone();
@@ -1847,8 +1847,8 @@ mod zero_copy_connection {
         });
     }
 
-    #[test]
-    fn channel_state_is_set_to_default_value_on_creation<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn channel_state_is_set_to_default_value_on_creation<Sut: ZeroCopyConnection>() {
         const NUMBER_OF_CHANNELS: usize = 12;
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
@@ -1876,8 +1876,8 @@ mod zero_copy_connection {
         drop(sut_sender);
     }
 
-    #[test]
-    fn initial_channel_state_can_be_defined_for_all_channels<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn initial_channel_state_can_be_defined_for_all_channels<Sut: ZeroCopyConnection>() {
         const NUMBER_OF_CHANNELS: usize = 11;
         const CUSTOM_INITIAL_CHANNEL_STATE: u64 = 981273;
         let name = generate_name();
@@ -1908,8 +1908,8 @@ mod zero_copy_connection {
         drop(sut_sender);
     }
 
-    #[test]
-    fn changing_channel_state_works<Sut: ZeroCopyConnection>() {
+    #[conformance_test]
+    pub fn changing_channel_state_works<Sut: ZeroCopyConnection>() {
         const CHANNEL_ID: ChannelId = ChannelId::new(0);
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
@@ -1933,10 +1933,4 @@ mod zero_copy_connection {
 
         assert_that!(sut_receiver.channel_state(CHANNEL_ID).load(Ordering::Relaxed), eq 789);
     }
-
-    #[instantiate_tests(<zero_copy_connection::posix_shared_memory::Connection>)]
-    mod posix_shared_memory {}
-
-    #[instantiate_tests(<zero_copy_connection::process_local::Connection>)]
-    mod process_local {}
 }
