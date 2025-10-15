@@ -77,7 +77,7 @@ semantic_string! {
   normalize: normalize
 }
 
-#[derive(Debug, Clone, Eq, ZeroCopySend)]
+#[derive(Debug, Clone, Copy, Eq, ZeroCopySend)]
 #[repr(C)]
 pub struct RestrictedFileName<const CAPACITY: usize> {
     value: iceoryx2_bb_container::string::StaticString<CAPACITY>,
