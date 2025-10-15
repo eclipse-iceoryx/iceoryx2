@@ -10,14 +10,18 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[generic_tests::define]
-mod event {
+use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod event_trait {
     use core::sync::atomic::{AtomicU64, Ordering};
     use core::time::Duration;
     use std::collections::HashSet;
     use std::sync::{Barrier, Mutex};
     use std::time::Instant;
 
+    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_posix::barrier::*;
     use iceoryx2_bb_system_types::file_name::FileName;
@@ -29,8 +33,8 @@ mod event {
 
     const TIMEOUT: Duration = Duration::from_millis(25);
 
-    #[test]
-    fn create_works<Sut: Event>() {
+    #[conformance_test]
+    pub fn create_works<Sut: Event>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -47,8 +51,8 @@ mod event {
         assert_that!(*sut_notifier.name(), eq name);
     }
 
-    #[test]
-    fn listener_cleans_up_when_out_of_scope<Sut: Event>() {
+    #[conformance_test]
+    pub fn listener_cleans_up_when_out_of_scope<Sut: Event>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -63,8 +67,8 @@ mod event {
         assert_that!(Sut::does_exist_cfg(&name, &config).unwrap(), eq false);
     }
 
-    #[test]
-    fn cannot_be_created_twice<Sut: Event>() {
+    #[conformance_test]
+    pub fn cannot_be_created_twice<Sut: Event>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -78,8 +82,8 @@ mod event {
         assert_that!(sut.err().unwrap(), eq ListenerCreateError::AlreadyExists);
     }
 
-    #[test]
-    fn cannot_open_non_existing<Sut: Event>() {
+    #[conformance_test]
+    pub fn cannot_open_non_existing<Sut: Event>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -89,8 +93,8 @@ mod event {
         assert_that!(sut.err().unwrap(), eq NotifierCreateError::DoesNotExist);
     }
 
-    #[test]
-    fn notify_with_same_id_does_not_lead_to_non_blocking_timed_wait<Sut: Event>() {
+    #[conformance_test]
+    pub fn notify_with_same_id_does_not_lead_to_non_blocking_timed_wait<Sut: Event>() {
         let _watchdog = Watchdog::new();
         const REPETITIONS: u64 = 8;
         let name = generate_name();
@@ -150,18 +154,18 @@ mod event {
         }
     }
 
-    #[test]
-    fn sending_notification_and_try_wait_works<Sut: Event>() {
+    #[conformance_test]
+    pub fn sending_notification_and_try_wait_works<Sut: Event>() {
         sending_notification_works::<Sut, _>(|sut| sut.try_wait_one());
     }
 
-    #[test]
-    fn sending_notification_and_timed_wait_works<Sut: Event>() {
+    #[conformance_test]
+    pub fn sending_notification_and_timed_wait_works<Sut: Event>() {
         sending_notification_works::<Sut, _>(|sut| sut.timed_wait_one(TIMEOUT));
     }
 
-    #[test]
-    fn sending_notification_and_blocking_wait_works<Sut: Event>() {
+    #[conformance_test]
+    pub fn sending_notification_and_blocking_wait_works<Sut: Event>() {
         sending_notification_works::<Sut, _>(|sut| sut.blocking_wait_one());
     }
 
@@ -198,20 +202,20 @@ mod event {
         }
     }
 
-    #[test]
-    fn sending_multiple_notifications_before_try_wait_works<Sut: Event>() {
+    #[conformance_test]
+    pub fn sending_multiple_notifications_before_try_wait_works<Sut: Event>() {
         sending_multiple_notifications_before_wait_works::<Sut, _>(|sut| sut.try_wait_one());
     }
 
-    #[test]
-    fn sending_multiple_notifications_before_timed_wait_works<Sut: Event>() {
+    #[conformance_test]
+    pub fn sending_multiple_notifications_before_timed_wait_works<Sut: Event>() {
         sending_multiple_notifications_before_wait_works::<Sut, _>(|sut| {
             sut.timed_wait_one(TIMEOUT)
         });
     }
 
-    #[test]
-    fn sending_multiple_notifications_before_blocking_wait_works<Sut: Event>() {
+    #[conformance_test]
+    pub fn sending_multiple_notifications_before_blocking_wait_works<Sut: Event>() {
         sending_multiple_notifications_before_wait_works::<Sut, _>(|sut| sut.blocking_wait_one());
     }
 
@@ -258,22 +262,26 @@ mod event {
         }
     }
 
-    #[test]
-    fn sending_multiple_notifications_from_multiple_sources_before_try_wait_works<Sut: Event>() {
+    #[conformance_test]
+    pub fn sending_multiple_notifications_from_multiple_sources_before_try_wait_works<
+        Sut: Event,
+    >() {
         sending_multiple_notifications_from_multiple_sources_before_wait_works::<Sut, _>(|sut| {
             sut.try_wait_one()
         });
     }
 
-    #[test]
-    fn sending_multiple_notifications_from_multiple_sources_before_timed_wait_works<Sut: Event>() {
+    #[conformance_test]
+    pub fn sending_multiple_notifications_from_multiple_sources_before_timed_wait_works<
+        Sut: Event,
+    >() {
         sending_multiple_notifications_from_multiple_sources_before_wait_works::<Sut, _>(|sut| {
             sut.timed_wait_one(TIMEOUT)
         });
     }
 
-    #[test]
-    fn sending_multiple_notifications_from_multiple_sources_before_blocking_wait_works<
+    #[conformance_test]
+    pub fn sending_multiple_notifications_from_multiple_sources_before_blocking_wait_works<
         Sut: Event,
     >() {
         sending_multiple_notifications_from_multiple_sources_before_wait_works::<Sut, _>(|sut| {
@@ -281,8 +289,8 @@ mod event {
         });
     }
 
-    #[test]
-    fn try_wait_does_not_block<Sut: Event>() {
+    #[conformance_test]
+    pub fn try_wait_does_not_block<Sut: Event>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -299,8 +307,8 @@ mod event {
         assert_that!(result, is_none);
     }
 
-    #[test]
-    fn timed_wait_does_block_for_at_least_timeout<Sut: Event>() {
+    #[conformance_test]
+    pub fn timed_wait_does_block_for_at_least_timeout<Sut: Event>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -319,8 +327,8 @@ mod event {
         assert_that!(start.elapsed(), time_at_least TIMEOUT);
     }
 
-    #[test]
-    fn blocking_wait_blocks_until_notification_arrives<Sut: Event>() {
+    #[conformance_test]
+    pub fn blocking_wait_blocks_until_notification_arrives<Sut: Event>() {
         let _watchdog = Watchdog::new();
         let name = generate_name();
         let config = Mutex::new(generate_isolated_config::<Sut>());
@@ -359,8 +367,8 @@ mod event {
 
     /// windows sporadically instantly wakes up in a timed receive operation
     #[cfg(not(target_os = "windows"))]
-    #[test]
-    fn timed_wait_blocks_until_notification_arrives<Sut: Event>() {
+    #[conformance_test]
+    pub fn timed_wait_blocks_until_notification_arrives<Sut: Event>() {
         let _watchdog = Watchdog::new();
         let name = generate_name();
         let config = Mutex::new(generate_isolated_config::<Sut>());
@@ -397,8 +405,8 @@ mod event {
         });
     }
 
-    #[test]
-    fn list_events_works<Sut: Event>() {
+    #[conformance_test]
+    pub fn list_events_works<Sut: Event>() {
         let mut sut_names = vec![];
         const LIMIT: usize = 10;
         let config = generate_isolated_config::<Sut>();
@@ -438,8 +446,8 @@ mod event {
         assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len 0);
     }
 
-    #[test]
-    fn custom_suffix_keeps_events_separated<Sut: Event>() {
+    #[conformance_test]
+    pub fn custom_suffix_keeps_events_separated<Sut: Event>() {
         let config = generate_isolated_config::<Sut>();
         let config_1 = config
             .clone()
@@ -488,16 +496,16 @@ mod event {
         assert_that!(unsafe {<Sut as NamedConceptMgmt>::remove_cfg(&sut_name, &config_2)}, eq Ok(false));
     }
 
-    #[test]
-    fn defaults_for_configuration_are_set_correctly<Sut: Event>() {
+    #[conformance_test]
+    pub fn defaults_for_configuration_are_set_correctly<Sut: Event>() {
         let config = <Sut as NamedConceptMgmt>::Configuration::default();
         assert_that!(*config.get_suffix(), eq Sut::default_suffix());
         assert_that!(*config.get_path_hint(), eq Sut::default_path_hint());
         assert_that!(*config.get_prefix(), eq Sut::default_prefix());
     }
 
-    #[test]
-    fn setting_trigger_id_limit_works<Sut: Event>() {
+    #[conformance_test]
+    pub fn setting_trigger_id_limit_works<Sut: Event>() {
         test_requires!(Sut::has_trigger_id_limit());
 
         const TRIGGER_ID_MAX: TriggerId = TriggerId::new(1234);
@@ -521,8 +529,8 @@ mod event {
         }
     }
 
-    #[test]
-    fn triggering_up_to_trigger_id_max_works<Sut: Event>() {
+    #[conformance_test]
+    pub fn triggering_up_to_trigger_id_max_works<Sut: Event>() {
         test_requires!(Sut::has_trigger_id_limit());
 
         const TRIGGER_ID_MAX: TriggerId = TriggerId::new(1024);
@@ -595,29 +603,29 @@ mod event {
         }
     }
 
-    #[test]
-    fn try_wait_all_collects_all_triggers<Sut: Event>() {
+    #[conformance_test]
+    pub fn try_wait_all_collects_all_triggers<Sut: Event>() {
         wait_all_collects_all_triggers::<Sut, _>(|v, sut: &Sut::Listener| {
             sut.try_wait_all(|id| v.push(id)).unwrap();
         });
     }
 
-    #[test]
-    fn timed_wait_all_collects_all_triggers<Sut: Event>() {
+    #[conformance_test]
+    pub fn timed_wait_all_collects_all_triggers<Sut: Event>() {
         wait_all_collects_all_triggers::<Sut, _>(|v, sut: &Sut::Listener| {
             sut.timed_wait_all(|id| v.push(id), TIMEOUT * 1000).unwrap();
         });
     }
 
-    #[test]
-    fn blocking_wait_all_collects_all_triggers<Sut: Event>() {
+    #[conformance_test]
+    pub fn blocking_wait_all_collects_all_triggers<Sut: Event>() {
         wait_all_collects_all_triggers::<Sut, _>(|v, sut: &Sut::Listener| {
             sut.blocking_wait_all(|id| v.push(id)).unwrap();
         });
     }
 
-    #[test]
-    fn try_wait_all_does_not_block<Sut: Event>() {
+    #[conformance_test]
+    pub fn try_wait_all_does_not_block<Sut: Event>() {
         let _watchdog = Watchdog::new();
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
@@ -634,8 +642,8 @@ mod event {
         assert_that!(callback_called, eq false);
     }
 
-    #[test]
-    fn timed_wait_all_does_block_for_at_least_timeout<Sut: Event>() {
+    #[conformance_test]
+    pub fn timed_wait_all_does_block_for_at_least_timeout<Sut: Event>() {
         let _watchdog = Watchdog::new();
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
@@ -696,22 +704,22 @@ mod event {
         });
     }
 
-    #[test]
-    fn timed_wait_all_wakes_up_on_notify<Sut: Event>() {
+    #[conformance_test]
+    pub fn timed_wait_all_wakes_up_on_notify<Sut: Event>() {
         wait_all_wakes_up_on_notify::<Sut, _>(|v, sut: &Sut::Listener| {
             sut.timed_wait_all(|id| v.push(id), TIMEOUT * 1000).unwrap();
         });
     }
 
-    #[test]
-    fn blocking_wait_all_wakes_up_on_notify<Sut: Event>() {
+    #[conformance_test]
+    pub fn blocking_wait_all_wakes_up_on_notify<Sut: Event>() {
         wait_all_wakes_up_on_notify::<Sut, _>(|v, sut: &Sut::Listener| {
             sut.blocking_wait_all(|id| v.push(id)).unwrap();
         });
     }
 
-    #[test]
-    fn out_of_scope_listener_shall_not_corrupt_notifier<Sut: Event>() {
+    #[conformance_test]
+    pub fn out_of_scope_listener_shall_not_corrupt_notifier<Sut: Event>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -734,17 +742,4 @@ mod event {
             assert_that!(result.err().unwrap(), eq NotifierNotifyError::Disconnected);
         }
     }
-
-    #[instantiate_tests(<iceoryx2_cal::event::process_local_socketpair::EventImpl>)]
-    mod process_local_socket_pair {}
-
-    #[instantiate_tests(<iceoryx2_cal::event::unix_datagram_socket::EventImpl>)]
-    mod unix_datagram {}
-
-    #[instantiate_tests(<iceoryx2_cal::event::sem_bitset_process_local::Event>)]
-    mod sem_bitset_process_local {}
-
-    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
-    #[instantiate_tests(<iceoryx2_cal::event::sem_bitset_posix_shared_memory::Event>)]
-    mod sem_bitset_posix_shared_memory {}
 }

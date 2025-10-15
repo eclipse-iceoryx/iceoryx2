@@ -15,4 +15,5 @@ pub mod communication_channel_trait;
 pub mod dynamic_storage_trait;
 pub mod event_id_tracker_trait;
 pub mod event_signal_mechanism_trait;
+pub mod event_trait;
 pub mod serialize_trait;
