@@ -10,10 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[generic_tests::define]
-mod shared_memory {
+use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod shared_memory_trait {
     use core::alloc::Layout;
 
+    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::{assert_that, test_requires};
@@ -25,7 +29,7 @@ mod shared_memory {
         shm_allocator::{pool_allocator::PoolAllocator, ShmAllocationError, ShmAllocator},
     };
 
-    type DefaultAllocator = PoolAllocator;
+    pub type DefaultAllocator = PoolAllocator;
     type AllocatorConfig = <DefaultAllocator as ShmAllocator>::Configuration;
 
     const NUMBER_OF_CHUNKS: usize = 32;
@@ -36,8 +40,8 @@ mod shared_memory {
         bucket_layout: DEFAULT_LAYOUT,
     };
 
-    #[test]
-    fn size_of_zero_fails<Sut: SharedMemory<DefaultAllocator>>() {
+    #[conformance_test]
+    pub fn size_of_zero_fails<Sut: SharedMemory<DefaultAllocator>>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -57,8 +61,8 @@ mod shared_memory {
         assert_that!(sut_open.err().unwrap(), eq SharedMemoryOpenError::DoesNotExist);
     }
 
-    #[test]
-    fn non_zero_size_works<Sut: SharedMemory<DefaultAllocator>>() {
+    #[conformance_test]
+    pub fn non_zero_size_works<Sut: SharedMemory<DefaultAllocator>>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -73,8 +77,8 @@ mod shared_memory {
         assert_that!(sut_open.size(), ge DEFAULT_SIZE);
     }
 
-    #[test]
-    fn create_after_drop_works<Sut: SharedMemory<DefaultAllocator>>() {
+    #[conformance_test]
+    pub fn create_after_drop_works<Sut: SharedMemory<DefaultAllocator>>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -94,8 +98,8 @@ mod shared_memory {
         assert_that!(sut_create, is_ok);
     }
 
-    #[test]
-    fn creating_it_twice_fails<Sut: SharedMemory<DefaultAllocator>>() {
+    #[conformance_test]
+    pub fn creating_it_twice_fails<Sut: SharedMemory<DefaultAllocator>>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -117,8 +121,8 @@ mod shared_memory {
         );
     }
 
-    #[test]
-    fn opening_non_existing_fails<Sut: SharedMemory<DefaultAllocator>>() {
+    #[conformance_test]
+    pub fn opening_non_existing_fails<Sut: SharedMemory<DefaultAllocator>>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -129,8 +133,8 @@ mod shared_memory {
         assert_that!(sut_open.err().unwrap(), eq SharedMemoryOpenError::DoesNotExist);
     }
 
-    #[test]
-    fn allocation_with_creator_works<Sut: SharedMemory<DefaultAllocator>>() {
+    #[conformance_test]
+    pub fn allocation_with_creator_works<Sut: SharedMemory<DefaultAllocator>>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
         let mut chunks = vec![];
@@ -162,8 +166,8 @@ mod shared_memory {
         assert_that!(chunk, is_ok);
     }
 
-    #[test]
-    fn allocation_with_creator_and_client_works<Sut: SharedMemory<DefaultAllocator>>() {
+    #[conformance_test]
+    pub fn allocation_with_creator_and_client_works<Sut: SharedMemory<DefaultAllocator>>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
         let mut chunks = vec![];
@@ -202,8 +206,8 @@ mod shared_memory {
         assert_that!(chunk, is_ok);
     }
 
-    #[test]
-    fn allocated_chunks_have_correct_alignment<Sut: SharedMemory<DefaultAllocator>>() {
+    #[conformance_test]
+    pub fn allocated_chunks_have_correct_alignment<Sut: SharedMemory<DefaultAllocator>>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -230,8 +234,8 @@ mod shared_memory {
         }
     }
 
-    #[test]
-    fn list_shm_works<Sut: SharedMemory<DefaultAllocator>>() {
+    #[conformance_test]
+    pub fn list_shm_works<Sut: SharedMemory<DefaultAllocator>>() {
         let mut storage_names = vec![];
         let mut storages = vec![];
         const LIMIT: usize = 8;
@@ -278,8 +282,8 @@ mod shared_memory {
         assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len 0);
     }
 
-    #[test]
-    fn custom_suffix_keeps_storages_separated<Sut: SharedMemory<DefaultAllocator>>() {
+    #[conformance_test]
+    pub fn custom_suffix_keeps_storages_separated<Sut: SharedMemory<DefaultAllocator>>() {
         let config = generate_isolated_config::<Sut>();
         let config_1 = config
             .clone()
@@ -330,16 +334,16 @@ mod shared_memory {
         assert_that!(unsafe {<Sut as NamedConceptMgmt>::remove_cfg(&storage_name, &config_2)}, eq Ok(false));
     }
 
-    #[test]
-    fn defaults_for_configuration_are_set_correctly<Sut: SharedMemory<DefaultAllocator>>() {
+    #[conformance_test]
+    pub fn defaults_for_configuration_are_set_correctly<Sut: SharedMemory<DefaultAllocator>>() {
         let config = <Sut as NamedConceptMgmt>::Configuration::default();
         assert_that!(*config.get_suffix(), eq Sut::default_suffix());
         assert_that!(*config.get_path_hint(), eq Sut::default_path_hint());
         assert_that!(*config.get_prefix(), eq Sut::default_prefix());
     }
 
-    #[test]
-    fn shm_does_not_remove_resources_without_ownership<Sut: SharedMemory<DefaultAllocator>>() {
+    #[conformance_test]
+    pub fn shm_does_not_remove_resources_without_ownership<Sut: SharedMemory<DefaultAllocator>>() {
         test_requires!(Sut::does_support_persistency());
         let config = generate_isolated_config::<Sut>();
 
@@ -374,8 +378,8 @@ mod shared_memory {
         assert_that!(unsafe { Sut::remove_cfg(&name_2, &config) }, eq Ok(true));
     }
 
-    #[test]
-    fn acquired_ownership_leads_to_cleaned_up_resources<Sut: SharedMemory<DefaultAllocator>>() {
+    #[conformance_test]
+    pub fn acquired_ownership_leads_to_cleaned_up_resources<Sut: SharedMemory<DefaultAllocator>>() {
         test_requires!(Sut::does_support_persistency());
 
         let name = generate_name();
@@ -395,10 +399,4 @@ mod shared_memory {
         drop(sut);
         assert_that!(Sut::does_exist_cfg(&name, &config), eq Ok(false));
     }
-
-    #[instantiate_tests(<iceoryx2_cal::shared_memory::posix::Memory<DefaultAllocator>>)]
-    mod posix {}
-
-    #[instantiate_tests(<iceoryx2_cal::shared_memory::process_local::Memory<DefaultAllocator>>)]
-    mod process_local {}
 }
