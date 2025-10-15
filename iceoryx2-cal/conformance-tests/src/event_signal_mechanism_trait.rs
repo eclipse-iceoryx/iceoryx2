@@ -15,13 +15,14 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod event_signal_mechanism_trait {
-    use core::{sync::atomic::AtomicU64, time::Duration};
+    use core::time::Duration;
     use std::sync::Barrier;
 
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_posix::clock::Time;
     use iceoryx2_bb_testing::{assert_that, watchdog::Watchdog};
     use iceoryx2_cal::event::signal_mechanism::SignalMechanism;
+    use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
     const TIMEOUT: Duration = Duration::from_millis(25);
 
     #[conformance_test]
@@ -59,7 +60,7 @@ pub mod event_signal_mechanism_trait {
         let _watchdog = Watchdog::new();
         let mut sut = Sut::new();
         let barrier = Barrier::new(2);
-        let counter = AtomicU64::new(0);
+        let counter = IoxAtomicU64::new(0);
 
         unsafe {
             assert_that!(sut.init(), is_ok);

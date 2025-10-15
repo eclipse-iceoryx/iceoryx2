@@ -243,11 +243,11 @@ pub mod resizable_shared_memory_trait {
             ptrs.push(ptr);
         }
 
-        for i in 0..NUMBER_OF_ITERATIONS {
+        for (i, ptr) in ptrs.iter().enumerate().take(NUMBER_OF_ITERATIONS) {
             let size = 2 + i;
             let ptr_view = unsafe {
                 sut_viewer
-                    .register_and_translate_offset(ptrs[i].offset)
+                    .register_and_translate_offset(ptr.offset)
                     .unwrap()
             };
 
@@ -312,11 +312,11 @@ pub mod resizable_shared_memory_trait {
             ptrs.push(ptr);
         }
 
-        for i in 0..NUMBER_OF_REALLOCATIONS {
+        for (i, ptr) in ptrs.iter().enumerate().take(NUMBER_OF_REALLOCATIONS) {
             let size = 2 + i;
             let ptr_view = unsafe {
                 sut_viewer
-                    .register_and_translate_offset(ptrs[i].offset)
+                    .register_and_translate_offset(ptr.offset)
                     .unwrap()
             };
 
@@ -383,11 +383,11 @@ pub mod resizable_shared_memory_trait {
             ptrs.push(ptr);
         }
 
-        for i in 0..NUMBER_OF_REALLOCATIONS {
+        for (i, ptr) in ptrs.iter().enumerate().take(NUMBER_OF_REALLOCATIONS) {
             let size = 2 + i;
             let ptr_view = unsafe {
                 sut_viewer
-                    .register_and_translate_offset(ptrs[i].offset)
+                    .register_and_translate_offset(ptr.offset)
                     .unwrap()
             };
 
@@ -823,7 +823,7 @@ pub mod resizable_shared_memory_trait {
         let chunk_3 = sut.allocate(Layout::new::<u32>()).unwrap();
         let chunk_4 = sut.allocate(Layout::new::<u64>()).unwrap();
 
-        unsafe { (chunk_1.data_ptr as *mut u8).write(value_1) };
+        unsafe { (chunk_1.data_ptr).write(value_1) };
         unsafe { (chunk_2.data_ptr as *mut u16).write(value_2) };
         unsafe { (chunk_3.data_ptr as *mut u32).write(value_3) };
         unsafe { (chunk_4.data_ptr as *mut u64).write(value_4) };

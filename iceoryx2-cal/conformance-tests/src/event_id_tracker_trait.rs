@@ -31,10 +31,7 @@ pub mod event_id_tracker_trait {
     }
 
     fn allocator(memory: &mut [u8]) -> BumpAllocator {
-        BumpAllocator::new(
-            NonNull::new(memory.as_mut_ptr() as *mut u8).unwrap(),
-            memory.len(),
-        )
+        BumpAllocator::new(NonNull::new(memory.as_mut_ptr()).unwrap(), memory.len())
     }
 
     #[conformance_test]

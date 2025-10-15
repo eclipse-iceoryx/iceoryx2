@@ -15,7 +15,7 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod dynamic_storage_trait {
-    use core::sync::atomic::{AtomicI64, Ordering};
+    use core::sync::atomic::Ordering;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_elementary_traits::allocator::*;
@@ -26,6 +26,7 @@ pub mod dynamic_storage_trait {
     use iceoryx2_cal::dynamic_storage::*;
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::testing::*;
+    use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicI64;
     use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
     use std::sync::{Arc, Barrier};
     use std::time::{Duration, Instant};
@@ -34,7 +35,7 @@ pub mod dynamic_storage_trait {
 
     #[derive(Debug)]
     pub struct TestData {
-        value: AtomicI64,
+        value: IoxAtomicI64,
         supplementary_ptr: *mut u8,
         supplementary_len: usize,
         _lifetime_tracker: Option<LifetimeTracker>,
@@ -43,7 +44,7 @@ pub mod dynamic_storage_trait {
     impl TestData {
         fn new(value: i64) -> Self {
             Self {
-                value: AtomicI64::new(value),
+                value: IoxAtomicI64::new(value),
                 supplementary_ptr: core::ptr::null_mut::<u8>(),
                 supplementary_len: 0,
                 _lifetime_tracker: None,
@@ -52,7 +53,7 @@ pub mod dynamic_storage_trait {
 
         fn new_with_lifetime_tracking(value: i64) -> Self {
             Self {
-                value: AtomicI64::new(value),
+                value: IoxAtomicI64::new(value),
                 supplementary_ptr: core::ptr::null_mut::<u8>(),
                 supplementary_len: 0,
                 _lifetime_tracker: Some(LifetimeTracker::new()),
@@ -575,9 +576,9 @@ pub mod dynamic_storage_trait {
 
         assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len LIMIT);
 
-        for i in 0..LIMIT {
-            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(&sut_names[i], &config)}, eq Ok(true));
-            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(&sut_names[i], &config)}, eq Ok(false));
+        for sut_name in sut_names.iter().take(LIMIT) {
+            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(sut_name, &config)}, eq Ok(true));
+            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(sut_name, &config)}, eq Ok(false));
         }
 
         core::mem::forget(suts);

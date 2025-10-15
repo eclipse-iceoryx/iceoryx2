@@ -272,9 +272,9 @@ pub mod shared_memory_trait {
 
         assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len LIMIT);
 
-        for i in 0..LIMIT {
-            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(&storage_names[i], &config)}, eq Ok(true));
-            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(&storage_names[i], &config)}, eq Ok(false));
+        for storage_name in storage_names.iter().take(LIMIT) {
+            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(storage_name, &config)}, eq Ok(true));
+            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(storage_name, &config)}, eq Ok(false));
         }
 
         core::mem::forget(storages);

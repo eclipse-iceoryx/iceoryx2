@@ -122,9 +122,9 @@ pub mod monitoring_trait {
             }
         }
 
-        for i in 0..LIMIT {
-            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(&sut_names[i], &config)}, eq Ok(true));
-            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(&sut_names[i], &config)}, eq Ok(false));
+        for sut_name in sut_names.iter().take(LIMIT) {
+            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(sut_name, &config)}, eq Ok(true));
+            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(sut_name, &config)}, eq Ok(false));
         }
 
         assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len 0);

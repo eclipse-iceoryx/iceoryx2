@@ -22,8 +22,9 @@ pub mod reactor_trait {
     use iceoryx2_cal::event::{Listener, ListenerBuilder, Notifier, NotifierBuilder};
     use iceoryx2_cal::reactor::{Reactor, *};
     use iceoryx2_cal::testing::{generate_isolated_config, generate_name};
+    use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 
-    use core::sync::atomic::{AtomicU64, Ordering};
+    use core::sync::atomic::Ordering;
     use core::time::Duration;
     use std::sync::{Barrier, Mutex};
     use std::time::Instant;
@@ -72,9 +73,9 @@ pub mod reactor_trait {
         }
 
         assert_that!(sut.is_empty(), eq true);
-        for i in 0..NUMBER_OF_ATTACHMENTS {
+        for (i, listener) in listeners.iter().enumerate().take(NUMBER_OF_ATTACHMENTS) {
             assert_that!(sut.len(), eq i);
-            guards.push(sut.attach(&listeners[i]));
+            guards.push(sut.attach(listener));
             assert_that!(sut.is_empty(), eq false);
         }
 
@@ -269,8 +270,8 @@ pub mod reactor_trait {
         }
 
         let mut guards = vec![];
-        for i in 0..NUMBER_OF_ATTACHMENTS {
-            guards.push(sut.attach(&attachments[i].listener).unwrap());
+        for attachment in attachments.iter().take(NUMBER_OF_ATTACHMENTS) {
+            guards.push(sut.attach(&attachment.listener).unwrap());
         }
 
         let mut triggered_fds = vec![];
@@ -280,8 +281,8 @@ pub mod reactor_trait {
         );
 
         assert_that!(triggered_fds, len NUMBER_OF_ATTACHMENTS);
-        for i in 0..NUMBER_OF_ATTACHMENTS {
-            assert_that!(triggered_fds, contains unsafe { attachments[i].listener.file_descriptor().native_handle() } );
+        for attachment in attachments.iter().take(NUMBER_OF_ATTACHMENTS) {
+            assert_that!(triggered_fds, contains unsafe { attachment.listener.file_descriptor().native_handle() } );
         }
     }
 
@@ -297,8 +298,8 @@ pub mod reactor_trait {
         }
 
         let mut guards = vec![];
-        for i in 0..NUMBER_OF_ATTACHMENTS {
-            guards.push(sut.attach(&attachments[i].listener).unwrap());
+        for attachment in attachments.iter().take(NUMBER_OF_ATTACHMENTS) {
+            guards.push(sut.attach(&attachment.listener).unwrap());
         }
 
         let mut triggered_fds = vec![];
@@ -311,8 +312,8 @@ pub mod reactor_trait {
         );
 
         assert_that!(triggered_fds, len NUMBER_OF_ATTACHMENTS);
-        for i in 0..NUMBER_OF_ATTACHMENTS {
-            assert_that!(triggered_fds, contains unsafe { attachments[i].listener.file_descriptor().native_handle() } );
+        for attachment in attachments.iter().take(NUMBER_OF_ATTACHMENTS) {
+            assert_that!(triggered_fds, contains unsafe { attachment.listener.file_descriptor().native_handle() } );
         }
     }
 
@@ -328,8 +329,8 @@ pub mod reactor_trait {
         }
 
         let mut guards = vec![];
-        for i in 0..NUMBER_OF_ATTACHMENTS {
-            guards.push(sut.attach(&attachments[i].listener).unwrap());
+        for attachment in attachments.iter().take(NUMBER_OF_ATTACHMENTS) {
+            guards.push(sut.attach(&attachment.listener).unwrap());
         }
 
         let mut triggered_fds = vec![];
@@ -339,8 +340,8 @@ pub mod reactor_trait {
         );
 
         assert_that!(triggered_fds, len NUMBER_OF_ATTACHMENTS);
-        for i in 0..NUMBER_OF_ATTACHMENTS {
-            assert_that!(triggered_fds, contains unsafe { attachments[i].listener.file_descriptor().native_handle() } );
+        for attachment in attachments.iter().take(NUMBER_OF_ATTACHMENTS) {
+            assert_that!(triggered_fds, contains unsafe { attachment.listener.file_descriptor().native_handle() } );
         }
     }
 
@@ -378,8 +379,8 @@ pub mod reactor_trait {
         }
 
         let mut guards = vec![];
-        for i in 0..NUMBER_OF_ATTACHMENTS {
-            guards.push(sut.attach(&attachments[i].listener).unwrap());
+        for attachment in attachments.iter().take(NUMBER_OF_ATTACHMENTS) {
+            guards.push(sut.attach(&attachment.listener).unwrap());
         }
 
         for n in 0..NUMBER_OF_ATTACHMENTS {
@@ -390,8 +391,8 @@ pub mod reactor_trait {
             );
 
             assert_that!(triggered_fds, len NUMBER_OF_ATTACHMENTS - n);
-            for i in n..NUMBER_OF_ATTACHMENTS {
-                assert_that!(triggered_fds, contains unsafe { attachments[i].listener.file_descriptor().native_handle() } );
+            for attachment in attachments.iter().take(NUMBER_OF_ATTACHMENTS).skip(n) {
+                assert_that!(triggered_fds, contains unsafe { attachment.listener.file_descriptor().native_handle() } );
             }
 
             attachments[n].listener.try_wait_one().unwrap();
@@ -418,8 +419,8 @@ pub mod reactor_trait {
         }
 
         let mut guards = vec![];
-        for i in 0..NUMBER_OF_ATTACHMENTS {
-            guards.push(sut.attach(&attachments[i].listener).unwrap());
+        for attachment in attachments.iter().take(NUMBER_OF_ATTACHMENTS) {
+            guards.push(sut.attach(&attachment.listener).unwrap());
         }
 
         for n in 0..NUMBER_OF_ATTACHMENTS {
@@ -433,8 +434,8 @@ pub mod reactor_trait {
             );
 
             assert_that!(triggered_fds, len NUMBER_OF_ATTACHMENTS - n);
-            for i in n..NUMBER_OF_ATTACHMENTS {
-                assert_that!(triggered_fds, contains unsafe { attachments[i].listener.file_descriptor().native_handle() } );
+            for attachment in attachments.iter().take(NUMBER_OF_ATTACHMENTS).skip(n) {
+                assert_that!(triggered_fds, contains unsafe { attachment.listener.file_descriptor().native_handle() } );
             }
 
             attachments[n].listener.try_wait_one().unwrap();
@@ -461,8 +462,8 @@ pub mod reactor_trait {
         }
 
         let mut guards = vec![];
-        for i in 0..NUMBER_OF_ATTACHMENTS {
-            guards.push(sut.attach(&attachments[i].listener).unwrap());
+        for attachment in attachments.iter().take(NUMBER_OF_ATTACHMENTS) {
+            guards.push(sut.attach(&attachment.listener).unwrap());
         }
 
         for n in 0..NUMBER_OF_ATTACHMENTS {
@@ -473,8 +474,8 @@ pub mod reactor_trait {
             );
 
             assert_that!(triggered_fds, len NUMBER_OF_ATTACHMENTS - n);
-            for i in n..NUMBER_OF_ATTACHMENTS {
-                assert_that!(triggered_fds, contains unsafe { attachments[i].listener.file_descriptor().native_handle() } );
+            for attachment in attachments.iter().take(NUMBER_OF_ATTACHMENTS).skip(n) {
+                assert_that!(triggered_fds, contains unsafe { attachment.listener.file_descriptor().native_handle() } );
             }
 
             attachments[n].listener.try_wait_one().unwrap();
@@ -493,7 +494,7 @@ pub mod reactor_trait {
     pub fn timed_wait_blocks_until_triggered<Sut: Reactor>() {
         let name = generate_name();
         let barrier = Barrier::new(2);
-        let counter = AtomicU64::new(0);
+        let counter = IoxAtomicU64::new(0);
         let config = Mutex::new(generate_isolated_config::<unix_datagram_socket::EventImpl>());
 
         std::thread::scope(|s| {
@@ -537,7 +538,7 @@ pub mod reactor_trait {
     pub fn blocking_wait_blocks_until_triggered<Sut: Reactor>() {
         let name = generate_name();
         let barrier = Barrier::new(2);
-        let counter = AtomicU64::new(0);
+        let counter = IoxAtomicU64::new(0);
         let config = Mutex::new(generate_isolated_config::<unix_datagram_socket::EventImpl>());
 
         std::thread::scope(|s| {

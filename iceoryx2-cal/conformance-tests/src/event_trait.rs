@@ -15,7 +15,7 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod event_trait {
-    use core::sync::atomic::{AtomicU64, Ordering};
+    use core::sync::atomic::Ordering;
     use core::time::Duration;
     use std::collections::HashSet;
     use std::sync::{Barrier, Mutex};
@@ -30,6 +30,7 @@ pub mod event_trait {
     use iceoryx2_cal::event::{TriggerId, *};
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::testing::*;
+    use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 
     const TIMEOUT: Duration = Duration::from_millis(25);
 
@@ -333,7 +334,7 @@ pub mod event_trait {
         let name = generate_name();
         let config = Mutex::new(generate_isolated_config::<Sut>());
 
-        let counter = AtomicU64::new(0);
+        let counter = IoxAtomicU64::new(0);
         let handle = BarrierHandle::new();
         let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
 
@@ -373,7 +374,7 @@ pub mod event_trait {
         let name = generate_name();
         let config = Mutex::new(generate_isolated_config::<Sut>());
 
-        let counter = AtomicU64::new(0);
+        let counter = IoxAtomicU64::new(0);
         let handle = BarrierHandle::new();
         let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
 
@@ -438,9 +439,9 @@ pub mod event_trait {
             }
         }
 
-        for i in 0..LIMIT {
-            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(&sut_names[i], &config)}, eq Ok(true));
-            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(&sut_names[i], &config)}, eq Ok(false));
+        for sut_name in sut_names.iter().take(LIMIT) {
+            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(sut_name, &config)}, eq Ok(true));
+            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(sut_name, &config)}, eq Ok(false));
         }
 
         assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len 0);
@@ -671,7 +672,7 @@ pub mod event_trait {
         let _watchdog = Watchdog::new();
         let name = generate_name();
         let barrier = Barrier::new(2);
-        let counter = AtomicU64::new(0);
+        let counter = IoxAtomicU64::new(0);
         let id = TriggerId::new(5);
         let config = Mutex::new(generate_isolated_config::<Sut>());
 
