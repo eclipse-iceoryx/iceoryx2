@@ -1,5 +1,5 @@
 {
-  "checksum": "129c070d9bddbdfc1cea54e7f40c7db429de48527ef64a16abf244d8db7f73f1",
+  "checksum": "910ca22eccea45dd6d894ea0d743baad64b71533c8f78b544fe74ffc5e1c0259",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -8467,6 +8467,10 @@
         ],
         "deps": {
           "common": [
+            {
+              "id": "lazy_static 1.5.0",
+              "target": "lazy_static"
+            },
             {
               "id": "serde 1.0.219",
               "target": "serde"

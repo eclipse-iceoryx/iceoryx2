@@ -10,8 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[generic_tests::define]
-mod shm_allocator {
+use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod shm_allocator_trait {
+    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::shm_allocator::{ShmAllocator, *};
@@ -86,8 +90,8 @@ mod shm_allocator {
         }
     }
 
-    #[test]
-    fn allocate_and_free_works<Sut: ShmAllocator>() {
+    #[conformance_test]
+    pub fn allocate_and_free_works<Sut: ShmAllocator>() {
         let mut test = TestFixture::<Sut>::new();
         test.init();
 
@@ -100,8 +104,8 @@ mod shm_allocator {
         }
     }
 
-    #[test]
-    fn first_allocated_offset_must_start_at_zero<Sut: ShmAllocator>() {
+    #[conformance_test]
+    pub fn first_allocated_offset_must_start_at_zero<Sut: ShmAllocator>() {
         let mut test = TestFixture::<Sut>::new();
         test.init();
 
@@ -112,8 +116,8 @@ mod shm_allocator {
         unsafe { test.sut().deallocate(distance, layout) };
     }
 
-    #[test]
-    fn allocate_max_alignment_works<Sut: ShmAllocator>() {
+    #[conformance_test]
+    pub fn allocate_max_alignment_works<Sut: ShmAllocator>() {
         let mut test = TestFixture::<Sut>::new();
         test.init();
 
@@ -127,8 +131,8 @@ mod shm_allocator {
         }
     }
 
-    #[test]
-    fn allocate_more_than_max_alignment_fails<Sut: ShmAllocator>() {
+    #[conformance_test]
+    pub fn allocate_more_than_max_alignment_fails<Sut: ShmAllocator>() {
         let mut test = TestFixture::<Sut>::new();
         test.init();
 
@@ -146,8 +150,10 @@ mod shm_allocator {
         );
     }
 
-    #[test]
-    fn init_fails_when_supported_memory_alignment_is_smaller_than_required<Sut: ShmAllocator>() {
+    #[conformance_test]
+    pub fn init_fails_when_supported_memory_alignment_is_smaller_than_required<
+        Sut: ShmAllocator,
+    >() {
         let mut test = TestFixture::<Sut>::new();
         test.prepare();
 
@@ -167,8 +173,8 @@ mod shm_allocator {
         );
     }
 
-    #[test]
-    fn allocator_id_is_unique<Sut: ShmAllocator>() {
+    #[conformance_test]
+    pub fn allocator_id_is_unique<Sut: ShmAllocator>() {
         lazy_static! {
             static ref ALLOCATOR_IDS: Mutex<HashSet<u8>> = Mutex::new(HashSet::new());
         }
@@ -178,10 +184,4 @@ mod shm_allocator {
         assert_that!(!guard.contains(&uid), eq true);
         guard.insert(uid);
     }
-
-    #[instantiate_tests(<iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator>)]
-    mod pool_allocator {}
-
-    #[instantiate_tests(<iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator>)]
-    mod bump_allocator {}
 }
