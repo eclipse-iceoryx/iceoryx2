@@ -10,19 +10,21 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[generic_tests::define]
-mod communication_channel {
+use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod communication_channel_trait {
+    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_container::semantic_string::*;
-    use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
-    use iceoryx2_cal::communication_channel;
     use iceoryx2_cal::communication_channel::*;
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::testing::*;
 
-    #[test]
-    fn names_are_set_correctly<Sut: CommunicationChannel<u64>>() {
+    #[conformance_test]
+    pub fn names_are_set_correctly<Sut: CommunicationChannel<u64>>() {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -39,8 +41,8 @@ mod communication_channel {
         assert_that!(*sut_sender.name(), eq storage_name);
     }
 
-    #[test]
-    fn buffer_size_is_by_default_at_least_provided_constant<Sut: CommunicationChannel<u64>>() {
+    #[conformance_test]
+    pub fn buffer_size_is_by_default_at_least_provided_constant<Sut: CommunicationChannel<u64>>() {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -52,8 +54,8 @@ mod communication_channel {
         assert_that!(sut_receiver.buffer_size(), ge DEFAULT_RECEIVER_BUFFER_SIZE);
     }
 
-    #[test]
-    fn safe_overflow_is_disabled_by_default<Sut: CommunicationChannel<u64>>() {
+    #[conformance_test]
+    pub fn safe_overflow_is_disabled_by_default<Sut: CommunicationChannel<u64>>() {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -70,8 +72,8 @@ mod communication_channel {
         assert_that!(!sut_sender.does_enable_safe_overflow(), eq true);
     }
 
-    #[test]
-    fn create_remove_and_create_again_works<Sut: CommunicationChannel<u64>>() {
+    #[conformance_test]
+    pub fn create_remove_and_create_again_works<Sut: CommunicationChannel<u64>>() {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -93,8 +95,8 @@ mod communication_channel {
         assert_that!(sut_receiver, is_ok);
     }
 
-    #[test]
-    fn connecting_to_non_existing_channel_fails<Sut: CommunicationChannel<u64>>() {
+    #[conformance_test]
+    pub fn connecting_to_non_existing_channel_fails<Sut: CommunicationChannel<u64>>() {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -108,8 +110,8 @@ mod communication_channel {
         );
     }
 
-    #[test]
-    fn connecting_to_receiver_works<Sut: CommunicationChannel<u64>>() {
+    #[conformance_test]
+    pub fn connecting_to_receiver_works<Sut: CommunicationChannel<u64>>() {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -124,8 +126,8 @@ mod communication_channel {
         assert_that!(sut_sender, is_ok);
     }
 
-    #[test]
-    fn connecting_after_first_connection_has_dropped_works<Sut: CommunicationChannel<u64>>() {
+    #[conformance_test]
+    pub fn connecting_after_first_connection_has_dropped_works<Sut: CommunicationChannel<u64>>() {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -146,8 +148,8 @@ mod communication_channel {
         assert_that!(sut_sender2, is_ok);
     }
 
-    #[test]
-    fn send_and_receive_works_for_single_packets<Sut: CommunicationChannel<u64>>() {
+    #[conformance_test]
+    pub fn send_and_receive_works_for_single_packets<Sut: CommunicationChannel<u64>>() {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -174,8 +176,8 @@ mod communication_channel {
         }
     }
 
-    #[test]
-    fn send_and_receive_for_multi_packets_has_queue_behavior<Sut: CommunicationChannel<u64>>() {
+    #[conformance_test]
+    pub fn send_and_receive_for_multi_packets_has_queue_behavior<Sut: CommunicationChannel<u64>>() {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -210,8 +212,8 @@ mod communication_channel {
         }
     }
 
-    #[test]
-    fn receive_without_transmission_returns_none<Sut: CommunicationChannel<u64>>() {
+    #[conformance_test]
+    pub fn receive_without_transmission_returns_none<Sut: CommunicationChannel<u64>>() {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -230,8 +232,10 @@ mod communication_channel {
         assert_that!(received.unwrap(), is_none);
     }
 
-    #[test]
-    fn send_will_return_receiver_cache_full_when_cache_is_full<Sut: CommunicationChannel<u64>>() {
+    #[conformance_test]
+    pub fn send_will_return_receiver_cache_full_when_cache_is_full<
+        Sut: CommunicationChannel<u64>,
+    >() {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -279,8 +283,8 @@ mod communication_channel {
         assert_that!(send_counter, ge sut_receiver.buffer_size() as u64);
     }
 
-    #[test]
-    fn safe_overflow_works<Sut: CommunicationChannel<u64>>() {
+    #[conformance_test]
+    pub fn safe_overflow_works<Sut: CommunicationChannel<u64>>() {
         if !Sut::does_support_safe_overflow() {
             return;
         }
@@ -315,8 +319,8 @@ mod communication_channel {
         }
     }
 
-    #[test]
-    fn custom_buffer_size_works<Sut: CommunicationChannel<u64>>() {
+    #[conformance_test]
+    pub fn custom_buffer_size_works<Sut: CommunicationChannel<u64>>() {
         if !Sut::has_configurable_buffer_size() {
             return;
         }
@@ -349,8 +353,8 @@ mod communication_channel {
         }
     }
 
-    #[test]
-    fn custom_buffer_size_and_overflow_works<Sut: CommunicationChannel<u64>>() {
+    #[conformance_test]
+    pub fn custom_buffer_size_and_overflow_works<Sut: CommunicationChannel<u64>>() {
         if !Sut::has_configurable_buffer_size() || !Sut::does_support_safe_overflow() {
             return;
         }
@@ -390,8 +394,8 @@ mod communication_channel {
         }
     }
 
-    #[test]
-    fn list_channels_works<Sut: CommunicationChannel<u64>>() {
+    #[conformance_test]
+    pub fn list_channels_works<Sut: CommunicationChannel<u64>>() {
         let mut sut_names = vec![];
         let mut suts = vec![];
         const LIMIT: usize = 8;
@@ -436,8 +440,8 @@ mod communication_channel {
         assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len 0);
     }
 
-    #[test]
-    fn custom_suffix_keeps_channels_separated<Sut: CommunicationChannel<u64>>() {
+    #[conformance_test]
+    pub fn custom_suffix_keeps_channels_separated<Sut: CommunicationChannel<u64>>() {
         let _watch_dog = Watchdog::new();
         let config = generate_isolated_config::<Sut>();
 
@@ -488,21 +492,11 @@ mod communication_channel {
         assert_that!(unsafe {<Sut as NamedConceptMgmt>::remove_cfg(&sut_name, &config_2)}, eq Ok(false));
     }
 
-    #[test]
-    fn defaults_for_configuration_are_set_correctly<Sut: CommunicationChannel<u64>>() {
+    #[conformance_test]
+    pub fn defaults_for_configuration_are_set_correctly<Sut: CommunicationChannel<u64>>() {
         let config = <Sut as NamedConceptMgmt>::Configuration::default();
         assert_that!(*config.get_suffix(), eq Sut::default_suffix());
         assert_that!(*config.get_path_hint(), eq Sut::default_path_hint());
         assert_that!(*config.get_prefix(), eq Sut::default_prefix());
     }
-
-    //#[cfg(not(any(target_os = "windows")))]
-    #[instantiate_tests(<communication_channel::unix_datagram::Channel<u64>>)]
-    mod unix_datagram {}
-
-    #[instantiate_tests(<communication_channel::posix_shared_memory::Channel>)]
-    mod posix_shared_memory {}
-
-    #[instantiate_tests(<communication_channel::process_local::Channel>)]
-    mod process_local {}
 }

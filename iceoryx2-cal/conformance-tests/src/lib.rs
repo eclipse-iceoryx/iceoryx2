@@ -11,4 +11,5 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 pub mod arc_sync_policy_trait;
+pub mod communication_channel_trait;
 pub mod serialize_trait;

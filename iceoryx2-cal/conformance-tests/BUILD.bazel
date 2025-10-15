@@ -24,6 +24,7 @@ rust_library(
     srcs = glob(["src/**/*.rs"]),
     deps = [
         "//iceoryx2-cal:iceoryx2-cal",
+        "//iceoryx2-bb/container:iceoryx2-bb-container",
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
         "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
         "@crate_index//:serde",

@@ -12,6 +12,7 @@ version = { workspace = true }
 
 [dependencies]
 iceoryx2-bb-conformance-test-macros = { workspace = true }
+iceoryx2-bb-container = { workspace = true }
 iceoryx2-bb-testing = { workspace = true }
 iceoryx2-cal = { workspace = true }
 iceoryx2-pal-concurrency-sync = { workspace = true }
