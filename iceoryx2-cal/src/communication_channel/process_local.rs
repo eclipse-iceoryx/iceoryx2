@@ -81,7 +81,7 @@ impl Default for Configuration {
 
 impl NamedConceptConfiguration for Configuration {
     fn prefix(mut self, value: &FileName) -> Self {
-        self.prefix = value.clone();
+        self.prefix = *value;
         self
     }
 
@@ -90,12 +90,12 @@ impl NamedConceptConfiguration for Configuration {
     }
 
     fn suffix(mut self, value: &FileName) -> Self {
-        self.suffix = value.clone();
+        self.suffix = *value;
         self
     }
 
     fn path_hint(mut self, value: &Path) -> Self {
-        self.path_hint = value.clone();
+        self.path_hint = *value;
         self
     }
 
@@ -119,7 +119,7 @@ pub struct Creator {
 impl NamedConceptBuilder<Channel> for Creator {
     fn new(channel_name: &FileName) -> Self {
         Self {
-            name: channel_name.clone(),
+            name: *channel_name,
             enable_safe_overflow: false,
             buffer_size: DEFAULT_RECEIVER_BUFFER_SIZE,
             config: Configuration::default(),
@@ -157,7 +157,7 @@ impl CommunicationChannelCreator<u64, Channel> for Creator {
         }
 
         guard.insert(
-            full_name.clone(),
+            full_name,
             StorageEntry {
                 content: Arc::new(Management::new(self.enable_safe_overflow, self.buffer_size)),
             },
@@ -182,7 +182,7 @@ pub struct Connector {
 impl NamedConceptBuilder<Channel> for Connector {
     fn new(channel_name: &FileName) -> Self {
         Self {
-            name: channel_name.clone(),
+            name: *channel_name,
             config: Configuration::default(),
         }
     }
@@ -197,7 +197,7 @@ impl CommunicationChannelConnector<u64, Channel> for Connector {
     fn open_sender(self) -> Result<Duplex, CommunicationChannelOpenError> {
         let msg = "Failed to open sender";
         let origin = format!("{self:?}");
-        let name = self.name.clone();
+        let name = self.name;
         match self.try_open_sender() {
             Err(CommunicationChannelOpenError::DoesNotExist) => {
                 fail!(from origin, with CommunicationChannelOpenError::DoesNotExist,

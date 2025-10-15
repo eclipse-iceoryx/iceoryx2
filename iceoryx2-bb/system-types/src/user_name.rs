@@ -57,6 +57,6 @@ semantic_string! {
     false
   },
   normalize: |this: &UserName| {
-      this.clone()
+      *this
   }
 }

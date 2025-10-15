@@ -38,7 +38,7 @@ impl AttributeSet {
     pub fn key_values(&self, key: &AttributeKey) -> Vec<AttributeValue> {
         let mut ret_val = vec![];
         self.0.iter_key_values(&key.0, |v| {
-            ret_val.push(AttributeValue(v.clone()));
+            ret_val.push(AttributeValue(*v));
             iceoryx2::prelude::CallbackProgression::Continue
         });
 

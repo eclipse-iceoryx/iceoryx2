@@ -139,7 +139,7 @@ pub struct SharedMemoryBuilder {
 impl SharedMemoryBuilder {
     pub fn new(name: &FileName) -> Self {
         SharedMemoryBuilder {
-            name: name.clone(),
+            name: *name,
             size: 0,
             is_memory_locked: false,
             permission: Permission::OWNER_ALL,
@@ -330,7 +330,7 @@ impl SharedMemoryCreationBuilder {
             let memory_mapping = SharedMemoryBuilder::create_memory_mapping(fd, &self.config)?;
 
             let shm = SharedMemory {
-                name: self.config.name.clone(),
+                name: self.config.name,
                 has_ownership: IoxAtomicBool::new(self.config.has_ownership),
                 memory_lock: None,
                 memory_mapping,
@@ -355,7 +355,7 @@ impl SharedMemoryCreationBuilder {
         let memory_mapping = SharedMemoryBuilder::create_memory_mapping(fd, &self.config)?;
 
         let mut shm = SharedMemory {
-            name: self.config.name.clone(),
+            name: self.config.name,
             has_ownership: IoxAtomicBool::new(self.config.has_ownership),
             memory_lock: None,
             memory_mapping,

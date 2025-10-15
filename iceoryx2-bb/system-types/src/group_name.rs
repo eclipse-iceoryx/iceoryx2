@@ -54,6 +54,6 @@ semantic_string! {
     false
   },
   normalize: |this: &GroupName| {
-      this.clone()
+      *this
   }
 }

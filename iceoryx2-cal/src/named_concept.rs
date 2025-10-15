@@ -105,7 +105,7 @@ pub trait NamedConceptConfiguration: Default + Clone + Debug + Send {
 
     /// Returns the full path for a given value under the given configuration.
     fn path_for(&self, value: &FileName) -> FilePath {
-        let mut path = self.get_path_hint().clone();
+        let mut path = *self.get_path_hint();
         fatal_panic!(from self, when path.add_path_entry(&self.get_prefix().into()),
                     "The path hint \"{}\" in combination with the prefix \"{}\" exceed the maximum supported path length of {} of the operating system.",
                     path, value, Path::max_len());
@@ -130,7 +130,7 @@ pub trait NamedConceptConfiguration: Default + Clone + Debug + Send {
 
     /// Extracts the name from a file name under a given configuration.
     fn extract_name_from_file(&self, value: &FileName) -> Option<FileName> {
-        let mut file = value.clone();
+        let mut file = *value;
 
         if !fatal_panic!(from self, when file.strip_prefix(self.get_prefix().as_bytes()),
                     "Stripping the prefix \"{}\" from the file name \"{}\" leads to invalid content.",

@@ -15,7 +15,7 @@ use iceoryx2::{
     prelude::CallbackProgression,
     service::{service_id::ServiceId, Service, ServiceDetails, ServiceListError},
 };
-use std::collections::{HashMap, HashSet};
+use std::collections::{hash_map::Entry, HashMap, HashSet};
 
 /// Errors that can occur during service synchronization.
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -89,12 +89,12 @@ impl<S: Service> Tracker<S> {
         let mut added_ids = Vec::<ServiceId>::new();
 
         S::list(&self.config, |service| {
-            let id = service.static_details.service_id().clone();
-            discovered_ids.insert(id.clone());
+            let id = *service.static_details.service_id();
+            discovered_ids.insert(id);
 
             // Track new services.
-            if !self.services.contains_key(&id) {
-                self.services.insert(id.clone(), service);
+            if let Entry::Vacant(e) = self.services.entry(id) {
+                e.insert(service);
                 added_ids.push(id);
             }
             CallbackProgression::Continue

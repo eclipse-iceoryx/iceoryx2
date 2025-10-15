@@ -136,7 +136,7 @@ pub fn generate_global() -> Result<()> {
 pub fn generate_local() -> Result<()> {
     let user = iceoryx2_bb_posix::user::User::from_self().unwrap();
     let mut user_config_path = match user.details() {
-        Some(details) => details.config_dir().clone(),
+        Some(details) => *details.config_dir(),
         None => {
             return Err(anyhow::anyhow!(
                 "User config directory not available on this platform!"

@@ -42,7 +42,7 @@ impl Default for Configuration {
 
 impl NamedConceptConfiguration for Configuration {
     fn prefix(mut self, value: &FileName) -> Self {
-        self.prefix = value.clone();
+        self.prefix = *value;
         self
     }
 
@@ -51,12 +51,12 @@ impl NamedConceptConfiguration for Configuration {
     }
 
     fn suffix(mut self, value: &FileName) -> Self {
-        self.suffix = value.clone();
+        self.suffix = *value;
         self
     }
 
     fn path_hint(mut self, value: &Path) -> Self {
-        self.path = value.clone();
+        self.path = *value;
         self
     }
 
@@ -175,7 +175,7 @@ pub struct NotifierBuilder {
 impl NamedConceptBuilder<EventImpl> for NotifierBuilder {
     fn new(name: &FileName) -> Self {
         Self {
-            name: name.clone(),
+            name: *name,
             config: Configuration::default(),
         }
     }
@@ -341,7 +341,7 @@ pub struct ListenerBuilder {
 impl NamedConceptBuilder<EventImpl> for ListenerBuilder {
     fn new(name: &FileName) -> Self {
         Self {
-            name: name.clone(),
+            name: *name,
             config: Configuration::default(),
         }
     }

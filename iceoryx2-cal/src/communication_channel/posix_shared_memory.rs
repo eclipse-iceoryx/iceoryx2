@@ -102,7 +102,7 @@ impl From<Configuration> for dynamic_storage::posix_shared_memory::Configuration
 
 impl NamedConceptConfiguration for Configuration {
     fn prefix(mut self, value: &FileName) -> Self {
-        self.prefix = value.clone();
+        self.prefix = *value;
         self
     }
 
@@ -111,12 +111,12 @@ impl NamedConceptConfiguration for Configuration {
     }
 
     fn suffix(mut self, value: &FileName) -> Self {
-        self.suffix = value.clone();
+        self.suffix = *value;
         self
     }
 
     fn path_hint(mut self, value: &Path) -> Self {
-        self.path_hint = value.clone();
+        self.path_hint = *value;
         self
     }
 
@@ -140,7 +140,7 @@ pub struct Creator {
 impl NamedConceptBuilder<Channel> for Creator {
     fn new(channel_name: &FileName) -> Self {
         Self {
-            channel_name: channel_name.clone(),
+            channel_name: *channel_name,
             enable_safe_overflow: false,
             buffer_size: DEFAULT_RECEIVER_BUFFER_SIZE,
             config: Configuration::default(),
@@ -202,7 +202,7 @@ pub struct Connector {
 impl NamedConceptBuilder<Channel> for Connector {
     fn new(channel_name: &FileName) -> Self {
         Self {
-            channel_name: channel_name.clone(),
+            channel_name: *channel_name,
             config: Configuration::default(),
         }
     }

@@ -283,7 +283,7 @@ impl NamedSemaphoreBuilder {
     pub fn new(name: &FileName) -> Self {
         Self {
             creation_mode: None,
-            name: name.clone(),
+            name: *name,
             initial_value: 0,
             permission: Permission::OWNER_ALL,
             clock_type: ClockType::default(),

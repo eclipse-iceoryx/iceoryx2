@@ -132,7 +132,7 @@ mod key {
          false
       },
       normalize: |this: &FixedString| {
-          this.clone()
+          *this
       }
     }
 }
@@ -165,7 +165,7 @@ mod value {
          false
       },
       normalize: |this: &FixedString| {
-          this.clone()
+          *this
       }
     }
 }
@@ -233,8 +233,8 @@ impl Attribute {
     /// Creates an attribute instance
     pub fn new(key: &AttributeKey, value: &AttributeValue) -> Self {
         Self {
-            key: key.clone(),
-            value: value.clone(),
+            key: *key,
+            value: *value,
         }
     }
 
@@ -324,7 +324,7 @@ impl AttributeVerifier {
     /// Requires that a specific key is defined.
     pub fn require_key(mut self, key: &AttributeKey) -> Result<Self, AttributeDefinitionError> {
         if AttributeSet::capacity() <= self.required_attributes.len() + self.required_keys.len()
-            || self.required_keys.push(key.clone()).is_err()
+            || self.required_keys.push(*key).is_err()
         {
             fail!(from self, with AttributeDefinitionError::ExceedsMaxSupportedAttributes,
                 "Unable to require the key {} since it would exceed the maximum number of supported attributes of {}.",
@@ -365,7 +365,7 @@ impl AttributeVerifier {
 
             if !attribute_present {
                 fail!(from self,
-                    with AttributeVerificationError::IncompatibleAttribute((key.clone(), value.clone())),
+                    with AttributeVerificationError::IncompatibleAttribute((*key, *value)),
                     "{msg} due to the incompatible attribute {} = {}.",
                     key, value);
             }
@@ -377,7 +377,7 @@ impl AttributeVerifier {
 
             if !key_exists {
                 fail!(from self,
-                    with AttributeVerificationError::NonExistingKey(key.clone()),
+                    with AttributeVerificationError::NonExistingKey(*key),
                     "{msg} due to a missing key {}.", key);
             }
         }

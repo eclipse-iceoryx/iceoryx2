@@ -66,7 +66,7 @@ impl AttributeVerifier {
     pub fn required_keys(&self) -> Vec<AttributeKey> {
         let mut ret_val = vec![];
         for key in self.0.required_keys() {
-            ret_val.push(AttributeKey(key.clone()));
+            ret_val.push(AttributeKey(*key));
         }
         ret_val
     }

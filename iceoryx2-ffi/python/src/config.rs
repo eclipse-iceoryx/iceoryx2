@@ -32,49 +32,49 @@ impl Node {
     #[getter]
     /// The directory in which all node files are stored
     pub fn directory(&self) -> Path {
-        Path(self.0.lock().global.node.directory.clone())
+        Path(self.0.lock().global.node.directory)
     }
 
     #[setter]
     /// Set the directory in which all node files are stored
     pub fn set_directory(&mut self, value: &Path) {
-        self.0.lock().global.node.directory = value.0.clone()
+        self.0.lock().global.node.directory = value.0
     }
 
     #[getter]
     /// The suffix of the monitor token
     pub fn monitor_suffix(&self) -> FileName {
-        FileName(self.0.lock().global.node.monitor_suffix.clone())
+        FileName(self.0.lock().global.node.monitor_suffix)
     }
 
     #[setter]
     /// Set the suffix of the monitor token
     pub fn set_monitor_suffix(&mut self, value: &FileName) {
-        self.0.lock().global.node.monitor_suffix = value.0.clone()
+        self.0.lock().global.node.monitor_suffix = value.0
     }
 
     #[getter]
     /// The suffix of the files where the node configuration is stored.
     pub fn static_config_suffix(&self) -> FileName {
-        FileName(self.0.lock().global.node.static_config_suffix.clone())
+        FileName(self.0.lock().global.node.static_config_suffix)
     }
 
     #[setter]
     /// Set the suffix of the files where the node configuration is stored.
     pub fn set_static_config_suffix(&mut self, value: &FileName) {
-        self.0.lock().global.node.static_config_suffix = value.0.clone()
+        self.0.lock().global.node.static_config_suffix = value.0
     }
 
     #[getter]
     /// The suffix of the service tags.
     pub fn service_tag_suffix(&self) -> FileName {
-        FileName(self.0.lock().global.node.service_tag_suffix.clone())
+        FileName(self.0.lock().global.node.service_tag_suffix)
     }
 
     #[setter]
     /// Set the suffix of the service tags.
     pub fn set_service_tag_suffix(&mut self, value: &FileName) {
-        self.0.lock().global.node.service_tag_suffix = value.0.clone()
+        self.0.lock().global.node.service_tag_suffix = value.0
     }
 
     #[getter]
@@ -119,63 +119,49 @@ impl Service {
     #[getter]
     /// The directory in which all service files are stored
     pub fn directory(&self) -> Path {
-        Path(self.0.lock().global.service.directory.clone())
+        Path(self.0.lock().global.service.directory)
     }
 
     #[setter]
     /// Set the directory in which all service files are stored
     pub fn set_directory(&self, value: &Path) {
-        self.0.lock().global.service.directory = value.0.clone()
+        self.0.lock().global.service.directory = value.0
     }
 
     #[getter]
     /// The suffix of the ports data segment
     pub fn data_segment_suffix(&self) -> FileName {
-        FileName(self.0.lock().global.service.data_segment_suffix.clone())
+        FileName(self.0.lock().global.service.data_segment_suffix)
     }
 
     #[setter]
     /// Set the suffix of the ports data segment
     pub fn set_data_segment_suffix(&self, value: &FileName) {
-        self.0.lock().global.service.data_segment_suffix = value.0.clone()
+        self.0.lock().global.service.data_segment_suffix = value.0
     }
 
     #[getter]
     /// The suffix of the static config file
     pub fn static_config_storage_suffix(&self) -> FileName {
-        FileName(
-            self.0
-                .lock()
-                .global
-                .service
-                .static_config_storage_suffix
-                .clone(),
-        )
+        FileName(self.0.lock().global.service.static_config_storage_suffix)
     }
 
     #[setter]
     /// Set the suffix of the static config file
     pub fn set_static_config_storage_suffix(&self, value: &FileName) {
-        self.0.lock().global.service.static_config_storage_suffix = value.0.clone()
+        self.0.lock().global.service.static_config_storage_suffix = value.0
     }
 
     #[getter]
     /// The suffix of the dynamic config file
     pub fn dynamic_config_storage_suffix(&self) -> FileName {
-        FileName(
-            self.0
-                .lock()
-                .global
-                .service
-                .dynamic_config_storage_suffix
-                .clone(),
-        )
+        FileName(self.0.lock().global.service.dynamic_config_storage_suffix)
     }
 
     #[setter]
     /// Set the suffix of the dynamic config file
     pub fn set_dynamic_config_storage_suffix(&self, value: &FileName) {
-        self.0.lock().global.service.dynamic_config_storage_suffix = value.0.clone()
+        self.0.lock().global.service.dynamic_config_storage_suffix = value.0
     }
 
     #[getter]
@@ -194,25 +180,25 @@ impl Service {
     #[getter]
     /// The suffix of a one-to-one connection
     pub fn connection_suffix(&self) -> FileName {
-        FileName(self.0.lock().global.service.connection_suffix.clone())
+        FileName(self.0.lock().global.service.connection_suffix)
     }
 
     #[setter]
     /// Set the suffix of a one-to-one connection
     pub fn set_connection_suffix(&self, value: &FileName) {
-        self.0.lock().global.service.connection_suffix = value.0.clone()
+        self.0.lock().global.service.connection_suffix = value.0
     }
 
     #[getter]
     /// The suffix of a one-to-one connection
     pub fn event_connection_suffix(&self) -> FileName {
-        FileName(self.0.lock().global.service.event_connection_suffix.clone())
+        FileName(self.0.lock().global.service.event_connection_suffix)
     }
 
     #[setter]
     /// Set the suffix of a one-to-one connection
     pub fn set_event_connection_suffix(&self, value: &FileName) {
-        self.0.lock().global.service.event_connection_suffix = value.0.clone()
+        self.0.lock().global.service.event_connection_suffix = value.0
     }
 }
 
@@ -938,19 +924,19 @@ impl Global {
     #[getter]
     /// Returns the directory under which service files are stored.
     pub fn service_dir(&self) -> Path {
-        Path(self.0.lock().global.service_dir().clone())
+        Path(self.0.lock().global.service_dir())
     }
 
     #[getter]
     /// Returns the directory under which node files are stored.
     pub fn node_dir(&self) -> Path {
-        Path(self.0.lock().global.node_dir().clone())
+        Path(self.0.lock().global.node_dir())
     }
 
     #[getter]
     /// The path under which all other directories or files will be created
     pub fn root_path(&self) -> Path {
-        Path(self.0.lock().global.root_path().clone())
+        Path(*self.0.lock().global.root_path())
     }
 
     #[setter]
@@ -962,13 +948,13 @@ impl Global {
     #[getter]
     /// Prefix used for all files created during runtime
     pub fn prefix(&self) -> FileName {
-        FileName(self.0.lock().global.prefix.clone())
+        FileName(self.0.lock().global.prefix)
     }
 
     #[setter]
     /// Set the prefix used for all files created during runtime
     pub fn set_prefix(&self, value: &FileName) {
-        self.0.lock().global.prefix = value.0.clone()
+        self.0.lock().global.prefix = value.0
     }
 }
 

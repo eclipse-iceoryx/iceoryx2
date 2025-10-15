@@ -21,7 +21,7 @@ pub trait DynamicStorageConfiguration: NamedConceptConfiguration {
     fn type_name(&self) -> &str;
 
     fn path_for_with_type(&self, value: &FileName) -> FilePath {
-        let mut path = self.get_path_hint().clone();
+        let mut path = *self.get_path_hint();
         let type_hash = Sha1::new(self.type_name().as_bytes()).value();
 
         fatal_panic!(from self, when path.add_path_entry(&self.get_prefix().into()),
@@ -44,7 +44,7 @@ pub trait DynamicStorageConfiguration: NamedConceptConfiguration {
     }
 
     fn extract_name_from_file_with_type(&self, value: &FileName) -> Option<FileName> {
-        let mut file = value.clone();
+        let mut file = *value;
 
         if !fatal_panic!(from self, when file.strip_prefix(self.get_prefix().as_bytes()),
                     "Stripping the prefix \"{}\" from the file name \"{}\" leads to invalid content.",

@@ -89,9 +89,9 @@ pub struct Configuration<T: Send + Sync + Debug> {
 impl<T: Send + Sync + Debug> Clone for Configuration<T> {
     fn clone(&self) -> Self {
         Self {
-            suffix: self.suffix.clone(),
-            prefix: self.prefix.clone(),
-            path_hint: self.path_hint.clone(),
+            suffix: self.suffix,
+            prefix: self.prefix,
+            path_hint: self.path_hint,
             _data: PhantomData,
             type_name: self.type_name.clone(),
         }
@@ -118,7 +118,7 @@ impl<T: Send + Sync + Debug> DynamicStorageConfiguration for Configuration<T> {
 
 impl<T: Send + Sync + Debug> NamedConceptConfiguration for Configuration<T> {
     fn prefix(mut self, value: &FileName) -> Self {
-        self.prefix = value.clone();
+        self.prefix = *value;
         self
     }
 
@@ -127,12 +127,12 @@ impl<T: Send + Sync + Debug> NamedConceptConfiguration for Configuration<T> {
     }
 
     fn suffix(mut self, value: &FileName) -> Self {
-        self.suffix = value.clone();
+        self.suffix = *value;
         self
     }
 
     fn path_hint(mut self, value: &Path) -> Self {
-        self.path_hint = value.clone();
+        self.path_hint = *value;
         self
     }
 
@@ -351,7 +351,7 @@ pub struct Builder<'builder, T: Send + Sync + Debug> {
 impl<T: Send + Sync + Debug + 'static> NamedConceptBuilder<Storage<T>> for Builder<'_, T> {
     fn new(storage_name: &FileName) -> Self {
         Self {
-            name: storage_name.clone(),
+            name: *storage_name,
             has_ownership: true,
             call_drop_on_destruction: true,
             supplementary_size: 0,
@@ -382,7 +382,7 @@ impl<T: Send + Sync + Debug + 'static> Builder<'_, T> {
         }
 
         Ok(Storage::<T> {
-            name: self.name.clone(),
+            name: self.name,
             data: entry
                 .as_mut()
                 .unwrap()
@@ -433,7 +433,7 @@ impl<T: Send + Sync + Debug + 'static> Builder<'_, T> {
         }
 
         guard.insert(
-            full_path.clone(),
+            full_path,
             StorageEntry {
                 content: storage_details,
             },
@@ -441,7 +441,7 @@ impl<T: Send + Sync + Debug + 'static> Builder<'_, T> {
 
         let mut entry = guard.get_mut(&full_path);
         Ok(Storage::<T> {
-            name: self.name.clone(),
+            name: self.name,
             data: entry
                 .as_mut()
                 .unwrap()

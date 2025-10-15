@@ -96,7 +96,7 @@ semantic_string! {
     false
   },
   normalize: |this: &FilePath| {
-      this.clone()
+      *this
   }
 }
 
