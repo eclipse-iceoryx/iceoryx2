@@ -102,6 +102,16 @@ pub mod semantic_string;
 /// A container to store key-value pairs.
 pub mod flatmap;
 
+// TODO: Consider replacing with own implementations to reduce certification complexity
+#[cfg(not(feature = "std"))]
+pub use hashbrown::hash_map;
+#[cfg(not(feature = "std"))]
+pub use hashbrown::hash_set;
+#[cfg(feature = "std")]
+pub use std::collections::hash_map;
+#[cfg(feature = "std")]
+pub use std::collections::hash_set;
+
 /// A trait that defines the interface of a string and several string variants.
 pub mod string;
 

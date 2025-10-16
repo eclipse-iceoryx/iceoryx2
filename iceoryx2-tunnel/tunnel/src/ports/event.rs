@@ -10,14 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use hashbrown::HashSet;
-
 use iceoryx2::{
     node::Node,
     port::{listener::Listener, notifier::Notifier},
     prelude::EventId,
     service::{static_config::StaticConfig, Service},
 };
+use iceoryx2_bb_container::hash_set::HashSet;
 use iceoryx2_bb_log::{fail, trace};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]

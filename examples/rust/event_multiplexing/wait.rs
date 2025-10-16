@@ -17,10 +17,10 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 use iceoryx2::{port::listener::Listener, prelude::*};
+use iceoryx2_bb_container::hash_map::HashMap;
 use iceoryx2_bb_log::info;
 
 use clap::Parser;
-use hashbrown::HashMap;
 
 fn main() -> Result<(), Box<dyn core::error::Error>> {
     set_log_level_from_env_or(LogLevel::Info);
