@@ -10,8 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[generic_tests::define]
-mod publish_subscribe_relay_tests {
+use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod publish_subscribe_propagation {
     use core::fmt::Debug;
     use core::time::Duration;
 
@@ -19,6 +22,7 @@ mod publish_subscribe_relay_tests {
     use iceoryx2::testing::*;
 
     use iceoryx2::service::Service;
+    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::test_fail;
@@ -253,28 +257,28 @@ mod publish_subscribe_relay_tests {
         }
     }
 
-    #[test]
-    fn propagates_struct_payload<S: Service, B: Backend<S> + Debug, T: Testing>() {
+    #[conformance_test]
+    pub fn propagates_struct_payload<S: Service, B: Backend<S> + Debug, T: Testing>() {
         propagate_struct_payloads::<S, B, T>(1);
     }
 
-    #[test]
-    fn propagates_struct_payload_many<S: Service, B: Backend<S> + Debug, T: Testing>() {
+    #[conformance_test]
+    pub fn propagates_struct_payload_many<S: Service, B: Backend<S> + Debug, T: Testing>() {
         propagate_struct_payloads::<S, B, T>(10);
     }
 
-    #[test]
-    fn propagates_slice_payload<S: Service, B: Backend<S> + Debug, T: Testing>() {
+    #[conformance_test]
+    pub fn propagates_slice_payload<S: Service, B: Backend<S> + Debug, T: Testing>() {
         propagate_slice_payloads::<S, B, T>(1);
     }
 
-    #[test]
-    fn propagates_slice_payload_many<S: Service, B: Backend<S> + Debug, T: Testing>() {
+    #[conformance_test]
+    pub fn propagates_slice_payload_many<S: Service, B: Backend<S> + Debug, T: Testing>() {
         propagate_slice_payloads::<S, B, T>(10);
     }
 
-    #[test]
-    fn propagated_payloads_do_not_loop_back<S: Service, B: Backend<S> + Debug, T: Testing>() {
+    #[conformance_test]
+    pub fn propagated_payloads_do_not_loop_back<S: Service, B: Backend<S> + Debug, T: Testing>() {
         const PAYLOAD_DATA: &str = "WhenItRegisters";
 
         // === SETUP ===
@@ -328,18 +332,5 @@ mod publish_subscribe_relay_tests {
         if subscriber.receive().unwrap().is_some() {
             test_fail!("sample looped back")
         }
-    }
-
-    #[cfg(feature = "tunnel_zenoh")]
-    mod zenoh_backend {
-        use iceoryx2::service::ipc::Service as Ipc;
-        use iceoryx2::service::local::Service as Local;
-        use iceoryx2_tunnel_zenoh::testing;
-        use iceoryx2_tunnel_zenoh::ZenohBackend;
-
-        #[instantiate_tests(<Ipc, ZenohBackend<Ipc>, testing::Testing>)]
-        mod ipc {}
-        #[instantiate_tests(<Local, ZenohBackend<Local>, testing::Testing>)]
-        mod local {}
     }
 }

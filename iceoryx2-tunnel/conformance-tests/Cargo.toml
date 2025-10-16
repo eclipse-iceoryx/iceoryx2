@@ -1,0 +1,20 @@
+[package]
+name = "iceoryx2-tunnel-conformance-tests"
+description = "iceoryx2: Conformance tests for iceoryx2-tunnel"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[dependencies]
+iceoryx2-bb-conformance-test-macros = { workspace = true }
+iceoryx2 = { workspace = true }
+iceoryx2-bb-posix = { workspace = true }
+iceoryx2-bb-testing = { workspace = true }
+iceoryx2-tunnel = { workspace = true }
+iceoryx2-tunnel-backend = { workspace = true }
+iceoryx2-services-discovery = { workspace = true }

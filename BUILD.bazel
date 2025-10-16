@@ -182,6 +182,7 @@ filegroup(
         "//iceoryx2-tunnel/backend:all_srcs",
         "//iceoryx2-tunnel/zenoh:all_srcs",
         "//iceoryx2-tunnel/tunnel:all_srcs",
+        "//iceoryx2-tunnel/conformance-tests:all_srcs",
         "//iceoryx2-services/discovery:all_srcs",
         "//iceoryx2:all_srcs",
         "//iceoryx2/conformance-tests:all_srcs",

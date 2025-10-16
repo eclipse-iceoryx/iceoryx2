@@ -12,7 +12,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test_suite")
+load("@rules_rust//rust:defs.bzl", "rust_library")
 
 filegroup(
     name = "all_srcs",
@@ -20,25 +20,17 @@ filegroup(
 )
 
 rust_library(
-    name = "iceoryx2-tunnel-zenoh",
+    name = "iceoryx2-tunnel-conformance-tests",
     srcs = glob(["src/**/*.rs"]),
     deps = [
         "//iceoryx2:iceoryx2",
-        "//iceoryx2-bb/log:iceoryx2-bb-log",
-        "//iceoryx2-tunnel/backend:iceoryx2-tunnel-backend",
-        "@crate_index//:serde_json",
-        "@crate_index//:zenoh",
-    ],
-)
-
-rust_test_suite(
-    name = "iceoryx2-tunnel-tests",
-    srcs = glob(["tests/**/*.rs"]),
-    deps = [
-        ":iceoryx2-tunnel-zenoh",
-        "//iceoryx2:iceoryx2",
+        "//iceoryx2-bb/posix:iceoryx2-bb-posix",
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
-        "//iceoryx2-pal/testing:iceoryx2-pal-testing",
-        "//iceoryx2-tunnel/conformance-tests:iceoryx2-tunnel-conformance-tests",
+        "//iceoryx2-tunnel/backend:iceoryx2-tunnel-backend",
+        "//iceoryx2-tunnel/tunnel:iceoryx2-tunnel",
+        "//iceoryx2-services/discovery:iceoryx2-services-discovery",
+    ],
+    proc_macro_deps = [
+        "//iceoryx2-bb/conformance-test-macros:iceoryx2-bb-conformance-test-macros",
     ],
 )

@@ -1703,6 +1703,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "iceoryx2-tunnel-conformance-tests"
+version = "0.7.0"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-conformance-test-macros",
+ "iceoryx2-bb-posix",
+ "iceoryx2-bb-testing",
+ "iceoryx2-services-discovery",
+ "iceoryx2-tunnel",
+ "iceoryx2-tunnel-backend",
+]
+
+[[package]]
 name = "iceoryx2-tunnel-end-to-end-tests"
 version = "0.7.0"
 dependencies = [
@@ -1722,6 +1735,7 @@ dependencies = [
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
  "iceoryx2-tunnel-backend",
+ "iceoryx2-tunnel-conformance-tests",
  "serde_json",
  "zenoh",
 ]
