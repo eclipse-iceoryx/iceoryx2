@@ -11,4 +11,5 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 pub mod active_request;
+pub mod client;
 pub mod node;
