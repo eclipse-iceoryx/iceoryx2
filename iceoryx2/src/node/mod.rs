@@ -164,6 +164,11 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_log::{debug, fail, fatal_panic, trace, warn};
 use iceoryx2_bb_posix::clock::{nanosleep, NanosleepError, Time};
+use iceoryx2_bb_posix::mutex::Handle;
+use iceoryx2_bb_posix::mutex::Mutex;
+use iceoryx2_bb_posix::mutex::MutexBuilder;
+use iceoryx2_bb_posix::mutex::MutexHandle;
+use iceoryx2_bb_posix::mutex::MutexType;
 use iceoryx2_bb_posix::process::{Process, ProcessId};
 use iceoryx2_bb_posix::signal::SignalHandler;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
@@ -188,7 +193,6 @@ use crate::signal_handling_mode::SignalHandlingMode;
 use crate::{config::Config, service::config_scheme::node_details_config};
 
 use hashbrown::HashMap;
-use std::sync::Mutex;
 
 /// The system-wide unique id of a [`Node`]
 #[derive(
@@ -740,21 +744,29 @@ fn remove_node<Service: service::Service>(
 
 #[derive(Debug)]
 pub(crate) struct RegisteredServices {
-    data: Mutex<HashMap<ServiceId, (ContainerHandle, u64)>>,
+    handle: MutexHandle<HashMap<ServiceId, (ContainerHandle, u64)>>,
 }
 
 unsafe impl Send for RegisteredServices {}
 unsafe impl Sync for RegisteredServices {}
 
 impl RegisteredServices {
+    pub(crate) fn new() -> Self {
+        let handle = MutexHandle::new();
+
+        MutexBuilder::new()
+            .is_interprocess_capable(false)
+            .mutex_type(MutexType::Normal)
+            .create(HashMap::new(), &handle)
+            .expect("Failed to create mutex");
+
+        Self { handle }
+    }
+
     pub(crate) fn add(&self, service_id: &ServiceId, handle: ContainerHandle) {
-        if self
-            .data
-            .lock()
-            .unwrap()
-            .insert(*service_id, (handle, 1))
-            .is_some()
-        {
+        let mut guard = self.mutex().lock().expect("Failed to lock mutex");
+
+        if guard.insert(*service_id, (handle, 1)).is_some() {
             fatal_panic!(from "RegisteredServices::add()",
                 "This should never happen! The service with the {:?} was already registered.", service_id);
         }
@@ -765,15 +777,16 @@ impl RegisteredServices {
         service_id: &ServiceId,
         mut or_callback: F,
     ) -> Result<(), OpenDynamicStorageFailure> {
-        let mut data = self.data.lock().unwrap();
-        match data.get_mut(service_id) {
-            Some(handle) => {
-                handle.1 += 1;
+        let mut guard = self.mutex().lock().expect("Failed to lock mutex");
+
+        match guard.get_mut(service_id) {
+            Some(entry) => {
+                entry.1 += 1;
             }
             None => {
-                drop(data);
-                let handle = or_callback()?;
-                self.add(service_id, handle);
+                drop(guard);
+                let new_handle = or_callback()?;
+                self.add(service_id, new_handle);
             }
         };
         Ok(())
@@ -784,17 +797,26 @@ impl RegisteredServices {
         service_id: &ServiceId,
         mut cleanup_call: F,
     ) {
-        let mut data = self.data.lock().unwrap();
-        if let Some(entry) = data.get_mut(service_id) {
+        let mut guard = self.mutex().lock().expect("Failed to lock mutex");
+
+        if let Some(entry) = guard.get_mut(service_id) {
             entry.1 -= 1;
             if entry.1 == 0 {
-                cleanup_call(entry.0);
-                data.remove(service_id);
+                let handle = entry.0;
+                guard.remove(service_id);
+                drop(guard);
+                cleanup_call(handle);
             }
         } else {
             fatal_panic!(from "RegisteredServices::remove()",
                 "This should never happen! The service with the {:?} was not registered.", service_id);
         }
+    }
+
+    fn mutex(&self) -> Mutex<'_, '_, HashMap<ServiceId, (ContainerHandle, u64)>> {
+        // Safe - the mutex is initialized when constructing the struct and
+        // not interacted with by anything else.
+        unsafe { Mutex::from_handle(&self.handle) }
     }
 }
 
@@ -1276,9 +1298,7 @@ impl NodeBuilder {
             shared: Arc::new(SharedNode {
                 id: NodeId(node_id),
                 monitoring_token: UnsafeCell::new(Some(monitoring_token)),
-                registered_services: RegisteredServices {
-                    data: Mutex::new(HashMap::new()),
-                },
+                registered_services: RegisteredServices::new(),
                 _details_storage: details_storage,
                 signal_handling_mode: self.signal_handling_mode,
                 details,
