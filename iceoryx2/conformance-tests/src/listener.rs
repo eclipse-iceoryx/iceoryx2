@@ -10,24 +10,28 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[generic_tests::define]
-mod listener {
+use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod listener {
     use std::collections::HashSet;
 
     use iceoryx2::testing::*;
     use iceoryx2::{node::NodeBuilder, port::listener::ListenerCreateError, service::Service};
+    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_testing::assert_that;
 
-    #[test]
-    fn create_error_display_works<S: Service>() {
+    #[conformance_test]
+    pub fn create_error_display_works<S: Service>() {
         assert_that!(
             format!("{}", ListenerCreateError::ResourceCreationFailed), eq "ListenerCreateError::ResourceCreationFailed");
         assert_that!(
             format!("{}", ListenerCreateError::ExceedsMaxSupportedListeners), eq "ListenerCreateError::ExceedsMaxSupportedListeners");
     }
 
-    #[test]
-    fn id_is_unique<Sut: Service>() {
+    #[conformance_test]
+    pub fn id_is_unique<Sut: Service>() {
         let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -49,16 +53,4 @@ mod listener {
             listeners.push(listener);
         }
     }
-
-    #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
-    mod ipc {}
-
-    #[instantiate_tests(<iceoryx2::service::local::Service>)]
-    mod local {}
-
-    #[instantiate_tests(<iceoryx2::service::ipc_threadsafe::Service>)]
-    mod ipc_threadsafe {}
-
-    #[instantiate_tests(<iceoryx2::service::local_threadsafe::Service>)]
-    mod local_threadsafe {}
 }
