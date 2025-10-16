@@ -19,13 +19,13 @@ use iceoryx2::service::service_id::ServiceId;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
 use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2::service::Service;
+use iceoryx2_bb_container::hash_map::HashMap;
+use iceoryx2_bb_container::hash_set::HashSet;
 use iceoryx2_bb_log::{fail, info, trace, warn};
 use iceoryx2_tunnel_backend::traits::{
     Backend, Discovery, EventRelay, PublishSubscribeRelay, RelayBuilder, RelayFactory,
 };
 use iceoryx2_tunnel_backend::types::publish_subscribe::LoanFn;
-
-use hashbrown::{HashMap, HashSet};
 
 use crate::discovery;
 use crate::ports::event::EventPorts;

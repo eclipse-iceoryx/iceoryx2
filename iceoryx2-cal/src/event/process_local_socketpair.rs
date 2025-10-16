@@ -16,6 +16,9 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 pub use iceoryx2_bb_container::semantic_string::SemanticString;
+pub use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath, path::Path};
+
+use iceoryx2_bb_container::hash_map::HashMap;
 use iceoryx2_bb_log::{debug, fail, fatal_panic};
 use iceoryx2_bb_posix::{
     file_descriptor::FileDescriptorBased,
@@ -26,9 +29,7 @@ use iceoryx2_bb_posix::{
         StreamingSocketPairReceiveError, StreamingSocketPairSendError,
     },
 };
-pub use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath, path::Path};
 
-use hashbrown::HashMap;
 use once_cell::sync::Lazy;
 
 use crate::named_concept::{

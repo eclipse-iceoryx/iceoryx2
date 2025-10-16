@@ -927,7 +927,6 @@ name = "example"
 version = "0.7.0"
 dependencies = [
  "clap",
- "hashbrown 0.16.0",
  "iceoryx2",
  "iceoryx2-bb-container",
  "iceoryx2-bb-derive-macros",
@@ -1295,7 +1294,6 @@ dependencies = [
 name = "iceoryx2"
 version = "0.7.0"
 dependencies = [
- "hashbrown 0.16.0",
  "iceoryx2-bb-container",
  "iceoryx2-bb-derive-macros",
  "iceoryx2-bb-elementary",
@@ -1329,6 +1327,7 @@ name = "iceoryx2-bb-container"
 version = "0.7.0"
 dependencies = [
  "generic-tests",
+ "hashbrown 0.16.0",
  "iceoryx2-bb-derive-macros",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
@@ -1506,7 +1505,6 @@ version = "0.7.0"
 dependencies = [
  "cdr",
  "generic-tests",
- "hashbrown 0.16.0",
  "iceoryx2-bb-container",
  "iceoryx2-bb-derive-macros",
  "iceoryx2-bb-elementary",
@@ -1693,8 +1691,8 @@ name = "iceoryx2-services-discovery"
 version = "0.7.0"
 dependencies = [
  "generic-tests",
- "hashbrown 0.16.0",
  "iceoryx2",
+ "iceoryx2-bb-container",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-posix",
@@ -1709,8 +1707,8 @@ name = "iceoryx2-tunnel"
 version = "0.7.0"
 dependencies = [
  "generic-tests",
- "hashbrown 0.16.0",
  "iceoryx2",
+ "iceoryx2-bb-container",
  "iceoryx2-bb-log",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",

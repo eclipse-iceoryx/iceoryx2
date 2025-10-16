@@ -10,13 +10,19 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 version = { workspace = true }
 
+[features]
+default = ["std"]
+std = []
+
 [dependencies]
 iceoryx2-bb-derive-macros = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-bb-log = { workspace = true }
 iceoryx2-pal-concurrency-sync = { workspace = true }
+
 serde = { workspace = true }
+hashbrown = { workspace = true }
 
 [dev-dependencies]
 generic-tests = { workspace = true }

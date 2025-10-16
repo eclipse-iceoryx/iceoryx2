@@ -21,8 +21,6 @@ iceoryx2-bb-log = { workspace = true }
 iceoryx2-bb-system-types = { workspace = true }
 iceoryx2-bb-posix = { workspace = true }
 
-hashbrown = { workspace = true }
-
 [dev-dependencies]
 clap = { workspace = true }
 

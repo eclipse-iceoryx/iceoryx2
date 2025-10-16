@@ -10,14 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use hashbrown::HashSet;
-
 use alloc::vec;
 use alloc::vec::Vec;
 
+use iceoryx2_bb_container::hash_set::HashSet;
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_posix::mutex::*;
 use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath, path::Path};
+
 use once_cell::sync::Lazy;
 
 use crate::{

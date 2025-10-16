@@ -221,6 +221,7 @@ use core::{
 use alloc::vec;
 use alloc::vec::Vec;
 
+use iceoryx2_bb_container::hash_map::HashMap;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::{
@@ -231,8 +232,6 @@ use iceoryx2_bb_posix::{
 };
 use iceoryx2_cal::reactor::*;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
-
-use hashbrown::HashMap;
 
 use crate::signal_handling_mode::SignalHandlingMode;
 

@@ -12,12 +12,13 @@
 
 use alloc::vec::Vec;
 
-use hashbrown::{hash_map::Entry, HashMap, HashSet};
 use iceoryx2::{
     config::Config,
     prelude::CallbackProgression,
     service::{service_id::ServiceId, Service, ServiceDetails, ServiceListError},
 };
+use iceoryx2_bb_container::hash_map::{Entry, HashMap};
+use iceoryx2_bb_container::hash_set::HashSet;
 
 /// Errors that can occur during service synchronization.
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
