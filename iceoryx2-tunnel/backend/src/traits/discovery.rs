@@ -33,8 +33,17 @@ use iceoryx2::service::static_config::StaticConfig;
 /// ```no_run
 /// use iceoryx2_tunnel_backend::traits::Discovery;
 ///
+/// #[derive(Debug)]
+/// struct MyDiscoveryError;
+/// impl core::fmt::Display for MyDiscoveryError {
+///     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+///         write!(f, "discovery failed")
+///     }
+/// }
+/// impl core::error::Error for MyDiscoveryError {}
+///
 /// fn list_services<DiscoveryError, ProcessingError>(discovery: &impl Discovery<DiscoveryError = DiscoveryError>) -> Result<(), DiscoveryError> {
-///     discovery.discover::<ProcessingError>(&mut |static_config| {
+///     discovery.discover(|static_config| -> Result<(), MyDiscoveryError> {
 ///         println!("Found service: {:?}", static_config.name());
 ///         Ok(())
 ///     })?;
@@ -46,7 +55,6 @@ use iceoryx2::service::static_config::StaticConfig;
 ///
 /// ```no_run
 /// use iceoryx2_tunnel_backend::traits::Discovery;
-/// use iceoryx2_tunnel_backend::types::discovery::ProcessDiscoveryFn;
 /// use iceoryx2::service::static_config::StaticConfig;
 ///
 /// struct MyDiscovery {
@@ -82,9 +90,9 @@ use iceoryx2::service::static_config::StaticConfig;
 ///         Ok(())
 ///     }
 ///
-///     fn discover<ProcessDiscoveryError>(
+///     fn discover<E: core::error::Error, F: FnMut(&StaticConfig) -> Result<(), E>>(
 ///         &self,
-///         process_discovery: &mut ProcessDiscoveryFn<ProcessDiscoveryError>,
+///         process_discovery: F,
 ///     ) -> Result<(), Self::DiscoveryError> {
 ///         // Query backend for available services
 ///         // For each service found, call process_discovery with its
