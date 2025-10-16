@@ -118,12 +118,13 @@ impl Logger {
     }
 
     fn print_message(log_level: crate::LogLevel, formatted_message: &str) {
-        Self::print("| ", Self::message_color(log_level), formatted_message);
+        Self::print("", Self::message_color(log_level), formatted_message);
     }
 
     fn print_origin(log_level: crate::LogLevel, origin: &str) {
         eprint!("{} ", Logger::log_level_string(log_level));
         Self::print("", Logger::origin_color(log_level), origin);
+        eprint!("| ");
     }
 }
 
