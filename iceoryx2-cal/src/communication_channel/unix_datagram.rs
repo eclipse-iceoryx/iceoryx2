@@ -15,6 +15,10 @@
 
 use core::{fmt::Debug, marker::PhantomData, mem::MaybeUninit};
 
+use alloc::format;
+use alloc::vec;
+use alloc::vec::Vec;
+
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_posix::{
     directory::*, file::*, system_configuration::SystemInfo, unix_datagram_socket::*,

@@ -10,8 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use alloc::sync::Arc;
 use core::{fmt::Debug, ops::Deref};
+
+use alloc::format;
+use alloc::sync::Arc;
 
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_posix::mutex::{

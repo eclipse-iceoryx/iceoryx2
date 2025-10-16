@@ -10,7 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::collections::HashSet;
+use hashbrown::HashSet;
+
+use alloc::vec;
+use alloc::vec::Vec;
 
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_posix::mutex::*;

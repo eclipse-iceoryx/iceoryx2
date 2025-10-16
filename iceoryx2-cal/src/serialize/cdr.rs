@@ -13,9 +13,12 @@
 //! Implements [`Serialize`] for the Common Data Representation (cdr),
 //! see: <https://en.wikipedia.org/wiki/Common_Data_Representation>.
 
+use alloc::vec::Vec;
+
+use iceoryx2_bb_log::fail;
+
 use crate::serialize::Serialize;
 use cdr::{CdrBe, Infinite};
-use iceoryx2_bb_log::fail;
 
 use super::{DeserializeError, SerializeError};
 

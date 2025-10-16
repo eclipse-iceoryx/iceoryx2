@@ -16,9 +16,23 @@ pub mod details {
     use core::fmt::Debug;
     use core::marker::PhantomData;
     use core::sync::atomic::Ordering;
+
+    use alloc::vec;
+    use alloc::vec::Vec;
+
+    use iceoryx2_bb_container::vector::relocatable_vec::*;
     use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
+    use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
+    use iceoryx2_bb_lock_free::spsc::{
+        index_queue::RelocatableIndexQueue,
+        safely_overflowing_index_queue::RelocatableSafelyOverflowingIndexQueue,
+    };
+    use iceoryx2_bb_log::{fail, fatal_panic};
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
+    use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
     use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicU64, IoxAtomicU8, IoxAtomicUsize};
+
+    pub use crate::zero_copy_connection::*;
 
     use crate::dynamic_storage::{
         DynamicStorage, DynamicStorageBuilder, DynamicStorageCreateError, DynamicStorageOpenError,
@@ -26,15 +40,6 @@ pub mod details {
     };
     use crate::named_concept::*;
     use crate::shared_memory::SegmentId;
-    pub use crate::zero_copy_connection::*;
-    use iceoryx2_bb_container::vector::relocatable_vec::*;
-    use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
-    use iceoryx2_bb_lock_free::spsc::{
-        index_queue::RelocatableIndexQueue,
-        safely_overflowing_index_queue::RelocatableSafelyOverflowingIndexQueue,
-    };
-    use iceoryx2_bb_log::{fail, fatal_panic};
-    use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 
     use self::used_chunk_list::RelocatableUsedChunkList;
 

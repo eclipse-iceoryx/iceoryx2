@@ -12,6 +12,9 @@
 
 //! Implements [`Serialize`] for TOML files.
 
+use alloc::string::String;
+use alloc::vec::Vec;
+
 use iceoryx2_bb_log::fail;
 
 use crate::serialize::Serialize;
