@@ -75,23 +75,3 @@ pub unsafe fn epoll_wait(
 ) -> posix::int {
     crate::internal::epoll_wait(epfd, events, maxevents, timeout)
 }
-
-pub unsafe fn epoll_pwait(
-    epfd: posix::int,
-    events: *mut epoll_event,
-    maxevents: posix::int,
-    timeout: posix::int,
-    ss: *const posix::sigset_t,
-) -> posix::int {
-    crate::internal::epoll_pwait(epfd, events, maxevents, timeout, ss.cast())
-}
-
-pub unsafe fn epoll_pwait2(
-    epfd: posix::int,
-    events: *mut epoll_event,
-    maxevents: posix::int,
-    timeout: *const posix::timespec,
-    ss: *const posix::sigset_t,
-) -> posix::int {
-    crate::internal::epoll_pwait2(epfd, events, maxevents, timeout.cast(), ss.cast())
-}
