@@ -11,8 +11,13 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::time::Duration;
+
+extern crate alloc;
+use alloc::boxed::Box;
+
 use examples_common::TransmissionData;
 use iceoryx2::prelude::*;
+use iceoryx2_bb_log::info;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
@@ -41,10 +46,10 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
         sample.send()?;
 
-        println!("Send sample {counter} ...");
+        info!("Send sample {counter} ...");
     }
 
-    println!("exit");
+    info!("exit");
 
     Ok(())
 }

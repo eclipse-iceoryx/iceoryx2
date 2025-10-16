@@ -11,8 +11,13 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::time::Duration;
+
+extern crate alloc;
+use alloc::boxed::Box;
+
 use examples_common::{open_service, PubSubEvent};
 use iceoryx2::prelude::*;
+use iceoryx2_bb_log::info;
 
 const CYCLE_TIME: Duration = Duration::from_millis(1000);
 
@@ -41,7 +46,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let _cycle_guard = waitset.attach_interval(CYCLE_TIME);
 
     waitset.wait_and_process(|_| {
-        println!("{service_name}: Send sample {counter} ...");
+        info!("{service_name}: Send sample {counter} ...");
         publisher
             .send_copy(counter)
             .expect("sample delivery successful.");
@@ -50,7 +55,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         CallbackProgression::Continue
     })?;
 
-    println!("exit");
+    info!("exit");
 
     Ok(())
 }

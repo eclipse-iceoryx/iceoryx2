@@ -11,8 +11,13 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::time::Duration;
+
+extern crate alloc;
+use alloc::boxed::Box;
+
 use iceoryx2::prelude::*;
 use iceoryx2_bb_container::string::*;
+use iceoryx2_bb_log::info;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
@@ -33,14 +38,14 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let entry_handle_9 = reader.entry::<f32>(&9)?;
 
     while node.wait(CYCLE_TIME).is_ok() {
-        println!("read values:");
+        info!("read values:");
 
-        println!("key: 0, value: {}", entry_handle_0.get());
-        println!("key: 5, value: {}", entry_handle_5.get());
-        println!("key: 9, value: {}\n", entry_handle_9.get());
+        info!("key: 0, value: {}", entry_handle_0.get());
+        info!("key: 5, value: {}", entry_handle_5.get());
+        info!("key: 9, value: {}\n", entry_handle_9.get());
     }
 
-    println!("exit");
+    info!("exit");
 
     Ok(())
 }

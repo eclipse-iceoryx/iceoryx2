@@ -10,16 +10,22 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use clap::Parser;
+use core::result::Result;
 use core::time::Duration;
+
+extern crate alloc;
+use alloc::boxed::Box;
+use alloc::string::String;
+
+use clap::Parser;
+
 use examples_common::TransmissionData;
 use iceoryx2::prelude::*;
-use iceoryx2_bb_log::{set_log_level, LogLevel};
+use iceoryx2_bb_log::{info, set_log_level, LogLevel};
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
 fn main() -> Result<(), Box<dyn core::error::Error>> {
-    set_log_level_from_env_or(LogLevel::Info);
     let args = parse_args();
 
     // create a new config based on the global config
@@ -42,17 +48,17 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let subscriber = service.subscriber_builder().create()?;
 
-    println!(
+    info!(
         "subscribed to: [domain: \"{}\", service: \"{}\"]",
         args.domain, args.service
     );
     while node.wait(CYCLE_TIME).is_ok() {
         while let Some(sample) = subscriber.receive()? {
-            println!("received: {:?}", *sample);
+            info!("received: {:?}", *sample);
         }
     }
 
-    println!("exit");
+    info!("exit");
 
     Ok(())
 }
@@ -80,7 +86,7 @@ fn define_log_level(args: &Args) {
     if args.debug {
         set_log_level(LogLevel::Trace);
     } else {
-        set_log_level(LogLevel::Warn);
+        set_log_level(LogLevel::Info);
     }
 }
 

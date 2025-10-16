@@ -10,12 +10,17 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate alloc;
-
-use alloc::sync::Arc;
 use core::sync::atomic::{AtomicBool, Ordering};
 use core::time::Duration;
+
+extern crate alloc;
+use alloc::boxed::Box;
+use alloc::sync::Arc;
+
 use iceoryx2::prelude::*;
+use iceoryx2_bb_log::info;
+use iceoryx2_bb_posix::clock::nanosleep;
+use iceoryx2_bb_posix::thread::{ThreadBuilder, ThreadName};
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 static KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
@@ -41,25 +46,27 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     // The ports created by a thread-safe service implement `Send` and `Sync`, so they can be
     // be shared between threads.
-    let t = std::thread::spawn(move || {
-        while KEEP_RUNNING.load(Ordering::Relaxed) {
-            std::thread::sleep(CYCLE_TIME);
-            if let Some(sample) = in_thread_subscriber.receive().unwrap() {
-                println!("[thread] received: {}", sample.payload());
+    let other_thread = ThreadBuilder::new()
+        .name(&ThreadName::from_bytes(b"other_thread").unwrap())
+        .spawn(move || {
+            while KEEP_RUNNING.load(Ordering::Relaxed) {
+                nanosleep(CYCLE_TIME).unwrap();
+                if let Some(sample) = in_thread_subscriber.receive().unwrap() {
+                    info!("[thread] received: {}", sample.payload());
+                }
             }
-        }
-    });
+        })?;
 
     while node.wait(CYCLE_TIME).is_ok() {
         if let Some(sample) = subscriber.receive()? {
-            println!("[main] received: {}", sample.payload());
+            info!("[main] received: {}", sample.payload());
         }
     }
 
     KEEP_RUNNING.store(false, Ordering::Relaxed);
-    let _ = t.join();
+    drop(other_thread);
 
-    println!("exit");
+    info!("exit");
 
     Ok(())
 }

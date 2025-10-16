@@ -11,7 +11,12 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::time::Duration;
+
+extern crate alloc;
+use alloc::boxed::Box;
+
 use iceoryx2::prelude::*;
+use iceoryx2_bb_log::info;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
@@ -37,7 +42,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let publisher = service.publisher_builder().create()?;
 
-    println!("defined service attributes: {:?}", service.attributes());
+    info!("defined service attributes: {:?}", service.attributes());
 
     while node.wait(CYCLE_TIME).is_ok() {
         let sample = publisher.loan_uninit()?;
@@ -45,7 +50,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         sample.send()?;
     }
 
-    println!("exit");
+    info!("exit");
 
     Ok(())
 }
