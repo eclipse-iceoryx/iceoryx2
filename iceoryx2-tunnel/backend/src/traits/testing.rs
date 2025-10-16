@@ -12,14 +12,16 @@
 
 use core::time::Duration;
 
-use iceoryx2_bb_testing::test_fail;
+use alloc::{format, string::String};
+
+use iceoryx2_bb_posix::clock::nanosleep;
 
 pub trait Testing {
     fn sync(_id: String, _timeout: Duration) -> bool {
         true
     }
 
-    fn retry<F>(mut f: F, period: Duration, max_attempts: Option<usize>)
+    fn retry<F>(mut f: F, period: Duration, max_attempts: Option<usize>) -> Result<(), String>
     where
         F: FnMut() -> Result<(), &'static str>,
     {
@@ -27,17 +29,17 @@ pub trait Testing {
 
         loop {
             match f() {
-                Ok(_) => return,
+                Ok(_) => return Ok(()),
                 Err(failure) => {
                     if let Some(max_attempts) = max_attempts {
                         if attempt >= max_attempts {
-                            test_fail!("{} after {} attempts", failure, attempt);
+                            return Err(format!("{} after {} attempts", failure, attempt));
                         }
                     }
                 }
             }
 
-            std::thread::sleep(period);
+            nanosleep(period).unwrap();
             attempt += 1;
         }
     }

@@ -11,7 +11,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::fmt::Debug;
-use std::collections::{HashMap, HashSet};
+
+use alloc::string::String;
 
 use iceoryx2::node::{Node, NodeBuilder, NodeId};
 use iceoryx2::service::service_id::ServiceId;
@@ -23,6 +24,8 @@ use iceoryx2_tunnel_backend::traits::{
     Backend, Discovery, EventRelay, PublishSubscribeRelay, RelayBuilder, RelayFactory,
 };
 use iceoryx2_tunnel_backend::types::publish_subscribe::LoanFn;
+
+use hashbrown::{HashMap, HashSet};
 
 use crate::discovery;
 use crate::ports::event::EventPorts;

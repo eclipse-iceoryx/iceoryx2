@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::collections::HashSet;
+use hashbrown::HashSet;
 
 use iceoryx2::{
     node::Node,

@@ -21,6 +21,8 @@ iceoryx2-bb-log = { workspace = true }
 iceoryx2-tunnel-backend = { workspace = true }
 iceoryx2-services-discovery = { workspace = true }
 
+hashbrown = { workspace = true }
+
 [dev-dependencies]
 iceoryx2-bb-testing = { workspace = true }
 generic-tests = { workspace = true }

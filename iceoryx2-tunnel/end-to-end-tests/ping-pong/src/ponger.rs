@@ -10,7 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use clap::Parser;
+use core::mem::size_of;
+use core::ptr::copy_nonoverlapping;
+
+extern crate alloc;
+use alloc::boxed::Box;
+
 use iceoryx2::prelude::{
     ipc, set_log_level_from_env_or, CallbackProgression, LogLevel, NodeBuilder,
     WaitSetAttachmentId, WaitSetBuilder,
@@ -19,6 +24,8 @@ use iceoryx2_bb_log::info;
 use iceoryx2_tunnel_end_to_end_tests::cli::*;
 use iceoryx2_tunnel_end_to_end_tests::config::*;
 use iceoryx2_tunnel_end_to_end_tests::payload::*;
+
+use clap::Parser;
 
 fn run_ponger<P: PayloadWriter>() -> Result<(), Box<dyn core::error::Error>> {
     let node = NodeBuilder::new().create::<ipc::Service>()?;
@@ -66,10 +73,10 @@ fn run_ponger<P: PayloadWriter>() -> Result<(), Box<dyn core::error::Error>> {
 
                 // Copy the received ping payload directly into the pong payload, by-passing stack
                 unsafe {
-                    std::ptr::copy_nonoverlapping(
+                    copy_nonoverlapping(
                         ping_sample.payload() as *const P::PayloadType as *const u8,
                         pong_sample.payload_mut().as_mut_ptr().cast(),
-                        std::mem::size_of::<P::PayloadType>(),
+                        size_of::<P::PayloadType>(),
                     );
                 }
 
