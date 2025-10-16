@@ -50,7 +50,7 @@ struct ContainerMutationTestResponse {
 
 impl ComponentTest for TestContainerMutation {
     fn test_name(&self) -> &'static str {
-        "container_mutation".into()
+        "container_mutation"
     }
 
     fn run_test(&mut self, node: &Node<ipc::Service>) -> Result<(), Box<dyn core::error::Error>> {
@@ -67,7 +67,7 @@ impl ComponentTest for TestContainerMutation {
         let client = service.client_builder().create()?;
         wait_for_pred(
             node,
-            &mut || service.dynamic_config().number_of_servers() > 0,
+            &|| service.dynamic_config().number_of_servers() > 0,
             core::time::Duration::from_secs(2),
             cycle_time,
         )?;
@@ -113,7 +113,7 @@ impl ComponentTest for TestContainerMutation {
             core::time::Duration::from_secs(5),
             cycle_time,
         )?;
-        if !check_response(&response.payload()) {
+        if !check_response(response.payload()) {
             return Err(Box::new(GenericTestError {}));
         }
 
@@ -136,16 +136,16 @@ fn check_response(res: &ContainerMutationTestResponse) -> bool {
         );
         return false;
     }
-    if !(res.string_append == "Hello my baby, hello my honey, hello my ragtime gal") {
+    if res.string_append != "Hello my baby, hello my honey, hello my ragtime gal" {
         println!("Unexpected value for string_append {:?}", res.string_append);
         return false;
     }
     if !res.vector_strings_change_middle.iter().len() == 5
-        || (*res.vector_strings_change_middle.iter().nth(0).unwrap() != "Howdy!")
-        || (*res.vector_strings_change_middle.iter().nth(1).unwrap() != "Yeehaw!")
-        || (*res.vector_strings_change_middle.iter().nth(2).unwrap() != "How's the mister")
-        || (*res.vector_strings_change_middle.iter().nth(3).unwrap() != "I'll be gone")
-        || (*res.vector_strings_change_middle.iter().nth(4).unwrap() != "See you soon")
+        || (*res.vector_strings_change_middle.first().unwrap() != "Howdy!")
+        || (*res.vector_strings_change_middle.get(1).unwrap() != "Yeehaw!")
+        || (*res.vector_strings_change_middle.get(2).unwrap() != "How's the mister")
+        || (*res.vector_strings_change_middle.get(3).unwrap() != "I'll be gone")
+        || (*res.vector_strings_change_middle.get(4).unwrap() != "See you soon")
     {
         println!(
             "Unexpected value for vector_strings_change_middle {:?}",

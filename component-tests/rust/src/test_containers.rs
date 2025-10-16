@@ -100,7 +100,7 @@ fn request_end_of_test() -> ContainerTestRequest {
 
 impl ComponentTest for TestContainers {
     fn test_name(&self) -> &'static str {
-        "containers".into()
+        "containers"
     }
 
     fn run_test(&mut self, node: &Node<ipc::Service>) -> Result<(), Box<dyn core::error::Error>> {
@@ -116,7 +116,7 @@ impl ComponentTest for TestContainers {
         let client = service.client_builder().create()?;
         wait_for_pred(
             node,
-            &mut || service.dynamic_config().number_of_servers() > 0,
+            &|| service.dynamic_config().number_of_servers() > 0,
             core::time::Duration::from_secs(2),
             cycle_time,
         )?;

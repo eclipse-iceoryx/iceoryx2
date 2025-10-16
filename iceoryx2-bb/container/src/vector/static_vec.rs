@@ -289,12 +289,12 @@ impl VectorMemoryLayoutMetrics {
     #[allow(missing_docs)]
     pub fn from_vector<T, const CAPACITY: usize>(v: &StaticVec<T, CAPACITY>) -> Self {
         VectorMemoryLayoutMetrics {
-            vector_size: std::mem::size_of_val(v),
-            vector_alignment: std::mem::align_of_val(v),
-            size_data: std::mem::size_of_val(&v.data),
-            offset_data: std::mem::offset_of!(StaticVec<T,CAPACITY>, data),
-            size_len: std::mem::size_of_val(&v.len),
-            offset_len: std::mem::offset_of!(StaticVec<T, CAPACITY>, len),
+            vector_size: core::mem::size_of_val(v),
+            vector_alignment: core::mem::align_of_val(v),
+            size_data: core::mem::size_of_val(&v.data),
+            offset_data: core::mem::offset_of!(StaticVec<T,CAPACITY>, data),
+            size_len: core::mem::size_of_val(&v.len),
+            offset_len: core::mem::offset_of!(StaticVec<T, CAPACITY>, len),
             len_is_unsigned: v.len.is_unsigned(),
         }
     }
