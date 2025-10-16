@@ -24,17 +24,47 @@ rust_library(
     name = "iceoryx2-bb-log",
     srcs = glob(["src/**/*.rs"]),
     crate_features = select({
+        "//:cfg_feature_std": [
+            "std"
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "//:cfg_feature_logger_buffer": [
+            "logger_buffer",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "//:cfg_feature_logger_file": [
+            "logger_file",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "//:cfg_feature_logger_console": [
+            "logger_console",
+        ],
+        "//conditions:default": [],
+    }) + select({
         "//:cfg_feature_logger_log": [
-            "logger_log"
+            "logger_log",
         ],
         "//conditions:default": [],
     }) + select({
         "//:cfg_feature_logger_tracing": [
-            "logger_tracing"
+            "logger_tracing",
         ],
         "//conditions:default": [],
     }),
     deps = [
         "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
-    ],
+    ] + select({
+        "//:cfg_feature_logger_log": [
+            "@crate_index//:log",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "//:cfg_feature_logger_tracing": [
+            "@crate_index//:tracing",
+        ],
+        "//conditions:default": [],
+    }),
 )

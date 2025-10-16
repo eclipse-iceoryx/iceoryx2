@@ -178,7 +178,10 @@ static DEFAULT_LOGGER: logger::tracing::Logger = logger::tracing::Logger::new();
 #[cfg(feature = "logger_log")]
 static DEFAULT_LOGGER: logger::log::Logger = logger::log::Logger::new();
 
-#[cfg(not(any(feature = "logger_log", feature = "logger_tracing")))]
+#[cfg(all(
+    not(any(feature = "logger_log", feature = "logger_tracing")),
+    feature = "logger_console"
+))]
 static DEFAULT_LOGGER: logger::console::Logger = logger::console::Logger::new();
 
 #[cfg(not(any(
