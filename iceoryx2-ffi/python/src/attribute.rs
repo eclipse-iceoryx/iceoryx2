@@ -32,12 +32,12 @@ impl Attribute {
     #[getter]
     /// Acquires the service attribute key
     pub fn key(&self) -> AttributeKey {
-        AttributeKey(self.0.key().clone())
+        AttributeKey(*self.0.key())
     }
 
     #[getter]
     /// Acquires the service attribute value
     pub fn value(&self) -> AttributeValue {
-        AttributeValue(self.0.value().clone())
+        AttributeValue(*self.0.value())
     }
 }

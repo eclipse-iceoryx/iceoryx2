@@ -306,7 +306,7 @@ impl MemoryMappingBuilder {
     /// Opens an existing file and maps its content into the process space
     pub fn from_file(file_path: &FilePath) -> FileMappingBuilder {
         FileMappingBuilder {
-            file_path: file_path.clone(),
+            file_path: *file_path,
             access_mode: AccessMode::None,
             settings: MemoryMappingBuilderSettings::new(),
         }
@@ -443,7 +443,7 @@ impl MemoryMappingBuilder {
                     &self.settings,
                     self.settings.mapping_behavior as _,
                     Some(fd),
-                    Some(file_path.clone()),
+                    Some(*file_path),
                 )
             }
         }

@@ -231,14 +231,14 @@ impl Default for Global {
 impl Global {
     /// The absolute path to the service directory where all static service infos are stored
     pub fn service_dir(&self) -> Path {
-        let mut path = self.root_path().clone();
+        let mut path = *self.root_path();
         path.add_path_entry(&self.service.directory).unwrap();
         path
     }
 
     /// The absolute path to the node directory where all node details are stored
     pub fn node_dir(&self) -> Path {
-        let mut path = self.root_path().clone();
+        let mut path = *self.root_path();
         path.add_path_entry(&self.node.directory).unwrap();
         path
     }
@@ -250,7 +250,7 @@ impl Global {
 
     /// Defines the path under which all other directories or files will be created
     pub fn set_root_path(&mut self, value: &Path) {
-        self.root_path = value.clone();
+        self.root_path = *value;
     }
 }
 
@@ -547,7 +547,7 @@ impl Config {
                          "{} since the current user details could not be acquired.", msg);
         match user.details() {
             Some(details) => {
-                let mut user_config = details.config_dir().clone();
+                let mut user_config = *details.config_dir();
                 fail!(from origin,
                     when user_config.add_path_entry(&Self::relative_config_path()),
                     with ConfigIterationFailure::TooLongUserConfigDirectory,

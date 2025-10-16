@@ -205,7 +205,7 @@ pub struct Builder {
 impl NamedConceptBuilder<FileLockMonitoring> for Builder {
     fn new(name: &FileName) -> Self {
         Self {
-            name: name.clone(),
+            name: *name,
             config: Configuration::default(),
         }
     }
@@ -332,7 +332,7 @@ impl Default for Configuration {
 
 impl NamedConceptConfiguration for Configuration {
     fn prefix(mut self, value: &FileName) -> Self {
-        self.prefix = value.clone();
+        self.prefix = *value;
         self
     }
 
@@ -341,7 +341,7 @@ impl NamedConceptConfiguration for Configuration {
     }
 
     fn suffix(mut self, value: &FileName) -> Self {
-        self.suffix = value.clone();
+        self.suffix = *value;
         self
     }
 
@@ -350,7 +350,7 @@ impl NamedConceptConfiguration for Configuration {
     }
 
     fn path_hint(mut self, value: &Path) -> Self {
-        self.path_hint = value.clone();
+        self.path_hint = *value;
         self
     }
 

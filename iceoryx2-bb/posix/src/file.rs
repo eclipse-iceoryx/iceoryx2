@@ -388,7 +388,7 @@ impl FileBuilder {
     /// Creates a new FileBuilder and sets the path of the file which should be opened.
     pub fn new(file_path: &FilePath) -> Self {
         FileBuilder {
-            file_path: file_path.clone(),
+            file_path: *file_path,
             access_mode: AccessMode::Read,
             permission: Permission::OWNER_ALL,
             has_ownership: false,
@@ -600,7 +600,7 @@ impl File {
 
         if let Some(v) = file_descriptor {
             return Ok(File {
-                path: Some(config.file_path.clone()),
+                path: Some(config.file_path),
                 file_descriptor: v,
                 has_ownership: config.has_ownership,
             });

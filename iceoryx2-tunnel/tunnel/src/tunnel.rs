@@ -135,7 +135,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
 
         trace!(
             from origin,
-            "Creating Tunnel:\n{:?}\n{:?}\n{:?}", 
+            "Creating Tunnel:\n{:?}\n{:?}\n{:?}",
             &tunnel_config, &iceoryx_config, &backend_config);
 
         let node = fail!(
@@ -330,7 +330,7 @@ fn setup_publish_subscribe<S: Service, B: Backend<S> + Debug>(
         with DiscoveryError::PublishSubscribePortCreation,
         "Failed to create publish-subscribe ports"
     );
-    ports.publish_subscribe.insert(service_id.clone(), port);
+    ports.publish_subscribe.insert(*service_id, port);
 
     let relay = fail!(
         from origin,
@@ -341,7 +341,7 @@ fn setup_publish_subscribe<S: Service, B: Backend<S> + Debug>(
         with DiscoveryError::PublishSubscribeRelayCreation,
         "Failed to create publish-subscribe relay"
     );
-    relays.publish_subscribe.insert(service_id.clone(), relay);
+    relays.publish_subscribe.insert(*service_id, relay);
 
     fail!(
         from origin,
@@ -370,7 +370,7 @@ fn setup_event<S: Service, B: Backend<S> + Debug>(
         with DiscoveryError::EventPortsCreation,
         "Failed to create event ports"
     );
-    ports.event.insert(service_id.clone(), port);
+    ports.event.insert(*service_id, port);
 
     let relay = fail!(
         from origin,
@@ -381,7 +381,7 @@ fn setup_event<S: Service, B: Backend<S> + Debug>(
         with DiscoveryError::EventRelayCreation,
         "Failed to create event relay"
     );
-    relays.event.insert(service_id.clone(), relay);
+    relays.event.insert(*service_id, relay);
 
     fail!(
         from origin,

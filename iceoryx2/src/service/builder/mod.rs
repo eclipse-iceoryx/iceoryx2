@@ -274,7 +274,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
     ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState> {
         let static_storage_config =
             static_config_storage_config::<ServiceType>(self.shared_node.config());
-        let file_name_uuid = self.service_config.service_id().0.clone().into();
+        let file_name_uuid = self.service_config.service_id().0.into();
         let creation_timeout = self.shared_node.config().global.service.creation_timeout;
 
         match <ServiceType::StaticStorage as NamedConceptMgmt>::does_exist_cfg(
@@ -356,7 +356,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
             DynamicConfig,
         >>::Builder<'_> as NamedConceptBuilder<
             ServiceType::DynamicStorage,
-        >>::new(&self.service_config.service_id().0.clone().into())
+        >>::new(&self.service_config.service_id().0.into())
             .config(&dynamic_config_storage_config::<ServiceType>(self.shared_node.config()))
             .supplementary_size(additional_size + required_memory_size)
             .has_ownership(false)
@@ -399,7 +399,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                 // can be safely cleaned up.
                 match unsafe {
                     <ServiceType::DynamicStorage as NamedConceptMgmt>::remove_cfg(
-                        &self.service_config.service_id().0.clone().into(),
+                        &self.service_config.service_id().0.into(),
                         &dynamic_config_storage_config::<ServiceType>(self.shared_node.config()),
                     )
                 } {
@@ -433,7 +433,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                     DynamicConfig,
                 >>::Builder<'_> as NamedConceptBuilder<
                     ServiceType::DynamicStorage,
-                >>::new(&self.service_config.service_id().0.clone().into())
+                >>::new(&self.service_config.service_id().0.into())
                     .timeout(self.shared_node.config().global.service.creation_timeout)
                     .config(&dynamic_config_storage_config::<ServiceType>(self.shared_node.config()))
                 .has_ownership(false)
@@ -467,7 +467,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
     ) -> Result<Option<ServiceType::StaticStorage>, ErrorType> {
         match <<ServiceType::StaticStorage as StaticStorage>::Builder as NamedConceptBuilder<
             ServiceType::StaticStorage,
-        >>::new(&self.service_config.service_id().0.clone().into())
+        >>::new(&self.service_config.service_id().0.into())
         .config(&service_tag_config::<ServiceType>(
             self.shared_node.config(),
             self.shared_node.id(),
@@ -491,7 +491,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         Ok(
             fail!(from self, when <<ServiceType::StaticStorage as StaticStorage>::Builder as NamedConceptBuilder<
                         ServiceType::StaticStorage,
-                    >>::new(&self.service_config.service_id().0.clone().into())
+                    >>::new(&self.service_config.service_id().0.into())
                     .config(&static_config_storage_config::<ServiceType>(
                         self.shared_node.config(),
                     ))

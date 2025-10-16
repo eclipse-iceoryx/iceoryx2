@@ -76,8 +76,8 @@ impl PortFactoryRequestResponse {
     /// Returns the `ServiceId` of the `Service`
     pub fn service_id(&self) -> ServiceId {
         match &*self.value.lock() {
-            PortFactoryRequestResponseType::Ipc(v) => ServiceId(v.service_id().clone()),
-            PortFactoryRequestResponseType::Local(v) => ServiceId(v.service_id().clone()),
+            PortFactoryRequestResponseType::Ipc(v) => ServiceId(*v.service_id()),
+            PortFactoryRequestResponseType::Local(v) => ServiceId(*v.service_id()),
         }
     }
 

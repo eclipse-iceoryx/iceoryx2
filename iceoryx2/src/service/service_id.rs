@@ -23,7 +23,7 @@ use super::{messaging_pattern::MessagingPattern, service_name::ServiceName};
 const SERVICE_ID_CAPACITY: usize = 64;
 
 /// The unique id of a [`Service`](crate::service::Service)
-#[derive(Debug, Eq, PartialEq, Clone, Hash, ZeroCopySend, Serialize, Deserialize)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy, Hash, ZeroCopySend, Serialize, Deserialize)]
 #[repr(C)]
 pub struct ServiceId(pub(crate) RestrictedFileName<SERVICE_ID_CAPACITY>);
 
@@ -33,10 +33,9 @@ impl ServiceId {
         messaging_pattern: MessagingPattern,
     ) -> Self {
         let pattern_and_service = (messaging_pattern as u32).to_string() + service_name.as_str();
-        let value = Hasher::new(pattern_and_service.as_bytes())
+        let value = *Hasher::new(pattern_and_service.as_bytes())
             .value()
-            .as_base64url()
-            .clone();
+            .as_base64url();
 
         Self(fatal_panic!(from "ServiceId::new()",
                    when RestrictedFileName::new(&value),

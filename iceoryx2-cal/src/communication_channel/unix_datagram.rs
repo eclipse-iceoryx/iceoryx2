@@ -46,7 +46,7 @@ impl Default for Configuration {
 
 impl NamedConceptConfiguration for Configuration {
     fn prefix(mut self, value: &FileName) -> Self {
-        self.prefix = value.clone();
+        self.prefix = *value;
         self
     }
 
@@ -55,12 +55,12 @@ impl NamedConceptConfiguration for Configuration {
     }
 
     fn suffix(mut self, value: &FileName) -> Self {
-        self.suffix = value.clone();
+        self.suffix = *value;
         self
     }
 
     fn path_hint(mut self, value: &Path) -> Self {
-        self.path_hint = value.clone();
+        self.path_hint = *value;
         self
     }
 
@@ -180,7 +180,7 @@ pub struct Creator<T: Copy + Debug> {
 impl<T: Copy + Debug> NamedConceptBuilder<Channel<T>> for Creator<T> {
     fn new(channel_name: &FileName) -> Self {
         Self {
-            channel_name: channel_name.clone(),
+            channel_name: *channel_name,
             enable_safe_overflow: false,
             buffer_size: DEFAULT_RECEIVER_BUFFER_SIZE,
             config: Configuration::default(),
@@ -282,7 +282,7 @@ impl<T: Copy + Debug> Connector<T> {
 impl<T: Copy + Debug> NamedConceptBuilder<Channel<T>> for Connector<T> {
     fn new(channel_name: &FileName) -> Self {
         Self {
-            channel_name: channel_name.clone(),
+            channel_name: *channel_name,
             config: Configuration::default(),
             _phantom_data: PhantomData,
         }

@@ -468,7 +468,7 @@ pub mod internal {
     fn send_dead_node_signal<S: Service>(service_id: &ServiceId, config: &config::Config) {
         let origin = "send_dead_node_signal()";
 
-        let service_details = match details::<S>(config, &service_id.0.clone().into()) {
+        let service_details = match details::<S>(config, &service_id.0.into()) {
             Ok(Some(service_details)) => service_details,
             Ok(None) => return,
             Err(e) => {
@@ -744,7 +744,7 @@ pub mod internal {
                 if let Ok(true) = blackboard_payload {
                     is_blackboard = true;
 
-                    let details = match details::<S>(config, &service_id.0.clone().into()) {
+                    let details = match details::<S>(config, &service_id.0.into()) {
                         Ok(Some(d)) => d,
                         _ => {
                             fail!(from origin,
@@ -760,7 +760,7 @@ pub mod internal {
                     // IMPORTANT: The static service config must be removed first. If it cannot be
                     // removed, the process may lack sufficient permissions and should not remove
                     // any other resources.
-                    remove_static_service_config::<S>(config, &service_id.0.clone().into())
+                    remove_static_service_config::<S>(config, &service_id.0.into())
                 } {
                     Ok(_) => {
                         trace!(from origin, "Remove unused service.");
@@ -1063,7 +1063,7 @@ fn open_dynamic_config<S: Service>(
                     DynamicConfig,
                 >>::Builder<'_> as NamedConceptBuilder<
                     S::DynamicStorage,
-                >>::new(&service_id.0.clone().into())
+                >>::new(&service_id.0.into())
                     .config(&dynamic_config_storage_config::<S>(config))
                 .has_ownership(false)
                 .open() {
@@ -1094,7 +1094,7 @@ pub(crate) fn remove_service_tag<S: Service>(
 
     match unsafe {
         <S::StaticStorage as NamedConceptMgmt>::remove_cfg(
-            &service_id.0.clone().into(),
+            &service_id.0.into(),
             &service_tag_config::<S>(config, node_id),
         )
     } {

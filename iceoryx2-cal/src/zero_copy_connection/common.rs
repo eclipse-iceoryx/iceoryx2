@@ -507,7 +507,7 @@ pub mod details {
     {
         fn new(name: &FileName) -> Self {
             Self {
-                name: name.clone(),
+                name: *name,
                 buffer_size: DEFAULT_BUFFER_SIZE,
                 enable_safe_overflow: DEFAULT_ENABLE_SAFE_OVERFLOW,
                 max_borrowed_samples_per_channel: DEFAULT_MAX_BORROWED_SAMPLES_PER_CHANNEL,

@@ -83,8 +83,8 @@ impl PortFactoryPublishSubscribe {
     /// Returns the `ServiceId` of the `Service`
     pub fn service_id(&self) -> ServiceId {
         match &*self.value.lock() {
-            PortFactoryPublishSubscribeType::Ipc(v) => ServiceId(v.service_id().clone()),
-            PortFactoryPublishSubscribeType::Local(v) => ServiceId(v.service_id().clone()),
+            PortFactoryPublishSubscribeType::Ipc(v) => ServiceId(*v.service_id()),
+            PortFactoryPublishSubscribeType::Local(v) => ServiceId(*v.service_id()),
         }
     }
 

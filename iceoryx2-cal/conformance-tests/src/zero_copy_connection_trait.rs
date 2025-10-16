@@ -1805,8 +1805,8 @@ pub mod zero_copy_connection_trait {
         };
 
         std::thread::scope(|s| {
-            let tname_1 = name_1.clone();
-            let tname_2 = name_2.clone();
+            let tname_1 = name_1;
+            let tname_2 = name_2;
             s.spawn(move || {
                 barrier_1.wait();
                 for _ in 0..ITERATIONS {

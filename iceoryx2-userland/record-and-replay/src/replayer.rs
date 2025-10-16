@@ -142,7 +142,7 @@ impl ReplayerOpener {
     /// Creates a new [`ReplayerOpener`]
     pub fn new(file_path: &FilePath) -> Self {
         Self {
-            file_path: file_path.clone(),
+            file_path: *file_path,
             data_representation: DataRepresentation::default(),
         }
     }

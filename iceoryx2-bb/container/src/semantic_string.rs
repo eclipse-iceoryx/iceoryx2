@@ -122,6 +122,8 @@ pub trait SemanticString<const CAPACITY: usize>:
     + PartialEq
     + Eq
     + Hash
+    + Clone
+    + Copy
 {
     /// Returns a reference to the underlying [`StaticString`]
     fn as_string(&self) -> &StaticString<CAPACITY>;
@@ -401,7 +403,7 @@ macro_rules! semantic_string {
      normalize: $normalize:expr} => {
         $(#[$documentation])*
         #[repr(C)]
-        #[derive(Debug, Clone, Eq, PartialOrd, Ord, ZeroCopySend)]
+        #[derive(Debug, Clone, Copy, Eq, PartialOrd, Ord, ZeroCopySend)]
         pub struct $string_name {
             value: iceoryx2_bb_container::string::StaticString<$capacity>
         }

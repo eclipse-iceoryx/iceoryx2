@@ -51,8 +51,8 @@ impl PortFactoryEvent {
     /// Returns the `ServiceId` of the `Service`
     pub fn service_id(&self) -> ServiceId {
         match &*self.0.lock() {
-            PortFactoryEventType::Ipc(v) => ServiceId(v.service_id().clone()),
-            PortFactoryEventType::Local(v) => ServiceId(v.service_id().clone()),
+            PortFactoryEventType::Ipc(v) => ServiceId(*v.service_id()),
+            PortFactoryEventType::Local(v) => ServiceId(*v.service_id()),
         }
     }
 

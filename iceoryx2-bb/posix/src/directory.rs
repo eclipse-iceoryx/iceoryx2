@@ -242,7 +242,7 @@ impl Directory {
         }
 
         Ok(Directory {
-            path: path.clone(),
+            path: *path,
             directory_stream,
             file_descriptor: file_descriptor.unwrap(),
         })
@@ -365,7 +365,7 @@ impl Directory {
                             "{} since the directory contents of {} could not be read.", msg, path);
 
         for entry in contents {
-            let mut sub_path = path.clone();
+            let mut sub_path = *path;
             sub_path
                 .add_path_entry(&entry.name().into())
                 .expect("always a valid path entry");
@@ -481,7 +481,7 @@ impl Directory {
 
     fn acquire_metadata(&self, file: &FileName, msg: &str) -> Result<Metadata, DirectoryStatError> {
         let mut buffer = posix::stat_t::new_zeroed();
-        let mut path = self.path().clone();
+        let mut path = *self.path();
         path.push(PATH_SEPARATOR).unwrap();
         path.push_bytes(file.as_bytes()).unwrap();
 

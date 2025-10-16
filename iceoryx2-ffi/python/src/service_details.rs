@@ -94,8 +94,8 @@ impl ServiceDetails {
     /// Returns the unique `ServiceId` of the `Service`
     pub fn service_id(&self) -> ServiceId {
         match &self.0 {
-            ServiceDetailsType::Ipc(v) => ServiceId(v.static_details.service_id().clone()),
-            ServiceDetailsType::Local(v) => ServiceId(v.static_details.service_id().clone()),
+            ServiceDetailsType::Ipc(v) => ServiceId(*v.static_details.service_id()),
+            ServiceDetailsType::Local(v) => ServiceId(*v.static_details.service_id()),
         }
     }
 

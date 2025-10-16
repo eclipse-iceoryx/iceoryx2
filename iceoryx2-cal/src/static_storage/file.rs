@@ -78,7 +78,7 @@ impl Default for Configuration {
 
 impl crate::named_concept::NamedConceptConfiguration for Configuration {
     fn prefix(mut self, value: &FileName) -> Self {
-        self.prefix = value.clone();
+        self.prefix = *value;
         self
     }
 
@@ -87,12 +87,12 @@ impl crate::named_concept::NamedConceptConfiguration for Configuration {
     }
 
     fn suffix(mut self, value: &FileName) -> Self {
-        self.suffix = value.clone();
+        self.suffix = *value;
         self
     }
 
     fn path_hint(mut self, value: &Path) -> Self {
-        self.path = value.clone();
+        self.path = *value;
         self
     }
 
@@ -362,7 +362,7 @@ pub struct Builder {
 impl crate::named_concept::NamedConceptBuilder<Storage> for Builder {
     fn new(storage_name: &FileName) -> Self {
         Self {
-            storage_name: storage_name.clone(),
+            storage_name: *storage_name,
             has_ownership: true,
             config: <Configuration as Default>::default(),
         }

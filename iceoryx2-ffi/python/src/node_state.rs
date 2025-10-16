@@ -40,7 +40,7 @@ impl NodeDetails {
     #[getter]
     /// Returns the executable `FileName` of the `Node`s owner process.
     pub fn executable(&self) -> FileName {
-        FileName(self.0.executable().clone())
+        FileName(*self.0.executable())
     }
 
     #[getter]
