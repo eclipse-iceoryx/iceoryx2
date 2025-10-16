@@ -30,10 +30,13 @@ pub mod messaging_pattern;
 
 pub mod blackboard;
 
+use alloc::format;
+
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_cal::hash::Hash;
+
 use serde::{Deserialize, Serialize};
 
 use crate::config;

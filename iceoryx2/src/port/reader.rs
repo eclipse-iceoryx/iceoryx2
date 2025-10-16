@@ -101,7 +101,7 @@ pub enum ReaderCreateError {
 
 impl core::fmt::Display for ReaderCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "ReaderCreateError::{self:?}")
+        write!(f, "ReaderCreateError::{self:?}")
     }
 }
 
@@ -279,7 +279,7 @@ pub enum EntryHandleError {
 
 impl core::fmt::Display for EntryHandleError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "EntryHandleError::{self:?}")
+        write!(f, "EntryHandleError::{self:?}")
     }
 }
 

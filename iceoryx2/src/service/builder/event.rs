@@ -15,19 +15,23 @@
 //! See [`crate::service`]
 //!
 pub use crate::port::event_id::EventId;
+
+use alloc::format;
+
+use iceoryx2_bb_log::{fail, fatal_panic};
+use iceoryx2_bb_posix::clock::Time;
+use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
+
 use crate::service::builder::OpenDynamicStorageFailure;
 use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::port_factory::event;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
 use crate::service::*;
 use crate::service::{self, dynamic_config::event::DynamicConfigSettings};
-use builder::RETRY_LIMIT;
-use iceoryx2_bb_log::{fail, fatal_panic};
-use iceoryx2_bb_posix::clock::Time;
-use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
-use static_config::event::Deadline;
 
 use self::attribute::{AttributeSpecifier, AttributeVerifier};
+use builder::RETRY_LIMIT;
+use static_config::event::Deadline;
 
 use super::ServiceState;
 

@@ -33,16 +33,21 @@
 //! # }
 //! ```
 
-use super::request_response::PortFactory;
+use core::fmt::Debug;
+
+use alloc::format;
+
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_log::{fail, warn};
+use iceoryx2_cal::shm_allocator::AllocationStrategy;
+
 use crate::{
     port::{server::Server, DegradationAction, DegradationCallback},
     prelude::UnableToDeliverStrategy,
     service,
 };
-use core::fmt::Debug;
-use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_log::{fail, warn};
-use iceoryx2_cal::shm_allocator::AllocationStrategy;
+
+use super::request_response::PortFactory;
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct LocalServerConfig {

@@ -35,7 +35,20 @@
 //! # }
 //! ```
 
-use super::{event_id::EventId, port_identifiers::UniqueListenerId};
+use core::{cell::UnsafeCell, sync::atomic::Ordering, time::Duration};
+
+use alloc::sync::Arc;
+use alloc::vec;
+use alloc::vec::Vec;
+
+use iceoryx2_bb_elementary::CallbackProgression;
+use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
+use iceoryx2_bb_log::{debug, fail, warn};
+use iceoryx2_cal::{
+    arc_sync_policy::ArcSyncPolicy, dynamic_storage::DynamicStorage, event::NotifierBuilder,
+};
+use iceoryx2_cal::{event::Event, named_concept::NamedConceptBuilder};
+
 use crate::{
     node::NodeId,
     port::{port_identifiers::UniqueNotifierId, update_connections::UpdateConnections},
@@ -47,16 +60,8 @@ use crate::{
         NoResource, ServiceState,
     },
 };
-use iceoryx2_bb_elementary::CallbackProgression;
-use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
-use iceoryx2_bb_log::{debug, fail, warn};
-use iceoryx2_cal::{
-    arc_sync_policy::ArcSyncPolicy, dynamic_storage::DynamicStorage, event::NotifierBuilder,
-};
-use iceoryx2_cal::{event::Event, named_concept::NamedConceptBuilder};
 
-use alloc::sync::Arc;
-use core::{cell::UnsafeCell, sync::atomic::Ordering, time::Duration};
+use super::{event_id::EventId, port_identifiers::UniqueListenerId};
 
 /// Failures that can occur when a new [`Notifier`] is created with the
 /// [`crate::service::port_factory::notifier::PortFactoryNotifier`].

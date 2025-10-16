@@ -29,13 +29,17 @@
 //! # }
 //! ```
 
+use core::fmt::Debug;
+use core::hash::Hash;
+
+use alloc::format;
+
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_log::fail;
+
 use super::blackboard::PortFactory;
 use crate::port::writer::{Writer, WriterCreateError};
 use crate::service;
-use core::fmt::Debug;
-use core::hash::Hash;
-use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_log::fail;
 
 /// Factory to create a new [`Writer`] port/endpoint for
 /// [`MessagingPattern::Blackboard`](crate::service::messaging_pattern::MessagingPattern::Blackboard)
