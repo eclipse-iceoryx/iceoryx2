@@ -10,8 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[generic_tests::define]
-mod notifier {
+use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod notifier {
     use std::collections::HashSet;
 
     use iceoryx2::testing::*;
@@ -20,22 +23,23 @@ mod notifier {
         port::notifier::{NotifierCreateError, NotifierNotifyError},
         service::Service,
     };
+    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_testing::assert_that;
 
-    #[test]
-    fn create_error_display_works<S: Service>() {
+    #[conformance_test]
+    pub fn create_error_display_works<S: Service>() {
         assert_that!(
             format!("{}", NotifierCreateError::ExceedsMaxSupportedNotifiers), eq "NotifierCreateError::ExceedsMaxSupportedNotifiers");
     }
 
-    #[test]
-    fn notify_error_display_works<S: Service>() {
+    #[conformance_test]
+    pub fn notify_error_display_works<S: Service>() {
         assert_that!(
             format!("{}", NotifierNotifyError::EventIdOutOfBounds), eq "NotifierNotifyError::EventIdOutOfBounds");
     }
 
-    #[test]
-    fn id_is_unique<Sut: Service>() {
+    #[conformance_test]
+    pub fn id_is_unique<Sut: Service>() {
         let config = generate_isolated_config();
         let service_name = generate_service_name();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -57,16 +61,4 @@ mod notifier {
             listeners.push(listener);
         }
     }
-
-    #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
-    mod ipc {}
-
-    #[instantiate_tests(<iceoryx2::service::local::Service>)]
-    mod local {}
-
-    #[instantiate_tests(<iceoryx2::service::ipc_threadsafe::Service>)]
-    mod ipc_threadsafe {}
-
-    #[instantiate_tests(<iceoryx2::service::local_threadsafe::Service>)]
-    mod local_threadsafe {}
 }
