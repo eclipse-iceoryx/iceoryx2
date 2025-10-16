@@ -63,7 +63,7 @@ pub struct DiscoverySubscriber<S: Service>(pub Subscriber<S, DiscoveryEvent, ()>
 
 impl<S: Service> DiscoverySubscriber<S> {
     pub fn create(node: &Node<S>, service_name: ServiceName) -> Result<Self, CreationError> {
-        let origin = "DiscoverySubscriber::create";
+        let origin = format!("DiscoverySubscriber<{}>::new", core::any::type_name::<S>());
 
         let service = fail!(
             from origin,
