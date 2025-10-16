@@ -11,7 +11,12 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::time::Duration;
+
+extern crate alloc;
+use alloc::boxed::Box;
+
 use iceoryx2::prelude::*;
+use iceoryx2_bb_log::info;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
@@ -26,15 +31,15 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let listener = event.listener_builder().create()?;
 
-    println!("Listener ready to receive events!");
+    info!("Listener ready to receive events!");
 
     while node.wait(Duration::ZERO).is_ok() {
         if let Ok(Some(event_id)) = listener.timed_wait_one(CYCLE_TIME) {
-            println!("event was triggered with id: {event_id:?}");
+            info!("event was triggered with id: {event_id:?}");
         }
     }
 
-    println!("exit");
+    info!("exit");
 
     Ok(())
 }

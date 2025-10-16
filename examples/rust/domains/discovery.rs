@@ -10,12 +10,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate alloc;
+use alloc::boxed::Box;
+use alloc::string::String;
+
 use clap::Parser;
 use iceoryx2::prelude::*;
-use iceoryx2_bb_log::{set_log_level, LogLevel};
+use iceoryx2_bb_log::{info, set_log_level, LogLevel};
 
 fn main() -> Result<(), Box<dyn core::error::Error>> {
-    set_log_level_from_env_or(LogLevel::Info);
     let args = parse_args();
 
     // create a new config based on the global config
@@ -25,11 +28,11 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     // Therefore, different domain names never share the same resources.
     config.global.prefix = FileName::new(args.domain.as_bytes())?;
 
-    println!("\nServices running in domain \"{}\":", args.domain);
+    info!("\nServices running in domain \"{}\":", args.domain);
 
     // use the custom config when listing the services
     ipc::Service::list(&config, |service| {
-        println!("  {}", &service.static_details.name());
+        info!("  {}", &service.static_details.name());
         CallbackProgression::Continue
     })?;
 
@@ -56,7 +59,7 @@ fn define_log_level(args: &Args) {
     if args.debug {
         set_log_level(LogLevel::Trace);
     } else {
-        set_log_level(LogLevel::Warn);
+        set_log_level(LogLevel::Info);
     }
 }
 

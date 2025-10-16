@@ -11,8 +11,14 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::time::Duration;
+
+extern crate alloc;
+use alloc::boxed::Box;
+use alloc::format;
+
 use examples_common::BlackboardKey;
 use iceoryx2::prelude::*;
+use iceoryx2_bb_log::info;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
@@ -30,7 +36,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .add::<f64>(key_1, INITIAL_VALUE_1)
         .create()?;
 
-    println!("Blackboard created.\n");
+    info!("Blackboard created.\n");
 
     let writer = service.writer_builder().create()?;
 
@@ -43,16 +49,16 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         counter += 1;
 
         entry_handle_mut_0.update_with_copy(counter);
-        println!("Write new value for key 0: {counter}");
+        info!("Write new value for key 0: {counter}");
 
         let entry_value_uninit = entry_handle_mut_1.loan_uninit();
         let value = INITIAL_VALUE_1 * counter as f64;
         let entry_value = entry_value_uninit.write(value);
         entry_handle_mut_1 = entry_value.update();
-        println!("Write new value for key 1: {}\n", value);
+        info!("Write new value for key 1: {}\n", value);
     }
 
-    println!("exit");
+    info!("exit");
 
     Ok(())
 }
