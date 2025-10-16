@@ -47,6 +47,8 @@
     [#1087](https://github.com/eclipse-iceoryx/iceoryx2/issues/1087)
 * Use `IOX2_SERVICE_NAME_LENGTH` in `ServiceName::to_string()`
     [#1095](https://github.com/eclipse-iceoryx/iceoryx2/issues/1095)
+* Fix QNX cross compilation
+    [#1116](https://github.com/eclipse-iceoryx/iceoryx2/issues/1116)
 
 ### Refactoring
 

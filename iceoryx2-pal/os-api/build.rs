@@ -13,36 +13,44 @@
 #[cfg(feature = "libc_platform")]
 fn main() {}
 
-#[cfg(all(not(feature = "libc_platform"), not(target_os = "linux")))]
-fn main() {}
-
-#[cfg(all(not(feature = "libc_platform"), target_os = "linux"))]
+#[cfg(not(feature = "libc_platform"))]
 fn main() {
-    extern crate bindgen;
-    extern crate cc;
+    // when cross compiling, 'target_os' is set to the environment the build script
+    // is executed; to get the actual target OS, use the cargo 'CARGO_CFG_TARGET_OS' env variable
+    let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap();
+    println!("Building for target: {}", target_os);
 
-    use bindgen::*;
-    use std::env;
-    use std::path::PathBuf;
+    // the check for 'linux' in the next line refers to native compilation
+    // and prevents to pull in bindgen
+    #[cfg(target_os = "linux")]
+    // the check for 'linux' in the next line refers to cross compilation
+    if target_os == "linux" {
+        extern crate bindgen;
+        extern crate cc;
 
-    println!("cargo:rerun-if-changed=src/c/linux.h");
+        use bindgen::*;
+        use std::env;
+        use std::path::PathBuf;
 
-    let mut builder = bindgen::Builder::default()
-        .header("src/c/linux.h")
-        .parse_callbacks(Box::new(CargoCallbacks::new()))
-        .use_core();
+        println!("cargo:rerun-if-changed=src/c/linux.h");
 
-    if std::env::var("DOCS_RS").is_ok() {
-        builder = builder.clang_arg("-D IOX2_DOCS_RS_SUPPORT");
+        let mut builder = bindgen::Builder::default()
+            .header("src/c/linux.h")
+            .parse_callbacks(Box::new(CargoCallbacks::new()))
+            .use_core();
+
+        if std::env::var("DOCS_RS").is_ok() {
+            builder = builder.clang_arg("-D IOX2_DOCS_RS_SUPPORT");
+        }
+
+        let bindings = builder.generate().expect("Unable to generate bindings");
+
+        // needed for bazel but can be empty for cargo builds
+        println!("cargo:rustc-env=BAZEL_BINDGEN_PATH_CORRECTION=");
+
+        let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
+        bindings
+            .write_to_file(out_path.join("os_api_generated.rs"))
+            .expect("Couldn't write bindings!");
     }
-
-    let bindings = builder.generate().expect("Unable to generate bindings");
-
-    // needed for bazel but can be empty for cargo builds
-    println!("cargo:rustc-env=BAZEL_BINDGEN_PATH_CORRECTION=");
-
-    let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
-    bindings
-        .write_to_file(out_path.join("os_api_generated.rs"))
-        .expect("Couldn't write bindings!");
 }
