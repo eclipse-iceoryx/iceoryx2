@@ -45,6 +45,7 @@ target_sources(component-tests_cxx
     PRIVATE
     ${PROJECT_SOURCE_DIR}/src/main.cpp
     ${PROJECT_SOURCE_DIR}/src/test_containers.cpp
+    ${PROJECT_SOURCE_DIR}/src/test_container_mutation.cpp
     PRIVATE
     ${PROJECT_SOURCE_DIR}/include/iox2/component-tests/common.hpp
 )

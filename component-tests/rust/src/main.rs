@@ -11,13 +11,17 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 mod common;
+mod test_container_mutation;
 mod test_containers;
 
 use iceoryx2::prelude::*;
 use iceoryx2_bb_container::string::StaticString;
 
 fn component_tests() -> Vec<Box<dyn common::ComponentTest>> {
-    vec![Box::new(test_containers::TestContainers::new())]
+    vec![
+        Box::new(test_containers::TestContainers::new()),
+        Box::new(test_container_mutation::TestContainerMutation::new()),
+    ]
 }
 
 #[derive(Debug, Clone, Copy, ZeroCopySend)]

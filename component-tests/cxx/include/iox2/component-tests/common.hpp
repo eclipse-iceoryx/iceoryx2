@@ -32,5 +32,6 @@ public:
 };
 
 auto test_containers() -> std::unique_ptr<IComponentTest>;
+auto test_container_mutation() -> std::unique_ptr<IComponentTest>;
 
 #endif

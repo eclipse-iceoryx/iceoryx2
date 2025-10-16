@@ -40,6 +40,7 @@ void add_test(std::vector<Test>& tests_vector, std::unique_ptr<IComponentTest> p
 auto component_tests() -> std::vector<Test> {
     std::vector<Test> ret;
     add_test(ret, test_containers());
+    add_test(ret, test_container_mutation());
     return ret;
 }
 

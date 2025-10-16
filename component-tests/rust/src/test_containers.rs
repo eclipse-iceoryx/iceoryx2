@@ -84,7 +84,6 @@ fn request_end_of_test() -> ContainerTestRequest {
     }
 }
 
-
 impl ComponentTest for TestContainers {
     fn test_name(&self) -> &'static str {
         "containers".into()
@@ -101,9 +100,12 @@ impl ComponentTest for TestContainers {
             .open_or_create()?;
 
         let client = service.client_builder().create()?;
-        while service.dynamic_config().number_of_servers() == 0 {
-            node.wait(cycle_time)?;
-        }
+        wait_for_pred(
+            node,
+            &mut || service.dynamic_config().number_of_servers() > 0,
+            core::time::Duration::from_secs(2),
+            cycle_time,
+        )?;
         for test in [VectorTypeSequence::VecI32_10, VectorTypeSequence::EndOfTest] {
             println!("       * Requesting {:?}", test);
             let request = match test {
@@ -111,15 +113,16 @@ impl ComponentTest for TestContainers {
                 VectorTypeSequence::EndOfTest => request_end_of_test(),
             };
             let pending_response = client.send_copy(request)?;
-            if let Some(response) =
-                await_response(node, &pending_response, core::time::Duration::from_secs(5), cycle_time)
+            let response = await_response(
+                node,
+                &pending_response,
+                core::time::Duration::from_secs(5),
+                cycle_time,
+            )?;
+            if (response.vector_type_sequence != request.vector_type_sequence)
+                || (!response.all_fields_match)
             {
-                if (response.vector_type_sequence != request.vector_type_sequence) || (!response.all_fields_match) {
-                    println!("Invalid response from component test server");
-                    return Err(Box::new(GenericTestError {}));
-                }
-            } else {
-                println!("Timeout.");
+                println!("Invalid response from component test server");
                 return Err(Box::new(GenericTestError {}));
             }
         }
