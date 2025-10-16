@@ -170,7 +170,7 @@ impl crate::Log for Logger {
                     Self::print_origin(log_level, &origin_str);
                 }
                 true => std::eprint!(
-                    "{}{:9} {} ",
+                    "{}{} {} ",
                     Logger::counter_color(log_level),
                     counter,
                     Logger::log_level_string(log_level),
