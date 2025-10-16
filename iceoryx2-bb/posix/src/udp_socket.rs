@@ -57,6 +57,9 @@
 use core::fmt::Debug;
 use core::sync::atomic::Ordering;
 use core::time::Duration;
+
+use alloc::format;
+
 use iceoryx2_bb_log::{fail, fatal_panic, trace};
 use iceoryx2_bb_system_types::ipv4_address::{self, Ipv4Address};
 use iceoryx2_bb_system_types::port::{self, Port};

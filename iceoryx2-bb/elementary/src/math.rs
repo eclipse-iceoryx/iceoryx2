@@ -12,6 +12,8 @@
 
 //! Contains simplistic math functions.
 
+use alloc::string::String;
+
 /// Returns the required memory size when alignment adjustments are taken into account
 pub const fn unaligned_mem_size<T>(array_capacity: usize) -> usize {
     core::mem::size_of::<T>() * array_capacity + core::mem::align_of::<T>() - 1

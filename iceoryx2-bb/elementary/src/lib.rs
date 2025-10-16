@@ -16,6 +16,8 @@
 
 //! Contains basic constructs which do not have any kind of dependency.
 
+extern crate alloc;
+
 #[macro_use]
 pub mod enum_gen;
 

@@ -50,6 +50,7 @@
 //! # }
 //! ```
 
+use alloc::format;
 use core::{
     alloc::Layout,
     fmt::Debug,

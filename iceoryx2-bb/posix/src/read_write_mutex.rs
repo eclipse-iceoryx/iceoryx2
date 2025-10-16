@@ -44,15 +44,8 @@
 //!     });
 //! });
 //! ```
-pub use crate::ipc_capable::{Handle, IpcCapable};
 
-use crate::handle_errno;
-use crate::ipc_capable::internal::{Capability, HandleStorage, IpcConstructible};
-use iceoryx2_bb_elementary::{enum_gen, scope_guard::ScopeGuardBuilder};
-use iceoryx2_bb_log::{fail, fatal_panic, warn};
-use iceoryx2_pal_posix::posix::errno::Errno;
-use iceoryx2_pal_posix::posix::MemZeroedStruct;
-use iceoryx2_pal_posix::*;
+pub use crate::ipc_capable::{Handle, IpcCapable};
 
 use core::marker::PhantomData;
 use core::{
@@ -60,6 +53,17 @@ use core::{
     fmt::Debug,
     ops::{Deref, DerefMut},
 };
+
+use alloc::format;
+
+use iceoryx2_bb_elementary::{enum_gen, scope_guard::ScopeGuardBuilder};
+use iceoryx2_bb_log::{fail, fatal_panic, warn};
+use iceoryx2_pal_posix::posix::errno::Errno;
+use iceoryx2_pal_posix::posix::MemZeroedStruct;
+use iceoryx2_pal_posix::*;
+
+use crate::handle_errno;
+use crate::ipc_capable::internal::{Capability, HandleStorage, IpcConstructible};
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum ReadWriteMutexCreationError {

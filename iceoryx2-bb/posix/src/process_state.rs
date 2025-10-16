@@ -129,6 +129,7 @@
 //! }
 //! ```
 
+use alloc::format;
 use core::fmt::Debug;
 
 pub use iceoryx2_bb_container::semantic_string::SemanticString;

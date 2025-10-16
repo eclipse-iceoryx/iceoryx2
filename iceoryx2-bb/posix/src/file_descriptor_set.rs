@@ -46,6 +46,9 @@
 
 use core::{cell::UnsafeCell, fmt::Debug, time::Duration};
 
+use alloc::vec;
+use alloc::vec::Vec;
+
 use crate::{
     clock::AsTimeval,
     file_descriptor::{FileDescriptor, FileDescriptorBased},

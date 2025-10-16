@@ -10,15 +10,18 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use alloc::string::ToString;
+
+use iceoryx2_bb_container::semantic_string::SemanticString;
+use iceoryx2_bb_log::fatal_panic;
+use iceoryx2_bb_system_types::file_name::FileName;
+use iceoryx2_bb_system_types::file_path::FilePath;
+
 use crate::config::TEST_DIRECTORY;
 use crate::directory::{Directory, DirectoryCreateError};
 use crate::permission::Permission;
 use crate::process_state::ProcessGuard;
 use crate::unique_system_id::UniqueSystemId;
-use iceoryx2_bb_container::semantic_string::SemanticString;
-use iceoryx2_bb_log::fatal_panic;
-use iceoryx2_bb_system_types::file_name::FileName;
-use iceoryx2_bb_system_types::file_path::FilePath;
 
 pub fn __internal_process_guard_staged_death(state: ProcessGuard) {
     state.staged_death();

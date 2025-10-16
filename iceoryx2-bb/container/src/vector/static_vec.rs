@@ -26,6 +26,7 @@
 //! my_vec.push(123); // returns false, when capacity is exceeded
 //! ```
 
+use alloc::format;
 use core::{fmt::Debug, mem::MaybeUninit};
 use core::{
     marker::PhantomData,

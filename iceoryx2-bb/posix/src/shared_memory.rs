@@ -63,6 +63,27 @@
 //! println!("first byte: {}", shm.as_slice()[0]);
 //! ```
 
+use core::ptr::NonNull;
+use core::sync::atomic::Ordering;
+
+use alloc::vec;
+use alloc::vec::Vec;
+
+use iceoryx2_bb_container::semantic_string::*;
+use iceoryx2_bb_elementary::enum_gen;
+use iceoryx2_bb_log::{error, fail, fatal_panic, trace};
+use iceoryx2_bb_system_types::file_name::*;
+use iceoryx2_bb_system_types::file_path::*;
+use iceoryx2_bb_system_types::path::*;
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
+use iceoryx2_pal_configuration::PATH_SEPARATOR;
+use iceoryx2_pal_posix::posix::errno::Errno;
+use iceoryx2_pal_posix::posix::POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING;
+use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
+use iceoryx2_pal_posix::*;
+
+pub use crate::access_mode::AccessMode;
+pub use crate::creation_mode::CreationMode;
 use crate::file::{FileStatError, FileTruncateError};
 use crate::file_descriptor::*;
 use crate::handle_errno;
@@ -70,27 +91,9 @@ use crate::memory_lock::{MemoryLock, MemoryLockCreationError};
 use crate::memory_mapping::{
     MappingBehavior, MemoryMapping, MemoryMappingBuilder, MemoryMappingCreationError,
 };
+pub use crate::permission::Permission;
 use crate::signal::SignalHandler;
 use crate::system_configuration::Limit;
-use iceoryx2_bb_container::semantic_string::*;
-use iceoryx2_bb_elementary::enum_gen;
-use iceoryx2_bb_log::{error, fail, fatal_panic, trace};
-use iceoryx2_bb_system_types::file_name::*;
-use iceoryx2_bb_system_types::file_path::*;
-use iceoryx2_bb_system_types::path::*;
-use iceoryx2_pal_configuration::PATH_SEPARATOR;
-use iceoryx2_pal_posix::posix::errno::Errno;
-use iceoryx2_pal_posix::posix::POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING;
-use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
-use iceoryx2_pal_posix::*;
-
-use core::ptr::NonNull;
-use core::sync::atomic::Ordering;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
-
-pub use crate::access_mode::AccessMode;
-pub use crate::creation_mode::CreationMode;
-pub use crate::permission::Permission;
 
 enum_gen! { SharedMemoryCreationError
   entry:
