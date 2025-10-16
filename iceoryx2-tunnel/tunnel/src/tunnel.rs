@@ -131,7 +131,11 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         iceoryx_config: &iceoryx2::config::Config,
         backend_config: &<B as Backend<S>>::Config,
     ) -> Result<Self, CreationError> {
-        let origin = "Tunnel::create";
+        let origin = format!(
+            "Tunnel<{}, {}>::create()",
+            core::any::type_name::<S>(),
+            core::any::type_name::<B>()
+        );
 
         trace!(
             from origin,
@@ -139,7 +143,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
             &tunnel_config, &iceoryx_config, &backend_config);
 
         let node = fail!(
-            from "Tunnel::create",
+            from origin,
             when NodeBuilder::new().config(iceoryx_config).create::<S>(),
             with CreationError::Node,
             "Failed to create Node"
@@ -281,7 +285,11 @@ fn on_discovery<S: Service, B: Backend<S> + Debug>(
     ports: &mut Ports<S>,
     relays: &mut Relays<S, B>,
 ) -> Result<(), DiscoveryError> {
-    let origin = "Tunnel::on_discovery";
+    let origin = format!(
+        "Tunnel<{}, {}>::on_discovery()",
+        core::any::type_name::<S>(),
+        core::any::type_name::<B>()
+    );
 
     if services.contains(static_config.service_id()) {
         // Nothing to do.
@@ -320,7 +328,11 @@ fn setup_publish_subscribe<S: Service, B: Backend<S> + Debug>(
     ports: &mut Ports<S>,
     relays: &mut Relays<S, B>,
 ) -> Result<(), DiscoveryError> {
-    let origin = "Tunnel::setup_publish_subscribe";
+    let origin = format!(
+        "Tunnel<{}, {}>::setup_publish_subscribe()",
+        core::any::type_name::<S>(),
+        core::any::type_name::<B>()
+    );
 
     let service_id = static_config.service_id();
 
@@ -360,7 +372,11 @@ fn setup_event<S: Service, B: Backend<S> + Debug>(
     ports: &mut Ports<S>,
     relays: &mut Relays<S, B>,
 ) -> Result<(), DiscoveryError> {
-    let origin = "Tunnel::setup_event";
+    let origin = format!(
+        "Tunnel<{}, {}>::setup_event()",
+        core::any::type_name::<S>(),
+        core::any::type_name::<B>()
+    );
 
     let service_id = static_config.service_id();
 
@@ -398,7 +414,11 @@ fn propagate_publish_subscribe_payloads<S: Service, B: Backend<S> + Debug>(
     port: &PublishSubscribePorts<S>,
     relay: &B::PublishSubscribeRelay,
 ) -> Result<(), PropagateError> {
-    let origin = "Tunnel::propagate_publish_subscribe_payloads";
+    let origin = format!(
+        "Tunnel<{}, {}>::propagate_publish_subscribe_payloads()",
+        core::any::type_name::<S>(),
+        core::any::type_name::<B>()
+    );
 
     let propagated = fail!(
         from origin,
@@ -442,7 +462,11 @@ fn propagate_events<S: Service, B: Backend<S> + Debug>(
     port: &EventPorts<S>,
     relay: &B::EventRelay,
 ) -> Result<(), PropagateError> {
-    let origin = "Tunnel::propagate_events";
+    let origin = format!(
+        "Tunnel<{}, {}>::propagate_events()",
+        core::any::type_name::<S>(),
+        core::any::type_name::<B>()
+    );
 
     let propagated = fail!(
         from origin,

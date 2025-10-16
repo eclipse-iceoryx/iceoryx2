@@ -71,7 +71,10 @@ pub(crate) struct PublishSubscribePorts<S: Service> {
 
 impl<S: Service> PublishSubscribePorts<S> {
     pub(crate) fn new(static_config: &StaticConfig, node: &Node<S>) -> Result<Self, CreationError> {
-        let origin = "PublishSubscribePorts::new";
+        let origin = format!(
+            "PublishSubscribePorts<{}>::new",
+            core::any::type_name::<S>()
+        );
 
         let port_config = static_config.publish_subscribe();
         let service = unsafe {

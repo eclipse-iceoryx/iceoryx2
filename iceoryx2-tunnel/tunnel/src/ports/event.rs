@@ -71,7 +71,7 @@ pub(crate) struct EventPorts<S: Service> {
 
 impl<S: Service> EventPorts<S> {
     pub(crate) fn new(static_config: &StaticConfig, node: &Node<S>) -> Result<Self, CreationError> {
-        let origin = "EventPorts::new";
+        let origin = format!("EventPorts<{}>::new", core::any::type_name::<S>());
 
         let event_config = static_config.event();
         let service = fail!(
