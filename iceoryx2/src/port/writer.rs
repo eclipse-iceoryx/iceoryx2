@@ -108,7 +108,7 @@ pub enum WriterCreateError {
 
 impl core::fmt::Display for WriterCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "WriterCreateError::{self:?}")
+        write!(f, "WriterCreateError::{self:?}")
     }
 }
 
@@ -287,7 +287,7 @@ pub enum EntryHandleMutError {
 
 impl core::fmt::Display for EntryHandleMutError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "EntryHandleMutError::{self:?}")
+        write!(f, "EntryHandleMutError::{self:?}")
     }
 }
 

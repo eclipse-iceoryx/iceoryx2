@@ -145,22 +145,18 @@ pub mod node_name;
 #[doc(hidden)]
 pub mod testing;
 
-use crate::node::node_name::NodeName;
-use crate::service::builder::{Builder, OpenDynamicStorageFailure};
-use crate::service::config_scheme::{
-    node_details_path, node_monitoring_config, service_tag_config,
-};
-use crate::service::service_id::ServiceId;
-use crate::service::service_name::ServiceName;
-use crate::service::{
-    self, remove_service_tag, remove_static_service_config, ServiceRemoveNodeError,
-};
-use crate::signal_handling_mode::SignalHandlingMode;
-use crate::{config::Config, service::config_scheme::node_details_config};
 use core::cell::UnsafeCell;
 use core::marker::PhantomData;
 use core::sync::atomic::Ordering;
 use core::time::Duration;
+
+use alloc::format;
+use alloc::string::String;
+use alloc::string::ToString;
+use alloc::sync::Arc;
+use alloc::vec;
+use alloc::vec::Vec;
+
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::CallbackProgression;
@@ -178,9 +174,20 @@ use iceoryx2_cal::{
 };
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
-use alloc::sync::Arc;
+use crate::node::node_name::NodeName;
+use crate::service::builder::{Builder, OpenDynamicStorageFailure};
+use crate::service::config_scheme::{
+    node_details_path, node_monitoring_config, service_tag_config,
+};
+use crate::service::service_id::ServiceId;
+use crate::service::service_name::ServiceName;
+use crate::service::{
+    self, remove_service_tag, remove_static_service_config, ServiceRemoveNodeError,
+};
+use crate::signal_handling_mode::SignalHandlingMode;
+use crate::{config::Config, service::config_scheme::node_details_config};
 
-use std::collections::HashMap;
+use hashbrown::HashMap;
 use std::sync::Mutex;
 
 /// The system-wide unique id of a [`Node`]

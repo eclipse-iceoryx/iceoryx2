@@ -1280,6 +1280,7 @@ name = "iceoryx2"
 version = "0.7.0"
 dependencies = [
  "generic-tests",
+ "hashbrown 0.16.0",
  "iceoryx2-bb-container",
  "iceoryx2-bb-derive-macros",
  "iceoryx2-bb-elementary",

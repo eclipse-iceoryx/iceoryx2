@@ -10,10 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::port::port_identifiers::UniqueListenerId;
+use alloc::string::ToString;
+
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_system_types::file_name::FileName;
+
+use crate::port::port_identifiers::UniqueListenerId;
 
 pub(crate) fn event_concept_name(listener_id: &UniqueListenerId) -> FileName {
     let msg = "The system does not support the required file name length for the listeners event concept name.";

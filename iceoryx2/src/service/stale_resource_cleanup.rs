@@ -10,6 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use alloc::format;
+use alloc::vec::Vec;
+
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::event::NamedConceptMgmt;
