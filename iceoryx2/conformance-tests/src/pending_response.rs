@@ -10,8 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[generic_tests::define]
-mod pending_response {
+use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod pending_response {
     use iceoryx2::port::client::Client;
     use iceoryx2::port::server::Server;
     use iceoryx2::service::port_factory::request_response::PortFactory;
@@ -20,6 +23,7 @@ mod pending_response {
         node::{Node, NodeBuilder},
         service::Service,
     };
+    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_testing::assert_that;
 
     struct TestFixture<Sut: Service> {
@@ -55,8 +59,8 @@ mod pending_response {
         }
     }
 
-    #[test]
-    fn is_connected_until_every_active_request_is_dropped<Sut: Service>() {
+    #[conformance_test]
+    pub fn is_connected_until_every_active_request_is_dropped<Sut: Service>() {
         let test = TestFixture::<Sut>::new();
         let sut = test.client.send_copy(123).unwrap();
 
@@ -72,8 +76,8 @@ mod pending_response {
         assert_that!(sut.is_connected(), eq false);
     }
 
-    #[test]
-    fn is_not_connected_when_there_are_no_servers<Sut: Service>() {
+    #[conformance_test]
+    pub fn is_not_connected_when_there_are_no_servers<Sut: Service>() {
         let config = generate_isolated_config();
         let service_name = generate_service_name();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -88,8 +92,8 @@ mod pending_response {
         assert_that!(sut.is_connected(), eq false);
     }
 
-    #[test]
-    fn disconnects_on_drop<Sut: Service>() {
+    #[conformance_test]
+    pub fn disconnects_on_drop<Sut: Service>() {
         let test = TestFixture::<Sut>::new();
         let sut = test.client.send_copy(123).unwrap();
 
@@ -100,8 +104,8 @@ mod pending_response {
         assert_that!(active_request.is_connected(), eq false);
     }
 
-    #[test]
-    fn payload_header_and_user_header_are_set_correctly<Sut: Service>() {
+    #[conformance_test]
+    pub fn payload_header_and_user_header_are_set_correctly<Sut: Service>() {
         const PAYLOAD: u64 = 80917290837;
         const USER_HEADER: u64 = 992101;
         let test = TestFixture::<Sut>::new();
@@ -115,16 +119,16 @@ mod pending_response {
         assert_that!(*sut.payload(), eq PAYLOAD);
     }
 
-    #[test]
-    fn number_of_server_connections_is_set_correctly<Sut: Service>() {
+    #[conformance_test]
+    pub fn number_of_server_connections_is_set_correctly<Sut: Service>() {
         let test = TestFixture::<Sut>::new();
         let sut = test.client.send_copy(9).unwrap();
 
         assert_that!(sut.number_of_server_connections(), eq 2);
     }
 
-    #[test]
-    fn receive_acquires_response<Sut: Service>() {
+    #[conformance_test]
+    pub fn receive_acquires_response<Sut: Service>() {
         let test = TestFixture::<Sut>::new();
         let sut = test.client.send_copy(9).unwrap();
 
@@ -136,16 +140,4 @@ mod pending_response {
         assert_that!(sut.has_response(), eq false);
         assert_that!(sut.receive().unwrap(), is_none);
     }
-
-    #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
-    mod ipc {}
-
-    #[instantiate_tests(<iceoryx2::service::local::Service>)]
-    mod local {}
-
-    #[instantiate_tests(<iceoryx2::service::ipc_threadsafe::Service>)]
-    mod ipc_threadsafe {}
-
-    #[instantiate_tests(<iceoryx2::service::local_threadsafe::Service>)]
-    mod local_threadsafe {}
 }
