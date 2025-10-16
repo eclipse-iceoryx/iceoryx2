@@ -10,12 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use alloc::vec::Vec;
+
+use hashbrown::{hash_map::Entry, HashMap, HashSet};
 use iceoryx2::{
     config::Config,
     prelude::CallbackProgression,
     service::{service_id::ServiceId, Service, ServiceDetails, ServiceListError},
 };
-use std::collections::{hash_map::Entry, HashMap, HashSet};
 
 /// Errors that can occur during service synchronization.
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -28,7 +30,7 @@ pub enum SyncError {
 }
 
 impl core::fmt::Display for SyncError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "SyncError::{self:?}")
     }
 }

@@ -19,5 +19,7 @@
 
 #![warn(missing_docs)]
 
+extern crate alloc;
+
 /// Discovery and tracking of services in an iceoryx2 system
 pub mod service_discovery;

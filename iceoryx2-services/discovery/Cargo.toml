@@ -21,6 +21,7 @@ iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-elementary-traits = { workspace = true }
 once_cell = { workspace = true }
 serde = { workspace = true }
+hashbrown = { workspace = true }
 
 [dev-dependencies]
 iceoryx2-bb-testing = { workspace = true }

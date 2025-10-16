@@ -1691,6 +1691,7 @@ name = "iceoryx2-services-discovery"
 version = "0.7.0"
 dependencies = [
  "generic-tests",
+ "hashbrown 0.16.0",
  "iceoryx2",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
