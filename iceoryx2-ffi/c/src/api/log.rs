@@ -15,14 +15,15 @@
 
 // BEGIN type definition
 
+use core::ffi::{c_char, CStr};
+
+use alloc::string::ToString;
+
 use iceoryx2_bb_log::{
-    get_log_level, set_log_level, set_log_level_from_env_or, set_log_level_from_env_or_default,
-    set_logger, Log, LogLevel, __internal_print_log_msg,
-    logger::{use_console_logger, use_file_logger},
+    get_log_level, set_log_level, set_logger, Log, LogLevel, __internal_print_log_msg,
 };
 
-use core::ffi::{c_char, CStr};
-use std::sync::Once;
+use iceoryx2_pal_concurrency_sync::once::Once;
 
 #[repr(C)]
 #[derive(Copy, Clone)]
@@ -150,8 +151,11 @@ pub unsafe extern "C" fn iox2_log(
 }
 
 /// Sets the console logger as default logger. Returns true if the logger was set, otherwise false.
+#[cfg(feature = "std")]
 #[no_mangle]
 pub extern "C" fn iox2_use_console_logger() -> bool {
+    use iceoryx2_bb_log::logger::use_console_logger;
+
     use_console_logger()
 }
 
@@ -160,8 +164,11 @@ pub extern "C" fn iox2_use_console_logger() -> bool {
 /// # Safety
 ///
 ///  * log_file must be a valid pointer to a string
+#[cfg(feature = "std")]
 #[no_mangle]
 pub unsafe extern "C" fn iox2_use_file_logger(log_file: *const c_char) -> bool {
+    use iceoryx2_bb_log::logger::use_file_logger;
+
     debug_assert!(!log_file.is_null());
 
     let log_file = CStr::from_ptr(log_file).to_string_lossy();
@@ -169,14 +176,20 @@ pub unsafe extern "C" fn iox2_use_file_logger(log_file: *const c_char) -> bool {
 }
 
 /// Sets the log level from environment variable or defaults it if variable does not exist
+#[cfg(feature = "std")]
 #[no_mangle]
 pub unsafe extern "C" fn iox2_set_log_level_from_env_or_default() {
+    use iceoryx2_bb_log::set_log_level_from_env_or_default;
+
     set_log_level_from_env_or_default();
 }
 
 /// Sets the log level from environment variable or to a user given value if variable does not exist
+#[cfg(feature = "std")]
 #[no_mangle]
 pub unsafe extern "C" fn iox2_set_log_level_from_env_or(v: iox2_log_level_e) {
+    use iceoryx2_bb_log::set_log_level_from_env_or;
+
     set_log_level_from_env_or(v.into());
 }
 
