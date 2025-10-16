@@ -10,8 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[generic_tests::define]
-mod client {
+use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod client {
     use std::ops::Deref;
     use std::sync::atomic::Ordering;
     use std::sync::Barrier;
@@ -21,6 +24,7 @@ mod client {
     use iceoryx2::port::LoanError;
     use iceoryx2::prelude::*;
     use iceoryx2::testing::*;
+    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
     use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -33,8 +37,8 @@ mod client {
         NodeBuilder::new().config(&config).create::<Sut>().unwrap()
     }
 
-    #[test]
-    fn disconnected_client_does_not_block_new_clients<Sut: Service>() {
+    #[conformance_test]
+    pub fn disconnected_client_does_not_block_new_clients<Sut: Service>() {
         let service_name = generate_service_name();
         let node = create_node::<Sut>();
         let service = node
@@ -53,8 +57,8 @@ mod client {
         assert_that!(sut, is_ok);
     }
 
-    #[test]
-    fn send_request_via_disconnected_client_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn send_request_via_disconnected_client_works<Sut: Service>() {
         let service_name = generate_service_name();
         let node = create_node::<Sut>();
         let service = node
@@ -71,8 +75,8 @@ mod client {
         assert_that!(request.send(), is_ok);
     }
 
-    #[test]
-    fn can_loan_at_most_max_supported_amount_of_requests<Sut: Service>() {
+    #[conformance_test]
+    pub fn can_loan_at_most_max_supported_amount_of_requests<Sut: Service>() {
         const MAX_LOANED_REQUESTS: usize = 29;
         const ITERATIONS: usize = 3;
         let service_name = generate_service_name();
@@ -98,8 +102,8 @@ mod client {
         }
     }
 
-    #[test]
-    fn can_loan_max_supported_amount_of_requests_when_holding_max_pending_responses<
+    #[conformance_test]
+    pub fn can_loan_max_supported_amount_of_requests_when_holding_max_pending_responses<
         Sut: Service,
     >() {
         const MAX_LOANED_REQUESTS: usize = 29;
@@ -135,8 +139,8 @@ mod client {
         }
     }
 
-    #[test]
-    fn unable_to_deliver_strategy_block_blocks_when_server_buffer_is_full<Sut: Service>() {
+    #[conformance_test]
+    pub fn unable_to_deliver_strategy_block_blocks_when_server_buffer_is_full<Sut: Service>() {
         let _watchdog = Watchdog::new();
         let service_name = generate_service_name();
         let node = create_node::<Sut>();
@@ -180,8 +184,8 @@ mod client {
         });
     }
 
-    #[test]
-    fn unable_to_deliver_strategy_discard_discards_sample<Sut: Service>() {
+    #[conformance_test]
+    pub fn unable_to_deliver_strategy_discard_discards_sample<Sut: Service>() {
         let service_name = generate_service_name();
         let node = create_node::<Sut>();
         let service = node
@@ -213,8 +217,8 @@ mod client {
         assert_that!(*data, eq 123);
     }
 
-    #[test]
-    fn loan_request_is_initialized_with_default_value<Sut: Service>() {
+    #[conformance_test]
+    pub fn loan_request_is_initialized_with_default_value<Sut: Service>() {
         let service_name = generate_service_name();
         let node = create_node::<Sut>();
         let service = node
@@ -230,8 +234,8 @@ mod client {
         assert_that!(tracker.number_of_living_instances(), eq 1);
     }
 
-    #[test]
-    fn drop_is_not_called_for_underlying_type_of_requests<Sut: Service>() {
+    #[conformance_test]
+    pub fn drop_is_not_called_for_underlying_type_of_requests<Sut: Service>() {
         let service_name = generate_service_name();
         let node = create_node::<Sut>();
         let service = node
@@ -249,8 +253,8 @@ mod client {
         assert_that!(tracker.number_of_living_instances(), eq 1);
     }
 
-    #[test]
-    fn loan_uninit_request_is_not_initialized<Sut: Service>() {
+    #[conformance_test]
+    pub fn loan_uninit_request_is_not_initialized<Sut: Service>() {
         let service_name = generate_service_name();
         let node = create_node::<Sut>();
         let service = node
@@ -269,8 +273,8 @@ mod client {
         assert_that!(tracker.number_of_living_instances(), eq 0);
     }
 
-    #[test]
-    fn sending_requests_reduces_loan_counter<Sut: Service>() {
+    #[conformance_test]
+    pub fn sending_requests_reduces_loan_counter<Sut: Service>() {
         let service_name = generate_service_name();
         let node = create_node::<Sut>();
 
@@ -294,8 +298,8 @@ mod client {
         assert_that!(request2, is_ok);
     }
 
-    #[test]
-    fn dropping_requests_reduces_loan_counter<Sut: Service>() {
+    #[conformance_test]
+    pub fn dropping_requests_reduces_loan_counter<Sut: Service>() {
         let service_name = generate_service_name();
         let node = create_node::<Sut>();
 
@@ -335,8 +339,8 @@ mod client {
         }
     }
 
-    #[test]
-    fn loaned_requests_has_default_constructed_request_header<Sut: Service>() {
+    #[conformance_test]
+    pub fn loaned_requests_has_default_constructed_request_header<Sut: Service>() {
         type UserHeader = CustomUserHeader<89123, 98123891>;
         let service_name = generate_service_name();
         let node = create_node::<Sut>();
@@ -354,8 +358,8 @@ mod client {
         assert_that!(*sut.user_header(), eq UserHeader::default());
     }
 
-    #[test]
-    fn uninitialized_loaned_requests_has_default_constructed_request_header<Sut: Service>() {
+    #[conformance_test]
+    pub fn uninitialized_loaned_requests_has_default_constructed_request_header<Sut: Service>() {
         type UserHeader = CustomUserHeader<789123, 798123891>;
         let service_name = generate_service_name();
         let node = create_node::<Sut>();
@@ -373,8 +377,8 @@ mod client {
         assert_that!(*sut.user_header(), eq UserHeader::default());
     }
 
-    #[test]
-    fn loaned_slice_requests_has_default_constructed_request_header<Sut: Service>() {
+    #[conformance_test]
+    pub fn loaned_slice_requests_has_default_constructed_request_header<Sut: Service>() {
         type UserHeader = CustomUserHeader<9889123, 4598123891>;
         let service_name = generate_service_name();
         let node = create_node::<Sut>();
@@ -392,8 +396,10 @@ mod client {
         assert_that!(*sut.user_header(), eq UserHeader::default());
     }
 
-    #[test]
-    fn uninitialized_loaned_slice_requests_has_default_constructed_request_header<Sut: Service>() {
+    #[conformance_test]
+    pub fn uninitialized_loaned_slice_requests_has_default_constructed_request_header<
+        Sut: Service,
+    >() {
         type UserHeader = CustomUserHeader<5557832, 2341>;
         let service_name = generate_service_name();
         let node = create_node::<Sut>();
@@ -411,8 +417,8 @@ mod client {
         assert_that!(*sut.user_header(), eq UserHeader::default());
     }
 
-    #[test]
-    fn request_is_correctly_aligned<Sut: Service>() {
+    #[conformance_test]
+    pub fn request_is_correctly_aligned<Sut: Service>() {
         const MAX_LOAN: usize = 9;
         const ALIGNMENT: usize = 512;
         let service_name = generate_service_name();
@@ -437,8 +443,8 @@ mod client {
         }
     }
 
-    #[test]
-    fn send_request_fails_when_already_active_requests_is_at_max<Sut: Service>() {
+    #[conformance_test]
+    pub fn send_request_fails_when_already_active_requests_is_at_max<Sut: Service>() {
         const MAX_ACTIVE_REQUESTS: usize = 9;
         const ITERATIONS: usize = 5;
         let service_name = generate_service_name();
@@ -533,8 +539,8 @@ mod client {
         }
     }
 
-    #[test]
-    fn client_never_goes_out_of_memory_with_huge_max_pending_responses<Sut: Service>() {
+    #[conformance_test]
+    pub fn client_never_goes_out_of_memory_with_huge_max_pending_responses<Sut: Service>() {
         const MAX_ACTIVE_REQUEST_PER_CLIENT: usize = 100;
         const MAX_SERVERS: usize = 1;
         const MAX_LOANED_REQUESTS: usize = 1;
@@ -546,8 +552,8 @@ mod client {
         );
     }
 
-    #[test]
-    fn client_never_goes_out_of_memory_with_huge_max_servers<Sut: Service>() {
+    #[conformance_test]
+    pub fn client_never_goes_out_of_memory_with_huge_max_servers<Sut: Service>() {
         const MAX_ACTIVE_REQUEST_PER_CLIENT: usize = 1;
         const MAX_SERVERS: usize = 100;
         const MAX_LOANED_REQUESTS: usize = 1;
@@ -559,8 +565,8 @@ mod client {
         );
     }
 
-    #[test]
-    fn client_never_goes_out_of_memory_with_huge_max_loaned_requests<Sut: Service>() {
+    #[conformance_test]
+    pub fn client_never_goes_out_of_memory_with_huge_max_loaned_requests<Sut: Service>() {
         const MAX_ACTIVE_REQUEST_PER_CLIENT: usize = 1;
         const MAX_SERVERS: usize = 1;
         const MAX_LOANED_REQUESTS: usize = 100;
@@ -572,8 +578,8 @@ mod client {
         );
     }
 
-    #[test]
-    fn client_never_goes_out_of_memory_with_smallest_possible_values<Sut: Service>() {
+    #[conformance_test]
+    pub fn client_never_goes_out_of_memory_with_smallest_possible_values<Sut: Service>() {
         const MAX_ACTIVE_REQUEST_PER_CLIENT: usize = 1;
         const MAX_SERVERS: usize = 1;
         const MAX_LOANED_REQUESTS: usize = 1;
@@ -585,8 +591,8 @@ mod client {
         );
     }
 
-    #[test]
-    fn client_never_goes_out_of_memory_with_huge_values<Sut: Service>() {
+    #[conformance_test]
+    pub fn client_never_goes_out_of_memory_with_huge_values<Sut: Service>() {
         const MAX_ACTIVE_REQUEST_PER_CLIENT: usize = 12;
         const MAX_SERVERS: usize = 15;
         const MAX_LOANED_REQUESTS: usize = 19;
@@ -653,8 +659,8 @@ mod client {
         }
     }
 
-    #[test]
-    fn completion_channel_capacity_is_never_exceeded_with_huge_active_requests<Sut: Service>() {
+    #[conformance_test]
+    pub fn completion_channel_capacity_is_never_exceeded_with_huge_active_requests<Sut: Service>() {
         const MAX_ACTIVE_REQUEST_PER_CLIENT: usize = 100;
         const MAX_SERVERS: usize = 1;
         const MAX_LOANED_REQUESTS: usize = 1;
@@ -666,8 +672,8 @@ mod client {
         );
     }
 
-    #[test]
-    fn completion_channel_capacity_is_never_exceeded_with_huge_max_servers<Sut: Service>() {
+    #[conformance_test]
+    pub fn completion_channel_capacity_is_never_exceeded_with_huge_max_servers<Sut: Service>() {
         const MAX_ACTIVE_REQUEST_PER_CLIENT: usize = 1;
         const MAX_SERVERS: usize = 100;
         const MAX_LOANED_REQUESTS: usize = 1;
@@ -679,8 +685,10 @@ mod client {
         );
     }
 
-    #[test]
-    fn completion_channel_capacity_is_never_exceeded_with_huge_max_loaned_requests<Sut: Service>() {
+    #[conformance_test]
+    pub fn completion_channel_capacity_is_never_exceeded_with_huge_max_loaned_requests<
+        Sut: Service,
+    >() {
         const MAX_ACTIVE_REQUEST_PER_CLIENT: usize = 1;
         const MAX_SERVERS: usize = 1;
         const MAX_LOANED_REQUESTS: usize = 100;
@@ -692,8 +700,8 @@ mod client {
         );
     }
 
-    #[test]
-    fn completion_channel_capacity_is_never_exceeded_with_huge_values<Sut: Service>() {
+    #[conformance_test]
+    pub fn completion_channel_capacity_is_never_exceeded_with_huge_values<Sut: Service>() {
         const MAX_ACTIVE_REQUEST_PER_CLIENT: usize = 23;
         const MAX_SERVERS: usize = 12;
         const MAX_LOANED_REQUESTS: usize = 10;
@@ -705,8 +713,10 @@ mod client {
         );
     }
 
-    #[test]
-    fn completion_channel_capacity_is_never_exceeded_with_smallest_possible_values<Sut: Service>() {
+    #[conformance_test]
+    pub fn completion_channel_capacity_is_never_exceeded_with_smallest_possible_values<
+        Sut: Service,
+    >() {
         const MAX_ACTIVE_REQUEST_PER_CLIENT: usize = 1;
         const MAX_SERVERS: usize = 1;
         const MAX_LOANED_REQUESTS: usize = 1;
@@ -718,8 +728,8 @@ mod client {
         );
     }
 
-    #[test]
-    fn reclaims_all_requests_delivered_to_server_after_a_server_disconnect<Sut: Service>() {
+    #[conformance_test]
+    pub fn reclaims_all_requests_delivered_to_server_after_a_server_disconnect<Sut: Service>() {
         const MAX_ACTIVE_REQUESTS: usize = 4;
         const ITERATIONS: usize = 20;
         const MAX_SERVER: usize = 4;
@@ -754,8 +764,8 @@ mod client {
         }
     }
 
-    #[test]
-    fn updates_connections_after_reconnect<Sut: Service>() {
+    #[conformance_test]
+    pub fn updates_connections_after_reconnect<Sut: Service>() {
         const RECONNECTIONS: usize = 20;
         const MAX_SERVERS: usize = 4;
         let service_name = generate_service_name();
@@ -788,16 +798,4 @@ mod client {
             }
         }
     }
-
-    #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
-    mod ipc {}
-
-    #[instantiate_tests(<iceoryx2::service::local::Service>)]
-    mod local {}
-
-    #[instantiate_tests(<iceoryx2::service::ipc_threadsafe::Service>)]
-    mod ipc_threadsafe {}
-
-    #[instantiate_tests(<iceoryx2::service::local_threadsafe::Service>)]
-    mod local_threadsafe {}
 }
