@@ -16,6 +16,8 @@
 
 //! Abstraction of POSIX constructs with a safe API
 
+extern crate alloc;
+
 use barrier::BarrierCreationError;
 use clock::ClockError;
 use directory::DirectoryError;

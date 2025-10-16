@@ -10,7 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![cfg_attr(not(any(test, feature = "std")), no_std)]
 #![warn(clippy::alloc_instead_of_core)]
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
@@ -179,13 +178,7 @@ static DEFAULT_LOGGER: logger::tracing::Logger = logger::tracing::Logger::new();
 #[cfg(feature = "logger_log")]
 static DEFAULT_LOGGER: logger::log::Logger = logger::log::Logger::new();
 
-#[cfg(feature = "logger_file")]
-static DEFAULT_LOGGER: logger::file::Logger = logger::file::Logger::new();
-
-#[cfg(feature = "logger_buffer")]
-static DEFAULT_LOGGER: logger::buffer::Logger = logger::buffer::Logger::new();
-
-#[cfg(feature = "logger_console")]
+#[cfg(not(any(feature = "logger_log", feature = "logger_tracing")))]
 static DEFAULT_LOGGER: logger::console::Logger = logger::console::Logger::new();
 
 #[cfg(not(any(

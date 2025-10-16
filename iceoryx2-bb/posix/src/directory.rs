@@ -33,6 +33,11 @@
 //!
 //! Directory::remove(&dir_name).unwrap();
 //! ```
+
+use alloc::format;
+use alloc::vec;
+use alloc::vec::Vec;
+
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_container::string::strnlen;
 use iceoryx2_bb_elementary::enum_gen;

@@ -11,16 +11,19 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [features]
-default = ["std"]
+default = []
 std = []
 
-logger_buffer = []
-logger_file = []
-logger_console = []
+# Enables logging to buffer
+logger_buffer = ["std"]
+# Enables logging to file
+logger_file = ["std"]
+# Enables logging to console
+logger_console = ["std"]
 # Enables https://crates.io/crates/log as default logger
-logger_log = ["dep:log"]
+logger_log = ["std", "dep:log"]
 # Enables https://crates.io/crates/tracing as default logger
-logger_tracing = ["dep:tracing"]
+logger_tracing = ["std", "dep:tracing"]
 
 [dependencies]
 iceoryx2-pal-concurrency-sync = { workspace = true }

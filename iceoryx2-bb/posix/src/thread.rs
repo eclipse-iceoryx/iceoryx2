@@ -84,7 +84,9 @@
 
 use core::{cell::UnsafeCell, fmt::Debug, marker::PhantomData};
 
-use crate::handle_errno;
+use alloc::vec;
+use alloc::vec::Vec;
+
 use iceoryx2_bb_container::string::*;
 use iceoryx2_bb_elementary::{enum_gen, scope_guard::ScopeGuardBuilder};
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
@@ -94,6 +96,7 @@ use iceoryx2_pal_posix::*;
 
 use crate::{
     config::MAX_THREAD_NAME_LENGTH,
+    handle_errno,
     scheduler::Scheduler,
     signal::Signal,
     system_configuration::{Limit, SystemInfo},
