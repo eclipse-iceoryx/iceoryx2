@@ -10,8 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[generic_tests::define]
-mod node_death_tests {
+use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod node_death {
     use core::sync::atomic::{AtomicU32, Ordering};
 
     use iceoryx2::config::Config;
@@ -20,15 +23,16 @@ mod node_death_tests {
     use iceoryx2::prelude::*;
     use iceoryx2::service::Service;
     use iceoryx2::testing::*;
+    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing::{assert_that, test_fail};
 
-    struct TestDetails<S: Service> {
+    pub struct TestDetails<S: Service> {
         node: Node<S>,
     }
 
-    trait Test {
+    pub trait Test {
         type Service: Service;
 
         fn generate_node_name(i: usize, prefix: &str) -> NodeName {
@@ -56,7 +60,7 @@ mod node_death_tests {
         fn staged_death(node: &mut Node<Self::Service>);
     }
 
-    struct ZeroCopy;
+    pub struct ZeroCopy;
 
     impl Test for ZeroCopy {
         type Service = iceoryx2::service::ipc::Service;
@@ -68,8 +72,8 @@ mod node_death_tests {
         }
     }
 
-    #[test]
-    fn dead_node_is_marked_as_dead_and_can_be_cleaned_up<S: Test>() {
+    #[conformance_test]
+    pub fn dead_node_is_marked_as_dead_and_can_be_cleaned_up<S: Test>() {
         let _watchdog = Watchdog::new();
         const NUMBER_OF_DEAD_NODES_LIMIT: usize = 5;
         let mut config = generate_isolated_config();
@@ -108,8 +112,8 @@ mod node_death_tests {
         }
     }
 
-    #[test]
-    fn dead_node_is_removed_from_pub_sub_service<S: Test>() {
+    #[conformance_test]
+    pub fn dead_node_is_removed_from_pub_sub_service<S: Test>() {
         let _watchdog = Watchdog::new();
         const NUMBER_OF_BAD_NODES: usize = 3;
         const NUMBER_OF_GOOD_NODES: usize = 4;
@@ -189,8 +193,8 @@ mod node_death_tests {
         }
     }
 
-    #[test]
-    fn dead_node_is_removed_from_event_service<S: Test>() {
+    #[conformance_test]
+    pub fn dead_node_is_removed_from_event_service<S: Test>() {
         let _watchdog = Watchdog::new();
         const NUMBER_OF_BAD_NODES: usize = 3;
         const NUMBER_OF_GOOD_NODES: usize = 4;
@@ -271,8 +275,8 @@ mod node_death_tests {
         }
     }
 
-    #[test]
-    fn notifier_of_dead_node_emits_death_event_when_configured<S: Test>() {
+    #[conformance_test]
+    pub fn notifier_of_dead_node_emits_death_event_when_configured<S: Test>() {
         let _watchdog = Watchdog::new();
         let mut config = generate_isolated_config();
         let service_name = generate_service_name();
@@ -314,8 +318,8 @@ mod node_death_tests {
         assert_that!(received_events, eq 1);
     }
 
-    #[test]
-    fn dead_node_is_removed_from_request_response_service<S: Test>() {
+    #[conformance_test]
+    pub fn dead_node_is_removed_from_request_response_service<S: Test>() {
         let _watchdog = Watchdog::new();
         const NUMBER_OF_BAD_NODES: usize = 2;
         const NUMBER_OF_GOOD_NODES: usize = 3;
@@ -396,8 +400,8 @@ mod node_death_tests {
         }
     }
 
-    #[test]
-    fn dead_node_is_removed_from_blackboard_service<S: Test>() {
+    #[conformance_test]
+    pub fn dead_node_is_removed_from_blackboard_service<S: Test>() {
         let _watchdog = Watchdog::new();
         const NUMBER_OF_BAD_NODES: usize = 3;
         const NUMBER_OF_GOOD_NODES: usize = 4;
@@ -476,8 +480,8 @@ mod node_death_tests {
         }
     }
 
-    #[test]
-    fn opened_blackboard_can_be_accessed_after_creator_node_crash<S: Test>() {
+    #[conformance_test]
+    pub fn opened_blackboard_can_be_accessed_after_creator_node_crash<S: Test>() {
         let _watchdog = Watchdog::new();
         let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
@@ -521,8 +525,8 @@ mod node_death_tests {
         assert_that!(reader.entry::<u64>(&0).unwrap().get(), eq 1);
     }
 
-    #[test]
-    fn event_service_is_removed_when_last_node_dies<S: Test>() {
+    #[conformance_test]
+    pub fn event_service_is_removed_when_last_node_dies<S: Test>() {
         let _watchdog = Watchdog::new();
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();
@@ -555,8 +559,8 @@ mod node_death_tests {
         );
     }
 
-    #[test]
-    fn pubsub_service_is_removed_when_last_node_dies<S: Test>() {
+    #[conformance_test]
+    pub fn pubsub_service_is_removed_when_last_node_dies<S: Test>() {
         let _watchdog = Watchdog::new();
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();
@@ -589,8 +593,8 @@ mod node_death_tests {
         );
     }
 
-    #[test]
-    fn request_response_service_is_removed_when_last_node_dies<S: Test>() {
+    #[conformance_test]
+    pub fn request_response_service_is_removed_when_last_node_dies<S: Test>() {
         let _watchdog = Watchdog::new();
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();
@@ -623,8 +627,8 @@ mod node_death_tests {
         );
     }
 
-    #[test]
-    fn blackboard_service_is_removed_when_last_node_dies<S: Test>() {
+    #[conformance_test]
+    pub fn blackboard_service_is_removed_when_last_node_dies<S: Test>() {
         let _watchdog = Watchdog::new();
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();
@@ -658,8 +662,8 @@ mod node_death_tests {
         );
     }
 
-    #[test]
-    fn writer_and_reader_resources_are_removed_after_crash<S: Test>() {
+    #[conformance_test]
+    pub fn writer_and_reader_resources_are_removed_after_crash<S: Test>() {
         let _watchdog = Watchdog::new();
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();
@@ -698,8 +702,8 @@ mod node_death_tests {
 
     // test disabled on Windows as the state files cannot be removed after simulated node death
     #[cfg(not(target_os = "windows"))]
-    #[test]
-    fn blackboard_resources_are_removed_when_key_has_user_defined_name<S: Test>() {
+    #[conformance_test]
+    pub fn blackboard_resources_are_removed_when_key_has_user_defined_name<S: Test>() {
         let _watchdog = Watchdog::new();
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();
@@ -751,8 +755,8 @@ mod node_death_tests {
 
     // test disabled on Windows as the state files cannot be removed after simulated node death
     #[cfg(not(target_os = "windows"))]
-    #[test]
-    fn blackboard_resources_are_removed_when_last_node_dies<S: Test>() {
+    #[conformance_test]
+    pub fn blackboard_resources_are_removed_when_last_node_dies<S: Test>() {
         let _watchdog = Watchdog::new();
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();
@@ -797,8 +801,8 @@ mod node_death_tests {
         assert_that!(service, is_ok);
     }
 
-    #[test]
-    fn node_cleanup_option_works_on_node_creation<S: Test>() {
+    #[conformance_test]
+    pub fn node_cleanup_option_works_on_node_creation<S: Test>() {
         let _watchdog = Watchdog::new();
         let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
@@ -841,8 +845,8 @@ mod node_death_tests {
         assert_that!(number_of_nodes(), eq 0);
     }
 
-    #[test]
-    fn node_cleanup_option_works_on_node_destruction<S: Test>() {
+    #[conformance_test]
+    pub fn node_cleanup_option_works_on_node_destruction<S: Test>() {
         let _watchdog = Watchdog::new();
         let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_destruction = true;
@@ -882,7 +886,4 @@ mod node_death_tests {
 
         assert_that!(number_of_nodes(), eq 0);
     }
-
-    #[instantiate_tests(<ZeroCopy>)]
-    mod ipc {}
 }

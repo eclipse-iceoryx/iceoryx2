@@ -10,10 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub mod active_request;
-pub mod client;
-pub mod listener;
-pub mod node;
-pub mod node_death;
-pub mod notifier;
-pub mod pending_response;
+use iceoryx2_bb_testing::instantiate_conformance_tests;
+
+mod ipc {
+    use iceoryx2_conformance_tests::node_death::node_death::ZeroCopy;
+    super::instantiate_conformance_tests!(iceoryx2_conformance_tests::node_death, super::ZeroCopy);
+}
+
+// #[instantiate_tests(<ZeroCopy>)]
+// mod ipc {}
