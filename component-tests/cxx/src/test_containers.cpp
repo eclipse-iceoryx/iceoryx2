@@ -48,6 +48,9 @@ struct ContainerTestRequest {
 // NOLINTNEXTLINE(performance-enum-size)
 enum class VectorTypeSequence : int32_t {
     VecI32_10 = 1,
+    VecI64_20 = 2,
+    VecOverAligned_5 = 3,
+    VecVec8_10 = 4,
     EndOfTest = -1,
 };
 // NOLINTEND(readability-identifier-naming)
@@ -59,43 +62,80 @@ struct ContainerTestResponse {
     bool all_fields_match;
 };
 
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+struct alignas(64) ContainerTestOverAligned {
+    int32_t i;
+};
+
+template <typename TestType, uint64_t TestCapacity>
+auto check_metrics_for_vector(ContainerTestRequest const& req) -> bool {
+    iox2::container::StaticVector<TestType, TestCapacity> test_vec;
+    auto const stats = test_vec.static_memory_layout_metrics();
+    if ((stats.vector_size > std::numeric_limits<int32_t>::max())
+        || (static_cast<int32_t>(stats.vector_size) != req.container_size)) {
+        std::cout << "Container size mismatch\n";
+        return false;
+    }
+    if ((stats.vector_alignment > std::numeric_limits<int32_t>::max())
+        || (static_cast<int32_t>(stats.vector_alignment) != req.container_alignment)) {
+        std::cout << "Container alignment mismatch\n";
+        return false;
+    }
+    if ((stats.storage_metrics.storage_size > std::numeric_limits<int32_t>::max())
+        || (static_cast<int32_t>(stats.storage_metrics.storage_size) != req.container_size)) {
+        std::cout << "Storage size mismatch\n";
+        return false;
+    }
+    if ((stats.storage_metrics.storage_alignment > std::numeric_limits<int32_t>::max())
+        || (static_cast<int32_t>(stats.storage_metrics.storage_alignment) != req.container_alignment)) {
+        std::cout << "Storage alignmnent mismatch\n";
+        return false;
+    }
+    if ((stats.storage_metrics.sizeof_bytes > std::numeric_limits<int32_t>::max())
+        || (static_cast<int32_t>(stats.storage_metrics.sizeof_bytes) != req.size_of_data_component)) {
+        std::cout << "Storage data size mismatch\n";
+        return false;
+    }
+    if ((stats.storage_metrics.offset_bytes > std::numeric_limits<int32_t>::max())
+        || (static_cast<int32_t>(stats.storage_metrics.offset_bytes) != req.offset_of_data_component)) {
+        std::cout << "Storage data offset mismatch\n";
+        return false;
+    }
+    if ((stats.storage_metrics.sizeof_size > std::numeric_limits<int32_t>::max())
+        || (static_cast<int32_t>(stats.storage_metrics.sizeof_size) != req.size_of_size_component)) {
+        std::cout << "Storage size size mismatch\n";
+        return false;
+    }
+    if ((stats.storage_metrics.offset_size > std::numeric_limits<int32_t>::max())
+        || (static_cast<int32_t>(stats.storage_metrics.offset_size) != req.offset_of_size_component)) {
+        std::cout << "Storage size offset mismatch\n";
+        return false;
+    }
+    if (stats.storage_metrics.size_is_unsigned != req.size_component_type_is_unsigned) {
+        std::cout << "Storage size signedness mismatch\n";
+        return false;
+    }
+    return true;
+}
+
 auto check_request(ContainerTestRequest const& req) -> bool {
     switch (req.vector_type_sequence) {
-    case static_cast<int32_t>(VectorTypeSequence::VecI32_10): {
+    case static_cast<int32_t>(VectorTypeSequence::VecI32_10):
         // NOLINTNEXTLINE(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
-        iox2::container::StaticVector<int32_t, 10> test_vec;
-        auto const stats = test_vec.static_memory_layout_metrics();
-        if (static_cast<int32_t>(stats.vector_size) != req.container_size) {
-            return false;
-        }
-        if (static_cast<int32_t>(stats.vector_alignment) != req.container_alignment) {
-            return false;
-        }
-        if (static_cast<int32_t>(stats.storage_metrics.storage_size) != req.container_size) {
-            return false;
-        }
-        if (static_cast<int32_t>(stats.storage_metrics.storage_alignment) != req.container_alignment) {
-            return false;
-        }
-        if (static_cast<int32_t>(stats.storage_metrics.sizeof_bytes) != req.size_of_data_component) {
-            return false;
-        }
-        if (static_cast<int32_t>(stats.storage_metrics.offset_bytes) != req.offset_of_data_component) {
-            return false;
-        }
-        if (static_cast<int32_t>(stats.storage_metrics.sizeof_size) != req.size_of_size_component) {
-            return false;
-        }
-        if (static_cast<int32_t>(stats.storage_metrics.offset_size) != req.offset_of_size_component) {
-            return false;
-        }
-        if (stats.storage_metrics.size_is_unsigned != req.size_component_type_is_unsigned) {
-            return false;
-        }
-    } break;
+        return check_metrics_for_vector<int32_t, 10>(req);
+    case static_cast<int32_t>(VectorTypeSequence::VecI64_20):
+        // NOLINTNEXTLINE(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
+        return check_metrics_for_vector<int64_t, 20>(req);
+    case static_cast<int32_t>(VectorTypeSequence::VecOverAligned_5):
+        // NOLINTNEXTLINE(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
+        return check_metrics_for_vector<ContainerTestOverAligned, 5>(req);
+    case static_cast<int32_t>(VectorTypeSequence::VecVec8_10):
+        // NOLINTNEXTLINE(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
+        return check_metrics_for_vector<iox2::container::StaticVector<int8_t, 10>, 10>(req);
     case static_cast<int32_t>(VectorTypeSequence::EndOfTest):
         break;
     default:
+        std::cout << "Unknown request type " << req.vector_type_sequence << "\n";
         return false;
     }
     return true;

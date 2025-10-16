@@ -12,6 +12,7 @@
 
 use super::common::*;
 use iceoryx2::prelude::*;
+use iceoryx2_bb_container::vector::StaticVec;
 use std::fmt::Debug;
 
 pub struct TestContainers {}
@@ -44,14 +45,27 @@ struct ContainerTestResponse {
     all_fields_match: bool,
 }
 
+#[derive(Debug, Clone, Copy, ZeroCopySend)]
+#[type_name("ContainerTestOverAligned")]
+#[repr(C)]
+#[repr(align(64))]
+struct ContainerTestOverAligned {
+    i: i32,
+}
+
 #[derive(Debug)]
 enum VectorTypeSequence {
     VecI32_10 = 1,
+    VecI64_20 = 2,
+    VecOverAligned5 = 3,
+    VecVecI8_10 = 4,
     EndOfTest = -1,
 }
 
-fn request_vec_i32() -> ContainerTestRequest {
-    let v = iceoryx2_bb_container::vector::StaticVec::<i32, 10>::default();
+fn container_request<T, const CAPACITY: usize>(
+    sequence_id: VectorTypeSequence,
+) -> ContainerTestRequest {
+    let v = StaticVec::<T, CAPACITY>::default();
     let stats = iceoryx2_bb_container::vector::VectorMemoryLayoutMetrics::from_vector(&v);
     assert!(stats.vector_size < i32::MAX as usize);
     assert!(stats.vector_alignment < i32::MAX as usize);
@@ -60,7 +74,7 @@ fn request_vec_i32() -> ContainerTestRequest {
     assert!(stats.size_len < i32::MAX as usize);
     assert!(stats.offset_len < i32::MAX as usize);
     ContainerTestRequest {
-        vector_type_sequence: VectorTypeSequence::VecI32_10 as i32,
+        vector_type_sequence: sequence_id as i32,
         container_size: stats.vector_size as i32,
         container_alignment: stats.vector_alignment as i32,
         size_of_data_component: stats.size_data as i32,
@@ -106,10 +120,21 @@ impl ComponentTest for TestContainers {
             core::time::Duration::from_secs(2),
             cycle_time,
         )?;
-        for test in [VectorTypeSequence::VecI32_10, VectorTypeSequence::EndOfTest] {
+        for test in [
+            VectorTypeSequence::VecI32_10,
+            VectorTypeSequence::VecI64_20,
+            VectorTypeSequence::VecOverAligned5,
+            VectorTypeSequence::VecVecI8_10,
+            VectorTypeSequence::EndOfTest,
+        ] {
             println!("       * Requesting {:?}", test);
             let request = match test {
-                VectorTypeSequence::VecI32_10 => request_vec_i32(),
+                VectorTypeSequence::VecI32_10 => container_request::<i32, 10>(test),
+                VectorTypeSequence::VecI64_20 => container_request::<i64, 20>(test),
+                VectorTypeSequence::VecOverAligned5 => {
+                    container_request::<ContainerTestOverAligned, 5>(test)
+                }
+                VectorTypeSequence::VecVecI8_10 => container_request::<StaticVec<i8, 10>, 10>(test),
                 VectorTypeSequence::EndOfTest => request_end_of_test(),
             };
             let pending_response = client.send_copy(request)?;
