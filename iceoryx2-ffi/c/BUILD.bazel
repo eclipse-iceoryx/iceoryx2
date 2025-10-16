@@ -41,6 +41,20 @@ genrule(
 rust_shared_library(
     name = "iceoryx2-ffi-c-shared-rust",
     srcs = glob(["src/**/*.rs"]),
+    crate_features = select({
+        "//:cfg_feature_std": [
+            "std",
+            "logger_buffer",
+            "logger_console",
+            "logger_file"
+        ],
+        "//conditions:default": [
+            "std",
+            "logger_buffer",
+            "logger_console",
+            "logger_file"
+        ],
+    }),
     deps = [
         "//iceoryx2:iceoryx2",
         "//iceoryx2-bb/container:iceoryx2-bb-container",
@@ -64,6 +78,20 @@ rust_shared_library(
 rust_static_library(
     name = "iceoryx2-ffi-c-static-rust",
     srcs = glob(["src/**/*.rs"]),
+    crate_features = select({
+        "//:cfg_feature_std": [
+            "std",
+            "logger_buffer",
+            "logger_console",
+            "logger_file"
+        ],
+        "//conditions:default": [
+            "std",
+            "logger_buffer",
+            "logger_console",
+            "logger_file"
+        ],
+    }),
     deps = [
         "//iceoryx2:iceoryx2",
         "//iceoryx2-bb/container:iceoryx2-bb-container",

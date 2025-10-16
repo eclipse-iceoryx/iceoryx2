@@ -46,6 +46,32 @@ config_setting(
 #
 
 string_flag(
+    name = "feature_std",
+    build_setting_default = "on",
+    visibility = ["//visibility:public"],
+)
+config_setting(
+    name = "std_auto",
+    flag_values = {
+        "//:feature_std": "auto",
+    },
+)
+config_setting(
+    name = "std_enabled",
+    flag_values = {
+        "//:feature_std": "on",
+    },
+)
+# NOTE: while this seems superfluous, it is the pattern for cases where *_auto is on by default;
+#       therefore this target is introduced to keep all feature flags consistent
+selects.config_setting_group(
+    name = "cfg_feature_std",
+    match_any = [
+        "//:std_enabled",
+    ],
+)
+
+string_flag(
     name = "feature_dev_permissions",
     build_setting_default = "auto",
     visibility = ["//visibility:public"],
@@ -68,6 +94,84 @@ selects.config_setting_group(
     name = "cfg_feature_dev_permissions",
     match_any = [
         "//:dev_permissions_enabled",
+    ],
+)
+
+string_flag(
+    name = "feature_logger_buffer",
+    build_setting_default = "auto",
+    visibility = ["//visibility:public"],
+)
+config_setting(
+    name = "logger_buffer_auto",
+    flag_values = {
+        "//:feature_logger_buffer": "on",
+    },
+)
+config_setting(
+    name = "logger_buffer_enabled",
+    flag_values = {
+        "//:feature_logger_buffer": "on",
+    },
+)
+# NOTE: while this seems superfluous, it is the pattern for cases where *_auto is on by default;
+#       therefore this target is introduced to keep all feature flags consistent
+selects.config_setting_group(
+    name = "cfg_feature_logger_buffer",
+    match_any = [
+        "//:logger_buffer_enabled",
+    ],
+)
+
+string_flag(
+    name = "feature_logger_file",
+    build_setting_default = "on",
+    visibility = ["//visibility:public"],
+)
+config_setting(
+    name = "logger_file_auto",
+    flag_values = {
+        "//:feature_logger_file": "auto",
+    },
+)
+config_setting(
+    name = "logger_file_enabled",
+    flag_values = {
+        "//:feature_logger_file": "on",
+    },
+)
+# NOTE: while this seems superfluous, it is the pattern for cases where *_auto is on by default;
+#       therefore this target is introduced to keep all feature flags consistent
+selects.config_setting_group(
+    name = "cfg_feature_logger_file",
+    match_any = [
+        "//:logger_file_enabled",
+    ],
+)
+
+string_flag(
+    name = "feature_logger_console",
+    build_setting_default = "on",
+    visibility = ["//visibility:public"],
+)
+config_setting(
+    name = "logger_console_auto",
+    flag_values = {
+        "//:feature_logger_console": "auto",
+    },
+)
+config_setting(
+    name = "logger_console_enabled",
+    flag_values = {
+        "//:feature_logger_console": "on",
+    },
+)
+# NOTE: while this seems superfluous, it is the pattern for cases where *_auto is on by default;
+#       therefore this target is introduced to keep all feature flags consistent
+selects.config_setting_group(
+    name = "cfg_feature_logger_console",
+    match_any = [
+        "//:logger_console_enabled",
     ],
 )
 
