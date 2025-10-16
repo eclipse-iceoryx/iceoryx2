@@ -10,8 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[generic_tests::define]
-mod publish_subscribe_discovery_tests {
+use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod event_discovery {
 
     use core::fmt::Debug;
     use core::time::Duration;
@@ -19,6 +22,7 @@ mod publish_subscribe_discovery_tests {
     use iceoryx2::prelude::*;
     use iceoryx2::testing::*;
 
+    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_services_discovery::service_discovery::Config as DiscoveryConfig;
     use iceoryx2_services_discovery::service_discovery::Service as DiscoveryService;
@@ -31,14 +35,14 @@ mod publish_subscribe_discovery_tests {
 
     fn generate_service_name() -> ServiceName {
         ServiceName::new(&format!(
-            "publish_subscribe_discovery_tests_{}",
+            "event_discovery_tests_{}",
             UniqueSystemId::new().unwrap().value()
         ))
         .unwrap()
     }
 
-    #[test]
-    fn discovers_services_via_subscriber<S: Service, B: Backend<S> + Debug, T: Testing>() {
+    #[conformance_test]
+    pub fn discovers_services_via_subscriber<S: Service, B: Backend<S> + Debug, T: Testing>() {
         // === SETUP ==
         let iceoryx_config = generate_isolated_config();
         let service_name = generate_service_name();
@@ -48,9 +52,7 @@ mod publish_subscribe_discovery_tests {
             .unwrap();
         let service = node
             .service_builder(&service_name)
-            .publish_subscribe::<[u8]>()
-            .history_size(10)
-            .subscriber_max_buffer_size(10)
+            .event()
             .open_or_create()
             .unwrap();
 
@@ -78,8 +80,8 @@ mod publish_subscribe_discovery_tests {
         assert_that!(tunnel.tunneled_services().contains(service.service_id()), eq true);
     }
 
-    #[test]
-    fn discovers_services_via_tracker<S: Service, B: Backend<S> + Debug, T: Testing>() {
+    #[conformance_test]
+    pub fn discovers_services_via_tracker<S: Service, B: Backend<S> + Debug, T: Testing>() {
         // === SETUP ==
         let iceoryx_config = generate_isolated_config();
         let service_name = generate_service_name();
@@ -89,9 +91,7 @@ mod publish_subscribe_discovery_tests {
             .unwrap();
         let service = node
             .service_builder(&service_name)
-            .publish_subscribe::<[u8]>()
-            .history_size(10)
-            .subscriber_max_buffer_size(10)
+            .event()
             .open_or_create()
             .unwrap();
 
@@ -106,8 +106,8 @@ mod publish_subscribe_discovery_tests {
         assert_that!(tunnel.tunneled_services().contains(service.service_id()), eq true);
     }
 
-    #[test]
-    fn discovers_services_via_backend<S: Service, B: Backend<S> + Debug, T: Testing>() {
+    #[conformance_test]
+    pub fn discovers_services_via_backend<S: Service, B: Backend<S> + Debug, T: Testing>() {
         // === SETUP ===
         let service_name = generate_service_name();
 
@@ -134,9 +134,7 @@ mod publish_subscribe_discovery_tests {
             .unwrap();
         let service_b = node_b
             .service_builder(&service_name)
-            .publish_subscribe::<[u8]>()
-            .history_size(10)
-            .subscriber_max_buffer_size(10)
+            .event()
             .open_or_create()
             .unwrap();
 
@@ -167,18 +165,5 @@ mod publish_subscribe_discovery_tests {
 
         assert_that!(tunnel_a.tunneled_services().len(), eq 1);
         assert_that!(tunnel_a.tunneled_services().contains(service_b.service_id()), eq true);
-    }
-
-    #[cfg(feature = "tunnel_zenoh")]
-    mod zenoh_backend {
-        use iceoryx2::service::ipc::Service as Ipc;
-        use iceoryx2::service::local::Service as Local;
-        use iceoryx2_tunnel_zenoh::testing;
-        use iceoryx2_tunnel_zenoh::ZenohBackend;
-
-        #[instantiate_tests(<Ipc, ZenohBackend<Ipc>, testing::Testing>)]
-        mod ipc {}
-        #[instantiate_tests(<Local, ZenohBackend<Local>, testing::Testing>)]
-        mod local {}
     }
 }
