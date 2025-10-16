@@ -12,4 +12,4 @@ version = { workspace = true }
 
 [dependencies]
 iceoryx2 = { workspace = true }
-iceoryx2-bb-testing = { workspace = true }
+iceoryx2-bb-posix = { workspace = true }

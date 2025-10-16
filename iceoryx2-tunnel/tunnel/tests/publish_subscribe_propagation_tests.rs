@@ -89,7 +89,8 @@ mod publish_subscribe_relay_tests {
             },
             TIMEOUT,
             Some(MAX_ATTEMPTS),
-        );
+        )
+        .unwrap();
         T::sync(service_a.service_id().as_str().to_string(), TIMEOUT);
 
         // Create a subscribe to connect to the tunneled service
@@ -140,7 +141,8 @@ mod publish_subscribe_relay_tests {
                 },
                 TIMEOUT,
                 Some(MAX_ATTEMPTS),
-            );
+            )
+            .unwrap();
         }
     }
 
@@ -197,7 +199,8 @@ mod publish_subscribe_relay_tests {
             },
             TIMEOUT,
             Some(MAX_ATTEMPTS),
-        );
+        )
+        .unwrap();
         T::sync(service_a.service_id().as_str().to_string(), TIMEOUT);
 
         // Create a subscribe to connect to the tunneled service
@@ -249,7 +252,8 @@ mod publish_subscribe_relay_tests {
                 },
                 TIMEOUT,
                 Some(MAX_ATTEMPTS),
-            );
+            )
+            .unwrap();
         }
     }
 

@@ -1690,6 +1690,7 @@ name = "iceoryx2-tunnel"
 version = "0.7.0"
 dependencies = [
  "generic-tests",
+ "hashbrown 0.16.0",
  "iceoryx2",
  "iceoryx2-bb-log",
  "iceoryx2-bb-posix",
@@ -1704,7 +1705,7 @@ name = "iceoryx2-tunnel-backend"
 version = "0.7.0"
 dependencies = [
  "iceoryx2",
- "iceoryx2-bb-testing",
+ "iceoryx2-bb-posix",
 ]
 
 [[package]]

@@ -10,11 +10,18 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::alloc::Layout;
-use std::mem::MaybeUninit;
-use std::rc::Rc;
+use core::alloc::Layout;
+use core::mem::size_of;
+use core::mem::MaybeUninit;
+use core::ptr::copy_nonoverlapping;
 
-use clap::Parser;
+extern crate alloc;
+use alloc::alloc::alloc;
+use alloc::alloc::dealloc;
+use alloc::boxed::Box;
+use alloc::format;
+use alloc::rc::Rc;
+
 use iceoryx2::prelude::{
     ipc, set_log_level_from_env_or, LogLevel, NodeBuilder, WaitSetAttachmentId, WaitSetBuilder,
 };
@@ -23,6 +30,8 @@ use iceoryx2_tunnel_end_to_end_tests::cli::*;
 use iceoryx2_tunnel_end_to_end_tests::config::*;
 use iceoryx2_tunnel_end_to_end_tests::payload::*;
 use iceoryx2_tunnel_end_to_end_tests::testing::*;
+
+use clap::Parser;
 
 fn run_pinger<P: PayloadWriter>() -> Result<(), Box<dyn core::error::Error>> {
     let node = NodeBuilder::new().create::<ipc::Service>()?;
@@ -66,7 +75,7 @@ fn run_pinger<P: PayloadWriter>() -> Result<(), Box<dyn core::error::Error>> {
     let timeout_id = WaitSetAttachmentId::from_guard(&timeout_guard);
 
     // Create the payload on the heap
-    let ptr = unsafe { std::alloc::alloc(Layout::new::<MaybeUninit<P::PayloadType>>()) }
+    let ptr = unsafe { alloc(Layout::new::<MaybeUninit<P::PayloadType>>()) }
         as *mut MaybeUninit<P::PayloadType>;
     unsafe {
         P::write_payload(ptr.cast());
@@ -110,10 +119,10 @@ fn run_pinger<P: PayloadWriter>() -> Result<(), Box<dyn core::error::Error>> {
 
     // The bytes of the payload are copied directly into shared memory, by-passing stack
     unsafe {
-        std::ptr::copy_nonoverlapping(
+        copy_nonoverlapping(
             *payload as *const u8,
             ping_sample.payload_mut().as_mut_ptr().cast(),
-            std::mem::size_of::<P::PayloadType>(),
+            size_of::<P::PayloadType>(),
         );
     }
 
@@ -123,7 +132,7 @@ fn run_pinger<P: PayloadWriter>() -> Result<(), Box<dyn core::error::Error>> {
 
     waitset.wait_and_process(on_event)?;
 
-    unsafe { std::alloc::dealloc(ptr as *mut u8, Layout::new::<MaybeUninit<P::PayloadType>>()) };
+    unsafe { dealloc(ptr as *mut u8, Layout::new::<MaybeUninit<P::PayloadType>>()) };
 
     Ok(())
 }
