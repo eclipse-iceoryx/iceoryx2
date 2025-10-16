@@ -73,6 +73,10 @@
 //! ```
 
 use core::mem::MaybeUninit;
+
+use alloc::vec;
+use alloc::vec::Vec;
+
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_posix::file::File;
