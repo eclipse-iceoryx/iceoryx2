@@ -18,14 +18,15 @@
 #include <memory>
 
 class IComponentTest {
-protected:
+  protected:
     IComponentTest() = default;
-public:
+
+  public:
     virtual ~IComponentTest() = default;
     IComponentTest(IComponentTest const&) = delete;
     IComponentTest(IComponentTest&&) = delete;
     auto operator=(IComponentTest const&) -> IComponentTest& = delete;
-    auto operator=(IComponentTest&&)  -> IComponentTest& = delete;
+    auto operator=(IComponentTest&&) -> IComponentTest& = delete;
 
     virtual auto test_name() const -> char const* = 0;
     virtual auto run_test(iox2::Node<iox2::ServiceType::Ipc> const& node) -> bool = 0;
