@@ -12,10 +12,13 @@
 
 use core::cell::RefCell;
 
-use iceoryx2::{config::Config, service::Service};
+use iceoryx2::{
+    config::Config,
+    service::{static_config::StaticConfig, Service},
+};
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_services_discovery::service_discovery::Tracker;
-use iceoryx2_tunnel_backend::{traits::Discovery, types::discovery::ProcessDiscoveryFn};
+use iceoryx2_tunnel_backend::traits::Discovery;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum DiscoveryError {
@@ -64,9 +67,9 @@ impl<S: Service> Discovery for DiscoveryTracker<S> {
         Ok(())
     }
 
-    fn discover<ProcessDiscoveryError>(
+    fn discover<E: core::error::Error, F: FnMut(&StaticConfig) -> Result<(), E>>(
         &self,
-        process_discovery: &mut ProcessDiscoveryFn<ProcessDiscoveryError>,
+        mut process_discovery: F,
     ) -> Result<(), Self::DiscoveryError> {
         let tracker = &mut self.0.borrow_mut();
         let (added, _removed) = fail!(

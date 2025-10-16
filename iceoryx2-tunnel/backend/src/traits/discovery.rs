@@ -14,8 +14,6 @@ use core::error::Error;
 
 use iceoryx2::service::static_config::StaticConfig;
 
-use crate::types::discovery::ProcessDiscoveryFn;
-
 /// Service discovery interface for discoverying and announcing
 /// [`Service`](iceoryx2::service::Service)s over the [`Backend`](crate::traits::Backend)
 /// communication mechanism.
@@ -126,8 +124,8 @@ pub trait Discovery {
     ///
     /// * `process_discovery` - Callback provided by the caller to process the
     ///   [`StaticConfig`] of each discovered [`Service`](iceoryx2::service::Service).
-    fn discover<ProcessDiscoveryError>(
+    fn discover<E: Error, F: FnMut(&StaticConfig) -> Result<(), E>>(
         &self,
-        process_discovery: &mut ProcessDiscoveryFn<ProcessDiscoveryError>,
+        process_discovery: F,
     ) -> Result<(), Self::DiscoveryError>;
 }
