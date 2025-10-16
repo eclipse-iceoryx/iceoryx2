@@ -10,6 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use alloc::format;
+use alloc::vec;
+use alloc::vec::Vec;
+
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::{
     directory::{Directory, DirectoryOpenError, DirectoryReadError},

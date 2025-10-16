@@ -41,16 +41,19 @@
 pub use crate::named_concept::*;
 pub use crate::static_storage::*;
 
-use alloc::sync::Arc;
 use core::sync::atomic::Ordering;
+
+use alloc::sync::Arc;
+use alloc::vec;
+use alloc::vec::Vec;
 
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_bb_posix::mutex::*;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
+use hashbrown::HashMap;
 use once_cell::sync::Lazy;
-use std::collections::HashMap;
 
 #[derive(Debug)]
 struct StorageContent {
