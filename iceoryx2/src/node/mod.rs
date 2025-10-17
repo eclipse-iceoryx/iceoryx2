@@ -150,6 +150,7 @@ use core::marker::PhantomData;
 use core::sync::atomic::Ordering;
 use core::time::Duration;
 
+use alloc::collections::BTreeMap;
 use alloc::format;
 use alloc::string::String;
 use alloc::string::ToString;
@@ -157,7 +158,6 @@ use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
 
-use iceoryx2_bb_container::hash_map::HashMap;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::CallbackProgression;
@@ -743,7 +743,7 @@ fn remove_node<Service: service::Service>(
 
 #[derive(Debug)]
 pub(crate) struct RegisteredServices {
-    handle: MutexHandle<HashMap<ServiceId, (ContainerHandle, u64)>>,
+    handle: MutexHandle<BTreeMap<ServiceId, (ContainerHandle, u64)>>,
 }
 
 unsafe impl Send for RegisteredServices {}
@@ -756,7 +756,7 @@ impl RegisteredServices {
         MutexBuilder::new()
             .is_interprocess_capable(false)
             .mutex_type(MutexType::Normal)
-            .create(HashMap::new(), &handle)
+            .create(BTreeMap::new(), &handle)
             .expect("Failed to create mutex");
 
         Self { handle }
@@ -812,7 +812,7 @@ impl RegisteredServices {
         }
     }
 
-    fn mutex(&self) -> Mutex<'_, '_, HashMap<ServiceId, (ContainerHandle, u64)>> {
+    fn mutex(&self) -> Mutex<'_, '_, BTreeMap<ServiceId, (ContainerHandle, u64)>> {
         // Safe - the mutex is initialized when constructing the struct and
         // not interacted with by anything else.
         unsafe { Mutex::from_handle(&self.handle) }

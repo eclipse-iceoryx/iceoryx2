@@ -12,6 +12,8 @@
 
 use core::fmt::Debug;
 
+use alloc::collections::BTreeMap;
+use alloc::collections::BTreeSet;
 use alloc::string::String;
 
 use iceoryx2::node::{Node, NodeBuilder, NodeId};
@@ -19,8 +21,6 @@ use iceoryx2::service::service_id::ServiceId;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
 use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2::service::Service;
-use iceoryx2_bb_container::hash_map::HashMap;
-use iceoryx2_bb_container::hash_set::HashSet;
 use iceoryx2_bb_log::{fail, info, trace, warn};
 use iceoryx2_tunnel_backend::traits::{
     Backend, Discovery, EventRelay, PublishSubscribeRelay, RelayBuilder, RelayFactory,
@@ -85,30 +85,30 @@ impl core::error::Error for PropagateError {}
 
 #[derive(Debug)]
 pub(crate) struct Ports<S: Service> {
-    pub(crate) publish_subscribe: HashMap<ServiceId, PublishSubscribePorts<S>>,
-    pub(crate) event: HashMap<ServiceId, EventPorts<S>>,
+    pub(crate) publish_subscribe: BTreeMap<ServiceId, PublishSubscribePorts<S>>,
+    pub(crate) event: BTreeMap<ServiceId, EventPorts<S>>,
 }
 
 impl<S: Service> Ports<S> {
     pub fn new() -> Self {
         Self {
-            publish_subscribe: HashMap::new(),
-            event: HashMap::new(),
+            publish_subscribe: BTreeMap::new(),
+            event: BTreeMap::new(),
         }
     }
 }
 
 #[derive(Debug, Default)]
 pub struct Relays<S: Service, B: Backend<S>> {
-    publish_subscribe: HashMap<ServiceId, B::PublishSubscribeRelay>,
-    event: HashMap<ServiceId, B::EventRelay>,
+    publish_subscribe: BTreeMap<ServiceId, B::PublishSubscribeRelay>,
+    event: BTreeMap<ServiceId, B::EventRelay>,
 }
 
 impl<S: Service, B: Backend<S>> Relays<S, B> {
     pub fn new() -> Self {
         Self {
-            publish_subscribe: HashMap::new(),
-            event: HashMap::new(),
+            publish_subscribe: BTreeMap::new(),
+            event: BTreeMap::new(),
         }
     }
 }
@@ -270,7 +270,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         Ok(())
     }
 
-    pub fn tunneled_services(&self) -> HashSet<ServiceId> {
+    pub fn tunneled_services(&self) -> BTreeSet<ServiceId> {
         self.ports
             .publish_subscribe
             .keys()
@@ -284,7 +284,7 @@ fn on_discovery<S: Service, B: Backend<S> + Debug>(
     static_config: &StaticConfig,
     node: &Node<S>,
     backend: &B,
-    services: &HashSet<ServiceId>,
+    services: &BTreeSet<ServiceId>,
     ports: &mut Ports<S>,
     relays: &mut Relays<S, B>,
 ) -> Result<(), DiscoveryError> {

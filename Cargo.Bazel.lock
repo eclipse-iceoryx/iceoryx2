@@ -1,5 +1,5 @@
 {
-  "checksum": "dd05ec17ab66ada52ac83ed8c04927f2689899d9c3765dda9c030896e7f6fc21",
+  "checksum": "b5f93db1bc352b314a2d79d6534a002e1f65ac592b1d41f7e27bf78e96a20a3f",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -5694,44 +5694,6 @@
       ],
       "license_file": "LICENSE-APACHE"
     },
-    "foldhash 0.2.0": {
-      "name": "foldhash",
-      "version": "0.2.0",
-      "package_url": "https://github.com/orlp/foldhash",
-      "repository": {
-        "Http": {
-          "url": "https://static.crates.io/crates/foldhash/0.2.0/download",
-          "sha256": "77ce24cb58228fbb8aa041425bb1050850ac19177686ea6e0f41a70416f56fdb"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "foldhash",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "allow_empty": true,
-              "include": [
-                "**/*.rs"
-              ]
-            }
-          }
-        }
-      ],
-      "library_target_name": "foldhash",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "edition": "2021",
-        "version": "0.2.0"
-      },
-      "license": "Zlib",
-      "license_ids": [
-        "Zlib"
-      ],
-      "license_file": "LICENSE"
-    },
     "form_urlencoded 1.2.1": {
       "name": "form_urlencoded",
       "version": "1.2.1",
@@ -7041,73 +7003,6 @@
       ],
       "license_file": "LICENSE-APACHE"
     },
-    "hashbrown 0.16.0": {
-      "name": "hashbrown",
-      "version": "0.16.0",
-      "package_url": "https://github.com/rust-lang/hashbrown",
-      "repository": {
-        "Http": {
-          "url": "https://static.crates.io/crates/hashbrown/0.16.0/download",
-          "sha256": "5419bdc4f6a9207fbeba6d11b604d481addf78ecd10c11ad51e76c2f6482748d"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "hashbrown",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "allow_empty": true,
-              "include": [
-                "**/*.rs"
-              ]
-            }
-          }
-        }
-      ],
-      "library_target_name": "hashbrown",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "crate_features": {
-          "common": [
-            "allocator-api2",
-            "default",
-            "default-hasher",
-            "equivalent",
-            "inline-more",
-            "raw-entry"
-          ],
-          "selects": {}
-        },
-        "deps": {
-          "common": [
-            {
-              "id": "allocator-api2 0.2.21",
-              "target": "allocator_api2"
-            },
-            {
-              "id": "equivalent 1.0.1",
-              "target": "equivalent"
-            },
-            {
-              "id": "foldhash 0.2.0",
-              "target": "foldhash"
-            }
-          ],
-          "selects": {}
-        },
-        "edition": "2021",
-        "version": "0.16.0"
-      },
-      "license": "MIT OR Apache-2.0",
-      "license_ids": [
-        "Apache-2.0",
-        "MIT"
-      ],
-      "license_file": "LICENSE-APACHE"
-    },
     "heck 0.4.1": {
       "name": "heck",
       "version": "0.4.1",
@@ -7952,10 +7847,6 @@
         },
         "deps": {
           "common": [
-            {
-              "id": "hashbrown 0.16.0",
-              "target": "hashbrown"
-            },
             {
               "id": "serde 1.0.219",
               "target": "serde"
@@ -30893,7 +30784,6 @@
     "dialoguer 0.8.0",
     "dirs 5.0.1",
     "enum-iterator 2.1.0",
-    "hashbrown 0.16.0",
     "human-panic 2.0.2",
     "lazy_static 1.5.0",
     "once_cell 1.20.2",

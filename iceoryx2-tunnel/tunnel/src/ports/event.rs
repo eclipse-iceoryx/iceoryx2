@@ -10,13 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use alloc::collections::BTreeSet;
+
 use iceoryx2::{
     node::Node,
     port::{listener::Listener, notifier::Notifier},
     prelude::EventId,
     service::{static_config::StaticConfig, Service},
 };
-use iceoryx2_bb_container::hash_set::HashSet;
 use iceoryx2_bb_log::{fail, trace};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -158,7 +159,7 @@ impl<S: Service> EventPorts<S> {
         PropagateFn: FnMut(EventId) -> Result<(), E>,
     {
         let mut propagated = false;
-        let mut received_ids: HashSet<EventId> = HashSet::new();
+        let mut received_ids: BTreeSet<EventId> = BTreeSet::new();
 
         // Consolidate pending event ids
         while let Ok(event_id) = self.listener.try_wait_one() {
