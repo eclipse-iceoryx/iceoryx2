@@ -93,6 +93,7 @@ class RawByteStorage {
                 *pointer_from_index(i) = *rhs.pointer_from_index(i);
             }
             for (uint64_t i = m_size; i < rhs.m_size; ++i) {
+                //NOLINTNEXTLINE(clang-analyzer-cplusplus.PlacementNew) false positive in clang-tidy version 19 only
                 new (pointer_from_index(i)) T(*rhs.pointer_from_index(i));
             }
             for (uint64_t i = rhs.m_size; i < m_size; ++i) {
