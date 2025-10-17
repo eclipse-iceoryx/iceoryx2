@@ -10,10 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub mod active_request;
-pub mod client;
-pub mod listener;
-pub mod node;
-pub mod node_death;
-pub mod notifier;
-pub mod pending_response;
+pub mod event_discovery;
+pub mod event_propagation;
+pub mod publish_subscribe_discovery;
+pub mod publish_subscribe_propagation;

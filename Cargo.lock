@@ -1564,6 +1564,8 @@ dependencies = [
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
  "iceoryx2-cal",
+ "iceoryx2-pal-concurrency-sync",
+ "iceoryx2-pal-testing",
 ]
 
 [[package]]
@@ -1686,6 +1688,20 @@ version = "0.7.0"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-testing",
+]
+
+[[package]]
+name = "iceoryx2-tunnel-conformance-tests"
+version = "0.7.0"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-conformance-test-macros",
+ "iceoryx2-bb-posix",
+ "iceoryx2-bb-testing",
+ "iceoryx2-services-discovery",
+ "iceoryx2-tunnel",
+ "iceoryx2-tunnel-backend",
+ "iceoryx2-tunnel-zenoh",
 ]
 
 [[package]]
