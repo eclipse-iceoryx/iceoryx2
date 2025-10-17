@@ -10,28 +10,28 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-load("@rules_rust//rust:defs.bzl", "rust_binary")
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 
-rust_binary(
-    name = "creator",
+cc_binary(
+    name = "example_cxx_blackboard_creator",
     srcs = [
-        "creator.rs",
+        "src/creator.cpp",
+        "src/blackboard_complex_key.hpp"
     ],
     deps = [
-        "//iceoryx2:iceoryx2",
-        "//iceoryx2-bb/container:iceoryx2-bb-container",
-        "//examples/rust:examples-common",
+        "@iceoryx//:iceoryx_hoofs",
+        "//:iceoryx2-cxx-static",
     ],
 )
 
-rust_binary(
-    name = "opener",
+cc_binary(
+    name = "example_cxx_blackboard_opener",
     srcs = [
-        "opener.rs",
+        "src/opener.cpp",
+        "src/blackboard_complex_key.hpp"
     ],
     deps = [
-        "//iceoryx2:iceoryx2",
-        "//iceoryx2-bb/container:iceoryx2-bb-container",
-        "//examples/rust:examples-common",
+        "@iceoryx//:iceoryx_hoofs",
+        "//:iceoryx2-cxx-static",
     ],
 )
