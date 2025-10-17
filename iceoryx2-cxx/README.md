@@ -67,6 +67,18 @@ cmake --build target/ff/iceoryx/build/hoofs
 cmake --install target/ff/iceoryx/build/hoofs --prefix target/ff/cc/install
 ```
 
+### Build and install `iceoryx2-bb-cxx`
+
+This is the package which will replace the components from `iceoryx_hoofs` in
+the long term.
+
+```bash
+cmake -S iceoryx2-bb/cxx -B target/ff/bb-cxx/build \
+      -DCMAKE_PREFIX_PATH="$( pwd )/target/ff/cc/install"
+cmake --build target/ff/bb-cxx/build
+cmake --install target/ff/bb-cxx/build --prefix target/ff/cc/install
+```
+
 ### Putting it together
 
 The C++ bindings can then use the installed artifacts via
