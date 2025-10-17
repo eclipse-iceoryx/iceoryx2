@@ -141,33 +141,15 @@ auto check_request(ContainerTestRequest const& req) -> bool {
     return true;
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity,readability-function-size)
 auto ContainerTest::run_test(iox2::Node<iox2::ServiceType::Ipc> const& node) -> bool {
-    auto exp_service_name = iox2::ServiceName::create("iox2-component-tests-containers");
-    if (!exp_service_name) {
-        std::cout << "Error creating service name\n";
-        return false;
-    }
-    auto exp_req_resp = node.service_builder(exp_service_name.value())
-                            .request_response<ContainerTestRequest, ContainerTestResponse>()
-                            .open_or_create();
-    if (!exp_req_resp) {
-        std::cout << "Error creating request response for test\n";
-        return false;
-    }
-    auto& req_resp = exp_req_resp.value();
-    auto exp_server = req_resp.server_builder().create();
-    if (!exp_server) {
-        std::cout << "Unable to create request response server\n";
-        return false;
-    }
-    auto& server = exp_server.value();
     auto const refresh_interval = iox::units::Duration::fromMilliseconds(100);
-    while (req_resp.dynamic_config().number_of_clients() == 0) {
-        if (!node.wait(refresh_interval)) {
-            return false;
-        }
+    auto opt_server = create_server<ContainerTestRequest, ContainerTestResponse>(
+        node, "iox2-component-tests-containers", refresh_interval);
+    if (!opt_server) {
+        return false;
     }
+    auto& req_resp = opt_server->request_response;
+    auto& server = opt_server->server;
 
     while (node.wait(refresh_interval)) {
         auto receive_request = server.receive();
