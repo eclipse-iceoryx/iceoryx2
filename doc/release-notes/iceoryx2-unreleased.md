@@ -60,9 +60,11 @@
 -->
 
 * Decoupled tunnel implementation from tunelling mechanism
-  [#845](https://github.com/eclipse-iceoryx/iceoryx2/issues/845)
+    [#845](https://github.com/eclipse-iceoryx/iceoryx2/issues/845)
 * Updated all dependencies and increased MSRV to 1.83
     [#1105](https://github.com/eclipse-iceoryx/iceoryx2/issues/1105)
+* Remove pre-compiled `noop.exe` used for testing command exeuction on Windows
+    [#1133](https://github.com/eclipse-iceoryx/iceoryx2/issues/1133)
 
 ### Workflow
 
