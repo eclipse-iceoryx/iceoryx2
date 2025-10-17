@@ -84,7 +84,9 @@
 
 use core::{cell::UnsafeCell, fmt::Debug, marker::PhantomData};
 
-use crate::handle_errno;
+use alloc::vec;
+use alloc::vec::Vec;
+
 use iceoryx2_bb_container::string::*;
 use iceoryx2_bb_elementary::{enum_gen, scope_guard::ScopeGuardBuilder};
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
@@ -94,6 +96,7 @@ use iceoryx2_pal_posix::*;
 
 use crate::{
     config::MAX_THREAD_NAME_LENGTH,
+    handle_errno,
     scheduler::Scheduler,
     signal::Signal,
     system_configuration::{Limit, SystemInfo},
@@ -122,16 +125,40 @@ enum_gen! { ThreadSpawnError
     ThreadSetNameError
 }
 
+impl core::fmt::Display for ThreadSpawnError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "ThreadSpawnError::{self:?}")
+    }
+}
+
+impl core::error::Error for ThreadSpawnError {}
+
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum ThreadSignalError {
     ThreadNoLongerActive,
     UnknownError(i32),
 }
 
+impl core::fmt::Display for ThreadSignalError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "ThreadSignalError::{self:?}")
+    }
+}
+
+impl core::error::Error for ThreadSignalError {}
+
 enum_gen! { ThreadSetNameError
   entry:
     UnknownError(i32)
 }
+
+impl core::fmt::Display for ThreadSetNameError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "ThreadSetNameError::{self:?}")
+    }
+}
+
+impl core::error::Error for ThreadSetNameError {}
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum ThreadSetAffinityError {
@@ -139,12 +166,28 @@ pub enum ThreadSetAffinityError {
     UnknownError(i32),
 }
 
+impl core::fmt::Display for ThreadSetAffinityError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "ThreadSetAffinityError::{self:?}")
+    }
+}
+
+impl core::error::Error for ThreadSetAffinityError {}
+
 enum_gen! {
     ThreadGetNameError
   entry:
     ThreadNameLongerThanMaxSupportedSize,
     UnknownError(i32)
 }
+
+impl core::fmt::Display for ThreadGetNameError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "ThreadGetNameError::{self:?}")
+    }
+}
+
+impl core::error::Error for ThreadGetNameError {}
 
 enum_gen! {
     /// The ThreadError enum is a generalization when one doesn't require the fine-grained error

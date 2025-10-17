@@ -31,6 +31,7 @@
 //! println!("removed byte {:?}", some_string.remove(0));
 //! ```
 
+use alloc::format;
 use core::str::FromStr;
 use core::{
     cmp::Ordering,

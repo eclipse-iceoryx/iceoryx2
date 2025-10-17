@@ -26,15 +26,14 @@ pub mod request_response;
 /// Builder for [`MessagingPattern::Blackboard`](crate::service::messaging_pattern::MessagingPattern::Blackboard)
 pub mod blackboard;
 
-use crate::node::SharedNode;
-use crate::service;
-use crate::service::dynamic_config::DynamicConfig;
-use crate::service::dynamic_config::RegisterNodeResult;
-use crate::service::static_config::*;
-use alloc::sync::Arc;
 use core::fmt::Debug;
 use core::hash::Hash;
 use core::marker::PhantomData;
+
+use alloc::string::String;
+use alloc::sync::Arc;
+use alloc::vec;
+
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -51,6 +50,12 @@ use iceoryx2_cal::named_concept::NamedConceptMgmt;
 use iceoryx2_cal::named_concept::NamedConceptRemoveError;
 use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::static_storage::*;
+
+use crate::node::SharedNode;
+use crate::service;
+use crate::service::dynamic_config::DynamicConfig;
+use crate::service::dynamic_config::RegisterNodeResult;
+use crate::service::static_config::*;
 
 use super::config_scheme::dynamic_config_storage_config;
 use super::config_scheme::service_tag_config;

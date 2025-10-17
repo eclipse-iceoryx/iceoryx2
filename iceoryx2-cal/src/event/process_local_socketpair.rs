@@ -11,7 +11,14 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::time::Duration;
+
+use alloc::collections::BTreeMap;
+use alloc::vec;
+use alloc::vec::Vec;
+
 pub use iceoryx2_bb_container::semantic_string::SemanticString;
+pub use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath, path::Path};
+
 use iceoryx2_bb_log::{debug, fail, fatal_panic};
 use iceoryx2_bb_posix::{
     file_descriptor::FileDescriptorBased,
@@ -22,9 +29,8 @@ use iceoryx2_bb_posix::{
         StreamingSocketPairReceiveError, StreamingSocketPairSendError,
     },
 };
-pub use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath, path::Path};
+
 use once_cell::sync::Lazy;
-use std::collections::HashMap;
 
 use crate::named_concept::{
     NamedConceptConfiguration, NamedConceptDoesExistError, NamedConceptListError,
@@ -43,12 +49,12 @@ struct StorageEntry {
     notifier: StreamingSocket,
 }
 
-static PROCESS_LOCAL_MTX_HANDLE: Lazy<MutexHandle<HashMap<FilePath, StorageEntry>>> =
+static PROCESS_LOCAL_MTX_HANDLE: Lazy<MutexHandle<BTreeMap<FilePath, StorageEntry>>> =
     Lazy::new(MutexHandle::new);
-static PROCESS_LOCAL_STORAGE: Lazy<Mutex<HashMap<FilePath, StorageEntry>>> = Lazy::new(|| {
+static PROCESS_LOCAL_STORAGE: Lazy<Mutex<BTreeMap<FilePath, StorageEntry>>> = Lazy::new(|| {
     let result = MutexBuilder::new()
         .is_interprocess_capable(false)
-        .create(HashMap::new(), &PROCESS_LOCAL_MTX_HANDLE);
+        .create(BTreeMap::new(), &PROCESS_LOCAL_MTX_HANDLE);
 
     if result.is_err() {
         fatal_panic!(from "PROCESS_LOCAL_STORAGE", "Failed to create global dynamic storage");

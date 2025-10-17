@@ -10,11 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::collections::HashSet;
+use alloc::collections::BTreeSet;
+use alloc::vec;
+use alloc::vec::Vec;
 
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_posix::mutex::*;
 use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath, path::Path};
+
 use once_cell::sync::Lazy;
 
 use crate::{
@@ -27,11 +30,12 @@ use super::{
     NamedConcept, NamedConceptBuilder, NamedConceptMgmt, State,
 };
 
-static PROCESS_LOCAL_MTX_HANDLE: Lazy<MutexHandle<HashSet<FilePath>>> = Lazy::new(MutexHandle::new);
-static PROCESS_LOCAL_STORAGE: Lazy<Mutex<HashSet<FilePath>>> = Lazy::new(|| {
+static PROCESS_LOCAL_MTX_HANDLE: Lazy<MutexHandle<BTreeSet<FilePath>>> =
+    Lazy::new(MutexHandle::new);
+static PROCESS_LOCAL_STORAGE: Lazy<Mutex<BTreeSet<FilePath>>> = Lazy::new(|| {
     let result = MutexBuilder::new()
         .is_interprocess_capable(false)
-        .create(HashSet::new(), &PROCESS_LOCAL_MTX_HANDLE);
+        .create(BTreeSet::new(), &PROCESS_LOCAL_MTX_HANDLE);
 
     if result.is_err() {
         fatal_panic!(from "PROCESS_LOCAL_STORAGE", "Failed to create global monitoring storage");

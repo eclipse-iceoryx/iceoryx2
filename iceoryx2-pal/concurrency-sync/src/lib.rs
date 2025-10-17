@@ -18,6 +18,7 @@ pub mod barrier;
 pub mod condition_variable;
 pub mod iox_atomic;
 pub mod mutex;
+pub mod once;
 pub mod rwlock;
 pub mod semaphore;
 

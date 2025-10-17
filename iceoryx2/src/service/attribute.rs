@@ -113,6 +113,8 @@ mod key {
     use core::hash::Hash;
     use core::hash::Hasher;
 
+    use alloc::string::String;
+
     use iceoryx2_bb_container::semantic_string;
     use iceoryx2_bb_container::semantic_string::SemanticString;
     use iceoryx2_bb_derive_macros::ZeroCopySend;
@@ -145,6 +147,8 @@ mod value {
 
     use core::hash::Hash;
     use core::hash::Hasher;
+
+    use alloc::string::String;
 
     use iceoryx2_bb_container::semantic_string;
     use iceoryx2_bb_container::semantic_string::SemanticString;

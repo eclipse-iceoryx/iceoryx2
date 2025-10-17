@@ -56,11 +56,12 @@
 
 use core::fmt::Debug;
 
+use alloc::format;
+
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::fail;
 use iceoryx2_cal::shm_allocator::AllocationStrategy;
 
-use super::publish_subscribe::PortFactory;
 use crate::{
     port::{
         publisher::{Publisher, PublisherCreateError},
@@ -69,6 +70,8 @@ use crate::{
     },
     service,
 };
+
+use super::publish_subscribe::PortFactory;
 
 #[derive(Debug)]
 pub(crate) struct LocalPublisherConfig {

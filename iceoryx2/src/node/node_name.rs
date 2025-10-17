@@ -10,9 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::constants::MAX_NODE_NAME_LENGTH;
+use alloc::format;
+
 use iceoryx2_bb_container::{semantic_string::SemanticStringError, string::*};
 use iceoryx2_bb_log::fail;
+
+use crate::constants::MAX_NODE_NAME_LENGTH;
+
 use serde::{de::Visitor, Deserialize, Serialize};
 
 type NodeNameString = StaticString<MAX_NODE_NAME_LENGTH>;

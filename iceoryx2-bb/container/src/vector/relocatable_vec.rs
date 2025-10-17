@@ -62,6 +62,7 @@
 //! unsafe { vec.init(&bump_allocator).expect("vec init failed") };
 //! ```
 
+use alloc::format;
 use core::{
     alloc::Layout,
     ops::{Deref, DerefMut},

@@ -163,7 +163,8 @@ mod publish_subscribe_discovery_tests {
             },
             TIME_BETWEEN_RETRIES,
             Some(MAX_RETRIES),
-        );
+        )
+        .unwrap();
 
         assert_that!(tunnel_a.tunneled_services().len(), eq 1);
         assert_that!(tunnel_a.tunneled_services().contains(service_b.service_id()), eq true);

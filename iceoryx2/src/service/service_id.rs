@@ -10,12 +10,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use alloc::string::ToString;
+
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_system_types::file_name::RestrictedFileName;
 use iceoryx2_cal::hash::Hash;
+
 use serde::{Deserialize, Serialize};
 
 use super::{messaging_pattern::MessagingPattern, service_name::ServiceName};
@@ -23,7 +26,9 @@ use super::{messaging_pattern::MessagingPattern, service_name::ServiceName};
 const SERVICE_ID_CAPACITY: usize = 64;
 
 /// The unique id of a [`Service`](crate::service::Service)
-#[derive(Debug, Eq, PartialEq, Clone, Copy, Hash, ZeroCopySend, Serialize, Deserialize)]
+#[derive(
+    Debug, Eq, PartialEq, Ord, PartialOrd, Clone, Copy, Hash, ZeroCopySend, Serialize, Deserialize,
+)]
 #[repr(C)]
 pub struct ServiceId(pub(crate) RestrictedFileName<SERVICE_ID_CAPACITY>);
 

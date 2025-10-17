@@ -21,6 +21,8 @@ use core::{
     slice,
 };
 
+use alloc::string::ToString;
+
 use iceoryx2::service::port_factory::request_response::PortFactory;
 use iceoryx2::service::static_config::message_type_details::TypeDetail;
 use iceoryx2::service::{

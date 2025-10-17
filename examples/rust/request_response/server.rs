@@ -11,8 +11,13 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::time::Duration;
+
+extern crate alloc;
+use alloc::boxed::Box;
+
 use examples_common::TransmissionData;
 use iceoryx2::prelude::*;
+use iceoryx2_bb_log::info;
 
 const CYCLE_TIME: Duration = Duration::from_millis(100);
 
@@ -27,19 +32,19 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let server = service.server_builder().create()?;
 
-    println!("Server ready to receive requests!");
+    info!("Server ready to receive requests!");
 
     let mut counter = 0;
     while node.wait(CYCLE_TIME).is_ok() {
         while let Some(active_request) = server.receive()? {
-            println!("received request: {:?}", *active_request);
+            info!("received request: {:?}", *active_request);
 
             let response = TransmissionData {
                 x: 5 + counter,
                 y: 6 * counter,
                 funky: 7.77,
             };
-            println!("  send response: {response:?}");
+            info!("  send response: {response:?}");
             // send first response by using the slower, non-zero-copy API
             active_request.send_copy(response)?;
 
@@ -51,7 +56,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
                     y: counter + n as i32,
                     funky: counter as f64 * 0.1234,
                 });
-                println!("  send response: {:?}", *response);
+                info!("  send response: {:?}", *response);
                 response.send()?;
             }
 
@@ -64,7 +69,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         counter += 1;
     }
 
-    println!("exit");
+    info!("exit");
 
     Ok(())
 }
