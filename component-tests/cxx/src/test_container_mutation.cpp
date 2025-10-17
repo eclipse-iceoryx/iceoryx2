@@ -73,6 +73,29 @@ auto check_request(ContainerMutationTestRequest const& req) -> bool {
 }
 // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
 
+auto prepare_response(ContainerMutationTestRequest const& request)
+    -> iox2::container::Optional<ContainerMutationTestResponse> {
+    // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+    ContainerMutationTestResponse response;
+    response.vector_add_element = request.vector_add_element;
+    response.vector_add_element.try_push_back(123);
+    response.vector_remove_element = request.vector_remove_element;
+    if (!(response.vector_remove_element.try_erase_at(5) && response.vector_remove_element.try_erase_at(2)
+          && response.vector_remove_element.try_pop_back())) {
+        return iox2::container::nullopt;
+    }
+    response.string_append = request.string_append;
+    response.string_append.try_append_utf8_null_terminated_unchecked(" my baby, hello my honey, hello my ragtime gal");
+    response.vector_strings_change_middle = request.vector_strings_change_middle;
+    if (!(response.vector_strings_change_middle.element_at(2)->get().unchecked_code_units().try_erase_at(13, 16)
+          && response.vector_strings_change_middle.element_at(2)->get().try_append_utf8_null_terminated_unchecked(
+              "ter"))) {
+        return iox2::container::nullopt;
+    }
+    // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+    return response;
+}
+
 auto ContainerMutationTest::run_test(iox2::Node<iox2::ServiceType::Ipc> const& node) -> bool {
     auto const refresh_interval = iox::units::Duration::fromMilliseconds(100);
     auto opt_server = create_server<ContainerMutationTestRequest, ContainerMutationTestResponse>(
@@ -96,26 +119,11 @@ auto ContainerMutationTest::run_test(iox2::Node<iox2::ServiceType::Ipc> const& n
             if (!check_request(request.payload())) {
                 return false;
             }
-            // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
-            ContainerMutationTestResponse response;
-            response.vector_add_element = request.payload().vector_add_element;
-            response.vector_add_element.try_push_back(123);
-            response.vector_remove_element = request.payload().vector_remove_element;
-            if (!(response.vector_remove_element.try_erase_at(5) && response.vector_remove_element.try_erase_at(2)
-                  && response.vector_remove_element.try_pop_back())) {
+            auto opt_response = prepare_response(request.payload());
+            if (!opt_response) {
                 return false;
             }
-            response.string_append = request.payload().string_append;
-            response.string_append.try_append_utf8_null_terminated_unchecked(
-                " my baby, hello my honey, hello my ragtime gal");
-            response.vector_strings_change_middle = request.payload().vector_strings_change_middle;
-            if (!(response.vector_strings_change_middle.element_at(2)->get().unchecked_code_units().try_erase_at(13, 16)
-                  && response.vector_strings_change_middle.element_at(2)
-                         ->get()
-                         .try_append_utf8_null_terminated_unchecked("ter"))) {
-                return false;
-            }
-            // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+            ContainerMutationTestResponse& response = *opt_response;
             auto exp_response = request.loan_uninit();
             if (!exp_response) {
                 std::cout << "Error loaning response\n";
