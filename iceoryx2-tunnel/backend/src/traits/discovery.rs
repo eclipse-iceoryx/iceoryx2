@@ -14,8 +14,6 @@ use core::error::Error;
 
 use iceoryx2::service::static_config::StaticConfig;
 
-use crate::types::discovery::ProcessDiscoveryFn;
-
 /// Service discovery interface for discoverying and announcing
 /// [`Service`](iceoryx2::service::Service)s over the [`Backend`](crate::traits::Backend)
 /// communication mechanism.
@@ -35,8 +33,17 @@ use crate::types::discovery::ProcessDiscoveryFn;
 /// ```no_run
 /// use iceoryx2_tunnel_backend::traits::Discovery;
 ///
+/// #[derive(Debug)]
+/// struct MyDiscoveryError;
+/// impl core::fmt::Display for MyDiscoveryError {
+///     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+///         write!(f, "discovery failed")
+///     }
+/// }
+/// impl core::error::Error for MyDiscoveryError {}
+///
 /// fn list_services<DiscoveryError, ProcessingError>(discovery: &impl Discovery<DiscoveryError = DiscoveryError>) -> Result<(), DiscoveryError> {
-///     discovery.discover::<ProcessingError>(&mut |static_config| {
+///     discovery.discover(|static_config| -> Result<(), MyDiscoveryError> {
 ///         println!("Found service: {:?}", static_config.name());
 ///         Ok(())
 ///     })?;
@@ -48,7 +55,6 @@ use crate::types::discovery::ProcessDiscoveryFn;
 ///
 /// ```no_run
 /// use iceoryx2_tunnel_backend::traits::Discovery;
-/// use iceoryx2_tunnel_backend::types::discovery::ProcessDiscoveryFn;
 /// use iceoryx2::service::static_config::StaticConfig;
 ///
 /// struct MyDiscovery {
@@ -84,9 +90,9 @@ use crate::types::discovery::ProcessDiscoveryFn;
 ///         Ok(())
 ///     }
 ///
-///     fn discover<ProcessDiscoveryError>(
+///     fn discover<E: core::error::Error, F: FnMut(&StaticConfig) -> Result<(), E>>(
 ///         &self,
-///         process_discovery: &mut ProcessDiscoveryFn<ProcessDiscoveryError>,
+///         process_discovery: F,
 ///     ) -> Result<(), Self::DiscoveryError> {
 ///         // Query backend for available services
 ///         // For each service found, call process_discovery with its
@@ -126,8 +132,8 @@ pub trait Discovery {
     ///
     /// * `process_discovery` - Callback provided by the caller to process the
     ///   [`StaticConfig`] of each discovered [`Service`](iceoryx2::service::Service).
-    fn discover<ProcessDiscoveryError>(
+    fn discover<E: Error, F: FnMut(&StaticConfig) -> Result<(), E>>(
         &self,
-        process_discovery: &mut ProcessDiscoveryFn<ProcessDiscoveryError>,
+        process_discovery: F,
     ) -> Result<(), Self::DiscoveryError>;
 }

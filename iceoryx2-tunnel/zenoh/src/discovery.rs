@@ -14,7 +14,6 @@ use core::cell::RefCell;
 
 use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2_bb_log::{error, fail, warn};
-use iceoryx2_tunnel_backend::types::discovery::ProcessDiscoveryFn;
 use zenoh::{
     handlers::FifoChannelHandler,
     query::{Querier, Reply},
@@ -152,9 +151,9 @@ impl iceoryx2_tunnel_backend::traits::Discovery for Discovery {
         Ok(())
     }
 
-    fn discover<ProcessDiscoveryError>(
+    fn discover<E: core::error::Error, F: FnMut(&StaticConfig) -> Result<(), E>>(
         &self,
-        process_discovery: &mut ProcessDiscoveryFn<ProcessDiscoveryError>,
+        mut process_discovery: F,
     ) -> Result<(), DiscoveryError> {
         // Drain all replies from previous query
         for reply in self.replies.borrow_mut().drain() {

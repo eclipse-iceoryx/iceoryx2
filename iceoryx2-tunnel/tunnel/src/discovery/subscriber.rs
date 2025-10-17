@@ -12,12 +12,12 @@
 
 use iceoryx2::node::Node;
 use iceoryx2::prelude::ServiceName;
+use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2::{port::subscriber::Subscriber, service::Service};
 use iceoryx2_bb_log::fail;
 use iceoryx2_services_discovery::service_discovery::Discovery as DiscoveryEvent;
 
 use iceoryx2_tunnel_backend::traits::Discovery;
-use iceoryx2_tunnel_backend::types::discovery::ProcessDiscoveryFn;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
@@ -97,9 +97,9 @@ impl<S: Service> Discovery for DiscoverySubscriber<S> {
         Ok(())
     }
 
-    fn discover<ProcessDiscoveryError>(
+    fn discover<E: core::error::Error, F: FnMut(&StaticConfig) -> Result<(), E>>(
         &self,
-        process_discovery: &mut ProcessDiscoveryFn<ProcessDiscoveryError>,
+        mut process_discovery: F,
     ) -> Result<(), Self::DiscoveryError> {
         let subscriber = &self.0;
         loop {

@@ -205,7 +205,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         if let Some(subscriber) = &mut self.subscriber {
             fail!(
                 from self,
-                when subscriber.discover(&mut |static_config| {
+                when subscriber.discover(|static_config| {
                     on_discovery(static_config, &self.node, &self.backend, &tunneled_services, &mut self.ports, &mut self.relays)
                 }),
                 with DiscoveryError::DiscoveryOverService,
@@ -215,7 +215,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         if let Some(tracker) = &mut self.tracker {
             fail!(
                 from self,
-                when tracker.discover(&mut |static_config| {
+                when tracker.discover(|static_config| {
                     on_discovery(static_config, &self.node, &self.backend, &tunneled_services, &mut self.ports, &mut self.relays)
                 }),
                 with DiscoveryError::DiscoveryOverTracker,
@@ -230,7 +230,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         let tunneled_services = self.tunneled_services();
         fail!(
             from self,
-            when self.backend.discovery().discover(&mut |static_config| {
+            when self.backend.discovery().discover(|static_config| {
                 on_discovery(static_config, &self.node, &self.backend, &tunneled_services, &mut self.ports, &mut self.relays)
             }),
             with DiscoveryError::DiscoveryOverBackend,
