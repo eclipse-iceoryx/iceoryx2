@@ -73,17 +73,32 @@ auto check_request(ContainerMutationTestRequest const& req) -> bool {
 }
 // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity,readability-function-size)
 auto ContainerMutationTest::run_test(iox2::Node<iox2::ServiceType::Ipc> const& node) -> bool {
-    auto req_resp =
-        node.service_builder(
-                iox2::ServiceName::create("iox2-component-tests-container_mutation").expect("Invalid service name"))
-            .request_response<ContainerMutationTestRequest, ContainerMutationTestResponse>()
-            .open_or_create()
-            .expect("No request response for test");
-    auto server = req_resp.server_builder().create().expect("Unable to create server");
+    auto exp_service_name = iox2::ServiceName::create("iox2-component-tests-container_mutation");
+    if (!exp_service_name) {
+        std::cout << "Error creating service name\n";
+        return false;
+    }
+    auto exp_req_resp = node.service_builder(exp_service_name.value())
+                            .request_response<ContainerMutationTestRequest, ContainerMutationTestResponse>()
+                            .open_or_create();
+    if (!exp_req_resp) {
+        std::cout << "Error creating request response for test\n";
+        return false;
+    }
+    auto& req_resp = exp_req_resp.value();
+    auto exp_server = req_resp.server_builder().create();
+    if (!exp_server) {
+        std::cout << "Unable to create request response server\n";
+        return false;
+    }
+    auto& server = exp_server.value();
     auto const refresh_interval = iox::units::Duration::fromMilliseconds(100);
     while (req_resp.dynamic_config().number_of_clients() == 0) {
-        node.wait(refresh_interval).expect("wait");
+        if (!node.wait(refresh_interval)) {
+            return false;
+        }
     }
 
     while (node.wait(refresh_interval)) {
@@ -119,7 +134,15 @@ auto ContainerMutationTest::run_test(iox2::Node<iox2::ServiceType::Ipc> const& n
                 return false;
             }
             // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
-            send(request.loan_uninit().expect("").write_payload(std::move(response))).expect("Response send error");
+            auto exp_response = request.loan_uninit();
+            if (!exp_response) {
+                std::cout << "Error loaning response\n";
+                return false;
+            }
+            if (!send(exp_response.value().write_payload(std::move(response)))) {
+                std::cout << "Error sending response\n";
+                return false;
+            }
             return true;
         } else {
             if (req_resp.dynamic_config().number_of_clients() == 0) {

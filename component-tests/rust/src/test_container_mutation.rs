@@ -11,8 +11,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use super::common::*;
+use core::fmt::Debug;
 use iceoryx2::prelude::*;
-use std::fmt::Debug;
 
 pub struct TestContainerMutation {}
 

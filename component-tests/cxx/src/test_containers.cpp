@@ -141,16 +141,32 @@ auto check_request(ContainerTestRequest const& req) -> bool {
     return true;
 }
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity,readability-function-size)
 auto ContainerTest::run_test(iox2::Node<iox2::ServiceType::Ipc> const& node) -> bool {
-    auto req_resp = node.service_builder(
-                            iox2::ServiceName::create("iox2-component-tests-containers").expect("Invalid service name"))
-                        .request_response<ContainerTestRequest, ContainerTestResponse>()
-                        .open_or_create()
-                        .expect("No request response for test");
-    auto server = req_resp.server_builder().create().expect("Unable to create server");
+    auto exp_service_name = iox2::ServiceName::create("iox2-component-tests-containers");
+    if (!exp_service_name) {
+        std::cout << "Error creating service name\n";
+        return false;
+    }
+    auto exp_req_resp = node.service_builder(exp_service_name.value())
+                            .request_response<ContainerTestRequest, ContainerTestResponse>()
+                            .open_or_create();
+    if (!exp_req_resp) {
+        std::cout << "Error creating request response for test\n";
+        return false;
+    }
+    auto& req_resp = exp_req_resp.value();
+    auto exp_server = req_resp.server_builder().create();
+    if (!exp_server) {
+        std::cout << "Unable to create request response server\n";
+        return false;
+    }
+    auto& server = exp_server.value();
     auto const refresh_interval = iox::units::Duration::fromMilliseconds(100);
     while (req_resp.dynamic_config().number_of_clients() == 0) {
-        node.wait(refresh_interval).expect("wait");
+        if (!node.wait(refresh_interval)) {
+            return false;
+        }
     }
 
     while (node.wait(refresh_interval)) {
@@ -165,9 +181,18 @@ auto ContainerTest::run_test(iox2::Node<iox2::ServiceType::Ipc> const& node) -> 
             auto& request = opt_request.value();
             std::cout << "       * Processing request " << request.payload().vector_type_sequence << "\n";
             bool const check_succeeded = check_request(request.payload());
-            send(request.loan_uninit().expect("").write_payload(
-                     ContainerTestResponse { request.payload().vector_type_sequence, check_succeeded }))
-                .expect("Response send error");
+            auto exp_response = request.loan_uninit();
+            if (!exp_response) {
+                std::cout << "Error loaning response\n";
+                return false;
+            }
+            auto& response = exp_response.value();
+            auto exp_send_result = send(response.write_payload(
+                ContainerTestResponse { request.payload().vector_type_sequence, check_succeeded }));
+            if (!exp_send_result) {
+                std::cout << "Error sending response\n";
+                return false;
+            }
             if (!check_succeeded) {
                 return false;
             }
