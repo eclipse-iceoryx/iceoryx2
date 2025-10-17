@@ -22,7 +22,6 @@ iceoryx2-bb-log = { workspace = true }
 iceoryx2-pal-concurrency-sync = { workspace = true }
 
 serde = { workspace = true }
-hashbrown = { workspace = true }
 
 [dev-dependencies]
 generic-tests = { workspace = true }

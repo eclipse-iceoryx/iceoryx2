@@ -118,7 +118,6 @@ enum-iterator = { version = "2.1.0" }
 better-panic = { version = "0.3.0" }
 colored = { version = "2.1" }
 generic-tests = { version = "0.1.2" }
-hashbrown = { version = "0.16" }
 human-panic = { version = "2.0.2" }
 lazy_static = { version = "1.4.0" }
 libc = { version = "0.2.169", features = ['extra_traits'] }

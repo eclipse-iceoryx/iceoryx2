@@ -12,12 +12,12 @@
 
 extern crate alloc;
 use alloc::boxed::Box;
+use alloc::collections::BTreeMap;
 use alloc::string::String;
 use alloc::vec;
 use alloc::vec::Vec;
 
 use iceoryx2::{port::listener::Listener, prelude::*};
-use iceoryx2_bb_container::hash_map::HashMap;
 use iceoryx2_bb_log::info;
 
 use clap::Parser;
@@ -41,10 +41,10 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
     let mut listeners = vec![];
-    let mut listener_attachments: HashMap<
+    let mut listener_attachments: BTreeMap<
         WaitSetAttachmentId<ipc::Service>,
         (&String, &Listener<ipc::Service>),
-    > = HashMap::new();
+    > = BTreeMap::new();
     let mut guards = vec![];
 
     // create a listener for every service

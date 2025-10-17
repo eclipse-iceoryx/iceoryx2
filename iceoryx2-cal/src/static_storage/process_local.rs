@@ -43,11 +43,11 @@ pub use crate::static_storage::*;
 
 use core::sync::atomic::Ordering;
 
+use alloc::collections::BTreeMap;
 use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
 
-use iceoryx2_bb_container::hash_map::HashMap;
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_bb_posix::mutex::*;
@@ -66,12 +66,12 @@ struct StorageEntry {
     content: Arc<StorageContent>,
 }
 
-static PROCESS_LOCAL_MTX_HANDLE: Lazy<MutexHandle<HashMap<FilePath, StorageEntry>>> =
+static PROCESS_LOCAL_MTX_HANDLE: Lazy<MutexHandle<BTreeMap<FilePath, StorageEntry>>> =
     Lazy::new(MutexHandle::new);
-static PROCESS_LOCAL_STORAGE: Lazy<Mutex<HashMap<FilePath, StorageEntry>>> = Lazy::new(|| {
+static PROCESS_LOCAL_STORAGE: Lazy<Mutex<BTreeMap<FilePath, StorageEntry>>> = Lazy::new(|| {
     let result = MutexBuilder::new()
         .is_interprocess_capable(false)
-        .create(HashMap::new(), &PROCESS_LOCAL_MTX_HANDLE);
+        .create(BTreeMap::new(), &PROCESS_LOCAL_MTX_HANDLE);
 
     if result.is_err() {
         fatal_panic!(from "PROCESS_LOCAL_STORAGE", "Failed to create global static storage");

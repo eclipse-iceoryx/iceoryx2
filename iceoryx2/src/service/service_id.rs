@@ -26,7 +26,9 @@ use super::{messaging_pattern::MessagingPattern, service_name::ServiceName};
 const SERVICE_ID_CAPACITY: usize = 64;
 
 /// The unique id of a [`Service`](crate::service::Service)
-#[derive(Debug, Eq, PartialEq, Clone, Copy, Hash, ZeroCopySend, Serialize, Deserialize)]
+#[derive(
+    Debug, Eq, PartialEq, Ord, PartialOrd, Clone, Copy, Hash, ZeroCopySend, Serialize, Deserialize,
+)]
 #[repr(C)]
 pub struct ServiceId(pub(crate) RestrictedFileName<SERVICE_ID_CAPACITY>);
 
