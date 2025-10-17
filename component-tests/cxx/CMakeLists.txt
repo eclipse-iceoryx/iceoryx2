@@ -20,27 +20,16 @@ include(Iceoryx2PlatformSettings)
 set(CMAKE_CXX_STANDARD ${ICEORYX2_CXX_STD_VALUE})
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-string(JOIN " " ICEORYX2_C_FLAGS_STRING ${ICEORYX2_C_FLAGS})
-string(JOIN " " ICEORYX2_C_WARNINGS_STRING ${ICEORYX2_C_WARNINGS})
-string(JOIN " " ICEORYX2_CXX_FLAGS_STRING ${ICEORYX2_CXX_FLAGS})
-string(JOIN " " ICEORYX2_CXX_WARNINGS_STRING ${ICEORYX2_CXX_WARNINGS})
-string(JOIN " " ICEORYX2_SANITIZER_FLAGS_STRING ${ICEORYX2_SANITIZER_FLAGS})
-
-set(CMAKE_C_FLAGS "\
-    ${CMAKE_C_FLAGS} \
-    ${ICEORYX2_C_FLAGS_STRING} \
-    ${ICEORYX2_C_WARNINGS_STRING}\
-")
-set(CMAKE_CXX_FLAGS "\
-    ${CMAKE_CXX_FLAGS} \
-    ${ICEORYX2_CXX_FLAGS_STRING} \
-    ${ICEORYX2_CXX_WARNINGS_STRING} \
-    ${ICEORYX2_SANITIZER_FLAGS_STRING} \
-")
-
 find_package(iceoryx2-cxx 0.7.0 REQUIRED)
 
 add_executable(component-tests_cxx)
+target_compile_options(component-tests_cxx
+    PRIVATE
+    ${ICEORYX2_CXX_FLAGS}
+    ${ICEORYX2_CXX_WARNINGS}
+    ${ICEORYX2_SANITIZER_FLAGS}
+    ${ICEORYX2_COVERAGE_FLAGS}
+)
 target_sources(component-tests_cxx
     PRIVATE
     ${PROJECT_SOURCE_DIR}/src/main.cpp
@@ -57,4 +46,6 @@ target_link_libraries(component-tests_cxx
     PRIVATE
     iceoryx2-cxx::static-lib-cxx
     iceoryx2-bb-cxx::iceoryx2-bb-containers-cxx
+    ${ICEORYX2_SANITIZER_FLAGS}
+    ${ICEORYX2_COVERAGE_FLAGS}
 )
