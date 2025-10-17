@@ -56,3 +56,8 @@ proc show_test_passed { } {
     global C_GREEN C_OFF
     puts "${C_GREEN}Test passed!${C_OFF}"
 }
+
+proc show_test_failed { } {
+    global C_RED C_OFF
+    puts "${C_RED}Test failed!${C_OFF}"
+}
