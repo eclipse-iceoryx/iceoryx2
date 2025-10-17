@@ -19,6 +19,3 @@ iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-bb-log = { workspace = true }
 iceoryx2-bb-system-types = { workspace = true }
-
-[dev-dependencies]
-clap = { workspace = true }
