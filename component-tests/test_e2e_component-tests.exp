@@ -1,0 +1,62 @@
+#!/usr/bin/expect
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache Software License 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+# which is available at https://opensource.org/licenses/MIT.
+#
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+#### Common Setup
+
+set REPO_ROOT [exec git rev-parse --show-toplevel]
+cd ${REPO_ROOT}
+
+source examples/cross-language-end-to-end-tests/common.exp
+
+#### Test Setup
+
+set timeout 30
+
+# Spawn both processes in the background
+spawn cargo run --bin component-tests_rust
+set id_rust $spawn_id
+spawn target/ff/cc/build/component-tests/cxx/component-tests_cxx
+set id_cxx $spawn_id
+
+#### Test Assertion
+
+expect_output_from $id_rust "Waiting for clients to connect..."
+expect_output_from $id_cxx "Waiting for clients to connect..."
+
+proc wait_for_exit {spawn_id} {
+    expect {
+        -i $spawn_id eof {
+            set status [wait $spawn_id]
+            set exit_code [lindex $status end]
+            return $exit_code
+        }
+    }
+}
+
+# Wait for both processes and get their exit codes
+set exit_code_rust [wait_for_exit $id_rust]
+set exit_code_cxx [wait_for_exit $id_cxx]
+
+puts "---"
+
+if {$exit_code_rust != 0} {
+    show_test_failed
+    exit $exit_code_rust
+}
+
+if {$exit_code_cxx != 0} {
+    show_test_failed
+    exit $exit_code_cxx
+}
+
+show_test_passed

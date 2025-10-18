@@ -1,5 +1,5 @@
 {
-  "checksum": "910ca22eccea45dd6d894ea0d743baad64b71533c8f78b544fe74ffc5e1c0259",
+  "checksum": "37438252815ee62b97c818c9334f52bf46489d16184910bf7f6ffc0f81fb1764",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -3176,6 +3176,27 @@
         "MIT"
       ],
       "license_file": "LICENSE"
+    },
+    "component-tests_rust 0.7.0": {
+      "name": "component-tests_rust",
+      "version": "0.7.0",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [],
+      "library_target_name": null,
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "edition": "2021",
+        "version": "0.7.0"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
     },
     "concurrent-queue 2.5.0": {
       "name": "concurrent-queue",
@@ -30465,6 +30486,7 @@
     "benchmark-publish-subscribe 0.7.0": "benchmarks/publish-subscribe",
     "benchmark-queue 0.7.0": "benchmarks/queue",
     "benchmark-request-response 0.7.0": "benchmarks/request-response",
+    "component-tests_rust 0.7.0": "component-tests/rust",
     "example 0.7.0": "examples",
     "iceoryx2 0.7.0": "iceoryx2",
     "iceoryx2-bb-conformance-test-macros 0.7.0": "iceoryx2-bb/conformance-test-macros",

@@ -124,7 +124,8 @@ class StaticVector {
   private:
     template <typename, uint64_t>
     friend class StaticVector;
-    detail::RawByteStorage<T, Capacity> m_storage;
+    using StorageType = detail::RawByteStorage<T, Capacity>;
+    StorageType m_storage;
 
   public:
     // constructors
@@ -487,6 +488,21 @@ class StaticVector {
 
     friend auto operator!=(StaticVector const& lhs, StaticVector const& rhs) -> bool {
         return !(lhs == rhs);
+    }
+
+    /// Obtains metrics about the internal memory layout of the vector.
+    /// This function is intended for internal use only.
+    constexpr auto static_memory_layout_metrics() noexcept {
+        struct VectorMemoryLayoutMetrics {
+            size_t vector_alignment;
+            size_t vector_size;
+            typename StorageType::StorageMemoryLayoutMetrics storage_metrics;
+        } ret;
+        using Self = std::remove_reference_t<decltype(*this)>;
+        ret.vector_size = sizeof(Self);
+        ret.vector_alignment = alignof(Self);
+        ret.storage_metrics = m_storage.static_memory_layout_metrics();
+        return ret;
     }
 };
 

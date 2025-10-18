@@ -61,6 +61,7 @@ if [[ ${BUILD_END_TO_END_TESTS} == true ]]; then
     echo "# Build end to end tests #"
     echo "##########################"
 
+    cargo build --bin component-tests_rust
     cargo build --examples
     cargo build --bin iox2-service
 
@@ -82,6 +83,7 @@ if [[ ${BUILD_END_TO_END_TESTS} == true ]]; then
         -DRUST_BUILD_ARTIFACT_PATH="$(pwd)/target/debug" \
         -DCMAKE_BUILD_TYPE=Debug \
         -DBUILD_CXX=ON \
+        -DBUILD_COMPONENT_TESTS=ON \
         -DBUILD_EXAMPLES=ON \
         -DBUILD_TESTING=OFF
     cmake --build target/ff/cc/build -j$NUM_JOBS
