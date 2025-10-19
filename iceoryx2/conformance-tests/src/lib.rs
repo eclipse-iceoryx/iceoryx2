@@ -21,3 +21,4 @@ pub mod publisher;
 pub mod reader;
 pub mod sample;
 pub mod sample_mut;
+pub mod server;

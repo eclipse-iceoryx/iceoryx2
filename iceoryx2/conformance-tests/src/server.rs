@@ -10,8 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[generic_tests::define]
-mod server {
+use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod server {
     use core::sync::atomic::Ordering;
     use core::time::Duration;
     use std::sync::Barrier;
@@ -20,6 +23,7 @@ mod server {
     use iceoryx2::prelude::*;
     use iceoryx2::service::port_factory::request_response::PortFactory;
     use iceoryx2::testing::*;
+    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
@@ -44,8 +48,8 @@ mod server {
         (node, service)
     }
 
-    #[test]
-    fn disconnected_server_does_not_block_new_servers<Sut: Service>() {
+    #[conformance_test]
+    pub fn disconnected_server_does_not_block_new_servers<Sut: Service>() {
         let service_name = generate_service_name();
         let node = create_node::<Sut>();
         let service = node
@@ -64,8 +68,8 @@ mod server {
         assert_that!(sut, is_ok);
     }
 
-    #[test]
-    fn receiving_requests_works_with_server_created_first<Sut: Service>() {
+    #[conformance_test]
+    pub fn receiving_requests_works_with_server_created_first<Sut: Service>() {
         let (_node, service) = create_node_and_service::<Sut>();
         let sut = service.server_builder().create().unwrap();
         let client = service.client_builder().create().unwrap();
@@ -78,8 +82,8 @@ mod server {
         assert_that!(*active_request, eq 1234);
     }
 
-    #[test]
-    fn receiving_requests_works_with_client_created_first<Sut: Service>() {
+    #[conformance_test]
+    pub fn receiving_requests_works_with_client_created_first<Sut: Service>() {
         let (_node, service) = create_node_and_service::<Sut>();
         let client = service.client_builder().create().unwrap();
         let sut = service.server_builder().create().unwrap();
@@ -92,8 +96,8 @@ mod server {
         assert_that!(*active_request, eq 5678);
     }
 
-    #[test]
-    fn requests_of_a_disconnected_client_are_not_received<Sut: Service>() {
+    #[conformance_test]
+    pub fn requests_of_a_disconnected_client_are_not_received<Sut: Service>() {
         let (_node, service) = create_node_and_service::<Sut>();
         let client = service.client_builder().create().unwrap();
         let sut = service.server_builder().create().unwrap();
@@ -108,8 +112,8 @@ mod server {
         assert_that!(active_request, is_none);
     }
 
-    #[test]
-    fn requests_are_not_delivered_to_late_joiners<Sut: Service>() {
+    #[conformance_test]
+    pub fn requests_are_not_delivered_to_late_joiners<Sut: Service>() {
         let (_node, service) = create_node_and_service::<Sut>();
         let client = service.client_builder().create().unwrap();
 
@@ -162,8 +166,8 @@ mod server {
         }
     }
 
-    #[test]
-    fn max_loaned_responses_per_requests_is_adjusted_to_sane_values<Sut: Service>() {
+    #[conformance_test]
+    pub fn max_loaned_responses_per_requests_is_adjusted_to_sane_values<Sut: Service>() {
         let (_node, service) = create_node_and_service::<Sut>();
 
         let sut = service
@@ -181,8 +185,8 @@ mod server {
         assert_that!(active_request.loan(), is_ok);
     }
 
-    #[test]
-    fn can_loan_at_most_max_responses_per_requests<Sut: Service>() {
+    #[conformance_test]
+    pub fn can_loan_at_most_max_responses_per_requests<Sut: Service>() {
         const MAX_LOANS: usize = 5;
         let service_name = generate_service_name();
         let node = create_node::<Sut>();
@@ -211,8 +215,10 @@ mod server {
         assert_that!(active_request.loan().err(), eq Some(iceoryx2::port::LoanError::ExceedsMaxLoans));
     }
 
-    #[test]
-    fn server_can_hold_specified_amount_of_active_requests_one_client_one_request<Sut: Service>() {
+    #[conformance_test]
+    pub fn server_can_hold_specified_amount_of_active_requests_one_client_one_request<
+        Sut: Service,
+    >() {
         const MAX_CLIENTS: usize = 1;
         const MAX_ACTIVE_REQUESTS: usize = 1;
         server_can_hold_specified_amount_of_active_requests::<Sut>(
@@ -221,8 +227,8 @@ mod server {
         );
     }
 
-    #[test]
-    fn server_can_hold_specified_amount_of_active_requests_one_client_many_requests<
+    #[conformance_test]
+    pub fn server_can_hold_specified_amount_of_active_requests_one_client_many_requests<
         Sut: Service,
     >() {
         const MAX_CLIENTS: usize = 1;
@@ -233,8 +239,8 @@ mod server {
         );
     }
 
-    #[test]
-    fn server_can_hold_specified_amount_of_active_requests_many_clients_one_request<
+    #[conformance_test]
+    pub fn server_can_hold_specified_amount_of_active_requests_many_clients_one_request<
         Sut: Service,
     >() {
         const MAX_CLIENTS: usize = 7;
@@ -245,8 +251,8 @@ mod server {
         );
     }
 
-    #[test]
-    fn server_can_hold_specified_amount_of_active_requests_many_clients_many_requests<
+    #[conformance_test]
+    pub fn server_can_hold_specified_amount_of_active_requests_many_clients_many_requests<
         Sut: Service,
     >() {
         const MAX_CLIENTS: usize = 8;
@@ -257,8 +263,8 @@ mod server {
         );
     }
 
-    #[test]
-    fn unable_to_deliver_strategy_discard_discards_responses_when_client_buffer_is_full<
+    #[conformance_test]
+    pub fn unable_to_deliver_strategy_discard_discards_responses_when_client_buffer_is_full<
         Sut: Service,
     >() {
         let service_name = generate_service_name();
@@ -292,8 +298,8 @@ mod server {
         assert_that!(response, is_none);
     }
 
-    #[test]
-    fn unable_to_deliver_strategy_block_blocks_responses_when_client_buffer_is_full<
+    #[conformance_test]
+    pub fn unable_to_deliver_strategy_block_blocks_responses_when_client_buffer_is_full<
         Sut: Service,
     >() {
         let _watchdog = Watchdog::new();
@@ -344,8 +350,8 @@ mod server {
         });
     }
 
-    #[test]
-    fn reclaims_all_responses_delivered_to_client_after_a_client_disconnect<Sut: Service>() {
+    #[conformance_test]
+    pub fn reclaims_all_responses_delivered_to_client_after_a_client_disconnect<Sut: Service>() {
         const MAX_ACTIVE_REQUESTS: usize = 4;
         const ITERATIONS: usize = 20;
         const MAX_CLIENTS: usize = 4;
@@ -390,8 +396,8 @@ mod server {
         }
     }
 
-    #[test]
-    fn updates_connections_after_reconnect<Sut: Service>() {
+    #[conformance_test]
+    pub fn updates_connections_after_reconnect<Sut: Service>() {
         const ITERATIONS: usize = 20;
         const MAX_CLIENTS: usize = 4;
         let service_name = generate_service_name();
@@ -463,8 +469,8 @@ mod server {
         }
     }
 
-    #[test]
-    fn completion_channel_capacity_is_never_exceeded_with_huge_buffer_size<Sut: Service>() {
+    #[conformance_test]
+    pub fn completion_channel_capacity_is_never_exceeded_with_huge_buffer_size<Sut: Service>() {
         const MAX_RESPONSE_BUFFER_SIZE: usize = 100;
         const MAX_BORROWED_RESPONSES: usize = 1;
 
@@ -474,8 +480,8 @@ mod server {
         );
     }
 
-    #[test]
-    fn completion_channel_capacity_is_never_exceeded_with_huge_response_borrow_size<
+    #[conformance_test]
+    pub fn completion_channel_capacity_is_never_exceeded_with_huge_response_borrow_size<
         Sut: Service,
     >() {
         const MAX_RESPONSE_BUFFER_SIZE: usize = 1;
@@ -487,8 +493,8 @@ mod server {
         );
     }
 
-    #[test]
-    fn completion_channel_capacity_is_never_exceeded_with_huge_values<Sut: Service>() {
+    #[conformance_test]
+    pub fn completion_channel_capacity_is_never_exceeded_with_huge_values<Sut: Service>() {
         const MAX_RESPONSE_BUFFER_SIZE: usize = 100;
         const MAX_BORROWED_RESPONSES: usize = 100;
 
@@ -498,8 +504,10 @@ mod server {
         );
     }
 
-    #[test]
-    fn completion_channel_capacity_is_never_exceeded_with_smallest_possible_values<Sut: Service>() {
+    #[conformance_test]
+    pub fn completion_channel_capacity_is_never_exceeded_with_smallest_possible_values<
+        Sut: Service,
+    >() {
         const MAX_RESPONSE_BUFFER_SIZE: usize = 1;
         const MAX_BORROWED_RESPONSES: usize = 1;
 
@@ -583,8 +591,8 @@ mod server {
         }
     }
 
-    #[test]
-    fn server_runs_never_out_of_memory_with_smallest_possible_values<Sut: Service>() {
+    #[conformance_test]
+    pub fn server_runs_never_out_of_memory_with_smallest_possible_values<Sut: Service>() {
         const MAX_CLIENTS: usize = 1;
         const MAX_ACTIVE_REQUESTS: usize = 1;
         const MAX_RESPONSE_BUFFER_SIZE: usize = 1;
@@ -600,8 +608,8 @@ mod server {
         );
     }
 
-    #[test]
-    fn server_runs_never_out_of_memory_with_huge_values<Sut: Service>() {
+    #[conformance_test]
+    pub fn server_runs_never_out_of_memory_with_huge_values<Sut: Service>() {
         const MAX_CLIENTS: usize = 10;
         const MAX_ACTIVE_REQUESTS: usize = 10;
         const MAX_RESPONSE_BUFFER_SIZE: usize = 10;
@@ -617,8 +625,8 @@ mod server {
         );
     }
 
-    #[test]
-    fn server_runs_never_out_of_memory_with_huge_max_clients<Sut: Service>() {
+    #[conformance_test]
+    pub fn server_runs_never_out_of_memory_with_huge_max_clients<Sut: Service>() {
         const MAX_CLIENTS: usize = 10;
         const MAX_ACTIVE_REQUESTS: usize = 1;
         const MAX_RESPONSE_BUFFER_SIZE: usize = 1;
@@ -634,8 +642,8 @@ mod server {
         );
     }
 
-    #[test]
-    fn server_runs_never_out_of_memory_with_huge_max_active_requests<Sut: Service>() {
+    #[conformance_test]
+    pub fn server_runs_never_out_of_memory_with_huge_max_active_requests<Sut: Service>() {
         const MAX_CLIENTS: usize = 1;
         const MAX_ACTIVE_REQUESTS: usize = 10;
         const MAX_RESPONSE_BUFFER_SIZE: usize = 1;
@@ -651,8 +659,8 @@ mod server {
         );
     }
 
-    #[test]
-    fn server_runs_never_out_of_memory_with_huge_response_buffer_size<Sut: Service>() {
+    #[conformance_test]
+    pub fn server_runs_never_out_of_memory_with_huge_response_buffer_size<Sut: Service>() {
         const MAX_CLIENTS: usize = 1;
         const MAX_ACTIVE_REQUESTS: usize = 1;
         const MAX_RESPONSE_BUFFER_SIZE: usize = 10;
@@ -668,8 +676,8 @@ mod server {
         );
     }
 
-    #[test]
-    fn server_runs_never_out_of_memory_with_huge_borrowed_responses<Sut: Service>() {
+    #[conformance_test]
+    pub fn server_runs_never_out_of_memory_with_huge_borrowed_responses<Sut: Service>() {
         const MAX_CLIENTS: usize = 1;
         const MAX_ACTIVE_REQUESTS: usize = 1;
         const MAX_RESPONSE_BUFFER_SIZE: usize = 1;
@@ -685,8 +693,8 @@ mod server {
         );
     }
 
-    #[test]
-    fn server_runs_never_out_of_memory_with_huge_max_loaned_responses<Sut: Service>() {
+    #[conformance_test]
+    pub fn server_runs_never_out_of_memory_with_huge_max_loaned_responses<Sut: Service>() {
         const MAX_CLIENTS: usize = 1;
         const MAX_ACTIVE_REQUESTS: usize = 1;
         const MAX_RESPONSE_BUFFER_SIZE: usize = 1;
@@ -702,8 +710,8 @@ mod server {
         );
     }
 
-    #[test]
-    fn can_loan_per_request_at_most_number_of_responses<Sut: Service>() {
+    #[conformance_test]
+    pub fn can_loan_per_request_at_most_number_of_responses<Sut: Service>() {
         const MAX_CLIENTS: usize = 4;
         const MAX_ACTIVE_REQUESTS: usize = 5;
         const MAX_LOANED_RESPONSES: usize = 6;
@@ -754,16 +762,4 @@ mod server {
             assert_that!(loans, len MAX_LOANED_RESPONSES * MAX_ACTIVE_REQUESTS * MAX_CLIENTS);
         }
     }
-
-    #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
-    mod ipc {}
-
-    #[instantiate_tests(<iceoryx2::service::local::Service>)]
-    mod local {}
-
-    #[instantiate_tests(<iceoryx2::service::ipc_threadsafe::Service>)]
-    mod ipc_threadsafe {}
-
-    #[instantiate_tests(<iceoryx2::service::local_threadsafe::Service>)]
-    mod local_threadsafe {}
 }
