@@ -10,8 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[generic_tests::define]
-mod service_event {
+use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod service_event {
     use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
     use core::time::Duration;
     use std::collections::HashSet;
@@ -23,6 +26,7 @@ mod service_event {
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::event::{EventCreateError, EventOpenError};
     use iceoryx2::testing::*;
+    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -37,8 +41,8 @@ mod service_event {
         .unwrap()
     }
 
-    #[test]
-    fn creating_non_existing_service_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn creating_non_existing_service_works<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -49,8 +53,8 @@ mod service_event {
         assert_that!(*sut.name(), eq service_name);
     }
 
-    #[test]
-    fn creating_same_service_twice_fails<Sut: Service>() {
+    #[conformance_test]
+    pub fn creating_same_service_twice_fails<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -65,8 +69,8 @@ mod service_event {
         );
     }
 
-    #[test]
-    fn recreate_after_drop_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn recreate_after_drop_works<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -79,8 +83,8 @@ mod service_event {
         assert_that!(sut2, is_ok);
     }
 
-    #[test]
-    fn open_fails_when_service_does_not_exist<Sut: Service>() {
+    #[conformance_test]
+    pub fn open_fails_when_service_does_not_exist<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -89,8 +93,8 @@ mod service_event {
         assert_that!(sut.err().unwrap(), eq EventOpenError::DoesNotExist);
     }
 
-    #[test]
-    fn open_succeeds_when_service_does_exist<Sut: Service>() {
+    #[conformance_test]
+    pub fn open_succeeds_when_service_does_exist<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -101,8 +105,8 @@ mod service_event {
         assert_that!(sut2, is_ok);
     }
 
-    #[test]
-    fn open_fails_when_service_does_not_satisfy_opener_notifier_requirements<Sut: Service>() {
+    #[conformance_test]
+    pub fn open_fails_when_service_does_not_satisfy_opener_notifier_requirements<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -133,8 +137,8 @@ mod service_event {
         assert_that!(sut2, is_ok);
     }
 
-    #[test]
-    fn open_fails_when_service_does_not_satisfy_opener_listener_requirements<Sut: Service>() {
+    #[conformance_test]
+    pub fn open_fails_when_service_does_not_satisfy_opener_listener_requirements<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -165,8 +169,8 @@ mod service_event {
         assert_that!(sut2, is_ok);
     }
 
-    #[test]
-    fn set_max_nodes_to_zero_adjusts_it_to_one<Sut: Service>() {
+    #[conformance_test]
+    pub fn set_max_nodes_to_zero_adjusts_it_to_one<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -180,8 +184,8 @@ mod service_event {
         assert_that!(sut.static_config().max_nodes(), eq 1);
     }
 
-    #[test]
-    fn set_max_listeners_to_zero_adjusts_it_to_one<Sut: Service>() {
+    #[conformance_test]
+    pub fn set_max_listeners_to_zero_adjusts_it_to_one<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -195,8 +199,8 @@ mod service_event {
         assert_that!(sut.static_config().max_listeners(), eq 1);
     }
 
-    #[test]
-    fn set_max_notifiers_to_zero_adjusts_it_to_one<Sut: Service>() {
+    #[conformance_test]
+    pub fn set_max_notifiers_to_zero_adjusts_it_to_one<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -210,8 +214,8 @@ mod service_event {
         assert_that!(sut.static_config().max_notifiers(), eq 1);
     }
 
-    #[test]
-    fn open_fails_when_service_does_not_satisfy_opener_node_requirements<Sut: Service>() {
+    #[conformance_test]
+    pub fn open_fails_when_service_does_not_satisfy_opener_node_requirements<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -242,8 +246,8 @@ mod service_event {
         assert_that!(sut2, is_ok);
     }
 
-    #[test]
-    fn open_fails_when_service_does_not_satisfy_event_id_requirements<Sut: Service>() {
+    #[conformance_test]
+    pub fn open_fails_when_service_does_not_satisfy_event_id_requirements<Sut: Service>() {
         let service_name = generate_name();
         const EVENT_ID_MAX_VALUE: usize = 78;
         let config = generate_isolated_config();
@@ -273,8 +277,8 @@ mod service_event {
         assert_that!(sut2, is_ok);
     }
 
-    #[test]
-    fn open_uses_predefined_settings_when_nothing_is_specified<Sut: Service>() {
+    #[conformance_test]
+    pub fn open_uses_predefined_settings_when_nothing_is_specified<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -305,8 +309,8 @@ mod service_event {
         assert_that!(sut2.static_config().notifier_created_event(), eq Some(EventId::new(10)));
     }
 
-    #[test]
-    fn settings_can_be_modified_via_custom_config<Sut: Service>() {
+    #[conformance_test]
+    pub fn settings_can_be_modified_via_custom_config<Sut: Service>() {
         let service_name = generate_name();
         let mut custom_config = generate_isolated_config();
         custom_config.defaults.event.max_nodes = 13;
@@ -332,8 +336,8 @@ mod service_event {
         assert_that!(sut2.static_config().max_listeners(), eq 10);
     }
 
-    #[test]
-    fn simple_communication_works_listener_created_first<Sut: Service>() {
+    #[conformance_test]
+    pub fn simple_communication_works_listener_created_first<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -364,8 +368,8 @@ mod service_event {
         assert_that!(received_events, eq 1);
     }
 
-    #[test]
-    fn simple_communication_works_notifier_created_first<Sut: Service>() {
+    #[conformance_test]
+    pub fn simple_communication_works_notifier_created_first<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -396,8 +400,8 @@ mod service_event {
         assert_that!(received_events, eq 1);
     }
 
-    #[test]
-    fn notifier_emits_create_and_dropped_event_id<Sut: Service>() {
+    #[conformance_test]
+    pub fn notifier_emits_create_and_dropped_event_id<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -430,8 +434,8 @@ mod service_event {
         assert_that!(received_events, eq 0);
     }
 
-    #[test]
-    fn notifier_emits_nothing_when_no_events_are_configured<Sut: Service>() {
+    #[conformance_test]
+    pub fn notifier_emits_nothing_when_no_events_are_configured<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -468,8 +472,8 @@ mod service_event {
         assert_that!(received_events, eq 1);
     }
 
-    #[test]
-    fn communication_with_max_notifiers_and_listeners_single_notification<Sut: Service>() {
+    #[conformance_test]
+    pub fn communication_with_max_notifiers_and_listeners_single_notification<Sut: Service>() {
         const MAX_LISTENERS: usize = 4;
         const MAX_NOTIFIERS: usize = 6;
         const NUMBER_OF_ITERATIONS: u64 = 128;
@@ -517,8 +521,8 @@ mod service_event {
         }
     }
 
-    #[test]
-    fn communication_with_max_notifiers_and_listeners_multi_notification<Sut: Service>() {
+    #[conformance_test]
+    pub fn communication_with_max_notifiers_and_listeners_multi_notification<Sut: Service>() {
         const MAX_LISTENERS: usize = 5;
         const MAX_NOTIFIERS: usize = 7;
         const NUMBER_OF_ITERATIONS: u64 = 128;
@@ -569,8 +573,8 @@ mod service_event {
         }
     }
 
-    #[test]
-    fn number_of_notifiers_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn number_of_notifiers_works<Sut: Service>() {
         let service_name = generate_name();
         const MAX_NOTIFIERS: usize = 8;
         let config = generate_isolated_config();
@@ -612,8 +616,8 @@ mod service_event {
         }
     }
 
-    #[test]
-    fn number_of_listeners_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn number_of_listeners_works<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -655,8 +659,8 @@ mod service_event {
         }
     }
 
-    #[test]
-    fn number_of_nodes_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn number_of_nodes_works<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let main_node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -693,8 +697,8 @@ mod service_event {
         assert_that!(service, is_ok);
     }
 
-    #[test]
-    fn max_event_id_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn max_event_id_works<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -724,8 +728,8 @@ mod service_event {
         assert_that!(result.err().unwrap(), eq NotifierNotifyError::EventIdOutOfBounds);
     }
 
-    #[test]
-    fn concurrent_reconnecting_notifier_can_trigger_waiting_listener<Sut: Service>() {
+    #[conformance_test]
+    pub fn concurrent_reconnecting_notifier_can_trigger_waiting_listener<Sut: Service>() {
         let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
 
         let number_of_listener_threads = 2;
@@ -784,8 +788,8 @@ mod service_event {
         });
     }
 
-    #[test]
-    fn concurrent_reconnecting_listener_can_wait_for_triggering_notifiers<Sut: Service>() {
+    #[conformance_test]
+    pub fn concurrent_reconnecting_listener_can_wait_for_triggering_notifiers<Sut: Service>() {
         let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
 
         let number_of_listener_threads = 2;
@@ -845,8 +849,8 @@ mod service_event {
         });
     }
 
-    #[test]
-    fn service_persists_when_service_object_is_dropped_but_endpoints_are_still_alive<
+    #[conformance_test]
+    pub fn service_persists_when_service_object_is_dropped_but_endpoints_are_still_alive<
         Sut: Service,
     >() {
         let service_name = generate_name();
@@ -881,8 +885,8 @@ mod service_event {
         assert_that!(received_events, eq 1);
     }
 
-    #[test]
-    fn ports_of_dropped_service_block_new_service_creation<Sut: Service>() {
+    #[conformance_test]
+    pub fn ports_of_dropped_service_block_new_service_creation<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -914,8 +918,8 @@ mod service_event {
         assert_that!(node.service_builder(&service_name).event().create(), is_ok);
     }
 
-    #[test]
-    fn service_can_be_opened_when_there_is_a_notifier<Sut: Service>() {
+    #[conformance_test]
+    pub fn service_can_be_opened_when_there_is_a_notifier<Sut: Service>() {
         let event_id = EventId::new(76);
         let service_name = generate_name();
         let config = generate_isolated_config();
@@ -952,8 +956,8 @@ mod service_event {
         assert_that!(sut, is_ok);
     }
 
-    #[test]
-    fn service_can_be_opened_when_there_is_a_listener<Sut: Service>() {
+    #[conformance_test]
+    pub fn service_can_be_opened_when_there_is_a_listener<Sut: Service>() {
         let event_id = EventId::new(93);
         let service_name = generate_name();
         let config = generate_isolated_config();
@@ -990,8 +994,8 @@ mod service_event {
         assert_that!(sut, is_ok);
     }
 
-    #[test]
-    fn try_wait_does_not_block<Sut: Service>() {
+    #[conformance_test]
+    pub fn try_wait_does_not_block<Sut: Service>() {
         let _watch_dog = Watchdog::new();
         let service_name = generate_name();
         let config = generate_isolated_config();
@@ -1007,8 +1011,8 @@ mod service_event {
         assert_that!(listener.try_wait_one(), is_ok);
     }
 
-    #[test]
-    fn timed_wait_blocks_for_at_least_timeout<Sut: Service>() {
+    #[conformance_test]
+    pub fn timed_wait_blocks_for_at_least_timeout<Sut: Service>() {
         let _watch_dog = Watchdog::new();
         let service_name = generate_name();
         let config = generate_isolated_config();
@@ -1062,24 +1066,24 @@ mod service_event {
         });
     }
 
-    #[test]
-    fn timed_wait_blocks_until_notification<Sut: Service>() {
+    #[conformance_test]
+    pub fn timed_wait_blocks_until_notification<Sut: Service>() {
         wait_blocks_until_notification(|l: &Listener<Sut>| {
             let id = l.timed_wait_one(TIMEOUT * 1000).unwrap();
             assert_that!(id, eq Some(EventId::new(13)));
         })
     }
 
-    #[test]
-    fn blocking_wait_blocks_until_notification<Sut: Service>() {
+    #[conformance_test]
+    pub fn blocking_wait_blocks_until_notification<Sut: Service>() {
         wait_blocks_until_notification(|l: &Listener<Sut>| {
             let id = l.blocking_wait_one().unwrap();
             assert_that!(id, eq Some(EventId::new(13)));
         })
     }
 
-    #[test]
-    fn try_wait_collects_all_notifications<Sut: Service>() {
+    #[conformance_test]
+    pub fn try_wait_collects_all_notifications<Sut: Service>() {
         const NUMBER_OF_NOTIFICATIONS: usize = 8;
         wait_collects_all_notifications(NUMBER_OF_NOTIFICATIONS, |l: &Listener<Sut>, ids| {
             while let Some(id) = l.try_wait_one().unwrap() {
@@ -1088,8 +1092,8 @@ mod service_event {
         });
     }
 
-    #[test]
-    fn timed_wait_collects_all_notifications<Sut: Service>() {
+    #[conformance_test]
+    pub fn timed_wait_collects_all_notifications<Sut: Service>() {
         const NUMBER_OF_NOTIFICATIONS: usize = 8;
         wait_collects_all_notifications(NUMBER_OF_NOTIFICATIONS, |l: &Listener<Sut>, ids| {
             for _ in 0..NUMBER_OF_NOTIFICATIONS {
@@ -1099,8 +1103,8 @@ mod service_event {
         });
     }
 
-    #[test]
-    fn blocking_wait_collects_all_notifications<Sut: Service>() {
+    #[conformance_test]
+    pub fn blocking_wait_collects_all_notifications<Sut: Service>() {
         const NUMBER_OF_NOTIFICATIONS: usize = 8;
         wait_collects_all_notifications(NUMBER_OF_NOTIFICATIONS, |l: &Listener<Sut>, ids| {
             for _ in 0..NUMBER_OF_NOTIFICATIONS {
@@ -1110,8 +1114,8 @@ mod service_event {
         });
     }
 
-    #[test]
-    fn try_wait_all_does_not_block<Sut: Service>() {
+    #[conformance_test]
+    pub fn try_wait_all_does_not_block<Sut: Service>() {
         let _watch_dog = Watchdog::new();
         let service_name = generate_name();
         let config = generate_isolated_config();
@@ -1130,8 +1134,8 @@ mod service_event {
         assert_that!(callback_called, eq false);
     }
 
-    #[test]
-    fn timed_wait_all_blocks_for_at_least_timeout<Sut: Service>() {
+    #[conformance_test]
+    pub fn timed_wait_all_blocks_for_at_least_timeout<Sut: Service>() {
         let _watch_dog = Watchdog::new();
         let service_name = generate_name();
         let config = generate_isolated_config();
@@ -1155,8 +1159,8 @@ mod service_event {
         assert_that!(callback_called, eq false);
     }
 
-    #[test]
-    fn timed_wait_all_blocks_until_notification<Sut: Service>() {
+    #[conformance_test]
+    pub fn timed_wait_all_blocks_until_notification<Sut: Service>() {
         let mut callback_was_called = false;
         wait_blocks_until_notification(|l: &Listener<Sut>| {
             assert_that!(
@@ -1173,8 +1177,8 @@ mod service_event {
         assert_that!(callback_was_called, eq true);
     }
 
-    #[test]
-    fn blocking_wait_all_blocks_until_notification<Sut: Service>() {
+    #[conformance_test]
+    pub fn blocking_wait_all_blocks_until_notification<Sut: Service>() {
         let mut callback_was_called = false;
         wait_blocks_until_notification(|l: &Listener<Sut>| {
             assert_that!(
@@ -1217,8 +1221,8 @@ mod service_event {
         wait_call(&listener, &mut id_set);
     }
 
-    #[test]
-    fn try_wait_all_collects_all_notifications<Sut: Service>() {
+    #[conformance_test]
+    pub fn try_wait_all_collects_all_notifications<Sut: Service>() {
         const NUMBER_OF_NOTIFICATIONS: usize = 8;
         wait_collects_all_notifications(NUMBER_OF_NOTIFICATIONS, |l: &Listener<Sut>, ids| {
             let result = l.try_wait_all(|id| assert_that!(ids.insert(id), eq true));
@@ -1226,8 +1230,8 @@ mod service_event {
         });
     }
 
-    #[test]
-    fn timed_wait_all_collects_all_notifications<Sut: Service>() {
+    #[conformance_test]
+    pub fn timed_wait_all_collects_all_notifications<Sut: Service>() {
         const NUMBER_OF_NOTIFICATIONS: usize = 8;
         wait_collects_all_notifications(NUMBER_OF_NOTIFICATIONS, |l: &Listener<Sut>, ids| {
             let result = l.timed_wait_all(|id| assert_that!(ids.insert(id), eq true), TIMEOUT);
@@ -1235,8 +1239,8 @@ mod service_event {
         });
     }
 
-    #[test]
-    fn blocking_wait_all_collects_all_notifications<Sut: Service>() {
+    #[conformance_test]
+    pub fn blocking_wait_all_collects_all_notifications<Sut: Service>() {
         const NUMBER_OF_NOTIFICATIONS: usize = 8;
         wait_collects_all_notifications(NUMBER_OF_NOTIFICATIONS, |l: &Listener<Sut>, ids| {
             let result = l.blocking_wait_all(|id| assert_that!(ids.insert(id), eq true));
@@ -1244,8 +1248,8 @@ mod service_event {
         });
     }
 
-    #[test]
-    fn open_error_display_works<S: Service>() {
+    #[conformance_test]
+    pub fn open_error_display_works<S: Service>() {
         assert_that!(
             format!("{}", EventOpenError::DoesNotExist), eq "EventOpenError::DoesNotExist");
         assert_that!(
@@ -1268,8 +1272,8 @@ mod service_event {
             format!("{}", EventOpenError::DoesNotSupportRequestedMaxEventId), eq "EventOpenError::DoesNotSupportRequestedMaxEventId");
     }
 
-    #[test]
-    fn create_error_display_works<S: Service>() {
+    #[conformance_test]
+    pub fn create_error_display_works<S: Service>() {
         assert_that!(
             format!("{}", EventCreateError::ServiceInCorruptedState), eq "EventCreateError::ServiceInCorruptedState");
         assert_that!(
@@ -1280,8 +1284,8 @@ mod service_event {
             format!("{}", EventCreateError::IsBeingCreatedByAnotherInstance), eq "EventCreateError::IsBeingCreatedByAnotherInstance");
     }
 
-    #[test]
-    fn deadline_can_be_set<S: Service>() {
+    #[conformance_test]
+    pub fn deadline_can_be_set<S: Service>() {
         const DEADLINE: Duration = Duration::from_secs(556);
         let service_name = generate_name();
         let mut config = generate_isolated_config();
@@ -1310,8 +1314,8 @@ mod service_event {
         assert_that!(notifier_open.deadline(), eq Some(DEADLINE));
     }
 
-    #[test]
-    fn deadline_can_be_disabled<S: Service>() {
+    #[conformance_test]
+    pub fn deadline_can_be_disabled<S: Service>() {
         const DEADLINE: Duration = Duration::from_secs(556);
         let service_name = generate_name();
         let mut config = generate_isolated_config();
@@ -1340,8 +1344,8 @@ mod service_event {
         assert_that!(notifier_open.deadline(), eq None);
     }
 
-    #[test]
-    fn notifier_is_informed_when_deadline_was_missed<S: Service>() {
+    #[conformance_test]
+    pub fn notifier_is_informed_when_deadline_was_missed<S: Service>() {
         const DEADLINE: Duration = Duration::from_nanos(1);
         const TIMEOUT: Duration = Duration::from_millis(10);
         let service_name = generate_name();
@@ -1372,8 +1376,8 @@ mod service_event {
         assert_that!(listener.try_wait_one().unwrap(), is_some);
     }
 
-    #[test]
-    fn when_deadline_is_not_missed_notification_works<S: Service>() {
+    #[conformance_test]
+    pub fn when_deadline_is_not_missed_notification_works<S: Service>() {
         const DEADLINE: Duration = Duration::from_secs(3600);
         const TIMEOUT: Duration = Duration::from_millis(10);
         let service_name = generate_name();
@@ -1402,8 +1406,8 @@ mod service_event {
         assert_that!(listener.try_wait_one().unwrap(), is_some);
     }
 
-    #[test]
-    fn listing_all_notifiers_works<S: Service>() {
+    #[conformance_test]
+    pub fn listing_all_notifiers_works<S: Service>() {
         const NUMBER_OF_NOTIFIERS: usize = 18;
         let service_name = generate_name();
         let config = generate_isolated_config();
@@ -1434,8 +1438,8 @@ mod service_event {
         }
     }
 
-    #[test]
-    fn listing_all_notifiers_stops_on_request<S: Service>() {
+    #[conformance_test]
+    pub fn listing_all_notifiers_stops_on_request<S: Service>() {
         const NUMBER_OF_NOTIFIERS: usize = 11;
         let service_name = generate_name();
         let config = generate_isolated_config();
@@ -1463,8 +1467,8 @@ mod service_event {
         assert_that!(counter, eq 1);
     }
 
-    #[test]
-    fn listing_all_listeners_works<S: Service>() {
+    #[conformance_test]
+    pub fn listing_all_listeners_works<S: Service>() {
         const NUMBER_OF_LISTENERS: usize = 14;
         let service_name = generate_name();
         let config = generate_isolated_config();
@@ -1495,8 +1499,8 @@ mod service_event {
         }
     }
 
-    #[test]
-    fn listing_all_listeners_stops_on_request<S: Service>() {
+    #[conformance_test]
+    pub fn listing_all_listeners_stops_on_request<S: Service>() {
         const NUMBER_OF_LISTENERS: usize = 11;
         let service_name = generate_name();
         let config = generate_isolated_config();
@@ -1524,8 +1528,8 @@ mod service_event {
         assert_that!(counter, eq 1);
     }
 
-    #[test]
-    fn notifier_does_not_notify_listener_from_same_node_id_when_requested<Sut: Service>() {
+    #[conformance_test]
+    pub fn notifier_does_not_notify_listener_from_same_node_id_when_requested<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -1567,16 +1571,4 @@ mod service_event {
         }
         assert_that!(received_events, eq 1);
     }
-
-    #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
-    mod ipc {}
-
-    #[instantiate_tests(<iceoryx2::service::local::Service>)]
-    mod local {}
-
-    #[instantiate_tests(<iceoryx2::service::ipc_threadsafe::Service>)]
-    mod ipc_threadsafe {}
-
-    #[instantiate_tests(<iceoryx2::service::local_threadsafe::Service>)]
-    mod local_threadsafe {}
 }
