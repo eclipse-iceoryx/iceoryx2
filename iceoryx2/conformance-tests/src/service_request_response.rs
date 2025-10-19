@@ -10,8 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[generic_tests::define]
-mod service_request_response {
+use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod service_request_response {
     use std::collections::HashSet;
 
     use iceoryx2::node::NodeBuilder;
@@ -22,6 +25,7 @@ mod service_request_response {
     use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::testing;
+    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_testing::assert_that;
 
     #[derive(Clone, Copy)]
@@ -126,8 +130,8 @@ mod service_request_response {
         }
     }
 
-    #[test]
-    fn response_buffer_size_of_client_is_set_correctly<Sut: Service>() {
+    #[conformance_test]
+    pub fn response_buffer_size_of_client_is_set_correctly<Sut: Service>() {
         let test_args = Args {
             response_buffer_size: 7,
             ..Default::default()
@@ -163,8 +167,8 @@ mod service_request_response {
         }
     }
 
-    #[test]
-    fn response_buffer_size_with_overflow_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn response_buffer_size_with_overflow_works<Sut: Service>() {
         let test_args = Args {
             response_buffer_size: 5,
             response_overflow: true,
@@ -186,8 +190,8 @@ mod service_request_response {
         }
     }
 
-    #[test]
-    fn response_buffer_size_with_non_overflow_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn response_buffer_size_with_non_overflow_works<Sut: Service>() {
         let test_args = Args {
             response_buffer_size: 9,
             response_overflow: false,
@@ -210,8 +214,8 @@ mod service_request_response {
         }
     }
 
-    #[test]
-    fn responses_are_delivered_only_to_the_client_with_the_request<Sut: Service>() {
+    #[conformance_test]
+    pub fn responses_are_delivered_only_to_the_client_with_the_request<Sut: Service>() {
         let test_args = Args {
             number_of_clients: 4,
             ..Default::default()
@@ -243,8 +247,8 @@ mod service_request_response {
         }
     }
 
-    #[test]
-    fn responses_are_delivered_from_all_servers<Sut: Service>() {
+    #[conformance_test]
+    pub fn responses_are_delivered_from_all_servers<Sut: Service>() {
         let test_args = Args {
             number_of_servers: 3,
             ..Default::default()
@@ -272,8 +276,8 @@ mod service_request_response {
         }
     }
 
-    #[test]
-    fn responses_from_previous_requests_are_filtered_out<Sut: Service>() {
+    #[conformance_test]
+    pub fn responses_from_previous_requests_are_filtered_out<Sut: Service>() {
         const ITERATIONS: usize = 50;
         let test_args = Args {
             response_buffer_size: 8,
@@ -301,8 +305,8 @@ mod service_request_response {
         }
     }
 
-    #[test]
-    fn client_port_ids_are_set_correctly<Sut: Service>() {
+    #[conformance_test]
+    pub fn client_port_ids_are_set_correctly<Sut: Service>() {
         let test_args = Args {
             number_of_clients: 2,
             ..Default::default()
@@ -324,8 +328,8 @@ mod service_request_response {
         assert_that!(test.clients[p1].id(), eq id1);
     }
 
-    #[test]
-    fn server_port_ids_are_set_correctly<Sut: Service>() {
+    #[conformance_test]
+    pub fn server_port_ids_are_set_correctly<Sut: Service>() {
         let test_args = Args {
             number_of_servers: 2,
             ..Default::default()
@@ -352,8 +356,8 @@ mod service_request_response {
         assert_that!(test.servers[p1].id(), eq id1);
     }
 
-    #[test]
-    fn sent_responses_from_disconnected_servers_can_be_received<Sut: Service>() {
+    #[conformance_test]
+    pub fn sent_responses_from_disconnected_servers_can_be_received<Sut: Service>() {
         let test_args = Args {
             response_buffer_size: 8,
             ..Default::default()
@@ -376,8 +380,8 @@ mod service_request_response {
         }
     }
 
-    #[test]
-    fn sent_requests_from_disconnected_clients_can_be_received<Sut: Service>() {
+    #[conformance_test]
+    pub fn sent_requests_from_disconnected_clients_can_be_received<Sut: Service>() {
         let test_args = Args {
             number_of_active_requests: 8,
             enable_fire_and_forget: true,
@@ -401,8 +405,8 @@ mod service_request_response {
         }
     }
 
-    #[test]
-    fn sent_requests_from_disconnected_clients_are_not_received_without_fire_and_forget<
+    #[conformance_test]
+    pub fn sent_requests_from_disconnected_clients_are_not_received_without_fire_and_forget<
         Sut: Service,
     >() {
         let test_args = Args {
@@ -425,8 +429,8 @@ mod service_request_response {
         assert_that!(active_request, is_none);
     }
 
-    #[test]
-    fn sent_requests_from_disconnected_clients_are_received_first<Sut: Service>() {
+    #[conformance_test]
+    pub fn sent_requests_from_disconnected_clients_are_received_first<Sut: Service>() {
         let test_args = Args {
             number_of_active_requests: 8,
             number_of_clients: 2,
@@ -459,8 +463,8 @@ mod service_request_response {
         }
     }
 
-    #[test]
-    fn sent_responses_from_disconnected_servers_are_received_first<Sut: Service>() {
+    #[conformance_test]
+    pub fn sent_responses_from_disconnected_servers_are_received_first<Sut: Service>() {
         let test_args = Args {
             number_of_servers: 2,
             response_buffer_size: 8,
@@ -496,8 +500,8 @@ mod service_request_response {
         assert_that!(pending_response.is_connected(), eq false);
     }
 
-    #[test]
-    fn sent_requests_from_out_of_scope_pending_responses_are_discarded_when_fire_and_forget_is_disabled<
+    #[conformance_test]
+    pub fn sent_requests_from_out_of_scope_pending_responses_are_discarded_when_fire_and_forget_is_disabled<
         Sut: Service,
     >() {
         let test_args = Args {
@@ -521,8 +525,8 @@ mod service_request_response {
         assert_that!(*active_request.payload(), eq * pending_response_2.payload());
     }
 
-    #[test]
-    fn sent_requests_from_out_of_scope_pending_responses_are_received_when_fire_and_forget_is_allowed<
+    #[conformance_test]
+    pub fn sent_requests_from_out_of_scope_pending_responses_are_received_when_fire_and_forget_is_allowed<
         Sut: Service,
     >() {
         let test_args = Args {
@@ -549,8 +553,8 @@ mod service_request_response {
         assert_that!(*active_request.payload(), eq * pending_response_2.payload());
     }
 
-    #[test]
-    fn sent_requests_from_out_of_scope_clients_are_not_discarded<Sut: Service>() {
+    #[conformance_test]
+    pub fn sent_requests_from_out_of_scope_clients_are_not_discarded<Sut: Service>() {
         let test_args = Args {
             number_of_clients: 3,
             ..Default::default()
@@ -572,8 +576,8 @@ mod service_request_response {
         assert_that!(*active_request.payload(), eq * pending_response_2.payload());
     }
 
-    #[test]
-    fn responses_can_be_received_when_client_no_longer_exists<Sut: Service>() {
+    #[conformance_test]
+    pub fn responses_can_be_received_when_client_no_longer_exists<Sut: Service>() {
         let test_args = Args {
             response_buffer_size: 5,
             ..Default::default()
@@ -594,8 +598,8 @@ mod service_request_response {
         }
     }
 
-    #[test]
-    fn safe_overflow_for_requests_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn safe_overflow_for_requests_works<Sut: Service>() {
         let test_args = Args {
             number_of_active_requests: 5,
             request_overflow: true,
@@ -620,8 +624,8 @@ mod service_request_response {
         }
     }
 
-    #[test]
-    fn safe_overflow_for_responses_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn safe_overflow_for_responses_works<Sut: Service>() {
         let test_args = Args {
             response_buffer_size: 7,
             response_overflow: true,
@@ -647,8 +651,8 @@ mod service_request_response {
         }
     }
 
-    #[test]
-    fn communication_with_max_clients_and_servers_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn communication_with_max_clients_and_servers_works<Sut: Service>() {
         const MAX_CLIENTS: usize = 4;
         const MAX_SERVERS: usize = 4;
         const MAX_ACTIVE_REQUESTS: usize = 2;
@@ -695,8 +699,8 @@ mod service_request_response {
         }
     }
 
-    #[test]
-    fn dropping_service_keeps_established_communication<Sut: Service>() {
+    #[conformance_test]
+    pub fn dropping_service_keeps_established_communication<Sut: Service>() {
         let service_name = testing::generate_service_name();
         let config = testing::generate_isolated_config();
 
@@ -716,8 +720,8 @@ mod service_request_response {
         assert_that!(*server.receive().unwrap().unwrap(), eq 8182982);
     }
 
-    #[test]
-    fn dropping_service_keeps_established_communication_for_active_requests<Sut: Service>() {
+    #[conformance_test]
+    pub fn dropping_service_keeps_established_communication_for_active_requests<Sut: Service>() {
         let service_name = testing::generate_service_name();
         let config = testing::generate_isolated_config();
 
@@ -743,8 +747,8 @@ mod service_request_response {
         assert_that!(*pending_response.receive().unwrap().unwrap(), eq 78223);
     }
 
-    #[test]
-    fn requests_are_correctly_aligned_on_all_ends<Sut: Service>() {
+    #[conformance_test]
+    pub fn requests_are_correctly_aligned_on_all_ends<Sut: Service>() {
         let test_args = Args {
             number_of_clients: 2,
             number_of_active_requests: 8,
@@ -776,8 +780,8 @@ mod service_request_response {
         }
     }
 
-    #[test]
-    fn responses_are_correctly_aligned_on_all_ends<Sut: Service>() {
+    #[conformance_test]
+    pub fn responses_are_correctly_aligned_on_all_ends<Sut: Service>() {
         let test_args = Args {
             number_of_clients: 2,
             response_buffer_size: 21,
@@ -812,8 +816,8 @@ mod service_request_response {
         }
     }
 
-    #[test]
-    fn request_response_comm_with_mixed_types_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn request_response_comm_with_mixed_types_works<Sut: Service>() {
         const REQUEST_PAYLOAD: u128 = 9891238912831298319823;
         const RESPONSE_PAYLOAD: u16 = 17821;
         const REQUEST_HEADER: u32 = 89213998;
@@ -852,8 +856,8 @@ mod service_request_response {
         assert_that!(*response.user_header(), eq RESPONSE_HEADER);
     }
 
-    #[test]
-    fn server_can_receive_max_amount_of_requests_from_max_clients<Sut: Service>() {
+    #[conformance_test]
+    pub fn server_can_receive_max_amount_of_requests_from_max_clients<Sut: Service>() {
         let test_args = Args {
             number_of_active_requests: 5,
             number_of_clients: 6,
@@ -885,8 +889,8 @@ mod service_request_response {
         }
     }
 
-    #[test]
-    fn client_can_receive_max_amount_of_responses_from_max_servers<Sut: Service>() {
+    #[conformance_test]
+    pub fn client_can_receive_max_amount_of_responses_from_max_servers<Sut: Service>() {
         let test_args = Args {
             number_of_active_requests: 3,
             response_buffer_size: 4,
@@ -942,8 +946,8 @@ mod service_request_response {
         }
     }
 
-    #[test]
-    fn pending_response_receives_only_responses_from_sent_request<Sut: Service>() {
+    #[conformance_test]
+    pub fn pending_response_receives_only_responses_from_sent_request<Sut: Service>() {
         const CONNECTION_ITERATIONS: usize = 6;
         const SEND_RECEIVE_ITERATIONS: usize = 8;
         let test_args = Args {
@@ -980,8 +984,8 @@ mod service_request_response {
         }
     }
 
-    #[test]
-    fn sending_requests_with_custom_payload_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn sending_requests_with_custom_payload_works<Sut: Service>() {
         const NUMBER_OF_ELEMENTS: usize = 1;
         let service_name = testing::generate_service_name();
         let config = testing::generate_isolated_config();
@@ -1033,8 +1037,8 @@ mod service_request_response {
         }
     }
 
-    #[test]
-    fn sending_response_with_custom_payload_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn sending_response_with_custom_payload_works<Sut: Service>() {
         const NUMBER_OF_ELEMENTS: usize = 1;
         let service_name = testing::generate_service_name();
         let config = testing::generate_isolated_config();
@@ -1094,8 +1098,8 @@ mod service_request_response {
         }
     }
 
-    #[test]
-    fn sending_requests_with_custom_header_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn sending_requests_with_custom_header_works<Sut: Service>() {
         let service_name = testing::generate_service_name();
         let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -1139,8 +1143,8 @@ mod service_request_response {
         }
     }
 
-    #[test]
-    fn sending_response_with_custom_header_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn sending_response_with_custom_header_works<Sut: Service>() {
         let service_name = testing::generate_service_name();
         let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -1188,8 +1192,8 @@ mod service_request_response {
         }
     }
 
-    #[test]
-    fn send_increasing_requests_with_static_allocation_strategy_fails<Sut: Service>() {
+    #[conformance_test]
+    pub fn send_increasing_requests_with_static_allocation_strategy_fails<Sut: Service>() {
         const SLICE_SIZE: usize = 1024;
         let service_name = testing::generate_service_name();
         let config = testing::generate_isolated_config();
@@ -1218,8 +1222,8 @@ mod service_request_response {
         assert_that!(request.err(), eq Some(LoanError::ExceedsMaxLoanSize));
     }
 
-    #[test]
-    fn send_increasing_responses_with_static_allocation_strategy_fails<Sut: Service>() {
+    #[conformance_test]
+    pub fn send_increasing_responses_with_static_allocation_strategy_fails<Sut: Service>() {
         const SLICE_SIZE: usize = 1024;
         let service_name = testing::generate_service_name();
         let config = testing::generate_isolated_config();
@@ -1290,13 +1294,13 @@ mod service_request_response {
         }
     }
 
-    #[test]
-    fn send_and_receive_increasing_requests_with_best_fit_allocation_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn send_and_receive_increasing_requests_with_best_fit_allocation_works<Sut: Service>() {
         send_and_receive_increasing_requests_works::<Sut>(AllocationStrategy::BestFit);
     }
 
-    #[test]
-    fn send_and_receive_increasing_requests_with_power_of_two_allocation_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn send_and_receive_increasing_requests_with_power_of_two_allocation_works<Sut: Service>() {
         send_and_receive_increasing_requests_works::<Sut>(AllocationStrategy::PowerOfTwo);
     }
 
@@ -1340,22 +1344,22 @@ mod service_request_response {
         }
     }
 
-    #[test]
-    fn send_and_receive_increasing_responses_with_best_fit_allocation_strategy_works<
+    #[conformance_test]
+    pub fn send_and_receive_increasing_responses_with_best_fit_allocation_strategy_works<
         Sut: Service,
     >() {
         send_and_receive_increasing_responses_works::<Sut>(AllocationStrategy::BestFit);
     }
 
-    #[test]
-    fn send_and_receive_increasing_responses_with_power_of_two_allocation_strategy_works<
+    #[conformance_test]
+    pub fn send_and_receive_increasing_responses_with_power_of_two_allocation_strategy_works<
         Sut: Service,
     >() {
         send_and_receive_increasing_responses_works::<Sut>(AllocationStrategy::PowerOfTwo);
     }
 
-    #[test]
-    fn listing_all_clients_works<S: Service>() {
+    #[conformance_test]
+    pub fn listing_all_clients_works<S: Service>() {
         const NUMBER_OF_CLIENTS: usize = 17;
         let service_name = testing::generate_service_name();
         let config = testing::generate_isolated_config();
@@ -1386,8 +1390,8 @@ mod service_request_response {
         }
     }
 
-    #[test]
-    fn listing_all_clients_stops_on_request<S: Service>() {
+    #[conformance_test]
+    pub fn listing_all_clients_stops_on_request<S: Service>() {
         const NUMBER_OF_CLIENTS: usize = 13;
         let service_name = testing::generate_service_name();
         let config = testing::generate_isolated_config();
@@ -1415,8 +1419,8 @@ mod service_request_response {
         assert_that!(counter, eq 1);
     }
 
-    #[test]
-    fn listing_all_servers_works<S: Service>() {
+    #[conformance_test]
+    pub fn listing_all_servers_works<S: Service>() {
         const NUMBER_OF_SERVERS: usize = 17;
         let service_name = testing::generate_service_name();
         let config = testing::generate_isolated_config();
@@ -1447,8 +1451,8 @@ mod service_request_response {
         }
     }
 
-    #[test]
-    fn listing_all_servers_stops_on_request<S: Service>() {
+    #[conformance_test]
+    pub fn listing_all_servers_stops_on_request<S: Service>() {
         const NUMBER_OF_SERVERS: usize = 13;
         let service_name = testing::generate_service_name();
         let config = testing::generate_isolated_config();
@@ -1476,8 +1480,8 @@ mod service_request_response {
         assert_that!(counter, eq 1);
     }
 
-    #[test]
-    fn receive_does_not_return_error_when_server_goes_out_of_scope_after_reallocation<
+    #[conformance_test]
+    pub fn receive_does_not_return_error_when_server_goes_out_of_scope_after_reallocation<
         S: Service,
     >() {
         const SLICE_MAX_LEN: usize = 1;
@@ -1526,8 +1530,8 @@ mod service_request_response {
         assert_that!(response, is_ok);
     }
 
-    #[test]
-    fn receive_does_not_return_error_when_client_goes_out_of_scope_after_reallocation<
+    #[conformance_test]
+    pub fn receive_does_not_return_error_when_client_goes_out_of_scope_after_reallocation<
         S: Service,
     >() {
         const SLICE_MAX_LEN: usize = 1;
@@ -1572,8 +1576,8 @@ mod service_request_response {
         assert_that!(active_request, is_ok);
     }
 
-    #[test]
-    fn client_can_set_disconnect_hint<S: Service>() {
+    #[conformance_test]
+    pub fn client_can_set_disconnect_hint<S: Service>() {
         let service_name = testing::generate_service_name();
         let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
@@ -1605,16 +1609,4 @@ mod service_request_response {
         assert_that!(active_request.is_connected(), eq false);
         assert_that!(active_request.has_disconnect_hint(), eq false);
     }
-
-    #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
-    mod ipc {}
-
-    #[instantiate_tests(<iceoryx2::service::local::Service>)]
-    mod local {}
-
-    #[instantiate_tests(<iceoryx2::service::ipc_threadsafe::Service>)]
-    mod ipc_threadsafe {}
-
-    #[instantiate_tests(<iceoryx2::service::local_threadsafe::Service>)]
-    mod local_threadsafe {}
 }
