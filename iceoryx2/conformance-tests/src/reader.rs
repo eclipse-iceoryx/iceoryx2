@@ -9,9 +9,12 @@
 // which is available at https://opensource.org/licenses/MIT.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-//
-#[generic_tests::define]
-mod reader {
+
+use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod reader {
     use iceoryx2::constants::MAX_BLACKBOARD_KEY_SIZE;
     use iceoryx2::port::reader::*;
     use iceoryx2::prelude::*;
@@ -20,6 +23,7 @@ mod reader {
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::Service;
     use iceoryx2::testing::*;
+    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use std::collections::HashSet;
@@ -32,8 +36,8 @@ mod reader {
         .unwrap()
     }
 
-    #[test]
-    fn id_is_unique<Sut: Service>() {
+    #[conformance_test]
+    pub fn id_is_unique<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -57,8 +61,8 @@ mod reader {
         }
     }
 
-    #[test]
-    fn handle_can_be_acquired_for_existing_key_value_pair<Sut: Service>() {
+    #[conformance_test]
+    pub fn handle_can_be_acquired_for_existing_key_value_pair<Sut: Service>() {
         type ValueType = u64;
         let service_name = generate_name();
         let config = generate_isolated_config();
@@ -77,8 +81,8 @@ mod reader {
         assert_that!(entry_handle.unwrap().get(), eq 0);
     }
 
-    #[test]
-    fn handle_cannot_be_acquired_for_non_existing_key<Sut: Service>() {
+    #[conformance_test]
+    pub fn handle_cannot_be_acquired_for_non_existing_key<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -99,8 +103,8 @@ mod reader {
         );
     }
 
-    #[test]
-    fn handle_cannot_be_acquired_for_wrong_value_type<Sut: Service>() {
+    #[conformance_test]
+    pub fn handle_cannot_be_acquired_for_wrong_value_type<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -135,8 +139,8 @@ mod reader {
         }
     }
 
-    #[test]
-    fn handle_can_be_acquired_for_existing_key_value_pair_with_custom_key_type<Sut: Service>() {
+    #[conformance_test]
+    pub fn handle_can_be_acquired_for_existing_key_value_pair_with_custom_key_type<Sut: Service>() {
         type KeyType = Foo;
         let key = Foo { a: -13, b: 13 };
         let key_ptr: *const KeyType = &key;
@@ -183,8 +187,8 @@ mod reader {
         assert_that!(read_value, eq default_value);
     }
 
-    #[test]
-    fn handle_cannot_be_acquired_for_non_existing_key_with_custom_key_type<Sut: Service>() {
+    #[conformance_test]
+    pub fn handle_cannot_be_acquired_for_non_existing_key_with_custom_key_type<Sut: Service>() {
         type KeyType = Foo;
         let key = Foo { a: 9, b: 9 };
         let key_ptr: *const KeyType = &key;
@@ -228,8 +232,8 @@ mod reader {
         );
     }
 
-    #[test]
-    fn handle_cannot_be_acquired_for_wrong_value_type_with_custom_key_type<Sut: Service>() {
+    #[conformance_test]
+    pub fn handle_cannot_be_acquired_for_wrong_value_type_with_custom_key_type<Sut: Service>() {
         type KeyType = Foo;
         let key = Foo { a: 0, b: 0 };
         let key_ptr: *const KeyType = &key;
@@ -269,16 +273,4 @@ mod reader {
             eq EntryHandleError::EntryDoesNotExist
         );
     }
-
-    #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
-    mod ipc {}
-
-    #[instantiate_tests(<iceoryx2::service::local::Service>)]
-    mod local {}
-
-    #[instantiate_tests(<iceoryx2::service::ipc_threadsafe::Service>)]
-    mod ipc_threadsafe {}
-
-    #[instantiate_tests(<iceoryx2::service::local_threadsafe::Service>)]
-    mod local_threadsafe {}
 }
