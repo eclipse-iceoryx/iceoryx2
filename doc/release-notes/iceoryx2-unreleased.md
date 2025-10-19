@@ -30,6 +30,8 @@
 * Add unchecked, compile time const creation functions to `SemanticString` and
   system types like, `FileName`, `Path`, `FilePath`, ...
   [#1109](https://github.com/eclipse-iceoryx/iceoryx2/issues/1109)
+* Add conformance test suite to be able to test out-of-tree extensions
+  [#1021](https://github.com/eclipse-iceoryx/iceoryx2/issues/1021)
 * Implement `Copy` for `StaticString`, `SemanticString` and system types
   [#1114](https://github.com/eclipse-iceoryx/iceoryx2/issues/1114)
 
