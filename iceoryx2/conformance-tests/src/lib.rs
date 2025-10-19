@@ -23,6 +23,7 @@ pub mod sample;
 pub mod sample_mut;
 pub mod server;
 pub mod service;
+pub mod service_blackboard;
 pub mod subscriber;
 pub mod waitset;
 pub mod writer;

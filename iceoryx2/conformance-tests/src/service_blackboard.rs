@@ -10,8 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[generic_tests::define]
-mod service_blackboard {
+use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod service_blackboard {
     use core::alloc::Layout;
     use core::ptr::copy_nonoverlapping;
     use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -26,6 +29,7 @@ mod service_blackboard {
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::Service;
     use iceoryx2::testing::*;
+    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_container::string::*;
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
@@ -42,8 +46,8 @@ mod service_blackboard {
         .unwrap()
     }
 
-    #[test]
-    fn open_with_attributes_fails_when_service_key_types_differ<Sut: Service>() {
+    #[conformance_test]
+    pub fn open_with_attributes_fails_when_service_key_types_differ<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -64,8 +68,8 @@ mod service_blackboard {
         assert_that!(sut2, is_err);
     }
 
-    #[test]
-    fn creating_non_existing_service_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn creating_non_existing_service_works<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -80,8 +84,8 @@ mod service_blackboard {
         assert_that!(*sut.name(), eq service_name);
     }
 
-    #[test]
-    fn creating_same_service_twice_fails<Sut: Service>() {
+    #[conformance_test]
+    pub fn creating_same_service_twice_fails<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -101,8 +105,8 @@ mod service_blackboard {
         assert_that!(sut2.err().unwrap(), eq BlackboardCreateError::AlreadyExists);
     }
 
-    #[test]
-    fn create_fails_when_no_key_value_pairs_are_provided<Sut: Service>() {
+    #[conformance_test]
+    pub fn create_fails_when_no_key_value_pairs_are_provided<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -114,8 +118,8 @@ mod service_blackboard {
         assert_that!(sut.err().unwrap(), eq BlackboardCreateError::NoEntriesProvided);
     }
 
-    #[test]
-    fn create_fails_when_the_same_key_is_provided_twice<Sut: Service>() {
+    #[conformance_test]
+    pub fn create_fails_when_the_same_key_is_provided_twice<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -129,8 +133,8 @@ mod service_blackboard {
         assert_that!(sut.err().unwrap(), eq BlackboardCreateError::ServiceInCorruptedState);
     }
 
-    #[test]
-    fn create_works_with_mixed_add_methods<Sut: Service>() {
+    #[conformance_test]
+    pub fn create_works_with_mixed_add_methods<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -143,8 +147,8 @@ mod service_blackboard {
         assert_that!(sut, is_ok);
     }
 
-    #[test]
-    fn create_fails_when_the_same_key_is_provided_twice_with_mixed_add_methods<Sut: Service>() {
+    #[conformance_test]
+    pub fn create_fails_when_the_same_key_is_provided_twice_with_mixed_add_methods<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -158,8 +162,8 @@ mod service_blackboard {
         assert_that!(sut.err().unwrap(), eq BlackboardCreateError::ServiceInCorruptedState);
     }
 
-    #[test]
-    fn recreate_after_drop_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn recreate_after_drop_works<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -180,8 +184,8 @@ mod service_blackboard {
         assert_that!(sut2, is_ok);
     }
 
-    #[test]
-    fn open_fails_when_service_does_not_exist<Sut: Service>() {
+    #[conformance_test]
+    pub fn open_fails_when_service_does_not_exist<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -193,8 +197,8 @@ mod service_blackboard {
         assert_that!(sut.err().unwrap(), eq BlackboardOpenError::DoesNotExist);
     }
 
-    #[test]
-    fn open_succeeds_when_service_does_exist<Sut: Service>() {
+    #[conformance_test]
+    pub fn open_succeeds_when_service_does_exist<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -212,8 +216,8 @@ mod service_blackboard {
         assert_that!(sut2, is_ok);
     }
 
-    #[test]
-    fn open_fails_when_service_has_wrong_key_type<Sut: Service>() {
+    #[conformance_test]
+    pub fn open_fails_when_service_has_wrong_key_type<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -232,8 +236,8 @@ mod service_blackboard {
         assert_that!(sut2.err().unwrap(), eq BlackboardOpenError::IncompatibleKeys);
     }
 
-    #[test]
-    fn open_fails_when_service_does_not_satisfy_max_nodes_requirement<Sut: Service>() {
+    #[conformance_test]
+    pub fn open_fails_when_service_does_not_satisfy_max_nodes_requirement<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -263,8 +267,8 @@ mod service_blackboard {
         assert_that!(sut2, is_ok);
     }
 
-    #[test]
-    fn open_fails_when_service_does_not_satisfy_max_readers_requirement<Sut: Service>() {
+    #[conformance_test]
+    pub fn open_fails_when_service_does_not_satisfy_max_readers_requirement<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -295,8 +299,8 @@ mod service_blackboard {
         assert_that!(sut2, is_ok);
     }
 
-    #[test]
-    fn open_does_not_fail_when_service_owner_is_dropped<Sut: Service>() {
+    #[conformance_test]
+    pub fn open_does_not_fail_when_service_owner_is_dropped<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -322,8 +326,8 @@ mod service_blackboard {
         assert_that!(sut3, is_ok);
     }
 
-    #[test]
-    fn open_fails_when_all_previous_owners_have_been_dropped<Sut: Service>() {
+    #[conformance_test]
+    pub fn open_fails_when_all_previous_owners_have_been_dropped<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -351,8 +355,8 @@ mod service_blackboard {
         assert_that!(sut3.err().unwrap(), eq BlackboardOpenError::DoesNotExist);
     }
 
-    #[test]
-    fn max_readers_is_set_to_config_default<Sut: Service>() {
+    #[conformance_test]
+    pub fn max_readers_is_set_to_config_default<Sut: Service>() {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
@@ -367,8 +371,8 @@ mod service_blackboard {
         assert_that!(sut.static_config().max_readers(), eq defaults.blackboard.max_readers);
     }
 
-    #[test]
-    fn open_uses_predefined_settings_when_nothing_is_specified<Sut: Service>() {
+    #[conformance_test]
+    pub fn open_uses_predefined_settings_when_nothing_is_specified<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -394,8 +398,8 @@ mod service_blackboard {
         assert_that!(sut2.static_config().max_readers(), eq 4);
     }
 
-    #[test]
-    fn settings_can_be_modified_via_custom_config<Sut: Service>() {
+    #[conformance_test]
+    pub fn settings_can_be_modified_via_custom_config<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let mut custom_config = config.clone();
@@ -429,8 +433,8 @@ mod service_blackboard {
         assert_that!(sut2.static_config().max_readers(), eq 9);
     }
 
-    #[test]
-    fn type_information_are_correct<Sut: Service>() {
+    #[conformance_test]
+    pub fn type_information_are_correct<Sut: Service>() {
         type KeyType = u64;
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -451,8 +455,8 @@ mod service_blackboard {
         assert_that!(d.alignment(), eq core::mem::align_of::<KeyType>());
     }
 
-    #[test]
-    fn number_of_readers_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn number_of_readers_works<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -495,8 +499,8 @@ mod service_blackboard {
         }
     }
 
-    #[test]
-    fn max_number_of_nodes_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn max_number_of_nodes_works<Sut: Service>() {
         let service_name = generate_name();
         const MAX_NODES: usize = 8;
 
@@ -549,8 +553,8 @@ mod service_blackboard {
         assert_that!(sut, is_ok);
     }
 
-    #[test]
-    fn add_with_default_stores_default_value<Sut: Service>() {
+    #[conformance_test]
+    pub fn add_with_default_stores_default_value<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -579,8 +583,8 @@ mod service_blackboard {
         assert_that!(entry_handle.get().t, eq DEFAULT);
     }
 
-    #[test]
-    fn simple_communication_works_reader_created_first<Sut: Service>() {
+    #[conformance_test]
+    pub fn simple_communication_works_reader_created_first<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -604,8 +608,8 @@ mod service_blackboard {
         assert_that!(entry_handle.get(), eq 4567);
     }
 
-    #[test]
-    fn simple_communication_works_writer_created_first<Sut: Service>() {
+    #[conformance_test]
+    pub fn simple_communication_works_writer_created_first<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -629,8 +633,8 @@ mod service_blackboard {
         assert_that!(entry_handle.get(), eq - 12);
     }
 
-    #[test]
-    fn communication_with_max_readers<Sut: Service>() {
+    #[conformance_test]
+    pub fn communication_with_max_readers<Sut: Service>() {
         const MAX_READERS: usize = 6;
         const NUMBER_OF_ITERATIONS: u64 = 128;
         let service_name = generate_name();
@@ -665,8 +669,8 @@ mod service_blackboard {
         }
     }
 
-    #[test]
-    fn communication_with_max_reader_and_entry_handle_muts<Sut: Service>() {
+    #[conformance_test]
+    pub fn communication_with_max_reader_and_entry_handle_muts<Sut: Service>() {
         const MAX_HANDLES: usize = 6;
         let service_name = generate_name();
         let config = generate_isolated_config();
@@ -710,8 +714,8 @@ mod service_blackboard {
         }
     }
 
-    #[test]
-    fn write_and_read_different_value_types_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn write_and_read_different_value_types_works<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -767,8 +771,8 @@ mod service_blackboard {
         assert_that!(reader.entry::<Groovy>(&13).unwrap().get(), eq Groovy{a: false, b: 888, c: 906});
     }
 
-    #[test]
-    fn creating_max_supported_amount_of_ports_work<Sut: Service>() {
+    #[conformance_test]
+    pub fn creating_max_supported_amount_of_ports_work<Sut: Service>() {
         const MAX_READERS: usize = 8;
 
         let service_name = generate_name();
@@ -821,8 +825,8 @@ mod service_blackboard {
         assert_that!(reader, is_ok);
     }
 
-    #[test]
-    fn set_max_nodes_to_zero_adjusts_it_to_one<Sut: Service>() {
+    #[conformance_test]
+    pub fn set_max_nodes_to_zero_adjusts_it_to_one<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -837,8 +841,8 @@ mod service_blackboard {
         assert_that!(sut.static_config().max_nodes(), eq 1);
     }
 
-    #[test]
-    fn set_max_readers_to_zero_adjusts_it_to_one<Sut: Service>() {
+    #[conformance_test]
+    pub fn set_max_readers_to_zero_adjusts_it_to_one<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -853,8 +857,8 @@ mod service_blackboard {
         assert_that!(sut.static_config().max_readers(), eq 1);
     }
 
-    #[test]
-    fn does_exist_works_single<Sut: Service>() {
+    #[conformance_test]
+    pub fn does_exist_works_single<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -875,8 +879,8 @@ mod service_blackboard {
         assert_that!(Sut::does_exist(&service_name, &config, MessagingPattern::Blackboard).unwrap(), eq false);
     }
 
-    #[test]
-    fn does_exist_works_many<Sut: Service>() {
+    #[conformance_test]
+    pub fn does_exist_works_many<Sut: Service>() {
         const NUMBER_OF_SERVICES: usize = 8;
 
         let config = generate_isolated_config();
@@ -919,8 +923,8 @@ mod service_blackboard {
         }
     }
 
-    #[test]
-    fn list_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn list_works<Sut: Service>() {
         const NUMBER_OF_SERVICES: usize = 8;
 
         let config = generate_isolated_config();
@@ -984,8 +988,8 @@ mod service_blackboard {
         }
     }
 
-    #[test]
-    fn dropping_service_keeps_established_communication<Sut: Service>() {
+    #[conformance_test]
+    pub fn dropping_service_keeps_established_communication<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -1009,8 +1013,8 @@ mod service_blackboard {
         assert_that!(entry_handle.get(), eq PAYLOAD);
     }
 
-    #[test]
-    fn ports_of_dropped_service_block_new_service_creation<Sut: Service>() {
+    #[conformance_test]
+    pub fn ports_of_dropped_service_block_new_service_creation<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -1051,8 +1055,8 @@ mod service_blackboard {
         );
     }
 
-    #[test]
-    fn service_can_be_opened_when_there_is_a_writer<Sut: Service>() {
+    #[conformance_test]
+    pub fn service_can_be_opened_when_there_is_a_writer<Sut: Service>() {
         let payload = 1809723987;
         let service_name = generate_name();
         let config = generate_isolated_config();
@@ -1111,8 +1115,8 @@ mod service_blackboard {
         assert_that!(sut, is_ok);
     }
 
-    #[test]
-    fn service_can_be_opened_when_there_is_a_reader<Sut: Service>() {
+    #[conformance_test]
+    pub fn service_can_be_opened_when_there_is_a_reader<Sut: Service>() {
         let payload = 325183783;
         let service_name = generate_name();
         let config = generate_isolated_config();
@@ -1171,8 +1175,8 @@ mod service_blackboard {
         assert_that!(sut, is_ok);
     }
 
-    #[test]
-    fn open_error_display_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn open_error_display_works<Sut: Service>() {
         assert_that!(format!("{}", BlackboardOpenError::DoesNotExist), eq
     "BlackboardOpenError::DoesNotExist");
         assert_that!(format!("{}", BlackboardOpenError::InternalFailure), eq
@@ -1199,8 +1203,8 @@ mod service_blackboard {
     "BlackboardOpenError::IsMarkedForDestruction");
     }
 
-    #[test]
-    fn create_error_display_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn create_error_display_works<Sut: Service>() {
         assert_that!(format!("{}", BlackboardCreateError::ServiceInCorruptedState), eq
     "BlackboardCreateError::ServiceInCorruptedState");
         assert_that!(format!("{}", BlackboardCreateError::HangsInCreation), eq
@@ -1217,8 +1221,8 @@ mod service_blackboard {
     "BlackboardCreateError::NoEntriesProvided");
     }
 
-    #[test]
-    fn reader_can_still_read_payload_when_writer_was_disconnected<Sut: Service>() {
+    #[conformance_test]
+    pub fn reader_can_still_read_payload_when_writer_was_disconnected<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -1241,8 +1245,8 @@ mod service_blackboard {
         assert_that!(entry_handle.get(), eq 5);
     }
 
-    #[test]
-    fn reconnected_reader_sees_current_blackboard_status<Sut: Service>() {
+    #[conformance_test]
+    pub fn reconnected_reader_sees_current_blackboard_status<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -1273,8 +1277,8 @@ mod service_blackboard {
         assert_that!(reader.entry::<i32>(&6).unwrap().get(), eq - 567);
     }
 
-    #[test]
-    fn entry_handle_mut_can_still_write_after_writer_was_dropped<Sut: Service>() {
+    #[conformance_test]
+    pub fn entry_handle_mut_can_still_write_after_writer_was_dropped<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -1296,8 +1300,8 @@ mod service_blackboard {
         assert_that!(reader.entry::<u8>(&0).unwrap().get(), eq 1);
     }
 
-    #[test]
-    fn entry_handle_can_still_read_after_reader_was_dropped<Sut: Service>() {
+    #[conformance_test]
+    pub fn entry_handle_can_still_read_after_reader_was_dropped<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -1321,8 +1325,8 @@ mod service_blackboard {
         assert_that!(entry_handle.get(), eq 1);
     }
 
-    #[test]
-    fn loan_and_write_entry_value_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn loan_and_write_entry_value_works<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -1346,8 +1350,8 @@ mod service_blackboard {
         assert_that!(entry_handle.get(), eq 333);
     }
 
-    #[test]
-    fn entry_handle_mut_can_be_reused_after_entry_value_was_updated<Sut: Service>() {
+    #[conformance_test]
+    pub fn entry_handle_mut_can_be_reused_after_entry_value_was_updated<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -1373,8 +1377,8 @@ mod service_blackboard {
         assert_that!(entry_handle.get(), eq 999);
     }
 
-    #[test]
-    fn entry_value_can_still_be_used_after_writer_was_dropped<Sut: Service>() {
+    #[conformance_test]
+    pub fn entry_value_can_still_be_used_after_writer_was_dropped<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -1399,8 +1403,8 @@ mod service_blackboard {
         assert_that!(entry_handle.get(), eq 333);
     }
 
-    #[test]
-    fn entry_handle_mut_can_be_reused_after_entry_value_uninit_was_discarded<Sut: Service>() {
+    #[conformance_test]
+    pub fn entry_handle_mut_can_be_reused_after_entry_value_uninit_was_discarded<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -1424,8 +1428,8 @@ mod service_blackboard {
         assert_that!(entry_handle.get(), eq 333);
     }
 
-    #[test]
-    fn entry_handle_mut_can_be_reused_after_entry_value_was_discarded<Sut: Service>() {
+    #[conformance_test]
+    pub fn entry_handle_mut_can_be_reused_after_entry_value_was_discarded<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -1450,8 +1454,8 @@ mod service_blackboard {
         assert_that!(entry_handle.get(), eq 333);
     }
 
-    #[test]
-    fn handle_can_still_be_used_after_every_previous_service_state_owner_was_dropped<
+    #[conformance_test]
+    pub fn handle_can_still_be_used_after_every_previous_service_state_owner_was_dropped<
         Sut: Service,
     >() {
         let service_name = generate_name();
@@ -1490,8 +1494,8 @@ mod service_blackboard {
         assert_that!(entry_handle.get(), eq 0);
     }
 
-    #[test]
-    fn listing_all_readers_works<S: Service>() {
+    #[conformance_test]
+    pub fn listing_all_readers_works<S: Service>() {
         const NUMBER_OF_READERS: usize = 18;
         let service_name = generate_name();
         let config = generate_isolated_config();
@@ -1523,8 +1527,8 @@ mod service_blackboard {
         }
     }
 
-    #[test]
-    fn listing_all_readers_stops_on_request<S: Service>() {
+    #[conformance_test]
+    pub fn listing_all_readers_stops_on_request<S: Service>() {
         const NUMBER_OF_READERS: usize = 16;
         let service_name = generate_name();
         let config = generate_isolated_config();
@@ -1553,8 +1557,8 @@ mod service_blackboard {
         assert_that!(counter, eq 1);
     }
 
-    #[test]
-    fn concurrent_write_and_read_of_the_same_value_works<S: Service>() {
+    #[conformance_test]
+    pub fn concurrent_write_and_read_of_the_same_value_works<S: Service>() {
         let _watch_dog = Watchdog::new();
         let number_of_entry_handles = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
 
@@ -1612,8 +1616,8 @@ mod service_blackboard {
         });
     }
 
-    #[test]
-    fn concurrent_write_of_different_values_works<S: Service>() {
+    #[conformance_test]
+    pub fn concurrent_write_of_different_values_works<S: Service>() {
         let _watch_dog = Watchdog::new();
         let number_of_entry_handle_muts: u64 = 8;
 
@@ -1672,8 +1676,8 @@ mod service_blackboard {
         }
     }
 
-    #[test]
-    fn simple_communication_with_key_struct_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn simple_communication_with_key_struct_works<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -1716,8 +1720,8 @@ mod service_blackboard {
         assert_that!(entry_handle_2.get(), eq 12);
     }
 
-    #[test]
-    fn adding_key_struct_twice_fails<Sut: Service>() {
+    #[conformance_test]
+    pub fn adding_key_struct_twice_fails<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -1740,8 +1744,8 @@ mod service_blackboard {
     }
 
     // TODO [#817] move the custom key type tests to testing.rs
-    #[test]
-    fn loan_uninit_and_write_works_with_custom_key_type<S: Service>() {
+    #[conformance_test]
+    pub fn loan_uninit_and_write_works_with_custom_key_type<S: Service>() {
         type KeyType = Foo;
         let key = Foo {
             a: 0,
@@ -1821,8 +1825,8 @@ mod service_blackboard {
         assert_that!(read_value, eq 8);
     }
 
-    #[test]
-    fn write_and_update_internal_cell_works_with_custom_key_type<S: Service>() {
+    #[conformance_test]
+    pub fn write_and_update_internal_cell_works_with_custom_key_type<S: Service>() {
         type KeyType = Foo;
         let key = Foo {
             a: 3,
@@ -1910,8 +1914,8 @@ mod service_blackboard {
         assert_that!(read_value, eq 5);
     }
 
-    #[test]
-    fn entry_handle_mut_can_be_reused_after_entry_value_uninit_was_discarded_with_custom_key_type<
+    #[conformance_test]
+    pub fn entry_handle_mut_can_be_reused_after_entry_value_uninit_was_discarded_with_custom_key_type<
         Sut: Service,
     >() {
         type KeyType = Foo;
@@ -1990,8 +1994,8 @@ mod service_blackboard {
         assert_that!(read_value, eq write_value);
     }
 
-    #[test]
-    fn key_memory_creation_fails_when_value_is_too_large<Sut: Service>() {
+    #[conformance_test]
+    pub fn key_memory_creation_fails_when_value_is_too_large<Sut: Service>() {
         let key: u16 = 256;
 
         let sut_value = KeyMemory::<1>::try_from(&key);
@@ -2005,8 +2009,8 @@ mod service_blackboard {
         assert_that!(sut_ptr.err().unwrap(), eq KeyMemoryError::ValueTooLarge);
     }
 
-    #[test]
-    fn key_memory_creation_fails_when_alignment_is_too_large<Sut: Service>() {
+    #[conformance_test]
+    pub fn key_memory_creation_fails_when_alignment_is_too_large<Sut: Service>() {
         #[derive(Clone, Copy)]
         #[repr(align(16))]
         struct Key {}
@@ -2023,8 +2027,8 @@ mod service_blackboard {
         assert_that!(sut_ptr.err().unwrap(), eq KeyMemoryError::ValueAlignmentTooLarge);
     }
 
-    #[test]
-    fn key_memory_creation_works_when_value_size_and_alignment_fit<Sut: Service>() {
+    #[conformance_test]
+    pub fn key_memory_creation_works_when_value_size_and_alignment_fit<Sut: Service>() {
         let key: u16 = 256;
 
         let sut_value = KeyMemory::<2>::try_from(&key);
@@ -2038,9 +2042,9 @@ mod service_blackboard {
         assert_that!(unsafe { *(sut_ptr.unwrap().data.as_ptr() as *const u16) }, eq key);
     }
 
-    #[test]
+    #[conformance_test]
     #[should_panic]
-    fn creation_fails_when_key_type_layout_is_invalid<Sut: Service>() {
+    pub fn creation_fails_when_key_type_layout_is_invalid<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -2050,16 +2054,4 @@ mod service_blackboard {
             .add::<u8>(0, 0)
             .create();
     }
-
-    #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
-    mod ipc {}
-
-    #[instantiate_tests(<iceoryx2::service::local::Service>)]
-    mod local {}
-
-    #[instantiate_tests(<iceoryx2::service::ipc_threadsafe::Service>)]
-    mod ipc_threadsafe {}
-
-    #[instantiate_tests(<iceoryx2::service::local_threadsafe::Service>)]
-    mod local_threadsafe {}
 }
