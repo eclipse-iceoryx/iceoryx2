@@ -96,6 +96,7 @@ fn collect_conformance_test_functions(
             if let syn::Item::Fn(func) = item {
                 let fn_ident = &func.sig.ident;
                 let fn_attrs = &func.attrs;
+                let fn_return = &func.sig.output;
 
                 // check if the function has #[conformance_test]
                 if fn_attrs
@@ -112,8 +113,8 @@ fn collect_conformance_test_functions(
                     conformance_test_fns.push(quote! {
                         #(#test_attrs)*
                         #[test]
-                        fn #fn_ident() {
-                            #mod_ident::#fn_ident::<$($sut_type),+>();
+                        fn #fn_ident() #fn_return {
+                            #mod_ident::#fn_ident::<$($sut_type),+>()
                         }
                     });
                 }
