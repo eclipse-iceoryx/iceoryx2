@@ -17,7 +17,7 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 pub mod service_blackboard {
     use core::alloc::Layout;
     use core::ptr::copy_nonoverlapping;
-    use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+    use core::sync::atomic::Ordering;
     use iceoryx2::constants::MAX_BLACKBOARD_KEY_SIZE;
     use iceoryx2::port::reader::*;
     use iceoryx2::port::writer::*;
@@ -35,6 +35,7 @@ pub mod service_blackboard {
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
+    use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64};
     use std::sync::Arc;
     use std::sync::Barrier;
 
@@ -652,8 +653,7 @@ pub mod service_blackboard {
         let writer = sut.writer_builder().create().unwrap();
         let entry_handle_mut = writer.entry::<u64>(&0).unwrap();
 
-        let mut readers = vec![];
-        readers.reserve(MAX_READERS);
+        let mut readers = Vec::with_capacity(MAX_READERS);
 
         for _ in 0..MAX_READERS {
             readers.push(sut.reader_builder().create().unwrap());
@@ -691,25 +691,29 @@ pub mod service_blackboard {
             .unwrap();
 
         let writer = sut.writer_builder().create().unwrap();
-        let mut entry_handle_muts = vec![];
-        entry_handle_muts.reserve(MAX_HANDLES);
+        let mut entry_handle_muts = Vec::with_capacity(MAX_HANDLES);
 
         let reader = sut.reader_builder().create().unwrap();
-        let mut entry_handles = vec![];
-        entry_handles.reserve(MAX_HANDLES);
+        let mut entry_handles = Vec::with_capacity(MAX_HANDLES);
 
         for i in 0..MAX_HANDLES as u64 {
             entry_handle_muts.push(writer.entry::<u64>(&i).unwrap());
             entry_handles.push(reader.entry::<u64>(&i).unwrap());
         }
 
-        for i in 0..MAX_HANDLES {
-            entry_handle_muts[i].update_with_copy(7);
-            for j in 0..(i + 1) {
-                assert_that!(entry_handles[j].get(), eq 7);
+        // for i in 0..MAX_HANDLES {
+        for (i, entry_handle_mut) in entry_handle_muts.iter().enumerate().take(MAX_HANDLES) {
+            entry_handle_mut.update_with_copy(7);
+            for entry_handle in entry_handles.iter().take(i + 1) {
+                assert_that!(entry_handle.get(), eq 7);
             }
-            for j in (i + 1)..MAX_HANDLES {
-                assert_that!(entry_handles[j].get(), eq j as u64);
+            for (j, entry_handle) in entry_handles
+                .iter()
+                .enumerate()
+                .take(MAX_HANDLES)
+                .skip(i + 1)
+            {
+                assert_that!(entry_handle.get(), eq j as u64);
             }
         }
     }
@@ -1573,8 +1577,8 @@ pub mod service_blackboard {
             .create()
             .unwrap();
 
-        let counter = AtomicU64::new(0);
-        let keep_running = AtomicBool::new(true);
+        let counter = IoxAtomicU64::new(0);
+        let keep_running = IoxAtomicBool::new(true);
 
         std::thread::scope(|s| {
             let t = s.spawn(|| {

@@ -113,7 +113,7 @@ pub mod publish_subscribe_propagation {
             // Publish
             let payload_data = MyType {
                 id: 42 + i as u32,
-                value: 3.14 + i as f64,
+                value: core::f64::consts::PI + i as f64,
                 active: i % 2 == 0,
             };
 

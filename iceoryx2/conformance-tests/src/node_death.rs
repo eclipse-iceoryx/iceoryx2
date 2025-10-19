@@ -15,7 +15,8 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod node_death {
-    use core::sync::atomic::{AtomicU32, Ordering};
+    use core::sync::atomic::Ordering;
+    use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU32;
 
     use iceoryx2::config::Config;
     use iceoryx2::node::testing::__internal_node_staged_death;
@@ -40,7 +41,7 @@ pub mod node_death {
         }
 
         fn create_test_node(config: &Config) -> TestDetails<Self::Service> {
-            static COUNTER: AtomicU32 = AtomicU32::new(0);
+            static COUNTER: IoxAtomicU32 = IoxAtomicU32::new(0);
             let node_name = Self::generate_node_name(0, "toby or no toby");
             let fake_node_id = ((u32::MAX - COUNTER.fetch_add(1, Ordering::Relaxed)) as u128) << 96;
             let fake_node_id =

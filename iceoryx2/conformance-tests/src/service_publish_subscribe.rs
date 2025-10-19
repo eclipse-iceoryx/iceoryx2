@@ -15,7 +15,7 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod service_publish_subscribe {
-    use core::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+    use core::sync::atomic::Ordering;
     use std::sync::{Barrier, Mutex};
     use std::thread;
 
@@ -40,6 +40,7 @@ pub mod service_publish_subscribe {
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
+    use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
 
     #[derive(Debug, ZeroCopySend)]
     #[repr(C)]
@@ -1239,7 +1240,7 @@ pub mod service_publish_subscribe {
 
         let create_service_barrier = Barrier::new(2);
         let service_name = generate_name();
-        let keep_running = AtomicBool::new(true);
+        let keep_running = IoxAtomicBool::new(true);
         let config = testing::generate_isolated_config();
         let node = Mutex::new(NodeBuilder::new().config(&config).create::<Sut>().unwrap());
 
@@ -1306,8 +1307,8 @@ pub mod service_publish_subscribe {
 
         let create_service_barrier = Barrier::new(1 + NUMBER_OF_PUBLISHER_THREADS);
         let service_name = generate_name();
-        let keep_running = AtomicBool::new(true);
-        let reconnection_cycle = AtomicUsize::new(0);
+        let keep_running = IoxAtomicBool::new(true);
+        let reconnection_cycle = IoxAtomicUsize::new(0);
         let config = testing::generate_isolated_config();
         let node = Mutex::new(NodeBuilder::new().config(&config).create::<Sut>().unwrap());
 
@@ -1326,12 +1327,11 @@ pub mod service_publish_subscribe {
                 create_service_barrier.wait();
 
                 while keep_running.load(Ordering::Relaxed) {
-                    if let Some(_) = subscriber.receive().unwrap() {
-                        if reconnection_cycle.fetch_add(1, Ordering::Relaxed)
+                    if subscriber.receive().unwrap().is_some()
+                        && reconnection_cycle.fetch_add(1, Ordering::Relaxed)
                             == NUMBER_OF_RECONNECTIONS
-                        {
-                            keep_running.store(false, Ordering::Relaxed);
-                        }
+                    {
+                        keep_running.store(false, Ordering::Relaxed);
                     }
                 }
             });
@@ -1383,15 +1383,13 @@ pub mod service_publish_subscribe {
             .create()
             .unwrap();
 
-        let mut publishers = vec![];
-        publishers.reserve(MAX_PUB);
+        let mut publishers = Vec::with_capacity(MAX_PUB);
 
         for _ in 0..MAX_PUB {
             publishers.push(sut.publisher_builder().create().unwrap());
         }
 
-        let mut subscribers = vec![];
-        subscribers.reserve(MAX_SUB);
+        let mut subscribers = Vec::with_capacity(MAX_PUB);
 
         for _ in 0..MAX_SUB {
             subscribers.push(sut.subscriber_builder().create().unwrap());
@@ -1429,8 +1427,7 @@ pub mod service_publish_subscribe {
             .create()
             .unwrap();
 
-        let mut channels = vec![];
-        channels.reserve(MAX_PUB + MAX_SUB);
+        let mut channels = Vec::with_capacity(MAX_PUB + MAX_SUB);
 
         for _ in 0..MAX_PUB + MAX_SUB {
             channels.push(
@@ -1441,15 +1438,13 @@ pub mod service_publish_subscribe {
             );
         }
 
-        let mut publishers = vec![];
-        publishers.reserve(MAX_PUB);
+        let mut publishers = Vec::with_capacity(MAX_PUB);
 
         for c in channels.iter().take(MAX_PUB) {
             publishers.push(c.publisher_builder().create().unwrap());
         }
 
-        let mut subscribers = vec![];
-        subscribers.reserve(MAX_SUB);
+        let mut subscribers = Vec::with_capacity(MAX_PUB);
 
         for i in 0..MAX_SUB {
             subscribers.push(channels[i + MAX_PUB].subscriber_builder().create().unwrap());
