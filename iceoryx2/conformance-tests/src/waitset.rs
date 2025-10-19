@@ -10,8 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[generic_tests::define]
-mod waitset {
+use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod waitset {
     use core::time::Duration;
     use std::time::Instant;
 
@@ -20,6 +23,7 @@ mod waitset {
     use iceoryx2::prelude::{WaitSetBuilder, *};
     use iceoryx2::testing::*;
     use iceoryx2::waitset::{WaitSetAttachmentError, WaitSetRunError};
+    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_posix::config::TEST_DIRECTORY;
     use iceoryx2_bb_posix::directory::Directory;
     use iceoryx2_bb_posix::file::Permission;
@@ -82,16 +86,16 @@ mod waitset {
         (receiver, sender)
     }
 
-    #[test]
-    fn calling_wait_and_process_once_on_empty_waitset_fails<S: Service>() {
+    #[conformance_test]
+    pub fn calling_wait_and_process_once_on_empty_waitset_fails<S: Service>() {
         let sut = WaitSetBuilder::new().create::<S>().unwrap();
         let result = sut.wait_and_process_once(|_| CallbackProgression::Continue);
 
         assert_that!(result.err(), eq Some(WaitSetRunError::NoAttachments));
     }
 
-    #[test]
-    fn attach_multiple_notifications_works<S: Service>()
+    #[conformance_test]
+    pub fn attach_multiple_notifications_works<S: Service>()
     where
         <S::Event as Event>::Listener: SynchronousMultiplexing,
     {
@@ -135,8 +139,8 @@ mod waitset {
         assert_that!(sut.len(), eq 0);
     }
 
-    #[test]
-    fn attaching_same_notification_twice_fails<S: Service>()
+    #[conformance_test]
+    pub fn attaching_same_notification_twice_fails<S: Service>()
     where
         <S::Event as Event>::Listener: SynchronousMultiplexing,
     {
@@ -154,8 +158,8 @@ mod waitset {
         assert_that!(sut.attach_notification(&receiver).err(), eq Some(WaitSetAttachmentError::AlreadyAttached));
     }
 
-    #[test]
-    fn attaching_same_deadline_twice_fails<S: Service>()
+    #[conformance_test]
+    pub fn attaching_same_deadline_twice_fails<S: Service>()
     where
         <S::Event as Event>::Listener: SynchronousMultiplexing,
     {
@@ -173,8 +177,8 @@ mod waitset {
         assert_that!(sut.attach_deadline(&receiver, TIMEOUT).err(), eq Some(WaitSetAttachmentError::AlreadyAttached));
     }
 
-    #[test]
-    fn wait_and_process_once_lists_all_notifications<S: Service>()
+    #[conformance_test]
+    pub fn wait_and_process_once_lists_all_notifications<S: Service>()
     where
         <S::Event as Event>::Listener: SynchronousMultiplexing,
     {
@@ -222,8 +226,8 @@ mod waitset {
         assert_that!(receiver_1_triggered, eq true);
     }
 
-    #[test]
-    fn wait_and_process_once_with_tick_interval_blocks_for_at_least_timeout<S: Service>()
+    #[conformance_test]
+    pub fn wait_and_process_once_with_tick_interval_blocks_for_at_least_timeout<S: Service>()
     where
         <S::Event as Event>::Listener: SynchronousMultiplexing,
     {
@@ -250,8 +254,8 @@ mod waitset {
         assert_that!(start.elapsed(), time_at_least TIMEOUT);
     }
 
-    #[test]
-    fn wait_and_process_once_with_deadline_blocks_for_at_least_timeout<S: Service>()
+    #[conformance_test]
+    pub fn wait_and_process_once_with_deadline_blocks_for_at_least_timeout<S: Service>()
     where
         <S::Event as Event>::Listener: SynchronousMultiplexing,
     {
@@ -273,8 +277,8 @@ mod waitset {
         assert_that!(start.elapsed(), time_at_least TIMEOUT);
     }
 
-    #[test]
-    fn wait_and_process_once_does_not_block_longer_than_provided_timeout<S: Service>()
+    #[conformance_test]
+    pub fn wait_and_process_once_does_not_block_longer_than_provided_timeout<S: Service>()
     where
         <S::Event as Event>::Listener: SynchronousMultiplexing,
     {
@@ -298,8 +302,8 @@ mod waitset {
         assert_that!(start.elapsed(), time_at_least TIMEOUT);
     }
 
-    #[test]
-    fn wait_and_process_once_with_timeout_blocks_at_each_invocation<S: Service>()
+    #[conformance_test]
+    pub fn wait_and_process_once_with_timeout_blocks_at_each_invocation<S: Service>()
     where
         <S::Event as Event>::Listener: SynchronousMultiplexing,
     {
@@ -328,8 +332,8 @@ mod waitset {
         }
     }
 
-    #[test]
-    fn wait_and_process_once_does_block_until_interval_when_user_timeout_is_larger<S: Service>()
+    #[conformance_test]
+    pub fn wait_and_process_once_does_block_until_interval_when_user_timeout_is_larger<S: Service>()
     where
         <S::Event as Event>::Listener: SynchronousMultiplexing,
     {
@@ -350,8 +354,8 @@ mod waitset {
         assert_that!(start.elapsed(), time_at_least TIMEOUT);
     }
 
-    #[test]
-    fn wait_and_process_once_lists_all_deadlines<S: Service>()
+    #[conformance_test]
+    pub fn wait_and_process_once_lists_all_deadlines<S: Service>()
     where
         <S::Event as Event>::Listener: SynchronousMultiplexing,
     {
@@ -406,8 +410,8 @@ mod waitset {
         assert_that!(receiver_2_triggered, eq true);
     }
 
-    #[test]
-    fn wait_and_process_once_lists_all_ticks<S: Service>()
+    #[conformance_test]
+    pub fn wait_and_process_once_lists_all_ticks<S: Service>()
     where
         <S::Event as Event>::Listener: SynchronousMultiplexing,
     {
@@ -448,8 +452,8 @@ mod waitset {
         assert_that!(tick_4_triggered, eq false);
     }
 
-    #[test]
-    fn wait_and_process_stops_when_requested<S: Service>()
+    #[conformance_test]
+    pub fn wait_and_process_stops_when_requested<S: Service>()
     where
         <S::Event as Event>::Listener: SynchronousMultiplexing,
     {
@@ -473,8 +477,8 @@ mod waitset {
         assert_that!(counter, eq 1);
     }
 
-    #[test]
-    fn wait_and_process_once_lists_mixed<S: Service>()
+    #[conformance_test]
+    pub fn wait_and_process_once_lists_mixed<S: Service>()
     where
         <S::Event as Event>::Listener: SynchronousMultiplexing,
     {
@@ -545,8 +549,8 @@ mod waitset {
         assert_that!(deadline_2_missed, eq true);
     }
 
-    #[test]
-    fn missed_deadline_and_then_notify_is_not_reported<S: Service>()
+    #[conformance_test]
+    pub fn missed_deadline_and_then_notify_is_not_reported<S: Service>()
     where
         <S::Event as Event>::Listener: SynchronousMultiplexing,
     {
@@ -582,8 +586,8 @@ mod waitset {
         assert_that!(received_event, eq true);
     }
 
-    #[test]
-    fn after_missed_deadline_is_reported_the_waitset_waits_again<S: Service>()
+    #[conformance_test]
+    pub fn after_missed_deadline_is_reported_the_waitset_waits_again<S: Service>()
     where
         <S::Event as Event>::Listener: SynchronousMultiplexing,
     {
@@ -604,8 +608,8 @@ mod waitset {
         assert_that!(now.elapsed(), time_at_least TIMEOUT / 2);
     }
 
-    #[test]
-    fn signal_handling_mechanism_can_be_configured<S: Service>() {
+    #[conformance_test]
+    pub fn signal_handling_mechanism_can_be_configured<S: Service>() {
         let sut_1 = WaitSetBuilder::new()
             .signal_handling_mode(SignalHandlingMode::Disabled)
             .create::<S>()
@@ -620,22 +624,10 @@ mod waitset {
         assert_that!(sut_2.signal_handling_mode(), eq SignalHandlingMode::HandleTerminationRequests);
     }
 
-    #[test]
-    fn by_default_termination_signals_are_handled<S: Service>() {
+    #[conformance_test]
+    pub fn by_default_termination_signals_are_handled<S: Service>() {
         let sut = WaitSetBuilder::new().create::<S>().unwrap();
 
         assert_that!(sut.signal_handling_mode(), eq SignalHandlingMode::HandleTerminationRequests);
     }
-
-    #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
-    mod ipc {}
-
-    #[instantiate_tests(<iceoryx2::service::local::Service>)]
-    mod local {}
-
-    #[instantiate_tests(<iceoryx2::service::ipc_threadsafe::Service>)]
-    mod ipc_threadsafe {}
-
-    #[instantiate_tests(<iceoryx2::service::local_threadsafe::Service>)]
-    mod local_threadsafe {}
 }
