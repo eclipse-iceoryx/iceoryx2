@@ -10,8 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[generic_tests::define]
-mod publisher {
+use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod publisher {
     use core::time::Duration;
     use std::collections::HashSet;
     use std::sync::Mutex;
@@ -23,25 +26,25 @@ mod publisher {
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::{service_name::ServiceName, Service};
     use iceoryx2::testing;
+    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_posix::barrier::*;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
     use iceoryx2_bb_testing::watchdog::Watchdog;
 
-    type TestResult<T> = core::result::Result<T, Box<dyn std::error::Error>>;
-
     const TIMEOUT: Duration = Duration::from_millis(25);
 
-    fn generate_name() -> TestResult<ServiceName> {
+    fn generate_name() -> core::result::Result<ServiceName, Box<dyn core::error::Error>> {
         Ok(ServiceName::new(&format!(
             "service_tests_{}",
             UniqueSystemId::new().unwrap().value()
         ))?)
     }
 
-    #[test]
-    fn publisher_loan_and_send_sample_works<Sut: Service>() -> TestResult<()> {
+    #[conformance_test]
+    pub fn publisher_loan_and_send_sample_works<Sut: Service>(
+    ) -> core::result::Result<(), Box<dyn core::error::Error>> {
         let service_name = generate_name()?;
         let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -59,8 +62,9 @@ mod publisher {
         Ok(())
     }
 
-    #[test]
-    fn loan_initializes_sample_with_default<Sut: Service>() -> TestResult<()> {
+    #[conformance_test]
+    pub fn loan_initializes_sample_with_default<Sut: Service>(
+    ) -> core::result::Result<(), Box<dyn core::error::Error>> {
         let service_name = generate_name()?;
         let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -78,8 +82,9 @@ mod publisher {
         Ok(())
     }
 
-    #[test]
-    fn drop_is_not_called_for_underlying_type_of_sample<Sut: Service>() -> TestResult<()> {
+    #[conformance_test]
+    pub fn drop_is_not_called_for_underlying_type_of_sample<Sut: Service>(
+    ) -> core::result::Result<(), Box<dyn core::error::Error>> {
         let service_name = generate_name()?;
         let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -99,8 +104,9 @@ mod publisher {
         Ok(())
     }
 
-    #[test]
-    fn loan_uninit_does_not_initialize_sample<Sut: Service>() -> TestResult<()> {
+    #[conformance_test]
+    pub fn loan_uninit_does_not_initialize_sample<Sut: Service>(
+    ) -> core::result::Result<(), Box<dyn core::error::Error>> {
         let service_name = generate_name()?;
         let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -118,8 +124,9 @@ mod publisher {
         Ok(())
     }
 
-    #[test]
-    fn publisher_loan_slice_initializes_sample_with_default<Sut: Service>() -> TestResult<()> {
+    #[conformance_test]
+    pub fn publisher_loan_slice_initializes_sample_with_default<Sut: Service>(
+    ) -> core::result::Result<(), Box<dyn core::error::Error>> {
         const NUMBER_OF_ELEMENTS: usize = 120;
         let service_name = generate_name()?;
         let config = testing::generate_isolated_config();
@@ -141,8 +148,9 @@ mod publisher {
         Ok(())
     }
 
-    #[test]
-    fn slice_sample_does_not_call_drop_for_underlying_value<Sut: Service>() -> TestResult<()> {
+    #[conformance_test]
+    pub fn slice_sample_does_not_call_drop_for_underlying_value<Sut: Service>(
+    ) -> core::result::Result<(), Box<dyn core::error::Error>> {
         const NUMBER_OF_ELEMENTS: usize = 120;
         let service_name = generate_name()?;
         let config = testing::generate_isolated_config();
@@ -166,8 +174,9 @@ mod publisher {
         Ok(())
     }
 
-    #[test]
-    fn publisher_loan_slice_up_to_max_elements_works<Sut: Service>() -> TestResult<()> {
+    #[conformance_test]
+    pub fn publisher_loan_slice_up_to_max_elements_works<Sut: Service>(
+    ) -> core::result::Result<(), Box<dyn core::error::Error>> {
         const NUMBER_OF_ELEMENTS: usize = 125;
         let service_name = generate_name()?;
         let config = testing::generate_isolated_config();
@@ -190,8 +199,9 @@ mod publisher {
         Ok(())
     }
 
-    #[test]
-    fn publisher_loan_slice_more_than_max_elements_fails<Sut: Service>() -> TestResult<()> {
+    #[conformance_test]
+    pub fn publisher_loan_slice_more_than_max_elements_fails<Sut: Service>(
+    ) -> core::result::Result<(), Box<dyn core::error::Error>> {
         const NUMBER_OF_ELEMENTS: usize = 125;
         let service_name = generate_name()?;
         let config = testing::generate_isolated_config();
@@ -213,8 +223,9 @@ mod publisher {
         Ok(())
     }
 
-    #[test]
-    fn publisher_loan_unit_and_send_sample_works<Sut: Service>() -> TestResult<()> {
+    #[conformance_test]
+    pub fn publisher_loan_unit_and_send_sample_works<Sut: Service>(
+    ) -> core::result::Result<(), Box<dyn core::error::Error>> {
         let service_name = generate_name()?;
         let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -232,8 +243,9 @@ mod publisher {
         Ok(())
     }
 
-    #[test]
-    fn publisher_can_borrow_multiple_sample_at_once<Sut: Service>() -> TestResult<()> {
+    #[conformance_test]
+    pub fn publisher_can_borrow_multiple_sample_at_once<Sut: Service>(
+    ) -> core::result::Result<(), Box<dyn core::error::Error>> {
         let service_name = generate_name()?;
         let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -265,8 +277,9 @@ mod publisher {
         Ok(())
     }
 
-    #[test]
-    fn publisher_max_loaned_samples_works<Sut: Service>() -> TestResult<()> {
+    #[conformance_test]
+    pub fn publisher_max_loaned_samples_works<Sut: Service>(
+    ) -> core::result::Result<(), Box<dyn core::error::Error>> {
         let service_name = generate_name()?;
         let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -287,8 +300,9 @@ mod publisher {
         Ok(())
     }
 
-    #[test]
-    fn publisher_sending_sample_reduces_loan_counter<Sut: Service>() -> TestResult<()> {
+    #[conformance_test]
+    pub fn publisher_sending_sample_reduces_loan_counter<Sut: Service>(
+    ) -> core::result::Result<(), Box<dyn core::error::Error>> {
         let service_name = generate_name()?;
         let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -312,8 +326,9 @@ mod publisher {
         Ok(())
     }
 
-    #[test]
-    fn publisher_dropping_sample_reduces_loan_counter<Sut: Service>() -> TestResult<()> {
+    #[conformance_test]
+    pub fn publisher_dropping_sample_reduces_loan_counter<Sut: Service>(
+    ) -> core::result::Result<(), Box<dyn core::error::Error>> {
         let service_name = generate_name()?;
         let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -353,8 +368,9 @@ mod publisher {
         }
     }
 
-    #[test]
-    fn loaned_sample_has_default_constructed_user_header<Sut: Service>() -> TestResult<()> {
+    #[conformance_test]
+    pub fn loaned_sample_has_default_constructed_user_header<Sut: Service>(
+    ) -> core::result::Result<(), Box<dyn core::error::Error>> {
         type UserHeader = CustomUserHeader<89123, 98123891>;
         let service_name = generate_name()?;
         let config = testing::generate_isolated_config();
@@ -373,9 +389,9 @@ mod publisher {
         Ok(())
     }
 
-    #[test]
-    fn uninitialized_loaned_sample_has_default_constructed_user_header<Sut: Service>(
-    ) -> TestResult<()> {
+    #[conformance_test]
+    pub fn uninitialized_loaned_sample_has_default_constructed_user_header<Sut: Service>(
+    ) -> core::result::Result<(), Box<dyn core::error::Error>> {
         type UserHeader = CustomUserHeader<87718, 9851291>;
         let service_name = generate_name()?;
         let config = testing::generate_isolated_config();
@@ -394,8 +410,9 @@ mod publisher {
         Ok(())
     }
 
-    #[test]
-    fn loaned_slice_sample_has_default_constructed_user_header<Sut: Service>() -> TestResult<()> {
+    #[conformance_test]
+    pub fn loaned_slice_sample_has_default_constructed_user_header<Sut: Service>(
+    ) -> core::result::Result<(), Box<dyn core::error::Error>> {
         type UserHeader = CustomUserHeader<3387718, 985129331>;
         let service_name = generate_name()?;
         let config = testing::generate_isolated_config();
@@ -414,9 +431,9 @@ mod publisher {
         Ok(())
     }
 
-    #[test]
-    fn uninitialized_loaned_slice_sample_has_default_constructed_user_header<Sut: Service>(
-    ) -> TestResult<()> {
+    #[conformance_test]
+    pub fn uninitialized_loaned_slice_sample_has_default_constructed_user_header<Sut: Service>(
+    ) -> core::result::Result<(), Box<dyn core::error::Error>> {
         type UserHeader = CustomUserHeader<312312, 92221>;
         let service_name = generate_name()?;
         let config = testing::generate_isolated_config();
@@ -435,8 +452,9 @@ mod publisher {
         Ok(())
     }
 
-    #[test]
-    fn publisher_block_when_unable_to_deliver_blocks<Sut: Service>() -> TestResult<()> {
+    #[conformance_test]
+    pub fn publisher_block_when_unable_to_deliver_blocks<Sut: Service>(
+    ) -> core::result::Result<(), Box<dyn core::error::Error>> {
         let _watchdog = Watchdog::new();
         let service_name = generate_name()?;
         let config = testing::generate_isolated_config();
@@ -497,16 +515,16 @@ mod publisher {
         Ok(())
     }
 
-    #[test]
-    fn create_error_display_works<S: Service>() {
+    #[conformance_test]
+    pub fn create_error_display_works<S: Service>() {
         assert_that!(
             format!("{}", PublisherCreateError::ExceedsMaxSupportedPublishers), eq "PublisherCreateError::ExceedsMaxSupportedPublishers");
         assert_that!(
             format!("{}", PublisherCreateError::UnableToCreateDataSegment), eq "PublisherCreateError::UnableToCreateDataSegment");
     }
 
-    #[test]
-    fn loan_error_display_works<S: Service>() {
+    #[conformance_test]
+    pub fn loan_error_display_works<S: Service>() {
         assert_that!(
             format!("{}", LoanError::OutOfMemory), eq "LoanError::OutOfMemory");
         assert_that!(
@@ -517,8 +535,8 @@ mod publisher {
             format!("{}", LoanError::InternalFailure), eq "LoanError::InternalFailure");
     }
 
-    #[test]
-    fn id_is_unique<Sut: Service>() {
+    #[conformance_test]
+    pub fn id_is_unique<Sut: Service>() {
         let service_name = generate_name().unwrap();
         let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -541,8 +559,9 @@ mod publisher {
         }
     }
 
-    #[test]
-    fn publisher_with_custom_payload_details_adjusts_slice_len<Sut: Service>() -> TestResult<()> {
+    #[conformance_test]
+    pub fn publisher_with_custom_payload_details_adjusts_slice_len<Sut: Service>(
+    ) -> core::result::Result<(), Box<dyn core::error::Error>> {
         const TYPE_SIZE_OVERRIDE: usize = 128;
         let service_name = generate_name()?;
         let config = testing::generate_isolated_config();
@@ -567,10 +586,12 @@ mod publisher {
         Ok(())
     }
 
-    #[test]
+    #[conformance_test]
     #[should_panic]
     #[cfg(debug_assertions)]
-    fn publisher_with_custom_payload_details_panics_when_calling_loan_slice_uninit<Sut: Service>() {
+    pub fn publisher_with_custom_payload_details_panics_when_calling_loan_slice_uninit<
+        Sut: Service,
+    >() {
         const TYPE_SIZE_OVERRIDE: usize = 128;
         let service_name = generate_name().unwrap();
         let config = testing::generate_isolated_config();
@@ -592,10 +613,10 @@ mod publisher {
         let _sample = sut.loan_slice_uninit(1);
     }
 
-    #[test]
+    #[conformance_test]
     #[should_panic]
     #[cfg(debug_assertions)]
-    fn custom_fixed_size_payload_panics_when_loaning_more_than_one_element<Sut: Service>() {
+    pub fn custom_fixed_size_payload_panics_when_loaning_more_than_one_element<Sut: Service>() {
         set_log_level(LogLevel::Error);
         let service_name = generate_name().unwrap();
         let config = testing::generate_isolated_config();
@@ -616,10 +637,10 @@ mod publisher {
         let _sample = unsafe { sut.loan_custom_payload(2) };
     }
 
-    #[test]
-    fn reclaims_all_samples_when_subscriber_is_disconnected_and_never_received_them<
+    #[conformance_test]
+    pub fn reclaims_all_samples_when_subscriber_is_disconnected_and_never_received_them<
         Sut: Service,
-    >() -> TestResult<()> {
+    >() -> core::result::Result<(), Box<dyn core::error::Error>> {
         const MAX_SUBSCRIBERS: usize = 4;
         const ITERATIONS: usize = 20;
         const SUBSCRIBER_BUFFER_SIZE: usize = 7;
@@ -658,16 +679,4 @@ mod publisher {
 
         Ok(())
     }
-
-    #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
-    mod ipc {}
-
-    #[instantiate_tests(<iceoryx2::service::local::Service>)]
-    mod local {}
-
-    #[instantiate_tests(<iceoryx2::service::ipc_threadsafe::Service>)]
-    mod ipc_threadsafe {}
-
-    #[instantiate_tests(<iceoryx2::service::local_threadsafe::Service>)]
-    mod local_threadsafe {}
 }

@@ -17,3 +17,4 @@ pub mod node;
 pub mod node_death;
 pub mod notifier;
 pub mod pending_response;
+pub mod publisher;
