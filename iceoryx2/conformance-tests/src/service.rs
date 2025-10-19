@@ -10,8 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[generic_tests::define]
-mod service {
+use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod service {
     use core::marker::PhantomData;
     use core::sync::atomic::{AtomicU64, Ordering};
     use core::time::Duration;
@@ -31,6 +34,7 @@ mod service {
     use iceoryx2::service::port_factory::{blackboard, event, publish_subscribe, request_response};
     use iceoryx2::service::{ServiceDetailsError, ServiceListError};
     use iceoryx2::testing::*;
+    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_log::{set_log_level, LogLevel};
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
@@ -45,7 +49,7 @@ mod service {
         .unwrap()
     }
 
-    trait SutFactory<Sut: Service>: Send + Sync {
+    pub trait SutFactory<Sut: Service>: Send + Sync {
         type Factory: PortFactory;
         type CreateError: core::fmt::Debug;
         type OpenError: core::fmt::Debug;
@@ -70,28 +74,28 @@ mod service {
         fn assert_attribute_error(error: Self::OpenError);
     }
 
-    struct PubSubTests<Sut: Service> {
+    pub struct PubSubTests<Sut: Service> {
         _data: PhantomData<Sut>,
     }
 
     unsafe impl<Sut: Service> Send for PubSubTests<Sut> {}
     unsafe impl<Sut: Service> Sync for PubSubTests<Sut> {}
 
-    struct EventTests<Sut: Service> {
+    pub struct EventTests<Sut: Service> {
         _data: PhantomData<Sut>,
     }
 
     unsafe impl<Sut: Service> Send for EventTests<Sut> {}
     unsafe impl<Sut: Service> Sync for EventTests<Sut> {}
 
-    struct RequestResponseTests<Sut: Service> {
+    pub struct RequestResponseTests<Sut: Service> {
         _data: PhantomData<Sut>,
     }
 
     unsafe impl<Sut: Service> Send for RequestResponseTests<Sut> {}
     unsafe impl<Sut: Service> Sync for RequestResponseTests<Sut> {}
 
-    struct BlackboardTests<Sut: Service> {
+    pub struct BlackboardTests<Sut: Service> {
         _data: PhantomData<Sut>,
     }
 
@@ -362,8 +366,8 @@ mod service {
         }
     }
 
-    #[test]
-    fn same_name_with_different_messaging_pattern_is_allowed<
+    #[conformance_test]
+    pub fn same_name_with_different_messaging_pattern_is_allowed<
         Sut: Service,
         Factory: SutFactory<Sut>,
     >() {
@@ -399,8 +403,8 @@ mod service {
         assert_that!(received_event, eq Some(EVENT_ID));
     }
 
-    #[test]
-    fn concurrent_creating_services_with_unique_names_is_successful<
+    #[conformance_test]
+    pub fn concurrent_creating_services_with_unique_names_is_successful<
         Sut: Service,
         Factory: SutFactory<Sut>,
     >() {
@@ -437,8 +441,8 @@ mod service {
         });
     }
 
-    #[test]
-    fn concurrent_creating_services_with_same_name_fails_for_all_but_one<
+    #[conformance_test]
+    pub fn concurrent_creating_services_with_same_name_fails_for_all_but_one<
         Sut: Service,
         Factory: SutFactory<Sut>,
     >() {
@@ -487,8 +491,8 @@ mod service {
         });
     }
 
-    #[test]
-    fn concurrent_opening_and_closing_services_with_same_name_is_handled_gracefully<
+    #[conformance_test]
+    pub fn concurrent_opening_and_closing_services_with_same_name_is_handled_gracefully<
         Sut: Service,
         Factory: SutFactory<Sut>,
     >() {
@@ -547,8 +551,8 @@ mod service {
         });
     }
 
-    #[test]
-    fn setting_attributes_in_creator_can_be_read_in_opener<
+    #[conformance_test]
+    pub fn setting_attributes_in_creator_can_be_read_in_opener<
         Sut: Service,
         Factory: SutFactory<Sut>,
     >() {
@@ -586,8 +590,8 @@ mod service {
         assert_that!(sut_open.attributes(), eq defined_attributes.attributes());
     }
 
-    #[test]
-    fn opener_succeeds_when_attributes_do_match<Sut: Service, Factory: SutFactory<Sut>>() {
+    #[conformance_test]
+    pub fn opener_succeeds_when_attributes_do_match<Sut: Service, Factory: SutFactory<Sut>>() {
         let test = Factory::new();
         let service_name = generate_name();
         let config = generate_isolated_config();
@@ -646,8 +650,11 @@ mod service {
         assert_that!(sut_open.attributes(), eq defined_attributes.attributes());
     }
 
-    #[test]
-    fn opener_fails_when_attribute_value_does_not_match<Sut: Service, Factory: SutFactory<Sut>>() {
+    #[conformance_test]
+    pub fn opener_fails_when_attribute_value_does_not_match<
+        Sut: Service,
+        Factory: SutFactory<Sut>,
+    >() {
         let test = Factory::new();
         let service_name = generate_name();
         let config = generate_isolated_config();
@@ -683,8 +690,11 @@ mod service {
         Factory::assert_attribute_error(sut_open.err().unwrap());
     }
 
-    #[test]
-    fn opener_fails_when_attribute_key_does_not_exist<Sut: Service, Factory: SutFactory<Sut>>() {
+    #[conformance_test]
+    pub fn opener_fails_when_attribute_key_does_not_exist<
+        Sut: Service,
+        Factory: SutFactory<Sut>,
+    >() {
         let test = Factory::new();
         let service_name = generate_name();
         let config = generate_isolated_config();
@@ -720,8 +730,11 @@ mod service {
         Factory::assert_attribute_error(sut_open.err().unwrap());
     }
 
-    #[test]
-    fn opener_fails_when_attribute_value_does_not_exist<Sut: Service, Factory: SutFactory<Sut>>() {
+    #[conformance_test]
+    pub fn opener_fails_when_attribute_value_does_not_exist<
+        Sut: Service,
+        Factory: SutFactory<Sut>,
+    >() {
         let test = Factory::new();
         let service_name = generate_name();
         let config = generate_isolated_config();
@@ -767,8 +780,8 @@ mod service {
         Factory::assert_attribute_error(sut_open.err().unwrap());
     }
 
-    #[test]
-    fn opener_fails_when_attribute_required_key_does_not_exist<
+    #[conformance_test]
+    pub fn opener_fails_when_attribute_required_key_does_not_exist<
         Sut: Service,
         Factory: SutFactory<Sut>,
     >() {
@@ -804,8 +817,8 @@ mod service {
         Factory::assert_attribute_error(sut_open.err().unwrap());
     }
 
-    #[test]
-    fn opener_succeeds_when_attribute_required_key_does_exist<
+    #[conformance_test]
+    pub fn opener_succeeds_when_attribute_required_key_does_exist<
         Sut: Service,
         Factory: SutFactory<Sut>,
     >() {
@@ -840,8 +853,8 @@ mod service {
         assert_that!(sut_open, is_ok);
     }
 
-    #[test]
-    fn details_error_display_works<Sut: Service, Factory: SutFactory<Sut>>() {
+    #[conformance_test]
+    pub fn details_error_display_works<Sut: Service, Factory: SutFactory<Sut>>() {
         assert_that!(format!("{}", ServiceDetailsError::FailedToOpenStaticServiceInfo), eq
     "ServiceDetailsError::FailedToOpenStaticServiceInfo");
 
@@ -864,8 +877,8 @@ mod service {
     "ServiceDetailsError::FailedToAcquireNodeState");
     }
 
-    #[test]
-    fn list_error_display_works<Sut: Service, Factory: SutFactory<Sut>>() {
+    #[conformance_test]
+    pub fn list_error_display_works<Sut: Service, Factory: SutFactory<Sut>>() {
         assert_that!(format!("{}", ServiceListError::InsufficientPermissions), eq
     "ServiceListError::InsufficientPermissions");
 
@@ -873,8 +886,8 @@ mod service {
     "ServiceListError::InternalError");
     }
 
-    #[test]
-    fn list_services_works<Sut: Service, Factory: SutFactory<Sut>>() {
+    #[conformance_test]
+    pub fn list_services_works<Sut: Service, Factory: SutFactory<Sut>>() {
         const NUMBER_OF_SERVICES: usize = 16;
         let test = Factory::new();
 
@@ -906,8 +919,8 @@ mod service {
         }
     }
 
-    #[test]
-    fn list_services_stops_when_callback_progression_states_stop<
+    #[conformance_test]
+    pub fn list_services_stops_when_callback_progression_states_stop<
         Sut: Service,
         Factory: SutFactory<Sut>,
     >() {
@@ -935,8 +948,8 @@ mod service {
         assert_that!(service_counter, eq 1);
     }
 
-    #[test]
-    fn concurrent_service_creation_and_listing_works<Sut: Service, Factory: SutFactory<Sut>>() {
+    #[conformance_test]
+    pub fn concurrent_service_creation_and_listing_works<Sut: Service, Factory: SutFactory<Sut>>() {
         let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
         let test = Factory::new();
         let number_of_creators = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
@@ -977,8 +990,8 @@ mod service {
         });
     }
 
-    #[test]
-    fn concurrent_node_attaching_to_service_and_listing_works<
+    #[conformance_test]
+    pub fn concurrent_node_attaching_to_service_and_listing_works<
         Sut: Service,
         Factory: SutFactory<Sut>,
     >() {
@@ -1041,8 +1054,8 @@ mod service {
         });
     }
 
-    #[test]
-    fn concurrent_node_attaching_to_service_and_details_node_listing_works<
+    #[conformance_test]
+    pub fn concurrent_node_attaching_to_service_and_details_node_listing_works<
         Sut: Service,
         Factory: SutFactory<Sut>,
     >() {
@@ -1110,8 +1123,8 @@ mod service {
         });
     }
 
-    #[test]
-    fn node_listing_works<Sut: Service, Factory: SutFactory<Sut>>() {
+    #[conformance_test]
+    pub fn node_listing_works<Sut: Service, Factory: SutFactory<Sut>>() {
         let test = Factory::new();
         const NUMBER_OF_NODES: usize = 5;
 
@@ -1174,8 +1187,8 @@ mod service {
         }
     }
 
-    #[test]
-    fn node_can_open_same_service_without_limits<Sut: Service, Factory: SutFactory<Sut>>() {
+    #[conformance_test]
+    pub fn node_can_open_same_service_without_limits<Sut: Service, Factory: SutFactory<Sut>>() {
         let test = Factory::new();
         let service_name = generate_name();
         const REPETITIONS: usize = 128;
@@ -1195,8 +1208,8 @@ mod service {
         }
     }
 
-    #[test]
-    fn uuid_is_equal_in_within_all_opened_instances<Sut: Service, Factory: SutFactory<Sut>>() {
+    #[conformance_test]
+    pub fn uuid_is_equal_in_within_all_opened_instances<Sut: Service, Factory: SutFactory<Sut>>() {
         let test = Factory::new();
         let service_name = generate_name();
         let config = generate_isolated_config();
@@ -1210,69 +1223,5 @@ mod service {
             .unwrap();
 
         assert_that!(sut.service_id(), eq sut2.service_id());
-    }
-
-    mod ipc {
-        use iceoryx2::service::ipc::Service;
-
-        #[instantiate_tests(<Service, crate::service::EventTests::<Service>>)]
-        mod event {}
-
-        #[instantiate_tests(<Service, crate::service::PubSubTests::<Service>>)]
-        mod publish_subscribe {}
-
-        #[instantiate_tests(<Service, crate::service::RequestResponseTests::<Service>>)]
-        mod request_response {}
-
-        #[instantiate_tests(<Service, crate::service::BlackboardTests::<Service>>)]
-        mod blackboard {}
-    }
-
-    mod ipc_threadsafe {
-        use iceoryx2::service::ipc_threadsafe::Service;
-
-        #[instantiate_tests(<Service, crate::service::EventTests::<Service>>)]
-        mod event {}
-
-        #[instantiate_tests(<Service, crate::service::PubSubTests::<Service>>)]
-        mod publish_subscribe {}
-
-        #[instantiate_tests(<Service, crate::service::RequestResponseTests::<Service>>)]
-        mod request_response {}
-
-        #[instantiate_tests(<Service, crate::service::BlackboardTests::<Service>>)]
-        mod blackboard {}
-    }
-
-    mod local {
-        use iceoryx2::service::local::Service;
-
-        #[instantiate_tests(<Service, crate::service::EventTests::<Service>>)]
-        mod event {}
-
-        #[instantiate_tests(<Service, crate::service::PubSubTests::<Service>>)]
-        mod publish_subscribe {}
-
-        #[instantiate_tests(<Service, crate::service::RequestResponseTests::<Service>>)]
-        mod request_response {}
-
-        #[instantiate_tests(<Service, crate::service::BlackboardTests::<Service>>)]
-        mod blackboard {}
-    }
-
-    mod local_threadsafe {
-        use iceoryx2::service::local_threadsafe::Service;
-
-        #[instantiate_tests(<Service, crate::service::EventTests::<Service>>)]
-        mod event {}
-
-        #[instantiate_tests(<Service, crate::service::PubSubTests::<Service>>)]
-        mod publish_subscribe {}
-
-        #[instantiate_tests(<Service, crate::service::RequestResponseTests::<Service>>)]
-        mod request_response {}
-
-        #[instantiate_tests(<Service, crate::service::BlackboardTests::<Service>>)]
-        mod blackboard {}
     }
 }
