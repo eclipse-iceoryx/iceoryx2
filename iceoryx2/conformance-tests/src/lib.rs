@@ -24,3 +24,4 @@ pub mod sample_mut;
 pub mod server;
 pub mod subscriber;
 pub mod waitset;
+pub mod writer;

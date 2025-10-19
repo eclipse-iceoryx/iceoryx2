@@ -9,9 +9,12 @@
 // which is available at https://opensource.org/licenses/MIT.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-//
-#[generic_tests::define]
-mod writer {
+
+use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod writer {
     use core::sync::atomic::{AtomicU64, Ordering};
     use iceoryx2::constants::MAX_BLACKBOARD_KEY_SIZE;
     use iceoryx2::port::writer::*;
@@ -21,6 +24,7 @@ mod writer {
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::Service;
     use iceoryx2::testing::*;
+    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
@@ -35,8 +39,8 @@ mod writer {
         .unwrap()
     }
 
-    #[test]
-    fn handle_can_be_acquired_for_existing_key_value_pair<Sut: Service>() {
+    #[conformance_test]
+    pub fn handle_can_be_acquired_for_existing_key_value_pair<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -53,8 +57,8 @@ mod writer {
         assert_that!(entry_handle_mut, is_ok);
     }
 
-    #[test]
-    fn handle_cannot_be_acquired_for_non_existing_key<Sut: Service>() {
+    #[conformance_test]
+    pub fn handle_cannot_be_acquired_for_non_existing_key<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -75,8 +79,8 @@ mod writer {
         );
     }
 
-    #[test]
-    fn handle_cannot_be_acquired_for_wrong_value_type<Sut: Service>() {
+    #[conformance_test]
+    pub fn handle_cannot_be_acquired_for_wrong_value_type<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -97,8 +101,8 @@ mod writer {
         );
     }
 
-    #[test]
-    fn entry_handle_mut_cannot_be_acquired_twice<Sut: Service>() {
+    #[conformance_test]
+    pub fn entry_handle_mut_cannot_be_acquired_twice<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -125,8 +129,8 @@ mod writer {
         assert_that!(entry_handle_mut2, is_ok);
     }
 
-    #[test]
-    fn entry_handle_mut_prevents_another_writer<Sut: Service>() {
+    #[conformance_test]
+    pub fn entry_handle_mut_prevents_another_writer<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -148,8 +152,8 @@ mod writer {
         assert_that!(res.err().unwrap(), eq WriterCreateError::ExceedsMaxSupportedWriters);
     }
 
-    #[test]
-    fn entry_value_can_still_be_used_after_every_previous_service_state_owner_was_dropped<
+    #[conformance_test]
+    pub fn entry_value_can_still_be_used_after_every_previous_service_state_owner_was_dropped<
         Sut: Service,
     >() {
         let service_name = generate_name();
@@ -174,8 +178,8 @@ mod writer {
         let _entry_handle_mut = entry_value.update();
     }
 
-    #[test]
-    fn concurrent_writer_creation_succeeds_only_once<Sut: Service>() {
+    #[conformance_test]
+    pub fn concurrent_writer_creation_succeeds_only_once<Sut: Service>() {
         let _watch_dog = Watchdog::new();
         let number_of_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
         let barrier_start = Barrier::new(number_of_threads);
@@ -234,8 +238,8 @@ mod writer {
         }
     }
 
-    #[test]
-    fn handle_can_be_acquired_for_existing_key_value_pair_with_custom_key_type<Sut: Service>() {
+    #[conformance_test]
+    pub fn handle_can_be_acquired_for_existing_key_value_pair_with_custom_key_type<Sut: Service>() {
         type KeyType = Foo;
         let key = Foo {
             a: 28763,
@@ -276,8 +280,8 @@ mod writer {
         assert_that!(entry_handle_mut, is_ok);
     }
 
-    #[test]
-    fn handle_cannot_be_acquired_for_non_existing_key_with_custom_key_type<Sut: Service>() {
+    #[conformance_test]
+    pub fn handle_cannot_be_acquired_for_non_existing_key_with_custom_key_type<Sut: Service>() {
         type KeyType = Foo;
         let key = Foo { a: 8, b: 64 };
         let key_ptr: *const KeyType = &key;
@@ -321,8 +325,8 @@ mod writer {
         );
     }
 
-    #[test]
-    fn handle_cannot_be_acquired_for_wrong_value_type_with_custom_key_type<Sut: Service>() {
+    #[conformance_test]
+    pub fn handle_cannot_be_acquired_for_wrong_value_type_with_custom_key_type<Sut: Service>() {
         type KeyType = Foo;
         let key = Foo { a: 1, b: -452 };
         let key_ptr: *const KeyType = &key;
@@ -364,8 +368,8 @@ mod writer {
         );
     }
 
-    #[test]
-    fn entry_handle_mut_cannot_be_acquired_twice_with_custom_key_type<Sut: Service>() {
+    #[conformance_test]
+    pub fn entry_handle_mut_cannot_be_acquired_twice_with_custom_key_type<Sut: Service>() {
         type KeyType = Foo;
         let key = Foo { a: 23, b: 4 };
         let key_ptr: *const KeyType = &key;
@@ -415,8 +419,8 @@ mod writer {
         assert_that!(entry_handle_mut2, is_ok);
     }
 
-    #[test]
-    fn entry_handle_mut_prevents_another_writer_with_custom_key_type<Sut: Service>() {
+    #[conformance_test]
+    pub fn entry_handle_mut_prevents_another_writer_with_custom_key_type<Sut: Service>() {
         type KeyType = Foo;
         let key = Foo { a: 0, b: 0 };
         let key_ptr: *const KeyType = &key;
@@ -459,8 +463,8 @@ mod writer {
         assert_that!(res.err().unwrap(), eq WriterCreateError::ExceedsMaxSupportedWriters);
     }
 
-    #[test]
-    fn entry_value_can_still_be_used_after_every_previous_service_state_owner_was_dropped_with_custom_key_type<
+    #[conformance_test]
+    pub fn entry_value_can_still_be_used_after_every_previous_service_state_owner_was_dropped_with_custom_key_type<
         Sut: Service,
     >() {
         type KeyType = Foo;
@@ -513,16 +517,4 @@ mod writer {
         }
         let _entry_handle_mut = entry_value_uninit.update();
     }
-
-    #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
-    mod ipc {}
-
-    #[instantiate_tests(<iceoryx2::service::local::Service>)]
-    mod local {}
-
-    #[instantiate_tests(<iceoryx2::service::ipc_threadsafe::Service>)]
-    mod ipc_threadsafe {}
-
-    #[instantiate_tests(<iceoryx2::service::local_threadsafe::Service>)]
-    mod local_threadsafe {}
 }
