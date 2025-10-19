@@ -10,20 +10,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_testing::instantiate_conformance_tests;
+use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
 
-mod posix_shared_memory {
-    use super::*;
-    instantiate_conformance_tests!(
-        iceoryx2_cal_conformance_tests::zero_copy_connection_trait,
-        iceoryx2_cal::zero_copy_connection::posix_shared_memory::Connection
-    );
-}
+instantiate_conformance_tests_with_module!(
+    posix_shared_memory,
+    iceoryx2_cal_conformance_tests::zero_copy_connection_trait,
+    iceoryx2_cal::zero_copy_connection::posix_shared_memory::Connection
+);
 
-mod process_local {
-    use super::*;
-    instantiate_conformance_tests!(
-        iceoryx2_cal_conformance_tests::zero_copy_connection_trait,
-        iceoryx2_cal::zero_copy_connection::process_local::Connection
-    );
-}
+instantiate_conformance_tests_with_module!(
+    process_local,
+    iceoryx2_cal_conformance_tests::zero_copy_connection_trait,
+    iceoryx2_cal::zero_copy_connection::process_local::Connection
+);

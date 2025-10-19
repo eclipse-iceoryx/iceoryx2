@@ -10,20 +10,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_testing::instantiate_conformance_tests;
+use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
 
-mod pool_allocator {
-    use super::*;
-    instantiate_conformance_tests!(
-        iceoryx2_cal_conformance_tests::shm_allocator_trait,
-        iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator
-    );
-}
+instantiate_conformance_tests_with_module!(
+    pool_allocator,
+    iceoryx2_cal_conformance_tests::shm_allocator_trait,
+    iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator
+);
 
-mod bump_allocator {
-    use super::*;
-    instantiate_conformance_tests!(
-        iceoryx2_cal_conformance_tests::shm_allocator_trait,
-        iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator
-    );
-}
+instantiate_conformance_tests_with_module!(
+    bump_allocator,
+    iceoryx2_cal_conformance_tests::shm_allocator_trait,
+    iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator
+);

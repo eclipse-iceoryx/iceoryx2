@@ -10,21 +10,17 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_testing::instantiate_conformance_tests;
+use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
 
-mod posix_select {
-    use super::*;
-    instantiate_conformance_tests!(
-        iceoryx2_cal_conformance_tests::reactor_trait,
-        iceoryx2_cal::reactor::posix_select::Reactor
-    );
-}
+instantiate_conformance_tests_with_module!(
+    posix_select,
+    iceoryx2_cal_conformance_tests::reactor_trait,
+    iceoryx2_cal::reactor::posix_select::Reactor
+);
 
 #[cfg(target_os = "linux")]
-mod epoll {
-    use super::*;
-    instantiate_conformance_tests!(
-        iceoryx2_cal_conformance_tests::reactor_trait,
-        iceoryx2_cal::reactor::epoll::Epoll
-    );
-}
+instantiate_conformance_tests_with_module!(
+    epoll,
+    iceoryx2_cal_conformance_tests::reactor_trait,
+    iceoryx2_cal::reactor::epoll::Epoll
+);

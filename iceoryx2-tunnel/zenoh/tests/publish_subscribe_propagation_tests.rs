@@ -10,29 +10,25 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_testing::instantiate_conformance_tests;
+use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
 
 use iceoryx2::service::ipc::Service as Ipc;
 use iceoryx2::service::local::Service as Local;
 use iceoryx2_tunnel_zenoh::testing;
 use iceoryx2_tunnel_zenoh::ZenohBackend;
 
-mod ipc {
-    use super::*;
-    instantiate_conformance_tests!(
-        iceoryx2_tunnel_conformance_tests::publish_subscribe_propagation,
-        super::Ipc,
-        super::ZenohBackend<super::Ipc>,
-        super::testing::Testing
-    );
-}
+instantiate_conformance_tests_with_module!(
+    ipc,
+    iceoryx2_tunnel_conformance_tests::publish_subscribe_propagation,
+    super::Ipc,
+    super::ZenohBackend<super::Ipc>,
+    super::testing::Testing
+);
 
-mod local {
-    use super::*;
-    instantiate_conformance_tests!(
-        iceoryx2_tunnel_conformance_tests::publish_subscribe_propagation,
-        super::Local,
-        super::ZenohBackend<super::Local>,
-        super::testing::Testing
-    );
-}
+instantiate_conformance_tests_with_module!(
+    local,
+    iceoryx2_tunnel_conformance_tests::publish_subscribe_propagation,
+    super::Local,
+    super::ZenohBackend<super::Local>,
+    super::testing::Testing
+);

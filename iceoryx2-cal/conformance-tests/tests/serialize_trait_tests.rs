@@ -10,28 +10,22 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_testing::instantiate_conformance_tests;
+use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
 
-mod toml {
-    use super::*;
-    instantiate_conformance_tests!(
-        iceoryx2_cal_conformance_tests::serialize_trait,
-        iceoryx2_cal::serialize::toml::Toml
-    );
-}
+instantiate_conformance_tests_with_module!(
+    toml,
+    iceoryx2_cal_conformance_tests::serialize_trait,
+    iceoryx2_cal::serialize::toml::Toml
+);
 
-mod cdr {
-    use super::*;
-    instantiate_conformance_tests!(
-        iceoryx2_cal_conformance_tests::serialize_trait,
-        iceoryx2_cal::serialize::cdr::Cdr
-    );
-}
+instantiate_conformance_tests_with_module!(
+    cdr,
+    iceoryx2_cal_conformance_tests::serialize_trait,
+    iceoryx2_cal::serialize::cdr::Cdr
+);
 
-mod postcard {
-    use super::*;
-    instantiate_conformance_tests!(
-        iceoryx2_cal_conformance_tests::serialize_trait,
-        iceoryx2_cal::serialize::postcard::Postcard
-    );
-}
+instantiate_conformance_tests_with_module!(
+    postcard,
+    iceoryx2_cal_conformance_tests::serialize_trait,
+    iceoryx2_cal::serialize::postcard::Postcard
+);
