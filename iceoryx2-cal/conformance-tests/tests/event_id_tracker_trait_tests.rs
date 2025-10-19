@@ -13,7 +13,8 @@
 use iceoryx2_bb_testing::instantiate_conformance_tests;
 
 mod bitset {
-    super::instantiate_conformance_tests!(
+    use super::*;
+    instantiate_conformance_tests!(
         iceoryx2_cal_conformance_tests::event_id_tracker_trait,
         iceoryx2_bb_lock_free::mpmc::bit_set::RelocatableBitSet
     );

@@ -11,10 +11,11 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2_bb_testing::instantiate_conformance_tests;
+use iceoryx2_conformance_tests::node_death::ZeroCopy;
 
 mod ipc {
-    use iceoryx2_conformance_tests::node_death::node_death::ZeroCopy;
-    super::instantiate_conformance_tests!(iceoryx2_conformance_tests::node_death, super::ZeroCopy);
+    use super::*;
+    instantiate_conformance_tests!(iceoryx2_conformance_tests::node_death, super::ZeroCopy);
 }
 
 // #[instantiate_tests(<ZeroCopy>)]

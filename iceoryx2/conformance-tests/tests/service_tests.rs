@@ -22,7 +22,7 @@ mod ipc {
     mod event {
         use super::*;
 
-        super::instantiate_conformance_tests!(
+        instantiate_conformance_tests!(
             iceoryx2_conformance_tests::service,
             super::Service,
             super::EventTests::<super::Service>
@@ -32,7 +32,7 @@ mod ipc {
     mod publish_subscribe {
         use super::*;
 
-        super::instantiate_conformance_tests!(
+        instantiate_conformance_tests!(
             iceoryx2_conformance_tests::service,
             super::Service,
             super::PubSubTests::<super::Service>
@@ -42,7 +42,7 @@ mod ipc {
     mod request_response {
         use super::*;
 
-        super::instantiate_conformance_tests!(
+        instantiate_conformance_tests!(
             iceoryx2_conformance_tests::service,
             super::Service,
             super::RequestResponseTests::<super::Service>
@@ -52,7 +52,7 @@ mod ipc {
     mod blackboard {
         use super::*;
 
-        super::instantiate_conformance_tests!(
+        instantiate_conformance_tests!(
             iceoryx2_conformance_tests::service,
             super::Service,
             super::BlackboardTests::<super::Service>
@@ -67,7 +67,7 @@ mod local {
     mod event {
         use super::*;
 
-        super::instantiate_conformance_tests!(
+        instantiate_conformance_tests!(
             iceoryx2_conformance_tests::service,
             super::Service,
             super::EventTests::<super::Service>
@@ -77,7 +77,7 @@ mod local {
     mod publish_subscribe {
         use super::*;
 
-        super::instantiate_conformance_tests!(
+        instantiate_conformance_tests!(
             iceoryx2_conformance_tests::service,
             super::Service,
             super::PubSubTests::<super::Service>
@@ -87,7 +87,7 @@ mod local {
     mod request_response {
         use super::*;
 
-        super::instantiate_conformance_tests!(
+        instantiate_conformance_tests!(
             iceoryx2_conformance_tests::service,
             super::Service,
             super::RequestResponseTests::<super::Service>
@@ -97,7 +97,7 @@ mod local {
     mod blackboard {
         use super::*;
 
-        super::instantiate_conformance_tests!(
+        instantiate_conformance_tests!(
             iceoryx2_conformance_tests::service,
             super::Service,
             super::BlackboardTests::<super::Service>
@@ -112,7 +112,7 @@ mod ipc_threadsafe {
     mod event {
         use super::*;
 
-        super::instantiate_conformance_tests!(
+        instantiate_conformance_tests!(
             iceoryx2_conformance_tests::service,
             super::Service,
             super::EventTests::<super::Service>
@@ -122,7 +122,7 @@ mod ipc_threadsafe {
     mod publish_subscribe {
         use super::*;
 
-        super::instantiate_conformance_tests!(
+        instantiate_conformance_tests!(
             iceoryx2_conformance_tests::service,
             super::Service,
             super::PubSubTests::<super::Service>
@@ -132,7 +132,7 @@ mod ipc_threadsafe {
     mod request_response {
         use super::*;
 
-        super::instantiate_conformance_tests!(
+        instantiate_conformance_tests!(
             iceoryx2_conformance_tests::service,
             super::Service,
             super::RequestResponseTests::<super::Service>
@@ -142,7 +142,7 @@ mod ipc_threadsafe {
     mod blackboard {
         use super::*;
 
-        super::instantiate_conformance_tests!(
+        instantiate_conformance_tests!(
             iceoryx2_conformance_tests::service,
             super::Service,
             super::BlackboardTests::<super::Service>
@@ -157,7 +157,7 @@ mod local_threadsafe {
     mod event {
         use super::*;
 
-        super::instantiate_conformance_tests!(
+        instantiate_conformance_tests!(
             iceoryx2_conformance_tests::service,
             super::Service,
             super::EventTests::<super::Service>
@@ -167,7 +167,7 @@ mod local_threadsafe {
     mod publish_subscribe {
         use super::*;
 
-        super::instantiate_conformance_tests!(
+        instantiate_conformance_tests!(
             iceoryx2_conformance_tests::service,
             super::Service,
             super::PubSubTests::<super::Service>
@@ -177,7 +177,7 @@ mod local_threadsafe {
     mod request_response {
         use super::*;
 
-        super::instantiate_conformance_tests!(
+        instantiate_conformance_tests!(
             iceoryx2_conformance_tests::service,
             super::Service,
             super::RequestResponseTests::<super::Service>
@@ -187,7 +187,7 @@ mod local_threadsafe {
     mod blackboard {
         use super::*;
 
-        super::instantiate_conformance_tests!(
+        instantiate_conformance_tests!(
             iceoryx2_conformance_tests::service,
             super::Service,
             super::BlackboardTests::<super::Service>

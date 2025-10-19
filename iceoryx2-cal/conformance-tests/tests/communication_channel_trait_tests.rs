@@ -13,21 +13,24 @@
 use iceoryx2_bb_testing::instantiate_conformance_tests;
 
 mod unix_datagram {
-    super::instantiate_conformance_tests!(
+    use super::*;
+    instantiate_conformance_tests!(
         iceoryx2_cal_conformance_tests::communication_channel_trait,
         iceoryx2_cal::communication_channel::unix_datagram::Channel<u64>
     );
 }
 
 mod posix_shared_memory {
-    super::instantiate_conformance_tests!(
+    use super::*;
+    instantiate_conformance_tests!(
         iceoryx2_cal_conformance_tests::communication_channel_trait,
         iceoryx2_cal::communication_channel::posix_shared_memory::Channel
     );
 }
 
 mod process_local {
-    super::instantiate_conformance_tests!(
+    use super::*;
+    instantiate_conformance_tests!(
         iceoryx2_cal_conformance_tests::communication_channel_trait,
         iceoryx2_cal::communication_channel::process_local::Channel
     );

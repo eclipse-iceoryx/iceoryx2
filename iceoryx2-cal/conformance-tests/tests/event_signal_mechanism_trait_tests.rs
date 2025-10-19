@@ -13,7 +13,8 @@
 use iceoryx2_bb_testing::instantiate_conformance_tests;
 
 mod semaphore {
-    super::instantiate_conformance_tests!(
+    use super::*;
+    instantiate_conformance_tests!(
         iceoryx2_cal_conformance_tests::event_signal_mechanism_trait,
         iceoryx2_cal::event::signal_mechanism::semaphore::Semaphore
     );

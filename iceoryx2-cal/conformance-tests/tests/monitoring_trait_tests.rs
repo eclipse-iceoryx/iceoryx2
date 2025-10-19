@@ -13,14 +13,16 @@
 use iceoryx2_bb_testing::instantiate_conformance_tests;
 
 mod file_lock {
-    super::instantiate_conformance_tests!(
+    use super::*;
+    instantiate_conformance_tests!(
         iceoryx2_cal_conformance_tests::monitoring_trait,
         iceoryx2_cal::monitoring::file_lock::FileLockMonitoring
     );
 }
 
 mod process_local {
-    super::instantiate_conformance_tests!(
+    use super::*;
+    instantiate_conformance_tests!(
         iceoryx2_cal_conformance_tests::monitoring_trait,
         iceoryx2_cal::monitoring::process_local::ProcessLocalMonitoring
     );

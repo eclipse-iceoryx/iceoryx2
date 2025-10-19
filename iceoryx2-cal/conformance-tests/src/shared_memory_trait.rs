@@ -11,6 +11,9 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;
+
+pub type DefaultAllocator = PoolAllocator;
 
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
@@ -22,14 +25,12 @@ pub mod shared_memory_trait {
     use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::{assert_that, test_requires};
     use iceoryx2_cal::named_concept::*;
+    use iceoryx2_cal::shared_memory::*;
+    use iceoryx2_cal::shm_allocator::{ShmAllocationError, ShmAllocator};
     use iceoryx2_cal::testing::*;
-    use iceoryx2_cal::{
-        named_concept::NamedConceptBuilder,
-        shared_memory::*,
-        shm_allocator::{pool_allocator::PoolAllocator, ShmAllocationError, ShmAllocator},
-    };
 
-    pub type DefaultAllocator = PoolAllocator;
+    use super::*;
+
     type AllocatorConfig = <DefaultAllocator as ShmAllocator>::Configuration;
 
     const NUMBER_OF_CHUNKS: usize = 32;

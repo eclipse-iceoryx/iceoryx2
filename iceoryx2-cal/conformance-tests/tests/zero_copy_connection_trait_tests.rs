@@ -13,14 +13,16 @@
 use iceoryx2_bb_testing::instantiate_conformance_tests;
 
 mod posix_shared_memory {
-    super::instantiate_conformance_tests!(
+    use super::*;
+    instantiate_conformance_tests!(
         iceoryx2_cal_conformance_tests::zero_copy_connection_trait,
         iceoryx2_cal::zero_copy_connection::posix_shared_memory::Connection
     );
 }
 
 mod process_local {
-    super::instantiate_conformance_tests!(
+    use super::*;
+    instantiate_conformance_tests!(
         iceoryx2_cal_conformance_tests::zero_copy_connection_trait,
         iceoryx2_cal::zero_copy_connection::process_local::Connection
     );

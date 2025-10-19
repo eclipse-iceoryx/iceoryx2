@@ -19,7 +19,7 @@ use iceoryx2_tunnel_zenoh::ZenohBackend;
 
 mod ipc {
     use super::*;
-    super::instantiate_conformance_tests!(
+    instantiate_conformance_tests!(
         iceoryx2_tunnel_conformance_tests::publish_subscribe_discovery,
         super::Ipc,
         super::ZenohBackend<super::Ipc>,
@@ -29,7 +29,7 @@ mod ipc {
 
 mod local {
     use super::*;
-    super::instantiate_conformance_tests!(
+    instantiate_conformance_tests!(
         iceoryx2_tunnel_conformance_tests::publish_subscribe_discovery,
         super::Local,
         super::ZenohBackend<super::Local>,

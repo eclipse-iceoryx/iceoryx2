@@ -11,21 +11,22 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2_bb_testing::instantiate_conformance_tests;
+use iceoryx2_cal::arc_sync_policy::mutex_protected::MutexProtected;
+use iceoryx2_cal::arc_sync_policy::single_threaded::SingleThreaded;
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 
 mod mutex_protected {
-    super::instantiate_conformance_tests!(
+    use super::*;
+    instantiate_conformance_tests!(
         iceoryx2_cal_conformance_tests::arc_sync_policy_trait,
-        iceoryx2_cal::arc_sync_policy::mutex_protected::MutexProtected<
-        iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64,
-        >
+        super::MutexProtected<super::IoxAtomicU64>
     );
 }
 
 mod single_threaded {
-    super::instantiate_conformance_tests!(
+    use super::*;
+    instantiate_conformance_tests!(
         iceoryx2_cal_conformance_tests::arc_sync_policy_trait,
-        iceoryx2_cal::arc_sync_policy::single_threaded::SingleThreaded<
-        iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64,
-        >
+        super::SingleThreaded<super::IoxAtomicU64>
     );
 }

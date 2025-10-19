@@ -13,7 +13,8 @@
 use iceoryx2_bb_testing::instantiate_conformance_tests;
 
 mod posix_select {
-    super::instantiate_conformance_tests!(
+    use super::*;
+    instantiate_conformance_tests!(
         iceoryx2_cal_conformance_tests::reactor_trait,
         iceoryx2_cal::reactor::posix_select::Reactor
     );
@@ -21,7 +22,8 @@ mod posix_select {
 
 #[cfg(target_os = "linux")]
 mod epoll {
-    super::instantiate_conformance_tests!(
+    use super::*;
+    instantiate_conformance_tests!(
         iceoryx2_cal_conformance_tests::reactor_trait,
         iceoryx2_cal::reactor::epoll::Epoll
     );

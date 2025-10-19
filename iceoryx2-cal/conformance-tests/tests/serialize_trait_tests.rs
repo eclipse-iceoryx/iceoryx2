@@ -13,21 +13,24 @@
 use iceoryx2_bb_testing::instantiate_conformance_tests;
 
 mod toml {
-    super::instantiate_conformance_tests!(
+    use super::*;
+    instantiate_conformance_tests!(
         iceoryx2_cal_conformance_tests::serialize_trait,
         iceoryx2_cal::serialize::toml::Toml
     );
 }
 
 mod cdr {
-    super::instantiate_conformance_tests!(
+    use super::*;
+    instantiate_conformance_tests!(
         iceoryx2_cal_conformance_tests::serialize_trait,
         iceoryx2_cal::serialize::cdr::Cdr
     );
 }
 
 mod postcard {
-    super::instantiate_conformance_tests!(
+    use super::*;
+    instantiate_conformance_tests!(
         iceoryx2_cal_conformance_tests::serialize_trait,
         iceoryx2_cal::serialize::postcard::Postcard
     );

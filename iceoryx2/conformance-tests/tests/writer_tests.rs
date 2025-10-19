@@ -13,28 +13,32 @@
 use iceoryx2_bb_testing::instantiate_conformance_tests;
 
 mod ipc {
-    super::instantiate_conformance_tests!(
+    use super::*;
+    instantiate_conformance_tests!(
         iceoryx2_conformance_tests::writer,
         iceoryx2::service::ipc::Service
     );
 }
 
 mod local {
-    super::instantiate_conformance_tests!(
+    use super::*;
+    instantiate_conformance_tests!(
         iceoryx2_conformance_tests::writer,
         iceoryx2::service::local::Service
     );
 }
 
 mod ipc_threadsafe {
-    super::instantiate_conformance_tests!(
+    use super::*;
+    instantiate_conformance_tests!(
         iceoryx2_conformance_tests::writer,
         iceoryx2::service::ipc_threadsafe::Service
     );
 }
 
 mod local_threadsafe {
-    super::instantiate_conformance_tests!(
+    use super::*;
+    instantiate_conformance_tests!(
         iceoryx2_conformance_tests::writer,
         iceoryx2::service::local_threadsafe::Service
     );

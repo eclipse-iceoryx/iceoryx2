@@ -10,68 +10,70 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use iceoryx2::prelude::*;
 use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU32;
+
+use iceoryx2::config::Config;
+use iceoryx2::node::testing::__internal_node_staged_death;
+
+use core::sync::atomic::Ordering;
+
+pub struct TestDetails<S: Service> {
+    node: Node<S>,
+}
+
+pub trait Test {
+    type Service: Service;
+
+    fn generate_node_name(i: usize, prefix: &str) -> NodeName {
+        NodeName::new(&(prefix.to_string() + &i.to_string())).unwrap()
+    }
+
+    fn create_test_node(config: &Config) -> TestDetails<Self::Service> {
+        static COUNTER: IoxAtomicU32 = IoxAtomicU32::new(0);
+        let node_name = Self::generate_node_name(0, "toby or no toby");
+        let fake_node_id = ((u32::MAX - COUNTER.fetch_add(1, Ordering::Relaxed)) as u128) << 96;
+        let fake_node_id = unsafe { core::mem::transmute::<u128, UniqueSystemId>(fake_node_id) };
+
+        let node = unsafe {
+            NodeBuilder::new()
+                .name(&node_name)
+                .config(config)
+                .__internal_create_with_custom_node_id::<Self::Service>(fake_node_id)
+                .unwrap()
+        };
+
+        TestDetails { node }
+    }
+
+    fn staged_death(node: &mut Node<Self::Service>);
+}
+
+pub struct ZeroCopy;
+
+impl Test for ZeroCopy {
+    type Service = iceoryx2::service::ipc::Service;
+
+    fn staged_death(node: &mut Node<Self::Service>) {
+        use iceoryx2_cal::monitoring::testing::__InternalMonitoringTokenTestable;
+        let monitor = unsafe { __internal_node_staged_death(node) };
+        monitor.staged_death();
+    }
+}
 
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod node_death {
-    use core::sync::atomic::Ordering;
-    use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU32;
-
-    use iceoryx2::config::Config;
-    use iceoryx2::node::testing::__internal_node_staged_death;
     use iceoryx2::node::{CleanupState, NodeState};
-    use iceoryx2::prelude::*;
     use iceoryx2::service::Service;
     use iceoryx2::testing::*;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
-    use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing::{assert_that, test_fail};
 
-    pub struct TestDetails<S: Service> {
-        node: Node<S>,
-    }
-
-    pub trait Test {
-        type Service: Service;
-
-        fn generate_node_name(i: usize, prefix: &str) -> NodeName {
-            NodeName::new(&(prefix.to_string() + &i.to_string())).unwrap()
-        }
-
-        fn create_test_node(config: &Config) -> TestDetails<Self::Service> {
-            static COUNTER: IoxAtomicU32 = IoxAtomicU32::new(0);
-            let node_name = Self::generate_node_name(0, "toby or no toby");
-            let fake_node_id = ((u32::MAX - COUNTER.fetch_add(1, Ordering::Relaxed)) as u128) << 96;
-            let fake_node_id =
-                unsafe { core::mem::transmute::<u128, UniqueSystemId>(fake_node_id) };
-
-            let node = unsafe {
-                NodeBuilder::new()
-                    .name(&node_name)
-                    .config(config)
-                    .__internal_create_with_custom_node_id::<Self::Service>(fake_node_id)
-                    .unwrap()
-            };
-
-            TestDetails { node }
-        }
-
-        fn staged_death(node: &mut Node<Self::Service>);
-    }
-
-    pub struct ZeroCopy;
-
-    impl Test for ZeroCopy {
-        type Service = iceoryx2::service::ipc::Service;
-
-        fn staged_death(node: &mut Node<Self::Service>) {
-            use iceoryx2_cal::monitoring::testing::__InternalMonitoringTokenTestable;
-            let monitor = unsafe { __internal_node_staged_death(node) };
-            monitor.staged_death();
-        }
-    }
+    use super::*;
 
     #[conformance_test]
     pub fn dead_node_is_marked_as_dead_and_can_be_cleaned_up<S: Test>() {

@@ -13,14 +13,16 @@
 use iceoryx2_bb_testing::instantiate_conformance_tests;
 
 mod pool_allocator {
-    super::instantiate_conformance_tests!(
+    use super::*;
+    instantiate_conformance_tests!(
         iceoryx2_cal_conformance_tests::shm_allocator_trait,
         iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator
     );
 }
 
 mod bump_allocator {
-    super::instantiate_conformance_tests!(
+    use super::*;
+    instantiate_conformance_tests!(
         iceoryx2_cal_conformance_tests::shm_allocator_trait,
         iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator
     );

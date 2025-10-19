@@ -11,11 +11,11 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2_bb_testing::instantiate_conformance_tests;
-use iceoryx2_cal_conformance_tests::shared_memory_trait::shared_memory_trait::DefaultAllocator;
+use iceoryx2_cal_conformance_tests::shared_memory_trait::DefaultAllocator;
 
 mod posix {
     use super::*;
-    super::instantiate_conformance_tests!(
+    instantiate_conformance_tests!(
         iceoryx2_cal_conformance_tests::shared_memory_trait,
         iceoryx2_cal::shared_memory::posix::Memory<super::DefaultAllocator>
     );
@@ -23,7 +23,7 @@ mod posix {
 
 mod process_local {
     use super::*;
-    super::instantiate_conformance_tests!(
+    instantiate_conformance_tests!(
         iceoryx2_cal_conformance_tests::shared_memory_trait,
         iceoryx2_cal::shared_memory::process_local::Memory<super::DefaultAllocator>
     );
