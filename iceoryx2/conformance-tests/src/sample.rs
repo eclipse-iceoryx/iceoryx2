@@ -10,8 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[generic_tests::define]
-mod sample {
+use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod sample {
     use iceoryx2::port::publisher::Publisher;
     use iceoryx2::port::subscriber::Subscriber;
     use iceoryx2::prelude::*;
@@ -19,6 +22,7 @@ mod sample {
     use iceoryx2::service::port_factory::publish_subscribe::PortFactory;
     use iceoryx2::service::Service;
     use iceoryx2::testing::*;
+    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
 
@@ -68,8 +72,8 @@ mod sample {
         }
     }
 
-    #[test]
-    fn origin_is_tracked_correctly<Sut: Service>() {
+    #[conformance_test]
+    pub fn origin_is_tracked_correctly<Sut: Service>() {
         let config = generate_isolated_config();
         let test_context = TestContext::<Sut>::new(&config);
 
@@ -82,8 +86,8 @@ mod sample {
         assert_that!(sample.origin(), eq test_context.publisher_2.id());
     }
 
-    #[test]
-    fn sample_of_dropped_service_does_block_new_service_creation<Sut: Service>() {
+    #[conformance_test]
+    pub fn sample_of_dropped_service_does_block_new_service_creation<Sut: Service>() {
         let config = generate_isolated_config();
         let test_context = TestContext::<Sut>::new(&config);
 
@@ -105,8 +109,8 @@ mod sample {
         assert_that!(result.err(), eq Some(PublishSubscribeCreateError::AlreadyExists));
     }
 
-    #[test]
-    fn when_everything_is_dropped_the_sample_can_still_be_consumed<Sut: Service>() {
+    #[conformance_test]
+    pub fn when_everything_is_dropped_the_sample_can_still_be_consumed<Sut: Service>() {
         let config = generate_isolated_config();
         let test_context = TestContext::<Sut>::new(&config);
 
@@ -129,8 +133,8 @@ mod sample {
         assert_that!(*sample, eq PAYLOAD);
     }
 
-    #[test]
-    fn sample_received_from_dropped_publisher_does_not_block_new_publishers<Sut: Service>() {
+    #[conformance_test]
+    pub fn sample_received_from_dropped_publisher_does_not_block_new_publishers<Sut: Service>() {
         let config = generate_isolated_config();
         let test_context = TestContext::<Sut>::new(&config);
         const PAYLOAD_1: u64 = 123554;
@@ -151,8 +155,8 @@ mod sample {
         assert_that!(*sample_2, eq PAYLOAD_2);
     }
 
-    #[test]
-    fn sample_from_dropped_subscriber_does_not_block_new_subscribers<Sut: Service>() {
+    #[conformance_test]
+    pub fn sample_from_dropped_subscriber_does_not_block_new_subscribers<Sut: Service>() {
         let mut config = generate_isolated_config();
         config.defaults.publish_subscribe.publisher_history_size = 1;
         let test_context = TestContext::<Sut>::new(&config);
@@ -174,16 +178,4 @@ mod sample {
         assert_that!(*sample_1, eq PAYLOAD_1);
         assert_that!(*sample_2, eq PAYLOAD_2);
     }
-
-    #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
-    mod ipc {}
-
-    #[instantiate_tests(<iceoryx2::service::local::Service>)]
-    mod local {}
-
-    #[instantiate_tests(<iceoryx2::service::ipc_threadsafe::Service>)]
-    mod ipc_threadsafe {}
-
-    #[instantiate_tests(<iceoryx2::service::local_threadsafe::Service>)]
-    mod local_threadsafe {}
 }

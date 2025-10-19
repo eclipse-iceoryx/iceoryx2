@@ -10,8 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[generic_tests::define]
-mod sample_mut {
+use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod sample_mut {
     use iceoryx2::port::publisher::Publisher;
     use iceoryx2::port::subscriber::Subscriber;
     use iceoryx2::port::LoanError;
@@ -20,6 +23,7 @@ mod sample_mut {
     use iceoryx2::service::port_factory::publish_subscribe::PortFactory;
     use iceoryx2::service::Service;
     use iceoryx2::testing::*;
+    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
 
@@ -70,8 +74,8 @@ mod sample_mut {
         }
     }
 
-    #[test]
-    fn when_going_out_of_scope_it_is_released<Sut: Service>() {
+    #[conformance_test]
+    pub fn when_going_out_of_scope_it_is_released<Sut: Service>() {
         let config = generate_isolated_config();
         let test_context = TestContext::<Sut>::new(&config);
 
@@ -94,16 +98,16 @@ mod sample_mut {
         }
     }
 
-    #[test]
-    fn header_tracks_correct_origin<Sut: Service>() {
+    #[conformance_test]
+    pub fn header_tracks_correct_origin<Sut: Service>() {
         let config = generate_isolated_config();
         let test_context = TestContext::<Sut>::new(&config);
         let sample = test_context.publisher.loan().unwrap();
         assert_that!(sample.header().publisher_id(), eq test_context.publisher.id());
     }
 
-    #[test]
-    fn write_payload_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn write_payload_works<Sut: Service>() {
         const PAYLOAD_1: u64 = 891283689123555;
         const PAYLOAD_2: u64 = 71820;
         let config = generate_isolated_config();
@@ -120,8 +124,8 @@ mod sample_mut {
         assert_that!(*sample.payload_mut(), eq PAYLOAD_2);
     }
 
-    #[test]
-    fn assume_init_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn assume_init_works<Sut: Service>() {
         const PAYLOAD: u64 = 7182055123;
         let config = generate_isolated_config();
         let test_context = TestContext::<Sut>::new(&config);
@@ -133,8 +137,8 @@ mod sample_mut {
         assert_that!(*sample.payload_mut(), eq PAYLOAD);
     }
 
-    #[test]
-    fn send_works<Sut: Service>() {
+    #[conformance_test]
+    pub fn send_works<Sut: Service>() {
         const PAYLOAD: u64 = 3215357;
         let config = generate_isolated_config();
         let test_context = TestContext::<Sut>::new(&config);
@@ -147,8 +151,8 @@ mod sample_mut {
         assert_that!(*received_sample, eq PAYLOAD);
     }
 
-    #[test]
-    fn sample_of_dropped_service_does_block_new_service_creation<Sut: Service>() {
+    #[conformance_test]
+    pub fn sample_of_dropped_service_does_block_new_service_creation<Sut: Service>() {
         let config = generate_isolated_config();
         let test_context = TestContext::<Sut>::new(&config);
         let service_name = test_context.service_name.clone();
@@ -166,8 +170,8 @@ mod sample_mut {
         assert_that!(result.err().unwrap(), eq PublishSubscribeCreateError::AlreadyExists);
     }
 
-    #[test]
-    fn sample_of_dropped_publisher_does_not_block_new_publishers<Sut: Service>() {
+    #[conformance_test]
+    pub fn sample_of_dropped_publisher_does_not_block_new_publishers<Sut: Service>() {
         let config = generate_isolated_config();
         let test_context = TestContext::<Sut>::new(&config);
         let service = test_context.service;
@@ -178,16 +182,4 @@ mod sample_mut {
 
         assert_that!(service.publisher_builder().create(), is_ok);
     }
-
-    #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
-    mod ipc {}
-
-    #[instantiate_tests(<iceoryx2::service::local::Service>)]
-    mod local {}
-
-    #[instantiate_tests(<iceoryx2::service::ipc_threadsafe::Service>)]
-    mod ipc_threadsafe {}
-
-    #[instantiate_tests(<iceoryx2::service::local_threadsafe::Service>)]
-    mod local_threadsafe {}
 }
