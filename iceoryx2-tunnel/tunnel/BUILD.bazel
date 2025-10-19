@@ -26,7 +26,6 @@ rust_library(
         "//iceoryx2:iceoryx2",
         "//iceoryx2-bb/log:iceoryx2-bb-log",
         "//iceoryx2-tunnel/backend:iceoryx2-tunnel-backend",
-        "//iceoryx2-tunnel/zenoh:iceoryx2-tunnel-zenoh",
         "//iceoryx2-services/discovery:iceoryx2-services-discovery",
     ],
 )

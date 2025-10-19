@@ -77,6 +77,5 @@ rust_test_suite(
     ],
     proc_macro_deps = [
         "//iceoryx2-bb/derive-macros:iceoryx2-bb-derive-macros",
-        "@crate_index//:generic-tests",
     ],
 )

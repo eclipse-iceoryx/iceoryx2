@@ -1,5 +1,5 @@
 {
-  "checksum": "8c12e520cc5f9d205a9b8a0b70c4ff26cda71a525d33b0ffe61da9d1982fd356",
+  "checksum": "8394a06b04b71f329bad98e9df648ee5df09f7dd9d0217b5f3b49c75cc54b251",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -7756,15 +7756,6 @@
           "selects": {}
         },
         "edition": "2021",
-        "proc_macro_deps_dev": {
-          "common": [
-            {
-              "id": "generic-tests 0.1.2",
-              "target": "generic_tests"
-            }
-          ],
-          "selects": {}
-        },
         "version": "0.7.0"
       },
       "license": "MIT OR Apache-2.0",
@@ -8430,15 +8421,6 @@
             {
               "id": "toml 0.8.19",
               "target": "toml"
-            }
-          ],
-          "selects": {}
-        },
-        "deps_dev": {
-          "common": [
-            {
-              "id": "lazy_static 1.5.0",
-              "target": "lazy_static"
             }
           ],
           "selects": {}
@@ -9195,14 +9177,6 @@
         "compile_data_glob": [
           "**"
         ],
-        "crate_features": {
-          "common": [
-            "default",
-            "iceoryx2-tunnel-zenoh",
-            "tunnel_zenoh"
-          ],
-          "selects": {}
-        },
         "edition": "2021",
         "proc_macro_deps_dev": {
           "common": [
@@ -9371,15 +9345,6 @@
           "selects": {}
         },
         "edition": "2021",
-        "proc_macro_deps_dev": {
-          "common": [
-            {
-              "id": "generic-tests 0.1.2",
-              "target": "generic_tests"
-            }
-          ],
-          "selects": {}
-        },
         "version": "0.7.0"
       },
       "license": "MIT OR Apache-2.0",
