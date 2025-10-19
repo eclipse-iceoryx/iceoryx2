@@ -19,23 +19,26 @@ extern crate alloc;
 
 mod common;
 
-#[cfg(feature = "libc_platform")]
+#[cfg(all(target_os = "linux", feature = "libc_platform"))]
 #[path = "libc/mod.rs"]
 mod platform;
 
-#[cfg(all(target_os = "freebsd", not(feature = "libc_platform")))]
+#[cfg(target_os = "android")]
+#[path = "android/mod.rs"]
+pub mod platform;
+#[cfg(target_os = "freebsd")]
 #[path = "freebsd/mod.rs"]
 mod platform;
-#[cfg(all(target_os = "macos", not(feature = "libc_platform")))]
+#[cfg(target_os = "macos")]
 #[path = "macos/mod.rs"]
 mod platform;
 #[cfg(all(target_os = "linux", not(feature = "libc_platform")))]
 #[path = "linux/mod.rs"]
 pub mod platform;
-#[cfg(all(target_os = "nto", not(feature = "libc_platform")))]
+#[cfg(target_os = "nto")]
 #[path = "qnx/mod.rs"]
 mod platform;
-#[cfg(all(target_os = "windows", not(feature = "libc_platform")))]
+#[cfg(target_os = "windows")]
 #[path = "windows/mod.rs"]
 mod platform;
 
