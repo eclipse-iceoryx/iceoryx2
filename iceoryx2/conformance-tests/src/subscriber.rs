@@ -10,11 +10,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[generic_tests::define]
-mod subscriber {
+use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod subscriber {
     use iceoryx2::port::ReceiveError;
     use iceoryx2::service::builder::CustomPayloadMarker;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
+    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use std::collections::HashSet;
 
     use iceoryx2::{
@@ -34,22 +38,22 @@ mod subscriber {
         .unwrap()
     }
 
-    #[test]
-    fn receive_error_display_works<S: Service>() {
+    #[conformance_test]
+    pub fn receive_error_display_works<S: Service>() {
         assert_that!(
             format!("{}", ReceiveError::ExceedsMaxBorrows), eq "ReceiveError::ExceedsMaxBorrows");
     }
 
-    #[test]
-    fn create_error_display_works<S: Service>() {
+    #[conformance_test]
+    pub fn create_error_display_works<S: Service>() {
         assert_that!(
             format!("{}", SubscriberCreateError::ExceedsMaxSupportedSubscribers), eq "SubscriberCreateError::ExceedsMaxSupportedSubscribers");
         assert_that!(
             format!("{}", SubscriberCreateError::BufferSizeExceedsMaxSupportedBufferSizeOfService), eq "SubscriberCreateError::BufferSizeExceedsMaxSupportedBufferSizeOfService");
     }
 
-    #[test]
-    fn id_is_unique<Sut: Service>() {
+    #[conformance_test]
+    pub fn id_is_unique<Sut: Service>() {
         let service_name = generate_name();
         let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -72,10 +76,10 @@ mod subscriber {
         }
     }
 
-    #[test]
+    #[conformance_test]
     #[should_panic]
     #[cfg(debug_assertions)]
-    fn subscriber_with_custom_payload_details_panics_when_calling_non_custom_receive<
+    pub fn subscriber_with_custom_payload_details_panics_when_calling_non_custom_receive<
         Sut: Service,
     >() {
         const TYPE_SIZE_OVERRIDE: usize = 128;
@@ -98,16 +102,4 @@ mod subscriber {
         // panics here
         let _sample = sut.receive();
     }
-
-    #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
-    mod ipc {}
-
-    #[instantiate_tests(<iceoryx2::service::local::Service>)]
-    mod local {}
-
-    #[instantiate_tests(<iceoryx2::service::ipc_threadsafe::Service>)]
-    mod ipc_threadsafe {}
-
-    #[instantiate_tests(<iceoryx2::service::local_threadsafe::Service>)]
-    mod local_threadsafe {}
 }
