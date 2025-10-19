@@ -1576,6 +1576,8 @@ dependencies = [
  "iceoryx2",
  "iceoryx2-bb-conformance-test-macros",
  "iceoryx2-bb-container",
+ "iceoryx2-bb-derive-macros",
+ "iceoryx2-bb-elementary",
  "iceoryx2-bb-log",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",

@@ -25,6 +25,7 @@ pub mod server;
 pub mod service;
 pub mod service_blackboard;
 pub mod service_event;
+pub mod service_publish_subscribe;
 pub mod subscriber;
 pub mod waitset;
 pub mod writer;
