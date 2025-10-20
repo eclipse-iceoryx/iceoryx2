@@ -35,7 +35,7 @@ macro_rules! instantiate_conformance_tests {
 }
 
 /// This is a convenience macro for `instantiate_conformance_tests`, to instantiate conformance tests
-/// for a given set of system-under-test (SUT) types and automatically wrap the test in a module.
+/// for a given set of system-under-test (SUT) types and automatically wrap them in a module.
 ///
 /// It generates a call to the specified conformance test, passing the provided SUT types as arguments
 /// to the macro defined within the conformance test module.

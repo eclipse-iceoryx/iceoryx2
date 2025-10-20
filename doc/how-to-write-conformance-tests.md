@@ -8,7 +8,8 @@ provided Rust macros and procedural attributes.
 **Conformance tests** ensure that different implementations of a trait or
 interface behave identically. This framework provides macros and attributes to
 automate the generation of test modules and test cases for multiple System Under
-Test (SUT) types.
+Test (SUT) types. A SUT is any concrete implementation of a iceoryx2 concept,
+service variant or extension.
 
 ## 2. Key Components
 
@@ -17,7 +18,7 @@ Test (SUT) types.
 | `#[conformance_test]` | Marks a function as a conformance test. The function must be generic over the SUT type(s). |
 | `#[conformance_test_module]` | Generates a declarative macro for a module, collecting all conformance tests and instantiating them for each SUT type. |
 | `instantiate_conformance_tests!` | Instantiates the generated macro for a conformance test and a list of SUT types. |
-| `instantiate_conformance_tests_with_module!` | Instantiates the generated macro for a conformance test and a list of SUT types. The instantiation is wrappen in a module. |
+| `instantiate_conformance_tests_with_module!` | Instantiates the generated macro for a conformance test and a list of SUT types. The instantiation is wrapped in a module. |
 
 ## 3. Writing Conformance Tests
 
@@ -66,7 +67,7 @@ Use the fully qualified path to the parent test module and
 to run the tests for each SUT type.
 
 Assuming the tests are part of a `my_test_crate` crate, which contains
-the modules `my_module`, the tests would be instantiated as follows:
+the modules `my_module`, the tests can be instantiated as follows:
 
 ```rs
 use iceoryx2_bb_testing::instantiate_conformance_tests;
@@ -88,42 +89,32 @@ mod sut3_impl {
 }
 ```
 
-For such simple cases, the `instantiate_conformance_tests_with_module!` macro
-can be used to reduce the boilerplate:
+For such simple cases like above, without any additional test setup, except the
+boilerplate for the `instantiate_conformance_tests!` macro, the
+`instantiate_conformance_tests_with_module!` macro can be used to reduce this
+boilerplate:
 
 
 ```rs
 use iceoryx2_bb_testing::instantiate_conformance_tests;
 use my_impl::{SUT1, SUT2, SUT3};
 
-instantiate_conformance_tests_with_module!(sut1_imp, lmy_test_crate::my_module, super::SUT1);
-instantiate_conformance_tests_with_module!(sut2_imp, lmy_test_crate::my_module, super::SUT2);
-instantiate_conformance_tests_with_module!(sut3_imp, lmy_test_crate::my_module, super::SUT3);
+instantiate_conformance_tests_with_module!(sut1_imp, my_test_crate::my_module, super::SUT1);
+instantiate_conformance_tests_with_module!(sut2_imp, my_test_crate::my_module, super::SUT2);
+instantiate_conformance_tests_with_module!(sut3_imp, my_test_crate::my_module, super::SUT3);
 ```
 
-If multiple conformance tests shall be instantiated in the same file, the
+If multiple conformance test modules shall be instantiated in the same file, the
 `instantiate_conformance_tests!` is recommended:
 
 ```rs
 use iceoryx2_bb_testing::instantiate_conformance_tests;
-use my_impl::{SUT1, SUT2, SUT3};
+use my_impl::SUT;
 
-mod sut1_impl {
+mod sut_impl {
     use super::*;
-    instantiate_conformance_tests!(my_test_crate::my_module1, super::SUT1);
-    instantiate_conformance_tests!(my_test_crate::my_module2, super::SUT1);
-}
-
-mod sut2_impl {
-    use super::*;
-    instantiate_conformance_tests!(my_test_crate::my_module1, super::SUT2);
-    instantiate_conformance_tests!(my_test_crate::my_module2, super::SUT2);
-}
-
-mod sut3_impl {
-    use super::*;
-    instantiate_conformance_tests!(my_test_crate::my_module1, super::SUT3);
-    instantiate_conformance_tests!(my_test_crate::my_module2, super::SUT3);
+    instantiate_conformance_tests!(my_test_crate::my_module1, super::SUT);
+    instantiate_conformance_tests!(my_test_crate::my_module2, super::SUT);
 }
 ```
 
@@ -193,8 +184,8 @@ This will generate and run `test_feature_x` and `test_feature_y` for both
 ## 5. Pitfalls
 
 Assuming the conformance test suit defines some types that need to be used in
-the instantiation. In this case, it is recommended to define the types outside
-of the conformance test module:
+the instantiation, it is recommended to define the types outside of the
+conformance test module:
 
 ```rs
 trait Foo {}
@@ -216,7 +207,7 @@ pub mod my_module {
 }
 ```
 
-This prevents to duplicate the module name when the types are imported. To use
+This prevents duplicating the module name when the types are imported. To use
 them in the macro, import them in the parent scope and use `super::`:
 
 ```rs
