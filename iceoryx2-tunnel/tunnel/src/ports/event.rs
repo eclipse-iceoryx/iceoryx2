@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use alloc::collections::BTreeSet;
+use alloc::format;
 
 use iceoryx2::{
     node::Node,

@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use alloc::format;
+
 use iceoryx2::node::{Node, NodeId};
 use iceoryx2::port::LoanError;
 use iceoryx2::prelude::AllocationStrategy;

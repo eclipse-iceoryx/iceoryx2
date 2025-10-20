@@ -14,6 +14,7 @@ use core::fmt::Debug;
 
 use alloc::collections::BTreeMap;
 use alloc::collections::BTreeSet;
+use alloc::format;
 use alloc::string::String;
 
 use iceoryx2::node::{Node, NodeBuilder, NodeId};
