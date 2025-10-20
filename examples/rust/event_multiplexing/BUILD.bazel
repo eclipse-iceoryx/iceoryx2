@@ -19,7 +19,6 @@ rust_binary(
     ],
     deps = [
         "//iceoryx2:iceoryx2",
-        "//iceoryx2-bb/log:iceoryx2-bb-log",
         "//examples/rust:examples-common",
         "@crate_index//:clap",
     ],
@@ -32,7 +31,6 @@ rust_binary(
     ],
     deps = [
         "//iceoryx2:iceoryx2",
-        "//iceoryx2-bb/log:iceoryx2-bb-log",
         "//iceoryx2-bb/container:iceoryx2-bb-container",
         "//examples/rust:examples-common",
         "@crate_index//:clap",

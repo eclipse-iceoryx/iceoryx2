@@ -17,7 +17,6 @@ use alloc::boxed::Box;
 
 use examples_common::CustomHeader;
 use iceoryx2::prelude::*;
-use iceoryx2_bb_log::info;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
@@ -49,10 +48,10 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
         sample.send()?;
 
-        info!("Send sample {counter} ...");
+        println!("Send sample {counter} ...");
     }
 
-    info!("exit");
+    println!("exit");
 
     Ok(())
 }

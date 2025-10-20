@@ -17,7 +17,6 @@ use alloc::boxed::Box;
 
 use iceoryx2::prelude::*;
 use iceoryx2_bb_container::{queue::FixedSizeQueue, string::*, vector::*};
-use iceoryx2_bb_log::info;
 
 // For both data types we derive from PlacementDefault to allow in memory initialization
 // without any copy. Avoids stack overflows when data type is larger than the available stack.
@@ -83,11 +82,11 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
             .push(StaticString::from_bytes(b"buh")?);
 
         sample.send()?;
-        info!("{counter} :: send");
+        println!("{counter} :: send");
 
         // receive sample and print it
         while let Some(sample) = subscriber.receive()? {
-            info!(
+            println!(
                 "{} :: received: {:?}",
                 counter,
                 sample.payload().plain_old_data

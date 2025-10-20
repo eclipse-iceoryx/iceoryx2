@@ -16,7 +16,6 @@ extern crate alloc;
 use alloc::boxed::Box;
 
 use iceoryx2::prelude::*;
-use iceoryx2_bb_log::info;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
@@ -44,7 +43,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     while node.wait(Duration::ZERO).is_ok() {
         if let Ok(Some(id)) = listener.timed_wait_one(CYCLE_TIME) {
             if id == entry_handle.entry_id() {
-                info!(
+                println!(
                     "read: {} for entry id {}",
                     entry_handle.get(),
                     id.as_value()
@@ -53,7 +52,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         }
     }
 
-    info!("exit");
+    println!("exit");
 
     Ok(())
 }

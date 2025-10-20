@@ -16,7 +16,6 @@ use alloc::string::String;
 
 use clap::Parser;
 use iceoryx2::prelude::*;
-use iceoryx2_bb_log::{info, set_log_level, LogLevel};
 
 fn main() -> Result<(), Box<dyn core::error::Error>> {
     let args = parse_args();
@@ -28,11 +27,11 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     // Therefore, different domain names never share the same resources.
     config.global.prefix = FileName::new(args.domain.as_bytes())?;
 
-    info!("\nServices running in domain \"{}\":", args.domain);
+    println!("\nServices running in domain \"{}\":", args.domain);
 
     // use the custom config when listing the services
     ipc::Service::list(&config, |service| {
-        info!("  {}", &service.static_details.name());
+        println!("  {}", &service.static_details.name());
         CallbackProgression::Continue
     })?;
 

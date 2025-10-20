@@ -17,7 +17,6 @@ use alloc::boxed::Box;
 
 use examples_common::TransmissionData;
 use iceoryx2::prelude::*;
-use iceoryx2_bb_log::info;
 
 const CYCLE_TIME: Duration = Duration::from_millis(100);
 
@@ -32,19 +31,19 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let server = service.server_builder().create()?;
 
-    info!("Server ready to receive requests!");
+    println!("Server ready to receive requests!");
 
     let mut counter = 0;
     while node.wait(CYCLE_TIME).is_ok() {
         while let Some(active_request) = server.receive()? {
-            info!("received request: {:?}", *active_request);
+            println!("received request: {:?}", *active_request);
 
             let response = TransmissionData {
                 x: 5 + counter,
                 y: 6 * counter,
                 funky: 7.77,
             };
-            info!("  send response: {response:?}");
+            println!("  send response: {response:?}");
             // send first response by using the slower, non-zero-copy API
             active_request.send_copy(response)?;
 
@@ -56,7 +55,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
                     y: counter + n as i32,
                     funky: counter as f64 * 0.1234,
                 });
-                info!("  send response: {:?}", *response);
+                println!("  send response: {:?}", *response);
                 response.send()?;
             }
 
@@ -69,7 +68,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         counter += 1;
     }
 
-    info!("exit");
+    println!("exit");
 
     Ok(())
 }

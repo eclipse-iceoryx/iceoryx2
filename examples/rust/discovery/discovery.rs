@@ -14,12 +14,11 @@ extern crate alloc;
 use alloc::boxed::Box;
 
 use iceoryx2::prelude::*;
-use iceoryx2_bb_log::info;
 
 fn main() -> Result<(), Box<dyn core::error::Error>> {
     set_log_level_from_env_or(LogLevel::Info);
     ipc::Service::list(Config::global_config(), |service| {
-        info!("\n{:#?}", &service);
+        println!("\n{:#?}", &service);
         CallbackProgression::Continue
     })?;
 

@@ -13,7 +13,6 @@
 use core::time::Duration;
 
 use iceoryx2::prelude::*;
-use iceoryx2_bb_log::info;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
@@ -34,10 +33,10 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         counter += 1;
         notifier.notify_with_custom_event_id(EventId::new(counter % max_event_id))?;
 
-        info!("Trigger event with id {counter} ...");
+        println!("Trigger event with id {counter} ...");
     }
 
-    info!("exit");
+    println!("exit");
 
     Ok(())
 }

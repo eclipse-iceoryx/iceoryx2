@@ -21,7 +21,6 @@ use clap::Parser;
 
 use examples_common::TransmissionData;
 use iceoryx2::prelude::*;
-use iceoryx2_bb_log::{info, set_log_level, LogLevel};
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
@@ -65,13 +64,13 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
         sample.send()?;
 
-        info!(
+        println!(
             "[domain: \"{}\", service: \"{}\"] Send sample {} ...",
             args.domain, args.service, counter
         );
     }
 
-    info!("exit");
+    println!("exit");
 
     Ok(())
 }

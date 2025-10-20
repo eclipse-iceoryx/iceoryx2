@@ -21,7 +21,6 @@ use clap::Parser;
 
 use examples_common::TransmissionData;
 use iceoryx2::prelude::*;
-use iceoryx2_bb_log::{info, set_log_level, LogLevel};
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
@@ -48,17 +47,17 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let subscriber = service.subscriber_builder().create()?;
 
-    info!(
+    println!(
         "subscribed to: [domain: \"{}\", service: \"{}\"]",
         args.domain, args.service
     );
     while node.wait(CYCLE_TIME).is_ok() {
         while let Some(sample) = subscriber.receive()? {
-            info!("received: {:?}", *sample);
+            println!("received: {:?}", *sample);
         }
     }
 
-    info!("exit");
+    println!("exit");
 
     Ok(())
 }

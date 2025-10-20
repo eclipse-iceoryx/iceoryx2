@@ -21,7 +21,6 @@ use iceoryx2::{
     port::{listener::Listener, subscriber::Subscriber},
     prelude::*,
 };
-use iceoryx2_bb_log::info;
 
 const REACTION_BUFFER_MS: u64 = 500;
 const CYCLE_TIME_1: Duration = Duration::from_millis(1000 + REACTION_BUFFER_MS);
@@ -54,7 +53,9 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let listener_2_guard = waitset.attach_deadline(&listener_2, deadline_2)?;
 
     let missed_deadline = |service_name, cycle_time| {
-        info!("{service_name}: violated contract and did not send a message after {cycle_time:?}.");
+        println!(
+            "{service_name}: violated contract and did not send a message after {cycle_time:?}."
+        );
     };
 
     let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
@@ -86,7 +87,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     waitset.wait_and_process(on_event)?;
 
-    info!("exit");
+    println!("exit");
 
     Ok(())
 }
@@ -94,7 +95,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 fn find_and_cleanup_dead_nodes() {
     Node::<ipc::Service>::list(Config::global_config(), |node_state| {
         if let NodeState::Dead(state) = node_state {
-            info!(
+            println!(
                 "detected dead node: {:?}",
                 state.details().as_ref().map(|v| v.name())
             );
@@ -114,14 +115,14 @@ fn handle_incoming_event(
     listener
         .try_wait_all(|event_id| {
             if event_id == PubSubEvent::ProcessDied.into() {
-                info!("{service_name}: process died!");
+                println!("{service_name}: process died!");
             } else if event_id == PubSubEvent::PublisherConnected.into() {
-                info!("{service_name}: publisher connected!");
+                println!("{service_name}: publisher connected!");
             } else if event_id == PubSubEvent::PublisherDisconnected.into() {
-                info!("{service_name}: publisher disconnected!");
+                println!("{service_name}: publisher disconnected!");
             } else if event_id == PubSubEvent::SentSample.into() {
                 if let Some(sample) = subscriber.receive().expect("") {
-                    info!("{}: Received sample {} ...", service_name, *sample)
+                    println!("{}: Received sample {} ...", service_name, *sample)
                 }
             }
         })

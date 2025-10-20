@@ -17,7 +17,6 @@ use alloc::boxed::Box;
 
 use examples_common::CustomHeader;
 use iceoryx2::prelude::*;
-use iceoryx2_bb_log::info;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
@@ -33,11 +32,11 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let subscriber = service.subscriber_builder().create()?;
 
-    info!("Subscriber ready to receive data!");
+    println!("Subscriber ready to receive data!");
 
     while node.wait(CYCLE_TIME).is_ok() {
         while let Some(sample) = subscriber.receive()? {
-            info!(
+            println!(
                 "received: {:?}, user_header: {:?}",
                 *sample,
                 sample.user_header()
@@ -45,7 +44,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         }
     }
 
-    info!("exit");
+    println!("exit");
 
     Ok(())
 }

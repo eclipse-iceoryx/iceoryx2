@@ -23,7 +23,6 @@ use iceoryx2::{
     },
     prelude::*,
 };
-use iceoryx2_bb_log::info;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 const HISTORY_SIZE: usize = 20;
@@ -46,7 +45,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
         // when the cyclic trigger guard gets notified we send out a new message
         if attachment_id.has_event_from(&cyclic_trigger_guard) {
-            info!("send message: {counter}");
+            println!("send message: {counter}");
             publisher.send(counter).unwrap();
             counter += 1;
             // when something else happens on the publisher we handle the events
@@ -60,7 +59,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     // event callback or an interrupt/termination signal was received.
     waitset.wait_and_process(on_event)?;
 
-    info!("exit");
+    println!("exit");
 
     Ok(())
 }
@@ -117,17 +116,17 @@ impl CustomPublisher {
             let event: PubSubEvent = event.into();
             match event {
                 PubSubEvent::SubscriberConnected => {
-                    info!("new subscriber connected - delivering history");
+                    println!("new subscriber connected - delivering history");
                     self.publisher.update_connections().unwrap();
                     self.notifier
                         .notify_with_custom_event_id(PubSubEvent::SentHistory.into())
                         .unwrap();
                 }
                 PubSubEvent::SubscriberDisconnected => {
-                    info!("subscriber disconnected");
+                    println!("subscriber disconnected");
                 }
                 PubSubEvent::ReceivedSample => {
-                    info!("subscriber has consumed sample");
+                    println!("subscriber has consumed sample");
                 }
                 _ => (),
             }

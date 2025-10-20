@@ -21,7 +21,6 @@ use iceoryx2::{
     prelude::*,
     sample::Sample,
 };
-use iceoryx2_bb_log::info;
 
 const HISTORY_SIZE: usize = 20;
 const DEADLINE: Duration = Duration::from_secs(2);
@@ -45,7 +44,9 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
             // If the subscriber did not receive an event until DEADLINE has
             // passed, we print out a warning.
         } else if attachment_id.has_missed_deadline(&subscriber_guard) {
-            info!("Contract violation! The subscriber did not receive a message for {DEADLINE:?}.");
+            println!(
+                "Contract violation! The subscriber did not receive a message for {DEADLINE:?}."
+            );
         }
 
         CallbackProgression::Continue
@@ -53,7 +54,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     waitset.wait_and_process(on_event)?;
 
-    info!("exit");
+    println!("exit");
 
     Ok(())
 }
@@ -113,18 +114,18 @@ impl CustomSubscriber {
             let event: PubSubEvent = event.into();
             match event {
                 PubSubEvent::SentHistory => {
-                    info!("History delivered");
+                    println!("History delivered");
                     while let Ok(Some(sample)) = self.receive() {
-                        info!("  history: {:?}", sample.x);
+                        println!("  history: {:?}", sample.x);
                     }
                 }
                 PubSubEvent::SentSample => {
                     while let Ok(Some(sample)) = self.receive() {
-                        info!("received: {:?}", sample.x);
+                        println!("received: {:?}", sample.x);
                     }
                 }
-                PubSubEvent::PublisherConnected => info!("new publisher connected"),
-                PubSubEvent::PublisherDisconnected => info!("publisher disconnected"),
+                PubSubEvent::PublisherConnected => println!("new publisher connected"),
+                PubSubEvent::PublisherDisconnected => println!("publisher disconnected"),
                 _ => (),
             }
         }

@@ -14,7 +14,7 @@ extern crate alloc;
 use alloc::boxed::Box;
 
 use iceoryx2::prelude::*;
-use iceoryx2_bb_log::{error, info};
+use iceoryx2_bb_log::error;
 use iceoryx2_services_discovery::*;
 use service_discovery::Discovery;
 
@@ -46,7 +46,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let guard = waitset.attach_notification(&listener)?;
     let attachment = WaitSetAttachmentId::from_guard(&guard);
 
-    info!("Discovery service ready!");
+    println!("Discovery service ready!");
 
     let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
         if attachment_id == attachment {
@@ -57,10 +57,10 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
             while let Ok(Some(sample)) = subscriber.receive() {
                 match sample.payload() {
                     Discovery::Added(details) => {
-                        info!("Added: {:?}", details.name());
+                        println!("Added: {:?}", details.name());
                     }
                     Discovery::Removed(details) => {
-                        info!("Removed: {:?}", details.name());
+                        println!("Removed: {:?}", details.name());
                     }
                 }
             }

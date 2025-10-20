@@ -18,7 +18,6 @@ use alloc::boxed::Box;
 use alloc::sync::Arc;
 
 use iceoryx2::prelude::*;
-use iceoryx2_bb_log::info;
 use iceoryx2_bb_posix::clock::nanosleep;
 use iceoryx2_bb_posix::thread::{ThreadBuilder, ThreadName};
 
@@ -52,21 +51,21 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
             while KEEP_RUNNING.load(Ordering::Relaxed) {
                 nanosleep(CYCLE_TIME).unwrap();
                 if let Some(sample) = in_thread_subscriber.receive().unwrap() {
-                    info!("[thread] received: {}", sample.payload());
+                    println!("[thread] received: {}", sample.payload());
                 }
             }
         })?;
 
     while node.wait(CYCLE_TIME).is_ok() {
         if let Some(sample) = subscriber.receive()? {
-            info!("[main] received: {}", sample.payload());
+            println!("[main] received: {}", sample.payload());
         }
     }
 
     KEEP_RUNNING.store(false, Ordering::Relaxed);
     drop(other_thread);
 
-    info!("exit");
+    println!("exit");
 
     Ok(())
 }

@@ -19,7 +19,6 @@ rust_binary(
     ],
     deps = [
         "//iceoryx2:iceoryx2",
-        "//iceoryx2-bb/log:iceoryx2-bb-log",
         "//examples/rust:examples-common",
     ],
 )
@@ -31,7 +30,6 @@ rust_binary(
     ],
     deps = [
         "//iceoryx2:iceoryx2",
-        "//iceoryx2-bb/log:iceoryx2-bb-log",
         "//examples/rust:examples-common",
     ],
 )
@@ -43,7 +41,6 @@ rust_binary(
     ],
     deps = [
         "//iceoryx2:iceoryx2",
-        "//iceoryx2-bb/log:iceoryx2-bb-log",
         "//examples/rust:examples-common",
     ],
 )
@@ -55,7 +52,6 @@ rust_binary(
     ],
     deps = [
         "//iceoryx2:iceoryx2",
-        "//iceoryx2-bb/log:iceoryx2-bb-log",
         "//examples/rust:examples-common",
     ],
 )
