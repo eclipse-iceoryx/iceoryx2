@@ -19,6 +19,13 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 #[repr(C)]
 pub struct Port(u16);
 
+impl TryFrom<&str> for Port {
+    type Error = core::num::ParseIntError;
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        Ok(Self(value.parse::<u16>()?))
+    }
+}
+
 impl Display for Port {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}", self.0)
