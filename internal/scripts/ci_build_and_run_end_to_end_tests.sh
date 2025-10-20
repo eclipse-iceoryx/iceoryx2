@@ -83,9 +83,8 @@ if [[ ${BUILD_END_TO_END_TESTS} == true ]]; then
         -DRUST_BUILD_ARTIFACT_PATH="$(pwd)/target/debug" \
         -DCMAKE_BUILD_TYPE=Debug \
         -DBUILD_CXX=ON \
-        -DBUILD_COMPONENT_TESTS=ON \
         -DBUILD_EXAMPLES=ON \
-        -DBUILD_TESTING=OFF
+        -DBUILD_TESTING=ON
     cmake --build target/ff/cc/build -j$NUM_JOBS
 
     # Build the Python bindings

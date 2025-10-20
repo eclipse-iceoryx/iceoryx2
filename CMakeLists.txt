@@ -51,12 +51,6 @@ add_option(
 )
 
 add_option(
-    NAME BUILD_COMPONENT_TESTS
-    DESCRIPTION "Build C++ components, e.g. container and bindings"
-    DEFAULT_VALUE OFF
-)
-
-add_option(
     NAME BUILD_EXAMPLES
     DESCRIPTION "Build examples"
     DEFAULT_VALUE OFF
@@ -193,8 +187,4 @@ if(BUILD_CXX)
     if(BUILD_TESTING)
         add_subdirectory(component-tests/cxx)
     endif()
-endif()
-
-if(BUILD_COMPONENT_TESTS)
-    add_subdirectory(component-tests/cxx)
 endif()
