@@ -14,6 +14,7 @@ use core::{fmt::Debug, fmt::Display};
 
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_log::fail;
 
 #[derive(Clone, Copy, PartialEq, Eq, ZeroCopySend)]
 #[repr(C)]
@@ -22,6 +23,40 @@ pub struct Ipv4Address(u32);
 pub const LOCALHOST: Ipv4Address = Ipv4Address::new(127, 0, 0, 1);
 pub const UNSPECIFIED: Ipv4Address = Ipv4Address::new(0, 0, 0, 0);
 pub const BROADCAST: Ipv4Address = Ipv4Address::new(255, 255, 255, 255);
+
+pub enum Ipv4AddressParseError {
+    ParseIntError(core::num::ParseIntError),
+    IncompleteAddress,
+}
+
+impl From<core::num::ParseIntError> for Ipv4AddressParseError {
+    fn from(value: core::num::ParseIntError) -> Self {
+        Self::ParseIntError(value)
+    }
+}
+
+impl TryFrom<&str> for Ipv4Address {
+    type Error = Ipv4AddressParseError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        let msg = "Unable to construct ipv4 address from";
+        let origin = "Ipv4Address::try_from()";
+        let mut ipv4 = [0u8; 4];
+        let mut counter = 0;
+        for (n, value) in value.split_terminator(".").enumerate() {
+            ipv4[n] = fail!(from origin, when value.parse::<u8>(),
+                            "{msg} \"{value}\" since some entries are not an u8 number.");
+            counter += 1;
+        }
+
+        if counter != 4 {
+            fail!(from origin, with Ipv4AddressParseError::IncompleteAddress,
+                "{msg} \"{value}\" since the address is incomplete.");
+        }
+
+        Ok(Self::new(ipv4[0], ipv4[1], ipv4[2], ipv4[3]))
+    }
+}
 
 impl Ipv4Address {
     pub const fn new(a: u8, b: u8, c: u8, d: u8) -> Self {
