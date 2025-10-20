@@ -157,6 +157,13 @@ TEST(StaticVector, from_range_unchecked_constructs_from_range) {
     EXPECT_EQ(sut->unchecked_access()[4], G_TEST_ARRAY[4]);
 }
 
+TEST(StaticVector, from_range_unchecked_from_empty_range_constructs_empty_vector) {
+    auto const sut = iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_range_unchecked(
+        std::end(G_TEST_ARRAY), std::end(G_TEST_ARRAY));
+    ASSERT_TRUE(sut);
+    ASSERT_TRUE(sut->empty());
+}
+
 TEST(StaticVector, from_range_unchecked_fails_if_exceeding_capacity) {
     auto const sut = iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE - 1>::from_range_unchecked(
         std::begin(G_TEST_ARRAY), std::end(G_TEST_ARRAY));
@@ -562,6 +569,45 @@ TEST(StaticVector, try_insert_at_fails_if_index_is_invalid_leaving_contents_inta
     ASSERT_EQ(sut.unchecked_access()[1], 2);
 }
 
+TEST_F(StaticVectorFixture, try_insert_at_moves_elements_if_argument_is_rvalue) {
+    constexpr size_t const VECTOR_CAPACITY = 3;
+    iox2::container::StaticVector<Observable, VECTOR_CAPACITY> sut;
+    ASSERT_TRUE(sut.try_emplace_back(Observable {}));
+    ASSERT_TRUE(sut.try_emplace_back(Observable {}));
+    ASSERT_EQ(Observable::s_counter.was_copy_constructed, 0);
+    ASSERT_EQ(Observable::s_counter.was_copy_assigned, 0);
+    ASSERT_TRUE(sut.try_insert_at(1, Observable {}));
+    ASSERT_EQ(Observable::s_counter.was_copy_constructed, 0);
+    ASSERT_EQ(Observable::s_counter.was_copy_assigned, 0);
+    expected_count().was_initialized = Observable::s_counter.was_initialized;
+    expected_count().was_move_constructed = Observable::s_counter.was_move_constructed;
+    expected_count().was_move_assigned = Observable::s_counter.was_move_assigned;
+    expected_count().was_destructed =
+        Observable::s_counter.was_initialized + Observable::s_counter.was_move_constructed;
+}
+
+TEST_F(StaticVectorFixture, try_insert_at_copies_elements_if_argument_is_lvalue) {
+    constexpr size_t const VECTOR_CAPACITY = 3;
+    iox2::container::StaticVector<Observable, VECTOR_CAPACITY> sut;
+    ASSERT_TRUE(sut.try_emplace_back(Observable {}));
+    ASSERT_TRUE(sut.try_emplace_back(Observable {}));
+    ASSERT_EQ(Observable::s_counter.was_copy_constructed, 0);
+    ASSERT_EQ(Observable::s_counter.was_copy_assigned, 0);
+    int32_t const tracking_id = 12345;
+    Observable const obj { tracking_id };
+    ASSERT_TRUE(sut.try_insert_at(1, obj));
+    ASSERT_EQ(Observable::s_counter.was_copy_constructed, 1);
+    ASSERT_EQ(Observable::s_counter.was_copy_assigned, 0);
+    ASSERT_EQ(sut.unchecked_access()[1].id, tracking_id);
+    ASSERT_EQ(obj.id, tracking_id);
+    expected_count().was_initialized = Observable::s_counter.was_initialized;
+    expected_count().was_move_constructed = Observable::s_counter.was_move_constructed;
+    expected_count().was_move_assigned = Observable::s_counter.was_move_assigned;
+    expected_count().was_copy_constructed = 1;
+    expected_count().was_destructed =
+        Observable::s_counter.was_initialized + Observable::s_counter.was_move_constructed + 1;
+}
+
 TEST(StaticVector, try_insert_at_inserting_range_of_elements_in_the_middle) {
     constexpr size_t const VECTOR_CAPACITY = 6;
     iox2::container::StaticVector<int32_t, VECTOR_CAPACITY> sut;
@@ -902,6 +948,61 @@ TEST(StaticVector, back_element_const_returns_first_element) {
 TEST(StaticVector, back_element_const_fails_for_empty_vector) {
     iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> const sut;
     ASSERT_FALSE(sut.back_element());
+}
+
+TEST(StaticVector, equality_comparison) {
+    ASSERT_TRUE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })
+                 == *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })));
+    ASSERT_FALSE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 0, 2, 3 })
+                  == *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })));
+    ASSERT_FALSE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })
+                  == *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 0, 2, 3 })));
+    ASSERT_FALSE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 0, 3 })
+                  == *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })));
+    ASSERT_FALSE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })
+                  == *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 0, 3 })));
+    ASSERT_FALSE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 0 })
+                  == *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })));
+    ASSERT_FALSE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })
+                  == *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 0 })));
+    ASSERT_FALSE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3, 4 })
+                  == *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })));
+    ASSERT_FALSE(
+        (*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })
+         == *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3, 4 })));
+    ASSERT_FALSE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1 })
+                  == *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 2 })));
+    ASSERT_TRUE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1 })
+                 == *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1 })));
+    ASSERT_TRUE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({})
+                 == *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({})));
+}
+
+TEST(StaticVector, not_equal_comparison) {
+    ASSERT_FALSE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })
+                  != *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })));
+    ASSERT_TRUE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 0, 2, 3 })
+                 != *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })));
+    ASSERT_TRUE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })
+                 != *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 0, 2, 3 })));
+    ASSERT_TRUE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 0, 3 })
+                 != *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })));
+    ASSERT_TRUE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })
+                 != *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 0, 3 })));
+    ASSERT_TRUE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 0 })
+                 != *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })));
+    ASSERT_TRUE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })
+                 != *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 0 })));
+    ASSERT_TRUE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3, 4 })
+                 != *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })));
+    ASSERT_TRUE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })
+                 != *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3, 4 })));
+    ASSERT_TRUE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1 })
+                 != *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 2 })));
+    ASSERT_FALSE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1 })
+                  != *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1 })));
+    ASSERT_FALSE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({})
+                  != *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({})));
 }
 
 
