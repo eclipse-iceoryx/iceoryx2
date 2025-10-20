@@ -17,6 +17,7 @@
 //! get informed of the presense of these components.
 //!
 
+#![no_std]
 #![warn(missing_docs)]
 
 extern crate alloc;
