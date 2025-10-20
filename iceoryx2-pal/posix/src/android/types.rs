@@ -78,7 +78,7 @@ pub type pthread_t = libc::pthread_t;
 impl MemZeroedStruct for pthread_t {}
 
 pub type pthread_rwlockattr_t = libc::pthread_rwlockattr_t;
-impl MemZeroedStruct for pthread_rwlockattr_t {}
+// impl MemZeroedStruct for pthread_rwlockattr_t {} // implemented via 'MemZeroedStruct for pthread_t' which is a i64
 
 pub type pthread_rwlock_t = libc::pthread_rwlock_t;
 impl MemZeroedStruct for pthread_rwlock_t {}
@@ -87,7 +87,7 @@ pub type pthread_mutex_t = libc::pthread_mutex_t;
 impl MemZeroedStruct for pthread_mutex_t {}
 
 pub type pthread_mutexattr_t = libc::pthread_mutexattr_t;
-impl MemZeroedStruct for pthread_mutexattr_t {}
+// impl MemZeroedStruct for pthread_mutexattr_t {} // implemented via 'MemZeroedStruct for pthread_t' which is a i64
 
 pub type sem_t = libc::sem_t;
 impl MemZeroedStruct for sem_t {}
@@ -125,7 +125,7 @@ impl From<native_stat_t> for stat_t {
         stat_t {
             st_dev: value.st_dev,
             st_ino: value.st_ino,
-            st_nlink: value.st_nlink,
+            st_nlink: value.st_nlink as _, // TODO
             st_mode: value.st_mode,
             st_uid: value.st_uid,
             st_gid: value.st_gid,
@@ -134,8 +134,8 @@ impl From<native_stat_t> for stat_t {
             st_atime: value.st_atime,
             st_mtime: value.st_mtime,
             st_ctime: value.st_ctime,
-            st_blksize: value.st_blksize,
-            st_blocks: value.st_blocks,
+            st_blksize: value.st_blksize as _, // TODO
+            st_blocks: value.st_blocks as _,   // TODO
         }
     }
 }

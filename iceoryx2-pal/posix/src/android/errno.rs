@@ -139,15 +139,15 @@ ErrnoEnumGenerator!(
 
 impl Errno {
     pub fn get() -> Errno {
-        unsafe { *libc::__errno_location() }.into()
+        unsafe { *libc::__errno() }.into()
     }
 
     pub fn set(value: Errno) {
-        unsafe { *libc::__errno_location() = value as i32 };
+        unsafe { *libc::__errno() = value as i32 };
     }
 
     pub fn reset() {
-        unsafe { *libc::__errno_location() = 0 };
+        unsafe { *libc::__errno() = 0 };
     }
 }
 

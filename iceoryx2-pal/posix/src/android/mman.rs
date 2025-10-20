@@ -13,7 +13,7 @@
 #![allow(non_camel_case_types)]
 #![allow(clippy::missing_safety_doc)]
 
-use crate::posix::{closedir, opendir, readdir, types::*};
+use crate::posix::{closedir, opendir, readdir, types::*, Errno};
 
 pub unsafe fn mlock(addr: *const void, len: size_t) -> int {
     libc::mlock(addr, len)
@@ -31,12 +31,16 @@ pub unsafe fn munlockall() -> int {
     libc::munlockall()
 }
 
-pub unsafe fn shm_open(name: *const c_char, oflag: int, mode: mode_t) -> int {
-    libc::shm_open(name, oflag, mode)
+pub unsafe fn shm_open(_name: *const c_char, _oflag: int, _mode: mode_t) -> int {
+    Errno::set(Errno::ENOSYS);
+
+    -1
 }
 
-pub unsafe fn shm_unlink(name: *const c_char) -> int {
-    libc::shm_unlink(name)
+pub unsafe fn shm_unlink(_name: *const c_char) -> int {
+    Errno::set(Errno::ENOSYS);
+
+    -1
 }
 
 pub unsafe fn shm_list() -> Vec<[i8; 256]> {

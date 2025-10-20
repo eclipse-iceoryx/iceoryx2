@@ -15,8 +15,9 @@
 
 use crate::posix::*;
 
-pub unsafe fn pthread_rwlockattr_setkind_np(attr: *mut pthread_rwlockattr_t, pref: int) -> int {
-    libc::pthread_rwlockattr_setkind_np(attr, pref)
+pub unsafe fn pthread_rwlockattr_setkind_np(_attr: *mut pthread_rwlockattr_t, _pref: int) -> int {
+    // not in libc crate but defined in toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/pthread.h
+    todo!() // TODO this function is not used; shall we remove it
 }
 
 pub unsafe fn pthread_barrier_wait(barrier: *mut pthread_barrier_t) -> int {
@@ -62,19 +63,27 @@ pub unsafe fn pthread_attr_setguardsize(attr: *mut pthread_attr_t, guardsize: si
     libc::pthread_attr_setguardsize(attr, guardsize)
 }
 
-pub unsafe fn pthread_attr_setinheritsched(attr: *mut pthread_attr_t, inheritsched: int) -> int {
-    libc::pthread_attr_setinheritsched(attr, inheritsched)
+pub unsafe fn pthread_attr_setinheritsched(_attr: *mut pthread_attr_t, _inheritsched: int) -> int {
+    // libc::pthread_attr_setinheritsched(attr, inheritsched)
+    println!("Android TODO: 'pthread_attr_setinheritsched' is not available!");
+    0
 }
 
-pub unsafe fn pthread_attr_setschedpolicy(attr: *mut pthread_attr_t, policy: int) -> int {
-    libc::pthread_attr_setschedpolicy(attr, policy)
+pub unsafe fn pthread_attr_setschedpolicy(_attr: *mut pthread_attr_t, _policy: int) -> int {
+    // libc::pthread_attr_setschedpolicy(attr, policy)
+    // not in libc but in toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/pthread.h
+    println!("Android TODO: 'pthread_attr_setschedpolicy' is not available!");
+    0
 }
 
 pub unsafe fn pthread_attr_setschedparam(
-    attr: *mut pthread_attr_t,
-    param: *const sched_param,
+    _attr: *mut pthread_attr_t,
+    _param: *const sched_param,
 ) -> int {
-    libc::pthread_attr_setschedparam(attr, param)
+    // libc::pthread_attr_setschedparam(attr, param)
+    // not in libc but in toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/pthread.h
+    println!("Android TODO: 'pthread_attr_setschedparam' is not available!");
+    0
 }
 
 pub unsafe fn pthread_attr_setstacksize(attr: *mut pthread_attr_t, stacksize: size_t) -> int {
@@ -82,13 +91,15 @@ pub unsafe fn pthread_attr_setstacksize(attr: *mut pthread_attr_t, stacksize: si
 }
 
 pub unsafe fn pthread_attr_setaffinity_np(
-    attr: *mut pthread_attr_t,
-    cpusetsize: size_t,
-    cpuset: *const cpu_set_t,
+    _attr: *mut pthread_attr_t,
+    _cpusetsize: size_t,
+    _cpuset: *const cpu_set_t,
 ) -> int {
-    let cpuset = core::mem::transmute::<cpu_set_t, native_cpu_set_t>(*cpuset);
-
-    libc::pthread_attr_setaffinity_np(attr, cpusetsize, &cpuset)
+    // let cpuset = core::mem::transmute::<cpu_set_t, native_cpu_set_t>(*cpuset);
+    // not in libc and also not in sysroot
+    // this function is not used; shall we remove it
+    println!("Android TODO: 'pthread_attr_setaffinity_np' is not available!");
+    0
 }
 
 pub unsafe fn pthread_create(
@@ -113,7 +124,7 @@ pub unsafe fn pthread_setname_np(thread: pthread_t, name: *const c_char) -> int 
 }
 
 pub unsafe fn pthread_getname_np(thread: pthread_t, name: *mut c_char, len: size_t) -> int {
-    libc::pthread_getname_np(thread, name, len)
+    internal::pthread_getname_np(thread, name, len)
 }
 
 pub unsafe fn pthread_kill(thread: pthread_t, sig: int) -> int {
@@ -121,27 +132,33 @@ pub unsafe fn pthread_kill(thread: pthread_t, sig: int) -> int {
 }
 
 pub unsafe fn pthread_setaffinity_np(
-    thread: pthread_t,
-    cpusetsize: size_t,
-    cpuset: *const cpu_set_t,
+    _thread: pthread_t,
+    _cpusetsize: size_t,
+    _cpuset: *const cpu_set_t,
 ) -> int {
-    let cpuset = core::mem::transmute::<cpu_set_t, native_cpu_set_t>(*cpuset);
+    // let cpuset = core::mem::transmute::<cpu_set_t, native_cpu_set_t>(*cpuset);
 
-    libc::pthread_setaffinity_np(thread, cpusetsize, &cpuset)
+    // internal::pthread_setaffinity_np(thread, cpusetsize, &cpuset)
+    // TODO not in libc but in toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/pthread.h
+    Errno::set(Errno::ENOSYS);
+    -1
 }
 
 pub unsafe fn pthread_getaffinity_np(
-    thread: pthread_t,
-    cpusetsize: size_t,
-    cpuset: *mut cpu_set_t,
+    _thread: pthread_t,
+    _cpusetsize: size_t,
+    _cpuset: *mut cpu_set_t,
 ) -> int {
-    let mut native_cpuset = native_cpu_set_t::new_zeroed();
-
-    let ret_val = libc::pthread_getaffinity_np(thread, cpusetsize, &mut native_cpuset);
-
-    *cpuset = core::mem::transmute::<native_cpu_set_t, cpu_set_t>(native_cpuset);
-
-    ret_val
+    // let mut native_cpuset = native_cpu_set_t::new_zeroed();
+    //
+    // let ret_val = internal::pthread_getaffinity_np(thread, cpusetsize, &mut native_cpuset);
+    //
+    // *cpuset = core::mem::transmute::<native_cpu_set_t, cpu_set_t>(native_cpuset);
+    //
+    // ret_val
+    // TODO not in libc but in toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/pthread.h
+    Errno::set(Errno::ENOSYS);
+    -1
 }
 
 pub unsafe fn pthread_rwlockattr_init(attr: *mut pthread_rwlockattr_t) -> int {
@@ -217,8 +234,12 @@ pub unsafe fn pthread_mutex_unlock(mtx: *mut pthread_mutex_t) -> int {
     libc::pthread_mutex_unlock(mtx)
 }
 
-pub unsafe fn pthread_mutex_consistent(mtx: *mut pthread_mutex_t) -> int {
-    libc::pthread_mutex_consistent(mtx)
+pub unsafe fn pthread_mutex_consistent(_mtx: *mut pthread_mutex_t) -> int {
+    // libc::pthread_mutex_consistent(mtx)
+
+    // TODO not in libc and also not in sysroot
+    Errno::set(Errno::ENOSYS);
+    -1
 }
 
 pub unsafe fn pthread_mutexattr_init(attr: *mut pthread_mutexattr_t) -> int {
@@ -229,18 +250,67 @@ pub unsafe fn pthread_mutexattr_destroy(attr: *mut pthread_mutexattr_t) -> int {
     libc::pthread_mutexattr_destroy(attr)
 }
 
-pub unsafe fn pthread_mutexattr_setprotocol(attr: *mut pthread_mutexattr_t, protocol: int) -> int {
-    libc::pthread_mutexattr_setprotocol(attr, protocol)
+pub unsafe fn pthread_mutexattr_setprotocol(
+    _attr: *mut pthread_mutexattr_t,
+    _protocol: int,
+) -> int {
+    // internal::pthread_mutexattr_setprotocol(attr, protocol)
+    // not in libc but in toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/pthread.h
+    println!("Android TODO: 'pthread_mutexattr_setprotocol' is not available!");
+    0
 }
 
 pub unsafe fn pthread_mutexattr_setpshared(attr: *mut pthread_mutexattr_t, pshared: int) -> int {
     libc::pthread_mutexattr_setpshared(attr, pshared)
 }
 
-pub unsafe fn pthread_mutexattr_setrobust(attr: *mut pthread_mutexattr_t, robustness: int) -> int {
-    libc::pthread_mutexattr_setrobust(attr, robustness)
+pub unsafe fn pthread_mutexattr_setrobust(
+    _attr: *mut pthread_mutexattr_t,
+    _robustness: int,
+) -> int {
+    // libc::pthread_mutexattr_setrobust(attr, robustness)
+    // not in libc and also not in sysroot
+    println!("Android TODO: 'pthread_mutexattr_setrobust' is not available!");
+    0
 }
 
 pub unsafe fn pthread_mutexattr_settype(attr: *mut pthread_mutexattr_t, mtype: int) -> int {
     libc::pthread_mutexattr_settype(attr, mtype)
+}
+
+mod internal {
+    use super::*;
+
+    extern "C" {
+        // pub(super) fn pthread_attr_setschedparam(
+        //     attr: *mut pthread_attr_t,
+        //     param: *const sched_param,
+        // ) -> int;
+
+        pub(super) fn pthread_getname_np(thread: pthread_t, name: *mut c_char, len: size_t) -> int;
+
+        // pub(super) fn pthread_setaffinity_np(
+        //     thread: pthread_t,
+        //     cpusetsize: size_t,
+        //     cpuset: *const cpu_set_t,
+        // ) -> int;
+        //
+        // pub(super) fn pthread_getaffinity_np(
+        //     thread: pthread_t,
+        //     cpusetsize: size_t,
+        //     cpuset: *mut cpu_set_t,
+        // ) -> int;
+        //
+        // pub(super) fn pthread_mutex_consistent(mtx: *mut pthread_mutex_t) -> int;
+        //
+        // pub(super) fn pthread_mutexattr_setprotocol(
+        //     attr: *mut pthread_mutexattr_t,
+        //     protocol: int,
+        // ) -> int;
+        //
+        // pub(super) fn pthread_mutexattr_setrobust(
+        //     attr: *mut pthread_mutexattr_t,
+        //     robustness: int,
+        // ) -> int;
+    }
 }
