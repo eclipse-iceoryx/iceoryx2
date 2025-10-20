@@ -112,6 +112,11 @@ fn ipv4_address_try_from_fails_with_wrong_format_when_too_many_parts_are_given()
 }
 
 #[test]
+fn ipv4_address_try_from_fails_with_wrong_format_when_it_ends_with_a_dot() {
+    assert_that!(Ipv4Address::try_from("61.62.63.71."), eq Err(Ipv4AddressParseError::WrongFormat));
+}
+
+#[test]
 fn ipv4_address_try_from_fails_when_part_is_not_an_u8_number() {
     assert_that!(Ipv4Address::try_from("61.62.aa.71"), is_err);
 }

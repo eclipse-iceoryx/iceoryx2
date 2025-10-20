@@ -27,8 +27,11 @@ pub const UNSPECIFIED: Ipv4Address = Ipv4Address::new(0, 0, 0, 0);
 pub const BROADCAST: Ipv4Address = Ipv4Address::new(255, 255, 255, 255);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Error type returned when parsing an IPv4 address from a string.
 pub enum Ipv4AddressParseError {
+    // Returned when one of the octets is not a valid `u8` number (non-numeric or out-of-range).
     ParseIntError(core::num::ParseIntError),
+    /// Returned when the input does not have exactly four parts separated by dots (e.g., too many or too few parts).
     WrongFormat,
 }
 
@@ -41,24 +44,24 @@ impl From<core::num::ParseIntError> for Ipv4AddressParseError {
 impl TryFrom<&str> for Ipv4Address {
     type Error = Ipv4AddressParseError;
 
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let msg = "Unable to construct ipv4 address from";
+    fn try_from(input: &str) -> Result<Self, Self::Error> {
+        let msg = "Unable to construct IPv4 address from";
         let origin = "Ipv4Address::try_from()";
         let mut ipv4 = [0u8; 4];
         let mut counter = 0;
-        for (n, value) in value.split_terminator(".").enumerate() {
+        for (n, value) in input.split(".").enumerate() {
             if n == 4 {
                 fail!(from origin, with Ipv4AddressParseError::WrongFormat,
-                    "{msg} \"{value}\" since the address contains too many parts.");
+                    "{msg} \"{input}\" since the address contains too many parts.");
             }
             ipv4[n] = fail!(from origin, when value.parse::<u8>(),
-                            "{msg} \"{value}\" since some entries are not an u8 number.");
+                            "{msg} \"{input}\" since some entries are not an u8 number.");
             counter += 1;
         }
 
         if counter != 4 {
             fail!(from origin, with Ipv4AddressParseError::WrongFormat,
-                "{msg} \"{value}\" since the address is incomplete.");
+                "{msg} \"{input}\" since the address is incomplete.");
         }
 
         Ok(Self::new(ipv4[0], ipv4[1], ipv4[2], ipv4[3]))
