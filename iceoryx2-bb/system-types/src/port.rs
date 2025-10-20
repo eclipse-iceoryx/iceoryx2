@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::convert::TryFrom;
 use core::fmt::Display;
 
 use iceoryx2_bb_derive_macros::ZeroCopySend;
@@ -26,7 +27,7 @@ impl TryFrom<&str> for Port {
         let msg = "Unable to construct port from";
         let origin = "Port::try_from()";
         let raw_port = fail!(from origin, when value.parse::<u16>(),
-            "{msg} \"{value}\" since it contains not a valid u16 number.");
+            "{msg} \"{value}\" since it does not contain a valid u16 number.");
         Ok(Self(raw_port))
     }
 }

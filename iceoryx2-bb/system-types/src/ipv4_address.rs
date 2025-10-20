@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::convert::From;
+use core::convert::TryFrom;
 use core::{fmt::Debug, fmt::Display};
 
 use iceoryx2_bb_derive_macros::ZeroCopySend;
