@@ -19,12 +19,12 @@ std = [
   "logger_file"
 ]
 
+# Enables logging to console
+logger_console = ["iceoryx2-bb-log/logger_console"]
 # Enables logging to buffer
 logger_buffer = ["iceoryx2-bb-log/logger_buffer"]
 # Enables logging to file
 logger_file = ["iceoryx2-bb-log/logger_file"]
-# Enables logging to console
-logger_console = ["iceoryx2-bb-log/logger_console"]
 # Enables https://crates.io/crates/log as default logger
 logger_log = [
   "iceoryx2-bb-log/logger_log"
