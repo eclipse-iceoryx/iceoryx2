@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![no_std]
 #![warn(missing_docs)]
 
 //! # iceoryx2 userland - record and replay
