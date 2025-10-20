@@ -10,7 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_system_types::ipv4_address::{Ipv4Address, BROADCAST, LOCALHOST, UNSPECIFIED};
+use iceoryx2_bb_system_types::ipv4_address::{
+    Ipv4Address, Ipv4AddressParseError, BROADCAST, LOCALHOST, UNSPECIFIED,
+};
 use iceoryx2_bb_testing::assert_that;
 
 #[test]
@@ -92,4 +94,24 @@ fn ipv4_address_is_global_works() {
     assert_that!(BROADCAST.is_global(), eq false);
     assert_that!(LOCALHOST.is_global(), eq false);
     assert_that!(UNSPECIFIED.is_global(), eq false);
+}
+
+#[test]
+fn ipv4_address_try_from_str_works() {
+    assert_that!(Ipv4Address::try_from("51.52.53.54"), eq Ok(Ipv4Address::new(51,52,53,54)));
+}
+
+#[test]
+fn ipv4_address_try_from_fails_with_wrong_format_when_too_few_parts_are_given() {
+    assert_that!(Ipv4Address::try_from("61.62.63"), eq Err(Ipv4AddressParseError::WrongFormat));
+}
+
+#[test]
+fn ipv4_address_try_from_fails_with_wrong_format_when_too_many_parts_are_given() {
+    assert_that!(Ipv4Address::try_from("61.62.63.71.72"), eq Err(Ipv4AddressParseError::WrongFormat));
+}
+
+#[test]
+fn ipv4_address_try_from_fails_when_part_is_not_an_u8_number() {
+    assert_that!(Ipv4Address::try_from("61.62.aa.71"), is_err);
 }

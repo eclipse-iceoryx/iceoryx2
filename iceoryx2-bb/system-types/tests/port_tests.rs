@@ -50,11 +50,11 @@ fn port_is_dynamic_works() {
 }
 
 #[test]
-fn try_from_str_work() {
+fn port_try_from_str_work() {
     assert_that!(Port::try_from("1234"), eq Ok(Port::new(1234)));
 }
 
 #[test]
-fn try_from_str_with_invalid_integer_fails() {
+fn port_try_from_str_with_invalid_integer_fails() {
     assert_that!(Port::try_from("12huh"), is_err);
 }

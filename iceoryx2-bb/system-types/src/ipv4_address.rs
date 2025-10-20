@@ -24,9 +24,10 @@ pub const LOCALHOST: Ipv4Address = Ipv4Address::new(127, 0, 0, 1);
 pub const UNSPECIFIED: Ipv4Address = Ipv4Address::new(0, 0, 0, 0);
 pub const BROADCAST: Ipv4Address = Ipv4Address::new(255, 255, 255, 255);
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Ipv4AddressParseError {
     ParseIntError(core::num::ParseIntError),
-    IncompleteAddress,
+    WrongFormat,
 }
 
 impl From<core::num::ParseIntError> for Ipv4AddressParseError {
@@ -44,13 +45,17 @@ impl TryFrom<&str> for Ipv4Address {
         let mut ipv4 = [0u8; 4];
         let mut counter = 0;
         for (n, value) in value.split_terminator(".").enumerate() {
+            if n == 4 {
+                fail!(from origin, with Ipv4AddressParseError::WrongFormat,
+                    "{msg} \"{value}\" since the address contains too many parts.");
+            }
             ipv4[n] = fail!(from origin, when value.parse::<u8>(),
                             "{msg} \"{value}\" since some entries are not an u8 number.");
             counter += 1;
         }
 
         if counter != 4 {
-            fail!(from origin, with Ipv4AddressParseError::IncompleteAddress,
+            fail!(from origin, with Ipv4AddressParseError::WrongFormat,
                 "{msg} \"{value}\" since the address is incomplete.");
         }
 
