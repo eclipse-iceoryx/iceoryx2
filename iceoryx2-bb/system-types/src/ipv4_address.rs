@@ -10,10 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::convert::From;
+use core::convert::TryFrom;
 use core::{fmt::Debug, fmt::Display};
 
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_log::fail;
 
 #[derive(Clone, Copy, PartialEq, Eq, ZeroCopySend)]
 #[repr(C)]
@@ -22,6 +25,48 @@ pub struct Ipv4Address(u32);
 pub const LOCALHOST: Ipv4Address = Ipv4Address::new(127, 0, 0, 1);
 pub const UNSPECIFIED: Ipv4Address = Ipv4Address::new(0, 0, 0, 0);
 pub const BROADCAST: Ipv4Address = Ipv4Address::new(255, 255, 255, 255);
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+/// Error type returned when parsing an IPv4 address from a string.
+pub enum Ipv4AddressParseError {
+    // Returned when one of the octets is not a valid `u8` number (non-numeric or out-of-range).
+    ParseIntError(core::num::ParseIntError),
+    /// Returned when the input does not have exactly four parts separated by dots (e.g., too many or too few parts).
+    WrongFormat,
+}
+
+impl From<core::num::ParseIntError> for Ipv4AddressParseError {
+    fn from(value: core::num::ParseIntError) -> Self {
+        Self::ParseIntError(value)
+    }
+}
+
+impl TryFrom<&str> for Ipv4Address {
+    type Error = Ipv4AddressParseError;
+
+    fn try_from(input: &str) -> Result<Self, Self::Error> {
+        let msg = "Unable to construct IPv4 address from";
+        let origin = "Ipv4Address::try_from()";
+        let mut ipv4 = [0u8; 4];
+        let mut counter = 0;
+        for (n, value) in input.split(".").enumerate() {
+            if n == 4 {
+                fail!(from origin, with Ipv4AddressParseError::WrongFormat,
+                    "{msg} \"{input}\" since the address contains too many parts.");
+            }
+            ipv4[n] = fail!(from origin, when value.parse::<u8>(),
+                            "{msg} \"{input}\" since some entries are not an u8 number.");
+            counter += 1;
+        }
+
+        if counter != 4 {
+            fail!(from origin, with Ipv4AddressParseError::WrongFormat,
+                "{msg} \"{input}\" since the address is incomplete.");
+        }
+
+        Ok(Self::new(ipv4[0], ipv4[1], ipv4[2], ipv4[3]))
+    }
+}
 
 impl Ipv4Address {
     pub const fn new(a: u8, b: u8, c: u8, d: u8) -> Self {

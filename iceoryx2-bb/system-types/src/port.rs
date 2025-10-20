@@ -10,14 +10,27 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::convert::TryFrom;
 use core::fmt::Display;
 
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_log::fail;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, ZeroCopySend)]
 #[repr(C)]
 pub struct Port(u16);
+
+impl TryFrom<&str> for Port {
+    type Error = core::num::ParseIntError;
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        let msg = "Unable to construct port from";
+        let origin = "Port::try_from()";
+        let raw_port = fail!(from origin, when value.parse::<u16>(),
+            "{msg} \"{value}\" since it does not contain a valid u16 number.");
+        Ok(Self(raw_port))
+    }
+}
 
 impl Display for Port {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {

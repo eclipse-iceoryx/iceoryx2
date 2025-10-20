@@ -48,3 +48,13 @@ fn port_is_dynamic_works() {
     assert_that!(UNSPECIFIED.is_dynamic(), eq false);
     assert_that!(Port::new(5193).is_dynamic(), eq false);
 }
+
+#[test]
+fn port_try_from_str_work() {
+    assert_that!(Port::try_from("1234"), eq Ok(Port::new(1234)));
+}
+
+#[test]
+fn port_try_from_str_with_invalid_integer_fails() {
+    assert_that!(Port::try_from("12huh"), is_err);
+}
