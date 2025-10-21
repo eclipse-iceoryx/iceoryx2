@@ -8,7 +8,7 @@ provided Rust macros and procedural attributes.
 **Conformance tests** ensure that different implementations of a trait or
 interface behave identically. This framework provides macros and attributes to
 automate the generation of test modules and test cases for multiple System Under
-Test (SUT) types. A SUT is any concrete implementation of a iceoryx2 concept,
+Test (SUT) types. A SUT is any concrete implementation of an iceoryx2 concept,
 service variant or extension.
 
 ## 2. Key Components
