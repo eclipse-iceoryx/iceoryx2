@@ -34,7 +34,7 @@ class ContainerTest : public IComponentTest {
 
 // NOLINTBEGIN(readability-identifier-naming)
 // NOLINTNEXTLINE(performance-enum-size)
-enum class VectorTypeSequence : int32_t {
+enum class ContainerTypeSequence : int32_t {
     VecI32_10 = 1,
     VecI64_20 = 2,
     VecOverAligned_5 = 3,
@@ -45,28 +45,28 @@ enum class VectorTypeSequence : int32_t {
 };
 // NOLINTEND(readability-identifier-naming)
 
-auto as_string_literal(const VectorTypeSequence value) noexcept -> const char* {
+auto as_string_literal(const ContainerTypeSequence value) noexcept -> const char* {
     switch (value) {
-    case VectorTypeSequence::VecI32_10:
-        return "VectorTypeSequence::VecI32_10";
-    case VectorTypeSequence::VecI64_20:
-        return "VectorTypeSequence::VecI64_20";
-    case VectorTypeSequence::VecOverAligned_5:
-        return "VectorTypeSequence::VecOverAligned_5";
-    case VectorTypeSequence::VecVec8_10:
-        return "VectorTypeSequence::VecVec8_10";
-    case VectorTypeSequence::String_10:
-        return "VectorTypeSequence::String_10";
-    case VectorTypeSequence::String_42:
-        return "VectorTypeSequence::String_42";
-    case VectorTypeSequence::EndOfTest:
-        return "VectorTypeSequence::EndOfTest";
+    case ContainerTypeSequence::VecI32_10:
+        return "VecI32_10";
+    case ContainerTypeSequence::VecI64_20:
+        return "VecI64_20";
+    case ContainerTypeSequence::VecOverAligned_5:
+        return "VecOverAligned_5";
+    case ContainerTypeSequence::VecVec8_10:
+        return "VecVec8_10";
+    case ContainerTypeSequence::String_10:
+        return "String_10";
+    case ContainerTypeSequence::String_42:
+        return "String_42";
+    case ContainerTypeSequence::EndOfTest:
+        return "EndOfTest";
     default:
-        return "[Undefined VectorTypeSequence]";
+        return "[Undefined ContainerTypeSequence]";
     }
 }
 
-auto operator<<(std::ostream& stream, VectorTypeSequence value) noexcept -> std::ostream& {
+auto operator<<(std::ostream& stream, ContainerTypeSequence value) noexcept -> std::ostream& {
     stream << as_string_literal(value);
     return stream;
 }
@@ -74,7 +74,7 @@ auto operator<<(std::ostream& stream, VectorTypeSequence value) noexcept -> std:
 struct ContainerTestRequest {
     // IOX2_TYPE_NAME is equivalent to the payload type name used on the Rust side
     static constexpr const char* IOX2_TYPE_NAME = "ContainerTestRequest";
-    VectorTypeSequence vector_type_sequence;
+    ContainerTypeSequence container_type_sequence;
     int32_t container_size;
     int32_t container_alignment;
     int32_t size_of_data_component;
@@ -87,7 +87,7 @@ struct ContainerTestRequest {
 struct ContainerTestResponse {
     // IOX2_TYPE_NAME is equivalent to the payload type name used on the Rust side
     static constexpr const char* IOX2_TYPE_NAME = "ContainerTestResponse";
-    VectorTypeSequence vector_type_sequence;
+    ContainerTypeSequence container_type_sequence;
     bool all_fields_match;
 };
 
@@ -189,29 +189,29 @@ auto check_metrics_for_string(ContainerTestRequest const& req) -> bool {
 }
 
 auto check_request(ContainerTestRequest const& req) -> bool {
-    switch (req.vector_type_sequence) {
-    case VectorTypeSequence::VecI32_10:
+    switch (req.container_type_sequence) {
+    case ContainerTypeSequence::VecI32_10:
         // NOLINTNEXTLINE(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
         return check_metrics_for_vector<int32_t, 10>(req);
-    case VectorTypeSequence::VecI64_20:
+    case ContainerTypeSequence::VecI64_20:
         // NOLINTNEXTLINE(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
         return check_metrics_for_vector<int64_t, 20>(req);
-    case VectorTypeSequence::VecOverAligned_5:
+    case ContainerTypeSequence::VecOverAligned_5:
         // NOLINTNEXTLINE(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
         return check_metrics_for_vector<ContainerTestOverAligned, 5>(req);
-    case VectorTypeSequence::VecVec8_10:
+    case ContainerTypeSequence::VecVec8_10:
         // NOLINTNEXTLINE(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
         return check_metrics_for_vector<iox2::container::StaticVector<int8_t, 10>, 10>(req);
-    case VectorTypeSequence::String_10:
+    case ContainerTypeSequence::String_10:
         // NOLINTNEXTLINE(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
         return check_metrics_for_string<10>(req);
-    case VectorTypeSequence::String_42:
+    case ContainerTypeSequence::String_42:
         // NOLINTNEXTLINE(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
         return check_metrics_for_string<42>(req);
-    case VectorTypeSequence::EndOfTest:
+    case ContainerTypeSequence::EndOfTest:
         break;
     default:
-        std::cout << "Unknown request type " << req.vector_type_sequence << "\n";
+        std::cout << "Unknown request type " << req.container_type_sequence << "\n";
         return false;
     }
     return true;
@@ -237,7 +237,7 @@ auto ContainerTest::run_test(iox2::Node<iox2::ServiceType::Ipc> const& node) -> 
         auto& opt_request = receive_request.value();
         if (opt_request) {
             auto& request = opt_request.value();
-            std::cout << "       * Processing request " << request.payload().vector_type_sequence << "\n";
+            std::cout << "       * Processing request " << request.payload().container_type_sequence << "\n";
             bool const check_succeeded = check_request(request.payload());
             auto exp_response = request.loan_uninit();
             if (!exp_response) {
@@ -246,7 +246,7 @@ auto ContainerTest::run_test(iox2::Node<iox2::ServiceType::Ipc> const& node) -> 
             }
             auto& response = exp_response.value();
             auto exp_send_result = send(response.write_payload(
-                ContainerTestResponse { request.payload().vector_type_sequence, check_succeeded }));
+                ContainerTestResponse { request.payload().container_type_sequence, check_succeeded }));
             if (!exp_send_result) {
                 std::cout << "Error sending response\n";
                 return false;
@@ -254,7 +254,7 @@ auto ContainerTest::run_test(iox2::Node<iox2::ServiceType::Ipc> const& node) -> 
             if (!check_succeeded) {
                 return false;
             }
-            if (request.payload().vector_type_sequence == VectorTypeSequence::EndOfTest) {
+            if (request.payload().container_type_sequence == ContainerTypeSequence::EndOfTest) {
                 return true;
             }
         } else {
