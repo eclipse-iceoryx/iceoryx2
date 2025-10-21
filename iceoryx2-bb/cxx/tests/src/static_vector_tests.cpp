@@ -17,6 +17,9 @@
 
 #include "gtest/gtest.h"
 
+#include <sstream>
+#include <string>
+
 namespace {
 using iox2::container::testing::Observable;
 
@@ -40,6 +43,185 @@ TEST(StaticVector, default_constructor_initializes_to_empty) {
 TEST_F(StaticVectorFixture, default_constructor_does_not_construct_any_objects) {
     iox2::container::StaticVector<Observable, G_TEST_ARRAY_SIZE> const sut;
     ASSERT_TRUE(sut.empty());
+}
+
+TEST(StaticVector, copy_constructor_copies_vector_contents) {
+    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> src_vec;
+    {
+        iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(src_vec);
+        iox2::container::testing::opaque_use(sut);
+        ASSERT_TRUE(sut.empty());
+        ASSERT_EQ(sut.size(), 0);
+    }
+    ASSERT_TRUE(src_vec.try_emplace_back(1));
+    {
+        iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(src_vec);
+        iox2::container::testing::opaque_use(sut);
+        ASSERT_EQ(sut.size(), 1);
+        EXPECT_EQ(sut.unchecked_access()[0], 1);
+    }
+    ASSERT_TRUE(src_vec.try_emplace_back(2));
+    {
+        iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(src_vec);
+        iox2::container::testing::opaque_use(sut);
+        ASSERT_EQ(sut.size(), 2);
+        EXPECT_EQ(sut.unchecked_access()[0], 1);
+        EXPECT_EQ(sut.unchecked_access()[1], 2);
+    }
+    ASSERT_TRUE(src_vec.try_emplace_back(G_TEST_ARRAY[0]));
+    ASSERT_TRUE(src_vec.try_emplace_back(G_TEST_ARRAY[1]));
+    ASSERT_TRUE(src_vec.try_emplace_back(G_TEST_ARRAY[3]));
+    {
+        iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(src_vec);
+        iox2::container::testing::opaque_use(sut);
+        ASSERT_EQ(sut.size(), G_TEST_ARRAY_SIZE);
+        EXPECT_EQ(sut.unchecked_access()[0], 1);
+        EXPECT_EQ(sut.unchecked_access()[1], 2);
+        EXPECT_EQ(sut.unchecked_access()[2], G_TEST_ARRAY[0]);
+        EXPECT_EQ(sut.unchecked_access()[3], G_TEST_ARRAY[1]);
+        EXPECT_EQ(sut.unchecked_access()[4], G_TEST_ARRAY[3]);
+    }
+}
+
+TEST(StaticVector, copy_constructor_copies_vector_contents_to_larger_capacity) {
+    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> src_vec;
+    {
+        iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut(src_vec);
+        iox2::container::testing::opaque_use(sut);
+        ASSERT_TRUE(sut.empty());
+        ASSERT_EQ(sut.size(), 0);
+    }
+    ASSERT_TRUE(src_vec.try_emplace_back(1));
+    {
+        iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut(src_vec);
+        iox2::container::testing::opaque_use(sut);
+        ASSERT_EQ(sut.size(), 1);
+        EXPECT_EQ(sut.unchecked_access()[0], 1);
+    }
+    ASSERT_TRUE(src_vec.try_emplace_back(2));
+    {
+        iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut(src_vec);
+        iox2::container::testing::opaque_use(sut);
+        ASSERT_EQ(sut.size(), 2);
+        EXPECT_EQ(sut.unchecked_access()[0], 1);
+        EXPECT_EQ(sut.unchecked_access()[1], 2);
+    }
+    ASSERT_TRUE(src_vec.try_emplace_back(G_TEST_ARRAY[0]));
+    ASSERT_TRUE(src_vec.try_emplace_back(G_TEST_ARRAY[1]));
+    ASSERT_TRUE(src_vec.try_emplace_back(G_TEST_ARRAY[3]));
+    {
+        iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut(src_vec);
+        iox2::container::testing::opaque_use(sut);
+        ASSERT_EQ(sut.size(), G_TEST_ARRAY_SIZE);
+        EXPECT_EQ(sut.unchecked_access()[0], 1);
+        EXPECT_EQ(sut.unchecked_access()[1], 2);
+        EXPECT_EQ(sut.unchecked_access()[2], G_TEST_ARRAY[0]);
+        EXPECT_EQ(sut.unchecked_access()[3], G_TEST_ARRAY[1]);
+        EXPECT_EQ(sut.unchecked_access()[4], G_TEST_ARRAY[3]);
+    }
+}
+
+TEST(StaticVector, copy_assignment_assigns_vector_contents) {
+    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> src_vec;
+    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut;
+    ASSERT_TRUE(sut.empty());
+    sut = src_vec;
+    ASSERT_TRUE(sut.empty());
+    ASSERT_EQ(sut.size(), 0);
+    ASSERT_TRUE(src_vec.try_emplace_back(1));
+    sut = src_vec;
+    ASSERT_EQ(sut.size(), 1);
+    EXPECT_EQ(sut.unchecked_access()[0], 1);
+    ASSERT_TRUE(src_vec.try_emplace_back(2));
+    sut = src_vec;
+    ASSERT_EQ(sut.size(), 2);
+    EXPECT_EQ(sut.unchecked_access()[0], 1);
+    EXPECT_EQ(sut.unchecked_access()[1], 2);
+    ASSERT_TRUE(src_vec.try_emplace_back(G_TEST_ARRAY[0]));
+    ASSERT_TRUE(src_vec.try_emplace_back(G_TEST_ARRAY[1]));
+    ASSERT_TRUE(src_vec.try_emplace_back(G_TEST_ARRAY[3]));
+    sut = src_vec;
+    ASSERT_EQ(sut.size(), G_TEST_ARRAY_SIZE);
+    EXPECT_EQ(sut.unchecked_access()[0], 1);
+    EXPECT_EQ(sut.unchecked_access()[1], 2);
+    EXPECT_EQ(sut.unchecked_access()[2], G_TEST_ARRAY[0]);
+    EXPECT_EQ(sut.unchecked_access()[3], G_TEST_ARRAY[1]);
+    EXPECT_EQ(sut.unchecked_access()[4], G_TEST_ARRAY[3]);
+    src_vec.clear();
+    sut = src_vec;
+    ASSERT_EQ(sut.size(), 0);
+}
+
+TEST(StaticVector, copy_assignment_returns_reference_to_self) {
+    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> src_vec;
+    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut;
+    EXPECT_EQ(&(sut = src_vec), &sut);
+    ASSERT_TRUE(src_vec.try_push_back(1));
+    ASSERT_TRUE(src_vec.try_push_back(2));
+    ASSERT_TRUE(src_vec.try_push_back(3));
+    EXPECT_EQ(&(sut = src_vec), &sut);
+}
+
+TEST(StaticVector, copy_assignment_self_assignment) {
+    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
+    auto const& reference_to_self = sut;
+    iox2::container::testing::opaque_use(&reference_to_self);
+    sut = reference_to_self;
+    ASSERT_TRUE(!sut.empty());
+    ASSERT_EQ(sut.size(), G_TEST_ARRAY_SIZE);
+    EXPECT_EQ(*sut.element_at(0), G_TEST_ARRAY[0]);
+    EXPECT_EQ(*sut.element_at(1), G_TEST_ARRAY[1]);
+    EXPECT_EQ(*sut.element_at(2), G_TEST_ARRAY[2]);
+    EXPECT_EQ(*sut.element_at(3), G_TEST_ARRAY[3]);
+    EXPECT_EQ(*sut.element_at(4), G_TEST_ARRAY[4]);
+}
+
+TEST(StaticVector, move_assignment_assigns_vector_contents) {
+    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> src_vec;
+    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut;
+    ASSERT_TRUE(sut.empty());
+    sut = std::move(src_vec);
+    src_vec = iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> {};
+    ASSERT_TRUE(sut.empty());
+    ASSERT_EQ(sut.size(), 0);
+    ASSERT_TRUE(src_vec.try_emplace_back(1));
+    sut = std::move(src_vec);
+    ASSERT_EQ(sut.size(), 1);
+    EXPECT_EQ(sut.unchecked_access()[0], 1);
+    src_vec = iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> {};
+    ASSERT_TRUE(src_vec.try_emplace_back(1));
+    ASSERT_TRUE(src_vec.try_emplace_back(2));
+    sut = std::move(src_vec);
+    ASSERT_EQ(sut.size(), 2);
+    EXPECT_EQ(sut.unchecked_access()[0], 1);
+    EXPECT_EQ(sut.unchecked_access()[1], 2);
+    src_vec = iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> {};
+    ASSERT_TRUE(src_vec.try_emplace_back(1));
+    ASSERT_TRUE(src_vec.try_emplace_back(2));
+    ASSERT_TRUE(src_vec.try_emplace_back(G_TEST_ARRAY[0]));
+    ASSERT_TRUE(src_vec.try_emplace_back(G_TEST_ARRAY[1]));
+    ASSERT_TRUE(src_vec.try_emplace_back(G_TEST_ARRAY[3]));
+    sut = std::move(src_vec);
+    ASSERT_EQ(sut.size(), G_TEST_ARRAY_SIZE);
+    EXPECT_EQ(sut.unchecked_access()[0], 1);
+    EXPECT_EQ(sut.unchecked_access()[1], 2);
+    EXPECT_EQ(sut.unchecked_access()[2], G_TEST_ARRAY[0]);
+    EXPECT_EQ(sut.unchecked_access()[3], G_TEST_ARRAY[1]);
+    EXPECT_EQ(sut.unchecked_access()[4], G_TEST_ARRAY[3]);
+    src_vec = iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> {};
+    sut = std::move(src_vec);
+    ASSERT_EQ(sut.size(), 0);
+}
+
+TEST(StaticVector, move_assignment_returns_reference_to_self) {
+    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> src_vec;
+    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut;
+    EXPECT_EQ(&(sut = std::move(src_vec)), &sut);
+    src_vec = iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> {};
+    ASSERT_TRUE(src_vec.try_push_back(1));
+    ASSERT_TRUE(src_vec.try_push_back(2));
+    ASSERT_TRUE(src_vec.try_push_back(3));
+    EXPECT_EQ(&(sut = std::move(src_vec)), &sut);
 }
 
 TEST(StaticVector, array_constructor_copies_array_elements_into_vector) {
@@ -950,6 +1132,56 @@ TEST(StaticVector, back_element_const_fails_for_empty_vector) {
     ASSERT_FALSE(sut.back_element());
 }
 
+TEST(StaticVector, unchecked_const_array_access) {
+    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> const sut(G_TEST_ARRAY);
+    // NOLINTNEXTLINE(readability-container-data-pointer) testing
+    ASSERT_EQ(&sut.unchecked_access()[0], &sut.element_at(0).value().get());
+}
+
+TEST(StaticVector, unchecked_const_begin_iterator) {
+    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> const sut(G_TEST_ARRAY);
+    ASSERT_EQ(sut.unchecked_access().begin(), &sut.element_at(0).value().get());
+}
+
+TEST(StaticVector, unchecked_const_end_iterator) {
+    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> const sut(G_TEST_ARRAY);
+    ASSERT_EQ(sut.unchecked_access().end(), sut.unchecked_access().begin() + G_TEST_ARRAY_SIZE);
+}
+
+TEST(StaticVector, unchecked_const_data_pointer) {
+    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> const sut(G_TEST_ARRAY);
+    ASSERT_EQ(sut.unchecked_access().data(), &sut.element_at(0).value().get());
+}
+
+TEST(StaticVector, unchecked_mutable_array_access) {
+    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
+    // NOLINTNEXTLINE(readability-container-data-pointer) testing
+    ASSERT_EQ(&sut.unchecked_access()[0], &sut.element_at(0).value().get());
+    sut.unchecked_access()[0] *= 2;
+    EXPECT_EQ(*sut.element_at(0), G_TEST_ARRAY[0] * 2);
+}
+
+TEST(StaticVector, unchecked_mutable_begin_iterator) {
+    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
+    ASSERT_EQ(sut.unchecked_access().begin(), &sut.element_at(0).value().get());
+    *sut.unchecked_access().begin() *= 2;
+    EXPECT_EQ(*sut.element_at(0), G_TEST_ARRAY[0] * 2);
+}
+
+TEST(StaticVector, unchecked_mutable_end_iterator) {
+    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
+    ASSERT_EQ(sut.unchecked_access().end(), sut.unchecked_access().begin() + G_TEST_ARRAY_SIZE);
+    *(sut.unchecked_access().end() - 1) *= 2;
+    EXPECT_EQ(*sut.element_at(G_TEST_ARRAY_SIZE - 1), G_TEST_ARRAY[G_TEST_ARRAY_SIZE - 1] * 2);
+}
+
+TEST(StaticVector, unchecked_mutable_data_pointer) {
+    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
+    ASSERT_EQ(sut.unchecked_access().data(), &sut.element_at(0).value().get());
+    *sut.unchecked_access().data() *= 2;
+    EXPECT_EQ(*sut.element_at(0), G_TEST_ARRAY[0] * 2);
+}
+
 TEST(StaticVector, equality_comparison) {
     ASSERT_TRUE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })
                  == *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })));
@@ -1005,5 +1237,69 @@ TEST(StaticVector, not_equal_comparison) {
                   != *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({})));
 }
 
+TEST(StaticVector, ostream_insertion_converts_contents_to_string) {
+    std::ostringstream sstr;
+    auto sut = *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_range_unchecked(G_TEST_ARRAY);
+    sstr << sut;
+    ASSERT_TRUE(sstr);
+    EXPECT_EQ(sstr.str(), "StaticVector::<5> { m_size: 5, m_data: [ 4, 9, 77, 32, -5 ] }");
+    ASSERT_TRUE(sut.try_pop_back());
+    ASSERT_TRUE(sut.try_pop_back());
+    sstr = std::ostringstream {};
+    sstr << sut;
+    ASSERT_TRUE(sstr);
+    EXPECT_EQ(sstr.str(), "StaticVector::<5> { m_size: 3, m_data: [ 4, 9, 77 ] }");
+    ASSERT_TRUE(sut.try_pop_back());
+    ASSERT_TRUE(sut.try_pop_back());
+    sstr = std::ostringstream {};
+    sstr << sut;
+    ASSERT_TRUE(sstr);
+    EXPECT_EQ(sstr.str(), "StaticVector::<5> { m_size: 1, m_data: [ 4 ] }");
+    sut.clear();
+    sstr = std::ostringstream {};
+    sstr << sut;
+    ASSERT_TRUE(sstr);
+    EXPECT_EQ(sstr.str(), "StaticVector::<5> { m_size: 0, m_data: [  ] }");
+}
+
+class Printable {
+    static int32_t s_print_count;
+
+  public:
+    static void reset_print_count() {
+        s_print_count = 0;
+    }
+    friend auto operator<<(std::ostream& ostr, Printable const& /*unused*/) -> std::ostream& {
+        return ostr << ++s_print_count;
+    }
+};
+int32_t Printable::s_print_count = 0;
+
+TEST(StaticVector, ostream_insertion_calls_ostream_inserter_for_values) {
+    constexpr size_t const VECTOR_CAPACITY = 5;
+    iox2::container::StaticVector<Printable, VECTOR_CAPACITY> sut;
+    Printable::reset_print_count();
+    std::ostringstream sstr;
+    sstr << sut;
+    ASSERT_TRUE(sstr);
+    EXPECT_EQ(sstr.str(), "StaticVector::<5> { m_size: 0, m_data: [  ] }");
+    ASSERT_TRUE(sut.try_emplace_back());
+    sstr = std::ostringstream {};
+    sstr << sut;
+    ASSERT_TRUE(sstr);
+    EXPECT_EQ(sstr.str(), "StaticVector::<5> { m_size: 1, m_data: [ 1 ] }");
+    ASSERT_TRUE(sut.try_emplace_back());
+    ASSERT_TRUE(sut.try_emplace_back());
+    ASSERT_TRUE(sut.try_emplace_back());
+    ASSERT_TRUE(sut.try_emplace_back());
+    sstr = std::ostringstream {};
+    sstr << sut;
+    ASSERT_TRUE(sstr);
+    EXPECT_EQ(sstr.str(), "StaticVector::<5> { m_size: 5, m_data: [ 2, 3, 4, 5, 6 ] }");
+    sstr = std::ostringstream {};
+    sstr << sut;
+    ASSERT_TRUE(sstr);
+    EXPECT_EQ(sstr.str(), "StaticVector::<5> { m_size: 5, m_data: [ 7, 8, 9, 10, 11 ] }");
+}
 
 } // namespace
