@@ -21,8 +21,8 @@ pub trait ComponentTest {
 #[derive(Debug)]
 pub struct GenericTestError {}
 
-impl std::fmt::Display for GenericTestError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for GenericTestError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Test Failed")
     }
 }
@@ -32,8 +32,8 @@ impl core::error::Error for GenericTestError {}
 #[derive(Debug)]
 pub struct TimeoutError {}
 
-impl std::fmt::Display for TimeoutError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for TimeoutError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Communication time out")
     }
 }
@@ -81,8 +81,8 @@ pub fn wait_for_pred<F: Fn() -> bool>(
 
 pub fn await_response<
     ServiceType: iceoryx2::service::Service,
-    RequestType: std::fmt::Debug + iceoryx2::prelude::ZeroCopySend + ?Sized,
-    ResponseType: std::fmt::Debug + iceoryx2::prelude::ZeroCopySend,
+    RequestType: core::fmt::Debug + iceoryx2::prelude::ZeroCopySend + ?Sized,
+    ResponseType: core::fmt::Debug + iceoryx2::prelude::ZeroCopySend,
 >(
     node: &iceoryx2::prelude::Node<iceoryx2::prelude::ipc::Service>,
     pending_response: &iceoryx2::pending_response::PendingResponse<
