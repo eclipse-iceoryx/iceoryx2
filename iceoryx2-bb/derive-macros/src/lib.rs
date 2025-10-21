@@ -319,9 +319,22 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                 #type_name_impl
             }
         }
-        _ => {
-            return quote! {compile_error!("ZeroCopySend can only be implemented for structs and enums");}
-                .into();
+        Data::Union(ref data_union) => {
+            let field_inits = data_union.fields.named.iter().map(|f| {
+                let field_name = &f.ident;
+                // dummy call to ensure at compile-time that all fields of the struct implement ZeroCopySend
+                quote! {
+                    ZeroCopySend::__is_zero_copy_send(unsafe { &self.#field_name });
+                }
+            });
+
+            quote! {
+                fn __is_zero_copy_send(&self) {
+                    #(#field_inits)*
+                }
+
+                #type_name_impl
+            }
         }
     };
 
