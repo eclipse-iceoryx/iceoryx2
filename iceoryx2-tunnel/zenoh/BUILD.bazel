@@ -12,7 +12,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("@rules_rust//rust:defs.bzl", "rust_library")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test_suite")
 
 filegroup(
     name = "all_srcs",
@@ -28,5 +28,17 @@ rust_library(
         "//iceoryx2-tunnel/backend:iceoryx2-tunnel-backend",
         "@crate_index//:serde_json",
         "@crate_index//:zenoh",
+    ],
+)
+
+rust_test_suite(
+    name = "iceoryx2-tunnel-tests",
+    srcs = glob(["tests/**/*.rs"]),
+    deps = [
+        ":iceoryx2-tunnel-zenoh",
+        "//iceoryx2:iceoryx2",
+        "//iceoryx2-bb/testing:iceoryx2-bb-testing",
+        "//iceoryx2-pal/testing:iceoryx2-pal-testing",
+        "//iceoryx2-tunnel/conformance-tests:iceoryx2-tunnel-conformance-tests",
     ],
 )

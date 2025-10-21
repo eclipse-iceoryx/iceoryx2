@@ -10,18 +10,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_testing::instantiate_conformance_tests;
+use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
 
-mod file_lock {
-    super::instantiate_conformance_tests!(
-        iceoryx2_cal_conformance_tests::monitoring_trait,
-        iceoryx2_cal::monitoring::file_lock::FileLockMonitoring
-    );
-}
+instantiate_conformance_tests_with_module!(
+    file_lock,
+    iceoryx2_cal_conformance_tests::monitoring_trait,
+    iceoryx2_cal::monitoring::file_lock::FileLockMonitoring
+);
 
-mod process_local {
-    super::instantiate_conformance_tests!(
-        iceoryx2_cal_conformance_tests::monitoring_trait,
-        iceoryx2_cal::monitoring::process_local::ProcessLocalMonitoring
-    );
-}
+instantiate_conformance_tests_with_module!(
+    process_local,
+    iceoryx2_cal_conformance_tests::monitoring_trait,
+    iceoryx2_cal::monitoring::process_local::ProcessLocalMonitoring
+);

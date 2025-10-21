@@ -10,23 +10,22 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_testing::instantiate_conformance_tests;
-use iceoryx2_cal_conformance_tests::dynamic_storage_trait::dynamic_storage_trait::TestData;
+use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
+use iceoryx2_cal_conformance_tests::dynamic_storage_trait::TestData;
 
-mod posix_shared_memory {
-    use super::*;
-    super::instantiate_conformance_tests!(
-        iceoryx2_cal_conformance_tests::dynamic_storage_trait,
-        iceoryx2_cal::dynamic_storage::posix_shared_memory::Storage<super::TestData>,
-        iceoryx2_cal::dynamic_storage::posix_shared_memory::Storage<u64>
-    );
-}
+use iceoryx2_cal::dynamic_storage::posix_shared_memory::Storage as PosixStorage;
+use iceoryx2_cal::dynamic_storage::process_local::Storage as LocalStorage;
 
-mod process_local {
-    use super::*;
-    super::instantiate_conformance_tests!(
-        iceoryx2_cal_conformance_tests::dynamic_storage_trait,
-        iceoryx2_cal::dynamic_storage::process_local::Storage<super::TestData>,
-        iceoryx2_cal::dynamic_storage::process_local::Storage<u64>
-    );
-}
+instantiate_conformance_tests_with_module!(
+    posix_shared_memory,
+    iceoryx2_cal_conformance_tests::dynamic_storage_trait,
+    super::PosixStorage<super::TestData>,
+    super::PosixStorage<u64>
+);
+
+instantiate_conformance_tests_with_module!(
+    process_local,
+    iceoryx2_cal_conformance_tests::dynamic_storage_trait,
+    super::LocalStorage<super::TestData>,
+    super::LocalStorage<u64>
+);

@@ -1,5 +1,5 @@
 {
-  "checksum": "37438252815ee62b97c818c9334f52bf46489d16184910bf7f6ffc0f81fb1764",
+  "checksum": "8394a06b04b71f329bad98e9df648ee5df09f7dd9d0217b5f3b49c75cc54b251",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -7756,15 +7756,6 @@
           "selects": {}
         },
         "edition": "2021",
-        "proc_macro_deps_dev": {
-          "common": [
-            {
-              "id": "generic-tests 0.1.2",
-              "target": "generic_tests"
-            }
-          ],
-          "selects": {}
-        },
         "version": "0.7.0"
       },
       "license": "MIT OR Apache-2.0",
@@ -8430,15 +8421,6 @@
             {
               "id": "toml 0.8.19",
               "target": "toml"
-            }
-          ],
-          "selects": {}
-        },
-        "deps_dev": {
-          "common": [
-            {
-              "id": "lazy_static 1.5.0",
-              "target": "lazy_static"
             }
           ],
           "selects": {}
@@ -9195,14 +9177,6 @@
         "compile_data_glob": [
           "**"
         ],
-        "crate_features": {
-          "common": [
-            "default",
-            "iceoryx2-tunnel-zenoh",
-            "tunnel_zenoh"
-          ],
-          "selects": {}
-        },
         "edition": "2021",
         "proc_macro_deps_dev": {
           "common": [
@@ -9242,6 +9216,40 @@
         }
       ],
       "library_target_name": "iceoryx2_tunnel_backend",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "edition": "2021",
+        "version": "0.7.0"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-tunnel-conformance-tests 0.7.0": {
+      "name": "iceoryx2-tunnel-conformance-tests",
+      "version": "0.7.0",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_tunnel_conformance_tests",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_tunnel_conformance_tests",
       "common_attrs": {
         "compile_data_glob": [
           "**"
@@ -9337,15 +9345,6 @@
           "selects": {}
         },
         "edition": "2021",
-        "proc_macro_deps_dev": {
-          "common": [
-            {
-              "id": "generic-tests 0.1.2",
-              "target": "generic_tests"
-            }
-          ],
-          "selects": {}
-        },
         "version": "0.7.0"
       },
       "license": "MIT OR Apache-2.0",
@@ -30518,6 +30517,7 @@
     "iceoryx2-services-discovery 0.7.0": "iceoryx2-services/discovery",
     "iceoryx2-tunnel 0.7.0": "iceoryx2-tunnel/tunnel",
     "iceoryx2-tunnel-backend 0.7.0": "iceoryx2-tunnel/backend",
+    "iceoryx2-tunnel-conformance-tests 0.7.0": "iceoryx2-tunnel/conformance-tests",
     "iceoryx2-tunnel-end-to-end-tests 0.7.0": "iceoryx2-tunnel/end-to-end-tests",
     "iceoryx2-tunnel-zenoh 0.7.0": "iceoryx2-tunnel/zenoh",
     "iceoryx2-userland-record-and-replay 0.7.0": "iceoryx2-userland/record-and-replay"

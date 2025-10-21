@@ -10,11 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_testing::instantiate_conformance_tests;
+use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
 
-mod bitset {
-    super::instantiate_conformance_tests!(
-        iceoryx2_cal_conformance_tests::event_id_tracker_trait,
-        iceoryx2_bb_lock_free::mpmc::bit_set::RelocatableBitSet
-    );
-}
+instantiate_conformance_tests_with_module!(
+    bitset,
+    iceoryx2_cal_conformance_tests::event_id_tracker_trait,
+    iceoryx2_bb_lock_free::mpmc::bit_set::RelocatableBitSet
+);

@@ -1276,7 +1276,6 @@ dependencies = [
 name = "iceoryx2"
 version = "0.7.0"
 dependencies = [
- "generic-tests",
  "iceoryx2-bb-container",
  "iceoryx2-bb-derive-macros",
  "iceoryx2-bb-elementary",
@@ -1499,9 +1498,6 @@ dependencies = [
  "iceoryx2-bb-system-types",
  "iceoryx2-bb-testing",
  "iceoryx2-pal-concurrency-sync",
- "iceoryx2-pal-posix",
- "iceoryx2-pal-testing",
- "lazy_static",
  "once_cell",
  "postcard",
  "serde",
@@ -1575,9 +1571,15 @@ version = "0.7.0"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-conformance-test-macros",
+ "iceoryx2-bb-container",
+ "iceoryx2-bb-derive-macros",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-bb-log",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
  "iceoryx2-cal",
+ "iceoryx2-pal-concurrency-sync",
+ "iceoryx2-pal-testing",
 ]
 
 [[package]]
@@ -1691,7 +1693,6 @@ dependencies = [
  "iceoryx2-bb-testing",
  "iceoryx2-services-discovery",
  "iceoryx2-tunnel-backend",
- "iceoryx2-tunnel-zenoh",
 ]
 
 [[package]]
@@ -1700,6 +1701,19 @@ version = "0.7.0"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-testing",
+]
+
+[[package]]
+name = "iceoryx2-tunnel-conformance-tests"
+version = "0.7.0"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-conformance-test-macros",
+ "iceoryx2-bb-posix",
+ "iceoryx2-bb-testing",
+ "iceoryx2-services-discovery",
+ "iceoryx2-tunnel",
+ "iceoryx2-tunnel-backend",
 ]
 
 [[package]]
@@ -1716,12 +1730,12 @@ dependencies = [
 name = "iceoryx2-tunnel-zenoh"
 version = "0.7.0"
 dependencies = [
- "generic-tests",
  "iceoryx2",
  "iceoryx2-bb-log",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
  "iceoryx2-tunnel-backend",
+ "iceoryx2-tunnel-conformance-tests",
  "serde_json",
  "zenoh",
 ]

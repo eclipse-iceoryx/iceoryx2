@@ -34,6 +34,7 @@ members = [
     "iceoryx2-services/discovery",
 
     "iceoryx2-tunnel/backend",
+    "iceoryx2-tunnel/conformance-tests",
     "iceoryx2-tunnel/tunnel",
     "iceoryx2-tunnel/zenoh",
     "iceoryx2-tunnel/end-to-end-tests",
@@ -102,6 +103,7 @@ iceoryx2-services-discovery = { version = "0.7.0", path = "iceoryx2-services/dis
 iceoryx2-tunnel-end-to-end-tests = { version = "0.7.0", path = "iceoryx2-tunnel/end-to-end-tests" }
 iceoryx2-tunnel = { version = "0.7.0", path = "iceoryx2-tunnel/tunnel" }
 iceoryx2-tunnel-backend = { version = "0.7.0", path = "iceoryx2-tunnel/backend" }
+iceoryx2-tunnel-conformance-tests = { version = "0.7.0", path = "iceoryx2-tunnel/conformance-tests" }
 iceoryx2-tunnel-zenoh = { version = "0.7.0", path = "iceoryx2-tunnel/zenoh" }
 iceoryx2-userland-record-and-replay = { version = "0.7.0", path = "iceoryx2-userland/record-and-replay" }
 

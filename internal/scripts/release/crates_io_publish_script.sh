@@ -52,8 +52,9 @@ CRATES_TO_PUBLISH=(
     iceoryx2-services-discovery
     iceoryx2-userland-record-and-replay
     iceoryx2-tunnel-backend
-    iceoryx2-tunnel-zenoh
     iceoryx2-tunnel
+    iceoryx2-tunnel-conformance-tests
+    iceoryx2-tunnel-zenoh
     iceoryx2-cli
 )
 CRATES_TO_IGNORE=(

@@ -8,7 +8,8 @@ provided Rust macros and procedural attributes.
 **Conformance tests** ensure that different implementations of a trait or
 interface behave identically. This framework provides macros and attributes to
 automate the generation of test modules and test cases for multiple System Under
-Test (SUT) types.
+Test (SUT) types. A SUT is any concrete implementation of an iceoryx2 concept,
+service variant or extension.
 
 ## 2. Key Components
 
@@ -16,7 +17,8 @@ Test (SUT) types.
 |-----------|-------------|
 | `#[conformance_test]` | Marks a function as a conformance test. The function must be generic over the SUT type(s). |
 | `#[conformance_test_module]` | Generates a declarative macro for a module, collecting all conformance tests and instantiating them for each SUT type. |
-| `instantiate_conformance_tests!` | Instantiates the generated macro for a module and a list of SUT types. |
+| `instantiate_conformance_tests!` | Instantiates the generated macro for a conformance test and a list of SUT types. |
+| `instantiate_conformance_tests_with_module!` | Instantiates the generated macro for a conformance test and a list of SUT types. The instantiation is wrapped in a module. |
 
 ## 3. Writing Conformance Tests
 
@@ -38,7 +40,7 @@ pub mod my_module {
 > module name must match the module name determined by the file name. The parent
 > module name is also required to reconstruct the fully qualified path in the
 > generated declarative macro that will run the tests. Since clippy complains
-> about repeating module names, this warning needs to deactivated.
+> about repeating module names, this warning needs to be deactivated.
 
 ### Step 2: Write Test Functions
 
@@ -46,6 +48,7 @@ Write test functions and mark them with `#[conformance_test]`. These functions
 must be generic over the SUT type(s):
 
 ```rs
+#[allow(clippy::module_inception)]
 #[conformance_test]
 pub fn test_my_feature<T: MyTrait>() {
     // Test logic here
@@ -60,28 +63,58 @@ pub fn test_my_feature<T: MyTrait>() {
 ### Step 3: Instantiate Tests for SUT Types
 
 Use the fully qualified path to the parent test module and
-`instantiate_conformance_tests!` to run the tests for each SUT type.
+`instantiate_conformance_tests!` or `instantiate_conformance_tests_with_module!`
+to run the tests for each SUT type.
 
 Assuming the tests are part of a `my_test_crate` crate, which contains
-the modules `my_module1` and `my_module2`, the tests would be instantiated as
-follows:
+the modules `my_module`, the tests can be instantiated as follows:
 
 ```rs
 use iceoryx2_bb_testing::instantiate_conformance_tests;
+use my_impl::{SUT1, SUT2, SUT3};
 
 mod sut1_impl {
-    super::instantiate_conformance_tests!(my_test_crate::my_module1, my_impl::SUT1);
-    super::instantiate_conformance_tests!(my_test_crate::my_module2, my_impl::SUT1);
+    use super::*;
+    instantiate_conformance_tests!(my_test_crate::my_module, super::SUT1);
 }
 
 mod sut2_impl {
-    super::instantiate_conformance_tests!(my_test_crate::my_module1, my_impl::SUT2);
-    super::instantiate_conformance_tests!(my_test_crate::my_module2, my_impl::SUT2);
+    use super::*;
+    instantiate_conformance_tests!(my_test_crate::my_module, super::SUT2);
 }
 
 mod sut3_impl {
-    super::instantiate_conformance_tests!(my_test_crate::my_module1, my_impl::SUT3);
-    super::instantiate_conformance_tests!(my_test_crate::my_module2, my_impl::SUT3);
+    use super::*;
+    instantiate_conformance_tests!(my_test_crate::my_module, super::SUT3);
+}
+```
+
+For such simple cases like above, without any additional test setup, except the
+boilerplate for the `instantiate_conformance_tests!` macro, the
+`instantiate_conformance_tests_with_module!` macro can be used to reduce this
+boilerplate:
+
+
+```rs
+use iceoryx2_bb_testing::instantiate_conformance_tests;
+use my_impl::{SUT1, SUT2, SUT3};
+
+instantiate_conformance_tests_with_module!(sut1_imp, my_test_crate::my_module, super::SUT1);
+instantiate_conformance_tests_with_module!(sut2_imp, my_test_crate::my_module, super::SUT2);
+instantiate_conformance_tests_with_module!(sut3_imp, my_test_crate::my_module, super::SUT3);
+```
+
+If multiple conformance test modules shall be instantiated in the same file, the
+`instantiate_conformance_tests!` is recommended:
+
+```rs
+use iceoryx2_bb_testing::instantiate_conformance_tests;
+use my_impl::SUT;
+
+mod sut_impl {
+    use super::*;
+    instantiate_conformance_tests!(my_test_crate::my_module1, super::SUT);
+    instantiate_conformance_tests!(my_test_crate::my_module2, super::SUT);
 }
 ```
 
@@ -107,6 +140,7 @@ The `my_impl` crate has two implementations: `ImplA` and `ImplB`.
 **Conformance Test Module in `my_test_crate`:**
 
 ```rs
+#[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod my_module {
     use super::*;
@@ -128,21 +162,97 @@ pub mod my_module {
 **Instantiated Tests in `my_impl`:**
 
 ```rs
-use iceoryx2_bb_testing::instantiate_conformance_tests;
+use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
+use my_impl::{ImplA, ImplB};
 
-mod impl_a {
-    super::instantiate_conformance_tests!(my_test_crate::my_module, my_impl::ImplA);
-}
+instantiate_conformance_tests_with_module!(
+    impl_a,
+    my_test_crate::my_module,
+    super::ImplA
+);
 
-mod impl_b {
-    super::instantiate_conformance_tests!(my_test_crate::my_module, my_impl::ImplB);
-}
+instantiate_conformance_tests_with_module!(
+    impl_b,
+    my_test_crate::my_module,
+    super::ImplB
+);
 ```
 
 This will generate and run `test_feature_x` and `test_feature_y` for both
 `ImplA` and `ImplB`.
 
-## 5. How It Works
+## 5. Pitfalls
+
+Assuming the conformance test suit defines some types that need to be used in
+the instantiation, it is recommended to define the types outside of the
+conformance test module:
+
+```rs
+trait Foo {}
+struc Bar {}
+struc Baz {}
+
+impl Foo for Bar {}
+impl Foo for Baz {}
+
+#[allow(clippy::module_inception)]
+#[conformance_test_module]
+pub mod my_module {
+    use super::*;
+
+    #[conformance_test]
+    pub fn test_feature<T: MyTrait, U: Foo>() {
+        // ...
+    }
+}
+```
+
+This prevents duplicating the module name when the types are imported. To use
+them in the macro, import them in the parent scope and use `super::`:
+
+```rs
+use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
+use my_impl::{ImplA, ImplB};
+use my_test_crate::my_module::{Bar, Foo};
+
+mod impl_a {
+    use super::*;
+
+    instantiate_conformance_tests_with_module!(
+        bar,
+        my_test_crate::my_module,
+        super::ImplA,
+        super::Bar
+    );
+
+    instantiate_conformance_tests!(
+        baz,
+        my_test_crate::my_module,
+        super::ImplA,
+        super::Baz
+    );
+}
+
+mod impl_b {
+    use super::*;
+
+    instantiate_conformance_tests_with_module!(
+        bar,
+        my_test_crate::my_module,
+        super::ImplB,
+        super::Bar
+    );
+
+    instantiate_conformance_tests!(
+        baz,
+        my_test_crate::my_module,
+        super::ImplB,
+        super::Baz
+    );
+}
+```
+
+## 6. How It Works
 
 The `conformance_test_module` proc macro will parse the module for functions
 with the `conformance_test` attribute and generates a declarative macro using
@@ -157,6 +267,7 @@ Assuming we have this conformance test in the `my_module` module of
 `my_module.rs` file in the `my_test_crate` crate:
 
 ```rs
+#[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod my_module {
     use super::*;
@@ -200,28 +311,45 @@ macro_rules! my_module {
 Assuming we have the following instantiation:
 
 ```rs
-use iceoryx2_bb_testing::instantiate_conformance_tests;
+use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
+use my_impl::{ImplA, ImplB};
+
+instantiate_conformance_tests_with_module!(impl_a, my_test_crate::my_module, super::ImplA);
+
+instantiate_conformance_tests_with_module!(impl_b, my_test_crate::my_module, super::ImplB);
+```
+
+The `instantiate_conformance_tests_with_module!` macro will then expand to this code:
+
+```rs
+use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
+use my_impl::{ImplA, ImplB};
 
 mod impl_a {
-    super::instantiate_conformance_tests!(my_test_crate::my_module, my_impl::ImplA);
+    super::*;
+    instantiate_conformance_tests!(my_test_crate::my_module, super::ImplA);
 }
 
 mod impl_b {
-    super::instantiate_conformance_tests!(my_test_crate::my_module, my_impl::ImplB);
+    super::*;
+    instantiate_conformance_tests!(my_test_crate::my_module, super::ImplB);
 }
 ```
 
 The `instantiate_conformance_tests!` macro will then expand to this code:
 
 ```rs
-use iceoryx2_bb_testing::instantiate_conformance_tests;
+use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
+use my_impl::{ImplA, ImplB};
 
 mod impl_a {
-    my_test_crate::my_module!(my_test_crate::my_module, my_impl::ImplA);
+    super::*;
+    my_test_crate::my_module!(my_test_crate::my_module, super::ImplA);
 }
 
 mod impl_b {
-    my_test_crate::my_module!(my_test_crate::my_module, my_impl::ImplB);
+    super::*;
+    my_test_crate::my_module!(my_test_crate::my_module, super::ImplB);
 }
 ```
 
@@ -229,32 +357,35 @@ With the expansion of the generated `my_module!` declarative macro, we get the
 following code:
 
 ```rs
-use iceoryx2_bb_testing::instantiate_conformance_tests;
+use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
+use my_impl::{ImplA, ImplB};
 
 mod impl_a {
+    super::*;
     mod my_module {
         use my_test_crate::my_module::*;
         #[test]
         fn test_feature_x() {
-            my_module::test_feature_x::<my_impl::ImplA>();
+            my_module::test_feature_x::<super::ImplA>();
         }
         #[test]
         fn test_feature_y() {
-            my_module::test_feature_y::<my_impl::ImplA>();
+            my_module::test_feature_y::<super::ImplA>();
         }
     }
 }
 
 mod impl_b {
+    super::*;
     mod my_module {
         use my_test_crate::my_module::*;
         #[test]
         fn test_feature_x() {
-            my_module::test_feature_x::<my_impl::ImplB>();
+            my_module::test_feature_x::<super::ImplB>();
         }
         #[test]
         fn test_feature_y() {
-            my_module::test_feature_y::<my_impl::ImplB>();
+            my_module::test_feature_y::<super::ImplB>();
         }
     }
 }

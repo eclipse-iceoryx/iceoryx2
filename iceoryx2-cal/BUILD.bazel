@@ -65,10 +65,7 @@ rust_test_suite(
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
         "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
-        "//iceoryx2-pal/testing:iceoryx2-pal-testing",
-        "//iceoryx2-pal/posix:iceoryx2-pal-posix",
         "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
-        "@crate_index//:lazy_static",
         "@crate_index//:serde",
     ],
     proc_macro_deps = [

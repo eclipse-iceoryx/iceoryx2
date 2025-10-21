@@ -11,6 +11,9 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;
+
+pub type DefaultAllocator = PoolAllocator;
 
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
@@ -21,11 +24,11 @@ pub mod resizable_shared_memory_trait {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::resizable_shared_memory::*;
+    use iceoryx2_cal::shared_memory::SharedMemory;
     use iceoryx2_cal::shm_allocator::{AllocationError, AllocationStrategy, ShmAllocationError};
     use iceoryx2_cal::testing::*;
-    use iceoryx2_cal::{shared_memory::SharedMemory, shm_allocator::pool_allocator::PoolAllocator};
 
-    pub type DefaultAllocator = PoolAllocator;
+    use super::*;
 
     #[conformance_test]
     pub fn create_and_open_works<

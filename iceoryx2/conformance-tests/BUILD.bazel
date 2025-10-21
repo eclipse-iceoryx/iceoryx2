@@ -24,12 +24,18 @@ rust_library(
     srcs = glob(["src/**/*.rs"]),
     deps = [
         "//iceoryx2:iceoryx2",
-        "//iceoryx2-bb/testing:iceoryx2-bb-testing",
+        "//iceoryx2-bb/container:iceoryx2-bb-container",
+        "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
+        "//iceoryx2-bb/log:iceoryx2-bb-log",
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
+        "//iceoryx2-bb/testing:iceoryx2-bb-testing",
         "//iceoryx2-cal:iceoryx2-cal",
+        "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
+        "//iceoryx2-pal/testing:iceoryx2-pal-testing",
     ],
     proc_macro_deps = [
         "//iceoryx2-bb/conformance-test-macros:iceoryx2-bb-conformance-test-macros",
+        "//iceoryx2-bb/derive-macros:iceoryx2-bb-derive-macros",
     ],
 )
 

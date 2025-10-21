@@ -11,6 +11,39 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicI64;
+
+#[derive(Debug)]
+pub struct TestData {
+    value: IoxAtomicI64,
+    supplementary_ptr: *mut u8,
+    supplementary_len: usize,
+    _lifetime_tracker: Option<LifetimeTracker>,
+}
+
+impl TestData {
+    fn new(value: i64) -> Self {
+        Self {
+            value: IoxAtomicI64::new(value),
+            supplementary_ptr: core::ptr::null_mut::<u8>(),
+            supplementary_len: 0,
+            _lifetime_tracker: None,
+        }
+    }
+
+    fn new_with_lifetime_tracking(value: i64) -> Self {
+        Self {
+            value: IoxAtomicI64::new(value),
+            supplementary_ptr: core::ptr::null_mut::<u8>(),
+            supplementary_len: 0,
+            _lifetime_tracker: Some(LifetimeTracker::new()),
+        }
+    }
+}
+
+unsafe impl Send for TestData {}
+unsafe impl Sync for TestData {}
 
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
@@ -20,49 +53,18 @@ pub mod dynamic_storage_trait {
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_elementary_traits::allocator::*;
     use iceoryx2_bb_system_types::file_name::FileName;
-    use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing::{assert_that, test_requires};
     use iceoryx2_cal::dynamic_storage::*;
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::testing::*;
-    use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicI64;
     use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
     use std::sync::{Arc, Barrier};
     use std::time::{Duration, Instant};
 
     const TIMEOUT: Duration = Duration::from_millis(100);
 
-    #[derive(Debug)]
-    pub struct TestData {
-        value: IoxAtomicI64,
-        supplementary_ptr: *mut u8,
-        supplementary_len: usize,
-        _lifetime_tracker: Option<LifetimeTracker>,
-    }
-
-    impl TestData {
-        fn new(value: i64) -> Self {
-            Self {
-                value: IoxAtomicI64::new(value),
-                supplementary_ptr: core::ptr::null_mut::<u8>(),
-                supplementary_len: 0,
-                _lifetime_tracker: None,
-            }
-        }
-
-        fn new_with_lifetime_tracking(value: i64) -> Self {
-            Self {
-                value: IoxAtomicI64::new(value),
-                supplementary_ptr: core::ptr::null_mut::<u8>(),
-                supplementary_len: 0,
-                _lifetime_tracker: Some(LifetimeTracker::new()),
-            }
-        }
-    }
-
-    unsafe impl Send for TestData {}
-    unsafe impl Sync for TestData {}
+    use super::*;
 
     #[conformance_test]
     pub fn create_and_read_works<

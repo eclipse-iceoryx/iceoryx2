@@ -11,26 +11,33 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2_bb_testing::instantiate_conformance_tests;
-use iceoryx2_cal_conformance_tests::resizable_shared_memory_trait::resizable_shared_memory_trait::DefaultAllocator;
+use iceoryx2_cal::resizable_shared_memory::dynamic::DynamicMemory;
+use iceoryx2_cal_conformance_tests::resizable_shared_memory_trait::DefaultAllocator;
 
 mod posix {
     use super::*;
-    super::instantiate_conformance_tests!(
+    use iceoryx2_cal::shared_memory::posix::Memory;
+
+    type SharedMemory = Memory<super::DefaultAllocator>;
+    type ResizeableSharedMemory = DynamicMemory<super::DefaultAllocator, SharedMemory>;
+
+    instantiate_conformance_tests!(
         iceoryx2_cal_conformance_tests::resizable_shared_memory_trait,
-        iceoryx2_cal::shared_memory::posix::Memory<super::DefaultAllocator>,
-        iceoryx2_cal::resizable_shared_memory::dynamic::DynamicMemory<
-            super::DefaultAllocator, iceoryx2_cal::shared_memory::posix::Memory<super::DefaultAllocator>
-        >
+        super::SharedMemory,
+        super::ResizeableSharedMemory
     );
 }
 
 mod process_local {
     use super::*;
-    super::instantiate_conformance_tests!(
+    use iceoryx2_cal::shared_memory::process_local::Memory;
+
+    type SharedMemory = Memory<super::DefaultAllocator>;
+    type ResizeableSharedMemory = DynamicMemory<super::DefaultAllocator, SharedMemory>;
+
+    instantiate_conformance_tests!(
         iceoryx2_cal_conformance_tests::resizable_shared_memory_trait,
-        iceoryx2_cal::shared_memory::process_local::Memory<super::DefaultAllocator>,
-        iceoryx2_cal::resizable_shared_memory::dynamic::DynamicMemory<
-            super::DefaultAllocator, iceoryx2_cal::shared_memory::process_local::Memory<super::DefaultAllocator>
-        >
+        super::SharedMemory,
+        super::ResizeableSharedMemory
     );
 }
