@@ -364,3 +364,39 @@ impl<const CAPACITY: usize> String for StaticString<CAPACITY> {
         self.len as usize
     }
 }
+
+#[allow(missing_docs)]
+pub struct StringMemoryLayoutMetrics {
+    pub string_size: usize,
+    pub string_alignment: usize,
+    pub size_data: usize,
+    pub offset_data: usize,
+    pub size_len: usize,
+    pub offset_len: usize,
+    pub len_is_unsigned: bool,
+}
+
+trait _StringMemoryLayoutFieldLenInspection {
+    fn is_unsigned(&self) -> bool;
+}
+
+impl _StringMemoryLayoutFieldLenInspection for u64 {
+    fn is_unsigned(&self) -> bool {
+        true
+    }
+}
+
+impl StringMemoryLayoutMetrics {
+    #[allow(missing_docs)]
+    pub fn from_string<const CAPACITY: usize>(v: &StaticString<CAPACITY>) -> Self {
+        StringMemoryLayoutMetrics {
+            string_size: core::mem::size_of_val(v),
+            string_alignment: core::mem::align_of_val(v),
+            size_data: core::mem::size_of_val(&v.data) + core::mem::size_of_val(&v.terminator),
+            offset_data: core::mem::offset_of!(StaticString<CAPACITY>, data),
+            size_len: core::mem::size_of_val(&v.len),
+            offset_len: core::mem::offset_of!(StaticString<CAPACITY>, len),
+            len_is_unsigned: v.len.is_unsigned(),
+        }
+    }
+}
