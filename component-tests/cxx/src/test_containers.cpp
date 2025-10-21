@@ -39,6 +39,8 @@ enum class VectorTypeSequence : int32_t {
     VecI64_20 = 2,
     VecOverAligned_5 = 3,
     VecVec8_10 = 4,
+    String_10 = 5,
+    String_42 = 6,
     EndOfTest = -1,
 };
 // NOLINTEND(readability-identifier-naming)
@@ -53,6 +55,10 @@ auto as_string_literal(const VectorTypeSequence value) noexcept -> const char* {
         return "VectorTypeSequence::VecOverAligned_5";
     case VectorTypeSequence::VecVec8_10:
         return "VectorTypeSequence::VecVec8_10";
+    case VectorTypeSequence::String_10:
+        return "VectorTypeSequence::String_10";
+    case VectorTypeSequence::String_42:
+        return "VectorTypeSequence::String_42";
     case VectorTypeSequence::EndOfTest:
         return "VectorTypeSequence::EndOfTest";
     default:
@@ -141,6 +147,47 @@ auto check_metrics_for_vector(ContainerTestRequest const& req) -> bool {
     return true;
 }
 
+template <uint64_t TestCapacity>
+auto check_metrics_for_string(ContainerTestRequest const& req) -> bool {
+    iox2::container::StaticString<TestCapacity> test_string;
+    auto const stats = test_string.static_memory_layout_metrics();
+    if ((stats.string_size > std::numeric_limits<int32_t>::max())
+        || (static_cast<int32_t>(stats.string_size) != req.container_size)) {
+        std::cout << "Container size mismatch\n";
+        return false;
+    }
+    if ((stats.string_alignment > std::numeric_limits<int32_t>::max())
+        || (static_cast<int32_t>(stats.string_alignment) != req.container_alignment)) {
+        std::cout << "Container alignment mismatch\n";
+        return false;
+    }
+    if ((stats.sizeof_data > std::numeric_limits<int32_t>::max())
+        || (static_cast<int32_t>(stats.sizeof_data) != req.size_of_data_component)) {
+        std::cout << "Storage data size mismatch\n";
+        return false;
+    }
+    if ((stats.offset_data > std::numeric_limits<int32_t>::max())
+        || (static_cast<int32_t>(stats.offset_data) != req.offset_of_data_component)) {
+        std::cout << "Storage data offset mismatch\n";
+        return false;
+    }
+    if ((stats.sizeof_size > std::numeric_limits<int32_t>::max())
+        || (static_cast<int32_t>(stats.sizeof_size) != req.size_of_size_component)) {
+        std::cout << "Storage size size mismatch\n";
+        return false;
+    }
+    if ((stats.offset_size > std::numeric_limits<int32_t>::max())
+        || (static_cast<int32_t>(stats.offset_size) != req.offset_of_size_component)) {
+        std::cout << "Storage size offset mismatch\n";
+        return false;
+    }
+    if (stats.size_is_unsigned != req.size_component_type_is_unsigned) {
+        std::cout << "Storage size signedness mismatch\n";
+        return false;
+    }
+    return true;
+}
+
 auto check_request(ContainerTestRequest const& req) -> bool {
     switch (req.vector_type_sequence) {
     case VectorTypeSequence::VecI32_10:
@@ -155,6 +202,12 @@ auto check_request(ContainerTestRequest const& req) -> bool {
     case VectorTypeSequence::VecVec8_10:
         // NOLINTNEXTLINE(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
         return check_metrics_for_vector<iox2::container::StaticVector<int8_t, 10>, 10>(req);
+    case VectorTypeSequence::String_10:
+        // NOLINTNEXTLINE(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
+        return check_metrics_for_string<10>(req);
+    case VectorTypeSequence::String_42:
+        // NOLINTNEXTLINE(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
+        return check_metrics_for_string<42>(req);
     case VectorTypeSequence::EndOfTest:
         break;
     default:

@@ -450,6 +450,30 @@ class StaticString {
         return !(lhs == rhs);
     }
 
+    /// Obtains metrics about the internal memory layout of the vector.
+    /// This function is intended for internal use only.
+    constexpr auto static_memory_layout_metrics() noexcept {
+        struct StringMemoryLayoutMetrics {
+            size_t string_alignment;
+            size_t string_size;
+            size_t sizeof_data;
+            size_t offset_data;
+            size_t sizeof_size;
+            size_t offset_size;
+            bool size_is_unsigned;
+        } ret;
+        using Self = std::remove_reference_t<decltype(*this)>;
+        ret.string_size = sizeof(Self);
+        ret.string_alignment = alignof(Self);
+        ret.sizeof_data = sizeof(m_string);
+        ret.offset_data = offsetof(Self, m_string);
+        ret.sizeof_size = sizeof(m_size);
+        ret.offset_size = offsetof(Self, m_size);
+        // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
+        ret.size_is_unsigned = std::is_unsigned<decltype(m_size)>::value;
+        return ret;
+    }
+
   private:
     auto is_valid_next(char character) const noexcept -> bool {
         constexpr char const CODE_UNIT_UPPER_BOUND = 127;

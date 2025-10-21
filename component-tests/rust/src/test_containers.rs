@@ -13,7 +13,7 @@
 use super::common::*;
 use core::fmt::Debug;
 use iceoryx2::prelude::*;
-use iceoryx2_bb_container::vector::StaticVec;
+use iceoryx2_bb_container::{string::StaticString, vector::StaticVec};
 
 pub struct TestContainers {}
 
@@ -59,6 +59,8 @@ enum VectorTypeSequence {
     VecI64_20 = 2,
     VecOverAligned5 = 3,
     VecVecI8_10 = 4,
+    String10 = 5,
+    String42 = 6,
     EndOfTest = -1,
 }
 
@@ -77,6 +79,29 @@ fn container_request<T, const CAPACITY: usize>(
         vector_type_sequence: sequence_id as i32,
         container_size: stats.vector_size as i32,
         container_alignment: stats.vector_alignment as i32,
+        size_of_data_component: stats.size_data as i32,
+        offset_of_data_component: stats.offset_data as i32,
+        size_of_size_component: stats.size_len as i32,
+        offset_of_size_component: stats.offset_len as i32,
+        size_component_type_is_unsigned: stats.len_is_unsigned,
+    }
+}
+
+fn container_request_string<const CAPACITY: usize>(
+    sequence_id: VectorTypeSequence,
+) -> ContainerTestRequest {
+    let string = StaticString::<CAPACITY>::default();
+    let stats = iceoryx2_bb_container::string::StringMemoryLayoutMetrics::from_string(&string);
+    assert!(stats.string_size < i32::MAX as usize);
+    assert!(stats.string_alignment < i32::MAX as usize);
+    assert!(stats.size_data < i32::MAX as usize);
+    assert!(stats.offset_data < i32::MAX as usize);
+    assert!(stats.size_len < i32::MAX as usize);
+    assert!(stats.offset_len < i32::MAX as usize);
+    ContainerTestRequest {
+        vector_type_sequence: sequence_id as i32,
+        container_size: stats.string_size as i32,
+        container_alignment: stats.string_alignment as i32,
         size_of_data_component: stats.size_data as i32,
         offset_of_data_component: stats.offset_data as i32,
         size_of_size_component: stats.size_len as i32,
@@ -125,6 +150,8 @@ impl ComponentTest for TestContainers {
             VectorTypeSequence::VecI64_20,
             VectorTypeSequence::VecOverAligned5,
             VectorTypeSequence::VecVecI8_10,
+            VectorTypeSequence::String10,
+            VectorTypeSequence::String42,
             VectorTypeSequence::EndOfTest,
         ] {
             println!("       * Requesting {:?}", test);
@@ -135,6 +162,8 @@ impl ComponentTest for TestContainers {
                     container_request::<ContainerTestOverAligned, 5>(test)
                 }
                 VectorTypeSequence::VecVecI8_10 => container_request::<StaticVec<i8, 10>, 10>(test),
+                VectorTypeSequence::String10 => container_request_string::<10>(test),
+                VectorTypeSequence::String42 => container_request_string::<42>(test),
                 VectorTypeSequence::EndOfTest => request_end_of_test(),
             };
             let pending_response = client.send_copy(request)?;
