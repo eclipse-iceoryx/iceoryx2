@@ -60,7 +60,7 @@ auto as_string_literal(const VectorTypeSequence value) noexcept -> const char* {
     }
 }
 
-std::ostream& operator<<(std::ostream& stream, VectorTypeSequence value) noexcept {
+auto operator<<(std::ostream& stream, VectorTypeSequence value) noexcept -> std::ostream& {
     stream << as_string_literal(value);
     return stream;
 }
