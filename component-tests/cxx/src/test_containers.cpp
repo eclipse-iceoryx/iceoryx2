@@ -31,18 +31,6 @@ class ContainerTest : public IComponentTest {
     auto run_test(iox2::Node<iox2::ServiceType::Ipc> const& node) -> bool override;
 };
 
-struct ContainerTestRequest {
-    // IOX2_TYPE_NAME is equivalent to the payload type name used on the Rust side
-    static constexpr const char* IOX2_TYPE_NAME = "ContainerTestRequest";
-    int32_t vector_type_sequence;
-    int32_t container_size;
-    int32_t container_alignment;
-    int32_t size_of_data_component;
-    int32_t offset_of_data_component;
-    int32_t size_of_size_component;
-    int32_t offset_of_size_component;
-    bool size_component_type_is_unsigned;
-};
 
 // NOLINTBEGIN(readability-identifier-naming)
 // NOLINTNEXTLINE(performance-enum-size)
@@ -55,10 +43,45 @@ enum class VectorTypeSequence : int32_t {
 };
 // NOLINTEND(readability-identifier-naming)
 
+auto as_string_literal(const VectorTypeSequence value) noexcept -> const char* {
+    switch (value) {
+    case VectorTypeSequence::VecI32_10:
+        return "VectorTypeSequence::VecI32_10";
+    case VectorTypeSequence::VecI64_20:
+        return "VectorTypeSequence::VecI64_20";
+    case VectorTypeSequence::VecOverAligned_5:
+        return "VectorTypeSequence::VecOverAligned_5";
+    case VectorTypeSequence::VecVec8_10:
+        return "VectorTypeSequence::VecVec8_10";
+    case VectorTypeSequence::EndOfTest:
+        return "VectorTypeSequence::EndOfTest";
+    default:
+        return "[Undefined VectorTypeSequence]";
+    }
+}
+
+std::ostream& operator<<(std::ostream& stream, VectorTypeSequence value) noexcept {
+    stream << as_string_literal(value);
+    return stream;
+}
+
+struct ContainerTestRequest {
+    // IOX2_TYPE_NAME is equivalent to the payload type name used on the Rust side
+    static constexpr const char* IOX2_TYPE_NAME = "ContainerTestRequest";
+    VectorTypeSequence vector_type_sequence;
+    int32_t container_size;
+    int32_t container_alignment;
+    int32_t size_of_data_component;
+    int32_t offset_of_data_component;
+    int32_t size_of_size_component;
+    int32_t offset_of_size_component;
+    bool size_component_type_is_unsigned;
+};
+
 struct ContainerTestResponse {
     // IOX2_TYPE_NAME is equivalent to the payload type name used on the Rust side
     static constexpr const char* IOX2_TYPE_NAME = "ContainerTestResponse";
-    int32_t vector_type_sequence;
+    VectorTypeSequence vector_type_sequence;
     bool all_fields_match;
 };
 
@@ -120,19 +143,19 @@ auto check_metrics_for_vector(ContainerTestRequest const& req) -> bool {
 
 auto check_request(ContainerTestRequest const& req) -> bool {
     switch (req.vector_type_sequence) {
-    case static_cast<int32_t>(VectorTypeSequence::VecI32_10):
+    case VectorTypeSequence::VecI32_10:
         // NOLINTNEXTLINE(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
         return check_metrics_for_vector<int32_t, 10>(req);
-    case static_cast<int32_t>(VectorTypeSequence::VecI64_20):
+    case VectorTypeSequence::VecI64_20:
         // NOLINTNEXTLINE(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
         return check_metrics_for_vector<int64_t, 20>(req);
-    case static_cast<int32_t>(VectorTypeSequence::VecOverAligned_5):
+    case VectorTypeSequence::VecOverAligned_5:
         // NOLINTNEXTLINE(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
         return check_metrics_for_vector<ContainerTestOverAligned, 5>(req);
-    case static_cast<int32_t>(VectorTypeSequence::VecVec8_10):
+    case VectorTypeSequence::VecVec8_10:
         // NOLINTNEXTLINE(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
         return check_metrics_for_vector<iox2::container::StaticVector<int8_t, 10>, 10>(req);
-    case static_cast<int32_t>(VectorTypeSequence::EndOfTest):
+    case VectorTypeSequence::EndOfTest:
         break;
     default:
         std::cout << "Unknown request type " << req.vector_type_sequence << "\n";
@@ -178,7 +201,7 @@ auto ContainerTest::run_test(iox2::Node<iox2::ServiceType::Ipc> const& node) -> 
             if (!check_succeeded) {
                 return false;
             }
-            if (request.payload().vector_type_sequence == static_cast<int32_t>(VectorTypeSequence::EndOfTest)) {
+            if (request.payload().vector_type_sequence == VectorTypeSequence::EndOfTest) {
                 return true;
             }
         } else {

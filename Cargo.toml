@@ -49,7 +49,7 @@ members = [
     "benchmarks/event",
     "benchmarks/queue",
 
-    "component-tests/rust"
+    "component-tests/rust",
 ]
 
 [workspace.package]
