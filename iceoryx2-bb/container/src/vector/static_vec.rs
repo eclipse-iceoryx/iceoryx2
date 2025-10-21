@@ -263,3 +263,39 @@ impl<T, const CAPACITY: usize> Vector<T> for StaticVec<T, CAPACITY> {
         self.len as usize
     }
 }
+
+#[allow(missing_docs)]
+pub struct VectorMemoryLayoutMetrics {
+    pub vector_size: usize,
+    pub vector_alignment: usize,
+    pub size_data: usize,
+    pub offset_data: usize,
+    pub size_len: usize,
+    pub offset_len: usize,
+    pub len_is_unsigned: bool,
+}
+
+trait _VectorMemoryLayoutFieldLenInspection {
+    fn is_unsigned(&self) -> bool;
+}
+
+impl _VectorMemoryLayoutFieldLenInspection for u64 {
+    fn is_unsigned(&self) -> bool {
+        true
+    }
+}
+
+impl VectorMemoryLayoutMetrics {
+    #[allow(missing_docs)]
+    pub fn from_vector<T, const CAPACITY: usize>(v: &StaticVec<T, CAPACITY>) -> Self {
+        VectorMemoryLayoutMetrics {
+            vector_size: core::mem::size_of_val(v),
+            vector_alignment: core::mem::align_of_val(v),
+            size_data: core::mem::size_of_val(&v.data),
+            offset_data: core::mem::offset_of!(StaticVec<T,CAPACITY>, data),
+            size_len: core::mem::size_of_val(&v.len),
+            offset_len: core::mem::offset_of!(StaticVec<T, CAPACITY>, len),
+            len_is_unsigned: v.len.is_unsigned(),
+        }
+    }
+}

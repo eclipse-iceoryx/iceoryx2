@@ -89,6 +89,7 @@ maybe(
         "//:benchmarks/publish-subscribe/Cargo.toml",
         "//:benchmarks/queue/Cargo.toml",
         "//:benchmarks/request-response/Cargo.toml",
+        "//:component-tests/rust/Cargo.toml",
         "//:examples/Cargo.toml",
         "//:iceoryx2-tunnel/end-to-end-tests/Cargo.toml",
         "//:iceoryx2-tunnel/backend/Cargo.toml",

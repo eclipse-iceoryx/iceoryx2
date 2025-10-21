@@ -177,6 +177,7 @@ filegroup(
         "//benchmarks/publish-subscribe:all_srcs",
         "//benchmarks/queue:all_srcs",
         "//benchmarks/request-response:all_srcs",
+        "//component-tests/rust:all_srcs",
         "//iceoryx2-tunnel/end-to-end-tests:all_srcs",
         "//iceoryx2-tunnel/backend:all_srcs",
         "//iceoryx2-tunnel/zenoh:all_srcs",
