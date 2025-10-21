@@ -162,7 +162,12 @@ class RawByteStorage {
 
     // @pre (index + range_size <= size())
     constexpr void remove_at(uint64_t index, uint64_t range_size) {
+// gcc 15 generates a false positive here, where range checks performed
+// by outer functions are not taken into account correctly
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
         std::move(pointer_from_index(index + range_size), pointer_from_index(m_size), pointer_from_index(index));
+#pragma GCC diagnostic pop
     }
 
     // @pre target_size < size()
