@@ -802,14 +802,15 @@ impl RegisteredServices {
             entry.1 -= 1;
             if entry.1 == 0 {
                 let handle = entry.0;
-                guard.remove(service_id);
-                drop(guard);
                 cleanup_call(handle);
+                guard.remove(service_id);
             }
         } else {
             fatal_panic!(from "RegisteredServices::remove()",
                 "This should never happen! The service with the {:?} was not registered.", service_id);
         }
+
+        drop(guard);
     }
 
     fn mutex(&self) -> Mutex<'_, '_, BTreeMap<ServiceId, (ContainerHandle, u64)>> {
