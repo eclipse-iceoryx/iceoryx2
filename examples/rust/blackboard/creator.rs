@@ -14,10 +14,10 @@ use core::time::Duration;
 
 extern crate alloc;
 use alloc::boxed::Box;
-use alloc::format;
 
 use examples_common::BlackboardKey;
 use iceoryx2::prelude::*;
+use iceoryx2_bb_log::println;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 

@@ -23,6 +23,7 @@ use iceoryx2::{
     },
     prelude::*,
 };
+use iceoryx2_bb_log::println;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 const HISTORY_SIZE: usize = 20;

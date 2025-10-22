@@ -17,6 +17,7 @@ extern crate alloc;
 use alloc::boxed::Box;
 
 use iceoryx2::prelude::*;
+use iceoryx2_bb_log::println;
 use iceoryx2_bb_posix::clock::nanosleep;
 use iceoryx2_bb_posix::thread::{ThreadBuilder, ThreadName};
 

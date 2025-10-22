@@ -18,6 +18,7 @@ use alloc::boxed::Box;
 use iceoryx2::prelude::*;
 use iceoryx2_bb_container::string::*;
 use iceoryx2_bb_container::vector::*;
+use iceoryx2_bb_log::println;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 

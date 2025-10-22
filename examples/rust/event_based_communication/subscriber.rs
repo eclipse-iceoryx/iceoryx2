@@ -21,6 +21,7 @@ use iceoryx2::{
     prelude::*,
     sample::Sample,
 };
+use iceoryx2_bb_log::println;
 
 const HISTORY_SIZE: usize = 20;
 const DEADLINE: Duration = Duration::from_secs(2);

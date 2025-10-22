@@ -16,6 +16,7 @@ extern crate alloc;
 use alloc::boxed::Box;
 
 use iceoryx2::{prelude::*, service::static_config::StaticConfig};
+use iceoryx2_bb_log::println;
 use iceoryx2_services_discovery::service_discovery::service_name;
 
 const CYCLE_TIME: Duration = Duration::from_millis(10);

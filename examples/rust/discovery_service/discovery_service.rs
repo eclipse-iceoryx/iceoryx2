@@ -14,7 +14,8 @@ extern crate alloc;
 use alloc::boxed::Box;
 
 use iceoryx2::prelude::*;
-use iceoryx2_bb_log::error;
+use iceoryx2_bb_log::eprintln;
+use iceoryx2_bb_log::println;
 use iceoryx2_services_discovery::*;
 use service_discovery::Discovery;
 

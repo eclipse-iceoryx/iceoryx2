@@ -16,6 +16,7 @@ extern crate alloc;
 use alloc::boxed::Box;
 
 use iceoryx2::prelude::*;
+use iceoryx2_bb_log::println;
 
 const CYCLE_TIME: Duration = Duration::from_millis(100);
 

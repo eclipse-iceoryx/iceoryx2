@@ -18,6 +18,7 @@ use alloc::boxed::Box;
 use examples_common::CustomHeader;
 use examples_common::TransmissionData;
 use iceoryx2::prelude::*;
+use iceoryx2_bb_log::println;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
