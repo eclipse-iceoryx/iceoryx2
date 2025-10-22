@@ -160,6 +160,7 @@ generate_report() {
         --ignore "*build.rs" \
         --ignore "*tests*" \
         --ignore "*testing*" \
+        --ignore "*component-tests*" \
         --ignore "*examples*" \
         --ignore "*benchmarks*" \
         --ignore "*target*" \
@@ -170,7 +171,7 @@ generate_report() {
     # Generate Coverage files for C++ Code
     # We use here https://github.com/gcovr/gcovr to handle the generated files by gcov and can be installed with `pip install gcovr`
     # License: https://github.com/gcovr/gcovr/blob/main/LICENSE.txt
-    gcovr ${GCOVR_OUTPUT_PATH} ${CMAKE_COV_DIR} -e '/.*/_deps/' -e '/.*/tests/' -e '/.*/testing/'
+    gcovr ${GCOVR_OUTPUT_PATH} ${CMAKE_COV_DIR} -e '/.*/_deps/' -e '/.*/tests/' -e '/.*/testing/' -e '/.*/component-tests/'
 
 }
 

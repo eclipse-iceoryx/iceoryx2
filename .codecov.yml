@@ -36,3 +36,4 @@ parsers:
 ignore:
   - "**/tests/**/*"
   - "**/testing/**/*"
+  - "component-tests/**/*"
