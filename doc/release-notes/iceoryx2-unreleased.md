@@ -67,6 +67,8 @@
     [#1105](https://github.com/eclipse-iceoryx/iceoryx2/issues/1105)
 * Remove pre-compiled `noop.exe` used for testing command exeuction on Windows
     [#1133](https://github.com/eclipse-iceoryx/iceoryx2/issues/1133)
+* Enable -Wconversion warning for the C and C++ code
+    [#956](https://github.com/eclipse-iceoryx/iceoryx2/issues/956)
 
 ### Workflow
 
