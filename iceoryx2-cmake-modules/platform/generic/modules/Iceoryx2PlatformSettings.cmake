@@ -25,7 +25,7 @@ set(ICEORYX2_C_WARNINGS
     -Wuninitialized
     -Wstrict-aliasing
     -Wcast-align
-    # -Wconversion # TODO #956: enable this warning
+    -Wconversion
     CACHE INTERNAL ""
 )
 set(ICEORYX2_CXX_WARNINGS       ${ICEORYX2_C_WARNINGS} -Wno-noexcept-type CACHE INTERNAL "")
