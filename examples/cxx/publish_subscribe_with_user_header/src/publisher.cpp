@@ -40,9 +40,9 @@ auto main() -> int {
         auto sample = publisher.loan_uninit().expect("acquire sample");
 
         sample.user_header_mut().version = 123;               // NOLINT
-        sample.user_header_mut().timestamp = 80337 + counter; // NOLINT
+        sample.user_header_mut().timestamp = static_cast<uint64_t>(80337 + counter); // NOLINT
 
-        auto initialized_sample = sample.write_payload(counter);
+        auto initialized_sample = sample.write_payload(static_cast<uint64_t>(counter));
 
         send(std::move(initialized_sample)).expect("send successful");
 

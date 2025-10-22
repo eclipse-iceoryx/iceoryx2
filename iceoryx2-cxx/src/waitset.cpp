@@ -13,6 +13,7 @@
 #include "iox2/waitset.hpp"
 #include "iox/into.hpp"
 #include "iox2/internal/callback_context.hpp"
+#include <cstdint>
 
 namespace iox2 {
 ////////////////////////////
@@ -235,8 +236,8 @@ auto WaitSet<S>::attach_interval(const iox::units::Duration deadline)
     iox2_waitset_guard_h guard_handle {};
     auto result = iox2_waitset_attach_interval(&m_handle,
                                                deadline.toSeconds(),
-                                               deadline.toNanoseconds()
-                                                   - (deadline.toSeconds() * iox::units::Duration::NANOSECS_PER_SEC),
+                                               static_cast<uint32_t>(deadline.toNanoseconds()
+                                                   - (deadline.toSeconds() * iox::units::Duration::NANOSECS_PER_SEC)),
                                                nullptr,
                                                &guard_handle);
 
@@ -254,8 +255,8 @@ auto WaitSet<S>::attach_deadline(const FileDescriptorBased& attachment, const io
     auto result = iox2_waitset_attach_deadline(&m_handle,
                                                attachment.file_descriptor().m_handle,
                                                deadline.toSeconds(),
-                                               deadline.toNanoseconds()
-                                                   - (deadline.toSeconds() * iox::units::Duration::NANOSECS_PER_SEC),
+                                               static_cast<uint32_t>(deadline.toNanoseconds()
+                                                   - (deadline.toSeconds() * iox::units::Duration::NANOSECS_PER_SEC)),
                                                nullptr,
                                                &guard_handle);
 
@@ -335,7 +336,7 @@ auto WaitSet<S>::wait_and_process_once_with_timeout(
     auto timeout_secs = timeout.toSeconds();
     auto timeout_nsecs = timeout.toNanoseconds() - (timeout.toSeconds() * iox::units::Duration::NANOSECS_PER_SEC);
     auto result = iox2_waitset_wait_and_process_once_with_timeout(
-        &m_handle, run_callback<S>, static_cast<void*>(&ctx), timeout_secs, timeout_nsecs, &run_result);
+        &m_handle, run_callback<S>, static_cast<void*>(&ctx), timeout_secs, static_cast<uint32_t>(timeout_nsecs), &run_result);
 
     if (result == IOX2_OK) {
         return iox::ok(iox::into<WaitSetRunResult>(static_cast<int>(run_result)));

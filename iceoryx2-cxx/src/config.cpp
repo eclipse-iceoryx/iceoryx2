@@ -275,8 +275,8 @@ void Event::set_deadline(iox::optional<iox::units::Duration> value) && {
     value
         .and_then([&](auto value) {
             const uint64_t seconds = value.toSeconds();
-            const uint32_t nanoseconds =
-                value.toNanoseconds() - (value.toSeconds() * iox::units::Duration::NANOSECS_PER_SEC);
+            const auto nanoseconds =
+                static_cast<uint32_t>(value.toNanoseconds() - (value.toSeconds() * iox::units::Duration::NANOSECS_PER_SEC));
             iox2_config_defaults_event_set_deadline(m_config, &seconds, &nanoseconds);
         })
         .or_else([&] { iox2_config_defaults_event_set_deadline(m_config, nullptr, nullptr); });
@@ -426,7 +426,7 @@ auto Service::creation_timeout() && -> iox::units::Duration {
 
 void Service::set_creation_timeout(const iox::units::Duration& value) && {
     auto duration = value.timespec();
-    iox2_config_global_service_set_creation_timeout(m_config, duration.tv_sec, duration.tv_nsec);
+    iox2_config_global_service_set_creation_timeout(m_config, static_cast<uint64_t>(duration.tv_sec), static_cast<uint32_t>(duration.tv_nsec));
 }
 
 auto Service::connection_suffix() && -> const char* {

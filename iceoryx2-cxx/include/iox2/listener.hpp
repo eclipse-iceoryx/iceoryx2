@@ -200,7 +200,7 @@ inline auto Listener<S>::timed_wait_all(const iox::function<void(EventId)>& call
     auto timeout_timespec = timeout.timespec();
 
     auto result = iox2_listener_timed_wait_all(
-        &m_handle, wait_callback, static_cast<void*>(&ctx), timeout_timespec.tv_sec, timeout_timespec.tv_nsec);
+        &m_handle, wait_callback, static_cast<void*>(&ctx), static_cast<uint64_t>(timeout_timespec.tv_sec), static_cast<uint32_t>(timeout_timespec.tv_nsec));
     if (result == IOX2_OK) {
         return iox::ok();
     }
@@ -247,7 +247,7 @@ inline auto Listener<S>::timed_wait_one(const iox::units::Duration& timeout)
 
     auto timespec_timeout = timeout.timespec();
     auto result = iox2_listener_timed_wait_one(
-        &m_handle, &event_id, &has_received_one, timespec_timeout.tv_sec, timespec_timeout.tv_nsec);
+        &m_handle, &event_id, &has_received_one, static_cast<uint64_t>(timespec_timeout.tv_sec), static_cast<uint32_t>(timespec_timeout.tv_nsec));
 
     if (result == IOX2_OK) {
         if (has_received_one) {

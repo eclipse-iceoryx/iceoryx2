@@ -415,7 +415,7 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_slice_uninit_send_receive_works) {
 
     auto iterations = 0;
     for (auto& item : send_sample.payload_mut()) {
-        new (&item) DummyData { DummyData::DEFAULT_VALUE_A + iterations, iterations % 2 == 0 };
+        new (&item) DummyData { DummyData::DEFAULT_VALUE_A + static_cast<uint64_t>(iterations), iterations % 2 == 0 };
         ++iterations;
     }
 
@@ -427,7 +427,7 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_slice_uninit_send_receive_works) {
 
     iterations = 0;
     for (const auto& item : recv_sample.payload()) {
-        ASSERT_THAT(item.a, Eq(DummyData::DEFAULT_VALUE_A + iterations));
+        ASSERT_THAT(item.a, Eq(DummyData::DEFAULT_VALUE_A + static_cast<uint64_t>(iterations)));
         ASSERT_THAT(item.z, Eq(iterations % 2 == 0));
         ++iterations;
     }
@@ -494,7 +494,7 @@ TYPED_TEST(ServicePublishSubscribeTest, write_from_fn_send_receive_works) {
 
     auto iterations = 0;
     for (const auto& item : recv_sample.payload()) {
-        ASSERT_THAT(item.a, Eq(DummyData::DEFAULT_VALUE_A + iterations));
+        ASSERT_THAT(item.a, Eq(DummyData::DEFAULT_VALUE_A + static_cast<uint64_t>(iterations)));
         ASSERT_THAT(item.z, Eq(iterations % 2 == 0));
         ++iterations;
     }

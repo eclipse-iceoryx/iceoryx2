@@ -13,6 +13,7 @@
 #include "iox2/iceoryx2.hpp"
 #include "message_data.hpp"
 
+#include <cstdint>
 #include <iostream>
 #include <utility>
 
@@ -31,13 +32,13 @@ auto main() -> int {
 
     auto publisher = service.publisher_builder().create().expect("successful publisher creation");
 
-    auto counter = 0;
+    int32_t counter = 0;
     while (node.wait(CYCLE_TIME).has_value()) {
         counter += 1;
 
         auto sample = publisher.loan_uninit().expect("acquire sample");
         sample.user_header_mut().version = 123;               // NOLINT
-        sample.user_header_mut().timestamp = 80337 + counter; // NOLINT
+        sample.user_header_mut().timestamp = static_cast<uint64_t>(80337 + counter); // NOLINT
 
         auto initialized_sample =
             sample.write_payload(TransmissionData { counter, counter * 3, counter * 812.12 }); // NOLINT

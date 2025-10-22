@@ -108,7 +108,7 @@ int main(void) {
         struct CustomHeader* header = NULL;
         iox2_sample_mut_user_header_mut(&sample, (void**) &header);
         header->version = 123;               // NOLINT
-        header->timestamp = 80337 + counter; // NOLINT
+        header->timestamp = (uint64_t)(80337 + counter); // NOLINT
 
         // send sample
         if (iox2_sample_mut_send(sample, NULL) != IOX2_OK) {
