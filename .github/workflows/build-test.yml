@@ -773,6 +773,15 @@ jobs:
           fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
 
+      - name: Upload C++ coverage to Codecov
+        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # ratchet:codecov/codecov-action@v4
+        with:
+          file: target/ff/coverage/lcov/iceoryx2_lcov_cpp.info
+          name: iceoryx2
+          flags: CPP
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
   # Have a sync point for all CI jobs that need to pass, will be enforced by Otterdog
   mandatory-checks:
     needs:
