@@ -25,6 +25,7 @@ use iceoryx2::prelude::*;
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
 fn main() -> Result<(), Box<dyn core::error::Error>> {
+    set_log_level_from_env_or(LogLevel::Info);
     let args = parse_args();
 
     // create a new config based on the global config
@@ -76,21 +77,9 @@ struct Args {
     /// The of the service.
     #[clap(short, long, default_value = "my_funky_service")]
     service: String,
-    /// Enable full debug log output
-    #[clap(long, default_value_t = false)]
-    debug: bool,
-}
-
-fn define_log_level(args: &Args) {
-    if args.debug {
-        set_log_level(LogLevel::Trace);
-    } else {
-        set_log_level(LogLevel::Info);
-    }
 }
 
 fn parse_args() -> Args {
     let args = Args::parse();
-    define_log_level(&args);
     args
 }
