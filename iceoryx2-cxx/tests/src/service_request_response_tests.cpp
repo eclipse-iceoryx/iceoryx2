@@ -793,9 +793,9 @@ TYPED_TEST(ServiceRequestResponseTest, write_from_fn_works) {
     auto active_request = sut_server.receive().expect("");
     ASSERT_TRUE(active_request.has_value());
     auto received_request = std::move(active_request.value());
-    auto iterations = 0;
+    uint64_t iterations = 0;
     for (const auto& item : received_request.payload()) {
-        ASSERT_THAT(item.a, Eq(DummyData::DEFAULT_VALUE_A + static_cast<uint64_t>(iterations)));
+        ASSERT_THAT(item.a, Eq(DummyData::DEFAULT_VALUE_A + iterations));
         ASSERT_THAT(item.z, Eq(iterations % 2 == 0));
         ++iterations;
     }

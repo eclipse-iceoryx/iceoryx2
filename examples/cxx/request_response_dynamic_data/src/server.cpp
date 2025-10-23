@@ -41,7 +41,7 @@ auto main() -> int {
 
     std::cout << "Server ready to receive requests!" << std::endl;
 
-    auto counter = 1;
+    auto counter = 1U;
 
     while (node.wait(CYCLE_TIME).has_value()) {
         while (true) {
@@ -50,12 +50,10 @@ auto main() -> int {
                 std::cout << "received request with " << active_request->payload().number_of_bytes() << " bytes ..."
                           << std::endl;
 
-                auto required_memory_size = std::min(1000000, counter * counter); // NOLINT
-                auto response = active_request->loan_slice_uninit(static_cast<uint64_t>(required_memory_size))
-                                    .expect("loan successful");
-                auto initialized_response = response.write_from_fn([&](auto byte_idx) {
-                    return static_cast<uint8_t>((byte_idx + static_cast<uint64_t>(counter)) % MAX_VALUE);
-                }); // NOLINT
+                uint64_t required_memory_size = std::min(1000000U, counter * counter); // NOLINT
+                auto response = active_request->loan_slice_uninit(required_memory_size).expect("loan successful");
+                auto initialized_response = response.write_from_fn(
+                    [&](auto byte_idx) { return static_cast<uint8_t>((byte_idx + counter) % MAX_VALUE); }); // NOLINT
                 std::cout << "send response with " << initialized_response.payload().number_of_bytes() << " bytes"
                           << std::endl;
                 send(std::move(initialized_response)).expect("send successful");

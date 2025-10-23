@@ -30,6 +30,7 @@ use iceoryx2_ffi_macros::CStrRepr;
 
 use super::{iox2_sample_mut_h, iox2_sample_mut_t, IntoCInt};
 
+use crate::c_size_t;
 use core::ffi::{c_char, c_int, c_void};
 use core::mem::ManuallyDrop;
 
@@ -325,7 +326,7 @@ pub unsafe extern "C" fn iox2_publisher_unable_to_deliver_strategy(
 ///
 /// * `publisher_handle` obtained by [`iox2_port_factory_publisher_builder_create`](crate::iox2_port_factory_publisher_builder_create)
 ///
-/// Returns the maximum number of elements as a [`c_int`].
+/// Returns the maximum number of elements as a [`c_size_t`].
 ///
 /// # Safety
 ///
@@ -333,14 +334,16 @@ pub unsafe extern "C" fn iox2_publisher_unable_to_deliver_strategy(
 #[no_mangle]
 pub unsafe extern "C" fn iox2_publisher_initial_max_slice_len(
     publisher_handle: iox2_publisher_h_ref,
-) -> c_int {
+) -> c_size_t {
     publisher_handle.assert_non_null();
 
     let publisher = &mut *publisher_handle.as_type();
     match publisher.service_type {
-        iox2_service_type_e::IPC => publisher.value.as_mut().ipc.initial_max_slice_len() as c_int,
+        iox2_service_type_e::IPC => {
+            publisher.value.as_mut().ipc.initial_max_slice_len() as c_size_t
+        }
         iox2_service_type_e::LOCAL => {
-            publisher.value.as_mut().local.initial_max_slice_len() as c_int
+            publisher.value.as_mut().local.initial_max_slice_len() as c_size_t
         }
     }
 }

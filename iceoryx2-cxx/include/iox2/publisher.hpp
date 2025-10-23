@@ -154,7 +154,7 @@ inline auto Publisher<S, Payload, UserHeader>::unable_to_deliver_strategy() cons
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
 inline auto Publisher<S, Payload, UserHeader>::initial_max_slice_len() const -> uint64_t {
-    return static_cast<uint64_t>(iox2_publisher_initial_max_slice_len(&m_handle));
+    return iox2_publisher_initial_max_slice_len(&m_handle);
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
