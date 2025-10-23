@@ -172,7 +172,7 @@ template <typename T, typename>
 inline auto
 Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::initial_max_slice_len() const
     -> uint64_t {
-    return static_cast<uint64_t>(iox2_client_initial_max_slice_len(&m_handle));
+    return iox2_client_initial_max_slice_len(&m_handle);
 }
 
 template <ServiceType Service,

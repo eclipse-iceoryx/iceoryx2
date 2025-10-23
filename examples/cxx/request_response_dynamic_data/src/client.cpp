@@ -40,14 +40,13 @@ auto main() -> int {
                       .create()
                       .expect("successful client creation");
 
-    auto counter = 1;
+    uint64_t counter = 1;
 
     while (true) {
-        auto required_memory_size = std::min(1000000, counter * counter); // NOLINT
-        auto request = client.loan_slice_uninit(static_cast<uint64_t>(required_memory_size)).expect("loan successful");
-        auto initialized_request = request.write_from_fn([&](auto byte_idx) {
-            return static_cast<uint8_t>((byte_idx + static_cast<uint64_t>(counter)) % MAX_VALUE);
-        }); // NOLINT
+        uint64_t required_memory_size = std::min<uint64_t>(1000000, counter * counter); // NOLINT
+        auto request = client.loan_slice_uninit(required_memory_size).expect("loan successful");
+        auto initialized_request = request.write_from_fn(
+            [&](auto byte_idx) { return static_cast<uint8_t>((byte_idx + counter) % MAX_VALUE); }); // NOLINT
         auto pending_response = send(std::move(initialized_request)).expect("send successful");
         std::cout << "send request " << counter << " with " << required_memory_size << " bytes ..." << std::endl;
 

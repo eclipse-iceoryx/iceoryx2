@@ -451,7 +451,7 @@ TEST_F(StaticVectorFixture, try_push_back_fails_for_temporaries_if_vector_is_ful
 TEST_F(StaticVectorFixture, try_emplace_back_constructs_in_place_at_back_of_vector) {
     constexpr size_t const VECTOR_CAPACITY = 5;
     iox2::container::StaticVector<Observable, VECTOR_CAPACITY> sut;
-    uint32_t const tracking_id = 99;
+    int32_t const tracking_id = 99;
     ASSERT_TRUE(sut.try_emplace_back());
     ASSERT_TRUE(sut.try_emplace_back(tracking_id));
     EXPECT_EQ(Observable::s_counter.was_initialized, 2);
@@ -467,14 +467,14 @@ TEST_F(StaticVectorFixture, try_emplace_back_constructs_in_place_at_back_of_vect
 TEST_F(StaticVectorFixture, try_emplace_back_forwards_its_arguments) {
     constexpr size_t const VECTOR_CAPACITY = 5;
     iox2::container::StaticVector<Observable, VECTOR_CAPACITY> sut;
-    uint32_t const tracking_id1 = 99;
+    int32_t const tracking_id1 = 99;
     ASSERT_TRUE(sut.try_emplace_back(Observable { tracking_id1 }));
     EXPECT_EQ(Observable::s_counter.was_initialized, 1);
     EXPECT_EQ(Observable::s_counter.was_move_constructed, 1);
     EXPECT_EQ(Observable::s_counter.was_copy_constructed, 0);
     ASSERT_EQ(sut.size(), 1);
     EXPECT_EQ(sut.unchecked_access()[0].id, tracking_id1);
-    uint32_t const tracking_id2 = 222;
+    int32_t const tracking_id2 = 222;
     Observable const obs { tracking_id2 };
     EXPECT_EQ(Observable::s_counter.was_initialized, 2);
     ASSERT_TRUE(sut.try_emplace_back(obs));
@@ -494,7 +494,7 @@ TEST_F(StaticVectorFixture, try_emplace_back_forwards_its_arguments) {
 TEST_F(StaticVectorFixture, try_emplace_back_fails_if_vector_is_full) {
     constexpr size_t const SMALL_VECTOR_CAPACITY = 1;
     iox2::container::StaticVector<Observable, SMALL_VECTOR_CAPACITY> sut;
-    uint32_t const tracking_id = 99;
+    int32_t const tracking_id = 99;
     ASSERT_TRUE(sut.try_emplace_back(tracking_id));
     ASSERT_EQ(sut.size(), 1);
     EXPECT_EQ(sut.unchecked_access()[0].id, tracking_id);
