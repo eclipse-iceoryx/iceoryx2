@@ -50,7 +50,8 @@ void ServiceBuilderEvent<S>::set_parameters() {
                 iox2_service_builder_event_set_deadline(
                     &m_handle,
                     static_cast<uint64_t>(value.toSeconds()),
-                    static_cast<uint32_t>(value.toNanoseconds() - (value.toSeconds() * iox::units::Duration::NANOSECS_PER_SEC)));
+                    static_cast<uint32_t>(value.toNanoseconds()
+                                          - (value.toSeconds() * iox::units::Duration::NANOSECS_PER_SEC)));
             })
             .or_else([&]() { iox2_service_builder_event_disable_deadline(&m_handle); });
     }

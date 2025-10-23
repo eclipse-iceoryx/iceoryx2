@@ -50,9 +50,10 @@ auto main() -> int {
                           << std::endl;
 
                 auto required_memory_size = std::min(1000000, counter * counter); // NOLINT
-                auto response = active_request->loan_slice_uninit(static_cast<uint64_t>(required_memory_size)).expect("loan successful");
-                auto initialized_response =
-                    response.write_from_fn([&](auto byte_idx) { return (byte_idx + static_cast<uint64_t>(counter)) % 255; }); // NOLINT
+                auto response = active_request->loan_slice_uninit(static_cast<uint64_t>(required_memory_size))
+                                    .expect("loan successful");
+                auto initialized_response = response.write_from_fn(
+                    [&](auto byte_idx) { return (byte_idx + static_cast<uint64_t>(counter)) % 255; }); // NOLINT
                 std::cout << "send response with " << initialized_response.payload().number_of_bytes() << " bytes"
                           << std::endl;
                 send(std::move(initialized_response)).expect("send successful");

@@ -37,7 +37,7 @@ auto main() -> int {
         counter += 1;
 
         auto sample = publisher.loan_uninit().expect("acquire sample");
-        sample.user_header_mut().version = 123;               // NOLINT
+        sample.user_header_mut().version = 123;                                      // NOLINT
         sample.user_header_mut().timestamp = static_cast<uint64_t>(80337 + counter); // NOLINT
 
         auto initialized_sample =
