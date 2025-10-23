@@ -13,6 +13,7 @@
 #include "iox2/iceoryx2.hpp"
 
 constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromMilliseconds(100);
+constexpr uint8_t MAX_VALUE = 255;
 
 auto main() -> int {
     using namespace iox2;
@@ -53,7 +54,7 @@ auto main() -> int {
                 auto response = active_request->loan_slice_uninit(static_cast<uint64_t>(required_memory_size))
                                     .expect("loan successful");
                 auto initialized_response = response.write_from_fn([&](auto byte_idx) {
-                    return static_cast<uint8_t>((byte_idx + static_cast<uint64_t>(counter)) % 255);
+                    return static_cast<uint8_t>((byte_idx + static_cast<uint64_t>(counter)) % MAX_VALUE);
                 }); // NOLINT
                 std::cout << "send response with " << initialized_response.payload().number_of_bytes() << " bytes"
                           << std::endl;

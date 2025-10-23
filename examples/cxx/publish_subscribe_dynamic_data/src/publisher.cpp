@@ -17,6 +17,7 @@
 #include <utility>
 
 constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1);
+constexpr uint8_t MAX_VALUE = 255;
 
 auto main() -> int {
     using namespace iox2;
@@ -50,7 +51,7 @@ auto main() -> int {
         const auto required_memory_size = (counter + 1) * (counter + 1); // NOLINT
         auto sample = publisher.loan_slice_uninit(static_cast<uint64_t>(required_memory_size)).expect("acquire sample");
         auto initialized_sample = sample.write_from_fn([&](auto byte_idx) {
-            return static_cast<uint8_t>((byte_idx + static_cast<uint64_t>(counter)) % 255);
+            return static_cast<uint8_t>((byte_idx + static_cast<uint64_t>(counter)) % MAX_VALUE);
         }); // NOLINT
 
         send(std::move(initialized_sample)).expect("send successful");
