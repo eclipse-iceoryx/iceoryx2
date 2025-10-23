@@ -1648,10 +1648,10 @@ TYPED_TEST(ServiceBlackboardTest, simple_communication_with_key_struct_works) {
 
     auto writer = service.writer_builder().create().expect("");
     auto entry_handle_mut_1 = writer.template entry<int32_t>(key_1).expect("");
-    auto entry_handle_mut_2 = writer.template entry<int32_t>(key_2).expect("");
+    auto entry_handle_mut_2 = writer.template entry<uint32_t>(key_2).expect("");
     auto reader = service.reader_builder().create().expect("");
     auto entry_handle_1 = reader.template entry<int32_t>(key_1).expect("");
-    auto entry_handle_2 = reader.template entry<int32_t>(key_2).expect("");
+    auto entry_handle_2 = reader.template entry<uint32_t>(key_2).expect("");
 
     ASSERT_THAT(entry_handle_1.get(), Eq(-3));
     ASSERT_THAT(entry_handle_2.get(), Eq(3));
