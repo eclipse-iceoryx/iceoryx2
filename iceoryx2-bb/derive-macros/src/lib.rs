@@ -322,7 +322,7 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
         Data::Union(ref data_union) => {
             let field_inits = data_union.fields.named.iter().map(|f| {
                 let field_name = &f.ident;
-                // dummy call to ensure at compile-time that all fields of the struct implement ZeroCopySend
+                // dummy call to ensure at compile-time that all fields of the union implement ZeroCopySend
                 quote! {
                     ZeroCopySend::__is_zero_copy_send(unsafe { &self.#field_name });
                 }
