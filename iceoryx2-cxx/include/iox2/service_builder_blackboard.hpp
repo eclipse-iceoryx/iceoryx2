@@ -152,6 +152,9 @@ template <typename KeyType, ServiceType S>
 template <typename ValueType>
 inline auto ServiceBuilderBlackboardCreator<KeyType, S>::add(KeyType key, ValueType value)
     -> ServiceBuilderBlackboardCreator&& {
+    static_assert(std::is_trivially_copyable_v<ValueType>,
+                  "The blackboard supports only trivially copyable value types.");
+
     // NOLINTNEXTLINE(cppcoreguidelines-owning-memory): required by C API
     auto value_ptr = new ValueType(value);
     const auto type_name = internal::get_type_name<ValueType>();

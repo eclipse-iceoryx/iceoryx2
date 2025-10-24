@@ -25,6 +25,8 @@ struct BlackboardKey {
     uint16_t z;
 };
 
+// To store and retrieve a key in the blackboard, a comparison function must be
+// provided.
 bool key_cmp(const void* lhs, const void* rhs) {
     const struct BlackboardKey LHS = *((const struct BlackboardKey*) lhs);
     const struct BlackboardKey RHS = *((const struct BlackboardKey*) rhs);

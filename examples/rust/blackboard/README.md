@@ -22,9 +22,19 @@
 > **`f64`), and the types in the `iceoryx2-bb-container` library are**
 > **cross-language compatible!**
 
-This example illustrates the blackboard messaging pattern. A writer updates the
-values in the blackboard every second and a reader reads and prints them to the
-console. The key-value pairs must be defined via the the service builder:
+This example illustrates the blackboard messaging pattern, a key-value
+repository in shared memory. Each communication participant can access exactly
+the entries it needs instead of the whole repository, making it useful for
+sharing a global configuration or state, for example.
+
+> [!IMPORTANT]
+> In addition to the shared memory related requirements mentioned above, the
+> keys and values stored in the blackboard must implement `Copy`. To be able to
+> store and retrieve keys in the blackboard, the key must also implement `Eq`.
+
+In this example, one writer updates the values in the blackboard every second
+and a reader reads and prints them to the console. The key-value pairs must be
+defined via the the service builder:
 
 ```rust
 node.service_builder(&service_name)

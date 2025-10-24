@@ -22,6 +22,8 @@ struct BlackboardKey {
     std::int64_t y;  // NOLINT
     std::uint16_t z; // NOLINT
 
+    // To store and retrieve a key in the blackboard, the key type must implement
+    // operator==.
     auto operator==(const BlackboardKey& rhs) const -> bool {
         return x == rhs.x && y == rhs.y && z == rhs.z;
     }
