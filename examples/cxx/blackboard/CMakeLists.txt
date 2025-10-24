@@ -11,12 +11,12 @@
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
 cmake_minimum_required(VERSION 3.22)
-project(example_c_blackboard LANGUAGES C)
+project(example_cxx_blackboard LANGUAGES CXX)
 
-find_package(iceoryx2-c 0.7.0 REQUIRED)
+find_package(iceoryx2-cxx 0.6.1 REQUIRED)
 
-add_executable(example_c_creator src/creator.c)
-target_link_libraries(example_c_creator iceoryx2-c::static-lib)
+add_executable(example_cxx_blackboard_creator src/creator.cpp)
+target_link_libraries(example_cxx_blackboard_creator iceoryx2-cxx::static-lib-cxx)
 
-add_executable(example_c_opener src/opener.c)
-target_link_libraries(example_c_opener iceoryx2-c::static-lib)
+add_executable(example_cxx_blackboard_opener src/opener.cpp)
+target_link_libraries(example_cxx_blackboard_opener iceoryx2-cxx::static-lib-cxx)

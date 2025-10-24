@@ -38,6 +38,7 @@ set(CMAKE_CXX_FLAGS "\
     ${ICEORYX2_SANITIZER_FLAGS_STRING} \
 ")
 
+add_subdirectory(blackboard)
 add_subdirectory(complex_data_types)
 add_subdirectory(cross_language_communication_basics)
 add_subdirectory(cross_language_communication_container)

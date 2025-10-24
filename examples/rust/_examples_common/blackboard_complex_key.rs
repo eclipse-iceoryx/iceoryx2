@@ -10,22 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_EXAMPLES_TRANSMISSION_DATA_H
-#define IOX2_EXAMPLES_TRANSMISSION_DATA_H
+use iceoryx2::prelude::*;
 
-#include <stdbool.h>
-#include <stdint.h>
-
-struct Foo {
-    uint32_t x;
-    int64_t y;
-    uint16_t z;
-};
-
-bool key_cmp(const void* lhs, const void* rhs) {
-    const struct Foo LHS = *(const struct Foo*) lhs;
-    const struct Foo RHS = *(const struct Foo*) rhs;
-    return LHS.x == RHS.x && LHS.y == RHS.y && LHS.z == RHS.z;
+#[derive(Debug, Clone, Copy, ZeroCopySend, Hash, PartialEq, Eq)]
+// optional type name; if not set, `core::any::type_name::<BlackboardKey>()` is used
+#[type_name("BlackboardKey")]
+#[repr(C)]
+pub struct BlackboardKey {
+    pub x: u32,
+    pub y: i64,
+    pub z: u16,
 }
-
-#endif
