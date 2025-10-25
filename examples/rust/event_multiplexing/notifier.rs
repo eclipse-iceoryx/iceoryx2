@@ -18,7 +18,7 @@ use alloc::string::String;
 
 use clap::Parser;
 use iceoryx2::prelude::*;
-use iceoryx2_bb_log::println;
+use iceoryx2_bb_log::cout;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
@@ -37,10 +37,10 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     while node.wait(CYCLE_TIME).is_ok() {
         notifier.notify_with_custom_event_id(EventId::new(args.event_id))?;
 
-        println!("[service: \"{}\"] Trigger event ...", args.service);
+        cout!("[service: \"{}\"] Trigger event ...", args.service);
     }
 
-    println!("exit");
+    cout!("exit");
 
     Ok(())
 }

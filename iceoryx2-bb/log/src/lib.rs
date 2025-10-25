@@ -320,14 +320,14 @@ pub fn __internal_print_log_msg(log_level: LogLevel, origin: Arguments, args: Ar
 // TODO(#1127): Add proper printing abstraction that can be implemented for no_std platforms
 #[cfg(feature = "std")]
 #[macro_export]
-macro_rules! println {
+macro_rules! cout {
     ($($arg:tt)*) => {
         std::println!($($arg)*)
     };
 }
 #[cfg(feature = "std")]
 #[macro_export]
-macro_rules! eprintln {
+macro_rules! cerr {
     ($($arg:tt)*) => {
         std::eprintln!($($arg)*)
     };
@@ -335,11 +335,11 @@ macro_rules! eprintln {
 
 #[cfg(not(feature = "std"))]
 #[macro_export]
-macro_rules! println {
+macro_rules! cout {
     ($($arg:tt)*) => {{}};
 }
 #[cfg(not(feature = "std"))]
 #[macro_export]
-macro_rules! eprintln {
+macro_rules! cerr {
     ($($arg:tt)*) => {{}};
 }

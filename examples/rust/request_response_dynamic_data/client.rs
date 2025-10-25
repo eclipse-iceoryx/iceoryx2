@@ -16,7 +16,7 @@ extern crate alloc;
 use alloc::boxed::Box;
 
 use iceoryx2::prelude::*;
-use iceoryx2_bb_log::println;
+use iceoryx2_bb_log::cout;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
@@ -49,7 +49,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         let request = request.write_from_fn(|byte_idx| ((byte_idx + counter) % 255) as u8);
         let pending_response = request.send()?;
 
-        println!("send request {counter} with {required_memory_size} bytes ...");
+        cout!("send request {counter} with {required_memory_size} bytes ...");
 
         if node.wait(CYCLE_TIME).is_err() {
             break;
@@ -57,7 +57,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
         // acquire all responses to our request from our buffer that were sent by the servers
         while let Some(response) = pending_response.receive()? {
-            println!(
+            cout!(
                 "  received response with {} bytes",
                 response.payload().len()
             );
@@ -66,7 +66,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         counter += 1;
     }
 
-    println!("exit");
+    cout!("exit");
 
     Ok(())
 }

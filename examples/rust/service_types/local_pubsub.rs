@@ -17,7 +17,7 @@ extern crate alloc;
 use alloc::boxed::Box;
 
 use iceoryx2::prelude::*;
-use iceoryx2_bb_log::println;
+use iceoryx2_bb_log::cout;
 use iceoryx2_bb_posix::clock::nanosleep;
 use iceoryx2_bb_posix::thread::{ThreadBuilder, ThreadName};
 
@@ -44,7 +44,7 @@ fn background_thread() {
     while KEEP_RUNNING.load(Ordering::Relaxed) {
         nanosleep(CYCLE_TIME).unwrap();
         while let Some(sample) = subscriber.receive().unwrap() {
-            println!("[thread] received: {}", sample.payload());
+            cout!("[thread] received: {}", sample.payload());
         }
     }
 }
@@ -73,14 +73,14 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let mut counter = 0u64;
     while node.wait(CYCLE_TIME).is_ok() {
-        println!("send: {counter}");
+        cout!("send: {counter}");
         publisher.send_copy(counter)?;
         counter += 1;
     }
 
     KEEP_RUNNING.store(false, Ordering::Relaxed);
     drop(background_thread);
-    println!("exit");
+    cout!("exit");
 
     Ok(())
 }

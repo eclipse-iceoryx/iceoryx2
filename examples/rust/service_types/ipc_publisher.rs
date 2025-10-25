@@ -16,7 +16,7 @@ extern crate alloc;
 use alloc::boxed::Box;
 
 use iceoryx2::prelude::*;
-use iceoryx2_bb_log::println;
+use iceoryx2_bb_log::cout;
 
 const CYCLE_TIME: Duration = Duration::from_millis(750);
 
@@ -41,12 +41,12 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let mut counter = 0u64;
     while node.wait(CYCLE_TIME).is_ok() {
-        println!("send: {counter}");
+        cout!("send: {counter}");
         publisher.send_copy(counter)?;
         counter += 1;
     }
 
-    println!("exit");
+    cout!("exit");
 
     Ok(())
 }

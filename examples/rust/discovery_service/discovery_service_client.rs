@@ -16,7 +16,7 @@ extern crate alloc;
 use alloc::boxed::Box;
 
 use iceoryx2::{prelude::*, service::static_config::StaticConfig};
-use iceoryx2_bb_log::println;
+use iceoryx2_bb_log::cout;
 use iceoryx2_services_discovery::service_discovery::service_name;
 
 const CYCLE_TIME: Duration = Duration::from_millis(10);
@@ -41,10 +41,10 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         if attachment_id.has_event_from(&guard) {
             while let Some(response) = pending_response.receive().unwrap() {
                 for service in response.payload().iter() {
-                    println!("Service ID: {:?}", service.service_id().as_str());
-                    println!("Service Name: {:?}", service.name().as_str());
+                    cout!("Service ID: {:?}", service.service_id().as_str());
+                    cout!("Service Name: {:?}", service.name().as_str());
                 }
-                println!("exit");
+                cout!("exit");
                 return CallbackProgression::Stop;
             }
         }

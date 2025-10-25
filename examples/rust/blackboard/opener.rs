@@ -17,7 +17,7 @@ use alloc::boxed::Box;
 
 use examples_common::BlackboardKey;
 use iceoryx2::prelude::*;
-use iceoryx2_bb_log::println;
+use iceoryx2_bb_log::cout;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
@@ -38,13 +38,13 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let entry_handle_1 = reader.entry::<f64>(&key_1)?;
 
     while node.wait(CYCLE_TIME).is_ok() {
-        println!("read values:");
+        cout!("read values:");
 
-        println!("key: 0, value: {}", entry_handle_0.get());
-        println!("key: 1, value: {}\n", entry_handle_1.get());
+        cout!("key: 0, value: {}", entry_handle_0.get());
+        cout!("key: 1, value: {}\n", entry_handle_1.get());
     }
 
-    println!("exit");
+    cout!("exit");
 
     Ok(())
 }

@@ -16,7 +16,7 @@ extern crate alloc;
 use alloc::boxed::Box;
 
 use iceoryx2::prelude::*;
-use iceoryx2_bb_log::println;
+use iceoryx2_bb_log::cout;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .add_with_default::<u64>(INTERESTING_KEY)
         .create()?;
 
-    println!("Blackboard created.\n");
+    cout!("Blackboard created.\n");
 
     let event_service = node
         .service_builder(&"My/Funk/ServiceName".try_into()?)
@@ -55,17 +55,17 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         counter += 1;
         interesting_entry_handle_mut.update_with_copy(counter);
         notifier.notify_with_custom_event_id(interesting_entry_id)?;
-        println!(
+        cout!(
             "Trigger event with entry id {}",
             interesting_entry_id.as_value()
         );
 
         entry_handle_mut.update_with_copy(2 * counter);
         notifier.notify_with_custom_event_id(entry_id)?;
-        println!("Trigger event with entry id {}", entry_id.as_value());
+        cout!("Trigger event with entry id {}", entry_id.as_value());
     }
 
-    println!("exit");
+    cout!("exit");
 
     Ok(())
 }

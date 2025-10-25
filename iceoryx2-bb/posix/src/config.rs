@@ -17,7 +17,7 @@ use core::time::Duration;
 
 use alloc::{format, string::ToString};
 
-use iceoryx2_bb_log::println;
+use iceoryx2_bb_log::cout;
 use iceoryx2_bb_system_types::{file_name::FileName, path::Path, user_name::UserName};
 
 use crate::{scheduler::Scheduler, system_configuration::*};
@@ -112,9 +112,9 @@ pub fn does_system_satisfy_posix_requirements(mode: ComplianceCheckMode) -> bool
     let mut is_compliant: bool = true;
 
     if mode == ComplianceCheckMode::Verbose {
-        println!("{HEADER_COLOR}system requirements check{COLOR_RESET}");
-        println!("");
-        println!(" {HEADER_COLOR}minimum system{COLOR_RESET}");
+        cout!("{HEADER_COLOR}system requirements check{COLOR_RESET}");
+        cout!("");
+        cout!(" {HEADER_COLOR}minimum system{COLOR_RESET}");
     }
     for i in MIN_REQUIRED_SYSTEM.iter() {
         let supported_value = i.0.value();
@@ -128,7 +128,7 @@ pub fn does_system_satisfy_posix_requirements(mode: ComplianceCheckMode) -> bool
         };
 
         if mode == ComplianceCheckMode::Verbose {
-            println!(
+            cout!(
                 "  {}{:<40}{} minimum:  {}{:<15}{} current:   {}{:<15}{}",
                 entry_color,
                 format!("{:?}", i.0),
@@ -144,8 +144,8 @@ pub fn does_system_satisfy_posix_requirements(mode: ComplianceCheckMode) -> bool
     }
 
     if mode == ComplianceCheckMode::Verbose {
-        println!("");
-        println!(" {HEADER_COLOR}maximum system{COLOR_RESET}");
+        cout!("");
+        cout!(" {HEADER_COLOR}maximum system{COLOR_RESET}");
     }
     for i in MAX_REQUIRED_SYSTEM.iter() {
         let supported_value = i.0.value();
@@ -159,7 +159,7 @@ pub fn does_system_satisfy_posix_requirements(mode: ComplianceCheckMode) -> bool
         };
 
         if mode == ComplianceCheckMode::Verbose {
-            println!(
+            cout!(
                 "  {}{:<40}{} maximum:  {}{:<15}{} current:   {}{:<15}{}",
                 entry_color,
                 format!("{:?}", i.0),
@@ -175,8 +175,8 @@ pub fn does_system_satisfy_posix_requirements(mode: ComplianceCheckMode) -> bool
     }
 
     if mode == ComplianceCheckMode::Verbose {
-        println!("");
-        println!(" {HEADER_COLOR}minimum limits{COLOR_RESET}");
+        cout!("");
+        cout!(" {HEADER_COLOR}minimum limits{COLOR_RESET}");
     }
     for i in MIN_REQUIRED_LIMITS.iter() {
         let supported_value = i.0.value();
@@ -197,7 +197,7 @@ pub fn does_system_satisfy_posix_requirements(mode: ComplianceCheckMode) -> bool
         };
 
         if mode == ComplianceCheckMode::Verbose {
-            println!(
+            cout!(
                 "  {}{:<40}{} minimum:  {}{:<15}{} current:   {}{:<15}{}",
                 entry_color,
                 format!("{:?}", i.0),
@@ -213,8 +213,8 @@ pub fn does_system_satisfy_posix_requirements(mode: ComplianceCheckMode) -> bool
     }
 
     if mode == ComplianceCheckMode::Verbose {
-        println!("");
-        println!(" {HEADER_COLOR}maximum limits{COLOR_RESET}");
+        cout!("");
+        cout!(" {HEADER_COLOR}maximum limits{COLOR_RESET}");
     }
     for i in MAX_REQUIRED_LIMITS.iter() {
         let supported_value = i.0.value();
@@ -235,7 +235,7 @@ pub fn does_system_satisfy_posix_requirements(mode: ComplianceCheckMode) -> bool
         };
 
         if mode == ComplianceCheckMode::Verbose {
-            println!(
+            cout!(
                 "  {}{:<40}{} maximum:  {}{:<15}{} current:   {}{:<15}{}",
                 entry_color,
                 format!("{:?}", i.0),
@@ -251,8 +251,8 @@ pub fn does_system_satisfy_posix_requirements(mode: ComplianceCheckMode) -> bool
     }
 
     if mode == ComplianceCheckMode::Verbose {
-        println!("");
-        println!(" {HEADER_COLOR}features{COLOR_RESET}");
+        cout!("");
+        cout!(" {HEADER_COLOR}features{COLOR_RESET}");
     }
     for i in REQUIRED_FEATURES.iter() {
         let is_supported = i.is_available();
@@ -265,7 +265,7 @@ pub fn does_system_satisfy_posix_requirements(mode: ComplianceCheckMode) -> bool
         };
 
         if mode == ComplianceCheckMode::Verbose {
-            println!(
+            cout!(
                 "  {}{:<40}{} required: {}{:<15}{} supported: {}{:<15}{}",
                 entry_color,
                 format!("{:?}", i),
@@ -281,10 +281,10 @@ pub fn does_system_satisfy_posix_requirements(mode: ComplianceCheckMode) -> bool
     }
 
     if mode == ComplianceCheckMode::Verbose {
-        println!("");
+        cout!("");
         match !is_compliant {
-            true => println!("  {FAILED_COLOR}[ system non-compliant ]{COLOR_RESET}"),
-            false => println!("  [ system compliant ]"),
+            true => cout!("  {FAILED_COLOR}[ system non-compliant ]{COLOR_RESET}"),
+            false => cout!("  [ system compliant ]"),
         }
     }
 

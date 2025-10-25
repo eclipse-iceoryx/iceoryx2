@@ -18,7 +18,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 use iceoryx2::{port::listener::Listener, prelude::*};
-use iceoryx2_bb_log::println;
+use iceoryx2_bb_log::cout;
 
 use clap::Parser;
 
@@ -59,7 +59,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         guards.push(guard);
     }
 
-    println!("Waiting on the following services: {:?}", args.services);
+    cout!("Waiting on the following services: {:?}", args.services);
 
     // the callback that is called when a listener has received an event
     let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
@@ -70,7 +70,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
             // busy loop.
             listener
                 .try_wait_all(|event_id| {
-                    println!("Received trigger from \"{service_name}\" :: {event_id:?}");
+                    cout!("Received trigger from \"{service_name}\" :: {event_id:?}");
                 })
                 .unwrap();
         }
@@ -83,7 +83,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     // didn't add this to the example so feel free to play around with it.
     waitset.wait_and_process(on_event)?;
 
-    println!("exit");
+    cout!("exit");
 
     Ok(())
 }
