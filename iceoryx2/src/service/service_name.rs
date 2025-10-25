@@ -22,12 +22,16 @@
 //! # }
 //! ```
 
-use crate::constants::MAX_SERVICE_NAME_LENGTH;
+use alloc::borrow::ToOwned;
+use alloc::format;
+
 use iceoryx2_bb_container::string::*;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 
 use serde::{de::Visitor, Deserialize, Serialize};
+
+use crate::constants::MAX_SERVICE_NAME_LENGTH;
 
 /// Prefix used to identify internal iceoryx2 services.
 ///

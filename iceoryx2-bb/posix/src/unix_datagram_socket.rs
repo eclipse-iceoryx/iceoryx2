@@ -117,13 +117,12 @@
 //! File::remove(&file_name);
 //! ```
 
-use crate::clock::AsTimeval;
-use crate::file_descriptor::{FileDescriptor, FileDescriptorBased, FileDescriptorManagement};
-use crate::file_descriptor_set::SynchronousMultiplexing;
-use crate::socket_ancillary::*;
 use core::mem::MaybeUninit;
 use core::sync::atomic::Ordering;
 use core::{mem::size_of, time::Duration};
+
+use alloc::format;
+
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary::scope_guard::ScopeGuardBuilder;
@@ -132,6 +131,10 @@ use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use iceoryx2_pal_posix::posix::{errno::Errno, MemZeroedStruct};
 
+use crate::clock::AsTimeval;
+use crate::file_descriptor::{FileDescriptor, FileDescriptorBased, FileDescriptorManagement};
+use crate::file_descriptor_set::SynchronousMultiplexing;
+use crate::socket_ancillary::*;
 use crate::{config::UNIX_DOMAIN_SOCKET_PATH_LENGTH, file::*, permission::Permission};
 
 pub use crate::creation_mode::CreationMode;

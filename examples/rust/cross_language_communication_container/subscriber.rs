@@ -11,9 +11,14 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::time::Duration;
+
+extern crate alloc;
+use alloc::boxed::Box;
+
 use iceoryx2::prelude::*;
 use iceoryx2_bb_container::string::*;
 use iceoryx2_bb_container::vector::*;
+use iceoryx2_bb_log::cout;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
@@ -34,11 +39,11 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let subscriber = service.subscriber_builder().create()?;
 
-    println!("Subscriber ready to receive data!");
+    cout!("Subscriber ready to receive data!");
 
     while node.wait(CYCLE_TIME).is_ok() {
         while let Some(sample) = subscriber.receive()? {
-            println!(
+            cout!(
                 "received: {:?}, user_header: {:?}",
                 *sample,
                 sample.user_header()
@@ -46,7 +51,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         }
     }
 
-    println!("exit");
+    cout!("exit");
 
     Ok(())
 }

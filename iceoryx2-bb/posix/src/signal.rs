@@ -52,10 +52,15 @@
 //!
 //! SignalHandler::wait_for_signal(NonFatalFetchableSignal::Terminate);
 //! ```
+
 use core::{
     fmt::{Debug, Display},
     time::Duration,
 };
+
+use alloc::string::ToString;
+use alloc::vec;
+use alloc::vec::Vec;
 
 use crate::{
     adaptive_wait::*,

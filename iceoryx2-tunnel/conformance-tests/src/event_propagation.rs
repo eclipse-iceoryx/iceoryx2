@@ -85,7 +85,8 @@ pub mod event_propagation {
             },
             TIMEOUT,
             Some(MAX_ATTEMPTS),
-        );
+        )
+        .unwrap();
         T::sync(service_a.service_id().as_str().to_string(), TIMEOUT);
 
         // Create a listener to connect to the discovered service
@@ -119,7 +120,8 @@ pub mod event_propagation {
                 },
                 TIMEOUT,
                 Some(MAX_ATTEMPTS),
-            );
+            )
+            .unwrap();
         }
     }
 
@@ -189,7 +191,8 @@ pub mod event_propagation {
             },
             TIMEOUT,
             Some(MAX_ATTEMPTS),
-        );
+        )
+        .unwrap();
 
         T::sync(service_a.service_id().as_str().to_string(), TIMEOUT);
 
@@ -227,7 +230,8 @@ pub mod event_propagation {
             },
             TIMEOUT,
             Some(MAX_ATTEMPTS),
-        );
+        )
+        .unwrap();
 
         // Propagate a few times to see if there is a loop-back
         for _ in 0..5 {
@@ -298,7 +302,8 @@ pub mod event_propagation {
             },
             TIMEOUT,
             Some(MAX_ATTEMPTS),
-        );
+        )
+        .unwrap();
 
         T::sync(service_a.service_id().as_str().to_string(), TIMEOUT);
 
@@ -360,7 +365,8 @@ pub mod event_propagation {
             },
             TIMEOUT,
             Some(MAX_ATTEMPTS),
-        );
+        )
+        .unwrap();
 
         assert_that!(num_notifications_a, eq 1);
         assert_that!(num_notifications_b, eq 1);

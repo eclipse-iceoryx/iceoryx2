@@ -12,6 +12,9 @@
 
 use core::fmt::Debug;
 
+use alloc::format;
+use alloc::vec::Vec;
+
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_posix::config::TEMP_DIRECTORY;

@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use alloc::boxed::Box;
+use alloc::format;
 use core::fmt::Display;
 
 /// Represents the crates version acquired through the internal environment variables set by cargo,

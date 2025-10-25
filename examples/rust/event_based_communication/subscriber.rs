@@ -12,12 +12,16 @@
 
 use core::time::Duration;
 
+extern crate alloc;
+use alloc::boxed::Box;
+
 use examples_common::{PubSubEvent, TransmissionData};
 use iceoryx2::{
     port::{listener::Listener, notifier::Notifier, subscriber::Subscriber},
     prelude::*,
     sample::Sample,
 };
+use iceoryx2_bb_log::cout;
 
 const HISTORY_SIZE: usize = 20;
 const DEADLINE: Duration = Duration::from_secs(2);
@@ -41,9 +45,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
             // If the subscriber did not receive an event until DEADLINE has
             // passed, we print out a warning.
         } else if attachment_id.has_missed_deadline(&subscriber_guard) {
-            println!(
-                "Contract violation! The subscriber did not receive a message for {DEADLINE:?}."
-            );
+            cout!("Contract violation! The subscriber did not receive a message for {DEADLINE:?}.");
         }
 
         CallbackProgression::Continue
@@ -51,7 +53,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     waitset.wait_and_process(on_event)?;
 
-    println!("exit");
+    cout!("exit");
 
     Ok(())
 }
@@ -111,18 +113,18 @@ impl CustomSubscriber {
             let event: PubSubEvent = event.into();
             match event {
                 PubSubEvent::SentHistory => {
-                    println!("History delivered");
+                    cout!("History delivered");
                     while let Ok(Some(sample)) = self.receive() {
-                        println!("  history: {:?}", sample.x);
+                        cout!("  history: {:?}", sample.x);
                     }
                 }
                 PubSubEvent::SentSample => {
                     while let Ok(Some(sample)) = self.receive() {
-                        println!("received: {:?}", sample.x);
+                        cout!("received: {:?}", sample.x);
                     }
                 }
-                PubSubEvent::PublisherConnected => println!("new publisher connected"),
-                PubSubEvent::PublisherDisconnected => println!("publisher disconnected"),
+                PubSubEvent::PublisherConnected => cout!("new publisher connected"),
+                PubSubEvent::PublisherDisconnected => cout!("publisher disconnected"),
                 _ => (),
             }
         }

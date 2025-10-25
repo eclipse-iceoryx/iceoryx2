@@ -24,6 +24,7 @@ rust_library(
     srcs = glob(["src/**/*.rs"]),
     deps = [
         "//iceoryx2:iceoryx2",
+        "//iceoryx2-bb/container:iceoryx2-bb-container",
         "//iceoryx2-bb/log:iceoryx2-bb-log",
         "//iceoryx2-tunnel/backend:iceoryx2-tunnel-backend",
         "//iceoryx2-services/discovery:iceoryx2-services-discovery",

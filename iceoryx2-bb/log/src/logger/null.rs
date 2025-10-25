@@ -10,16 +10,29 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! # Discovery Services
-//!
-//! The `iceoryx2-services-discovery` crate provides discovery services for the components
-//! of an iceoryx2 system. These services enable other applications built on iceoryx2 to
-//! get informed of the presense of these components.
-//!
+use crate::LogLevel;
 
-#![warn(missing_docs)]
+pub struct Logger;
 
-extern crate alloc;
+impl Logger {
+    pub const fn new() -> Self {
+        Self {}
+    }
+}
 
-/// Discovery and tracking of services in an iceoryx2 system
-pub mod service_discovery;
+impl Default for Logger {
+    fn default() -> Self {
+        Logger::new()
+    }
+}
+
+impl crate::Log for Logger {
+    fn log(
+        &self,
+        _log_level: LogLevel,
+        _origin: core::fmt::Arguments,
+        _formatted_message: core::fmt::Arguments,
+    ) {
+        // Do nothing
+    }
+}

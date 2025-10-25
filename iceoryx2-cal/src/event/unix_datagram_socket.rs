@@ -12,6 +12,9 @@
 
 use core::mem::MaybeUninit;
 
+use alloc::format;
+use alloc::vec::Vec;
+
 pub use crate::event::*;
 use crate::static_storage::file::NamedConceptConfiguration;
 use iceoryx2_bb_log::fail;

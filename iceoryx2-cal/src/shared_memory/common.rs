@@ -14,8 +14,6 @@ use core::marker::PhantomData;
 use core::mem::MaybeUninit;
 use core::{alloc::Layout, fmt::Debug};
 
-use crate::dynamic_storage::*;
-pub use crate::shared_memory::*;
 use iceoryx2_bb_elementary_traits::allocator::BaseAllocator;
 use iceoryx2_bb_log::{debug, fail};
 use iceoryx2_bb_posix::system_configuration::SystemInfo;
@@ -23,12 +21,17 @@ use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 
+use crate::dynamic_storage::*;
+pub use crate::shared_memory::*;
+
 use crate::static_storage::file::{
     NamedConcept, NamedConceptBuilder, NamedConceptConfiguration, NamedConceptMgmt,
 };
 
 #[doc(hidden)]
 pub mod details {
+    use alloc::vec::Vec;
+
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
     use pool_allocator::PoolAllocator;
 

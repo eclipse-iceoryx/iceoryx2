@@ -12,10 +12,28 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [features]
+default = ["std"]
+std = [
+  "logger_buffer",
+  "logger_console",
+  "logger_file"
+]
+
+# Enables logging to console
+logger_console = ["iceoryx2-bb-log/logger_console"]
+# Enables logging to buffer
+logger_buffer = ["iceoryx2-bb-log/logger_buffer"]
+# Enables logging to file
+logger_file = ["iceoryx2-bb-log/logger_file"]
 # Enables https://crates.io/crates/log as default logger
-logger_log = ["iceoryx2-bb-log/logger_log"]
+logger_log = [
+  "iceoryx2-bb-log/logger_log"
+]
 # Enables https://crates.io/crates/tracing as default logger
-logger_tracing = ["iceoryx2-bb-log/logger_tracing"]
+logger_tracing = [
+  "iceoryx2-bb-log/logger_tracing"
+]
+
 # The permissions of all resources will be set to read, write, execute for everyone.
 # This shall not be used in production and is meant to be enabled in a docker environment
 # with inconsistent user configuration.

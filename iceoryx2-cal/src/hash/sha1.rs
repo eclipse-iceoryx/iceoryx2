@@ -12,7 +12,10 @@
 
 //! Creates a Sha1 [`Hash`]. **Shall not be used for security critical use cases.**
 
+use alloc::string::ToString;
+
 use crate::hash::*;
+
 use sha1_smol::Digest;
 
 pub struct Sha1 {

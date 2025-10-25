@@ -40,13 +40,11 @@
 //! }
 //! ```
 
-use crate::file_descriptor::{FileDescriptor, FileDescriptorBased, FileDescriptorManagement};
-use crate::group::Gid;
-use crate::group::GroupError;
-use crate::handle_errno;
-use crate::ownership::OwnershipBuilder;
-use crate::user::{Uid, UserError};
 use core::fmt::Debug;
+
+use alloc::string::String;
+use alloc::vec::Vec;
+
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::{fail, trace, warn};
@@ -56,6 +54,12 @@ use iceoryx2_pal_posix::posix::MemZeroedStruct;
 use iceoryx2_pal_posix::*;
 
 pub use crate::creation_mode::CreationMode;
+use crate::file_descriptor::{FileDescriptor, FileDescriptorBased, FileDescriptorManagement};
+use crate::group::Gid;
+use crate::group::GroupError;
+use crate::handle_errno;
+use crate::ownership::OwnershipBuilder;
+use crate::user::{Uid, UserError};
 pub use crate::{access_mode::AccessMode, permission::*};
 
 enum_gen! { FileRemoveError

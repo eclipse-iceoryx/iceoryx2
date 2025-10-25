@@ -17,6 +17,10 @@
 
 use core::fmt::Display;
 use core::ops::{BitOr, BitOrAssign, Not};
+
+use alloc::string::String;
+use alloc::string::ToString;
+
 use iceoryx2_pal_posix::*;
 
 type ModeType = posix::mode_t;

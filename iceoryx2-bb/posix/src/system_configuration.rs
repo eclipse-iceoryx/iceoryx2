@@ -13,6 +13,8 @@
 //! Provides information about the POSIX [`SystemInfo`], [`Limit`]s, available [`SysOption`] and
 //! [`Feature`]s.
 
+use alloc::string::ToString;
+
 use enum_iterator::Sequence;
 use iceoryx2_bb_log::{fatal_panic, warn};
 use iceoryx2_bb_system_types::path::Path;

@@ -11,7 +11,12 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::time::Duration;
+
+extern crate alloc;
+use alloc::boxed::Box;
+
 use iceoryx2::prelude::*;
+use iceoryx2_bb_log::cout;
 
 const CYCLE_TIME: Duration = Duration::from_millis(100);
 
@@ -36,12 +41,12 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .allocation_strategy(AllocationStrategy::PowerOfTwo)
         .create()?;
 
-    println!("Server ready to receive requests!");
+    cout!("Server ready to receive requests!");
 
     let mut counter = 1;
     while node.wait(CYCLE_TIME).is_ok() {
         while let Some(active_request) = server.receive()? {
-            println!(
+            cout!(
                 "received request with {} bytes ...",
                 active_request.payload().len()
             );
@@ -49,14 +54,14 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
             let required_memory_size = 1_000_000.min(counter * counter);
             let response = active_request.loan_slice_uninit(required_memory_size)?;
             let response = response.write_from_fn(|byte_idx| ((byte_idx + counter) % 255) as u8);
-            println!("  send response with {} bytes", response.payload().len());
+            cout!("  send response with {} bytes", response.payload().len());
             response.send()?;
         }
 
         counter += 1;
     }
 
-    println!("exit");
+    cout!("exit");
 
     Ok(())
 }

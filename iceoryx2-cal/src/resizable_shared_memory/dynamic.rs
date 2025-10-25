@@ -16,15 +16,11 @@ use core::sync::atomic::Ordering;
 use core::time::Duration;
 use core::{fmt::Debug, marker::PhantomData};
 
-use crate::shared_memory::{
-    AllocationStrategy, SegmentId, SharedMemoryForPoolAllocator, ShmPointer,
-};
-use crate::shared_memory::{
-    PointerOffset, SharedMemory, SharedMemoryBuilder, SharedMemoryCreateError,
-    SharedMemoryOpenError, ShmAllocator,
-};
-use crate::shm_allocator::pool_allocator::PoolAllocator;
-use crate::shm_allocator::ShmAllocationError;
+use alloc::format;
+use alloc::string::ToString;
+use alloc::vec;
+use alloc::vec::Vec;
+
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_container::slotmap::{SlotMap, SlotMapKey};
 use iceoryx2_bb_container::string::String;
@@ -34,6 +30,16 @@ use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicU64, IoxAtomicUsize};
+
+use crate::shared_memory::{
+    AllocationStrategy, SegmentId, SharedMemoryForPoolAllocator, ShmPointer,
+};
+use crate::shared_memory::{
+    PointerOffset, SharedMemory, SharedMemoryBuilder, SharedMemoryCreateError,
+    SharedMemoryOpenError, ShmAllocator,
+};
+use crate::shm_allocator::pool_allocator::PoolAllocator;
+use crate::shm_allocator::ShmAllocationError;
 
 use super::{
     NamedConcept, NamedConceptBuilder, NamedConceptDoesExistError, NamedConceptListError,

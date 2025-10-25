@@ -39,7 +39,7 @@
 //! # }
 //! ```
 
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_posix::{
@@ -198,7 +198,7 @@ pub struct SignalInfo {
 }
 
 impl Debug for SignalInfo {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "SignalInfo {{ signal: {:?}, origin_pid: {}, origin_uid: {} }}",

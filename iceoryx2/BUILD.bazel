@@ -37,6 +37,34 @@ rust_library(
             "logger_tracing"
         ],
         "//conditions:default": [],
+    }) + select({
+        "//:cfg_feature_logger_buffer": [
+            "logger_buffer"
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "//:cfg_feature_logger_file": [
+            "logger_file"
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "//:cfg_feature_logger_console": [
+            "logger_console"
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "//:cfg_feature_std": [
+            "std",
+            "logger_buffer",
+            "logger_console",
+            "logger_file"
+        ],
+        "//conditions:default": [
+            "std",
+            "logger_buffer",
+            "logger_console",
+            "logger_file"
+        ],
     }),
     deps = [
         "//iceoryx2-bb/container:iceoryx2-bb-container",

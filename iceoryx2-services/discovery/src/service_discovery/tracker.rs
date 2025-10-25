@@ -10,12 +10,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use alloc::collections::btree_map::Entry;
+use alloc::collections::BTreeMap;
+use alloc::collections::BTreeSet;
+use alloc::vec::Vec;
+
 use iceoryx2::{
     config::Config,
     prelude::CallbackProgression,
     service::{service_id::ServiceId, Service, ServiceDetails, ServiceListError},
 };
-use std::collections::{hash_map::Entry, HashMap, HashSet};
 
 /// Errors that can occur during service synchronization.
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -28,7 +32,7 @@ pub enum SyncError {
 }
 
 impl core::fmt::Display for SyncError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "SyncError::{self:?}")
     }
 }
@@ -55,7 +59,7 @@ impl From<ServiceListError> for SyncError {
 #[derive(Debug, Default)]
 pub struct Tracker<S: Service> {
     config: Config,
-    services: HashMap<ServiceId, ServiceDetails<S>>,
+    services: BTreeMap<ServiceId, ServiceDetails<S>>,
 }
 
 impl<S: Service> Tracker<S> {
@@ -63,7 +67,7 @@ impl<S: Service> Tracker<S> {
     pub fn new(config: &Config) -> Self {
         Self {
             config: config.clone(),
-            services: HashMap::new(),
+            services: BTreeMap::new(),
         }
     }
 
@@ -85,7 +89,7 @@ impl<S: Service> Tracker<S> {
     /// * A vector of service details for services that are no longer available, these details are
     ///   no longer stored in the tracker
     pub fn sync(&mut self) -> Result<(Vec<ServiceId>, Vec<ServiceDetails<S>>), SyncError> {
-        let mut discovered_ids = HashSet::<ServiceId>::new();
+        let mut discovered_ids = BTreeSet::<ServiceId>::new();
         let mut added_ids = Vec::<ServiceId>::new();
 
         S::list(&self.config, |service| {

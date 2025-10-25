@@ -13,6 +13,15 @@
 use core::fmt::Debug;
 use core::marker::PhantomData;
 
+use alloc::format;
+
+use iceoryx2_bb_elementary::alignment::Alignment;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_log::{fail, fatal_panic, warn};
+use iceoryx2_cal::dynamic_storage::{DynamicStorageCreateError, DynamicStorageOpenError};
+use iceoryx2_cal::serialize::Serialize;
+use iceoryx2_cal::static_storage::{StaticStorage, StaticStorageCreateError, StaticStorageLocked};
+
 use crate::prelude::{AttributeSpecifier, AttributeVerifier};
 use crate::service::builder::OpenDynamicStorageFailure;
 use crate::service::dynamic_config::request_response::DynamicConfigSettings;
@@ -22,12 +31,6 @@ use crate::service::static_config::message_type_details::TypeDetail;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
 use crate::service::{self, header, static_config, NoResource};
 use crate::service::{builder, dynamic_config, Service};
-use iceoryx2_bb_elementary::alignment::Alignment;
-use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_log::{fail, fatal_panic, warn};
-use iceoryx2_cal::dynamic_storage::{DynamicStorageCreateError, DynamicStorageOpenError};
-use iceoryx2_cal::serialize::Serialize;
-use iceoryx2_cal::static_storage::{StaticStorage, StaticStorageCreateError, StaticStorageLocked};
 
 use super::message_type_details::{MessageTypeDetails, TypeVariant};
 use super::{CustomHeaderMarker, CustomPayloadMarker, ServiceState, RETRY_LIMIT};

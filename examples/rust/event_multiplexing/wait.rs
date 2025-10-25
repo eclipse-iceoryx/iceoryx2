@@ -10,9 +10,17 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use clap::Parser;
+extern crate alloc;
+use alloc::boxed::Box;
+use alloc::collections::BTreeMap;
+use alloc::string::String;
+use alloc::vec;
+use alloc::vec::Vec;
+
 use iceoryx2::{port::listener::Listener, prelude::*};
-use std::collections::HashMap;
+use iceoryx2_bb_log::cout;
+
+use clap::Parser;
 
 fn main() -> Result<(), Box<dyn core::error::Error>> {
     set_log_level_from_env_or(LogLevel::Info);
@@ -33,10 +41,10 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
     let mut listeners = vec![];
-    let mut listener_attachments: HashMap<
+    let mut listener_attachments: BTreeMap<
         WaitSetAttachmentId<ipc::Service>,
         (&String, &Listener<ipc::Service>),
-    > = HashMap::new();
+    > = BTreeMap::new();
     let mut guards = vec![];
 
     // create a listener for every service
@@ -51,24 +59,20 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         guards.push(guard);
     }
 
-    println!("Waiting on the following services: {:?}", args.services);
+    cout!("Waiting on the following services: {:?}", args.services);
 
     // the callback that is called when a listener has received an event
     let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
         if let Some((service_name, listener)) = listener_attachments.get(&attachment_id) {
-            print!("Received trigger from \"{service_name}\" ::");
-
             // IMPORTANT:
             // We need to collect all notifications since the WaitSet will wake us up as long as
             // there is something to read. If we skip this step completely we will end up in a
             // busy loop.
             listener
                 .try_wait_all(|event_id| {
-                    print!(" {event_id:?}");
+                    cout!("Received trigger from \"{service_name}\" :: {event_id:?}");
                 })
                 .unwrap();
-
-            println!();
         }
 
         CallbackProgression::Continue
@@ -79,7 +83,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     // didn't add this to the example so feel free to play around with it.
     waitset.wait_and_process(on_event)?;
 
-    println!("exit");
+    cout!("exit");
 
     Ok(())
 }

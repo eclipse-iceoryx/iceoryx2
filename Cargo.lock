@@ -933,6 +933,7 @@ dependencies = [
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-log",
+ "iceoryx2-bb-posix",
  "iceoryx2-bb-system-types",
  "iceoryx2-services-discovery",
 ]
@@ -1673,6 +1674,7 @@ version = "0.7.0"
 dependencies = [
  "generic-tests",
  "iceoryx2",
+ "iceoryx2-bb-container",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-posix",
@@ -1688,6 +1690,7 @@ version = "0.7.0"
 dependencies = [
  "generic-tests",
  "iceoryx2",
+ "iceoryx2-bb-container",
  "iceoryx2-bb-log",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
@@ -1700,7 +1703,7 @@ name = "iceoryx2-tunnel-backend"
 version = "0.7.0"
 dependencies = [
  "iceoryx2",
- "iceoryx2-bb-testing",
+ "iceoryx2-bb-posix",
 ]
 
 [[package]]

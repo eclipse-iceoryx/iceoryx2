@@ -16,13 +16,8 @@
 //!
 use core::marker::PhantomData;
 
-use crate::service::dynamic_config::publish_subscribe::DynamicConfigSettings;
-use crate::service::header::publish_subscribe::Header;
-use crate::service::port_factory::publish_subscribe;
-use crate::service::static_config::messaging_pattern::MessagingPattern;
-use crate::service::*;
-use crate::service::{self, dynamic_config::MessagingPatternSettings};
-use builder::RETRY_LIMIT;
+use alloc::format;
+
 use iceoryx2_bb_elementary::alignment::Alignment;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
@@ -30,12 +25,20 @@ use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::static_storage::StaticStorageLocked;
 
+use crate::service::dynamic_config::publish_subscribe::DynamicConfigSettings;
+use crate::service::header::publish_subscribe::Header;
+use crate::service::port_factory::publish_subscribe;
+use crate::service::static_config::messaging_pattern::MessagingPattern;
+use crate::service::*;
+use crate::service::{self, dynamic_config::MessagingPatternSettings};
+
+use super::{CustomHeaderMarker, CustomPayloadMarker, OpenDynamicStorageFailure, ServiceState};
+
 use self::{
     attribute::{AttributeSpecifier, AttributeVerifier},
     message_type_details::{MessageTypeDetails, TypeDetail, TypeVariant},
 };
-
-use super::{CustomHeaderMarker, CustomPayloadMarker, OpenDynamicStorageFailure, ServiceState};
+use builder::RETRY_LIMIT;
 
 /// Errors that can occur when an existing [`MessagingPattern::PublishSubscribe`] [`Service`] shall be opened.
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]

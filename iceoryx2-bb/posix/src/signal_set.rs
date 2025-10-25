@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use alloc::vec::Vec;
+
 use enum_iterator::all;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_pal_posix::posix::{self, Errno, MemZeroedStruct};

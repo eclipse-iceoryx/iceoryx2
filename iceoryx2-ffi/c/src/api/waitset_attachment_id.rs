@@ -12,14 +12,15 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::c_size_t;
 use core::{ffi::c_char, mem::ManuallyDrop};
+
+use alloc::format;
 
 use iceoryx2::prelude::WaitSetAttachmentId;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
-use crate::{iox2_service_type_e, iox2_waitset_guard_h_ref};
+use crate::{c_size_t, iox2_service_type_e, iox2_waitset_guard_h_ref};
 
 use super::{AssertNonNullHandle, HandleToType};
 
