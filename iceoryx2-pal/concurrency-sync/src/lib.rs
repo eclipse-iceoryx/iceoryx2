@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![no_std]
+#![cfg_attr(not(feature = "std"), no_std)]
 
 const SPIN_REPETITIONS: u64 = 10000;
 
@@ -18,9 +18,16 @@ pub mod barrier;
 pub mod condition_variable;
 pub mod iox_atomic;
 pub mod mutex;
-pub mod once;
 pub mod rwlock;
 pub mod semaphore;
+
+#[cfg(not(feature = "std"))]
+pub mod once;
+
+#[cfg(feature = "std")]
+pub mod once {
+    pub use std::sync::Once;
+}
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum WaitAction {

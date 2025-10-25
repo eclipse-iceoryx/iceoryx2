@@ -23,10 +23,7 @@ use iceoryx2_bb_log::{
     get_log_level, set_log_level, set_logger, Log, LogLevel, __internal_print_log_msg,
 };
 
-#[cfg(not(feature = "std"))]
 use iceoryx2_pal_concurrency_sync::once::Once;
-#[cfg(feature = "std")]
-use std::sync::Once;
 
 #[repr(C)]
 #[derive(Copy, Clone)]
