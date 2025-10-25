@@ -751,19 +751,27 @@ unsafe impl Sync for RegisteredServices {}
 
 impl RegisteredServices {
     pub(crate) fn new() -> Self {
+        let origin = "RegisteredServices::new()";
         let handle = MutexHandle::new();
 
-        MutexBuilder::new()
-            .is_interprocess_capable(false)
-            .mutex_type(MutexType::Normal)
-            .create(BTreeMap::new(), &handle)
-            .expect("Failed to create mutex");
+        fatal_panic!(
+            from origin,
+            when MutexBuilder::new()
+                .is_interprocess_capable(false)
+                .mutex_type(MutexType::Normal)
+                .create(BTreeMap::new(), &handle),
+            "Failed to create mutex"
+        );
 
         Self { handle }
     }
 
     pub(crate) fn add(&self, service_id: &ServiceId, handle: ContainerHandle) {
-        let mut guard = self.mutex().lock().expect("Failed to lock mutex");
+        let mut guard = fatal_panic!(
+            from self,
+            when self.mutex().lock(),
+            "Failed to lock mutex"
+        );
 
         if guard.insert(*service_id, (handle, 1)).is_some() {
             fatal_panic!(from "RegisteredServices::add()",
@@ -776,7 +784,11 @@ impl RegisteredServices {
         service_id: &ServiceId,
         mut or_callback: F,
     ) -> Result<(), OpenDynamicStorageFailure> {
-        let mut guard = self.mutex().lock().expect("Failed to lock mutex");
+        let mut guard = fatal_panic!(
+            from self,
+            when self.mutex().lock(),
+            "Failed to lock mutex"
+        );
 
         match guard.get_mut(service_id) {
             Some(entry) => {
