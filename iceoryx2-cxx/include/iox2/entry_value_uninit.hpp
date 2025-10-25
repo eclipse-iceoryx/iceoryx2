@@ -72,7 +72,7 @@ inline auto discard(EntryValueUninit<S, KeyType, ValueType>&& self) -> EntryHand
     iox2_entry_value_discard(self.m_entry_value.take_handle_ownership(), nullptr, &entry_handle_mut_handle);
 
     EntryHandleMut<S, KeyType, ValueType> entry_handle_mut(entry_handle_mut_handle);
-    return std::move(entry_handle_mut);
+    return entry_handle_mut;
 }
 } // namespace iox2
 

@@ -13,6 +13,7 @@
 #include "iox2/iceoryx2.hpp"
 #include "pubsub_event.hpp"
 
+#include <cstdint>
 #include <iostream>
 
 constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromMilliseconds(1000);
@@ -36,7 +37,7 @@ auto main() -> int {
                         .default_event_id(iox::into<EventId>(PubSubEvent::SentSample))
                         .create()
                         .expect("");
-    auto counter = 0;
+    uint64_t counter = 0;
 
     auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().expect("");
 

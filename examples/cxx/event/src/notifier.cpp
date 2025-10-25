@@ -12,6 +12,7 @@
 
 #include "iox2/iceoryx2.hpp"
 
+#include <cstdint>
 #include <iostream>
 
 constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1);
@@ -29,7 +30,7 @@ auto main() -> int {
 
     auto notifier = service.notifier_builder().create().expect("successful notifier creation");
 
-    auto counter = 0;
+    uint64_t counter = 0;
     while (node.wait(CYCLE_TIME).has_value()) {
         counter += 1;
         const auto event_id = EventId(counter % max_event_id);

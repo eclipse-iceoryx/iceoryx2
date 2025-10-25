@@ -12,6 +12,7 @@
 
 #include "iox2/iceoryx2.hpp"
 #include "transmission_data.hpp"
+#include <cstdint>
 
 constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1);
 
@@ -27,7 +28,7 @@ auto main() -> int {
 
     auto client = service.client_builder().create().expect("successful client creation");
 
-    auto request_counter = 0;
+    uint64_t request_counter = 0;
     auto response_counter = 0;
 
     // sending first request by using slower, inefficient copy API
@@ -49,7 +50,7 @@ auto main() -> int {
         request_counter += 1;
         // send all other requests by using zero copy API
         auto request = client.loan_uninit().expect("loan successful");
-        auto initialized_request = request.write_payload(request_counter);
+        auto initialized_request = request.write_payload(std::move(request_counter));
 
         pending_response = send(std::move(initialized_request)).expect("send successful");
 

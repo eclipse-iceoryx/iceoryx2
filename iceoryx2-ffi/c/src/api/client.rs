@@ -22,6 +22,7 @@ use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use crate::api::IntoCInt;
 use crate::api::RequestMutUninitUnion;
+use crate::c_size_t;
 use crate::IOX2_OK;
 
 use super::iox2_pending_response_h;
@@ -180,13 +181,15 @@ pub unsafe extern "C" fn iox2_client_unable_to_deliver_strategy(
 ///
 /// * `handle` is valid and non-null
 #[no_mangle]
-pub unsafe extern "C" fn iox2_client_initial_max_slice_len(handle: iox2_client_h_ref) -> c_int {
+pub unsafe extern "C" fn iox2_client_initial_max_slice_len(handle: iox2_client_h_ref) -> c_size_t {
     handle.assert_non_null();
 
     let client = &mut *handle.as_type();
     match client.service_type {
-        iox2_service_type_e::IPC => client.value.as_mut().ipc.initial_max_slice_len() as c_int,
-        iox2_service_type_e::LOCAL => client.value.as_mut().local.initial_max_slice_len() as c_int,
+        iox2_service_type_e::IPC => client.value.as_mut().ipc.initial_max_slice_len() as c_size_t,
+        iox2_service_type_e::LOCAL => {
+            client.value.as_mut().local.initial_max_slice_len() as c_size_t
+        }
     }
 }
 

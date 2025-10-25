@@ -89,7 +89,7 @@ int main(void) {
         goto drop_service;
     }
 
-    int32_t counter = 0;
+    uint32_t counter = 0;
     while (iox2_node_wait(&node_handle, 1, 0) == IOX2_OK) {
         counter += 1;
 
