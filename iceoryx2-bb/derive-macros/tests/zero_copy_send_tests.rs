@@ -87,6 +87,14 @@ mod zero_copy_send {
         T1: ZeroCopySend,
         T2: ZeroCopySend;
 
+    #[repr(C)]
+    #[derive(ZeroCopySend)]
+    #[type_name("TryMadHoney")]
+    union BasicUnionTest {
+        _val1: u32,
+        _val2: u8,
+    }
+
     #[test]
     fn zero_copy_send_derive_works_for_named_struct() {
         let sut = NamedTestStruct {
@@ -171,5 +179,12 @@ mod zero_copy_send {
         let sut_with_attr = GenericUnnamedTestStructWithAttr(-13, 13);
         assert_that!(is_zero_copy_send(&sut_with_attr), eq true);
         assert_that!(unsafe { GenericUnnamedTestStructWithAttr::<i32, i32>::type_name() }, eq "Smeik");
+    }
+
+    #[test]
+    fn zero_copy_send_derive_for_unions() {
+        let sut = BasicUnionTest { _val1: 12 };
+        assert_that!(is_zero_copy_send(&sut), eq true);
+        assert_that!(unsafe { BasicUnionTest::type_name() }, eq "TryMadHoney");
     }
 }
