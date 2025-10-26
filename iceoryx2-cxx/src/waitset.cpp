@@ -13,6 +13,7 @@
 #include "iox2/waitset.hpp"
 #include "iox/into.hpp"
 #include "iox2/internal/callback_context.hpp"
+#include <cstdint>
 
 namespace iox2 {
 ////////////////////////////
@@ -233,10 +234,10 @@ template <ServiceType S>
 auto WaitSet<S>::attach_interval(const iox::units::Duration deadline)
     -> iox::expected<WaitSetGuard<S>, WaitSetAttachmentError> {
     iox2_waitset_guard_h guard_handle {};
+    auto duration = deadline.timespec();
     auto result = iox2_waitset_attach_interval(&m_handle,
-                                               deadline.toSeconds(),
-                                               deadline.toNanoseconds()
-                                                   - (deadline.toSeconds() * iox::units::Duration::NANOSECS_PER_SEC),
+                                               static_cast<uint64_t>(duration.tv_sec),
+                                               static_cast<uint32_t>(duration.tv_nsec),
                                                nullptr,
                                                &guard_handle);
 
@@ -251,11 +252,11 @@ template <ServiceType S>
 auto WaitSet<S>::attach_deadline(const FileDescriptorBased& attachment, const iox::units::Duration deadline)
     -> iox::expected<WaitSetGuard<S>, WaitSetAttachmentError> {
     iox2_waitset_guard_h guard_handle {};
+    auto duration = deadline.timespec();
     auto result = iox2_waitset_attach_deadline(&m_handle,
                                                attachment.file_descriptor().m_handle,
-                                               deadline.toSeconds(),
-                                               deadline.toNanoseconds()
-                                                   - (deadline.toSeconds() * iox::units::Duration::NANOSECS_PER_SEC),
+                                               static_cast<uint64_t>(duration.tv_sec),
+                                               static_cast<uint32_t>(duration.tv_nsec),
                                                nullptr,
                                                &guard_handle);
 
@@ -332,8 +333,9 @@ auto WaitSet<S>::wait_and_process_once_with_timeout(
     -> iox::expected<WaitSetRunResult, WaitSetRunError> {
     iox2_waitset_run_result_e run_result = iox2_waitset_run_result_e_STOP_REQUEST;
     auto ctx = internal::ctx(fn_call);
-    auto timeout_secs = timeout.toSeconds();
-    auto timeout_nsecs = timeout.toNanoseconds() - (timeout.toSeconds() * iox::units::Duration::NANOSECS_PER_SEC);
+    auto duration = timeout.timespec();
+    auto timeout_secs = static_cast<uint64_t>(duration.tv_sec);
+    auto timeout_nsecs = static_cast<uint32_t>(duration.tv_nsec);
     auto result = iox2_waitset_wait_and_process_once_with_timeout(
         &m_handle, run_callback<S>, static_cast<void*>(&ctx), timeout_secs, timeout_nsecs, &run_result);
 

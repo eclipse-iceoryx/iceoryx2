@@ -17,6 +17,7 @@
 #include <utility>
 
 constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1);
+constexpr uint8_t MAX_VALUE = 255;
 
 auto main() -> int {
     using namespace iox2;
@@ -44,13 +45,13 @@ auto main() -> int {
                          .create()
                          .expect("successful publisher creation");
 
-    auto counter = 0;
+    uint64_t counter = 0;
 
     while (node.wait(CYCLE_TIME).has_value()) {
-        const auto required_memory_size = (counter + 1) * (counter + 1); // NOLINT
+        const uint64_t required_memory_size = (counter + 1) * (counter + 1); // NOLINT
         auto sample = publisher.loan_slice_uninit(required_memory_size).expect("acquire sample");
-        auto initialized_sample =
-            sample.write_from_fn([&](auto byte_idx) { return (byte_idx + counter) % 255; }); // NOLINT
+        auto initialized_sample = sample.write_from_fn(
+            [&](auto byte_idx) { return static_cast<uint8_t>((byte_idx + counter) % MAX_VALUE); }); // NOLINT
 
         send(std::move(initialized_sample)).expect("send successful");
 

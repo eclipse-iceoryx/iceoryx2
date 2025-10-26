@@ -16,6 +16,7 @@
 #include "iox2/attribute_verifier.hpp"
 
 #include "test.hpp"
+#include <cstddef>
 
 namespace {
 using namespace iox2;
@@ -123,7 +124,7 @@ TEST(AttributeSet, all_key_values_can_be_acquired) {
     attribute_specifier.define(key, values[1]).expect("");
     auto attributes = attribute_specifier.attributes();
 
-    auto counter = 0;
+    size_t counter = 0;
 
     attributes.iter_key_values(key, [&](const auto& value) -> CallbackProgression {
         EXPECT_THAT(value, Eq(values[counter]));

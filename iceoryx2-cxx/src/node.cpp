@@ -71,7 +71,7 @@ template <ServiceType T>
 auto Node<T>::wait(iox::units::Duration cycle_time) const -> iox::expected<void, NodeWaitFailure> {
     auto time = cycle_time.timespec();
 
-    auto result = iox2_node_wait(&m_handle, time.tv_sec, time.tv_nsec);
+    auto result = iox2_node_wait(&m_handle, static_cast<uint64_t>(time.tv_sec), static_cast<uint32_t>(time.tv_nsec));
     if (result == IOX2_OK) {
         return iox::ok();
     }

@@ -112,7 +112,7 @@ inline auto update(EntryValue<S, KeyType, ValueType>&& self) -> EntryHandleMut<S
     iox2_entry_value_update(self.take_handle_ownership(), nullptr, &entry_handle_mut_handle);
 
     EntryHandleMut<S, KeyType, ValueType> entry_handle_mut(entry_handle_mut_handle);
-    return std::move(entry_handle_mut);
+    return entry_handle_mut;
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>
@@ -122,7 +122,7 @@ inline auto discard(EntryValue<S, KeyType, ValueType>&& self) -> EntryHandleMut<
     iox2_entry_value_discard(self.take_handle_ownership(), nullptr, &entry_handle_mut_handle);
 
     EntryHandleMut<S, KeyType, ValueType> entry_handle_mut(entry_handle_mut_handle);
-    return std::move(entry_handle_mut);
+    return entry_handle_mut;
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>
