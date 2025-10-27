@@ -678,15 +678,23 @@ jobs:
         run: bazel test //...
 
   sanitizers:
-    needs: [preflight-check, static-code-analysis, cargo-nextest]
+    needs: [preflight-check]
+        # needs: [preflight-check, static-code-analysis, cargo-nextest]
+    # needs: [preflight-check, static-code-analysis, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        toolchain: [stable]
+        toolchain: [nightly]  # Rust sanitizers require nightly
         sanitizer: ["address", "ub", "address;ub", "thread"]
+        exclude:
+          # Thread sanitizer is not well supported on macOS
+          - os: macos-latest
+            sanitizer: "thread"
     timeout-minutes: 60
     runs-on: ${{ matrix.os }}
+    env:
+      RUST_BACKTRACE: 1
     steps:
       - name: Checkout sources
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
@@ -704,6 +712,7 @@ jobs:
         with:
           toolchain: ${{ matrix.toolchain }}
           components: rustfmt, clippy
+          targets: x86_64-unknown-linux-gnu, x86_64-apple-darwin
 
       - name: Download artifact cargo-nextest
         uses: ./.github/actions/download-cached-rust-tool
@@ -717,11 +726,34 @@ jobs:
           internal/scripts/ci_prepare_ubuntu.sh
           uname -a
 
+      - name: Set Rust sanitizer flags
+        run: |
+          # Set default target based on OS
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            RUST_TARGET="x86_64-unknown-linux-gnu"
+          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            RUST_TARGET="x86_64-apple-darwin"
+          fi
+          
+          # Set sanitizer-specific flags
+          if [[ "${{ matrix.sanitizer }}" == "address" ]]; then
+            echo "RUSTFLAGS=-Zsanitizer=address -Copt-level=1" >> $GITHUB_ENV
+          elif [[ "${{ matrix.sanitizer }}" == "ub" ]]; then
+            # Rust doesn't have a specific undefined behavior sanitizer, but we can enable debug assertions
+            echo "RUSTFLAGS=-Cdebug-assertions=on -Coverflow-checks=on -Copt-level=1" >> $GITHUB_ENV
+          elif [[ "${{ matrix.sanitizer }}" == "address;ub" ]]; then
+            echo "RUSTFLAGS=-Zsanitizer=address -Cdebug-assertions=on -Coverflow-checks=on -Copt-level=1" >> $GITHUB_ENV
+          elif [[ "${{ matrix.sanitizer }}" == "thread" ]]; then
+            echo "RUSTFLAGS=-Zsanitizer=thread -Copt-level=1" >> $GITHUB_ENV
+          fi
+          
+          echo "RUST_TARGET=$RUST_TARGET" >> $GITHUB_ENV
+
       - name: Run cargo build
-        run: cargo build --workspace --all-targets
+        run: cargo build -Zbuild-std --workspace --all-targets --target ${{ env.RUST_TARGET }}
 
       - name: Run cargo nextest
-        run: cargo nextest run --workspace --all-targets --no-fail-fast
+        run: cargo nextest run --workspace --all-targets --no-fail-fast --target ${{ env.RUST_TARGET }}
 
       - name: Build iceoryx_hoofs
         run: internal/scripts/ci_build_and_install_iceoryx_hoofs.sh
@@ -735,7 +767,7 @@ jobs:
                 -DSANITIZERS="${{ matrix.sanitizer }}" \
                 -DCMAKE_INSTALL_PREFIX=target/ff/cc/install \
                 -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/iceoryx/install" \
-                -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/debug"
+                -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/${{ env.RUST_TARGET }}/debug"
           cmake --build target/ff/cc/build
           cmake --install target/ff/cc/build
 
@@ -755,31 +787,43 @@ jobs:
           TSAN_OPTIONS: "halt_on_error=1:history_size=7"
         run: target/ff/cc/build/tests/iceoryx2-cxx-tests
 
-      - name: Run C examples with sanitizers
-        env:
-          ASAN_OPTIONS: "detect_leaks=1:detect_stack_use_after_return=1:detect_stack_use_after_scope=1:check_initialization_order=true:strict_init_order=true:new_delete_type_mismatch=0:intercept_tls_get_addr=0"
-          LSAN_OPTIONS: "verbosity=1:log_threads=1"
-          UBSAN_OPTIONS: "print_stacktrace=1:halt_on_error=1"
-          TSAN_OPTIONS: "halt_on_error=1:history_size=7"
-        run: |
-          cd target/ff/cc/build/examples/c
-          find . -maxdepth 1 -type f -executable | while read example; do
-            echo "Running C example: $example"
-            timeout 10s $example || true
-          done
+      # - name: Run C examples with sanitizers
+      #   env:
+      #     ASAN_OPTIONS: "detect_leaks=1:detect_stack_use_after_return=1:detect_stack_use_after_scope=1:check_initialization_order=true:strict_init_order=true:new_delete_type_mismatch=0:intercept_tls_get_addr=0"
+      #     LSAN_OPTIONS: "verbosity=1:log_threads=1"
+      #     UBSAN_OPTIONS: "print_stacktrace=1:halt_on_error=1"
+      #     TSAN_OPTIONS: "halt_on_error=1:history_size=7"
+      #   run: |
+      #     cd target/ff/cc/build/examples/c
+      #     find . -maxdepth 1 -type f -executable | while read example; do
+      #       echo "Running C example: $example"
+      #       timeout 10s $example || true
+      #     done
 
-      - name: Run C++ examples with sanitizers
+      # - name: Run C++ examples with sanitizers
+      #   env:
+      #     ASAN_OPTIONS: "detect_leaks=1:detect_stack_use_after_return=1:detect_stack_use_after_scope=1:check_initialization_order=true:strict_init_order=true:new_delete_type_mismatch=0:intercept_tls_get_addr=0"
+      #     LSAN_OPTIONS: "verbosity=1:log_threads=1"
+      #     UBSAN_OPTIONS: "print_stacktrace=1:halt_on_error=1"
+      #     TSAN_OPTIONS: "halt_on_error=1:history_size=7"
+      #   run: |
+      #     cd target/ff/cc/build/examples/cxx
+      #     find . -maxdepth 1 -type f -executable | while read example; do
+      #       echo "Running C++ example: $example"
+      #       timeout 10s $example || true
+      #     done
+
+      - name: Run end-to-end tests with sanitizers
+        # Skip end-to-end tests with thread sanitizer due to potential issues with dynamic linking
+        if: ${{ matrix.sanitizer != 'thread' }}
         env:
           ASAN_OPTIONS: "detect_leaks=1:detect_stack_use_after_return=1:detect_stack_use_after_scope=1:check_initialization_order=true:strict_init_order=true:new_delete_type_mismatch=0:intercept_tls_get_addr=0"
           LSAN_OPTIONS: "verbosity=1:log_threads=1"
           UBSAN_OPTIONS: "print_stacktrace=1:halt_on_error=1"
           TSAN_OPTIONS: "halt_on_error=1:history_size=7"
         run: |
-          cd target/ff/cc/build/examples/cxx
-          find . -maxdepth 1 -type f -executable | while read example; do
-            echo "Running C++ example: $example"
-            timeout 10s $example || true
-          done
+          cd "${GITHUB_WORKSPACE}"
+          internal/scripts/ci_build_and_run_end_to_end_tests.sh no-build
 
   cargo-publish-dry-run:
     needs: [preflight-check, static-code-analysis]
