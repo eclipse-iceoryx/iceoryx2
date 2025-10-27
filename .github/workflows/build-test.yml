@@ -684,7 +684,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        toolchain: [nightly]  # Rust sanitizers require nightly
+        toolchain: [stable]  # Rust sanitizers require nightly
         sanitizer: ["address", "ub", "address;ub", "thread"]
         exclude:
           # Thread sanitizer is not well supported on macOS
@@ -725,36 +725,34 @@ jobs:
           internal/scripts/ci_prepare_ubuntu.sh
           uname -a
 
-      - name: Set Rust sanitizer flags
-        run: |
-          # Set default target based on OS
-          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-            RUST_TARGET="x86_64-unknown-linux-gnu"
-          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            RUST_TARGET="x86_64-apple-darwin"
-          fi
+      # - name: Set Rust sanitizer flags
+      #   run: |
+      #     # Set default target based on OS
+      #     if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+      #       RUST_TARGET="x86_64-unknown-linux-gnu"
+      #     elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+      #       RUST_TARGET="x86_64-apple-darwin"
+      #     fi
           
-          # Set sanitizer-specific flags
-          if [[ "${{ matrix.sanitizer }}" == "address" ]]; then
-            echo "RUSTFLAGS=-Zsanitizer=address -Copt-level=1" >> $GITHUB_ENV
-          elif [[ "${{ matrix.sanitizer }}" == "ub" ]]; then
-            # Rust doesn't have a specific undefined behavior sanitizer, but we can enable debug assertions
-            echo "RUSTFLAGS=-Cdebug-assertions=on -Coverflow-checks=on -Copt-level=1" >> $GITHUB_ENV
-          elif [[ "${{ matrix.sanitizer }}" == "address;ub" ]]; then
-            echo "RUSTFLAGS=-Zsanitizer=address -Cdebug-assertions=on -Coverflow-checks=on -Copt-level=1" >> $GITHUB_ENV
-          elif [[ "${{ matrix.sanitizer }}" == "thread" ]]; then
-            echo "RUSTFLAGS=-Zsanitizer=thread -Copt-level=1" >> $GITHUB_ENV
-          fi
+      #     # Set sanitizer-specific flags
+      #     if [[ "${{ matrix.sanitizer }}" == "address" ]]; then
+      #       echo "RUSTFLAGS=-Zsanitizer=address -Copt-level=1" >> $GITHUB_ENV
+      #     elif [[ "${{ matrix.sanitizer }}" == "ub" ]]; then
+      #       # Rust doesn't have a specific undefined behavior sanitizer, but we can enable debug assertions
+      #       echo "RUSTFLAGS=-Cdebug-assertions=on -Coverflow-checks=on -Copt-level=1" >> $GITHUB_ENV
+      #     elif [[ "${{ matrix.sanitizer }}" == "address;ub" ]]; then
+      #       echo "RUSTFLAGS=-Zsanitizer=address -Cdebug-assertions=on -Coverflow-checks=on -Copt-level=1" >> $GITHUB_ENV
+      #     elif [[ "${{ matrix.sanitizer }}" == "thread" ]]; then
+      #       echo "RUSTFLAGS=-Zsanitizer=thread -Copt-level=1" >> $GITHUB_ENV
+      #     fi
           
-          echo "RUST_TARGET=$RUST_TARGET" >> $GITHUB_ENV
+      #     echo "RUST_TARGET=$RUST_TARGET" >> $GITHUB_ENV
 
       - name: Run cargo build
-        run: |
-          rustup component add rust-src --toolchain ${{ matrix.toolchain }}
-          cargo build -Zbuild-std --workspace --all-targets --target ${{ env.RUST_TARGET }}
+        run: cargo build --workspace --all-targets
 
       - name: Run cargo nextest
-        run: cargo nextest run --workspace --all-targets --no-fail-fast --target ${{ env.RUST_TARGET }}
+        run: cargo nextest run --workspace --all-targets --no-fail-fast
 
       - name: Build iceoryx_hoofs
         run: internal/scripts/ci_build_and_install_iceoryx_hoofs.sh
@@ -768,7 +766,7 @@ jobs:
                 -DSANITIZERS="${{ matrix.sanitizer }}" \
                 -DCMAKE_INSTALL_PREFIX=target/ff/cc/install \
                 -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/iceoryx/install" \
-                -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/${{ env.RUST_TARGET }}/debug"
+                -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/debug"
           cmake --build target/ff/cc/build
           cmake --install target/ff/cc/build
 
