@@ -715,7 +715,7 @@ jobs:
         with:
           toolchain: ${{ matrix.toolchain }}
           components: rustfmt, clippy
-          targets: x86_64-unknown-linux-gnu, x86_64-apple-darwin
+          # targets: x86_64-unknown-linux-gnu, x86_64-apple-darwin
 
       - name: Download artifact cargo-nextest
         uses: ./.github/actions/download-cached-rust-tool
