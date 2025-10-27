@@ -10,5 +10,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-# TODO #957: differentiate between address and thread sanitizer
-set(ICEORYX2_SANITZER_FLAGS -fsanitize=address -fsanitize=undefined CACHE INTERNAL "")
+# Parse SANITIZERS string and set appropriate flags
+set(ICEORYX2_SANITZER_FLAGS "" CACHE INTERNAL "")
+
+if(SANITIZERS STREQUAL "address")
+    set(ICEORYX2_SANITZER_FLAGS -fsanitize=address CACHE INTERNAL "")
+elseif(SANITIZERS STREQUAL "ub")
+    set(ICEORYX2_SANITZER_FLAGS -fsanitize=undefined CACHE INTERNAL "")
+elseif(SANITIZERS STREQUAL "address;ub")
+    set(ICEORYX2_SANITZER_FLAGS -fsanitize=address -fsanitize=undefined CACHE INTERNAL "")
+elseif(SANITIZERS STREQUAL "thread")
+    set(ICEORYX2_SANITZER_FLAGS -fsanitize=thread CACHE INTERNAL "")
+elseif(NOT SANITIZERS STREQUAL "")
+    message(FATAL_ERROR "Invalid SANITIZERS value: '${SANITIZERS}'. Valid options are: 'address', 'ub', 'address;ub', or 'thread'")
+endif()

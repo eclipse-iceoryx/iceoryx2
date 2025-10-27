@@ -36,7 +36,7 @@ if(WARNING_AS_ERROR)
 endif()
 
 set(ICEORYX2_SANITZER_FLAGS CACHE INTERNAL "")
-if(SANITIZERS)
+if(NOT SANITIZERS STREQUAL "")
     include(Iceoryx2Sanitizer)
 endif()
 
