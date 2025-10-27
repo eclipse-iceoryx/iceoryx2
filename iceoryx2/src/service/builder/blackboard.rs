@@ -37,6 +37,7 @@ use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 use iceoryx2_cal::shared_memory::{SharedMemory, SharedMemoryBuilder};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
+use std::cell::RefCell;
 
 use crate::constants::{MAX_BLACKBOARD_KEY_ALIGNMENT, MAX_BLACKBOARD_KEY_SIZE};
 use crate::service;
@@ -276,10 +277,10 @@ impl<const CAPACITY: usize> KeyMemory<CAPACITY> {
 pub struct BuilderInternals {
     key: KeyMemory<MAX_BLACKBOARD_KEY_SIZE>,
     value_type_details: TypeDetail,
-    value_writer: Box<dyn FnMut(*mut u8)>,
+    value_writer: Rc<RefCell<dyn FnMut(*mut u8)>>,
     internal_value_size: usize,
     internal_value_alignment: usize,
-    internal_value_cleanup_callback: Box<dyn FnMut()>,
+    internal_value_cleanup_callback: Rc<RefCell<dyn FnMut()>>,
 }
 
 impl Debug for BuilderInternals {
@@ -290,7 +291,21 @@ impl Debug for BuilderInternals {
 
 impl Drop for BuilderInternals {
     fn drop(&mut self) {
-        (self.internal_value_cleanup_callback)();
+        // (self.internal_value_cleanup_callback)();
+        (*self.internal_value_cleanup_callback.borrow_mut())();
+    }
+}
+
+impl Clone for BuilderInternals {
+    fn clone(&self) -> Self {
+        Self {
+            key: self.key.clone(),
+            value_type_details: self.value_type_details.clone(),
+            value_writer: Rc::clone(&self.value_writer),
+            internal_value_size: self.internal_value_size,
+            internal_value_alignment: self.internal_value_alignment,
+            internal_value_cleanup_callback: Rc::clone(&self.internal_value_cleanup_callback),
+        }
     }
 }
 
@@ -306,10 +321,10 @@ impl BuilderInternals {
         Self {
             key,
             value_type_details,
-            value_writer,
+            value_writer: Rc::new(RefCell::new(value_writer)),
             internal_value_size: value_size,
             internal_value_alignment: value_alignment,
-            internal_value_cleanup_callback: value_cleanup_callback,
+            internal_value_cleanup_callback: Rc::new(RefCell::new(value_cleanup_callback)),
         }
     }
 }
@@ -360,7 +375,7 @@ struct Builder<
     verify_max_nodes: bool,
     internals: Vec<BuilderInternals>,
     override_key_type: Option<TypeDetail>,
-    key_eq_func: Box<dyn Fn(*const u8, *const u8) -> bool>,
+    key_eq_func: Rc<dyn Fn(*const u8, *const u8) -> bool>,
     _key: PhantomData<KeyType>,
 }
 
@@ -385,6 +400,24 @@ impl<
 impl<
         KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
         ServiceType: service::Service,
+    > Clone for Builder<KeyType, ServiceType>
+{
+    fn clone(&self) -> Self {
+        Self {
+            base: self.base.clone(),
+            verify_max_readers: self.verify_max_readers,
+            verify_max_nodes: self.verify_max_nodes,
+            internals: self.internals.clone(),
+            override_key_type: self.override_key_type.clone(),
+            key_eq_func: Rc::clone(&self.key_eq_func),
+            _key: PhantomData,
+        }
+    }
+}
+
+impl<
+        KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
+        ServiceType: service::Service,
     > Builder<KeyType, ServiceType>
 {
     fn new(base: builder::BuilderWithServiceType<ServiceType>) -> Self {
@@ -394,7 +427,7 @@ impl<
             verify_max_nodes: false,
             internals: Vec::<BuilderInternals>::new(),
             override_key_type: None,
-            key_eq_func: Box::new(|lhs: *const u8, rhs: *const u8| {
+            key_eq_func: Rc::new(|lhs: *const u8, rhs: *const u8| {
                 KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::default_key_eq_comparison::<KeyType>(lhs, rhs)
             }),
             _key: PhantomData,
@@ -479,7 +512,7 @@ impl<
 /// # Example
 ///
 /// See [`crate::service`]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Creator<
     KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
     ServiceType: service::Service,
@@ -529,14 +562,14 @@ impl<
             value_type_details: TypeDetail::new::<ValueType>(
                 message_type_details::TypeVariant::FixedSize,
             ),
-            value_writer: Box::new(move |mem: *mut u8| {
+            value_writer: Rc::new(RefCell::new(move |mem: *mut u8| {
                 let mem: *mut UnrestrictedAtomic<ValueType> =
                     mem as *mut UnrestrictedAtomic<ValueType>;
                 unsafe { mem.write(UnrestrictedAtomic::<ValueType>::new(value)) };
-            }),
+            })),
             internal_value_size: core::mem::size_of::<UnrestrictedAtomic<ValueType>>(),
             internal_value_alignment: core::mem::align_of::<UnrestrictedAtomic<ValueType>>(),
-            internal_value_cleanup_callback: Box::new(|| {}),
+            internal_value_cleanup_callback: Rc::new(RefCell::new(|| {})),
         };
         self.builder.internals.push(internals);
 
@@ -725,7 +758,7 @@ impl<
                                         return false
                                     }
                                 };
-                                (*self.builder.internals[i].value_writer)(mem.data_ptr);
+                                (*self.builder.internals[i].value_writer.borrow_mut())(mem.data_ptr);
                                 // write offset to value in payload_shm to entries vector
                                 let res = entry.entries.push(Entry{type_details: self.builder.internals[i].value_type_details.clone(), offset: IoxAtomicU64::new(mem.offset.offset() as u64)});
                                 if res.is_err() {
@@ -733,7 +766,7 @@ impl<
                                     return false
                                 }
                                 // write offset index to map
-                                let res = unsafe {entry.map.__internal_insert(self.builder.internals[i].key, entry.entries.len() - 1, &self.builder.key_eq_func)};
+                                let res = unsafe {entry.map.__internal_insert(self.builder.internals[i].key, entry.entries.len() - 1, &self.builder.key_eq_func.as_ref())};
                                 if res.is_err() {
                                     error!(from self, "Inserting the key-value pair into the blackboard management segment failed.");
                                     return false
@@ -763,7 +796,7 @@ impl<
                         BlackboardResources {
                             mgmt: mgmt_storage,
                             data: payload_shm,
-                            key_eq_func: Rc::new(self.builder.key_eq_func),
+                            key_eq_func: Rc::clone(&self.builder.key_eq_func),
                         },
                     ),
                 ))
@@ -784,7 +817,7 @@ impl<ServiceType: service::Service> Creator<CustomKeyMarker, ServiceType> {
         mut self,
         key_eq_func: Box<dyn Fn(*const u8, *const u8) -> bool>,
     ) -> Self {
-        self.builder.key_eq_func = key_eq_func;
+        self.builder.key_eq_func = Rc::new(key_eq_func);
         self
     }
 
@@ -850,7 +883,7 @@ impl<ServiceType: service::Service> Creator<CustomKeyMarker, ServiceType> {
 /// # Example
 ///
 /// See [`crate::service`]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Opener<
     KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
     ServiceType: service::Service,
@@ -1059,7 +1092,7 @@ impl<
                             BlackboardResources {
                                 mgmt: mgmt_storage,
                                 data: payload_shm,
-                                key_eq_func: Rc::new(self.builder.key_eq_func),
+                                key_eq_func: Rc::clone(&self.builder.key_eq_func),
                             },
                         ),
                     ));
