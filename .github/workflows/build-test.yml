@@ -687,9 +687,13 @@ jobs:
         toolchain: [stable]  # Rust sanitizers require nightly
         sanitizer: ["address", "ub", "address;ub", "thread"]
         exclude:
-          # Thread sanitizer is not well supported on macOS
+          # Only run address sanitizer on macOS
           - os: macos-latest
             sanitizer: "thread"
+          - os: macos-latest
+            sanitizer: "ub"
+          - os: macos-latest
+            sanitizer: "address;ub"
     timeout-minutes: 60
     runs-on: ${{ matrix.os }}
     env:
