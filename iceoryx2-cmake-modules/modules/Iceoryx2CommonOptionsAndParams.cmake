@@ -31,8 +31,7 @@ if(NOT ICEORYX2_COMMON_OPTIONS_AND_PARAMS_LISTED)
 
     add_param(
         NAME SANITIZERS
-        TYPE STRING
-        DESCRIPTION "Sanitizer configuration: 'address', 'ub', 'address;ub', or 'thread'"
+        DESCRIPTION "Sanitizer configuration: 'address', 'ub', 'address;ub', 'thread', or empty string (disabled)"
         DEFAULT_VALUE ""
     )
 

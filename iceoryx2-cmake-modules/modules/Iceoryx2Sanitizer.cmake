@@ -13,7 +13,9 @@
 # Parse SANITIZERS string and set appropriate flags
 set(ICEORYX2_SANITZER_FLAGS "" CACHE INTERNAL "")
 
-if(SANITIZERS STREQUAL "address")
+if(SANITIZERS STREQUAL "")
+    # No sanitizers enabled - empty string is the default
+elseif(SANITIZERS STREQUAL "address")
     set(ICEORYX2_SANITZER_FLAGS -fsanitize=address CACHE INTERNAL "")
 elseif(SANITIZERS STREQUAL "ub")
     set(ICEORYX2_SANITZER_FLAGS -fsanitize=undefined CACHE INTERNAL "")
@@ -21,6 +23,6 @@ elseif(SANITIZERS STREQUAL "address;ub")
     set(ICEORYX2_SANITZER_FLAGS -fsanitize=address -fsanitize=undefined CACHE INTERNAL "")
 elseif(SANITIZERS STREQUAL "thread")
     set(ICEORYX2_SANITZER_FLAGS -fsanitize=thread CACHE INTERNAL "")
-elseif(NOT SANITIZERS STREQUAL "")
-    message(FATAL_ERROR "Invalid SANITIZERS value: '${SANITIZERS}'. Valid options are: 'address', 'ub', 'address;ub', or 'thread'")
+else()
+    message(FATAL_ERROR "Invalid SANITIZERS value: '${SANITIZERS}'. Valid options are: 'address', 'ub', 'address;ub', 'thread', or empty string (disabled)")
 endif()
