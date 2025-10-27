@@ -98,6 +98,9 @@ if [[ ${UPDATE_ICEORYX2_VERSION} == true ]]; then
     find . -name "pyproject.toml" -type f -exec \
         sed -i 's/version = "'"${OLD_VERSION}"'"/version = "'"${NEW_VERSION}"'"/g' {} \;
 
+    sed -i -z 's/name = "iceoryx2",\n    version = "'"${OLD_VERSION}"'"/name = "iceoryx2",\n    version = "'"${NEW_VERSION}"'"/g' \
+        MODULE.bazel
+
     sed -i 's/    <version>'"${OLD_VERSION}"'/    <version>'"${NEW_VERSION}"'/g' \
         package.xml
 

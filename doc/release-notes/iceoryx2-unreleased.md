@@ -46,6 +46,8 @@
   [#1176](https://github.com/eclipse-iceoryx/iceoryx2/issues/1176)
 * Add option to provide custom `iceoryx2-pal-posix`
   [#1176](https://github.com/eclipse-iceoryx/iceoryx2/issues/1176)
+* Enable Bazel `bzlmod` support for iceoryx2 builds
+  [#355](https://github.com/eclipse-iceoryx/iceoryx2/issues/355)
 
 ### Bugfixes
 
