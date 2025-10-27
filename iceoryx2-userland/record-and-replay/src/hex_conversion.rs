@@ -10,6 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::fmt::Write;
+
+use alloc::string::String;
+use alloc::vec::Vec;
+
 use iceoryx2_bb_log::debug;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -46,8 +51,6 @@ pub fn hex_string_to_bytes(hex_string: &str) -> Result<Vec<u8>, HexToBytesConver
 
 /// Converts bytes into a hex string. Can be converted back with [`hex_string_to_bytes()`].
 pub fn bytes_to_hex_string(raw_data: &[u8]) -> String {
-    use std::fmt::Write;
-
     let mut ret_val = String::with_capacity(3 * raw_data.len());
     for byte in raw_data {
         let _ = write!(&mut ret_val, "{byte:0>2x} ");

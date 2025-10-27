@@ -142,11 +142,11 @@
 //! # }
 //! ```
 //!
-//! ## [`HashMap`](std::collections::HashMap) approach
+//! ## [`BTreeMap`](std::collections::BTreeMap) approach
 //!
 //! ```no_run
 //! use iceoryx2::prelude::*;
-//! use std::collections::HashMap;
+//! use std::collections::BTreeMap;
 //! use iceoryx2::port::listener::Listener;
 //! # use core::time::Duration;
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {
@@ -161,7 +161,7 @@
 //! let listener_1 = event_1.listener_builder().create()?;
 //! let listener_2 = event_2.listener_builder().create()?;
 //!
-//! let mut listeners: HashMap<WaitSetAttachmentId<ipc::Service>, &Listener<ipc::Service>> = HashMap::new();
+//! let mut listeners: BTreeMap<WaitSetAttachmentId<ipc::Service>, &Listener<ipc::Service>> = BTreeMap::new();
 //! let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
 //!
 //! // attach all listeners to the waitset
@@ -217,7 +217,10 @@ use core::{
     cell::RefCell, fmt::Debug, hash::Hash, marker::PhantomData, sync::atomic::Ordering,
     time::Duration,
 };
-use std::collections::HashMap;
+
+use alloc::collections::BTreeMap;
+use alloc::vec;
+use alloc::vec::Vec;
 
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_log::fail;
@@ -504,8 +507,8 @@ impl WaitSetBuilder {
             Ok(reactor) => Ok(WaitSet {
                 reactor,
                 deadline_queue,
-                attachment_to_deadline: RefCell::new(HashMap::new()),
-                deadline_to_attachment: RefCell::new(HashMap::new()),
+                attachment_to_deadline: RefCell::new(BTreeMap::new()),
+                deadline_to_attachment: RefCell::new(BTreeMap::new()),
                 attachment_counter: IoxAtomicUsize::new(0),
                 signal_handling_mode: self.signal_handling_mode,
             }),
@@ -536,8 +539,8 @@ impl WaitSetBuilder {
 pub struct WaitSet<Service: crate::service::Service> {
     reactor: Service::Reactor,
     deadline_queue: DeadlineQueue,
-    attachment_to_deadline: RefCell<HashMap<i32, DeadlineQueueIndex>>,
-    deadline_to_attachment: RefCell<HashMap<DeadlineQueueIndex, i32>>,
+    attachment_to_deadline: RefCell<BTreeMap<i32, DeadlineQueueIndex>>,
+    deadline_to_attachment: RefCell<BTreeMap<DeadlineQueueIndex, i32>>,
     attachment_counter: IoxAtomicUsize,
     signal_handling_mode: SignalHandlingMode,
 }

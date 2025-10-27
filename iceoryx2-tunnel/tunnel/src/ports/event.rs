@@ -10,7 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::collections::HashSet;
+use alloc::collections::BTreeSet;
+use alloc::format;
 
 use iceoryx2::{
     node::Node,
@@ -159,7 +160,7 @@ impl<S: Service> EventPorts<S> {
         PropagateFn: FnMut(EventId) -> Result<(), E>,
     {
         let mut propagated = false;
-        let mut received_ids: HashSet<EventId> = HashSet::new();
+        let mut received_ids: BTreeSet<EventId> = BTreeSet::new();
 
         // Consolidate pending event ids
         while let Ok(event_id) = self.listener.try_wait_one() {

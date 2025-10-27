@@ -58,6 +58,12 @@
 //! # }
 //! ```
 
+use core::sync::atomic::Ordering;
+use core::time::Duration;
+
+use alloc::format;
+use alloc::sync::Arc;
+
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::file_descriptor::{FileDescriptor, FileDescriptorBased};
@@ -73,9 +79,6 @@ use crate::service::dynamic_config::event::ListenerDetails;
 use crate::service::naming_scheme::event_concept_name;
 use crate::service::{NoResource, ServiceState};
 use crate::{port::port_identifiers::UniqueListenerId, service};
-use alloc::sync::Arc;
-use core::sync::atomic::Ordering;
-use core::time::Duration;
 
 use super::event_id::EventId;
 

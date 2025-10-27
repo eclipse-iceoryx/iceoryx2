@@ -71,11 +71,18 @@
 //! // cleanup
 //! File::remove(&file_name);
 //! ```
+
+use core::{fmt::Display, marker::PhantomPinned};
+
+use alloc::format;
+use alloc::string::ToString;
+use alloc::vec;
+use alloc::vec::Vec;
+
 use crate::{
     file_descriptor::FileDescriptor, group::Gid, process::*,
     unix_datagram_socket::UnixDatagramReceiver, user::Uid,
 };
-use core::{fmt::Display, marker::PhantomPinned};
 use iceoryx2_bb_log::warn;
 use iceoryx2_pal_posix::{posix::MemZeroedStruct, *};
 

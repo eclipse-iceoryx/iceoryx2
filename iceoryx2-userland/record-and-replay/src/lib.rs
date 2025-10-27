@@ -120,6 +120,8 @@
 //! # }
 //! ```
 
+extern crate alloc;
+
 /// Free functions to convert bytes to a hex string and back.
 pub mod hex_conversion;
 

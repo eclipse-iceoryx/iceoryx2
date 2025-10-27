@@ -69,6 +69,11 @@ use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64};
 
 use crate::mpmc::unique_index_set::*;
+
+extern crate alloc;
+use alloc::vec;
+use alloc::vec::Vec;
+
 use core::alloc::Layout;
 use core::fmt::Debug;
 use core::{cell::UnsafeCell, mem::MaybeUninit, sync::atomic::Ordering};

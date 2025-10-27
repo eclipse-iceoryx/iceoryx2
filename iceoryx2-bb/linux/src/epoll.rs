@@ -48,9 +48,14 @@
 //! # Ok(())
 //! # }
 //! ```
+
+extern crate alloc;
+
+use alloc::format;
+
 use core::mem::MaybeUninit;
+use core::sync::atomic::Ordering;
 use core::time::Duration;
-use std::sync::atomic::Ordering;
 
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_log::{fail, warn};

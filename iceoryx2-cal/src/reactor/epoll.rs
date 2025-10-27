@@ -13,6 +13,9 @@
 pub use iceoryx2_bb_linux::epoll::{
     Epoll, EpollBuilder, EpollCreateError, EpollEvent, EpollGuard, EventType,
 };
+
+use alloc::format;
+
 use iceoryx2_bb_linux::epoll::{EpollAttachmentError, EpollWaitError};
 use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_bb_posix::file_descriptor::FileDescriptor;

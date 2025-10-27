@@ -10,11 +10,18 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use clap::Parser;
+use core::result::Result;
 use core::time::Duration;
+
+extern crate alloc;
+use alloc::boxed::Box;
+use alloc::string::String;
+
+use clap::Parser;
+
 use examples_common::TransmissionData;
 use iceoryx2::prelude::*;
-use iceoryx2_bb_log::{set_log_level, LogLevel};
+use iceoryx2_bb_log::cout;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
@@ -42,17 +49,18 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let subscriber = service.subscriber_builder().create()?;
 
-    println!(
+    cout!(
         "subscribed to: [domain: \"{}\", service: \"{}\"]",
-        args.domain, args.service
+        args.domain,
+        args.service
     );
     while node.wait(CYCLE_TIME).is_ok() {
         while let Some(sample) = subscriber.receive()? {
-            println!("received: {:?}", *sample);
+            cout!("received: {:?}", *sample);
         }
     }
 
-    println!("exit");
+    cout!("exit");
 
     Ok(())
 }
@@ -71,21 +79,9 @@ struct Args {
     /// The of the service.
     #[clap(short, long, default_value = "my_funky_service")]
     service: String,
-    /// Enable full debug log output
-    #[clap(long, default_value_t = false)]
-    debug: bool,
-}
-
-fn define_log_level(args: &Args) {
-    if args.debug {
-        set_log_level(LogLevel::Trace);
-    } else {
-        set_log_level(LogLevel::Warn);
-    }
 }
 
 fn parse_args() -> Args {
     let args = Args::parse();
-    define_log_level(&args);
     args
 }

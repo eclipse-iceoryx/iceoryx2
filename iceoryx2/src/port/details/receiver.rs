@@ -12,19 +12,9 @@
 
 use core::cell::UnsafeCell;
 
-use super::channel_management::ChannelManagement;
-use super::channel_management::INVALID_CHANNEL_STATE;
-use super::chunk::Chunk;
-use super::chunk_details::ChunkDetails;
-use super::data_segment::{DataSegmentType, DataSegmentView};
-use crate::port::update_connections::ConnectionFailure;
-use crate::port::{DegradationAction, DegradationCallback, ReceiveError};
-use crate::service::naming_scheme::data_segment_name;
-use crate::service::static_config::message_type_details::MessageTypeDetails;
-use crate::service::NoResource;
-use crate::service::ServiceState;
-use crate::service::{self, config_scheme::connection_config, naming_scheme::connection_name};
+use alloc::format;
 use alloc::sync::Arc;
+
 use iceoryx2_bb_container::slotmap::SlotMap;
 use iceoryx2_bb_container::slotmap::SlotMapKey;
 use iceoryx2_bb_container::vector::polymorphic_vec::*;
@@ -34,6 +24,20 @@ use iceoryx2_bb_log::{error, fail, warn};
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::zero_copy_connection::*;
+
+use crate::port::update_connections::ConnectionFailure;
+use crate::port::{DegradationAction, DegradationCallback, ReceiveError};
+use crate::service::naming_scheme::data_segment_name;
+use crate::service::static_config::message_type_details::MessageTypeDetails;
+use crate::service::NoResource;
+use crate::service::ServiceState;
+use crate::service::{self, config_scheme::connection_config, naming_scheme::connection_name};
+
+use super::channel_management::ChannelManagement;
+use super::channel_management::INVALID_CHANNEL_STATE;
+use super::chunk::Chunk;
+use super::chunk_details::ChunkDetails;
+use super::data_segment::{DataSegmentType, DataSegmentView};
 
 #[derive(Clone, Copy)]
 pub(crate) struct SenderDetails {

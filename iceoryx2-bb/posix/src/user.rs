@@ -31,6 +31,10 @@
 use core::ffi::CStr;
 use core::fmt::Display;
 
+use alloc::format;
+use alloc::string::String;
+use alloc::string::ToString;
+
 use crate::group::Gid;
 use crate::handle_errno;
 use crate::{config::PASSWD_BUFFER_SIZE, system_configuration::*};

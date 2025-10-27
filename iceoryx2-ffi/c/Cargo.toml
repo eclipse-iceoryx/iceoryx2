@@ -18,6 +18,12 @@ build = "build.rs"
 path = "src/lib.rs"
 crate-type = ["rlib", "cdylib", "staticlib"] # without "rlib" the doc examples are not run
 
+[features]
+default = ["std"]
+std = [
+  "iceoryx2/std",
+]
+
 [build-dependencies]
 cbindgen = { workspace = true }
 

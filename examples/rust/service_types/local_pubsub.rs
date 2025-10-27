@@ -12,7 +12,14 @@
 
 use core::sync::atomic::{AtomicBool, Ordering};
 use core::time::Duration;
+
+extern crate alloc;
+use alloc::boxed::Box;
+
 use iceoryx2::prelude::*;
+use iceoryx2_bb_log::cout;
+use iceoryx2_bb_posix::clock::nanosleep;
+use iceoryx2_bb_posix::thread::{ThreadBuilder, ThreadName};
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 static KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
@@ -35,9 +42,9 @@ fn background_thread() {
     let subscriber = service.subscriber_builder().create().unwrap();
 
     while KEEP_RUNNING.load(Ordering::Relaxed) {
-        std::thread::sleep(CYCLE_TIME);
+        nanosleep(CYCLE_TIME).unwrap();
         while let Some(sample) = subscriber.receive().unwrap() {
-            println!("[thread] received: {}", sample.payload());
+            cout!("[thread] received: {}", sample.payload());
         }
     }
 }
@@ -60,18 +67,20 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .open_or_create()?;
 
     let publisher = service.publisher_builder().create()?;
-    let background_thread = std::thread::spawn(background_thread);
+    let background_thread = ThreadBuilder::new()
+        .name(&ThreadName::from_bytes(b"bgthread").unwrap())
+        .spawn(background_thread)?;
 
     let mut counter = 0u64;
     while node.wait(CYCLE_TIME).is_ok() {
-        println!("send: {counter}");
+        cout!("send: {counter}");
         publisher.send_copy(counter)?;
         counter += 1;
     }
 
     KEEP_RUNNING.store(false, Ordering::Relaxed);
-    let _ = background_thread.join();
-    println!("exit");
+    drop(background_thread);
+    cout!("exit");
 
     Ok(())
 }

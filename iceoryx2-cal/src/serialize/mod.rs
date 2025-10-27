@@ -42,6 +42,8 @@ pub mod postcard;
 pub mod recommended;
 pub mod toml;
 
+use alloc::vec::Vec;
+
 /// Failure emitted by [`Serialize::serialize()`]
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum SerializeError {

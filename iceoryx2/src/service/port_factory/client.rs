@@ -29,16 +29,21 @@
 //! # }
 //! ```
 
-use super::request_response::PortFactory;
+use core::fmt::Debug;
+
+use alloc::format;
+
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_log::fail;
+use iceoryx2_cal::shm_allocator::AllocationStrategy;
+
 use crate::{
     port::{client::Client, DegradationAction, DegradationCallback},
     prelude::UnableToDeliverStrategy,
     service,
 };
-use core::fmt::Debug;
-use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_log::fail;
-use iceoryx2_cal::shm_allocator::AllocationStrategy;
+
+use super::request_response::PortFactory;
 
 /// Defines a failure that can occur when a [`Client`] is created with
 /// [`crate::service::port_factory::client::PortFactoryClient`].

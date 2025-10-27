@@ -51,6 +51,8 @@
 //! # }
 //! ```
 
+use alloc::format;
+
 use iceoryx2::prelude::{MessagingPattern, ServiceName};
 use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use iceoryx2_bb_elementary::package_version::PackageVersion;

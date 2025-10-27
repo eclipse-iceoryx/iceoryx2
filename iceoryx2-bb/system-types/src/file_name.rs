@@ -28,12 +28,15 @@
 //! ```
 
 pub use iceoryx2_bb_container::semantic_string::SemanticString;
+
+use core::hash::{Hash, Hasher};
+
+use alloc::string::String;
+
+use iceoryx2_bb_container::semantic_string;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::static_assert::{static_assert_ge, static_assert_le};
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-
-use core::hash::{Hash, Hasher};
-use iceoryx2_bb_container::semantic_string;
 use iceoryx2_pal_configuration::FILENAME_LENGTH;
 
 fn invalid_characters(value: &[u8]) -> bool {
@@ -77,7 +80,7 @@ semantic_string! {
   normalize: normalize
 }
 
-#[derive(Debug, Clone, Copy, Eq, ZeroCopySend)]
+#[derive(Debug, Clone, Copy, Eq, Ord, PartialOrd, ZeroCopySend)]
 #[repr(C)]
 pub struct RestrictedFileName<const CAPACITY: usize> {
     value: iceoryx2_bb_container::string::StaticString<CAPACITY>,

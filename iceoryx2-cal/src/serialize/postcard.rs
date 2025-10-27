@@ -10,8 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::serialize::Serialize;
+use alloc::vec::Vec;
+
 use iceoryx2_bb_log::fail;
+
+use crate::serialize::Serialize;
 
 use super::{DeserializeError, SerializeError};
 

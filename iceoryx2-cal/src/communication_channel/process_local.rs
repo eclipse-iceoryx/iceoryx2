@@ -16,8 +16,13 @@
 use crate::communication_channel::*;
 use crate::static_storage::file::NamedConceptConfiguration;
 
-use alloc::sync::Arc;
 use core::fmt::Debug;
+
+use alloc::collections::BTreeMap;
+use alloc::format;
+use alloc::sync::Arc;
+use alloc::vec;
+use alloc::vec::Vec;
 
 use iceoryx2_bb_lock_free::spsc::safely_overflowing_index_queue::*;
 use iceoryx2_bb_log::{fail, fatal_panic};
@@ -26,7 +31,6 @@ use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 
 use once_cell::sync::Lazy;
-use std::collections::HashMap;
 
 #[derive(Debug)]
 pub(crate) struct Management {
@@ -48,12 +52,12 @@ struct StorageEntry {
     content: Arc<Management>,
 }
 
-static PROCESS_LOCAL_MTX_HANDLE: Lazy<MutexHandle<HashMap<FilePath, StorageEntry>>> =
+static PROCESS_LOCAL_MTX_HANDLE: Lazy<MutexHandle<BTreeMap<FilePath, StorageEntry>>> =
     Lazy::new(MutexHandle::new);
-static PROCESS_LOCAL_CHANNELS: Lazy<Mutex<HashMap<FilePath, StorageEntry>>> = Lazy::new(|| {
+static PROCESS_LOCAL_CHANNELS: Lazy<Mutex<BTreeMap<FilePath, StorageEntry>>> = Lazy::new(|| {
     let result = MutexBuilder::new()
         .is_interprocess_capable(false)
-        .create(HashMap::new(), &PROCESS_LOCAL_MTX_HANDLE);
+        .create(BTreeMap::new(), &PROCESS_LOCAL_MTX_HANDLE);
 
     if result.is_err() {
         fatal_panic!(from "PROCESS_LOCAL_CHANNELS", "Failed to create process global communication channels");

@@ -13,15 +13,21 @@
 //! Trait which can be implemented by logger, see [`crate::logger::console::Logger`]
 //! for instance.
 
+#[cfg(feature = "logger_buffer")]
 pub mod buffer;
+#[cfg(feature = "logger_console")]
 pub mod console;
+#[cfg(feature = "logger_file")]
 pub mod file;
 #[cfg(feature = "logger_log")]
 pub mod log;
 #[cfg(feature = "logger_tracing")]
 pub mod tracing;
 
+pub mod null;
+
 /// Sets the [`console::Logger`] as default logger
+#[cfg(feature = "logger_console")]
 pub fn use_console_logger() -> bool {
     // LazyLock is only available in 'std' but since static values are never dropped in Rust,
     // we can also use Box::leak
@@ -30,6 +36,7 @@ pub fn use_console_logger() -> bool {
 }
 
 /// Sets the [`file::Logger`] as default logger
+#[cfg(feature = "logger_file")]
 pub fn use_file_logger(log_file_name: &str) -> bool {
     // LazyLock is only available in 'std' but since static values are never dropped in Rust,
     // we can also use Box::leak

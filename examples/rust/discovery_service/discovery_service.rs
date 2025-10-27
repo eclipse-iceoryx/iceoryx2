@@ -10,7 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate alloc;
+use alloc::boxed::Box;
+
 use iceoryx2::prelude::*;
+use iceoryx2_bb_log::cerr;
+use iceoryx2_bb_log::cout;
 use iceoryx2_services_discovery::*;
 use service_discovery::Discovery;
 
@@ -24,7 +29,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .publish_subscribe::<service_discovery::Payload>()
         .open()
         .inspect_err(|_| {
-            eprintln!("Unable to open service discovery service. Was it started?");
+            cerr!("Unable to open service discovery service. Was it started?");
         })?;
 
     let subscriber = publish_subscribe.subscriber_builder().create()?;
@@ -34,7 +39,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .event()
         .open()
         .inspect_err(|_| {
-            eprintln!("unable to open service discovery service. Was it started?");
+            cerr!("unable to open service discovery service. Was it started?");
         })?;
     let listener = event.listener_builder().create()?;
 
@@ -42,7 +47,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let guard = waitset.attach_notification(&listener)?;
     let attachment = WaitSetAttachmentId::from_guard(&guard);
 
-    println!("Discovery service ready!");
+    cout!("Discovery service ready!");
 
     let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
         if attachment_id == attachment {
@@ -53,10 +58,10 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
             while let Ok(Some(sample)) = subscriber.receive() {
                 match sample.payload() {
                     Discovery::Added(details) => {
-                        println!("Added: {:?}", details.name());
+                        cout!("Added: {:?}", details.name());
                     }
                     Discovery::Removed(details) => {
-                        println!("Removed: {:?}", details.name());
+                        cout!("Removed: {:?}", details.name());
                     }
                 }
             }

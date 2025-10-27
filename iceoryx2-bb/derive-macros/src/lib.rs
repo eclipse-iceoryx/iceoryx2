@@ -16,7 +16,11 @@
 
 //! Contains helper derive macros for iceoryx2.
 
+extern crate alloc;
 extern crate proc_macro;
+
+use alloc::format;
+use alloc::vec::Vec;
 
 use proc_macro::TokenStream;
 use quote::quote;

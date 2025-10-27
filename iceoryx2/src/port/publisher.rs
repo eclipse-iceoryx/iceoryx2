@@ -101,30 +101,15 @@
 //! # }
 //! ```
 
-use super::details::data_segment::{DataSegment, DataSegmentType};
-use super::details::segment_state::SegmentState;
-use super::port_identifiers::UniquePublisherId;
-use super::{LoanError, SendError};
-use crate::port::details::sender::*;
-use crate::port::update_connections::{ConnectionFailure, UpdateConnections};
-use crate::prelude::UnableToDeliverStrategy;
-use crate::raw_sample::RawSampleMut;
-use crate::sample_mut::SampleMut;
-use crate::sample_mut_uninit::SampleMutUninit;
-use crate::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
-use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, SubscriberDetails};
-use crate::service::header::publish_subscribe::Header;
-use crate::service::naming_scheme::data_segment_name;
-use crate::service::port_factory::publisher::LocalPublisherConfig;
-use crate::service::static_config::message_type_details::TypeVariant;
-use crate::service::static_config::publish_subscribe;
-use crate::service::{self, NoResource, ServiceState};
-use alloc::sync::Arc;
 use core::any::TypeId;
 use core::cell::UnsafeCell;
 use core::fmt::Debug;
 use core::sync::atomic::Ordering;
 use core::{marker::PhantomData, mem::MaybeUninit};
+
+use alloc::sync::Arc;
+use alloc::vec::Vec;
+
 use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::cyclic_tagger::CyclicTagger;
 use iceoryx2_bb_elementary::CallbackProgression;
@@ -139,6 +124,26 @@ use iceoryx2_cal::zero_copy_connection::{
     ChannelId, ZeroCopyCreationError, ZeroCopyPortDetails, ZeroCopySender,
 };
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
+
+use crate::port::details::sender::*;
+use crate::port::update_connections::{ConnectionFailure, UpdateConnections};
+use crate::prelude::UnableToDeliverStrategy;
+use crate::raw_sample::RawSampleMut;
+use crate::sample_mut::SampleMut;
+use crate::sample_mut_uninit::SampleMutUninit;
+use crate::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
+use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, SubscriberDetails};
+use crate::service::header::publish_subscribe::Header;
+use crate::service::naming_scheme::data_segment_name;
+use crate::service::port_factory::publisher::LocalPublisherConfig;
+use crate::service::static_config::message_type_details::TypeVariant;
+use crate::service::static_config::publish_subscribe;
+use crate::service::{self, NoResource, ServiceState};
+
+use super::details::data_segment::{DataSegment, DataSegmentType};
+use super::details::segment_state::SegmentState;
+use super::port_identifiers::UniquePublisherId;
+use super::{LoanError, SendError};
 
 /// Defines a failure that can occur when a [`Publisher`] is created with
 /// [`crate::service::port_factory::publisher::PortFactoryPublisher`].

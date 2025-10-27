@@ -11,6 +11,10 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::time::Duration;
+
+extern crate alloc;
+use alloc::boxed::Box;
+
 use examples_common::{PubSubEvent, TransmissionData};
 use iceoryx2::{
     port::{
@@ -19,6 +23,7 @@ use iceoryx2::{
     },
     prelude::*,
 };
+use iceoryx2_bb_log::cout;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 const HISTORY_SIZE: usize = 20;
@@ -41,7 +46,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
         // when the cyclic trigger guard gets notified we send out a new message
         if attachment_id.has_event_from(&cyclic_trigger_guard) {
-            println!("send message: {counter}");
+            cout!("send message: {counter}");
             publisher.send(counter).unwrap();
             counter += 1;
             // when something else happens on the publisher we handle the events
@@ -55,7 +60,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     // event callback or an interrupt/termination signal was received.
     waitset.wait_and_process(on_event)?;
 
-    println!("exit");
+    cout!("exit");
 
     Ok(())
 }
@@ -112,17 +117,17 @@ impl CustomPublisher {
             let event: PubSubEvent = event.into();
             match event {
                 PubSubEvent::SubscriberConnected => {
-                    println!("new subscriber connected - delivering history");
+                    cout!("new subscriber connected - delivering history");
                     self.publisher.update_connections().unwrap();
                     self.notifier
                         .notify_with_custom_event_id(PubSubEvent::SentHistory.into())
                         .unwrap();
                 }
                 PubSubEvent::SubscriberDisconnected => {
-                    println!("subscriber disconnected");
+                    cout!("subscriber disconnected");
                 }
                 PubSubEvent::ReceivedSample => {
-                    println!("subscriber has consumed sample");
+                    cout!("subscriber has consumed sample");
                 }
                 _ => (),
             }

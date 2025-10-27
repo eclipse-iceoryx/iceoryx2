@@ -253,9 +253,14 @@ pub mod ipc_threadsafe;
 pub(crate) mod config_scheme;
 pub(crate) mod naming_scheme;
 
-use alloc::sync::Arc;
 use core::fmt::Debug;
 use core::time::Duration;
+
+use alloc::format;
+use alloc::string::String;
+use alloc::sync::Arc;
+use alloc::vec;
+use alloc::vec::Vec;
 
 use crate::config;
 use crate::constants::MAX_TYPE_NAME_LENGTH;

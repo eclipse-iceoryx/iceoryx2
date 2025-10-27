@@ -37,13 +37,20 @@
 //! println!("New value: {}", reader.get().load(Ordering::Relaxed));
 //! ```
 
-use alloc::sync::Arc;
 use core::alloc::Layout;
 use core::any::Any;
 use core::fmt::Debug;
 use core::marker::PhantomData;
 use core::ptr::NonNull;
 use core::sync::atomic::Ordering;
+
+use alloc::collections::BTreeMap;
+use alloc::format;
+use alloc::string::String;
+use alloc::string::ToString;
+use alloc::sync::Arc;
+use alloc::vec;
+use alloc::vec::Vec;
 
 use iceoryx2_bb_elementary_traits::allocator::BaseAllocator;
 use iceoryx2_bb_log::{fail, fatal_panic};
@@ -55,7 +62,6 @@ use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
 use once_cell::sync::Lazy;
-use std::collections::HashMap;
 
 pub use crate::dynamic_storage::*;
 use crate::named_concept::{
@@ -184,12 +190,12 @@ impl<T> Drop for StorageDetails<T> {
 unsafe impl<T> Send for StorageDetails<T> {}
 unsafe impl<T> Sync for StorageDetails<T> {}
 
-static PROCESS_LOCAL_MTX_HANDLE: Lazy<MutexHandle<HashMap<FilePath, StorageEntry>>> =
+static PROCESS_LOCAL_MTX_HANDLE: Lazy<MutexHandle<BTreeMap<FilePath, StorageEntry>>> =
     Lazy::new(MutexHandle::new);
-static PROCESS_LOCAL_STORAGE: Lazy<Mutex<HashMap<FilePath, StorageEntry>>> = Lazy::new(|| {
+static PROCESS_LOCAL_STORAGE: Lazy<Mutex<BTreeMap<FilePath, StorageEntry>>> = Lazy::new(|| {
     let result = MutexBuilder::new()
         .is_interprocess_capable(false)
-        .create(HashMap::new(), &PROCESS_LOCAL_MTX_HANDLE);
+        .create(BTreeMap::new(), &PROCESS_LOCAL_MTX_HANDLE);
 
     if result.is_err() {
         fatal_panic!(from "PROCESS_LOCAL_STORAGE", "Failed to create global dynamic storage");
@@ -370,7 +376,7 @@ impl<T: Send + Sync + Debug + 'static> NamedConceptBuilder<Storage<T>> for Build
 impl<T: Send + Sync + Debug + 'static> Builder<'_, T> {
     fn open_impl(
         &self,
-        guard: &mut MutexGuard<'static, HashMap<FilePath, StorageEntry>>,
+        guard: &mut MutexGuard<'static, BTreeMap<FilePath, StorageEntry>>,
     ) -> Result<Storage<T>, DynamicStorageOpenError> {
         let msg = "Failed to open dynamic storage";
 
@@ -397,7 +403,7 @@ impl<T: Send + Sync + Debug + 'static> Builder<'_, T> {
 
     fn create_impl(
         &mut self,
-        guard: &mut MutexGuard<'static, HashMap<FilePath, StorageEntry>>,
+        guard: &mut MutexGuard<'static, BTreeMap<FilePath, StorageEntry>>,
         initial_value: T,
     ) -> Result<Storage<T>, DynamicStorageCreateError> {
         let msg = "Failed to create dynamic storage";

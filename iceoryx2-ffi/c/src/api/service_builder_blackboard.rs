@@ -12,17 +12,11 @@
 
 #![allow(non_camel_case_types)]
 
-use super::{iox2_attribute_specifier_h_ref, iox2_attribute_verifier_h_ref, iox2_type_variant_e};
-use crate::api::{
-    c_size_t, iox2_port_factory_blackboard_h, iox2_port_factory_blackboard_t,
-    iox2_service_builder_blackboard_creator_h, iox2_service_builder_blackboard_creator_h_ref,
-    iox2_service_builder_blackboard_opener_h, iox2_service_builder_blackboard_opener_h_ref,
-    iox2_service_type_e, AssertNonNullHandle, HandleToType, IntoCInt, KeyFfi,
-    PortFactoryBlackboardUnion, ServiceBuilderUnion, IOX2_OK,
-};
-use crate::create_type_details;
 use core::ffi::{c_char, c_int, c_void};
 use core::mem::ManuallyDrop;
+
+use alloc::boxed::Box;
+
 use iceoryx2::constants::MAX_BLACKBOARD_KEY_SIZE;
 use iceoryx2::service::builder::blackboard::{
     BlackboardCreateError, BlackboardOpenError, Creator, KeyMemory, Opener,
@@ -31,6 +25,17 @@ use iceoryx2::service::port_factory::blackboard::PortFactory;
 use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeName, TypeVariant};
 use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_ffi_macros::CStrRepr;
+
+use crate::api::{
+    c_size_t, iox2_port_factory_blackboard_h, iox2_port_factory_blackboard_t,
+    iox2_service_builder_blackboard_creator_h, iox2_service_builder_blackboard_creator_h_ref,
+    iox2_service_builder_blackboard_opener_h, iox2_service_builder_blackboard_opener_h_ref,
+    iox2_service_type_e, AssertNonNullHandle, HandleToType, IntoCInt, KeyFfi,
+    PortFactoryBlackboardUnion, ServiceBuilderUnion, IOX2_OK,
+};
+use crate::create_type_details;
+
+use super::{iox2_attribute_specifier_h_ref, iox2_attribute_verifier_h_ref, iox2_type_variant_e};
 
 // BEGIN types definition
 
