@@ -4,8 +4,10 @@ build:windows --cxxopt="/std:c++17"
 
 # this has to be specified manually
 build:mingw --cxxopt="-std=c++17"
+build --noincompatible_disallow_empty_glob
 
 build --action_env=CARGO_BAZEL_REPIN=true
+build --action_env=CARGO_HOME=/tmp/cargo
 
 # test --local_test_jobs=1
 # test --test_strategy=standalone
