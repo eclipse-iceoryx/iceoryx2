@@ -677,6 +677,105 @@ jobs:
           USE_BAZEL_VERSION: "7.4.1"
         run: bazel test //...
 
+  sanitizers:
+    needs: [preflight-check, static-code-analysis, cargo-nextest]
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        toolchain: [stable]
+        sanitizer: ["address", "ub", "address;ub", "thread"]
+    timeout-minutes: 60
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: "3.31.x"
+      
+      - name: Use cmake
+        run: cmake --version
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          components: rustfmt, clippy
+
+      - name: Download artifact cargo-nextest
+        uses: ./.github/actions/download-cached-rust-tool
+        with:
+          artifact-bin-name: cargo-nextest
+          artifact-upload-name: ${{ runner.os }}-cargo-nextest
+
+      - name: Prepare Linux
+        run: |
+          internal/scripts/ci_prepare_ubuntu.sh
+          uname -a
+
+      - name: Run cargo build
+        run: cargo build --workspace --all-targets
+
+      - name: Run cargo nextest
+        run: cargo nextest run --workspace --all-targets --no-fail-fast
+
+      - name: Build iceoryx_hoofs
+        run: internal/scripts/ci_build_and_install_iceoryx_hoofs.sh
+
+      - name: Build language bindings with sanitizers
+        run: |
+          cmake -S . -B target/ff/cc/build \
+                -DBUILD_EXAMPLES=ON \
+                -DBUILD_TESTING=ON \
+                -DCMAKE_BUILD_TYPE=Debug \
+                -DSANITIZERS="${{ matrix.sanitizer }}" \
+                -DCMAKE_INSTALL_PREFIX=target/ff/cc/install \
+                -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/iceoryx/install" \
+                -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/debug"
+          cmake --build target/ff/cc/build
+          cmake --install target/ff/cc/build
+
+      - name: Run C language binding tests with sanitizers
+        env:
+          ASAN_OPTIONS: "detect_leaks=1:check_initialization_order=1:strict_init_order=1"
+          UBSAN_OPTIONS: "print_stacktrace=1:halt_on_error=1"
+          TSAN_OPTIONS: "halt_on_error=1:history_size=7"
+        run: target/ff/cc/build/tests/iceoryx2-c-tests
+
+      - name: Run C++ language binding tests with sanitizers
+        env:
+          ASAN_OPTIONS: "detect_leaks=1:check_initialization_order=1:strict_init_order=1"
+          UBSAN_OPTIONS: "print_stacktrace=1:halt_on_error=1"
+          TSAN_OPTIONS: "halt_on_error=1:history_size=7"
+        run: target/ff/cc/build/tests/iceoryx2-cxx-tests
+
+      - name: Run C examples with sanitizers
+        env:
+          ASAN_OPTIONS: "detect_leaks=1:check_initialization_order=1:strict_init_order=1"
+          UBSAN_OPTIONS: "print_stacktrace=1:halt_on_error=1"
+          TSAN_OPTIONS: "halt_on_error=1:history_size=7"
+        run: |
+          cd target/ff/cc/build/examples/c
+          find . -maxdepth 1 -type f -executable | while read example; do
+            echo "Running C example: $example"
+            timeout 10s $example || true
+          done
+
+      - name: Run C++ examples with sanitizers
+        env:
+          ASAN_OPTIONS: "detect_leaks=1:check_initialization_order=1:strict_init_order=1"
+          UBSAN_OPTIONS: "print_stacktrace=1:halt_on_error=1"
+          TSAN_OPTIONS: "halt_on_error=1:history_size=7"
+        run: |
+          cd target/ff/cc/build/examples/cxx
+          find . -maxdepth 1 -type f -executable | while read example; do
+            echo "Running C++ example: $example"
+            timeout 10s $example || true
+          done
+
   cargo-publish-dry-run:
     needs: [preflight-check, static-code-analysis]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
@@ -792,6 +891,7 @@ jobs:
         x86_32,
         python-bindings,
         end-to-end-tests,
+        sanitizers,
       ]
     runs-on: ubuntu-latest
     steps:
