@@ -71,6 +71,8 @@
     [#1133](https://github.com/eclipse-iceoryx/iceoryx2/issues/1133)
 * Enable -Wconversion warning for the C and C++ code
     [#956](https://github.com/eclipse-iceoryx/iceoryx2/issues/956)
+* Add thread sanitizer
+    [#957](https://github.com/eclipse-iceoryx/iceoryx2/issues/957)
 
 ### Workflow
 
