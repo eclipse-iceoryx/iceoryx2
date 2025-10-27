@@ -13,7 +13,7 @@
 # Parse SANITIZERS string and set appropriate flags
 set(ICEORYX2_SANITZER_FLAGS "" CACHE INTERNAL "")
 
-if(SANITIZERS STREQUAL "")
+if(NOT DEFINED SANITIZERS OR SANITIZERS STREQUAL "")
     # No sanitizers enabled - empty string is the default
 elseif(SANITIZERS STREQUAL "address")
     set(ICEORYX2_SANITZER_FLAGS -fsanitize=address CACHE INTERNAL "")
