@@ -682,7 +682,7 @@ jobs:
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, macos-latest]
         toolchain: [stable]
         sanitizer: ["address", "ub", "address;ub", "thread"]
     timeout-minutes: 60
@@ -712,6 +712,7 @@ jobs:
           artifact-upload-name: ${{ runner.os }}-cargo-nextest
 
       - name: Prepare Linux
+        if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
           internal/scripts/ci_prepare_ubuntu.sh
           uname -a
