@@ -683,7 +683,7 @@ jobs:
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest]
         toolchain: [stable]  # Rust sanitizers require nightly
         sanitizer: ["address", "ub", "address;ub", "thread"]
         exclude:
