@@ -679,7 +679,6 @@ jobs:
 
   sanitizers:
     needs: [preflight-check]
-        # needs: [preflight-check, static-code-analysis, cargo-nextest]
     # needs: [preflight-check, static-code-analysis, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
@@ -750,7 +749,9 @@ jobs:
           echo "RUST_TARGET=$RUST_TARGET" >> $GITHUB_ENV
 
       - name: Run cargo build
-        run: cargo build -Zbuild-std --workspace --all-targets --target ${{ env.RUST_TARGET }}
+        run: |
+          rustup component add rust-src --toolchain ${{ matrix.toolchain }}
+          cargo build -Zbuild-std --workspace --all-targets --target ${{ env.RUST_TARGET }}
 
       - name: Run cargo nextest
         run: cargo nextest run --workspace --all-targets --no-fail-fast --target ${{ env.RUST_TARGET }}
