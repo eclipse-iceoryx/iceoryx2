@@ -14,6 +14,7 @@ use iceoryx2::prelude::{CallbackProgression, PortFactory};
 use iceoryx2::service::builder::CustomKeyMarker;
 use pyo3::prelude::*;
 
+use crate::attribute_set::AttributeSet;
 use crate::error::NodeListFailure;
 use crate::node_id::NodeId;
 use crate::node_state::{
@@ -61,6 +62,15 @@ impl PortFactoryBlackboard {
         match &*self.value.lock() {
             PortFactoryBlackboardType::Ipc(v) => ServiceName(v.name().clone()),
             PortFactoryBlackboardType::Local(v) => ServiceName(v.name().clone()),
+        }
+    }
+
+    #[getter]
+    /// Returns the `AttributeSet` defined in the `Service`
+    pub fn attributes(&self) -> AttributeSet {
+        match &*self.value.lock() {
+            PortFactoryBlackboardType::Ipc(v) => AttributeSet(v.attributes().clone()),
+            PortFactoryBlackboardType::Local(v) => AttributeSet(v.attributes().clone()),
         }
     }
 

@@ -271,3 +271,10 @@ create_exception!(
     PyException,
     "Errors caused when creating a blackboard service."
 );
+
+create_exception!(
+    iceoryx2_ffi_python,
+    BlackboardOpenError,
+    PyException,
+    "Errors caused when opening a blackboard service."
+);

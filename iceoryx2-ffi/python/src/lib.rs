@@ -328,6 +328,10 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
         "BlackboardCreateError",
         py.get_type::<crate::error::BlackboardCreateError>(),
     )?;
+    m.add(
+        "BlackboardOpenError",
+        py.get_type::<crate::error::BlackboardOpenError>(),
+    )?;
 
     Ok(())
 }

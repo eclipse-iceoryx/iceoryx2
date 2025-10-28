@@ -43,6 +43,28 @@ def blackboard_creator(
     )
 
 
+def blackboard_opener(
+    self: ServiceBuilder, t: Type[T]
+) -> ServiceBuilderBlackboardOpener:
+    """Returns the `ServiceBuilderBlackboardOpener` to open a blackboard service. The key ctype must be provided as argument."""
+
+    type_name = get_type_name(t)
+    type_size = ctypes.sizeof(t)
+    type_align = ctypes.alignment(t)
+    type_variant = TypeVariant.FixedSize
+
+    result = self.__blackboard_opener()
+    result.__set_key_type(t)
+
+    return result.__set_key_type_details(
+        TypeDetail.new()
+        .type_variant(type_variant)
+        .type_name(TypeName.new(type_name))
+        .size(type_size)
+        .alignment(type_align)
+    )
+
+
 def add(
     self: ServiceBuilderBlackboardCreator,
     key: Type[T],
@@ -75,4 +97,5 @@ def add(
 
 
 ServiceBuilder.blackboard_creator = blackboard_creator
+ServiceBuilder.blackboard_opener = blackboard_opener
 ServiceBuilderBlackboardCreator.add = add

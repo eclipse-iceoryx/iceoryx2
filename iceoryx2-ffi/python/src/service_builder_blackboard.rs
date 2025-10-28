@@ -14,7 +14,8 @@ use iceoryx2::service::builder::CustomKeyMarker;
 use pyo3::prelude::*;
 
 use crate::attribute_specifier::AttributeSpecifier;
-use crate::error::BlackboardCreateError;
+use crate::attribute_verifier::AttributeVerifier;
+use crate::error::{BlackboardCreateError, BlackboardOpenError};
 use crate::port_factory_blackboard::{PortFactoryBlackboard, PortFactoryBlackboardType};
 use crate::type_detail::TypeDetail;
 use crate::type_storage::TypeStorage;
@@ -209,12 +210,143 @@ impl ServiceBuilderBlackboardCreator {
     }
 }
 
-#[pyclass]
+// TODO: make cleanup callable Send+Sync and remove unsendable?
+#[pyclass(unsendable)]
 /// Builder to open new `MessagingPattern::Blackboard` based `Service`s
-pub struct ServiceBuilderBlackboardOpener {}
+pub struct ServiceBuilderBlackboardOpener {
+    pub(crate) value: ServiceBuilderBlackboardOpenerType,
+    pub key_type_details: TypeStorage,
+}
 
 impl ServiceBuilderBlackboardOpener {
     pub(crate) fn new(value: ServiceBuilderBlackboardOpenerType) -> Self {
-        todo!()
+        Self {
+            value,
+            key_type_details: TypeStorage::new(),
+        }
+    }
+
+    fn clone_ipc(&self, builder: IpcOpener) -> Self {
+        Self {
+            value: ServiceBuilderBlackboardOpenerType::Ipc(builder),
+            key_type_details: self.key_type_details.clone(),
+        }
+    }
+
+    fn clone_local(&self, builder: LocalOpener) -> Self {
+        Self {
+            value: ServiceBuilderBlackboardOpenerType::Local(builder),
+            key_type_details: self.key_type_details.clone(),
+        }
+    }
+}
+
+#[pymethods]
+impl ServiceBuilderBlackboardOpener {
+    #[getter]
+    pub fn __key_type_details(&self) -> Option<Py<PyAny>> {
+        self.key_type_details.clone().value
+    }
+
+    pub fn __set_key_type(&mut self, value: PyObject) {
+        self.key_type_details.value = Some(value)
+    }
+
+    pub fn __set_key_type_details(&self, value: &TypeDetail) -> Self {
+        match &self.value {
+            ServiceBuilderBlackboardOpenerType::Ipc(v) => {
+                let this = v.clone();
+                let this = unsafe { this.__internal_set_key_type_details(&value.0) };
+                self.clone_ipc(this)
+            }
+            ServiceBuilderBlackboardOpenerType::Local(v) => {
+                let this = v.clone();
+                let this = unsafe { this.__internal_set_key_type_details(&value.0) };
+                self.clone_local(this)
+            }
+        }
+    }
+
+    pub fn max_readers(&self, value: usize) -> Self {
+        match &self.value {
+            ServiceBuilderBlackboardOpenerType::Ipc(v) => {
+                let this = v.clone();
+                let this = this.max_readers(value);
+                self.clone_ipc(this)
+            }
+            ServiceBuilderBlackboardOpenerType::Local(v) => {
+                let this = v.clone();
+                let this = this.max_readers(value);
+                self.clone_local(this)
+            }
+        }
+    }
+
+    pub fn max_nodes(&self, value: usize) -> Self {
+        match &self.value {
+            ServiceBuilderBlackboardOpenerType::Ipc(v) => {
+                let this = v.clone();
+                let this = this.max_nodes(value);
+                self.clone_ipc(this)
+            }
+            ServiceBuilderBlackboardOpenerType::Local(v) => {
+                let this = v.clone();
+                let this = this.max_nodes(value);
+                self.clone_local(this)
+            }
+        }
+    }
+
+    pub fn open(&self) -> PyResult<PortFactoryBlackboard> {
+        match &self.value {
+            ServiceBuilderBlackboardOpenerType::Ipc(v) => {
+                let this = v.clone();
+                Ok(PortFactoryBlackboard::new(
+                    PortFactoryBlackboardType::Ipc(
+                        this.open()
+                            .map_err(|e| BlackboardOpenError::new_err(format!("{e:?}")))?,
+                    ),
+                    self.key_type_details.clone(),
+                ))
+            }
+            ServiceBuilderBlackboardOpenerType::Local(v) => {
+                let this = v.clone();
+                Ok(PortFactoryBlackboard::new(
+                    PortFactoryBlackboardType::Local(
+                        this.open()
+                            .map_err(|e| BlackboardOpenError::new_err(format!("{e:?}")))?,
+                    ),
+                    self.key_type_details.clone(),
+                ))
+            }
+        }
+    }
+
+    pub fn open_with_attributes(
+        &self,
+        verifier: &AttributeVerifier,
+    ) -> PyResult<PortFactoryBlackboard> {
+        match &self.value {
+            ServiceBuilderBlackboardOpenerType::Ipc(v) => {
+                let this = v.clone();
+                Ok(PortFactoryBlackboard::new(
+                    PortFactoryBlackboardType::Ipc(
+                        this.open_with_attributes(&verifier.0)
+                            .map_err(|e| BlackboardOpenError::new_err(format!("{e:?}")))?,
+                    ),
+                    self.key_type_details.clone(),
+                ))
+            }
+            ServiceBuilderBlackboardOpenerType::Local(v) => {
+                let this = v.clone();
+                Ok(PortFactoryBlackboard::new(
+                    PortFactoryBlackboardType::Local(
+                        this.open_with_attributes(&verifier.0)
+                            .map_err(|e| BlackboardOpenError::new_err(format!("{e:?}")))?,
+                    ),
+                    self.key_type_details.clone(),
+                ))
+            }
+        }
     }
 }

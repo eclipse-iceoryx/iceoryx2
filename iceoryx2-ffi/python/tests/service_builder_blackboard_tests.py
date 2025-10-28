@@ -59,6 +59,93 @@ def test_existing_service_cannot_be_created(
 
 
 @pytest.mark.parametrize("service_type", service_types)
+def test_existing_service_can_be_opened(service_type: iox2.ServiceType) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+
+    service_name = iox2.testing.generate_service_name()
+    _existing_service = (
+        node.service_builder(service_name)
+        .blackboard_creator(c_uint32)
+        .add(c_uint32(0), c_uint32, c_uint32(0))
+        .create()
+    )
+    try:
+        sut = node.service_builder(service_name).blackboard_opener(c_uint32).open()
+        assert sut.name == service_name
+    except iox2.BlackboardOpenError:
+        assert False
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_non_existing_service_cannot_be_opened(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+
+    service_name = iox2.testing.generate_service_name()
+    with pytest.raises(iox2.BlackboardOpenError):
+        node.service_builder(service_name).blackboard_opener(c_uint32).open()
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_create_service_with_attributes_work(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    attribute_spec = iox2.AttributeSpecifier.new().define(
+        iox2.AttributeKey.new("fuu"), iox2.AttributeValue.new("bar")
+    )
+
+    service_name = iox2.testing.generate_service_name()
+    sut_create = (
+        node.service_builder(service_name)
+        .blackboard_creator(c_uint32)
+        .add(c_uint32(0), c_uint32, c_uint32(0))
+        .create_with_attributes(attribute_spec)
+    )
+
+    sut_open = node.service_builder(service_name).blackboard_opener(c_uint32).open()
+
+    assert sut_create.attributes == attribute_spec.attributes
+    assert sut_create.attributes == sut_open.attributes
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_open_service_with_attributes_work(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+
+    attribute_spec = iox2.AttributeSpecifier.new().define(
+        iox2.AttributeKey.new("knock"), iox2.AttributeValue.new("knock")
+    )
+    attribute_verifier = iox2.AttributeVerifier.new().require(
+        iox2.AttributeKey.new("knock"), iox2.AttributeValue.new("knock")
+    )
+
+    service_name = iox2.testing.generate_service_name()
+    sut_create = (
+        node.service_builder(service_name)
+        .blackboard_creator(c_uint32)
+        .add(c_uint32(0), c_uint32, c_uint32(0))
+        .create_with_attributes(attribute_spec)
+    )
+
+    sut_open = (
+        node.service_builder(service_name)
+        .blackboard_opener(c_uint32)
+        .open_with_attributes(attribute_verifier)
+    )
+
+    assert sut_create.attributes == attribute_spec.attributes
+    assert sut_create.attributes == sut_open.attributes
+
+
+@pytest.mark.parametrize("service_type", service_types)
 def test_node_listing_works(service_type: iox2.ServiceType) -> None:
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
