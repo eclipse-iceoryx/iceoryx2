@@ -264,3 +264,10 @@ create_exception!(
     PyException,
     "Errors caused by calling WaitSet::wait_and_process()."
 );
+
+create_exception!(
+    iceoryx2_ffi_python,
+    BlackboardCreateError,
+    PyException,
+    "Errors caused when creating a blackboard service."
+);

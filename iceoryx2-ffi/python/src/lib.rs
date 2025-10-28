@@ -43,6 +43,7 @@ pub mod notifier;
 pub mod parc;
 pub mod path;
 pub mod pending_response;
+pub mod port_factory_blackboard;
 pub mod port_factory_client;
 pub mod port_factory_event;
 pub mod port_factory_listener;
@@ -66,6 +67,7 @@ pub mod sample_mut_uninit;
 pub mod server;
 pub mod service;
 pub mod service_builder;
+pub mod service_builder_blackboard;
 pub mod service_builder_event;
 pub mod service_builder_publish_subscribe;
 pub mod service_builder_request_response;
@@ -74,6 +76,7 @@ pub mod service_id;
 pub mod service_name;
 pub mod service_type;
 pub mod signal_handling_mode;
+pub mod static_config_blackboard;
 pub mod static_config_event;
 pub mod static_config_publish_subscribe;
 pub mod static_config_request_response;
@@ -143,6 +146,7 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::notifier::Notifier>()?;
     m.add_class::<crate::path::Path>()?;
     m.add_class::<crate::pending_response::PendingResponse>()?;
+    m.add_class::<crate::port_factory_blackboard::PortFactoryBlackboard>()?;
     m.add_class::<crate::port_factory_client::PortFactoryClient>()?;
     m.add_class::<crate::port_factory_event::PortFactoryEvent>()?;
     m.add_class::<crate::port_factory_listener::PortFactoryListener>()?;
@@ -166,6 +170,8 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::server::Server>()?;
     m.add_class::<crate::service::Service>()?;
     m.add_class::<crate::service_builder::ServiceBuilder>()?;
+    m.add_class::<crate::service_builder_blackboard::ServiceBuilderBlackboardCreator>()?;
+    m.add_class::<crate::service_builder_blackboard::ServiceBuilderBlackboardOpener>()?;
     m.add_class::<crate::service_builder_event::ServiceBuilderEvent>()?;
     m.add_class::<crate::service_builder_publish_subscribe::ServiceBuilderPublishSubscribe>()?;
     m.add_class::<crate::service_builder_request_response::ServiceBuilderRequestResponse>()?;
@@ -174,6 +180,7 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::service_name::ServiceName>()?;
     m.add_class::<crate::service_type::ServiceType>()?;
     m.add_class::<crate::signal_handling_mode::SignalHandlingMode>()?;
+    m.add_class::<crate::static_config_blackboard::StaticConfigBlackboard>()?;
     m.add_class::<crate::static_config_event::StaticConfigEvent>()?;
     m.add_class::<crate::static_config_publish_subscribe::StaticConfigPublishSubscribe>()?;
     m.add_class::<crate::static_config_request_response::StaticConfigRequestResponse>()?;
@@ -316,6 +323,10 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add(
         "WaitSetRunError",
         py.get_type::<crate::error::WaitSetRunError>(),
+    )?;
+    m.add(
+        "BlackboardCreateError",
+        py.get_type::<crate::error::BlackboardCreateError>(),
     )?;
 
     Ok(())
