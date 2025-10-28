@@ -29,10 +29,10 @@ if(NOT ICEORYX2_COMMON_OPTIONS_AND_PARAMS_LISTED)
         DEFAULT_VALUE OFF
     )
 
-    add_option(
+    add_param(
         NAME SANITIZERS
-        DESCRIPTION "Build with undefined-behavior- and address-sanitizer"
-        DEFAULT_VALUE OFF
+        DESCRIPTION "Sanitizer configuration: 'address', 'ub', 'address;ub', 'thread', or empty string (disabled)"
+        DEFAULT_VALUE ""
     )
 
     add_option(
