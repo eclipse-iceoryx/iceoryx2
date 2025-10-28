@@ -16,7 +16,8 @@ default = ["std"]
 std = [
   "logger_buffer",
   "logger_console",
-  "logger_file"
+  "logger_file",
+  "iceoryx2-bb-posix/std"
 ]
 
 # Enables logging to console
