@@ -10,26 +10,26 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![allow(dead_code)]
+#![allow(non_camel_case_types, non_snake_case)]
+#![allow(clippy::missing_safety_doc)]
+#![allow(unused_variables)]
 
-use core::unreachable;
+use core::unimplemented;
 
-pub(crate) unsafe fn c_string_length(value: *const crate::posix::c_char) -> usize {
-    for i in 0..isize::MAX {
-        if *value.offset(i) == crate::posix::NULL_TERMINATOR {
-            return i as usize;
-        }
-    }
+use crate::posix::types::*;
 
-    unreachable!()
+pub unsafe fn malloc(size: size_t) -> *mut void {
+    unimplemented!("malloc")
 }
 
-pub(crate) unsafe fn c_wide_string_length(value: *const u16) -> usize {
-    for i in 0..usize::MAX {
-        if *value.add(i) == 0u16 {
-            return i;
-        }
-    }
+pub unsafe fn calloc(nmemb: size_t, size: size_t) -> *mut void {
+    unimplemented!("calloc")
+}
 
-    0
+pub unsafe fn realloc(ptr: *mut void, size: size_t) -> *mut void {
+    unimplemented!("realloc")
+}
+
+pub unsafe fn free(ptr: *mut void) {
+    unimplemented!("free")
 }

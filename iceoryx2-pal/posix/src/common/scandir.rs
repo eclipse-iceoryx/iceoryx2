@@ -10,6 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use alloc::vec;
+use alloc::vec::Vec;
+
 use crate::posix::{closedir, free, malloc, opendir, readdir_r};
 use crate::posix::{dirent_size, types::*};
 

@@ -29,6 +29,9 @@ fn main() {
 
     // #[cfg(any(...))] does not work when cross-compiling
     let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap();
+    if target_os.as_str() == "none" {
+        return;
+    }
 
     let mut builder = bindgen::Builder::default()
         .header("src/c/posix.h")
