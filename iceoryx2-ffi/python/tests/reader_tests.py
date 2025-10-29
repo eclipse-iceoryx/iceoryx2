@@ -1,0 +1,91 @@
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache Software License 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+# which is available at https://opensource.org/licenses/MIT.
+#
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+from ctypes import *
+
+import iceoryx2 as iox2
+import pytest
+
+service_types = [iox2.ServiceType.Ipc, iox2.ServiceType.Local]
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_reader_is_is_unique(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .blackboard_creator(c_uint64)
+        .add(c_uint64(0), c_uint8, c_uint8(0))
+        .create()
+    )
+
+    max_readers = 8
+    readers = []
+    reader_ids = {0}
+    assert len(reader_ids) == 1
+
+    i = 0
+    while i < max_readers:
+        reader = service.reader_builder().create()
+        reader_ids.add(reader.id.value)
+        readers.append(reader)
+        i += 1
+
+    assert len(reader_ids) == max_readers + 1
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_handle_can_be_acquired_for_existing_key_value_pair(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .blackboard_creator(c_uint64)
+        .add(c_uint64(0), c_uint64, c_uint64(0))
+        .create()
+    )
+
+    reader = service.reader_builder().create()
+    try:
+        entry_handle = reader.entry(c_uint64(0), c_uint64)
+    except iox2.EntryHandleError:
+        assert False
+
+
+# TODO: check why test fails
+@pytest.mark.parametrize("service_type", service_types)
+def test_handle_cannot_be_acquired_for_non_existing_key(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .blackboard_creator(c_uint64)
+        .add(c_uint64(0), c_uint64, c_uint64(0))
+        .create()
+    )
+
+    reader = service.reader_builder().create()
+    with pytest.raises(iox2.EntryHandleError):
+        entry_handle = reader.entry(c_uint64(9), c_uint64)
+
+
+# TODO: continue with "handle_cannot_be_acquired_for_wrong_value_type"

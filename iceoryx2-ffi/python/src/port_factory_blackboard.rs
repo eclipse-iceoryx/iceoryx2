@@ -21,6 +21,9 @@ use crate::node_state::{
     AliveNodeView, AliveNodeViewType, DeadNodeView, DeadNodeViewType, NodeState,
 };
 use crate::parc::Parc;
+use crate::port_factory_reader::PortFactoryReader;
+use crate::port_factory_writer::PortFactoryWriter;
+use crate::service_id::ServiceId;
 use crate::service_name::ServiceName;
 use crate::static_config_blackboard::StaticConfigBlackboard;
 use crate::type_storage::TypeStorage;
@@ -62,6 +65,15 @@ impl PortFactoryBlackboard {
         match &*self.value.lock() {
             PortFactoryBlackboardType::Ipc(v) => ServiceName(v.name().clone()),
             PortFactoryBlackboardType::Local(v) => ServiceName(v.name().clone()),
+        }
+    }
+
+    #[getter]
+    /// Returns the `ServiceId` of the `Service`
+    pub fn service_id(&self) -> ServiceId {
+        match &*self.value.lock() {
+            PortFactoryBlackboardType::Ipc(v) => ServiceId(v.service_id().clone()),
+            PortFactoryBlackboardType::Local(v) => ServiceId(v.service_id().clone()),
         }
     }
 
@@ -134,5 +146,15 @@ impl PortFactoryBlackboard {
                 Ok(ret_val)
             }
         }
+    }
+
+    /// Returns a `PortFactoryWriter` to create a new `Writer` port
+    pub fn writer_builder(&self) -> PortFactoryWriter {
+        PortFactoryWriter::new(self.value.clone(), self.key_type_details.clone())
+    }
+
+    /// Returns a `PortFactoryReader` to create a new `Reader` port
+    pub fn reader_builder(&self) -> PortFactoryReader {
+        PortFactoryReader::new(self.value.clone(), self.key_type_details.clone())
     }
 }

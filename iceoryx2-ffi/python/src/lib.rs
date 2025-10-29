@@ -23,6 +23,7 @@ pub mod cleanup_state;
 pub mod client;
 pub mod config;
 pub mod duration;
+pub mod entry_handle;
 pub mod error;
 pub mod event_id;
 pub mod file_descriptor;
@@ -50,10 +51,13 @@ pub mod port_factory_listener;
 pub mod port_factory_notifier;
 pub mod port_factory_publish_subscribe;
 pub mod port_factory_publisher;
+pub mod port_factory_reader;
 pub mod port_factory_request_response;
 pub mod port_factory_server;
 pub mod port_factory_subscriber;
+pub mod port_factory_writer;
 pub mod publisher;
+pub mod reader;
 pub mod request_header;
 pub mod request_mut;
 pub mod request_mut_uninit;
@@ -91,6 +95,7 @@ pub mod unique_client_id;
 pub mod unique_listener_id;
 pub mod unique_notifier_id;
 pub mod unique_publisher_id;
+pub mod unique_reader_id;
 pub mod unique_server_id;
 pub mod unique_subscriber_id;
 pub mod waitset;
@@ -127,6 +132,7 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::attribute_value::AttributeValue>()?;
     m.add_class::<crate::client::Client>()?;
     m.add_class::<crate::duration::Duration>()?;
+    m.add_class::<crate::entry_handle::EntryHandle>()?;
     m.add_class::<crate::event_id::EventId>()?;
     m.add_class::<crate::file_name::FileName>()?;
     m.add_class::<crate::file_path::FilePath>()?;
@@ -153,10 +159,13 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::port_factory_notifier::PortFactoryNotifier>()?;
     m.add_class::<crate::port_factory_publisher::PortFactoryPublisher>()?;
     m.add_class::<crate::port_factory_publish_subscribe::PortFactoryPublishSubscribe>()?;
+    m.add_class::<crate::port_factory_reader::PortFactoryReader>()?;
     m.add_class::<crate::port_factory_request_response::PortFactoryRequestResponse>()?;
     m.add_class::<crate::port_factory_server::PortFactoryServer>()?;
     m.add_class::<crate::port_factory_subscriber::PortFactorySubscriber>()?;
+    m.add_class::<crate::port_factory_writer::PortFactoryWriter>()?;
     m.add_class::<crate::publisher::Publisher>()?;
+    m.add_class::<crate::reader::Reader>()?;
     m.add_class::<crate::request_header::RequestHeader>()?;
     m.add_class::<crate::request_mut::RequestMut>()?;
     m.add_class::<crate::request_mut_uninit::RequestMutUninit>()?;
@@ -193,6 +202,7 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::unique_listener_id::UniqueListenerId>()?;
     m.add_class::<crate::unique_notifier_id::UniqueNotifierId>()?;
     m.add_class::<crate::unique_publisher_id::UniquePublisherId>()?;
+    m.add_class::<crate::unique_reader_id::UniqueReaderId>()?;
     m.add_class::<crate::unique_server_id::UniqueServerId>()?;
     m.add_class::<crate::unique_subscriber_id::UniqueSubscriberId>()?;
     m.add_class::<crate::waitset::WaitSet>()?;
@@ -331,6 +341,14 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add(
         "BlackboardOpenError",
         py.get_type::<crate::error::BlackboardOpenError>(),
+    )?;
+    m.add(
+        "ReaderCreateError",
+        py.get_type::<crate::error::ReaderCreateError>(),
+    )?;
+    m.add(
+        "EntryHandleError",
+        py.get_type::<crate::error::EntryHandleError>(),
     )?;
 
     Ok(())

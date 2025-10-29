@@ -395,5 +395,73 @@ def test_open_uses_predefined_settings_when_nothing_is_specified(
     assert static_config.max_readers == 4
 
 
+@pytest.mark.parametrize("service_type", service_types)
+def test_service_id_is_unique_per_service(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service_name_1 = iox2.testing.generate_service_name()
+    service_name_2 = iox2.testing.generate_service_name()
+
+    service_1_create = (
+        node.service_builder(service_name_1)
+        .blackboard_creator(c_uint64)
+        .add(c_uint64(0), c_uint64, c_uint64(0))
+        .create()
+    )
+    service_1_open = (
+        node.service_builder(service_name_1).blackboard_opener(c_uint64).open()
+    )
+    service_2 = (
+        node.service_builder(service_name_2)
+        .blackboard_creator(c_uint64)
+        .add(c_uint64(0), c_uint64, c_uint64(0))
+        .create()
+    )
+
+    assert service_1_create.service_id.as_str == service_1_open.service_id.as_str
+    assert service_1_create.service_id.as_str != service_2.service_id.as_str
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_max_number_of_nodes_works(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    service_name = iox2.testing.generate_service_name()
+    max_nodes = 8
+    nodes = []
+    services = []
+
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    creator = (
+        node.service_builder(service_name)
+        .blackboard_creator(c_uint64)
+        .add(c_uint64(0), c_uint64, c_uint64(0))
+        .max_nodes(max_nodes)
+        .create()
+    )
+    nodes.append(node)
+    services.append(creator)
+
+    i = 1
+    while i < max_nodes:
+        opener_node = iox2.NodeBuilder.new().config(config).create(service_type)
+        nodes.append(opener_node)
+        services.append(
+            opener_node.service_builder(service_name).blackboard_opener(c_uint64).open()
+        )
+        i += 1
+
+    assert len(services) == 8
+    with pytest.raises(iox2.BlackboardOpenError):
+        opener_node = iox2.NodeBuilder.new().config(config).create(service_type)
+        services.append(
+            opener_node.service_builder(service_name).blackboard_opener(c_uint64).open()
+        )
+
+    assert len(services) == 8
+
+
 # TODO: "drop" tests
-# continue with number_of_readers_works

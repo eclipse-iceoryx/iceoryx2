@@ -54,7 +54,7 @@ impl PortFactoryListener {
                     > = v;
                     // by converting the factory into a pointer we change the lifetime into 'static
                     // and with the factory reference hold by this object we ensure that it
-                    // lifes long enough
+                    // lives long enough
                     PortFactoryListenerType::Ipc(unsafe { &*v }.listener_builder())
                 }
                 PortFactoryEventType::Local(v) => {
@@ -63,7 +63,7 @@ impl PortFactoryListener {
                     > = v;
                     // by converting the factory into a pointer we change the lifetime into 'static
                     // and with the factory reference hold by this object we ensure that it
-                    // lifes long enough
+                    // lives long enough
                     PortFactoryListenerType::Local(unsafe { &*v }.listener_builder())
                 }
             },

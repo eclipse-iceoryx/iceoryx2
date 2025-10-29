@@ -44,7 +44,7 @@ use crate::service;
 /// Factory to create a new [`Reader`] port/endpoint for
 /// [`MessagingPattern::Blackboard`](crate::service::messaging_pattern::MessagingPattern::Blackboard)
 /// based communication.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PortFactoryReader<
     'factory,
     Service: service::Service,

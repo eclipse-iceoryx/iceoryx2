@@ -44,7 +44,7 @@ pub(crate) enum SubscriberType {
 }
 
 #[pyclass]
-/// Represents the receiving endpoint of an event based communication.
+/// Represents the receiving endpoint of a publish-subscribe based communication.
 pub struct Subscriber {
     pub(crate) value: Parc<SubscriberType>,
     pub(crate) payload_type_details: TypeStorage,
