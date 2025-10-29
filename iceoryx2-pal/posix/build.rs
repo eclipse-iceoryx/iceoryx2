@@ -32,6 +32,9 @@ fn main() {
     // when cross compiling, 'target_os' is set to the environment the build script
     // is executed; to get the actual target OS, use the cargo 'TARGET' env variable
     let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap();
+    if target_os.as_str() == "none" {
+        return;
+    }
 
     println!("Building for target: {}", target_os);
 

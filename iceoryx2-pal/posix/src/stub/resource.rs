@@ -10,8 +10,18 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub trait MemZeroedStruct: core::marker::Sized {
-    fn new_zeroed() -> Self {
-        unsafe { core::mem::zeroed() }
-    }
+#![allow(non_camel_case_types, non_snake_case)]
+#![allow(clippy::missing_safety_doc)]
+#![allow(unused_variables)]
+
+use core::unimplemented;
+
+use crate::posix::types::*;
+
+pub unsafe fn getrlimit(resource: int, rlim: *mut rlimit) -> int {
+    unimplemented!("getrlimit")
+}
+
+pub unsafe fn setrlimit(resource: int, rlim: *const rlimit) -> int {
+    unimplemented!("setrlimit")
 }

@@ -42,8 +42,11 @@ mod platform;
 #[cfg(target_os = "windows")]
 #[path = "windows/mod.rs"]
 mod platform;
+#[cfg(all(target_os = "none", not(feature = "libc_platform")))]
+#[path = "stub/mod.rs"]
+mod platform;
 
-#[cfg(not(feature = "libc_platform"))]
+#[cfg(any(not(feature = "libc_platform"), not(target_os = "none")))]
 pub(crate) mod internal {
     #![allow(non_upper_case_globals)]
     #![allow(non_camel_case_types)]

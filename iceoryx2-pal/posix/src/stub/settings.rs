@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub trait MemZeroedStruct: core::marker::Sized {
-    fn new_zeroed() -> Self {
-        unsafe { core::mem::zeroed() }
-    }
-}
+#![allow(dead_code)]
+
+pub(crate) const MAX_PATH_LENGTH: usize = 255;
+pub(crate) const SHM_STATE_DIRECTORY: &[u8] = iceoryx2_pal_configuration::TEMP_DIRECTORY;
+pub(crate) const SHM_STATE_SUFFIX: &[u8] = b".shm_state";
