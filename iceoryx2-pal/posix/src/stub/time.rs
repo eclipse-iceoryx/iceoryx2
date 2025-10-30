@@ -14,16 +14,14 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(unused_variables)]
 
-use core::unimplemented;
-
 use crate::posix::types::*;
 
 pub unsafe fn clock_gettime(clock_id: clockid_t, tp: *mut timespec) -> int {
-    unimplemented!("clock_gettime")
+    0
 }
 
 pub unsafe fn clock_settime(clock_id: clockid_t, tp: *const timespec) -> int {
-    unimplemented!("clock_settime")
+    0
 }
 
 pub unsafe fn clock_nanosleep(
@@ -32,5 +30,5 @@ pub unsafe fn clock_nanosleep(
     rqtp: *const timespec,
     rmtp: *mut timespec,
 ) -> int {
-    unimplemented!("clock_nanosleep")
+    0
 }
