@@ -32,7 +32,6 @@ iceoryx2-pal-concurrency-sync = { workspace = true }
 postcard = { workspace = true }
 once_cell = { workspace = true }
 serde = { workspace = true }
-cdr = { workspace = true }
 toml = { workspace = true }
 sha1_smol = { workspace = true }
 tiny-fn = { workspace = true }

@@ -395,16 +395,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cdr"
-version = "0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9617422bf43fde9280707a7e90f8f7494389c182f5c70b0f67592d0f06d41dfa"
-dependencies = [
- "byteorder",
- "serde",
-]
-
-[[package]]
 name = "cesu8"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1485,7 +1475,6 @@ dependencies = [
 name = "iceoryx2-cal"
 version = "0.7.0"
 dependencies = [
- "cdr",
  "generic-tests",
  "iceoryx2-bb-container",
  "iceoryx2-bb-derive-macros",
@@ -1511,7 +1500,6 @@ dependencies = [
 name = "iceoryx2-cal-conformance-tests"
 version = "0.7.0"
 dependencies = [
- "cdr",
  "iceoryx2-bb-conformance-test-macros",
  "iceoryx2-bb-container",
  "iceoryx2-bb-elementary-traits",
@@ -1656,7 +1644,6 @@ dependencies = [
  "iceoryx2-pal-concurrency-sync",
  "iceoryx2-pal-configuration",
  "iceoryx2-pal-testing",
- "lazy_static",
  "libc",
  "windows-sys 0.48.0",
 ]
