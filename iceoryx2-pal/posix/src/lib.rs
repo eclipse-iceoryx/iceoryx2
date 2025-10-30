@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![no_std]
+#![cfg_attr(target_os = "none", no_std)]
 #![allow(clippy::missing_safety_doc)]
 #![warn(clippy::alloc_instead_of_core)]
 #![warn(clippy::std_instead_of_alloc)]
