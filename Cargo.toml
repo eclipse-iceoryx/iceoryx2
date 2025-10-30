@@ -80,7 +80,7 @@ iceoryx2-bb-derive-macros = { version = "0.7.0", path = "iceoryx2-bb/derive-macr
 iceoryx2-bb-elementary = { version = "0.7.0", path = "iceoryx2-bb/elementary/" }
 iceoryx2-bb-elementary-traits = { version = "0.7.0", path = "iceoryx2-bb/elementary-traits/" }
 iceoryx2-bb-linux = { version = "0.7.0", path = "iceoryx2-bb/linux/" }
-iceoryx2-bb-log = { version = "0.7.0", path = "iceoryx2-bb/log/" }
+iceoryx2-bb-log = { version = "0.7.0", path = "iceoryx2-bb/log/", default-features = false }
 iceoryx2-bb-memory = { version = "0.7.0", path = "iceoryx2-bb/memory/" }
 iceoryx2-bb-posix = { version = "0.7.0", path = "iceoryx2-bb/posix/" }
 iceoryx2-bb-system-types = { version = "0.7.0", path = "iceoryx2-bb/system-types/" }
@@ -93,7 +93,7 @@ iceoryx2-pal-configuration = { version = "0.7.0", path = "iceoryx2-pal/configura
 iceoryx2-pal-testing = { version = "0.7.0", path = "iceoryx2-pal/testing/" }
 iceoryx2-cal = { version = "0.7.0", path = "iceoryx2-cal", default-features = false }
 iceoryx2-cal-conformance-tests = { version = "0.7.0", path = "iceoryx2-cal/conformance-tests"}
-iceoryx2 = { version = "0.7.0", path = "iceoryx2/" }
+iceoryx2 = { version = "0.7.0", path = "iceoryx2/", default-features = false }
 iceoryx2-conformance-tests = { version = "0.7.0", path = "iceoryx2/conformance-tests"}
 iceoryx2-cli = { version = "0.7.0", path = "iceoryx2_cli/"}
 iceoryx2-ffi-c = { version = "0.7.0", path = "iceoryx2-ffi/c" }
@@ -132,7 +132,6 @@ serde_test = { version = "1.0.176" }
 sha1_smol = { version = "1.0.0" }
 syn = { version = "2.0.66", features = ["full"] }
 tempfile = { version = "3.12.0" }
-thiserror = { version = "1.0.56" }
 tiny-fn = { version = "0.1.6" }
 toml = { version = "0.9.8", default-features = false, features = ["serde", "parse", "display"] }
 tracing = { version = "0.1.40" }
