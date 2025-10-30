@@ -18,6 +18,7 @@ use crate::posix::types::*;
 pub const GLOBAL_CONFIG_PATH: &str = "";
 pub const USER_CONFIG_PATH: &str = "";
 pub const USER_NAME_LENGTH: usize = 255;
+pub const THREAD_NAME_LENGTH: usize = 16;
 pub const GROUP_NAME_LENGTH: usize = 31;
 
 pub const CPU_SETSIZE: usize = core::mem::size_of::<usize>() * 8;

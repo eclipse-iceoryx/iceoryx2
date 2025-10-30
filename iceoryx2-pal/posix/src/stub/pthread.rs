@@ -14,9 +14,143 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(unused_variables)]
 
-use core::unimplemented;
+use core::{cell::UnsafeCell, sync::atomic::Ordering, unimplemented};
+
+use iceoryx2_pal_concurrency_sync::{mutex::Mutex, WaitAction};
 
 use crate::posix::*;
+
+#[derive(Clone, Copy)]
+struct ThreadState {
+    id: u64,
+    affinity: cpu_set_t,
+    name: [u8; THREAD_NAME_LENGTH],
+}
+
+impl ThreadState {
+    fn new(pthread: pthread_t) -> Self {
+        Self {
+            id: pthread.id as u64,
+            affinity: cpu_set_t::new_allow_all(),
+            name: [0u8; THREAD_NAME_LENGTH],
+        }
+    }
+}
+
+struct ThreadStates {
+    states: [UnsafeCell<Option<ThreadState>>; MAX_NUMBER_OF_THREADS],
+    mtx: Mutex,
+}
+
+unsafe impl Send for ThreadStates {}
+unsafe impl Sync for ThreadStates {}
+
+impl ThreadStates {
+    const fn new() -> Self {
+        #[allow(clippy::declare_interior_mutable_const)]
+        const NONE: UnsafeCell<Option<ThreadState>> = UnsafeCell::new(None);
+        Self {
+            states: [NONE; MAX_NUMBER_OF_THREADS],
+            mtx: Mutex::new(),
+        }
+    }
+
+    fn get_instance() -> &'static ThreadStates {
+        static INSTANCE: ThreadStates = ThreadStates::new();
+
+        &INSTANCE
+    }
+
+    fn lock(&self) {
+        self.mtx.lock(|_, _| WaitAction::Continue);
+    }
+
+    fn unlock(&self) {
+        self.mtx.unlock(|_| {});
+    }
+
+    fn add(&self, pthread: pthread_t) -> usize {
+        let mut index = usize::MAX;
+        self.lock();
+        for i in 0..MAX_NUMBER_OF_THREADS {
+            if unsafe { (*self.states[i].get()).is_none() } {
+                unsafe { *self.states[i].get() = Some(ThreadState::new(pthread)) };
+                index = i;
+                break;
+            }
+        }
+        self.unlock();
+
+        if index == usize::MAX {
+            panic!("With this thread the maximum number of supported thread ({MAX_NUMBER_OF_THREADS}) of the system is exceeded.");
+        }
+        index
+    }
+
+    fn get(&self, pthread: pthread_t) -> ThreadState {
+        let t = pthread.id as u64;
+        let mut thread_state = core::ptr::null::<ThreadState>();
+        self.lock();
+        for state in &self.states {
+            unsafe {
+                if let Some(ref v) = *state.get() {
+                    if v.id == t {
+                        thread_state = v;
+                        break;
+                    }
+                }
+            }
+        }
+
+        self.unlock();
+        unsafe { *thread_state }
+    }
+
+    #[allow(clippy::mut_from_ref)]
+    unsafe fn get_mut(&self, pthread: pthread_t) -> &mut ThreadState {
+        let t = pthread.id as u64;
+        let mut thread_state = core::ptr::null_mut::<ThreadState>();
+        self.lock();
+        for state in &self.states {
+            unsafe {
+                if let Some(ref mut v) = *state.get() {
+                    if v.id == t {
+                        thread_state = v;
+                        break;
+                    }
+                }
+            }
+        }
+
+        self.unlock();
+        unsafe { &mut *thread_state }
+    }
+
+    fn remove(&self, pthread: pthread_t) {
+        let t = pthread.id as u64;
+        self.lock();
+        for state in &self.states {
+            unsafe {
+                if let Some(ref v) = *state.get() {
+                    if v.id == t {
+                        *state.get() = None;
+                        break;
+                    }
+                }
+            }
+        }
+        self.unlock();
+    }
+}
+
+unsafe fn get_thread_id() -> u32 {
+    let id = 0u64;
+    id as _
+}
+
+unsafe fn owner_and_ref_count(v: u64) -> (u32, u32) {
+    ((v >> 32) as u32, ((v << 32) >> 32) as u32)
+}
 
 pub unsafe fn pthread_rwlockattr_setkind_np(_attr: *mut pthread_rwlockattr_t, _pref: int) -> int {
     unimplemented!("pthread_rwlockattr_setkind_np")
@@ -184,15 +318,22 @@ pub unsafe fn pthread_mutex_init(
     mtx: *mut pthread_mutex_t,
     attr: *const pthread_mutexattr_t,
 ) -> int {
-    unimplemented!("pthread_mutex_init")
+    mtx.write(pthread_mutex_t::new_zeroed());
+    (*mtx).mtype = (*attr).mtype | (*attr).robustness;
+    (*mtx).track_thread_id = (*attr).mtype == PTHREAD_MUTEX_ERRORCHECK
+        || (*attr).mtype == PTHREAD_MUTEX_RECURSIVE
+        || (*attr).robustness == PTHREAD_MUTEX_ROBUST;
+
+    0
 }
 
 pub unsafe fn pthread_mutex_destroy(mtx: *mut pthread_mutex_t) -> int {
-    unimplemented!("pthread_mutex_destroy")
+    0
 }
 
 pub unsafe fn pthread_mutex_lock(mtx: *mut pthread_mutex_t) -> int {
-    unimplemented!("pthread_mutex_lock")
+    (*mtx).mtx.lock(|atomic, value| WaitAction::Continue);
+    0
 }
 
 pub unsafe fn pthread_mutex_timedlock(
@@ -207,7 +348,49 @@ pub unsafe fn pthread_mutex_trylock(mtx: *mut pthread_mutex_t) -> int {
 }
 
 pub unsafe fn pthread_mutex_unlock(mtx: *mut pthread_mutex_t) -> int {
-    unimplemented!("pthread_mutex_unlock")
+    if ((*mtx).mtype & PTHREAD_MUTEX_ERRORCHECK) != 0 {
+        let thread_id = get_thread_id();
+        if thread_id != owner_and_ref_count((*mtx).current_owner.load(Ordering::Relaxed)).0 {
+            return Errno::EBUSY as _;
+        }
+    }
+
+    if (*mtx).inconsistent_state {
+        (*mtx).unrecoverable_state = true;
+    }
+
+    let mut unlock_thread = false;
+    if (*mtx).mtype & PTHREAD_MUTEX_RECURSIVE != 0 {
+        let mut current_value = (*mtx).current_owner.load(Ordering::Relaxed);
+        loop {
+            let (_owner, ref_count) = owner_and_ref_count(current_value);
+            let new_value = if ref_count == 0 { 0 } else { current_value - 1 };
+
+            match (*mtx).current_owner.compare_exchange(
+                current_value,
+                new_value,
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            ) {
+                Ok(_) => {
+                    if new_value == 0 {
+                        unlock_thread = true;
+                    }
+                    break;
+                }
+                Err(v) => current_value = v,
+            }
+        }
+    } else {
+        (*mtx).current_owner.store(0, Ordering::Relaxed);
+        unlock_thread = true;
+    }
+
+    if unlock_thread {
+        (*mtx).mtx.unlock(|_| {});
+    }
+
+    Errno::ESUCCES as _
 }
 
 pub unsafe fn pthread_mutex_consistent(mtx: *mut pthread_mutex_t) -> int {
@@ -215,15 +398,25 @@ pub unsafe fn pthread_mutex_consistent(mtx: *mut pthread_mutex_t) -> int {
 }
 
 pub unsafe fn pthread_mutexattr_init(attr: *mut pthread_mutexattr_t) -> int {
-    unimplemented!("pthread_mutexattr_init")
+    Errno::set(Errno::ESUCCES);
+    attr.write(pthread_mutexattr_t::new_zeroed());
+    0
 }
 
 pub unsafe fn pthread_mutexattr_destroy(attr: *mut pthread_mutexattr_t) -> int {
-    unimplemented!("pthread_mutexattr_destroy")
+    Errno::set(Errno::ESUCCES);
+    core::ptr::drop_in_place(attr);
+    0
 }
 
 pub unsafe fn pthread_mutexattr_setprotocol(attr: *mut pthread_mutexattr_t, protocol: int) -> int {
-    unimplemented!("pthread_mutexattr_setprotocol")
+    if protocol == PTHREAD_PRIO_NONE {
+        Errno::set(Errno::ESUCCES);
+        0
+    } else {
+        Errno::set(Errno::ENOSYS);
+        -1
+    }
 }
 
 pub unsafe fn pthread_mutexattr_setpshared(attr: *mut pthread_mutexattr_t, pshared: int) -> int {
@@ -231,9 +424,13 @@ pub unsafe fn pthread_mutexattr_setpshared(attr: *mut pthread_mutexattr_t, pshar
 }
 
 pub unsafe fn pthread_mutexattr_setrobust(attr: *mut pthread_mutexattr_t, robustness: int) -> int {
-    unimplemented!("pthread_mutexattr_setrobust")
+    Errno::set(Errno::ESUCCES);
+    (*attr).robustness = robustness;
+    0
 }
 
 pub unsafe fn pthread_mutexattr_settype(attr: *mut pthread_mutexattr_t, mtype: int) -> int {
-    unimplemented!("pthread_mutexattr_settype")
+    Errno::set(Errno::ESUCCES);
+    (*attr).mtype = mtype;
+    0
 }

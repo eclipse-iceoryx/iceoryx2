@@ -18,12 +18,17 @@ use core::unimplemented;
 
 use crate::posix::types::*;
 
+use super::_SC_PAGESIZE;
+
 pub unsafe fn proc_pidpath(pid: pid_t, buffer: *mut c_char, buffer_len: size_t) -> isize {
-    unimplemented!("proc_pidpath")
+    0
 }
 
 pub unsafe fn sysconf(name: int) -> long {
-    unimplemented!("sysconf")
+    if name == _SC_PAGESIZE {
+        return 4096;
+    }
+    -1
 }
 
 pub unsafe fn pathconf(path: *const c_char, name: int) -> long {
@@ -31,11 +36,11 @@ pub unsafe fn pathconf(path: *const c_char, name: int) -> long {
 }
 
 pub unsafe fn getpid() -> pid_t {
-    unimplemented!("getpid")
+    0
 }
 
 pub unsafe fn getppid() -> pid_t {
-    unimplemented!("getppid")
+    0
 }
 
 pub unsafe fn dup(fildes: int) -> int {
