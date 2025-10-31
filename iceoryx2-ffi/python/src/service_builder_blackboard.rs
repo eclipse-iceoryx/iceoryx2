@@ -12,6 +12,7 @@
 
 use iceoryx2::service::builder::CustomKeyMarker;
 use pyo3::prelude::*;
+use pyo3::types::PyBytes;
 
 use crate::attribute_specifier::AttributeSpecifier;
 use crate::attribute_verifier::AttributeVerifier;
@@ -128,32 +129,37 @@ impl ServiceBuilderBlackboardCreator {
     }
 
     pub fn __add(&mut self, key: PyObject, value: PyObject, value_details: &TypeDetail) -> Self {
-        match &self.value {
-            ServiceBuilderBlackboardCreatorType::Ipc(v) => {
-                let this = v.clone();
-                let this = unsafe {
-                    this.__internal_add(
-                        key.as_ptr() as *const u8,
-                        value.as_ptr() as *mut u8,
-                        value_details.0.clone(),
-                        Box::new(|| {}),
-                    )
-                };
-                self.clone_ipc(this)
+        Python::with_gil(|py| {
+            let key = key.downcast_bound::<PyBytes>(py).unwrap(); // TODO: error handling
+            let key = key.as_bytes();
+
+            match &self.value {
+                ServiceBuilderBlackboardCreatorType::Ipc(v) => {
+                    let this = v.clone();
+                    let this = unsafe {
+                        this.__internal_add(
+                            key.as_ptr(),
+                            value.as_ptr() as *mut u8,
+                            value_details.0.clone(),
+                            Box::new(|| {}),
+                        )
+                    };
+                    self.clone_ipc(this)
+                }
+                ServiceBuilderBlackboardCreatorType::Local(v) => {
+                    let this = v.clone();
+                    let this = unsafe {
+                        this.__internal_add(
+                            key.as_ptr(),
+                            value.as_ptr() as *mut u8,
+                            value_details.0.clone(),
+                            Box::new(|| {}),
+                        )
+                    };
+                    self.clone_local(this)
+                }
             }
-            ServiceBuilderBlackboardCreatorType::Local(v) => {
-                let this = v.clone();
-                let this = unsafe {
-                    this.__internal_add(
-                        key.as_ptr() as *const u8,
-                        value.as_ptr() as *mut u8,
-                        value_details.0.clone(),
-                        Box::new(|| {}),
-                    )
-                };
-                self.clone_local(this)
-            }
-        }
+        })
     }
 
     pub fn create(&self) -> PyResult<PortFactoryBlackboard> {

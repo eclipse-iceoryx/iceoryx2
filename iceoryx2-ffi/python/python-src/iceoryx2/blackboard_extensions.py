@@ -67,14 +67,12 @@ def blackboard_opener(
 
 def add(
     self: ServiceBuilderBlackboardCreator,
-    key: Type[T],
+    key: bytes,
     value_type: Type[T],
     value: Type[T],
 ) -> ServiceBuilderBlackboardCreator:
     """Adds a key-value pair to the blackboard."""
     assert self.__key_type_details is not None
-    assert ctypes.sizeof(key) == ctypes.sizeof(self.__key_type_details)
-    assert ctypes.alignment(key) == ctypes.alignment(self.__key_type_details)
 
     type_name = get_type_name(value_type)
     type_size = ctypes.sizeof(value_type)
