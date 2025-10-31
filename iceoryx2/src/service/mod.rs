@@ -473,7 +473,7 @@ pub mod internal {
     fn send_dead_node_signal<S: Service>(service_id: &ServiceId, config: &config::Config) {
         let origin = "send_dead_node_signal()";
 
-        let service_details = match details::<S>(config, &service_id.0.into()) {
+        let service_details = match __internal_details::<S>(config, &service_id.0.into()) {
             Ok(Some(service_details)) => service_details,
             Ok(None) => return,
             Err(e) => {
@@ -749,7 +749,7 @@ pub mod internal {
                 if let Ok(true) = blackboard_payload {
                     is_blackboard = true;
 
-                    let details = match details::<S>(config, &service_id.0.into()) {
+                    let details = match __internal_details::<S>(config, &service_id.0.into()) {
                         Ok(Some(d)) => d,
                         _ => {
                             fail!(from origin,
@@ -918,7 +918,7 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone {
         messaging_pattern: MessagingPattern,
     ) -> Result<Option<ServiceDetails<Self>>, ServiceDetailsError> {
         let service_id = ServiceId::new::<Self::ServiceNameHasher>(service_name, messaging_pattern);
-        details::<Self>(config, &service_id.0.into())
+        __internal_details::<Self>(config, &service_id.0.into())
     }
 
     /// Returns a list of all services created under a given [`config::Config`].
@@ -952,7 +952,7 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone {
                 "{} due to a failure while collecting all active services for config: {:?}", msg, config);
 
         for uuid in &service_uuids {
-            if let Ok(Some(service_details)) = details::<Self>(config, uuid) {
+            if let Ok(Some(service_details)) = __internal_details::<Self>(config, uuid) {
                 if callback(service_details) == CallbackProgression::Stop {
                     break;
                 }
@@ -979,7 +979,8 @@ pub(crate) unsafe fn remove_static_service_config<S: Service>(
     }
 }
 
-fn details<S: Service>(
+#[doc(hidden)]
+pub fn __internal_details<S: Service>(
     config: &config::Config,
     uuid: &FileName,
 ) -> Result<Option<ServiceDetails<S>>, ServiceDetailsError> {
