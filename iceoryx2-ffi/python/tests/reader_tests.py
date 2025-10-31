@@ -25,10 +25,12 @@ def test_reader_is_is_unique(
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
+    key = 0
+    key = key.to_bytes(8, "little")
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint8, c_uint8(0))
+        .add(key, c_uint8, c_uint8(0))
         .create()
     )
 
@@ -54,21 +56,22 @@ def test_handle_can_be_acquired_for_existing_key_value_pair(
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
+    key = 0
+    key = key.to_bytes(8, "little")
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint64, c_uint64(0))
+        .add(key, c_uint64, c_uint64(0))
         .create()
     )
 
     reader = service.reader_builder().create()
     try:
-        entry_handle = reader.entry(c_uint64(0), c_uint64)
+        reader.entry(key, c_uint64)
     except iox2.EntryHandleError:
         assert False
 
 
-# TODO: check why test fails
 @pytest.mark.parametrize("service_type", service_types)
 def test_handle_cannot_be_acquired_for_non_existing_key(
     service_type: iox2.ServiceType,
@@ -76,16 +79,40 @@ def test_handle_cannot_be_acquired_for_non_existing_key(
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
+    key = 0
+    key = key.to_bytes(8, "little")
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint64, c_uint64(0))
+        .add(key, c_uint64, c_uint64(0))
         .create()
     )
 
     reader = service.reader_builder().create()
+    invalid_key = 9
+    invalid_key = invalid_key.to_bytes(8, "little")
     with pytest.raises(iox2.EntryHandleError):
-        entry_handle = reader.entry(c_uint64(9), c_uint64)
+        reader.entry(invalid_key, c_uint64)
 
 
-# TODO: continue with "handle_cannot_be_acquired_for_wrong_value_type"
+@pytest.mark.parametrize("service_type", service_types)
+def test_handle_cannot_be_acquired_for_wrong_value_type(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service_name = iox2.testing.generate_service_name()
+    key = 0
+    key = key.to_bytes(8, "little")
+    service = (
+        node.service_builder(service_name)
+        .blackboard_creator(c_uint64)
+        .add(key, c_uint64, c_uint64(0))
+        .create()
+    )
+
+    reader = service.reader_builder().create()
+    invalid_key = 0
+    invalid_key = invalid_key.to_bytes(8, "little")
+    with pytest.raises(iox2.EntryHandleError):
+        reader.entry(invalid_key, c_int64)

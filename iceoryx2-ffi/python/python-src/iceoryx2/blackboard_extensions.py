@@ -94,13 +94,9 @@ def add(
     )
 
 
-def entry(self: Reader, key: Type[T], value: Type[T]) -> EntryHandle:
+def entry(self: Reader, key: bytes, value: Type[T]) -> EntryHandle:
     """Creates an EntryHandle for direct read access to the value. On failure
     it returns `EntryHandleError` describing the failure."""
-    assert self.__key_type_details is not None
-    assert ctypes.sizeof(key) == ctypes.sizeof(self.__key_type_details)
-    assert ctypes.alignment(key) == ctypes.alignment(self.__key_type_details)
-
     type_name = get_type_name(value)
     type_size = ctypes.sizeof(value)
     type_align = ctypes.alignment(value)

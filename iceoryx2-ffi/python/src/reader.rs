@@ -15,6 +15,7 @@ use std::sync::Arc;
 use iceoryx2::service::builder::CustomKeyMarker;
 use iceoryx2_bb_log::fatal_panic;
 use pyo3::prelude::*;
+use pyo3::types::PyBytes;
 
 use crate::entry_handle::{EntryHandle, EntryHandleType};
 use crate::error::EntryHandleError;
@@ -56,28 +57,33 @@ impl Reader {
     /// Creates an EntryHandle for direct read access to the value. On failure
     /// it returns `EntryHandleError` describing the failure.
     pub fn __entry(&self, key: PyObject, value_type_details: &TypeDetail) -> PyResult<EntryHandle> {
-        match &*self.value.lock() {
-            ReaderType::Ipc(Some(v)) => {
-                let entry_handle = unsafe {
-                    v.__internal_entry(key.as_ptr() as *const u8, &value_type_details.0)
-                        .map_err(|e| EntryHandleError::new_err(format!("{e:?}")))?
-                };
-                Ok(EntryHandle {
-                    value: EntryHandleType::Ipc(Some(entry_handle)),
-                })
+        Python::with_gil(|py| {
+            let key = key.downcast_bound::<PyBytes>(py).unwrap(); // TODO: error handling
+            let key = key.as_bytes();
+
+            match &*self.value.lock() {
+                ReaderType::Ipc(Some(v)) => {
+                    let entry_handle = unsafe {
+                        v.__internal_entry(key.as_ptr(), &value_type_details.0)
+                            .map_err(|e| EntryHandleError::new_err(format!("{e:?}")))?
+                    };
+                    Ok(EntryHandle {
+                        value: EntryHandleType::Ipc(Some(entry_handle)),
+                    })
+                }
+                ReaderType::Local(Some(v)) => {
+                    let entry_handle = unsafe {
+                        v.__internal_entry(key.as_ptr(), &value_type_details.0)
+                            .map_err(|e| EntryHandleError::new_err(format!("{e:?}")))?
+                    };
+                    Ok(EntryHandle {
+                        value: EntryHandleType::Local(Some(entry_handle)),
+                    })
+                }
+                _ => fatal_panic!(from "Reader::entry()",
+                    "Accessing a deleted reader."),
             }
-            ReaderType::Local(Some(v)) => {
-                let entry_handle = unsafe {
-                    v.__internal_entry(key.as_ptr() as *const u8, &value_type_details.0)
-                        .map_err(|e| EntryHandleError::new_err(format!("{e:?}")))?
-                };
-                Ok(EntryHandle {
-                    value: EntryHandleType::Local(Some(entry_handle)),
-                })
-            }
-            _ => fatal_panic!(from "Reader::entry()",
-                "Accessing a deleted reader."),
-        }
+        })
     }
 
     /// Releases the `Reader`.
