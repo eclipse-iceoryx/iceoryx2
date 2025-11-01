@@ -346,3 +346,47 @@ fn zero_copy_send_derive_does_not_work_for_generic_enum_when_members_do_not_impl
 /// ```
 #[cfg(doctest)]
 fn zero_copy_send_derive_does_not_work_for_generic_enum_when_not_all_members_implement_it() {}
+
+/// === Unions ===
+
+/// ``` compile_fail
+/// use iceoryx2_bb_derive_macros::ZeroCopySend;
+///
+/// struct Foo(u16);
+///
+/// #[repr(C)]
+/// #[derive(ZeroCopySend)]
+/// union SomeUnion {
+///     val1: u64,
+///     val2: Foo,
+/// }
+/// ```
+#[cfg(doctest)]
+fn zero_copy_send_derive_does_not_work_for_union_when_not_all_members_implement_it() {}
+
+/// ``` compile_fail
+/// use iceoryx2_bb_derive_macros::ZeroCopySend;
+///
+/// #[repr(C)]
+/// #[derive(ZeroCopySend)]
+/// union GenericUnion<T1, T2> {
+///     val1: T1,
+///     val2: T2,
+/// }
+/// ```
+#[cfg(doctest)]
+fn zero_copy_send_derive_does_not_work_for_generic_union_when_members_do_not_implement_it() {}
+
+/// ``` compile_fail
+/// use iceoryx2_bb_derive_macros::ZeroCopySend;
+/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+///
+/// #[repr(C)]
+/// #[derive(ZeroCopySend)]
+/// union GenericUnion<T1: ZeroCopySend, T2> {
+///     val1: T1,
+///     val2: T2,
+/// }
+/// ```
+#[cfg(doctest)]
+fn zero_copy_send_derive_does_not_work_for_generic_union_when_not_all_members_implement_it() {}

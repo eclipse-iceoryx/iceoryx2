@@ -34,6 +34,8 @@
   [#1021](https://github.com/eclipse-iceoryx/iceoryx2/issues/1021)
 * Implement `Copy` for `StaticString`, `SemanticString` and system types
   [#1114](https://github.com/eclipse-iceoryx/iceoryx2/issues/1114)
+* Support `unions` with `ZeroCopySend`
+  [#1144](https://github.com/eclipse-iceoryx/iceoryx2/issues/1144)
 
 ### Bugfixes
 

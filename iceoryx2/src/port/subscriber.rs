@@ -411,7 +411,10 @@ impl<
                     RawSample::<Header, UserHeader, [Payload]>::new_slice_unchecked(
                         header_ptr,
                         chunk.user_header.cast(),
-                        core::slice::from_raw_parts(chunk.payload.cast(), number_of_elements as _),
+                        core::ptr::slice_from_raw_parts(
+                            chunk.payload.cast(),
+                            number_of_elements as _,
+                        ),
                     )
                 },
             }
@@ -448,7 +451,7 @@ impl<Service: service::Service, UserHeader: Debug + ZeroCopySend>
                     RawSample::<Header, UserHeader, [CustomPayloadMarker]>::new_slice_unchecked(
                         header_ptr,
                         chunk.user_header.cast(),
-                        core::slice::from_raw_parts(chunk.payload.cast(), number_of_bytes),
+                        core::ptr::slice_from_raw_parts(chunk.payload.cast(), number_of_bytes),
                     )
                 },
             }

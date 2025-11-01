@@ -962,7 +962,7 @@ impl<
             >::new_unchecked(
                 header_ptr,
                 user_header_ptr,
-                core::slice::from_raw_parts_mut(
+                core::ptr::slice_from_raw_parts_mut(
                     chunk.payload.cast(),
                     underlying_number_of_slice_elements,
                 ),
