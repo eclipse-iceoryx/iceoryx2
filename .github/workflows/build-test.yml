@@ -95,7 +95,7 @@ jobs:
           - os: ubuntu-latest
             cargo-features-flag: "--features libc_platform"
 
-    timeout-minutes: 20
+    timeout-minutes: 40
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout sources
