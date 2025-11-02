@@ -20,6 +20,7 @@ use iceoryx2_pal_concurrency_sync::{mutex::Mutex, WaitAction};
 
 use crate::posix::*;
 
+#[allow(dead_code)]
 #[derive(Clone, Copy)]
 struct ThreadState {
     id: u64,
@@ -27,6 +28,7 @@ struct ThreadState {
     name: [u8; THREAD_NAME_LENGTH],
 }
 
+#[allow(dead_code)]
 impl ThreadState {
     fn new(pthread: pthread_t) -> Self {
         Self {
@@ -45,6 +47,7 @@ struct ThreadStates {
 unsafe impl Send for ThreadStates {}
 unsafe impl Sync for ThreadStates {}
 
+#[allow(dead_code)]
 impl ThreadStates {
     const fn new() -> Self {
         #[allow(clippy::declare_interior_mutable_const)]
