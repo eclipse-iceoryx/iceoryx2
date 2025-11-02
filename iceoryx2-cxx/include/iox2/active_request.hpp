@@ -194,7 +194,8 @@ template <ServiceType Service,
 template <typename T, typename>
 inline auto ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::send_copy(
     const ResponsePayload& payload) const -> iox::expected<void, SendError> {
-    static_assert(std::is_trivially_copyable<ResponsePayload>::value);
+    static_assert(std::is_trivially_copyable<ResponsePayload>::value,
+                  "The server supports only trivially copyable response payload types.");
     constexpr uint64_t NUMBER_OF_ELEMENTS = 1;
 
     auto result = iox2_active_request_send_copy(
@@ -214,7 +215,8 @@ template <typename T, typename>
 inline auto
 ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::send_slice_copy(
     const iox::ImmutableSlice<ValueType>& payload) const -> iox::expected<void, SendError> {
-    static_assert(std::is_trivially_copyable<ValueType>::value);
+    static_assert(std::is_trivially_copyable<ValueType>::value,
+                  "The server supports only trivially copyable response payload types.");
 
     auto result = iox2_active_request_send_copy(
         &m_handle, payload.data(), sizeof(typename ResponsePayload::ValueType), payload.number_of_elements());

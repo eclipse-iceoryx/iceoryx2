@@ -119,8 +119,8 @@ constexpr auto can_call_from_utf8_with(T&& /* unused */) -> std::false_type {
 }
 
 TEST(StaticString, from_utf8_works_only_with_statically_known_strings) {
-    static_assert(can_call_from_utf8_with("ABC"));
-    static_assert(!can_call_from_utf8_with(static_cast<char const*>("ABC")));
+    static_assert(can_call_from_utf8_with("ABC"), "");
+    static_assert(!can_call_from_utf8_with(static_cast<char const*>("ABC")), "");
 }
 
 TEST(StaticString, from_utf8_null_terminated_unchecked_construction_from_null_terminated_c_style_string) {
