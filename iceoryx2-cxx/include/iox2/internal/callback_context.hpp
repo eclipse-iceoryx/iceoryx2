@@ -21,7 +21,8 @@
 #include "iox2/node_state.hpp"
 #include "iox2/service_type.hpp"
 
-namespace iox2::internal {
+namespace iox2 {
+namespace internal {
 
 /// Building block to provide a type-safe context pointer to a C callback
 /// that has a `void*` context argument.
@@ -115,6 +116,7 @@ auto list_callback(iox2_node_state_e node_state,
 }
 // NOLINTEND(readability-function-size)
 
-} // namespace iox2::internal
+} // namespace internal
+} // namespace iox2
 
 #endif

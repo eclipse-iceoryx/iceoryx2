@@ -22,7 +22,9 @@
 #include <cstdio>
 #include <typeinfo>
 
-namespace iox2::internal {
+namespace iox2 {
+namespace internal {
+
 template <typename>
 auto get_type_name() -> TypeName;
 
@@ -159,6 +161,7 @@ auto get_type_name() -> TypeName {
     return get_type_name_impl<PayloadType>();
 }
 
-} // namespace iox2::internal
+} // namespace internal
+} // namespace iox2
 
 #endif
