@@ -67,12 +67,14 @@
     [#845](https://github.com/eclipse-iceoryx/iceoryx2/issues/845)
 * Explicitly use components from `core` and `alloc` in all Rust code
     [#865](https://github.com/eclipse-iceoryx/iceoryx2/issues/865)
+* Enable -Wconversion warning for the C and C++ code
+    [#956](https://github.com/eclipse-iceoryx/iceoryx2/issues/956)
 * Updated all dependencies and increased MSRV to 1.83
     [#1105](https://github.com/eclipse-iceoryx/iceoryx2/issues/1105)
 * Remove pre-compiled `noop.exe` used for testing command exeuction on Windows
     [#1133](https://github.com/eclipse-iceoryx/iceoryx2/issues/1133)
-* Enable -Wconversion warning for the C and C++ code
-    [#956](https://github.com/eclipse-iceoryx/iceoryx2/issues/956)
+* Support C++14 for the C++ Bindings
+    [#1167](https://github.com/eclipse-iceoryx/iceoryx2/issues/1167)
 
 ### Workflow
 
