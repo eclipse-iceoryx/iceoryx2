@@ -30,7 +30,8 @@ namespace iox2 {
 template <typename KeyType, ServiceType S>
 class ServiceBuilderBlackboardCreator {
   public:
-    static_assert(std::is_trivially_copyable_v<KeyType>, "The blackboard supports only trivially copyable key types.");
+    static_assert(std::is_trivially_copyable<KeyType>::value,
+                  "The blackboard supports only trivially copyable key types.");
     static_assert(std::alignment_of<KeyType>() <= IOX2_MAX_BLACKBOARD_KEY_ALIGNMENT,
                   "The blackboard supports only key types with an alignment <= IOX2_MAX_BLACKBOARD_KEY_ALIGNMENT.");
     static_assert(sizeof(KeyType) <= IOX2_MAX_BLACKBOARD_KEY_SIZE,
@@ -152,7 +153,7 @@ template <typename KeyType, ServiceType S>
 template <typename ValueType>
 inline auto ServiceBuilderBlackboardCreator<KeyType, S>::add(KeyType key, ValueType value)
     -> ServiceBuilderBlackboardCreator&& {
-    static_assert(std::is_trivially_copyable_v<ValueType>,
+    static_assert(std::is_trivially_copyable<ValueType>::value,
                   "The blackboard supports only trivially copyable value types.");
 
     // NOLINTNEXTLINE(cppcoreguidelines-owning-memory): required by C API

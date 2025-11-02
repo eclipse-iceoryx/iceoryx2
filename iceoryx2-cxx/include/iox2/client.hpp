@@ -224,7 +224,7 @@ inline auto Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, 
     const RequestPayload& payload) const
     -> iox::expected<PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
                      RequestSendError> {
-    static_assert(std::is_trivially_copyable_v<RequestPayload>);
+    static_assert(std::is_trivially_copyable<RequestPayload>::value);
 
     iox2_pending_response_h pending_response_handle {};
     auto result = iox2_client_send_copy(
@@ -248,7 +248,7 @@ inline auto Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, 
     iox::ImmutableSlice<ValueType>& payload) const
     -> iox::expected<PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
                      RequestSendError> {
-    static_assert(std::is_trivially_copyable_v<ValueType>);
+    static_assert(std::is_trivially_copyable<ValueType>::value);
 
     iox2_pending_response_h pending_response_handle {};
     auto result = iox2_client_send_copy(&m_handle,
