@@ -33,7 +33,7 @@ use iceoryx2::{
     },
 };
 
-use once_cell::sync::Lazy;
+use lazy_static::lazy_static;
 
 const SERVICE_NAME: &str = "discovery/services/";
 
@@ -527,10 +527,12 @@ impl<S: ServiceType> Service<S> {
 /// This function will panic during the first call if the service name is invalid,
 /// which should never happen with the predefined constants.
 pub fn service_name() -> &'static ServiceName {
-    static SERVICE_NAME_INSTANCE: Lazy<ServiceName> = Lazy::new(|| {
-        ServiceName::__internal_new_prefixed(SERVICE_NAME)
-            .expect("shouldn't occur: invalid service name for service discovery service")
-    });
+    lazy_static! {
+        static ref SERVICE_NAME_INSTANCE: ServiceName = {
+            ServiceName::__internal_new_prefixed(SERVICE_NAME)
+                .expect("shouldn't occur: invalid service name for service discovery service")
+        };
+    }
 
     &SERVICE_NAME_INSTANCE
 }

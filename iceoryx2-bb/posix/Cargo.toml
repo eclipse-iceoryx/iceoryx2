@@ -11,7 +11,9 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [features]
-default = []
+default = [
+  "lazy_static/spin_no_std"
+]
 std = []
 
 # Use https://crates.io/crates/libc for the platform abstraction. This simplifies
