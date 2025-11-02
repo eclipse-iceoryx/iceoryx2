@@ -14,6 +14,8 @@
 #include "iox/into.hpp"
 #include "iox2/internal/callback_context.hpp"
 #include <cstdint>
+#include <string>
+#include <vector>
 
 namespace iox2 {
 ////////////////////////////
@@ -73,9 +75,16 @@ void WaitSetAttachmentId<S>::drop() {
 template <ServiceType S>
 auto WaitSetAttachmentId<S>::hash() const -> std::size_t {
     auto len = iox2_waitset_attachment_id_debug_len(&m_handle);
-    std::string empty(len, '\0');
-    iox2_waitset_attachment_id_debug(&m_handle, empty.data(), len);
-    return std::hash<std::string> {}(empty);
+#if __cplusplus >= 201703L
+    std::string str(len + 1, '\0');
+    iox2_waitset_attachment_id_debug(&m_handle, str.data(), len);
+#else
+    std::vector<char> buffer(len + 1, '\0');
+    iox2_waitset_attachment_id_debug(&m_handle, buffer.data(), len);
+    const std::string str(buffer.begin(), buffer.end());
+#endif
+
+    return std::hash<std::string> {}(str);
 }
 
 template <ServiceType S>
@@ -91,9 +100,9 @@ auto operator<(const WaitSetAttachmentId<S>& lhs, const WaitSetAttachmentId<S>& 
 template <ServiceType S>
 auto operator<<(std::ostream& stream, const WaitSetAttachmentId<S>& self) -> std::ostream& {
     auto len = iox2_waitset_attachment_id_debug_len(&self.m_handle);
-    std::string empty(len, '\0');
-    iox2_waitset_attachment_id_debug(&self.m_handle, empty.data(), len);
-    stream << empty;
+    std::vector<char> buffer(len + 1, '\0');
+    iox2_waitset_attachment_id_debug(&self.m_handle, buffer.data(), len);
+    stream << buffer.data();
     return stream;
 }
 
