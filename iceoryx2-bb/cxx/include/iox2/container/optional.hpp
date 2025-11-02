@@ -60,7 +60,8 @@ struct NulloptT {
     constexpr explicit NulloptT(detail::NulloptTConstructorTag /* unused */) noexcept {
     }
 };
-
+// NOLINTNEXTLINE(readability-identifier-naming), for consistency with C++17 code using std::optional
+constexpr NulloptT nullopt = NulloptT(detail::NulloptTConstructorTag {});
 
 namespace detail {
 /// Internal union implementation for Optional.
@@ -202,14 +203,15 @@ class Optional {
     using value_type = T;
 
     // constructors
-    constexpr Optional() noexcept = default;
+    constexpr Optional() noexcept
+        : Optional(NulloptT { detail::NulloptTConstructorTag {} }) {
+    }
 
     constexpr Optional(const Optional& rhs) = default;
     constexpr Optional(Optional&& rhs) = default;
 
     // NOLINTNEXTLINE(hicpp-explicit-conversions), as specified in ISO14882:2017 [optional]
-    constexpr Optional(NulloptT /* unused */) noexcept
-        : Optional() {
+    constexpr Optional(const NulloptT& /* unused */) noexcept {
     }
 
     template <typename U = std::remove_cv_t<T>,
@@ -232,7 +234,7 @@ class Optional {
         ~Optional() = default;
 
     // assignment
-    constexpr auto operator=(NulloptT /* unused */) noexcept -> Optional& {
+    constexpr auto operator=(NulloptT& /* unused */) noexcept -> Optional& {
         reset();
         return *this;
     }
@@ -330,23 +332,6 @@ template <class T>
 Optional(T) -> Optional<T>;
 #endif
 
-#endif
-
-#if __cplusplus >= 201703L
-// NOLINTNEXTLINE(readability-identifier-naming), for consistency with C++17 code using std::optional
-inline constexpr NulloptT nullopt { detail::NulloptTConstructorTag {} };
-#else
-namespace detail {
-template <typename = void>
-struct NulloptHelper {
-    static NulloptT nullopt;
-};
-template <>
-// NOLINTNEXTLINE(misc-definitions-in-headers), not an ODR violation because of template
-NulloptT NulloptHelper<>::nullopt = NulloptT { detail::NulloptTConstructorTag {} };
-} // namespace detail
-// NOLINTNEXTLINE(readability-identifier-naming), for consistency with C++17 code using std::optional
-static constexpr NulloptT const& nullopt = detail::NulloptHelper<>::nullopt;
 #endif
 
 } // namespace container
