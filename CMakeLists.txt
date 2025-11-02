@@ -176,7 +176,7 @@ if(BUILD_CXX)
     add_subdirectory(iceoryx2-bb/cxx)
 
     # C++ binding
-    set(ICEORYX_HOOFS_VERSION 2.95.7)
+    set(ICEORYX_HOOFS_VERSION 2.95.8)
     include(${CMAKE_CURRENT_LIST_DIR}/iceoryx2-cxx/cmake/fetch-iceoryx-hoofs.cmake)
 
     add_subdirectory(iceoryx2-cxx)
