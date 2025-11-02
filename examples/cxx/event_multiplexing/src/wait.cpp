@@ -66,7 +66,8 @@ auto main(int argc, char** argv) -> int {
 
     // the callback that is called when a listener has received an event
     auto on_event = [&](WaitSetAttachmentId<ServiceType::Ipc> attachment_id) {
-        if (auto entry = listeners.find(attachment_id); entry != listeners.end()) {
+        auto entry = listeners.find(attachment_id);
+        if (entry != listeners.end()) {
             std::cout << "Received trigger from \"" << entry->second.service_name.to_string().c_str() << "\""
                       << std::endl;
 
