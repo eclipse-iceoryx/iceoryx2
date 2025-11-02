@@ -27,10 +27,11 @@ def test_reader_is_is_unique(
     service_name = iox2.testing.generate_service_name()
     key = 0
     key = key.to_bytes(8, "little")
+    value = 0
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint8, c_uint8(0))
+        .add(key, c_uint8, value.to_bytes(1, "little"))
         .create()
     )
 
@@ -58,16 +59,20 @@ def test_handle_can_be_acquired_for_existing_key_value_pair(
     service_name = iox2.testing.generate_service_name()
     key = 0
     key = key.to_bytes(8, "little")
+    value = 7
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint64, c_uint64(0))
+        .add(key, c_uint64, value.to_bytes(8, "little"))
         .create()
     )
 
     reader = service.reader_builder().create()
     try:
-        reader.entry(key, c_uint64)
+        entry_handle = reader.entry(key, c_uint64)
+        value = entry_handle.get()
+        assert int.from_bytes(value, byteorder="little", signed=False) == 7
+
     except iox2.EntryHandleError:
         assert False
 
@@ -81,10 +86,11 @@ def test_handle_cannot_be_acquired_for_non_existing_key(
     service_name = iox2.testing.generate_service_name()
     key = 0
     key = key.to_bytes(8, "little")
+    value = 0
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint64, c_uint64(0))
+        .add(key, c_uint64, value.to_bytes(8, "little"))
         .create()
     )
 
@@ -104,10 +110,11 @@ def test_handle_cannot_be_acquired_for_wrong_value_type(
     service_name = iox2.testing.generate_service_name()
     key = 0
     key = key.to_bytes(8, "little")
+    value = 0
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint64, c_uint64(0))
+        .add(key, c_uint64, value.to_bytes(8, "little"))
         .create()
     )
 

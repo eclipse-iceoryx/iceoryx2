@@ -69,7 +69,7 @@ def add(
     self: ServiceBuilderBlackboardCreator,
     key: bytes,
     value_type: Type[T],
-    value: Type[T],
+    value: bytes,
 ) -> ServiceBuilderBlackboardCreator:
     """Adds a key-value pair to the blackboard."""
     assert self.__key_type_details is not None
@@ -79,9 +79,7 @@ def add(
     type_align = ctypes.alignment(value_type)
     type_variant = TypeVariant.FixedSize
 
-    # TODO: can value_type and value argument be combined?
-    assert ctypes.sizeof(value) == type_size
-    assert ctypes.alignment(value) == type_align
+    assert len(value) == type_size
 
     return self.__add(
         key,

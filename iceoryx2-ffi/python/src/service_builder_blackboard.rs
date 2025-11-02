@@ -132,6 +132,8 @@ impl ServiceBuilderBlackboardCreator {
         Python::with_gil(|py| {
             let key = key.downcast_bound::<PyBytes>(py).unwrap(); // TODO: error handling
             let key = key.as_bytes();
+            let value = value.downcast_bound::<PyBytes>(py).unwrap(); // TODO: error handling
+            let value = value.as_bytes();
 
             match &self.value {
                 ServiceBuilderBlackboardCreatorType::Ipc(v) => {

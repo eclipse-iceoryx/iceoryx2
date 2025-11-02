@@ -33,7 +33,7 @@ pub(crate) enum ReaderType {
 /// Represents the reading endpoint of a blackboard based communication.
 pub struct Reader {
     pub(crate) value: Parc<ReaderType>,
-    pub(crate) key_type_details: TypeStorage,
+    pub(crate) key_type_details: TypeStorage, // TODO: needed?
 }
 
 #[pymethods]
@@ -56,7 +56,7 @@ impl Reader {
 
     /// Creates an EntryHandle for direct read access to the value. On failure
     /// it returns `EntryHandleError` describing the failure.
-    pub fn __entry(&self, key: PyObject, value_type_details: &TypeDetail) -> PyResult<EntryHandle> {
+    pub fn __entry(&self, key: PyObject, value_type_details: TypeDetail) -> PyResult<EntryHandle> {
         Python::with_gil(|py| {
             let key = key.downcast_bound::<PyBytes>(py).unwrap(); // TODO: error handling
             let key = key.as_bytes();
@@ -69,6 +69,7 @@ impl Reader {
                     };
                     Ok(EntryHandle {
                         value: EntryHandleType::Ipc(Some(entry_handle)),
+                        value_type_details,
                     })
                 }
                 ReaderType::Local(Some(v)) => {
@@ -78,6 +79,7 @@ impl Reader {
                     };
                     Ok(EntryHandle {
                         value: EntryHandleType::Local(Some(entry_handle)),
+                        value_type_details,
                     })
                 }
                 _ => fatal_panic!(from "Reader::entry()",
