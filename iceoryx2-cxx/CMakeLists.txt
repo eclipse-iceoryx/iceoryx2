@@ -120,7 +120,7 @@ target_link_libraries(iceoryx2-cxx-object-lib
 add_library(static-lib-cxx STATIC $<TARGET_OBJECTS:iceoryx2-cxx-object-lib>)
 add_library(iceoryx2-cxx::static-lib-cxx ALIAS static-lib-cxx)
 
-target_compile_features(static-lib-cxx PUBLIC cxx_std_17)
+target_compile_features(static-lib-cxx PUBLIC ${ICEORYX2_CXX_STD})
 set_target_properties(static-lib-cxx
     PROPERTIES
     POSITION_INDEPENDENT_CODE ON
@@ -140,7 +140,7 @@ target_link_libraries(static-lib-cxx
 add_library(shared-lib-cxx SHARED $<TARGET_OBJECTS:iceoryx2-cxx-object-lib>)
 add_library(iceoryx2-cxx::shared-lib-cxx ALIAS shared-lib-cxx)
 
-target_compile_features(shared-lib-cxx PUBLIC cxx_std_17)
+target_compile_features(shared-lib-cxx PUBLIC ${ICEORYX2_CXX_STD})
 set_target_properties(shared-lib-cxx
     PROPERTIES
     POSITION_INDEPENDENT_CODE ON
