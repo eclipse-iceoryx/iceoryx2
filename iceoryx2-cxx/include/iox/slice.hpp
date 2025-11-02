@@ -97,7 +97,7 @@ template <typename T>
 Slice<T>::Slice(T* data, uint64_t number_of_elements)
     : m_data { data }
     , m_number_of_elements { number_of_elements } {
-    static_assert(!std::is_same_v<T, void>, "Slice<void> is not allowed");
+    static_assert(!std::is_same<T, void>::value, "Slice<void> is not allowed");
 }
 
 template <typename T>

@@ -98,37 +98,37 @@ auto get_type_name_impl() -> internal::FromStaticVector<PayloadType> {
 // NOLINTBEGIN(readability-function-size) : template alternative is less readable
 template <typename PayloadType>
 auto get_type_name_impl() -> internal::FromNonSlice<PayloadType> {
-    if (std::is_same_v<PayloadType, void>) {
+    if (std::is_same<PayloadType, void>::value) {
         return *TypeName::from_utf8("()");
     }
-    if (std::is_same_v<PayloadType, uint8_t>) {
+    if (std::is_same<PayloadType, uint8_t>::value) {
         return *TypeName::from_utf8("u8");
     }
-    if (std::is_same_v<PayloadType, uint16_t>) {
+    if (std::is_same<PayloadType, uint16_t>::value) {
         return *TypeName::from_utf8("u16");
     }
-    if (std::is_same_v<PayloadType, uint32_t>) {
+    if (std::is_same<PayloadType, uint32_t>::value) {
         return *TypeName::from_utf8("u32");
     }
-    if (std::is_same_v<PayloadType, uint64_t>) {
+    if (std::is_same<PayloadType, uint64_t>::value) {
         return *TypeName::from_utf8("u64");
     }
-    if (std::is_same_v<PayloadType, int8_t>) {
+    if (std::is_same<PayloadType, int8_t>::value) {
         return *TypeName::from_utf8("i8");
     }
-    if (std::is_same_v<PayloadType, int16_t>) {
+    if (std::is_same<PayloadType, int16_t>::value) {
         return *TypeName::from_utf8("i16");
     }
-    if (std::is_same_v<PayloadType, int32_t>) {
+    if (std::is_same<PayloadType, int32_t>::value) {
         return *TypeName::from_utf8("i32");
     }
-    if (std::is_same_v<PayloadType, int64_t>) {
+    if (std::is_same<PayloadType, int64_t>::value) {
         return *TypeName::from_utf8("i64");
     }
-    if (std::is_same_v<PayloadType, float>) {
+    if (std::is_same<PayloadType, float>::value) {
         return *TypeName::from_utf8("f32");
     }
-    if (std::is_same_v<PayloadType, double>) {
+    if (std::is_same<PayloadType, double>::value) {
         return *TypeName::from_utf8("f64");
     }
 

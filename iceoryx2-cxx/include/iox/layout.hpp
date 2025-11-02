@@ -31,11 +31,11 @@ class Layout {
     /// Creates a new [`Layout`] from the provided type `T` by using `sizeof(T)`
     /// and `alignof(T)`
     template <typename T>
-    static auto from() -> std::enable_if_t<!std::is_same_v<T, void>, Layout>;
+    static auto from() -> std::enable_if_t<!std::is_same<T, void>::value, Layout>;
 
     /// Creates a new [`Layout`] with size == 0 and alignment == 1.
     template <typename T>
-    static auto from() -> std::enable_if_t<std::is_same_v<T, void>, Layout>;
+    static auto from() -> std::enable_if_t<std::is_same<T, void>::value, Layout>;
 
     /// Creates a new [`Layout`] from the given `size` and `align`.
     ///  * If the `size` is not a multiple of `align` it will be rounded up so that it
@@ -62,12 +62,12 @@ class Layout {
 
 
 template <typename T>
-inline auto Layout::from() -> std::enable_if_t<!std::is_same_v<T, void>, Layout> {
+inline auto Layout::from() -> std::enable_if_t<!std::is_same<T, void>::value, Layout> {
     return Layout { sizeof(T), alignof(T) };
 }
 
 template <typename T>
-inline auto Layout::from() -> std::enable_if_t<std::is_same_v<T, void>, Layout> {
+inline auto Layout::from() -> std::enable_if_t<std::is_same<T, void>::value, Layout> {
     return Layout { 0, 1 };
 }
 

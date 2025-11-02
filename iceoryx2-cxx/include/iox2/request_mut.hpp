@@ -47,11 +47,13 @@ class RequestMut {
     auto header() const -> RequestHeader;
 
     /// Returns a reference to the user defined request header.
-    template <typename T = RequestUserHeader, typename = std::enable_if_t<!std::is_same_v<void, RequestUserHeader>, T>>
+    template <typename T = RequestUserHeader,
+              typename = std::enable_if_t<!std::is_same<void, RequestUserHeader>::value, T>>
     auto user_header() const -> const T&;
 
     /// Returns a mutable reference to the user defined request header.
-    template <typename T = RequestUserHeader, typename = std::enable_if_t<!std::is_same_v<void, RequestUserHeader>, T>>
+    template <typename T = RequestUserHeader,
+              typename = std::enable_if_t<!std::is_same<void, RequestUserHeader>::value, T>>
     auto user_header_mut() -> T&;
 
     /// Returns a reference to the user defined request payload.
