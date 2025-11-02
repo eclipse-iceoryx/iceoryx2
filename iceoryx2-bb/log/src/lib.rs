@@ -333,10 +333,14 @@ macro_rules! cerr {
 #[cfg(not(feature = "std"))]
 #[macro_export]
 macro_rules! cout {
-    ($($arg:tt)*) => {{}};
+    ($($arg:tt)*) => {{
+        let _ = format_args!($($arg)*);
+    }};
 }
 #[cfg(not(feature = "std"))]
 #[macro_export]
 macro_rules! cerr {
-    ($($arg:tt)*) => {{}};
+    ($($arg:tt)*) => {{
+        let _ = format_args!($($arg)*);
+    }};
 }
