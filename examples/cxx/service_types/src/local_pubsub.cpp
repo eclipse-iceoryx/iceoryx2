@@ -19,8 +19,8 @@
 
 constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1);
 namespace {
-std::atomic<bool> keep_running = true; // NOLINT
-std::mutex cout_mtx;                   // NOLINT
+std::atomic<bool> keep_running { true }; // NOLINT
+std::mutex cout_mtx;                     // NOLINT
 
 void background_thread_fn() {
     using namespace iox2;

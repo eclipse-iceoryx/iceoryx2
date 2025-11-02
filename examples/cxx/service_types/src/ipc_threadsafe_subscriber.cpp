@@ -32,7 +32,7 @@ auto main() -> int {
                        .expect("service created");
 
     std::mutex cout_mtx;
-    auto keep_running = std::atomic<bool>(true);
+    std::atomic<bool> keep_running { true };
     auto subscriber = service.subscriber_builder().create().expect("subscriber created");
 
     // All ports (like Subscriber, Publisher, Client, Server, ...) are threadsafe
