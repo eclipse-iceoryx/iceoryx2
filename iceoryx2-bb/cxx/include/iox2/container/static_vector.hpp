@@ -64,7 +64,11 @@ class StaticVector {
       public:
         ~UncheckedConstAccessor() = default;
         UncheckedConstAccessor(UncheckedConstAccessor const&) = delete;
+#if __cplusplus >= 201703L
         UncheckedConstAccessor(UncheckedConstAccessor&&) = delete;
+#else
+        UncheckedConstAccessor(UncheckedConstAccessor&&) = default;
+#endif
         auto operator=(UncheckedConstAccessor const&) -> UncheckedConstAccessor& = delete;
         auto operator=(UncheckedConstAccessor&&) -> UncheckedConstAccessor& = delete;
 
@@ -100,7 +104,11 @@ class StaticVector {
       public:
         ~UncheckedAccessor() = default;
         UncheckedAccessor(UncheckedAccessor const&) = delete;
+#if __cplusplus >= 201703L
         UncheckedAccessor(UncheckedAccessor&&) = delete;
+#else
+        UncheckedAccessor(UncheckedAccessor&&) = default;
+#endif
         auto operator=(UncheckedAccessor const&) -> UncheckedAccessor& = delete;
         auto operator=(UncheckedAccessor&&) -> UncheckedAccessor& = delete;
 

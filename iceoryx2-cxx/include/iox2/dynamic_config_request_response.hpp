@@ -29,7 +29,11 @@ namespace iox2 {
 class DynamicConfigRequestResponse {
   public:
     DynamicConfigRequestResponse(const DynamicConfigRequestResponse&) = delete;
+#if __cplusplus >= 201703L
     DynamicConfigRequestResponse(DynamicConfigRequestResponse&&) = delete;
+#else
+    DynamicConfigRequestResponse(DynamicConfigRequestResponse&&) = default;
+#endif
     auto operator=(const DynamicConfigRequestResponse&) -> DynamicConfigRequestResponse& = delete;
     auto operator=(DynamicConfigRequestResponse&&) -> DynamicConfigRequestResponse& = delete;
     ~DynamicConfigRequestResponse() = default;

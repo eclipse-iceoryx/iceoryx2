@@ -26,7 +26,11 @@ namespace iox2 {
 class DynamicConfigBlackboard {
   public:
     DynamicConfigBlackboard(const DynamicConfigBlackboard&) = delete;
+#if __cplusplus >= 201703L
     DynamicConfigBlackboard(DynamicConfigBlackboard&&) = delete;
+#else
+    DynamicConfigBlackboard(DynamicConfigBlackboard&&) = default;
+#endif
     auto operator=(const DynamicConfigBlackboard&) -> DynamicConfigBlackboard& = delete;
     auto operator=(DynamicConfigBlackboard&&) -> DynamicConfigBlackboard& = delete;
     ~DynamicConfigBlackboard() = default;
