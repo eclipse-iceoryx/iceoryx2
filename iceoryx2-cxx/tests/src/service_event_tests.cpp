@@ -475,7 +475,8 @@ TYPED_TEST(ServiceEventTest, open_fails_when_attributes_are_incompatible) {
 }
 
 TYPED_TEST(ServiceEventTest, deadline_can_be_set) {
-    constexpr iox::units::Duration DEADLINE = iox::units::Duration::fromMilliseconds(9281);
+    using iox::units::Duration;
+    constexpr Duration DEADLINE = Duration::fromMilliseconds(9281);
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name = iox2_testing::generate_service_name();
     Config config;
@@ -490,20 +491,21 @@ TYPED_TEST(ServiceEventTest, deadline_can_be_set) {
     auto listener_open = service_open.listener_builder().create().expect("");
     auto notifier_open = service_open.notifier_builder().create().expect("");
 
-    ASSERT_THAT(service_create.static_config().deadline(), Eq(iox::optional(DEADLINE)));
-    ASSERT_THAT(service_open.static_config().deadline(), Eq(iox::optional(DEADLINE)));
-    ASSERT_THAT(listener_create.deadline(), Eq(iox::optional(DEADLINE)));
-    ASSERT_THAT(listener_open.deadline(), Eq(iox::optional(DEADLINE)));
-    ASSERT_THAT(notifier_create.deadline(), Eq(iox::optional(DEADLINE)));
-    ASSERT_THAT(notifier_open.deadline(), Eq(iox::optional(DEADLINE)));
+    ASSERT_THAT(service_create.static_config().deadline(), Eq(iox::optional<Duration>(DEADLINE)));
+    ASSERT_THAT(service_open.static_config().deadline(), Eq(iox::optional<Duration>(DEADLINE)));
+    ASSERT_THAT(listener_create.deadline(), Eq(iox::optional<Duration>(DEADLINE)));
+    ASSERT_THAT(listener_open.deadline(), Eq(iox::optional<Duration>(DEADLINE)));
+    ASSERT_THAT(notifier_create.deadline(), Eq(iox::optional<Duration>(DEADLINE)));
+    ASSERT_THAT(notifier_open.deadline(), Eq(iox::optional<Duration>(DEADLINE)));
 }
 
 TYPED_TEST(ServiceEventTest, deadline_can_be_disabled) {
-    constexpr iox::units::Duration DEADLINE = iox::units::Duration::fromMilliseconds(9281);
+    using iox::units::Duration;
+    constexpr Duration DEADLINE = Duration::fromMilliseconds(9281);
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name = iox2_testing::generate_service_name();
     Config config;
-    config.defaults().event().set_deadline(iox::optional(DEADLINE));
+    config.defaults().event().set_deadline(iox::optional<Duration>(DEADLINE));
     auto node = NodeBuilder().config(config).create<SERVICE_TYPE>().expect("");
 
     auto service_create = node.service_builder(service_name).event().disable_deadline().create().expect("");
