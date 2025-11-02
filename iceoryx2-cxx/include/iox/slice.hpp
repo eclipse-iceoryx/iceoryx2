@@ -56,7 +56,7 @@ class Slice {
     /// @param[in] n The index of the element to access.
     /// @return A reference to the element at the specified index.
     /// @pre The index must be less than the number of elements in the slice.
-    auto operator[](uint64_t n) -> std::conditional_t<std::is_const_v<T>, const ValueType&, ValueType&>;
+    auto operator[](uint64_t n) -> std::conditional_t<std::is_const<T>::value, const ValueType&, ValueType&>;
 
     /// @brief Returns an iterator to the beginning of the slice (const version).
     /// @return An iterator pointing to the first element of the slice.
@@ -117,7 +117,8 @@ auto Slice<T>::operator[](const uint64_t n) const -> const ValueType& {
 }
 
 template <typename T>
-auto Slice<T>::operator[](const uint64_t n) -> std::conditional_t<std::is_const_v<T>, const ValueType&, ValueType&> {
+auto Slice<T>::operator[](const uint64_t n)
+    -> std::conditional_t<std::is_const<T>::value, const ValueType&, ValueType&> {
     IOX_ASSERT(n < m_number_of_elements, "Index out of bounds");
     return *(m_data + n);
 }
