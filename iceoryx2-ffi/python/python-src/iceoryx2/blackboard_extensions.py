@@ -110,8 +110,29 @@ def entry(self: Reader, key: bytes, value: Type[T]) -> EntryHandle:
     )
 
 
+def entry(self: Writer, key: bytes, value: Type[T]) -> EntryHandleMut:
+    """Creates an EntryHandleMut for direct write access to the value. There
+    can be only one EntryHandleMut per value. On failure it returns
+    `EntryHandleMutError` describing the failure."""
+    type_name = get_type_name(value)
+    type_size = ctypes.sizeof(value)
+    type_align = ctypes.alignment(value)
+    type_variant = TypeVariant.FixedSize
+
+    return self.__entry(
+        key,
+        TypeDetail.new()
+        .type_variant(type_variant)
+        .type_name(TypeName.new(type_name))
+        .size(type_size)
+        .alignment(type_align),
+    )
+
+
 Reader.entry = entry
 
 ServiceBuilder.blackboard_creator = blackboard_creator
 ServiceBuilder.blackboard_opener = blackboard_opener
 ServiceBuilderBlackboardCreator.add = add
+
+Writer.entry = entry

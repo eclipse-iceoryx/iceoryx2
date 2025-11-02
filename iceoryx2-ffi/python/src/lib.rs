@@ -24,6 +24,7 @@ pub mod client;
 pub mod config;
 pub mod duration;
 pub mod entry_handle;
+pub mod entry_handle_mut;
 pub mod error;
 pub mod event_id;
 pub mod file_descriptor;
@@ -98,11 +99,13 @@ pub mod unique_publisher_id;
 pub mod unique_reader_id;
 pub mod unique_server_id;
 pub mod unique_subscriber_id;
+pub mod unique_writer_id;
 pub mod waitset;
 pub mod waitset_attachment_id;
 pub mod waitset_builder;
 pub mod waitset_guard;
 pub mod waitset_run_result;
+pub mod writer;
 
 use pyo3::prelude::*;
 use pyo3::wrap_pymodule;
@@ -133,6 +136,7 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::client::Client>()?;
     m.add_class::<crate::duration::Duration>()?;
     m.add_class::<crate::entry_handle::EntryHandle>()?;
+    m.add_class::<crate::entry_handle_mut::EntryHandleMut>()?;
     m.add_class::<crate::event_id::EventId>()?;
     m.add_class::<crate::file_name::FileName>()?;
     m.add_class::<crate::file_path::FilePath>()?;
@@ -205,11 +209,13 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::unique_reader_id::UniqueReaderId>()?;
     m.add_class::<crate::unique_server_id::UniqueServerId>()?;
     m.add_class::<crate::unique_subscriber_id::UniqueSubscriberId>()?;
+    m.add_class::<crate::unique_writer_id::UniqueWriterId>()?;
     m.add_class::<crate::waitset::WaitSet>()?;
     m.add_class::<crate::waitset_attachment_id::WaitSetAttachmentId>()?;
     m.add_class::<crate::waitset_builder::WaitSetBuilder>()?;
     m.add_class::<crate::waitset_guard::WaitSetGuard>()?;
     m.add_class::<crate::waitset_run_result::WaitSetRunResult>()?;
+    m.add_class::<crate::writer::Writer>()?;
 
     m.add(
         "ClientCreateError",
@@ -349,6 +355,14 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add(
         "EntryHandleError",
         py.get_type::<crate::error::EntryHandleError>(),
+    )?;
+    m.add(
+        "WriterCreateError",
+        py.get_type::<crate::error::WriterCreateError>(),
+    )?;
+    m.add(
+        "EntryHandleMutError",
+        py.get_type::<crate::error::EntryHandleMutError>(),
     )?;
 
     Ok(())

@@ -1,0 +1,154 @@
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache Software License 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+# which is available at https://opensource.org/licenses/MIT.
+#
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+from ctypes import *
+
+import iceoryx2 as iox2
+import pytest
+
+service_types = [iox2.ServiceType.Ipc, iox2.ServiceType.Local]
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_handle_can_be_acquired_for_existing_key_value_pair(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service_name = iox2.testing.generate_service_name()
+    key = 0
+    key = key.to_bytes(8, "little")
+    value = 0
+    value = value.to_bytes(8, "little")
+    service = (
+        node.service_builder(service_name)
+        .blackboard_creator(c_uint64)
+        .add(key, c_uint64, value)
+        .create()
+    )
+
+    writer = service.writer_builder().create()
+    try:
+        writer.entry(key, c_uint64)
+
+    except iox2.EntryHandleMutError:
+        assert False
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_handle_cannot_be_acquired_for_non_existing_key(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service_name = iox2.testing.generate_service_name()
+    key = 0
+    key = key.to_bytes(8, "little")
+    value = 0
+    value = value.to_bytes(8, "little")
+    service = (
+        node.service_builder(service_name)
+        .blackboard_creator(c_uint64)
+        .add(key, c_uint64, value)
+        .create()
+    )
+
+    writer = service.writer_builder().create()
+    invalid_key = 9
+    invalid_key = invalid_key.to_bytes(8, "little")
+    with pytest.raises(iox2.EntryHandleMutError):
+        writer.entry(invalid_key, c_uint64)
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_handle_cannot_be_acquired_for_wrong_value_type(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service_name = iox2.testing.generate_service_name()
+    key = 0
+    key = key.to_bytes(8, "little")
+    value = 0
+    value = value.to_bytes(8, "little")
+    service = (
+        node.service_builder(service_name)
+        .blackboard_creator(c_uint64)
+        .add(key, c_uint64, value)
+        .create()
+    )
+
+    writer = service.writer_builder().create()
+    invalid_key = 0
+    invalid_key = invalid_key.to_bytes(8, "little")
+    with pytest.raises(iox2.EntryHandleMutError):
+        writer.entry(invalid_key, c_int64)
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_entry_handle_mut_cannot_be_acquired_twice(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service_name = iox2.testing.generate_service_name()
+    key = 0
+    key = key.to_bytes(8, "little")
+    value = 0
+    value = value.to_bytes(8, "little")
+    service = (
+        node.service_builder(service_name)
+        .blackboard_creator(c_uint64)
+        .add(key, c_uint64, value)
+        .create()
+    )
+
+    writer = service.writer_builder().create()
+    entry_handle_mut = writer.entry(key, c_uint64)
+    with pytest.raises(iox2.EntryHandleMutError):
+        writer.entry(key, c_uint64)
+
+    entry_handle_mut.delete()
+    try:
+        writer.entry(key, c_uint64)
+    except iox2.EntryHandleMutError:
+        assert False
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_entry_handle_mut_prevents_another_writer(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service_name = iox2.testing.generate_service_name()
+    key = 0
+    key = key.to_bytes(1, "little")
+    value = 0
+    value = value.to_bytes(4, "little")
+    service = (
+        node.service_builder(service_name)
+        .blackboard_creator(c_uint8)
+        .add(key, c_int32, value)
+        .create()
+    )
+
+    writer = service.writer_builder().create()
+    entry_handle_mut = writer.entry(key, c_int32)
+
+    writer.delete()
+
+    with pytest.raises(iox2.WriterCreateError):
+        service.writer_builder().create()
+
+
+# TODO: continue with entry_value_can_still_be_used_after_every_previous_service_state_owner_was_dropped

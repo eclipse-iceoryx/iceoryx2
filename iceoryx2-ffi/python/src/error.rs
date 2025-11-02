@@ -292,3 +292,17 @@ create_exception!(
     PyException,
     "Errors caused when an EntryHandle is created with Reader::entry()."
 );
+
+create_exception!(
+    iceoryx2_ffi_python,
+    WriterCreateError,
+    PyException,
+    "Errors caused when creating a writer port."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    EntryHandleMutError,
+    PyException,
+    "Errors caused when an EntryHandleMut is created with Writer::entry()."
+);

@@ -13,9 +13,11 @@
 use iceoryx2::service::builder::CustomKeyMarker;
 use pyo3::prelude::*;
 
+use crate::error::WriterCreateError;
 use crate::parc::Parc;
 use crate::port_factory_blackboard::PortFactoryBlackboardType;
 use crate::type_storage::TypeStorage;
+use crate::writer::{Writer, WriterType};
 
 type IpcPortFactoryWriter<'a> = iceoryx2::service::port_factory::writer::PortFactoryWriter<
     'a,
@@ -80,6 +82,35 @@ impl PortFactoryWriter {
             factory: self.factory.clone(),
             value: PortFactoryWriterType::Local(Parc::new(value)),
             key_type_details: self.key_type_details.clone(),
+        }
+    }
+}
+
+#[pymethods]
+impl PortFactoryWriter {
+    pub fn create(&self) -> PyResult<Writer> {
+        let _guard = self.factory.lock();
+        match &self.value {
+            PortFactoryWriterType::Ipc(v) => {
+                let this = (*v.lock()).clone();
+                Ok(Writer {
+                    value: Parc::new(WriterType::Ipc(Some(
+                        this.create()
+                            .map_err(|e| WriterCreateError::new_err(format!("{e:?}")))?,
+                    ))),
+                    key_type_details: self.key_type_details.clone(),
+                })
+            }
+            PortFactoryWriterType::Local(v) => {
+                let this = (*v.lock()).clone();
+                Ok(Writer {
+                    value: Parc::new(WriterType::Local(Some(
+                        this.create()
+                            .map_err(|e| WriterCreateError::new_err(format!("{e:?}")))?,
+                    ))),
+                    key_type_details: self.key_type_details.clone(),
+                })
+            }
         }
     }
 }
