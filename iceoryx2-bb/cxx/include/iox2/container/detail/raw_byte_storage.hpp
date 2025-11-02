@@ -104,8 +104,8 @@ class RawByteStorage {
         return *this;
     }
 
-    constexpr auto operator=(RawByteStorage&& rhs) noexcept(std::is_nothrow_move_constructible_v<T>
-                                                            && std::is_nothrow_move_assignable_v<T>)
+    constexpr auto operator=(RawByteStorage&& rhs) noexcept(std::is_nothrow_move_constructible<T>::value
+                                                            && std::is_nothrow_move_assignable<T>::value)
         -> RawByteStorage& {
         if (&rhs != this) {
             for (uint64_t i = 0; i < std::min(m_size, rhs.m_size); ++i) {
