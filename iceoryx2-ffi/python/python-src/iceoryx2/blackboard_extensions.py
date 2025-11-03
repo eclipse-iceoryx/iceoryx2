@@ -129,6 +129,18 @@ def entry(self: Writer, key: bytes, value: Type[T]) -> EntryHandleMut:
     )
 
 
+def update_with_copy(self: EntryHandleMut, value: Type[T]):
+    """Updates the value by copying the passed value into it."""
+    type_size = ctypes.sizeof(value)
+    type_align = ctypes.alignment(value)
+
+    data_cell_ptr = self.__get_data_ptr(type_size, type_align)
+    ctypes.memmove(data_cell_ptr, ctypes.byref(value), type_size)
+    self.__update_data_ptr()
+
+
+EntryHandleMut.update_with_copy = update_with_copy
+
 Reader.entry = entry
 
 ServiceBuilder.blackboard_creator = blackboard_creator

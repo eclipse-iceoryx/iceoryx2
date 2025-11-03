@@ -14,6 +14,7 @@ use iceoryx2_bb_log::fatal_panic;
 use pyo3::prelude::*;
 use pyo3::types::PyBytes;
 
+use crate::entry_value_uninit::{EntryValueUninit, EntryValueUninitType};
 use crate::event_id::EventId;
 use crate::parc::Parc;
 use crate::type_detail::TypeDetail;
@@ -33,6 +34,73 @@ pub struct EntryHandleMut {
 
 #[pymethods]
 impl EntryHandleMut {
+    #[getter]
+    pub fn __value_type_details(&self) -> TypeDetail {
+        self.value_type_details.clone()
+    }
+
+    pub fn __get_data_ptr(&self, value_size: usize, value_alignment: usize) -> usize {
+        unsafe {
+            match &self.value {
+                EntryHandleMutType::Ipc(Some(v)) => {
+                    v.__internal_get_ptr_to_write_cell(value_size, value_alignment) as usize
+                }
+                EntryHandleMutType::Local(Some(v)) => {
+                    v.__internal_get_ptr_to_write_cell(value_size, value_alignment) as usize
+                }
+                _ => fatal_panic!(""), // TODO
+            }
+        }
+    }
+
+    pub fn __update_data_ptr(&self) {
+        unsafe {
+            match &self.value {
+                EntryHandleMutType::Ipc(Some(v)) => {
+                    v.__internal_update_write_cell();
+                }
+                EntryHandleMutType::Local(Some(v)) => {
+                    v.__internal_update_write_cell();
+                }
+                _ => fatal_panic!(""), // TODO
+            }
+        };
+    }
+
+    pub fn loan_uninit(&mut self) -> EntryValueUninit {
+        match &mut self.value {
+            EntryHandleMutType::Ipc(ref mut v) => {
+                let entry_handle_mut = v.take().unwrap();
+                let entry_value_uninit = entry_handle_mut.loan_uninit(
+                    self.value_type_details.0.size(),
+                    self.value_type_details.0.alignment(),
+                );
+                EntryValueUninit {
+                    value: EntryValueUninitType::Ipc(entry_value_uninit),
+                }
+            }
+            EntryHandleMutType::Local(ref mut v) => {
+                let entry_handle_mut = v.take().unwrap();
+                let entry_value_uninit = entry_handle_mut.loan_uninit(
+                    self.value_type_details.0.size(),
+                    self.value_type_details.0.alignment(),
+                );
+                EntryValueUninit {
+                    value: EntryValueUninitType::Local(entry_value_uninit),
+                }
+            }
+            _ => fatal_panic!(""), // TODO
+        }
+    }
+
+    pub fn entry_id(&self) -> EventId {
+        match &self.value {
+            EntryHandleMutType::Ipc(Some(v)) => EventId::new(v.entry_id().as_value()),
+            EntryHandleMutType::Local(Some(v)) => EventId::new(v.entry_id().as_value()),
+            _ => fatal_panic!(""), // TODO
+        }
+    }
+
     /// Releases the `EntryHandleMut`.
     ///
     /// After this call the `EntryHandleMut` is no longer usable!
