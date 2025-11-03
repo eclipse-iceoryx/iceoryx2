@@ -735,7 +735,7 @@ TYPED_TEST(ServicePublishSubscribeTest, send_receive_with_user_header_works) {
     const uint64_t payload = 781891729871;
     sample.payload_mut() = payload;
     for (uint64_t idx = 0; idx < TestHeader::CAPACITY; ++idx) {
-        sample.user_header_mut().value.at(idx) = 4 * idx + 3;
+        sample.user_header_mut().value.at(idx) = (4 * idx) + 3;
     }
     send(std::move(sample)).expect("");
     auto recv_sample = sut_subscriber.receive().expect("");
