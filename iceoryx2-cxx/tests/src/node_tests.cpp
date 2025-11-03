@@ -49,13 +49,13 @@ TYPED_TEST(NodeTest, created_nodes_can_be_listed) {
         auto sut_2 = NodeBuilder().name(node_name_2).create<SERVICE_TYPE>().expect("");
 
         std::vector<NodeName> nodes;
-        auto result = Node<SERVICE_TYPE>::list(Config::global_config(), [&](auto node_state) {
-            node_state.alive([&](auto& view) { nodes.push_back(view.details()->name()); });
+        auto result = Node<SERVICE_TYPE>::list(Config::global_config(), [&](auto node_state) -> auto {
+            node_state.alive([&](auto& view) -> auto { nodes.push_back(view.details()->name()); });
             return CallbackProgression::Continue;
         });
         ASSERT_TRUE(result.has_value());
 
-        auto contains = [&](const NodeName& name) {
+        auto contains = [&](const NodeName& name) -> auto {
             // NOLINTNEXTLINE(readability-use-anyofallof), not yet supported in all compilers
             for (const auto& node : nodes) {
                 if (node.to_string() == name.to_string()) {
@@ -70,7 +70,7 @@ TYPED_TEST(NodeTest, created_nodes_can_be_listed) {
     }
 
     uint64_t counter = 0;
-    auto result = Node<SERVICE_TYPE>::list(Config::global_config(), [&](const auto&) {
+    auto result = Node<SERVICE_TYPE>::list(Config::global_config(), [&](const auto&) -> auto {
         counter++;
         return CallbackProgression::Continue;
     });

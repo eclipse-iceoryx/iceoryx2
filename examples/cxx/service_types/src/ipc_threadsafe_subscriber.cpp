@@ -37,7 +37,7 @@ auto main() -> int {
 
     // All ports (like Subscriber, Publisher, Client, Server, ...) are threadsafe
     // so they can be shared between threads.
-    auto background_thread = std::thread([&] {
+    auto background_thread = std::thread([&]() -> auto {
         while (keep_running.load()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(CYCLE_TIME.toMilliseconds()));
             auto sample = subscriber.receive().expect("sample received");

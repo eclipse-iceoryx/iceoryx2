@@ -132,7 +132,7 @@ TYPED_TEST(WaitSetTest, attaching_same_notification_twice_fails) {
 
 TYPED_TEST(WaitSetTest, empty_waitset_returns_error_on_run) {
     auto sut = this->create_sut();
-    auto result = sut.wait_and_process([](auto) { return CallbackProgression::Continue; });
+    auto result = sut.wait_and_process([](auto) -> auto { return CallbackProgression::Continue; });
 
     ASSERT_THAT(result.has_error(), Eq(true));
     ASSERT_THAT(result.get_error(), Eq(WaitSetRunError::NoAttachments));
@@ -140,7 +140,7 @@ TYPED_TEST(WaitSetTest, empty_waitset_returns_error_on_run) {
 
 TYPED_TEST(WaitSetTest, empty_waitset_returns_error_on_run_once) {
     auto sut = this->create_sut();
-    auto result = sut.wait_and_process_once([](auto) { return CallbackProgression::Continue; });
+    auto result = sut.wait_and_process_once([](auto) -> auto { return CallbackProgression::Continue; });
 
     ASSERT_THAT(result.has_error(), Eq(true));
     ASSERT_THAT(result.get_error(), Eq(WaitSetRunError::NoAttachments));
@@ -237,7 +237,7 @@ TYPED_TEST(WaitSetTest, deadline_attachment_wakes_up_when_notified) {
     auto guard = sut.attach_deadline(listener, Duration::fromHours(1)).expect("");
 
     auto callback_called = false;
-    std::thread notifier_thread([&]() {
+    std::thread notifier_thread([&]() -> auto {
         std::this_thread::sleep_for(std::chrono::milliseconds(TIMEOUT.toMilliseconds()));
         auto notifier = this->create_notifier();
         notifier.notify().expect("");
@@ -260,7 +260,7 @@ TYPED_TEST(WaitSetTest, notification_attachment_wakes_up_when_notified) {
     auto guard = sut.attach_notification(listener).expect("");
 
     auto callback_called = false;
-    std::thread notifier_thread([&]() {
+    std::thread notifier_thread([&]() -> auto {
         std::this_thread::sleep_for(std::chrono::milliseconds(TIMEOUT.toMilliseconds()));
         auto notifier = this->create_notifier();
         notifier.notify().expect("");

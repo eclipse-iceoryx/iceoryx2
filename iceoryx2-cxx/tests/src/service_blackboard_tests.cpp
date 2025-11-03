@@ -93,7 +93,7 @@ TYPED_TEST(ServiceBlackboardTest, list_service_nodes_works) {
     auto sut_2 = node_2.service_builder(service_name).template blackboard_opener<uint64_t>().open().expect("");
 
     auto counter = 0;
-    auto verify_node = [&](const AliveNodeView<SERVICE_TYPE>& node_view) {
+    auto verify_node = [&](const AliveNodeView<SERVICE_TYPE>& node_view) -> auto {
         counter++;
         if (node_view.id() == node_1.id()) {
             ASSERT_THAT(node_view.details()->name().to_string().c_str(), StrEq(node_1.name().to_string().c_str()));
@@ -105,9 +105,9 @@ TYPED_TEST(ServiceBlackboardTest, list_service_nodes_works) {
     auto result = sut_1.nodes([&](auto node_state) -> CallbackProgression {
         node_state.alive(verify_node);
 
-        node_state.dead([](const auto&) { ASSERT_TRUE(false); });
-        node_state.inaccessible([](const auto&) { ASSERT_TRUE(false); });
-        node_state.undefined([](const auto&) { ASSERT_TRUE(false); });
+        node_state.dead([](const auto&) -> auto { ASSERT_TRUE(false); });
+        node_state.inaccessible([](const auto&) -> auto { ASSERT_TRUE(false); });
+        node_state.undefined([](const auto&) -> auto { ASSERT_TRUE(false); });
 
         return CallbackProgression::Continue;
     });
@@ -1439,7 +1439,7 @@ TYPED_TEST(ServiceBlackboardTest, listing_all_readers_works) {
 
     std::vector<UniqueReaderId> reader_ids;
     reader_ids.reserve(NUMBER_OF_READERS);
-    service.dynamic_config().list_readers([&](auto reader_details_view) {
+    service.dynamic_config().list_readers([&](auto reader_details_view) -> auto {
         reader_ids.push_back(reader_details_view.reader_id());
         return CallbackProgression::Continue;
     });
@@ -1471,7 +1471,7 @@ TYPED_TEST(ServiceBlackboardTest, listing_all_readers_stops_on_request) {
     }
 
     auto counter = 0;
-    sut.dynamic_config().list_readers([&](auto) {
+    sut.dynamic_config().list_readers([&](auto) -> auto {
         counter++;
         return CallbackProgression::Stop;
     });
@@ -1574,7 +1574,7 @@ TYPED_TEST(ServiceBlackboardTest, reader_details_are_correct) {
     auto reader = sut.reader_builder().create().expect("");
 
     auto counter = 0;
-    sut.dynamic_config().list_readers([&](auto reader_details_view) {
+    sut.dynamic_config().list_readers([&](auto reader_details_view) -> auto {
         counter++;
         EXPECT_TRUE(reader_details_view.reader_id() == reader.id());
         EXPECT_TRUE(reader_details_view.node_id() == node.id());

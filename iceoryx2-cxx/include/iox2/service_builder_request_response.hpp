@@ -408,28 +408,35 @@ template <typename RequestPayload,
 inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
     set_parameters() {
     m_request_payload_alignment.and_then(
-        [&](auto value) { iox2_service_builder_request_response_request_payload_alignment(&m_handle, value); });
-    m_response_payload_alignment.and_then(
-        [&](auto value) { iox2_service_builder_request_response_response_payload_alignment(&m_handle, value); });
-    m_enable_safe_overflow_for_requests.and_then(
-        [&](auto value) { iox2_service_builder_request_response_enable_safe_overflow_for_requests(&m_handle, value); });
-    m_enable_safe_overflow_for_responses.and_then([&](auto value) {
+        [&](auto value) -> auto { iox2_service_builder_request_response_request_payload_alignment(&m_handle, value); });
+    m_response_payload_alignment.and_then([&](auto value) -> auto {
+        iox2_service_builder_request_response_response_payload_alignment(&m_handle, value);
+    });
+    m_enable_safe_overflow_for_requests.and_then([&](auto value) -> auto {
+        iox2_service_builder_request_response_enable_safe_overflow_for_requests(&m_handle, value);
+    });
+    m_enable_safe_overflow_for_responses.and_then([&](auto value) -> auto {
         iox2_service_builder_request_response_enable_safe_overflow_for_responses(&m_handle, value);
     });
-    m_max_active_requests_per_client.and_then(
-        [&](auto value) { iox2_service_builder_request_response_max_active_requests_per_client(&m_handle, value); });
+    m_max_active_requests_per_client.and_then([&](auto value) -> auto {
+        iox2_service_builder_request_response_max_active_requests_per_client(&m_handle, value);
+    });
     m_max_response_buffer_size.and_then(
-        [&](auto value) { iox2_service_builder_request_response_max_response_buffer_size(&m_handle, value); });
-    m_max_servers.and_then([&](auto value) { iox2_service_builder_request_response_max_servers(&m_handle, value); });
-    m_max_clients.and_then([&](auto value) { iox2_service_builder_request_response_max_clients(&m_handle, value); });
-    m_max_nodes.and_then([&](auto value) { iox2_service_builder_request_response_set_max_nodes(&m_handle, value); });
-    m_max_borrowed_responses_per_pending_response.and_then([&](auto value) {
+        [&](auto value) -> auto { iox2_service_builder_request_response_max_response_buffer_size(&m_handle, value); });
+    m_max_servers.and_then(
+        [&](auto value) -> auto { iox2_service_builder_request_response_max_servers(&m_handle, value); });
+    m_max_clients.and_then(
+        [&](auto value) -> auto { iox2_service_builder_request_response_max_clients(&m_handle, value); });
+    m_max_nodes.and_then(
+        [&](auto value) -> auto { iox2_service_builder_request_response_set_max_nodes(&m_handle, value); });
+    m_max_borrowed_responses_per_pending_response.and_then([&](auto value) -> auto {
         iox2_service_builder_request_response_max_borrowed_responses_per_pending_response(&m_handle, value);
     });
     m_max_loaned_requests.and_then(
-        [&](auto value) { iox2_service_builder_request_response_max_loaned_requests(&m_handle, value); });
-    m_enable_fire_and_forget_requests.and_then(
-        [&](auto value) { iox2_service_builder_request_response_enable_fire_and_forget_requests(&m_handle, value); });
+        [&](auto value) -> auto { iox2_service_builder_request_response_max_loaned_requests(&m_handle, value); });
+    m_enable_fire_and_forget_requests.and_then([&](auto value) -> auto {
+        iox2_service_builder_request_response_enable_fire_and_forget_requests(&m_handle, value);
+    });
 
     // request payload type details
     using RequestValueType = typename PayloadInfo<RequestPayload>::ValueType;

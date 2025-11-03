@@ -155,7 +155,7 @@ void WaitSetGuard<S>::drop() {
 // BEGIN: WaitSetBuilder
 ////////////////////////////
 WaitSetBuilder::WaitSetBuilder()
-    : m_handle([] {
+    : m_handle([]() -> auto {
         iox2_waitset_builder_h handle {};
         iox2_waitset_builder_new(nullptr, &handle);
         return handle;

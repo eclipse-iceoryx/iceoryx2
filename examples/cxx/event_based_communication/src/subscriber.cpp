@@ -31,7 +31,7 @@ auto main() -> int {
     // latest after the deadline has passed.
     auto subscriber_guard = waitset.attach_deadline(subscriber, DEADLINE).expect("");
 
-    auto on_event = [&](WaitSetAttachmentId<ServiceType::Ipc> attachment_id) {
+    auto on_event = [&](WaitSetAttachmentId<ServiceType::Ipc> attachment_id) -> auto {
         // If we have received a new event on the subscriber we handle it.
         if (attachment_id.has_event_from(subscriber_guard)) {
             subscriber.handle_event();

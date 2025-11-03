@@ -98,7 +98,7 @@ TYPED_TEST(ServiceRequestResponseTest, list_service_nodes_works) {
     auto sut_2 = node_2.service_builder(service_name).template request_response<uint64_t, uint64_t>().open().expect("");
 
     auto counter = 0;
-    auto verify_node = [&](const AliveNodeView<SERVICE_TYPE>& node_view) {
+    auto verify_node = [&](const AliveNodeView<SERVICE_TYPE>& node_view) -> auto {
         counter++;
         if (node_view.id() == node_1.id()) {
             ASSERT_THAT(node_view.details()->name().to_string().c_str(), StrEq(node_1.name().to_string().c_str()));
@@ -110,9 +110,9 @@ TYPED_TEST(ServiceRequestResponseTest, list_service_nodes_works) {
     auto result = sut_1.nodes([&](auto node_state) -> CallbackProgression {
         node_state.alive(verify_node);
 
-        node_state.dead([](const auto&) { ASSERT_TRUE(false); });
-        node_state.inaccessible([](const auto&) { ASSERT_TRUE(false); });
-        node_state.undefined([](const auto&) { ASSERT_TRUE(false); });
+        node_state.dead([](const auto&) -> auto { ASSERT_TRUE(false); });
+        node_state.inaccessible([](const auto&) -> auto { ASSERT_TRUE(false); });
+        node_state.undefined([](const auto&) -> auto { ASSERT_TRUE(false); });
 
         return CallbackProgression::Continue;
     });
@@ -787,7 +787,7 @@ TYPED_TEST(ServiceRequestResponseTest, write_from_fn_works) {
     EXPECT_THAT(request_uninit.payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
 
     auto request = request_uninit.write_from_fn(
-        [](auto index) { return DummyData { DummyData::DEFAULT_VALUE_A + index, index % 2 == 0 }; });
+        [](auto index) -> auto { return DummyData { DummyData::DEFAULT_VALUE_A + index, index % 2 == 0 }; });
     auto pending_response = send(std::move(request)).expect("");
 
     auto active_request = sut_server.receive().expect("");
@@ -804,7 +804,7 @@ TYPED_TEST(ServiceRequestResponseTest, write_from_fn_works) {
 
     auto response_uninit = received_request.loan_slice_uninit(SLICE_MAX_LENGTH).expect("");
     auto response = response_uninit.write_from_fn(
-        [](auto index) { return DummyData { DummyData::DEFAULT_VALUE_Z + index, index % 2 == 0 }; });
+        [](auto index) -> auto { return DummyData { DummyData::DEFAULT_VALUE_Z + index, index % 2 == 0 }; });
     send(std::move(response)).expect("");
 
     auto received_response = pending_response.receive().expect("");
@@ -1895,7 +1895,7 @@ TYPED_TEST(ServiceRequestResponseTest, listing_all_clients_works) {
 
     std::vector<UniqueClientId> client_ids;
     client_ids.reserve(NUMBER_OF_CLIENTS);
-    sut.dynamic_config().list_clients([&](auto client_details_view) {
+    sut.dynamic_config().list_clients([&](auto client_details_view) -> auto {
         client_ids.push_back(client_details_view.client_id());
         return CallbackProgression::Continue;
     });
@@ -1926,7 +1926,7 @@ TYPED_TEST(ServiceRequestResponseTest, listing_all_clients_stops_on_request) {
     }
 
     auto counter = 0;
-    sut.dynamic_config().list_clients([&](auto) {
+    sut.dynamic_config().list_clients([&](auto) -> auto {
         counter++;
         return CallbackProgression::Stop;
     });
@@ -1949,7 +1949,7 @@ TYPED_TEST(ServiceRequestResponseTest, client_details_are_correct) {
         sut.client_builder().initial_max_slice_len(MAX_SLICE_LEN).create().expect("");
 
     auto counter = 0;
-    sut.dynamic_config().list_clients([&](auto client_details_view) {
+    sut.dynamic_config().list_clients([&](auto client_details_view) -> auto {
         counter++;
         EXPECT_TRUE(client_details_view.client_id() == client.id());
         EXPECT_TRUE(client_details_view.node_id() == node.id());
@@ -1980,7 +1980,7 @@ TYPED_TEST(ServiceRequestResponseTest, listing_all_servers_works) {
 
     std::vector<UniqueServerId> server_ids;
     server_ids.reserve(NUMBER_OF_SERVERS);
-    sut.dynamic_config().list_servers([&](auto server_details_view) {
+    sut.dynamic_config().list_servers([&](auto server_details_view) -> auto {
         server_ids.push_back(server_details_view.server_id());
         return CallbackProgression::Continue;
     });
@@ -2011,7 +2011,7 @@ TYPED_TEST(ServiceRequestResponseTest, listing_all_servers_stops_on_request) {
     }
 
     auto counter = 0;
-    sut.dynamic_config().list_servers([&](auto) {
+    sut.dynamic_config().list_servers([&](auto) -> auto {
         counter++;
         return CallbackProgression::Stop;
     });
@@ -2034,7 +2034,7 @@ TYPED_TEST(ServiceRequestResponseTest, server_details_are_correct) {
         sut.server_builder().initial_max_slice_len(MAX_SLICE_LEN).create().expect("");
 
     auto counter = 0;
-    sut.dynamic_config().list_servers([&](auto server_details_view) {
+    sut.dynamic_config().list_servers([&](auto server_details_view) -> auto {
         counter++;
         EXPECT_TRUE(server_details_view.server_id() == server.id());
         EXPECT_TRUE(server_details_view.node_id() == node.id());

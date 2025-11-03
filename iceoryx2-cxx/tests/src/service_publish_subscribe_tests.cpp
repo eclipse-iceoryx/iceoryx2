@@ -100,7 +100,7 @@ TYPED_TEST(ServicePublishSubscribeTest, list_service_nodes_works) {
     auto sut_2 = node_2.service_builder(service_name).template publish_subscribe<uint64_t>().open().expect("");
 
     auto counter = 0;
-    auto verify_node = [&](const AliveNodeView<SERVICE_TYPE>& node_view) {
+    auto verify_node = [&](const AliveNodeView<SERVICE_TYPE>& node_view) -> auto {
         counter++;
         if (node_view.id() == node_1.id()) {
             ASSERT_THAT(node_view.details()->name().to_string().c_str(), StrEq(node_1.name().to_string().c_str()));
@@ -112,9 +112,9 @@ TYPED_TEST(ServicePublishSubscribeTest, list_service_nodes_works) {
     auto result = sut_1.nodes([&](auto node_state) -> CallbackProgression {
         node_state.alive(verify_node);
 
-        node_state.dead([](const auto&) { ASSERT_TRUE(false); });
-        node_state.inaccessible([](const auto&) { ASSERT_TRUE(false); });
-        node_state.undefined([](const auto&) { ASSERT_TRUE(false); });
+        node_state.dead([](const auto&) -> auto { ASSERT_TRUE(false); });
+        node_state.inaccessible([](const auto&) -> auto { ASSERT_TRUE(false); });
+        node_state.undefined([](const auto&) -> auto { ASSERT_TRUE(false); });
 
         return CallbackProgression::Continue;
     });
@@ -486,7 +486,7 @@ TYPED_TEST(ServicePublishSubscribeTest, write_from_fn_send_receive_works) {
 
     auto sample_uninit = sut_publisher.loan_slice_uninit(SLICE_MAX_LENGTH).expect("");
     auto send_sample = sample_uninit.write_from_fn(
-        [](auto index) { return DummyData { DummyData::DEFAULT_VALUE_A + index, index % 2 == 0 }; });
+        [](auto index) -> auto { return DummyData { DummyData::DEFAULT_VALUE_A + index, index % 2 == 0 }; });
     send(std::move(send_sample)).expect("");
 
     auto recv_result = sut_subscriber.receive().expect("");
@@ -1489,7 +1489,7 @@ TYPED_TEST(ServicePublishSubscribeTest, listing_all_subscribers_works) {
 
     std::vector<UniqueSubscriberId> subscriber_ids;
     subscriber_ids.reserve(NUMBER_OF_SUBSCRIBERS);
-    sut.dynamic_config().list_subscribers([&](auto subscriber_details_view) {
+    sut.dynamic_config().list_subscribers([&](auto subscriber_details_view) -> auto {
         subscriber_ids.push_back(subscriber_details_view.subscriber_id());
         return CallbackProgression::Continue;
     });
@@ -1520,7 +1520,7 @@ TYPED_TEST(ServicePublishSubscribeTest, listing_all_subscribers_stops_on_request
     }
 
     auto counter = 0;
-    sut.dynamic_config().list_subscribers([&](auto) {
+    sut.dynamic_config().list_subscribers([&](auto) -> auto {
         counter++;
         return CallbackProgression::Stop;
     });
@@ -1538,7 +1538,7 @@ TYPED_TEST(ServicePublishSubscribeTest, subscriber_details_are_correct) {
     iox2::Subscriber<SERVICE_TYPE, uint64_t, void> subscriber = sut.subscriber_builder().create().expect("");
 
     auto counter = 0;
-    sut.dynamic_config().list_subscribers([&](auto subscriber_details_view) {
+    sut.dynamic_config().list_subscribers([&](auto subscriber_details_view) -> auto {
         counter++;
         EXPECT_TRUE(subscriber_details_view.subscriber_id() == subscriber.id());
         EXPECT_TRUE(subscriber_details_view.node_id() == node.id());
@@ -1569,7 +1569,7 @@ TYPED_TEST(ServicePublishSubscribeTest, listing_all_publishers_works) {
 
     std::vector<UniquePublisherId> publisher_ids;
     publisher_ids.reserve(NUMBER_OF_PUBLISHERS);
-    sut.dynamic_config().list_publishers([&](auto publisher_details_view) {
+    sut.dynamic_config().list_publishers([&](auto publisher_details_view) -> auto {
         publisher_ids.push_back(publisher_details_view.publisher_id());
         return CallbackProgression::Continue;
     });
@@ -1600,7 +1600,7 @@ TYPED_TEST(ServicePublishSubscribeTest, listing_all_publishers_stops_on_request)
     }
 
     auto counter = 0;
-    sut.dynamic_config().list_publishers([&](auto) {
+    sut.dynamic_config().list_publishers([&](auto) -> auto {
         counter++;
         return CallbackProgression::Stop;
     });
@@ -1621,7 +1621,7 @@ TYPED_TEST(ServicePublishSubscribeTest, publisher_details_are_correct) {
         sut.publisher_builder().initial_max_slice_len(INITIAL_MAX_SLICE_LEN).create().expect("");
 
     auto counter = 0;
-    sut.dynamic_config().list_publishers([&](auto publisher_details_view) {
+    sut.dynamic_config().list_publishers([&](auto publisher_details_view) -> auto {
         counter++;
         EXPECT_TRUE(publisher_details_view.publisher_id() == publisher.id());
         EXPECT_TRUE(publisher_details_view.node_id() == node.id());
