@@ -94,7 +94,6 @@ class OptionalValueHolder {
             set(rhs.m_u_value);
         }
     }
-    // NOLINTNEXTLINE(modernize-type-traits), requires C++17
     constexpr OptionalValueHolder(OptionalValueHolder&& rhs) noexcept(std::is_nothrow_move_constructible<T>::value)
         : OptionalValueHolder() {
         if (!rhs.m_is_empty) {
@@ -122,7 +121,6 @@ class OptionalValueHolder {
         return *this;
     }
 
-    // NOLINTNEXTLINE(modernize-type-traits), requires C++17
     constexpr auto operator=(OptionalValueHolder&& rhs) noexcept(std::is_nothrow_move_assignable<T>::value)
         -> OptionalValueHolder& {
         if (this != &rhs) {
@@ -215,11 +213,7 @@ class Optional {
     }
 
     template <typename U = std::remove_cv_t<T>,
-              // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
-              std::enable_if_t<std::is_constructible<T, U>::value
-                                   // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
-                                   && !std::is_same<std::decay_t<U>, Optional<T>>::value
-                                   // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
+              std::enable_if_t<std::is_constructible<T, U>::value && !std::is_same<std::decay_t<U>, Optional<T>>::value
                                    && !std::is_same<std::decay_t<U>, NulloptT>::value,
                                bool> = true>
     // NOLINTNEXTLINE(hicpp-explicit-conversions), as specified in ISO14882:2017 [optional]

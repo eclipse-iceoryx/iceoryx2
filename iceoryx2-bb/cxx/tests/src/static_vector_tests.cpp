@@ -31,7 +31,6 @@ constexpr size_t const G_TEST_ARRAY_SIZE = 5;
 int32_t const G_TEST_ARRAY[G_TEST_ARRAY_SIZE] = { 4, 9, 77, 32, -5 };
 
 
-// NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
 static_assert(std::is_standard_layout<iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>>::value,
               "StaticVector must be standard layout");
 

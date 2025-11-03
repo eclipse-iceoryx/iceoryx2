@@ -33,7 +33,6 @@ namespace container {
 template <typename T, uint64_t Capacity>
 class StaticVector {
     static_assert(Capacity > 0, "Static container with capacity 0 is not allowed.");
-    // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
     static_assert(std::is_standard_layout<T>::value, "Containers can only be used with standard layout types.");
 
   public:
@@ -171,7 +170,6 @@ class StaticVector {
     /// @return Nullopt if `count` exceeds the vector capacity.
     ///         Otherwise a vector containing the desired elements.
     static constexpr auto from_value(SizeType count)
-        // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
         -> std::enable_if_t<std::is_default_constructible<T>::value, Optional<StaticVector>> {
         if (count <= Capacity) {
             return from_value(count, T {});
@@ -200,9 +198,7 @@ class StaticVector {
     template <typename Iter,
               typename Sentinel,
               std::enable_if_t<
-                  // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
                   std::is_constructible<T, decltype(*std::declval<Iter>())>::value
-                      // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
                       && std::is_convertible<decltype(std::declval<Iter>() == std::declval<Sentinel>()), bool>::value,
                   bool> = true>
     static constexpr auto from_range_unchecked(Iter it_begin, Sentinel it_end) -> Optional<StaticVector> {
@@ -244,9 +240,8 @@ class StaticVector {
     /// @return true on success.
     ///         false if the operation would exceed the vector's capacity.
     template <typename... Args>
-    constexpr auto try_emplace_back(Args&&... args) ->
-        // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
-        std::enable_if_t<std::is_constructible<T, Args...>::value, bool> {
+    constexpr auto try_emplace_back(Args&&... args)
+        -> std::enable_if_t<std::is_constructible<T, Args...>::value, bool> {
         if (m_storage.size() < Capacity) {
             m_storage.emplace_back(std::forward<Args>(args)...);
             return true;
@@ -260,9 +255,8 @@ class StaticVector {
     ///         false if `index` is greater than the current size of the vector or
     ///         if the operation would exceed the vector's capacity.
     template <typename... Args>
-    constexpr auto try_emplace_at(SizeType index, Args&&... args) ->
-        // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
-        std::enable_if_t<std::is_constructible<T, Args...>::value, bool> {
+    constexpr auto try_emplace_at(SizeType index, Args&&... args)
+        -> std::enable_if_t<std::is_constructible<T, Args...>::value, bool> {
         if ((m_storage.size() < Capacity) && (index <= m_storage.size())) {
             m_storage.emplace_at(index, std::forward<Args>(args)...);
             return true;
@@ -332,9 +326,7 @@ class StaticVector {
     template <typename Iter,
               typename Sentinel,
               std::enable_if_t<
-                  // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
                   std::is_constructible<T, decltype(*std::declval<Iter>())>::value
-                      // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
                       && std::is_convertible<decltype(std::declval<Iter>() == std::declval<Sentinel>()), bool>::value,
                   bool> = true>
     constexpr auto try_insert_at_unchecked(SizeType index, Iter it_begin, Sentinel it_end) -> bool {

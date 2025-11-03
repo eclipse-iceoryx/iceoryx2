@@ -33,7 +33,6 @@ inline auto free_space_is_all_zeroes(iox2::container::StaticString<N> const& str
 }
 
 constexpr uint64_t const G_ARBITRARY_CAPACITY = 55;
-// NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
 static_assert(std::is_standard_layout<iox2::container::StaticString<G_ARBITRARY_CAPACITY>>::value,
               "StaticString must be standard layout");
 static_assert(iox2::container::StaticString<G_ARBITRARY_CAPACITY>::capacity() == G_ARBITRARY_CAPACITY,
@@ -112,7 +111,6 @@ template <typename T, typename U = decltype(iox2::container::StaticString<99>::f
 constexpr auto can_call_from_utf8_with(T&& /* unused */) -> std::true_type {
     return {};
 }
-// NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
 template <typename T, typename = std::enable_if_t<!std::is_array<std::remove_reference_t<T>>::value, bool>>
 constexpr auto can_call_from_utf8_with(T&& /* unused */) -> std::false_type {
     return {};

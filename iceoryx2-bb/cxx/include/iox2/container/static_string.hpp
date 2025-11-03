@@ -485,7 +485,6 @@ class StaticString {
         ret.offset_data = offsetof(Self, m_string);
         ret.sizeof_size = sizeof(m_size);
         ret.offset_size = offsetof(Self, m_size);
-        // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
         ret.size_is_unsigned = std::is_unsigned<decltype(m_size)>::value;
         return ret;
     }
