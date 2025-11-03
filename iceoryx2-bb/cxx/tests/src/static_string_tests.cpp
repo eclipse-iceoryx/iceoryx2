@@ -27,8 +27,9 @@ using DetectT = void;
 
 template <uint64_t N>
 inline auto free_space_is_all_zeroes(iox2::container::StaticString<N> const& str) -> bool {
-    return std::all_of(str.unchecked_access().data() + str.size(),
-                       str.unchecked_access().data() + str.capacity() + 1,
+    using DifferenceType = typename iox2::container::StaticString<N>::DifferenceType;
+    return std::all_of(std::next(str.unchecked_access().data(), static_cast<DifferenceType>(str.size())),
+                       std::next(str.unchecked_access().data(), str.capacity() + 1),
                        [](char character) -> bool { return character == '\0'; });
 }
 
@@ -892,7 +893,7 @@ TEST(StaticString, unchecked_end_returns_mutable_pointer_to_one_past_last_elemen
     constexpr uint64_t const STRING_SIZE = 5;
     auto sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABC");
     ASSERT_EQ(sut.unchecked_access().end(), &sut.unchecked_access()[sut.size()]);
-    *(sut.unchecked_access().end() - 1) = 'X';
+    *(std::prev(sut.unchecked_access().end())) = 'X';
     ASSERT_STREQ(sut.unchecked_access().c_str(), "ABX");
     ASSERT_TRUE(free_space_is_all_zeroes(sut));
 }
@@ -909,7 +910,7 @@ TEST(StaticString, unchecked_data_returns_mutable_pointer_to_first_element) {
     auto sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABC");
     // NOLINTNEXTLINE(readability-container-data-pointer) testing
     ASSERT_EQ(sut.unchecked_access().data(), &sut.unchecked_access()[0]);
-    sut.unchecked_access().data()[0] = 'X';
+    *(sut.unchecked_access().data()) = 'X';
     ASSERT_STREQ(sut.unchecked_access().c_str(), "XBC");
     ASSERT_TRUE(free_space_is_all_zeroes(sut));
 }
