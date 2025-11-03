@@ -18,6 +18,7 @@ use crate::serialize::Serialize;
 
 use super::{DeserializeError, SerializeError};
 
+#[derive(Debug)]
 pub struct Postcard {}
 
 impl Serialize for Postcard {

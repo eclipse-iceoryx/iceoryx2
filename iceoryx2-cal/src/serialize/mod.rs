@@ -42,6 +42,8 @@ pub mod postcard;
 pub mod recommended;
 pub mod toml;
 
+use core::fmt::Debug;
+
 use alloc::vec::Vec;
 
 /// Failure emitted by [`Serialize::serialize()`]
@@ -74,7 +76,7 @@ impl core::error::Error for DeserializeError {}
 
 /// Serialize and deserialize constructs which implement [`serde::Serialize`] and
 /// [`serde::de::DeserializeOwned`]
-pub trait Serialize {
+pub trait Serialize: Debug {
     /// Serializes a value
     fn serialize<T: serde::Serialize>(value: &T) -> Result<Vec<u8>, SerializeError>;
 
