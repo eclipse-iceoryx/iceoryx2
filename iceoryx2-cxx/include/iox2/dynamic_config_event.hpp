@@ -26,11 +26,8 @@ namespace iox2 {
 class DynamicConfigEvent {
   public:
     DynamicConfigEvent(const DynamicConfigEvent&) = delete;
-#if __cplusplus >= 201703L
-    DynamicConfigEvent(DynamicConfigEvent&&) = delete;
-#else
+    // NOTE: can be changed to '= delete' when C++17 becomes mandatory and we can rely on RVO
     DynamicConfigEvent(DynamicConfigEvent&&) = default;
-#endif
     auto operator=(const DynamicConfigEvent&) -> DynamicConfigEvent& = delete;
     auto operator=(DynamicConfigEvent&&) -> DynamicConfigEvent& = delete;
     ~DynamicConfigEvent() = default;
