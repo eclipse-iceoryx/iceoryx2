@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2::service::builder::CustomKeyMarker;
+use iceoryx2_bb_log::fatal_panic;
 use pyo3::prelude::*;
 
 use crate::error::WriterCreateError;
@@ -52,18 +53,19 @@ impl PortFactoryWriter {
         Self {
             factory: factory.clone(),
             value: match &*factory.lock() {
-                PortFactoryBlackboardType::Ipc(v) => PortFactoryWriterType::Ipc(unsafe {
+                PortFactoryBlackboardType::Ipc(Some(v)) => PortFactoryWriterType::Ipc(unsafe {
                     Parc::new(core::mem::transmute::<
                         IpcPortFactoryWriter<'_>,
                         IpcPortFactoryWriter<'static>,
                     >(v.writer_builder()))
                 }),
-                PortFactoryBlackboardType::Local(v) => PortFactoryWriterType::Local(unsafe {
+                PortFactoryBlackboardType::Local(Some(v)) => PortFactoryWriterType::Local(unsafe {
                     Parc::new(core::mem::transmute::<
                         LocalPortFactoryWriter<'_>,
                         LocalPortFactoryWriter<'static>,
                     >(v.writer_builder()))
                 }),
+                _ => fatal_panic!(""), // TODO
             },
             key_type_details,
         }

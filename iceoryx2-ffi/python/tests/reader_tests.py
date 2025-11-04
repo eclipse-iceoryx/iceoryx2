@@ -10,7 +10,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-from ctypes import *
+from ctypes import c_uint64, c_uint8, c_int64, c_uint32
 
 import iceoryx2 as iox2
 import pytest
@@ -28,10 +28,11 @@ def test_reader_is_is_unique(
     key = 0
     key = key.to_bytes(8, "little")
     value = 0
+    value = value.to_bytes(1, "little")
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint8, value.to_bytes(1, "little"))
+        .add(key, c_uint8, value)
         .create()
     )
 
@@ -60,10 +61,11 @@ def test_handle_can_be_acquired_for_existing_key_value_pair(
     key = 0
     key = key.to_bytes(8, "little")
     value = 7
+    value = value.to_bytes(8, "little")
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint64, value.to_bytes(8, "little"))
+        .add(key, c_uint64, value)
         .create()
     )
 
@@ -87,10 +89,11 @@ def test_handle_cannot_be_acquired_for_non_existing_key(
     key = 0
     key = key.to_bytes(8, "little")
     value = 0
+    value = value.to_bytes(8, "little")
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint64, value.to_bytes(8, "little"))
+        .add(key, c_uint64, value)
         .create()
     )
 
@@ -111,10 +114,11 @@ def test_handle_cannot_be_acquired_for_wrong_value_type(
     key = 0
     key = key.to_bytes(8, "little")
     value = 0
+    value = value.to_bytes(8, "little")
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint64, value.to_bytes(8, "little"))
+        .add(key, c_uint64, value)
         .create()
     )
 
@@ -123,3 +127,35 @@ def test_handle_cannot_be_acquired_for_wrong_value_type(
     invalid_key = invalid_key.to_bytes(8, "little")
     with pytest.raises(iox2.EntryHandleError):
         reader.entry(invalid_key, c_int64)
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_deleting_reader_removes_it_from_the_service(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service_name = iox2.testing.generate_service_name()
+    key = 0
+    key = key.to_bytes(8, "little")
+    value = 0
+    value = value.to_bytes(4, "little")
+    service = (
+        node.service_builder(service_name)
+        .blackboard_creator(c_uint64)
+        .add(key, c_uint32, value)
+        .max_readers(1)
+        .create()
+    )
+
+    sut = service.reader_builder().create()
+
+    with pytest.raises(iox2.ReaderCreateError):
+        sut = service.reader_builder().create()
+
+    sut.delete()
+
+    try:
+        sut = service.reader_builder().create()
+    except iox2.ReaderCreateError:
+        assert False

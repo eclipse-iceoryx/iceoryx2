@@ -169,20 +169,20 @@ impl ServiceBuilderBlackboardCreator {
             ServiceBuilderBlackboardCreatorType::Ipc(v) => {
                 let this = v.clone();
                 Ok(PortFactoryBlackboard::new(
-                    PortFactoryBlackboardType::Ipc(
+                    PortFactoryBlackboardType::Ipc(Some(
                         this.create()
                             .map_err(|e| BlackboardCreateError::new_err(format!("{e:?}")))?,
-                    ),
+                    )),
                     self.key_type_details.clone(),
                 ))
             }
             ServiceBuilderBlackboardCreatorType::Local(v) => {
                 let this = v.clone();
                 Ok(PortFactoryBlackboard::new(
-                    PortFactoryBlackboardType::Local(
+                    PortFactoryBlackboardType::Local(Some(
                         this.create()
                             .map_err(|e| BlackboardCreateError::new_err(format!("{e:?}")))?,
-                    ),
+                    )),
                     self.key_type_details.clone(),
                 ))
             }
@@ -197,20 +197,20 @@ impl ServiceBuilderBlackboardCreator {
             ServiceBuilderBlackboardCreatorType::Ipc(v) => {
                 let this = v.clone();
                 Ok(PortFactoryBlackboard::new(
-                    PortFactoryBlackboardType::Ipc(
+                    PortFactoryBlackboardType::Ipc(Some(
                         this.create_with_attributes(&attributes.0)
                             .map_err(|e| BlackboardCreateError::new_err(format!("{e:?}")))?,
-                    ),
+                    )),
                     self.key_type_details.clone(),
                 ))
             }
             ServiceBuilderBlackboardCreatorType::Local(v) => {
                 let this = v.clone();
                 Ok(PortFactoryBlackboard::new(
-                    PortFactoryBlackboardType::Local(
+                    PortFactoryBlackboardType::Local(Some(
                         this.create_with_attributes(&attributes.0)
                             .map_err(|e| BlackboardCreateError::new_err(format!("{e:?}")))?,
-                    ),
+                    )),
                     self.key_type_details.clone(),
                 ))
             }
@@ -310,20 +310,20 @@ impl ServiceBuilderBlackboardOpener {
             ServiceBuilderBlackboardOpenerType::Ipc(v) => {
                 let this = v.clone();
                 Ok(PortFactoryBlackboard::new(
-                    PortFactoryBlackboardType::Ipc(
+                    PortFactoryBlackboardType::Ipc(Some(
                         this.open()
                             .map_err(|e| BlackboardOpenError::new_err(format!("{e:?}")))?,
-                    ),
+                    )),
                     self.key_type_details.clone(),
                 ))
             }
             ServiceBuilderBlackboardOpenerType::Local(v) => {
                 let this = v.clone();
                 Ok(PortFactoryBlackboard::new(
-                    PortFactoryBlackboardType::Local(
+                    PortFactoryBlackboardType::Local(Some(
                         this.open()
                             .map_err(|e| BlackboardOpenError::new_err(format!("{e:?}")))?,
-                    ),
+                    )),
                     self.key_type_details.clone(),
                 ))
             }
@@ -338,20 +338,20 @@ impl ServiceBuilderBlackboardOpener {
             ServiceBuilderBlackboardOpenerType::Ipc(v) => {
                 let this = v.clone();
                 Ok(PortFactoryBlackboard::new(
-                    PortFactoryBlackboardType::Ipc(
+                    PortFactoryBlackboardType::Ipc(Some(
                         this.open_with_attributes(&verifier.0)
                             .map_err(|e| BlackboardOpenError::new_err(format!("{e:?}")))?,
-                    ),
+                    )),
                     self.key_type_details.clone(),
                 ))
             }
             ServiceBuilderBlackboardOpenerType::Local(v) => {
                 let this = v.clone();
                 Ok(PortFactoryBlackboard::new(
-                    PortFactoryBlackboardType::Local(
+                    PortFactoryBlackboardType::Local(Some(
                         this.open_with_attributes(&verifier.0)
                             .map_err(|e| BlackboardOpenError::new_err(format!("{e:?}")))?,
-                    ),
+                    )),
                     self.key_type_details.clone(),
                 ))
             }

@@ -12,6 +12,7 @@
 
 use iceoryx2::prelude::{CallbackProgression, PortFactory};
 use iceoryx2::service::builder::CustomKeyMarker;
+use iceoryx2_bb_log::fatal_panic;
 use pyo3::prelude::*;
 
 use crate::attribute_set::AttributeSet;
@@ -30,15 +31,19 @@ use crate::type_storage::TypeStorage;
 
 pub(crate) enum PortFactoryBlackboardType {
     Ipc(
-        iceoryx2::service::port_factory::blackboard::PortFactory<
-            crate::IpcService,
-            CustomKeyMarker,
+        Option<
+            iceoryx2::service::port_factory::blackboard::PortFactory<
+                crate::IpcService,
+                CustomKeyMarker,
+            >,
         >,
     ),
     Local(
-        iceoryx2::service::port_factory::blackboard::PortFactory<
-            crate::LocalService,
-            CustomKeyMarker,
+        Option<
+            iceoryx2::service::port_factory::blackboard::PortFactory<
+                crate::LocalService,
+                CustomKeyMarker,
+            >,
         >,
     ),
 }
@@ -63,8 +68,9 @@ impl PortFactoryBlackboard {
     #[getter]
     pub fn name(&self) -> ServiceName {
         match &*self.value.lock() {
-            PortFactoryBlackboardType::Ipc(v) => ServiceName(v.name().clone()),
-            PortFactoryBlackboardType::Local(v) => ServiceName(v.name().clone()),
+            PortFactoryBlackboardType::Ipc(Some(v)) => ServiceName(v.name().clone()),
+            PortFactoryBlackboardType::Local(Some(v)) => ServiceName(v.name().clone()),
+            _ => fatal_panic!(""), // TODO
         }
     }
 
@@ -72,8 +78,9 @@ impl PortFactoryBlackboard {
     /// Returns the `ServiceId` of the `Service`
     pub fn service_id(&self) -> ServiceId {
         match &*self.value.lock() {
-            PortFactoryBlackboardType::Ipc(v) => ServiceId(v.service_id().clone()),
-            PortFactoryBlackboardType::Local(v) => ServiceId(v.service_id().clone()),
+            PortFactoryBlackboardType::Ipc(Some(v)) => ServiceId(v.service_id().clone()),
+            PortFactoryBlackboardType::Local(Some(v)) => ServiceId(v.service_id().clone()),
+            _ => fatal_panic!(""), // TODO
         }
     }
 
@@ -81,8 +88,9 @@ impl PortFactoryBlackboard {
     /// Returns the `AttributeSet` defined in the `Service`
     pub fn attributes(&self) -> AttributeSet {
         match &*self.value.lock() {
-            PortFactoryBlackboardType::Ipc(v) => AttributeSet(v.attributes().clone()),
-            PortFactoryBlackboardType::Local(v) => AttributeSet(v.attributes().clone()),
+            PortFactoryBlackboardType::Ipc(Some(v)) => AttributeSet(v.attributes().clone()),
+            PortFactoryBlackboardType::Local(Some(v)) => AttributeSet(v.attributes().clone()),
+            _ => fatal_panic!(""), // TODO
         }
     }
 
@@ -91,10 +99,13 @@ impl PortFactoryBlackboard {
     /// Contains all settings that never change during the lifetime of the service.
     pub fn static_config(&self) -> StaticConfigBlackboard {
         match &*self.value.lock() {
-            PortFactoryBlackboardType::Ipc(v) => StaticConfigBlackboard(v.static_config().clone()),
-            PortFactoryBlackboardType::Local(v) => {
+            PortFactoryBlackboardType::Ipc(Some(v)) => {
                 StaticConfigBlackboard(v.static_config().clone())
             }
+            PortFactoryBlackboardType::Local(Some(v)) => {
+                StaticConfigBlackboard(v.static_config().clone())
+            }
+            _ => fatal_panic!(""), // TODO
         }
     }
 
@@ -102,7 +113,7 @@ impl PortFactoryBlackboard {
     /// Returns a list of all `NodeState` of all the `Node`s which have opened the `Service`.
     pub fn nodes(&self) -> PyResult<Vec<NodeState>> {
         match &*self.value.lock() {
-            PortFactoryBlackboardType::Ipc(v) => {
+            PortFactoryBlackboardType::Ipc(Some(v)) => {
                 let mut ret_val = vec![];
                 v.nodes(|state| {
                     match state {
@@ -124,7 +135,7 @@ impl PortFactoryBlackboard {
                 .map_err(|e| NodeListFailure::new_err(format!("{e:?}")))?;
                 Ok(ret_val)
             }
-            PortFactoryBlackboardType::Local(v) => {
+            PortFactoryBlackboardType::Local(Some(v)) => {
                 let mut ret_val = vec![];
                 v.nodes(|state| {
                     match state {
@@ -145,6 +156,7 @@ impl PortFactoryBlackboard {
                 .map_err(|e| NodeListFailure::new_err(format!("{e:?}")))?;
                 Ok(ret_val)
             }
+            _ => fatal_panic!(""), // TODO
         }
     }
 
@@ -156,5 +168,19 @@ impl PortFactoryBlackboard {
     /// Returns a `PortFactoryReader` to create a new `Reader` port
     pub fn reader_builder(&self) -> PortFactoryReader {
         PortFactoryReader::new(self.value.clone(), self.key_type_details.clone())
+    }
+
+    /// Releases the `PortFactoryBlackboard`.
+    ///
+    /// After this call the `PortFactoryBlackboard` is no longer usable!
+    pub fn delete(&mut self) {
+        match *self.value.lock() {
+            PortFactoryBlackboardType::Ipc(ref mut v) => {
+                v.take();
+            }
+            PortFactoryBlackboardType::Local(ref mut v) => {
+                v.take();
+            }
+        }
     }
 }

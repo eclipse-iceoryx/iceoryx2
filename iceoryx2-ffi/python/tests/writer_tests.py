@@ -10,7 +10,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-from ctypes import *
+from ctypes import c_uint64, c_uint8, c_int32, c_int64, c_uint32
 
 import iceoryx2 as iox2
 import pytest
@@ -143,7 +143,7 @@ def test_entry_handle_mut_prevents_another_writer(
     )
 
     writer = service.writer_builder().create()
-    entry_handle_mut = writer.entry(key, c_int32)
+    _entry_handle_mut = writer.entry(key, c_int32)
 
     writer.delete()
 
@@ -151,4 +151,68 @@ def test_entry_handle_mut_prevents_another_writer(
         service.writer_builder().create()
 
 
-# TODO: continue with entry_value_can_still_be_used_after_every_previous_service_state_owner_was_dropped
+@pytest.mark.parametrize("service_type", service_types)
+def test_entry_value_can_still_be_used_after_every_previous_service_state_owner_was_dropped(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service_name = iox2.testing.generate_service_name()
+    key = 0
+    key = key.to_bytes(8, "little")
+    value = 0
+    value = value.to_bytes(4, "little")
+    service = (
+        node.service_builder(service_name)
+        .blackboard_creator(c_uint64)
+        .add(key, c_uint32, value)
+        .create()
+    )
+
+    writer = service.writer_builder().create()
+    entry_handle_mut = writer.entry(key, c_uint32)
+    entry_value_uninit = entry_handle_mut.loan_uninit()
+
+    writer.delete()
+    service.delete()
+
+    try:
+        entry_value = entry_value_uninit.write(c_uint32(333))
+        entry_value.update()
+    except:
+        assert False
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_deleting_writer_removes_it_from_the_service(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service_name = iox2.testing.generate_service_name()
+    key = 0
+    key = key.to_bytes(8, "little")
+    value = 0
+    value = value.to_bytes(4, "little")
+    service = (
+        node.service_builder(service_name)
+        .blackboard_creator(c_uint64)
+        .add(key, c_uint32, value)
+        .create()
+    )
+
+    sut = service.writer_builder().create()
+
+    with pytest.raises(iox2.WriterCreateError):
+        sut = service.writer_builder().create()
+
+    sut.delete()
+
+    try:
+        sut = service.writer_builder().create()
+    except iox2.WriterCreateError:
+        assert False
+
+
+# TODO: missing tests
+# - concurrent_writer_creation_succeeds_only_once
