@@ -19,6 +19,41 @@ service_types = [iox2.ServiceType.Ipc, iox2.ServiceType.Local]
 
 
 @pytest.mark.parametrize("service_type", service_types)
+def test_open_fails_when_attributes_are_incompatible(
+    service_type: iox2.ServiceType,
+) -> None:
+    attr_key = iox2.AttributeKey.new("whats hypnotoad doing these days?")
+    attr_value = iox2.AttributeValue.new("eating hypnoflies?")
+    missing_attr_key = iox2.AttributeKey.new("no he is singing a song!")
+    config = iox2.testing.generate_isolated_config()
+    service_name = iox2.testing.generate_service_name()
+
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    attribute_spec = iox2.AttributeSpecifier.new().define(attr_key, attr_value)
+    key = 0
+    key = key.to_bytes(8, "little")
+    value = 0
+    value = value.to_bytes(8, "little")
+    _creator = (
+        node.service_builder(service_name)
+        .blackboard_creator(c_uint64)
+        .add(key, c_uint64, value)
+        .create_with_attributes(attribute_spec)
+    )
+
+    attribute_verifier = (
+        iox2.AttributeVerifier.new()
+        .require(attr_key, attr_value)
+        .require_key(missing_attr_key)
+    )
+
+    with pytest.raises(iox2.BlackboardOpenError):
+        node.service_builder(service_name).blackboard_opener(
+            c_uint64
+        ).open_with_attributes(attribute_verifier)
+
+
+@pytest.mark.parametrize("service_type", service_types)
 def test_open_with_attributes_fails_when_key_types_differ(
     service_type: iox2.ServiceType,
 ) -> None:
@@ -34,7 +69,7 @@ def test_open_with_attributes_fails_when_key_types_differ(
     key = key.to_bytes(8, "little")
     value = 0
     value = value.to_bytes(1, "little")
-    sut = (
+    _sut = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
         .add(key, c_uint8, value)
@@ -149,6 +184,35 @@ def test_create_fails_when_key_is_provided_twice(
         node.service_builder(service_name).blackboard_creator(c_uint64).add(
             key, c_uint8, value_1
         ).add(key, c_uint8, value_2).create()
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_recreate_after_drop_works(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service_name = iox2.testing.generate_service_name()
+    key = 0
+    key = key.to_bytes(8, "little")
+    value = 0
+    value = value.to_bytes(1, "little")
+
+    service = (
+        node.service_builder(service_name)
+        .blackboard_creator(c_uint64)
+        .add(key, c_uint8, value)
+        .create()
+    )
+
+    service.delete()
+
+    try:
+        node.service_builder(service_name).blackboard_creator(c_uint64).add(
+            key, c_uint8, value
+        ).create()
+    except iox2.BlackboardCreateError:
+        assert False
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -330,7 +394,7 @@ def test_open_fails_when_service_does_not_satisfy_max_readers_requirement(
     key = key.to_bytes(8, "little")
     value = 0
     value = value.to_bytes(1, "little")
-    sut = (
+    _sut = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
         .add(key, c_uint8, value)
@@ -352,6 +416,63 @@ def test_open_fails_when_service_does_not_satisfy_max_readers_requirement(
         assert sut2.name == service_name
     except iox2.BlackboardOpenError:
         assert False
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_open_does_not_fail_when_service_owner_is_dropped(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service_name = iox2.testing.generate_service_name()
+
+    key = 0
+    key = key.to_bytes(8, "little")
+    value = 0
+    value = value.to_bytes(1, "little")
+    creator = (
+        node.service_builder(service_name)
+        .blackboard_creator(c_uint64)
+        .add(key, c_uint8, value)
+        .create()
+    )
+    _opener_1 = node.service_builder(service_name).blackboard_opener(c_uint64).open()
+
+    creator.delete()
+
+    try:
+        _opener_2 = (
+            node.service_builder(service_name).blackboard_opener(c_uint64).open()
+        )
+    except iox2.BlackboardOpenError:
+        assert False
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_open_fails_when_all_previous_owners_have_been_dropped(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service_name = iox2.testing.generate_service_name()
+
+    key = 0
+    key = key.to_bytes(8, "little")
+    value = 0
+    value = value.to_bytes(1, "little")
+    creator = (
+        node.service_builder(service_name)
+        .blackboard_creator(c_uint64)
+        .add(key, c_uint8, value)
+        .create()
+    )
+    opener = node.service_builder(service_name).blackboard_opener(c_uint64).open()
+
+    creator.delete()
+    opener.delete()
+
+    with pytest.raises(iox2.BlackboardOpenError):
+        node.service_builder(service_name).blackboard_opener(c_uint64).open()
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -421,6 +542,8 @@ def test_service_builder_based_on_custom_config_works(
     config = iox2.testing.generate_isolated_config()
     max_nodes = 112
     config.defaults.blackboard.max_nodes = max_nodes
+    max_readers = 21
+    config.defaults.blackboard.max_readers = max_readers
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
 
@@ -437,6 +560,7 @@ def test_service_builder_based_on_custom_config_works(
 
     static_config = sut.static_config
     assert static_config.max_nodes == max_nodes
+    assert static_config.max_readers == max_readers
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -474,7 +598,7 @@ def test_open_uses_predefined_settings_when_nothing_is_specified(
     key = key.to_bytes(8, "little")
     value = 0
     value = value.to_bytes(1, "little")
-    sut = (
+    _creator = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
         .add(key, c_uint8, value)
@@ -483,9 +607,9 @@ def test_open_uses_predefined_settings_when_nothing_is_specified(
         .create()
     )
 
-    sut2 = node.service_builder(service_name).blackboard_opener(c_uint64).open()
+    sut = node.service_builder(service_name).blackboard_opener(c_uint64).open()
 
-    static_config = sut2.static_config
+    static_config = sut.static_config
     assert static_config.max_nodes == 89
     assert static_config.max_readers == 4
 
@@ -565,3 +689,49 @@ def test_max_number_of_nodes_works(
         )
 
     assert len(services) == 8
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_set_max_nodes_to_zero_adjusts_it_to_one(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service_name = iox2.testing.generate_service_name()
+    key = 0
+    key = key.to_bytes(8, "little")
+    value = 0
+    value = value.to_bytes(1, "little")
+
+    service = (
+        node.service_builder(service_name)
+        .blackboard_creator(c_uint64)
+        .add(key, c_uint8, value)
+        .max_nodes(0)
+        .create()
+    )
+
+    assert service.static_config.max_nodes == 1
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_set_max_readers_to_zero_adjusts_it_to_one(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service_name = iox2.testing.generate_service_name()
+    key = 0
+    key = key.to_bytes(8, "little")
+    value = 0
+    value = value.to_bytes(1, "little")
+
+    service = (
+        node.service_builder(service_name)
+        .blackboard_creator(c_uint64)
+        .add(key, c_uint8, value)
+        .max_readers(0)
+        .create()
+    )
+
+    assert service.static_config.max_readers == 1
