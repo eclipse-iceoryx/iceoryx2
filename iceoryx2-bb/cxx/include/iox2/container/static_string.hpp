@@ -72,11 +72,8 @@ class StaticString {
       public:
         ~UncheckedConstAccessor() = default;
         UncheckedConstAccessor(UncheckedConstAccessor const&) = delete;
-#if __cplusplus >= 201703L
-        UncheckedConstAccessor(UncheckedConstAccessor&&) = delete;
-#else
+        // NOTE: can be changed to '= delete' when C++17 becomes mandatory and we can rely on RVO
         UncheckedConstAccessor(UncheckedConstAccessor&&) = default;
-#endif
         auto operator=(UncheckedConstAccessor const&) -> UncheckedConstAccessor& = delete;
         auto operator=(UncheckedConstAccessor&&) -> UncheckedConstAccessor& = delete;
 
@@ -118,11 +115,8 @@ class StaticString {
       public:
         ~UncheckedAccessor() = default;
         UncheckedAccessor(UncheckedAccessor const&) = delete;
-#if __cplusplus >= 201703L
-        UncheckedAccessor(UncheckedAccessor&&) = delete;
-#else
+        // NOTE: can be changed to '= delete' when C++17 becomes mandatory and we can rely on RVO
         UncheckedAccessor(UncheckedAccessor&&) = default;
-#endif
         auto operator=(UncheckedAccessor const&) -> UncheckedAccessor& = delete;
         auto operator=(UncheckedAccessor&&) -> UncheckedAccessor& = delete;
 
@@ -163,11 +157,8 @@ class StaticString {
       public:
         ~UncheckedAccessorCodeUnits() = default;
         UncheckedAccessorCodeUnits(UncheckedAccessorCodeUnits const&) = delete;
-#if __cplusplus >= 201703L
-        UncheckedAccessorCodeUnits(UncheckedAccessorCodeUnits&&) = delete;
-#else
+        // NOTE: can be changed to '= delete' when C++17 becomes mandatory and we can rely on RVO
         UncheckedAccessorCodeUnits(UncheckedAccessorCodeUnits&&) = default;
-#endif
         auto operator=(UncheckedAccessorCodeUnits const&) -> UncheckedAccessorCodeUnits& = delete;
         auto operator=(UncheckedAccessorCodeUnits&&) -> UncheckedAccessorCodeUnits& = delete;
 
@@ -235,11 +226,8 @@ class StaticString {
       public:
         ~ConstAccessorCodeUnits() = default;
         ConstAccessorCodeUnits(ConstAccessorCodeUnits const&) = delete;
-#if __cplusplus >= 201703L
-        ConstAccessorCodeUnits(ConstAccessorCodeUnits&&) = delete;
-#else
+        // NOTE: can be changed to '= delete' when C++17 becomes mandatory and we can rely on RVO
         ConstAccessorCodeUnits(ConstAccessorCodeUnits&&) = default;
-#endif
         auto operator=(ConstAccessorCodeUnits const&) -> ConstAccessorCodeUnits& = delete;
         auto operator=(ConstAccessorCodeUnits&&) -> ConstAccessorCodeUnits& = delete;
 
