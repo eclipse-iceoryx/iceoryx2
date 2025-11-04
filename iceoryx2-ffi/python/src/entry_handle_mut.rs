@@ -14,6 +14,7 @@ use iceoryx2_bb_log::fatal_panic;
 use pyo3::prelude::*;
 use pyo3::types::PyBytes;
 
+use crate::entry_value::{EntryValue, EntryValueType};
 use crate::entry_value_uninit::{EntryValueUninit, EntryValueUninitType};
 use crate::event_id::EventId;
 use crate::parc::Parc;
@@ -68,6 +69,7 @@ impl EntryHandleMut {
     }
 
     pub fn loan_uninit(&mut self) -> EntryValueUninit {
+        // TODO: use parc and lock
         match &mut self.value {
             EntryHandleMutType::Ipc(ref mut v) => {
                 let entry_handle_mut = v.take().unwrap();
@@ -76,7 +78,12 @@ impl EntryHandleMut {
                     self.value_type_details.0.alignment(),
                 );
                 EntryValueUninit {
-                    value: EntryValueUninitType::Ipc(entry_value_uninit),
+                    // value: EntryValueUninitType::Ipc(Some(entry_value_uninit)),
+                    // value_type_details: self.value_type_details.clone(),
+                    entry_value: EntryValue {
+                        value: EntryValueType::Ipc(Some(entry_value_uninit)),
+                        value_type_details: self.value_type_details.clone(),
+                    },
                 }
             }
             EntryHandleMutType::Local(ref mut v) => {
@@ -86,7 +93,12 @@ impl EntryHandleMut {
                     self.value_type_details.0.alignment(),
                 );
                 EntryValueUninit {
-                    value: EntryValueUninitType::Local(entry_value_uninit),
+                    // value: EntryValueUninitType::Local(Some(entry_value_uninit)),
+                    // value_type_details: self.value_type_details.clone(),
+                    entry_value: EntryValue {
+                        value: EntryValueType::Local(Some(entry_value_uninit)),
+                        value_type_details: self.value_type_details.clone(),
+                    },
                 }
             }
             _ => fatal_panic!(""), // TODO

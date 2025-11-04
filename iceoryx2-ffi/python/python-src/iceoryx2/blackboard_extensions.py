@@ -139,7 +139,23 @@ def update_with_copy(self: EntryHandleMut, value: Type[T]):
     self.__update_data_ptr()
 
 
+def write(self: EntryValueUninit, value: Type[T]) -> EntryValue:
+    """Consumes the EntryValueUninit, writes values to the entry
+    value and returns the initialized EntryValue."""
+    type_size = ctypes.sizeof(value)
+    # TODO: reintroduce TypeStorage somewhere, check type safety in other functions
+    # assert self.__value_type_details is not None
+    # assert ctypes.sizeof(value) == ctypes.sizeof(self.__value_type_details)
+    # assert ctypes.alignment(value) == ctypes.alignment(self.__value_type_details)
+
+    write_cell = self.__get_write_cell()
+    ctypes.memmove(write_cell, ctypes.byref(value), type_size)
+    return self.__assume_init()
+
+
 EntryHandleMut.update_with_copy = update_with_copy
+
+EntryValueUninit.write = write
 
 Reader.entry = entry
 
