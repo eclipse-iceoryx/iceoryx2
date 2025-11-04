@@ -117,6 +117,8 @@ impl<T, F: FnOnce(&mut T)> ScopeGuard<T, F> {
 
 impl<T, F: FnOnce(&mut T)> Drop for ScopeGuard<T, F> {
     fn drop(&mut self) {
-        (self.on_drop.take().unwrap())(&mut self.value);
+        if let Some(f) = self.on_drop.take() {
+            f(&mut self.value);
+        }
     }
 }
