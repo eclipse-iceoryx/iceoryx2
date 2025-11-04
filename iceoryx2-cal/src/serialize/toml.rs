@@ -21,6 +21,7 @@ use crate::serialize::Serialize;
 
 use super::{DeserializeError, SerializeError};
 
+#[derive(Debug)]
 /// toml [`Serialize`]
 pub struct Toml {}
 
