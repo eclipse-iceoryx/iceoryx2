@@ -29,7 +29,7 @@ TEST(ServiceName, valid_service_name_can_be_created) {
 TEST(ServiceName, creating_service_name_with_too_long_name_fails) {
     constexpr uint64_t MAX_OVERLENGTH = 10;
 
-    auto test = [](auto overlength) {
+    auto test = [](auto overlength) -> auto {
         auto invalid_name = std::string(IOX2_SERVICE_NAME_LENGTH + overlength, 's');
         auto sut = ServiceName::create(invalid_name.c_str());
 

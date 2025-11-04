@@ -39,7 +39,7 @@ auto main(int argc, char** argv) -> int {
 
     std::cout << "Services running in domain \"" << args.domain() << "\":" << std::endl;
 
-    Service<ServiceType::Ipc>::list(config.view(), [](auto service) {
+    Service<ServiceType::Ipc>::list(config.view(), [](auto service) -> auto {
         std::cout << service.static_details << std::endl;
         return CallbackProgression::Continue;
     }).expect("discover all available services");

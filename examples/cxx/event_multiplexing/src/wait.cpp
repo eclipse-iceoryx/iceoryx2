@@ -65,8 +65,9 @@ auto main(int argc, char** argv) -> int {
                       ServiceNameListenerPair { service_name_2, std::move(listener_2) });
 
     // the callback that is called when a listener has received an event
-    auto on_event = [&](WaitSetAttachmentId<ServiceType::Ipc> attachment_id) {
-        if (auto entry = listeners.find(attachment_id); entry != listeners.end()) {
+    auto on_event = [&](WaitSetAttachmentId<ServiceType::Ipc> attachment_id) -> auto {
+        auto entry = listeners.find(attachment_id);
+        if (entry != listeners.end()) {
             std::cout << "Received trigger from \"" << entry->second.service_name.to_string().c_str() << "\""
                       << std::endl;
 
@@ -75,7 +76,7 @@ auto main(int argc, char** argv) -> int {
             // We need to collect all notifications since the WaitSet will wake us up as long as
             // there is something to read. If we skip this step completely we will end up in a
             // busy loop.
-            listener.try_wait_all([](auto event_id) { std::cout << " " << event_id; }).expect("");
+            listener.try_wait_all([](auto event_id) -> auto { std::cout << " " << event_id; }).expect("");
             std::cout << std::endl;
         }
 

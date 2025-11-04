@@ -56,12 +56,12 @@ auto main() -> int {
     auto listener_1_guard = waitset.attach_deadline(listener_1, deadline_1).expect("");
     auto listener_2_guard = waitset.attach_deadline(listener_2, deadline_2).expect("");
 
-    auto missed_deadline = [](const ServiceName& service_name, const iox::units::Duration& cycle_time) {
+    auto missed_deadline = [](const ServiceName& service_name, const iox::units::Duration& cycle_time) -> auto {
         std::cout << service_name.to_string().c_str() << ": voilated contract and did not send a message after "
                   << cycle_time << std::endl;
     };
 
-    auto on_event = [&](const WaitSetAttachmentId<ServiceType::Ipc>& attachment_id) {
+    auto on_event = [&](const WaitSetAttachmentId<ServiceType::Ipc>& attachment_id) -> auto {
         if (attachment_id.has_missed_deadline(listener_1_guard)) {
             missed_deadline(service_name_1, deadline_1);
             // one cause of a deadline it can be a dead node. usually our "central_daemon" would
@@ -100,7 +100,7 @@ void handle_incoming_events(Listener<ServiceType::Ipc>& listener,
                             const Subscriber<ServiceType::Ipc, uint64_t, void>& subscriber,
                             const ServiceName& service_name) {
     listener
-        .try_wait_all([&](auto event_id) {
+        .try_wait_all([&](auto event_id) -> auto {
             if (event_id == iox::into<EventId>(PubSubEvent::ProcessDied)) {
                 std::cout << service_name.to_string().c_str() << ": process died!" << std::endl;
             } else if (event_id == iox::into<EventId>(PubSubEvent::PublisherConnected)) {
@@ -108,7 +108,7 @@ void handle_incoming_events(Listener<ServiceType::Ipc>& listener,
             } else if (event_id == iox::into<EventId>(PubSubEvent::PublisherDisconnected)) {
                 std::cout << service_name.to_string().c_str() << ": publisher disconnected!" << std::endl;
             } else if (event_id == iox::into<EventId>(PubSubEvent::SentSample)) {
-                subscriber.receive().expect("").and_then([&](auto& sample) {
+                subscriber.receive().expect("").and_then([&](auto& sample) -> auto {
                     std::cout << service_name.to_string().c_str() << ": Received sample " << sample.payload() << " ..."
                               << std::endl;
                 });
@@ -118,10 +118,11 @@ void handle_incoming_events(Listener<ServiceType::Ipc>& listener,
 }
 
 void find_and_cleanup_dead_nodes() {
-    Node<ServiceType::Ipc>::list(Config::global_config(), [](auto node_state) {
-        node_state.dead([](auto view) {
+    Node<ServiceType::Ipc>::list(Config::global_config(), [](auto node_state) -> auto {
+        node_state.dead([](auto view) -> auto {
             std::cout << "detected dead node: ";
-            view.details().and_then([](const auto& details) { std::cout << details.name().to_string().c_str(); });
+            view.details().and_then(
+                [](const auto& details) -> auto { std::cout << details.name().to_string().c_str(); });
             std::cout << std::endl;
             view.remove_stale_resources().expect("");
         });

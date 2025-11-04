@@ -243,7 +243,7 @@ TYPED_TEST(ServiceEventTest, notifier_emits_create_and_drop_events) {
 
         auto counter = 0;
         listener
-            .try_wait_all([&](auto event_id) {
+            .try_wait_all([&](auto event_id) -> auto {
                 EXPECT_THAT(event_id, Eq(create_event_id));
                 counter++;
             })
@@ -253,7 +253,7 @@ TYPED_TEST(ServiceEventTest, notifier_emits_create_and_drop_events) {
 
     auto counter = 0;
     listener
-        .try_wait_all([&](auto event_id) {
+        .try_wait_all([&](auto event_id) -> auto {
             EXPECT_THAT(event_id, Eq(dropped_event_id));
             counter++;
         })
@@ -299,7 +299,8 @@ TYPED_TEST(ServiceEventTest, notification_is_received_with_try_wait_all) {
     this->notifier.notify_with_custom_event_id(this->event_id_2).expect("");
 
     std::set<size_t> received_ids;
-    this->listener.try_wait_all([&](auto event_id) { ASSERT_TRUE(received_ids.emplace(event_id.as_value()).second); })
+    this->listener
+        .try_wait_all([&](auto event_id) -> auto { ASSERT_TRUE(received_ids.emplace(event_id.as_value()).second); })
         .expect("");
     ASSERT_THAT(received_ids.size(), Eq(2));
 }
@@ -310,7 +311,8 @@ TYPED_TEST(ServiceEventTest, notification_is_received_with_timed_wait_all) {
 
     std::set<size_t> received_ids;
     this->listener
-        .timed_wait_all([&](auto event_id) { ASSERT_TRUE(received_ids.emplace(event_id.as_value()).second); }, TIMEOUT)
+        .timed_wait_all([&](auto event_id) -> auto { ASSERT_TRUE(received_ids.emplace(event_id.as_value()).second); },
+                        TIMEOUT)
         .expect("");
     ASSERT_THAT(received_ids.size(), Eq(2));
 }
@@ -321,7 +323,8 @@ TYPED_TEST(ServiceEventTest, notification_is_received_with_blocking_wait_all) {
 
     std::set<size_t> received_ids;
     this->listener
-        .blocking_wait_all([&](auto event_id) { ASSERT_TRUE(received_ids.emplace(event_id.as_value()).second); })
+        .blocking_wait_all(
+            [&](auto event_id) -> auto { ASSERT_TRUE(received_ids.emplace(event_id.as_value()).second); })
         .expect("");
     ASSERT_THAT(received_ids.size(), Eq(2));
 }
@@ -332,7 +335,7 @@ TYPED_TEST(ServiceEventTest, timed_wait_one_does_not_deadlock) {
 }
 
 TYPED_TEST(ServiceEventTest, timed_wait_all_does_not_deadlock) {
-    this->listener.timed_wait_all([](auto) { }, TIMEOUT).expect("");
+    this->listener.timed_wait_all([](auto) -> auto { }, TIMEOUT).expect("");
 }
 
 TYPED_TEST(ServiceEventTest, service_can_be_opened_when_there_is_a_notifier) {
@@ -475,7 +478,8 @@ TYPED_TEST(ServiceEventTest, open_fails_when_attributes_are_incompatible) {
 }
 
 TYPED_TEST(ServiceEventTest, deadline_can_be_set) {
-    constexpr iox::units::Duration DEADLINE = iox::units::Duration::fromMilliseconds(9281);
+    using iox::units::Duration;
+    constexpr Duration DEADLINE = Duration::fromMilliseconds(9281);
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name = iox2_testing::generate_service_name();
     Config config;
@@ -490,20 +494,21 @@ TYPED_TEST(ServiceEventTest, deadline_can_be_set) {
     auto listener_open = service_open.listener_builder().create().expect("");
     auto notifier_open = service_open.notifier_builder().create().expect("");
 
-    ASSERT_THAT(service_create.static_config().deadline(), Eq(iox::optional(DEADLINE)));
-    ASSERT_THAT(service_open.static_config().deadline(), Eq(iox::optional(DEADLINE)));
-    ASSERT_THAT(listener_create.deadline(), Eq(iox::optional(DEADLINE)));
-    ASSERT_THAT(listener_open.deadline(), Eq(iox::optional(DEADLINE)));
-    ASSERT_THAT(notifier_create.deadline(), Eq(iox::optional(DEADLINE)));
-    ASSERT_THAT(notifier_open.deadline(), Eq(iox::optional(DEADLINE)));
+    ASSERT_THAT(service_create.static_config().deadline(), Eq(iox::optional<Duration>(DEADLINE)));
+    ASSERT_THAT(service_open.static_config().deadline(), Eq(iox::optional<Duration>(DEADLINE)));
+    ASSERT_THAT(listener_create.deadline(), Eq(iox::optional<Duration>(DEADLINE)));
+    ASSERT_THAT(listener_open.deadline(), Eq(iox::optional<Duration>(DEADLINE)));
+    ASSERT_THAT(notifier_create.deadline(), Eq(iox::optional<Duration>(DEADLINE)));
+    ASSERT_THAT(notifier_open.deadline(), Eq(iox::optional<Duration>(DEADLINE)));
 }
 
 TYPED_TEST(ServiceEventTest, deadline_can_be_disabled) {
-    constexpr iox::units::Duration DEADLINE = iox::units::Duration::fromMilliseconds(9281);
+    using iox::units::Duration;
+    constexpr Duration DEADLINE = Duration::fromMilliseconds(9281);
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name = iox2_testing::generate_service_name();
     Config config;
-    config.defaults().event().set_deadline(iox::optional(DEADLINE));
+    config.defaults().event().set_deadline(iox::optional<Duration>(DEADLINE));
     auto node = NodeBuilder().config(config).create<SERVICE_TYPE>().expect("");
 
     auto service_create = node.service_builder(service_name).event().disable_deadline().create().expect("");
@@ -625,7 +630,7 @@ TYPED_TEST(ServiceEventTest, list_service_nodes_works) {
     auto sut_2 = node_2.service_builder(service_name).event().open().expect("");
 
     auto counter = 0;
-    auto verify_node = [&](const AliveNodeView<SERVICE_TYPE>& node_view) {
+    auto verify_node = [&](const AliveNodeView<SERVICE_TYPE>& node_view) -> auto {
         counter++;
         if (node_view.id() == node_1.id()) {
             ASSERT_THAT(node_view.details()->name().to_string().c_str(), StrEq(node_1.name().to_string().c_str()));
@@ -637,9 +642,9 @@ TYPED_TEST(ServiceEventTest, list_service_nodes_works) {
     auto result = sut_1.nodes([&](auto node_state) -> CallbackProgression {
         node_state.alive(verify_node);
 
-        node_state.dead([](const auto&) { ASSERT_TRUE(false); });
-        node_state.inaccessible([](const auto&) { ASSERT_TRUE(false); });
-        node_state.undefined([](const auto&) { ASSERT_TRUE(false); });
+        node_state.dead([](const auto&) -> auto { ASSERT_TRUE(false); });
+        node_state.inaccessible([](const auto&) -> auto { ASSERT_TRUE(false); });
+        node_state.undefined([](const auto&) -> auto { ASSERT_TRUE(false); });
 
         return CallbackProgression::Continue;
     });
@@ -665,7 +670,7 @@ TYPED_TEST(ServiceEventTest, listing_all_notifiers_works) {
 
     std::vector<UniqueNotifierId> notifier_ids;
     notifier_ids.reserve(NUMBER_OF_NOTIFIERS);
-    sut.dynamic_config().list_notifiers([&](auto notifier_details_view) {
+    sut.dynamic_config().list_notifiers([&](auto notifier_details_view) -> auto {
         notifier_ids.push_back(notifier_details_view.notifier_id());
         return CallbackProgression::Continue;
     });
@@ -692,7 +697,7 @@ TYPED_TEST(ServiceEventTest, listing_all_notifiers_stops_on_request) {
     }
 
     auto counter = 0;
-    sut.dynamic_config().list_notifiers([&](auto) {
+    sut.dynamic_config().list_notifiers([&](auto) -> auto {
         counter++;
         return CallbackProgression::Stop;
     });
@@ -710,7 +715,7 @@ TYPED_TEST(ServiceEventTest, notifier_details_are_correct) {
     iox2::Notifier<SERVICE_TYPE> notifier = sut.notifier_builder().create().expect("");
 
     auto counter = 0;
-    sut.dynamic_config().list_notifiers([&](auto notifier_details_view) {
+    sut.dynamic_config().list_notifiers([&](auto notifier_details_view) -> auto {
         counter++;
         EXPECT_TRUE(notifier_details_view.notifier_id() == notifier.id());
         EXPECT_TRUE(notifier_details_view.node_id() == node.id());
@@ -736,7 +741,7 @@ TYPED_TEST(ServiceEventTest, listing_all_listeners_works) {
 
     std::vector<UniqueListenerId> listener_ids;
     listener_ids.reserve(NUMBER_OF_LISTENERS);
-    sut.dynamic_config().list_listeners([&](auto listener_details_view) {
+    sut.dynamic_config().list_listeners([&](auto listener_details_view) -> auto {
         listener_ids.push_back(listener_details_view.listener_id());
         return CallbackProgression::Continue;
     });
@@ -763,7 +768,7 @@ TYPED_TEST(ServiceEventTest, listing_all_listeners_stops_on_request) {
     }
 
     auto counter = 0;
-    sut.dynamic_config().list_listeners([&](auto) {
+    sut.dynamic_config().list_listeners([&](auto) -> auto {
         counter++;
         return CallbackProgression::Stop;
     });
@@ -781,7 +786,7 @@ TYPED_TEST(ServiceEventTest, listener_details_are_correct) {
     iox2::Listener<SERVICE_TYPE> listener = sut.listener_builder().create().expect("");
 
     auto counter = 0;
-    sut.dynamic_config().list_listeners([&](auto listener_details_view) {
+    sut.dynamic_config().list_listeners([&](auto listener_details_view) -> auto {
         counter++;
         EXPECT_TRUE(listener_details_view.listener_id() == listener.id());
         EXPECT_TRUE(listener_details_view.node_id() == node.id());

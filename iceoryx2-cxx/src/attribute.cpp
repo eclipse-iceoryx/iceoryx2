@@ -15,7 +15,7 @@
 namespace iox2 {
 auto AttributeView::key() const -> Attribute::Key {
     Attribute::Key key;
-    key.unsafe_raw_access([this](auto* buffer, const auto& info) {
+    key.unsafe_raw_access([this](auto* buffer, const auto& info) -> auto {
         iox2_attribute_key(m_handle, buffer, info.total_size);
         return iox2_attribute_key_len(m_handle);
     });
@@ -24,7 +24,7 @@ auto AttributeView::key() const -> Attribute::Key {
 
 auto AttributeView::value() const -> Attribute::Value {
     Attribute::Value value;
-    value.unsafe_raw_access([this](auto* buffer, const auto& info) {
+    value.unsafe_raw_access([this](auto* buffer, const auto& info) -> auto {
         iox2_attribute_value(m_handle, buffer, info.total_size);
         return iox2_attribute_value_len(m_handle);
     });

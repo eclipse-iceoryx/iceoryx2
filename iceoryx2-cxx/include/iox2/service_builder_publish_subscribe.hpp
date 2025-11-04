@@ -154,17 +154,21 @@ inline ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::ServiceBuilderPub
 template <typename Payload, typename UserHeader, ServiceType S>
 inline void ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_parameters() {
     m_enable_safe_overflow.and_then(
-        [&](auto value) { iox2_service_builder_pub_sub_set_enable_safe_overflow(&m_handle, value); });
-    m_subscriber_max_borrowed_samples.and_then(
-        [&](auto value) { iox2_service_builder_pub_sub_set_subscriber_max_borrowed_samples(&m_handle, value); });
-    m_history_size.and_then([&](auto value) { iox2_service_builder_pub_sub_set_history_size(&m_handle, value); });
+        [&](auto value) -> auto { iox2_service_builder_pub_sub_set_enable_safe_overflow(&m_handle, value); });
+    m_subscriber_max_borrowed_samples.and_then([&](auto value) -> auto {
+        iox2_service_builder_pub_sub_set_subscriber_max_borrowed_samples(&m_handle, value);
+    });
+    m_history_size.and_then(
+        [&](auto value) -> auto { iox2_service_builder_pub_sub_set_history_size(&m_handle, value); });
     m_subscriber_max_buffer_size.and_then(
-        [&](auto value) { iox2_service_builder_pub_sub_set_subscriber_max_buffer_size(&m_handle, value); });
-    m_max_subscribers.and_then([&](auto value) { iox2_service_builder_pub_sub_set_max_subscribers(&m_handle, value); });
-    m_max_publishers.and_then([&](auto value) { iox2_service_builder_pub_sub_set_max_publishers(&m_handle, value); });
+        [&](auto value) -> auto { iox2_service_builder_pub_sub_set_subscriber_max_buffer_size(&m_handle, value); });
+    m_max_subscribers.and_then(
+        [&](auto value) -> auto { iox2_service_builder_pub_sub_set_max_subscribers(&m_handle, value); });
+    m_max_publishers.and_then(
+        [&](auto value) -> auto { iox2_service_builder_pub_sub_set_max_publishers(&m_handle, value); });
     m_payload_alignment.and_then(
-        [&](auto value) { iox2_service_builder_pub_sub_set_payload_alignment(&m_handle, value); });
-    m_max_nodes.and_then([&](auto value) { iox2_service_builder_pub_sub_set_max_nodes(&m_handle, value); });
+        [&](auto value) -> auto { iox2_service_builder_pub_sub_set_payload_alignment(&m_handle, value); });
+    m_max_nodes.and_then([&](auto value) -> auto { iox2_service_builder_pub_sub_set_max_nodes(&m_handle, value); });
 
     using ValueType = typename PayloadInfo<Payload>::ValueType;
     auto type_variant = iox::IsSlice<Payload>::VALUE ? iox2_type_variant_e_DYNAMIC : iox2_type_variant_e_FIXED_SIZE;

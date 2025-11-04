@@ -45,7 +45,7 @@ auto main() -> int {
     auto cycle_guard = waitset.attach_interval(CYCLE_TIME);
 
     waitset
-        .wait_and_process([&](auto) {
+        .wait_and_process([&](auto) -> auto {
             std::cout << service_name.to_string().c_str() << ": Send sample " << counter << " ..." << std::endl;
             publisher.send_copy(counter).expect("");
             notifier.notify().expect("");

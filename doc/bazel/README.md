@@ -22,7 +22,7 @@ http_archive(
 
 
 # Load iceoryx rules
-ICEORYX_VERSION = "2.95.7"
+ICEORYX_VERSION = "2.95.8"
 
 maybe(
     name = "iceoryx",

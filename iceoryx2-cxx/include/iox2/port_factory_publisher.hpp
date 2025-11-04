@@ -102,16 +102,18 @@ template <ServiceType S, typename Payload, typename UserHeader>
 inline auto
 PortFactoryPublisher<S, Payload, UserHeader>::create() && -> iox::expected<Publisher<S, Payload, UserHeader>,
                                                                            PublisherCreateError> {
-    m_unable_to_deliver_strategy.and_then([&](auto value) {
+    m_unable_to_deliver_strategy.and_then([&](auto value) -> auto {
         iox2_port_factory_publisher_builder_unable_to_deliver_strategy(
             &m_handle, static_cast<iox2_unable_to_deliver_strategy_e>(iox::into<int>(value)));
     });
     m_max_slice_len
-        .and_then([&](auto value) { iox2_port_factory_publisher_builder_set_initial_max_slice_len(&m_handle, value); })
-        .or_else([&]() { iox2_port_factory_publisher_builder_set_initial_max_slice_len(&m_handle, 1); });
+        .and_then([&](auto value) -> auto {
+            iox2_port_factory_publisher_builder_set_initial_max_slice_len(&m_handle, value);
+        })
+        .or_else([&]() -> auto { iox2_port_factory_publisher_builder_set_initial_max_slice_len(&m_handle, 1); });
     m_max_loaned_samples.and_then(
-        [&](auto value) { iox2_port_factory_publisher_builder_set_max_loaned_samples(&m_handle, value); });
-    m_allocation_strategy.and_then([&](auto value) {
+        [&](auto value) -> auto { iox2_port_factory_publisher_builder_set_max_loaned_samples(&m_handle, value); });
+    m_allocation_strategy.and_then([&](auto value) -> auto {
         iox2_port_factory_publisher_builder_set_allocation_strategy(&m_handle,
                                                                     iox::into<iox2_allocation_strategy_e>(value));
     });

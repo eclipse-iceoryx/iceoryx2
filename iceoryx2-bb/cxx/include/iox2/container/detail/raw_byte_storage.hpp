@@ -27,7 +27,6 @@ namespace detail {
 /// All operations on this class are unchecked.
 template <typename T, uint64_t Capacity>
 class RawByteStorage {
-    // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
     static_assert(std::is_standard_layout<T>::value, "Storage is only valid for standard layout types.");
 
   private:
@@ -104,8 +103,8 @@ class RawByteStorage {
         return *this;
     }
 
-    constexpr auto operator=(RawByteStorage&& rhs) noexcept(std::is_nothrow_move_constructible_v<T>
-                                                            && std::is_nothrow_move_assignable_v<T>)
+    constexpr auto operator=(RawByteStorage&& rhs) noexcept(std::is_nothrow_move_constructible<T>::value
+                                                            && std::is_nothrow_move_assignable<T>::value)
         -> RawByteStorage& {
         if (&rhs != this) {
             for (uint64_t i = 0; i < std::min(m_size, rhs.m_size); ++i) {
@@ -218,7 +217,6 @@ class RawByteStorage {
         ret.offset_bytes = offsetof(Self, m_bytes);
         ret.sizeof_size = sizeof(m_size);
         ret.offset_size = offsetof(Self, m_size);
-        // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
         ret.size_is_unsigned = std::is_unsigned<decltype(m_size)>::value;
         return ret;
     }

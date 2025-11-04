@@ -201,7 +201,7 @@ UniqueClientId::UniqueClientId(UniqueClientId&& rhs) noexcept {
     *this = std::move(rhs);
 }
 
-auto UniqueClientId::operator=([[maybe_unused]] UniqueClientId&& rhs) noexcept -> UniqueClientId& {
+auto UniqueClientId::operator=(UniqueClientId&& rhs) noexcept -> UniqueClientId& {
     if (this != &rhs) {
         drop();
         m_handle = std::move(rhs.m_handle);

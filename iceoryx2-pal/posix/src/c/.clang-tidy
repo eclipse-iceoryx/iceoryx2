@@ -1,4 +1,6 @@
 InheritParentConfig: true
+ExtraArgsBefore:
+  - -std=c11
 
 CheckOptions:
   - { key: readability-identifier-naming.StructCase,                        value: lower_case }

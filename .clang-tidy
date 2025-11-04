@@ -39,6 +39,8 @@ WarningsAsErrors:     '' # Treat all Checks from above as errors
 HeaderFilterRegex:    ''
 FormatStyle:          file
 InheritParentConfig:  false
+ExtraArgsBefore:
+  - -std=c++14
 
 CheckOptions:
   - { key: readability-identifier-naming.ClassCase,               value: CamelCase }

@@ -30,29 +30,29 @@ TEST(SliceTest, const_correctness_is_maintained) {
     auto elements = std::array<DummyData, SLICE_MAX_LENGTH> {};
 
     auto mutable_slice = iox::MutableSlice<DummyData>(elements.data(), SLICE_MAX_LENGTH);
-    ASSERT_FALSE(std::is_const_v<std::remove_pointer_t<decltype(mutable_slice.begin())>>);
-    ASSERT_FALSE(std::is_const_v<std::remove_pointer_t<decltype(mutable_slice.end())>>);
-    ASSERT_FALSE(std::is_const_v<std::remove_pointer_t<decltype(mutable_slice.data())>>);
-    ASSERT_FALSE(std::is_const_v<std::remove_reference_t<decltype(mutable_slice[0])>>);
+    ASSERT_FALSE(std::is_const<std::remove_pointer_t<decltype(mutable_slice.begin())>>::value);
+    ASSERT_FALSE(std::is_const<std::remove_pointer_t<decltype(mutable_slice.end())>>::value);
+    ASSERT_FALSE(std::is_const<std::remove_pointer_t<decltype(mutable_slice.data())>>::value);
+    ASSERT_FALSE(std::is_const<std::remove_reference_t<decltype(mutable_slice[0])>>::value);
 
     // const instances of MutableSlice are also not mutable
     const auto const_mutable_slice = iox::MutableSlice<DummyData>(elements.data(), SLICE_MAX_LENGTH);
-    ASSERT_TRUE(std::is_const_v<std::remove_pointer_t<decltype(const_mutable_slice.begin())>>);
-    ASSERT_TRUE(std::is_const_v<std::remove_pointer_t<decltype(const_mutable_slice.end())>>);
-    ASSERT_TRUE(std::is_const_v<std::remove_pointer_t<decltype(const_mutable_slice.data())>>);
-    ASSERT_TRUE(std::is_const_v<std::remove_reference_t<decltype(const_mutable_slice[0])>>);
+    ASSERT_TRUE(std::is_const<std::remove_pointer_t<decltype(const_mutable_slice.begin())>>::value);
+    ASSERT_TRUE(std::is_const<std::remove_pointer_t<decltype(const_mutable_slice.end())>>::value);
+    ASSERT_TRUE(std::is_const<std::remove_pointer_t<decltype(const_mutable_slice.data())>>::value);
+    ASSERT_TRUE(std::is_const<std::remove_reference_t<decltype(const_mutable_slice[0])>>::value);
 
     auto immutable_slice = iox::ImmutableSlice<DummyData>(elements.data(), SLICE_MAX_LENGTH);
-    ASSERT_TRUE(std::is_const_v<std::remove_pointer_t<decltype(immutable_slice.begin())>>);
-    ASSERT_TRUE(std::is_const_v<std::remove_pointer_t<decltype(immutable_slice.end())>>);
-    ASSERT_TRUE(std::is_const_v<std::remove_pointer_t<decltype(immutable_slice.data())>>);
-    ASSERT_TRUE(std::is_const_v<std::remove_reference_t<decltype(immutable_slice[0])>>);
+    ASSERT_TRUE(std::is_const<std::remove_pointer_t<decltype(immutable_slice.begin())>>::value);
+    ASSERT_TRUE(std::is_const<std::remove_pointer_t<decltype(immutable_slice.end())>>::value);
+    ASSERT_TRUE(std::is_const<std::remove_pointer_t<decltype(immutable_slice.data())>>::value);
+    ASSERT_TRUE(std::is_const<std::remove_reference_t<decltype(immutable_slice[0])>>::value);
 
     const auto const_immutable_slice = iox::ImmutableSlice<DummyData>(elements.data(), SLICE_MAX_LENGTH);
-    ASSERT_TRUE(std::is_const_v<std::remove_pointer_t<decltype(const_immutable_slice.begin())>>);
-    ASSERT_TRUE(std::is_const_v<std::remove_pointer_t<decltype(const_immutable_slice.end())>>);
-    ASSERT_TRUE(std::is_const_v<std::remove_pointer_t<decltype(const_immutable_slice.data())>>);
-    ASSERT_TRUE(std::is_const_v<std::remove_reference_t<decltype(const_immutable_slice[0])>>);
+    ASSERT_TRUE(std::is_const<std::remove_pointer_t<decltype(const_immutable_slice.begin())>>::value);
+    ASSERT_TRUE(std::is_const<std::remove_pointer_t<decltype(const_immutable_slice.end())>>::value);
+    ASSERT_TRUE(std::is_const<std::remove_pointer_t<decltype(const_immutable_slice.data())>>::value);
+    ASSERT_TRUE(std::is_const<std::remove_reference_t<decltype(const_immutable_slice[0])>>::value);
 }
 
 TEST(SliceTest, can_iterate_mutable_slice) {

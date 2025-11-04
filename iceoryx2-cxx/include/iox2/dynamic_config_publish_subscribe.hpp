@@ -28,7 +28,11 @@ namespace iox2 {
 class DynamicConfigPublishSubscribe {
   public:
     DynamicConfigPublishSubscribe(const DynamicConfigPublishSubscribe&) = delete;
+#if __cplusplus >= 201703L
     DynamicConfigPublishSubscribe(DynamicConfigPublishSubscribe&&) = delete;
+#else
+    DynamicConfigPublishSubscribe(DynamicConfigPublishSubscribe&&) = default;
+#endif
     auto operator=(const DynamicConfigPublishSubscribe&) -> DynamicConfigPublishSubscribe& = delete;
     auto operator=(DynamicConfigPublishSubscribe&&) -> DynamicConfigPublishSubscribe& = delete;
     ~DynamicConfigPublishSubscribe() = default;

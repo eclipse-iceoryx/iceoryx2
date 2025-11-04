@@ -42,6 +42,10 @@ if(NOT iceoryx_platform_FOUND OR NOT iceoryx_hoofs_FOUND)
 endif()
 
 if(ICEORYX_WITH_FETCH_CONTENT)
+    # turn on the C++14 subset of iceoryx_hoofs
+    set(IOX_PLATFORM_MINIMAL_POSIX ON)
+    set(IOX_USE_HOOFS_SUBSET_ONLY ON)
+
     # turn off every option which is not required to build iceoryx hoofs
     set(EXAMPLES OFF)
     set(BUILD_TEST OFF)
@@ -49,7 +53,7 @@ if(ICEORYX_WITH_FETCH_CONTENT)
     # We need to disable temporary the ${COVERAGE} variable here to avoid interference
     # because it is a external dependency
     if(COVERAGE)
-        set(IOX2_COVERAGE_PREVIOUSLY_DISABLED ON)     
+        set(IOX2_COVERAGE_PREVIOUSLY_DISABLED ON)
         set(COVERAGE OFF)
     endif()
 
