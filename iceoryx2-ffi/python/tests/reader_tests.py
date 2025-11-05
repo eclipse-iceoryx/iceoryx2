@@ -32,7 +32,7 @@ def test_reader_is_is_unique(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint8, value)
+        .add(c_uint64(0), c_uint8, value)
         .create()
     )
 
@@ -65,7 +65,7 @@ def test_handle_can_be_acquired_for_existing_key_value_pair(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint64, value)
+        .add(c_uint64(0), c_uint64, value)
         .create()
     )
 
@@ -93,7 +93,7 @@ def test_handle_cannot_be_acquired_for_non_existing_key(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint64, value)
+        .add(c_uint64(0), c_uint64, value)
         .create()
     )
 
@@ -118,7 +118,7 @@ def test_handle_cannot_be_acquired_for_wrong_value_type(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint64, value)
+        .add(c_uint64(0), c_uint64, value)
         .create()
     )
 
@@ -143,7 +143,7 @@ def test_deleting_reader_removes_it_from_the_service(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint32, value)
+        .add(c_uint64(0), c_uint32, value)
         .max_readers(1)
         .create()
     )

@@ -12,6 +12,7 @@
 
 from ctypes import *
 
+import ctypes
 import iceoryx2 as iox2
 import pytest
 
@@ -35,8 +36,8 @@ def test_same_entry_id_for_same_key(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key_0, c_uint64, value)
-        .add(key_1, c_uint64, value)
+        .add(c_uint64(0), c_uint64, value)
+        .add(c_uint64(1), c_uint64, value)
         .create()
     )
 
@@ -65,7 +66,7 @@ def test_simple_communication_works_reader_created_first(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint16, value)
+        .add(c_uint64(0), c_uint16, value)
         .create()
     )
 
@@ -103,7 +104,7 @@ def test_simple_communication_works_writer_created_first(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_int32, value)
+        .add(c_uint64(3), c_int32, value)
         .create()
     )
 
@@ -141,7 +142,7 @@ def test_communication_with_max_readers(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint64, value)
+        .add(c_uint64(0), c_uint64, value)
         .max_readers(max_readers)
         .create()
     )
@@ -177,24 +178,25 @@ def test_communication_with_max_readers_and_entry_handle_muts(
     config = iox2.testing.generate_isolated_config()
     service_name = iox2.testing.generate_service_name()
     max_handles = 6
+    key = [0, 1, 2, 3, 4, 5, 6]
     keys = []
     i = 0
     while i < max_handles + 1:
-        key = i
-        keys.append(key.to_bytes(8, "little"))
+        k = i
+        keys.append(k.to_bytes(8, "little"))
         i += 1
 
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(keys[0], c_uint64, keys[0])
-        .add(keys[1], c_uint64, keys[1])
-        .add(keys[2], c_uint64, keys[2])
-        .add(keys[3], c_uint64, keys[3])
-        .add(keys[4], c_uint64, keys[4])
-        .add(keys[5], c_uint64, keys[5])
-        .add(keys[6], c_uint64, keys[6])
+        .add(c_uint64(key[0]), c_uint64, keys[0])
+        .add(c_uint64(key[1]), c_uint64, keys[1])
+        .add(c_uint64(key[2]), c_uint64, keys[2])
+        .add(c_uint64(key[3]), c_uint64, keys[3])
+        .add(c_uint64(key[4]), c_uint64, keys[4])
+        .add(c_uint64(key[5]), c_uint64, keys[5])
+        .add(c_uint64(key[6]), c_uint64, keys[6])
         .max_readers(max_handles)
         .create()
     )
@@ -256,10 +258,10 @@ def test_write_and_read_different_value_types_works(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(keys[0].to_bytes(8, "little"), c_uint64, value_0)
-        .add(keys[1].to_bytes(8, "little"), c_int8, value_1)
-        .add(keys[2].to_bytes(8, "little"), c_uint8 * 4, value_23)
-        .add(keys[3].to_bytes(8, "little"), c_bool, value_100)
+        .add(c_uint64(keys[0]), c_uint64, value_0)
+        .add(c_uint64(keys[1]), c_int8, value_1)
+        .add(c_uint64(keys[2]), c_uint8 * 4, value_23)
+        .add(c_uint64(keys[3]), c_bool, value_100)
         .create()
     )
 
@@ -321,7 +323,7 @@ def test_creating_max_supported_amount_of_ports_work(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint8, value)
+        .add(c_uint64(0), c_uint8, value)
         .max_readers(max_readers)
         .create()
     )
@@ -370,7 +372,7 @@ def test_dropping_service_keeps_established_communication(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint32, value)
+        .add(c_uint64(0), c_uint32, value)
         .create()
     )
 
@@ -404,7 +406,7 @@ def test_ports_of_dropped_service_block_new_service_creation(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint8, value)
+        .add(c_uint64(0), c_uint8, value)
         .create()
     )
 
@@ -415,21 +417,21 @@ def test_ports_of_dropped_service_block_new_service_creation(
 
     with pytest.raises(iox2.BlackboardCreateError):
         node.service_builder(service_name).blackboard_creator(c_uint64).add(
-            key, c_uint8, value
+            c_uint64(0), c_uint8, value
         ).create()
 
     reader.delete()
 
     with pytest.raises(iox2.BlackboardCreateError):
         node.service_builder(service_name).blackboard_creator(c_uint64).add(
-            key, c_uint8, value
+            c_uint64(0), c_uint8, value
         ).create()
 
     writer.delete()
 
     try:
         node.service_builder(service_name).blackboard_creator(c_uint64).add(
-            key, c_uint8, value
+            c_uint64(0), c_uint8, value
         ).create()
     except iox2.BlackboardCreateError:
         assert False
@@ -450,7 +452,7 @@ def test_service_can_be_opened_when_a_writer_exists(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint64, value)
+        .add(c_uint64(0), c_uint64, value)
         .create()
     )
     _writer = service.writer_builder().create()
@@ -459,7 +461,7 @@ def test_service_can_be_opened_when_a_writer_exists(
 
     with pytest.raises(iox2.BlackboardCreateError):
         node.service_builder(service_name).blackboard_creator(c_uint64).add(
-            key, c_uint64, value
+            c_uint64(0), c_uint64, value
         ).create()
 
     try:
@@ -483,7 +485,7 @@ def test_service_can_be_opened_when_a_reader_exists(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint64, value)
+        .add(c_uint64(0), c_uint64, value)
         .create()
     )
     _reader = service.reader_builder().create()
@@ -492,7 +494,7 @@ def test_service_can_be_opened_when_a_reader_exists(
 
     with pytest.raises(iox2.BlackboardCreateError):
         node.service_builder(service_name).blackboard_creator(c_uint64).add(
-            key, c_uint64, value
+            c_uint64(0), c_uint64, value
         ).create()
 
     try:
@@ -516,7 +518,7 @@ def test_reader_can_still_read_value_when_writer_was_disconnected(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint8, value)
+        .add(c_uint64(0), c_uint8, value)
         .create()
     )
 
@@ -550,8 +552,8 @@ def test_reconnected_reader_sees_current_blackboard_status(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key_0, c_uint8, value_0)
-        .add(key_1, c_int32, value_1)
+        .add(c_uint64(0), c_uint8, value_0)
+        .add(c_uint64(6), c_int32, value_1)
         .create()
     )
 
@@ -592,7 +594,7 @@ def test_entry_handle_mut_can_still_write_after_writer_was_dropped(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint8, value)
+        .add(c_uint64(0), c_uint8, value)
         .create()
     )
 
@@ -622,7 +624,7 @@ def test_entry_handle_can_still_read_after_reader_was_dropped(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint8, value)
+        .add(c_uint64(0), c_uint8, value)
         .create()
     )
 
@@ -654,7 +656,7 @@ def test_loan_and_write_entry_value_works(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint32, value)
+        .add(c_uint64(0), c_uint32, value)
         .create()
     )
 
@@ -684,7 +686,7 @@ def test_entry_handle_mut_can_be_reused_after_entry_value_was_updated(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint32, value)
+        .add(c_uint64(0), c_uint32, value)
         .create()
     )
 
@@ -717,7 +719,7 @@ def test_entry_value_can_still_be_used_after_writer_was_dropped(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint32, value)
+        .add(c_uint64(0), c_uint32, value)
         .create()
     )
 
@@ -750,7 +752,7 @@ def test_entry_handle_mut_can_be_reused_after_entry_value_uninit_was_discarded(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint32, value)
+        .add(c_uint64(0), c_uint32, value)
         .create()
     )
 
@@ -781,7 +783,7 @@ def test_entry_handle_mut_can_be_reused_after_entry_value_was_discarded(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint32, value)
+        .add(c_uint64(0), c_uint32, value)
         .create()
     )
 
@@ -813,7 +815,7 @@ def test_handle_can_still_be_used_after_every_previous_service_state_owner_was_d
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint32, value)
+        .add(c_uint64(0), c_uint32, value)
         .create()
     )
 
@@ -829,7 +831,7 @@ def test_handle_can_still_be_used_after_every_previous_service_state_owner_was_d
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint32, value)
+        .add(c_uint64(0), c_uint32, value)
         .create()
     )
 
@@ -842,8 +844,52 @@ def test_handle_can_still_be_used_after_every_previous_service_state_owner_was_d
     assert int.from_bytes(entry_handle.get(), byteorder="little", signed=False) == 0
 
 
+class Foo(ctypes.Structure):
+    _fields_ = [("a", ctypes.c_uint8), ("b", ctypes.c_uint32), ("c", ctypes.c_double)]
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_simple_communication_with_key_struct_works(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    service_name = iox2.testing.generate_service_name()
+    value = -3
+    value = value.to_bytes(4, "little", signed=True)
+
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service = (
+        node.service_builder(service_name)
+        .blackboard_creator(Foo)
+        .add(Foo(a=9, b=99, c=9.9), c_int32, value)
+        .create()
+    )
+
+    # TODO: complete test
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_adding_key_struct_twice_fails(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    service_name = iox2.testing.generate_service_name()
+    value_1 = -3
+    value_1 = value_1.to_bytes(4, "little", signed=True)
+    value_2 = 3
+    value_2 = value_2.to_bytes(4, "little")
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+
+    with pytest.raises(iox2.BlackboardCreateError):
+        (
+            node.service_builder(service_name)
+            .blackboard_creator(Foo)
+            .add(Foo(a=9, b=99, c=9.9), c_int32, value_1)
+            .add(Foo(a=9, b=99, c=9.9), c_uint32, value_2)
+            .create()
+        )
+
+
 # TODO: missing tests
 # - concurrent_write_and_read_of_the_same_value_works
 # - concurrent_write_of_different_values_works
-# - simple_communication_with_key_struct_works
-# - adding_key_struct_twice_fails

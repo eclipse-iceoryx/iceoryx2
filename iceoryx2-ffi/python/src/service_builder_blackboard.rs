@@ -128,10 +128,8 @@ impl ServiceBuilderBlackboardCreator {
         }
     }
 
-    pub fn __add(&mut self, key: PyObject, value: PyObject, value_details: &TypeDetail) -> Self {
+    pub fn __add(&mut self, key: usize, value: PyObject, value_details: &TypeDetail) -> Self {
         Python::with_gil(|py| {
-            let key = key.downcast_bound::<PyBytes>(py).unwrap(); // TODO: error handling
-            let key = key.as_bytes();
             let value = value.downcast_bound::<PyBytes>(py).unwrap(); // TODO: error handling
             let value = value.as_bytes();
 
@@ -140,7 +138,7 @@ impl ServiceBuilderBlackboardCreator {
                     let this = v.clone();
                     let this = unsafe {
                         this.__internal_add(
-                            key.as_ptr(),
+                            key as *const u8,
                             value.as_ptr() as *mut u8,
                             value_details.0.clone(),
                             Box::new(|| {}),
@@ -152,7 +150,7 @@ impl ServiceBuilderBlackboardCreator {
                     let this = v.clone();
                     let this = unsafe {
                         this.__internal_add(
-                            key.as_ptr(),
+                            key as *const u8,
                             value.as_ptr() as *mut u8,
                             value_details.0.clone(),
                             Box::new(|| {}),
