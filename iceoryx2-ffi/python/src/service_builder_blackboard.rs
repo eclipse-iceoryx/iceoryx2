@@ -128,38 +128,33 @@ impl ServiceBuilderBlackboardCreator {
         }
     }
 
-    pub fn __add(&mut self, key: usize, value: PyObject, value_details: &TypeDetail) -> Self {
-        Python::with_gil(|py| {
-            let value = value.downcast_bound::<PyBytes>(py).unwrap(); // TODO: error handling
-            let value = value.as_bytes();
-
-            match &self.value {
-                ServiceBuilderBlackboardCreatorType::Ipc(v) => {
-                    let this = v.clone();
-                    let this = unsafe {
-                        this.__internal_add(
-                            key as *const u8,
-                            value.as_ptr() as *mut u8,
-                            value_details.0.clone(),
-                            Box::new(|| {}),
-                        )
-                    };
-                    self.clone_ipc(this)
-                }
-                ServiceBuilderBlackboardCreatorType::Local(v) => {
-                    let this = v.clone();
-                    let this = unsafe {
-                        this.__internal_add(
-                            key as *const u8,
-                            value.as_ptr() as *mut u8,
-                            value_details.0.clone(),
-                            Box::new(|| {}),
-                        )
-                    };
-                    self.clone_local(this)
-                }
+    pub fn __add(&mut self, key: usize, value: usize, value_details: &TypeDetail) -> Self {
+        match &self.value {
+            ServiceBuilderBlackboardCreatorType::Ipc(v) => {
+                let this = v.clone();
+                let this = unsafe {
+                    this.__internal_add(
+                        key as *const u8,
+                        value as *mut u8,
+                        value_details.0.clone(),
+                        Box::new(|| {}),
+                    )
+                };
+                self.clone_ipc(this)
             }
-        })
+            ServiceBuilderBlackboardCreatorType::Local(v) => {
+                let this = v.clone();
+                let this = unsafe {
+                    this.__internal_add(
+                        key as *const u8,
+                        value as *mut u8,
+                        value_details.0.clone(),
+                        Box::new(|| {}),
+                    )
+                };
+                self.clone_local(this)
+            }
+        }
     }
 
     pub fn create(&self) -> PyResult<PortFactoryBlackboard> {

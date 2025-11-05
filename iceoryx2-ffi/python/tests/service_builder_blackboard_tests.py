@@ -35,7 +35,7 @@ def test_open_fails_when_attributes_are_incompatible(
     _creator = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint64, value)
+        .add(c_uint64(0), c_uint64, c_uint64(0))
         .create_with_attributes(attribute_spec)
     )
 
@@ -68,7 +68,7 @@ def test_open_with_attributes_fails_when_key_types_differ(
     _sut = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint8, value)
+        .add(c_uint64(0), c_uint8, c_uint8(0))
         .create_with_attributes(attribute_spec)
     )
     with pytest.raises(iox2.BlackboardOpenError):
@@ -90,7 +90,7 @@ def test_open_fails_when_key_types_differ(
     _sut = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint8, value)
+        .add(c_uint64(0), c_uint8, c_uint8(0))
         .create()
     )
     with pytest.raises(iox2.BlackboardOpenError):
@@ -110,7 +110,7 @@ def test_non_existing_service_can_be_created(
         sut = (
             node.service_builder(service_name)
             .blackboard_creator(c_uint32)
-            .add(c_uint32(0), c_uint32, value)
+            .add(c_uint32(0), c_uint32, c_uint32(0))
             .create()
         )
         assert sut.name == service_name
@@ -132,13 +132,13 @@ def test_existing_service_cannot_be_created(
     _existing_service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint32)
-        .add(c_uint32(0), c_uint32, value)
+        .add(c_uint32(0), c_uint32, c_uint32(0))
         .create()
     )
 
     with pytest.raises(iox2.BlackboardCreateError):
         node.service_builder(service_name).blackboard_creator(c_uint32).add(
-            c_uint32(0), c_uint32, value
+            c_uint32(0), c_uint32, c_uint32(0)
         ).create()
 
 
@@ -171,8 +171,8 @@ def test_create_fails_when_key_is_provided_twice(
 
     with pytest.raises(iox2.BlackboardCreateError):
         node.service_builder(service_name).blackboard_creator(c_uint64).add(
-            c_uint64(key), c_uint8, value_1
-        ).add(c_uint64(key), c_uint8, value_2).create()
+            c_uint64(key), c_uint8, c_uint8(1)
+        ).add(c_uint64(key), c_uint8, c_uint8(2)).create()
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -189,7 +189,7 @@ def test_recreate_after_drop_works(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(key), c_uint8, value)
+        .add(c_uint64(key), c_uint8, c_uint8(0))
         .create()
     )
 
@@ -197,7 +197,7 @@ def test_recreate_after_drop_works(
 
     try:
         node.service_builder(service_name).blackboard_creator(c_uint64).add(
-            c_uint64(key), c_uint8, value
+            c_uint64(key), c_uint8, c_uint8(0)
         ).create()
     except iox2.BlackboardCreateError:
         assert False
@@ -214,7 +214,7 @@ def test_existing_service_can_be_opened(service_type: iox2.ServiceType) -> None:
     _existing_service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint32)
-        .add(c_uint32(0), c_uint32, value)
+        .add(c_uint32(0), c_uint32, c_uint32(0))
         .create()
     )
     try:
@@ -237,9 +237,9 @@ def test_service_can_be_created_with_different_keys(
     _existing_service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint32)
-        .add(c_uint32(0), c_uint32, value)
-        .add(c_uint32(1), c_uint32, value)
-        .add(c_uint32(11), c_uint32, value)
+        .add(c_uint32(0), c_uint32, c_uint32(0))
+        .add(c_uint32(1), c_uint32, c_uint32(0))
+        .add(c_uint32(11), c_uint32, c_uint32(0))
         .create()
     )
     try:
@@ -278,7 +278,7 @@ def test_create_service_with_attributes_work(
     sut_create = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint32)
-        .add(c_uint32(0), c_uint32, value)
+        .add(c_uint32(0), c_uint32, c_uint32(0))
         .create_with_attributes(attribute_spec)
     )
 
@@ -308,7 +308,7 @@ def test_open_service_with_attributes_work(
     sut_create = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint32)
-        .add(c_uint32(0), c_uint32, value)
+        .add(c_uint32(0), c_uint32, c_uint32(0))
         .create_with_attributes(attribute_spec)
     )
 
@@ -335,7 +335,7 @@ def test_open_fails_when_service_does_not_satisfy_max_nodes_requirement(
     _sut = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint8, value)
+        .add(c_uint64(0), c_uint8, c_uint8(0))
         .max_nodes(2)
         .create()
     )
@@ -369,7 +369,7 @@ def test_open_fails_when_service_does_not_satisfy_max_readers_requirement(
     _sut = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint8, value)
+        .add(c_uint64(0), c_uint8, c_uint8(0))
         .max_readers(2)
         .create()
     )
@@ -403,7 +403,7 @@ def test_open_does_not_fail_when_service_owner_is_dropped(
     creator = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint8, value)
+        .add(c_uint64(0), c_uint8, c_uint8(0))
         .create()
     )
     _opener_1 = node.service_builder(service_name).blackboard_opener(c_uint64).open()
@@ -431,7 +431,7 @@ def test_open_fails_when_all_previous_owners_have_been_dropped(
     creator = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint8, value)
+        .add(c_uint64(0), c_uint8, c_uint8(0))
         .create()
     )
     opener = node.service_builder(service_name).blackboard_opener(c_uint64).open()
@@ -454,7 +454,7 @@ def test_node_listing_works(service_type: iox2.ServiceType) -> None:
     sut = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint32)
-        .add(c_uint32(0), c_uint32, value)
+        .add(c_uint32(0), c_uint32, c_uint32(0))
         .create()
     )
 
@@ -488,7 +488,7 @@ def test_service_builder_configuration_works(
     sut = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint32)
-        .add(c_uint32(0), c_uint32, value)
+        .add(c_uint32(0), c_uint32, c_uint32(0))
         .max_readers(56)
         .max_nodes(65)
         .create()
@@ -516,7 +516,7 @@ def test_service_builder_based_on_custom_config_works(
     sut = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint32)
-        .add(c_uint32(0), c_uint32, value)
+        .add(c_uint32(0), c_uint32, c_uint32(0))
         .create()
     )
 
@@ -538,7 +538,7 @@ def test_max_readers_is_set_to_config_default(
     sut = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint8, value)
+        .add(c_uint64(0), c_uint8, c_uint8(0))
         .create()
     )
 
@@ -559,7 +559,7 @@ def test_open_uses_predefined_settings_when_nothing_is_specified(
     _creator = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint8, value)
+        .add(c_uint64(0), c_uint8, c_uint8(0))
         .max_nodes(89)
         .max_readers(4)
         .create()
@@ -587,7 +587,7 @@ def test_service_id_is_unique_per_service(
     service_1_create = (
         node.service_builder(service_name_1)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(key), c_uint64, value)
+        .add(c_uint64(key), c_uint64, c_uint64(0))
         .create()
     )
     service_1_open = (
@@ -596,7 +596,7 @@ def test_service_id_is_unique_per_service(
     service_2 = (
         node.service_builder(service_name_2)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(key), c_uint64, value)
+        .add(c_uint64(key), c_uint64, c_uint64(0))
         .create()
     )
 
@@ -620,7 +620,7 @@ def test_max_number_of_nodes_works(
     creator = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint64, value)
+        .add(c_uint64(0), c_uint64, c_uint64(0))
         .max_nodes(max_nodes)
         .create()
     )
@@ -659,7 +659,7 @@ def test_set_max_nodes_to_zero_adjusts_it_to_one(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint8, value)
+        .add(c_uint64(0), c_uint8, c_uint8(0))
         .max_nodes(0)
         .create()
     )
@@ -680,7 +680,7 @@ def test_set_max_readers_to_zero_adjusts_it_to_one(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint8, value)
+        .add(c_uint64(0), c_uint8, c_uint8(0))
         .max_readers(0)
         .create()
     )
