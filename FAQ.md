@@ -35,7 +35,7 @@
    pod-types (plain old data, e.g. `u64`, `f32`, ...) or explicitly
    shared-memory compatible containers like some of the constructs in the
    `iceoryx2-bb-containers`.
-2. Add `#[repr(C`)]` to your custom data type so that it has a uniform memory
+2. Add `#[repr(C)]` to your custom data type so that it has a uniform memory
    representation.
 
    ```rust
@@ -131,10 +131,10 @@ service variant from `Local` to `Ipc`.
 
 Take a look at the local_pubsub file in the
 
-* [C service variants example](examples/c/service_variants)
-* [C++ service variants example](examples/cxx/service_variants)
-* [Python service variants example](examples/python/service_variants)
-* [Rust service variants example](examples/rust/service_variants)
+* [C service types example](examples/c/service_types)
+* [C++ service types example](examples/cxx/service_types)
+* [Python service types example](examples/python/service_types)
+* [Rust service types example](examples/rust/service_types)
 
 ### Interop Between 32-bit And 64-bit Processes
 
