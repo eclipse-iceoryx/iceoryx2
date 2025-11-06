@@ -86,7 +86,6 @@ impl EntryHandleMut {
                 EntryValueUninit {
                     // value: EntryValueUninitType::Ipc(Some(entry_value_uninit)),
                     // value_type_details: self.value_type_details.clone(),
-                    value_type_storage: self.value_type_storage.clone(),
                     entry_value: EntryValue {
                         value: EntryValueType::Ipc(Some(entry_value_uninit)),
                         value_type_details: self.value_type_details.clone(),
@@ -103,7 +102,6 @@ impl EntryHandleMut {
                 EntryValueUninit {
                     // value: EntryValueUninitType::Local(Some(entry_value_uninit)),
                     // value_type_details: self.value_type_details.clone(),
-                    value_type_storage: self.value_type_storage.clone(),
                     entry_value: EntryValue {
                         value: EntryValueType::Local(Some(entry_value_uninit)),
                         value_type_details: self.value_type_details.clone(),
