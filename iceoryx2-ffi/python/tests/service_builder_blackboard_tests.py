@@ -30,12 +30,12 @@ def test_open_fails_when_attributes_are_incompatible(
 
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     attribute_spec = iox2.AttributeSpecifier.new().define(attr_key, attr_value)
-    value = 0
-    value = value.to_bytes(8, "little")
+    key = c_uint64(0)
+    value = c_uint64(0)
     _creator = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint64, c_uint64(0))
+        .add(key, c_uint64, value)
         .create_with_attributes(attribute_spec)
     )
 
@@ -63,12 +63,12 @@ def test_open_with_attributes_fails_when_key_types_differ(
     )
     service_name = iox2.testing.generate_service_name()
 
-    value = 0
-    value = value.to_bytes(1, "little")
+    key = c_uint64(0)
+    value = c_uint8(0)
     _sut = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint8, c_uint8(0))
+        .add(key, c_uint8, value)
         .create_with_attributes(attribute_spec)
     )
     with pytest.raises(iox2.BlackboardOpenError):
@@ -83,14 +83,14 @@ def test_open_fails_when_key_types_differ(
 ) -> None:
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
-
     service_name = iox2.testing.generate_service_name()
-    value = 0
-    value = value.to_bytes(1, "little")
+
+    key = c_uint64(0)
+    value = c_uint8(0)
     _sut = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint8, c_uint8(0))
+        .add(key, c_uint8, value)
         .create()
     )
     with pytest.raises(iox2.BlackboardOpenError):
@@ -103,14 +103,14 @@ def test_non_existing_service_can_be_created(
 ) -> None:
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service_name = iox2.testing.generate_service_name()
+    key = c_uint32(0)
+    value = c_uint32(0)
     try:
-        service_name = iox2.testing.generate_service_name()
-        value = 0
-        value = value.to_bytes(4, "little")
         sut = (
             node.service_builder(service_name)
             .blackboard_creator(c_uint32)
-            .add(c_uint32(0), c_uint32, c_uint32(0))
+            .add(key, c_uint32, value)
             .create()
         )
         assert sut.name == service_name
@@ -126,19 +126,18 @@ def test_existing_service_cannot_be_created(
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
 
-    value = 0
-    value = value.to_bytes(4, "little")
-
+    key = c_uint32(0)
+    value = c_uint32(0)
     _existing_service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint32)
-        .add(c_uint32(0), c_uint32, c_uint32(0))
+        .add(key, c_uint32, value)
         .create()
     )
 
     with pytest.raises(iox2.BlackboardCreateError):
         node.service_builder(service_name).blackboard_creator(c_uint32).add(
-            c_uint32(0), c_uint32, c_uint32(0)
+            key, c_uint32, value
         ).create()
 
 
@@ -163,16 +162,14 @@ def test_create_fails_when_key_is_provided_twice(
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
 
-    key = 0
-    value_1 = 1
-    value_1 = value_1.to_bytes(1, "little")
-    value_2 = 2
-    value_2 = value_2.to_bytes(1, "little")
+    key = c_uint64(0)
+    value_1 = c_uint8(1)
+    value_2 = c_uint8(2)
 
     with pytest.raises(iox2.BlackboardCreateError):
         node.service_builder(service_name).blackboard_creator(c_uint64).add(
-            c_uint64(key), c_uint8, c_uint8(1)
-        ).add(c_uint64(key), c_uint8, c_uint8(2)).create()
+            key, c_uint8, value_1
+        ).add(key, c_uint8, value_2).create()
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -182,14 +179,13 @@ def test_recreate_after_drop_works(
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
-    key = 0
-    value = 0
-    value = value.to_bytes(1, "little")
+    key = c_uint64(0)
+    value = c_uint8(0)
 
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(key), c_uint8, c_uint8(0))
+        .add(key, c_uint8, value)
         .create()
     )
 
@@ -197,7 +193,7 @@ def test_recreate_after_drop_works(
 
     try:
         node.service_builder(service_name).blackboard_creator(c_uint64).add(
-            c_uint64(key), c_uint8, c_uint8(0)
+            key, c_uint8, value
         ).create()
     except iox2.BlackboardCreateError:
         assert False
@@ -209,12 +205,12 @@ def test_existing_service_can_be_opened(service_type: iox2.ServiceType) -> None:
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
 
-    value = 0
-    value = value.to_bytes(4, "little")
+    key = c_uint32(0)
+    value = c_uint32(0)
     _existing_service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint32)
-        .add(c_uint32(0), c_uint32, c_uint32(0))
+        .add(key, c_uint32, value)
         .create()
     )
     try:
@@ -231,15 +227,17 @@ def test_service_can_be_created_with_different_keys(
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
 
-    value = 0
-    value = value.to_bytes(4, "little")
+    key_0 = c_uint32(0)
+    key_1 = c_uint32(1)
+    key_2 = c_uint32(11)
+    value = c_uint32(0)
     service_name = iox2.testing.generate_service_name()
     _existing_service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint32)
-        .add(c_uint32(0), c_uint32, c_uint32(0))
-        .add(c_uint32(1), c_uint32, c_uint32(0))
-        .add(c_uint32(11), c_uint32, c_uint32(0))
+        .add(key_0, c_uint32, value)
+        .add(key_1, c_uint32, value)
+        .add(key_2, c_uint32, value)
         .create()
     )
     try:
@@ -273,12 +271,12 @@ def test_create_service_with_attributes_work(
         iox2.AttributeKey.new("fuu"), iox2.AttributeValue.new("bar")
     )
 
-    value = 0
-    value = value.to_bytes(4, "little")
+    key = c_uint32(0)
+    value = c_uint32(0)
     sut_create = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint32)
-        .add(c_uint32(0), c_uint32, c_uint32(0))
+        .add(key, c_uint32, value)
         .create_with_attributes(attribute_spec)
     )
 
@@ -303,12 +301,12 @@ def test_open_service_with_attributes_work(
         iox2.AttributeKey.new("knock"), iox2.AttributeValue.new("knock")
     )
 
-    value = 0
-    value = value.to_bytes(4, "little")
+    key = c_uint32(0)
+    value = c_uint32(0)
     sut_create = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint32)
-        .add(c_uint32(0), c_uint32, c_uint32(0))
+        .add(key, c_uint32, value)
         .create_with_attributes(attribute_spec)
     )
 
@@ -330,12 +328,12 @@ def test_open_fails_when_service_does_not_satisfy_max_nodes_requirement(
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
 
-    value = 0
-    value = value.to_bytes(1, "little")
+    key = c_uint64(0)
+    value = c_uint8(0)
     _sut = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint8, c_uint8(0))
+        .add(key, c_uint8, value)
         .max_nodes(2)
         .create()
     )
@@ -364,12 +362,12 @@ def test_open_fails_when_service_does_not_satisfy_max_readers_requirement(
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
 
-    value = 0
-    value = value.to_bytes(1, "little")
+    key = c_uint64(0)
+    value = c_uint8(0)
     _sut = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint8, c_uint8(0))
+        .add(key, c_uint8, value)
         .max_readers(2)
         .create()
     )
@@ -398,12 +396,12 @@ def test_open_does_not_fail_when_service_owner_is_dropped(
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
 
-    value = 0
-    value = value.to_bytes(1, "little")
+    key = c_uint64(0)
+    value = c_uint8(0)
     creator = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint8, c_uint8(0))
+        .add(key, c_uint8, value)
         .create()
     )
     _opener_1 = node.service_builder(service_name).blackboard_opener(c_uint64).open()
@@ -426,12 +424,12 @@ def test_open_fails_when_all_previous_owners_have_been_dropped(
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
 
-    value = 0
-    value = value.to_bytes(1, "little")
+    key = c_uint64(0)
+    value = c_uint8(0)
     creator = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint8, c_uint8(0))
+        .add(key, c_uint8, value)
         .create()
     )
     opener = node.service_builder(service_name).blackboard_opener(c_uint64).open()
@@ -449,12 +447,12 @@ def test_node_listing_works(service_type: iox2.ServiceType) -> None:
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
 
-    value = 0
-    value = value.to_bytes(4, "little")
+    key = c_uint32(0)
+    value = c_uint32(0)
     sut = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint32)
-        .add(c_uint32(0), c_uint32, c_uint32(0))
+        .add(key, c_uint32, value)
         .create()
     )
 
@@ -483,12 +481,12 @@ def test_service_builder_configuration_works(
 
     max_readers = 56
     max_nodes = 65
-    value = 0
-    value = value.to_bytes(4, "little")
+    key = c_uint32(0)
+    value = c_uint32(0)
     sut = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint32)
-        .add(c_uint32(0), c_uint32, c_uint32(0))
+        .add(key, c_uint32, value)
         .max_readers(56)
         .max_nodes(65)
         .create()
@@ -511,12 +509,12 @@ def test_service_builder_based_on_custom_config_works(
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
 
-    value = 0
-    value = value.to_bytes(4, "little")
+    key = c_uint32(0)
+    value = c_uint32(0)
     sut = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint32)
-        .add(c_uint32(0), c_uint32, c_uint32(0))
+        .add(key, c_uint32, value)
         .create()
     )
 
@@ -533,12 +531,12 @@ def test_max_readers_is_set_to_config_default(
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
 
-    value = 0
-    value = value.to_bytes(1, "little")
+    key = c_uint64(0)
+    value = c_uint8(0)
     sut = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint8, c_uint8(0))
+        .add(key, c_uint8, value)
         .create()
     )
 
@@ -554,12 +552,12 @@ def test_open_uses_predefined_settings_when_nothing_is_specified(
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
 
-    value = 0
-    value = value.to_bytes(1, "little")
+    key = c_uint64(0)
+    value = c_uint8(0)
     _creator = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint8, c_uint8(0))
+        .add(key, c_uint8, value)
         .max_nodes(89)
         .max_readers(4)
         .create()
@@ -580,14 +578,13 @@ def test_service_id_is_unique_per_service(
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name_1 = iox2.testing.generate_service_name()
     service_name_2 = iox2.testing.generate_service_name()
-    key = 0
-    value = 0
-    value = value.to_bytes(8, "little")
+    key = c_uint64(0)
+    value = c_uint64(0)
 
     service_1_create = (
         node.service_builder(service_name_1)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(key), c_uint64, c_uint64(0))
+        .add(key, c_uint64, value)
         .create()
     )
     service_1_open = (
@@ -596,7 +593,7 @@ def test_service_id_is_unique_per_service(
     service_2 = (
         node.service_builder(service_name_2)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(key), c_uint64, c_uint64(0))
+        .add(key, c_uint64, value)
         .create()
     )
 
@@ -610,17 +607,17 @@ def test_max_number_of_nodes_works(
 ) -> None:
     config = iox2.testing.generate_isolated_config()
     service_name = iox2.testing.generate_service_name()
-    value = 0
-    value = value.to_bytes(8, "little")
     max_nodes = 8
     nodes = []
     services = []
 
     node = iox2.NodeBuilder.new().config(config).create(service_type)
+    key = c_uint64(0)
+    value = c_uint64(0)
     creator = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint64, c_uint64(0))
+        .add(key, c_uint64, value)
         .max_nodes(max_nodes)
         .create()
     )
@@ -653,13 +650,13 @@ def test_set_max_nodes_to_zero_adjusts_it_to_one(
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
-    value = 0
-    value = value.to_bytes(1, "little")
 
+    key = c_uint64(0)
+    value = c_uint8(0)
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint8, c_uint8(0))
+        .add(key, c_uint8, value)
         .max_nodes(0)
         .create()
     )
@@ -674,13 +671,13 @@ def test_set_max_readers_to_zero_adjusts_it_to_one(
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
-    value = 0
-    value = value.to_bytes(1, "little")
 
+    key = c_uint64(0)
+    value = c_uint8(0)
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint8, c_uint8(0))
+        .add(key, c_uint8, value)
         .max_readers(0)
         .create()
     )

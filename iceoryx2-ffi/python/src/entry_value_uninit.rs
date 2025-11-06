@@ -25,12 +25,17 @@ pub(crate) enum EntryValueUninitType {
 #[pyclass(unsendable)]
 pub struct EntryValueUninit {
     // pub(crate) value: EntryValueUninitType, // TODO: better name
-    // pub(crate) value_type_details: TypeStorage,
+    pub(crate) value_type_storage: TypeStorage,
     pub(crate) entry_value: EntryValue,
 }
 
 #[pymethods]
 impl EntryValueUninit {
+    #[getter]
+    pub fn __value_type(&self) -> Option<Py<PyAny>> {
+        self.value_type_storage.clone().value
+    }
+
     pub fn __get_write_cell(&self) -> usize {
         match &self.entry_value.value {
             EntryValueType::Ipc(Some(v)) => v.write_cell() as usize,
@@ -47,6 +52,7 @@ impl EntryValueUninit {
                 EntryValue {
                     value: EntryValueType::Ipc(Some(entry_value_uninit)),
                     value_type_details,
+                    value_type_storage: self.value_type_storage.clone(),
                 }
             }
             EntryValueType::Local(v) => {
@@ -55,6 +61,7 @@ impl EntryValueUninit {
                 EntryValue {
                     value: EntryValueType::Local(Some(entry_value_uninit)),
                     value_type_details,
+                    value_type_storage: self.value_type_storage.clone(),
                 }
             }
         }
@@ -67,6 +74,7 @@ impl EntryValueUninit {
                 let entry_handle_mut = entry_value_uninit.discard();
                 EntryHandleMut {
                     value: EntryHandleMutType::Ipc(Some(entry_handle_mut)),
+                    value_type_storage: self.value_type_storage.clone(),
                     value_type_details: self.entry_value.value_type_details.clone(),
                 }
             }
@@ -75,6 +83,7 @@ impl EntryValueUninit {
                 let entry_handle_mut = entry_value_uninit.discard();
                 EntryHandleMut {
                     value: EntryHandleMutType::Local(Some(entry_handle_mut)),
+                    value_type_storage: self.value_type_storage.clone(),
                     value_type_details: self.entry_value.value_type_details.clone(),
                 }
             }

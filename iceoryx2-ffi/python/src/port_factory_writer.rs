@@ -42,13 +42,13 @@ pub(crate) enum PortFactoryWriterType {
 pub struct PortFactoryWriter {
     factory: Parc<PortFactoryBlackboardType>,
     value: PortFactoryWriterType,
-    key_type_details: TypeStorage,
+    key_type_storage: TypeStorage,
 }
 
 impl PortFactoryWriter {
     pub(crate) fn new(
         factory: Parc<PortFactoryBlackboardType>,
-        key_type_details: TypeStorage,
+        key_type_storage: TypeStorage,
     ) -> Self {
         Self {
             factory: factory.clone(),
@@ -67,7 +67,7 @@ impl PortFactoryWriter {
                 }),
                 _ => fatal_panic!(""), // TODO
             },
-            key_type_details,
+            key_type_storage,
         }
     }
 
@@ -75,7 +75,7 @@ impl PortFactoryWriter {
         Self {
             factory: self.factory.clone(),
             value: PortFactoryWriterType::Ipc(Parc::new(value)),
-            key_type_details: self.key_type_details.clone(),
+            key_type_storage: self.key_type_storage.clone(),
         }
     }
 
@@ -83,7 +83,7 @@ impl PortFactoryWriter {
         Self {
             factory: self.factory.clone(),
             value: PortFactoryWriterType::Local(Parc::new(value)),
-            key_type_details: self.key_type_details.clone(),
+            key_type_storage: self.key_type_storage.clone(),
         }
     }
 }
@@ -100,7 +100,7 @@ impl PortFactoryWriter {
                         this.create()
                             .map_err(|e| WriterCreateError::new_err(format!("{e:?}")))?,
                     ))),
-                    key_type_details: self.key_type_details.clone(),
+                    key_type_storage: self.key_type_storage.clone(),
                 })
             }
             PortFactoryWriterType::Local(v) => {
@@ -110,7 +110,7 @@ impl PortFactoryWriter {
                         this.create()
                             .map_err(|e| WriterCreateError::new_err(format!("{e:?}")))?,
                     ))),
-                    key_type_details: self.key_type_details.clone(),
+                    key_type_storage: self.key_type_storage.clone(),
                 })
             }
         }

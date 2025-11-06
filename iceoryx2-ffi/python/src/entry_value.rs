@@ -14,6 +14,7 @@ use pyo3::prelude::*;
 
 use crate::entry_handle_mut::{EntryHandleMut, EntryHandleMutType};
 use crate::type_detail::TypeDetail;
+use crate::type_storage::TypeStorage;
 
 pub(crate) enum EntryValueType {
     Ipc(Option<iceoryx2::port::writer::__InternalEntryValueUninit<crate::IpcService>>), // TODO: Option?
@@ -24,6 +25,7 @@ pub(crate) enum EntryValueType {
 pub struct EntryValue {
     pub(crate) value: EntryValueType, // TODO: better name
     pub(crate) value_type_details: TypeDetail,
+    pub(crate) value_type_storage: TypeStorage,
 }
 
 #[pymethods]
@@ -35,6 +37,7 @@ impl EntryValue {
                 let entry_handle_mut = entry_value_uninit.update();
                 EntryHandleMut {
                     value: EntryHandleMutType::Ipc(Some(entry_handle_mut)),
+                    value_type_storage: self.value_type_storage.clone(),
                     value_type_details: self.value_type_details.clone(),
                 }
             }
@@ -43,6 +46,7 @@ impl EntryValue {
                 let entry_handle_mut = entry_value_uninit.update();
                 EntryHandleMut {
                     value: EntryHandleMutType::Local(Some(entry_handle_mut)),
+                    value_type_storage: self.value_type_storage.clone(),
                     value_type_details: self.value_type_details.clone(),
                 }
             }
@@ -56,6 +60,7 @@ impl EntryValue {
                 let entry_handle_mut = entry_value_uninit.discard();
                 EntryHandleMut {
                     value: EntryHandleMutType::Ipc(Some(entry_handle_mut)),
+                    value_type_storage: self.value_type_storage.clone(),
                     value_type_details: self.value_type_details.clone(),
                 }
             }
@@ -64,6 +69,7 @@ impl EntryValue {
                 let entry_handle_mut = entry_value_uninit.discard();
                 EntryHandleMut {
                     value: EntryHandleMutType::Local(Some(entry_handle_mut)),
+                    value_type_storage: self.value_type_storage.clone(),
                     value_type_details: self.value_type_details.clone(),
                 }
             }

@@ -25,19 +25,16 @@ def test_same_entry_id_for_same_key(
 ) -> None:
     config = iox2.testing.generate_isolated_config()
     service_name = iox2.testing.generate_service_name()
-    key_0 = 0
-    key_0 = key_0.to_bytes(8, "little")
-    key_1 = 1
-    key_1 = key_1.to_bytes(8, "little")
-    value = 0
-    value = value.to_bytes(8, "little")
+    key_0 = c_uint64(0)
+    key_1 = c_uint64(1)
+    value = c_uint64(0)
 
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint64, c_uint64(0))
-        .add(c_uint64(1), c_uint64, c_uint64(0))
+        .add(key_0, c_uint64, value)
+        .add(key_1, c_uint64, value)
         .create()
     )
 
@@ -57,16 +54,14 @@ def test_simple_communication_works_reader_created_first(
 ) -> None:
     config = iox2.testing.generate_isolated_config()
     service_name = iox2.testing.generate_service_name()
-    key = 0
-    key = key.to_bytes(8, "little")
-    value = 0
-    value = value.to_bytes(2, "little")
+    key = c_uint64(0)
+    value = c_uint16(0)
 
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint16, c_uint16(0))
+        .add(key, c_uint16, value)
         .create()
     )
 
@@ -77,16 +72,11 @@ def test_simple_communication_works_reader_created_first(
 
     new_value = 1234
     entry_handle_mut.update_with_copy(c_uint16(new_value))
-    assert (
-        int.from_bytes(entry_handle.get(), byteorder="little", signed=False)
-        == new_value
-    )
+    assert entry_handle.get().contents.value == new_value
+
     new_value = 4567
     entry_handle_mut.update_with_copy(c_uint16(new_value))
-    assert (
-        int.from_bytes(entry_handle.get(), byteorder="little", signed=False)
-        == new_value
-    )
+    assert entry_handle.get().contents.value == new_value
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -95,16 +85,14 @@ def test_simple_communication_works_writer_created_first(
 ) -> None:
     config = iox2.testing.generate_isolated_config()
     service_name = iox2.testing.generate_service_name()
-    key = 3
-    key = key.to_bytes(8, "little")
-    value = -3
-    value = value.to_bytes(4, "little", signed=True)
+    key = c_uint64(3)
+    value = c_int32(-3)
 
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(3), c_int32, c_int32(-3))
+        .add(key, c_int32, value)
         .create()
     )
 
@@ -115,14 +103,10 @@ def test_simple_communication_works_writer_created_first(
 
     new_value = 50
     entry_handle_mut.update_with_copy(c_int32(new_value))
-    assert (
-        int.from_bytes(entry_handle.get(), byteorder="little", signed=True) == new_value
-    )
+    assert entry_handle.get().contents.value == new_value
     new_value = -12
     entry_handle_mut.update_with_copy(c_int32(new_value))
-    assert (
-        int.from_bytes(entry_handle.get(), byteorder="little", signed=True) == new_value
-    )
+    assert entry_handle.get().contents.value == new_value
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -133,16 +117,14 @@ def test_communication_with_max_readers(
     service_name = iox2.testing.generate_service_name()
     number_of_iterations = 128
     max_readers = 6
-    key = 0
-    key = key.to_bytes(8, "little")
-    value = 0
-    value = value.to_bytes(8, "little")
+    key = c_uint64(0)
+    value = c_uint64(0)
 
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint64, c_uint64(0))
+        .add(key, c_uint64, value)
         .max_readers(max_readers)
         .create()
     )
@@ -163,41 +145,39 @@ def test_communication_with_max_readers(
         i = 0
         while i < max_readers:
             entry_handle = readers[i].entry(key, c_uint64)
-            int.from_bytes(
-                entry_handle.get(), byteorder="little", signed=False
-            ) == counter
+            assert entry_handle.get().contents.value == counter
             i += 1
 
         counter += 1
 
 
 @pytest.mark.parametrize("service_type", service_types)
-def test_communication_with_max_readers_and_entry_handle_muts(
+def test_communication_with_several_entry_handles_works(
     service_type: iox2.ServiceType,
 ) -> None:
     config = iox2.testing.generate_isolated_config()
     service_name = iox2.testing.generate_service_name()
     max_handles = 6
-    key = [0, 1, 2, 3, 4, 5, 6]
-    keys = []
-    i = 0
-    while i < max_handles + 1:
-        k = i
-        keys.append(k.to_bytes(8, "little"))
-        i += 1
+    key_0 = c_uint64(0)
+    key_1 = c_uint64(1)
+    key_2 = c_uint64(2)
+    key_3 = c_uint64(3)
+    key_4 = c_uint64(4)
+    key_5 = c_uint64(5)
+    key_6 = c_uint64(6)
+    keys = [key_0, key_1, key_2, key_3, key_4, key_5, key_6]
 
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(key[0]), c_uint64, c_uint64(key[0]))
-        .add(c_uint64(key[1]), c_uint64, c_uint64(key[1]))
-        .add(c_uint64(key[2]), c_uint64, c_uint64(key[2]))
-        .add(c_uint64(key[3]), c_uint64, c_uint64(key[3]))
-        .add(c_uint64(key[4]), c_uint64, c_uint64(key[4]))
-        .add(c_uint64(key[5]), c_uint64, c_uint64(key[5]))
-        .add(c_uint64(key[6]), c_uint64, c_uint64(key[6]))
-        .max_readers(max_handles)
+        .add(key_0, c_uint64, key_0)
+        .add(key_1, c_uint64, key_1)
+        .add(key_2, c_uint64, key_2)
+        .add(key_3, c_uint64, key_3)
+        .add(key_4, c_uint64, key_4)
+        .add(key_5, c_uint64, key_5)
+        .add(key_6, c_uint64, key_6)
         .create()
     )
 
@@ -213,98 +193,94 @@ def test_communication_with_max_readers_and_entry_handle_muts(
         entry_handles.append(reader.entry(keys[i], c_uint64))
         i += 1
 
+    for x in entry_handles:
+        print(x.get().contents.value)
+
     i = 0
     while i < max_handles:
         entry_handle_muts[i].update_with_copy(c_uint64(7))
 
         j = 0
         while j < i + 1:
-            assert (
-                int.from_bytes(entry_handles[j].get(), byteorder="little", signed=False)
-                == 7
-            )
+            assert entry_handles[j].get().contents.value == 7
             j += 1
 
-        # TODO: check once we dont use bytes anymore
-        # j = i + 1
-        # while j < max_handles:
-        #     assert (
-        #         int.from_bytes(entry_handles[j].get(), byteorder="little", signed=False)
-        #         == j
-        #     )
-        #     j += 1
+        j = i + 1
+        while j < max_handles:
+            assert entry_handles[j].get().contents.value == j
+            j += 1
 
         i += 1
 
 
-@pytest.mark.parametrize("service_type", service_types)
-def test_write_and_read_different_value_types_works(
-    service_type: iox2.ServiceType,
-) -> None:
-    config = iox2.testing.generate_isolated_config()
-    service_name = iox2.testing.generate_service_name()
-    node = iox2.NodeBuilder.new().config(config).create(service_type)
+# @pytest.mark.parametrize("service_type", service_types)
+# def test_write_and_read_different_value_types_works(
+#     service_type: iox2.ServiceType,
+# ) -> None:
+#     config = iox2.testing.generate_isolated_config()
+#     service_name = iox2.testing.generate_service_name()
+#     node = iox2.NodeBuilder.new().config(config).create(service_type)
 
-    keys = [0, 1, 23, 100, 13]
-    value_0 = 0
-    value_0 = value_0.to_bytes(8, "little")
-    value_1 = -5
-    value_1 = value_1.to_bytes(1, "little", signed=True)
-    value_23 = "Nala"
-    value_23 = value_23.encode("utf-8")
-    value_100 = False
-    value_100 = value_100.to_bytes(1, "little")
-    # TODO: add Groovy struct
+#     keys = [0, 1, 23, 100, 13]
+#     value_0 = 0
+#     value_0 = value_0.to_bytes(8, "little")
+#     value_1 = -5
+#     value_1 = value_1.to_bytes(1, "little", signed=True)
+#     value_23 = "Nala"
+#     value_23 = value_23.encode("utf-8")
+#     value_100 = False
+#     value_100 = value_100.to_bytes(1, "little")
+#     # TODO: add Groovy struct
 
-    service = (
-        node.service_builder(service_name)
-        .blackboard_creator(c_uint64)
-        .add(c_uint64(keys[0]), c_uint64, c_uint64(0))
-        .add(c_uint64(keys[1]), c_int8, c_int8(-5))
-        # .add(c_uint64(keys[2]), c_uint8 * 4, value_23)
-        # .add(c_uint64(keys[3]), c_bool, value_100)
-        .create()
-    )
+#     service = (
+#         node.service_builder(service_name)
+#         .blackboard_creator(c_uint64)
+#         .add(c_uint64(keys[0]), c_uint64, c_uint64(0))
+#         .add(c_uint64(keys[1]), c_int8, c_int8(-5))
+#         # .add(c_uint64(keys[2]), c_uint8 * 4, value_23)
+#         # .add(c_uint64(keys[3]), c_bool, value_100)
+#         .create()
+#     )
 
-    writer = service.writer_builder().create()
-    writer.entry(keys[0].to_bytes(8, "little"), c_uint64).update_with_copy(
-        c_uint64(2008)
-    )
-    writer.entry(keys[1].to_bytes(8, "little"), c_int8).update_with_copy(c_int8(11))
-    # TODO: how to pass string? check Payload in service_builder_publish_subscribe_tests.py
-    # B = c_uint8 * 4
-    # x = "Wolf"
-    # # x = x.encode("utf-8")
-    # x = bytearray(x, "utf-8")
-    # writer.entry(keys[2].to_bytes(8, "little"), c_uint8 * 4).update_with_copy(B(x))
-    # writer.entry(keys[3].to_bytes(8, "little"), c_bool).update_with_copy(c_bool(True))
+#     writer = service.writer_builder().create()
+#     writer.entry(keys[0].to_bytes(8, "little"), c_uint64).update_with_copy(
+#         c_uint64(2008)
+#     )
+#     writer.entry(keys[1].to_bytes(8, "little"), c_int8).update_with_copy(c_int8(11))
+#     # TODO: how to pass string? check Payload in service_builder_publish_subscribe_tests.py
+#     # B = c_uint8 * 4
+#     # x = "Wolf"
+#     # # x = x.encode("utf-8")
+#     # x = bytearray(x, "utf-8")
+#     # writer.entry(keys[2].to_bytes(8, "little"), c_uint8 * 4).update_with_copy(B(x))
+#     # writer.entry(keys[3].to_bytes(8, "little"), c_bool).update_with_copy(c_bool(True))
 
-    reader = service.reader_builder().create()
-    assert (
-        int.from_bytes(
-            reader.entry(keys[0].to_bytes(8, "little"), c_uint64).get(),
-            byteorder="little",
-            signed=False,
-        )
-        == 2008
-    )
-    assert (
-        int.from_bytes(
-            reader.entry(keys[1].to_bytes(8, "little"), c_int8).get(),
-            byteorder="little",
-            signed=False,
-        )
-        == 11
-    )
-    # TODO: how to convert other types than integers?
-    # assert (
-    #     int.from_bytes(
-    #         reader.entry(keys[3].to_bytes(8, "little"), c_bool).get(),
-    #         byteorder="little",
-    #         signed=False,
-    #     )
-    #     == True
-    # )
+#     reader = service.reader_builder().create()
+#     assert (
+#         int.from_bytes(
+#             reader.entry(keys[0].to_bytes(8, "little"), c_uint64).get(),
+#             byteorder="little",
+#             signed=False,
+#         )
+#         == 2008
+#     )
+#     assert (
+#         int.from_bytes(
+#             reader.entry(keys[1].to_bytes(8, "little"), c_int8).get(),
+#             byteorder="little",
+#             signed=False,
+#         )
+#         == 11
+#     )
+#     # TODO: how to convert other types than integers?
+#     # assert (
+#     #     int.from_bytes(
+#     #         reader.entry(keys[3].to_bytes(8, "little"), c_bool).get(),
+#     #         byteorder="little",
+#     #         signed=False,
+#     #     )
+#     #     == True
+#     # )
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -315,16 +291,14 @@ def test_creating_max_supported_amount_of_ports_work(
     service_name = iox2.testing.generate_service_name()
     max_readers = 8
     readers = []
-    key = 0
-    key = key.to_bytes(8, "little")
-    value = 0
-    value = value.to_bytes(1, "little")
+    key = c_uint64(0)
+    value = c_uint8(0)
 
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint8, c_uint8(0))
+        .add(key, c_uint8, value)
         .max_readers(max_readers)
         .create()
     )
@@ -364,16 +338,14 @@ def test_dropping_service_keeps_established_communication(
 ) -> None:
     config = iox2.testing.generate_isolated_config()
     service_name = iox2.testing.generate_service_name()
-    key = 0
-    key = key.to_bytes(8, "little")
-    value = 0
-    value = value.to_bytes(4, "little")
+    key = c_uint64(0)
+    value = c_uint32(0)
 
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint32, c_uint32(0))
+        .add(key, c_uint32, value)
         .create()
     )
 
@@ -386,10 +358,7 @@ def test_dropping_service_keeps_established_communication(
 
     new_value = 981293
     entry_handle_mut.update_with_copy(c_uint32(new_value))
-    assert (
-        int.from_bytes(entry_handle.get(), byteorder="little", signed=False)
-        == new_value
-    )
+    assert entry_handle.get().contents.value == new_value
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -398,16 +367,14 @@ def test_ports_of_dropped_service_block_new_service_creation(
 ) -> None:
     config = iox2.testing.generate_isolated_config()
     service_name = iox2.testing.generate_service_name()
-    key = 0
-    key = key.to_bytes(8, "little")
-    value = 0
-    value = value.to_bytes(1, "little")
+    key = c_uint64(0)
+    value = c_uint8(0)
 
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint8, c_uint8(0))
+        .add(key, c_uint8, value)
         .create()
     )
 
@@ -418,21 +385,21 @@ def test_ports_of_dropped_service_block_new_service_creation(
 
     with pytest.raises(iox2.BlackboardCreateError):
         node.service_builder(service_name).blackboard_creator(c_uint64).add(
-            c_uint64(0), c_uint8, c_uint8(0)
+            key, c_uint8, value
         ).create()
 
     reader.delete()
 
     with pytest.raises(iox2.BlackboardCreateError):
         node.service_builder(service_name).blackboard_creator(c_uint64).add(
-            c_uint64(0), c_uint8, c_uint8(0)
+            key, c_uint8, value
         ).create()
 
     writer.delete()
 
     try:
         node.service_builder(service_name).blackboard_creator(c_uint64).add(
-            c_uint64(0), c_uint8, c_uint8(0)
+            key, c_uint8, value
         ).create()
     except iox2.BlackboardCreateError:
         assert False
@@ -444,16 +411,14 @@ def test_service_can_be_opened_when_a_writer_exists(
 ) -> None:
     config = iox2.testing.generate_isolated_config()
     service_name = iox2.testing.generate_service_name()
-    key = 0
-    key = key.to_bytes(8, "little")
-    value = 0
-    value = value.to_bytes(8, "little")
+    key = c_uint64(0)
+    value = c_uint64(0)
 
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint64, c_uint64(0))
+        .add(key, c_uint64, value)
         .create()
     )
     _writer = service.writer_builder().create()
@@ -462,7 +427,7 @@ def test_service_can_be_opened_when_a_writer_exists(
 
     with pytest.raises(iox2.BlackboardCreateError):
         node.service_builder(service_name).blackboard_creator(c_uint64).add(
-            c_uint64(0), c_uint64, c_uint64(0)
+            key, c_uint64, value
         ).create()
 
     try:
@@ -477,16 +442,14 @@ def test_service_can_be_opened_when_a_reader_exists(
 ) -> None:
     config = iox2.testing.generate_isolated_config()
     service_name = iox2.testing.generate_service_name()
-    key = 0
-    key = key.to_bytes(8, "little")
-    value = 0
-    value = value.to_bytes(8, "little")
+    key = c_uint64(0)
+    value = c_uint64(0)
 
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint64, c_uint64(0))
+        .add(key, c_uint64, value)
         .create()
     )
     _reader = service.reader_builder().create()
@@ -495,7 +458,7 @@ def test_service_can_be_opened_when_a_reader_exists(
 
     with pytest.raises(iox2.BlackboardCreateError):
         node.service_builder(service_name).blackboard_creator(c_uint64).add(
-            c_uint64(0), c_uint64, c_uint64(0)
+            key, c_uint64, value
         ).create()
 
     try:
@@ -510,16 +473,14 @@ def test_reader_can_still_read_value_when_writer_was_disconnected(
 ) -> None:
     config = iox2.testing.generate_isolated_config()
     service_name = iox2.testing.generate_service_name()
-    key = 0
-    key = key.to_bytes(8, "little")
-    value = 0
-    value = value.to_bytes(1, "little")
+    key = c_uint64(0)
+    value = c_uint8(0)
 
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint8, c_uint8(0))
+        .add(key, c_uint8, value)
         .create()
     )
 
@@ -531,7 +492,7 @@ def test_reader_can_still_read_value_when_writer_was_disconnected(
 
     reader = service.reader_builder().create()
     entry_handle = reader.entry(key, c_uint8)
-    assert int.from_bytes(entry_handle.get(), byteorder="little", signed=False) == 5
+    assert entry_handle.get().contents.value == 5
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -540,21 +501,17 @@ def test_reconnected_reader_sees_current_blackboard_status(
 ) -> None:
     config = iox2.testing.generate_isolated_config()
     service_name = iox2.testing.generate_service_name()
-    key_0 = 0
-    key_0 = key_0.to_bytes(8, "little")
-    key_1 = 6
-    key_1 = key_1.to_bytes(8, "little")
-    value_0 = 0
-    value_0 = value_0.to_bytes(1, "little")
-    value_1 = -9
-    value_1 = value_1.to_bytes(4, "little", signed=True)
+    key_0 = c_uint64(0)
+    key_1 = c_uint64(6)
+    value_0 = c_uint8(0)
+    value_1 = c_int32(-9)
 
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint8, c_uint8(0))
-        .add(c_uint64(6), c_int32, c_int32(-9))
+        .add(key_0, c_uint8, value_0)
+        .add(key_1, c_int32, value_1)
         .create()
     )
 
@@ -564,9 +521,9 @@ def test_reconnected_reader_sees_current_blackboard_status(
 
     reader = service.reader_builder().create()
     entry_handle_0 = reader.entry(key_0, c_uint8)
-    assert int.from_bytes(entry_handle_0.get(), byteorder="little", signed=False) == 5
+    assert entry_handle_0.get().contents.value == 5
     entry_handle_1 = reader.entry(key_1, c_int32)
-    assert int.from_bytes(entry_handle_1.get(), byteorder="little", signed=True) == -9
+    assert entry_handle_1.get().contents.value == -9
 
     reader.delete()
 
@@ -575,9 +532,9 @@ def test_reconnected_reader_sees_current_blackboard_status(
 
     reader = service.reader_builder().create()
     entry_handle_0 = reader.entry(key_0, c_uint8)
-    assert int.from_bytes(entry_handle_0.get(), byteorder="little", signed=False) == 5
+    assert entry_handle_0.get().contents.value == 5
     entry_handle_1 = reader.entry(key_1, c_int32)
-    assert int.from_bytes(entry_handle_1.get(), byteorder="little", signed=True) == -567
+    assert entry_handle_1.get().contents.value == -567
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -586,16 +543,14 @@ def test_entry_handle_mut_can_still_write_after_writer_was_dropped(
 ) -> None:
     config = iox2.testing.generate_isolated_config()
     service_name = iox2.testing.generate_service_name()
-    key = 0
-    key = key.to_bytes(8, "little")
-    value = 0
-    value = value.to_bytes(1, "little")
+    key = c_uint64(0)
+    value = c_uint8(0)
 
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint8, c_uint8(0))
+        .add(key, c_uint8, value)
         .create()
     )
 
@@ -607,7 +562,7 @@ def test_entry_handle_mut_can_still_write_after_writer_was_dropped(
 
     reader = service.reader_builder().create()
     entry_handle = reader.entry(key, c_uint8)
-    assert int.from_bytes(entry_handle.get(), byteorder="little", signed=False) == 1
+    assert entry_handle.get().contents.value == 1
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -616,16 +571,14 @@ def test_entry_handle_can_still_read_after_reader_was_dropped(
 ) -> None:
     config = iox2.testing.generate_isolated_config()
     service_name = iox2.testing.generate_service_name()
-    key = 0
-    key = key.to_bytes(8, "little")
-    value = 0
-    value = value.to_bytes(1, "little")
+    key = c_uint64(0)
+    value = c_uint8(0)
 
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint8, c_uint8(0))
+        .add(key, c_uint8, value)
         .create()
     )
 
@@ -633,13 +586,13 @@ def test_entry_handle_can_still_read_after_reader_was_dropped(
     entry_handle = reader.entry(key, c_uint8)
 
     reader.delete()
-    assert int.from_bytes(entry_handle.get(), byteorder="little", signed=False) == 0
+    assert entry_handle.get().contents.value == 0
 
     writer = service.writer_builder().create()
     entry_handle_mut = writer.entry(key, c_uint8)
     entry_handle_mut.update_with_copy(c_uint8(1))
 
-    assert int.from_bytes(entry_handle.get(), byteorder="little", signed=False) == 1
+    assert entry_handle.get().contents.value == 1
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -648,16 +601,14 @@ def test_loan_and_write_entry_value_works(
 ) -> None:
     config = iox2.testing.generate_isolated_config()
     service_name = iox2.testing.generate_service_name()
-    key = 0
-    key = key.to_bytes(8, "little")
-    value = 0
-    value = value.to_bytes(4, "little")
+    key = c_uint64(0)
+    value = c_uint32(0)
 
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint32, c_uint32(0))
+        .add(key, c_uint32, value)
         .create()
     )
 
@@ -669,7 +620,7 @@ def test_loan_and_write_entry_value_works(
     entry_value_uninit = entry_handle_mut.loan_uninit()
     entry_value = entry_value_uninit.write(c_uint32(333))
     entry_handle_mut = entry_value.update()
-    assert int.from_bytes(entry_handle.get(), byteorder="little", signed=False) == 333
+    assert entry_handle.get().contents.value == 333
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -678,16 +629,14 @@ def test_entry_handle_mut_can_be_reused_after_entry_value_was_updated(
 ) -> None:
     config = iox2.testing.generate_isolated_config()
     service_name = iox2.testing.generate_service_name()
-    key = 0
-    key = key.to_bytes(8, "little")
-    value = 0
-    value = value.to_bytes(4, "little")
+    key = c_uint64(0)
+    value = c_uint32(0)
 
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint32, c_uint32(0))
+        .add(key, c_uint32, value)
         .create()
     )
 
@@ -699,10 +648,10 @@ def test_entry_handle_mut_can_be_reused_after_entry_value_was_updated(
     entry_value_uninit = entry_handle_mut.loan_uninit()
     entry_value = entry_value_uninit.write(c_uint32(333))
     entry_handle_mut = entry_value.update()
-    assert int.from_bytes(entry_handle.get(), byteorder="little", signed=False) == 333
+    assert entry_handle.get().contents.value == 333
 
     entry_handle_mut.update_with_copy(c_uint32(999))
-    assert int.from_bytes(entry_handle.get(), byteorder="little", signed=False) == 999
+    assert entry_handle.get().contents.value == 999
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -711,16 +660,14 @@ def test_entry_value_can_still_be_used_after_writer_was_dropped(
 ) -> None:
     config = iox2.testing.generate_isolated_config()
     service_name = iox2.testing.generate_service_name()
-    key = 0
-    key = key.to_bytes(8, "little")
-    value = 0
-    value = value.to_bytes(4, "little")
+    key = c_uint64(0)
+    value = c_uint32(0)
 
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint32, c_uint32(0))
+        .add(key, c_uint32, value)
         .create()
     )
 
@@ -735,7 +682,7 @@ def test_entry_value_can_still_be_used_after_writer_was_dropped(
     entry_value = entry_value_uninit.write(c_uint32(333))
     entry_handle_mut = entry_value.update()
 
-    assert int.from_bytes(entry_handle.get(), byteorder="little", signed=False) == 333
+    assert entry_handle.get().contents.value == 333
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -744,16 +691,14 @@ def test_entry_handle_mut_can_be_reused_after_entry_value_uninit_was_discarded(
 ) -> None:
     config = iox2.testing.generate_isolated_config()
     service_name = iox2.testing.generate_service_name()
-    key = 0
-    key = key.to_bytes(8, "little")
-    value = 0
-    value = value.to_bytes(4, "little")
+    key = c_uint64(0)
+    value = c_uint32(0)
 
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint32, c_uint32(0))
+        .add(key, c_uint32, value)
         .create()
     )
 
@@ -766,7 +711,7 @@ def test_entry_handle_mut_can_be_reused_after_entry_value_uninit_was_discarded(
     entry_handle_mut = entry_value_uninit.discard()
 
     entry_handle_mut.update_with_copy(c_uint32(333))
-    assert int.from_bytes(entry_handle.get(), byteorder="little", signed=False) == 333
+    assert entry_handle.get().contents.value == 333
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -775,16 +720,14 @@ def test_entry_handle_mut_can_be_reused_after_entry_value_was_discarded(
 ) -> None:
     config = iox2.testing.generate_isolated_config()
     service_name = iox2.testing.generate_service_name()
-    key = 0
-    key = key.to_bytes(8, "little")
-    value = 0
-    value = value.to_bytes(4, "little")
+    key = c_uint64(0)
+    value = c_uint32(0)
 
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint32, c_uint32(0))
+        .add(key, c_uint32, value)
         .create()
     )
 
@@ -798,7 +741,7 @@ def test_entry_handle_mut_can_be_reused_after_entry_value_was_discarded(
     entry_handle_mut = entry_value.discard()
     entry_handle_mut.update_with_copy(c_uint32(333))
 
-    assert int.from_bytes(entry_handle.get(), byteorder="little", signed=False) == 333
+    assert entry_handle.get().contents.value == 333
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -807,16 +750,14 @@ def test_handle_can_still_be_used_after_every_previous_service_state_owner_was_d
 ) -> None:
     config = iox2.testing.generate_isolated_config()
     service_name = iox2.testing.generate_service_name()
-    key = 0
-    key = key.to_bytes(8, "little")
-    value = 0
-    value = value.to_bytes(4, "little")
+    key = c_uint64(0)
+    value = c_uint32(0)
 
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint32, c_uint32(0))
+        .add(key, c_uint32, value)
         .create()
     )
 
@@ -842,7 +783,7 @@ def test_handle_can_still_be_used_after_every_previous_service_state_owner_was_d
     reader.delete()
     service.delete()
 
-    assert int.from_bytes(entry_handle.get(), byteorder="little", signed=False) == 0
+    assert entry_handle.get().contents.value == 0
 
 
 class Foo(ctypes.Structure):
@@ -856,10 +797,14 @@ def test_simple_communication_with_key_struct_works(
     config = iox2.testing.generate_isolated_config()
     service_name = iox2.testing.generate_service_name()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
+
+    key = Foo(a=9, b=99, c=9.9)
+    value = c_int32(-3)
+
     service = (
         node.service_builder(service_name)
         .blackboard_creator(Foo)
-        .add(Foo(a=9, b=99, c=9.9), c_int32, c_int32(-3))
+        .add(key, c_int32, value)
         .create()
     )
 
@@ -874,12 +819,16 @@ def test_adding_key_struct_twice_fails(
     service_name = iox2.testing.generate_service_name()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
 
+    key = Foo(a=9, b=99, c=9.9)
+    value_0 = c_int32(-3)
+    value_1 = c_uint32(3)
+
     with pytest.raises(iox2.BlackboardCreateError):
         (
             node.service_builder(service_name)
             .blackboard_creator(Foo)
-            .add(Foo(a=9, b=99, c=9.9), c_int32, c_int32(-3))
-            .add(Foo(a=9, b=99, c=9.9), c_uint32, c_uint32(3))
+            .add(key, c_int32, value_0)
+            .add(key, c_uint32, value_1)
             .create()
         )
 

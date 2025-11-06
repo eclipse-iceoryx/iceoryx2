@@ -13,7 +13,7 @@
 """Strong type safe extensions for the blackboard messaging pattern."""
 
 import ctypes
-from typing import Type, TypeVar
+from typing import Any, Type, TypeVar
 
 from ._iceoryx2 import *
 from .type_name import get_type_name
@@ -72,6 +72,7 @@ def add(
     value: Type[T],
 ) -> ServiceBuilderBlackboardCreator:
     """Adds a key-value pair to the blackboard."""
+    # TODO: state that key and value must live long enough
     assert self.__key_type_details is not None
     assert ctypes.sizeof(key) == ctypes.sizeof(self.__key_type_details)
     assert ctypes.alignment(key) == ctypes.alignment(self.__key_type_details)
@@ -96,41 +97,59 @@ def add(
     )
 
 
-def entry(self: Reader, key: bytes, value: Type[T]) -> EntryHandle:
+def entry_handle(self: Reader, key: Type[T], value: Type[T]) -> EntryHandle:
     """Creates an EntryHandle for direct read access to the value. On failure
     it returns `EntryHandleError` describing the failure."""
+    assert self.__key_type_details is not None
+    assert ctypes.sizeof(key) == ctypes.sizeof(self.__key_type_details)
+    assert ctypes.alignment(key) == ctypes.alignment(self.__key_type_details)
+
     type_name = get_type_name(value)
     type_size = ctypes.sizeof(value)
     type_align = ctypes.alignment(value)
     type_variant = TypeVariant.FixedSize
 
-    return self.__entry(
-        key,
+    entry_handle = self.__entry(
+        ctypes.addressof(key),
         TypeDetail.new()
         .type_variant(type_variant)
         .type_name(TypeName.new(type_name))
         .size(type_size)
         .alignment(type_align),
     )
+    entry_handle.__set_value_type(value)
+    return entry_handle
 
 
-def entry(self: Writer, key: bytes, value: Type[T]) -> EntryHandleMut:
+def get(self: EntryHandle) -> Any:
+    """Returna a copy of the value."""
+    value_ptr = self.__get()
+    return ctypes.cast(value_ptr, ctypes.POINTER(self.__value_type))
+
+
+def entry_handle_mut(self: Writer, key: Type[T], value: Type[T]) -> EntryHandleMut:
     """Creates an EntryHandleMut for direct write access to the value. There
     can be only one EntryHandleMut per value. On failure it returns
     `EntryHandleMutError` describing the failure."""
+    assert self.__key_type_details is not None
+    assert ctypes.sizeof(key) == ctypes.sizeof(self.__key_type_details)
+    assert ctypes.alignment(key) == ctypes.alignment(self.__key_type_details)
+
     type_name = get_type_name(value)
     type_size = ctypes.sizeof(value)
     type_align = ctypes.alignment(value)
     type_variant = TypeVariant.FixedSize
 
-    return self.__entry(
-        key,
+    entry_handle_mut = self.__entry(
+        ctypes.addressof(key),
         TypeDetail.new()
         .type_variant(type_variant)
         .type_name(TypeName.new(type_name))
         .size(type_size)
         .alignment(type_align),
     )
+    entry_handle_mut.__set_value_type(value)
+    return entry_handle_mut
 
 
 def update_with_copy(self: EntryHandleMut, value: Type[T]):
@@ -146,25 +165,26 @@ def update_with_copy(self: EntryHandleMut, value: Type[T]):
 def write(self: EntryValueUninit, value: Type[T]) -> EntryValue:
     """Consumes the EntryValueUninit, writes values to the entry
     value and returns the initialized EntryValue."""
+    assert self.__value_type is not None
     type_size = ctypes.sizeof(value)
-    # TODO: reintroduce TypeStorage somewhere, check type safety in other functions
-    # assert self.__value_type_details is not None
-    # assert ctypes.sizeof(value) == ctypes.sizeof(self.__value_type_details)
-    # assert ctypes.alignment(value) == ctypes.alignment(self.__value_type_details)
+    assert type_size == ctypes.sizeof(self.__value_type)
+    assert ctypes.alignment(value) == ctypes.alignment(self.__value_type)
 
     write_cell = self.__get_write_cell()
     ctypes.memmove(write_cell, ctypes.byref(value), type_size)
     return self.__assume_init()
 
 
+EntryHandle.get = get
+
 EntryHandleMut.update_with_copy = update_with_copy
 
 EntryValueUninit.write = write
 
-Reader.entry = entry
+Reader.entry = entry_handle
 
 ServiceBuilder.blackboard_creator = blackboard_creator
 ServiceBuilder.blackboard_opener = blackboard_opener
 ServiceBuilderBlackboardCreator.add = add
 
-Writer.entry = entry
+Writer.entry = entry_handle_mut

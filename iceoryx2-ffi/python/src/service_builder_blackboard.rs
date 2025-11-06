@@ -12,7 +12,6 @@
 
 use iceoryx2::service::builder::CustomKeyMarker;
 use pyo3::prelude::*;
-use pyo3::types::PyBytes;
 
 use crate::attribute_specifier::AttributeSpecifier;
 use crate::attribute_verifier::AttributeVerifier;
@@ -46,28 +45,28 @@ pub(crate) enum ServiceBuilderBlackboardOpenerType {
 /// Builder to create new `MessagingPattern::Blackboard` based `Service`s
 pub struct ServiceBuilderBlackboardCreator {
     pub(crate) value: ServiceBuilderBlackboardCreatorType,
-    pub key_type_details: TypeStorage,
+    pub key_type_storage: TypeStorage,
 }
 
 impl ServiceBuilderBlackboardCreator {
     pub(crate) fn new(value: ServiceBuilderBlackboardCreatorType) -> Self {
         Self {
             value,
-            key_type_details: TypeStorage::new(),
+            key_type_storage: TypeStorage::new(),
         }
     }
 
     fn clone_ipc(&self, builder: IpcCreator) -> Self {
         Self {
             value: ServiceBuilderBlackboardCreatorType::Ipc(builder),
-            key_type_details: self.key_type_details.clone(),
+            key_type_storage: self.key_type_storage.clone(),
         }
     }
 
     fn clone_local(&self, builder: LocalCreator) -> Self {
         Self {
             value: ServiceBuilderBlackboardCreatorType::Local(builder),
-            key_type_details: self.key_type_details.clone(),
+            key_type_storage: self.key_type_storage.clone(),
         }
     }
 }
@@ -76,11 +75,11 @@ impl ServiceBuilderBlackboardCreator {
 impl ServiceBuilderBlackboardCreator {
     #[getter]
     pub fn __key_type_details(&self) -> Option<Py<PyAny>> {
-        self.key_type_details.clone().value
+        self.key_type_storage.clone().value
     }
 
     pub fn __set_key_type(&mut self, value: PyObject) {
-        self.key_type_details.value = Some(value)
+        self.key_type_storage.value = Some(value)
     }
 
     pub fn __set_key_type_details(&self, value: &TypeDetail) -> Self {
@@ -166,7 +165,7 @@ impl ServiceBuilderBlackboardCreator {
                         this.create()
                             .map_err(|e| BlackboardCreateError::new_err(format!("{e:?}")))?,
                     )),
-                    self.key_type_details.clone(),
+                    self.key_type_storage.clone(),
                 ))
             }
             ServiceBuilderBlackboardCreatorType::Local(v) => {
@@ -176,7 +175,7 @@ impl ServiceBuilderBlackboardCreator {
                         this.create()
                             .map_err(|e| BlackboardCreateError::new_err(format!("{e:?}")))?,
                     )),
-                    self.key_type_details.clone(),
+                    self.key_type_storage.clone(),
                 ))
             }
         }
@@ -194,7 +193,7 @@ impl ServiceBuilderBlackboardCreator {
                         this.create_with_attributes(&attributes.0)
                             .map_err(|e| BlackboardCreateError::new_err(format!("{e:?}")))?,
                     )),
-                    self.key_type_details.clone(),
+                    self.key_type_storage.clone(),
                 ))
             }
             ServiceBuilderBlackboardCreatorType::Local(v) => {
@@ -204,7 +203,7 @@ impl ServiceBuilderBlackboardCreator {
                         this.create_with_attributes(&attributes.0)
                             .map_err(|e| BlackboardCreateError::new_err(format!("{e:?}")))?,
                     )),
-                    self.key_type_details.clone(),
+                    self.key_type_storage.clone(),
                 ))
             }
         }

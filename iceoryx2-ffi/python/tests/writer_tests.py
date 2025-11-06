@@ -25,14 +25,12 @@ def test_handle_can_be_acquired_for_existing_key_value_pair(
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
-    key = 0
-    key = key.to_bytes(8, "little")
-    value = 0
-    value = value.to_bytes(8, "little")
+    key = c_uint64(0)
+    value = c_uint64(0)
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint64, c_uint64(0))
+        .add(key, c_uint64, value)
         .create()
     )
 
@@ -51,20 +49,17 @@ def test_handle_cannot_be_acquired_for_non_existing_key(
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
-    key = 0
-    key = key.to_bytes(8, "little")
-    value = 0
-    value = value.to_bytes(8, "little")
+    key = c_uint64(0)
+    value = c_uint64(0)
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint64, c_uint64(0))
+        .add(key, c_uint64, value)
         .create()
     )
 
     writer = service.writer_builder().create()
-    invalid_key = 9
-    invalid_key = invalid_key.to_bytes(8, "little")
+    invalid_key = c_uint64(9)
     with pytest.raises(iox2.EntryHandleMutError):
         writer.entry(invalid_key, c_uint64)
 
@@ -76,22 +71,18 @@ def test_handle_cannot_be_acquired_for_wrong_value_type(
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
-    key = 0
-    key = key.to_bytes(8, "little")
-    value = 0
-    value = value.to_bytes(8, "little")
+    key = c_uint64(0)
+    value = c_uint64(0)
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint64, c_uint64(0))
+        .add(key, c_uint64, value)
         .create()
     )
 
     writer = service.writer_builder().create()
-    invalid_key = 0
-    invalid_key = invalid_key.to_bytes(8, "little")
     with pytest.raises(iox2.EntryHandleMutError):
-        writer.entry(invalid_key, c_int64)
+        writer.entry(key, c_int64)
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -101,14 +92,12 @@ def test_entry_handle_mut_cannot_be_acquired_twice(
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
-    key = 0
-    key = key.to_bytes(8, "little")
-    value = 0
-    value = value.to_bytes(8, "little")
+    key = c_uint64(0)
+    value = c_uint64(0)
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint64, c_uint64(0))
+        .add(key, c_uint64, value)
         .create()
     )
 
@@ -131,14 +120,12 @@ def test_entry_handle_mut_prevents_another_writer(
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
-    key = 0
-    key = key.to_bytes(1, "little")
-    value = 0
-    value = value.to_bytes(4, "little")
+    key = c_uint8(0)
+    value = c_int32(0)
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint8)
-        .add(c_uint8(0), c_int32, c_int32(0))
+        .add(key, c_int32, value)
         .create()
     )
 
@@ -158,14 +145,12 @@ def test_entry_value_can_still_be_used_after_every_previous_service_state_owner_
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
-    key = 0
-    key = key.to_bytes(8, "little")
-    value = 0
-    value = value.to_bytes(4, "little")
+    key = c_uint64(0)
+    value = c_uint32(0)
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint32, c_uint32(0))
+        .add(key, c_uint32, value)
         .create()
     )
 
@@ -190,14 +175,12 @@ def test_deleting_writer_removes_it_from_the_service(
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
-    key = 0
-    key = key.to_bytes(8, "little")
-    value = 0
-    value = value.to_bytes(4, "little")
+    key = c_uint64(0)
+    value = c_uint32(0)
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint32, c_uint32(0))
+        .add(key, c_uint32, value)
         .create()
     )
 

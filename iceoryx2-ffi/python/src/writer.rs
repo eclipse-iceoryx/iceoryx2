@@ -13,7 +13,6 @@
 use iceoryx2::service::builder::CustomKeyMarker;
 use iceoryx2_bb_log::fatal_panic;
 use pyo3::prelude::*;
-use pyo3::types::PyBytes;
 
 use crate::entry_handle_mut::{EntryHandleMut, EntryHandleMutType};
 use crate::error::EntryHandleMutError;
@@ -31,11 +30,16 @@ pub(crate) enum WriterType {
 /// Represents the writing endpoint of a blackboard based communication.
 pub struct Writer {
     pub(crate) value: Parc<WriterType>,
-    pub(crate) key_type_details: TypeStorage, // TODO: needed?
+    pub(crate) key_type_storage: TypeStorage,
 }
 
 #[pymethods]
 impl Writer {
+    #[getter]
+    pub fn __key_type_details(&self) -> Option<Py<PyAny>> {
+        self.key_type_storage.clone().value
+    }
+
     #[getter]
     /// Returns the `UniqueWriterId` of the `Writer`
     pub fn id(&self) -> UniqueWriterId {
@@ -50,40 +54,33 @@ impl Writer {
     /// Creates an `EntryHandleMut` for direct write access to the value. There can be only one
     /// `EntryHandleMut` per value. On failure it returns `EntryHandleMutError` describing the
     /// failure.
-    pub fn __entry(
-        &self,
-        key: PyObject,
-        value_type_details: TypeDetail,
-    ) -> PyResult<EntryHandleMut> {
-        Python::with_gil(|py| {
-            let key = key.downcast_bound::<PyBytes>(py).unwrap(); // TODO: error handling
-            let key = key.as_bytes();
-
-            match &*self.value.lock() {
-                WriterType::Ipc(Some(v)) => {
-                    let entry_handle = unsafe {
-                        v.__internal_entry(key.as_ptr(), &value_type_details.0)
-                            .map_err(|e| EntryHandleMutError::new_err(format!("{e:?}")))?
-                    };
-                    Ok(EntryHandleMut {
-                        value: EntryHandleMutType::Ipc(Some(entry_handle)),
-                        value_type_details,
-                    })
-                }
-                WriterType::Local(Some(v)) => {
-                    let entry_handle = unsafe {
-                        v.__internal_entry(key.as_ptr(), &value_type_details.0)
-                            .map_err(|e| EntryHandleMutError::new_err(format!("{e:?}")))?
-                    };
-                    Ok(EntryHandleMut {
-                        value: EntryHandleMutType::Local(Some(entry_handle)),
-                        value_type_details,
-                    })
-                }
-                _ => fatal_panic!(from "Writer::entry()",
-                    "Accessing a deleted writer."),
+    pub fn __entry(&self, key: usize, value_type_details: TypeDetail) -> PyResult<EntryHandleMut> {
+        match &*self.value.lock() {
+            WriterType::Ipc(Some(v)) => {
+                let entry_handle = unsafe {
+                    v.__internal_entry(key as *const u8, &value_type_details.0)
+                        .map_err(|e| EntryHandleMutError::new_err(format!("{e:?}")))?
+                };
+                Ok(EntryHandleMut {
+                    value: EntryHandleMutType::Ipc(Some(entry_handle)),
+                    value_type_storage: TypeStorage::new(),
+                    value_type_details,
+                })
             }
-        })
+            WriterType::Local(Some(v)) => {
+                let entry_handle = unsafe {
+                    v.__internal_entry(key as *const u8, &value_type_details.0)
+                        .map_err(|e| EntryHandleMutError::new_err(format!("{e:?}")))?
+                };
+                Ok(EntryHandleMut {
+                    value: EntryHandleMutType::Local(Some(entry_handle)),
+                    value_type_storage: TypeStorage::new(),
+                    value_type_details,
+                })
+            }
+            _ => fatal_panic!(from "Writer::entry()",
+                    "Accessing a deleted writer."),
+        }
     }
 
     /// Releases the `Writer`.

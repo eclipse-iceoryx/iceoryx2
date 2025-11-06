@@ -51,14 +51,14 @@ pub(crate) enum PortFactoryBlackboardType {
 #[pyclass]
 pub struct PortFactoryBlackboard {
     pub(crate) value: Parc<PortFactoryBlackboardType>,
-    key_type_details: TypeStorage,
+    key_type_storage: TypeStorage,
 }
 
 impl PortFactoryBlackboard {
-    pub(crate) fn new(value: PortFactoryBlackboardType, key_type_details: TypeStorage) -> Self {
+    pub(crate) fn new(value: PortFactoryBlackboardType, key_type_storage: TypeStorage) -> Self {
         Self {
             value: Parc::new(value),
-            key_type_details,
+            key_type_storage,
         }
     }
 }
@@ -162,12 +162,12 @@ impl PortFactoryBlackboard {
 
     /// Returns a `PortFactoryWriter` to create a new `Writer` port
     pub fn writer_builder(&self) -> PortFactoryWriter {
-        PortFactoryWriter::new(self.value.clone(), self.key_type_details.clone())
+        PortFactoryWriter::new(self.value.clone(), self.key_type_storage.clone())
     }
 
     /// Returns a `PortFactoryReader` to create a new `Reader` port
     pub fn reader_builder(&self) -> PortFactoryReader {
-        PortFactoryReader::new(self.value.clone(), self.key_type_details.clone())
+        PortFactoryReader::new(self.value.clone(), self.key_type_storage.clone())
     }
 
     /// Releases the `PortFactoryBlackboard`.

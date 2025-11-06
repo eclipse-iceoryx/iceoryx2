@@ -19,6 +19,7 @@ use crate::entry_value_uninit::{EntryValueUninit, EntryValueUninitType};
 use crate::event_id::EventId;
 use crate::parc::Parc;
 use crate::type_detail::TypeDetail;
+use crate::type_storage::TypeStorage;
 
 pub(crate) enum EntryHandleMutType {
     Ipc(Option<iceoryx2::port::writer::__InternalEntryHandleMut<crate::IpcService>>), // TODO: Option?
@@ -30,13 +31,18 @@ pub(crate) enum EntryHandleMutType {
 pub struct EntryHandleMut {
     pub(crate) value: EntryHandleMutType, // TODO: better name
     // pub(crate) value: Parc<EntryHandleMutType>,
+    pub(crate) value_type_storage: TypeStorage,
     pub(crate) value_type_details: TypeDetail,
 }
 
 #[pymethods]
 impl EntryHandleMut {
+    pub fn __set_value_type(&mut self, value: PyObject) {
+        self.value_type_storage.value = Some(value)
+    }
+
     #[getter]
-    pub fn __value_type_details(&self) -> TypeDetail {
+    pub fn __value_type(&self) -> TypeDetail {
         self.value_type_details.clone()
     }
 
@@ -80,9 +86,11 @@ impl EntryHandleMut {
                 EntryValueUninit {
                     // value: EntryValueUninitType::Ipc(Some(entry_value_uninit)),
                     // value_type_details: self.value_type_details.clone(),
+                    value_type_storage: self.value_type_storage.clone(),
                     entry_value: EntryValue {
                         value: EntryValueType::Ipc(Some(entry_value_uninit)),
                         value_type_details: self.value_type_details.clone(),
+                        value_type_storage: self.value_type_storage.clone(),
                     },
                 }
             }
@@ -95,9 +103,11 @@ impl EntryHandleMut {
                 EntryValueUninit {
                     // value: EntryValueUninitType::Local(Some(entry_value_uninit)),
                     // value_type_details: self.value_type_details.clone(),
+                    value_type_storage: self.value_type_storage.clone(),
                     entry_value: EntryValue {
                         value: EntryValueType::Local(Some(entry_value_uninit)),
                         value_type_details: self.value_type_details.clone(),
+                        value_type_storage: self.value_type_storage.clone(),
                     },
                 }
             }
