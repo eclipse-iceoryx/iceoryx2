@@ -1,24 +1,35 @@
 # Frequently Asked Questions
 
-## Encountered a SEGFAULT. What Kind Of Data Types Can Be Transmitted Via iceoryx2
+* [Tips and Tricks](#tips-and-tricks)
+  * [How To Define Custom Data Types](#how-to-define-custom-data-types)
+  * [Send Dynamic Data](#send-dynamic-data)
+  * [Inter-Thread Communication](#inter-thread-communication)
+  * [Interop Between 32-bit and 64-bit Processes](#interop-between-32-bit-and-64-bit-processes)
+  * [Docker](#docker)
+  * [Async API](#async-api)
+  * [Change Log Backend](#change-log-backend)
+  * [Supported Log Levels](#supported-log-levels)
+* [Error Handling](#error-handling)
+  * [Something Is Broken, How To Enable Debug Output](#something-is-broken-how-to-enable-debug-output)
+  * [Encountered a SEGFAULT](#encountered-a-segfault)
+  * [Stack Overflow](#stack-overflow)
+  * [100% CPU Load When Using The WaitSet](#100-cpu-load-when-using-the-waitset)
+  * [SIGBUS Error](#sigbus-error)
+  * [`PublishSubscribeOpenError(UnableToOpenDynamicServiceInformation)`](#publishsubscribeopenerrorunabletoopendynamicserviceinformation)
+  * [Remove Stale Resources](#remove-stale-resources)
+  * [Run Out-Of-Memory](#run-out-of-memory)
+  * [Internal Failure](#internal-failure)
+    * [Maximum File-Descriptor Limit Exceeded](#maximum-file-descriptor-limit-exceeded)
+  * [Losing Data](#losing-data)
+  * [Losing Dynamic Data](#losing-dynamic-data)
+  * [`iceoryx2-ffi-c` does not contain this feature: libc_platform](#iceoryx2-ffi-c-does-not-contain-this-feature-libc_platform)
+  * [Service In Corrupted state](#service-in-corrupted-state)
 
-iceoryx2 stores all data in shared memory, which imposes certain restrictions.
-Only data that is self-contained and does not use pointers to reference itself
-is allowed. This is because shared memory is mapped at different offsets in each
-process, rendering absolute pointers invalid. Additionally, if the data
-structure uses the heap, it is stored locally within a process and cannot be
-accessed by other processes. As a result, data types such as `String`, `Vec`, or
-`HashMap` cannot be used as payload types.
+## Tips And Tricks
 
-Additionally, every data type must be annotated with `#[repr(C)]`. The Rust
-compiler may reorder the members of a struct, which can lead to undefined
-behavior if another process expects a different ordering.
+### How To Define Custom Data Types
 
-To address this, iceoryx2 provides shared-memory-compatible data types. You can
-refer to the [complex data types example](examples/rust/complex_data_types),
-which demonstrates the use of `FixedSizeByteString` and `FixedSizeVec`.
-
-## How To Define Custom Data Types (Rust)
+#### Rust
 
 1. Ensure to only use data types suitable for shared memory communication like
    pod-types (plain old data, e.g. `u64`, `f32`, ...) or explicitly
@@ -46,7 +57,7 @@ which demonstrates the use of `FixedSizeByteString` and `FixedSizeVec`.
    but when the last user is a receiver it is not able to mutate the
    memory and therefore cannot call drop on it.
 
-## How To Define Custom Data Types (C++)
+#### C++
 
 1. Ensure to only use data types suitable for shared memory communication like
    pod-types (plain old data, e.g. `uint64_t`, `int32_t`, ...) or explicitly
@@ -64,12 +75,12 @@ which demonstrates the use of `FixedSizeByteString` and `FixedSizeVec`.
    but when the last user is a receiver it is not able to mutate the
    memory and therefore cannot call drop on it.
 
-## How To Send Data Where The Size Is Unknown At Compilation-Time?
+### Send Dynamic Data
 
 Take a look at the
 [publish-subscribe dynamic data size example](examples/rust/publish_subscribe_dynamic_data).
 
-## How To Use iceoryx2 For Inter-Thread Communication (As MPMC Queue Alternative)
+### Inter-Thread Communication
 
 iceoryx2 provides service variants optimized for different use cases. One such
 variant is the local variant, which relies solely on mechanisms restricted to
@@ -116,7 +127,7 @@ service variant from `Local` to `Ipc`.
   }
   ```
 
-### Example
+#### Example
 
 Take a look at the local_pubsub file in the
 
@@ -125,50 +136,13 @@ Take a look at the local_pubsub file in the
 * [Python service variants example](examples/python/service_variants)
 * [Rust service variants example](examples/rust/service_variants)
 
-## How To Make 32-bit and 64-bit iceoryx2 Applications Interoperatable
+### Interop Between 32-bit And 64-bit Processes
 
 This is currently not possible since we cannot guarantee to have the same layout
 of the data structures in the shared memory. On 32-bit architectures 64-bit POD
 are aligned to a 4 byte boundary but to a 8 byte boundary on 64-bit
 architectures. Some additional work is required to make 32-bit and 64-bit
 applications interoperabel.
-
-## My Transmission Type Is Too Large, Encounter Stack Overflow On Initialization
-
-Take a look at the
-[complex data types example](examples/rust/complex_data_types).
-
-In this example the `PlacementDefault` trait is introduced that allows in place
-initialization and solves the stack overflow issue when the data type is larger
-than the available stack size.
-
-## 100% CPU Load When Using The WaitSet
-
-The WaitSet wakes up whenever an attachment, such as a `Listener` or a `socket`,
-has something to read. If you do not handle all notifications, for example, with
-`Listener::try_wait_one()`, the WaitSet will wake up immediately again,
-potentially causing an infinite loop and resulting in 100% CPU usage.
-
-## `SIGBUS` Error
-
-This error is usually caused by insufficient memory. When iceoryx2 allocates
-shared memory, the operating system can overcommit by allocating more memory
-than is physically available. As soon as the process actually accesses this
-overcommitted memory, a `SIGBUS` signal is raised. This can occur with both
-fixed-size and dynamic messages such as slices.
-
-When using dynamic messages, the error may appear later, once your data size
-grows and iceoryx2 needs to reallocate memory. For this reason, you should
-avoid relying on dynamic memory in critical systems.
-
-### Check
-
-You can check how much memory iceoryx2 is currently using by inspecting the
-shared memory objects in /dev/shm:
-
-```sh
-du -sh /dev/shm
-```
 
 ### Docker
 
@@ -179,34 +153,14 @@ scenario.
 The shared memory size can be adjusted with the `--shm-size=` parameter, see:
 [https://docs.docker.com/engine/containers/run/#runtime-constraints-on-resources](https://docs.docker.com/engine/containers/run/#runtime-constraints-on-resources)
 
-## Does iceoryx2 Offer an Async API?
+### Async API
 
-No, but it is
+Currently, iceoryx2 does not provide an async API but it is
 [on our roadmap](https://github.com/eclipse-iceoryx/iceoryx2/issues/47).
 However, we offer an event-based API to implement push notifications. For more
 details, see the [event example](examples/rust/event).
 
-## Application does not remove services/ports on shutdown or several application restarts lead to port count exceeded
-
-The structs of iceoryx2 need to be able to cleanup all resources when they go
-out of scope. This is not the case when the application is:
-
-* killed with the sigkill signal (`kill -9`)
-* the `SIGTERM` signal is not explicitly handled
-
-iceoryx2 already provides a mechanism that registers a signal handler that
-handles termination requests gracefully, see
-[publish subscribe example](examples/rust/publish_subscribe) and
-
-```rust
-while node.wait(CYCLE_TIME).is_ok() {
-  // user code
-}
-```
-
-But you can also use a crate like [ctrlc](https://docs.rs/ctrlc/latest/ctrlc/).
-
-## How to use `log` or `tracing` as default log backend
+### Change Log Backend
 
 * **log**, add the feature flag `logger_log` to the dependency in `Cargo.toml`
   ```toml
@@ -218,12 +172,14 @@ But you can also use a crate like [ctrlc](https://docs.rs/ctrlc/latest/ctrlc/).
    iceoryx2 = { version = "0.1.0", features = ["logger_tracing"]}
   ```
 
-## Supported log levels
+### Supported Log Levels
 
 iceoryx2 supports different log levels
-`trace, debug, info, warning, error, fatal`
+`trace`, `debug`, `info`, `warning`, `error`, `fatal`
 
-## How to set the log level
+## Error Handling
+
+### Something Is Broken, How To Enable Debug Output
 
 iceoryx2 provides different APIs which can be used to set the log level
 directly in the code or read the configured log level by environment variable
@@ -254,7 +210,67 @@ set_log_level(LogLevel::Trace);
 `.cargo/config.toml`, but this can be over-ridden by using the APIs that reads
 environment variable `IOX2_LOG_LEVEL` or set the log level directly in the code.
 
-## A crash leads to the failure `PublishSubscribeOpenError(UnableToOpenDynamicServiceInformation)`
+### Encountered a SEGFAULT
+
+**What Kind Of Data Types Can Be Transmitted Via iceoryx2?**
+
+iceoryx2 stores all data in shared memory, which imposes certain restrictions.
+Only data that is self-contained and does not use pointers to reference itself
+is allowed. This is because shared memory is mapped at different offsets in each
+process, rendering absolute pointers invalid. Additionally, if the data
+structure uses the heap, it is stored locally within a process and cannot be
+accessed by other processes. As a result, data types such as `String`, `Vec`, or
+`HashMap` cannot be used as payload types.
+
+Additionally, every data type must be annotated with `#[repr(C)]`. The Rust
+compiler may reorder the members of a struct, which can lead to undefined
+behavior if another process expects a different ordering.
+
+To address this, iceoryx2 provides shared-memory-compatible data types. You can
+refer to the [complex data types example](examples/rust/complex_data_types),
+which demonstrates the use of `FixedSizeByteString` and `FixedSizeVec`.
+
+### Stack Overflow
+
+Most likely your payload type is too large and you need to construct the type
+in-place of the shared memory.
+
+Take a look at the
+[complex data types example](examples/rust/complex_data_types).
+
+In this example the `PlacementDefault` trait is introduced that allows in place
+initialization and solves the stack overflow issue when the data type is larger
+than the available stack size.
+
+### 100% CPU Load When Using The WaitSet
+
+The WaitSet wakes up whenever an attachment, such as a `Listener` or a `socket`,
+has something to read. If you do not handle all notifications, for example, with
+`Listener::try_wait_one()`, the WaitSet will wake up immediately again,
+potentially causing an infinite loop and resulting in 100% CPU usage.
+
+### SIGBUS Error
+
+This error is usually caused by insufficient memory. When iceoryx2 allocates
+shared memory, the operating system can overcommit by allocating more memory
+than is physically available. As soon as the process actually accesses this
+overcommitted memory, a `SIGBUS` signal is raised. This can occur with both
+fixed-size and dynamic messages such as slices.
+
+When using dynamic messages, the error may appear later, once your data size
+grows and iceoryx2 needs to reallocate memory. For this reason, you should
+avoid relying on dynamic memory in critical systems.
+
+#### Check
+
+You can check how much memory iceoryx2 is currently using by inspecting the
+shared memory objects in /dev/shm:
+
+```sh
+du -sh /dev/shm
+```
+
+### `PublishSubscribeOpenError(UnableToOpenDynamicServiceInformation)`
 
 When an application crashes, some resources may remain in the system and need to
 be cleaned up. This issue is detected whenever a new iceoryx2 instance is
@@ -277,8 +293,12 @@ Generally, it is not necessary to manually clean up these resources, as other
 processes should detect and handle the cleanup when creating or removing nodes,
 or when services are opened or closed.
 
-Nevertheless, there are three different approaches to initiate stale resource
-cleanup:
+You can manually [remove stale resources](#remove-stale-resources) to cleanup
+your system.
+
+### Remove Stale Resources
+
+There are three different approaches to initiate stale resource cleanup:
 
 1. **Using the iceoryx2 API**:
 
@@ -301,7 +321,7 @@ cleanup:
    * POSIX: `/dev/shm/`, `/tmp/iceoryx2`
    * Windows: `c:\Temp\iceoryx2`
 
-## Run Out-Of-Memory When Creating Publisher With A Large Service Payload
+### Run Out-Of-Memory
 
 Since iceoryx2 is designed to operate in safety-critical systems, it must
 ensure that a publisher (or sender) never runs out of memory. To achieve this,
@@ -341,9 +361,9 @@ let publisher = service
 All these parameters can also be set globally by using the
 [iceoryx2 config file](config).
 
-## `Error: Resource Creation Failed`
+### Internal Failure
 
-### You May Exceeded The Maximum File-Descriptor Limit
+#### Maximum File-Descriptor Limit Exceeded
 
 When you increase the number of services or ports beyond a certain limit for
 one process, the process may exceed the per-user file descriptor limit. This
@@ -366,7 +386,7 @@ soft file descriptor limit up to the hard limit:
 ulimit -n <new_limit>
 ```
 
-## Losing data
+### Losing Data
 
 When a `Subscriber` or a `Server` does not seem to receive data, it may be
 because the port was never able to connect to its counterpart - typically
@@ -384,7 +404,7 @@ before starting communication.
 Another solution is to ensure that the sending ports remain alive at least
 until the first piece of data has been successfully received.
 
-## Losing a sample when sending dynamic data
+### Losing Dynamic Data
 
 If you're sending slices and have defined an allocation strategy, a sample may
 be lost if the sender shuts down after reallocating its data segment. This is
@@ -395,9 +415,17 @@ To circumvent this, you could use the size of the last sent sample as
 `initial_max_slice_len` and use the `Static` allocation strategy.
 
 <!-- markdownlint-disable MD044 'c' needs to be lower-case -->
-## The package 'iceoryx2-ffi-c' does not contain this feature: libc_platform
+### `iceoryx2-ffi-c` Does Not Contain This Feature: `libc_platform`
 <!-- markdownlint-enable MD044 -->
 
 In order to use the `iceoryx2` feature flags when building the `iceoryx2-ffi-c`
 crate standalone, you needs to prefix the feature with `iceoryx2/`,
 e.g. `--features iceoryx2/libc_platform.`.
+
+### Service In Corrupted State
+
+This error can have multiple causes.
+
+1. Crashed processes cleaned up resources incompletely, see: [Remove Stale Resources](#remove-stale-resources)
+2. The processes are compiled with two incompatible iceoryx2 versions.
+3. Two service variants were used that are not compatible.
