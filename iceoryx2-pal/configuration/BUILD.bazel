@@ -10,9 +10,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-package(default_visibility = ["//visibility:public"])
-
 load("@rules_rust//rust:defs.bzl", "rust_library")
+
+package(default_visibility = ["//visibility:public"])
 
 filegroup(
     name = "all_srcs",
@@ -21,5 +21,9 @@ filegroup(
 
 rust_library(
     name = "iceoryx2-pal-configuration",
-    srcs = glob(["src/**/*.rs"]),
+    srcs = ["src/lib.rs"],
+    crate_features = select({
+        "//:custom_pal_config_enabled": ["custom_pal_config"],
+        "//conditions:default": [""],
+    }),
 )
