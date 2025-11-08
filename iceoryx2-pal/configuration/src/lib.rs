@@ -22,7 +22,10 @@ pub(crate) mod internal {
     #![allow(unknown_lints)]
     #![allow(unnecessary_transmutes)]
     #![allow(clippy::all)]
-    include!(concat!(env!("IOX2_CUSTOM_PAL_CONFIG_PATH"), "/iceoryx2_pal_config.rs"));
+    include!(concat!(
+        env!("IOX2_CUSTOM_PAL_CONFIG_PATH"),
+        "/iceoryx2_pal_config.rs"
+    ));
 }
 
 #[cfg(not(feature = "custom_pal_config"))]
