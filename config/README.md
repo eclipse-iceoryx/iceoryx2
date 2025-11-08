@@ -195,3 +195,71 @@ payload data segment
 * `defaults.blackboard.max-readers` - [int]: The maximum amount of supported Readers.
 * `defaults.blackboard.max-nodes` - [int]: The maximum amount of supported Nodes.
 Defines indirectly how many processes can open the service at the same time.
+
+## Custom Platform Abstraction Layer Configuration
+
+The platform-specific settings in `iceoryx2-pal/configuration/src/lib.rs`
+contains a variety of attributes to configure iceoryx2 for a flexible deployment.
+One example is the `ICEORYX2_ROOT_PATH` that contains the operational files for
+services and nodes. These settings are defined at compile-time and the baseline
+for the runtime configuration in TOML format as described above.
+
+The existing settings in iceoryx2 are already tailored to the most common
+operating systems but it can happen that users may face a specific limitation
+(e.g. the `TEMP_DIRECTORY` is not writeable).
+To solve that the user has the possibility to define an own iceoryx2-pal
+configuration in a user-defined location.
+
+The first step is to create a file with name `iceoryx2_pal_config.rs`
+in a custom location (e.g. `/my/funky/platform/iceoryx2_pal_config.rs`).
+The name must be set to `iceoryx2_pal_config.rs` to detect the file properly.
+
+Example content of `iceoryx2_pal_config.rs`
+
+```rust
+// Custom Platform Config
+pub mod settings {
+    pub const GLOBAL_CONFIG_PATH: &[u8] = b"/etc";
+    pub const USER_CONFIG_PATH: &[u8] = b".config";
+    pub const TEMP_DIRECTORY: &[u8] = b"/my_tmp/";
+    pub const TEST_DIRECTORY: &[u8] = b"/my_tmp/tests/";
+    pub const SHARED_MEMORY_DIRECTORY: &[u8] = b"/dev/my_shm/";
+    pub const PATH_SEPARATOR: u8 = b'/';
+    pub const ROOT: &[u8] = b"/";
+    pub const ICEORYX2_ROOT_PATH: &[u8] = b"/my_tmp/";
+    pub const FILENAME_LENGTH: usize = 255;
+    // it is actually 4096 but to be more compatible with windows and also safe some stack the number
+    // is reduced to 255
+    pub const PATH_LENGTH: usize = 255;
+    #[cfg(not(target_os = "macos"))]
+    pub const AT_LEAST_TIMING_VARIANCE: f32 = 0.25;
+    #[cfg(target_os = "macos")]
+    pub const AT_LEAST_TIMING_VARIANCE: f32 = 1.0;
+}
+```
+
+To recompile iceoryx2 with the custom settings, the following steps needs to be done:
+
+1. Set environment variable with absolute path to `iceoryx2_pal_config.rs`
+(no trailing slash)
+
+```cli
+export IOX2_CUSTOM_PAL_CONFIG_PATH=/my/funky/platform
+```
+
+1. Build iceoryx2 with feature `custom_pal_config`
+for custom platform abstraction layer
+
+```cli
+cargo build --features "custom_pal_config"
+```
+
+Since iceoryx2 takes TOML-based config as startup parameter,
+it maybe necessary to regenerate the iceoryx2 config with the new values
+as described above.
+
+For Bazel the equivalent build command is:
+
+```cli
+bazel build //... --action_env=IOX2_CUSTOM_PAL_CONFIG_PATH=/my/funky/platform --//:custom_pal_config="on"
+```
