@@ -301,7 +301,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest] # [windows-latest, ubuntu-latest, macos-latest]
-        toolchain: [stable] # [stable, 1.81.0, beta, nightly]
+        toolchain: [stable] # [stable, 1.83.0, beta, nightly]
     uses: ./.github/workflows/x86_32_workflow.yml
     with:
       os: ${{ matrix.os }}
@@ -525,7 +525,7 @@ jobs:
       - name: Upload C++ coverage to Codecov
         uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # ratchet:codecov/codecov-action@v5
         with:
-          file: target/ff/coverage/lcov/iceoryx2_lcov_cpp.info
+          files: target/ff/coverage/lcov/iceoryx2_lcov_cpp.info
           name: iceoryx2
           flags: CPP
           fail_ci_if_error: false
