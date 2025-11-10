@@ -6,17 +6,37 @@ on:
   workflow_dispatch:
 
 jobs:
+
+  cargo-nextest-nightly:
+    strategy:
+      matrix:
+        os: [windows-2022, ubuntu-latest, macos-latest] # todo (iox2-#1049): Use windows latest here
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+      - name: Build and cache cargo-nextest
+        uses: ./.github/actions/build-and-cache-rust-tool
+        with:
+          rust-toolchain: stable
+          check-and-install-cmd: cargo-nextest --version > /dev/null || cargo install cargo-nextest --locked
+          print-version-cmd: cargo-nextest --version
+          # increment cache-N-${{}} if a new nextest version is required
+          cache-key: cache-2-${{ runner.os }}-cargo-nextest
+          artifact-bin-name: cargo-nextest
+          artifact-upload-name: ${{ runner.os }}-cargo-nextest
+
   static-code-analysis-rust-nightly:
     strategy:
       matrix:
         os: [windows-2022] # todo (iox2-#1049): Use windows latest here
         cargo-features-flag: [""]
-    uses: ./.github/workflows/x86_32_workflow.yml
-    with: 
+    uses: ./.github/workflows/static_code_analysis_workflow.yml
+    with:
       os: ${{ matrix.os }}
       cargo-features-flag: ${{ matrix.cargo-features-flag }}
 
   x86_32-nightly:
+    needs: [static-code-analysis-rust-nightly, cargo-nextest-nightly]
     strategy:
       matrix:
         os: [ubuntu-latest] # [windows-latest, ubuntu-latest, macos-latest]
@@ -30,6 +50,7 @@ jobs:
       cmake-build-type: "-DCMAKE_BUILD_TYPE=Release"
 
   x86_64-stable-nightly:
+    needs: [static-code-analysis-rust-nightly, cargo-nextest-nightly]
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-2022] # todo (iox2-#1049): Use windows latest here
@@ -63,6 +84,7 @@ jobs:
       cargo-features-flag: ${{ matrix.cargo-features-flag }}
 
   x86_64_unstable-nightly:
+    needs: [static-code-analysis-rust-nightly, cargo-nextest-nightly]
     strategy:
       matrix:
         os: [windows-2022, ubuntu-latest, macos-latest] # todo (iox2-#1049): Use windows latest here

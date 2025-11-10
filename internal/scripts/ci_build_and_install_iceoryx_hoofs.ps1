@@ -61,3 +61,5 @@ switch ($toolchain) {
 if ($?) { Write-Host "## Building and installing iceoryx_hoofs with $NUM_JOBS cores" }
 if ($?) { cmake --build target/ff/iceoryx/build/hoofs $CMAKE_BUILD_CONFIG -j $NUM_JOBS }
 if ($?) { cmake --install target/ff/iceoryx/build/hoofs $CMAKE_BUILD_CONFIG }
+
+exit $LASTEXITCODE
