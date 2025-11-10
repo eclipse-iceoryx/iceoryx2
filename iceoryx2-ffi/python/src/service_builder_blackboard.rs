@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use iceoryx2::constants::MAX_BLACKBOARD_KEY_SIZE;
+use iceoryx2::service::builder::blackboard::KeyMemory;
 use iceoryx2::service::builder::CustomKeyMarker;
 use pyo3::prelude::*;
 
@@ -92,6 +94,41 @@ impl ServiceBuilderBlackboardCreator {
             ServiceBuilderBlackboardCreatorType::Local(v) => {
                 let this = v.clone();
                 let this = unsafe { this.__internal_set_key_type_details(&value.0) };
+                self.clone_local(this)
+            }
+        }
+    }
+
+    pub fn __set_key_eq_cmp_func(&self, key_eq_func: PyObject) -> Self {
+        match &self.value {
+            ServiceBuilderBlackboardCreatorType::Ipc(v) => {
+                let this = v.clone();
+                let eq_func = Box::new(move |lhs: *const u8, rhs: *const u8| -> bool {
+                    Python::with_gil(|py| {
+                        let x = key_eq_func.call1(py, (lhs as usize, rhs as usize)).unwrap();
+                        x.extract::<bool>(py).expect("")
+                    })
+                });
+                let this = unsafe {
+                    this.__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
+                        KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::key_eq_comparison(lhs, rhs, &*eq_func)
+                    }))
+                };
+                self.clone_ipc(this)
+            }
+            ServiceBuilderBlackboardCreatorType::Local(v) => {
+                let this = v.clone();
+                let eq_func = Box::new(move |lhs: *const u8, rhs: *const u8| -> bool {
+                    Python::with_gil(|py| {
+                        let x = key_eq_func.call1(py, (lhs as usize, rhs as usize)).unwrap();
+                        x.extract::<bool>(py).expect("")
+                    })
+                });
+                let this = unsafe {
+                    this.__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
+                        KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::key_eq_comparison(lhs, rhs, &*eq_func)
+                    }))
+                };
                 self.clone_local(this)
             }
         }

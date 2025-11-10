@@ -764,6 +764,12 @@ def test_handle_can_still_be_used_after_every_previous_service_state_owner_was_d
 class Foo(ctypes.Structure):
     _fields_ = [("a", ctypes.c_uint8), ("b", ctypes.c_uint32), ("c", ctypes.c_double)]
 
+    # TODO: document that custom structures must implement __eq__
+    def __eq__(self, other):
+        if not isinstance(other, Foo):
+            return NotImplemented
+        return (self.a, self.b, self.c) == (other.a, other.b, other.c)
+
 
 @pytest.mark.parametrize("service_type", service_types)
 def test_simple_communication_with_key_struct_works(
@@ -773,26 +779,36 @@ def test_simple_communication_with_key_struct_works(
     service_name = iox2.testing.generate_service_name()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
 
-    # TODO: add second key-value pair
-    key = Foo(a=9, b=99, c=9.9)
-    value = c_int32(-3)
+    key_1 = Foo(a=9, b=99, c=9.9)
+    value_1 = c_int32(-3)
+    key_2 = Foo(a=9, b=999, c=9.9)
+    value_2 = c_uint32(3)
 
     service = (
         node.service_builder(service_name)
         .blackboard_creator(Foo)
-        .add(key, c_int32, value)
+        .add(key_1, c_int32, value_1)
+        .add(key_2, c_uint32, value_2)
         .create()
     )
 
     writer = service.writer_builder().create()
-    entry_handle_mut = writer.entry(key, c_int32)
+    entry_handle_mut_1 = writer.entry(key_1, c_int32)
+    entry_handle_mut_2 = writer.entry(key_2, c_uint32)
     reader = service.reader_builder().create()
-    entry_handle = reader.entry(key, c_int32)
+    entry_handle_1 = reader.entry(key_1, c_int32)
+    entry_handle_2 = reader.entry(key_2, c_uint32)
 
-    assert entry_handle.get().value == -3
+    assert entry_handle_1.get().value == -3
+    assert entry_handle_2.get().value == 3
 
-    entry_handle_mut.update_with_copy(c_int32(50))
-    assert entry_handle.get().value == 50
+    entry_handle_mut_1.update_with_copy(c_int32(50))
+    assert entry_handle_1.get().value == 50
+    assert entry_handle_2.get().value == 3
+
+    entry_handle_mut_2.update_with_copy(c_uint32(12))
+    assert entry_handle_1.get().value == 50
+    assert entry_handle_2.get().value == 12
 
 
 @pytest.mark.parametrize("service_type", service_types)

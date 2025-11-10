@@ -13,12 +13,25 @@
 """Strong type safe extensions for the blackboard messaging pattern."""
 
 import ctypes
-from typing import Any, Type, TypeVar
+from typing import Any, Callable, Type, TypeVar
 
 from ._iceoryx2 import *
 from .type_name import get_type_name
 
 T = TypeVar("T", bound=ctypes.Structure)
+
+
+def get_key_cmp_func(
+    key_type_details: Any,
+) -> Callable[[ctypes.c_uint64, ctypes.c_uint64], bool]:
+    def key_cmp(lhs: ctypes.c_uint64, rhs: ctypes.c_uint64) -> bool:
+        lhs_key = ctypes.cast(lhs, ctypes.POINTER(key_type_details)).contents
+        rhs_key = ctypes.cast(rhs, ctypes.POINTER(key_type_details)).contents
+        if isinstance(lhs_key, ctypes.Structure):
+            return lhs_key == rhs_key
+        return lhs_key.value == rhs_key.value
+
+    return key_cmp
 
 
 def blackboard_creator(
@@ -34,13 +47,15 @@ def blackboard_creator(
     result = self.__blackboard_creator()
     result.__set_key_type(t)
 
-    return result.__set_key_type_details(
+    result = result.__set_key_type_details(
         TypeDetail.new()
         .type_variant(type_variant)
         .type_name(TypeName.new(type_name))
         .size(type_size)
         .alignment(type_align)
     )
+
+    return result.__set_key_eq_cmp_func(get_key_cmp_func(result.__key_type_details))
 
 
 def blackboard_opener(
