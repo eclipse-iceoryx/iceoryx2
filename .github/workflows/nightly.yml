@@ -20,7 +20,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest] # [windows-latest, ubuntu-latest, macos-latest]
-        toolchain: [stable] # [stable, 1.81.0, beta, nightly]
+        toolchain: [stable] # [stable, 1.83.0, beta, nightly]
     uses: ./.github/workflows/x86_32_workflow.yml
     with: 
       os: ${{ matrix.os }}
@@ -34,8 +34,8 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-2022] # todo (iox2-#1049): Use windows latest here
         # NOTE: enable for MinGW
-        # toolchain: [stable, stable-gnu, 1.81.0]
-        toolchain: [stable, 1.81.0]
+        # toolchain: [stable, stable-gnu, 1.83.0]
+        toolchain: [stable, 1.83.0]
         mode:
           - name: "release"
             arg: "--release"

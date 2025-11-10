@@ -340,7 +340,7 @@ freebsd_x64_min_version_debug_task:
     PATH: /root/.cargo/bin:$PATH
     HOME: /root  # must be set manually to '/root' or 'rustup' will throw an error
   <<: *IOX2_FREEBSD_SETUP
-  set_toolchain_script: rustup default 1.81.0
+  set_toolchain_script: rustup default 1.83.0
   <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
 
 freebsd_x64_stable_debug_task:

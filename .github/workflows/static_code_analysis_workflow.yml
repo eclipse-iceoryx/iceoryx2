@@ -12,7 +12,7 @@ on:
 
 jobs:
   static-code-analysis-rust:
-    timeout-minutes: 20
+    timeout-minutes: 40
     runs-on: ${{ inputs.os }}
     steps:
       - name: Checkout sources
