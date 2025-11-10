@@ -124,7 +124,7 @@ def entry_handle(self: Reader, key: Type[T], value: Type[T]) -> EntryHandle:
 def get(self: EntryHandle) -> Any:
     """Returna a copy of the value."""
     value_ptr = self.__get()
-    return ctypes.cast(value_ptr, ctypes.POINTER(self.__value_type))
+    return ctypes.cast(value_ptr, ctypes.POINTER(self.__value_type)).contents
 
 
 def entry_handle_mut(self: Writer, key: Type[T], value: Type[T]) -> EntryHandleMut:

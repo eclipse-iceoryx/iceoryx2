@@ -12,7 +12,6 @@
 
 use iceoryx2_bb_log::fatal_panic;
 use pyo3::prelude::*;
-use pyo3::types::PyBytes;
 
 use crate::event_id::EventId;
 use crate::parc::Parc;
@@ -44,30 +43,6 @@ impl EntryHandle {
         self.value_type_storage.value = Some(value)
     }
 
-    pub fn get(&self) -> Py<PyBytes> {
-        let value_size = self.value_type_details.0.size();
-        let value_alignment = self.value_type_details.0.alignment();
-        let layout =
-            unsafe { core::alloc::Layout::from_size_align_unchecked(value_size, value_alignment) };
-        let ptr = unsafe { std::alloc::alloc(layout) };
-        match &self.value {
-            EntryHandleType::Ipc(Some(v)) => {
-                unsafe { v.get(ptr, value_size, value_alignment) };
-                Python::with_gil(|py| {
-                    let value_bytes = unsafe { PyBytes::from_ptr(py, ptr, value_size) };
-                    value_bytes.unbind()
-                })
-            }
-            EntryHandleType::Local(Some(v)) => {
-                unsafe { v.get(ptr, value_size, value_alignment) };
-                Python::with_gil(|py| {
-                    let value_bytes = unsafe { PyBytes::from_ptr(py, ptr, value_size) };
-                    value_bytes.unbind()
-                })
-            }
-            _ => fatal_panic!(""), // TODO
-        }
-    }
     pub fn __get(&self) -> usize {
         let value_size = self.value_type_details.0.size();
         let value_alignment = self.value_type_details.0.alignment();

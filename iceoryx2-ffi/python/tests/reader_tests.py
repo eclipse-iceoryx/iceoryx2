@@ -10,7 +10,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-from ctypes import c_uint64, c_uint8, c_int64, c_uint32
+from ctypes import c_int64, c_uint8, c_uint32, c_uint64
 
 import iceoryx2 as iox2
 import pytest
@@ -68,7 +68,7 @@ def test_handle_can_be_acquired_for_existing_key_value_pair(
     reader = service.reader_builder().create()
     try:
         entry_handle = reader.entry(key, c_uint64)
-        assert entry_handle.get().contents.value == 7
+        assert entry_handle.get().value == 7
     except iox2.EntryHandleError:
         assert False
 

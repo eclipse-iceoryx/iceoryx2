@@ -15,7 +15,6 @@ use std::sync::Arc;
 use iceoryx2::service::builder::CustomKeyMarker;
 use iceoryx2_bb_log::fatal_panic;
 use pyo3::prelude::*;
-use pyo3::types::PyBytes;
 
 use crate::entry_handle::{EntryHandle, EntryHandleType};
 use crate::error::EntryHandleError;
