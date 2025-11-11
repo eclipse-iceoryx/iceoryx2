@@ -56,7 +56,7 @@ jobs:
           artifact-upload-name: ${{ runner.os }}-cargo-nextest
 
       - name: Prepare Windows
-        if: ${{ inputs.os == 'windows-2022' }} # todo (iox2-#1049): Use windows latest here
+        if: ${{ inputs.os == 'windows-latest' }}
         run: internal\scripts\ci_prepare_windows.ps1
       - name: Prepare Linux
         if: ${{ inputs.os == 'ubuntu-latest' }}
@@ -78,10 +78,10 @@ jobs:
         run: cargo nextest run --workspace --all-targets --no-fail-fast ${{ inputs.mode-arg }} ${{ inputs.cargo-features-flag }}
 
       - name: Build iceoryx_hoofs on Windows
-        if: ${{ inputs.os == 'windows-2022' }} # todo (iox2-#1049): Use windows latest here
+        if: ${{ inputs.os == 'windows-latest' }}
         run: internal\scripts\ci_build_and_install_iceoryx_hoofs.ps1 -mode ${{ inputs.mode-name }} -toolchain ${{ inputs.toolchain }}
       - name: Build iceoryx_hoofs on non-Windows
-        if: ${{ inputs.os != 'windows-2022' }} # todo (iox2-#1049): Use windows latest here
+        if: ${{ inputs.os != 'windows-latest' }}
         run: internal/scripts/ci_build_and_install_iceoryx_hoofs.sh
 
       - name: Print native libs of FFI target
@@ -104,11 +104,11 @@ jobs:
         run: target/ff/cc/build/tests/iceoryx2-cxx-tests
 
       - name: Remove language binding build artifacts on Windows
-        if: ${{ inputs.os == 'windows-2022' }} # todo (iox2-#1049): Use windows latest here
+        if: ${{ inputs.os == 'windows-latest' }}
         run: rm -r -force target/ff/cc/build
 
       - name: Remove language binding build artifacts on non-Windows
-        if: ${{ inputs.os != 'windows-2022' }} # todo (iox2-#1049): Use windows latest here
+        if: ${{ inputs.os != 'windows-latest' }}
         run: rm -rf target/ff/cc/build
 
       - name: Build C language binding examples in out-of-tree configuration
