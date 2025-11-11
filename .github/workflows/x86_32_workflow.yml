@@ -49,7 +49,7 @@ jobs:
           artifact-upload-name: ${{ runner.os }}-cargo-nextest
 
       - name: Prepare Windows
-        if: ${{ inputs.os == 'windows-2022' }} # todo (iox2-#1049): Use windows latest here
+        if: ${{ inputs.os == 'windows-latest' }}
         run: internal\scripts\ci_prepare_windows.ps1
 
       - name: Prepare Linux

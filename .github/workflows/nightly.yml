@@ -10,7 +10,7 @@ jobs:
   cargo-nextest-nightly:
     strategy:
       matrix:
-        os: [windows-2022, ubuntu-latest, macos-latest] # todo (iox2-#1049): Use windows latest here
+        os: [windows-latest, ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
@@ -28,7 +28,7 @@ jobs:
   static-code-analysis-rust-nightly:
     strategy:
       matrix:
-        os: [windows-2022] # todo (iox2-#1049): Use windows latest here
+        os: [windows-latest]
         cargo-features-flag: [""]
     uses: ./.github/workflows/static_code_analysis_workflow.yml
     with:
@@ -53,7 +53,7 @@ jobs:
     needs: [static-code-analysis-rust-nightly, cargo-nextest-nightly]
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-2022] # todo (iox2-#1049): Use windows latest here
+        os: [ubuntu-latest, macos-latest, windows-latest]
         # NOTE: enable for MinGW
         # toolchain: [stable, stable-gnu, 1.83.0]
         toolchain: [stable, 1.83.0]
@@ -64,11 +64,11 @@ jobs:
             cmake-build-config: "--config Release" # required for Visual Studio at build and install time
         cargo-features-flag: ["", "--features libc_platform"]
         include:
-          - os: windows-2022 # todo (iox2-#1049): Use windows latest here
+          - os: windows-latest
             toolchain: stable
             cmake-cxx-flags: '-DCMAKE_CXX_FLAGS="/MP"'
         exclude:
-          - os: windows-2022 # todo (iox2-#1049): Use windows latest here
+          - os: windows-latest
             cargo-features-flag: "--features libc_platform"
           - os: macos-latest
             cargo-features-flag: "--features libc_platform"
@@ -87,7 +87,7 @@ jobs:
     needs: [static-code-analysis-rust-nightly, cargo-nextest-nightly]
     strategy:
       matrix:
-        os: [windows-2022, ubuntu-latest, macos-latest] # todo (iox2-#1049): Use windows latest here
+        os: [windows-latest, ubuntu-latest, macos-latest]
         toolchain: [beta, nightly]
         mode: 
           - name: "release"
