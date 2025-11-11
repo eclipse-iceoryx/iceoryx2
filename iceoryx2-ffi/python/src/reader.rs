@@ -10,8 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::sync::Arc;
-
 use iceoryx2::service::builder::CustomKeyMarker;
 use iceoryx2_bb_log::fatal_panic;
 use pyo3::prelude::*;
@@ -63,7 +61,7 @@ impl Reader {
                         .map_err(|e| EntryHandleError::new_err(format!("{e:?}")))?
                 };
                 Ok(EntryHandle {
-                    value: EntryHandleType::Ipc(Some(entry_handle)),
+                    value: Parc::new(EntryHandleType::Ipc(Some(entry_handle))),
                     value_type_details,
                     value_type_storage: TypeStorage::new(),
                 })
@@ -74,7 +72,7 @@ impl Reader {
                         .map_err(|e| EntryHandleError::new_err(format!("{e:?}")))?
                 };
                 Ok(EntryHandle {
-                    value: EntryHandleType::Local(Some(entry_handle)),
+                    value: Parc::new(EntryHandleType::Local(Some(entry_handle))),
                     value_type_details,
                     value_type_storage: TypeStorage::new(),
                 })

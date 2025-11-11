@@ -62,7 +62,7 @@ impl Writer {
                         .map_err(|e| EntryHandleMutError::new_err(format!("{e:?}")))?
                 };
                 Ok(EntryHandleMut {
-                    value: EntryHandleMutType::Ipc(Some(entry_handle)),
+                    value: Parc::new(EntryHandleMutType::Ipc(Some(entry_handle))),
                     value_type_storage: TypeStorage::new(),
                     value_type_details,
                 })
@@ -73,7 +73,7 @@ impl Writer {
                         .map_err(|e| EntryHandleMutError::new_err(format!("{e:?}")))?
                 };
                 Ok(EntryHandleMut {
-                    value: EntryHandleMutType::Local(Some(entry_handle)),
+                    value: Parc::new(EntryHandleMutType::Local(Some(entry_handle))),
                     value_type_storage: TypeStorage::new(),
                     value_type_details,
                 })

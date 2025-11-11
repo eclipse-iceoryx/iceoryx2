@@ -195,7 +195,3 @@ def test_deleting_writer_removes_it_from_the_service(
         sut = service.writer_builder().create()
     except iox2.WriterCreateError:
         assert False
-
-
-# TODO: missing tests
-# - concurrent_writer_creation_succeeds_only_once

@@ -831,8 +831,3 @@ def test_adding_key_struct_twice_fails(
             .add(key, c_uint32, value_1)
             .create()
         )
-
-
-# TODO: missing tests
-# - concurrent_write_and_read_of_the_same_value_works
-# - concurrent_write_of_different_values_works

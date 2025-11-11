@@ -23,11 +23,9 @@ pub(crate) enum EntryHandleType {
     Local(Option<iceoryx2::port::reader::__InternalEntryHandle<crate::LocalService>>),
 }
 
-// TODO: unsendable?
-#[pyclass(unsendable)]
+#[pyclass]
 pub struct EntryHandle {
-    pub(crate) value: EntryHandleType, // TODO: better name
-    // pub(crate) value: Parc<EntryHandleType>,
+    pub(crate) value: Parc<EntryHandleType>, // TODO: better name
     pub(crate) value_type_details: TypeDetail,
     pub(crate) value_type_storage: TypeStorage,
 }
@@ -49,7 +47,7 @@ impl EntryHandle {
         let layout =
             unsafe { core::alloc::Layout::from_size_align_unchecked(value_size, value_alignment) };
         let ptr = unsafe { std::alloc::alloc(layout) };
-        match &self.value {
+        match &*self.value.lock() {
             EntryHandleType::Ipc(Some(v)) => {
                 unsafe { v.get(ptr, value_size, value_alignment) };
                 ptr as usize
@@ -63,7 +61,7 @@ impl EntryHandle {
     }
 
     pub fn entry_id(&self) -> EventId {
-        match &self.value {
+        match &*self.value.lock() {
             EntryHandleType::Ipc(Some(v)) => EventId::new(v.entry_id().as_value()),
             EntryHandleType::Local(Some(v)) => EventId::new(v.entry_id().as_value()),
             _ => fatal_panic!(""), // TODO

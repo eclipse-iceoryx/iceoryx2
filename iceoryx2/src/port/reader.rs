@@ -426,6 +426,12 @@ pub struct __InternalEntryHandle<Service: service::Service> {
     _shared_state: Arc<ReaderSharedState<Service, CustomKeyMarker>>,
 }
 
+// Safe since the pointer to the UnrestrictedAtomicMgmt and the data pointer don't change and the
+// UnrestrictedAtomicMgmt implements Send + Sync, and shared_state ensures the lifetime of the
+// UnrestrictedAtomicMgmt
+unsafe impl<Service: service::Service> Send for __InternalEntryHandle<Service> {}
+unsafe impl<Service: service::Service> Sync for __InternalEntryHandle<Service> {}
+
 impl<Service: service::Service> __InternalEntryHandle<Service> {
     /// Stores a copy of the value in `value_ptr`.
     ///

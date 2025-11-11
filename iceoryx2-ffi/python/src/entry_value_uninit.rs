@@ -15,14 +15,9 @@ use pyo3::prelude::*;
 
 use crate::entry_handle_mut::{EntryHandleMut, EntryHandleMutType};
 use crate::entry_value::{EntryValue, EntryValueType};
-use crate::type_storage::TypeStorage;
+use crate::parc::Parc;
 
-pub(crate) enum EntryValueUninitType {
-    Ipc(Option<iceoryx2::port::writer::__InternalEntryValueUninit<crate::IpcService>>), // TODO: Option?
-    Local(Option<iceoryx2::port::writer::__InternalEntryValueUninit<crate::LocalService>>),
-}
-
-#[pyclass(unsendable)]
+#[pyclass]
 pub struct EntryValueUninit {
     pub(crate) entry_value: EntryValue,
 }
@@ -35,7 +30,7 @@ impl EntryValueUninit {
     }
 
     pub fn __get_write_cell(&self) -> usize {
-        match &self.entry_value.value {
+        match &*self.entry_value.value.lock() {
             EntryValueType::Ipc(Some(v)) => v.write_cell() as usize,
             EntryValueType::Local(Some(v)) => v.write_cell() as usize,
             _ => fatal_panic!(""), // TODO
@@ -43,12 +38,12 @@ impl EntryValueUninit {
     }
 
     pub fn __assume_init(&mut self) -> EntryValue {
-        match &mut self.entry_value.value {
+        match &mut *self.entry_value.value.lock() {
             EntryValueType::Ipc(v) => {
                 let value_type_details = self.entry_value.value_type_details.clone();
                 let entry_value_uninit = v.take().unwrap();
                 EntryValue {
-                    value: EntryValueType::Ipc(Some(entry_value_uninit)),
+                    value: Parc::new(EntryValueType::Ipc(Some(entry_value_uninit))),
                     value_type_details,
                     value_type_storage: self.entry_value.value_type_storage.clone(),
                 }
@@ -57,7 +52,7 @@ impl EntryValueUninit {
                 let value_type_details = self.entry_value.value_type_details.clone();
                 let entry_value_uninit = v.take().unwrap();
                 EntryValue {
-                    value: EntryValueType::Local(Some(entry_value_uninit)),
+                    value: Parc::new(EntryValueType::Local(Some(entry_value_uninit))),
                     value_type_details,
                     value_type_storage: self.entry_value.value_type_storage.clone(),
                 }
@@ -66,12 +61,12 @@ impl EntryValueUninit {
     }
 
     pub fn discard(&mut self) -> EntryHandleMut {
-        match &mut self.entry_value.value {
+        match &mut *self.entry_value.value.lock() {
             EntryValueType::Ipc(v) => {
                 let entry_value_uninit = v.take().unwrap();
                 let entry_handle_mut = entry_value_uninit.discard();
                 EntryHandleMut {
-                    value: EntryHandleMutType::Ipc(Some(entry_handle_mut)),
+                    value: Parc::new(EntryHandleMutType::Ipc(Some(entry_handle_mut))),
                     value_type_storage: self.entry_value.value_type_storage.clone(),
                     value_type_details: self.entry_value.value_type_details.clone(),
                 }
@@ -80,7 +75,7 @@ impl EntryValueUninit {
                 let entry_value_uninit = v.take().unwrap();
                 let entry_handle_mut = entry_value_uninit.discard();
                 EntryHandleMut {
-                    value: EntryHandleMutType::Local(Some(entry_handle_mut)),
+                    value: Parc::new(EntryHandleMutType::Local(Some(entry_handle_mut))),
                     value_type_storage: self.entry_value.value_type_storage.clone(),
                     value_type_details: self.entry_value.value_type_details.clone(),
                 }

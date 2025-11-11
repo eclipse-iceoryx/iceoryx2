@@ -70,22 +70,6 @@ impl PortFactoryWriter {
             key_type_storage,
         }
     }
-
-    fn clone_ipc(&self, value: IpcPortFactoryWriter<'static>) -> Self {
-        Self {
-            factory: self.factory.clone(),
-            value: PortFactoryWriterType::Ipc(Parc::new(value)),
-            key_type_storage: self.key_type_storage.clone(),
-        }
-    }
-
-    fn clone_local(&self, value: LocalPortFactoryWriter<'static>) -> Self {
-        Self {
-            factory: self.factory.clone(),
-            value: PortFactoryWriterType::Local(Parc::new(value)),
-            key_type_storage: self.key_type_storage.clone(),
-        }
-    }
 }
 
 #[pymethods]
