@@ -22,6 +22,7 @@ use cdr::{CdrBe, Infinite};
 
 use super::{DeserializeError, SerializeError};
 
+#[derive(Debug)]
 /// cdr [`Serialize`]
 pub struct Cdr {}
 

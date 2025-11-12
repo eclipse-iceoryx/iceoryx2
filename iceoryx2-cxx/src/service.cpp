@@ -59,7 +59,7 @@ auto Service<S>::details(const ServiceName& service_name,
         return iox::ok(iox::optional<ServiceDetails<S>>());
     }
 
-    return iox::ok(iox::optional(ServiceDetails<S> { StaticConfig(raw_static_config) }));
+    return iox::ok(iox::optional<ServiceDetails<S>>(ServiceDetails<S> { StaticConfig(raw_static_config) }));
 }
 
 template <ServiceType S>

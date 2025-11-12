@@ -55,7 +55,7 @@ class Sample {
     auto payload() const -> iox::ImmutableSlice<ValueType>;
 
     /// Returns a reference to the user_header of the [`Sample`]
-    template <typename T = UserHeader, typename = std::enable_if_t<!std::is_same_v<void, UserHeader>, T>>
+    template <typename T = UserHeader, typename = std::enable_if_t<!std::is_same<void, UserHeader>::value, T>>
     auto user_header() const -> const T&;
 
     /// Returns a reference to the [`Header`] of the [`Sample`].

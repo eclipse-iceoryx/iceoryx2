@@ -58,7 +58,8 @@ class PendingResponse {
 
     /// Returns a reference to the user defined request header of the corresponding
     /// [`RequestMut`]
-    template <typename T = RequestUserHeader, typename = std::enable_if_t<!std::is_same_v<void, RequestUserHeader>, T>>
+    template <typename T = RequestUserHeader,
+              typename = std::enable_if_t<!std::is_same<void, RequestUserHeader>::value, T>>
     auto user_header() -> const T&;
 
     /// Returns a reference to the request payload of the corresponding

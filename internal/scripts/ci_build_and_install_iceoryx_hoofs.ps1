@@ -21,7 +21,7 @@ $ErrorActionPreference = "Stop"
 
 $NUM_JOBS = (Get-WmiObject Win32_processor).NumberOfLogicalProcessors
 
-git clone --depth 1 --branch v2.95.7 https://github.com/eclipse-iceoryx/iceoryx.git target/ff/iceoryx/src
+git clone --depth 1 --branch v2.95.8 https://github.com/eclipse-iceoryx/iceoryx.git target/ff/iceoryx/src
 
 switch ($mode) {
     "release" {

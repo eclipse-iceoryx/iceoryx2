@@ -32,12 +32,12 @@ auto main() -> int {
                        .expect("service created");
 
     std::mutex cout_mtx;
-    auto keep_running = std::atomic<bool>(true);
+    std::atomic<bool> keep_running { true };
     auto subscriber = service.subscriber_builder().create().expect("subscriber created");
 
     // All ports (like Subscriber, Publisher, Client, Server, ...) are threadsafe
     // so they can be shared between threads.
-    auto background_thread = std::thread([&] {
+    auto background_thread = std::thread([&]() -> auto {
         while (keep_running.load()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(CYCLE_TIME.toMilliseconds()));
             auto sample = subscriber.receive().expect("sample received");

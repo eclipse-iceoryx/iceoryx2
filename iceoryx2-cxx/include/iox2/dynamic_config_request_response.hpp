@@ -29,7 +29,8 @@ namespace iox2 {
 class DynamicConfigRequestResponse {
   public:
     DynamicConfigRequestResponse(const DynamicConfigRequestResponse&) = delete;
-    DynamicConfigRequestResponse(DynamicConfigRequestResponse&&) = delete;
+    // NOTE: can be changed to '= delete' when C++17 becomes mandatory and we can rely on RVO
+    DynamicConfigRequestResponse(DynamicConfigRequestResponse&&) = default;
     auto operator=(const DynamicConfigRequestResponse&) -> DynamicConfigRequestResponse& = delete;
     auto operator=(DynamicConfigRequestResponse&&) -> DynamicConfigRequestResponse& = delete;
     ~DynamicConfigRequestResponse() = default;

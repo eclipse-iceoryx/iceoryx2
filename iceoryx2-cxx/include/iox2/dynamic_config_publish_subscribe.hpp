@@ -28,7 +28,8 @@ namespace iox2 {
 class DynamicConfigPublishSubscribe {
   public:
     DynamicConfigPublishSubscribe(const DynamicConfigPublishSubscribe&) = delete;
-    DynamicConfigPublishSubscribe(DynamicConfigPublishSubscribe&&) = delete;
+    // NOTE: can be changed to '= delete' when C++17 becomes mandatory and we can rely on RVO
+    DynamicConfigPublishSubscribe(DynamicConfigPublishSubscribe&&) = default;
     auto operator=(const DynamicConfigPublishSubscribe&) -> DynamicConfigPublishSubscribe& = delete;
     auto operator=(DynamicConfigPublishSubscribe&&) -> DynamicConfigPublishSubscribe& = delete;
     ~DynamicConfigPublishSubscribe() = default;

@@ -31,7 +31,6 @@ constexpr size_t const G_TEST_ARRAY_SIZE = 5;
 int32_t const G_TEST_ARRAY[G_TEST_ARRAY_SIZE] = { 4, 9, 77, 32, -5 };
 
 
-// NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
 static_assert(std::is_standard_layout<iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>>::value,
               "StaticVector must be standard layout");
 
@@ -1145,7 +1144,7 @@ TEST(StaticVector, unchecked_const_begin_iterator) {
 
 TEST(StaticVector, unchecked_const_end_iterator) {
     iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> const sut(G_TEST_ARRAY);
-    ASSERT_EQ(sut.unchecked_access().end(), sut.unchecked_access().begin() + G_TEST_ARRAY_SIZE);
+    ASSERT_EQ(sut.unchecked_access().end(), std::next(sut.unchecked_access().begin(), G_TEST_ARRAY_SIZE));
 }
 
 TEST(StaticVector, unchecked_const_data_pointer) {
@@ -1170,8 +1169,8 @@ TEST(StaticVector, unchecked_mutable_begin_iterator) {
 
 TEST(StaticVector, unchecked_mutable_end_iterator) {
     iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
-    ASSERT_EQ(sut.unchecked_access().end(), sut.unchecked_access().begin() + G_TEST_ARRAY_SIZE);
-    *(sut.unchecked_access().end() - 1) *= 2;
+    ASSERT_EQ(sut.unchecked_access().end(), std::next(sut.unchecked_access().begin(), G_TEST_ARRAY_SIZE));
+    *(std::prev(sut.unchecked_access().end())) *= 2;
     EXPECT_EQ(*sut.element_at(G_TEST_ARRAY_SIZE - 1), G_TEST_ARRAY[G_TEST_ARRAY_SIZE - 1] * 2);
 }
 

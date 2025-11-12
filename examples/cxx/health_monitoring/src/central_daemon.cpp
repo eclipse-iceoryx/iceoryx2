@@ -88,7 +88,7 @@ auto main() -> int {
         // Since we added the notifier_dead_event to the service, all listeners, that are waiting
         // on a service where one participant has died, will be woken up and they receive
         // the PubSubEvent::ProcessDied
-        .wait_and_process([](auto) {
+        .wait_and_process([](auto) -> auto {
             find_and_cleanup_dead_nodes();
             return CallbackProgression::Continue;
         })
@@ -101,10 +101,11 @@ auto main() -> int {
 
 namespace {
 void find_and_cleanup_dead_nodes() {
-    Node<ServiceType::Ipc>::list(Config::global_config(), [](auto node_state) {
-        node_state.dead([](auto view) {
+    Node<ServiceType::Ipc>::list(Config::global_config(), [](auto node_state) -> auto {
+        node_state.dead([](auto view) -> auto {
             std::cout << "detected dead node: ";
-            view.details().and_then([](const auto& details) { std::cout << details.name().to_string().c_str(); });
+            view.details().and_then(
+                [](const auto& details) -> auto { std::cout << details.name().to_string().c_str(); });
             std::cout << std::endl;
             view.remove_stale_resources().expect("");
         });

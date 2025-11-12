@@ -48,12 +48,12 @@ class ResponseMut {
 
     /// Returns a reference to the user header of the response.
     template <typename T = ResponseUserHeader,
-              typename = std::enable_if_t<!std::is_same_v<void, ResponseUserHeader>, T>>
+              typename = std::enable_if_t<!std::is_same<void, ResponseUserHeader>::value, T>>
     auto user_header() const -> const T&;
 
     /// Returns a mutable reference to the user header of the response.
     template <typename T = ResponseUserHeader,
-              typename = std::enable_if_t<!std::is_same_v<void, ResponseUserHeader>, T>>
+              typename = std::enable_if_t<!std::is_same<void, ResponseUserHeader>::value, T>>
     auto user_header_mut() -> T&;
 
     /// Returns a reference to the payload of the response.

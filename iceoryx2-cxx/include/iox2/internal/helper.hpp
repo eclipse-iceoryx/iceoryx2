@@ -13,7 +13,9 @@
 #ifndef IOX2_SERVICE_INTERNAL_HELPER_HPP
 #define IOX2_SERVICE_INTERNAL_HELPER_HPP
 
-namespace iox2::internal {
+namespace iox2 {
+namespace internal {
+
 template <typename T>
 struct PlacementDefault {
     template <typename S>
@@ -30,6 +32,7 @@ struct PlacementDefault<void> {
     }
 };
 
-} // namespace iox2::internal
+} // namespace internal
+} // namespace iox2
 
 #endif

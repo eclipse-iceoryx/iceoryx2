@@ -26,7 +26,8 @@ namespace iox2 {
 class DynamicConfigEvent {
   public:
     DynamicConfigEvent(const DynamicConfigEvent&) = delete;
-    DynamicConfigEvent(DynamicConfigEvent&&) = delete;
+    // NOTE: can be changed to '= delete' when C++17 becomes mandatory and we can rely on RVO
+    DynamicConfigEvent(DynamicConfigEvent&&) = default;
     auto operator=(const DynamicConfigEvent&) -> DynamicConfigEvent& = delete;
     auto operator=(DynamicConfigEvent&&) -> DynamicConfigEvent& = delete;
     ~DynamicConfigEvent() = default;

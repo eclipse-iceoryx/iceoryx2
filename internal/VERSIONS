@@ -8,4 +8,4 @@ CURRENT: 0.7.0
 PREVIOUS_RELEASE: 0.7.0
 
 # This version is set by the update_versions.sh
-ICEORYX_HOOFS: 2.95.7
+ICEORYX_HOOFS: 2.95.8

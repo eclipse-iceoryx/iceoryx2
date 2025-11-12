@@ -21,7 +21,8 @@
 #include "iox2/node_state.hpp"
 #include "iox2/service_type.hpp"
 
-namespace iox2::internal {
+namespace iox2 {
+namespace internal {
 
 /// Building block to provide a type-safe context pointer to a C callback
 /// that has a `void*` context argument.
@@ -79,7 +80,7 @@ auto list_callback(iox2_node_state_e node_state,
                    iox2_node_name_ptr node_name,
                    iox2_config_ptr config,
                    iox2_callback_context context) -> iox2_callback_progression_e {
-    auto node_details = [&] {
+    auto node_details = [&]() -> auto {
         if (node_id_ptr == nullptr || config == nullptr) {
             return iox::optional<NodeDetails>();
         }
@@ -95,7 +96,7 @@ auto list_callback(iox2_node_state_e node_state,
     iox2_node_id_clone_from_ptr(nullptr, node_id_ptr, &node_id_handle);
     NodeId node_id { node_id_handle };
 
-    auto node_state_object = [&] {
+    auto node_state_object = [&]() -> auto {
         switch (node_state) {
         case iox2_node_state_e_ALIVE:
             return NodeState<T> { AliveNodeView<T> { node_id, node_details } };
@@ -115,6 +116,7 @@ auto list_callback(iox2_node_state_e node_state,
 }
 // NOLINTEND(readability-function-size)
 
-} // namespace iox2::internal
+} // namespace internal
+} // namespace iox2
 
 #endif

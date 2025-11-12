@@ -44,7 +44,8 @@ target_include_directories(iceoryx2-bb-containers-cxx
     $<INSTALL_INTERFACE:include/${PREFIX}>
 )
 
-target_compile_features(iceoryx2-bb-containers-cxx INTERFACE cxx_std_14)
+target_compile_features(iceoryx2-bb-containers-cxx INTERFACE ${ICEORYX2_CXX_STD})
+
 target_gdb_pretty_printer(iceoryx2-bb-containers-cxx
     INTERFACE
     ${PROJECT_SOURCE_DIR}/iceoryx2-bb-containers-cxx-pretty-printer.py

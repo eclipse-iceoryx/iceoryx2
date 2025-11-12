@@ -35,13 +35,15 @@ TYPED_TEST(NodeStateTest, alive_node_works) {
 
     bool alive_node_found = false;
     bool has_invalid_state = false;
-    Node<SERVICE_TYPE>::list(node.config(), [&](auto state) {
-        state.alive(
-            [&](auto& view) { alive_node_found = view.details()->name().to_string() == node_name.to_string(); });
-        state.dead(
-            [&](auto& view) { has_invalid_state = view.details()->name().to_string() == node_name.to_string(); });
-        state.inaccessible([&](auto& view) { has_invalid_state = view == node_id; });
-        state.undefined([&](auto& view) { has_invalid_state = view == node_id; });
+    Node<SERVICE_TYPE>::list(node.config(), [&](auto state) -> auto {
+        state.alive([&](auto& view) -> auto {
+            alive_node_found = view.details()->name().to_string() == node_name.to_string();
+        });
+        state.dead([&](auto& view) -> auto {
+            has_invalid_state = view.details()->name().to_string() == node_name.to_string();
+        });
+        state.inaccessible([&](auto& view) -> auto { has_invalid_state = view == node_id; });
+        state.undefined([&](auto& view) -> auto { has_invalid_state = view == node_id; });
 
         if (alive_node_found || has_invalid_state) {
             return CallbackProgression::Stop;

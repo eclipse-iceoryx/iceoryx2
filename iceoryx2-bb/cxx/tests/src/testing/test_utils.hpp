@@ -24,13 +24,11 @@ namespace testing {
 void opaque_use(void* object);
 void opaque_use(void const* object);
 
-// NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
 template <typename T, std::enable_if_t<!std::is_pointer<T>::value, bool> = true>
 void opaque_use(T& object) {
     opaque_use(&object);
 }
 
-// NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
 template <typename T, std::enable_if_t<!std::is_pointer<T>::value, bool> = true>
 void opaque_use(T const& object) {
     opaque_use(&object);

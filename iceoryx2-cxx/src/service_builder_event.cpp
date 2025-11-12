@@ -20,43 +20,48 @@ ServiceBuilderEvent<S>::ServiceBuilderEvent(iox2_service_builder_h handle)
 
 template <ServiceType S>
 void ServiceBuilderEvent<S>::set_parameters() {
-    m_max_notifiers.and_then([&](auto value) { iox2_service_builder_event_set_max_notifiers(&m_handle, value); });
-    m_max_listeners.and_then([&](auto value) { iox2_service_builder_event_set_max_listeners(&m_handle, value); });
+    m_max_notifiers.and_then(
+        [&](auto value) -> auto { iox2_service_builder_event_set_max_notifiers(&m_handle, value); });
+    m_max_listeners.and_then(
+        [&](auto value) -> auto { iox2_service_builder_event_set_max_listeners(&m_handle, value); });
 
     if (m_verify_notifier_created_event) {
         m_notifier_created_event
-            .and_then(
-                [&](auto value) { iox2_service_builder_event_set_notifier_created_event(&m_handle, value.as_value()); })
-            .or_else([&]() { iox2_service_builder_event_disable_notifier_created_event(&m_handle); });
+            .and_then([&](auto value) -> auto {
+                iox2_service_builder_event_set_notifier_created_event(&m_handle, value.as_value());
+            })
+            .or_else([&]() -> auto { iox2_service_builder_event_disable_notifier_created_event(&m_handle); });
     }
 
     if (m_verify_notifier_dropped_event) {
         m_notifier_dropped_event
-            .and_then(
-                [&](auto value) { iox2_service_builder_event_set_notifier_dropped_event(&m_handle, value.as_value()); })
-            .or_else([&]() { iox2_service_builder_event_disable_notifier_dropped_event(&m_handle); });
+            .and_then([&](auto value) -> auto {
+                iox2_service_builder_event_set_notifier_dropped_event(&m_handle, value.as_value());
+            })
+            .or_else([&]() -> auto { iox2_service_builder_event_disable_notifier_dropped_event(&m_handle); });
     }
 
     if (m_verify_notifier_dead_event) {
         m_notifier_dead_event
-            .and_then(
-                [&](auto value) { iox2_service_builder_event_set_notifier_dead_event(&m_handle, value.as_value()); })
-            .or_else([&]() { iox2_service_builder_event_disable_notifier_dead_event(&m_handle); });
+            .and_then([&](auto value) -> auto {
+                iox2_service_builder_event_set_notifier_dead_event(&m_handle, value.as_value());
+            })
+            .or_else([&]() -> auto { iox2_service_builder_event_disable_notifier_dead_event(&m_handle); });
     }
 
     if (m_verify_deadline) {
         m_deadline
-            .and_then([&](auto value) {
+            .and_then([&](auto value) -> auto {
                 auto duration = value.timespec();
                 iox2_service_builder_event_set_deadline(
                     &m_handle, static_cast<uint64_t>(duration.tv_sec), static_cast<uint32_t>(duration.tv_nsec));
             })
-            .or_else([&]() { iox2_service_builder_event_disable_deadline(&m_handle); });
+            .or_else([&]() -> auto { iox2_service_builder_event_disable_deadline(&m_handle); });
     }
 
-    m_max_nodes.and_then([&](auto value) { iox2_service_builder_event_set_max_nodes(&m_handle, value); });
+    m_max_nodes.and_then([&](auto value) -> auto { iox2_service_builder_event_set_max_nodes(&m_handle, value); });
     m_event_id_max_value.and_then(
-        [&](auto value) { iox2_service_builder_event_set_event_id_max_value(&m_handle, value); });
+        [&](auto value) -> auto { iox2_service_builder_event_set_event_id_max_value(&m_handle, value); });
 }
 
 template <ServiceType S>

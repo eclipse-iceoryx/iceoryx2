@@ -64,7 +64,8 @@ template <ServiceType S, typename Payload, typename UserHeader>
 inline auto
 PortFactorySubscriber<S, Payload, UserHeader>::create() && -> iox::expected<Subscriber<S, Payload, UserHeader>,
                                                                             SubscriberCreateError> {
-    m_buffer_size.and_then([&](auto value) { iox2_port_factory_subscriber_builder_set_buffer_size(&m_handle, value); });
+    m_buffer_size.and_then(
+        [&](auto value) -> auto { iox2_port_factory_subscriber_builder_set_buffer_size(&m_handle, value); });
 
     iox2_subscriber_h sub_handle {};
     auto result = iox2_port_factory_subscriber_builder_create(m_handle, nullptr, &sub_handle);

@@ -60,7 +60,8 @@ struct NulloptT {
     constexpr explicit NulloptT(detail::NulloptTConstructorTag /* unused */) noexcept {
     }
 };
-
+// NOLINTNEXTLINE(readability-identifier-naming), for consistency with C++17 code using std::optional
+constexpr NulloptT nullopt = NulloptT(detail::NulloptTConstructorTag {});
 
 namespace detail {
 /// Internal union implementation for Optional.
@@ -93,7 +94,6 @@ class OptionalValueHolder {
             set(rhs.m_u_value);
         }
     }
-    // NOLINTNEXTLINE(modernize-type-traits), requires C++17
     constexpr OptionalValueHolder(OptionalValueHolder&& rhs) noexcept(std::is_nothrow_move_constructible<T>::value)
         : OptionalValueHolder() {
         if (!rhs.m_is_empty) {
@@ -121,7 +121,6 @@ class OptionalValueHolder {
         return *this;
     }
 
-    // NOLINTNEXTLINE(modernize-type-traits), requires C++17
     constexpr auto operator=(OptionalValueHolder&& rhs) noexcept(std::is_nothrow_move_assignable<T>::value)
         -> OptionalValueHolder& {
         if (this != &rhs) {
@@ -202,22 +201,19 @@ class Optional {
     using value_type = T;
 
     // constructors
-    constexpr Optional() noexcept = default;
+    constexpr Optional() noexcept
+        : Optional(NulloptT { detail::NulloptTConstructorTag {} }) {
+    }
 
     constexpr Optional(const Optional& rhs) = default;
     constexpr Optional(Optional&& rhs) = default;
 
     // NOLINTNEXTLINE(hicpp-explicit-conversions), as specified in ISO14882:2017 [optional]
-    constexpr Optional(NulloptT /* unused */) noexcept
-        : Optional() {
+    constexpr Optional(const NulloptT& /* unused */) noexcept {
     }
 
     template <typename U = std::remove_cv_t<T>,
-              // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
-              std::enable_if_t<std::is_constructible<T, U>::value
-                                   // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
-                                   && !std::is_same<std::decay_t<U>, Optional<T>>::value
-                                   // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
+              std::enable_if_t<std::is_constructible<T, U>::value && !std::is_same<std::decay_t<U>, Optional<T>>::value
                                    && !std::is_same<std::decay_t<U>, NulloptT>::value,
                                bool> = true>
     // NOLINTNEXTLINE(hicpp-explicit-conversions), as specified in ISO14882:2017 [optional]
@@ -232,7 +228,7 @@ class Optional {
         ~Optional() = default;
 
     // assignment
-    constexpr auto operator=(NulloptT /* unused */) noexcept -> Optional& {
+    constexpr auto operator=(NulloptT& /* unused */) noexcept -> Optional& {
         reset();
         return *this;
     }
@@ -330,23 +326,6 @@ template <class T>
 Optional(T) -> Optional<T>;
 #endif
 
-#endif
-
-#if __cplusplus >= 201703L
-// NOLINTNEXTLINE(readability-identifier-naming), for consistency with C++17 code using std::optional
-inline constexpr NulloptT nullopt { detail::NulloptTConstructorTag {} };
-#else
-namespace detail {
-template <typename = void>
-struct NulloptHelper {
-    static NulloptT nullopt;
-};
-template <>
-// NOLINTNEXTLINE(misc-definitions-in-headers), not an ODR violation because of template
-NulloptT NulloptHelper<>::nullopt = NulloptT { detail::NulloptTConstructorTag {} };
-} // namespace detail
-// NOLINTNEXTLINE(readability-identifier-naming), for consistency with C++17 code using std::optional
-static constexpr NulloptT const& nullopt = detail::NulloptHelper<>::nullopt;
 #endif
 
 } // namespace container

@@ -72,7 +72,8 @@ class StaticString {
       public:
         ~UncheckedConstAccessor() = default;
         UncheckedConstAccessor(UncheckedConstAccessor const&) = delete;
-        UncheckedConstAccessor(UncheckedConstAccessor&&) = delete;
+        // NOTE: can be changed to '= delete' when C++17 becomes mandatory and we can rely on RVO
+        UncheckedConstAccessor(UncheckedConstAccessor&&) = default;
         auto operator=(UncheckedConstAccessor const&) -> UncheckedConstAccessor& = delete;
         auto operator=(UncheckedConstAccessor&&) -> UncheckedConstAccessor& = delete;
 
@@ -114,7 +115,8 @@ class StaticString {
       public:
         ~UncheckedAccessor() = default;
         UncheckedAccessor(UncheckedAccessor const&) = delete;
-        UncheckedAccessor(UncheckedAccessor&&) = delete;
+        // NOTE: can be changed to '= delete' when C++17 becomes mandatory and we can rely on RVO
+        UncheckedAccessor(UncheckedAccessor&&) = default;
         auto operator=(UncheckedAccessor const&) -> UncheckedAccessor& = delete;
         auto operator=(UncheckedAccessor&&) -> UncheckedAccessor& = delete;
 
@@ -155,7 +157,8 @@ class StaticString {
       public:
         ~UncheckedAccessorCodeUnits() = default;
         UncheckedAccessorCodeUnits(UncheckedAccessorCodeUnits const&) = delete;
-        UncheckedAccessorCodeUnits(UncheckedAccessorCodeUnits&&) = delete;
+        // NOTE: can be changed to '= delete' when C++17 becomes mandatory and we can rely on RVO
+        UncheckedAccessorCodeUnits(UncheckedAccessorCodeUnits&&) = default;
         auto operator=(UncheckedAccessorCodeUnits const&) -> UncheckedAccessorCodeUnits& = delete;
         auto operator=(UncheckedAccessorCodeUnits&&) -> UncheckedAccessorCodeUnits& = delete;
 
@@ -223,7 +226,8 @@ class StaticString {
       public:
         ~ConstAccessorCodeUnits() = default;
         ConstAccessorCodeUnits(ConstAccessorCodeUnits const&) = delete;
-        ConstAccessorCodeUnits(ConstAccessorCodeUnits&&) = delete;
+        // NOTE: can be changed to '= delete' when C++17 becomes mandatory and we can rely on RVO
+        ConstAccessorCodeUnits(ConstAccessorCodeUnits&&) = default;
         auto operator=(ConstAccessorCodeUnits const&) -> ConstAccessorCodeUnits& = delete;
         auto operator=(ConstAccessorCodeUnits&&) -> ConstAccessorCodeUnits& = delete;
 
@@ -469,7 +473,6 @@ class StaticString {
         ret.offset_data = offsetof(Self, m_string);
         ret.sizeof_size = sizeof(m_size);
         ret.offset_size = offsetof(Self, m_size);
-        // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
         ret.size_is_unsigned = std::is_unsigned<decltype(m_size)>::value;
         return ret;
     }

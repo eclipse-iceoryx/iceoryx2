@@ -68,7 +68,8 @@ class ActiveRequest {
     auto payload() const -> iox::ImmutableSlice<ValueType>;
 
     /// Returns a reference to the user_header of the received [`RequestMut`]
-    template <typename T = RequestUserHeader, typename = std::enable_if_t<!std::is_same_v<void, RequestUserHeader>, T>>
+    template <typename T = RequestUserHeader,
+              typename = std::enable_if_t<!std::is_same<void, RequestUserHeader>::value, T>>
     auto user_header() const -> const T&;
 
     /// Returns a reference to the [`RequestHeader`] of the received [`RequestMut`]
@@ -193,7 +194,8 @@ template <ServiceType Service,
 template <typename T, typename>
 inline auto ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::send_copy(
     const ResponsePayload& payload) const -> iox::expected<void, SendError> {
-    static_assert(std::is_trivially_copyable_v<ResponsePayload>);
+    static_assert(std::is_trivially_copyable<ResponsePayload>::value,
+                  "The server supports only trivially copyable response payload types.");
     constexpr uint64_t NUMBER_OF_ELEMENTS = 1;
 
     auto result = iox2_active_request_send_copy(
@@ -213,7 +215,8 @@ template <typename T, typename>
 inline auto
 ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::send_slice_copy(
     const iox::ImmutableSlice<ValueType>& payload) const -> iox::expected<void, SendError> {
-    static_assert(std::is_trivially_copyable_v<ValueType>);
+    static_assert(std::is_trivially_copyable<ValueType>::value,
+                  "The server supports only trivially copyable response payload types.");
 
     auto result = iox2_active_request_send_copy(
         &m_handle, payload.data(), sizeof(typename ResponsePayload::ValueType), payload.number_of_elements());

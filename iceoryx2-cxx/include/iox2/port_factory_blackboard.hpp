@@ -149,8 +149,8 @@ inline auto PortFactoryBlackboard<S, KeyType>::dynamic_config() const -> Dynamic
 }
 
 template <ServiceType S, typename KeyType>
-inline auto PortFactoryBlackboard<S, KeyType>::nodes(
-    [[maybe_unused]] const iox::function<CallbackProgression(NodeState<S>)>& callback) const
+inline auto
+PortFactoryBlackboard<S, KeyType>::nodes(const iox::function<CallbackProgression(NodeState<S>)>& callback) const
     -> iox::expected<void, NodeListFailure> {
     auto ctx = internal::ctx(callback);
 
