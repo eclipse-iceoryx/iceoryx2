@@ -74,6 +74,7 @@ impl PortFactoryWriter {
 
 #[pymethods]
 impl PortFactoryWriter {
+    /// Creates a new `Writer` or returns a `WriterCreateError` on failure.
     pub fn create(&self) -> PyResult<Writer> {
         let _guard = self.factory.lock();
         match &self.value {

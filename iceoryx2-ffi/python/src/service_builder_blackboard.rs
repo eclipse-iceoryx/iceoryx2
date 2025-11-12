@@ -43,7 +43,7 @@ pub(crate) enum ServiceBuilderBlackboardOpenerType {
     Local(LocalOpener),
 }
 
-// TODO: remove unsendable?
+// TODO: remove unsendable
 #[pyclass(unsendable)]
 /// Builder to create new `MessagingPattern::Blackboard` based `Service`s
 pub struct ServiceBuilderBlackboardCreator {
@@ -86,6 +86,8 @@ impl ServiceBuilderBlackboardCreator {
         self.key_type_storage.value = Some(value)
     }
 
+    /// Defines the key type. To be able to connect to a `Service`, the `TypeDetail` must be
+    /// indentical in all participants since the communication is always strongly typed.
     pub fn __set_key_type_details(&self, value: &TypeDetail) -> Self {
         match &self.value {
             ServiceBuilderBlackboardCreatorType::Ipc(v) => {
@@ -101,6 +103,8 @@ impl ServiceBuilderBlackboardCreator {
         }
     }
 
+    /// Defines the key eq comparison function needed to store and retrieve keys in the
+    /// blackboard.
     pub fn __set_key_eq_cmp_func(&self, key_eq_func: PyObject) -> Self {
         match &self.value {
             ServiceBuilderBlackboardCreatorType::Ipc(v) => {
@@ -136,6 +140,7 @@ impl ServiceBuilderBlackboardCreator {
         }
     }
 
+    /// Defines how many `Reader`s shall be supported at most.
     pub fn max_readers(&self, value: usize) -> Self {
         match &self.value {
             ServiceBuilderBlackboardCreatorType::Ipc(v) => {
@@ -151,6 +156,7 @@ impl ServiceBuilderBlackboardCreator {
         }
     }
 
+    /// Defines how many `Node`s shall be able to open the `Service` in parallel.
     pub fn max_nodes(&self, value: usize) -> Self {
         match &self.value {
             ServiceBuilderBlackboardCreatorType::Ipc(v) => {
@@ -166,6 +172,7 @@ impl ServiceBuilderBlackboardCreator {
         }
     }
 
+    /// Adds key-value pairs to the blackboard.
     pub fn __add(&mut self, key: usize, value: usize, value_details: &TypeDetail) -> Self {
         match &self.value {
             ServiceBuilderBlackboardCreatorType::Ipc(v) => {
@@ -195,6 +202,7 @@ impl ServiceBuilderBlackboardCreator {
         }
     }
 
+    /// Creates a new `Service`.
     pub fn create(&self) -> PyResult<PortFactoryBlackboard> {
         match &self.value {
             ServiceBuilderBlackboardCreatorType::Ipc(v) => {
@@ -220,6 +228,7 @@ impl ServiceBuilderBlackboardCreator {
         }
     }
 
+    /// Creates a new `Service` with a set of attributes.
     pub fn create_with_attributes(
         &self,
         attributes: &AttributeSpecifier,
@@ -249,7 +258,7 @@ impl ServiceBuilderBlackboardCreator {
     }
 }
 
-// TODO: make cleanup callable Send+Sync and remove unsendable?
+// TODO: remove unsendable
 #[pyclass(unsendable)]
 /// Builder to open new `MessagingPattern::Blackboard` based `Service`s
 pub struct ServiceBuilderBlackboardOpener {
@@ -291,6 +300,8 @@ impl ServiceBuilderBlackboardOpener {
         self.key_type_details.value = Some(value)
     }
 
+    /// Defines the key type. To be able to connect to a `Service`, the `TypeDetail` must be
+    /// indentical in all participants since the communication is always strongly typed.
     pub fn __set_key_type_details(&self, value: &TypeDetail) -> Self {
         match &self.value {
             ServiceBuilderBlackboardOpenerType::Ipc(v) => {
@@ -306,6 +317,7 @@ impl ServiceBuilderBlackboardOpener {
         }
     }
 
+    /// Defines how many `Reader`s must be at least supported.
     pub fn max_readers(&self, value: usize) -> Self {
         match &self.value {
             ServiceBuilderBlackboardOpenerType::Ipc(v) => {
@@ -321,6 +333,7 @@ impl ServiceBuilderBlackboardOpener {
         }
     }
 
+    /// Defines how many `Node`s must be at least supported.
     pub fn max_nodes(&self, value: usize) -> Self {
         match &self.value {
             ServiceBuilderBlackboardOpenerType::Ipc(v) => {
@@ -336,6 +349,7 @@ impl ServiceBuilderBlackboardOpener {
         }
     }
 
+    /// Opens an existing `Service`.
     pub fn open(&self) -> PyResult<PortFactoryBlackboard> {
         match &self.value {
             ServiceBuilderBlackboardOpenerType::Ipc(v) => {
@@ -361,6 +375,8 @@ impl ServiceBuilderBlackboardOpener {
         }
     }
 
+    /// Opens an existing `Service` with attribute requirements. If the defined attribute
+    /// requirements are not satisfied the open process will fail.
     pub fn open_with_attributes(
         &self,
         verifier: &AttributeVerifier,

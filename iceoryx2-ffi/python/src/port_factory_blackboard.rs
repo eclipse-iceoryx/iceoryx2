@@ -49,6 +49,8 @@ pub(crate) enum PortFactoryBlackboardType {
 }
 
 #[pyclass]
+/// The factory for `MessagingPattern::Blackboard`. It can acquire dynamic and static service
+/// informations and create `Reader` or `Writer` ports.
 pub struct PortFactoryBlackboard {
     pub(crate) value: Parc<PortFactoryBlackboardType>,
     key_type_storage: TypeStorage,
@@ -66,6 +68,7 @@ impl PortFactoryBlackboard {
 #[pymethods]
 impl PortFactoryBlackboard {
     #[getter]
+    /// Returns the `ServiceName` of the service.
     pub fn name(&self) -> ServiceName {
         match &*self.value.lock() {
             PortFactoryBlackboardType::Ipc(Some(v)) => ServiceName(v.name().clone()),
@@ -75,7 +78,7 @@ impl PortFactoryBlackboard {
     }
 
     #[getter]
-    /// Returns the `ServiceId` of the `Service`
+    /// Returns the `ServiceId` of the `Service`.
     pub fn service_id(&self) -> ServiceId {
         match &*self.value.lock() {
             PortFactoryBlackboardType::Ipc(Some(v)) => ServiceId(v.service_id().clone()),
@@ -85,7 +88,7 @@ impl PortFactoryBlackboard {
     }
 
     #[getter]
-    /// Returns the `AttributeSet` defined in the `Service`
+    /// Returns the `AttributeSet` defined in the `Service`.
     pub fn attributes(&self) -> AttributeSet {
         match &*self.value.lock() {
             PortFactoryBlackboardType::Ipc(Some(v)) => AttributeSet(v.attributes().clone()),
@@ -95,8 +98,8 @@ impl PortFactoryBlackboard {
     }
 
     #[getter]
-    /// Returns the StaticConfig of the `Service`.
-    /// Contains all settings that never change during the lifetime of the service.
+    /// Returns the StaticConfig of the `Service`. Contains all settings that never change during
+    /// the lifetime of the service.
     pub fn static_config(&self) -> StaticConfigBlackboard {
         match &*self.value.lock() {
             PortFactoryBlackboardType::Ipc(Some(v)) => {
