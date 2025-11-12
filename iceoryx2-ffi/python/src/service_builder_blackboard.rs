@@ -111,8 +111,10 @@ impl ServiceBuilderBlackboardCreator {
                 let this = v.clone();
                 let eq_func = Box::new(move |lhs: *const u8, rhs: *const u8| -> bool {
                     Python::with_gil(|py| {
-                        let x = key_eq_func.call1(py, (lhs as usize, rhs as usize)).unwrap();
-                        x.extract::<bool>(py).expect("")
+                        let result = key_eq_func.call1(py, (lhs as usize, rhs as usize)).unwrap();
+                        result
+                            .extract::<bool>(py)
+                            .expect("Return type of key eq comparison function must be bool.")
                     })
                 });
                 let this = unsafe {
@@ -126,8 +128,10 @@ impl ServiceBuilderBlackboardCreator {
                 let this = v.clone();
                 let eq_func = Box::new(move |lhs: *const u8, rhs: *const u8| -> bool {
                     Python::with_gil(|py| {
-                        let x = key_eq_func.call1(py, (lhs as usize, rhs as usize)).unwrap();
-                        x.extract::<bool>(py).expect("")
+                        let result = key_eq_func.call1(py, (lhs as usize, rhs as usize)).unwrap();
+                        result
+                            .extract::<bool>(py)
+                            .expect("Return type of key eq comparison function must be bool.")
                     })
                 });
                 let this = unsafe {

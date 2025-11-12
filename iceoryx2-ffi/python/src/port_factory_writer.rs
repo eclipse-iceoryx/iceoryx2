@@ -65,7 +65,9 @@ impl PortFactoryWriter {
                         LocalPortFactoryWriter<'static>,
                     >(v.writer_builder()))
                 }),
-                _ => fatal_panic!(""), // TODO
+                _ => {
+                    fatal_panic!(from "PortFactoryWriter::new()", "Accessing a deleted PortFactoryBlackboard.")
+                }
             },
             key_type_storage,
         }

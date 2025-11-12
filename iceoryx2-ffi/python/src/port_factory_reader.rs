@@ -65,7 +65,9 @@ impl PortFactoryReader {
                         LocalPortFactoryReader<'static>,
                     >(v.reader_builder()))
                 }),
-                _ => fatal_panic!(""), // TODO
+                _ => {
+                    fatal_panic!(from "PortFactoryReader::new()", "Accessing a deleted PortFactoryBlackboard.")
+                }
             },
             key_type_storage,
         }

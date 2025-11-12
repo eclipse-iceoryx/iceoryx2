@@ -73,7 +73,9 @@ impl PortFactoryBlackboard {
         match &*self.value.lock() {
             PortFactoryBlackboardType::Ipc(Some(v)) => ServiceName(v.name().clone()),
             PortFactoryBlackboardType::Local(Some(v)) => ServiceName(v.name().clone()),
-            _ => fatal_panic!(""), // TODO
+            _ => {
+                fatal_panic!(from "PortFactoryBlackboard::name()", "Accessing a deleted PortFactoryBlackboard.")
+            }
         }
     }
 
@@ -83,7 +85,9 @@ impl PortFactoryBlackboard {
         match &*self.value.lock() {
             PortFactoryBlackboardType::Ipc(Some(v)) => ServiceId(v.service_id().clone()),
             PortFactoryBlackboardType::Local(Some(v)) => ServiceId(v.service_id().clone()),
-            _ => fatal_panic!(""), // TODO
+            _ => {
+                fatal_panic!(from "PortFactoryBlackboard::service_id()", "Accessing a deleted PortFactoryBlackboard.")
+            }
         }
     }
 
@@ -93,7 +97,9 @@ impl PortFactoryBlackboard {
         match &*self.value.lock() {
             PortFactoryBlackboardType::Ipc(Some(v)) => AttributeSet(v.attributes().clone()),
             PortFactoryBlackboardType::Local(Some(v)) => AttributeSet(v.attributes().clone()),
-            _ => fatal_panic!(""), // TODO
+            _ => {
+                fatal_panic!(from "PortFactoryBlackboard::attributes()", "Accessing a deleted PortFactoryBlackboard.")
+            }
         }
     }
 
@@ -108,7 +114,9 @@ impl PortFactoryBlackboard {
             PortFactoryBlackboardType::Local(Some(v)) => {
                 StaticConfigBlackboard(v.static_config().clone())
             }
-            _ => fatal_panic!(""), // TODO
+            _ => {
+                fatal_panic!(from "PortFactoryBlackboard::static_config()", "Accessing a deleted PortFactoryBlackboard.")
+            }
         }
     }
 
@@ -159,7 +167,9 @@ impl PortFactoryBlackboard {
                 .map_err(|e| NodeListFailure::new_err(format!("{e:?}")))?;
                 Ok(ret_val)
             }
-            _ => fatal_panic!(""), // TODO
+            _ => {
+                fatal_panic!(from "PortFactoryBlackboard::nodes()", "Accessing a deleted PortFactoryBlackboard.")
+            }
         }
     }
 

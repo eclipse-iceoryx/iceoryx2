@@ -50,7 +50,8 @@ def get_key_cmp_func(
 def blackboard_creator(
     self: ServiceBuilder, key: Type[T]
 ) -> ServiceBuilderBlackboardCreator:
-    """Returns the `ServiceBuilderBlackboardCreator` to create a new blackboard service. The key ctype must be provided as argument."""
+    """Returns the `ServiceBuilderBlackboardCreator` to create a new blackboard service. The key ctype must be provided as argument.
+    If the key is of type ctypes.Structure, it must implement __eq__."""
     type_name = get_type_name(key)
     type_size = ctypes.sizeof(key)
     type_align = ctypes.alignment(key)
