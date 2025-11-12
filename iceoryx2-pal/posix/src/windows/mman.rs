@@ -471,7 +471,7 @@ pub unsafe fn mmap(
         }
         Some(FdHandleEntry::File(fd)) => {
             let max_size_low: u32 = (len & 0xFFFFFFFF) as u32;
-            let max_size_high: u32 = ((len >> 32) & 0xFFFFFFFF) as u32;
+            let max_size_high: u32 = (len.overflowing_shr(32).0 & 0xFFFFFFFF) as u32;
             let file_view = win32call! { CreateFileMappingA(
                 fd.handle,
                 core::ptr::null(),
