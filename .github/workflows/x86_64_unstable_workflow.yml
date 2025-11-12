@@ -13,6 +13,10 @@ on:
         required: true
         type: string
 
+env:
+  SCCACHE_GHA_ENABLED: true
+  RUSTC_WRAPPER: sccache
+
 jobs:
   x86_64_unstable:
     continue-on-error: true
@@ -25,7 +29,7 @@ jobs:
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@802fa1a2c4e212495c05bf94dba2704a92a472be # ratchet: jwlawson/actions-setup-cmake@v2
         with:
-          cmake-version: '3.31.x'
+          cmake-version: "3.31.x"
       - name: Use cmake
         run: cmake --version
 
@@ -41,21 +45,28 @@ jobs:
           artifact-bin-name: cargo-nextest
           artifact-upload-name: ${{ runner.os }}-cargo-nextest
 
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@bafd42bd91680affe190f697cac6ef3ad958ecba # ratchet:mozilla-actions/sccache-action@v0.0.9
+      - name: Set C/C++ caching env vars
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+
+      - name: Set up sccache on Windows
+        if: ${{ inputs.os == 'windows-latest' }}
+        run: |
+          Add-Content -Path $env:GITHUB_ENV -Value "SCCACHE_GHA_ENABLED=true"
+          Add-Content -Path $env:GITHUB_ENV -Value "RUSTC_WRAPPER=sccache"
+
       - name: Prepare Windows
         if: ${{ inputs.os == 'windows-latest' }}
         run: internal\scripts\ci_prepare_windows.ps1
+
       - name: Prepare Linux
         if: ${{ inputs.os == 'ubuntu-latest' }}
         run: |
           internal/scripts/ci_prepare_ubuntu.sh
           uname -a
-
-      - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad # ratchet:mozilla-actions/sccache-action@v0.0.9
-      - name: Set C/C++ caching env vars
-        run: |
-          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
 
       - name: Run cargo build
         run: cargo build --workspace --all-targets ${{ inputs.mode-arg }}

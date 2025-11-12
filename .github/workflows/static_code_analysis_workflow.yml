@@ -28,6 +28,13 @@ jobs:
           toolchain: stable
           components: rustfmt, clippy
 
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@bafd42bd91680affe190f697cac6ef3ad958ecba # ratchet:mozilla-actions/sccache-action@v0.0.9
+      - name: Set C/C++ caching env vars
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+
       - name: Run cargo fmt
         run: cargo fmt --all -- --check
 
@@ -39,7 +46,7 @@ jobs:
 
       - name: Build documentation
         run: cargo doc ${{ inputs.cargo-features-flag }}
-  
+
       - name: Setup miri
         uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
         with:

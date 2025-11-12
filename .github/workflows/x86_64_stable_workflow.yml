@@ -28,6 +28,10 @@ on:
         required: true
         type: string
 
+env:
+  SCCACHE_GHA_ENABLED: true
+  RUSTC_WRAPPER: sccache
+
 jobs:
   x86_64:
     timeout-minutes: 90
@@ -39,7 +43,7 @@ jobs:
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@802fa1a2c4e212495c05bf94dba2704a92a472be # ratchet: jwlawson/actions-setup-cmake@v2
         with:
-          cmake-version: '3.31.x'
+          cmake-version: "3.31.x"
       - name: Use cmake
         run: cmake --version
 
@@ -55,21 +59,28 @@ jobs:
           artifact-bin-name: cargo-nextest
           artifact-upload-name: ${{ runner.os }}-cargo-nextest
 
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@bafd42bd91680affe190f697cac6ef3ad958ecba # ratchet:mozilla-actions/sccache-action@v0.0.9
+      - name: Set C/C++ caching env vars
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+
+      - name: Set up sccache on Windows
+        if: ${{ inputs.os == 'windows-latest' }}
+        run: |
+          Add-Content -Path $env:GITHUB_ENV -Value "SCCACHE_GHA_ENABLED=true"
+          Add-Content -Path $env:GITHUB_ENV -Value "RUSTC_WRAPPER=sccache"
+
       - name: Prepare Windows
         if: ${{ inputs.os == 'windows-latest' }}
         run: internal\scripts\ci_prepare_windows.ps1
+
       - name: Prepare Linux
         if: ${{ inputs.os == 'ubuntu-latest' }}
         run: |
           internal/scripts/ci_prepare_ubuntu.sh
           uname -a
-
-      - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad # ratchet:mozilla-actions/sccache-action@v0.0.9
-      - name: Set C/C++ caching env vars
-        run: |
-          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
 
       - name: Run cargo build
         run: cargo build --workspace --all-targets ${{ inputs.mode-arg }} ${{ inputs.cargo-features-flag }}
@@ -93,7 +104,7 @@ jobs:
       - name: Build language bindings
         # NOTE: the cmake command is in a single line since Windows complains about breaking up lines with '\'
         run: |
-          cmake -S . -B target/ff/cc/build -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON -DWARNING_AS_ERROR=ON ${{ inputs.mode-cmake-build-type }} ${{ inputs.mode-cmake-cxx-flags }} -DCMAKE_INSTALL_PREFIX=target/ff/cc/install -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/iceoryx/install" -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/${{ inputs.mode-name }}"
+          cmake -S . -B target/ff/cc/build -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON -DWARNING_AS_ERROR=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache ${{ inputs.mode-cmake-build-type }} ${{ inputs.mode-cmake-cxx-flags }} -DCMAKE_INSTALL_PREFIX=target/ff/cc/install -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/iceoryx/install" -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/${{ inputs.mode-name }}"
           cmake --build target/ff/cc/build ${{ inputs.mode-cmake-build-config }}
           cmake --install target/ff/cc/build ${{ inputs.mode-cmake-build-config }}
 
@@ -114,11 +125,11 @@ jobs:
       - name: Build C language binding examples in out-of-tree configuration
         # NOTE: the cmake command is in a single line since Windows complains about breaking up lines with '\'
         run: |
-          cmake -S examples/c -B target/ff/out-of-tree-c ${{ inputs.mode-cmake-build-type }} ${{ inputs.mode-cmake-cxx-flags }} -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/cc/install"
+          cmake -S examples/c -B target/ff/out-of-tree-c ${{ inputs.mode-cmake-build-type }} ${{ inputs.mode-cmake-cxx-flags }} -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/cc/install"
           cmake --build target/ff/out-of-tree-c ${{ inputs.mode-cmake-build-config }}
 
       - name: Build C++ language binding examples in out-of-tree configuration
         # NOTE: the cmake command is in a single line since Windows complains about breaking up lines with '\'
         run: |
-          cmake -S examples/cxx -B target/ff/out-of-tree-cxx ${{ inputs.mode-cmake-build-type }} ${{ inputs.mode-cmake-cxx-flags }} -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/cc/install;${{ github.workspace }}/target/ff/iceoryx/install"
+          cmake -S examples/cxx -B target/ff/out-of-tree-cxx ${{ inputs.mode-cmake-build-type }} ${{ inputs.mode-cmake-cxx-flags }} -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/cc/install;${{ github.workspace }}/target/ff/iceoryx/install"
           cmake --build target/ff/out-of-tree-cxx ${{ inputs.mode-cmake-build-config }}
