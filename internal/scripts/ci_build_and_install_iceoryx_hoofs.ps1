@@ -37,11 +37,21 @@ switch ($mode) {
 switch ($toolchain) {
     "stable-gnu" {
         if ($?) { Write-Host "## Using the MinGW toolchain" }
-        if ($?) { cmake -S target/ff/iceoryx/src/iceoryx_platform -B target/ff/iceoryx/build/platform -DBUILD_SHARED_LIBS=OFF $CMAKE_BUILD_TYPE -DCMAKE_INSTALL_PREFIX=target/ff/iceoryx/install -G "MinGW Makefiles" }
+        if ($?) { cmake -S target/ff/iceoryx/src/iceoryx_platform -B target/ff/iceoryx/build/platform `
+            -DBUILD_SHARED_LIBS=OFF `
+            $CMAKE_BUILD_TYPE `
+            -DCMAKE_C_COMPILER_LAUNCHER=sccache `
+            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache `
+            -DCMAKE_INSTALL_PREFIX=target/ff/iceoryx/install -G "MinGW Makefiles" }
     }
     default {
         if ($?) { Write-Host "## Using the MSVC toolchain" }
-        if ($?) { cmake -S target/ff/iceoryx/src/iceoryx_platform -B target/ff/iceoryx/build/platform -DBUILD_SHARED_LIBS=OFF $CMAKE_BUILD_TYPE -DCMAKE_INSTALL_PREFIX=target/ff/iceoryx/install -DCMAKE_CXX_FLAGS="/MP" }
+        if ($?) { cmake -S target/ff/iceoryx/src/iceoryx_platform -B target/ff/iceoryx/build/platform `
+            -DBUILD_SHARED_LIBS=OFF `
+            $CMAKE_BUILD_TYPE `
+            -DCMAKE_C_COMPILER_LAUNCHER=sccache `
+            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache `
+            -DCMAKE_INSTALL_PREFIX=target/ff/iceoryx/install -DCMAKE_CXX_FLAGS="/MP" }
     }
 }
 
