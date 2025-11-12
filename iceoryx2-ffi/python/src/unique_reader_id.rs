@@ -25,5 +25,3 @@ impl UniqueReaderId {
         self.0.value()
     }
 }
-
-// TODO: tests

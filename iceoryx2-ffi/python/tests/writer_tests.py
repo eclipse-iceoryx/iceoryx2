@@ -19,6 +19,28 @@ service_types = [iox2.ServiceType.Ipc, iox2.ServiceType.Local]
 
 
 @pytest.mark.parametrize("service_type", service_types)
+def test_writer_id_from_same_port_is_equal(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service_name = iox2.testing.generate_service_name()
+    key = c_uint64(0)
+    value = c_uint8(0)
+    service = (
+        node.service_builder(service_name)
+        .blackboard_creator(c_uint64)
+        .add(key, value)
+        .create()
+    )
+
+    writer = service.writer_builder().create()
+    id = writer.id
+
+    assert writer.id.value == id.value
+
+
+@pytest.mark.parametrize("service_type", service_types)
 def test_handle_can_be_acquired_for_existing_key_value_pair(
     service_type: iox2.ServiceType,
 ) -> None:

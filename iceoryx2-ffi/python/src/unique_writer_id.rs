@@ -25,5 +25,3 @@ impl UniqueWriterId {
         self.0.value()
     }
 }
-
-// TODO: tests
