@@ -15,7 +15,20 @@
 import ctypes
 from typing import Any, Callable, Type, TypeVar
 
-from ._iceoryx2 import *
+from ._iceoryx2 import (
+    EntryHandle,
+    EntryHandleMut,
+    EntryValue,
+    EntryValueUninit,
+    Reader,
+    ServiceBuilder,
+    ServiceBuilderBlackboardCreator,
+    ServiceBuilderBlackboardOpener,
+    TypeDetail,
+    TypeName,
+    TypeVariant,
+    Writer,
+)
 from .type_name import get_type_name
 
 T = TypeVar("T", bound=ctypes.Structure)
@@ -35,17 +48,16 @@ def get_key_cmp_func(
 
 
 def blackboard_creator(
-    self: ServiceBuilder, t: Type[T]
+    self: ServiceBuilder, key: Type[T]
 ) -> ServiceBuilderBlackboardCreator:
     """Returns the `ServiceBuilderBlackboardCreator` to create a new blackboard service. The key ctype must be provided as argument."""
-
-    type_name = get_type_name(t)
-    type_size = ctypes.sizeof(t)
-    type_align = ctypes.alignment(t)
+    type_name = get_type_name(key)
+    type_size = ctypes.sizeof(key)
+    type_align = ctypes.alignment(key)
     type_variant = TypeVariant.FixedSize
 
     result = self.__blackboard_creator()
-    result.__set_key_type(t)
+    result.__set_key_type(key)
 
     result = result.__set_key_type_details(
         TypeDetail.new()
@@ -59,17 +71,16 @@ def blackboard_creator(
 
 
 def blackboard_opener(
-    self: ServiceBuilder, t: Type[T]
+    self: ServiceBuilder, key: Type[T]
 ) -> ServiceBuilderBlackboardOpener:
     """Returns the `ServiceBuilderBlackboardOpener` to open a blackboard service. The key ctype must be provided as argument."""
-
-    type_name = get_type_name(t)
-    type_size = ctypes.sizeof(t)
-    type_align = ctypes.alignment(t)
+    type_name = get_type_name(key)
+    type_size = ctypes.sizeof(key)
+    type_align = ctypes.alignment(key)
     type_variant = TypeVariant.FixedSize
 
     result = self.__blackboard_opener()
-    result.__set_key_type(t)
+    result.__set_key_type(key)
 
     return result.__set_key_type_details(
         TypeDetail.new()
@@ -83,23 +94,18 @@ def blackboard_opener(
 def add(
     self: ServiceBuilderBlackboardCreator,
     key: Type[T],
-    value_type: Type[T],
     value: Type[T],
 ) -> ServiceBuilderBlackboardCreator:
-    """Adds a key-value pair to the blackboard."""
-    # TODO: state that key and value must live long enough
+    """Adds a key-value pair to the blackboard. Key and value must live until
+    `ServiceBuilderBlackboardCreator::create()` returns."""
     assert self.__key_type_details is not None
     assert ctypes.sizeof(key) == ctypes.sizeof(self.__key_type_details)
     assert ctypes.alignment(key) == ctypes.alignment(self.__key_type_details)
 
-    type_name = get_type_name(value_type)
-    type_size = ctypes.sizeof(value_type)
-    type_align = ctypes.alignment(value_type)
+    type_name = get_type_name(type(value))
+    type_size = ctypes.sizeof(value)
+    type_align = ctypes.alignment(value)
     type_variant = TypeVariant.FixedSize
-
-    # TODO: can value_type and value argument be combined?
-    assert ctypes.sizeof(value) == type_size
-    assert ctypes.alignment(value) == type_align
 
     return self.__add(
         ctypes.addressof(key),
@@ -137,7 +143,7 @@ def entry_handle(self: Reader, key: Type[T], value: Type[T]) -> EntryHandle:
 
 
 def get(self: EntryHandle) -> Any:
-    """Returna a copy of the value."""
+    """Return a copy of the value."""
     value_ptr = self.__get()
     return ctypes.cast(value_ptr, ctypes.POINTER(self.__value_type)).contents
 

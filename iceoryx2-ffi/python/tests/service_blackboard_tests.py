@@ -33,8 +33,8 @@ def test_same_entry_id_for_same_key(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key_0, c_uint64, value)
-        .add(key_1, c_uint64, value)
+        .add(key_0, value)
+        .add(key_1, value)
         .create()
     )
 
@@ -61,7 +61,7 @@ def test_simple_communication_works_reader_created_first(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint16, value)
+        .add(key, value)
         .create()
     )
 
@@ -92,7 +92,7 @@ def test_simple_communication_works_writer_created_first(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_int32, value)
+        .add(key, value)
         .create()
     )
 
@@ -124,7 +124,7 @@ def test_communication_with_max_readers(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint64, value)
+        .add(key, value)
         .max_readers(max_readers)
         .create()
     )
@@ -171,13 +171,13 @@ def test_communication_with_several_entry_handles_works(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key_0, c_uint64, key_0)
-        .add(key_1, c_uint64, key_1)
-        .add(key_2, c_uint64, key_2)
-        .add(key_3, c_uint64, key_3)
-        .add(key_4, c_uint64, key_4)
-        .add(key_5, c_uint64, key_5)
-        .add(key_6, c_uint64, key_6)
+        .add(key_0, key_0)
+        .add(key_1, key_1)
+        .add(key_2, key_2)
+        .add(key_3, key_3)
+        .add(key_4, key_4)
+        .add(key_5, key_5)
+        .add(key_6, key_6)
         .create()
     )
 
@@ -233,10 +233,10 @@ def test_write_and_read_different_value_types_works(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key_0, c_uint64, value_0)
-        .add(key_1, c_int8, value_1)
-        .add(key_2, c_bool, value_2)
-        .add(key_3, Groovy, value_3)
+        .add(key_0, value_0)
+        .add(key_1, value_1)
+        .add(key_2, value_2)
+        .add(key_3, value_3)
         .create()
     )
 
@@ -273,7 +273,7 @@ def test_creating_max_supported_amount_of_ports_work(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint8, value)
+        .add(key, value)
         .max_readers(max_readers)
         .create()
     )
@@ -320,7 +320,7 @@ def test_dropping_service_keeps_established_communication(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint32, value)
+        .add(key, value)
         .create()
     )
 
@@ -349,7 +349,7 @@ def test_ports_of_dropped_service_block_new_service_creation(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint8, value)
+        .add(key, value)
         .create()
     )
 
@@ -360,21 +360,21 @@ def test_ports_of_dropped_service_block_new_service_creation(
 
     with pytest.raises(iox2.BlackboardCreateError):
         node.service_builder(service_name).blackboard_creator(c_uint64).add(
-            key, c_uint8, value
+            key, value
         ).create()
 
     reader.delete()
 
     with pytest.raises(iox2.BlackboardCreateError):
         node.service_builder(service_name).blackboard_creator(c_uint64).add(
-            key, c_uint8, value
+            key, value
         ).create()
 
     writer.delete()
 
     try:
         node.service_builder(service_name).blackboard_creator(c_uint64).add(
-            key, c_uint8, value
+            key, value
         ).create()
     except iox2.BlackboardCreateError:
         assert False
@@ -393,7 +393,7 @@ def test_service_can_be_opened_when_a_writer_exists(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint64, value)
+        .add(key, value)
         .create()
     )
     _writer = service.writer_builder().create()
@@ -402,7 +402,7 @@ def test_service_can_be_opened_when_a_writer_exists(
 
     with pytest.raises(iox2.BlackboardCreateError):
         node.service_builder(service_name).blackboard_creator(c_uint64).add(
-            key, c_uint64, value
+            key, value
         ).create()
 
     try:
@@ -424,7 +424,7 @@ def test_service_can_be_opened_when_a_reader_exists(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint64, value)
+        .add(key, value)
         .create()
     )
     _reader = service.reader_builder().create()
@@ -433,7 +433,7 @@ def test_service_can_be_opened_when_a_reader_exists(
 
     with pytest.raises(iox2.BlackboardCreateError):
         node.service_builder(service_name).blackboard_creator(c_uint64).add(
-            key, c_uint64, value
+            key, value
         ).create()
 
     try:
@@ -455,7 +455,7 @@ def test_reader_can_still_read_value_when_writer_was_disconnected(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint8, value)
+        .add(key, value)
         .create()
     )
 
@@ -485,8 +485,8 @@ def test_reconnected_reader_sees_current_blackboard_status(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key_0, c_uint8, value_0)
-        .add(key_1, c_int32, value_1)
+        .add(key_0, value_0)
+        .add(key_1, value_1)
         .create()
     )
 
@@ -525,7 +525,7 @@ def test_entry_handle_mut_can_still_write_after_writer_was_dropped(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint8, value)
+        .add(key, value)
         .create()
     )
 
@@ -553,7 +553,7 @@ def test_entry_handle_can_still_read_after_reader_was_dropped(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint8, value)
+        .add(key, value)
         .create()
     )
 
@@ -583,7 +583,7 @@ def test_loan_and_write_entry_value_works(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint32, value)
+        .add(key, value)
         .create()
     )
 
@@ -611,7 +611,7 @@ def test_entry_handle_mut_can_be_reused_after_entry_value_was_updated(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint32, value)
+        .add(key, value)
         .create()
     )
 
@@ -642,7 +642,7 @@ def test_entry_value_can_still_be_used_after_writer_was_dropped(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint32, value)
+        .add(key, value)
         .create()
     )
 
@@ -673,7 +673,7 @@ def test_entry_handle_mut_can_be_reused_after_entry_value_uninit_was_discarded(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint32, value)
+        .add(key, value)
         .create()
     )
 
@@ -702,7 +702,7 @@ def test_entry_handle_mut_can_be_reused_after_entry_value_was_discarded(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint32, value)
+        .add(key, value)
         .create()
     )
 
@@ -732,7 +732,7 @@ def test_handle_can_still_be_used_after_every_previous_service_state_owner_was_d
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint32, value)
+        .add(key, value)
         .create()
     )
 
@@ -748,7 +748,7 @@ def test_handle_can_still_be_used_after_every_previous_service_state_owner_was_d
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint32, c_uint32(0))
+        .add(c_uint64(0), c_uint32(0))
         .create()
     )
 
@@ -787,8 +787,8 @@ def test_simple_communication_with_key_struct_works(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(Foo)
-        .add(key_1, c_int32, value_1)
-        .add(key_2, c_uint32, value_2)
+        .add(key_1, value_1)
+        .add(key_2, value_2)
         .create()
     )
 
@@ -827,7 +827,7 @@ def test_adding_key_struct_twice_fails(
         (
             node.service_builder(service_name)
             .blackboard_creator(Foo)
-            .add(key, c_int32, value_0)
-            .add(key, c_uint32, value_1)
+            .add(key, value_0)
+            .add(key, value_1)
             .create()
         )

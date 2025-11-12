@@ -18,6 +18,7 @@ use pyo3::prelude::*;
 use crate::attribute_specifier::AttributeSpecifier;
 use crate::attribute_verifier::AttributeVerifier;
 use crate::error::{BlackboardCreateError, BlackboardOpenError};
+use crate::parc::Parc;
 use crate::port_factory_blackboard::{PortFactoryBlackboard, PortFactoryBlackboardType};
 use crate::type_detail::TypeDetail;
 use crate::type_storage::TypeStorage;
@@ -46,6 +47,7 @@ pub(crate) enum ServiceBuilderBlackboardOpenerType {
 #[pyclass(unsendable)]
 /// Builder to create new `MessagingPattern::Blackboard` based `Service`s
 pub struct ServiceBuilderBlackboardCreator {
+    // pub(crate) value: Parc<ServiceBuilderBlackboardCreatorType>,
     pub(crate) value: ServiceBuilderBlackboardCreatorType,
     pub key_type_storage: TypeStorage,
 }

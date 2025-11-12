@@ -30,7 +30,7 @@ def test_handle_can_be_acquired_for_existing_key_value_pair(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint64, value)
+        .add(key, value)
         .create()
     )
 
@@ -54,7 +54,7 @@ def test_handle_cannot_be_acquired_for_non_existing_key(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint64, value)
+        .add(key, value)
         .create()
     )
 
@@ -76,7 +76,7 @@ def test_handle_cannot_be_acquired_for_wrong_value_type(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint64, value)
+        .add(key, value)
         .create()
     )
 
@@ -97,7 +97,7 @@ def test_entry_handle_mut_cannot_be_acquired_twice(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint64, value)
+        .add(key, value)
         .create()
     )
 
@@ -125,7 +125,7 @@ def test_entry_handle_mut_prevents_another_writer(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint8)
-        .add(key, c_int32, value)
+        .add(key, value)
         .create()
     )
 
@@ -150,7 +150,7 @@ def test_entry_value_can_still_be_used_after_every_previous_service_state_owner_
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint32, value)
+        .add(key, value)
         .create()
     )
 
@@ -180,7 +180,7 @@ def test_deleting_writer_removes_it_from_the_service(
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, c_uint32, value)
+        .add(key, value)
         .create()
     )
 

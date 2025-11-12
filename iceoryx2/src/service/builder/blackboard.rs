@@ -277,10 +277,10 @@ impl<const CAPACITY: usize> KeyMemory<CAPACITY> {
 pub struct BuilderInternals {
     key: KeyMemory<MAX_BLACKBOARD_KEY_SIZE>,
     value_type_details: TypeDetail,
-    value_writer: Rc<RefCell<dyn FnMut(*mut u8)>>,
+    value_writer: Arc<RefCell<dyn FnMut(*mut u8)>>,
     internal_value_size: usize,
     internal_value_alignment: usize,
-    internal_value_cleanup_callback: Rc<RefCell<dyn FnMut()>>,
+    internal_value_cleanup_callback: Arc<RefCell<dyn FnMut()>>,
 }
 
 impl Debug for BuilderInternals {
@@ -300,10 +300,10 @@ impl Clone for BuilderInternals {
         Self {
             key: self.key.clone(),
             value_type_details: self.value_type_details.clone(),
-            value_writer: Rc::clone(&self.value_writer),
+            value_writer: Arc::clone(&self.value_writer),
             internal_value_size: self.internal_value_size,
             internal_value_alignment: self.internal_value_alignment,
-            internal_value_cleanup_callback: Rc::clone(&self.internal_value_cleanup_callback),
+            internal_value_cleanup_callback: Arc::clone(&self.internal_value_cleanup_callback),
         }
     }
 }
@@ -320,10 +320,10 @@ impl BuilderInternals {
         Self {
             key,
             value_type_details,
-            value_writer: Rc::new(RefCell::new(value_writer)),
+            value_writer: Arc::new(RefCell::new(value_writer)),
             internal_value_size: value_size,
             internal_value_alignment: value_alignment,
-            internal_value_cleanup_callback: Rc::new(RefCell::new(value_cleanup_callback)),
+            internal_value_cleanup_callback: Arc::new(RefCell::new(value_cleanup_callback)),
         }
     }
 }
@@ -561,14 +561,14 @@ impl<
             value_type_details: TypeDetail::new::<ValueType>(
                 message_type_details::TypeVariant::FixedSize,
             ),
-            value_writer: Rc::new(RefCell::new(move |mem: *mut u8| {
+            value_writer: Arc::new(RefCell::new(move |mem: *mut u8| {
                 let mem: *mut UnrestrictedAtomic<ValueType> =
                     mem as *mut UnrestrictedAtomic<ValueType>;
                 unsafe { mem.write(UnrestrictedAtomic::<ValueType>::new(value)) };
             })),
             internal_value_size: core::mem::size_of::<UnrestrictedAtomic<ValueType>>(),
             internal_value_alignment: core::mem::align_of::<UnrestrictedAtomic<ValueType>>(),
-            internal_value_cleanup_callback: Rc::new(RefCell::new(|| {})),
+            internal_value_cleanup_callback: Arc::new(RefCell::new(|| {})),
         };
         self.builder.internals.push(internals);
 
