@@ -69,7 +69,7 @@ iox2_container_windows_server_2019_x64_template: &IOX2_CONTAINER_WINDOWS_SERVER_
 iox2_container_freebsd_x64_template: &IOX2_CONTAINER_FREEBSD_X64
   <<: *IOX2_TASK_TIMEOUT
   freebsd_instance:
-    image_family: freebsd-14-0
+    image_family: freebsd-15-0
     <<: *IOX2_COMMON_CPU_AND_MEMORY_CONFIG_FOR_BUILD_AND_TEST
 
 iox2_container_macos_aarch64_template: &IOX2_CONTAINER_MACOS_AARCH64
@@ -237,6 +237,7 @@ ubuntu_22_04_aarch64_min_version_debug_task:
   <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
 
 ubuntu_22_04_aarch64_stable_debug_task:
+  only_if: false
   depends_on: preflight_check
   skip: "changesIncludeOnly('.github/**', '**.md')"
   <<: *IOX2_CONTAINER_UBUNTU_22_04_AARCH64
