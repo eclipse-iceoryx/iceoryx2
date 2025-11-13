@@ -10,6 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use std::alloc::Layout;
+use std::ptr::copy_nonoverlapping;
+
 use iceoryx2::constants::MAX_BLACKBOARD_KEY_SIZE;
 use iceoryx2::service::builder::blackboard::KeyMemory;
 use iceoryx2::service::builder::CustomKeyMarker;
@@ -36,7 +39,9 @@ pub(crate) enum ServiceBuilderBlackboardCreatorType {
     Ipc(IpcCreator),
     Local(LocalCreator),
 }
-
+// TODO: reasoning: Fn must be Send, they are if the captured variables are Send
+// only relevant Fn is value writer: value and key pointer (memory) must live long enough
+unsafe impl Send for ServiceBuilderBlackboardCreatorType {}
 #[derive(Clone)]
 pub(crate) enum ServiceBuilderBlackboardOpenerType {
     Ipc(IpcOpener),
@@ -44,32 +49,32 @@ pub(crate) enum ServiceBuilderBlackboardOpenerType {
 }
 
 // TODO: remove unsendable
-#[pyclass(unsendable)]
+#[pyclass]
 /// Builder to create new `MessagingPattern::Blackboard` based `Service`s
 pub struct ServiceBuilderBlackboardCreator {
-    // pub(crate) value: Parc<ServiceBuilderBlackboardCreatorType>,
-    pub(crate) value: ServiceBuilderBlackboardCreatorType,
+    pub(crate) value: Parc<ServiceBuilderBlackboardCreatorType>,
+    // pub(crate) value: ServiceBuilderBlackboardCreatorType,
     pub key_type_storage: TypeStorage,
 }
 
 impl ServiceBuilderBlackboardCreator {
     pub(crate) fn new(value: ServiceBuilderBlackboardCreatorType) -> Self {
         Self {
-            value,
+            value: Parc::new(value),
             key_type_storage: TypeStorage::new(),
         }
     }
 
     fn clone_ipc(&self, builder: IpcCreator) -> Self {
         Self {
-            value: ServiceBuilderBlackboardCreatorType::Ipc(builder),
+            value: Parc::new(ServiceBuilderBlackboardCreatorType::Ipc(builder)),
             key_type_storage: self.key_type_storage.clone(),
         }
     }
 
     fn clone_local(&self, builder: LocalCreator) -> Self {
         Self {
-            value: ServiceBuilderBlackboardCreatorType::Local(builder),
+            value: Parc::new(ServiceBuilderBlackboardCreatorType::Local(builder)),
             key_type_storage: self.key_type_storage.clone(),
         }
     }
@@ -89,7 +94,7 @@ impl ServiceBuilderBlackboardCreator {
     /// Defines the key type. To be able to connect to a `Service`, the `TypeDetail` must be
     /// indentical in all participants since the communication is always strongly typed.
     pub fn __set_key_type_details(&self, value: &TypeDetail) -> Self {
-        match &self.value {
+        match &*self.value.lock() {
             ServiceBuilderBlackboardCreatorType::Ipc(v) => {
                 let this = v.clone();
                 let this = unsafe { this.__internal_set_key_type_details(&value.0) };
@@ -106,7 +111,7 @@ impl ServiceBuilderBlackboardCreator {
     /// Defines the key eq comparison function needed to store and retrieve keys in the
     /// blackboard.
     pub fn __set_key_eq_cmp_func(&self, key_eq_func: PyObject) -> Self {
-        match &self.value {
+        match &*self.value.lock() {
             ServiceBuilderBlackboardCreatorType::Ipc(v) => {
                 let this = v.clone();
                 let eq_func = Box::new(move |lhs: *const u8, rhs: *const u8| -> bool {
@@ -146,7 +151,7 @@ impl ServiceBuilderBlackboardCreator {
 
     /// Defines how many `Reader`s shall be supported at most.
     pub fn max_readers(&self, value: usize) -> Self {
-        match &self.value {
+        match &*self.value.lock() {
             ServiceBuilderBlackboardCreatorType::Ipc(v) => {
                 let this = v.clone();
                 let this = this.max_readers(value);
@@ -162,7 +167,7 @@ impl ServiceBuilderBlackboardCreator {
 
     /// Defines how many `Node`s shall be able to open the `Service` in parallel.
     pub fn max_nodes(&self, value: usize) -> Self {
-        match &self.value {
+        match &*self.value.lock() {
             ServiceBuilderBlackboardCreatorType::Ipc(v) => {
                 let this = v.clone();
                 let this = this.max_nodes(value);
@@ -178,15 +183,23 @@ impl ServiceBuilderBlackboardCreator {
 
     /// Adds key-value pairs to the blackboard.
     pub fn __add(&mut self, key: usize, value: usize, value_details: &TypeDetail) -> Self {
-        match &self.value {
+        // TODO: check key
+        let value_layout = unsafe {
+            Layout::from_size_align_unchecked(value_details.0.size(), value_details.0.alignment())
+        };
+        let value_buffer = unsafe { std::alloc::alloc(value_layout) };
+        unsafe { copy_nonoverlapping(value as *const u8, value_buffer, value_details.0.size()) };
+        match &*self.value.lock() {
             ServiceBuilderBlackboardCreatorType::Ipc(v) => {
                 let this = v.clone();
                 let this = unsafe {
                     this.__internal_add(
                         key as *const u8,
-                        value as *mut u8,
+                        value_buffer,
                         value_details.0.clone(),
-                        Box::new(|| {}),
+                        Box::new(move || {
+                            // std::alloc::dealloc(value_buffer, value_layout);
+                        }),
                     )
                 };
                 self.clone_ipc(this)
@@ -196,9 +209,11 @@ impl ServiceBuilderBlackboardCreator {
                 let this = unsafe {
                     this.__internal_add(
                         key as *const u8,
-                        value as *mut u8,
+                        value_buffer,
                         value_details.0.clone(),
-                        Box::new(|| {}),
+                        Box::new(move || {
+                            // std::alloc::dealloc(value_buffer, value_layout);
+                        }),
                     )
                 };
                 self.clone_local(this)
@@ -208,7 +223,7 @@ impl ServiceBuilderBlackboardCreator {
 
     /// Creates a new `Service`.
     pub fn create(&self) -> PyResult<PortFactoryBlackboard> {
-        match &self.value {
+        match &*self.value.lock() {
             ServiceBuilderBlackboardCreatorType::Ipc(v) => {
                 let this = v.clone();
                 Ok(PortFactoryBlackboard::new(
@@ -237,7 +252,7 @@ impl ServiceBuilderBlackboardCreator {
         &self,
         attributes: &AttributeSpecifier,
     ) -> PyResult<PortFactoryBlackboard> {
-        match &self.value {
+        match &*self.value.lock() {
             ServiceBuilderBlackboardCreatorType::Ipc(v) => {
                 let this = v.clone();
                 Ok(PortFactoryBlackboard::new(

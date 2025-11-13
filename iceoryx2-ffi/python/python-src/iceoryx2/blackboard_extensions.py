@@ -99,6 +99,7 @@ def add(
 ) -> ServiceBuilderBlackboardCreator:
     """Adds a key-value pair to the blackboard. Key and value must live until
     `ServiceBuilderBlackboardCreator::create()` returns."""
+    # TODO: remove restriction
     assert self.__key_type_details is not None
     assert ctypes.sizeof(key) == ctypes.sizeof(self.__key_type_details)
     assert ctypes.alignment(key) == ctypes.alignment(self.__key_type_details)
