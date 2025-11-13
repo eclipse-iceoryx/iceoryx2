@@ -99,13 +99,13 @@ impl ServiceBuilder {
             ServiceBuilderType::Ipc(v) => {
                 let this = v.clone();
                 ServiceBuilderBlackboardCreator::new(ServiceBuilderBlackboardCreatorType::Ipc(
-                    this.blackboard_creator::<CustomKeyMarker>(),
+                    Some(this.blackboard_creator::<CustomKeyMarker>()),
                 ))
             }
             ServiceBuilderType::Local(v) => {
                 let this = v.clone();
                 ServiceBuilderBlackboardCreator::new(ServiceBuilderBlackboardCreatorType::Local(
-                    this.blackboard_creator::<CustomKeyMarker>(),
+                    Some(this.blackboard_creator::<CustomKeyMarker>()),
                 ))
             }
         }
@@ -116,14 +116,14 @@ impl ServiceBuilder {
         match &self.0 {
             ServiceBuilderType::Ipc(v) => {
                 let this = v.clone();
-                ServiceBuilderBlackboardOpener::new(ServiceBuilderBlackboardOpenerType::Ipc(
+                ServiceBuilderBlackboardOpener::new(ServiceBuilderBlackboardOpenerType::Ipc(Some(
                     this.blackboard_opener::<CustomKeyMarker>(),
-                ))
+                )))
             }
             ServiceBuilderType::Local(v) => {
                 let this = v.clone();
                 ServiceBuilderBlackboardOpener::new(ServiceBuilderBlackboardOpenerType::Local(
-                    this.blackboard_opener::<CustomKeyMarker>(),
+                    Some(this.blackboard_opener::<CustomKeyMarker>()),
                 ))
             }
         }

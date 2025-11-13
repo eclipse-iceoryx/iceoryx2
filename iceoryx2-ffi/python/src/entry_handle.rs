@@ -41,23 +41,25 @@ impl EntryHandle {
         self.value_type_storage.value = Some(value)
     }
 
+    // TODO: return custom Python object, implements drop which makes dealloc
     pub fn __get(&self) -> usize {
         let value_size = self.value_type_details.0.size();
         let value_alignment = self.value_type_details.0.alignment();
         let layout =
             unsafe { core::alloc::Layout::from_size_align_unchecked(value_size, value_alignment) };
-        let ptr = unsafe { std::alloc::alloc(layout) };
+        let value_buffer = unsafe { std::alloc::alloc(layout) };
         match &*self.value.lock() {
             EntryHandleType::Ipc(Some(v)) => {
-                unsafe { v.get(ptr, value_size, value_alignment) };
-                ptr as usize
+                unsafe { v.get(value_buffer, value_size, value_alignment) };
+                value_buffer as usize
             }
             EntryHandleType::Local(Some(v)) => {
-                unsafe { v.get(ptr, value_size, value_alignment) };
-                ptr as usize
+                unsafe { v.get(value_buffer, value_size, value_alignment) };
+                value_buffer as usize
             }
             _ => fatal_panic!(""), // TODO
         }
+        // TODO: dealloc
     }
 
     pub fn entry_id(&self) -> EventId {
@@ -68,3 +70,21 @@ impl EntryHandle {
         }
     }
 }
+
+// #[pyclass]
+// pub struct Helper {
+//     value: *mut u8, // helper of parc<helper2>
+//     value_type_details: TypeDetail,
+// }
+
+// impl Drop for Helper {
+//     fn drop(&mut self) {
+//         unsafe {
+//             let layout = core::alloc::Layout::from_size_align_unchecked(
+//                 self.value_type_details.0.size(),
+//                 self.value_type_details.0.alignment(),
+//             );
+//             std::alloc::dealloc(self.value, layout);
+//         }
+//     }
+// }

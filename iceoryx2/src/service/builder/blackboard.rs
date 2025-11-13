@@ -295,19 +295,6 @@ impl Drop for BuilderInternals {
     }
 }
 
-impl Clone for BuilderInternals {
-    fn clone(&self) -> Self {
-        Self {
-            key: self.key.clone(),
-            value_type_details: self.value_type_details.clone(),
-            value_writer: Arc::clone(&self.value_writer),
-            internal_value_size: self.internal_value_size,
-            internal_value_alignment: self.internal_value_alignment,
-            internal_value_cleanup_callback: Arc::clone(&self.internal_value_cleanup_callback),
-        }
-    }
-}
-
 impl BuilderInternals {
     pub fn new(
         key: KeyMemory<MAX_BLACKBOARD_KEY_SIZE>,
@@ -393,24 +380,6 @@ impl<
             self.verify_max_nodes,
             self.internals
         )
-    }
-}
-
-impl<
-        KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
-        ServiceType: service::Service,
-    > Clone for Builder<KeyType, ServiceType>
-{
-    fn clone(&self) -> Self {
-        Self {
-            base: self.base.clone(),
-            verify_max_readers: self.verify_max_readers,
-            verify_max_nodes: self.verify_max_nodes,
-            internals: self.internals.clone(),
-            override_key_type: self.override_key_type.clone(),
-            key_eq_func: Arc::clone(&self.key_eq_func),
-            _key: PhantomData,
-        }
     }
 }
 
@@ -511,7 +480,7 @@ impl<
 /// # Example
 ///
 /// See [`crate::service`]
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Creator<
     KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
     ServiceType: service::Service,
@@ -882,7 +851,7 @@ impl<ServiceType: service::Service> Creator<CustomKeyMarker, ServiceType> {
 /// # Example
 ///
 /// See [`crate::service`]
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Opener<
     KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
     ServiceType: service::Service,
