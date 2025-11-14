@@ -19,12 +19,6 @@ instantiate_conformance_tests_with_module!(
 );
 
 instantiate_conformance_tests_with_module!(
-    cdr,
-    iceoryx2_cal_conformance_tests::serialize_trait,
-    iceoryx2_cal::serialize::cdr::Cdr
-);
-
-instantiate_conformance_tests_with_module!(
     postcard,
     iceoryx2_cal_conformance_tests::serialize_trait,
     iceoryx2_cal::serialize::postcard::Postcard
