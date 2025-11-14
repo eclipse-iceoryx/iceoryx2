@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! Three queue variations that are similar to [`std::collections::VecDeque`].
+//! Three queue variations that are similar to [`alloc::collections::vec_deque::VecDeque`].
 //!
 //!  * [`FixedSizeQueue`](crate::queue::FixedSizeQueue), compile-time fixed size queue that
 //!     is self-contained.
