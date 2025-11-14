@@ -91,7 +91,7 @@
 
 extern crate alloc;
 
-/// A queue similar to [`std::collections::VecDeque`]
+/// A queue similar to [`alloc::collections::vec_deque::VecDeque`]
 pub mod queue;
 /// A container with persistent unique keys to access values.
 pub mod slotmap;
