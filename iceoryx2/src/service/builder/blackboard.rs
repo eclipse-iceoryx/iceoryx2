@@ -14,8 +14,8 @@
 //!
 //! See [`crate::service`]
 //!
-
 use core::alloc::Layout;
+use core::cell::RefCell;
 use core::hash::Hash;
 use core::marker::PhantomData;
 
@@ -37,7 +37,6 @@ use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 use iceoryx2_cal::shared_memory::{SharedMemory, SharedMemoryBuilder};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
-use std::cell::RefCell;
 
 use crate::constants::{MAX_BLACKBOARD_KEY_ALIGNMENT, MAX_BLACKBOARD_KEY_SIZE};
 use crate::service;

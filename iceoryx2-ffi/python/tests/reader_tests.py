@@ -57,11 +57,10 @@ def test_handle_can_be_acquired_for_existing_key_value_pair(
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
     key = c_uint64(0)
-    value = c_uint64(7)
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(key, value)
+        .add(key, c_uint64(7))
         .create()
     )
 

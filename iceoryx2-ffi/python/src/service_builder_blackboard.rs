@@ -38,14 +38,19 @@ pub(crate) enum ServiceBuilderBlackboardCreatorType {
     Ipc(Option<IpcCreator>),
     Local(Option<LocalCreator>),
 }
-// TODO: reasoning: Fn must be Send, they are if the captured variables are Send
-// only relevant Fn is value writer: value and key pointer (memory) must live long enough
-unsafe impl Send for ServiceBuilderBlackboardCreatorType {}
 
 pub(crate) enum ServiceBuilderBlackboardOpenerType {
     Ipc(Option<IpcOpener>),
     Local(Option<LocalOpener>),
 }
+
+// `ServiceBuilderBlackboardCreatorType` is Send when `BuilderInternals::value_writer` and
+// `BuilderInternals::internal_value_cleanup_callback` are Send. They are if the captured variables
+// can be Send. To achieve this, the memory the value pointer argument of `__add()` points to is
+// copied to `value_buffer` on the heap and therefore lives long enough, i.e. until
+// `Creator::create()` returns.
+unsafe impl Send for ServiceBuilderBlackboardCreatorType {}
+unsafe impl Send for ServiceBuilderBlackboardOpenerType {}
 
 #[pyclass]
 /// Builder to create new `MessagingPattern::Blackboard` based `Service`s
@@ -180,7 +185,6 @@ impl ServiceBuilderBlackboardCreator {
 
     /// Adds key-value pairs to the blackboard.
     pub fn __add(&mut self, key: usize, value: usize, value_details: &TypeDetail) -> Self {
-        // TODO: check key
         let value_layout = unsafe {
             Layout::from_size_align_unchecked(value_details.0.size(), value_details.0.alignment())
         };
@@ -274,32 +278,31 @@ impl ServiceBuilderBlackboardCreator {
     }
 }
 
-// TODO: remove unsendable
-#[pyclass(unsendable)]
+#[pyclass]
 /// Builder to open new `MessagingPattern::Blackboard` based `Service`s
 pub struct ServiceBuilderBlackboardOpener {
-    pub(crate) value: ServiceBuilderBlackboardOpenerType,
+    pub(crate) value: Parc<ServiceBuilderBlackboardOpenerType>,
     pub key_type_details: TypeStorage,
 }
 
 impl ServiceBuilderBlackboardOpener {
     pub(crate) fn new(value: ServiceBuilderBlackboardOpenerType) -> Self {
         Self {
-            value,
+            value: Parc::new(value),
             key_type_details: TypeStorage::new(),
         }
     }
 
     fn clone_ipc(&self, builder: IpcOpener) -> Self {
         Self {
-            value: ServiceBuilderBlackboardOpenerType::Ipc(Some(builder)),
+            value: Parc::new(ServiceBuilderBlackboardOpenerType::Ipc(Some(builder))),
             key_type_details: self.key_type_details.clone(),
         }
     }
 
     fn clone_local(&self, builder: LocalOpener) -> Self {
         Self {
-            value: ServiceBuilderBlackboardOpenerType::Local(Some(builder)),
+            value: Parc::new(ServiceBuilderBlackboardOpenerType::Local(Some(builder))),
             key_type_details: self.key_type_details.clone(),
         }
     }
@@ -319,7 +322,7 @@ impl ServiceBuilderBlackboardOpener {
     /// Defines the key type. To be able to connect to a `Service`, the `TypeDetail` must be
     /// indentical in all participants since the communication is always strongly typed.
     pub fn __set_key_type_details(&mut self, value: &TypeDetail) -> Self {
-        match &mut self.value {
+        match &mut *self.value.lock() {
             ServiceBuilderBlackboardOpenerType::Ipc(ref mut v) => {
                 let this = v.take().unwrap();
                 let this = unsafe { this.__internal_set_key_type_details(&value.0) };
@@ -335,7 +338,7 @@ impl ServiceBuilderBlackboardOpener {
 
     /// Defines how many `Reader`s must be at least supported.
     pub fn max_readers(&mut self, value: usize) -> Self {
-        match &mut self.value {
+        match &mut *self.value.lock() {
             ServiceBuilderBlackboardOpenerType::Ipc(ref mut v) => {
                 let this = v.take().unwrap();
                 let this = this.max_readers(value);
@@ -351,7 +354,7 @@ impl ServiceBuilderBlackboardOpener {
 
     /// Defines how many `Node`s must be at least supported.
     pub fn max_nodes(&mut self, value: usize) -> Self {
-        match &mut self.value {
+        match &mut *self.value.lock() {
             ServiceBuilderBlackboardOpenerType::Ipc(ref mut v) => {
                 let this = v.take().unwrap();
                 let this = this.max_nodes(value);
@@ -367,7 +370,7 @@ impl ServiceBuilderBlackboardOpener {
 
     /// Opens an existing `Service`.
     pub fn open(&mut self) -> PyResult<PortFactoryBlackboard> {
-        match &mut self.value {
+        match &mut *self.value.lock() {
             ServiceBuilderBlackboardOpenerType::Ipc(ref mut v) => {
                 let this = v.take().unwrap();
                 Ok(PortFactoryBlackboard::new(
@@ -397,7 +400,7 @@ impl ServiceBuilderBlackboardOpener {
         &mut self,
         verifier: &AttributeVerifier,
     ) -> PyResult<PortFactoryBlackboard> {
-        match &mut self.value {
+        match &mut *self.value.lock() {
             ServiceBuilderBlackboardOpenerType::Ipc(ref mut v) => {
                 let this = v.take().unwrap();
                 Ok(PortFactoryBlackboard::new(
