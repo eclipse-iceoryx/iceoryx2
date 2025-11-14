@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![no_std]
+#![cfg_attr(not(test), no_std)]
 #![warn(clippy::alloc_instead_of_core)]
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
