@@ -66,9 +66,6 @@ impl MemZeroedStruct for sigset_t {}
 pub type pthread_barrier_t = crate::internal::pthread_barrier_t;
 impl MemZeroedStruct for pthread_barrier_t {}
 
-pub type sync_t = crate::internal::sync_t;
-impl MemZeroedStruct for sync_t {}
-
 pub type sync_attr_t = crate::internal::_sync_attr;
 impl MemZeroedStruct for sync_attr_t {}
 
@@ -91,11 +88,16 @@ pub type pthread_rwlockattr_t = sync_attr_t;
 pub type pthread_rwlock_t = crate::internal::pthread_rwlock_t;
 impl MemZeroedStruct for pthread_rwlock_t {}
 
-pub type pthread_mutex_t = sync_t;
+pub type pthread_mutex_t = crate::internal::pthread_mutex_t;
+impl MemZeroedStruct for pthread_mutex_t {}
 
 pub type pthread_mutexattr_t = sync_attr_t;
 
-pub type sem_t = sync_t;
+pub type sem_t = crate::internal::sem_t;
+
+// For qnx710 this is implemented by pthread_mutex_t as both are alias to same type.
+#[cfg(target_env = "nto80")]
+impl MemZeroedStruct for sem_t {}
 
 pub type flock = crate::internal::flock;
 impl MemZeroedStruct for flock {}
