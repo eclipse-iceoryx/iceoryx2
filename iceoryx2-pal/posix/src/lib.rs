@@ -46,7 +46,7 @@ mod platform;
 #[path = "stub/mod.rs"]
 mod platform;
 
-#[cfg(any(not(feature = "libc_platform"), not(target_os = "none")))]
+#[cfg(all(not(feature = "libc_platform"), not(target_os = "none")))]
 pub(crate) mod internal {
     #![allow(non_upper_case_globals)]
     #![allow(non_camel_case_types)]
