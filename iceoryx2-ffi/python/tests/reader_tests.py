@@ -68,7 +68,7 @@ def test_handle_can_be_acquired_for_existing_key_value_pair(
     reader = service.reader_builder().create()
     try:
         entry_handle = reader.entry(key, c_uint64)
-        assert entry_handle.get().value == 7
+        assert entry_handle.get().decode_as(c_uint64).value == 7
     except iox2.EntryHandleError:
         assert False
 

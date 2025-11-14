@@ -141,13 +141,27 @@ def entry_handle(self: Reader, key: Type[T], value: Type[T]) -> EntryHandle:
         .alignment(type_align),
     )
     entry_handle.__set_value_type(value)
+    entry_handle.__set_value_ptr()
     return entry_handle
 
 
-def get(self: EntryHandle) -> Any:
-    """Return a copy of the value."""
+class RawValue:
+    def __init__(self, data: bytes):
+        self.data = data
+        self.size = len(data)
+
+    def decode_as(self, ct_type):
+        """Interpret the raw bytes as a ctypes type."""
+        return ct_type.from_buffer_copy(self.data)
+
+
+def get(self: EntryHandle) -> RawValue:
+    """Return a copy of the value as bytes. Use decode_as() to reinterpret the raw bytes
+    as a ctypes type."""
     value_ptr = self.__get()
-    return ctypes.cast(value_ptr, ctypes.POINTER(self.__value_type)).contents
+    value_size = ctypes.sizeof(self.__value_type)
+    raw_bytes = ctypes.string_at(value_ptr, value_size)
+    return RawValue(raw_bytes)
 
 
 def entry_handle_mut(self: Writer, key: Type[T], value: Type[T]) -> EntryHandleMut:

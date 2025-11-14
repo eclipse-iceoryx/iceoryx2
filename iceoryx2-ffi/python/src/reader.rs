@@ -14,7 +14,7 @@ use iceoryx2::service::builder::CustomKeyMarker;
 use iceoryx2_bb_log::fatal_panic;
 use pyo3::prelude::*;
 
-use crate::entry_handle::{EntryHandle, EntryHandleType};
+use crate::entry_handle::{EntryHandle, EntryHandleType, InternalHelper};
 use crate::error::EntryHandleError;
 use crate::parc::Parc;
 use crate::type_detail::TypeDetail;
@@ -62,8 +62,12 @@ impl Reader {
                 };
                 Ok(EntryHandle {
                     value: Parc::new(EntryHandleType::Ipc(Some(entry_handle))),
-                    value_type_details,
+                    value_type_details: value_type_details.clone(),
                     value_type_storage: TypeStorage::new(),
+                    value_ptr: Parc::new(InternalHelper {
+                        value_buffer: core::ptr::null_mut::<u8>(),
+                        value_type_details: value_type_details.clone(),
+                    }),
                 })
             }
             ReaderType::Local(Some(v)) => {
@@ -73,8 +77,12 @@ impl Reader {
                 };
                 Ok(EntryHandle {
                     value: Parc::new(EntryHandleType::Local(Some(entry_handle))),
-                    value_type_details,
+                    value_type_details: value_type_details.clone(),
                     value_type_storage: TypeStorage::new(),
+                    value_ptr: Parc::new(InternalHelper {
+                        value_buffer: core::ptr::null_mut::<u8>(),
+                        value_type_details: value_type_details.clone(),
+                    }),
                 })
             }
             _ => fatal_panic!(from "Reader::entry()",

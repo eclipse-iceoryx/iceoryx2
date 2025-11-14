@@ -72,11 +72,11 @@ def test_simple_communication_works_reader_created_first(
 
     new_value = 1234
     entry_handle_mut.update_with_copy(c_uint16(new_value))
-    assert entry_handle.get().value == new_value
+    assert entry_handle.get().decode_as(c_uint16).value == new_value
 
     new_value = 4567
     entry_handle_mut.update_with_copy(c_uint16(new_value))
-    assert entry_handle.get().value == new_value
+    assert entry_handle.get().decode_as(c_uint16).value == new_value
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -103,10 +103,10 @@ def test_simple_communication_works_writer_created_first(
 
     new_value = 50
     entry_handle_mut.update_with_copy(c_int32(new_value))
-    assert entry_handle.get().value == new_value
+    assert entry_handle.get().decode_as(c_int32).value == new_value
     new_value = -12
     entry_handle_mut.update_with_copy(c_int32(new_value))
-    assert entry_handle.get().value == new_value
+    assert entry_handle.get().decode_as(c_int32).value == new_value
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -145,7 +145,7 @@ def test_communication_with_max_readers(
         i = 0
         while i < max_readers:
             entry_handle = readers[i].entry(key, c_uint64)
-            assert entry_handle.get().value == counter
+            assert entry_handle.get().decode_as(c_uint64).value == counter
             i += 1
 
         counter += 1
@@ -199,12 +199,12 @@ def test_communication_with_several_entry_handles_works(
 
         j = 0
         while j < i + 1:
-            assert entry_handles[j].get().value == 7
+            assert entry_handles[j].get().decode_as(c_uint64).value == 7
             j += 1
 
         j = i + 1
         while j < max_handles:
-            assert entry_handles[j].get().value == j
+            assert entry_handles[j].get().decode_as(c_uint64).value == j
             j += 1
 
         i += 1
@@ -249,11 +249,11 @@ def test_write_and_read_different_value_types_works(
     )
 
     reader = service.reader_builder().create()
-    assert reader.entry(key_0, c_uint64).get().value == 2008
-    assert reader.entry(key_1, c_int8).get().value == 11
-    assert reader.entry(key_2, c_bool).get().value == True
-    entry_value_key_3 = reader.entry(key_3, Groovy).get()
-    assert entry_value_key_3.a == False
+    assert reader.entry(key_0, c_uint64).get().decode_as(c_uint64).value == 2008
+    assert reader.entry(key_1, c_int8).get().decode_as(c_int8).value == 11
+    assert reader.entry(key_2, c_bool).get().decode_as(c_bool).value
+    entry_value_key_3 = reader.entry(key_3, Groovy).get().decode_as(Groovy)
+    assert not entry_value_key_3.a
     assert entry_value_key_3.b == 888
     assert entry_value_key_3.c == 906
 
@@ -333,7 +333,7 @@ def test_dropping_service_keeps_established_communication(
 
     new_value = 981293
     entry_handle_mut.update_with_copy(c_uint32(new_value))
-    assert entry_handle.get().value == new_value
+    assert entry_handle.get().decode_as(c_uint32).value == new_value
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -467,7 +467,7 @@ def test_reader_can_still_read_value_when_writer_was_disconnected(
 
     reader = service.reader_builder().create()
     entry_handle = reader.entry(key, c_uint8)
-    assert entry_handle.get().value == 5
+    assert entry_handle.get().decode_as(c_uint8).value == 5
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -496,9 +496,9 @@ def test_reconnected_reader_sees_current_blackboard_status(
 
     reader = service.reader_builder().create()
     entry_handle_0 = reader.entry(key_0, c_uint8)
-    assert entry_handle_0.get().value == 5
+    assert entry_handle_0.get().decode_as(c_uint8).value == 5
     entry_handle_1 = reader.entry(key_1, c_int32)
-    assert entry_handle_1.get().value == -9
+    assert entry_handle_1.get().decode_as(c_int32).value == -9
 
     reader.delete()
 
@@ -507,9 +507,9 @@ def test_reconnected_reader_sees_current_blackboard_status(
 
     reader = service.reader_builder().create()
     entry_handle_0 = reader.entry(key_0, c_uint8)
-    assert entry_handle_0.get().value == 5
+    assert entry_handle_0.get().decode_as(c_uint8).value == 5
     entry_handle_1 = reader.entry(key_1, c_int32)
-    assert entry_handle_1.get().value == -567
+    assert entry_handle_1.get().decode_as(c_int32).value == -567
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -537,7 +537,7 @@ def test_entry_handle_mut_can_still_write_after_writer_was_dropped(
 
     reader = service.reader_builder().create()
     entry_handle = reader.entry(key, c_uint8)
-    assert entry_handle.get().value == 1
+    assert entry_handle.get().decode_as(c_uint8).value == 1
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -561,13 +561,13 @@ def test_entry_handle_can_still_read_after_reader_was_dropped(
     entry_handle = reader.entry(key, c_uint8)
 
     reader.delete()
-    assert entry_handle.get().value == 0
+    assert entry_handle.get().decode_as(c_uint8).value == 0
 
     writer = service.writer_builder().create()
     entry_handle_mut = writer.entry(key, c_uint8)
     entry_handle_mut.update_with_copy(c_uint8(1))
 
-    assert entry_handle.get().value == 1
+    assert entry_handle.get().decode_as(c_uint8).value == 1
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -595,7 +595,7 @@ def test_loan_and_write_entry_value_works(
     entry_value_uninit = entry_handle_mut.loan_uninit()
     entry_value = entry_value_uninit.write(c_uint32(333))
     entry_handle_mut = entry_value.update()
-    assert entry_handle.get().value == 333
+    assert entry_handle.get().decode_as(c_uint32).value == 333
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -623,10 +623,10 @@ def test_entry_handle_mut_can_be_reused_after_entry_value_was_updated(
     entry_value_uninit = entry_handle_mut.loan_uninit()
     entry_value = entry_value_uninit.write(c_uint32(333))
     entry_handle_mut = entry_value.update()
-    assert entry_handle.get().value == 333
+    assert entry_handle.get().decode_as(c_uint32).value == 333
 
     entry_handle_mut.update_with_copy(c_uint32(999))
-    assert entry_handle.get().value == 999
+    assert entry_handle.get().decode_as(c_uint32).value == 999
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -657,7 +657,7 @@ def test_entry_value_can_still_be_used_after_writer_was_dropped(
     entry_value = entry_value_uninit.write(c_uint32(333))
     entry_handle_mut = entry_value.update()
 
-    assert entry_handle.get().value == 333
+    assert entry_handle.get().decode_as(c_uint32).value == 333
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -686,7 +686,7 @@ def test_entry_handle_mut_can_be_reused_after_entry_value_uninit_was_discarded(
     entry_handle_mut = entry_value_uninit.discard()
 
     entry_handle_mut.update_with_copy(c_uint32(333))
-    assert entry_handle.get().value == 333
+    assert entry_handle.get().decode_as(c_uint32).value == 333
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -716,7 +716,7 @@ def test_entry_handle_mut_can_be_reused_after_entry_value_was_discarded(
     entry_handle_mut = entry_value.discard()
     entry_handle_mut.update_with_copy(c_uint32(333))
 
-    assert entry_handle.get().value == 333
+    assert entry_handle.get().decode_as(c_uint32).value == 333
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -748,7 +748,7 @@ def test_handle_can_still_be_used_after_every_previous_service_state_owner_was_d
     service = (
         node.service_builder(service_name)
         .blackboard_creator(c_uint64)
-        .add(c_uint64(0), c_uint32(0))
+        .add(key, value)
         .create()
     )
 
@@ -758,7 +758,7 @@ def test_handle_can_still_be_used_after_every_previous_service_state_owner_was_d
     reader.delete()
     service.delete()
 
-    assert entry_handle.get().value == 0
+    assert entry_handle.get().decode_as(c_uint32).value == 0
 
 
 class Foo(ctypes.Structure):
@@ -799,16 +799,16 @@ def test_simple_communication_with_key_struct_works(
     entry_handle_1 = reader.entry(key_1, c_int32)
     entry_handle_2 = reader.entry(key_2, c_uint32)
 
-    assert entry_handle_1.get().value == -3
-    assert entry_handle_2.get().value == 3
+    assert entry_handle_1.get().decode_as(c_int32).value == -3
+    assert entry_handle_2.get().decode_as(c_uint32).value == 3
 
     entry_handle_mut_1.update_with_copy(c_int32(50))
-    assert entry_handle_1.get().value == 50
-    assert entry_handle_2.get().value == 3
+    assert entry_handle_1.get().decode_as(c_int32).value == 50
+    assert entry_handle_2.get().decode_as(c_uint32).value == 3
 
     entry_handle_mut_2.update_with_copy(c_uint32(12))
-    assert entry_handle_1.get().value == 50
-    assert entry_handle_2.get().value == 12
+    assert entry_handle_1.get().decode_as(c_int32).value == 50
+    assert entry_handle_2.get().decode_as(c_uint32).value == 12
 
 
 @pytest.mark.parametrize("service_type", service_types)

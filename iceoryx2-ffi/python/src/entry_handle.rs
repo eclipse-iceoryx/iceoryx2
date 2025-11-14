@@ -28,6 +28,7 @@ pub struct EntryHandle {
     pub(crate) value: Parc<EntryHandleType>, // TODO: better name
     pub(crate) value_type_details: TypeDetail,
     pub(crate) value_type_storage: TypeStorage,
+    pub(crate) value_ptr: Parc<InternalHelper>,
 }
 
 #[pymethods]
@@ -41,13 +42,22 @@ impl EntryHandle {
         self.value_type_storage.value = Some(value)
     }
 
-    // TODO: return custom Python object, implements drop which makes dealloc
-    pub fn __get(&self) -> usize {
+    pub fn __set_value_ptr(&mut self) {
         let value_size = self.value_type_details.0.size();
         let value_alignment = self.value_type_details.0.alignment();
         let layout =
             unsafe { core::alloc::Layout::from_size_align_unchecked(value_size, value_alignment) };
         let value_buffer = unsafe { std::alloc::alloc(layout) };
+        self.value_ptr = Parc::new(InternalHelper {
+            value_buffer,
+            value_type_details: self.value_type_details.clone(),
+        });
+    }
+
+    pub fn __get(&self) -> usize {
+        let value_size = self.value_type_details.0.size();
+        let value_alignment = self.value_type_details.0.alignment();
+        let value_buffer = (&*self.value_ptr.lock()).value_buffer;
         match &*self.value.lock() {
             EntryHandleType::Ipc(Some(v)) => {
                 unsafe { v.get(value_buffer, value_size, value_alignment) };
@@ -59,7 +69,6 @@ impl EntryHandle {
             }
             _ => fatal_panic!(""), // TODO
         }
-        // TODO: dealloc
     }
 
     pub fn entry_id(&self) -> EventId {
@@ -71,20 +80,22 @@ impl EntryHandle {
     }
 }
 
-// #[pyclass]
-// pub struct Helper {
-//     value: *mut u8, // helper of parc<helper2>
-//     value_type_details: TypeDetail,
-// }
-
-// impl Drop for Helper {
-//     fn drop(&mut self) {
-//         unsafe {
-//             let layout = core::alloc::Layout::from_size_align_unchecked(
-//                 self.value_type_details.0.size(),
-//                 self.value_type_details.0.alignment(),
-//             );
-//             std::alloc::dealloc(self.value, layout);
-//         }
-//     }
-// }
+// TODO: use Box of 'u8 slice' and remove one helper struct
+// TODO: better names
+pub struct InternalHelper {
+    pub value_buffer: *mut u8,
+    pub value_type_details: TypeDetail,
+}
+// TODO: reasoning: memory is not changed
+unsafe impl Send for InternalHelper {}
+impl Drop for InternalHelper {
+    fn drop(&mut self) {
+        unsafe {
+            let value_layout = core::alloc::Layout::from_size_align_unchecked(
+                self.value_type_details.0.size(),
+                self.value_type_details.0.alignment(),
+            );
+            std::alloc::dealloc(self.value_buffer, value_layout);
+        }
+    }
+}
