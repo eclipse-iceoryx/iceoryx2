@@ -21,7 +21,6 @@ use core::marker::PhantomData;
 
 use alloc::boxed::Box;
 use alloc::format;
-use alloc::rc::Rc;
 use alloc::vec::Vec;
 
 use iceoryx2_bb_container::flatmap::RelocatableFlatMap;
