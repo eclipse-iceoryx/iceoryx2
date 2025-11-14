@@ -764,7 +764,6 @@ def test_handle_can_still_be_used_after_every_previous_service_state_owner_was_d
 class Foo(ctypes.Structure):
     _fields_ = [("a", ctypes.c_uint8), ("b", ctypes.c_uint32), ("c", ctypes.c_double)]
 
-    # TODO: document that custom structures must implement __eq__
     def __eq__(self, other):
         if not isinstance(other, Foo):
             return NotImplemented
