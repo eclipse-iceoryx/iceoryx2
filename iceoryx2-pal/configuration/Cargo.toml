@@ -10,4 +10,7 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 version = { workspace = true }
 
-[dependencies]
+[features]
+custom_pal_config = []
+
+[build-dependencies]
