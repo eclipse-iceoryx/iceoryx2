@@ -37,9 +37,10 @@
 //! }
 //! ```
 
-pub mod cdr;
 pub mod postcard;
 pub mod recommended;
+
+#[cfg(feature = "std")]
 pub mod toml;
 
 use core::fmt::Debug;

@@ -1,0 +1,15 @@
+[package]
+name = "bare-metal-publish-subscribe"
+description = "a bare metal application that runs on qemu emulating the r5"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = []
+semihosting = [
+  "bare-metal-common/semihosting"
+]
+
+[dependencies]
+iceoryx2 = { workspace = true }
+bare-metal-common = { workspace = true }

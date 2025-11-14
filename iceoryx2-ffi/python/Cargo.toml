@@ -17,7 +17,7 @@ name = "_iceoryx2"
 crate-type = ["cdylib"]
 
 [dependencies]
-iceoryx2 = { workspace = true }
+iceoryx2 = { workspace = true, features = ["std"] }
 iceoryx2-bb-log = { workspace = true }
 
 [dependencies.pyo3]

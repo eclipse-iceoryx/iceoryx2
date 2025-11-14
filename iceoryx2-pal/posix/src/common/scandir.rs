@@ -10,9 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use alloc::vec;
+use alloc::vec::Vec;
+
 use crate::posix::{closedir, free, malloc, opendir, readdir_r};
 use crate::posix::{dirent_size, types::*};
 
+#[allow(dead_code)]
 pub(crate) unsafe fn scandir_impl(
     path: *const c_char,
     namelist: *mut *mut *mut crate::posix::types::dirent,

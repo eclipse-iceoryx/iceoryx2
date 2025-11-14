@@ -30,7 +30,7 @@ use iceoryx2_bb_posix::mutex::*;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 
-use once_cell::sync::Lazy;
+use lazy_static::lazy_static;
 
 #[derive(Debug)]
 pub(crate) struct Management {
@@ -52,19 +52,21 @@ struct StorageEntry {
     content: Arc<Management>,
 }
 
-static PROCESS_LOCAL_MTX_HANDLE: Lazy<MutexHandle<BTreeMap<FilePath, StorageEntry>>> =
-    Lazy::new(MutexHandle::new);
-static PROCESS_LOCAL_CHANNELS: Lazy<Mutex<BTreeMap<FilePath, StorageEntry>>> = Lazy::new(|| {
-    let result = MutexBuilder::new()
-        .is_interprocess_capable(false)
-        .create(BTreeMap::new(), &PROCESS_LOCAL_MTX_HANDLE);
+lazy_static! {
+    static ref PROCESS_LOCAL_MTX_HANDLE: MutexHandle<BTreeMap<FilePath, StorageEntry>> =
+        MutexHandle::new();
+    static ref PROCESS_LOCAL_CHANNELS: Mutex<'static, 'static, BTreeMap<FilePath, StorageEntry>> = {
+        let result = MutexBuilder::new()
+            .is_interprocess_capable(false)
+            .create(BTreeMap::new(), &PROCESS_LOCAL_MTX_HANDLE);
 
-    if result.is_err() {
-        fatal_panic!(from "PROCESS_LOCAL_CHANNELS", "Failed to create process global communication channels");
-    }
+        if result.is_err() {
+            fatal_panic!(from "PROCESS_LOCAL_CHANNELS", "Failed to create process global communication channels");
+        }
 
-    result.unwrap()
-});
+        result.unwrap()
+    };
+}
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Configuration {

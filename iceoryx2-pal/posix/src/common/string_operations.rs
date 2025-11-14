@@ -12,6 +12,8 @@
 
 #![allow(dead_code)]
 
+use core::unreachable;
+
 pub(crate) unsafe fn c_string_length(value: *const crate::posix::c_char) -> usize {
     for i in 0..isize::MAX {
         if *value.offset(i) == crate::posix::NULL_TERMINATOR {

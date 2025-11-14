@@ -44,14 +44,14 @@ tunnel_zenoh = ["iceoryx2-tunnel-zenoh"]
 
 [dependencies]
 iceoryx2-services-discovery = { workspace = true }
-iceoryx2 = { workspace = true }
+iceoryx2 = { workspace = true, features = ["std"] }
 iceoryx2-bb-log = { workspace = true }
 iceoryx2-pal-posix = { workspace = true }
-iceoryx2-bb-posix = { workspace = true }
+iceoryx2-bb-posix = { workspace = true, features = ["std"] }
 iceoryx2-bb-system-types = { workspace = true }
 iceoryx2-bb-container = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }
-iceoryx2-cal = { workspace = true }
+iceoryx2-cal = { workspace = true, features = ["std"] }
 iceoryx2-userland-record-and-replay = { workspace = true }
 
 anyhow = { workspace = true }

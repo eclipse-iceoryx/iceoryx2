@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![cfg_attr(not(any(test, feature = "std")), no_std)]
 #![warn(clippy::alloc_instead_of_core)]
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
@@ -332,10 +333,14 @@ macro_rules! cerr {
 #[cfg(not(feature = "std"))]
 #[macro_export]
 macro_rules! cout {
-    ($($arg:tt)*) => {{}};
+    ($($arg:tt)*) => {{
+        let _ = format_args!($($arg)*);
+    }};
 }
 #[cfg(not(feature = "std"))]
 #[macro_export]
 macro_rules! cerr {
-    ($($arg:tt)*) => {{}};
+    ($($arg:tt)*) => {{
+        let _ = format_args!($($arg)*);
+    }};
 }

@@ -1,0 +1,14 @@
+[package]
+name = "bare-metal-common"
+description = "common components for running iceoryx2 in a bare metal deployment"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = []
+semihosting = []
+
+[dependencies]
+iceoryx2-bb-memory = { workspace = true }
+
+spin = { workspace = true }

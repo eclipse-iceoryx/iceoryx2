@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![no_std]
 #![warn(clippy::alloc_instead_of_core)]
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
@@ -90,7 +91,7 @@
 
 extern crate alloc;
 
-/// A queue similar to [`std::collections::VecDeque`]
+/// A queue similar to [`alloc::collections::vec_deque::VecDeque`]
 pub mod queue;
 /// A container with persistent unique keys to access values.
 pub mod slotmap;

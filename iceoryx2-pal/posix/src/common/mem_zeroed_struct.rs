@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub trait MemZeroedStruct: Sized {
+pub trait MemZeroedStruct: core::marker::Sized {
     fn new_zeroed() -> Self {
         unsafe { core::mem::zeroed() }
     }

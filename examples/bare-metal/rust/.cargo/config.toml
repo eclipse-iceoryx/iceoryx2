@@ -1,0 +1,17 @@
+[profile.release]
+codegen-units = 1
+strip = true
+lto = true
+opt-level = "z"
+panic = "abort"
+
+[build]
+target = "armv7r-none-eabihf"
+
+[target.armv7r-none-eabihf]
+rustflags = [
+    "-Clink-arg=-Tlinker.ld",
+    "-Ctarget-cpu=cortex-r5",
+]
+
+runner = "qemu-system-arm -machine versatileab -cpu cortex-r5f -semihosting -nographic -kernel"

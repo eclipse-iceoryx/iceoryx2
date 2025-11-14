@@ -11,6 +11,11 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [features]
+default = [
+  "lazy_static/spin_no_std"
+]
+std = []
+
 # The permissions of all resources will be set to read, write, execute for everyone.
 # This shall not be used in production and is meant to be enabled in a docker environment
 # with inconsistent user configuration.
@@ -29,10 +34,9 @@ iceoryx2-bb-memory = { workspace = true }
 iceoryx2-bb-lock-free = { workspace = true }
 iceoryx2-pal-concurrency-sync = { workspace = true }
 
+lazy_static = { workspace = true }
 postcard = { workspace = true }
-once_cell = { workspace = true }
 serde = { workspace = true }
-cdr = { workspace = true }
 toml = { workspace = true }
 sha1_smol = { workspace = true }
 tiny-fn = { workspace = true }
