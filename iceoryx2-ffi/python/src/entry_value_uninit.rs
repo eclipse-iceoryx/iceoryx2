@@ -33,7 +33,9 @@ impl EntryValueUninit {
         match &*self.entry_value.value.lock() {
             EntryValueType::Ipc(Some(v)) => v.write_cell() as usize,
             EntryValueType::Local(Some(v)) => v.write_cell() as usize,
-            _ => fatal_panic!(""), // TODO
+            _ => {
+                fatal_panic!(from "EntryValueUninit::write()", "Accessing a deleted EntryValueUninit")
+            }
         }
     }
 
@@ -60,6 +62,8 @@ impl EntryValueUninit {
         }
     }
 
+    /// Discards the `EntryValueUninit` and returns the original
+    /// `EntryHandleMut`.
     pub fn discard(&mut self) -> EntryHandleMut {
         match &mut *self.entry_value.value.lock() {
             EntryValueType::Ipc(v) => {

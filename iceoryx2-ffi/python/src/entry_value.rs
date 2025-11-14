@@ -18,19 +18,21 @@ use crate::type_detail::TypeDetail;
 use crate::type_storage::TypeStorage;
 
 pub(crate) enum EntryValueType {
-    Ipc(Option<iceoryx2::port::writer::__InternalEntryValueUninit<crate::IpcService>>), // TODO: Option?
+    Ipc(Option<iceoryx2::port::writer::__InternalEntryValueUninit<crate::IpcService>>),
     Local(Option<iceoryx2::port::writer::__InternalEntryValueUninit<crate::LocalService>>),
 }
 
 #[pyclass]
 pub struct EntryValue {
-    pub(crate) value: Parc<EntryValueType>, // TODO: better name
+    pub(crate) value: Parc<EntryValueType>,
     pub(crate) value_type_details: TypeDetail,
     pub(crate) value_type_storage: TypeStorage,
 }
 
 #[pymethods]
 impl EntryValue {
+    /// Makes new value readable for `Reader`s, consumes the `EntryValue` and
+    /// returns the original `EntryHandleMut`.
     pub fn update(&mut self) -> EntryHandleMut {
         match &mut *self.value.lock() {
             EntryValueType::Ipc(v) => {
@@ -54,6 +56,7 @@ impl EntryValue {
         }
     }
 
+    /// Discards the `EntryValue` and returns the original `EntryHandleMut`.
     pub fn discard(&mut self) -> EntryHandleMut {
         match &mut *self.value.lock() {
             EntryValueType::Ipc(v) => {

@@ -10,7 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_log::fatal_panic;
 use pyo3::prelude::*;
 
 use crate::event_id::EventId;
@@ -19,16 +18,16 @@ use crate::type_detail::TypeDetail;
 use crate::type_storage::TypeStorage;
 
 pub(crate) enum EntryHandleType {
-    Ipc(Option<iceoryx2::port::reader::__InternalEntryHandle<crate::IpcService>>), // TODO: Option?
-    Local(Option<iceoryx2::port::reader::__InternalEntryHandle<crate::LocalService>>),
+    Ipc(iceoryx2::port::reader::__InternalEntryHandle<crate::IpcService>),
+    Local(iceoryx2::port::reader::__InternalEntryHandle<crate::LocalService>),
 }
 
 #[pyclass]
 pub struct EntryHandle {
-    pub(crate) value: Parc<EntryHandleType>, // TODO: better name
+    pub(crate) value: Parc<EntryHandleType>,
     pub(crate) value_type_details: TypeDetail,
     pub(crate) value_type_storage: TypeStorage,
-    pub(crate) value_ptr: Parc<InternalHelper>,
+    pub(crate) value_ptr: Parc<InternalValueStorage>,
 }
 
 #[pymethods]
@@ -48,7 +47,7 @@ impl EntryHandle {
         let layout =
             unsafe { core::alloc::Layout::from_size_align_unchecked(value_size, value_alignment) };
         let value_buffer = unsafe { std::alloc::alloc(layout) };
-        self.value_ptr = Parc::new(InternalHelper {
+        self.value_ptr = Parc::new(InternalValueStorage {
             value_buffer,
             value_type_details: self.value_type_details.clone(),
         });
@@ -59,36 +58,35 @@ impl EntryHandle {
         let value_alignment = self.value_type_details.0.alignment();
         let value_buffer = (&*self.value_ptr.lock()).value_buffer;
         match &*self.value.lock() {
-            EntryHandleType::Ipc(Some(v)) => {
+            EntryHandleType::Ipc(v) => {
                 unsafe { v.get(value_buffer, value_size, value_alignment) };
                 value_buffer as usize
             }
-            EntryHandleType::Local(Some(v)) => {
+            EntryHandleType::Local(v) => {
                 unsafe { v.get(value_buffer, value_size, value_alignment) };
                 value_buffer as usize
             }
-            _ => fatal_panic!(""), // TODO
         }
     }
 
     pub fn entry_id(&self) -> EventId {
         match &*self.value.lock() {
-            EntryHandleType::Ipc(Some(v)) => EventId::new(v.entry_id().as_value()),
-            EntryHandleType::Local(Some(v)) => EventId::new(v.entry_id().as_value()),
-            _ => fatal_panic!(""), // TODO
+            EntryHandleType::Ipc(v) => EventId::new(v.entry_id().as_value()),
+            EntryHandleType::Local(v) => EventId::new(v.entry_id().as_value()),
         }
     }
 }
 
-// TODO: use Box of 'u8 slice' and remove one helper struct
-// TODO: better names
-pub struct InternalHelper {
+pub struct InternalValueStorage {
     pub value_buffer: *mut u8,
     pub value_type_details: TypeDetail,
 }
-// TODO: reasoning: memory is not changed
-unsafe impl Send for InternalHelper {}
-impl Drop for InternalHelper {
+
+// `InternalValueStorage` is only used as member of `EntryHandle` and the memory that
+// `value_buffer` is pointing to remains valid until the `EntryHandle` goes out of scope.
+unsafe impl Send for InternalValueStorage {}
+
+impl Drop for InternalValueStorage {
     fn drop(&mut self) {
         unsafe {
             let value_layout = core::alloc::Layout::from_size_align_unchecked(

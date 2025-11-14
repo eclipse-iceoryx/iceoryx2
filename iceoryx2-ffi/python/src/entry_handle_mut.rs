@@ -21,13 +21,13 @@ use crate::type_detail::TypeDetail;
 use crate::type_storage::TypeStorage;
 
 pub(crate) enum EntryHandleMutType {
-    Ipc(Option<iceoryx2::port::writer::__InternalEntryHandleMut<crate::IpcService>>), // TODO: Option?
+    Ipc(Option<iceoryx2::port::writer::__InternalEntryHandleMut<crate::IpcService>>),
     Local(Option<iceoryx2::port::writer::__InternalEntryHandleMut<crate::LocalService>>),
 }
 
 #[pyclass]
 pub struct EntryHandleMut {
-    pub(crate) value: Parc<EntryHandleMutType>, // TODO: better name
+    pub(crate) value: Parc<EntryHandleMutType>,
     pub(crate) value_type_storage: TypeStorage,
     pub(crate) value_type_details: TypeDetail,
 }
@@ -52,7 +52,9 @@ impl EntryHandleMut {
                 EntryHandleMutType::Local(Some(v)) => {
                     v.__internal_get_ptr_to_write_cell(value_size, value_alignment) as usize
                 }
-                _ => fatal_panic!(""), // TODO
+                _ => {
+                    fatal_panic!(from "EntryHandleMut::update_with_copy()", "Accessing a deleted EntryHandleMut")
+                }
             }
         }
     }
@@ -66,11 +68,15 @@ impl EntryHandleMut {
                 EntryHandleMutType::Local(Some(v)) => {
                     v.__internal_update_write_cell();
                 }
-                _ => fatal_panic!(""), // TODO
+                _ => {
+                    fatal_panic!(from "EntryHandleMut::update_with_copy()", "Accessing a deleted EntryHandleMut")
+                }
             }
         };
     }
 
+    /// Consumes the `EntryHandleMut` and loans an uninitialized entry value that can be used to
+    /// update without copy.
     pub fn loan_uninit(&mut self) -> EntryValueUninit {
         match &mut *self.value.lock() {
             EntryHandleMutType::Ipc(ref mut v) => {
@@ -104,11 +110,15 @@ impl EntryHandleMut {
         }
     }
 
+    /// Returns an ID corresponding to the entry which can be used in an event based
+    /// communication setup.
     pub fn entry_id(&self) -> EventId {
         match &*self.value.lock() {
             EntryHandleMutType::Ipc(Some(v)) => EventId::new(v.entry_id().as_value()),
             EntryHandleMutType::Local(Some(v)) => EventId::new(v.entry_id().as_value()),
-            _ => fatal_panic!(""), // TODO
+            _ => {
+                fatal_panic!(from "EntryHandleMut::entry_id()", "Accessing a deleted EntryHandleMut")
+            }
         }
     }
 
