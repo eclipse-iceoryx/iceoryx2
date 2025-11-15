@@ -154,7 +154,13 @@ impl Errno {
 pub unsafe fn strerror_r(errnum: int, buf: *mut c_char, buflen: size_t) -> int {
     use core::sync::atomic::Ordering;
     use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
+
+    #[cfg(all(test, loom, feature = "std"))]
     static IS_LOCKED: IoxAtomicBool = IoxAtomicBool::new(false);
+    #[cfg(not(all(test, loom, feature = "std")))]
+    static IS_LOCKED: std::sync::LazyLock<IoxAtomicBool> = std::sync::LazyLock::new(|| {
+        unimplemented!("loom does not provide const-initialization for atomic variables.")
+    });
 
     while IS_LOCKED
         .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
