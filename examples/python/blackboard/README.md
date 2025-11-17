@@ -26,7 +26,7 @@ sharing a global configuration or state, for example.
 > In addition to the shared memory related requirements mentioned above, the
 > keys and values stored in the blackboard must be trivially copyable. To be
 > able to store and retrieve keys in the blackboard, the key must implement
-> __eq__.
+> `__eq__`.
 
 In this example, one writer updates the values in the blackboard every second
 and a reader reads and prints them to the console.

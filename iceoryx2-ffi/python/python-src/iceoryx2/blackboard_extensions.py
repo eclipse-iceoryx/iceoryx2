@@ -15,28 +15,22 @@
 import ctypes
 from typing import Any, Callable, Type, TypeVar
 
-from ._iceoryx2 import (
-    EntryHandle,
-    EntryHandleMut,
-    EntryValue,
-    EntryValueUninit,
-    Reader,
-    ServiceBuilder,
-    ServiceBuilderBlackboardCreator,
-    ServiceBuilderBlackboardOpener,
-    TypeDetail,
-    TypeName,
-    TypeVariant,
-    Writer,
-)
+from ._iceoryx2 import (EntryHandle, EntryHandleMut, EntryValue,
+                        EntryValueUninit, Reader, ServiceBuilder,
+                        ServiceBuilderBlackboardCreator,
+                        ServiceBuilderBlackboardOpener, TypeDetail, TypeName,
+                        TypeVariant, Writer)
 from .type_name import get_type_name
 
-T = TypeVar("T", bound=ctypes.Structure)
+K = TypeVar("K", bound=ctypes.Structure)
+V = TypeVar("V", bound=ctypes.Structure)
 
 
 def get_key_cmp_func(
     key_type_details: Any,
 ) -> Callable[[ctypes.c_uint64, ctypes.c_uint64], bool]:
+    """Returns a callable for comparing keys."""
+
     def key_cmp(lhs: ctypes.c_uint64, rhs: ctypes.c_uint64) -> bool:
         lhs_key = ctypes.cast(lhs, ctypes.POINTER(key_type_details)).contents
         rhs_key = ctypes.cast(rhs, ctypes.POINTER(key_type_details)).contents
@@ -48,11 +42,14 @@ def get_key_cmp_func(
 
 
 def blackboard_creator(
-    self: ServiceBuilder, key: Type[T]
+    self: ServiceBuilder, key: Type[K]
 ) -> ServiceBuilderBlackboardCreator:
-    """Returns the `ServiceBuilderBlackboardCreator` to create a new blackboard service. The key
-    ctype must be provided as argument. If the key is of type ctypes.Structure, it must implement
-    __eq__."""
+    """
+    Returns the `ServiceBuilderBlackboardCreator` to create a new blackboard service.
+
+    The key ctype must be provided as argument. If the key is of type ctypes.Structure,
+    it must implement __eq__.
+    """
     type_name = get_type_name(key)
     type_size = ctypes.sizeof(key)
     type_align = ctypes.alignment(key)
@@ -73,10 +70,13 @@ def blackboard_creator(
 
 
 def blackboard_opener(
-    self: ServiceBuilder, key: Type[T]
+    self: ServiceBuilder, key: Type[K]
 ) -> ServiceBuilderBlackboardOpener:
-    """Returns the `ServiceBuilderBlackboardOpener` to open a blackboard service. The key
-    ctype must be provided as argument."""
+    """
+    Returns the `ServiceBuilderBlackboardOpener` to open a blackboard service.
+
+    The key ctype must be provided as argument.
+    """
     type_name = get_type_name(key)
     type_size = ctypes.sizeof(key)
     type_align = ctypes.alignment(key)
@@ -96,8 +96,8 @@ def blackboard_opener(
 
 def add(
     self: ServiceBuilderBlackboardCreator,
-    key: Type[T],
-    value: Type[T],
+    key: Type[K],
+    value: Type[V],
 ) -> ServiceBuilderBlackboardCreator:
     """Adds a key-value pair to the blackboard."""
     assert self.__key_type_details is not None
@@ -120,9 +120,12 @@ def add(
     )
 
 
-def entry_handle(self: Reader, key: Type[T], value: Type[T]) -> EntryHandle:
-    """Creates an EntryHandle for direct read access to the value. On failure
-    it returns `EntryHandleError` describing the failure."""
+def entry_handle(self: Reader, key: Type[K], value: Type[V]) -> EntryHandle:
+    """
+    Creates an EntryHandle for direct read access to the value.
+
+    On failure it returns `EntryHandleError` describing the failure.
+    """
     assert self.__key_type_details is not None
     assert ctypes.sizeof(key) == ctypes.sizeof(self.__key_type_details)
     assert ctypes.alignment(key) == ctypes.alignment(self.__key_type_details)
@@ -146,7 +149,10 @@ def entry_handle(self: Reader, key: Type[T], value: Type[T]) -> EntryHandle:
 
 
 class RawValue:
+    """A wrapper class for the value returned by `EntryHandle.get()`."""
+
     def __init__(self, data: bytes):
+        """Initializes `RawValue` from bytes."""
         self.data = data
         self.size = len(data)
 
@@ -156,18 +162,24 @@ class RawValue:
 
 
 def get(self: EntryHandle) -> RawValue:
-    """Return a copy of the value as bytes. Use decode_as() to reinterpret the raw bytes
-    as a ctypes type."""
+    """
+    Returns a copy of the value as bytes.
+
+    Use decode_as() to reinterpret the raw bytes as a ctypes type.
+    """
     value_ptr = self.__get()
     value_size = ctypes.sizeof(self.__value_type)
     raw_bytes = ctypes.string_at(value_ptr, value_size)
     return RawValue(raw_bytes)
 
 
-def entry_handle_mut(self: Writer, key: Type[T], value: Type[T]) -> EntryHandleMut:
-    """Creates an EntryHandleMut for direct write access to the value. There
-    can be only one EntryHandleMut per value. On failure it returns
-    `EntryHandleMutError` describing the failure."""
+def entry_handle_mut(self: Writer, key: Type[K], value: Type[V]) -> EntryHandleMut:
+    """
+    Creates an EntryHandleMut for direct write access to the value.
+
+    There can be only one EntryHandleMut per value. On failure it returns
+    `EntryHandleMutError` describing the failure.
+    """
     assert self.__key_type_details is not None
     assert ctypes.sizeof(key) == ctypes.sizeof(self.__key_type_details)
     assert ctypes.alignment(key) == ctypes.alignment(self.__key_type_details)
@@ -189,7 +201,7 @@ def entry_handle_mut(self: Writer, key: Type[T], value: Type[T]) -> EntryHandleM
     return entry_handle_mut
 
 
-def update_with_copy(self: EntryHandleMut, value: Type[T]):
+def update_with_copy(self: EntryHandleMut, value: Type[V]):
     """Updates the value by copying the passed value into it."""
     assert self.__value_type is not None
     type_size = ctypes.sizeof(value)
@@ -202,9 +214,13 @@ def update_with_copy(self: EntryHandleMut, value: Type[T]):
     self.__update_data_ptr()
 
 
-def write(self: EntryValueUninit, value: Type[T]) -> EntryValue:
-    """Consumes the EntryValueUninit, writes values to the entry
-    value and returns the initialized EntryValue."""
+def write(self: EntryValueUninit, value: Type[V]) -> EntryValue:
+    """
+    Writes to the entry value.
+
+    Consumes the EntryValueUninit, writes values to the entry
+    value and returns the initialized EntryValue.
+    """
     assert self.__value_type is not None
     type_size = ctypes.sizeof(value)
     assert type_size == ctypes.sizeof(self.__value_type)

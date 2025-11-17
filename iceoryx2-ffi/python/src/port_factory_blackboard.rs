@@ -83,8 +83,8 @@ impl PortFactoryBlackboard {
     /// Returns the `ServiceId` of the `Service`.
     pub fn service_id(&self) -> ServiceId {
         match &*self.value.lock() {
-            PortFactoryBlackboardType::Ipc(Some(v)) => ServiceId(v.service_id().clone()),
-            PortFactoryBlackboardType::Local(Some(v)) => ServiceId(v.service_id().clone()),
+            PortFactoryBlackboardType::Ipc(Some(v)) => ServiceId(*v.service_id()),
+            PortFactoryBlackboardType::Local(Some(v)) => ServiceId(*v.service_id()),
             _ => {
                 fatal_panic!(from "PortFactoryBlackboard::service_id()", "Accessing a deleted PortFactoryBlackboard.")
             }

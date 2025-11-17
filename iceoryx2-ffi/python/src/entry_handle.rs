@@ -57,7 +57,7 @@ impl EntryHandle {
     pub fn __get(&self) -> usize {
         let value_size = self.value_type_details.0.size();
         let value_alignment = self.value_type_details.0.alignment();
-        let value_buffer = (&*self.value_ptr.lock()).value_buffer;
+        let value_buffer = (self.value_ptr.lock()).value_buffer;
         match &*self.value.lock() {
             EntryHandleType::Ipc(v) => {
                 unsafe { v.get(value_buffer, value_size, value_alignment) };

@@ -14,9 +14,8 @@
 
 from ctypes import c_double, c_int32
 
-from blackboard_complex_key import BlackboardKey
-
 import iceoryx2 as iox2
+from blackboard_complex_key import BlackboardKey
 
 cycle_time = iox2.Duration.from_secs(1)
 
