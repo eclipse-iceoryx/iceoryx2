@@ -34,13 +34,13 @@ pub struct EntryHandleMut {
 
 #[pymethods]
 impl EntryHandleMut {
-    pub fn __set_value_type(&mut self, value: PyObject) {
-        self.value_type_storage.value = Some(value)
+    #[getter]
+    pub fn __value_type(&self) -> Option<Py<PyAny>> {
+        self.value_type_storage.clone().value
     }
 
-    #[getter]
-    pub fn __value_type(&self) -> TypeDetail {
-        self.value_type_details.clone()
+    pub fn __set_value_type(&mut self, value: PyObject) {
+        self.value_type_storage.value = Some(value)
     }
 
     pub fn __get_data_ptr(&self, value_size: usize, value_alignment: usize) -> usize {

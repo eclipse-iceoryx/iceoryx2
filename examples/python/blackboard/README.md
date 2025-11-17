@@ -28,7 +28,8 @@ sharing a global configuration or state, for example.
 > able to store and retrieve keys in the blackboard, the key must implement
 > __eq__.
 
-In this example, one writer updates the values in the blackboard every second and a reader reads and prints them to the console.
+In this example, one writer updates the values in the blackboard every second
+and a reader reads and prints them to the console.
 
 ## How to Build
 

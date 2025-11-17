@@ -46,6 +46,7 @@ impl EntryHandle {
         let value_alignment = self.value_type_details.0.alignment();
         let layout =
             unsafe { core::alloc::Layout::from_size_align_unchecked(value_size, value_alignment) };
+        // The corresponding dealloc is implemented in InternalValueStorage::drop().
         let value_buffer = unsafe { std::alloc::alloc(layout) };
         self.value_ptr = Parc::new(InternalValueStorage {
             value_buffer,

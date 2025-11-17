@@ -50,8 +50,9 @@ def get_key_cmp_func(
 def blackboard_creator(
     self: ServiceBuilder, key: Type[T]
 ) -> ServiceBuilderBlackboardCreator:
-    """Returns the `ServiceBuilderBlackboardCreator` to create a new blackboard service. The key ctype must be provided as argument.
-    If the key is of type ctypes.Structure, it must implement __eq__."""
+    """Returns the `ServiceBuilderBlackboardCreator` to create a new blackboard service. The key
+    ctype must be provided as argument. If the key is of type ctypes.Structure, it must implement
+    __eq__."""
     type_name = get_type_name(key)
     type_size = ctypes.sizeof(key)
     type_align = ctypes.alignment(key)
@@ -74,7 +75,8 @@ def blackboard_creator(
 def blackboard_opener(
     self: ServiceBuilder, key: Type[T]
 ) -> ServiceBuilderBlackboardOpener:
-    """Returns the `ServiceBuilderBlackboardOpener` to open a blackboard service. The key ctype must be provided as argument."""
+    """Returns the `ServiceBuilderBlackboardOpener` to open a blackboard service. The key
+    ctype must be provided as argument."""
     type_name = get_type_name(key)
     type_size = ctypes.sizeof(key)
     type_align = ctypes.alignment(key)
@@ -189,8 +191,11 @@ def entry_handle_mut(self: Writer, key: Type[T], value: Type[T]) -> EntryHandleM
 
 def update_with_copy(self: EntryHandleMut, value: Type[T]):
     """Updates the value by copying the passed value into it."""
+    assert self.__value_type is not None
     type_size = ctypes.sizeof(value)
     type_align = ctypes.alignment(value)
+    assert type_size == ctypes.sizeof(self.__value_type)
+    assert type_align == ctypes.alignment(self.__value_type)
 
     data_cell_ptr = self.__get_data_ptr(type_size, type_align)
     ctypes.memmove(data_cell_ptr, ctypes.byref(value), type_size)
