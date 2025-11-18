@@ -35,9 +35,9 @@ def test_writer_id_from_same_port_is_equal(
     )
 
     writer = service.writer_builder().create()
-    id = writer.id
+    writer_id = writer.id
 
-    assert writer.id.value == id.value
+    assert writer.id.value == writer_id.value
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -183,11 +183,8 @@ def test_entry_value_can_still_be_used_after_every_previous_service_state_owner_
     writer.delete()
     service.delete()
 
-    try:
-        entry_value = entry_value_uninit.write(c_uint32(333))
-        entry_value.update()
-    except:
-        assert False
+    entry_value = entry_value_uninit.write(c_uint32(333))
+    entry_value.update()
 
 
 @pytest.mark.parametrize("service_type", service_types)

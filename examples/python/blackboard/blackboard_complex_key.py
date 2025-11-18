@@ -22,6 +22,7 @@ class BlackboardKey(ctypes.Structure):
 
     # To store and retrieve a key in the blackboard, a comparison function must be provided.
     def __eq__(self, other):
+        """Key eq comparison function."""
         if not isinstance(other, BlackboardKey):
             return NotImplemented
         return (self.x, self.y, self.z) == (other.x, other.y, other.z)
