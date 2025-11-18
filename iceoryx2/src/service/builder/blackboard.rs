@@ -288,7 +288,7 @@ impl Debug for BuilderInternals {
 
 impl Drop for BuilderInternals {
     fn drop(&mut self) {
-        (*self.internal_value_cleanup_callback)();
+        (self.internal_value_cleanup_callback)();
     }
 }
 
@@ -304,10 +304,10 @@ impl BuilderInternals {
         Self {
             key,
             value_type_details,
-            value_writer: Box::new(value_writer),
+            value_writer,
             internal_value_size: value_size,
             internal_value_alignment: value_alignment,
-            internal_value_cleanup_callback: Box::new(value_cleanup_callback),
+            internal_value_cleanup_callback: value_cleanup_callback,
         }
     }
 }
