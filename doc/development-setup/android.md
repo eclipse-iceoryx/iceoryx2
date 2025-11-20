@@ -27,7 +27,7 @@ sudo mkdir android
 sudo chown $USER:$USER android
 cd android
 wget https://dl.google.com/android/repository/android-ndk-r29-linux.zip
-unizp android-ndk-r29-linux.zip     # unzips to 'android-ndk-r29'
+unzip android-ndk-r29-linux.zip     # unzips to 'android-ndk-r29'
 ```
 
 In order for create binaries, the linker must be specified to cargo. Since the
@@ -66,7 +66,7 @@ https://wiki.archlinux.org/title/Waydroid.
 `waydroid` is available via the official Arch repository. It can be installed
 with `pacman` with the following command:
 ```bash
-pacman -S waydroid
+sudo pacman -S waydroid
 ```
 
 Once installed, `waydroid` needs to be initialized. This needs to be done only
@@ -82,7 +82,7 @@ waydroid prop set persist.waydroid.width 576
 waydroid prop set persist.waydroid.height 1024
 waydroid prop set persist.waydroid.suspend false
 # potentially this needs to be done in order to activate the props
-systemctl restart waydroid-container.service
+sudo systemctl restart waydroid-container.service
 ```
 
 The `suspend` property prevents the Android session to activate the lock-screen.
@@ -95,6 +95,9 @@ adb shell settings put global stay_on_while_plugged_in 3
 
 It is recommended to use the `waydroid` property, though, and only use the `adb`
 setting as fallback if the `waydroid` property does not work.
+
+In case a firewall is used, it must be ensured that `waydroid` can be reached
+via network. See also https://docs.waydro.id/debugging/networking-issues.
 
 Now, `waydroid` can be used to start an Android session with:
 ```bash
