@@ -1348,8 +1348,7 @@ pub mod service_blackboard {
         let entry_handle = reader.entry::<u32>(&0).unwrap();
 
         let entry_value_uninit = entry_handle_mut.loan_uninit();
-        let entry_value = entry_value_uninit.write(333);
-        let _entry_handle_mut = entry_value.update();
+        let _entry_handle_mut = entry_value_uninit.update_with_copy(333);
 
         assert_that!(entry_handle.get(), eq 333);
     }
@@ -1373,8 +1372,7 @@ pub mod service_blackboard {
         let entry_handle = reader.entry::<u32>(&0).unwrap();
 
         let entry_value_uninit = entry_handle_mut.loan_uninit();
-        let entry_value = entry_value_uninit.write(333);
-        let entry_handle_mut = entry_value.update();
+        let entry_handle_mut = entry_value_uninit.update_with_copy(333);
         assert_that!(entry_handle.get(), eq 333);
 
         entry_handle_mut.update_with_copy(999);
@@ -1402,8 +1400,7 @@ pub mod service_blackboard {
 
         drop(writer);
 
-        let entry_value = entry_value_uninit.write(333);
-        let _entry_handle_mut = entry_value.update();
+        let _entry_handle_mut = entry_value_uninit.update_with_copy(333);
         assert_that!(entry_handle.get(), eq 333);
     }
 
@@ -1427,32 +1424,6 @@ pub mod service_blackboard {
 
         let entry_value_uninit = entry_handle_mut.loan_uninit();
         let entry_handle_mut = entry_value_uninit.discard();
-        entry_handle_mut.update_with_copy(333);
-
-        assert_that!(entry_handle.get(), eq 333);
-    }
-
-    #[conformance_test]
-    pub fn entry_handle_mut_can_be_reused_after_entry_value_was_discarded<Sut: Service>() {
-        let service_name = generate_name();
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-
-        let sut = node
-            .service_builder(&service_name)
-            .blackboard_creator::<usize>()
-            .add::<u32>(0, 0)
-            .create()
-            .unwrap();
-
-        let writer = sut.writer_builder().create().unwrap();
-        let entry_handle_mut = writer.entry::<u32>(&0).unwrap();
-        let reader = sut.reader_builder().create().unwrap();
-        let entry_handle = reader.entry::<u32>(&0).unwrap();
-
-        let entry_value_uninit = entry_handle_mut.loan_uninit();
-        let entry_value = entry_value_uninit.write(999);
-        let entry_handle_mut = entry_value.discard();
         entry_handle_mut.update_with_copy(333);
 
         assert_that!(entry_handle.get(), eq 333);

@@ -473,9 +473,15 @@ impl<
     /// # Ok(())
     /// # }
     /// ```
-    pub fn write(self, value: ValueType) -> EntryValue<Service, KeyType, ValueType> {
+    pub fn update_with_copy(self, value: ValueType) -> EntryHandleMut<Service, KeyType, ValueType> {
+        // TODO: update documentation
         unsafe { self.ptr.write(value) };
-        EntryValue::new(self)
+        unsafe {
+            self.entry_handle_mut
+                .producer
+                .__internal_update_write_cell()
+        };
+        self.entry_handle_mut
     }
 
     /// Discard the [`EntryValueUninit`] and returns the original [`EntryHandleMut`].
@@ -495,101 +501,6 @@ impl<
     /// # let entry_handle_mut = writer.entry::<i32>(&1)?;
     /// let entry_value_uninit = entry_handle_mut.loan_uninit();
     /// let entry_handle_mut = entry_value_uninit.discard();
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn discard(self) -> EntryHandleMut<Service, KeyType, ValueType> {
-        self.entry_handle_mut
-    }
-}
-
-/// Wrapper around an initialized entry value that can be used for a zero-copy update.
-pub struct EntryValue<
-    Service: service::Service,
-    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
-    ValueType: Copy + 'static,
-> {
-    entry_handle_mut: EntryHandleMut<Service, KeyType, ValueType>,
-}
-
-// Safe since the EntryHandleMut implements Send + Sync and all methods of EntryValueUninit are
-// consuming.
-unsafe impl<
-        Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
-        ValueType: Copy + 'static,
-    > Send for EntryValue<Service, KeyType, ValueType>
-{
-}
-unsafe impl<
-        Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
-        ValueType: Copy + 'static,
-    > Sync for EntryValue<Service, KeyType, ValueType>
-{
-}
-
-impl<
-        Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
-        ValueType: Copy + 'static,
-    > EntryValue<Service, KeyType, ValueType>
-{
-    fn new(entry_value_uninit: EntryValueUninit<Service, KeyType, ValueType>) -> Self {
-        Self {
-            entry_handle_mut: entry_value_uninit.entry_handle_mut,
-        }
-    }
-
-    /// Makes new value readable for [`Reader`](crate::port::reader::Reader)s, consumes the
-    /// [`EntryValue`] and returns the original [`EntryHandleMut`].
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use iceoryx2::prelude::*;
-    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
-    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
-    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
-    /// #     .blackboard_creator::<u64>()
-    /// #     .add::<i32>(1, -1)
-    /// #     .create()?;
-    ///
-    /// # let writer = service.writer_builder().create()?;
-    /// # let entry_handle_mut = writer.entry::<i32>(&1)?;
-    /// let entry_value_uninitialized = entry_handle_mut.loan_uninit();
-    /// let entry_value = entry_value_uninitialized.write(-8);
-    /// let entry_handle_mut = entry_value.update();
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn update(self) -> EntryHandleMut<Service, KeyType, ValueType> {
-        unsafe {
-            self.entry_handle_mut
-                .producer
-                .__internal_update_write_cell()
-        };
-        self.entry_handle_mut
-    }
-
-    /// Discards the [`EntryValue`] and returns the original [`EntryHandleMut`].
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use iceoryx2::prelude::*;
-    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
-    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
-    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
-    /// #     .blackboard_creator::<u64>()
-    /// #     .add::<i32>(1, -1)
-    /// #     .create()?;
-    ///
-    /// # let writer = service.writer_builder().create()?;
-    /// # let entry_handle_mut = writer.entry::<i32>(&1)?;
-    /// let entry_value_uninit = entry_handle_mut.loan_uninit();
-    /// let entry_value = entry_value_uninit.write(-8);
-    /// let entry_handle_mut = entry_value.discard();
     /// # Ok(())
     /// # }
     /// ```

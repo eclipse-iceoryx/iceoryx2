@@ -52,8 +52,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
         let entry_value_uninit = entry_handle_mut_1.loan_uninit();
         let value = INITIAL_VALUE_1 * counter as f64;
-        let entry_value = entry_value_uninit.write(value);
-        entry_handle_mut_1 = entry_value.update();
+        entry_handle_mut_1 = entry_value_uninit.update_with_copy(value);
         cout!("Write new value for key 1: {}\n", value);
     }
 
