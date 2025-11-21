@@ -18,11 +18,13 @@ use iceoryx2_bb_posix::{
     memory_mapping::*,
     system_configuration::SystemInfo,
     unique_system_id::UniqueSystemId,
+    testing::create_test_directory,
 };
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_testing::assert_that;
 
 fn generate_file_name() -> FilePath {
+    create_test_directory();
     let mut file = FileName::new(b"mmap_tests").unwrap();
     file.push_bytes(
         UniqueSystemId::new()
