@@ -53,8 +53,7 @@ auto main() -> int {
 
         auto entry_value_uninit = loan_uninit(std::move(entry_handle_mut_key_1));
         auto value = initial_value * counter;
-        auto entry_value = write(std::move(entry_value_uninit), value);
-        entry_handle_mut_key_1 = update(std::move(entry_value));
+        entry_handle_mut_key_1 = update_with_copy(std::move(entry_value_uninit), value);
         std::cout << "Write new value for key 1: " << value << "...\n" << std::endl;
     }
 

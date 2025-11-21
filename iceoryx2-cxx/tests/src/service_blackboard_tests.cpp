@@ -701,8 +701,7 @@ TYPED_TEST(ServiceBlackboardTest, entry_value_can_still_be_used_after_every_prev
     writer.reset();
     service.reset();
 
-    auto entry_value = write(std::move(entry_value_uninit), static_cast<uint32_t>(1));
-    auto new_entry_handle_mut = update(std::move(entry_value));
+    auto new_entry_handle_mut = update_with_copy(std::move(entry_value_uninit), static_cast<uint32_t>(1));
 }
 
 TYPED_TEST(ServiceBlackboardTest, simple_communication_works_reader_created_first) {
@@ -1266,8 +1265,7 @@ TYPED_TEST(ServiceBlackboardTest, loan_and_write_entry_value_works) {
     auto entry_handle = reader.template entry<uint64_t>(0).expect("");
 
     auto entry_value_uninit = loan_uninit(std::move(entry_handle_mut));
-    auto entry_value = write(std::move(entry_value_uninit), VALUE);
-    auto new_entry_handle_mut = update(std::move(entry_value));
+    auto new_entry_handle_mut = update_with_copy(std::move(entry_value_uninit), VALUE);
 
     ASSERT_THAT(entry_handle.get(), Eq(VALUE));
 }
@@ -1292,8 +1290,7 @@ TYPED_TEST(ServiceBlackboardTest, entry_handle_mut_can_be_reused_after_entry_val
     auto entry_handle = reader.template entry<uint32_t>(0).expect("");
 
     auto entry_value_uninit = loan_uninit(std::move(entry_handle_mut));
-    auto entry_value = write(std::move(entry_value_uninit), VALUE1);
-    auto new_entry_handle_mut = update(std::move(entry_value));
+    auto new_entry_handle_mut = update_with_copy(std::move(entry_value_uninit), VALUE1);
     ASSERT_THAT(entry_handle.get(), Eq(VALUE1));
 
     new_entry_handle_mut.update_with_copy(VALUE2);
@@ -1322,8 +1319,7 @@ TYPED_TEST(ServiceBlackboardTest, entry_value_can_still_be_used_after_writer_was
 
     writer.reset();
 
-    auto entry_value = write(std::move(entry_value_uninit), VALUE);
-    auto new_entry_handle_mut = update(std::move(entry_value));
+    auto new_entry_handle_mut = update_with_copy(std::move(entry_value_uninit), VALUE);
     ASSERT_THAT(entry_handle.get(), Eq(VALUE));
 }
 
@@ -1349,31 +1345,6 @@ TYPED_TEST(ServiceBlackboardTest, entry_handle_mut_can_be_reused_after_entry_val
     auto sut = discard(std::move(entry_value_uninit));
     sut.update_with_copy(1);
     ASSERT_THAT(entry_handle.get(), Eq(1));
-}
-
-TYPED_TEST(ServiceBlackboardTest, entry_handle_mut_can_be_reused_after_entry_value_was_discarded) {
-    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-
-    const auto service_name = iox2_testing::generate_service_name();
-
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto service = node.service_builder(service_name)
-                       .template blackboard_creator<uint64_t>()
-                       .template add_with_default<uint32_t>(0)
-                       .create()
-                       .expect("");
-
-    auto writer = service.writer_builder().create().expect("");
-    auto entry_handle_mut = writer.template entry<uint32_t>(0).expect("");
-    auto reader = service.reader_builder().create().expect("");
-    auto entry_handle = reader.template entry<uint32_t>(0).expect("");
-
-    auto entry_value_uninit = loan_uninit(std::move(entry_handle_mut));
-    auto entry_value = write(std::move(entry_value_uninit), static_cast<uint32_t>(1));
-
-    auto sut = discard(std::move(entry_value));
-    sut.update_with_copy(2);
-    ASSERT_THAT(entry_handle.get(), Eq(2));
 }
 
 TYPED_TEST(ServiceBlackboardTest, entry_handle_can_still_be_used_after_every_previous_service_state_owner_was_dropped) {

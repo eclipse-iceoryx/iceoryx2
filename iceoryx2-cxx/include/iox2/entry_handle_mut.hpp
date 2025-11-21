@@ -13,7 +13,6 @@
 #ifndef IOX2_ENTRY_HANDLE_MUT_HPP
 #define IOX2_ENTRY_HANDLE_MUT_HPP
 
-#include "iox2/entry_value.hpp"
 #include "iox2/entry_value_uninit.hpp"
 #include "iox2/event_id.hpp"
 #include "iox2/service_type.hpp"
@@ -45,9 +44,7 @@ class EntryHandleMut {
     template <ServiceType, typename>
     friend class Writer;
     template <ServiceType ST, typename KeyT, typename ValueT>
-    friend auto update(EntryValue<ST, KeyT, ValueT>&& self) -> EntryHandleMut<ST, KeyT, ValueT>;
-    template <ServiceType ST, typename KeyT, typename ValueT>
-    friend auto discard(EntryValue<ST, KeyT, ValueT>&& self) -> EntryHandleMut<ST, KeyT, ValueT>;
+    friend auto update_with_copy(EntryValueUninit<ST, KeyT, ValueT>&&, ValueT) -> EntryHandleMut<ST, KeyT, ValueT>;
     template <ServiceType ST, typename KeyT, typename ValueT>
     friend auto discard(EntryValueUninit<ST, KeyT, ValueT>&& self) -> EntryHandleMut<ST, KeyT, ValueT>;
 
