@@ -10,7 +10,8 @@
     NOTE: Add new entries sorted by issue number to minimize the possibility of
     conflicts when merging.
 -->
-
+* Android proof of concept with `local` communication
+  [#416](https://github.com/eclipse-iceoryx/iceoryx2/issues/416)
 * `iox2 config explain` cli command for config descriptions
   [#832](https://github.com/eclipse-iceoryx/iceoryx2/issues/832)
 * Add traits to facilitate implementation of custom tunnelling mechanisms

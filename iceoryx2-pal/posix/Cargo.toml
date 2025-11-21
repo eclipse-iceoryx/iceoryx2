@@ -31,5 +31,10 @@ libc = { workspace = true, optional = true }
 [target.'cfg(windows)'.dependencies]
 windows-sys = { workspace = true }
 
+[target.aarch64-linux-android.dependencies]
+libc = { workspace = true }
+[target.x86_64-linux-android.dependencies]
+libc = { workspace = true }
+
 [dev-dependencies]
 iceoryx2-pal-testing = { workspace = true }
