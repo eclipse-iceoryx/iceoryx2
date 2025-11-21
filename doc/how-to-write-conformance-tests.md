@@ -14,7 +14,7 @@ service variant or extension.
 ## 2. Key Components
 
 | Component | Description |
-|-----------|-------------|
+| --------- | ----------- |
 | `#[conformance_test]` | Marks a function as a conformance test. The function must be generic over the SUT type(s). |
 | `#[conformance_test_module]` | Generates a declarative macro for a module, collecting all conformance tests and instantiating them for each SUT type. |
 | `instantiate_conformance_tests!` | Instantiates the generated macro for a conformance test and a list of SUT types. |
@@ -93,7 +93,6 @@ For such simple cases like above, without any additional test setup, except the
 boilerplate for the `instantiate_conformance_tests!` macro, the
 `instantiate_conformance_tests_with_module!` macro can be used to reduce this
 boilerplate:
-
 
 ```rs
 use iceoryx2_bb_testing::instantiate_conformance_tests;

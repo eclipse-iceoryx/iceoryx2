@@ -399,7 +399,6 @@
    auto attribute_specifier = AttributeSpecifier().define(*my_key, *my_value);
    ```
 
-
 1. **C++** Moved classes from `iceoryx_hoofs` to `iceoryx2` and adjusted
    namespaces and naming convention
 

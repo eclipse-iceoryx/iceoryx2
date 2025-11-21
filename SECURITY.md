@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 Line breaks on the bullet list lines are also present on the github renderer, therefore no line length limitation -->
+
 # Security Policy
 
 This Eclipse Foundation Project adheres to the [Eclipse Foundation Vulnerability Reporting Policy](https://www.eclipse.org/security/policy/).
@@ -29,3 +31,5 @@ Please include as much of the information listed below as you can to help us bet
 * Proof-of-concept or exploit code (if possible)
 
 This information will help us triage your report more quickly.
+
+<!-- markdownlint-enable MD013 -->

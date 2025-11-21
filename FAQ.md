@@ -193,7 +193,7 @@ cargo build --features iceoryx2-bb-loggers/std -features iceoryx2-bb-loggers/fil
 Alternatively, a custom logger backend can be set at runtime at the very
 beginning of your application:
 
-```
+```rust
 use iceoryx2::prelude::*;
 
 static LOGGER: MyLogger = MyLogger::new();
