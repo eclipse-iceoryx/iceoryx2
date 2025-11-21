@@ -1142,7 +1142,7 @@ TYPED_TEST(ServiceBlackboardTest, service_can_be_opened_when_there_is_a_reader) 
     ASSERT_FALSE(new_creator.has_error());
 }
 
-TYPED_TEST(ServiceBlackboardTest, reader_can_stil_read_value_when_writer_was_disconnected) {
+TYPED_TEST(ServiceBlackboardTest, reader_can_still_read_value_when_writer_was_disconnected) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr uint64_t VALUE = 5;
 

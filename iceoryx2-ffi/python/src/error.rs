@@ -264,3 +264,45 @@ create_exception!(
     PyException,
     "Errors caused by calling WaitSet::wait_and_process()."
 );
+
+create_exception!(
+    iceoryx2_ffi_python,
+    BlackboardCreateError,
+    PyException,
+    "Errors caused when creating a blackboard service."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    BlackboardOpenError,
+    PyException,
+    "Errors caused when opening a blackboard service."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    ReaderCreateError,
+    PyException,
+    "Errors caused when creating a reader port."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    EntryHandleError,
+    PyException,
+    "Errors caused when an EntryHandle is created with Reader::entry()."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    WriterCreateError,
+    PyException,
+    "Errors caused when creating a writer port."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    EntryHandleMutError,
+    PyException,
+    "Errors caused when an EntryHandleMut is created with Writer::entry()."
+);

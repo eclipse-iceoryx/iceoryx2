@@ -130,7 +130,7 @@ impl Publisher {
                     user_header_type_details: self.user_header_type_details.clone(),
                 })
             }
-            _ => fatal_panic!(from "Publisher::id()",
+            _ => fatal_panic!(from "Publisher::loan_slice_uninit()",
                 "Accessing a deleted publisher."),
         }
     }

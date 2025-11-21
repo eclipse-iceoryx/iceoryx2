@@ -10,11 +10,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
+use iceoryx2::service::builder::{CustomHeaderMarker, CustomKeyMarker, CustomPayloadMarker};
 use pyo3::prelude::*;
 
+use crate::service_builder_blackboard::{
+    ServiceBuilderBlackboardCreatorType, ServiceBuilderBlackboardOpenerType,
+};
 use crate::service_builder_request_response::ServiceBuilderRequestResponseType;
 use crate::{
+    service_builder_blackboard::{ServiceBuilderBlackboardCreator, ServiceBuilderBlackboardOpener},
     service_builder_event::{ServiceBuilderEvent, ServiceBuilderEventType},
     service_builder_publish_subscribe::{
         ServiceBuilderPublishSubscribe, ServiceBuilderPublishSubscribeType,
@@ -84,6 +88,42 @@ impl ServiceBuilder {
                     this.request_response::<[CustomPayloadMarker], [CustomPayloadMarker]>()
                         .request_user_header::<CustomHeaderMarker>()
                         .response_user_header::<CustomHeaderMarker>(),
+                ))
+            }
+        }
+    }
+
+    /// Create a new builder to create a `MessagingPattern::Blackboard` `Service`.
+    pub fn __blackboard_creator(&self) -> ServiceBuilderBlackboardCreator {
+        match &self.0 {
+            ServiceBuilderType::Ipc(v) => {
+                let this = v.clone();
+                ServiceBuilderBlackboardCreator::new(ServiceBuilderBlackboardCreatorType::Ipc(
+                    Some(this.blackboard_creator::<CustomKeyMarker>()),
+                ))
+            }
+            ServiceBuilderType::Local(v) => {
+                let this = v.clone();
+                ServiceBuilderBlackboardCreator::new(ServiceBuilderBlackboardCreatorType::Local(
+                    Some(this.blackboard_creator::<CustomKeyMarker>()),
+                ))
+            }
+        }
+    }
+
+    /// Create a new builder to open a `MessagingPattern::Blackboard` `Service`.
+    pub fn __blackboard_opener(&self) -> ServiceBuilderBlackboardOpener {
+        match &self.0 {
+            ServiceBuilderType::Ipc(v) => {
+                let this = v.clone();
+                ServiceBuilderBlackboardOpener::new(ServiceBuilderBlackboardOpenerType::Ipc(Some(
+                    this.blackboard_opener::<CustomKeyMarker>(),
+                )))
+            }
+            ServiceBuilderType::Local(v) => {
+                let this = v.clone();
+                ServiceBuilderBlackboardOpener::new(ServiceBuilderBlackboardOpenerType::Local(
+                    Some(this.blackboard_opener::<CustomKeyMarker>()),
                 ))
             }
         }

@@ -1999,6 +1999,65 @@ pub mod service_blackboard {
     }
 
     #[conformance_test]
+    pub fn value_cleanup_callback_works_when_custom_key_type_is_used<S: Service>() {
+        let counter = Arc::new(IoxAtomicU64::new(0));
+
+        type KeyType = Foo;
+        let key_0 = Foo {
+            a: 0,
+            b: 0,
+            c: StaticString::new(),
+        };
+        let key_ptr_0: *const KeyType = &key_0;
+        let key_1 = Foo {
+            a: 1,
+            b: 0,
+            c: StaticString::new(),
+        };
+        let key_ptr_1: *const KeyType = &key_1;
+
+        type ValueType = u64;
+        let default_value = ValueType::default();
+        let value_ptr: *const ValueType = &default_value;
+
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+        let cleanup_counter_0 = counter.clone();
+        let cleanup_counter_1 = counter.clone();
+        let _service = unsafe {
+            node.service_builder(&service_name)
+                .blackboard_creator::<CustomKeyMarker>()
+                .__internal_set_key_type_details(&TypeDetail::new::<KeyType>(
+                    TypeVariant::FixedSize,
+                ))
+                .__internal_set_key_eq_cmp_func(Box::new(move |lhs: *const u8, rhs: *const u8| {
+                    KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::key_eq_comparison(lhs, rhs, &cmp_for_foo)
+                }))
+                .__internal_add(
+                    key_ptr_0 as *const u8,
+                    value_ptr as *mut u8,
+                    TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
+                    Box::new(move || {
+                        cleanup_counter_0.fetch_add(1, Ordering::Relaxed);
+                    }),
+                )
+                .__internal_add(
+                    key_ptr_1 as *const u8,
+                    value_ptr as *mut u8,
+                    TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
+                    Box::new(move || {
+                        cleanup_counter_1.fetch_add(1, Ordering::Relaxed);
+                    }),
+                )
+                .create()
+                .unwrap()
+        };
+
+        assert_that!(counter.load(Ordering::Relaxed), eq 2);
+    }
+
+    #[conformance_test]
     pub fn key_memory_creation_fails_when_value_is_too_large<Sut: Service>() {
         let key: u16 = 256;
 

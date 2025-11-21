@@ -10,10 +10,10 @@
 >     * therefore, only `ctypes` and `ctypes.Structure` can be transferred
 > * not use pointers to manage their internal structure
 >
-> Any other python data type, except `ctypes` or `ctypes.Structure`s, like will
-> cause undefined behavior and may result in segmentation faults. Take a look
-> at the [publish subscribe example](../publish_subscribe) to see how `ctypes`
-> can be transferred.
+> Any other python data type, except `ctypes` or `ctypes.Structure`s, will
+> likely cause undefined behavior and may result in segmentation faults. Take a
+> look at the [publish subscribe example](../publish_subscribe) to see how
+> `ctypes` can be transferred.
 >
 > **Only fixed-size integers (like `ctypes.c_uint8_t`), `ctypes.c_float`,**
 > **`ctypes.c_double`, and the types in the `iceoryx2-bb-container` library**

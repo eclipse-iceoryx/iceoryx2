@@ -23,6 +23,10 @@ pub mod cleanup_state;
 pub mod client;
 pub mod config;
 pub mod duration;
+pub mod entry_handle;
+pub mod entry_handle_mut;
+pub mod entry_value;
+pub mod entry_value_uninit;
 pub mod error;
 pub mod event_id;
 pub mod file_descriptor;
@@ -43,16 +47,20 @@ pub mod notifier;
 pub mod parc;
 pub mod path;
 pub mod pending_response;
+pub mod port_factory_blackboard;
 pub mod port_factory_client;
 pub mod port_factory_event;
 pub mod port_factory_listener;
 pub mod port_factory_notifier;
 pub mod port_factory_publish_subscribe;
 pub mod port_factory_publisher;
+pub mod port_factory_reader;
 pub mod port_factory_request_response;
 pub mod port_factory_server;
 pub mod port_factory_subscriber;
+pub mod port_factory_writer;
 pub mod publisher;
+pub mod reader;
 pub mod request_header;
 pub mod request_mut;
 pub mod request_mut_uninit;
@@ -66,6 +74,7 @@ pub mod sample_mut_uninit;
 pub mod server;
 pub mod service;
 pub mod service_builder;
+pub mod service_builder_blackboard;
 pub mod service_builder_event;
 pub mod service_builder_publish_subscribe;
 pub mod service_builder_request_response;
@@ -74,6 +83,7 @@ pub mod service_id;
 pub mod service_name;
 pub mod service_type;
 pub mod signal_handling_mode;
+pub mod static_config_blackboard;
 pub mod static_config_event;
 pub mod static_config_publish_subscribe;
 pub mod static_config_request_response;
@@ -88,13 +98,16 @@ pub mod unique_client_id;
 pub mod unique_listener_id;
 pub mod unique_notifier_id;
 pub mod unique_publisher_id;
+pub mod unique_reader_id;
 pub mod unique_server_id;
 pub mod unique_subscriber_id;
+pub mod unique_writer_id;
 pub mod waitset;
 pub mod waitset_attachment_id;
 pub mod waitset_builder;
 pub mod waitset_guard;
 pub mod waitset_run_result;
+pub mod writer;
 
 use pyo3::prelude::*;
 use pyo3::wrap_pymodule;
@@ -124,6 +137,10 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::attribute_value::AttributeValue>()?;
     m.add_class::<crate::client::Client>()?;
     m.add_class::<crate::duration::Duration>()?;
+    m.add_class::<crate::entry_handle::EntryHandle>()?;
+    m.add_class::<crate::entry_handle_mut::EntryHandleMut>()?;
+    m.add_class::<crate::entry_value::EntryValue>()?;
+    m.add_class::<crate::entry_value_uninit::EntryValueUninit>()?;
     m.add_class::<crate::event_id::EventId>()?;
     m.add_class::<crate::file_name::FileName>()?;
     m.add_class::<crate::file_path::FilePath>()?;
@@ -143,16 +160,20 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::notifier::Notifier>()?;
     m.add_class::<crate::path::Path>()?;
     m.add_class::<crate::pending_response::PendingResponse>()?;
+    m.add_class::<crate::port_factory_blackboard::PortFactoryBlackboard>()?;
     m.add_class::<crate::port_factory_client::PortFactoryClient>()?;
     m.add_class::<crate::port_factory_event::PortFactoryEvent>()?;
     m.add_class::<crate::port_factory_listener::PortFactoryListener>()?;
     m.add_class::<crate::port_factory_notifier::PortFactoryNotifier>()?;
     m.add_class::<crate::port_factory_publisher::PortFactoryPublisher>()?;
     m.add_class::<crate::port_factory_publish_subscribe::PortFactoryPublishSubscribe>()?;
+    m.add_class::<crate::port_factory_reader::PortFactoryReader>()?;
     m.add_class::<crate::port_factory_request_response::PortFactoryRequestResponse>()?;
     m.add_class::<crate::port_factory_server::PortFactoryServer>()?;
     m.add_class::<crate::port_factory_subscriber::PortFactorySubscriber>()?;
+    m.add_class::<crate::port_factory_writer::PortFactoryWriter>()?;
     m.add_class::<crate::publisher::Publisher>()?;
+    m.add_class::<crate::reader::Reader>()?;
     m.add_class::<crate::request_header::RequestHeader>()?;
     m.add_class::<crate::request_mut::RequestMut>()?;
     m.add_class::<crate::request_mut_uninit::RequestMutUninit>()?;
@@ -166,6 +187,8 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::server::Server>()?;
     m.add_class::<crate::service::Service>()?;
     m.add_class::<crate::service_builder::ServiceBuilder>()?;
+    m.add_class::<crate::service_builder_blackboard::ServiceBuilderBlackboardCreator>()?;
+    m.add_class::<crate::service_builder_blackboard::ServiceBuilderBlackboardOpener>()?;
     m.add_class::<crate::service_builder_event::ServiceBuilderEvent>()?;
     m.add_class::<crate::service_builder_publish_subscribe::ServiceBuilderPublishSubscribe>()?;
     m.add_class::<crate::service_builder_request_response::ServiceBuilderRequestResponse>()?;
@@ -174,6 +197,7 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::service_name::ServiceName>()?;
     m.add_class::<crate::service_type::ServiceType>()?;
     m.add_class::<crate::signal_handling_mode::SignalHandlingMode>()?;
+    m.add_class::<crate::static_config_blackboard::StaticConfigBlackboard>()?;
     m.add_class::<crate::static_config_event::StaticConfigEvent>()?;
     m.add_class::<crate::static_config_publish_subscribe::StaticConfigPublishSubscribe>()?;
     m.add_class::<crate::static_config_request_response::StaticConfigRequestResponse>()?;
@@ -186,13 +210,16 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::unique_listener_id::UniqueListenerId>()?;
     m.add_class::<crate::unique_notifier_id::UniqueNotifierId>()?;
     m.add_class::<crate::unique_publisher_id::UniquePublisherId>()?;
+    m.add_class::<crate::unique_reader_id::UniqueReaderId>()?;
     m.add_class::<crate::unique_server_id::UniqueServerId>()?;
     m.add_class::<crate::unique_subscriber_id::UniqueSubscriberId>()?;
+    m.add_class::<crate::unique_writer_id::UniqueWriterId>()?;
     m.add_class::<crate::waitset::WaitSet>()?;
     m.add_class::<crate::waitset_attachment_id::WaitSetAttachmentId>()?;
     m.add_class::<crate::waitset_builder::WaitSetBuilder>()?;
     m.add_class::<crate::waitset_guard::WaitSetGuard>()?;
     m.add_class::<crate::waitset_run_result::WaitSetRunResult>()?;
+    m.add_class::<crate::writer::Writer>()?;
 
     m.add(
         "ClientCreateError",
@@ -316,6 +343,30 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add(
         "WaitSetRunError",
         py.get_type::<crate::error::WaitSetRunError>(),
+    )?;
+    m.add(
+        "BlackboardCreateError",
+        py.get_type::<crate::error::BlackboardCreateError>(),
+    )?;
+    m.add(
+        "BlackboardOpenError",
+        py.get_type::<crate::error::BlackboardOpenError>(),
+    )?;
+    m.add(
+        "ReaderCreateError",
+        py.get_type::<crate::error::ReaderCreateError>(),
+    )?;
+    m.add(
+        "EntryHandleError",
+        py.get_type::<crate::error::EntryHandleError>(),
+    )?;
+    m.add(
+        "WriterCreateError",
+        py.get_type::<crate::error::WriterCreateError>(),
+    )?;
+    m.add(
+        "EntryHandleMutError",
+        py.get_type::<crate::error::EntryHandleMutError>(),
     )?;
 
     Ok(())

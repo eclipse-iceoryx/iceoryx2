@@ -417,3 +417,17 @@ def test_defaults_publish_subscribe_subscriber_expired_connection_buffer_can_be_
     value = 56273
     sut.defaults.publish_subscribe.subscriber_expired_connection_buffer = value
     assert sut.defaults.publish_subscribe.subscriber_expired_connection_buffer == value
+
+
+def test_defaults_blackboard_max_readers_can_be_set() -> None:
+    sut = iox2.config.default()
+    value = 13
+    sut.defaults.blackboard.max_readers = value
+    assert sut.defaults.blackboard.max_readers == value
+
+
+def test_defaults_blackboard_max_nodes_can_be_set() -> None:
+    sut = iox2.config.default()
+    value = 35
+    sut.defaults.blackboard.max_nodes = value
+    assert sut.defaults.blackboard.max_nodes == value

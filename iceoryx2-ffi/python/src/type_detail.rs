@@ -17,7 +17,7 @@ use iceoryx2::testing;
 
 #[pyclass(str = "{0:?}", eq)]
 /// Contains all type details required to connect to a `Service`
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 pub struct TypeDetail(
     pub(crate) iceoryx2::service::static_config::message_type_details::TypeDetail,
 );

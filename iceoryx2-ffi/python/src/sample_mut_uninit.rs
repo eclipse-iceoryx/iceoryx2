@@ -111,7 +111,7 @@ impl SampleMutUninit {
         match &mut *self.value.lock() {
             SampleMutUninitType::Ipc(Some(v)) => (v.payload_mut().as_mut_ptr()) as usize,
             SampleMutUninitType::Local(Some(v)) => (v.payload_mut().as_mut_ptr()) as usize,
-            _ => fatal_panic!(from "SampleMutUninit::user_header_ptr()",
+            _ => fatal_panic!(from "SampleMutUninit::payload_ptr()",
                 "Accessing a released sample."),
         }
     }
