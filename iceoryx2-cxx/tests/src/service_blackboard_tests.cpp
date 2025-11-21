@@ -11,7 +11,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/container/static_string.hpp"
-#include "iox2/entry_value.hpp"
 #include "iox2/node.hpp"
 #include "iox2/port_factory_blackboard.hpp"
 #include "iox2/reader_error.hpp"

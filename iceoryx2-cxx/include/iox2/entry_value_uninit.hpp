@@ -57,20 +57,20 @@ class EntryValueUninit {
 
     auto value_mut() -> ValueType&;
 
-    auto take_handle_ownership() -> iox2_entry_value_h;
+    auto take_handle_ownership() -> iox2_entry_value_uninit_h;
 
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init,hicpp-member-init) m_entry_value is initialized in the the c'tor via iox2_entry_handle_mut_loan_uninit
-    iox2_entry_value_t m_entry_value;
-    iox2_entry_value_h m_handle = nullptr;
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init,hicpp-member-init) m_entry_value_uninit is initialized in the the c'tor via iox2_entry_handle_mut_loan_uninit
+    iox2_entry_value_uninit_t m_entry_value_uninit;
+    iox2_entry_value_uninit_h m_handle = nullptr;
 };
 
-// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init,hicpp-member-init) m_entry_value is initialized in the the c'tor via iox2_entry_handle_mut_loan_uninit
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init,hicpp-member-init) m_entry_value_uninit is initialized in the the c'tor via iox2_entry_handle_mut_loan_uninit
 template <ServiceType S, typename KeyType, typename ValueType>
 inline EntryValueUninit<S, KeyType, ValueType>::EntryValueUninit(iox2_entry_handle_mut_h entry_handle) {
-    iox2_entry_handle_mut_loan_uninit(entry_handle, &m_entry_value, &m_handle, sizeof(ValueType), alignof(ValueType));
+    iox2_entry_handle_mut_loan_uninit(entry_handle, &m_entry_value_uninit, &m_handle, sizeof(ValueType), alignof(ValueType));
 }
 
-// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init,hicpp-member-init) m_entry_value will be initialized in the move assignment operator
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init,hicpp-member-init) m_entry_value_uninit will be initialized in the move assignment operator
 template <ServiceType S, typename KeyType, typename ValueType>
 inline EntryValueUninit<S, KeyType, ValueType>::EntryValueUninit(EntryValueUninit&& rhs) noexcept {
     *this = std::move(rhs);
@@ -78,7 +78,7 @@ inline EntryValueUninit<S, KeyType, ValueType>::EntryValueUninit(EntryValueUnini
 
 namespace internal {
 extern "C" {
-void iox2_entry_value_uninit_move(iox2_entry_value_t*, iox2_entry_value_t*, iox2_entry_value_h*);
+void iox2_entry_value_uninit_move(iox2_entry_value_uninit_t*, iox2_entry_value_uninit_t*, iox2_entry_value_uninit_h*);
 }
 } // namespace internal
 
@@ -87,7 +87,7 @@ inline auto EntryValueUninit<S, KeyType, ValueType>::operator=(EntryValueUninit&
     if (this != &rhs) {
         drop();
 
-        internal::iox2_entry_value_uninit_move(&rhs.m_entry_value, &m_entry_value, &m_handle);
+        internal::iox2_entry_value_uninit_move(&rhs.m_entry_value_uninit, &m_entry_value_uninit, &m_handle);
         rhs.m_handle = nullptr;
     }
 
@@ -105,7 +105,7 @@ inline auto update_with_copy(EntryValueUninit<S, KeyType, ValueType>&& self, Val
     new (&self.value_mut()) ValueType(std::forward<ValueType>(value));
 
     iox2_entry_handle_mut_h entry_handle_mut_handle = nullptr;
-    iox2_entry_value_update(self.take_handle_ownership(), nullptr, &entry_handle_mut_handle);
+    iox2_entry_value_uninit_update(self.take_handle_ownership(), nullptr, &entry_handle_mut_handle);
 
     EntryHandleMut<S, KeyType, ValueType> entry_handle_mut(entry_handle_mut_handle);
     return entry_handle_mut;
@@ -115,7 +115,7 @@ template <ServiceType S, typename KeyType, typename ValueType>
 inline auto discard(EntryValueUninit<S, KeyType, ValueType>&& self) -> EntryHandleMut<S, KeyType, ValueType> {
     iox2_entry_handle_mut_h entry_handle_mut_handle = nullptr;
 
-    iox2_entry_value_discard(self.take_handle_ownership(), nullptr, &entry_handle_mut_handle);
+    iox2_entry_value_uninit_discard(self.take_handle_ownership(), nullptr, &entry_handle_mut_handle);
 
     EntryHandleMut<S, KeyType, ValueType> entry_handle_mut(entry_handle_mut_handle);
     return entry_handle_mut;
@@ -124,20 +124,20 @@ inline auto discard(EntryValueUninit<S, KeyType, ValueType>&& self) -> EntryHand
 template <ServiceType S, typename KeyType, typename ValueType>
 inline auto EntryValueUninit<S, KeyType, ValueType>::value_mut() -> ValueType& {
     void* value_ptr = nullptr;
-    iox2_entry_value_mut(&m_handle, &value_ptr);
+    iox2_entry_value_uninit_mut(&m_handle, &value_ptr);
     return *static_cast<ValueType*>(value_ptr);
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>
 inline void EntryValueUninit<S, KeyType, ValueType>::drop() {
     if (m_handle != nullptr) {
-        iox2_entry_value_drop(m_handle);
+        iox2_entry_value_uninit_drop(m_handle);
         m_handle = nullptr;
     }
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>
-inline auto EntryValueUninit<S, KeyType, ValueType>::take_handle_ownership() -> iox2_entry_value_h {
+inline auto EntryValueUninit<S, KeyType, ValueType>::take_handle_ownership() -> iox2_entry_value_uninit_h {
     auto* result = m_handle;
     m_handle = nullptr;
     return result;
