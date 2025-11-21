@@ -19,33 +19,21 @@ get_repo_root() {
 }
 
 get_changed_files() {
-    if [ -n "$GITHUB_EVENT_NAME" ]; then
-        # We're in GitHub Actions
-        if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
-            gh pr view "$GITHUB_PR_NUMBER" --json files --jq '.files[].path' | grep '\.md$' || true
-        elif [ "$GITHUB_EVENT_NAME" == "push" ]; then
-            git diff --name-only "$GITHUB_BEFORE" "$GITHUB_AFTER" | grep '\.md$' || true
-        else
-            echo "Unsupported GitHub event: $GITHUB_EVENT_NAME"
-            exit 1
-        fi
+    # We're running locally
+    # Get the name of the current branch
+    current_branch=$(git rev-parse --abbrev-ref HEAD)
+
+    if [ "$current_branch" = "main" ]; then
+        # If we're on main, just check uncommitted changes
+        git diff --name-only --diff-filter=ACMRT HEAD
     else
-        # We're running locally
-        # Get the name of the current branch
-        current_branch=$(git rev-parse --abbrev-ref HEAD)
-        
-        if [ "$current_branch" = "main" ]; then
-            # If we're on main, just check uncommitted changes
-            git diff --name-only --diff-filter=ACMRT HEAD
-        else
-            merge_base=$(git merge-base main HEAD)
-            
-            {
-                git diff --name-only --diff-filter=ACMRT $merge_base...HEAD
-                git ls-files --others --exclude-standard  # New files not yet committed
-                git diff --name-only --diff-filter=ACMRT  # Uncommitted changes to tracked files
-            } | sort -u
-        fi
+        merge_base=$(git merge-base main HEAD)
+
+        {
+            git diff --name-only --diff-filter=ACMRT $merge_base...HEAD
+            git ls-files --others --exclude-standard # New files not yet committed
+            git diff --name-only --diff-filter=ACMRT # Uncommitted changes to tracked files
+        } | sort -u
     fi
 }
 
@@ -68,7 +56,7 @@ REPO_ROOT=$(get_repo_root)
 MARKDOWNLINT_CONFIG="$REPO_ROOT/.markdownlint.yaml"
 
 # Check required tools are installed
-if ! command -v markdownlint &> /dev/null; then
+if ! command -v markdownlint &>/dev/null; then
     echo "Error: markdownlint-cli is not installed. Please install it using npm:"
     echo "npm install -g markdownlint-cli"
     exit 1
@@ -83,10 +71,13 @@ fi
 # Parse command line arguments
 while [[ "$#" -gt 0 ]]; do
     case $1 in
-        --fix) MODE="fix" ;;
-        --check) MODE="check" ;;
-        --all) CHECK_ALL=true ;;
-        *) echo "Unknown parameter passed: $1"; exit 1 ;;
+    --fix) MODE="fix" ;;
+    --check) MODE="check" ;;
+    --all) CHECK_ALL=true ;;
+    *)
+        echo "Unknown parameter passed: $1"
+        exit 1
+        ;;
     esac
     shift
 done
@@ -115,7 +106,7 @@ print_file_list "$MODE" "$md_files"
 if [ "$MODE" = "fix" ]; then
     echo "\nRunning markdownlint to fix other issues..."
     echo "$md_files" | xargs markdownlint -c "$MARKDOWNLINT_CONFIG" --fix
-    
+
     echo "\nMarkdown lint and format fix completed. Please review the changes."
     echo "NOTE: Not all violations may be automatically fixable."
 else

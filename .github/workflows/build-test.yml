@@ -64,7 +64,7 @@ jobs:
       - name: Install linters
         run: npm install -g markdownlint-cli@0.47.0
 
-      - name: Check linting on all docs
+      - name: Check linting
         run: ./internal/scripts/ci_check_markdown_linting.sh --all
 
       - name: Check config key documentation
