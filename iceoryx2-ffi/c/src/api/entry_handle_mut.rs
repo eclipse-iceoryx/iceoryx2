@@ -13,7 +13,7 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
-    iox2_entry_value_h, iox2_entry_value_t, iox2_event_id_t, iox2_service_type_e,
+    iox2_entry_value_uninit_h, iox2_entry_value_uninit_t, iox2_event_id_t, iox2_service_type_e,
     AssertNonNullHandle, EntryValueUninitUnion, HandleToType,
 };
 use core::ffi::c_void;
@@ -114,33 +114,34 @@ impl HandleToType for iox2_entry_handle_mut_h_ref {
 /// # Safety
 ///
 /// * `entry_handle_mut_handle` obtained by [`iox2_writer_entry()`](crate::iox2_writer_entry()), is invalid after the return of this function
-/// * `entry_value_struct_ptr` must be either a NULL pointer or a pointer to a valid [`iox2_entry_value_t`]
-/// * `entry_value_handle_ptr` a valid, non-null [`*mut iox2_entry_value_h`] pointer which will be initialized by this function call
+/// * `entry_value_uninit_struct_ptr` must be either a NULL pointer or a pointer to a valid [`iox2_entry_value_uninit_t`]
+/// * `entry_value_uninit_handle_ptr` a valid, non-null [`*mut iox2_entry_value_uninit_h`] pointer which will be initialized by this function call
 /// * `value_size` the size of the value type that shall be stored in the entry value
 /// * `value_alignment` the alignment of the value type that shall be stored in the entry value
 #[no_mangle]
 pub unsafe extern "C" fn iox2_entry_handle_mut_loan_uninit(
     entry_handle_mut_handle: iox2_entry_handle_mut_h,
-    entry_value_struct_ptr: *mut iox2_entry_value_t,
-    entry_value_handle_ptr: *mut iox2_entry_value_h,
+    entry_value_uninit_struct_ptr: *mut iox2_entry_value_uninit_t,
+    entry_value_uninit_handle_ptr: *mut iox2_entry_value_uninit_h,
     value_size: usize,
     value_alignment: usize,
 ) {
     entry_handle_mut_handle.assert_non_null();
-    debug_assert!(!entry_value_handle_ptr.is_null());
+    debug_assert!(!entry_value_uninit_handle_ptr.is_null());
 
-    let init_entry_value_struct_ptr = |entry_value_struct_ptr: *mut iox2_entry_value_t| {
-        let mut entry_value_struct_ptr = entry_value_struct_ptr;
-        fn no_op(_: *mut iox2_entry_value_t) {}
-        let mut deleter: fn(*mut iox2_entry_value_t) = no_op;
-        if entry_value_struct_ptr.is_null() {
-            entry_value_struct_ptr = iox2_entry_value_t::alloc();
-            deleter = iox2_entry_value_t::dealloc;
-        }
-        debug_assert!(!entry_value_struct_ptr.is_null());
+    let init_entry_value_uninit_struct_ptr =
+        |entry_value_uninit_struct_ptr: *mut iox2_entry_value_uninit_t| {
+            let mut entry_value_uninit_struct_ptr = entry_value_uninit_struct_ptr;
+            fn no_op(_: *mut iox2_entry_value_uninit_t) {}
+            let mut deleter: fn(*mut iox2_entry_value_uninit_t) = no_op;
+            if entry_value_uninit_struct_ptr.is_null() {
+                entry_value_uninit_struct_ptr = iox2_entry_value_uninit_t::alloc();
+                deleter = iox2_entry_value_uninit_t::dealloc;
+            }
+            debug_assert!(!entry_value_uninit_struct_ptr.is_null());
 
-        (entry_value_struct_ptr, deleter)
-    };
+            (entry_value_uninit_struct_ptr, deleter)
+        };
 
     let entry_handle_mut_struct = &mut *entry_handle_mut_handle.as_type();
     let service_type = entry_handle_mut_struct.service_type;
@@ -157,26 +158,26 @@ pub unsafe extern "C" fn iox2_entry_handle_mut_loan_uninit(
         iox2_service_type_e::IPC => {
             let entry_handle_mut = ManuallyDrop::into_inner(entry_handle_mut.ipc);
             let entry_value_uninit = entry_handle_mut.loan_uninit(value_size, value_alignment);
-            let (entry_value_struct_ptr, deleter) =
-                init_entry_value_struct_ptr(entry_value_struct_ptr);
-            (*entry_value_struct_ptr).init(
+            let (entry_value_uninit_struct_ptr, deleter) =
+                init_entry_value_uninit_struct_ptr(entry_value_uninit_struct_ptr);
+            (*entry_value_uninit_struct_ptr).init(
                 service_type,
                 EntryValueUninitUnion::new_ipc(entry_value_uninit),
                 deleter,
             );
-            *entry_value_handle_ptr = (*entry_value_struct_ptr).as_handle();
+            *entry_value_uninit_handle_ptr = (*entry_value_uninit_struct_ptr).as_handle();
         }
         iox2_service_type_e::LOCAL => {
             let entry_handle_mut = ManuallyDrop::into_inner(entry_handle_mut.local);
             let entry_value_uninit = entry_handle_mut.loan_uninit(value_size, value_alignment);
-            let (entry_value_struct_ptr, deleter) =
-                init_entry_value_struct_ptr(entry_value_struct_ptr);
-            (*entry_value_struct_ptr).init(
+            let (entry_value_uninit_struct_ptr, deleter) =
+                init_entry_value_uninit_struct_ptr(entry_value_uninit_struct_ptr);
+            (*entry_value_uninit_struct_ptr).init(
                 service_type,
                 EntryValueUninitUnion::new_local(entry_value_uninit),
                 deleter,
             );
-            *entry_value_handle_ptr = (*entry_value_struct_ptr).as_handle();
+            *entry_value_uninit_handle_ptr = (*entry_value_uninit_struct_ptr).as_handle();
         }
     }
 }
