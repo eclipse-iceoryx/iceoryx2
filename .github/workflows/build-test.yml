@@ -54,15 +54,6 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
 
-      - name: Setup GitHub CLI
-        run: |
-          type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
-          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
-          && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
-          && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
-          && sudo apt update \
-          && sudo apt install gh -y
-
       - name: Setup node.js
         uses: actions/setup-node@1a4442cacd436585916779262731d5b162bc6ec7 # ratchet:actions/setup-node@v3
         with:
@@ -72,11 +63,7 @@ jobs:
         run: npm install -g markdownlint-cli
 
       - name: Check linting
-        env:
-          GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
-          GITHUB_BEFORE: ${{ github.event.before }}
-          GITHUB_AFTER: ${{ github.event.after }}
-        run: ./internal/scripts/ci_check_markdown_linting.sh
+        run: ./internal/scripts/ci_check_markdown_linting.sh --all
 
       - name: Check config key documentation
         run: ./internal/scripts/ci_check_description_vector_and_README.sh
