@@ -204,7 +204,7 @@ qemu-system-x86_64 \
 `telnet` can be used to connect to a running image with default credentials
 (root/root):
 
-##### QNX 7.1
+#### QNX 7.1
 
 ```bash
 export VM_IPV4_ADDR="172.31.1.11" # Or whatever address you have chosen
@@ -296,7 +296,6 @@ rustup toolchain link ${RUST_TOOLCHAIN} $RUSTDIR/build/host/stage1
 
 > [!WARNING]
 > Unavailable on QNX 8.0 due to dependency on `std`.
-
 > [!TIP]
 > A convenience script is available for building the remote testing utilities.
 >
@@ -460,7 +459,6 @@ $RUSTDIR/build/host/stage0-tools-bin/remote-test-client run 0 <test_binary>
 
 > [!WARNING]
 > Unavailable on QNX 8.0 due to dependency on `std`.
-
 > [!TIP]
 > A convenience script is available for building and running benchmarks on a
 > remote target.
