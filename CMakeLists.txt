@@ -94,7 +94,7 @@ add_rust_feature(
 
 add_rust_feature(
     NAME IOX2_CUSTOM_PAL_CONFIG
-    DESCRIPTION "Uses a custom Platform Abstraction Layer Config"
+    DESCRIPTION "Uses a custom Platform Abstraction Layer Config defined in the 'IOX2_CUSTOM_PAL_CONFIG_PATH' env variable"
     DEFAULT_VALUE OFF
     RUST_FEATURE "iceoryx2/custom_pal_config"
 )

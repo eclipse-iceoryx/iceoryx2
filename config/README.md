@@ -247,6 +247,13 @@ To recompile iceoryx2 with the custom settings, the following steps needs to be 
 export IOX2_CUSTOM_PAL_CONFIG_PATH=/my/funky/platform
 ```
 
+To make it persistent, the `config.toml` file can be used:
+
+```toml
+[env]
+IOX2_CUSTOM_PAL_CONFIG_PATH = "/my/funky/platform"
+```
+
 1. Build iceoryx2 with feature `custom_pal_config`
 for custom platform abstraction layer
 
