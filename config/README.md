@@ -264,6 +264,12 @@ For CMake the feature can be enabled with:
 cmake . -Bbuild -DIOX2_CUSTOM_PAL_CONFIG=ON -DBUILD_CXX=on
 ```
 
+In Python:
+
+```cli
+poetry --project iceoryx2-ffi/python run maturin develop --manifest-path iceoryx2-ffi/python/Cargo.toml --target-dir target/ff/python --features custom_pal_config
+```
+
 For Bazel the equivalent build command is:
 
 ```cli

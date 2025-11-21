@@ -16,6 +16,9 @@ readme = { workspace = true }
 name = "_iceoryx2"
 crate-type = ["cdylib"]
 
+[features]
+custom_pal_config = ["iceoryx2/custom_pal_config"]
+
 [dependencies]
 iceoryx2 = { workspace = true }
 iceoryx2-bb-log = { workspace = true }
