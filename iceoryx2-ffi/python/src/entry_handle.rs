@@ -70,6 +70,7 @@ impl EntryHandle {
         }
     }
 
+    #[getter]
     pub fn entry_id(&self) -> EventId {
         match &*self.value.lock() {
             EntryHandleType::Ipc(v) => EventId::new(v.entry_id().as_value()),

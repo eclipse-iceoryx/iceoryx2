@@ -43,8 +43,8 @@ def test_same_entry_id_for_same_key(
     entry_handle_0 = reader.entry(key_0, ctypes.c_uint64)
     entry_handle_1 = reader.entry(key_1, ctypes.c_uint64)
 
-    assert entry_handle_mut.entry_id().as_value == entry_handle_0.entry_id().as_value
-    assert entry_handle_0.entry_id().as_value != entry_handle_1.entry_id().as_value
+    assert entry_handle_mut.entry_id.as_value == entry_handle_0.entry_id.as_value
+    assert entry_handle_0.entry_id.as_value != entry_handle_1.entry_id.as_value
 
 
 @pytest.mark.parametrize("service_type", service_types)

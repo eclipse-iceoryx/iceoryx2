@@ -112,6 +112,7 @@ impl EntryHandleMut {
 
     /// Returns an ID corresponding to the entry which can be used in an event based
     /// communication setup.
+    #[getter]
     pub fn entry_id(&self) -> EventId {
         match &*self.value.lock() {
             EntryHandleMutType::Ipc(Some(v)) => EventId::new(v.entry_id().as_value()),
