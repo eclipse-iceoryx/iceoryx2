@@ -12,13 +12,13 @@ runs:
   steps:
     - name: Download artifact
       if: runner.os != 'Windows'
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 #ratchet v5
       with:
         name: ${{ inputs.artifact-upload-name }}
         path: ~/.cargo/bin/
     - name: Download artifact
       if: runner.os == 'Windows'
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 #ratchet v5
       with:
         name: ${{ inputs.artifact-upload-name }}
         path: C:/Users/runneradmin/.cargo/bin/

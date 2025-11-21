@@ -73,7 +73,9 @@ cmake -S target/ff/iceoryx/src/iceoryx_platform \
       -DCMAKE_INSTALL_PREFIX=target/ff/iceoryx/install \
       -DIOX_PLATFORM_FEATURE_ACL=OFF \
       -DCMAKE_C_FLAGS="$CMAKE_C_FLAGS" \
-      -DCMAKE_CXX_FLAGS="$CMAKE_CXX_FLAGS"
+      -DCMAKE_CXX_FLAGS="$CMAKE_CXX_FLAGS" \
+      -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+      -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 cmake --build target/ff/iceoryx/build/platform -j$NUM_JOBS
 cmake --install target/ff/iceoryx/build/platform
 
@@ -85,6 +87,8 @@ cmake -S target/ff/iceoryx/src/iceoryx_hoofs \
       -DCMAKE_PREFIX_PATH="$( pwd )/target/ff/iceoryx/install" \
       -DIOX_USE_HOOFS_SUBSET_ONLY=ON \
       -DCMAKE_C_FLAGS="$CMAKE_C_FLAGS" \
-      -DCMAKE_CXX_FLAGS="$CMAKE_CXX_FLAGS"
+      -DCMAKE_CXX_FLAGS="$CMAKE_CXX_FLAGS" \
+      -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+      -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 cmake --build target/ff/iceoryx/build/hoofs -j$NUM_JOBS
 cmake --install target/ff/iceoryx/build/hoofs
