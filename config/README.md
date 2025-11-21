@@ -258,6 +258,12 @@ Since iceoryx2 takes TOML-based config as startup parameter,
 it maybe necessary to regenerate the iceoryx2 config with the new values
 as described above.
 
+For CMake the feature can be enabled with:
+
+```cli
+cmake . -Bbuild -DIOX2_CUSTOM_PAL_CONFIG=ON -DBUILD_CXX=on
+```
+
 For Bazel the equivalent build command is:
 
 ```cli
