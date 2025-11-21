@@ -175,8 +175,7 @@ pub mod writer {
         drop(writer);
         drop(sut);
 
-        let entry_value = entry_value_uninit.write(333);
-        let _entry_handle_mut = entry_value.update();
+        let _entry_handle_mut = entry_value_uninit.update_with_copy(333);
     }
 
     #[conformance_test]
