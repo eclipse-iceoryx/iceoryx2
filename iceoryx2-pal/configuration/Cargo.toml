@@ -10,4 +10,10 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 version = { workspace = true }
 
-[dependencies]
+[features]
+# Uses a custom configuration file for the iceoryx2 platform abstraction layer
+# The location of the config can be set via environment variable
+# `IOX2_CUSTOM_PAL_CONFIG_PATH`.
+custom_pal_config = []
+
+[build-dependencies]
