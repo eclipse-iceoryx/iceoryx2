@@ -601,8 +601,7 @@ def test_loan_and_write_entry_value_works(
     entry_handle = reader.entry(key, ctypes.c_uint32)
 
     entry_value_uninit = entry_handle_mut.loan_uninit()
-    entry_value = entry_value_uninit.write(ctypes.c_uint32(333))
-    entry_handle_mut = entry_value.update()
+    entry_handle_mut = entry_value_uninit.update_with_copy(ctypes.c_uint32(333))
     assert entry_handle.get().decode_as(ctypes.c_uint32).value == 333
 
 
@@ -629,8 +628,7 @@ def test_entry_handle_mut_can_be_reused_after_entry_value_was_updated(
     entry_handle = reader.entry(key, ctypes.c_uint32)
 
     entry_value_uninit = entry_handle_mut.loan_uninit()
-    entry_value = entry_value_uninit.write(ctypes.c_uint32(333))
-    entry_handle_mut = entry_value.update()
+    entry_handle_mut = entry_value_uninit.update_with_copy(ctypes.c_uint32(333))
     assert entry_handle.get().decode_as(ctypes.c_uint32).value == 333
 
     entry_handle_mut.update_with_copy(ctypes.c_uint32(999))
@@ -662,8 +660,7 @@ def test_entry_value_can_still_be_used_after_writer_was_dropped(
 
     writer.delete()
 
-    entry_value = entry_value_uninit.write(ctypes.c_uint32(333))
-    entry_handle_mut = entry_value.update()
+    entry_handle_mut = entry_value_uninit.update_with_copy(ctypes.c_uint32(333))
 
     assert entry_handle.get().decode_as(ctypes.c_uint32).value == 333
 
@@ -694,36 +691,6 @@ def test_entry_handle_mut_can_be_reused_after_entry_value_uninit_was_discarded(
     entry_handle_mut = entry_value_uninit.discard()
 
     entry_handle_mut.update_with_copy(ctypes.c_uint32(333))
-    assert entry_handle.get().decode_as(ctypes.c_uint32).value == 333
-
-
-@pytest.mark.parametrize("service_type", service_types)
-def test_entry_handle_mut_can_be_reused_after_entry_value_was_discarded(
-    service_type: iox2.ServiceType,
-) -> None:
-    config = iox2.testing.generate_isolated_config()
-    service_name = iox2.testing.generate_service_name()
-    key = ctypes.c_uint64(0)
-    value = ctypes.c_uint32(0)
-
-    node = iox2.NodeBuilder.new().config(config).create(service_type)
-    service = (
-        node.service_builder(service_name)
-        .blackboard_creator(ctypes.c_uint64)
-        .add(key, value)
-        .create()
-    )
-
-    writer = service.writer_builder().create()
-    entry_handle_mut = writer.entry(key, ctypes.c_uint32)
-    reader = service.reader_builder().create()
-    entry_handle = reader.entry(key, ctypes.c_uint32)
-
-    entry_value_uninit = entry_handle_mut.loan_uninit()
-    entry_value = entry_value_uninit.write(ctypes.c_uint32(999))
-    entry_handle_mut = entry_value.discard()
-    entry_handle_mut.update_with_copy(ctypes.c_uint32(333))
-
     assert entry_handle.get().decode_as(ctypes.c_uint32).value == 333
 
 

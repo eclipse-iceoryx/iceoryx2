@@ -210,7 +210,8 @@ def update_with_copy(self: EntryHandleMut, value: Type[V]):
     self.__update_data_ptr()
 
 
-def write(self: EntryValueUninit, value: Type[V]) -> EntryValue:
+# TODO: update documentation
+def write_with_copy(self: EntryValueUninit, value: Type[V]) -> EntryHandleMut:
     """
     Writes to the entry value.
 
@@ -224,14 +225,14 @@ def write(self: EntryValueUninit, value: Type[V]) -> EntryValue:
 
     write_cell = self.__get_write_cell()
     ctypes.memmove(write_cell, ctypes.byref(value), type_size)
-    return self.__assume_init()
+    return self.__update_write_cell()
 
 
 EntryHandle.get = get
 
 EntryHandleMut.update_with_copy = update_with_copy
 
-EntryValueUninit.write = write
+EntryValueUninit.update_with_copy = write_with_copy
 
 Reader.entry = entry_handle
 
