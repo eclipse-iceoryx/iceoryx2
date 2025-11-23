@@ -13,8 +13,7 @@
 use iceoryx2_bb_log::fatal_panic;
 use pyo3::prelude::*;
 
-use crate::entry_value::{EntryValue, EntryValueType};
-use crate::entry_value_uninit::EntryValueUninit;
+use crate::entry_value_uninit::{EntryValueUninit, EntryValueUninitType};
 use crate::event_id::EventId;
 use crate::parc::Parc;
 use crate::type_detail::TypeDetail;
@@ -86,11 +85,9 @@ impl EntryHandleMut {
                     self.value_type_details.0.alignment(),
                 );
                 EntryValueUninit {
-                    entry_value: EntryValue {
-                        value: Parc::new(EntryValueType::Ipc(Some(entry_value_uninit))),
-                        value_type_details: self.value_type_details.clone(),
-                        value_type_storage: self.value_type_storage.clone(),
-                    },
+                    value: Parc::new(EntryValueUninitType::Ipc(Some(entry_value_uninit))),
+                    value_type_details: self.value_type_details.clone(),
+                    value_type_storage: self.value_type_storage.clone(),
                 }
             }
             EntryHandleMutType::Local(ref mut v) => {
@@ -100,11 +97,9 @@ impl EntryHandleMut {
                     self.value_type_details.0.alignment(),
                 );
                 EntryValueUninit {
-                    entry_value: EntryValue {
-                        value: Parc::new(EntryValueType::Local(Some(entry_value_uninit))),
-                        value_type_details: self.value_type_details.clone(),
-                        value_type_storage: self.value_type_storage.clone(),
-                    },
+                    value: Parc::new(EntryValueUninitType::Local(Some(entry_value_uninit))),
+                    value_type_details: self.value_type_details.clone(),
+                    value_type_storage: self.value_type_storage.clone(),
                 }
             }
         }
