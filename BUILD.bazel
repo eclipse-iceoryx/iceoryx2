@@ -10,10 +10,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-package(default_visibility = ["//visibility:public"])
-
 load("@bazel_skylib//lib:selects.bzl", "selects")
 load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
+
+package(default_visibility = ["//visibility:public"])
 
 exports_files([
     "LICENSE-APACHE",
@@ -76,18 +76,21 @@ string_flag(
     build_setting_default = "auto",
     visibility = ["//visibility:public"],
 )
+
 config_setting(
     name = "dev_permissions_auto",
     flag_values = {
         "//:feature_dev_permissions": "auto",
     },
 )
+
 config_setting(
     name = "dev_permissions_enabled",
     flag_values = {
         "//:feature_dev_permissions": "on",
     },
 )
+
 # NOTE: while this seems superfluous, it is the pattern for cases where *_auto is on by default;
 #       therefore this target is introduced to keep all feature flags consistent
 selects.config_setting_group(
@@ -180,18 +183,21 @@ string_flag(
     build_setting_default = "auto",
     visibility = ["//visibility:public"],
 )
+
 config_setting(
     name = "logger_log_auto",
     flag_values = {
         "//:feature_logger_log": "auto",
     },
 )
+
 config_setting(
     name = "logger_log_enabled",
     flag_values = {
         "//:feature_logger_log": "on",
     },
 )
+
 # NOTE: while this seems superfluous, it is the pattern for cases where *_auto is on by default;
 #       therefore this target is introduced to keep all feature flags consistent
 selects.config_setting_group(
@@ -206,18 +212,21 @@ string_flag(
     build_setting_default = "auto",
     visibility = ["//visibility:public"],
 )
+
 config_setting(
     name = "logger_tracing_auto",
     flag_values = {
         "//:feature_logger_tracing": "auto",
     },
 )
+
 config_setting(
     name = "logger_tracing_enabled",
     flag_values = {
         "//:feature_logger_tracing": "on",
     },
 )
+
 # NOTE: while this seems superfluous, it is the pattern for cases where *_auto is on by default;
 #       therefore this target is introduced to keep all feature flags consistent
 selects.config_setting_group(
@@ -225,6 +234,46 @@ selects.config_setting_group(
     match_any = [
         ":logger_tracing_enabled",
     ],
+)
+
+string_flag(
+    name = "custom_pal",
+    build_setting_default = "off",
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "custom_pal_enabled",
+    flag_values = {
+        ":custom_pal": "on",
+    },
+)
+
+config_setting(
+    name = "custom_pal_disabled",
+    flag_values = {
+        ":custom_pal": "off",
+    },
+)
+
+string_flag(
+    name = "custom_pal_config",
+    build_setting_default = "off",
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "custom_pal_config_enabled",
+    flag_values = {
+        ":custom_pal_config": "on",
+    },
+)
+
+config_setting(
+    name = "custom_pal_config_disabled",
+    flag_values = {
+        ":custom_pal_config": "off",
+    },
 )
 
 #
@@ -282,14 +331,7 @@ filegroup(
         "//benchmarks/queue:all_srcs",
         "//benchmarks/request-response:all_srcs",
         "//component-tests/rust:all_srcs",
-        "//iceoryx2-tunnel/end-to-end-tests:all_srcs",
-        "//iceoryx2-tunnel/backend:all_srcs",
-        "//iceoryx2-tunnel/zenoh:all_srcs",
-        "//iceoryx2-tunnel/tunnel:all_srcs",
-        "//iceoryx2-tunnel/conformance-tests:all_srcs",
-        "//iceoryx2-services/discovery:all_srcs",
         "//iceoryx2:all_srcs",
-        "//iceoryx2/conformance-tests:all_srcs",
         "//iceoryx2-bb/conformance-test-macros:all_srcs",
         "//iceoryx2-bb/container:all_srcs",
         "//iceoryx2-bb/derive-macros:all_srcs",
@@ -317,7 +359,14 @@ filegroup(
         "//iceoryx2-pal/os-api:all_srcs",
         "//iceoryx2-pal/posix:all_srcs",
         "//iceoryx2-pal/testing:all_srcs",
+        "//iceoryx2-services/discovery:all_srcs",
+        "//iceoryx2-tunnel/backend:all_srcs",
+        "//iceoryx2-tunnel/conformance-tests:all_srcs",
+        "//iceoryx2-tunnel/end-to-end-tests:all_srcs",
+        "//iceoryx2-tunnel/tunnel:all_srcs",
+        "//iceoryx2-tunnel/zenoh:all_srcs",
         "//iceoryx2-userland/record-and-replay:all_srcs",
+        "//iceoryx2/conformance-tests:all_srcs",
     ],
     visibility = ["//visibility:public"],
 )

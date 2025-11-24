@@ -45,6 +45,11 @@ dev_permissions = ["iceoryx2-cal/dev_permissions"]
 # feature flag.
 libc_platform = ["iceoryx2-bb-posix/libc_platform"]
 
+# Uses a custom configuration file for the iceoryx2 platform abstraction layer
+# The location of the config can be set via environment variable
+# `IOX2_CUSTOM_PAL_CONFIG_PATH`.
+custom_pal_config = ["iceoryx2-pal-configuration/custom_pal_config"]
+
 [dependencies]
 iceoryx2-bb-container = { workspace = true }
 iceoryx2-bb-derive-macros = { workspace = true }
