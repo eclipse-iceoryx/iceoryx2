@@ -11,6 +11,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/container/static_string.hpp"
+#include "iox2/entry_handle_mut.hpp"
+#include "iox2/entry_value_uninit.hpp"
 #include "iox2/node.hpp"
 #include "iox2/port_factory_blackboard.hpp"
 #include "iox2/reader_error.hpp"
@@ -1651,5 +1653,40 @@ TYPED_TEST(ServiceBlackboardTest, adding_key_struct_twice_fails) {
                        .create();
     ASSERT_TRUE(service.has_error());
     ASSERT_THAT(service.error(), Eq(BlackboardCreateError::ServiceInCorruptedState));
+}
+
+TYPED_TEST(ServiceBlackboardTest, new_value_can_be_written_using_value_mut) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint16_t VALUE_1 = 1234;
+    constexpr uint16_t VALUE_2 = 4321;
+    constexpr uint16_t VALUE_3 = 4567;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template blackboard_creator<uint64_t>()
+                       .template add_with_default<uint16_t>(0)
+                       .create()
+                       .expect("");
+
+    auto reader = service.reader_builder().create().expect("");
+    auto entry_handle = reader.template entry<uint16_t>(0).expect("");
+    auto writer = service.writer_builder().create().expect("");
+    auto entry_handle_mut = writer.template entry<uint16_t>(0).expect("");
+    auto entry_value_uninit = loan_uninit(std::move(entry_handle_mut));
+
+    entry_value_uninit.value_mut() = VALUE_1;
+    entry_handle_mut = assume_init_and_update(std::move(entry_value_uninit));
+    ASSERT_THAT(entry_handle.get(), Eq(VALUE_1));
+
+    entry_value_uninit = loan_uninit(std::move(entry_handle_mut));
+    entry_value_uninit.value_mut() = VALUE_2;
+    // before calling assume_init_and_update(), the old value is read
+    ASSERT_THAT(entry_handle.get(), Eq(VALUE_1));
+    entry_handle_mut = discard(std::move(entry_value_uninit));
+
+    entry_handle_mut.update_with_copy(VALUE_3);
+    ASSERT_THAT(entry_handle.get(), Eq(VALUE_3));
 }
 } // namespace

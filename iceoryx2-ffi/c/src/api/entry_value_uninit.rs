@@ -154,7 +154,7 @@ pub unsafe extern "C" fn iox2_entry_value_uninit_move(
 /// * `entry_value_uninit_handle` obtained by [`iox2_entry_handle_mut_loan_uninit()`](crate::iox2_entry_handle_mut_loan_uninit())
 /// * `value_ptr` a valid, non-null pointer pointing to a [`*mut c_void`] pointer.
 #[no_mangle]
-pub unsafe extern "C" fn iox2_entry_value_uninit_mut(
+pub unsafe extern "C" fn iox2_entry_value_uninit_value_mut(
     entry_value_uninit_handle: iox2_entry_value_uninit_h_ref,
     value_ptr: *mut *mut c_void,
 ) {

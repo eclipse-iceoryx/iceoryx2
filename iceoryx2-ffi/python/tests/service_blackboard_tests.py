@@ -810,3 +810,51 @@ def test_adding_key_struct_twice_fails(
             .add(key, value_1)
             .create()
         )
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_new_value_can_be_written_using_value_mut(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    service_name = iox2.testing.generate_service_name()
+    key = ctypes.c_uint64(0)
+    value = ctypes.c_uint16(0)
+
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service = (
+        node.service_builder(service_name)
+        .blackboard_creator(ctypes.c_uint64)
+        .add(key, value)
+        .create()
+    )
+
+    reader = service.reader_builder().create()
+    entry_handle = reader.entry(key, ctypes.c_uint16)
+    writer = service.writer_builder().create()
+    entry_handle_mut = writer.entry(key, ctypes.c_uint16)
+    entry_value_uninit = entry_handle_mut.loan_uninit()
+
+    new_value_1 = ctypes.c_uint16(1234)
+    ctypes.memmove(
+        entry_value_uninit.value_mut(),
+        ctypes.byref(new_value_1),
+        ctypes.sizeof(ctypes.c_uint16),
+    )
+    entry_handle_mut = entry_value_uninit.assume_init_and_update()
+    assert entry_handle.get().decode_as(ctypes.c_uint16).value == new_value_1.value
+
+    entry_value_uninit = entry_handle_mut.loan_uninit()
+    new_value_2 = ctypes.c_uint16(4321)
+    ctypes.memmove(
+        entry_value_uninit.value_mut(),
+        ctypes.byref(new_value_2),
+        ctypes.sizeof(ctypes.c_uint16),
+    )
+    # before calling assume_init_and_update(), the old value is read
+    assert entry_handle.get().decode_as(ctypes.c_uint16).value == new_value_1.value
+    entry_handle_mut = entry_value_uninit.discard()
+
+    new_value_3 = ctypes.c_uint16(4567)
+    entry_handle_mut.update_with_copy(new_value_3)
+    assert entry_handle.get().decode_as(ctypes.c_uint16).value == new_value_3.value

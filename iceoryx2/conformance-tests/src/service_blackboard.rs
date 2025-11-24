@@ -2088,4 +2088,42 @@ pub mod service_blackboard {
             .add::<u8>(0, 0)
             .create();
     }
+
+    #[conformance_test]
+    pub fn new_value_can_be_written_using_value_mut<Sut: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add::<u16>(0, 0)
+            .create()
+            .unwrap();
+
+        let reader = sut.reader_builder().create().unwrap();
+        let entry_handle = reader.entry::<u16>(&0).unwrap();
+        let writer = sut.writer_builder().create().unwrap();
+        let mut entry_handle_mut = writer.entry::<u16>(&0).unwrap();
+        let entry_value_uninit = entry_handle_mut.loan_uninit();
+
+        entry_value_uninit.value_mut().write(1234);
+        entry_handle_mut = unsafe { entry_value_uninit.assume_init_and_update() };
+        assert_that!(entry_handle.get(), eq 1234);
+
+        let entry_value_uninit = entry_handle_mut.loan_uninit();
+        unsafe { *entry_value_uninit.value_mut().as_mut_ptr() = 4321 };
+        entry_handle_mut = unsafe { entry_value_uninit.assume_init_and_update() };
+        assert_that!(entry_handle.get(), eq 4321);
+
+        let entry_value_uninit = entry_handle_mut.loan_uninit();
+        entry_value_uninit.value_mut().write(4567);
+        // before calling assume_init_and_update(), the old value is read
+        assert_that!(entry_handle.get(), eq 4321);
+        entry_handle_mut = entry_value_uninit.discard();
+
+        entry_handle_mut.update_with_copy(4567);
+        assert_that!(entry_handle.get(), eq 4567);
+    }
 }

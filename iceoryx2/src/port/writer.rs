@@ -51,6 +51,7 @@ use core::alloc::Layout;
 use core::fmt::Debug;
 use core::hash::Hash;
 use core::marker::PhantomData;
+use core::mem::MaybeUninit;
 use core::sync::atomic::Ordering;
 use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -505,6 +506,19 @@ impl<
     /// # }
     /// ```
     pub fn discard(self) -> EntryHandleMut<Service, KeyType, ValueType> {
+        self.entry_handle_mut
+    }
+
+    pub fn value_mut(&self) -> &mut MaybeUninit<ValueType> {
+        unsafe {
+            &mut *core::mem::transmute::<*mut ValueType, *mut MaybeUninit<ValueType>>(self.ptr)
+        }
+    }
+
+    pub unsafe fn assume_init_and_update(self) -> EntryHandleMut<Service, KeyType, ValueType> {
+        self.entry_handle_mut
+            .producer
+            .__internal_update_write_cell();
         self.entry_handle_mut
     }
 }

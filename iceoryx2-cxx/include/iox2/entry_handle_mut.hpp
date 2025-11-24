@@ -47,6 +47,8 @@ class EntryHandleMut {
     friend auto update_with_copy(EntryValueUninit<ST, KeyT, ValueT>&&, ValueT) -> EntryHandleMut<ST, KeyT, ValueT>;
     template <ServiceType ST, typename KeyT, typename ValueT>
     friend auto discard(EntryValueUninit<ST, KeyT, ValueT>&& self) -> EntryHandleMut<ST, KeyT, ValueT>;
+    template <ServiceType ST, typename KeyT, typename ValueT>
+    friend auto assume_init_and_update(EntryValueUninit<ST, KeyT, ValueT>&& self) -> EntryHandleMut<ST, KeyT, ValueT>;
 
     explicit EntryHandleMut(iox2_entry_handle_mut_h handle);
 
