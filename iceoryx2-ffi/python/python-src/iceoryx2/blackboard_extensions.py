@@ -228,11 +228,24 @@ def write_with_copy(self: EntryValueUninit, value: Type[V]) -> EntryHandleMut:
     return self.__update_write_cell()
 
 
+def value_mut(self: EntryValueUninit) -> Any:
+    """Returns a `ctypes.POINTER` to the value."""
+    assert self.__value_type is not None
+
+    return ctypes.cast(self.__get_write_cell(), ctypes.POINTER(self.__value_type))
+
+
+def assume_init_and_update(self: EntryValueUninit) -> EntryHandleMut:
+    return self.__update_write_cell()
+
+
 EntryHandle.get = get
 
 EntryHandleMut.update_with_copy = update_with_copy
 
+EntryValueUninit.assume_init_and_update = assume_init_and_update
 EntryValueUninit.update_with_copy = write_with_copy
+EntryValueUninit.value_mut = value_mut
 
 Reader.entry = entry_handle
 

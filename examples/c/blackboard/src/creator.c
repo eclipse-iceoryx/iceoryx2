@@ -200,7 +200,7 @@ int main(void) {
         iox2_entry_value_uninit_h entry_value_uninit = NULL;
         iox2_entry_handle_mut_loan_uninit(entry_handle_mut_key_1, NULL, &entry_value_uninit, sizeof(double), alignof(double));
         double* payload = NULL;
-        iox2_entry_value_uninit_mut(&entry_value_uninit, (void**) &payload);
+        iox2_entry_value_uninit_value_mut(&entry_value_uninit, (void**) &payload);
         *payload = INITIAL_VALUE * (double) counter;
         iox2_entry_value_uninit_update(entry_value_uninit, NULL, &entry_handle_mut_key_1);
         printf("Write new value %f for key 1...\n\n", *payload);
