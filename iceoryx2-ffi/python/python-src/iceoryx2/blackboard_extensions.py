@@ -197,7 +197,7 @@ def entry_handle_mut(self: Writer, key: Type[K], value: Type[V]) -> EntryHandleM
     return entry_handle_mut
 
 
-def update_with_copy(self: EntryHandleMut, value: Type[V]):
+def update_with_copy_on_entry_handle(self: EntryHandleMut, value: Type[V]):
     """Updates the value by copying the passed value into it."""
     assert self.__value_type is not None
     type_size = ctypes.sizeof(value)
@@ -210,13 +210,14 @@ def update_with_copy(self: EntryHandleMut, value: Type[V]):
     self.__update_data_ptr()
 
 
-# TODO: update documentation
-def write_with_copy(self: EntryValueUninit, value: Type[V]) -> EntryHandleMut:
+def update_with_copy_on_entry_value(
+    self: EntryValueUninit, value: Type[V]
+) -> EntryHandleMut:
     """
-    Writes to the entry value.
+    Updates the entry value.
 
     Consumes the EntryValueUninit, writes values to the entry
-    value and returns the initialized EntryValue.
+    value and returns the original EntryHandleMut.
     """
     assert self.__value_type is not None
     type_size = ctypes.sizeof(value)
@@ -229,22 +230,33 @@ def write_with_copy(self: EntryValueUninit, value: Type[V]) -> EntryHandleMut:
 
 
 def value_mut(self: EntryValueUninit) -> Any:
-    """Returns a `ctypes.POINTER` to the value."""
+    """
+    Returns a `ctypes.POINTER` to the value of the blackboard entry.
+
+    It can be used to update the value without copy. After writing,
+    assume_init_and_update() must be called.
+    """
     assert self.__value_type is not None
 
     return ctypes.cast(self.__get_write_cell(), ctypes.POINTER(self.__value_type))
 
 
 def assume_init_and_update(self: EntryValueUninit) -> EntryHandleMut:
+    """
+    Makes the new value accessible.
+
+    Consumes the EntryValueUninit, makes the new value accessible
+    and returns the original EntryHandleMut.
+    """
     return self.__update_write_cell()
 
 
 EntryHandle.get = get
 
-EntryHandleMut.update_with_copy = update_with_copy
+EntryHandleMut.update_with_copy = update_with_copy_on_entry_handle
 
 EntryValueUninit.assume_init_and_update = assume_init_and_update
-EntryValueUninit.update_with_copy = write_with_copy
+EntryValueUninit.update_with_copy = update_with_copy_on_entry_value
 EntryValueUninit.value_mut = value_mut
 
 Reader.entry = entry_handle

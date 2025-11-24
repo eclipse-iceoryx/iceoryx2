@@ -34,18 +34,21 @@ class EntryValueUninit {
     auto operator=(const EntryValueUninit&) -> EntryValueUninit& = delete;
 
     /// Consumes the [`EntryValueUninit`], writes value to the entry value and returns the
-    /// initialized [`EntryValue`].
+    /// original [`EntryHandleMut`].
     template <ServiceType ST, typename KeyT, typename ValueT>
     friend auto update_with_copy(EntryValueUninit<ST, KeyT, ValueT>&& self, ValueT value)
         -> EntryHandleMut<ST, KeyT, ValueT>;
-    // TODO: update documentation
 
     /// Discard the [`EntryValueUninit`] and returns the original [`EntryHandleMut`].
     template <ServiceType ST, typename KeyT, typename ValueT>
     friend auto discard(EntryValueUninit<ST, KeyT, ValueT>&& self) -> EntryHandleMut<ST, KeyT, ValueT>;
 
+    /// Returns a reference to the value of the blackboard entry. It can be used to update the
+    /// value without copy. After writing, assume_init_and_update() must be called.
     auto value_mut() -> ValueType&;
 
+    /// Consumes the [`EntryValueUninit`], makes the new value accessible and returns the
+    /// original [`EntryHandleMut`].
     template <ServiceType ST, typename KeyT, typename ValueT>
     friend auto assume_init_and_update(EntryValueUninit<ST, KeyT, ValueT>&& self) -> EntryHandleMut<ST, KeyT, ValueT>;
 

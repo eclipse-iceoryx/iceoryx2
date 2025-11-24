@@ -147,7 +147,7 @@ pub unsafe extern "C" fn iox2_entry_value_uninit_move(
     *dest_handle_ptr = (*dest_struct_ptr).as_handle();
 }
 
-/// Acquires the entrie's mutable value.
+/// Acquires the entrie's mutable value. After writing the value, [`iox2_entry_value_uninit_update()`] must be called.
 ///
 /// # Safety
 ///
