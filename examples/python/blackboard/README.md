@@ -1,4 +1,4 @@
-# Publish-Subscribe
+# Blackboard
 
 > [!CAUTION]
 > Every payload you transmit with iceoryx2 must be compatible with shared
@@ -17,12 +17,19 @@
 > **`ctypes.c_double`, and the types in the `iceoryx2-bb-container` library**
 > **are cross-language compatible!**
 
-This example illustrates a robust publisher-subscriber communication pattern
-between two separate processes. The publisher sends a message every second,
-each containing [`TransmissionData`]. On the receiving end, the subscriber
-checks for new data every second.
+This example illustrates the blackboard messaging pattern, a key-value
+repository in shared memory. Each communication participant can access exactly
+the entries it needs instead of the whole repository, making it useful for
+sharing a global configuration or state, for example.
 
-The subscriber is printing the sample on the console whenever new data arrives.
+> [!IMPORTANT]
+> In addition to the shared memory related requirements mentioned above, the
+> keys and values stored in the blackboard must be trivially copyable. To be
+> able to store and retrieve keys in the blackboard, the key must implement
+> `__eq__`.
+
+In this example, one writer updates the values in the blackboard every second
+and a reader reads and prints them to the console.
 
 ## How to Build
 
@@ -43,28 +50,21 @@ poetry --project iceoryx2-ffi/python run maturin develop --manifest-path iceoryx
 
 ## How to Run
 
-To observe this dynamic communication in action, open two separate terminals
-and execute the following commands:
+To observe the blackboard messaging pattern in action, open two separate
+terminals and execute the following commands:
 
 ### Terminal 1
 
 ```sh
-poetry --project iceoryx2-ffi/python run python examples/python/publish_subscribe/subscriber.py
+poetry --project iceoryx2-ffi/python run python examples/python/blackboard/creator.py
 ```
 
 ### Terminal 2
 
 ```sh
-poetry --project iceoryx2-ffi/python run python examples/python/publish_subscribe/publisher.py
+poetry --project iceoryx2-ffi/python run python examples/python/blackboard/opener.py
 ```
 
-Feel free to run multiple instances of publisher or subscriber processes
-simultaneously to explore how iceoryx2 handles publisher-subscriber
-communication efficiently.
-
-> [!TIP]
-> You may hit the maximum supported number of ports when too many publisher or
-> subscriber processes run. Take a look at the
-> [iceoryx2 config](../../../config) to set the limits globally or at the
-> [API of the Service builder](https://docs.rs/iceoryx2/latest/iceoryx2/service/index.html)
-> to set them for a single service.
+Feel free to run multiple instances of reader processes simultaneously but note
+that the `blackboard_creator` must run first to create the blackboard service
+with the key-value pairs and that there can be only one writer.

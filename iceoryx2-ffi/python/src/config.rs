@@ -986,6 +986,49 @@ impl Defaults {
     pub fn request_response(&self) -> RequestResponse {
         RequestResponse(self.0.clone())
     }
+
+    #[getter]
+    /// Returns the blackboard part of the default settings
+    pub fn blackboard(&self) -> Blackboard {
+        Blackboard(self.0.clone())
+    }
+}
+
+#[pyclass]
+/// Default settings for the blackboard messaging pattern. These settings are used unless
+/// the user specifies custom QoS or port settings.
+pub struct Blackboard(Parc<iceoryx2::config::Config>);
+
+#[pymethods]
+impl Blackboard {
+    pub fn __str__(&self) -> String {
+        format!("{:?}", self.0.lock().defaults.blackboard)
+    }
+
+    #[getter]
+    /// The maximum amount of supported `Reader`s
+    pub fn max_readers(&self) -> usize {
+        self.0.lock().defaults.blackboard.max_readers
+    }
+
+    #[setter]
+    /// Set the maximum amount of supported `Reader`s
+    pub fn set_max_readers(&self, value: usize) {
+        self.0.lock().defaults.blackboard.max_readers = value
+    }
+
+    #[getter]
+    /// The maximum amount of supported `Node`s. Defines indirectly how many
+    /// processes can open the service at the same time.
+    pub fn max_nodes(&self) -> usize {
+        self.0.lock().defaults.blackboard.max_nodes
+    }
+
+    #[setter]
+    /// Set the maximum amount of supported `Node`s.
+    pub fn set_max_nodes(&self, value: usize) {
+        self.0.lock().defaults.blackboard.max_nodes = value
+    }
 }
 
 #[pyclass]
@@ -1083,6 +1126,7 @@ pub fn config(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::config::Global>()?;
     m.add_class::<crate::config::Config>()?;
     m.add_class::<crate::config::Defaults>()?;
+    m.add_class::<crate::config::Blackboard>()?;
     m.add_class::<crate::config::Event>()?;
     m.add_class::<crate::config::PublishSubscribe>()?;
     m.add_class::<crate::config::RequestResponse>()?;

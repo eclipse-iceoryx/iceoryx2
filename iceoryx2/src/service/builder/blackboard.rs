@@ -14,14 +14,12 @@
 //!
 //! See [`crate::service`]
 //!
-
 use core::alloc::Layout;
 use core::hash::Hash;
 use core::marker::PhantomData;
 
 use alloc::boxed::Box;
 use alloc::format;
-use alloc::rc::Rc;
 use alloc::vec::Vec;
 
 use iceoryx2_bb_container::flatmap::RelocatableFlatMap;
@@ -331,7 +329,7 @@ pub(crate) struct Mgmt {
 pub(crate) struct BlackboardResources<ServiceType: service::Service> {
     pub(crate) mgmt: ServiceType::BlackboardMgmt<Mgmt>,
     pub(crate) data: ServiceType::BlackboardPayload,
-    pub(crate) key_eq_func: Rc<dyn Fn(*const u8, *const u8) -> bool>,
+    pub(crate) key_eq_func: Arc<dyn Fn(*const u8, *const u8) -> bool + Send + Sync>,
 }
 
 impl<ServiceType: service::Service> Debug for BlackboardResources<ServiceType> {
@@ -360,7 +358,7 @@ struct Builder<
     verify_max_nodes: bool,
     internals: Vec<BuilderInternals>,
     override_key_type: Option<TypeDetail>,
-    key_eq_func: Box<dyn Fn(*const u8, *const u8) -> bool>,
+    key_eq_func: Box<dyn Fn(*const u8, *const u8) -> bool + Send + Sync>,
     _key: PhantomData<KeyType>,
 }
 
@@ -763,7 +761,7 @@ impl<
                         BlackboardResources {
                             mgmt: mgmt_storage,
                             data: payload_shm,
-                            key_eq_func: Rc::new(self.builder.key_eq_func),
+                            key_eq_func: Arc::new(self.builder.key_eq_func),
                         },
                     ),
                 ))
@@ -782,7 +780,7 @@ impl<ServiceType: service::Service> Creator<CustomKeyMarker, ServiceType> {
     #[doc(hidden)]
     pub unsafe fn __internal_set_key_eq_cmp_func(
         mut self,
-        key_eq_func: Box<dyn Fn(*const u8, *const u8) -> bool>,
+        key_eq_func: Box<dyn Fn(*const u8, *const u8) -> bool + Send + Sync>,
     ) -> Self {
         self.builder.key_eq_func = key_eq_func;
         self
@@ -1059,7 +1057,7 @@ impl<
                             BlackboardResources {
                                 mgmt: mgmt_storage,
                                 data: payload_shm,
-                                key_eq_func: Rc::new(self.builder.key_eq_func),
+                                key_eq_func: Arc::new(self.builder.key_eq_func),
                             },
                         ),
                     ));

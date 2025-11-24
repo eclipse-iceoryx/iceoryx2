@@ -674,6 +674,12 @@ impl<Service: service::Service> Drop for __InternalEntryHandleMut<Service> {
     }
 }
 
+// Safe since the pointer to the UnrestrictedAtomicMgmt and the data pointer don't change and the
+// UnrestrictedAtomicMgmt implements Send + Sync, and shared_state ensures the lifetime of the
+// UnrestrictedAtomicMgmt
+unsafe impl<Service: service::Service> Send for __InternalEntryHandleMut<Service> {}
+unsafe impl<Service: service::Service> Sync for __InternalEntryHandleMut<Service> {}
+
 impl<Service: service::Service> __InternalEntryHandleMut<Service> {
     fn new(
         atomic_mgmt_ptr: *const UnrestrictedAtomicMgmt,
@@ -747,6 +753,12 @@ pub struct __InternalEntryValueUninit<Service: service::Service> {
     write_cell_ptr: *mut u8,
     entry_handle_mut: __InternalEntryHandleMut<Service>,
 }
+
+// Safe since the write cell pointer doesn't change until the __InternalEntryValueUninit is
+// consumed, and entry_handle_mut ensures the lifetime of the UnrestrictedAtomicMgmt to which
+// write_cell_ptr points to.
+unsafe impl<Service: service::Service> Send for __InternalEntryValueUninit<Service> {}
+unsafe impl<Service: service::Service> Sync for __InternalEntryValueUninit<Service> {}
 
 impl<Service: service::Service> __InternalEntryValueUninit<Service> {
     /// Creates a new __InternalEntryValueUninit
