@@ -27,7 +27,6 @@ rust_library(
         "//iceoryx2-bb/container:iceoryx2-bb-container",
         "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
         "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
-        "@crate_index//:once_cell",
         "@crate_index//:serde",
     ],
 )

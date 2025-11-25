@@ -50,7 +50,6 @@ rust_test_suite(
         "//iceoryx2-bb/lock-free:iceoryx2-bb-lock-free",
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
         "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
-        "@crate_index//:cdr",
         "@crate_index//:postcard",
         "@crate_index//:toml",
     ],

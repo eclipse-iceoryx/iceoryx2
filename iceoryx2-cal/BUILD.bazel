@@ -40,8 +40,6 @@ rust_library(
         "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
         "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
         "@crate_index//:postcard",
-        "@crate_index//:cdr",
-        "@crate_index//:once_cell",
         "@crate_index//:serde",
         "@crate_index//:sha1_smol",
         "@crate_index//:tiny-fn",
