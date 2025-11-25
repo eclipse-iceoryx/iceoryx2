@@ -24,7 +24,7 @@ name = "iceoryx2_tunnel_end_to_end_tests"
 path = "common/src/lib.rs"
 
 [dependencies]
-iceoryx2 = { workspace = true }
+iceoryx2 = { workspace = true, features = ["std"] }
 iceoryx2-bb-log = { workspace = true }
 iceoryx2-bb-container = { workspace = true }
 
