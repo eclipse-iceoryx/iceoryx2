@@ -27,6 +27,11 @@ rust_library(
             "dev_permissions",
         ],
         "//conditions:default": [],
+    }) + select({
+        "//:cfg_feature_std": [
+            "std",
+        ],
+        "//conditions:default": [],
     }),
     proc_macro_deps = [
         "//iceoryx2-bb/derive-macros:iceoryx2-bb-derive-macros",

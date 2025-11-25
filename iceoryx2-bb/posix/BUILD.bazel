@@ -22,6 +22,12 @@ filegroup(
 rust_library(
     name = "iceoryx2-bb-posix",
     srcs = glob(["src/**/*.rs"]),
+    crate_features = select({
+        "//:cfg_feature_std": [
+            "std",
+        ],
+        "//conditions:default": [],
+    }),
     deps = [
         "//iceoryx2-bb/container:iceoryx2-bb-container",
         "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
