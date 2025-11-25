@@ -10,9 +10,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-package(default_visibility = ["//visibility:public"])
-
 load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test_suite")
+
+package(default_visibility = ["//visibility:public"])
 
 filegroup(
     name = "all_srcs",
@@ -22,22 +22,22 @@ filegroup(
 rust_library(
     name = "iceoryx2-cal-conformance-tests",
     srcs = glob(["src/**/*.rs"]),
+    proc_macro_deps = [
+        "//iceoryx2-bb/conformance-test-macros:iceoryx2-bb-conformance-test-macros",
+    ],
     deps = [
-        "//iceoryx2-cal:iceoryx2-cal",
         "//iceoryx2-bb/container:iceoryx2-bb-container",
         "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
         "//iceoryx2-bb/memory:iceoryx2-bb-memory",
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
         "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
+        "//iceoryx2-cal",
         "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
-        "//iceoryx2-pal/testing:iceoryx2-pal-testing",
         "//iceoryx2-pal/posix:iceoryx2-pal-posix",
+        "//iceoryx2-pal/testing:iceoryx2-pal-testing",
         "@crate_index//:lazy_static",
         "@crate_index//:serde",
-    ],
-    proc_macro_deps = [
-        "//iceoryx2-bb/conformance-test-macros:iceoryx2-bb-conformance-test-macros",
     ],
 )
 
@@ -46,9 +46,9 @@ rust_test_suite(
     srcs = glob(["tests/**/*.rs"]),
     deps = [
         ":iceoryx2-cal-conformance-tests",
-        "//iceoryx2-cal:iceoryx2-cal",
         "//iceoryx2-bb/lock-free:iceoryx2-bb-lock-free",
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
+        "//iceoryx2-cal",
         "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
         "@crate_index//:postcard",
         "@crate_index//:toml",
