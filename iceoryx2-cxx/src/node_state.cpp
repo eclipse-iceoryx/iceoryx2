@@ -51,6 +51,10 @@ auto DeadNodeView<T>::details() const -> iox::optional<NodeDetails> {
 
 template <ServiceType T>
 auto DeadNodeView<T>::remove_stale_resources() -> iox::expected<bool, NodeCleanupFailure> {
+    if (!m_view.details().has_value()) {
+        return iox::err(NodeCleanupFailure::InsufficientPermissions);
+    }
+
     bool has_success = false;
     auto result = iox2_dead_node_remove_stale_resources(iox::into<iox2_service_type_e>(T),
                                                         &m_view.id().m_handle,
