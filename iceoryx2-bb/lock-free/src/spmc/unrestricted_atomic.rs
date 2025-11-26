@@ -256,6 +256,13 @@ impl UnrestrictedAtomicMgmt {
             value_alignment,
         )
     }
+
+    // TODO: make unsafe?
+    pub fn __internal_get_write_cell(&self, write_cell_ptr: *mut u8) {
+        let write_cell = self.write_cell.load(Ordering::Relaxed);
+        let ptr: *const u64 = &write_cell;
+        unsafe { core::ptr::copy_nonoverlapping(ptr as *const u8, write_cell_ptr, 8) };
+    }
 }
 
 /// An atomic implementation where the underlying type has to be copyable but is otherwise
@@ -344,6 +351,10 @@ impl<T: Copy> UnrestrictedAtomic<T> {
     #[doc(hidden)]
     pub fn __internal_get_data_ptr(&self) -> *mut u8 {
         self.data.as_ptr() as *mut u8
+    }
+
+    pub fn write_cell(&self) -> u64 {
+        self.mgmt.write_cell.load(Ordering::Relaxed)
     }
 }
 

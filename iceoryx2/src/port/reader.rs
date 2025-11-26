@@ -46,6 +46,7 @@ use core::alloc::Layout;
 use core::fmt::Debug;
 use core::hash::Hash;
 use core::marker::PhantomData;
+use core::ops::Deref;
 use core::sync::atomic::Ordering;
 use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -56,11 +57,42 @@ use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::{
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shared_memory::SharedMemory;
+use std::fmt::Display;
 
 extern crate alloc;
 use alloc::sync::Arc;
 
 use super::port_identifiers::UniqueReaderId;
+
+pub struct BlackboardValue<ValueType: Copy> {
+    value: ValueType,
+    generation_counter: u64,
+}
+
+impl<ValueType: Copy> Deref for BlackboardValue<ValueType> {
+    type Target = ValueType;
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl<ValueType: Copy + Display> core::fmt::Display for BlackboardValue<ValueType> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{}", self.value)
+    }
+}
+
+impl<ValueType: Copy + Debug> Debug for BlackboardValue<ValueType> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(
+            f,
+            "BlackboardValue<{}> {{ value: {:?}, generation_counter: {} }}",
+            core::any::type_name::<ValueType>(),
+            self.value,
+            self.generation_counter
+        )
+    }
+}
 
 #[derive(Debug)]
 struct ReaderSharedState<
@@ -351,14 +383,30 @@ impl<
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get(&self) -> ValueType {
-        unsafe { (*self.atomic).load() }
+    pub fn get(&self) -> BlackboardValue<ValueType> {
+        // TODO: update documentation
+        unsafe {
+            let generation_counter = (*self.atomic).write_cell();
+            BlackboardValue {
+                value: (*self.atomic).load(),
+                // TODO: counter and value may not match (counter older than value)
+                // -> has_updated would return true but get won't update value - ok?
+                generation_counter,
+            }
+        }
     }
 
     /// Returns an ID corresponding to the entry which can be used in an event based communication
     /// setup.
     pub fn entry_id(&self) -> EventId {
         self.entry_id
+    }
+
+    // get returns pair of value and generation counter
+    // extra type, implements Deref to get value
+    // has_updates/is_up_to_date takes reference to that type and compares generation counter
+    pub fn is_up_to_date(&self, value: &BlackboardValue<ValueType>) -> bool {
+        unsafe { (*self.atomic).write_cell() == value.generation_counter }
     }
 }
 
@@ -438,7 +486,18 @@ impl<Service: service::Service> __InternalEntryHandle<Service> {
     /// # Safety
     ///
     ///   * see Safety section of core::ptr::copy_nonoverlapping
-    pub unsafe fn get(&self, value_ptr: *mut u8, value_size: usize, value_alignment: usize) {
+    pub unsafe fn get(
+        &self,
+        value_ptr: *mut u8,
+        value_size: usize,
+        value_alignment: usize,
+        generation_counter: *mut u8,
+    ) {
+        // TODO: update documentation
+        if !generation_counter.is_null() {
+            (*self.atomic_mgmt_ptr).__internal_get_write_cell(generation_counter);
+        }
+        // TODO: generation counter can be outdated
         (*self.atomic_mgmt_ptr).load(value_ptr, value_size, value_alignment, self.data_ptr);
     }
 
@@ -446,5 +505,14 @@ impl<Service: service::Service> __InternalEntryHandle<Service> {
     /// setup.
     pub fn entry_id(&self) -> EventId {
         self.entry_id
+    }
+
+    pub fn is_up_to_date(&self, generation_counter: usize) -> bool {
+        let mut write_cell: usize = 0;
+        let write_cell_ptr: *mut usize = &mut write_cell;
+        unsafe {
+            (*self.atomic_mgmt_ptr).__internal_get_write_cell(write_cell_ptr as *mut u8);
+        }
+        write_cell == generation_counter
     }
 }

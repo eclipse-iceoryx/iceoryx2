@@ -60,11 +60,25 @@ impl EntryHandle {
         let value_buffer = (self.value_ptr.lock()).value_buffer;
         match &*self.value.lock() {
             EntryHandleType::Ipc(v) => {
-                unsafe { v.get(value_buffer, value_size, value_alignment) };
+                unsafe {
+                    v.get(
+                        value_buffer,
+                        value_size,
+                        value_alignment,
+                        core::ptr::null_mut::<u8>(),
+                    )
+                };
                 value_buffer as usize
             }
             EntryHandleType::Local(v) => {
-                unsafe { v.get(value_buffer, value_size, value_alignment) };
+                unsafe {
+                    v.get(
+                        value_buffer,
+                        value_size,
+                        value_alignment,
+                        core::ptr::null_mut::<u8>(),
+                    )
+                };
                 value_buffer as usize
             }
         }
