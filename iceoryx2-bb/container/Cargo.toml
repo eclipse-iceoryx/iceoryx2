@@ -10,10 +10,6 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 version = { workspace = true }
 
-[features]
-default = ["std"]
-std = []
-
 [dependencies]
 iceoryx2-bb-derive-macros = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }
