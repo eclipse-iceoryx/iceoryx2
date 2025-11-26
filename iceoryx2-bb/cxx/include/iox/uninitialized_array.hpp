@@ -21,17 +21,14 @@
 
 #include <cstdint>
 
-namespace iox
-{
+namespace iox {
 /// @brief struct used as policy parameter in UninitializedArray to wrap an array with all elements zeroed
 /// @tparam ElementType is the array type
 /// @tparam Capacity is the array size
 // AXIVION DISABLE STYLE AutosarC++19_03-A9.6.1 : False positive. Used ElementTypes have defined size.
 template <typename ElementType, uint64_t Capacity>
-struct ZeroedBuffer
-{
-    struct alignas(ElementType) element_t
-    {
+struct ZeroedBuffer {
+    struct alignas(ElementType) element_t {
         // AXIVION Next Construct AutosarC++19_03-M0.1.3 : the field is intentionally unused and serves as a mean to provide memory
         // AXIVION Next Construct AutosarC++19_03-A1.1.1 : object size depends on template parameter and has to be taken care of at the specific template instantiation
         // AXIVION Next Construct AutosarC++19_03-A18.1.1 : required as low level building block, encapsulated in abstraction and not directly used
@@ -41,17 +38,15 @@ struct ZeroedBuffer
     // AXIVION Next Construct AutosarC++19_03-A1.1.1 : object size depends on template parameter and has to be taken care of at the specific template instantiation
     // AXIVION Next Construct AutosarC++19_03-A18.1.1 : required as low level building block, encapsulated in abstraction and not directly used
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays, hicpp-avoid-c-arrays)
-    element_t value[Capacity]{};
+    element_t value[Capacity] {};
 };
 
 /// @brief struct used as policy parameter in UninitializedArray to wrap an uninitialized array
 /// @tparam ElementType is the array type
 /// @tparam Capacity is the array size
 template <typename ElementType, uint64_t Capacity>
-struct NonZeroedBuffer
-{
-    struct alignas(ElementType) element_t
-    {
+struct NonZeroedBuffer {
+    struct alignas(ElementType) element_t {
         // AXIVION Next Construct AutosarC++19_03-M0.1.3 : the field is intentionally unused and serves as a mean to provide memory
         // AXIVION Next Construct AutosarC++19_03-A1.1.1 : object size depends on template parameter and has to be taken care of at the specific template instantiation
         // AXIVION Next Construct AutosarC++19_03-A18.1.1 : required as low level building block, encapsulated in abstraction and not directly used
@@ -73,8 +68,7 @@ struct NonZeroedBuffer
 /// @note Out of bounds access leads to undefined behavior
 // AXIVION Next Construct AutosarC++19_03-A9.6.1 : type contains a single member that is a byte array whos size is defined by ElementType and Capacity
 template <typename ElementType, uint64_t Capacity, template <typename, uint64_t> class Buffer = NonZeroedBuffer>
-class UninitializedArray final
-{
+class UninitializedArray final {
     static_assert(Capacity > 0U, "The size of the UninitializedArray must be greater than 0!");
 
   public:
@@ -86,7 +80,7 @@ class UninitializedArray final
     // Use of "= default" leads to value-initialization of class members.
     // AXIVION Next Construct AutosarC++19_03-A12.6.1 : This is a low-level building block which is supposed to provide uninitialized memory
     // NOLINTNEXTLINE(hicpp-use-equals-default)
-    constexpr UninitializedArray() noexcept {};
+    constexpr UninitializedArray() noexcept { };
     UninitializedArray(const UninitializedArray&) = delete;
     UninitializedArray(UninitializedArray&&) = delete;
     UninitializedArray& operator=(const UninitializedArray&) = delete;

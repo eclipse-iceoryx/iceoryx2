@@ -19,41 +19,35 @@
 #include "iox/error_reporting/custom/default/error_handler.hpp"
 #include "iox/error_reporting/source_location.hpp"
 
-namespace
-{
+namespace {
 
 using namespace ::testing;
 using namespace iox::er;
 
-constexpr ErrorCode CODE{73};
+constexpr ErrorCode CODE { 73 };
 
-class DefaultErrorHandler_test : public Test
-{
+class DefaultErrorHandler_test : public Test {
   public:
-    void SetUp() override
-    {
+    void SetUp() override {
     }
 
-    void TearDown() override
-    {
+    void TearDown() override {
     }
 
     DefaultErrorHandler sut;
 };
 
 // Can only check that it can be called, there are no observable effects.
-TEST_F(DefaultErrorHandler_test, panicDoesNothing)
-{
+TEST_F(DefaultErrorHandler_test, panicDoesNothing) {
     ::testing::Test::RecordProperty("TEST_ID", "0d7f7048-94d3-42b7-a25a-1a7b506fd835");
     sut.onPanic();
 }
 
 // Can only check that it can be called, there are no observable effects.
-TEST_F(DefaultErrorHandler_test, reportDoesNothing)
-{
+TEST_F(DefaultErrorHandler_test, reportDoesNothing) {
     ::testing::Test::RecordProperty("TEST_ID", "9e288318-c756-4666-b779-b944b89ffaf5");
-    sut.onReportError(ErrorDescriptor{IOX_CURRENT_SOURCE_LOCATION, CODE});
-    sut.onReportViolation(ErrorDescriptor{IOX_CURRENT_SOURCE_LOCATION, CODE});
+    sut.onReportError(ErrorDescriptor { IOX_CURRENT_SOURCE_LOCATION, CODE });
+    sut.onReportViolation(ErrorDescriptor { IOX_CURRENT_SOURCE_LOCATION, CODE });
 }
 
 } // namespace

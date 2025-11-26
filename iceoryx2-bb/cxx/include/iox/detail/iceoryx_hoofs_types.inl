@@ -21,16 +21,12 @@
 /// @note since this file will be included by many other files, it should not include other header except
 /// iceoryx_platform or STL header
 
-namespace iox
-{
+namespace iox {
 // AXIVION Next Construct AutosarC++19_03-M2.10.1 : See declaration in header
-namespace log
-{
+namespace log {
 // AXIVION Next Construct AutosarC++19_03-A3.9.1 : See declaration in header
-inline constexpr const char* asStringLiteral(const LogLevel value) noexcept
-{
-    switch (value)
-    {
+inline constexpr const char* asStringLiteral(const LogLevel value) noexcept {
+    switch (value) {
     case LogLevel::Off:
         return "LogLevel::Off";
     case LogLevel::Fatal:

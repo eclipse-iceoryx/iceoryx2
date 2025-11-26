@@ -22,10 +22,8 @@
 #include "iox/error_reporting/custom/default/default_error_handler.hpp"
 #include "iox/error_reporting/custom/default/error_handler_interface.hpp"
 
-namespace iox
-{
-namespace er
-{
+namespace iox {
+namespace er {
 
 using ErrorHandler = iox::PolymorphicHandler<ErrorHandlerInterface, DefaultErrorHandler>;
 

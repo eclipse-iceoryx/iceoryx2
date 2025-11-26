@@ -15,21 +15,15 @@
 
 #include "iox/cli/arguments.hpp"
 
-namespace iox
-{
-namespace cli
-{
-const char* Arguments::binaryName() const noexcept
-{
+namespace iox {
+namespace cli {
+const char* Arguments::binaryName() const noexcept {
     return m_binaryName;
 }
 
-bool Arguments::isSwitchSet(const OptionName_t& switchName) const noexcept
-{
-    for (const auto& a : m_arguments)
-    {
-        if (a.isSwitch && a.hasOptionName(switchName))
-        {
+bool Arguments::isSwitchSet(const OptionName_t& switchName) const noexcept {
+    for (const auto& a : m_arguments) {
+        if (a.isSwitch && a.hasOptionName(switchName)) {
             return true;
         }
     }

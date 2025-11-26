@@ -24,8 +24,7 @@
 
 #include <cstdint>
 
-namespace iox
-{
+namespace iox {
 static constexpr uint32_t POSIX_CALL_ERROR_STRING_SIZE = 128U;
 static constexpr uint64_t POSIX_CALL_EINTR_REPETITIONS = 5U;
 static constexpr int32_t POSIX_CALL_INVALID_ERRNO = -1;
@@ -35,8 +34,7 @@ class PosixCallBuilder;
 
 /// @brief result of a posix call
 template <typename T>
-struct PosixCallResult
-{
+struct PosixCallResult {
     PosixCallResult() noexcept = default;
 
     /// @brief returns the result of strerror_r(errnum, ...) which acquires a
@@ -44,14 +42,13 @@ struct PosixCallResult
     string<POSIX_CALL_ERROR_STRING_SIZE> getHumanReadableErrnum() const noexcept;
 
     /// @brief the return value of the posix function call
-    T value{};
+    T value {};
 
     /// @brief the errno value which was set by the posix function call
     int32_t errnum = POSIX_CALL_INVALID_ERRNO;
 };
 
-namespace detail
-{
+namespace detail {
 template <typename ReturnType, typename... FunctionArguments>
 PosixCallBuilder<ReturnType, FunctionArguments...>
 createPosixCallBuilder(ReturnType (*IOX_POSIX_CALL)(FunctionArguments...),
@@ -61,8 +58,7 @@ createPosixCallBuilder(ReturnType (*IOX_POSIX_CALL)(FunctionArguments...),
                        const char* callingFunction) noexcept;
 
 template <typename ReturnType>
-struct PosixCallDetails
-{
+struct PosixCallDetails {
     PosixCallDetails(const char* posixFunctionName, const char* file, int line, const char* callingFunction) noexcept;
     const char* posixFunctionName = nullptr;
     const char* file = nullptr;
@@ -78,8 +74,7 @@ struct PosixCallDetails
 
 /// @brief class which is created by the verificator to evaluate the result of a posix call
 template <typename ReturnType>
-class IOX_NO_DISCARD PosixCallEvaluator
-{
+class IOX_NO_DISCARD PosixCallEvaluator {
   public:
     /// @brief ignore specified errnos from the evaluation
     /// @tparam IgnoredErrnos a list of int32_t variables
@@ -114,8 +109,7 @@ class IOX_NO_DISCARD PosixCallEvaluator
 
 /// @brief class which verifies the return value of a posix function call
 template <typename ReturnType>
-class IOX_NO_DISCARD PosixCallVerificator
-{
+class IOX_NO_DISCARD PosixCallVerificator {
   public:
     /// @brief the posix function call defines success through a single value
     /// @param[in] successReturnValues a list of values which define success
@@ -146,8 +140,7 @@ class IOX_NO_DISCARD PosixCallVerificator
 };
 
 template <typename ReturnType, typename... FunctionArguments>
-class IOX_NO_DISCARD PosixCallBuilder
-{
+class IOX_NO_DISCARD PosixCallBuilder {
   public:
     /// @brief input function type
     using FunctionType_t = ReturnType (*)(FunctionArguments...);

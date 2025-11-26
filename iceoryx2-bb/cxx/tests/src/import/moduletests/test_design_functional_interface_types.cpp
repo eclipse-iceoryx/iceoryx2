@@ -15,8 +15,7 @@
 
 #include "test_design_functional_interface_types.hpp"
 
-namespace test_design_functional_interface
-{
+namespace test_design_functional_interface {
 //////////////////////////////////
 /// BEGIN GenericValueErrorFactory
 //////////////////////////////////
@@ -25,8 +24,7 @@ GenericValueErrorFactory::value_t GenericValueErrorFactory::anotherTestValue = 2
 GenericValueErrorFactory::error_t GenericValueErrorFactory::usedErrorValue = 3;
 GenericValueErrorFactory::error_t GenericValueErrorFactory::anotherErrorValue = 4;
 
-void GenericValueErrorFactory::configureNextTestCase() noexcept
-{
+void GenericValueErrorFactory::configureNextTestCase() noexcept {
     // we increment all the values with an arbitrary value (23) int every test case
     // so that we have some variation with every test and reduce the false positives
     // probability due to memory corruptions
@@ -37,13 +35,11 @@ void GenericValueErrorFactory::configureNextTestCase() noexcept
     anotherErrorValue += NEXT_CASE_INCREMENT_VALUE;
 }
 
-GenericValueErrorFactory::Type GenericValueErrorFactory::createValidObject() noexcept
-{
+GenericValueErrorFactory::Type GenericValueErrorFactory::createValidObject() noexcept {
     return GenericValueError(usedTestValue, usedErrorValue);
 }
 
-GenericValueErrorFactory::Type GenericValueErrorFactory::createInvalidObject() noexcept
-{
+GenericValueErrorFactory::Type GenericValueErrorFactory::createInvalidObject() noexcept {
     return GenericValueError(GenericValueError::INVALID_VALUE, usedErrorValue);
 }
 //////////////////////////////////
@@ -53,17 +49,14 @@ GenericValueErrorFactory::Type GenericValueErrorFactory::createInvalidObject() n
 /////////////////////////////
 /// BEGIN GenericPlainFactory
 /////////////////////////////
-void GenericPlainFactory::configureNextTestCase() noexcept
-{
+void GenericPlainFactory::configureNextTestCase() noexcept {
 }
 
-GenericPlain GenericPlainFactory::createValidObject() noexcept
-{
+GenericPlain GenericPlainFactory::createValidObject() noexcept {
     return GenericPlain(GenericPlain::VALID_VALUE, GenericPlain::VALID_VALUE);
 }
 
-GenericPlain GenericPlainFactory::createInvalidObject() noexcept
-{
+GenericPlain GenericPlainFactory::createInvalidObject() noexcept {
     return GenericPlain(GenericPlain::INVALID_VALUE, GenericPlain::INVALID_VALUE);
 }
 ///////////////////////////
@@ -76,8 +69,7 @@ GenericPlain GenericPlainFactory::createInvalidObject() noexcept
 OptionalFactory::value_t OptionalFactory::usedTestValue = 56;
 OptionalFactory::value_t OptionalFactory::anotherTestValue = 1174;
 
-void OptionalFactory::configureNextTestCase() noexcept
-{
+void OptionalFactory::configureNextTestCase() noexcept {
     // we increment all the values with an arbitrary value every test case
     // so that we have some variation with every test and reduce the false positives
     // probability due to memory corruptions
@@ -87,13 +79,11 @@ void OptionalFactory::configureNextTestCase() noexcept
     anotherTestValue += NEXT_CASE_VALUE_2_INCREMENT;
 }
 
-OptionalFactory::Type OptionalFactory::createValidObject() noexcept
-{
+OptionalFactory::Type OptionalFactory::createValidObject() noexcept {
     return OptionalFactory::Type(iox::in_place, usedTestValue);
 }
 
-OptionalFactory::Type OptionalFactory::createInvalidObject() noexcept
-{
+OptionalFactory::Type OptionalFactory::createInvalidObject() noexcept {
     return iox::nullopt;
 }
 ///////////////////////
@@ -108,8 +98,7 @@ ExpectedValueErrorFactory::value_t ExpectedValueErrorFactory::anotherTestValue =
 ExpectedValueErrorFactory::error_t ExpectedValueErrorFactory::usedErrorValue = 13;
 ExpectedValueErrorFactory::error_t ExpectedValueErrorFactory::anotherErrorValue = 14;
 
-void ExpectedValueErrorFactory::configureNextTestCase() noexcept
-{
+void ExpectedValueErrorFactory::configureNextTestCase() noexcept {
     // we increment all the values with an static arbitrary value in every test case
     // so that we have some variation with every test and reduce the false positives
     // probability due to memory corruptions
@@ -121,13 +110,11 @@ void ExpectedValueErrorFactory::configureNextTestCase() noexcept
     anotherErrorValue += NEXT_CASE_ERROR_INCREMENT;
 }
 
-ExpectedValueErrorFactory::Type ExpectedValueErrorFactory::createValidObject() noexcept
-{
+ExpectedValueErrorFactory::Type ExpectedValueErrorFactory::createValidObject() noexcept {
     return iox::ok(usedTestValue);
 }
 
-ExpectedValueErrorFactory::Type ExpectedValueErrorFactory::createInvalidObject() noexcept
-{
+ExpectedValueErrorFactory::Type ExpectedValueErrorFactory::createInvalidObject() noexcept {
     return iox::err(usedErrorValue);
 }
 //////////////////////////////////
@@ -140,8 +127,7 @@ ExpectedValueErrorFactory::Type ExpectedValueErrorFactory::createInvalidObject()
 ExpectedErrorFactory::error_t ExpectedErrorFactory::usedErrorValue = 13;
 ExpectedErrorFactory::error_t ExpectedErrorFactory::anotherErrorValue = 14;
 
-void ExpectedErrorFactory::configureNextTestCase() noexcept
-{
+void ExpectedErrorFactory::configureNextTestCase() noexcept {
     // we increment all the values with an static arbitrary value in every test case
     // so that we have some variation with every test and reduce the false positives
     // probability due to memory corruptions
@@ -150,13 +136,11 @@ void ExpectedErrorFactory::configureNextTestCase() noexcept
     anotherErrorValue += NEXT_CASE_INCREMENT_VALUE;
 }
 
-ExpectedErrorFactory::Type ExpectedErrorFactory::createValidObject() noexcept
-{
+ExpectedErrorFactory::Type ExpectedErrorFactory::createValidObject() noexcept {
     return iox::ok();
 }
 
-ExpectedErrorFactory::Type ExpectedErrorFactory::createInvalidObject() noexcept
-{
+ExpectedErrorFactory::Type ExpectedErrorFactory::createInvalidObject() noexcept {
     return iox::err(usedErrorValue);
 }
 ////////////////////////////

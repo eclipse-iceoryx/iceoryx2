@@ -21,8 +21,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace iox
-{
+namespace iox {
 /// @brief Manages a static instance of type T in a way so that each
 /// existing StaticLifetimeGuard prevents the destruction of
 /// the instance.
@@ -48,8 +47,7 @@ namespace iox
 /// static T& instance = StaticLifetimeGuard<T>::instance();
 /// @endcode
 template <typename T>
-class StaticLifetimeGuard
-{
+class StaticLifetimeGuard {
   public:
     StaticLifetimeGuard() noexcept;
 
@@ -78,8 +76,7 @@ class StaticLifetimeGuard
     static uint64_t count();
 
   private:
-    struct alignas(T) storage_t
-    {
+    struct alignas(T) storage_t {
         // AXIVION Next Construct AutosarC++19_03-M0.1.3 : the field is intentionally unused and serves as a mean to provide memory
         // AXIVION Next Construct AutosarC++19_03-A1.1.1 : object size depends on template parameter and has to be taken care of at the specific template instantiation
         // AXIVION Next Construct AutosarC++19_03-A18.1.1 : required as low level building block, encapsulated in abstraction and not directly used
@@ -87,9 +84,9 @@ class StaticLifetimeGuard
         unsigned char data[sizeof(T)];
     };
 
-    static constexpr uint32_t UNINITIALIZED{0};
-    static constexpr uint32_t INITALIZING{1};
-    static constexpr uint32_t INITALIZED{2};
+    static constexpr uint32_t UNINITIALIZED { 0 };
+    static constexpr uint32_t INITALIZING { 1 };
+    static constexpr uint32_t INITALIZED { 2 };
 
     // NOLINTJUSTIFICATION these static variables are private and mutability is required
     // NOLINTBEGIN (cppcoreguidelines-avoid-non-const-global-variables)

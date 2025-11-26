@@ -22,29 +22,19 @@
 
 #include <utility>
 
-namespace iox
-{
-namespace internal
-{
+namespace iox {
+namespace internal {
 template <typename Derived, class = void>
-struct HasValueMethod : std::false_type
-{
-};
+struct HasValueMethod : std::false_type { };
 
 template <typename Derived>
-struct HasValueMethod<Derived, void_t<decltype(std::declval<Derived>().value())>> : std::true_type
-{
-};
+struct HasValueMethod<Derived, void_t<decltype(std::declval<Derived>().value())>> : std::true_type { };
 
 template <typename Derived, class = void>
-struct HasGetErrorMethod : std::false_type
-{
-};
+struct HasGetErrorMethod : std::false_type { };
 
 template <typename Derived>
-struct HasGetErrorMethod<Derived, void_t<decltype(std::declval<Derived>().error())>> : std::true_type
-{
-};
+struct HasGetErrorMethod<Derived, void_t<decltype(std::declval<Derived>().error())>> : std::true_type { };
 
 template <typename Derived>
 // AXIVION Next Construct AutosarC++19_03-A12.0.1 : not required since a default'ed destructor does not define
@@ -52,8 +42,7 @@ template <typename Derived>
 // the only adaptation is that the dtor is protected to prohibit the user deleting the child type by
 // explicitly calling the destructor of the base type.
 // NOLINTNEXTLINE(cppcoreguidelines-special-member-functions, hicpp-special-member-functions)
-struct Expect
-{
+struct Expect {
     /// @brief Expects that the object is valid, otherwise the method prints the
     ///        provided message and induces a fatal error
     /// @tparam StringType the string type of the message. Allowed types are a char array and a iox::string
@@ -71,8 +60,7 @@ template <typename Derived, typename ValueType>
 // the only adaptation is that the dtor is protected to prohibit the user deleting the child type by
 // explicitly calling the destructor of the base type.
 // NOLINTNEXTLINE(cppcoreguidelines-special-member-functions, hicpp-special-member-functions)
-struct ExpectWithValue
-{
+struct ExpectWithValue {
     /// @brief Expects that the object is valid and returns the contained value, otherwise
     //         the method prints the provided message and induces a fatal error
     /// @tparam StringType the string type of the message. Allowed types are a char array and a iox::string
@@ -115,8 +103,7 @@ template <typename Derived, typename ValueType>
 // the only adaptation is that the dtor is protected to prohibit the user deleting the child type by
 // explicitly calling the destructor of the base type.
 // NOLINTNEXTLINE(cppcoreguidelines-special-member-functions, hicpp-special-member-functions)
-struct ValueOr
-{
+struct ValueOr {
     /// @brief When the object contains a value a copy will be returned otherwise
     ///        alternative is perfectly forwarded to the ValueType constructor
     /// @param[in]  alternative the return value which will be used when the object does
@@ -145,8 +132,7 @@ template <typename Derived, typename ValueType>
 // the only adaptation is that the dtor is protected to prohibit the user deleting the child type by
 // explicitly calling the destructor of the base type.
 // NOLINTNEXTLINE(cppcoreguidelines-special-member-functions, hicpp-special-member-functions)
-struct AndThenWithValue
-{
+struct AndThenWithValue {
     using and_then_callback_t = function_ref<void(ValueType&)>;
     using const_and_then_callback_t = function_ref<void(const ValueType&)>;
 
@@ -197,8 +183,7 @@ template <typename Derived>
 // the only adaptation is that the dtor is protected to prohibit the user deleting the child type by
 // explicitly calling the destructor of the base type.
 // NOLINTNEXTLINE(cppcoreguidelines-special-member-functions, hicpp-special-member-functions)
-struct AndThen
-{
+struct AndThen {
     using and_then_callback_t = function_ref<void()>;
 
     /// @brief Calls the provided callable when the object is valid. If the object is not
@@ -235,8 +220,7 @@ template <typename Derived, typename ErrorType>
 // the only adaptation is that the dtor is protected to prohibit the user deleting the child type by
 // explicitly calling the destructor of the base type.
 // NOLINTNEXTLINE(cppcoreguidelines-special-member-functions, hicpp-special-member-functions)
-struct OrElseWithValue
-{
+struct OrElseWithValue {
     using or_else_callback_t = function_ref<void(ErrorType&)>;
     using const_or_else_callback_t = function_ref<void(const ErrorType&)>;
 
@@ -287,8 +271,7 @@ template <typename Derived>
 // the only adaptation is that the dtor is protected to prohibit the user deleting the child type by
 // explicitly calling the destructor of the base type.
 // NOLINTNEXTLINE(cppcoreguidelines-special-member-functions, hicpp-special-member-functions)
-struct OrElse
-{
+struct OrElse {
     using or_else_callback_t = function_ref<void()>;
 
     /// @brief Calls the provided callable when the object is invalid. If the object is valid,
@@ -336,8 +319,7 @@ template <typename Derived, typename ValueType, typename ErrorType>
 struct FunctionalInterfaceImpl : public ExpectWithValue<Derived, ValueType>,
                                  public ValueOr<Derived, ValueType>,
                                  public AndThenWithValue<Derived, ValueType>,
-                                 public OrElseWithValue<Derived, ErrorType>
-{
+                                 public OrElseWithValue<Derived, ErrorType> {
   protected:
     ~FunctionalInterfaceImpl() = default;
 };
@@ -357,8 +339,7 @@ template <typename Derived>
 // explicitly calling the destructor of the base type.
 // NOLINTNEXTLINE(cppcoreguidelines-special-member-functions, hicpp-special-member-functions)
 struct FunctionalInterfaceImpl<Derived, void, void>
-    : public Expect<Derived>, public AndThen<Derived>, public OrElse<Derived>
-{
+    : public Expect<Derived>, public AndThen<Derived>, public OrElse<Derived> {
   protected:
     ~FunctionalInterfaceImpl() = default;
 };
@@ -380,8 +361,7 @@ template <typename Derived, typename ValueType>
 struct FunctionalInterfaceImpl<Derived, ValueType, void> : public ExpectWithValue<Derived, ValueType>,
                                                            public ValueOr<Derived, ValueType>,
                                                            public AndThenWithValue<Derived, ValueType>,
-                                                           public OrElse<Derived>
-{
+                                                           public OrElse<Derived> {
   protected:
     ~FunctionalInterfaceImpl() = default;
 };
@@ -401,8 +381,7 @@ template <typename Derived, typename ErrorType>
 // explicitly calling the destructor of the base type.
 // NOLINTNEXTLINE(cppcoreguidelines-special-member-functions, hicpp-special-member-functions)
 struct FunctionalInterfaceImpl<Derived, void, ErrorType>
-    : public Expect<Derived>, public AndThen<Derived>, public OrElseWithValue<Derived, ErrorType>
-{
+    : public Expect<Derived>, public AndThen<Derived>, public OrElseWithValue<Derived, ErrorType> {
   protected:
     ~FunctionalInterfaceImpl() = default;
 };

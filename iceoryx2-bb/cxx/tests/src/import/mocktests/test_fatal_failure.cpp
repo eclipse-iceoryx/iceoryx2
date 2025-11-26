@@ -19,13 +19,11 @@
 
 #include "test.hpp"
 
-namespace
-{
+namespace {
 using namespace ::testing;
 using namespace ::iox::testing;
 
-TEST(FatalFailure, UsingExpectFatalFailureWorks)
-{
+TEST(FatalFailure, UsingExpectFatalFailureWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "26393210-9738-462f-9d35-dbd53fbae9d2");
 
     auto hasFatalFailure = IOX_EXPECT_FATAL_FAILURE([&] { IOX_ENFORCE(false, ""); }, iox::er::ENFORCE_VIOLATION);
@@ -33,11 +31,10 @@ TEST(FatalFailure, UsingExpectFatalFailureWorks)
     EXPECT_TRUE(hasFatalFailure);
 }
 
-TEST(FatalFailure, UsingExpectNoFatalFailureWorks)
-{
+TEST(FatalFailure, UsingExpectNoFatalFailureWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "80bf8050-bfaa-4482-b69c-d0c80699bd4b");
 
-    auto hasNoFatalFailure = IOX_EXPECT_NO_FATAL_FAILURE([&] {});
+    auto hasNoFatalFailure = IOX_EXPECT_NO_FATAL_FAILURE([&] { });
 
     EXPECT_TRUE(hasNoFatalFailure);
 }

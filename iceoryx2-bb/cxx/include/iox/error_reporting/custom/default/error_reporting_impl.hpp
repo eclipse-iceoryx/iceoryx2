@@ -25,10 +25,8 @@
 #include "iox/error_reporting/custom/default/error_handler.hpp"
 #include "iox/error_reporting/custom/error_kind.hpp"
 
-namespace iox
-{
-namespace er
-{
+namespace iox {
+namespace er {
 
 // The static reporting interface that must be defined to at least do nothing.
 // It should provide a noreturn specification for panic (but since it be assumed that the custom
@@ -43,16 +41,14 @@ namespace er
 // The logging can be extended in the future.
 
 // Custom panic
-[[noreturn]] inline void panic()
-{
+[[noreturn]] inline void panic() {
     auto& h = ErrorHandler::get();
     h.onPanic();
     abort();
 }
 
 // Custom panic with location
-[[noreturn]] inline void panic(const SourceLocation& location)
-{
+[[noreturn]] inline void panic(const SourceLocation& location) {
     IOX_ERROR_INTERNAL_LOG_PANIC(location, "[PANIC]");
     panic();
 }
@@ -62,18 +58,14 @@ namespace er
 // beyond const char*
 template <class Message>
 // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward) false positive, this is used as a universal reference
-[[noreturn]] inline void panic(const SourceLocation& location, Message&& msg)
-{
+[[noreturn]] inline void panic(const SourceLocation& location, Message&& msg) {
     IOX_ERROR_INTERNAL_LOG_PANIC(location, "[PANIC] " << msg);
     panic();
 }
 
-namespace detail
-{
-inline log::LogStream& logStringifiedCondition(log::LogStream& stream, const char* stringifiedCondition)
-{
-    if (stringifiedCondition != nullptr && strnlen(stringifiedCondition, 1) != 0)
-    {
+namespace detail {
+inline log::LogStream& logStringifiedCondition(log::LogStream& stream, const char* stringifiedCondition) {
+    if (stringifiedCondition != nullptr && strnlen(stringifiedCondition, 1) != 0) {
         stream << "Conditiopn: \"" << stringifiedCondition << "\" ";
     }
     return stream;
@@ -82,8 +74,7 @@ inline log::LogStream& logStringifiedCondition(log::LogStream& stream, const cha
 
 // Report any error, general version.
 template <class Kind, class Error>
-inline void report(const SourceLocation& location, Kind, const Error& error, const char* stringifiedCondition)
-{
+inline void report(const SourceLocation& location, Kind, const Error& error, const char* stringifiedCondition) {
     auto code = toCode(error);
     auto module = toModule(error);
     auto moduleName = toModuleName(error);
@@ -106,8 +97,7 @@ inline void report(const SourceLocation& location, Kind, const Error& error, con
 
 template <class Error>
 inline void
-report(const SourceLocation& location, iox::er::FatalKind kind, const Error& error, const char* stringifiedCondition)
-{
+report(const SourceLocation& location, iox::er::FatalKind kind, const Error& error, const char* stringifiedCondition) {
     auto code = toCode(error);
     auto module = toModule(error);
     auto moduleName = toModuleName(error);
@@ -123,13 +113,11 @@ report(const SourceLocation& location, iox::er::FatalKind kind, const Error& err
     h.onReportError(ErrorDescriptor(location, code, module));
 }
 
-namespace detail
-{
+namespace detail {
 template <class Kind, class Error>
 inline void
 // NOLINTNEXTLINE(readability-function-size) Not used directly but via a macro which hides the number of parameter away
-report(const SourceLocation& location, Kind kind, const Error& error, const char* stringifiedCondition)
-{
+report(const SourceLocation& location, Kind kind, const Error& error, const char* stringifiedCondition) {
     auto code = toCode(error);
     auto module = toModule(error);
     IOX_ERROR_INTERNAL_LOG_FATAL(location,
@@ -144,8 +132,7 @@ report(const SourceLocation& location, Kind kind, const Error& error, const char
 template <class Kind, class Error, class Message>
 inline void
 // NOLINTNEXTLINE(readability-function-size) Not used directly but via a macro which hides the number of parameter away
-report(const SourceLocation& location, Kind kind, const Error& error, const char* stringifiedCondition, Message&& msg)
-{
+report(const SourceLocation& location, Kind kind, const Error& error, const char* stringifiedCondition, Message&& msg) {
     auto code = toCode(error);
     auto module = toModule(error);
     IOX_ERROR_INTERNAL_LOG_FATAL(location,
@@ -162,8 +149,7 @@ template <class Error>
 inline void report(const SourceLocation& location,
                    iox::er::AssertViolationKind kind,
                    const Error& error,
-                   const char* stringifiedCondition)
-{
+                   const char* stringifiedCondition) {
     detail::report(location, kind, error, stringifiedCondition);
 }
 
@@ -171,8 +157,7 @@ template <class Error>
 inline void report(const SourceLocation& location,
                    iox::er::EnforceViolationKind kind,
                    const Error& error,
-                   const char* stringifiedCondition)
-{
+                   const char* stringifiedCondition) {
     detail::report(location, kind, error, stringifiedCondition);
 }
 
@@ -182,8 +167,7 @@ inline void report(const SourceLocation& location,
                    iox::er::AssertViolationKind kind,
                    const Error& error,
                    const char* stringifiedCondition,
-                   Message&& msg)
-{
+                   Message&& msg) {
     detail::report(location, kind, error, stringifiedCondition, std::forward<Message>(msg));
 }
 
@@ -193,8 +177,7 @@ inline void report(const SourceLocation& location,
                    iox::er::EnforceViolationKind kind,
                    const Error& error,
                    const char* stringifiedCondition,
-                   Message&& msg)
-{
+                   Message&& msg) {
     detail::report(location, kind, error, stringifiedCondition, std::forward<Message>(msg));
 }
 

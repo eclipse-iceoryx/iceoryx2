@@ -19,8 +19,7 @@
 #include "iox/functional_interface.hpp"
 #include "test.hpp"
 
-namespace test_design_functional_interface
-{
+namespace test_design_functional_interface {
 /// @brief Every test file uses this as a common base and extends the TYPED_TEST
 ///        for a specific part of the functional interface.
 ///
@@ -30,13 +29,11 @@ namespace test_design_functional_interface
 ///        for its specific type and then can add its type to the typelist and
 ///        the tests are generated for them.
 template <typename T>
-class FunctionalInterface_test : public testing::Test
-{
+class FunctionalInterface_test : public testing::Test {
   public:
     using TestFactoryType = T;
 
-    void SetUp() override
-    {
+    void SetUp() override {
         // Whenever we start the next test case we inform the factory of our
         // test types that we started a new test.
         // This enables the factory to vary the underlying value/error values
@@ -44,15 +41,13 @@ class FunctionalInterface_test : public testing::Test
         TestFactoryType::configureNextTestCase();
     }
 
-    void TearDown() override
-    {
+    void TearDown() override {
     }
 };
 
 /// @brief This types is used for testing the functional interface in the case
 ///        of a 'value' and a 'error' method
-struct GenericValueError : public iox::FunctionalInterface<GenericValueError, int, int>
-{
+struct GenericValueError : public iox::FunctionalInterface<GenericValueError, int, int> {
     using value_t = int;
     using error_t = int;
 
@@ -79,8 +74,7 @@ struct GenericValueError : public iox::FunctionalInterface<GenericValueError, in
 
 /// @brief This types is used for testing the functional interface in the case
 ///        that it is only nullable
-struct GenericPlain : public iox::FunctionalInterface<GenericPlain, void, void>
-{
+struct GenericPlain : public iox::FunctionalInterface<GenericPlain, void, void> {
     static constexpr int VALID_VALUE = 5;
     static constexpr int INVALID_VALUE = 0;
 

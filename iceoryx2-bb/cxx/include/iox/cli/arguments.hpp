@@ -22,10 +22,8 @@
 #include "iox/expected.hpp"
 #include "iox/vector.hpp"
 
-namespace iox
-{
-namespace cli
-{
+namespace iox {
+namespace cli {
 /// @brief This class provides access to the command line argument values.
 ///        When constructed with the default constructor it is empty. Calling
 ///        CommandLineParser::parse creates and returns a populated Arguments
@@ -33,11 +31,9 @@ namespace cli
 ///        This class should never be used directly. Use the CommandLine builder
 ///        from 'iox/cli_definition.hpp' to create a struct which contains
 ///        the values.
-class Arguments
-{
+class Arguments {
   public:
-    enum class Error : uint8_t
-    {
+    enum class Error : uint8_t {
         UNABLE_TO_CONVERT_VALUE,
         NO_SUCH_VALUE
     };

@@ -19,15 +19,11 @@
 
 #include "iox/log/logstream.hpp"
 
-namespace iox
-{
-namespace log
-{
-namespace internal
-{
+namespace iox {
+namespace log {
+namespace internal {
 /// @brief Convenience function for the IOX_LOG_INTERNAL macro
-inline bool isLogLevelActive(LogLevel logLevel) noexcept
-{
+inline bool isLogLevelActive(LogLevel logLevel) noexcept {
     // AXIVION Next Construct FaultDetection-DeadBranches this is a configurable compile time option to be able to
     // optimize the logger call away during compilation and intended
     // AXIVION Next Construct AutosarC++19_03-M0.1.2 see justification for FaultDetection-DeadBranches
@@ -45,12 +41,11 @@ inline bool isLogLevelActive(LogLevel logLevel) noexcept
 // NOLINTBEGIN(cppcoreguidelines-macro-usage)
 // NOLINTBEGIN(bugprone-macro-parentheses) 'msg_stream' cannot be wrapped in parentheses due to the '<<' operator
 #define IOX_LOG_INTERNAL(file, line, function, level, msg_stream)                                                      \
-    if (iox::log::internal::isLogLevelActive(level))                                                                   \
-    {                                                                                                                  \
+    if (iox::log::internal::isLogLevelActive(level)) {                                                                 \
         iox::log::LogStream(file, line, function, level).self() << msg_stream;                                         \
     }                                                                                                                  \
-    [] {}() // the empty lambda forces a semicolon on the caller side
-            // NOLINTEND(bugprone-macro-parentheses)
+    [] { }() // the empty lambda forces a semicolon on the caller side
+             // NOLINTEND(bugprone-macro-parentheses)
 
 /// @brief Macro for logging
 /// @param[in] level is the log level to be used for the log message

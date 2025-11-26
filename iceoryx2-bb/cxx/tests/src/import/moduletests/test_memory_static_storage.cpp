@@ -30,25 +30,20 @@ using namespace iox;
 // the actual size will be some multiple of a power of 2 larger than MinSize
 // decided by the compiler
 template <uint32_t Size, uint32_t Align = 1U>
-struct alignas(Align) Bytes
-{
+struct alignas(Align) Bytes {
     // NOLINTJUSTIFICATION required to provide raw memory in tests
     // NOLINTNEXTLINE(hicpp-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
     uint8_t data[Size] = {};
 
-    void set(uint8_t value)
-    {
+    void set(uint8_t value) {
         memset(&data[0], value, Size);
     }
 
-    bool hasValue(uint8_t value)
-    {
-        for (uint32_t i = 0; i < Size; ++i)
-        {
+    bool hasValue(uint8_t value) {
+        for (uint32_t i = 0; i < Size; ++i) {
             // NOLINTJUSTIFICATION verify content of memory
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
-            if (data[i] != value)
-            {
+            if (data[i] != value) {
                 return false;
             }
         }
@@ -56,17 +51,14 @@ struct alignas(Align) Bytes
     }
 };
 
-namespace
-{
-TEST(static_storage_test, CapacityIsConsistent)
-{
+namespace {
+TEST(static_storage_test, CapacityIsConsistent) {
     ::testing::Test::RecordProperty("TEST_ID", "0b533f98-4a17-4480-bf53-9c44256a0d3c");
     constexpr uint64_t CAPACITY = 16;
     EXPECT_EQ(static_storage<CAPACITY>::capacity(), CAPACITY);
 }
 
-TEST(static_storage_test, IsAllocatableWithoutAlignmentRestriction)
-{
+TEST(static_storage_test, IsAllocatableWithoutAlignmentRestriction) {
     ::testing::Test::RecordProperty("TEST_ID", "62ad55d1-1505-43ec-9af0-3a73333515aa");
     using Data = Bytes<16, 1>;
     EXPECT_EQ(sizeof(Data), 16);
@@ -74,15 +66,13 @@ TEST(static_storage_test, IsAllocatableWithoutAlignmentRestriction)
     EXPECT_TRUE(static_storage<16>::is_allocatable<Data>());
 }
 
-TEST(static_storage_test, IsNotAllocatableWithoutAlignmentRestriction)
-{
+TEST(static_storage_test, IsNotAllocatableWithoutAlignmentRestriction) {
     ::testing::Test::RecordProperty("TEST_ID", "000f64bc-2f02-4f58-97d2-112464b09e5b");
     using Data = Bytes<16, 1>;
     EXPECT_FALSE(static_storage<15>::is_allocatable<Data>());
 }
 
-TEST(static_storage_test, IsAllocatableWithAlignmentRestriction)
-{
+TEST(static_storage_test, IsAllocatableWithAlignmentRestriction) {
     ::testing::Test::RecordProperty("TEST_ID", "baba3141-3c3f-42f3-982c-1763410becb7");
     using Data = Bytes<16, 4>;
     EXPECT_EQ(sizeof(Data), 16);
@@ -90,45 +80,39 @@ TEST(static_storage_test, IsAllocatableWithAlignmentRestriction)
     EXPECT_TRUE(static_storage<19>::is_allocatable<Data>());
 }
 
-TEST(static_storage_test, IsNotAllocatableWithAlignmentRestriction)
-{
+TEST(static_storage_test, IsNotAllocatableWithAlignmentRestriction) {
     ::testing::Test::RecordProperty("TEST_ID", "ca960e9a-a6d8-4fc4-b57a-cb2c665adffd");
     using Data = Bytes<16, 4>;
     EXPECT_FALSE(static_storage<18>::is_allocatable<Data>());
 }
 
-TEST(static_storage_test, IsAllocatableWithDifferentAlignment)
-{
+TEST(static_storage_test, IsAllocatableWithDifferentAlignment) {
     ::testing::Test::RecordProperty("TEST_ID", "66341003-4ec2-4990-8321-7df49eb5e79f");
     using Data = Bytes<16, 4>;
     const bool result = static_storage<18, 2>::is_allocatable<Data>();
     EXPECT_TRUE(result);
 }
 
-TEST(static_storage_test, IsNotAllocatableWithDifferentAlignment)
-{
+TEST(static_storage_test, IsNotAllocatableWithDifferentAlignment) {
     ::testing::Test::RecordProperty("TEST_ID", "17e4b597-fe98-4b76-93df-c792d61453ff");
     using Data = Bytes<16, 4>;
     const bool result = static_storage<17, 2>::is_allocatable<Data>();
     EXPECT_FALSE(result);
 }
 
-TEST(static_storage_test, AllocateSucceedsIfSizeIsSufficient)
-{
+TEST(static_storage_test, AllocateSucceedsIfSizeIsSufficient) {
     ::testing::Test::RecordProperty("TEST_ID", "7e1bc0e1-a2f3-46d5-ba6a-5b05dcf50df0");
     static_storage<18, 2> sut;
     EXPECT_NE(sut.allocate(16, 4), nullptr);
 }
 
-TEST(static_storage_test, AllocateFailsIfSizeIsInsufficient)
-{
+TEST(static_storage_test, AllocateFailsIfSizeIsInsufficient) {
     ::testing::Test::RecordProperty("TEST_ID", "164dde97-c0a4-44d9-b6cc-3fd57611c15d");
     static_storage<17, 2> sut;
     EXPECT_NE(sut.allocate(16, 4), nullptr);
 }
 
-TEST(static_storage_test, TypedAllocateSucceedsIfSizeIsSufficient)
-{
+TEST(static_storage_test, TypedAllocateSucceedsIfSizeIsSufficient) {
     ::testing::Test::RecordProperty("TEST_ID", "7fcc223e-9247-4446-a55c-bede75b15257");
     using Data = Bytes<16, 4>;
     static_storage<18, 2> sut;
@@ -137,16 +121,14 @@ TEST(static_storage_test, TypedAllocateSucceedsIfSizeIsSufficient)
     // therefore cannot be tested
 }
 
-TEST(static_storage_test, DoubleAllocateFails)
-{
+TEST(static_storage_test, DoubleAllocateFails) {
     ::testing::Test::RecordProperty("TEST_ID", "aa935996-284c-4c7f-a738-04cf66017d9c");
     static_storage<18, 2> sut;
     sut.allocate(16, 4);
     EXPECT_EQ(sut.allocate(16, 4), nullptr);
 }
 
-TEST(static_storage_test, DoubleTypedAllocateFails)
-{
+TEST(static_storage_test, DoubleTypedAllocateFails) {
     ::testing::Test::RecordProperty("TEST_ID", "04847320-17ea-4532-8b1f-3fb9a2024998");
     using Data = Bytes<16, 4>;
     static_storage<18, 2> sut;
@@ -154,8 +136,7 @@ TEST(static_storage_test, DoubleTypedAllocateFails)
     EXPECT_EQ(sut.allocate<Data>(), nullptr);
 }
 
-TEST(static_storage_test, AllocateAfterDeallocateSucceeds)
-{
+TEST(static_storage_test, AllocateAfterDeallocateSucceeds) {
     ::testing::Test::RecordProperty("TEST_ID", "75904d93-d2dd-4df4-88e0-0e35925ec51c");
     static_storage<18, 2> sut;
     sut.allocate(16, 4);
@@ -163,8 +144,7 @@ TEST(static_storage_test, AllocateAfterDeallocateSucceeds)
     EXPECT_NE(sut.allocate(16, 4), nullptr);
 }
 
-TEST(static_storage_test, TypedAllocateAfterDeallocateSucceeds)
-{
+TEST(static_storage_test, TypedAllocateAfterDeallocateSucceeds) {
     ::testing::Test::RecordProperty("TEST_ID", "b0287c9b-389e-4e8c-974f-b33166c29e16");
     using Data = Bytes<16, 4>;
     static_storage<18, 2> sut;
@@ -173,8 +153,7 @@ TEST(static_storage_test, TypedAllocateAfterDeallocateSucceeds)
     EXPECT_NE(sut.allocate<Data>(), nullptr);
 }
 
-TEST(static_storage_test, ClearSetsStorageBytesToZeroIfThereIsNoObjectStored)
-{
+TEST(static_storage_test, ClearSetsStorageBytesToZeroIfThereIsNoObjectStored) {
     ::testing::Test::RecordProperty("TEST_ID", "debd1562-2b68-485b-a5df-d38ecf50e3ef");
     using Data = Bytes<16, 4>;
     static_storage<18, 2> sut;
@@ -188,8 +167,7 @@ TEST(static_storage_test, ClearSetsStorageBytesToZeroIfThereIsNoObjectStored)
     EXPECT_TRUE(data->hasValue(0));
 }
 
-TEST(static_storage_test, ClearHasNoEffectIfThereIsAnObjectStored)
-{
+TEST(static_storage_test, ClearHasNoEffectIfThereIsAnObjectStored) {
     ::testing::Test::RecordProperty("TEST_ID", "8882ef4d-92df-4370-9f84-5b6ead3d6d2c");
     using Data = Bytes<16, 4>;
     static_storage<18, 2> sut;
@@ -202,8 +180,7 @@ TEST(static_storage_test, ClearHasNoEffectIfThereIsAnObjectStored)
     EXPECT_TRUE(data->hasValue(37));
 }
 
-TEST(static_storage_test, AllocationIsAligned)
-{
+TEST(static_storage_test, AllocationIsAligned) {
     ::testing::Test::RecordProperty("TEST_ID", "645c0194-7aea-4f9c-b379-212fbcaa05f7");
     static_storage<17, 2> sut;
     // NOLINTJUSTIFICATION required for testing
@@ -212,8 +189,7 @@ TEST(static_storage_test, AllocationIsAligned)
     EXPECT_EQ(p % 4, 0);
 }
 
-TEST(static_storage_test, TypedAllocationIsAligned)
-{
+TEST(static_storage_test, TypedAllocationIsAligned) {
     ::testing::Test::RecordProperty("TEST_ID", "bb990529-2721-4db8-8b17-02719021210e");
     using Data = Bytes<4, 8>;
     static_storage<17, 2> sut;
@@ -223,8 +199,7 @@ TEST(static_storage_test, TypedAllocationIsAligned)
     EXPECT_EQ(p % 8, 0);
 }
 
-TEST(static_storage_test, AllocationSizeReturnsSizeIfTypeIsAlignedWithStorage)
-{
+TEST(static_storage_test, AllocationSizeReturnsSizeIfTypeIsAlignedWithStorage) {
     ::testing::Test::RecordProperty("TEST_ID", "22106a23-2bd4-40ef-9a1c-112f91f254da");
     constexpr uint64_t typeAlign = 2;
     constexpr uint64_t storageAlign = 2 * typeAlign;
@@ -234,8 +209,7 @@ TEST(static_storage_test, AllocationSizeReturnsSizeIfTypeIsAlignedWithStorage)
     EXPECT_EQ(size, sizeof(Data));
 }
 
-TEST(static_storage_test, AllocationSizeReturnsMoreThanSizeIfTypeIsNotAlignedWithStorage)
-{
+TEST(static_storage_test, AllocationSizeReturnsMoreThanSizeIfTypeIsNotAlignedWithStorage) {
     ::testing::Test::RecordProperty("TEST_ID", "76f41902-fa90-481b-bca8-2a897b3ce7c7");
     constexpr uint64_t typeAlign = 16;
     constexpr uint64_t storageAlign = 4;

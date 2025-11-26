@@ -20,50 +20,43 @@
 
 #include <algorithm>
 
-namespace iox
-{
-namespace cli
-{
-Arguments
-parseCommandLineArguments(const OptionDefinition& optionSet, int argc, char** argv, const uint64_t argcOffset) noexcept
-{
+namespace iox {
+namespace cli {
+Arguments parseCommandLineArguments(const OptionDefinition& optionSet,
+                                    int argc,
+                                    char** argv,
+                                    const uint64_t argcOffset) noexcept {
     return CommandLineParser().parse(optionSet, argc, argv, argcOffset);
 }
 
-bool CommandLineParser::hasArguments(const uint64_t argc) const noexcept
-{
+bool CommandLineParser::hasArguments(const uint64_t argc) const noexcept {
     const bool hasArguments = (argc > 0);
-    if (!hasArguments)
-    {
+    if (!hasArguments) {
         printHelpAndExit();
     }
     return hasArguments;
 }
 
-bool CommandLineParser::doesOptionStartWithDash(const char* option) const noexcept
-{
+bool CommandLineParser::doesOptionStartWithDash(const char* option) const noexcept {
     // NOLINTJUSTIFICATION required for command line options; bounds are checked
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     const bool doesOptionStartWithDash = (strnlen(option, 1) > 0 && option[0] == '-');
 
-    if (!doesOptionStartWithDash)
-    {
+    if (!doesOptionStartWithDash) {
         std::cout << "Every option has to start with \"-\" but \"" << option << "\" does not." << std::endl;
         printHelpAndExit();
     }
     return doesOptionStartWithDash;
 }
 
-bool CommandLineParser::hasNonEmptyOptionName(const char* option) const noexcept
-{
+bool CommandLineParser::hasNonEmptyOptionName(const char* option) const noexcept {
     const uint64_t minArgIdentifierLength = strnlen(option, 3);
     const bool hasEmptyOptionName =
         // NOLINTJUSTIFICATION required for command line options; bounds are checked
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         minArgIdentifierLength == 1 || (minArgIdentifierLength == 2 && option[1] == '-');
 
-    if (hasEmptyOptionName)
-    {
+    if (hasEmptyOptionName) {
         std::cout << "Empty option names are forbidden" << std::endl;
         printHelpAndExit();
     }
@@ -71,15 +64,13 @@ bool CommandLineParser::hasNonEmptyOptionName(const char* option) const noexcept
     return !hasEmptyOptionName;
 }
 
-bool CommandLineParser::doesNotHaveLongOptionDash(const char* option) const noexcept
-{
+bool CommandLineParser::doesNotHaveLongOptionDash(const char* option) const noexcept {
     const uint64_t minArgIdentifierLength = strnlen(option, 3);
     // NOLINTJUSTIFICATION required for command line options; bounds are checked
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     const bool doesHaveLongOptionDash = minArgIdentifierLength > 2 && option[1] != '-';
 
-    if (doesHaveLongOptionDash)
-    {
+    if (doesHaveLongOptionDash) {
         std::cout << "Only one letter allowed when using a short option name. The switch \"" << option
                   << "\" is not valid." << std::endl;
         printHelpAndExit();
@@ -87,15 +78,13 @@ bool CommandLineParser::doesNotHaveLongOptionDash(const char* option) const noex
     return !doesHaveLongOptionDash;
 }
 
-bool CommandLineParser::doesNotExceedLongOptionDash(const char* option) const noexcept
-{
+bool CommandLineParser::doesNotExceedLongOptionDash(const char* option) const noexcept {
     const uint64_t minArgIdentifierLength = strnlen(option, 3);
     // NOLINTJUSTIFICATION required for command line options; bounds are checked
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     const bool doesExceedLongOptionDash = minArgIdentifierLength > 2 && option[2] == '-';
 
-    if (doesExceedLongOptionDash)
-    {
+    if (doesExceedLongOptionDash) {
         std::cout << "A long option name should start after \"--\". This \"" << option << "\" is not valid."
                   << std::endl;
         printHelpAndExit();
@@ -103,17 +92,14 @@ bool CommandLineParser::doesNotExceedLongOptionDash(const char* option) const no
     return !doesExceedLongOptionDash;
 }
 
-bool CommandLineParser::doesFitIntoString(const char* value, const uint64_t maxLength) noexcept
-{
+bool CommandLineParser::doesFitIntoString(const char* value, const uint64_t maxLength) noexcept {
     return (strnlen(value, static_cast<size_t>(maxLength) + 1) <= maxLength);
 }
 
-bool CommandLineParser::doesOptionNameFitIntoString(const char* option) const noexcept
-{
+bool CommandLineParser::doesOptionNameFitIntoString(const char* option) const noexcept {
     const bool doesOptionNameFitIntoString = doesFitIntoString(option, MAX_OPTION_NAME_LENGTH);
 
-    if (!doesOptionNameFitIntoString)
-    {
+    if (!doesOptionNameFitIntoString) {
         std::cout << "\"" << option << "\" is longer then the maximum supported size of " << MAX_OPTION_NAME_LENGTH
                   << " for option names." << std::endl;
         printHelpAndExit();
@@ -121,8 +107,7 @@ bool CommandLineParser::doesOptionNameFitIntoString(const char* option) const no
     return doesOptionNameFitIntoString;
 }
 
-bool CommandLineParser::isNextArgumentAValue(const uint64_t position) const noexcept
-{
+bool CommandLineParser::isNextArgumentAValue(const uint64_t position) const noexcept {
     uint64_t nextPosition = position + 1;
     return (m_argc > 0
             && m_argc > nextPosition
@@ -131,20 +116,16 @@ bool CommandLineParser::isNextArgumentAValue(const uint64_t position) const noex
             && (strnlen(m_argv[nextPosition], MAX_OPTION_NAME_LENGTH) > 0 && m_argv[nextPosition][0] != '-'));
 }
 
-bool CommandLineParser::isOptionSet(const OptionWithDetails& entry) const noexcept
-{
+bool CommandLineParser::isOptionSet(const OptionWithDetails& entry) const noexcept {
     bool isOptionSet = false;
-    for (const auto& option : m_optionValue.m_arguments)
-    {
-        if (option.isSameOption(entry))
-        {
+    for (const auto& option : m_optionValue.m_arguments) {
+        if (option.isSameOption(entry)) {
             isOptionSet = true;
             break;
         }
     }
 
-    if (isOptionSet)
-    {
+    if (isOptionSet) {
         std::cout << "The option \"" << entry << "\" is already set!" << std::endl;
         printHelpAndExit();
     }
@@ -152,12 +133,10 @@ bool CommandLineParser::isOptionSet(const OptionWithDetails& entry) const noexce
     return isOptionSet;
 }
 
-bool CommandLineParser::doesOptionValueFitIntoString(const char* value) const noexcept
-{
+bool CommandLineParser::doesOptionValueFitIntoString(const char* value) const noexcept {
     const bool doesOptionValueFitIntoString = doesFitIntoString(value, MAX_OPTION_ARGUMENT_LENGTH);
 
-    if (!doesOptionValueFitIntoString)
-    {
+    if (!doesOptionValueFitIntoString) {
         std::cout << "\"" << value << "\" is longer then the maximum supported size of " << MAX_OPTION_ARGUMENT_LENGTH
                   << " for option values." << std::endl;
         printHelpAndExit();
@@ -166,15 +145,13 @@ bool CommandLineParser::doesOptionValueFitIntoString(const char* value) const no
     return doesOptionValueFitIntoString;
 }
 
-bool CommandLineParser::hasLexicallyValidOption(const char* value) const noexcept
-{
+bool CommandLineParser::hasLexicallyValidOption(const char* value) const noexcept {
     return doesOptionStartWithDash(value) && hasNonEmptyOptionName(value) && doesNotHaveLongOptionDash(value)
            && doesNotExceedLongOptionDash(value) && doesOptionNameFitIntoString(value);
 }
 
 Arguments
-CommandLineParser::parse(const OptionDefinition& optionSet, int argc, char** argv, const uint64_t argcOffset) noexcept
-{
+CommandLineParser::parse(const OptionDefinition& optionSet, int argc, char** argv, const uint64_t argcOffset) noexcept {
     m_optionSet = &optionSet;
 
     m_argc = static_cast<uint64_t>(algorithm::maxVal(0, argc));
@@ -183,8 +160,7 @@ CommandLineParser::parse(const OptionDefinition& optionSet, int argc, char** arg
     // reset options otherwise multiple parse calls work on already parsed options
     m_optionValue = Arguments();
 
-    if (!hasArguments(m_argc))
-    {
+    if (!hasArguments(m_argc)) {
         return m_optionValue;
     }
 
@@ -192,45 +168,36 @@ CommandLineParser::parse(const OptionDefinition& optionSet, int argc, char** arg
     // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     m_optionValue.m_binaryName = m_argv[0];
 
-    for (uint64_t i = algorithm::maxVal(argcOffset, static_cast<uint64_t>(1U)); i < m_argc; ++i)
-    {
+    for (uint64_t i = algorithm::maxVal(argcOffset, static_cast<uint64_t>(1U)); i < m_argc; ++i) {
         const auto skipCommandLineArgument = [&] { ++i; };
 
-        if (!hasLexicallyValidOption(m_argv[i]))
-        {
+        if (!hasLexicallyValidOption(m_argv[i])) {
             return m_optionValue;
         }
 
         uint64_t optionNameStart = (m_argv[i][1] == '-') ? 2 : 1;
         auto optionEntry = m_optionSet->getOption(OptionName_t(TruncateToCapacity, m_argv[i] + optionNameStart));
 
-        if (!optionEntry)
-        {
+        if (!optionEntry) {
             std::cout << "Unknown option \"" << m_argv[i] << "\"" << std::endl;
             printHelpAndExit();
             return m_optionValue;
         }
 
-        if (isOptionSet(*optionEntry))
-        {
+        if (isOptionSet(*optionEntry)) {
             return m_optionValue;
         }
 
-        if (optionEntry->details.type == OptionType::Switch)
-        {
+        if (optionEntry->details.type == OptionType::Switch) {
             m_optionValue.m_arguments.emplace_back(*optionEntry);
             m_optionValue.m_arguments.back().value.clear();
             m_optionValue.m_arguments.back().isSwitch = true;
-        }
-        else
-        {
-            if (!doesOptionHasSucceedingValue(*optionEntry, i))
-            {
+        } else {
+            if (!doesOptionHasSucceedingValue(*optionEntry, i)) {
                 return m_optionValue;
             }
 
-            if (!doesOptionValueFitIntoString(m_argv[i + 1]))
-            {
+            if (!doesOptionValueFitIntoString(m_argv[i + 1])) {
                 return m_optionValue;
             }
 
@@ -244,8 +211,7 @@ CommandLineParser::parse(const OptionDefinition& optionSet, int argc, char** arg
 
     setDefaultValuesToUnsetOptions();
 
-    if (m_optionValue.isSwitchSet("help") || !areAllRequiredValuesPresent())
-    {
+    if (m_optionValue.isSwitchSet("help") || !areAllRequiredValuesPresent()) {
         printHelpAndExit();
         return m_optionValue;
     }
@@ -254,11 +220,9 @@ CommandLineParser::parse(const OptionDefinition& optionSet, int argc, char** arg
 }
 
 bool CommandLineParser::doesOptionHasSucceedingValue(const OptionWithDetails& entry,
-                                                     const uint64_t position) const noexcept
-{
+                                                     const uint64_t position) const noexcept {
     bool doesOptionHasSucceedingValue = (position + 1 < m_argc);
-    if (!doesOptionHasSucceedingValue)
-    {
+    if (!doesOptionHasSucceedingValue) {
         std::cout << "The option \"" << entry << "\" must be followed by a value!" << std::endl;
         printHelpAndExit();
     }
@@ -268,48 +232,37 @@ bool CommandLineParser::doesOptionHasSucceedingValue(const OptionWithDetails& en
 
 void CommandLineParser::setDefaultValuesToUnsetOptions() noexcept // rename
 {
-    for (const auto& availableOption : m_optionSet->m_availableOptions)
-    {
-        if (availableOption.details.type != OptionType::Optional)
-        {
+    for (const auto& availableOption : m_optionSet->m_availableOptions) {
+        if (availableOption.details.type != OptionType::Optional) {
             continue;
         }
 
         bool isOptionAlreadySet = false;
-        for (auto& option : m_optionValue.m_arguments)
-        {
-            if (option.isSameOption(availableOption))
-            {
+        for (auto& option : m_optionValue.m_arguments) {
+            if (option.isSameOption(availableOption)) {
                 isOptionAlreadySet = true;
                 break;
             }
         }
 
-        if (!isOptionAlreadySet)
-        {
+        if (!isOptionAlreadySet) {
             m_optionValue.m_arguments.emplace_back(availableOption);
         }
     }
 }
 
-bool CommandLineParser::areAllRequiredValuesPresent() const noexcept
-{
+bool CommandLineParser::areAllRequiredValuesPresent() const noexcept {
     bool areAllRequiredValuesPresent = true;
-    for (const auto& availableOption : m_optionSet->m_availableOptions)
-    {
-        if (availableOption.details.type == OptionType::Required)
-        {
+    for (const auto& availableOption : m_optionSet->m_availableOptions) {
+        if (availableOption.details.type == OptionType::Required) {
             bool isValuePresent = false;
-            for (const auto& option : m_optionValue.m_arguments)
-            {
-                if (option.isSameOption(availableOption))
-                {
+            for (const auto& option : m_optionValue.m_arguments) {
+                if (option.isSameOption(availableOption)) {
                     isValuePresent = true;
                     break;
                 }
             }
-            if (!isValuePresent)
-            {
+            if (!isValuePresent) {
                 std::cout << "Required option \"" << availableOption << "\" is unset!" << std::endl;
                 areAllRequiredValuesPresent = false;
             }
@@ -319,12 +272,10 @@ bool CommandLineParser::areAllRequiredValuesPresent() const noexcept
     return areAllRequiredValuesPresent;
 }
 
-void CommandLineParser::printHelpAndExit() const noexcept
-{
+void CommandLineParser::printHelpAndExit() const noexcept {
     std::cout << "\n" << m_optionSet->m_programDescription << "\n" << std::endl;
     std::cout << "Usage: ";
-    for (uint64_t i = 0; i < m_argcOffset && i < m_argc; ++i)
-    {
+    for (uint64_t i = 0; i < m_argcOffset && i < m_argc; ++i) {
         // NOLINTJUSTIFICATION required for command line options; bounds are checked
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         std::cout << m_argv[i] << " ";
@@ -336,46 +287,38 @@ void CommandLineParser::printHelpAndExit() const noexcept
     auto sortedAvailableOptions = m_optionSet->m_availableOptions;
     std::sort(sortedAvailableOptions.begin(), sortedAvailableOptions.end());
 
-    for (const auto& option : sortedAvailableOptions)
-    {
+    for (const auto& option : sortedAvailableOptions) {
         uint64_t outLength = 4U;
         std::cout << "    ";
-        if (option.hasShortOption())
-        {
+        if (option.hasShortOption()) {
             std::cout << "-" << option.shortOption;
             outLength += 2;
         }
 
-        if (option.hasShortOption() && option.hasLongOption())
-        {
+        if (option.hasShortOption() && option.hasLongOption()) {
             std::cout << ", ";
             outLength += 2;
         }
 
-        if (option.hasLongOption())
-        {
+        if (option.hasLongOption()) {
             std::cout << "--" << option.longOption.c_str();
             outLength += 2 + option.longOption.size();
         }
 
-        if (option.details.type == OptionType::Required || option.details.type == OptionType::Optional)
-        {
+        if (option.details.type == OptionType::Required || option.details.type == OptionType::Optional) {
             std::cout << " [" << option.details.typeName << "]";
             outLength += 3 + option.details.typeName.size();
         }
 
         uint64_t spacing = (outLength + 1 < OPTION_OUTPUT_WIDTH) ? OPTION_OUTPUT_WIDTH - outLength : 2;
 
-        for (uint64_t i = 0; i < spacing; ++i)
-        {
+        for (uint64_t i = 0; i < spacing; ++i) {
             std::cout << " ";
         }
         std::cout << option.details.description << std::endl;
 
-        if (option.details.type == OptionType::Optional)
-        {
-            for (uint64_t i = 0; i < OPTION_OUTPUT_WIDTH; ++i)
-            {
+        if (option.details.type == OptionType::Optional) {
+            for (uint64_t i = 0; i < OPTION_OUTPUT_WIDTH; ++i) {
                 std::cout << " ";
             }
             std::cout << "default value = \'" << option.value << "\'" << std::endl;

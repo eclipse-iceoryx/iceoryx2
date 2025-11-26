@@ -25,8 +25,7 @@ using namespace ::testing;
 using namespace iox;
 
 template <typename T>
-class stringTyped_test : public Test
-{
+class stringTyped_test : public Test {
   protected:
     T testSubject;
 

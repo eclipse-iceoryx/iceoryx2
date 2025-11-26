@@ -25,10 +25,8 @@
 #include <cstring>
 #include <mutex>
 
-namespace iox
-{
-namespace log
-{
+namespace iox {
+namespace log {
 class LogStream;
 
 /// @todo iox-#1755 move this to e.g. helplets once we are able to depend on on it
@@ -50,8 +48,7 @@ bool equalStrings(const char* lhs, const char (&rhs)[N]) noexcept;
 /// the function should only be used in the startup phase of the application and only in the main thread.
 LogLevel logLevelFromEnvOr(const LogLevel logLevel) noexcept;
 
-namespace internal
-{
+namespace internal {
 /// @brief The backend for the platform logging frontend
 /// @copydoc IceoryxPlatformLogBackend
 /// @note Needs to be implemented in 'logging.cpp' in order to use the high level log API
@@ -62,8 +59,7 @@ void platform_log_backend(
 /// the BaseLogger which is provided as template parameter. Please have a look at the design document for more details.
 /// @tparam[in] BaseLogger is the actual implementation
 template <typename BaseLogger>
-class Logger : public BaseLogger
-{
+class Logger : public BaseLogger {
   public:
     friend class log::LogStream;
 
@@ -102,8 +98,8 @@ class Logger : public BaseLogger
     void initLoggerInternal(const LogLevel logLevel) noexcept;
 
   private:
-    concurrent::Atomic<bool> m_isActive{true};
-    concurrent::Atomic<bool> m_isFinalized{false};
+    concurrent::Atomic<bool> m_isActive { true };
+    concurrent::Atomic<bool> m_isFinalized { false };
 };
 
 } // namespace internal

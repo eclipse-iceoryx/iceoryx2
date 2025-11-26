@@ -18,13 +18,10 @@
 
 #include "iox/cli/types.hpp"
 
-namespace iox
-{
-namespace cli
-{
+namespace iox {
+namespace cli {
 /// @brief Represents a command line option
-struct Option
-{
+struct Option {
     /// @brief returns true when the name is either equal to the long or
     ///        short option
     /// @param[in] name the option name in question
@@ -86,8 +83,7 @@ struct OptionWithDetails : public Option // can this be melt together
     /// @param[in] rhs the other OptionWithDetails to which it should be compared
     bool operator<(const OptionWithDetails& rhs) const noexcept;
 
-    struct
-    {
+    struct {
         OptionDescription_t description;
         OptionType type = OptionType::Switch;
         TypeName_t typeName;

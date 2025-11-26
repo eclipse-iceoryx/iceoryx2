@@ -18,17 +18,14 @@
 
 #include <cstdlib>
 
-namespace iox
-{
-void* alignedAlloc(const size_t alignment, const size_t size) noexcept
-{
+namespace iox {
+void* alignedAlloc(const size_t alignment, const size_t size) noexcept {
     // -1 == since the max alignment addition is alignment - 1 otherwise the
     // memory is already aligned and we have to do nothing
     // low-level memory management, no other approach then to use malloc to acquire heap memory
     // NOLINTNEXTLINE(cppcoreguidelines-owning-memory,cppcoreguidelines-pro-type-reinterpret-cast,hicpp-no-malloc,cppcoreguidelines-no-malloc)
     auto memory = reinterpret_cast<size_t>(std::malloc(size + alignment + sizeof(void*) - 1));
-    if (memory == 0)
-    {
+    if (memory == 0) {
         return nullptr;
     }
     size_t alignedMemory = align(memory + sizeof(void*), alignment);
@@ -44,10 +41,8 @@ void* alignedAlloc(const size_t alignment, const size_t size) noexcept
     return reinterpret_cast<void*>(alignedMemory);
 }
 
-void alignedFree(void* const memory) noexcept
-{
-    if (memory != nullptr)
-    {
+void alignedFree(void* const memory) noexcept {
+    if (memory != nullptr) {
         // low-level memory management
         // NOLINTNEXTLINE(cppcoreguidelines-owning-memory, cppcoreguidelines-no-malloc,
         // cppcoreguidelines-pro-bounds-pointer-arithmetic)

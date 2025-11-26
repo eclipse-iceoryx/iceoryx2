@@ -19,21 +19,16 @@
 
 #include "iox/type_traits.hpp"
 
-namespace iox
-{
+namespace iox {
 template <uint64_t Capacity>
 class string;
 
 /// @brief struct to check whether an argument is a iox::string
 template <typename T>
-struct is_iox_string : std::false_type
-{
-};
+struct is_iox_string : std::false_type { };
 
 template <uint64_t N>
-struct is_iox_string<::iox::string<N>> : std::true_type
-{
-};
+struct is_iox_string<::iox::string<N>> : std::true_type { };
 
 } // namespace iox
 

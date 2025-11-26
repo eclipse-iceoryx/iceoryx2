@@ -20,10 +20,8 @@
 #include "iox/logging.hpp"
 #include "iox/posix_call.hpp"
 
-namespace iox
-{
-namespace detail
-{
+namespace iox {
+namespace detail {
 template <typename ReturnType, typename... FunctionArguments>
 inline PosixCallBuilder<ReturnType, FunctionArguments...>
 // NOLINTJUSTIFICATION this function is never used directly, only be the macro IOX_POSIX_CALL
@@ -32,8 +30,7 @@ createPosixCallBuilder(ReturnType (*IOX_POSIX_CALL)(FunctionArguments...),
                        const char* posixFunctionName,
                        const char* file,
                        const int32_t line,
-                       const char* callingFunction) noexcept
-{
+                       const char* callingFunction) noexcept {
     return PosixCallBuilder<ReturnType, FunctionArguments...>(
         IOX_POSIX_CALL, posixFunctionName, file, line, callingFunction);
 }
@@ -49,8 +46,7 @@ inline PosixCallDetails<ReturnType>::PosixCallDetails(const char* posixFunctionN
     : posixFunctionName(posixFunctionName)
     , file(file)
     , callingFunction(callingFunction)
-    , line(line)
-{
+    , line(line) {
 }
 
 /// the overload is required since on most linux systems there are two different implementations
@@ -58,20 +54,17 @@ inline PosixCallDetails<ReturnType>::PosixCallDetails(const char* posixFunctionN
 /// and a gnu version which returns a pointer to the message and sometimes stores the message
 /// in the buffer
 inline string<POSIX_CALL_ERROR_STRING_SIZE> errorLiteralToString(const int returnCode IOX_MAYBE_UNUSED,
-                                                                 char* const buffer)
-{
+                                                                 char* const buffer) {
     return string<POSIX_CALL_ERROR_STRING_SIZE>(TruncateToCapacity, buffer);
 }
 
-inline string<POSIX_CALL_ERROR_STRING_SIZE> errorLiteralToString(const char* msg, char* const buffer IOX_MAYBE_UNUSED)
-{
+inline string<POSIX_CALL_ERROR_STRING_SIZE> errorLiteralToString(const char* msg, char* const buffer IOX_MAYBE_UNUSED) {
     return string<POSIX_CALL_ERROR_STRING_SIZE>(TruncateToCapacity, msg);
 }
 } // namespace detail
 
 template <typename T>
-inline string<POSIX_CALL_ERROR_STRING_SIZE> PosixCallResult<T>::getHumanReadableErrnum() const noexcept
-{
+inline string<POSIX_CALL_ERROR_STRING_SIZE> PosixCallResult<T>::getHumanReadableErrnum() const noexcept {
     // NOLINTJUSTIFICATION needed by POSIX function which is wrapped here
     // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays)
     char buffer[POSIX_CALL_ERROR_STRING_SIZE];
@@ -85,23 +78,19 @@ inline PosixCallBuilder<ReturnType, FunctionArguments...>::PosixCallBuilder(Func
                                                                             const char* file,
                                                                             const int32_t line,
                                                                             const char* callingFunction) noexcept
-    : m_IOX_POSIX_CALL{IOX_POSIX_CALL}
-    , m_details{posixFunctionName, file, line, callingFunction}
-{
+    : m_IOX_POSIX_CALL { IOX_POSIX_CALL }
+    , m_details { posixFunctionName, file, line, callingFunction } {
 }
 
 template <typename ReturnType, typename... FunctionArguments>
 inline PosixCallVerificator<ReturnType>
-PosixCallBuilder<ReturnType, FunctionArguments...>::operator()(FunctionArguments... arguments) && noexcept
-{
-    for (uint64_t i = 0U; i < POSIX_CALL_EINTR_REPETITIONS; ++i)
-    {
+PosixCallBuilder<ReturnType, FunctionArguments...>::operator()(FunctionArguments... arguments) && noexcept {
+    for (uint64_t i = 0U; i < POSIX_CALL_EINTR_REPETITIONS; ++i) {
         errno = 0;
         m_details.result.value = m_IOX_POSIX_CALL(arguments...);
         m_details.result.errnum = errno;
 
-        if (m_details.result.errnum != EINTR)
-        {
+        if (m_details.result.errnum != EINTR) {
             break;
         }
     }
@@ -111,15 +100,13 @@ PosixCallBuilder<ReturnType, FunctionArguments...>::operator()(FunctionArguments
 
 template <typename ReturnType>
 inline PosixCallVerificator<ReturnType>::PosixCallVerificator(detail::PosixCallDetails<ReturnType>& details) noexcept
-    : m_details{details}
-{
+    : m_details { details } {
 }
 
 template <typename ReturnType>
 template <typename... SuccessReturnValues>
 inline PosixCallEvaluator<ReturnType>
-PosixCallVerificator<ReturnType>::successReturnValue(const SuccessReturnValues... successReturnValues) && noexcept
-{
+PosixCallVerificator<ReturnType>::successReturnValue(const SuccessReturnValues... successReturnValues) && noexcept {
     m_details.hasSuccess = algorithm::doesContainValue(m_details.result.value, successReturnValues...);
 
     return PosixCallEvaluator<ReturnType>(m_details);
@@ -128,8 +115,7 @@ PosixCallVerificator<ReturnType>::successReturnValue(const SuccessReturnValues..
 template <typename ReturnType>
 template <typename... FailureReturnValues>
 inline PosixCallEvaluator<ReturnType>
-PosixCallVerificator<ReturnType>::failureReturnValue(const FailureReturnValues... failureReturnValues) && noexcept
-{
+PosixCallVerificator<ReturnType>::failureReturnValue(const FailureReturnValues... failureReturnValues) && noexcept {
     using ValueType = decltype(m_details.result.value);
     m_details.hasSuccess =
         !algorithm::doesContainValue(m_details.result.value, static_cast<ValueType>(failureReturnValues)...);
@@ -138,8 +124,7 @@ PosixCallVerificator<ReturnType>::failureReturnValue(const FailureReturnValues..
 }
 
 template <typename ReturnType>
-inline PosixCallEvaluator<ReturnType> PosixCallVerificator<ReturnType>::returnValueMatchesErrno() && noexcept
-{
+inline PosixCallEvaluator<ReturnType> PosixCallVerificator<ReturnType>::returnValueMatchesErrno() && noexcept {
     m_details.hasSuccess = m_details.result.value == 0;
     m_details.result.errnum = static_cast<int32_t>(m_details.result.value);
 
@@ -148,17 +133,14 @@ inline PosixCallEvaluator<ReturnType> PosixCallVerificator<ReturnType>::returnVa
 
 template <typename ReturnType>
 inline PosixCallEvaluator<ReturnType>::PosixCallEvaluator(detail::PosixCallDetails<ReturnType>& details) noexcept
-    : m_details{details}
-{
+    : m_details { details } {
 }
 
 template <typename ReturnType>
 template <typename... IgnoredErrnos>
 inline PosixCallEvaluator<ReturnType>
-PosixCallEvaluator<ReturnType>::ignoreErrnos(const IgnoredErrnos... ignoredErrnos) const&& noexcept
-{
-    if (!m_details.hasSuccess)
-    {
+PosixCallEvaluator<ReturnType>::ignoreErrnos(const IgnoredErrnos... ignoredErrnos) const&& noexcept {
+    if (!m_details.hasSuccess) {
         m_details.hasIgnoredErrno |= algorithm::doesContainValue(m_details.result.errnum, ignoredErrnos...);
     }
 
@@ -168,10 +150,8 @@ PosixCallEvaluator<ReturnType>::ignoreErrnos(const IgnoredErrnos... ignoredErrno
 template <typename ReturnType>
 template <typename... SilentErrnos>
 inline PosixCallEvaluator<ReturnType>
-PosixCallEvaluator<ReturnType>::suppressErrorMessagesForErrnos(const SilentErrnos... silentErrnos) const&& noexcept
-{
-    if (!m_details.hasSuccess)
-    {
+PosixCallEvaluator<ReturnType>::suppressErrorMessagesForErrnos(const SilentErrnos... silentErrnos) const&& noexcept {
+    if (!m_details.hasSuccess) {
         m_details.hasSilentErrno |= algorithm::doesContainValue(m_details.result.errnum, silentErrnos...);
     }
 
@@ -180,15 +160,12 @@ PosixCallEvaluator<ReturnType>::suppressErrorMessagesForErrnos(const SilentErrno
 
 template <typename ReturnType>
 inline expected<PosixCallResult<ReturnType>, PosixCallResult<ReturnType>>
-PosixCallEvaluator<ReturnType>::evaluate() const&& noexcept
-{
-    if (m_details.hasSuccess || m_details.hasIgnoredErrno)
-    {
+PosixCallEvaluator<ReturnType>::evaluate() const&& noexcept {
+    if (m_details.hasSuccess || m_details.hasIgnoredErrno) {
         return ok<PosixCallResult<ReturnType>>(m_details.result);
     }
 
-    if (!m_details.hasSilentErrno)
-    {
+    if (!m_details.hasSilentErrno) {
         IOX_LOG(Error,
                 m_details.file << ":" << m_details.line << " { " << m_details.callingFunction << " -> "
                                << m_details.posixFunctionName << " }  :::  [ " << m_details.result.errnum << " ]  "

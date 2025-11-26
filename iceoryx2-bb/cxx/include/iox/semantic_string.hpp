@@ -21,12 +21,10 @@
 
 #include <cstdint>
 
-namespace iox
-{
+namespace iox {
 /// @brief Defines errors which can occur when modifying or creating a
 ///         SemanticString
-enum class SemanticStringError : uint8_t
-{
+enum class SemanticStringError : uint8_t {
     ContainsInvalidCharacters,
     ContainsInvalidContent,
     ExceedsMaximumLength
@@ -72,8 +70,7 @@ template <typename Child,
           uint64_t Capacity,
           DoesContainInvalidContent<Capacity> DoesContainInvalidContentCall,
           DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
-class SemanticString
-{
+class SemanticString {
   public:
     /// @brief Creates a new SemanticString from the provided string literal.
     ///         If the value contains invalid characters or invalid content

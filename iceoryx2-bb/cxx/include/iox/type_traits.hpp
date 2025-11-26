@@ -22,8 +22,7 @@
 
 #include "iceoryx_platform/platform_settings.hpp"
 
-namespace iox
-{
+namespace iox {
 template <uint64_t Capacity>
 class string;
 ///
@@ -32,13 +31,11 @@ class string;
 /// @tparam Condition is the type which determines if the const qualifier needs to be added to T
 ///
 template <typename T, typename C>
-struct add_const_conditionally
-{
+struct add_const_conditionally {
     using type = T;
 };
 template <typename T, typename C>
-struct add_const_conditionally<T, const C>
-{
+struct add_const_conditionally<T, const C> {
     using type = const T;
 };
 ///
@@ -54,18 +51,16 @@ using add_const_conditionally_t = typename add_const_conditionally<T, C>::type;
 /// @endcode
 ///
 template <typename>
-constexpr bool always_false_v{false};
+constexpr bool always_false_v { false };
 
 ///
 /// @brief Verifies whether the passed Callable type is in fact invocable with the given arguments
 ///
 template <typename Callable, typename... ArgTypes>
-struct is_invocable
-{
+struct is_invocable {
     // This variant is chosen when Callable(ArgTypes) successfully resolves to a valid type, i.e. is invocable.
     template <typename C, typename... As>
-    static constexpr std::true_type test(typename platform::invoke_result<C, As...>::type*) noexcept
-    {
+    static constexpr std::true_type test(typename platform::invoke_result<C, As...>::type*) noexcept {
         return {};
     }
 
@@ -74,13 +69,12 @@ struct is_invocable
     // This is chosen if Callable(ArgTypes) does not resolve to a valid type.
     template <typename C, typename... As>
     // NOLINTNEXTLINE(cert-dcl50-cpp)
-    static constexpr std::false_type test(...) noexcept
-    {
+    static constexpr std::false_type test(...) noexcept {
         return {};
     }
 
     // Test with nullptr as this can stand in for a pointer to any type.
-    static constexpr bool value{decltype(test<Callable, ArgTypes...>(nullptr))::value};
+    static constexpr bool value { decltype(test<Callable, ArgTypes...>(nullptr))::value };
 };
 
 ///
@@ -90,52 +84,41 @@ struct is_invocable
 /// @note This is an implementation of std::is_invokable_r (C++17).
 ///
 template <typename ReturnType, typename Callable, typename... ArgTypes>
-struct is_invocable_r
-{
+struct is_invocable_r {
     template <typename C, typename... As>
     static constexpr std::true_type
     test(std::enable_if_t<
-         std::is_convertible<typename platform::invoke_result<C, As...>::type, ReturnType>::value>*) noexcept
-    {
+         std::is_convertible<typename platform::invoke_result<C, As...>::type, ReturnType>::value>*) noexcept {
         return {};
     }
     // AXIVION Next Construct AutosarC++19_03-A8.4.1 : we require a SFINEA failure case where all
     // parameter types (non invokable ones) are allowed, this can be achieved with variadic arguments
     template <typename C, typename... As>
     // NOLINTNEXTLINE(cert-dcl50-cpp)
-    static constexpr std::false_type test(...) noexcept
-    {
+    static constexpr std::false_type test(...) noexcept {
         return {};
     }
 
     // Test with nullptr as this can stand in for a pointer to any type.
-    static constexpr bool value{decltype(test<Callable, ArgTypes...>(nullptr))::value};
+    static constexpr bool value { decltype(test<Callable, ArgTypes...>(nullptr))::value };
 };
 
 ///
 /// @brief Check whether T is a function pointer with arbitrary signature
 ///
 template <typename T>
-struct is_function_pointer : std::false_type
-{
-};
+struct is_function_pointer : std::false_type { };
 template <typename ReturnType, typename... ArgTypes>
-struct is_function_pointer<ReturnType (*)(ArgTypes...)> : std::true_type
-{
-};
+struct is_function_pointer<ReturnType (*)(ArgTypes...)> : std::true_type { };
 
 /// @brief struct to check whether an argument is a char array
 template <typename T>
-struct is_char_array : std::false_type
-{
-};
+struct is_char_array : std::false_type { };
 
 template <uint64_t N>
 // AXIVION DISABLE STYLE AutosarC++19_03-A18.1.1 : struct used to deduce char array types, it does not use them
 // NOLINTNEXTLINE(hicpp-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
-struct is_char_array<char[N]> : std::true_type
-{
-};
+struct is_char_array<char[N]> : std::true_type { };
 // AXIVION ENABLE STYLE AutosarC++19_03-A18.1.1
 
 /// @brief Maps a sequence of any types to the type void
@@ -148,30 +131,20 @@ using bool_constant = std::integral_constant<bool, B>;
 
 /// @brief Implementation of C++17 negation
 template <class B>
-struct negation : bool_constant<!bool(B::value)>
-{
-};
+struct negation : bool_constant<!bool(B::value)> { };
 
 template <bool...>
-struct bool_pack
-{
-};
+struct bool_pack { };
 
 /// @brief Implementation of C++17 std::conjunction
 template <class...>
-struct conjunction : std::true_type
-{
-};
+struct conjunction : std::true_type { };
 
 template <class Arg>
-struct conjunction<Arg> : Arg
-{
-};
+struct conjunction<Arg> : Arg { };
 
 template <class Arg, class... Args>
-struct conjunction<Arg, Args...> : std::conditional_t<!bool(Arg::value), Arg, conjunction<Args...>>
-{
-};
+struct conjunction<Arg, Args...> : std::conditional_t<!bool(Arg::value), Arg, conjunction<Args...>> { };
 
 /// @brief Implementation of C++20's std::remove_cvref.
 //
@@ -179,8 +152,7 @@ struct conjunction<Arg, Args...> : std::conditional_t<!bool(Arg::value), Arg, co
 // - https://en.cppreference.com/w/cpp/types/remove_cvref
 // - https://wg21.link/meta.trans.other#lib:remove_cvref
 template <typename T>
-struct remove_cvref
-{
+struct remove_cvref {
     using type_t = std::remove_cv_t<std::remove_reference_t<T>>;
 };
 
@@ -227,8 +199,7 @@ constexpr bool is_convertible_v = std::is_convertible<From, To>::value;
 
 /// @brief Provides a translation from a type into its human readable name
 template <typename T>
-struct TypeInfo
-{
+struct TypeInfo {
     static_assert(always_false_v<T>, "unknown type");
     static constexpr const char NAME[] = "unknown type";
 };
@@ -236,87 +207,73 @@ template <typename T>
 constexpr const char TypeInfo<T>::NAME[];
 
 template <>
-struct TypeInfo<int8_t>
-{
+struct TypeInfo<int8_t> {
     static constexpr const char NAME[] = "int8_t";
 };
 
 template <>
-struct TypeInfo<int16_t>
-{
+struct TypeInfo<int16_t> {
     static constexpr const char NAME[] = "int16_t";
 };
 
 template <>
-struct TypeInfo<int32_t>
-{
+struct TypeInfo<int32_t> {
     static constexpr const char NAME[] = "int32_t";
 };
 
 template <>
-struct TypeInfo<int64_t>
-{
+struct TypeInfo<int64_t> {
     static constexpr const char NAME[] = "int64_t";
 };
 
 template <>
-struct TypeInfo<uint8_t>
-{
+struct TypeInfo<uint8_t> {
     static constexpr const char NAME[] = "uint8_t";
 };
 
 template <>
-struct TypeInfo<uint16_t>
-{
+struct TypeInfo<uint16_t> {
     static constexpr const char NAME[] = "uint16_t";
 };
 
 template <>
-struct TypeInfo<uint32_t>
-{
+struct TypeInfo<uint32_t> {
     static constexpr const char NAME[] = "uint32_t";
 };
 
 template <>
-struct TypeInfo<uint64_t>
-{
+struct TypeInfo<uint64_t> {
     static constexpr const char NAME[] = "uint64_t";
 };
 
 template <>
-struct TypeInfo<bool>
-{
+struct TypeInfo<bool> {
     static constexpr const char NAME[] = "bool";
 };
 
 template <>
-struct TypeInfo<char>
-{
+struct TypeInfo<char> {
     static constexpr const char NAME[] = "char";
 };
 
 template <>
-struct TypeInfo<float>
-{
+struct TypeInfo<float> {
     static constexpr const char NAME[] = "float";
 };
 
 template <>
-struct TypeInfo<double>
-{
+struct TypeInfo<double> {
     static constexpr const char NAME[] = "double";
 };
 
 // AXIVION Next Construct AutosarC++19_03-A0.4.2 : The type is not directly used but only to get a string representation of the type
 template <>
-struct TypeInfo<long double>
-{
+struct TypeInfo<long double> {
     static constexpr const char NAME[] = "long double";
 };
 
 template <uint64_t N>
-struct TypeInfo<iox::string<N>>
-{
+struct TypeInfo<iox::string<N>> {
     static constexpr const char NAME[] = "string";
 };
 template <uint64_t N>

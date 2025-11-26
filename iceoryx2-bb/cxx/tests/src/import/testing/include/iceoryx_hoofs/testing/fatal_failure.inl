@@ -19,25 +19,21 @@
 
 #include "iceoryx_hoofs/testing/fatal_failure.hpp"
 
-namespace iox
-{
-namespace testing
-{
+namespace iox {
+namespace testing {
 template <typename ErrorType, std::enable_if_t<std::is_same<ErrorType, iox::er::FatalKind>::value, bool>>
 // NOLINTJUSTIFICATION The complexity comes from the expanded macros; without the expansions the function is quite readable
 // NOLINTNEXTLINE(readability-function-size, readability-function-cognitive-complexity)
 inline bool IOX_EXPECT_FATAL_FAILURE(const function_ref<void()> testFunction,
-                                     const ErrorType expectedError IOX_MAYBE_UNUSED)
-{
+                                     const ErrorType expectedError IOX_MAYBE_UNUSED) {
     iox::testing::ErrorHandler::instance().reset();
     runInTestThread([&] { testFunction(); });
     IOX_TESTING_EXPECT_PANIC();
     auto hasPanicked = iox::testing::hasPanicked();
 
-    auto hasExpectedError{false};
+    auto hasExpectedError { false };
     hasExpectedError = hasPanicked;
-    if (!hasExpectedError)
-    {
+    if (!hasExpectedError) {
         IOX_LOG(Error, "Expected '" << iox::er::FatalKind::name << "' but it did not happen!");
     }
 
@@ -49,17 +45,15 @@ template <typename ErrorType, std::enable_if_t<std::is_same<ErrorType, iox::er::
 // NOLINTJUSTIFICATION The complexity comes from the expanded macros; without the expansions the function is quite readable
 // NOLINTNEXTLINE(readability-function-size, readability-function-cognitive-complexity)
 inline bool IOX_EXPECT_FATAL_FAILURE(const function_ref<void()> testFunction,
-                                     const ErrorType expectedError IOX_MAYBE_UNUSED)
-{
+                                     const ErrorType expectedError IOX_MAYBE_UNUSED) {
     iox::testing::ErrorHandler::instance().reset();
     runInTestThread([&] { testFunction(); });
     IOX_TESTING_EXPECT_PANIC();
     auto hasPanicked = iox::testing::hasPanicked();
 
-    auto hasExpectedError{false};
+    auto hasExpectedError { false };
     hasExpectedError = iox::testing::hasEnforceViolation();
-    if (!hasExpectedError)
-    {
+    if (!hasExpectedError) {
         IOX_LOG(Error, "Expected '" << iox::er::EnforceViolationKind::name << "' but it did not happen!");
     }
 
@@ -71,17 +65,15 @@ template <typename ErrorType, std::enable_if_t<std::is_same<ErrorType, iox::er::
 // NOLINTJUSTIFICATION The complexity comes from the expanded macros; without the expansions the function is quite readable
 // NOLINTNEXTLINE(readability-function-size, readability-function-cognitive-complexity)
 inline bool IOX_EXPECT_FATAL_FAILURE(const function_ref<void()> testFunction,
-                                     const ErrorType expectedError IOX_MAYBE_UNUSED)
-{
+                                     const ErrorType expectedError IOX_MAYBE_UNUSED) {
     iox::testing::ErrorHandler::instance().reset();
     runInTestThread([&] { testFunction(); });
     IOX_TESTING_EXPECT_PANIC();
     auto hasPanicked = iox::testing::hasPanicked();
 
-    auto hasExpectedError{false};
+    auto hasExpectedError { false };
     hasExpectedError = iox::testing::hasAssertViolation();
-    if (!hasExpectedError)
-    {
+    if (!hasExpectedError) {
         IOX_LOG(Error, "Expected '" << iox::er::AssertViolationKind::name << "' but it did not happen!");
     }
 
@@ -96,17 +88,15 @@ template <typename ErrorType,
                            bool>>
 // NOLINTJUSTIFICATION The complexity comes from the expanded macros; without the expansions the function is quite readable
 // NOLINTNEXTLINE(readability-function-size, readability-function-cognitive-complexity)
-inline bool IOX_EXPECT_FATAL_FAILURE(const function_ref<void()> testFunction, const ErrorType expectedError)
-{
+inline bool IOX_EXPECT_FATAL_FAILURE(const function_ref<void()> testFunction, const ErrorType expectedError) {
     iox::testing::ErrorHandler::instance().reset();
     runInTestThread([&] { testFunction(); });
     IOX_TESTING_EXPECT_PANIC();
     auto hasPanicked = iox::testing::hasPanicked();
 
-    auto hasExpectedError{false};
+    auto hasExpectedError { false };
     hasExpectedError = iox::testing::hasError(expectedError);
-    if (!hasExpectedError)
-    {
+    if (!hasExpectedError) {
         IOX_LOG(Error, "Expected an '" << expectedError << "' error but it did not happen!");
     }
 
@@ -114,8 +104,7 @@ inline bool IOX_EXPECT_FATAL_FAILURE(const function_ref<void()> testFunction, co
     return hasExpectedError && hasPanicked;
 }
 
-inline bool IOX_EXPECT_NO_FATAL_FAILURE(const function_ref<void()> testFunction)
-{
+inline bool IOX_EXPECT_NO_FATAL_FAILURE(const function_ref<void()> testFunction) {
     runInTestThread([&] { testFunction(); });
     return !iox::testing::hasPanicked();
 }

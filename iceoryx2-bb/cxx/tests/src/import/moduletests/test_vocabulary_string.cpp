@@ -27,27 +27,24 @@
 
 // NOTE: To speed up compilation and the clang-tidy check, the tests for 'iox::string' are split into multiple files
 
-namespace
-{
+namespace {
 using namespace ::testing;
 using namespace iox;
 using namespace iox::testing;
 
 TYPED_TEST_SUITE(stringTyped_test, StringImplementations, );
 
-TEST(string_test, CapacityReturnsSpecifiedCapacity)
-{
+TEST(string_test, CapacityReturnsSpecifiedCapacity) {
     ::testing::Test::RecordProperty("TEST_ID", "6eed7f1a-c8d9-4902-ac22-405a3bd62d28");
-    constexpr uint16_t CAPACITY_ONE{1};
-    constexpr uint16_t CAPACITY_FOURTYTWO{42};
+    constexpr uint16_t CAPACITY_ONE { 1 };
+    constexpr uint16_t CAPACITY_FOURTYTWO { 42 };
 
     EXPECT_THAT(string<CAPACITY_ONE>::capacity(), Eq(CAPACITY_ONE));
     EXPECT_THAT(string<CAPACITY_FOURTYTWO>::capacity(), Eq(CAPACITY_FOURTYTWO));
 }
 
 /// @note void unsafe_raw_access(const std::function<void(char*, const uint64_t, const uint64_t)>& func) noexcept
-TYPED_TEST(stringTyped_test, UnsafeRawAccessOfCStringOfSize0ResultsInSize0)
-{
+TYPED_TEST(stringTyped_test, UnsafeRawAccessOfCStringOfSize0ResultsInSize0) {
     ::testing::Test::RecordProperty("TEST_ID", "43e10399-445d-42af-80b1-25071590de0a");
     this->testSubject.unsafe_raw_access([this](char* str, const auto info) -> uint64_t {
         //NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.strcpy,-warnings-as-errors)
@@ -61,8 +58,7 @@ TYPED_TEST(stringTyped_test, UnsafeRawAccessOfCStringOfSize0ResultsInSize0)
     EXPECT_THAT(this->testSubject.c_str(), StrEq(""));
 }
 
-TYPED_TEST(stringTyped_test, UnsafeRawAccessOfCStringOfSize1ResultsInSize1)
-{
+TYPED_TEST(stringTyped_test, UnsafeRawAccessOfCStringOfSize1ResultsInSize1) {
     ::testing::Test::RecordProperty("TEST_ID", "a3a3395e-2b69-400c-876a-1fdf70cf2d4a");
     this->testSubject.unsafe_raw_access([this](char* str, const auto info) -> uint64_t {
         //NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.strcpy,-warnings-as-errors)
@@ -76,8 +72,7 @@ TYPED_TEST(stringTyped_test, UnsafeRawAccessOfCStringOfSize1ResultsInSize1)
     EXPECT_THAT(this->testSubject.c_str(), StrEq("M"));
 }
 
-TYPED_TEST(stringTyped_test, UnsafeRawAccessCStringOfSizeCapaResultsInSizeCapa)
-{
+TYPED_TEST(stringTyped_test, UnsafeRawAccessCStringOfSizeCapaResultsInSizeCapa) {
     ::testing::Test::RecordProperty("TEST_ID", "49faad68-52fa-4024-993c-49b05e7cb971");
     using MyString = typename TestFixture::stringType;
     constexpr auto STRINGCAP = MyString::capacity();
@@ -99,8 +94,7 @@ TYPED_TEST(stringTyped_test, UnsafeRawAccessCStringOfSizeCapaResultsInSizeCapa)
     EXPECT_THAT(this->testSubject.size(), Eq(STRINGCAP));
 }
 
-TYPED_TEST(stringTyped_test, UnsafeRawAccessCStringOutOfBoundFail)
-{
+TYPED_TEST(stringTyped_test, UnsafeRawAccessCStringOutOfBoundFail) {
     ::testing::Test::RecordProperty("TEST_ID", "b25c35db-1c0d-4f0e-b4bc-b9430a6696f1");
 
     runInTestThread([this] {
@@ -113,8 +107,7 @@ TYPED_TEST(stringTyped_test, UnsafeRawAccessCStringOutOfBoundFail)
     IOX_TESTING_EXPECT_PANIC();
 }
 
-TYPED_TEST(stringTyped_test, UnsafeRawAccessCStringWrongLenghtFail)
-{
+TYPED_TEST(stringTyped_test, UnsafeRawAccessCStringWrongLenghtFail) {
     ::testing::Test::RecordProperty("TEST_ID", "411f5db1-18b8-45c3-9ad6-3c886fb12a26");
 
     runInTestThread([this] {
@@ -128,16 +121,14 @@ TYPED_TEST(stringTyped_test, UnsafeRawAccessCStringWrongLenghtFail)
 }
 
 /// @note constexpr bool empty() const noexcept
-TYPED_TEST(stringTyped_test, NewlyCreatedStringIsEmpty)
-{
+TYPED_TEST(stringTyped_test, NewlyCreatedStringIsEmpty) {
     ::testing::Test::RecordProperty("TEST_ID", "b76d10c1-46e2-4bc3-ab79-af187b85d584");
     using MyString = typename TestFixture::stringType;
     MyString sut;
     EXPECT_THAT(sut.empty(), Eq(true));
 }
 
-TYPED_TEST(stringTyped_test, StringWithContentIsNotEmtpy)
-{
+TYPED_TEST(stringTyped_test, StringWithContentIsNotEmtpy) {
     ::testing::Test::RecordProperty("TEST_ID", "bb7fd1ff-82dc-4ae2-af70-9b080eb2265d");
     using MyString = typename TestFixture::stringType;
     MyString sut(TruncateToCapacity, "Dr.SchluepferStrikesAgain!");
@@ -145,8 +136,7 @@ TYPED_TEST(stringTyped_test, StringWithContentIsNotEmtpy)
 }
 
 /// @note void clear() noexcept
-TYPED_TEST(stringTyped_test, ClearEmptyStringDoesNotChangeString)
-{
+TYPED_TEST(stringTyped_test, ClearEmptyStringDoesNotChangeString) {
     ::testing::Test::RecordProperty("TEST_ID", "5109413a-6067-4f7f-ac35-8dd3a33a641f");
     using MyString = typename TestFixture::stringType;
     constexpr auto STRINGCAP = MyString().capacity();
@@ -156,8 +146,7 @@ TYPED_TEST(stringTyped_test, ClearEmptyStringDoesNotChangeString)
     EXPECT_THAT(this->testSubject.capacity(), Eq(STRINGCAP));
 }
 
-TYPED_TEST(stringTyped_test, ClearNotEmptyStringResultsInEmptyStringWithUnchangedCapacity)
-{
+TYPED_TEST(stringTyped_test, ClearNotEmptyStringResultsInEmptyStringWithUnchangedCapacity) {
     ::testing::Test::RecordProperty("TEST_ID", "d25d2a74-6ea0-4892-b072-02177b31309e");
     using MyString = typename TestFixture::stringType;
     constexpr auto STRINGCAP = MyString().capacity();
@@ -169,8 +158,7 @@ TYPED_TEST(stringTyped_test, ClearNotEmptyStringResultsInEmptyStringWithUnchange
     EXPECT_THAT(this->testSubject.capacity(), Eq(STRINGCAP));
 }
 
-TYPED_TEST(stringTyped_test, ChangeStringAfterClearWorks)
-{
+TYPED_TEST(stringTyped_test, ChangeStringAfterClearWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "58444d00-ec85-464f-8269-7838823f04c2");
     this->testSubject.clear();
     this->testSubject = "M";
@@ -178,8 +166,7 @@ TYPED_TEST(stringTyped_test, ChangeStringAfterClearWorks)
 }
 
 /// @note iox::optional<string<Capacity>> substr(uint64_t pos = 0) const noexcept;
-TYPED_TEST(stringTyped_test, SubstrWithDefaultPosAndSizeResultsInWholeString)
-{
+TYPED_TEST(stringTyped_test, SubstrWithDefaultPosAndSizeResultsInWholeString) {
     ::testing::Test::RecordProperty("TEST_ID", "da66bb36-2a1c-435b-8a47-874eb12315ef");
     using MyString = typename TestFixture::stringType;
     constexpr auto STRINGCAP = MyString::capacity();
@@ -198,8 +185,7 @@ TYPED_TEST(stringTyped_test, SubstrWithDefaultPosAndSizeResultsInWholeString)
     EXPECT_THAT(this->testSubject.c_str(), StrEq(testStdString));
 }
 
-TEST(String100, SubstrWithDefaultSizeWorks)
-{
+TEST(String100, SubstrWithDefaultSizeWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "10b1244f-7245-449d-b6d0-5c94faa7d274");
     constexpr uint64_t STRINGCAP = 100U;
     constexpr uint64_t SUBSTR_POS = 8U;
@@ -216,8 +202,7 @@ TEST(String100, SubstrWithDefaultSizeWorks)
 }
 
 /// @note iox::optional<string<Capacity>> substr(uint64_t pos, uint64_t count) const noexcept
-TEST(String100, SubstrWithValidPosAndSizeWorks)
-{
+TEST(String100, SubstrWithValidPosAndSizeWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "3cd90af2-97f4-4767-854d-d3ca726bd348");
     constexpr uint64_t STRINGCAP = 100U;
     std::string testStdString = "Ferdinand Spitzschnueffler";
@@ -264,8 +249,7 @@ TEST(String100, SubstrWithValidPosAndSizeWorks)
     EXPECT_THAT(testSubstring5.c_str(), StrEq(testStdSubstring));
 }
 
-TYPED_TEST(stringTyped_test, SubstrWithInvalidPosFails)
-{
+TYPED_TEST(stringTyped_test, SubstrWithInvalidPosFails) {
     ::testing::Test::RecordProperty("TEST_ID", "2298f577-2974-4a01-82fb-a11d1f6faf6e");
     using MyString = typename TestFixture::stringType;
     constexpr auto STRINGCAP = MyString::capacity();
@@ -275,8 +259,7 @@ TYPED_TEST(stringTyped_test, SubstrWithInvalidPosFails)
 
 /// @note template <typename T>
 /// iox::optional<uint64_t> find(const T& t, uint64_t pos = 0) const noexcept
-TYPED_TEST(stringTyped_test, FindEmptyStringInEmptyStringWorks)
-{
+TYPED_TEST(stringTyped_test, FindEmptyStringInEmptyStringWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "3ceb4ed6-1395-445e-afe4-94f6c9b2cee8");
     using MyString = typename TestFixture::stringType;
     constexpr auto STRINGCAP = MyString::capacity();
@@ -290,8 +273,7 @@ TYPED_TEST(stringTyped_test, FindEmptyStringInEmptyStringWorks)
     EXPECT_THAT(res.value(), Eq(0U));
 }
 
-TYPED_TEST(stringTyped_test, FindStringInEmptyStringFails)
-{
+TYPED_TEST(stringTyped_test, FindStringInEmptyStringFails) {
     ::testing::Test::RecordProperty("TEST_ID", "feb48bb6-c6f0-4f8b-8ce5-bf881fd876cb");
     using MyString = typename TestFixture::stringType;
     constexpr auto STRINGCAP = MyString::capacity();
@@ -303,8 +285,7 @@ TYPED_TEST(stringTyped_test, FindStringInEmptyStringFails)
     EXPECT_THAT(res.has_value(), Eq(false));
 }
 
-TEST(String100, FindStringInNotEmptyStringWorks)
-{
+TEST(String100, FindStringInNotEmptyStringWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "b487b6bc-1c40-46f1-8285-dd1660d2e882");
     string<10U> testString("R2-D2");
     string<100U> substring("2");
@@ -321,8 +302,7 @@ TEST(String100, FindStringInNotEmptyStringWorks)
     EXPECT_THAT(res.value(), Eq(4U));
 }
 
-TEST(String100, FindNotIncludedStringFails)
-{
+TEST(String100, FindNotIncludedStringFails) {
     ::testing::Test::RecordProperty("TEST_ID", "bb0ca1b6-3dbd-491a-acac-e1f57ad2eb4f");
     constexpr uint64_t STRINGCAP = 100U;
     string<STRINGCAP> testString("Kernfusionsbaby");
@@ -337,8 +317,7 @@ TEST(String100, FindNotIncludedStringFails)
     EXPECT_THAT(res.has_value(), Eq(false));
 }
 
-TEST(String100, FindStringLiteralInNotEmptyStringWorks)
-{
+TEST(String100, FindStringLiteralInNotEmptyStringWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "b9a3018f-10d5-4f57-bfeb-f536a6ea9642");
     constexpr uint64_t STRINGCAP = 100U;
 
@@ -356,15 +335,14 @@ TEST(String100, FindStringLiteralInNotEmptyStringWorks)
     EXPECT_THAT(res.value(), Eq(12U));
 
     constexpr uint64_t STRING_COUNT = 7U;
-    std::string testStdString{"ice\0ryx", STRING_COUNT};
+    std::string testStdString { "ice\0ryx", STRING_COUNT };
     string<STRINGCAP> testString2(TruncateToCapacity, testStdString.c_str(), STRING_COUNT);
     res = testString2.find("e\0ry", 0U);
     ASSERT_THAT(res.has_value(), Eq(true));
     EXPECT_THAT(res.value(), Eq(2U));
 }
 
-TEST(String100, FindNotIncludedStringLiteralFails)
-{
+TEST(String100, FindNotIncludedStringLiteralFails) {
     ::testing::Test::RecordProperty("TEST_ID", "bd1ef66b-3698-4049-9d62-131b6de51b76");
     string<100U> testString("Kernfusionsbaby");
     auto res = testString.find("abc");
@@ -376,8 +354,7 @@ TEST(String100, FindNotIncludedStringLiteralFails)
 
 /// @note template <typename T>
 /// iox::optional<uint64_t> find_first_of(const T& t, uint64_t pos = 0) const noexcept
-TYPED_TEST(stringTyped_test, FindFirstOfFailsForEmptyStringInEmptyString)
-{
+TYPED_TEST(stringTyped_test, FindFirstOfFailsForEmptyStringInEmptyString) {
     ::testing::Test::RecordProperty("TEST_ID", "21f90f13-6b15-4ce1-9258-c21154b6043c");
     using MyString = typename TestFixture::stringType;
     constexpr auto STRINGCAP = MyString::capacity();
@@ -389,8 +366,7 @@ TYPED_TEST(stringTyped_test, FindFirstOfFailsForEmptyStringInEmptyString)
     EXPECT_THAT(res.has_value(), Eq(false));
 }
 
-TYPED_TEST(stringTyped_test, FindFirstOfForStringInEmptyStringFails)
-{
+TYPED_TEST(stringTyped_test, FindFirstOfForStringInEmptyStringFails) {
     ::testing::Test::RecordProperty("TEST_ID", "1a1b1272-fc5b-431e-980d-39357f66e882");
     using MyString = typename TestFixture::stringType;
     constexpr auto STRINGCAP = MyString::capacity();
@@ -402,8 +378,7 @@ TYPED_TEST(stringTyped_test, FindFirstOfForStringInEmptyStringFails)
     EXPECT_THAT(res.has_value(), Eq(false));
 }
 
-TEST(String100, FindFirstOfForStringInNotEmptyStringWorks)
-{
+TEST(String100, FindFirstOfForStringInNotEmptyStringWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "b24dbd99-3595-4b04-9e6e-177d2a6e4ad0");
     constexpr uint64_t STRINGCAP = 10U;
     constexpr uint64_t SUB_STRINGCAP = 100U;
@@ -431,8 +406,7 @@ TEST(String100, FindFirstOfForStringInNotEmptyStringWorks)
     EXPECT_THAT(res.value(), Eq(3U));
 }
 
-TEST(String100, FindFirstOfForNotIncludedStringFails)
-{
+TEST(String100, FindFirstOfForNotIncludedStringFails) {
     ::testing::Test::RecordProperty("TEST_ID", "f42e026a-063b-43dd-8a6a-157330f3f426");
     constexpr uint64_t STRINGCAP = 100U;
     string<STRINGCAP> testString("Kernfusionsbaby");
@@ -447,8 +421,7 @@ TEST(String100, FindFirstOfForNotIncludedStringFails)
     EXPECT_THAT(res.has_value(), Eq(false));
 }
 
-TEST(String100, FindFirstOfForStringLiteralInNotEmptyStringWorks)
-{
+TEST(String100, FindFirstOfForStringLiteralInNotEmptyStringWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "cfb3c539-c442-4a80-82b2-2da4ea37f1cd");
     constexpr uint64_t STRINGCAP = 100U;
     string<STRINGCAP> testString1("Mueslimaedchen");
@@ -469,15 +442,14 @@ TEST(String100, FindFirstOfForStringLiteralInNotEmptyStringWorks)
     EXPECT_THAT(res.value(), Eq(0U));
 
     constexpr uint64_t STRING_COUNT = 7U;
-    std::string testStdString{"ice\0ryx", STRING_COUNT};
+    std::string testStdString { "ice\0ryx", STRING_COUNT };
     string<STRINGCAP> testString2(TruncateToCapacity, testStdString.c_str(), STRING_COUNT);
     res = testString2.find_first_of("e\0ry", 0U);
     ASSERT_THAT(res.has_value(), Eq(true));
     EXPECT_THAT(res.value(), Eq(2U));
 }
 
-TEST(String100, FindFirstOfForNotIncludedStringLiteralFails)
-{
+TEST(String100, FindFirstOfForNotIncludedStringLiteralFails) {
     ::testing::Test::RecordProperty("TEST_ID", "bc574b5b-496b-4c81-acf9-a81fe3d2abb0");
     string<100U> testString("Kernfusionsbaby");
     auto res = testString.find_first_of("cd");
@@ -492,8 +464,7 @@ TEST(String100, FindFirstOfForNotIncludedStringLiteralFails)
 
 /// @note template <typename T>
 /// iox::optional<uint64_t> find_last_of(const T& t, uint64_t pos = 0) const noexcept
-TYPED_TEST(stringTyped_test, FindLastOfFailsForEmptyStringInEmptyString)
-{
+TYPED_TEST(stringTyped_test, FindLastOfFailsForEmptyStringInEmptyString) {
     ::testing::Test::RecordProperty("TEST_ID", "7e09947d-762f-4d7f-a1ab-65696877da06");
     using MyString = typename TestFixture::stringType;
     constexpr auto STRINGCAP = MyString::capacity();
@@ -505,8 +476,7 @@ TYPED_TEST(stringTyped_test, FindLastOfFailsForEmptyStringInEmptyString)
     EXPECT_THAT(res.has_value(), Eq(false));
 }
 
-TYPED_TEST(stringTyped_test, FindLastOfForStringInEmptyStringFails)
-{
+TYPED_TEST(stringTyped_test, FindLastOfForStringInEmptyStringFails) {
     ::testing::Test::RecordProperty("TEST_ID", "ab1650d8-b3f1-445a-b53a-b339f9f37830");
     using MyString = typename TestFixture::stringType;
     constexpr auto STRINGCAP = MyString::capacity();
@@ -518,8 +488,7 @@ TYPED_TEST(stringTyped_test, FindLastOfForStringInEmptyStringFails)
     EXPECT_THAT(res.has_value(), Eq(false));
 }
 
-TEST(String100, FindLastOfForStringInNotEmptyStringWorks)
-{
+TEST(String100, FindLastOfForStringInNotEmptyStringWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "384b1457-ccaa-4801-a7be-625ef9b7a27a");
     constexpr uint64_t STRINGCAP = 10U;
     constexpr uint64_t SUB_STRINGCAP = 100U;
@@ -547,8 +516,7 @@ TEST(String100, FindLastOfForStringInNotEmptyStringWorks)
     EXPECT_THAT(res.value(), Eq(0U));
 }
 
-TEST(String100, FindLastOfForNotIncludedStringFails)
-{
+TEST(String100, FindLastOfForNotIncludedStringFails) {
     ::testing::Test::RecordProperty("TEST_ID", "c0aad222-061f-42ab-8d58-7c7fb5dc1296");
     constexpr uint64_t STRINGCAP = 100U;
     string<STRINGCAP> testString("Kernfusionsbaby");
@@ -563,8 +531,7 @@ TEST(String100, FindLastOfForNotIncludedStringFails)
     EXPECT_THAT(res.has_value(), Eq(false));
 }
 
-TEST(String100, FindLastOfForStringLiteralInNotEmptyStringWorks)
-{
+TEST(String100, FindLastOfForStringLiteralInNotEmptyStringWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "cac2ed11-6f33-4e32-ac3f-fd725c068f42");
     string<100U> testString1("Mueslimaedchen");
     auto res = testString1.find_last_of("lima");
@@ -584,8 +551,7 @@ TEST(String100, FindLastOfForStringLiteralInNotEmptyStringWorks)
     EXPECT_THAT(res.value(), Eq(0U));
 }
 
-TEST(String100, FindLastOfForNotIncludedStringLiteralFails)
-{
+TEST(String100, FindLastOfForNotIncludedStringLiteralFails) {
     ::testing::Test::RecordProperty("TEST_ID", "ec2e64cf-91ef-4c9c-801d-4a27d26db240");
     string<100U> testString("Kernfusionsbaby");
     auto res = testString.find_last_of("cd");
@@ -599,15 +565,13 @@ TEST(String100, FindLastOfForNotIncludedStringLiteralFails)
 }
 
 /// @note constexpr char& at(const uint64_t pos) noexcept
-TYPED_TEST(stringTyped_test, AccessPositionOfEmptyStringViaAtFails)
-{
+TYPED_TEST(stringTyped_test, AccessPositionOfEmptyStringViaAtFails) {
     ::testing::Test::RecordProperty("TEST_ID", "89817818-f05a-4ceb-8663-9727d227048c");
 
     IOX_EXPECT_FATAL_FAILURE([&] { this->testSubject.at(0U); }, iox::er::ENFORCE_VIOLATION);
 }
 
-TYPED_TEST(stringTyped_test, AccessPositionOutOfBoundsViaAtFails)
-{
+TYPED_TEST(stringTyped_test, AccessPositionOutOfBoundsViaAtFails) {
     ::testing::Test::RecordProperty("TEST_ID", "68035709-5f8d-4bcb-80ce-ad5619aba84a");
 
     using MyString = typename TestFixture::stringType;
@@ -616,15 +580,13 @@ TYPED_TEST(stringTyped_test, AccessPositionOutOfBoundsViaAtFails)
     IOX_EXPECT_FATAL_FAILURE([&] { this->testSubject.at(STRINGCAP); }, iox::er::ENFORCE_VIOLATION);
 }
 
-TYPED_TEST(stringTyped_test, AccessFirstPositionOfNonEmptyStringViaAtReturnsCorrectCharacter)
-{
+TYPED_TEST(stringTyped_test, AccessFirstPositionOfNonEmptyStringViaAtReturnsCorrectCharacter) {
     ::testing::Test::RecordProperty("TEST_ID", "8f096ca8-6951-43d4-86a8-3cf94de2977a");
     this->testSubject = "M";
     EXPECT_THAT(this->testSubject.at(0U), Eq('M'));
 }
 
-TYPED_TEST(stringTyped_test, AccessAndAssignToMaxPositionOfNotEmptyStringViaAtSucceeds)
-{
+TYPED_TEST(stringTyped_test, AccessAndAssignToMaxPositionOfNotEmptyStringViaAtSucceeds) {
     ::testing::Test::RecordProperty("TEST_ID", "9b9d106d-bfc5-40fe-876d-5beb1725e3fa");
     constexpr char START_CHARACTER = 'M';
     constexpr char NEW_CHARACTER = 'L';
@@ -640,8 +602,7 @@ TYPED_TEST(stringTyped_test, AccessAndAssignToMaxPositionOfNotEmptyStringViaAtSu
 }
 
 /// @note constexpr const char& at(const uint64_t pos) const noexcept
-TYPED_TEST(stringTyped_test, AccessPositionOfEmptyStringViaConstAtFails)
-{
+TYPED_TEST(stringTyped_test, AccessPositionOfEmptyStringViaConstAtFails) {
     ::testing::Test::RecordProperty("TEST_ID", "5cf6d322-6ee9-41ce-bbf6-4e0d193fa938");
 
     using MyString = typename TestFixture::stringType;
@@ -651,8 +612,7 @@ TYPED_TEST(stringTyped_test, AccessPositionOfEmptyStringViaConstAtFails)
     IOX_EXPECT_FATAL_FAILURE([&] { sut.at(0U); }, iox::er::ENFORCE_VIOLATION);
 }
 
-TYPED_TEST(stringTyped_test, AccessPositionOutOfBoundsViaConstAtFails)
-{
+TYPED_TEST(stringTyped_test, AccessPositionOutOfBoundsViaConstAtFails) {
     ::testing::Test::RecordProperty("TEST_ID", "90a986f4-b29b-4ce7-ad55-79cc4b7b2b29");
 
     using MyString = typename TestFixture::stringType;
@@ -662,8 +622,7 @@ TYPED_TEST(stringTyped_test, AccessPositionOutOfBoundsViaConstAtFails)
     IOX_EXPECT_FATAL_FAILURE([&] { sut.at(STRINGCAP); }, iox::er::ENFORCE_VIOLATION);
 }
 
-TYPED_TEST(stringTyped_test, AccessFirstPositionOfNotEmptyStringViaConstAtReturnsCorrectCharacter)
-{
+TYPED_TEST(stringTyped_test, AccessFirstPositionOfNotEmptyStringViaConstAtReturnsCorrectCharacter) {
     ::testing::Test::RecordProperty("TEST_ID", "661fb674-3edf-4ac3-adb7-c7767153040d");
     using MyString = typename TestFixture::stringType;
     constexpr auto STRINGCAP = MyString().capacity();
@@ -671,8 +630,7 @@ TYPED_TEST(stringTyped_test, AccessFirstPositionOfNotEmptyStringViaConstAtReturn
     EXPECT_THAT(sut.at(0U), Eq('M'));
 }
 
-TYPED_TEST(stringTyped_test, AccessMaxPositionOfNotEmptyStringViaConstAtSucceeds)
-{
+TYPED_TEST(stringTyped_test, AccessMaxPositionOfNotEmptyStringViaConstAtSucceeds) {
     ::testing::Test::RecordProperty("TEST_ID", "78f13867-8633-4d90-9f04-a9a47ab492b1");
     using MyString = typename TestFixture::stringType;
     constexpr auto STRINGCAP = MyString().capacity();
@@ -684,15 +642,13 @@ TYPED_TEST(stringTyped_test, AccessMaxPositionOfNotEmptyStringViaConstAtSucceeds
 }
 
 /// @note constexpr char& operator[](const uint64_t pos) noexcept
-TYPED_TEST(stringTyped_test, AccessPositionOfEmptyStringViaSubscriptOperatorFails)
-{
+TYPED_TEST(stringTyped_test, AccessPositionOfEmptyStringViaSubscriptOperatorFails) {
     ::testing::Test::RecordProperty("TEST_ID", "95ced457-1aec-47e9-a496-0197ea3f4600");
 
     IOX_EXPECT_FATAL_FAILURE([&] { this->testSubject[0U]; }, iox::er::ENFORCE_VIOLATION);
 }
 
-TYPED_TEST(stringTyped_test, AccessPositionOutOfBoundsViaSubscriptOperatorFails)
-{
+TYPED_TEST(stringTyped_test, AccessPositionOutOfBoundsViaSubscriptOperatorFails) {
     ::testing::Test::RecordProperty("TEST_ID", "ab52924e-1d6a-41e1-a8a9-8cfd9ab2120d");
 
     using MyString = typename TestFixture::stringType;
@@ -701,15 +657,13 @@ TYPED_TEST(stringTyped_test, AccessPositionOutOfBoundsViaSubscriptOperatorFails)
     IOX_EXPECT_FATAL_FAILURE([&] { this->testSubject[STRINGCAP]; }, iox::er::ENFORCE_VIOLATION);
 }
 
-TYPED_TEST(stringTyped_test, AccessFirstPositionOfNotEmptyStringViaSubscriptOperatorReturnsCorrectCharacter)
-{
+TYPED_TEST(stringTyped_test, AccessFirstPositionOfNotEmptyStringViaSubscriptOperatorReturnsCorrectCharacter) {
     ::testing::Test::RecordProperty("TEST_ID", "86a984b9-8345-4413-a25c-e9a1c74c5cef");
     this->testSubject = "L";
     EXPECT_THAT(this->testSubject[0U], Eq('L'));
 }
 
-TYPED_TEST(stringTyped_test, AccessAndAssignToMaxPositionOfNotEmptyStringViaSubscriptOperatorSucceeds)
-{
+TYPED_TEST(stringTyped_test, AccessAndAssignToMaxPositionOfNotEmptyStringViaSubscriptOperatorSucceeds) {
     ::testing::Test::RecordProperty("TEST_ID", "9e2dd8ba-6053-4532-895b-f18a9ae0adf6");
     constexpr char START_CHARACTER = 'F';
     constexpr char NEW_CHARACTER = 'S';
@@ -725,8 +679,7 @@ TYPED_TEST(stringTyped_test, AccessAndAssignToMaxPositionOfNotEmptyStringViaSubs
 }
 
 /// @note constexpr const char& operator[](const uint64_t pos) const noexcept
-TYPED_TEST(stringTyped_test, AccessPositionOfEmptyStringViaConstSubscriptOperatorFails)
-{
+TYPED_TEST(stringTyped_test, AccessPositionOfEmptyStringViaConstSubscriptOperatorFails) {
     ::testing::Test::RecordProperty("TEST_ID", "7ca75e53-8e26-4451-8712-a86bfe5bd32c");
 
     using MyString = typename TestFixture::stringType;
@@ -736,8 +689,7 @@ TYPED_TEST(stringTyped_test, AccessPositionOfEmptyStringViaConstSubscriptOperato
     IOX_EXPECT_FATAL_FAILURE([&] { sut[0U]; }, iox::er::ENFORCE_VIOLATION);
 }
 
-TYPED_TEST(stringTyped_test, AccessPositionOutOfBoundsViaConstSubscriptOperatorFails)
-{
+TYPED_TEST(stringTyped_test, AccessPositionOutOfBoundsViaConstSubscriptOperatorFails) {
     ::testing::Test::RecordProperty("TEST_ID", "5498e314-d321-464a-a667-400ee0c4d81f");
 
     using MyString = typename TestFixture::stringType;
@@ -747,8 +699,7 @@ TYPED_TEST(stringTyped_test, AccessPositionOutOfBoundsViaConstSubscriptOperatorF
     IOX_EXPECT_FATAL_FAILURE([&] { sut[STRINGCAP]; }, iox::er::ENFORCE_VIOLATION);
 }
 
-TYPED_TEST(stringTyped_test, AccessFirstPositionOfNotEmptyStringViaConstSubscriptOperatorReturnsCorrectCharacter)
-{
+TYPED_TEST(stringTyped_test, AccessFirstPositionOfNotEmptyStringViaConstSubscriptOperatorReturnsCorrectCharacter) {
     ::testing::Test::RecordProperty("TEST_ID", "7ea474cc-db27-43cd-a2f8-dfa2ba196404");
     using MyString = typename TestFixture::stringType;
     constexpr auto STRINGCAP = MyString().capacity();
@@ -756,8 +707,7 @@ TYPED_TEST(stringTyped_test, AccessFirstPositionOfNotEmptyStringViaConstSubscrip
     EXPECT_THAT(sut[0U], Eq('L'));
 }
 
-TYPED_TEST(stringTyped_test, AccessMaxPositionOfNotEmptyStringViaConstSubscriptOperatorSucceeds)
-{
+TYPED_TEST(stringTyped_test, AccessMaxPositionOfNotEmptyStringViaConstSubscriptOperatorSucceeds) {
     ::testing::Test::RecordProperty("TEST_ID", "43ca0e71-7ac6-4039-a0fb-ebe84f7c0bad");
     using MyString = typename TestFixture::stringType;
     constexpr auto STRINGCAP = MyString().capacity();
@@ -768,8 +718,7 @@ TYPED_TEST(stringTyped_test, AccessMaxPositionOfNotEmptyStringViaConstSubscriptO
     EXPECT_THAT(sut[STRINGCAP - 1], Eq('L'));
 }
 
-TEST(stringTyped_test, NonCxxStringsAreIdentifiedCorrectly)
-{
+TEST(stringTyped_test, NonCxxStringsAreIdentifiedCorrectly) {
     ::testing::Test::RecordProperty("TEST_ID", "898fdeb7-2b35-4d33-8db4-ed3b9447a1da");
 
     EXPECT_FALSE(is_iox_string<int>::value);
@@ -781,26 +730,22 @@ TEST(stringTyped_test, NonCxxStringsAreIdentifiedCorrectly)
     EXPECT_FALSE(is_iox_string<char>::value);
 }
 
-TEST(stringTyped_test, CxxStringsAreIdentifiedCorrectly)
-{
+TEST(stringTyped_test, CxxStringsAreIdentifiedCorrectly) {
     ::testing::Test::RecordProperty("TEST_ID", "778995dc-9be4-47f1-9490-cd111930d3d3");
 
     EXPECT_TRUE(is_iox_string<iox::string<1>>::value);
     EXPECT_TRUE(is_iox_string<iox::string<10>>::value);
 }
 
-TYPED_TEST(stringTyped_test, UncheckedAtWorks)
-{
+TYPED_TEST(stringTyped_test, UncheckedAtWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "2197840d-af88-4fcd-9bb7-51a87d4bf10d");
 
-    for (uint64_t i = 0; i < this->testSubject.capacity(); ++i)
-    {
+    for (uint64_t i = 0; i < this->testSubject.capacity(); ++i) {
         // add a b c in alternating fashion
         EXPECT_THAT(this->testSubject.unsafe_append(static_cast<char>('a' + i % 3)), Eq(true));
     }
 
-    for (uint64_t i = 0; i < this->testSubject.size(); ++i)
-    {
+    for (uint64_t i = 0; i < this->testSubject.size(); ++i) {
         EXPECT_THAT(this->testSubject.unchecked_at(i), Eq(static_cast<char>('a' + i % 3)));
         // NOLINTJUSTIFICATION we explicitly test the const version
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)

@@ -16,66 +16,55 @@
 #include "test_design_functional_interface_common.hpp"
 #include "iox/attributes.hpp"
 
-namespace test_design_functional_interface
-{
+namespace test_design_functional_interface {
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) only for testing purposes
 GenericValueError::GenericValueError(const value_t value, const error_t error) noexcept
-    : m_value{value}
-    , m_error{error}
-{
+    : m_value { value }
+    , m_error { error } {
 }
 
-GenericValueError::operator bool() const noexcept
-{
+GenericValueError::operator bool() const noexcept {
     return m_value != 0;
 }
 
-GenericValueError::value_t& GenericValueError::value() & noexcept
-{
+GenericValueError::value_t& GenericValueError::value() & noexcept {
     return m_value;
 }
 
-const GenericValueError::value_t& GenericValueError::value() const& noexcept
-{
+const GenericValueError::value_t& GenericValueError::value() const& noexcept {
     return m_value;
 }
 
-GenericValueError::value_t&& GenericValueError::value() && noexcept
-{
+GenericValueError::value_t&& GenericValueError::value() && noexcept {
     // we must use std::move otherwise m_value is not converted into a rvalue
     // which would lead to a compile failure
     // NOLINTNEXTLINE(hicpp-move-const-arg, performance-move-const-arg)
     return std::move(m_value);
 }
 
-const GenericValueError::value_t&& GenericValueError::value() const&& noexcept
-{
+const GenericValueError::value_t&& GenericValueError::value() const&& noexcept {
     // we must use std::move otherwise m_value is not converted into a rvalue
     // which would lead to a compile failure
     // NOLINTNEXTLINE(hicpp-move-const-arg, performance-move-const-arg)
     return std::move(m_value);
 }
 
-GenericValueError::error_t& GenericValueError::error() & noexcept
-{
+GenericValueError::error_t& GenericValueError::error() & noexcept {
     return m_error;
 }
 
-const GenericValueError::error_t& GenericValueError::error() const& noexcept
-{
+const GenericValueError::error_t& GenericValueError::error() const& noexcept {
     return m_error;
 }
 
-GenericValueError::error_t&& GenericValueError::error() && noexcept
-{
+GenericValueError::error_t&& GenericValueError::error() && noexcept {
     // we must use std::move otherwise m_value is not converted into a rvalue
     // which would lead to a compile failure
     // NOLINTNEXTLINE(hicpp-move-const-arg, performance-move-const-arg)
     return std::move(m_error);
 }
 
-const GenericValueError::error_t&& GenericValueError::error() const&& noexcept
-{
+const GenericValueError::error_t&& GenericValueError::error() const&& noexcept {
     // we must use std::move otherwise m_value is not converted into a rvalue
     // which would lead to a compile failure
     // NOLINTNEXTLINE(hicpp-move-const-arg, performance-move-const-arg)
@@ -84,13 +73,11 @@ const GenericValueError::error_t&& GenericValueError::error() const&& noexcept
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) only for testing purposes
 GenericPlain::GenericPlain(const int value, const int error)
-    : m_isValid{value != INVALID_VALUE}
-{
+    : m_isValid { value != INVALID_VALUE } {
     IOX_DISCARD_RESULT(error);
 }
 
-GenericPlain::operator bool() const noexcept
-{
+GenericPlain::operator bool() const noexcept {
     return m_isValid;
 }
 

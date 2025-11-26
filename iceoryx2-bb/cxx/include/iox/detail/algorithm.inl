@@ -18,68 +18,56 @@
 
 #include "iox/algorithm.hpp"
 
-namespace iox
-{
-namespace algorithm
-{
+namespace iox {
+namespace algorithm {
 template <typename T>
-inline constexpr T maxVal(const T& left) noexcept
-{
+inline constexpr T maxVal(const T& left) noexcept {
     return left;
 }
 
 template <typename T>
-inline constexpr T maxVal(const T& left, const T& right) noexcept
-{
+inline constexpr T maxVal(const T& left, const T& right) noexcept {
     return (right < left) ? left : right;
 }
 
 template <typename T, typename... Targs>
-inline constexpr T maxVal(const T& left, const T& right, const Targs&... args) noexcept
-{
+inline constexpr T maxVal(const T& left, const T& right, const Targs&... args) noexcept {
     return maxVal(maxVal(left, right), args...);
 }
 
 template <typename T>
-inline constexpr T minVal(const T& left) noexcept
-{
+inline constexpr T minVal(const T& left) noexcept {
     return left;
 }
 
 template <typename T>
-inline constexpr T minVal(const T& left, const T& right) noexcept
-{
+inline constexpr T minVal(const T& left, const T& right) noexcept {
     return (left < right) ? left : right;
 }
 
 template <typename T, typename... Targs>
-inline constexpr T minVal(const T& left, const T& right, const Targs&... args) noexcept
-{
+inline constexpr T minVal(const T& left, const T& right, const Targs&... args) noexcept {
     return minVal(minVal(left, right), args...);
 }
 
 template <typename T, typename CompareType>
-inline constexpr bool doesContainType() noexcept
-{
+inline constexpr bool doesContainType() noexcept {
     return std::is_same<T, CompareType>::value;
 }
 
 template <typename T, typename CompareType, typename Next, typename... Remainder>
-inline constexpr bool doesContainType() noexcept
-{
+inline constexpr bool doesContainType() noexcept {
     return doesContainType<T, CompareType>() || doesContainType<T, Next, Remainder...>();
 }
 
 template <typename T>
-inline constexpr bool doesContainValue(const T) noexcept
-{
+inline constexpr bool doesContainValue(const T) noexcept {
     return false;
 }
 
 template <typename T1, typename T2, typename... ValueList>
 inline constexpr bool
-doesContainValue(const T1 value, const T2 firstValueListEntry, const ValueList... remainingValueListEntries) noexcept
-{
+doesContainValue(const T1 value, const T2 firstValueListEntry, const ValueList... remainingValueListEntries) noexcept {
     // AXIVION Next Line AutosarC++19_03-M6.2.2 : intentional check for exact equality
     return (value == firstValueListEntry) ? true : doesContainValue(value, remainingValueListEntries...);
 }

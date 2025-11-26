@@ -24,12 +24,9 @@
 
 #include <cmath>
 
-namespace iox
-{
-namespace units
-{
-enum class TimeSpecReference : uint8_t
-{
+namespace iox {
+namespace units {
+enum class TimeSpecReference : uint8_t {
     None,
     Epoch,
     Monotonic
@@ -37,8 +34,7 @@ enum class TimeSpecReference : uint8_t
 
 class Duration;
 
-namespace duration_literals
-{
+namespace duration_literals {
 /// @brief Constructs a new Duration object from nanoseconds
 // AXIVION Next Line AutosarC++19_03-A3.9.1 : Use of unsigned long long int in user-defined literals is enforced by the standard
 constexpr Duration operator"" _ns(unsigned long long int value) noexcept;
@@ -79,8 +75,7 @@ constexpr Duration operator"" _d(unsigned long long int value) noexcept;
 ///   IOX_LOG(Info, someDays.nanoSeconds<uint64_t>() << " ns");
 ///   IOX_LOG(Info, someSeconds.milliSeconds<int64_t>() << " ms");
 /// @endcode
-class Duration
-{
+class Duration {
   public:
     // BEGIN CREATION FROM STATIC FUNCTIONS
 
@@ -295,16 +290,16 @@ class Duration
     friend std::ostream& operator<<(std::ostream& stream, const Duration t);
     friend iox::log::LogStream& operator<<(iox::log::LogStream& stream, const Duration t) noexcept;
 
-    static constexpr uint32_t SECS_PER_MINUTE{60U};
-    static constexpr uint32_t SECS_PER_HOUR{3600U};
-    static constexpr uint32_t HOURS_PER_DAY{24U};
+    static constexpr uint32_t SECS_PER_MINUTE { 60U };
+    static constexpr uint32_t SECS_PER_HOUR { 3600U };
+    static constexpr uint32_t HOURS_PER_DAY { 24U };
 
-    static constexpr uint32_t MILLISECS_PER_SEC{1000U};
-    static constexpr uint32_t MICROSECS_PER_SEC{MILLISECS_PER_SEC * 1000U};
+    static constexpr uint32_t MILLISECS_PER_SEC { 1000U };
+    static constexpr uint32_t MICROSECS_PER_SEC { MILLISECS_PER_SEC * 1000U };
 
-    static constexpr uint32_t NANOSECS_PER_MICROSEC{1000U};
-    static constexpr uint32_t NANOSECS_PER_MILLISEC{NANOSECS_PER_MICROSEC * 1000U};
-    static constexpr uint32_t NANOSECS_PER_SEC{NANOSECS_PER_MILLISEC * 1000U};
+    static constexpr uint32_t NANOSECS_PER_MICROSEC { 1000U };
+    static constexpr uint32_t NANOSECS_PER_MILLISEC { NANOSECS_PER_MICROSEC * 1000U };
+    static constexpr uint32_t NANOSECS_PER_SEC { NANOSECS_PER_MILLISEC * 1000U };
 
   protected:
     using Seconds_t = uint64_t;
@@ -336,8 +331,8 @@ class Duration
     constexpr Duration multiplyWith(const std::enable_if_t<std::is_floating_point<T>::value, T>& rhs) const noexcept;
 
   private:
-    Seconds_t m_seconds{0U};
-    Nanoseconds_t m_nanoseconds{0U};
+    Seconds_t m_seconds { 0U };
+    Nanoseconds_t m_nanoseconds { 0U };
 };
 
 /// @brief creates Duration object by multiplying object T with a duration. On overflow

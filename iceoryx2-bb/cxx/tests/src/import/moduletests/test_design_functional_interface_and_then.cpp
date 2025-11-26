@@ -15,13 +15,11 @@
 
 #include "test_design_functional_interface_types.hpp"
 
-namespace
-{
+namespace {
 using namespace test_design_functional_interface;
 using namespace ::testing;
 
-TYPED_TEST(FunctionalInterface_test, AndThenHasCorrectSignature)
-{
+TYPED_TEST(FunctionalInterface_test, AndThenHasCorrectSignature) {
     ::testing::Test::RecordProperty("TEST_ID", "7636fda5-090f-4dd6-b3a0-3d71bdbca787");
     using Factory = typename TestFixture::TestFactoryType;
     constexpr bool DOES_AND_THEN_HAVE_A_VALUE = iox::internal::HasValueMethod<typename Factory::Type>::value;
@@ -47,11 +45,9 @@ template <bool HasValue>
 struct AndThenIsCalledCorrectlyWhenValid;
 
 template <>
-struct AndThenIsCalledCorrectlyWhenValid<TYPE_HAS_NO_VALUE_METHOD>
-{
+struct AndThenIsCalledCorrectlyWhenValid<TYPE_HAS_NO_VALUE_METHOD> {
     template <typename TestFactory, typename AndThenCall>
-    static void performTest(const AndThenCall& callAndThen)
-    {
+    static void performTest(const AndThenCall& callAndThen) {
         auto sut = TestFactory::createValidObject();
         bool wasCallbackCalled = false;
         auto andThenCallbackArgument = [&] { wasCallbackCalled = true; };
@@ -61,11 +57,9 @@ struct AndThenIsCalledCorrectlyWhenValid<TYPE_HAS_NO_VALUE_METHOD>
 };
 
 template <>
-struct AndThenIsCalledCorrectlyWhenValid<TYPE_HAS_VALUE_METHOD>
-{
+struct AndThenIsCalledCorrectlyWhenValid<TYPE_HAS_VALUE_METHOD> {
     template <typename TestFactory, typename AndThenCall>
-    static void performTest(const AndThenCall& callAndThen)
-    {
+    static void performTest(const AndThenCall& callAndThen) {
         auto sut = TestFactory::createValidObject();
         bool wasCallbackCalled = false;
         auto andThenCallbackArgument = [&](auto& arg) {
@@ -77,28 +71,24 @@ struct AndThenIsCalledCorrectlyWhenValid<TYPE_HAS_VALUE_METHOD>
     }
 };
 
-TYPED_TEST(FunctionalInterface_test, AndThenIsCalledCorrectlyWhenValid_LValueCase)
-{
+TYPED_TEST(FunctionalInterface_test, AndThenIsCalledCorrectlyWhenValid_LValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "7f1b42e0-c834-47f4-96cc-c6466647615c");
     IOX_TEST_FUNCTIONAL_INTERFACE(AndThenIsCalledCorrectlyWhenValid, sut);
 }
 
-TYPED_TEST(FunctionalInterface_test, AndThenIsCalledCorrectlyWhenValid_ConstLValueCase)
-{
+TYPED_TEST(FunctionalInterface_test, AndThenIsCalledCorrectlyWhenValid_ConstLValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "80724fcd-78a4-4f52-82fe-1613069823f0");
     // const_cast avoids code duplication
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     IOX_TEST_FUNCTIONAL_INTERFACE(AndThenIsCalledCorrectlyWhenValid, const_cast<const SutType&>(sut));
 }
 
-TYPED_TEST(FunctionalInterface_test, AndThenIsCalledCorrectlyWhenValid_RValueCase)
-{
+TYPED_TEST(FunctionalInterface_test, AndThenIsCalledCorrectlyWhenValid_RValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "ddf400a0-3231-49d3-b29f-338873038549");
     IOX_TEST_FUNCTIONAL_INTERFACE(AndThenIsCalledCorrectlyWhenValid, std::move(sut));
 }
 
-TYPED_TEST(FunctionalInterface_test, AndThenIsCalledCorrectlyWhenValid_ConstRValueCase)
-{
+TYPED_TEST(FunctionalInterface_test, AndThenIsCalledCorrectlyWhenValid_ConstRValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "225f1e86-6b37-47db-9e1f-f44040040e8a");
     // const_cast avoids code duplication
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
@@ -109,11 +99,9 @@ template <bool HasValue>
 struct AndThenIsNotCalledWhenInvalid;
 
 template <>
-struct AndThenIsNotCalledWhenInvalid<TYPE_HAS_NO_VALUE_METHOD>
-{
+struct AndThenIsNotCalledWhenInvalid<TYPE_HAS_NO_VALUE_METHOD> {
     template <typename TestFactory, typename AndThenCall>
-    static void performTest(const AndThenCall& callAndThen)
-    {
+    static void performTest(const AndThenCall& callAndThen) {
         auto sut = TestFactory::createInvalidObject();
         bool wasCallbackCalled = false;
         auto andThenCallbackArgument = [&] { wasCallbackCalled = true; };
@@ -123,11 +111,9 @@ struct AndThenIsNotCalledWhenInvalid<TYPE_HAS_NO_VALUE_METHOD>
 };
 
 template <>
-struct AndThenIsNotCalledWhenInvalid<TYPE_HAS_VALUE_METHOD>
-{
+struct AndThenIsNotCalledWhenInvalid<TYPE_HAS_VALUE_METHOD> {
     template <typename TestFactory, typename AndThenCall>
-    static void performTest(const AndThenCall& callAndThen)
-    {
+    static void performTest(const AndThenCall& callAndThen) {
         auto sut = TestFactory::createInvalidObject();
         bool wasCallbackCalled = false;
         auto andThenCallbackArgument = [&](auto&) { wasCallbackCalled = true; };
@@ -136,28 +122,24 @@ struct AndThenIsNotCalledWhenInvalid<TYPE_HAS_VALUE_METHOD>
     }
 };
 
-TYPED_TEST(FunctionalInterface_test, AndThenIsNotCalledWhenInvalid_LValueCase)
-{
+TYPED_TEST(FunctionalInterface_test, AndThenIsNotCalledWhenInvalid_LValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "53eef31f-ab30-41c8-887e-edac3c51966c");
     IOX_TEST_FUNCTIONAL_INTERFACE(AndThenIsNotCalledWhenInvalid, sut);
 }
 
-TYPED_TEST(FunctionalInterface_test, AndThenIsNotCalledWhenInvalid_ConstLValueCase)
-{
+TYPED_TEST(FunctionalInterface_test, AndThenIsNotCalledWhenInvalid_ConstLValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "1fcd75d8-ce17-49c3-8a0a-d676d649b985");
     // const_cast avoids code duplication
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     IOX_TEST_FUNCTIONAL_INTERFACE(AndThenIsNotCalledWhenInvalid, const_cast<const SutType&>(sut));
 }
 
-TYPED_TEST(FunctionalInterface_test, AndThenIsNotCalledWhenInvalid_RValueCase)
-{
+TYPED_TEST(FunctionalInterface_test, AndThenIsNotCalledWhenInvalid_RValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "ba6ed865-0bc1-451c-ace2-b09ce273e6ca");
     IOX_TEST_FUNCTIONAL_INTERFACE(AndThenIsNotCalledWhenInvalid, std::move(sut));
 }
 
-TYPED_TEST(FunctionalInterface_test, AndThenIsNotCalledWhenInvalid_ConstRValueCase)
-{
+TYPED_TEST(FunctionalInterface_test, AndThenIsNotCalledWhenInvalid_ConstRValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "d4162bb7-c2b3-4c82-bb78-bc63acf4b3b9");
     // const_cast avoids code duplication
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)

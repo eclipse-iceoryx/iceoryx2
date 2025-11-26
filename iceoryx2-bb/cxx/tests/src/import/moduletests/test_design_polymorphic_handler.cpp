@@ -23,39 +23,32 @@
 #include <iostream>
 #include <thread>
 
-namespace
-{
+namespace {
 using namespace ::testing;
 
-struct Interface
-{
+struct Interface {
     virtual ~Interface() = default;
 
     virtual uint32_t id() = 0;
 
-    void reset()
-    {
+    void reset() {
         value = 0;
     }
 
-    uint32_t value{0};
+    uint32_t value { 0 };
 };
 
 constexpr uint32_t DEFAULT_ID = 73;
 constexpr uint32_t ALTERNATE_ID = 21;
 
-struct Default : public Interface
-{
-    uint32_t id() override
-    {
+struct Default : public Interface {
+    uint32_t id() override {
         return DEFAULT_ID;
     }
 };
 
-struct Alternate : public Interface
-{
-    uint32_t id() override
-    {
+struct Alternate : public Interface {
+    uint32_t id() override {
         return ALTERNATE_ID;
     }
 };
@@ -72,11 +65,9 @@ Guard<Alternate> alternateGuard;
 Default& defaultHandler = Guard<Default>::instance();
 Alternate& alternateHandler = Guard<Alternate>::instance();
 
-struct Hooks
-{
+struct Hooks {
     // to check whether the arguments are used correctly
-    static void onSetAfterFinalize(Interface& currentInstance, Interface& newInstance)
-    {
+    static void onSetAfterFinalize(Interface& currentInstance, Interface& newInstance) {
         currentInstance.value = currentInstance.id();
         newInstance.value = newInstance.id();
     }
@@ -84,27 +75,22 @@ struct Hooks
 
 using Handler = iox::PolymorphicHandler<Interface, Default, Hooks>;
 
-class PolymorphicHandler_test : public Test
-{
+class PolymorphicHandler_test : public Test {
   public:
-    void SetUp() override
-    {
+    void SetUp() override {
     }
 
-    void TearDown() override
-    {
+    void TearDown() override {
         Handler::reset();
     }
 };
 
-TEST_F(PolymorphicHandler_test, handlerIsInitializedWithDefault)
-{
+TEST_F(PolymorphicHandler_test, handlerIsInitializedWithDefault) {
     ::testing::Test::RecordProperty("TEST_ID", "41bb4a5e-a916-4a6d-80c4-fed3a3d8d78b");
     EXPECT_EQ(Handler::get().id(), DEFAULT_ID);
 }
 
-TEST_F(PolymorphicHandler_test, settingAlternateWorks)
-{
+TEST_F(PolymorphicHandler_test, settingAlternateWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "8b2f0cfe-f13c-4fa0-aa93-5ddd4f0904d1");
     EXPECT_EQ(Handler::get().id(), DEFAULT_ID);
 
@@ -115,8 +101,7 @@ TEST_F(PolymorphicHandler_test, settingAlternateWorks)
     EXPECT_TRUE(ret);
 }
 
-TEST_F(PolymorphicHandler_test, alternatePointsToExternalMemory)
-{
+TEST_F(PolymorphicHandler_test, alternatePointsToExternalMemory) {
     ::testing::Test::RecordProperty("TEST_ID", "85ce0e51-a1fe-490c-9012-7d539512ed38");
     EXPECT_EQ(Handler::get().id(), DEFAULT_ID);
     Handler::set(alternateGuard);
@@ -127,8 +112,7 @@ TEST_F(PolymorphicHandler_test, alternatePointsToExternalMemory)
     EXPECT_EQ(&handler, ptr);
 }
 
-TEST_F(PolymorphicHandler_test, explicitlySettingToDefaultWorks)
-{
+TEST_F(PolymorphicHandler_test, explicitlySettingToDefaultWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "32e4d808-c848-4bf9-b878-e163ca825539");
     EXPECT_EQ(Handler::get().id(), DEFAULT_ID);
     Handler::set(alternateGuard);
@@ -143,8 +127,7 @@ TEST_F(PolymorphicHandler_test, explicitlySettingToDefaultWorks)
 }
 
 
-TEST_F(PolymorphicHandler_test, resetToDefaultWorks)
-{
+TEST_F(PolymorphicHandler_test, resetToDefaultWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "ef8a99da-22a6-497e-b2ec-bf72cc3ae943");
     Handler::set(alternateGuard);
     auto& prevHandler = Handler::get();
@@ -158,8 +141,7 @@ TEST_F(PolymorphicHandler_test, resetToDefaultWorks)
     EXPECT_EQ(handler.id(), DEFAULT_ID);
 }
 
-TEST_F(PolymorphicHandler_test, setToCurrentHandlerWorks)
-{
+TEST_F(PolymorphicHandler_test, setToCurrentHandlerWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "54e22290-a7b4-4552-a18f-953571381d38");
 
     // change to alternateHandler
@@ -174,24 +156,22 @@ TEST_F(PolymorphicHandler_test, setToCurrentHandlerWorks)
     EXPECT_EQ(&handler, &alternateHandler);
 }
 
-TEST_F(PolymorphicHandler_test, defaultHandlerIsVisibleInAllThreads)
-{
+TEST_F(PolymorphicHandler_test, defaultHandlerIsVisibleInAllThreads) {
     ::testing::Test::RecordProperty("TEST_ID", "caa1e507-7cc1-4233-8c9c-5c4e56be9fb3");
 
     Handler::set(defaultGuard);
 
-    iox::concurrent::Atomic<uint32_t> count{0};
+    iox::concurrent::Atomic<uint32_t> count { 0 };
 
     auto checkHandler = [&]() {
         auto& h = Handler::get();
 
-        if (h.id() == DEFAULT_ID)
-        {
+        if (h.id() == DEFAULT_ID) {
             ++count;
         }
     };
 
-    constexpr uint32_t NUM_THREADS{2}; // including main thread
+    constexpr uint32_t NUM_THREADS { 2 }; // including main thread
 
     std::thread t(checkHandler);
     t.join();
@@ -201,8 +181,7 @@ TEST_F(PolymorphicHandler_test, defaultHandlerIsVisibleInAllThreads)
     EXPECT_EQ(count.load(), NUM_THREADS);
 }
 
-TEST_F(PolymorphicHandler_test, handlerChangePropagatesBetweenThreads)
-{
+TEST_F(PolymorphicHandler_test, handlerChangePropagatesBetweenThreads) {
     ::testing::Test::RecordProperty("TEST_ID", "f0a8e941-e064-4889-a6db-425b35a3b7b0");
 
     Handler::set(defaultGuard);
@@ -216,8 +195,7 @@ TEST_F(PolymorphicHandler_test, handlerChangePropagatesBetweenThreads)
     EXPECT_EQ(Handler::get().id(), ALTERNATE_ID);
 }
 
-TEST_F(PolymorphicHandler_test, settingAfterFinalizeCallsHook)
-{
+TEST_F(PolymorphicHandler_test, settingAfterFinalizeCallsHook) {
     ::testing::Test::RecordProperty("TEST_ID", "171ac802-01b9-4e08-80a6-6f2defecaf6d");
 
     // we always finalize it to be alternateHandler
@@ -247,8 +225,7 @@ TEST_F(PolymorphicHandler_test, settingAfterFinalizeCallsHook)
     EXPECT_EQ(&handler, &alternateHandler);
 }
 
-TEST_F(PolymorphicHandler_test, resetAfterFinalizeCallsHook)
-{
+TEST_F(PolymorphicHandler_test, resetAfterFinalizeCallsHook) {
     ::testing::Test::RecordProperty("TEST_ID", "996220e3-7985-4d57-bd3f-844987cf99dc");
 
     // we always finalize it to be alternateHandler (in the other test or here)
@@ -278,8 +255,7 @@ TEST_F(PolymorphicHandler_test, resetAfterFinalizeCallsHook)
     EXPECT_EQ(&handler, &alternateHandler);
 }
 
-TEST_F(PolymorphicHandler_test, obtainingGuardWorks)
-{
+TEST_F(PolymorphicHandler_test, obtainingGuardWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "694f7399-598a-4918-b1e8-4b8546484245");
     EXPECT_EQ(Guard<Handler>::count(), 1);
     Guard<Handler> guard(Handler::guard());

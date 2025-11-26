@@ -21,17 +21,14 @@
 
 #include <type_traits>
 
-namespace iox
-{
-namespace detail
-{
+namespace iox {
+namespace detail {
 
 /// @brief default hooks for the PolymorphicHandler
 /// @tparam Interface the handler interface
 /// @note template hooks to avoid forced virtual inheritance
 template <typename Interface>
-struct DefaultHooks
-{
+struct DefaultHooks {
     /// @brief called if the polymorphic handler is set or reset after finalize
     /// @param currentInstance the current instance of the handler singleton
     /// @param newInstance the instance of the handler singleton to be set
@@ -58,8 +55,7 @@ struct DefaultHooks
 /// static void onSetAfterFinalize(Interface& /*currentInstance*/, Interface& /*newInstance*/).
 /// @note DefaultHooks call abort if the handler is set or reset after finalize
 template <typename Interface, typename Default, typename Hooks = detail::DefaultHooks<Interface>>
-class PolymorphicHandler
-{
+class PolymorphicHandler {
     static_assert(std::is_base_of<Interface, Default>::value, "Interface must be a base class of Default");
 
     using Self = PolymorphicHandler<Interface, Default, Hooks>;
@@ -117,8 +113,8 @@ class PolymorphicHandler
 
     // should a defaultHandler be created, the guard prevents its destruction
     StaticLifetimeGuard<Default> m_defaultGuard;
-    concurrent::Atomic<bool> m_isFinal{false};
-    concurrent::Atomic<Interface*> m_current{nullptr};
+    concurrent::Atomic<bool> m_isFinal { false };
+    concurrent::Atomic<Interface*> m_current { nullptr };
 };
 
 } // namespace iox

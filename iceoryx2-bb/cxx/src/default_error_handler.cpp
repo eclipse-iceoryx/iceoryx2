@@ -15,20 +15,15 @@
 
 #include "iox/error_reporting/custom/default/default_error_handler.hpp"
 
-namespace iox
-{
-namespace er
-{
-void DefaultErrorHandler::onPanic()
-{
+namespace iox {
+namespace er {
+void DefaultErrorHandler::onPanic() {
 }
 
-void DefaultErrorHandler::onReportError(ErrorDescriptor)
-{
+void DefaultErrorHandler::onReportError(ErrorDescriptor) {
 }
 
-void DefaultErrorHandler::onReportViolation(ErrorDescriptor)
-{
+void DefaultErrorHandler::onReportViolation(ErrorDescriptor) {
 }
 
 } // namespace er

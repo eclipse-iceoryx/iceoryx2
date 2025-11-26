@@ -15,55 +15,44 @@
 
 #include "iceoryx_hoofs/testing/error_reporting/testing_support.hpp"
 
-namespace iox
-{
-namespace testing
-{
+namespace iox {
+namespace testing {
 
-bool hasPanicked()
-{
+bool hasPanicked() {
     return ErrorHandler::instance().hasPanicked();
 }
 
-bool hasError()
-{
+bool hasError() {
     return ErrorHandler::instance().hasError();
 }
 
-bool hasAssertViolation()
-{
+bool hasAssertViolation() {
     auto code = iox::er::Violation(iox::er::ViolationErrorCode::ASSERT_VIOLATION).code();
     return ErrorHandler::instance().hasViolation(code);
 }
 
-bool hasEnforceViolation()
-{
+bool hasEnforceViolation() {
     auto code = iox::er::Violation(iox::er::ViolationErrorCode::ENFORCE_VIOLATION).code();
     return ErrorHandler::instance().hasViolation(code);
 }
 
-bool hasViolation()
-{
+bool hasViolation() {
     return hasEnforceViolation() || hasAssertViolation();
 }
 
-bool isInNormalState()
-{
+bool isInNormalState() {
     return !(hasPanicked() || hasError() || hasViolation());
 }
 
-void runInTestThread(const function_ref<void()> testFunction)
-{
+void runInTestThread(const function_ref<void()> testFunction) {
     auto t = std::thread([&]() {
         auto successfullRun = ErrorHandler::instance().fatalFailureTestContext(testFunction);
-        if (!successfullRun)
-        {
+        if (!successfullRun) {
             GTEST_FAIL() << "This should not fail! Incorrect usage!";
         }
     });
 
-    if (t.joinable())
-    {
+    if (t.joinable()) {
         t.join();
     }
 }

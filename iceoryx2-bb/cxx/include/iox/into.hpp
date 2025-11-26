@@ -16,29 +16,23 @@
 #ifndef IOX_HOOFS_UTILITY_INTO_HPP
 #define IOX_HOOFS_UTILITY_INTO_HPP
 
-namespace iox
-{
+namespace iox {
 
 /// @brief Helper struct to indicate a lossy conversion, e.g. from an unbounded type into a bounded type
 template <typename D>
-struct lossy
-{
-};
+struct lossy { };
 
-namespace detail
-{
+namespace detail {
 /// @brief Helper struct to get the actual destination type 'T' for 'into' with an additional indirection like
 /// 'into<lossy<T>>'
 template <typename T>
-struct extract_into_type
-{
+struct extract_into_type {
     using type_t = T;
 };
 
 /// @brief Helper struct to get the actual destination type 'T' for 'into<lossy<T>>'
 template <typename T>
-struct extract_into_type<lossy<T>>
-{
+struct extract_into_type<lossy<T>> {
     using type_t = T;
 };
 } // namespace detail
@@ -95,8 +89,7 @@ constexpr typename detail::extract_into_type<DestinationType>::type_t from(const
 
 // Using a struct as impl, as free functions do not support partially specialized templates
 template <typename SourceType, typename DestinationType>
-struct FromImpl
-{
+struct FromImpl {
     // AXIVION Next Construct AutosarC++19_03-A7.1.5 : 'auto' is only used for the generic implementation which will always result in a compile error
     static auto fromImpl(const SourceType& value) noexcept;
 };

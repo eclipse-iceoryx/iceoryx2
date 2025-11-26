@@ -22,18 +22,15 @@
 #include "iox/std_string_support.hpp"
 #include "iox/vector.hpp"
 
-namespace iox
-{
-namespace cli
-{
+namespace iox {
+namespace cli {
 using CmdAssignments_t = vector<function<void(Arguments&)>, MAX_NUMBER_OF_ARGUMENTS>;
 
 /// @brief Manages command line options which were defined via the IOX_CLI_ macros in a
 ///        user defined struct.
 ///        This class ensures that the option values are assigned to the member variables
 ///        of the struct when the constructor of the IOX_CLI_DEFINITION struct is called.
-class OptionManager
-{
+class OptionManager {
   public:
     /// @brief Create OptionManager
     /// @param[in] programDescription the description of the application

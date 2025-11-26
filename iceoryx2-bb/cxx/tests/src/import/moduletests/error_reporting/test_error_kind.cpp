@@ -19,8 +19,7 @@
 #include "iox/error_reporting/custom/error_kind.hpp"
 #include "iox/error_reporting/error_kind.hpp"
 
-namespace
-{
+namespace {
 
 using namespace ::testing;
 using namespace iox::er;
@@ -28,8 +27,7 @@ using namespace iox::er;
 // check the type traits of the error kinds
 
 // tautologies are always true ...
-TEST(ErrorKind_test, fatalErrorsAreFatal)
-{
+TEST(ErrorKind_test, fatalErrorsAreFatal) {
     ::testing::Test::RecordProperty("TEST_ID", "2524192f-a29c-45bc-b950-ae29deb8b3ae");
 
     FatalKind sut;
@@ -37,8 +35,7 @@ TEST(ErrorKind_test, fatalErrorsAreFatal)
     EXPECT_TRUE(isFatal(sut));
 }
 
-TEST(ErrorKind_test, enforceViolationsAreFatal)
-{
+TEST(ErrorKind_test, enforceViolationsAreFatal) {
     ::testing::Test::RecordProperty("TEST_ID", "21b79757-e46b-44fe-854a-7579b7f2243b");
 
     EnforceViolationKind sut;
@@ -47,8 +44,7 @@ TEST(ErrorKind_test, enforceViolationsAreFatal)
     EXPECT_TRUE(isFatal(ENFORCE_VIOLATION));
 }
 
-TEST(ErrorKind_test, assertViolationsAreFatal)
-{
+TEST(ErrorKind_test, assertViolationsAreFatal) {
     ::testing::Test::RecordProperty("TEST_ID", "b502e70e-157d-45a0-9654-61ada213531d");
 
     AssertViolationKind sut;
@@ -57,8 +53,7 @@ TEST(ErrorKind_test, assertViolationsAreFatal)
     EXPECT_TRUE(isFatal(ASSERT_VIOLATION));
 }
 
-TEST(ErrorKind_test, runtimeErrorsAreNotFatal)
-{
+TEST(ErrorKind_test, runtimeErrorsAreNotFatal) {
     ::testing::Test::RecordProperty("TEST_ID", "22c69c24-5082-4e81-8b3f-306e624731a5");
 
     RuntimeErrorKind sut;

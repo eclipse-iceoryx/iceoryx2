@@ -32,8 +32,7 @@
 #include <sstream>
 #include <string>
 
-namespace iox
-{
+namespace iox {
 /// @brief Collection of static methods for conversion from and to string.
 /// @code
 ///     std::string number      = iox::convert::toString(123);
@@ -46,23 +45,21 @@ namespace iox
 /// @endcode
 /// @todo iox-#260 Refactor 'convert' so that one can use 'into' to directly to convert numbers to strings:
 /// 'ClassExpectingAnIoxString(iox::into<iox::string<100>>(42)'
-class convert
-{
+class convert {
   public:
-    enum class NumberType : uint8_t
-    {
+    enum class NumberType : uint8_t {
         INTEGER,
         UNSIGNED_INTEGER,
         FLOAT
     };
 
-    static constexpr int32_t STRTOULL_BASE{10};
-    static constexpr int32_t STRTOUL_BASE{10};
-    static constexpr int32_t STRTOLL_BASE{10};
-    static constexpr int32_t STRTOL_BASE{10};
+    static constexpr int32_t STRTOULL_BASE { 10 };
+    static constexpr int32_t STRTOUL_BASE { 10 };
+    static constexpr int32_t STRTOLL_BASE { 10 };
+    static constexpr int32_t STRTOL_BASE { 10 };
 
-    static constexpr uint32_t FLOAT_SIGNALING_NAN_MASK{static_cast<uint32_t>(1) << static_cast<uint32_t>(22)};
-    static constexpr uint64_t DOUBLE_SIGNALING_NAN_MASK{static_cast<uint64_t>(1) << static_cast<uint64_t>(51)};
+    static constexpr uint32_t FLOAT_SIGNALING_NAN_MASK { static_cast<uint32_t>(1) << static_cast<uint32_t>(22) };
+    static constexpr uint64_t DOUBLE_SIGNALING_NAN_MASK { static_cast<uint64_t>(1) << static_cast<uint64_t>(51) };
 
     /// @brief Converts every type which is either a pod (plain old data) type or is convertable
     ///         to a string (this means that the operator std::string() is defined)

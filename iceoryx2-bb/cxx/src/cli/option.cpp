@@ -15,69 +15,54 @@
 
 #include "iox/cli/option.hpp"
 
-namespace iox
-{
-namespace cli
-{
-bool Option::isEmpty() const noexcept
-{
+namespace iox {
+namespace cli {
+bool Option::isEmpty() const noexcept {
     return longOption.empty() && shortOption == NO_SHORT_OPTION;
 }
 
-bool Option::longOptionNameDoesStartWithDash() const noexcept
-{
+bool Option::longOptionNameDoesStartWithDash() const noexcept {
     return !longOption.empty() && longOption[0] == '-';
 }
 
-bool Option::shortOptionNameIsEqualDash() const noexcept
-{
+bool Option::shortOptionNameIsEqualDash() const noexcept {
     return shortOption == '-';
 }
 
-bool Option::hasLongOptionName(const OptionName_t& value) const noexcept
-{
+bool Option::hasLongOptionName(const OptionName_t& value) const noexcept {
     return (!longOption.empty() && longOption == value);
 }
 
-bool Option::hasShortOptionName(const char value) const noexcept
-{
+bool Option::hasShortOptionName(const char value) const noexcept {
     return (shortOption != NO_SHORT_OPTION && shortOption == value);
 }
 
-bool Option::hasOptionName(const OptionName_t& name) const noexcept
-{
+bool Option::hasOptionName(const OptionName_t& name) const noexcept {
     return hasLongOptionName(name) || (name.size() == 1 && hasShortOptionName(name[0]));
 }
 
-bool Option::isSameOption(const Option& rhs) const noexcept
-{
+bool Option::isSameOption(const Option& rhs) const noexcept {
     return (shortOption == rhs.shortOption && longOption == rhs.longOption);
 }
 
-bool Option::hasShortOption() const noexcept
-{
+bool Option::hasShortOption() const noexcept {
     return (shortOption != NO_SHORT_OPTION);
 }
 
-bool Option::hasLongOption() const noexcept
-{
+bool Option::hasLongOption() const noexcept {
     return !longOption.empty();
 }
 
-bool Option::operator<(const Option& rhs) const noexcept
-{
-    if (shortOption != NO_SHORT_OPTION && rhs.shortOption != NO_SHORT_OPTION)
-    {
+bool Option::operator<(const Option& rhs) const noexcept {
+    if (shortOption != NO_SHORT_OPTION && rhs.shortOption != NO_SHORT_OPTION) {
         return shortOption < rhs.shortOption;
     }
 
-    if (!longOption.empty() && rhs.shortOption != NO_SHORT_OPTION)
-    {
+    if (!longOption.empty() && rhs.shortOption != NO_SHORT_OPTION) {
         return longOption.unchecked_at(0) < rhs.shortOption;
     }
 
-    if (shortOption != NO_SHORT_OPTION && !rhs.longOption.empty())
-    {
+    if (shortOption != NO_SHORT_OPTION && !rhs.longOption.empty()) {
         return shortOption < rhs.longOption.unchecked_at(0);
     }
 
@@ -88,13 +73,11 @@ OptionWithDetails::OptionWithDetails(const Option& option,
                                      const OptionDescription_t& description,
                                      const OptionType type,
                                      const TypeName_t& typeName) noexcept
-    : Option{option}
-    , details{description, type, typeName}
-{
+    : Option { option }
+    , details { description, type, typeName } {
 }
 
-bool OptionWithDetails::operator<(const OptionWithDetails& rhs) const noexcept
-{
+bool OptionWithDetails::operator<(const OptionWithDetails& rhs) const noexcept {
     return Option::operator<(rhs);
 }
 } // namespace cli

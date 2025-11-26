@@ -27,15 +27,12 @@
 // NOLINTNEXTLINE(hicpp-deprecated-headers) required to work on some platforms
 #include <setjmp.h>
 
-namespace iox
-{
-namespace testing
-{
+namespace iox {
+namespace testing {
 
 /// @brief indicates whether the test error handler registered a specific error
 template <typename Code>
-inline bool hasError(Code&& code)
-{
+inline bool hasError(Code&& code) {
     auto e = iox::er::toError(std::forward<Code>(code));
     return ErrorHandler::instance().hasError(e.code(), e.module());
 }

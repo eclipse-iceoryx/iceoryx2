@@ -18,10 +18,8 @@
 
 #include <type_traits>
 
-namespace iox
-{
-namespace er
-{
+namespace iox {
+namespace er {
 
 // Tag types for mandatory fatal error categories that always exist.
 // They have the suffix "Kind" to allow using the prefix as the actual error type.
@@ -31,24 +29,20 @@ namespace er
 // In addition, this has the advantage to be more explicit at reporting site instead of hiding
 // the information in a function name or the error itself.
 
-struct FatalKind
-{
+struct FatalKind {
     static constexpr char const* name = "Fatal Error";
 };
 
-struct AssertViolationKind
-{
+struct AssertViolationKind {
     static constexpr char const* name = "Assert Violation";
 };
 
-struct EnforceViolationKind
-{
+struct EnforceViolationKind {
     static constexpr char const* name = "Enforce Violation";
 };
 
 template <class T>
-struct IsFatal : public std::false_type
-{
+struct IsFatal : public std::false_type {
     /// @todo iox-#1032 shouldn't there be a static_assert to prevent using this struct in a generic way without
     /// specialization?
 };
@@ -57,43 +51,33 @@ struct IsFatal : public std::false_type
 // as this would lead to a compilation error.
 // This enforces that these errors are always fatal in the sense that they cause panic and abort.
 template <>
-struct IsFatal<FatalKind> : public std::true_type
-{
-};
+struct IsFatal<FatalKind> : public std::true_type { };
 
 template <>
-struct IsFatal<AssertViolationKind> : public std::true_type
-{
-};
+struct IsFatal<AssertViolationKind> : public std::true_type { };
 
 template <>
-struct IsFatal<EnforceViolationKind> : public std::true_type
-{
-};
+struct IsFatal<EnforceViolationKind> : public std::true_type { };
 
 // The function syntax is more useful if there is already a value (instead of only a type).
 // It must be consistent with the type trait, i.e. yield the same boolean value.
 template <class Kind>
-bool constexpr isFatal(Kind)
-{
+bool constexpr isFatal(Kind) {
     return IsFatal<Kind>::value;
 }
 
 template <>
-bool constexpr isFatal<FatalKind>(FatalKind)
-{
+bool constexpr isFatal<FatalKind>(FatalKind) {
     return IsFatal<FatalKind>::value;
 }
 
 template <>
-bool constexpr isFatal<AssertViolationKind>(AssertViolationKind)
-{
+bool constexpr isFatal<AssertViolationKind>(AssertViolationKind) {
     return IsFatal<AssertViolationKind>::value;
 }
 
 template <>
-bool constexpr isFatal<EnforceViolationKind>(EnforceViolationKind)
-{
+bool constexpr isFatal<EnforceViolationKind>(EnforceViolationKind) {
     return IsFatal<EnforceViolationKind>::value;
 }
 

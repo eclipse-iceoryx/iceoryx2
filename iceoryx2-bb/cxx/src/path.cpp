@@ -16,12 +16,9 @@
 #include "iox/path.hpp"
 #include "iceoryx_platform/platform_settings.hpp"
 
-namespace iox
-{
-namespace detail
-{
-bool path_does_contain_invalid_content(const string<platform::IOX_MAX_PATH_LENGTH>&) noexcept
-{
+namespace iox {
+namespace detail {
+bool path_does_contain_invalid_content(const string<platform::IOX_MAX_PATH_LENGTH>&) noexcept {
     return false;
 }
 } // namespace detail

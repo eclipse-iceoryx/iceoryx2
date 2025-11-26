@@ -22,16 +22,13 @@
 #include "iox/vector.hpp"
 #include <cstdint>
 
-namespace iox
-{
-namespace cli
-{
+namespace iox {
+namespace cli {
 /// @brief A set of options which is provided to the CommandLineParser.
 ///     Description, short and long name as well as type and value can be defined for every
 ///     command line option which the application provides.
 ///     The parser uses this set to populate the Arguments.
-class OptionDefinition
-{
+class OptionDefinition {
   public:
     /// @brief The constructor.
     /// @param[in] programDescription The description to the program. Will be printed in the help.

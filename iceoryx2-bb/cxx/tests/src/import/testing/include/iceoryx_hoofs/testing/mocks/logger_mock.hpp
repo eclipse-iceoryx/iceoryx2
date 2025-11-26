@@ -23,10 +23,8 @@
 #include <mutex>
 #include <vector>
 
-namespace iox
-{
-namespace testing
-{
+namespace iox {
+namespace testing {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage) required to be able to easily test custom types
 #define IOX_LOGSTREAM_MOCK(logger)                                                                                     \
     iox::log::LogStream((logger), "file", 42, "function", iox::log::LogLevel::Trace).self()
@@ -42,19 +40,17 @@ namespace testing
 /// ASSERT_THAT(loggerMock.logs.size(), Eq(1U));
 /// EXPECT_THAT(loggerMock.logs[0].message, StrEq(EXPECTED_STRING_REPRESENTATION);
 /// @endcode
-class Logger_Mock : public log::TestingLoggerBase
-{
+class Logger_Mock : public log::TestingLoggerBase {
     using Base = log::TestingLoggerBase;
 
   public:
     Logger_Mock() noexcept = default;
 
-    struct LogEntry
-    {
+    struct LogEntry {
         std::string file;
-        int line{0};
+        int line { 0 };
         std::string function;
-        log::LogLevel logLevel{iox::log::LogLevel::Off};
+        log::LogLevel logLevel { iox::log::LogLevel::Off };
         std::string message;
     };
 
@@ -65,8 +61,7 @@ class Logger_Mock : public log::TestingLoggerBase
     void createLogMessageHeader(const char* file,
                                 const int line,
                                 const char* function,
-                                log::LogLevel logLevel) noexcept override
-    {
+                                log::LogLevel logLevel) noexcept override {
         Base::assumeFlushed();
 
         LogEntry logEntry;
@@ -78,8 +73,7 @@ class Logger_Mock : public log::TestingLoggerBase
         logs.emplace_back(std::move(logEntry));
     }
 
-    void flush() noexcept override
-    {
+    void flush() noexcept override {
         const auto logBuffer = Base::getLogBuffer();
         logs.back().message = logBuffer.buffer;
         Base::assumeFlushed();

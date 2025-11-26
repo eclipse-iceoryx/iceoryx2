@@ -23,30 +23,24 @@
 #include <cstring>
 #include <mutex>
 
-namespace iox
-{
-namespace log
-{
+namespace iox {
+namespace log {
 template <uint32_t N>
 // NOLINTJUSTIFICATION See at declaration in header
 // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays)
-inline bool equalStrings(const char* lhs, const char (&rhs)[N]) noexcept
-{
+inline bool equalStrings(const char* lhs, const char (&rhs)[N]) noexcept {
     return strncmp(lhs, rhs, N) == 0;
 }
 
-namespace internal
-{
+namespace internal {
 template <typename BaseLogger>
-inline Logger<BaseLogger>& Logger<BaseLogger>::get() noexcept
-{
+inline Logger<BaseLogger>& Logger<BaseLogger>::get() noexcept {
     /// @todo iox-#1755 use the PolymorphicHandler for the handling with the logger exchange once available
 
     // NOLINTJUSTIFICATION needed for the functionality
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
     thread_local static Logger* logger = &Logger::activeLogger();
-    if (!logger->m_isActive.load(std::memory_order_relaxed))
-    {
+    if (!logger->m_isActive.load(std::memory_order_relaxed)) {
         // no need to loop until m_isActive is true since this is an inherent race
         //   - the logger needs to be active for the whole lifetime of the application anyway
         //   - if the logger was changed again, the next call will update the logger
@@ -57,32 +51,27 @@ inline Logger<BaseLogger>& Logger<BaseLogger>::get() noexcept
 }
 
 template <typename BaseLogger>
-inline void Logger<BaseLogger>::init(const LogLevel logLevel) noexcept
-{
+inline void Logger<BaseLogger>::init(const LogLevel logLevel) noexcept {
     Logger::get().initLoggerInternal(logLevel);
 }
 
 template <typename BaseLogger>
-inline void Logger<BaseLogger>::setActiveLogger(Logger<BaseLogger>& newLogger) noexcept
-{
+inline void Logger<BaseLogger>::setActiveLogger(Logger<BaseLogger>& newLogger) noexcept {
     Logger::activeLogger(&newLogger);
 }
 
 template <typename BaseLogger>
-inline Logger<BaseLogger>& Logger<BaseLogger>::activeLogger(Logger<BaseLogger>* newLogger) noexcept
-{
+inline Logger<BaseLogger>& Logger<BaseLogger>::activeLogger(Logger<BaseLogger>* newLogger) noexcept {
     static std::mutex mtx;
     std::lock_guard<std::mutex> lock(mtx);
     static Logger defaultLogger;
 
     // NOLINTJUSTIFICATION needed for the functionality
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-    static Logger* logger{&defaultLogger};
+    static Logger* logger { &defaultLogger };
 
-    if (newLogger)
-    {
-        if (logger->m_isFinalized.load(std::memory_order_relaxed))
-        {
+    if (newLogger) {
+        if (logger->m_isFinalized.load(std::memory_order_relaxed)) {
             logger->createLogMessageHeader(__FILE__, __LINE__, __FUNCTION__, LogLevel::Error);
             logger->logString("Trying to replace logger after already initialized!");
             logger->flush();
@@ -90,9 +79,7 @@ inline Logger<BaseLogger>& Logger<BaseLogger>::activeLogger(Logger<BaseLogger>* 
             logger->logString("Trying to replace logger after already initialized!");
             newLogger->flush();
             /// @todo iox-#1755 call error handler after the error handler refactoring was merged
-        }
-        else
-        {
+        } else {
             logger->m_isActive.store(false);
             logger = newLogger;
             logger->m_isActive.store(true);
@@ -103,17 +90,13 @@ inline Logger<BaseLogger>& Logger<BaseLogger>::activeLogger(Logger<BaseLogger>* 
 }
 
 template <typename BaseLogger>
-inline void Logger<BaseLogger>::initLoggerInternal(const LogLevel logLevel) noexcept
-{
-    if (!m_isFinalized.load(std::memory_order_relaxed))
-    {
+inline void Logger<BaseLogger>::initLoggerInternal(const LogLevel logLevel) noexcept {
+    if (!m_isFinalized.load(std::memory_order_relaxed)) {
         BaseLogger::setLogLevel(logLevel);
         BaseLogger::initLogger(logLevel);
         iox_platform_set_log_backend(&platform_log_backend);
         m_isFinalized.store(true, std::memory_order_relaxed);
-    }
-    else
-    {
+    } else {
         BaseLogger::createLogMessageHeader(__FILE__, __LINE__, __FUNCTION__, LogLevel::Error);
         BaseLogger::logString("Multiple initLogger calls");
         BaseLogger::flush();

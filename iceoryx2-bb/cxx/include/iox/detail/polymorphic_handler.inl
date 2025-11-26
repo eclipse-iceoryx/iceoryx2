@@ -22,14 +22,11 @@
 #include <cstdlib>
 #include <type_traits>
 
-namespace iox
-{
-namespace detail
-{
+namespace iox {
+namespace detail {
 
 template <typename Interface>
-[[noreturn]] void DefaultHooks<Interface>::onSetAfterFinalize(Interface&, Interface&) noexcept
-{
+[[noreturn]] void DefaultHooks<Interface>::onSetAfterFinalize(Interface&, Interface&) noexcept {
     // we should not use an error handling construct (e.g. some IOX_ASSERT) here for dependency reasons
     // we could in principle do nothing by default as well, but the misuse failure should have visible consequences
     std::abort();
@@ -58,8 +55,7 @@ template <typename Interface>
 // Note that it may change again but this is unavoidable if it can change concurrently
 // without locks and not a problem.
 template <typename Interface, typename Default, typename Hooks>
-Interface& PolymorphicHandler<Interface, Default, Hooks>::get() noexcept
-{
+Interface& PolymorphicHandler<Interface, Default, Hooks>::get() noexcept {
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables) false positive, thread_local
     thread_local Interface* localHandler = getCurrentSync(); // initialized once per thread on first call
 
@@ -69,8 +65,7 @@ Interface& PolymorphicHandler<Interface, Default, Hooks>::get() noexcept
     // is the known localHandler outdated?
     // NB: this is a variation of double checked locking but with atomics:
     // we avoid the more costly operation on the hot path unless there was a change (rare case)
-    if (localHandler != currentHandler)
-    {
+    if (localHandler != currentHandler) {
         // stronger sync of memory
         localHandler = getCurrentSync();
         // note that it may concurrently change again but we do not loop to check as there is no
@@ -82,8 +77,7 @@ Interface& PolymorphicHandler<Interface, Default, Hooks>::get() noexcept
 
 template <typename Interface, typename Default, typename Hooks>
 template <typename Handler>
-bool PolymorphicHandler<Interface, Default, Hooks>::set(StaticLifetimeGuard<Handler> handlerGuard) noexcept
-{
+bool PolymorphicHandler<Interface, Default, Hooks>::set(StaticLifetimeGuard<Handler> handlerGuard) noexcept {
     static_assert(std::is_base_of<Interface, Handler>::value,
                   "Handler must inherit from Interface or be of type Interface");
     static StaticLifetimeGuard<Handler> guard(handlerGuard);
@@ -92,16 +86,14 @@ bool PolymorphicHandler<Interface, Default, Hooks>::set(StaticLifetimeGuard<Hand
 }
 
 template <typename Interface, typename Default, typename Hooks>
-bool PolymorphicHandler<Interface, Default, Hooks>::setHandler(Interface& handler) noexcept
-{
+bool PolymorphicHandler<Interface, Default, Hooks>::setHandler(Interface& handler) noexcept {
     auto& s = self();
     // m_current is now guaranteed to be set
 
     // ensure we cannot miss that it was set to true concurrently
     // OK, since it will never change back from true to false
-    bool exp{true};
-    if (s.m_isFinal.compare_exchange_strong(exp, true, std::memory_order_relaxed))
-    {
+    bool exp { true };
+    if (s.m_isFinal.compare_exchange_strong(exp, true, std::memory_order_relaxed)) {
         // it must be ensured that the handlers still exist and are thread-safe,
         // this is ensured for the default handler by m_defaultGuard
         // (the primary guard that is constructed with the instance alone is not sufficient)
@@ -118,57 +110,49 @@ bool PolymorphicHandler<Interface, Default, Hooks>::setHandler(Interface& handle
 }
 
 template <typename Interface, typename Default, typename Hooks>
-bool PolymorphicHandler<Interface, Default, Hooks>::reset() noexcept
-{
+bool PolymorphicHandler<Interface, Default, Hooks>::reset() noexcept {
     return setHandler(getDefault());
 }
 
 template <typename Interface, typename Default, typename Hooks>
-void PolymorphicHandler<Interface, Default, Hooks>::finalize() noexcept
-{
+void PolymorphicHandler<Interface, Default, Hooks>::finalize() noexcept {
     self().m_isFinal.store(true, std::memory_order_relaxed);
 }
 
 template <typename Interface, typename Default, typename Hooks>
-PolymorphicHandler<Interface, Default, Hooks>::PolymorphicHandler() noexcept
-{
+PolymorphicHandler<Interface, Default, Hooks>::PolymorphicHandler() noexcept {
     m_current.store(&getDefault(), std::memory_order_release);
 }
 
 template <typename Interface, typename Default, typename Hooks>
-PolymorphicHandler<Interface, Default, Hooks>& PolymorphicHandler<Interface, Default, Hooks>::self() noexcept
-{
+PolymorphicHandler<Interface, Default, Hooks>& PolymorphicHandler<Interface, Default, Hooks>::self() noexcept {
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables) singleton pattern
     static auto& ins = StaticLifetimeGuard<Self>::instance();
     return ins;
 }
 
 template <typename Interface, typename Default, typename Hooks>
-Default& PolymorphicHandler<Interface, Default, Hooks>::getDefault() noexcept
-{
+Default& PolymorphicHandler<Interface, Default, Hooks>::getDefault() noexcept {
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables) singleton pattern
     static auto& ins = StaticLifetimeGuard<Default>::instance();
     return ins;
 }
 
 template <typename Interface, typename Default, typename Hooks>
-Interface* PolymorphicHandler<Interface, Default, Hooks>::getCurrentRelaxed() noexcept
-{
+Interface* PolymorphicHandler<Interface, Default, Hooks>::getCurrentRelaxed() noexcept {
     // only load the pointer atomically
     return self().m_current.load(std::memory_order_relaxed);
 }
 
 template <typename Interface, typename Default, typename Hooks>
-Interface* PolymorphicHandler<Interface, Default, Hooks>::getCurrentSync() noexcept
-{
+Interface* PolymorphicHandler<Interface, Default, Hooks>::getCurrentSync() noexcept {
     // must be strong enough to sync memory of the object pointed to
     return self().m_current.load(std::memory_order_acquire);
 }
 
 template <typename Interface, typename Default, typename Hooks>
 StaticLifetimeGuard<typename PolymorphicHandler<Interface, Default, Hooks>::Self>
-PolymorphicHandler<Interface, Default, Hooks>::guard() noexcept
-{
+PolymorphicHandler<Interface, Default, Hooks>::guard() noexcept {
     return StaticLifetimeGuard<Self>();
 }
 

@@ -19,39 +19,33 @@
 #include "iox/detail/string_type_traits.hpp"
 #include "iox/functional_interface.hpp"
 
-namespace iox
-{
-namespace internal
-{
+namespace iox {
+namespace internal {
 ///////////////
 // BEGIN expect
 ///////////////
 template <typename Derived>
 template <typename StringType>
-inline void Expect<Derived>::expect(const StringType& msg) const noexcept
-{
+inline void Expect<Derived>::expect(const StringType& msg) const noexcept {
     static_assert(is_char_array<StringType>::value || is_iox_string<StringType>::value,
                   "Only char arrays and iox::strings are allowed as message type.");
 
     const auto& derivedThis = *static_cast<const Derived*>(this);
 
-    if (!derivedThis)
-    {
+    if (!derivedThis) {
         IOX_PANIC(&msg[0]);
     }
 }
 
 template <typename Derived, typename ValueType>
 template <typename StringType>
-inline ValueType& ExpectWithValue<Derived, ValueType>::expect(const StringType& msg) & noexcept
-{
+inline ValueType& ExpectWithValue<Derived, ValueType>::expect(const StringType& msg) & noexcept {
     static_assert(is_char_array<StringType>::value || is_iox_string<StringType>::value,
                   "Only char arrays and iox::strings are allowed as message type.");
 
     auto& derivedThis = *static_cast<Derived*>(this);
 
-    if (!derivedThis)
-    {
+    if (!derivedThis) {
         IOX_PANIC(&msg[0]);
     }
 
@@ -60,8 +54,7 @@ inline ValueType& ExpectWithValue<Derived, ValueType>::expect(const StringType& 
 
 template <typename Derived, typename ValueType>
 template <typename StringType>
-inline const ValueType& ExpectWithValue<Derived, ValueType>::expect(const StringType& msg) const& noexcept
-{
+inline const ValueType& ExpectWithValue<Derived, ValueType>::expect(const StringType& msg) const& noexcept {
     using Self = ExpectWithValue<Derived, ValueType>;
     // AXIVION Next Construct AutosarC++19_03-A5.2.3 : const_cast avoids code duplication, is safe since the constness of the return value is restored
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
@@ -70,15 +63,13 @@ inline const ValueType& ExpectWithValue<Derived, ValueType>::expect(const String
 
 template <typename Derived, typename ValueType>
 template <typename StringType>
-inline ValueType&& ExpectWithValue<Derived, ValueType>::expect(const StringType& msg) && noexcept
-{
+inline ValueType&& ExpectWithValue<Derived, ValueType>::expect(const StringType& msg) && noexcept {
     return std::move(this->expect(msg));
 }
 
 template <typename Derived, typename ValueType>
 template <typename StringType>
-inline const ValueType&& ExpectWithValue<Derived, ValueType>::expect(const StringType& msg) const&& noexcept
-{
+inline const ValueType&& ExpectWithValue<Derived, ValueType>::expect(const StringType& msg) const&& noexcept {
     using Self = ExpectWithValue<Derived, ValueType>;
     // AXIVION Next Construct AutosarC++19_03-A5.2.3 : const_cast avoids code duplication, is safe since the constness of the return value is restored
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
@@ -93,12 +84,10 @@ inline const ValueType&& ExpectWithValue<Derived, ValueType>::expect(const Strin
 // AXIVION Next Construct AutosarC++19_03-A13.3.1 : overload is invoked only on const lvalues
 template <typename Derived, typename ValueType>
 template <typename U>
-inline ValueType ValueOr<Derived, ValueType>::value_or(U&& alternative) const& noexcept
-{
+inline ValueType ValueOr<Derived, ValueType>::value_or(U&& alternative) const& noexcept {
     const auto& derivedThis = *static_cast<const Derived*>(this);
 
-    if (!derivedThis)
-    {
+    if (!derivedThis) {
         return std::forward<U>(alternative);
     }
 
@@ -108,12 +97,10 @@ inline ValueType ValueOr<Derived, ValueType>::value_or(U&& alternative) const& n
 // AXIVION Next Construct AutosarC++19_03-A13.3.1 : overload is invoked only on rvalues
 template <typename Derived, typename ValueType>
 template <typename U>
-inline ValueType ValueOr<Derived, ValueType>::value_or(U&& alternative) && noexcept
-{
+inline ValueType ValueOr<Derived, ValueType>::value_or(U&& alternative) && noexcept {
     auto& derivedThis = *static_cast<Derived*>(this);
 
-    if (!derivedThis)
-    {
+    if (!derivedThis) {
         return std::forward<U>(alternative);
     }
 
@@ -126,15 +113,13 @@ inline ValueType ValueOr<Derived, ValueType>::value_or(U&& alternative) && noexc
 /////////////////
 template <typename Derived, typename ValueType>
 template <typename Functor>
-inline Derived& AndThenWithValue<Derived, ValueType>::and_then(const Functor& callable) & noexcept
-{
+inline Derived& AndThenWithValue<Derived, ValueType>::and_then(const Functor& callable) & noexcept {
     static_assert(is_invocable<Functor, ValueType&>::value,
                   "Only callables with a signature of void(ValueType&) are allowed!");
 
     auto& derivedThis = *static_cast<Derived*>(this);
 
-    if (derivedThis)
-    {
+    if (derivedThis) {
         const auto callback = static_cast<and_then_callback_t>(callable);
         callback(derivedThis.value());
     }
@@ -144,22 +129,19 @@ inline Derived& AndThenWithValue<Derived, ValueType>::and_then(const Functor& ca
 
 template <typename Derived, typename ValueType>
 template <typename Functor>
-inline Derived&& AndThenWithValue<Derived, ValueType>::and_then(const Functor& callable) && noexcept
-{
+inline Derived&& AndThenWithValue<Derived, ValueType>::and_then(const Functor& callable) && noexcept {
     return std::move(this->and_then(callable));
 }
 
 template <typename Derived, typename ValueType>
 template <typename Functor>
-inline const Derived& AndThenWithValue<Derived, ValueType>::and_then(const Functor& callable) const& noexcept
-{
+inline const Derived& AndThenWithValue<Derived, ValueType>::and_then(const Functor& callable) const& noexcept {
     static_assert(is_invocable<Functor, const ValueType&>::value,
                   "Only callables with a signature of void(const ValueType&) are allowed!");
 
     const auto& derivedThis = *static_cast<const Derived*>(this);
 
-    if (derivedThis)
-    {
+    if (derivedThis) {
         const auto callback = static_cast<const_and_then_callback_t>(callable);
         callback(derivedThis.value());
     }
@@ -169,18 +151,15 @@ inline const Derived& AndThenWithValue<Derived, ValueType>::and_then(const Funct
 
 template <typename Derived, typename ValueType>
 template <typename Functor>
-inline const Derived&& AndThenWithValue<Derived, ValueType>::and_then(const Functor& callable) const&& noexcept
-{
+inline const Derived&& AndThenWithValue<Derived, ValueType>::and_then(const Functor& callable) const&& noexcept {
     return std::move(this->and_then(callable));
 }
 
 template <typename Derived>
-inline Derived& AndThen<Derived>::and_then(const and_then_callback_t& callable) & noexcept
-{
+inline Derived& AndThen<Derived>::and_then(const and_then_callback_t& callable) & noexcept {
     auto& derivedThis = *static_cast<Derived*>(this);
 
-    if (derivedThis)
-    {
+    if (derivedThis) {
         callable();
     }
 
@@ -188,8 +167,7 @@ inline Derived& AndThen<Derived>::and_then(const and_then_callback_t& callable) 
 }
 
 template <typename Derived>
-inline const Derived& AndThen<Derived>::and_then(const and_then_callback_t& callable) const& noexcept
-{
+inline const Derived& AndThen<Derived>::and_then(const and_then_callback_t& callable) const& noexcept {
     using Self = AndThen<Derived>;
     // AXIVION Next Construct AutosarC++19_03-A5.2.3 : const_cast avoids code duplication, is safe since the constness of the return value is restored
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
@@ -197,14 +175,12 @@ inline const Derived& AndThen<Derived>::and_then(const and_then_callback_t& call
 }
 
 template <typename Derived>
-inline Derived&& AndThen<Derived>::and_then(const and_then_callback_t& callable) && noexcept
-{
+inline Derived&& AndThen<Derived>::and_then(const and_then_callback_t& callable) && noexcept {
     return std::move(this->and_then(callable));
 }
 
 template <typename Derived>
-inline const Derived&& AndThen<Derived>::and_then(const and_then_callback_t& callable) const&& noexcept
-{
+inline const Derived&& AndThen<Derived>::and_then(const and_then_callback_t& callable) const&& noexcept {
     using Self = AndThen<Derived>;
     // AXIVION DISABLE STYLE AutosarC++19_03-A5.2.3 : const_cast avoids code duplication, is safe since the constness of the return value is restored
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
@@ -218,15 +194,13 @@ inline const Derived&& AndThen<Derived>::and_then(const and_then_callback_t& cal
 ////////////////
 template <typename Derived, typename ErrorType>
 template <typename Functor>
-inline Derived& OrElseWithValue<Derived, ErrorType>::or_else(const Functor& callable) & noexcept
-{
+inline Derived& OrElseWithValue<Derived, ErrorType>::or_else(const Functor& callable) & noexcept {
     static_assert(is_invocable<Functor, ErrorType&>::value,
                   "Only callables with a signature of void(ErrorType&) are allowed!");
 
     auto& derivedThis = *static_cast<Derived*>(this);
 
-    if (!derivedThis)
-    {
+    if (!derivedThis) {
         const auto callback = static_cast<or_else_callback_t>(callable);
         callback(derivedThis.error());
     }
@@ -236,22 +210,19 @@ inline Derived& OrElseWithValue<Derived, ErrorType>::or_else(const Functor& call
 
 template <typename Derived, typename ErrorType>
 template <typename Functor>
-inline Derived&& OrElseWithValue<Derived, ErrorType>::or_else(const Functor& callable) && noexcept
-{
+inline Derived&& OrElseWithValue<Derived, ErrorType>::or_else(const Functor& callable) && noexcept {
     return std::move(this->or_else(callable));
 }
 
 template <typename Derived, typename ErrorType>
 template <typename Functor>
-inline const Derived& OrElseWithValue<Derived, ErrorType>::or_else(const Functor& callable) const& noexcept
-{
+inline const Derived& OrElseWithValue<Derived, ErrorType>::or_else(const Functor& callable) const& noexcept {
     static_assert(is_invocable<Functor, ErrorType&>::value,
                   "Only callables with a signature of void(const ErrorType&) are allowed!");
 
     const auto& derivedThis = *static_cast<const Derived*>(this);
 
-    if (!derivedThis)
-    {
+    if (!derivedThis) {
         auto callback = static_cast<const_or_else_callback_t>(callable);
         callback(derivedThis.error());
     }
@@ -261,18 +232,15 @@ inline const Derived& OrElseWithValue<Derived, ErrorType>::or_else(const Functor
 
 template <typename Derived, typename ErrorType>
 template <typename Functor>
-inline const Derived&& OrElseWithValue<Derived, ErrorType>::or_else(const Functor& callable) const&& noexcept
-{
+inline const Derived&& OrElseWithValue<Derived, ErrorType>::or_else(const Functor& callable) const&& noexcept {
     return std::move(this->or_else(callable));
 }
 
 template <typename Derived>
-inline Derived& OrElse<Derived>::or_else(const or_else_callback_t& callable) & noexcept
-{
+inline Derived& OrElse<Derived>::or_else(const or_else_callback_t& callable) & noexcept {
     auto& derivedThis = *static_cast<Derived*>(this);
 
-    if (!derivedThis)
-    {
+    if (!derivedThis) {
         callable();
     }
 
@@ -280,14 +248,12 @@ inline Derived& OrElse<Derived>::or_else(const or_else_callback_t& callable) & n
 }
 
 template <typename Derived>
-inline Derived&& OrElse<Derived>::or_else(const or_else_callback_t& callable) && noexcept
-{
+inline Derived&& OrElse<Derived>::or_else(const or_else_callback_t& callable) && noexcept {
     return std::move(this->or_else(callable));
 }
 
 template <typename Derived>
-inline const Derived& OrElse<Derived>::or_else(const or_else_callback_t& callable) const& noexcept
-{
+inline const Derived& OrElse<Derived>::or_else(const or_else_callback_t& callable) const& noexcept {
     using Self = OrElse<Derived>;
     // AXIVION Next Construct AutosarC++19_03-A5.2.3 : const_cast avoids code duplication, is safe since the constness
     // of the return value is restored
@@ -296,8 +262,7 @@ inline const Derived& OrElse<Derived>::or_else(const or_else_callback_t& callabl
 }
 
 template <typename Derived>
-inline const Derived&& OrElse<Derived>::or_else(const or_else_callback_t& callable) const&& noexcept
-{
+inline const Derived&& OrElse<Derived>::or_else(const or_else_callback_t& callable) const&& noexcept {
     return std::move(this->or_else(callable));
 }
 // END or_else

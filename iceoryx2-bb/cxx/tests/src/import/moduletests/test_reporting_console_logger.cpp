@@ -22,19 +22,16 @@
 #include <cstdio>
 #include <iostream>
 
-namespace
-{
+namespace {
 using namespace ::testing;
 
-class LoggerSUT : public iox::log::ConsoleLogger
-{
+class LoggerSUT : public iox::log::ConsoleLogger {
   public:
     using iox::log::ConsoleLogger::flush;
     using iox::log::ConsoleLogger::logString;
 };
 
-TEST(ConsoleLogger_test, TestOutput)
-{
+TEST(ConsoleLogger_test, TestOutput) {
     ::testing::Test::RecordProperty("TEST_ID", "67f1dac5-b425-414a-9690-268ecb06c1ee");
 
     GTEST_SKIP() << "This is tested via the integration tests by launch testing waiting for the 'RouDi is ready for "
@@ -43,10 +40,9 @@ TEST(ConsoleLogger_test, TestOutput)
 
 /// @note the actual log API is tested via the LogStream tests
 
-TEST(ConsoleLogger_test, SettingTheLogLevelWorks)
-{
+TEST(ConsoleLogger_test, SettingTheLogLevelWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "e8225d29-ee35-4864-8528-b1e290a83311");
-    constexpr auto LOG_LEVEL{iox::log::LogLevel::Info};
+    constexpr auto LOG_LEVEL { iox::log::LogLevel::Info };
     EXPECT_THAT(LoggerSUT::getLogLevel(), Ne(LOG_LEVEL));
 
     LoggerSUT::setLogLevel(LOG_LEVEL);

@@ -20,87 +20,73 @@
 #include "iceoryx_hoofs/testing/testing_logger.hpp"
 #include "test.hpp"
 
-namespace
-{
+namespace {
 using namespace ::testing;
 
 void testLogLevelThreshold(const iox::log::LogLevel loggerLogLevel,
-                           const std::function<void(iox::log::LogLevel)>& loggerCall)
-{
+                           const std::function<void(iox::log::LogLevel)>& loggerCall) {
     iox::log::Logger::setLogLevel(loggerLogLevel);
 
-    struct LogLevel
-    {
+    struct LogLevel {
         LogLevel(iox::log::LogLevel logLevel, std::string str)
             : value(logLevel)
-            , string(std::move(str))
-        {
+            , string(std::move(str)) {
         }
         iox::log::LogLevel value;
         std::string string;
     };
 
-    const std::initializer_list<LogLevel> logEntryLogLevels{{iox::log::LogLevel::Fatal, "Fatal"},
-                                                            {iox::log::LogLevel::Error, "Error"},
-                                                            {iox::log::LogLevel::Warn, "Warn"},
-                                                            {iox::log::LogLevel::Info, "Info"},
-                                                            {iox::log::LogLevel::Debug, "Debug"},
-                                                            {iox::log::LogLevel::Trace, "Trace"}};
+    const std::initializer_list<LogLevel> logEntryLogLevels {
+        { iox::log::LogLevel::Fatal, "Fatal" }, { iox::log::LogLevel::Error, "Error" },
+        { iox::log::LogLevel::Warn, "Warn" },   { iox::log::LogLevel::Info, "Info" },
+        { iox::log::LogLevel::Debug, "Debug" }, { iox::log::LogLevel::Trace, "Trace" }
+    };
 
-    for (const auto& logEntryLogLevel : logEntryLogLevels)
-    {
-        if (!iox::testing::TestingLogger::doesLoggerSupportLogLevel(logEntryLogLevel.value))
-        {
+    for (const auto& logEntryLogLevel : logEntryLogLevels) {
+        if (!iox::testing::TestingLogger::doesLoggerSupportLogLevel(logEntryLogLevel.value)) {
             continue;
         }
 
         dynamic_cast<iox::testing::TestingLogger&>(iox::log::Logger::get()).clearLogBuffer();
         loggerCall(logEntryLogLevel.value);
 
-        if (logEntryLogLevel.value <= loggerLogLevel)
-        {
+        if (logEntryLogLevel.value <= loggerLogLevel) {
             ASSERT_THAT(iox::testing::TestingLogger::getNumberOfLogMessages(), Eq(1U));
             iox::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
                 logEntryLogLevel.value, [&](const auto& logMessages) {
                     const auto& logMessage = logMessages.back();
                     EXPECT_THAT(logMessage.find(logEntryLogLevel.string), Ne(std::string::npos));
                 });
-        }
-        else
-        {
+        } else {
             ASSERT_THAT(iox::testing::TestingLogger::getNumberOfLogMessages(), Eq(0U));
         }
     }
 }
 
-TEST(LoggingLogLevelThreshold_test, LogLevel)
-{
+TEST(LoggingLogLevelThreshold_test, LogLevel) {
     ::testing::Test::RecordProperty("TEST_ID", "829a6634-43be-4fa4-94bf-18d53ce816a9");
-    for (const auto loggerLogLevel : {iox::log::LogLevel::Off,
-                                      iox::log::LogLevel::Fatal,
-                                      iox::log::LogLevel::Error,
-                                      iox::log::LogLevel::Warn,
-                                      iox::log::LogLevel::Info,
-                                      iox::log::LogLevel::Debug,
-                                      iox::log::LogLevel::Trace})
-    {
+    for (const auto loggerLogLevel : { iox::log::LogLevel::Off,
+                                       iox::log::LogLevel::Fatal,
+                                       iox::log::LogLevel::Error,
+                                       iox::log::LogLevel::Warn,
+                                       iox::log::LogLevel::Info,
+                                       iox::log::LogLevel::Debug,
+                                       iox::log::LogLevel::Trace }) {
         SCOPED_TRACE(std::string("Logger LogLevel: ") + iox::log::asStringLiteral(loggerLogLevel));
 
         testLogLevelThreshold(loggerLogLevel, [](auto logLevel) { IOX_LOG_INTERNAL("", 0, "", logLevel, ""); });
     }
 }
 
-TEST(LoggingLogLevelThreshold_test, LogLevelForPlatform)
-{
+TEST(LoggingLogLevelThreshold_test, LogLevelForPlatform) {
     ::testing::Test::RecordProperty("TEST_ID", "574007ac-62ed-4cd1-95e8-e18a9f20e1e1");
-    for (const auto loggerLogLevel : {iox::log::LogLevel::Off,
-                                      iox::log::LogLevel::Fatal,
-                                      iox::log::LogLevel::Error,
-                                      iox::log::LogLevel::Warn,
-                                      iox::log::LogLevel::Info,
-                                      iox::log::LogLevel::Debug,
-                                      iox::log::LogLevel::Trace})
-    {
+    for (const auto loggerLogLevel : { iox::log::LogLevel::Off,
+                                       iox::log::LogLevel::Fatal,
+                                       iox::log::LogLevel::Error,
+                                       iox::log::LogLevel::Warn,
+                                       iox::log::LogLevel::Info,
+                                       iox::log::LogLevel::Debug,
+                                       iox::log::LogLevel::Trace }) {
         SCOPED_TRACE(std::string("Logger LogLevel: ") + iox::log::asStringLiteral(loggerLogLevel));
 
         testLogLevelThreshold(loggerLogLevel, [](auto logLevel) {

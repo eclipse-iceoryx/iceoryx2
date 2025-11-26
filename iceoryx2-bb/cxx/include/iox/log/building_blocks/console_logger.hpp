@@ -25,13 +25,10 @@
 #include <cstdio>
 #include <mutex>
 
-namespace iox
-{
-namespace log
-{
+namespace iox {
+namespace log {
 /// @brief A minimal logger implementation which outputs the log messages to the console
-class ConsoleLogger
-{
+class ConsoleLogger {
   public:
     /// @brief Obtain the current log level
     /// @return the current log level
@@ -108,8 +105,7 @@ class ConsoleLogger
     template <typename T>
     static void logArithmetic(const T value, const char* format) noexcept;
 
-    struct ThreadLocalData final
-    {
+    struct ThreadLocalData final {
         ThreadLocalData() noexcept = default;
         ~ThreadLocalData() = default;
 
@@ -120,8 +116,8 @@ class ConsoleLogger
         ThreadLocalData& operator=(ThreadLocalData&&) = delete;
 
         /// @todo iox-#1755 this could be made a compile time option
-        static constexpr uint32_t BUFFER_SIZE{1024};
-        static constexpr uint32_t NULL_TERMINATED_BUFFER_SIZE{BUFFER_SIZE + 1};
+        static constexpr uint32_t BUFFER_SIZE { 1024 };
+        static constexpr uint32_t NULL_TERMINATED_BUFFER_SIZE { BUFFER_SIZE + 1 };
 
         // AXIVION Next Construct AutosarC++19_03-A3.9.1 : Not used as an integer but as actual character
         // AXIVION Next Construct AutosarC++19_03-A18.1.1 : This is a low-level component with minimal dependencies.

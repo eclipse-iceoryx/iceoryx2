@@ -18,18 +18,15 @@
 #include "iox/into.hpp"
 #include "iox/type_traits.hpp"
 
-namespace iox
-{
+namespace iox {
 template <typename SourceType, typename DestinationType>
-inline constexpr typename detail::extract_into_type<DestinationType>::type_t from(const SourceType value) noexcept
-{
+inline constexpr typename detail::extract_into_type<DestinationType>::type_t from(const SourceType value) noexcept {
     return FromImpl<SourceType, DestinationType>::fromImpl(value);
 }
 
 // AXIVION Next Construct AutosarC++19_03-A7.1.5 : 'auto' is only used for the generic implementation which will always result in a compile error
 template <typename SourceType, typename DestinationType>
-inline auto FromImpl<SourceType, DestinationType>::fromImpl(const SourceType&) noexcept
-{
+inline auto FromImpl<SourceType, DestinationType>::fromImpl(const SourceType&) noexcept {
     static_assert(always_false_v<SourceType> && always_false_v<DestinationType>, "\n \
         Conversion for the specified types is not implemented!\n \
         Please specialize 'FromImpl::fromImpl'!\n \
@@ -41,8 +38,7 @@ inline auto FromImpl<SourceType, DestinationType>::fromImpl(const SourceType&) n
 
 // AXIVION Next Construct AutosarC++19_03-A15.5.3, AutosarC++19_03-A15.4.2, FaultDetection-NoexceptViolations : Intentional behavior. The library itself does not throw and on the implementation side a try-catch block can be used
 template <typename DestinationType, typename SourceType>
-inline constexpr typename detail::extract_into_type<DestinationType>::type_t into(const SourceType value) noexcept
-{
+inline constexpr typename detail::extract_into_type<DestinationType>::type_t into(const SourceType value) noexcept {
     return from<SourceType, DestinationType>(value);
 }
 } // namespace iox

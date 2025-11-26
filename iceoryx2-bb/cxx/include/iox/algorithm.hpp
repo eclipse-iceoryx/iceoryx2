@@ -23,10 +23,8 @@
 #include <cstdint>
 #include <limits>
 
-namespace iox
-{
-namespace algorithm
-{
+namespace iox {
+namespace algorithm {
 /// @brief Returns the maximum gained with operator<() of an arbitrary amount
 ///          of variables of the same type. Helper function which is required as generic
 ///          recursive template endpoint.
@@ -118,37 +116,31 @@ inline constexpr bool
 doesContainValue(const T1 value, const T2 firstValueListEntry, const ValueList... remainingValueListEntries) noexcept;
 } // namespace algorithm
 
-namespace internal
-{
+namespace internal {
 /// @brief struct to find the best fitting unsigned integer type
 template <bool GreaterUint8, bool GreaterUint16, bool GreaterUint32>
-struct BestFittingTypeImpl
-{
+struct BestFittingTypeImpl {
     using Type_t = uint64_t;
 };
 
 template <>
-struct BestFittingTypeImpl<false, false, false>
-{
+struct BestFittingTypeImpl<false, false, false> {
     using Type_t = uint8_t;
 };
 
 template <>
-struct BestFittingTypeImpl<true, false, false>
-{
+struct BestFittingTypeImpl<true, false, false> {
     using Type_t = uint16_t;
 };
 
 template <>
-struct BestFittingTypeImpl<true, true, false>
-{
+struct BestFittingTypeImpl<true, true, false> {
     using Type_t = uint32_t;
 };
 } // namespace internal
 /// @brief get the best fitting unsigned integer type for a given value at compile time
 template <uint64_t Value>
-struct BestFittingType
-{
+struct BestFittingType {
 // gcc warns here that the uint8_t test for BestFittingType<256> is always true... which is correct, but we need it for
 // portability anyway
 #if defined(__GNUC__)
@@ -169,17 +161,14 @@ template <uint64_t Value>
 using BestFittingType_t = typename BestFittingType<Value>::Type_t;
 
 template <typename T, T Minimum>
-struct greater_or_equal
-{
+struct greater_or_equal {
   public:
     // AXIVION Next Construct AutosarC++19_03-A12.1.4: this class should behave like a T but which never can be less
     // than Minimum. Adding explicit would defeat the purpose.
     // NOLINTNEXTLINE(hicpp-explicit-conversions)
     greater_or_equal(T t) noexcept
-        : m_value(t)
-    {
-        if (t < Minimum)
-        {
+        : m_value(t) {
+        if (t < Minimum) {
             IOX_LOG(Fatal, "The value '" << t << "' is below '" << Minimum << "'");
             IOX_PANIC("Violating invariant of 'greater_or_equal'");
         }
@@ -188,8 +177,7 @@ struct greater_or_equal
     // AXIVION Next Construct AutosarC++19_03-A13.5.2,AutosarC++19_03-A13.5.3:this class should behave like a T but
     // which never can be less than Minimum. Adding explicit would defeat the purpose.
     // NOLINTNEXTLINE(hicpp-explicit-conversions)
-    constexpr operator T() const noexcept
-    {
+    constexpr operator T() const noexcept {
         return m_value;
     }
 
@@ -198,17 +186,14 @@ struct greater_or_equal
 };
 
 template <typename T, T Minimum, T Maximum>
-struct range
-{
+struct range {
   public:
     // AXIVION Next Construct AutosarC++19_03-A12.1.4: this class should behave like a T but with values only in
     // range [Minimum, Maximum] Adding explicit would defeat the purpose.
     // NOLINTNEXTLINE(hicpp-explicit-conversions)
     range(T t) noexcept
-        : m_value(t)
-    {
-        if (t < Minimum || t > Maximum)
-        {
+        : m_value(t) {
+        if (t < Minimum || t > Maximum) {
             IOX_LOG(Fatal, "The value '" << t << "' is out of the range [" << Minimum << ", " << Maximum << "]");
             IOX_PANIC("Violating invariant of 'range'");
         }
@@ -217,8 +202,7 @@ struct range
     // AXIVION Next Construct AutosarC++19_03-A13.5.2, AutosarC++19_03-A13.5.3: this class should behave like a T but
     // with values only in range [Minimum, Maximum]. Adding explicit would defeat the purpose.
     // NOLINTNEXTLINE(hicpp-explicit-conversions)
-    constexpr operator T() const noexcept
-    {
+    constexpr operator T() const noexcept {
         return m_value;
     }
 
@@ -229,8 +213,7 @@ struct range
 /// @brief Checks if an unsigned integer is a power of two
 /// @return true if power of two, otherwise false
 template <typename T>
-constexpr bool isPowerOfTwo(const T n) noexcept
-{
+constexpr bool isPowerOfTwo(const T n) noexcept {
     static_assert(std::is_unsigned<T>::value && !std::is_same<T, bool>::value, "Only unsigned integer are allowed!");
     // AXIVION Next Construct AutosarC++19_03-M0.1.2, AutosarC++19_03-M0.1.9, FaultDetection-DeadBranches : False positive! 'n' can be zero.
     return (n > 0) && ((n & (n - 1U)) == 0U);

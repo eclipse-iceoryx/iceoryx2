@@ -18,13 +18,9 @@
 
 #include "iceoryx_versions.hpp"
 
-namespace iox
-{
-namespace detail
-{
-struct DeprecationMarker
-{
-};
+namespace iox {
+namespace detail {
+struct DeprecationMarker { };
 } // namespace detail
 } // namespace iox
 
@@ -53,13 +49,10 @@ static_assert(ICEORYX_VERSION_MAJOR < IOX_INTERNAL_NEXT_DEPRECATED_VERSION,
 // when the namespace is called 'header' the warning will be "warning: 'header' is deprecated: Deprecated since v#.0
 // ..." with the file and line where the 'IOX_DEPRECATED_HEADER_SINCE' macro is used
 #define IOX_INTERNAL_DEPRECATED_HEADER_SINCE(VERSION, MESSAGE)                                                         \
-    namespace iox                                                                                                      \
-    {                                                                                                                  \
-    namespace detail                                                                                                   \
-    {                                                                                                                  \
+    namespace iox {                                                                                                    \
+    namespace detail {                                                                                                 \
     namespace                                                                                                          \
-        [[deprecated("Deprecated since v" #VERSION ".0 and will be removed at a later version! " MESSAGE)]] header     \
-    {                                                                                                                  \
+        [[deprecated("Deprecated since v" #VERSION ".0 and will be removed at a later version! " MESSAGE)]] header {   \
     using iox::detail::DeprecationMarker;                                                                              \
     }                                                                                                                  \
     using header::DeprecationMarker;                                                                                   \

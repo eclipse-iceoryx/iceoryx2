@@ -31,10 +31,8 @@
 #include "iox/log/building_blocks/console_logger.hpp"
 #include "iox/log/building_blocks/logger.hpp"
 
-namespace iox
-{
-namespace log
-{
+namespace iox {
+namespace log {
 using Logger = internal::Logger<ConsoleLogger>;
 using TestingLoggerBase = internal::Logger<ConsoleLogger>;
 
@@ -43,12 +41,12 @@ using TestingLoggerBase = internal::Logger<ConsoleLogger>;
 /// logger. This is useful in cases the default ConsoleLogger is replaced by a custom logger which does the filtering by
 /// itself
 /// @note This has an performance impact if set to true since the lazy evaluation of the logged data will be jimmied.
-static constexpr bool IGNORE_ACTIVE_LOG_LEVEL{false};
+static constexpr bool IGNORE_ACTIVE_LOG_LEVEL { false };
 
 /// @brief The minimal log level which will be compiled into the application. All log levels below this will be
 /// optimized out at compile time
 /// @note This is different than IGNORE_ACTIVE_LOG_LEVEL since the active log level could still be set to off at runtime
-static constexpr LogLevel MINIMAL_LOG_LEVEL{build::IOX_MINIMAL_LOG_LEVEL};
+static constexpr LogLevel MINIMAL_LOG_LEVEL { build::IOX_MINIMAL_LOG_LEVEL };
 
 } // namespace log
 } // namespace iox

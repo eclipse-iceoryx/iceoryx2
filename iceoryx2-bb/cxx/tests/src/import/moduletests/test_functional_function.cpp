@@ -23,8 +23,7 @@
 using namespace ::testing;
 using namespace iox;
 
-namespace
-{
+namespace {
 
 constexpr uint64_t Bytes = 128U;
 
@@ -38,55 +37,45 @@ using test_function = fixed_size_function<signature>;
 // for our purpose (test_function) we do not need to distinguish
 // between copy (move) ctor and copy(move) assignment
 template <typename T>
-class Counter
-{
+class Counter {
   public:
     static uint64_t numCreated;
     static uint64_t numCopied;
     static uint64_t numMoved;
     static uint64_t numDestroyed;
 
-    Counter()
-    {
+    Counter() {
         ++numCreated;
     }
 
-    Counter(const Counter& rhs IOX_MAYBE_UNUSED)
-    {
+    Counter(const Counter& rhs IOX_MAYBE_UNUSED) {
         ++numCreated;
         ++numCopied;
     }
 
-    Counter(Counter&& rhs IOX_MAYBE_UNUSED) noexcept
-    {
+    Counter(Counter&& rhs IOX_MAYBE_UNUSED) noexcept {
         ++numMoved;
     }
 
-    ~Counter()
-    {
+    ~Counter() {
         ++numDestroyed;
     }
 
-    Counter& operator=(const Counter& rhs)
-    {
-        if (this != &rhs)
-        {
+    Counter& operator=(const Counter& rhs) {
+        if (this != &rhs) {
             ++numCopied;
         }
         return *this;
     }
 
-    Counter& operator=(Counter&& rhs) noexcept
-    {
-        if (this != &rhs)
-        {
+    Counter& operator=(Counter&& rhs) noexcept {
+        if (this != &rhs) {
             ++numMoved;
         }
         return *this;
     }
 
-    static void resetCounts()
-    {
+    static void resetCounts() {
         numCreated = 0U;
         numCopied = 0U;
         numMoved = 0U;
@@ -107,39 +96,33 @@ template <typename T>
 uint64_t Counter<T>::numDestroyed = 0U;
 
 
-class Functor : public Counter<Functor>
-{
+class Functor : public Counter<Functor> {
   public:
     explicit Functor(int32_t state)
-        : m_state(state)
-    {
+        : m_state(state) {
     }
 
-    int32_t operator()(int32_t n)
-    {
+    int32_t operator()(int32_t n) {
         m_state += n;
         return m_state;
     }
 
     // integer arg to satisfy signature requirement of our test_function
-    int32_t getState(int32_t n = 0) const
-    {
+    int32_t getState(int32_t n = 0) const {
         return m_state + n;
     }
 
-    int32_t m_state{0};
+    int32_t m_state { 0 };
 };
 
-int32_t freeFunction(int32_t n)
-{
+int32_t freeFunction(int32_t n) {
     return n + 1;
 }
 
-struct Arg : Counter<Arg>
-{
+struct Arg : Counter<Arg> {
     Arg() = default;
     explicit Arg(int32_t value)
-        : value(value) {};
+        : value(value) { };
     Arg(const Arg&) = default;
     Arg& operator=(const Arg&) = default;
 
@@ -150,34 +133,28 @@ struct Arg : Counter<Arg>
     // Note that this is mainly an issue if the argument is passed by value.
     // The std::function also fails to compile in this case (gcc implementation).
 
-    int32_t value{0};
+    int32_t value { 0 };
 };
 
-int32_t freeFunctionWithCopyableArg(const Arg& arg)
-{
+int32_t freeFunctionWithCopyableArg(const Arg& arg) {
     return arg.value;
 }
 
 
-class function_test : public Test
-{
+class function_test : public Test {
   public:
-    void SetUp() override
-    {
+    void SetUp() override {
     }
 
-    void TearDown() override
-    {
+    void TearDown() override {
     }
 
-    static int32_t staticFunction(int32_t n)
-    {
+    static int32_t staticFunction(int32_t n) {
         return n + 1;
     }
 };
 
-TEST_F(function_test, ConstructionFromFunctorIsCallable)
-{
+TEST_F(function_test, ConstructionFromFunctorIsCallable) {
     ::testing::Test::RecordProperty("TEST_ID", "2969913d-a849-47c5-a76b-f32481e03ea5");
     Functor f(73);
     Functor::resetCounts();
@@ -187,8 +164,7 @@ TEST_F(function_test, ConstructionFromFunctorIsCallable)
     EXPECT_EQ(sut(1), f(1));
 }
 
-TEST_F(function_test, ConstructionFromLambdaIsCallable)
-{
+TEST_F(function_test, ConstructionFromLambdaIsCallable) {
     ::testing::Test::RecordProperty("TEST_ID", "f42a8511-b78d-47b5-aa7f-ae227ae12465");
     int32_t capture = 37;
     auto lambda = [state = capture](int32_t n) { return state + n; };
@@ -197,16 +173,14 @@ TEST_F(function_test, ConstructionFromLambdaIsCallable)
     EXPECT_EQ(sut(1), lambda(1));
 }
 
-TEST_F(function_test, ConstructionFromFreeFunctionIsCallable)
-{
+TEST_F(function_test, ConstructionFromFreeFunctionIsCallable) {
     ::testing::Test::RecordProperty("TEST_ID", "2d808b65-182b-44b0-a501-c9b6ab3c80e7");
     test_function sut(freeFunction);
 
     EXPECT_EQ(sut(1), freeFunction(1));
 }
 
-TEST_F(function_test, ConstructionFromStaticFunctionIsCallable)
-{
+TEST_F(function_test, ConstructionFromStaticFunctionIsCallable) {
     ::testing::Test::RecordProperty("TEST_ID", "24f95326-9d93-4ce1-8338-3582d9a82af3");
     // is essentially also a free function but we test the case to be sure
     test_function sut(staticFunction);
@@ -214,8 +188,7 @@ TEST_F(function_test, ConstructionFromStaticFunctionIsCallable)
     EXPECT_EQ(sut(1), staticFunction(1));
 }
 
-TEST_F(function_test, ConstructionFromMemberFunctionIsCallable)
-{
+TEST_F(function_test, ConstructionFromMemberFunctionIsCallable) {
     ::testing::Test::RecordProperty("TEST_ID", "ac4311a5-8e85-4051-92cc-ca28e679c5ab");
     Functor f(37);
     test_function sut(f, &Functor::operator());
@@ -224,8 +197,7 @@ TEST_F(function_test, ConstructionFromMemberFunctionIsCallable)
     EXPECT_EQ(sut(1), result + 1);
 }
 
-TEST_F(function_test, ConstructionFromConstMemberFunctionIsCallable)
-{
+TEST_F(function_test, ConstructionFromConstMemberFunctionIsCallable) {
     ::testing::Test::RecordProperty("TEST_ID", "a59e5060-ebca-42dd-ae04-0bacab7c3805");
     Functor f(37);
     test_function sut(f, &Functor::getState);
@@ -235,8 +207,7 @@ TEST_F(function_test, ConstructionFromConstMemberFunctionIsCallable)
     EXPECT_EQ(f.getState(1), state); // state is unchanged by the previous call
 }
 
-TEST_F(function_test, ConstructionFromAnotherFunctionIsCallable)
-{
+TEST_F(function_test, ConstructionFromAnotherFunctionIsCallable) {
     ::testing::Test::RecordProperty("TEST_ID", "18e62771-8ed3-43eb-ba1d-876f3825e09e");
     constexpr int32_t INITIAL = 37;
     int32_t capture = INITIAL;
@@ -249,8 +220,7 @@ TEST_F(function_test, ConstructionFromAnotherFunctionIsCallable)
     EXPECT_EQ(capture, INITIAL + 2);
 }
 
-TEST_F(function_test, FunctionStateIsIndependentOfSource)
-{
+TEST_F(function_test, FunctionStateIsIndependentOfSource) {
     ::testing::Test::RecordProperty("TEST_ID", "8302046f-cd6a-4527-aca6-3e6408f87a6b");
     constexpr uint32_t INITIAL_STATE = 73;
     constexpr uint32_t MEMORY_SIZE = 1024;
@@ -286,8 +256,7 @@ TEST_F(function_test, FunctionStateIsIndependentOfSource)
 // The implementation uses type erasure and we need to verify that the corresponding
 // constructors and operators of the underlying object (functor) are called.
 
-TEST_F(function_test, DestructorCallsDestructorOfStoredFunctor)
-{
+TEST_F(function_test, DestructorCallsDestructorOfStoredFunctor) {
     ::testing::Test::RecordProperty("TEST_ID", "2481cf93-c63b-40b0-b6de-2213507efe33");
     Functor f(73);
     Functor::resetCounts();
@@ -299,8 +268,7 @@ TEST_F(function_test, DestructorCallsDestructorOfStoredFunctor)
     EXPECT_EQ(Functor::numDestroyed, 1U);
 }
 
-TEST_F(function_test, CopyCtorCopiesStoredFunctor)
-{
+TEST_F(function_test, CopyCtorCopiesStoredFunctor) {
     ::testing::Test::RecordProperty("TEST_ID", "e34fba7e-0c11-4535-8ac3-7d1b034fc793");
     Functor functor(73);
     test_function f(functor);
@@ -314,8 +282,7 @@ TEST_F(function_test, CopyCtorCopiesStoredFunctor)
     EXPECT_EQ(sut(1), f(1));
 }
 
-TEST_F(function_test, MoveCtorMovesStoredFunctor)
-{
+TEST_F(function_test, MoveCtorMovesStoredFunctor) {
     ::testing::Test::RecordProperty("TEST_ID", "0b9d8b1e-81a6-4242-8f31-aadf2a6c0f91");
     Functor functor(73);
     test_function f(functor);
@@ -327,8 +294,7 @@ TEST_F(function_test, MoveCtorMovesStoredFunctor)
     EXPECT_EQ(sut(1), functor(1));
 }
 
-TEST_F(function_test, CopyAssignmentCopiesStoredFunctor)
-{
+TEST_F(function_test, CopyAssignmentCopiesStoredFunctor) {
     ::testing::Test::RecordProperty("TEST_ID", "8ef88318-0aa0-4766-8b3c-a9cc197f88fd");
     test_function f(Functor(73));
     test_function sut(Functor(42));
@@ -341,8 +307,7 @@ TEST_F(function_test, CopyAssignmentCopiesStoredFunctor)
     EXPECT_EQ(sut(1), f(1));
 }
 
-TEST_F(function_test, MoveAssignmentMovesStoredFunctor)
-{
+TEST_F(function_test, MoveAssignmentMovesStoredFunctor) {
     ::testing::Test::RecordProperty("TEST_ID", "684f7c51-5532-46d1-91ea-7e7e7e76534b");
     Functor functor(73);
     test_function f(functor);
@@ -359,8 +324,7 @@ TEST_F(function_test, MoveAssignmentMovesStoredFunctor)
 }
 
 
-TEST_F(function_test, CopyCtorCopiesStoredFreeFunction)
-{
+TEST_F(function_test, CopyCtorCopiesStoredFreeFunction) {
     ::testing::Test::RecordProperty("TEST_ID", "8f95a82a-c879-48b1-aa56-316bf15b983a");
     test_function f(freeFunction);
     // NOLINTJUSTIFICATION the copy constructor is tested here
@@ -370,8 +334,7 @@ TEST_F(function_test, CopyCtorCopiesStoredFreeFunction)
     EXPECT_EQ(sut(1), f(1));
 }
 
-TEST_F(function_test, MoveCtorMovesStoredFreeFunction)
-{
+TEST_F(function_test, MoveCtorMovesStoredFreeFunction) {
     ::testing::Test::RecordProperty("TEST_ID", "efcd5ae0-393f-4243-8825-871f7f59a9c0");
     test_function f(freeFunction);
     test_function sut(std::move(f));
@@ -379,8 +342,7 @@ TEST_F(function_test, MoveCtorMovesStoredFreeFunction)
     EXPECT_EQ(sut(1), freeFunction(1));
 }
 
-TEST_F(function_test, CopyAssignmentCopiesStoredFreeFunction)
-{
+TEST_F(function_test, CopyAssignmentCopiesStoredFreeFunction) {
     ::testing::Test::RecordProperty("TEST_ID", "29ebca31-0266-4741-84b3-b3cbecfc7b4a");
     test_function f(freeFunction);
     test_function sut(Functor(73));
@@ -394,8 +356,7 @@ TEST_F(function_test, CopyAssignmentCopiesStoredFreeFunction)
     EXPECT_EQ(sut(1), f(1));
 }
 
-TEST_F(function_test, MoveAssignmentMovesStoredFreeFunction)
-{
+TEST_F(function_test, MoveAssignmentMovesStoredFreeFunction) {
     ::testing::Test::RecordProperty("TEST_ID", "414ec34a-f5e3-4ab6-bfab-60796bbd7b8a");
     test_function f(freeFunction);
     test_function sut(Functor(73));
@@ -409,8 +370,7 @@ TEST_F(function_test, MoveAssignmentMovesStoredFreeFunction)
     EXPECT_EQ(sut(1), freeFunction(1));
 }
 
-TEST_F(function_test, MemberSwapWorks)
-{
+TEST_F(function_test, MemberSwapWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "85ba9d33-f552-4aa9-a214-24464a5ca934");
     Functor f1(73);
     Functor f2(37);
@@ -423,8 +383,7 @@ TEST_F(function_test, MemberSwapWorks)
     EXPECT_EQ(sut2(1), f1(1));
 }
 
-TEST_F(function_test, StaticSwapWorks)
-{
+TEST_F(function_test, StaticSwapWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "0b27cb60-85ae-4942-b448-1f9b00a253fa");
     Functor f1(73);
     Functor f2(37);
@@ -437,8 +396,7 @@ TEST_F(function_test, StaticSwapWorks)
     EXPECT_EQ(sut2(1), f1(1));
 }
 
-TEST_F(function_test, FunctorOfSizeSmallerThanStorageBytesCanBeStored)
-{
+TEST_F(function_test, FunctorOfSizeSmallerThanStorageBytesCanBeStored) {
     ::testing::Test::RecordProperty("TEST_ID", "34de556c-95f4-4d7b-b01b-377c08529f62");
     // it will not compile if the storage is too small,
     constexpr auto BYTES = test_function::required_storage_size<Functor>();
@@ -447,26 +405,23 @@ TEST_F(function_test, FunctorOfSizeSmallerThanStorageBytesCanBeStored)
     function<signature, BYTES> sut(f);
 }
 
-TEST_F(function_test, IsStorableIsConsistent)
-{
+TEST_F(function_test, IsStorableIsConsistent) {
     ::testing::Test::RecordProperty("TEST_ID", "78fd4207-9ef4-459d-96f4-9cca98135b47");
     constexpr auto BYTES = test_function::required_storage_size<Functor>();
     constexpr auto RESULT = function<signature, BYTES>::is_storable<Functor>();
     EXPECT_TRUE(RESULT);
 }
 
-TEST_F(function_test, IsNotStorableDueToSize)
-{
+TEST_F(function_test, IsNotStorableDueToSize) {
     ::testing::Test::RecordProperty("TEST_ID", "4ecd7078-5b3d-4fd5-b5af-296401b652ce");
     constexpr auto BYTES = test_function::required_storage_size<Functor>();
     constexpr auto RESULT = function<signature, BYTES - alignof(Functor)>::is_storable<Functor>();
     EXPECT_FALSE(RESULT);
 }
 
-TEST_F(function_test, IsNotStorableDueToSignature)
-{
+TEST_F(function_test, IsNotStorableDueToSignature) {
     ::testing::Test::RecordProperty("TEST_ID", "a7a5e2a6-68dd-477a-8eb0-573e57c7a3ae");
-    auto nonStorable = []() {};
+    auto nonStorable = []() { };
     using NonStorable = decltype(nonStorable);
     constexpr auto BYTES = test_function::required_storage_size<NonStorable>();
     constexpr auto RESULT = function<signature, BYTES>::is_storable<NonStorable>();
@@ -474,8 +429,7 @@ TEST_F(function_test, IsNotStorableDueToSignature)
 }
 
 
-TEST_F(function_test, CallWithCopyConstructibleArgument)
-{
+TEST_F(function_test, CallWithCopyConstructibleArgument) {
     ::testing::Test::RecordProperty("TEST_ID", "20018d76-6255-407a-b3d3-77b6b480067d");
     function<int32_t(const Arg&), 1024> sut(freeFunctionWithCopyableArg);
     std::function<int32_t(const Arg&)> func(freeFunctionWithCopyableArg);
@@ -491,8 +445,7 @@ TEST_F(function_test, CallWithCopyConstructibleArgument)
     // in this case
 }
 
-TEST_F(function_test, CallWithVoidSignatureWorks)
-{
+TEST_F(function_test, CallWithVoidSignatureWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "dcc54ea2-ce1a-4142-a141-df6d0bbe9707");
     const int32_t initial = 73;
     int value = initial;
@@ -504,8 +457,7 @@ TEST_F(function_test, CallWithVoidSignatureWorks)
     EXPECT_EQ(value, initial + 1);
 }
 
-TEST_F(function_test, CallWithReferenceArgumentsWorks)
-{
+TEST_F(function_test, CallWithReferenceArgumentsWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "ef3fe399-cf1c-4d28-b688-b50ac9c1fe3e");
     const int32_t initial = 73;
     Arg arg(initial);
@@ -518,8 +470,7 @@ TEST_F(function_test, CallWithReferenceArgumentsWorks)
     EXPECT_EQ(arg.value, initial + 1);
 }
 
-TEST_F(function_test, CallWithConstReferenceArgumentsWorks)
-{
+TEST_F(function_test, CallWithConstReferenceArgumentsWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "80ea9066-918e-436d-9b99-11c6339412da");
     const int32_t initial = 73;
     Arg arg(initial);
@@ -532,8 +483,7 @@ TEST_F(function_test, CallWithConstReferenceArgumentsWorks)
     EXPECT_EQ(result, initial + 1);
 }
 
-TEST_F(function_test, CallWithValueArgumentsWorks)
-{
+TEST_F(function_test, CallWithValueArgumentsWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "b3ea6823-b392-418e-8be0-e8d69246e3c5");
     const int32_t initial = 73;
     Arg arg(initial);
@@ -548,8 +498,7 @@ TEST_F(function_test, CallWithValueArgumentsWorks)
     EXPECT_EQ(result, initial + 1);
 }
 
-TEST_F(function_test, CallWithRValueReferenceArgumentsWorks)
-{
+TEST_F(function_test, CallWithRValueReferenceArgumentsWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "1c827680-a04d-4fca-bb22-96922d7192ab");
     const int32_t initial = 73;
     Arg arg(initial);
@@ -563,8 +512,7 @@ TEST_F(function_test, CallWithRValueReferenceArgumentsWorks)
     EXPECT_EQ(result, initial + 1);
 }
 
-TEST_F(function_test, CallWithMixedArgumentsWorks)
-{
+TEST_F(function_test, CallWithMixedArgumentsWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "d26e380d-4b0e-4c9f-a1b9-c9e7ab3707e1");
     Arg arg1(1);
     Arg arg2(2);

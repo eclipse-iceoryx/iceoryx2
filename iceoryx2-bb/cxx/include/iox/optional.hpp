@@ -23,25 +23,20 @@
 #include <new> // needed for placement new in the construct_value member function
 #include <utility>
 
-namespace iox
-{
+namespace iox {
 /// @brief Helper struct which is used to signal an empty optional.
 ///         It is equivalent to no value.
-struct nullopt_t
-{
-};
+struct nullopt_t { };
 // AXIVION Next Construct AutosarC++19_03-M17.0.2 : nullopt is defined within iox namespace which prevents easy
 // misuse
-constexpr nullopt_t nullopt{nullopt_t()};
+constexpr nullopt_t nullopt { nullopt_t() };
 
 /// @brief helper struct which is used to call the in-place-construction constructor
-struct in_place_t
-{
-};
+struct in_place_t { };
 
 // AXIVION Next Construct AutosarC++19_03-M17.0.2 : in_place is defined within iox namespace which prevents easy
 // misuse
-constexpr in_place_t in_place{};
+constexpr in_place_t in_place {};
 
 /// @brief Optional implementation from the C++17 standard with C++11. The
 ///         interface is analog to the C++17 standard and it can be used in
@@ -67,8 +62,7 @@ constexpr in_place_t in_place{};
 ///     }
 /// @endcode
 template <typename T>
-class optional final : public FunctionalInterface<optional<T>, T, void>
-{
+class optional final : public FunctionalInterface<optional<T>, T, void> {
   public:
     using type = T;
 
@@ -228,10 +222,9 @@ class optional final : public FunctionalInterface<optional<T>, T, void>
     //     // mistakes can be introduced quickly in low level c abstraction classes
     //     initHandle(&handle);
     //   }
-    bool m_hasValue{false};
+    bool m_hasValue { false };
     // AXIVION DISABLE STYLE AutosarC++19_03-A9.6.1 : False positive. Used type has defined size.
-    struct alignas(T) element_t
-    {
+    struct alignas(T) element_t {
         // AXIVION Next Construct AutosarC++19_03-M0.1.3 : the field is intentionally unused and serves as a mean to provide memory
         // AXIVION Next Construct AutosarC++19_03-A1.1.1 : object size depends on template parameter and has to be taken care of at the specific template instantiation
         // AXIVION Next Construct AutosarC++19_03-A18.1.1 : required as low level building block, encapsulated in abstraction and not directly used
@@ -300,14 +293,10 @@ template <typename T>
 bool operator!=(const optional<T>& lhs, const nullopt_t) noexcept;
 
 template <typename... T>
-struct is_optional : std::false_type
-{
-};
+struct is_optional : std::false_type { };
 
 template <typename T>
-struct is_optional<optional<T>> : std::true_type
-{
-};
+struct is_optional<optional<T>> : std::true_type { };
 // AXIVION ENABLE STYLE AutosarC++19_03-A13.5.5
 } // namespace iox
 

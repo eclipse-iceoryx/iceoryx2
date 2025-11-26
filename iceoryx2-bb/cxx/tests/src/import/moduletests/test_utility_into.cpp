@@ -17,28 +17,22 @@
 #include "iox/into.hpp"
 #include "test.hpp"
 
-namespace
-{
-enum class A : uint8_t
-{
+namespace {
+enum class A : uint8_t {
     A1 = 13,
     A2
 };
 
-enum class B : uint8_t
-{
+enum class B : uint8_t {
     B1 = 42,
     B2
 };
 } // namespace
 
-namespace iox
-{
+namespace iox {
 template <>
-constexpr B from<A, B>(A e) noexcept
-{
-    switch (e)
-    {
+constexpr B from<A, B>(A e) noexcept {
+    switch (e) {
     case A::A1:
         return B::B1;
     case A::A2:
@@ -47,25 +41,22 @@ constexpr B from<A, B>(A e) noexcept
 }
 } // namespace iox
 
-namespace
-{
+namespace {
 using namespace ::testing;
 using namespace iox;
 
-TEST(into_test_from, FromWorksAsConstexpr)
-{
+TEST(into_test_from, FromWorksAsConstexpr) {
     ::testing::Test::RecordProperty("TEST_ID", "5b7cac32-c0ef-4f29-8314-59ed8850d1f5");
-    constexpr A FROM_VALUE{A::A1};
-    constexpr B TO_VALUE{B::B1};
+    constexpr A FROM_VALUE { A::A1 };
+    constexpr B TO_VALUE { B::B1 };
     constexpr B SUT = iox::from<A, B>(FROM_VALUE);
     EXPECT_EQ(SUT, TO_VALUE);
 }
 
-TEST(into_test_into, IntoWorksWhenFromIsSpecialized)
-{
+TEST(into_test_into, IntoWorksWhenFromIsSpecialized) {
     ::testing::Test::RecordProperty("TEST_ID", "1d4331e5-f603-4e50-bdb2-75df57b0b517");
-    constexpr A FROM_VALUE{A::A2};
-    constexpr B TO_VALUE{B::B2};
+    constexpr A FROM_VALUE { A::A2 };
+    constexpr B TO_VALUE { B::B2 };
     constexpr B SUT = iox::into<B>(FROM_VALUE);
     EXPECT_EQ(SUT, TO_VALUE);
 }

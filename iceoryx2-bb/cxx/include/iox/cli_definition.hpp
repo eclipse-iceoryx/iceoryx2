@@ -25,8 +25,7 @@
 
 #define IOX_INTERNAL_CMD_LINE_VALUE(type, memberName, defaultValue, shortName, longName, description, optionType)      \
   public:                                                                                                              \
-    const type& memberName() const noexcept                                                                            \
-    {                                                                                                                  \
+    const type& memberName() const noexcept {                                                                          \
         return m_##memberName;                                                                                         \
     }                                                                                                                  \
                                                                                                                        \
@@ -101,8 +100,7 @@
 #define IOX_CLI_DEFINITION(Name)                                                                                       \
   private:                                                                                                             \
     Name(::iox::cli::OptionManager& optionManager, int argc, char** argv, const uint64_t argcOffset = 1U)              \
-        : m_optionManager{&optionManager}                                                                              \
-    {                                                                                                                  \
+        : m_optionManager { &optionManager } {                                                                         \
         m_optionManager->populateDefinedOptions(m_binaryName, argc, argv, argcOffset);                                 \
     }                                                                                                                  \
                                                                                                                        \
@@ -112,14 +110,12 @@
         char** argv,                                                                                                   \
         const iox::cli::OptionDescription_t& programDescription,                                                       \
         const uint64_t argcOffset = 1U,                                                                                \
-        const ::iox::function<void()>& onFailureCallback = [] { std::abort(); })                                       \
-    {                                                                                                                  \
+        const ::iox::function<void()>& onFailureCallback = [] { std::abort(); }) {                                     \
         ::iox::cli::OptionManager optionManager(programDescription, onFailureCallback);                                \
         return Name(optionManager, argc, argv, argcOffset);                                                            \
     }                                                                                                                  \
                                                                                                                        \
-    const char* binaryName() const noexcept                                                                            \
-    {                                                                                                                  \
+    const char* binaryName() const noexcept {                                                                          \
         return m_binaryName;                                                                                           \
     }                                                                                                                  \
                                                                                                                        \

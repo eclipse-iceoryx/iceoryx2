@@ -25,8 +25,7 @@
 #include <string>
 #include <vector>
 
-namespace
-{
+namespace {
 using namespace ::testing;
 using namespace iox;
 
@@ -34,19 +33,15 @@ using namespace iox;
 /// command line parser macros are working and connecting everything together correctly
 /// The actual test of the command line parser can be found in
 /// test_cli_command_line_argument_parser.cpp
-class CliDefinition_test : public Test
-{
+class CliDefinition_test : public Test {
   public:
-    void SetUp() override
-    {
+    void SetUp() override {
         // if we do not capture stdout then the console is filled with garbage
         // since the command line parser prints the help on failure
         outputBuffer.emplace();
     }
-    void TearDown() override
-    {
-        if (Test::HasFailure())
-        {
+    void TearDown() override {
+        if (Test::HasFailure()) {
             auto output = outputBuffer->output();
             outputBuffer.reset();
             std::cout << "#### Captured output start ####" << std::endl;
@@ -58,18 +53,18 @@ class CliDefinition_test : public Test
     optional<OutBuffer> outputBuffer;
 };
 
-struct CliDefinitionSut
-{
+struct CliDefinitionSut {
     // NOLINTJUSTIFICATION hidden behind a macro
     // NOLINTNEXTLINE(readability-function-size)
     IOX_CLI_DEFINITION(CliDefinitionSut);
 
-    IOX_CLI_OPTIONAL(string<100>, stringValue1, {"default value"}, 's', {"string-value-1"}, {"some description"});
-    IOX_CLI_OPTIONAL(string<100>, stringValue2, {"some other value"}, 't', {"string-value-2"}, {"some description"});
-    IOX_CLI_OPTIONAL(int64_t, optionalInt1, 123, 'i', {"int-value-1"}, {"some description"});
-    IOX_CLI_OPTIONAL(int64_t, optionalInt2, 456, 'j', {"int-value-2"}, {"some description"});
-    IOX_CLI_OPTIONAL(uint8_t, optionalUint1, 123, 'u', {"uint-value-1"}, {"some description"});
-    IOX_CLI_OPTIONAL(uint8_t, optionalUint2, 212, 'v', {"uint-value-2"}, {"some description"});
+    IOX_CLI_OPTIONAL(string<100>, stringValue1, { "default value" }, 's', { "string-value-1" }, { "some description" });
+    IOX_CLI_OPTIONAL(
+        string<100>, stringValue2, { "some other value" }, 't', { "string-value-2" }, { "some description" });
+    IOX_CLI_OPTIONAL(int64_t, optionalInt1, 123, 'i', { "int-value-1" }, { "some description" });
+    IOX_CLI_OPTIONAL(int64_t, optionalInt2, 456, 'j', { "int-value-2" }, { "some description" });
+    IOX_CLI_OPTIONAL(uint8_t, optionalUint1, 123, 'u', { "uint-value-1" }, { "some description" });
+    IOX_CLI_OPTIONAL(uint8_t, optionalUint2, 212, 'v', { "uint-value-2" }, { "some description" });
 
     IOX_CLI_SWITCH(lightSwitch1, 'l', "light-switch-1", "do some stuff - some description");
     IOX_CLI_SWITCH(lightSwitch2, 'm', "light-switch-2", "do some stuff - some description");
@@ -79,11 +74,10 @@ struct CliDefinitionSut
     IOX_CLI_REQUIRED(uint16_t, requiredUint, 'c', "required-uint", "some description");
 };
 
-TEST_F(CliDefinition_test, OnlyRequiredValuesSetsRemainingValuesToDefault)
-{
+TEST_F(CliDefinition_test, OnlyRequiredValuesSetsRemainingValuesToDefault) {
     ::testing::Test::RecordProperty("TEST_ID", "451701b8-061f-4e30-9beb-1c09c7e6bc1b");
     CmdArgs args(
-        {"myBinaryName", "--required-string", "bluubb", "--required-float", "123.456", "--required-uint", "12"});
+        { "myBinaryName", "--required-string", "bluubb", "--required-float", "123.456", "--required-uint", "12" });
     auto sut = CliDefinitionSut::parse(args.argc, args.argv, "My program description");
 
     EXPECT_THAT(sut.binaryName(), StrEq("myBinaryName"));
@@ -103,30 +97,29 @@ TEST_F(CliDefinition_test, OnlyRequiredValuesSetsRemainingValuesToDefault)
     EXPECT_THAT(sut.requiredUint(), Eq(12));
 }
 
-TEST_F(CliDefinition_test, AllValuesViaCommandLineArgumentDefinitionAreSetCorrectly)
-{
+TEST_F(CliDefinition_test, AllValuesViaCommandLineArgumentDefinitionAreSetCorrectly) {
     ::testing::Test::RecordProperty("TEST_ID", "0478575e-8eb4-4983-93bd-199d222e706e");
-    CmdArgs args({"anotherOneBitesTheDust",
-                  "--required-string",
-                  "schnappidububa",
-                  "--required-float",
-                  "456.123",
-                  "--required-uint",
-                  "1212",
-                  "--string-value-1",
-                  "flatterdude",
-                  "--string-value-2",
-                  "evilhuhn",
-                  "--int-value-1",
-                  "4711123",
-                  "--int-value-2",
-                  "810456",
-                  "--uint-value-1",
-                  "39",
-                  "--uint-value-2",
-                  "31",
-                  "--light-switch-1",
-                  "--light-switch-2"});
+    CmdArgs args({ "anotherOneBitesTheDust",
+                   "--required-string",
+                   "schnappidububa",
+                   "--required-float",
+                   "456.123",
+                   "--required-uint",
+                   "1212",
+                   "--string-value-1",
+                   "flatterdude",
+                   "--string-value-2",
+                   "evilhuhn",
+                   "--int-value-1",
+                   "4711123",
+                   "--int-value-2",
+                   "810456",
+                   "--uint-value-1",
+                   "39",
+                   "--uint-value-2",
+                   "31",
+                   "--light-switch-1",
+                   "--light-switch-2" });
     auto sut = CliDefinitionSut::parse(args.argc, args.argv, "My program description");
 
     EXPECT_THAT(sut.binaryName(), StrEq("anotherOneBitesTheDust"));
@@ -145,30 +138,29 @@ TEST_F(CliDefinition_test, AllValuesViaCommandLineArgumentDefinitionAreSetCorrec
     EXPECT_THAT(sut.requiredUint(), Eq(1212));
 }
 
-TEST_F(CliDefinition_test, AllValuesViaCommandLineArgumentDefinitionAndShortcutAreSetCorrectly)
-{
+TEST_F(CliDefinition_test, AllValuesViaCommandLineArgumentDefinitionAndShortcutAreSetCorrectly) {
     ::testing::Test::RecordProperty("TEST_ID", "0c9abe4d-47ab-469a-a0fe-eff03a7aff37");
-    CmdArgs args({"noOneBitesHypnotoad",
-                  "-r",
-                  "AllYouNeedIsHorst",
-                  "-b",
-                  "810.123",
-                  "-c",
-                  "31415",
-                  "-s",
-                  "DoNotTouchTheFishy",
-                  "-t",
-                  "NoLittleTouchyFishy",
-                  "-i",
-                  "3",
-                  "-j",
-                  "4",
-                  "-u",
-                  "5",
-                  "-v",
-                  "25",
-                  "-l",
-                  "-m"});
+    CmdArgs args({ "noOneBitesHypnotoad",
+                   "-r",
+                   "AllYouNeedIsHorst",
+                   "-b",
+                   "810.123",
+                   "-c",
+                   "31415",
+                   "-s",
+                   "DoNotTouchTheFishy",
+                   "-t",
+                   "NoLittleTouchyFishy",
+                   "-i",
+                   "3",
+                   "-j",
+                   "4",
+                   "-u",
+                   "5",
+                   "-v",
+                   "25",
+                   "-l",
+                   "-m" });
     auto sut = CliDefinitionSut::parse(args.argc, args.argv, "My program description");
 
     EXPECT_THAT(sut.binaryName(), StrEq("noOneBitesHypnotoad"));

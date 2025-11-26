@@ -20,23 +20,19 @@
 #include "iox/error_reporting/types.hpp"
 #include "iox/error_reporting/violation.hpp"
 
-namespace iox
-{
-namespace er
-{
+namespace iox {
+namespace er {
 /// @brief Contains all required information about the error.
 /// Can be extended as needed without breaking the interface.
 /// @note We either need this, something like std::any or a class hierarchy for runtime polymorphism.
 /// The actual error type must be erased in some way.
-struct ErrorDescriptor
-{
+struct ErrorDescriptor {
     constexpr ErrorDescriptor(const SourceLocation& location,
                               const ErrorCode& code,
                               const ModuleId& module = ModuleId())
         : location(location)
         , code(code)
-        , module(module)
-    {
+        , module(module) {
     }
 
     SourceLocation location;
@@ -47,8 +43,7 @@ struct ErrorDescriptor
 /// @brief Defines the dynamic error handling interface (i.e. changeable at runtime).
 // NOLINTJUSTIFICATION abstract interface
 // NOLINTNEXTLINE(cppcoreguidelines-special-member-functions, hicpp-special-member-functions)
-class ErrorHandlerInterface
-{
+class ErrorHandlerInterface {
   public:
     virtual ~ErrorHandlerInterface() = default;
 

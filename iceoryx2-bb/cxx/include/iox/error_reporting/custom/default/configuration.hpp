@@ -18,18 +18,15 @@
 
 #include "iox/error_reporting/configuration.hpp"
 
-namespace iox
-{
-namespace er
-{
+namespace iox {
+namespace er {
 
 // Specialize to change the checks (and other options if needed) at compile time.
 // this can later also be done depending on a #define to select a header
 // but we should avoid to have a #define for each option.
 template <>
-struct ConfigurationParameters<ConfigurationTag>
-{
-    static constexpr bool CHECK_ASSERT{true}; /// @todo iox-#1032 deactive for release builds
+struct ConfigurationParameters<ConfigurationTag> {
+    static constexpr bool CHECK_ASSERT { true }; /// @todo iox-#1032 deactive for release builds
 };
 
 } // namespace er

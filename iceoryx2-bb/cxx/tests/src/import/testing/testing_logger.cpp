@@ -27,35 +27,26 @@
 // NOLINTNEXTLINE(hicpp-deprecated-headers) required to work on some platforms
 #include <setjmp.h>
 
-namespace iox
-{
-namespace testing
-{
-void TestingLogger::init() noexcept
-{
+namespace iox {
+namespace testing {
+void TestingLogger::init() noexcept {
     static TestingLogger logger;
     log::Logger::setActiveLogger(logger);
     log::Logger::init(log::logLevelFromEnvOr(log::LogLevel::Trace));
     // disable logger output only after initializing the logger to get error messages from initialization
     // JUSTIFICATION getenv is required for the functionality of the testing logger and will be called only once in main
     // NOLINTNEXTLINE(concurrency-mt-unsafe)
-    if (const auto* allowLogString = std::getenv("IOX_TESTING_ALLOW_LOG"))
-    {
-        if (log::equalStrings(allowLogString, "on") || log::equalStrings(allowLogString, "ON"))
-        {
+    if (const auto* allowLogString = std::getenv("IOX_TESTING_ALLOW_LOG")) {
+        if (log::equalStrings(allowLogString, "on") || log::equalStrings(allowLogString, "ON")) {
             logger.m_loggerData->allowLog = true;
-        }
-        else
-        {
+        } else {
             logger.m_loggerData->allowLog = false;
             std::cout << "" << std::endl;
             std::cout << "Invalid value for 'IOX_TESTING_ALLOW_LOG' environment variable!'" << std::endl;
             std::cout << "Found: " << allowLogString << std::endl;
             std::cout << "Allowed is one of: on, ON" << std::endl;
         }
-    }
-    else
-    {
+    } else {
         logger.m_loggerData->allowLog = false;
     }
 
@@ -64,59 +55,49 @@ void TestingLogger::init() noexcept
     listeners.Append(new (std::nothrow) LogPrinter);
 }
 
-void TestingLogger::clearLogBuffer() noexcept
-{
+void TestingLogger::clearLogBuffer() noexcept {
     m_loggerData->buffer.clear();
 }
 
-void TestingLogger::printLogBuffer() noexcept
-{
+void TestingLogger::printLogBuffer() noexcept {
     auto loggerData = m_loggerData.get_scope_guard();
-    if (loggerData->buffer.empty())
-    {
+    if (loggerData->buffer.empty()) {
         return;
     }
     puts("#### Log start ####");
-    for (const auto& log : loggerData->buffer)
-    {
+    for (const auto& log : loggerData->buffer) {
         puts(log.c_str());
     }
     puts("#### Log end ####");
     loggerData->buffer.clear();
 }
 
-uint64_t TestingLogger::getNumberOfLogMessages() noexcept
-{
+uint64_t TestingLogger::getNumberOfLogMessages() noexcept {
     auto& logger = dynamic_cast<TestingLogger&>(log::Logger::get());
     return logger.m_loggerData->buffer.size();
 }
 
 void TestingLogger::checkLogMessageIfLogLevelIsSupported(
-    iox::log::LogLevel logLevel, const std::function<void(const std::vector<std::string>&)>& check)
-{
-    if (doesLoggerSupportLogLevel(logLevel))
-    {
+    iox::log::LogLevel logLevel, const std::function<void(const std::vector<std::string>&)>& check) {
+    if (doesLoggerSupportLogLevel(logLevel)) {
         check(getLogMessages());
     }
 }
 
 
-void TestingLogger::flush() noexcept
-{
+void TestingLogger::flush() noexcept {
     auto loggerData = m_loggerData.get_scope_guard();
     const auto logBuffer = Base::getLogBuffer();
     loggerData->buffer.emplace_back(logBuffer.buffer, logBuffer.writeIndex);
 
-    if (loggerData->allowLog)
-    {
+    if (loggerData->allowLog) {
         Base::flush();
     }
 
     Base::assumeFlushed();
 }
 
-std::vector<std::string> TestingLogger::getLogMessages() noexcept
-{
+std::vector<std::string> TestingLogger::getLogMessages() noexcept {
     auto& logger = dynamic_cast<TestingLogger&>(log::Logger::get());
     return logger.m_loggerData->buffer;
 }
@@ -125,14 +106,12 @@ std::vector<std::string> TestingLogger::getLogMessages() noexcept
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables) global variable is required as jmp target
 jmp_buf exitJmpBuffer;
 
-static void sigHandler(int sig, siginfo_t*, void*)
-{
-    constexpr const char* COLOR_RESET{"\033[m"};
+static void sigHandler(int sig, siginfo_t*, void*) {
+    constexpr const char* COLOR_RESET { "\033[m" };
 
     std::cout << iox::log::logLevelDisplayColor(iox::log::LogLevel::Warn)
               << "Catched signal: " << iox::log::logLevelDisplayColor(iox::log::LogLevel::Fatal);
-    switch (sig)
-    {
+    switch (sig) {
     case SIGSEGV:
         std::cout << "SIGSEGV" << std::flush;
         break;
@@ -157,14 +136,13 @@ static void sigHandler(int sig, siginfo_t*, void*)
               << COLOR_RESET << "\n"
               << std::flush;
 
-    constexpr int JMP_VALUE{1};
+    constexpr int JMP_VALUE { 1 };
     // NOLINTNEXTLINE(cert-err52-cpp) exception cannot be used and longjmp/setjmp is a working fallback
     longjmp(&exitJmpBuffer[0], JMP_VALUE);
 }
 #endif
 
-void LogPrinter::OnTestStart(const ::testing::TestInfo&)
-{
+void LogPrinter::OnTestStart(const ::testing::TestInfo&) {
     dynamic_cast<TestingLogger&>(log::Logger::get()).clearLogBuffer();
     TestingLogger::setLogLevel(log::LogLevel::Trace);
 
@@ -188,10 +166,8 @@ void LogPrinter::OnTestStart(const ::testing::TestInfo&)
 #endif
 }
 
-void LogPrinter::OnTestPartResult(const ::testing::TestPartResult& result)
-{
-    if (result.failed())
-    {
+void LogPrinter::OnTestPartResult(const ::testing::TestPartResult& result) {
+    if (result.failed()) {
         dynamic_cast<TestingLogger&>(log::Logger::get()).printLogBuffer();
     }
 

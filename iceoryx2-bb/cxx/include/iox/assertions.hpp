@@ -52,30 +52,28 @@
 /// @param condition boolean expression that must hold
 /// @param message message to be forwarded in case of violation
 #define IOX_ASSERT(condition, message)                                                                                 \
-    if (iox::er::Configuration::CHECK_ASSERT && !(condition))                                                          \
-    {                                                                                                                  \
+    if (iox::er::Configuration::CHECK_ASSERT && !(condition)) {                                                        \
         iox::er::forwardFatalError(iox::er::Violation::createAssertViolation(),                                        \
                                    iox::er::ASSERT_VIOLATION,                                                          \
                                    IOX_CURRENT_SOURCE_LOCATION,                                                        \
                                    #condition,                                                                         \
                                    message);                                                                           \
     }                                                                                                                  \
-    [] {}() // the empty lambda forces a semicolon on the caller side
+    [] { }() // the empty lambda forces a semicolon on the caller side
 
 /// @brief report fatal enforce violation if expression evaluates to false
 /// @note for conditions that may actually happen during correct use
 /// @param condition boolean expression that must hold
 /// @param message message to be forwarded in case of violation
 #define IOX_ENFORCE(condition, message)                                                                                \
-    if (!(condition))                                                                                                  \
-    {                                                                                                                  \
+    if (!(condition)) {                                                                                                \
         iox::er::forwardFatalError(iox::er::Violation::createEnforceViolation(),                                       \
                                    iox::er::ENFORCE_VIOLATION,                                                         \
                                    IOX_CURRENT_SOURCE_LOCATION,                                                        \
                                    #condition,                                                                         \
                                    message);                                                                           \
     }                                                                                                                  \
-    [] {}() // the empty lambda forces a semicolon on the caller side
+    [] { }() // the empty lambda forces a semicolon on the caller side
 
 /// @brief panic if control flow reaches this code at runtime
 #define IOX_UNREACHABLE()                                                                                              \

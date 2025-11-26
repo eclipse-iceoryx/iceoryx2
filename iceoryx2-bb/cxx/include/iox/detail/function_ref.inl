@@ -22,8 +22,7 @@
 
 #include <memory>
 
-namespace iox
-{
+namespace iox {
 template <class ReturnType, class... ArgTypes>
 template <typename CallableType, typename>
 // AXIVION Next Construct AutosarC++19_03-A12.1.5 : Other c'tors can't be used as delegating c'tor
@@ -44,8 +43,7 @@ inline function_ref<ReturnType(ArgTypes...)>::function_ref(CallableType&& callab
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         return (*reinterpret_cast<typename std::add_pointer<CallableType>::type>(target))(
             std::forward<ArgTypes>(args)...);
-    })
-{
+    }) {
 }
 
 template <class ReturnType, class... ArgTypes>
@@ -62,25 +60,21 @@ inline function_ref<ReturnType(ArgTypes...)>::function_ref(ReturnType (&function
         using PointerType = ReturnType (*)(ArgTypes...);
         // AXIVION Next Construct AutosarC++19_03-A5.2.4 : The class design ensures a cast to the actual type of target
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast,hicpp-use-auto)
-        PointerType f{reinterpret_cast<PointerType>(target)};
+        PointerType f { reinterpret_cast<PointerType>(target) };
         // AXIVION Next Line AutosarC++19_03-A5.3.2 : Check for 'nullptr' is performed on call
         return f(args...);
-    })
-{
+    }) {
 }
 
 template <class ReturnType, class... ArgTypes>
-inline function_ref<ReturnType(ArgTypes...)>::function_ref(function_ref&& rhs) noexcept
-{
+inline function_ref<ReturnType(ArgTypes...)>::function_ref(function_ref&& rhs) noexcept {
     *this = std::move(rhs);
 }
 
 template <class ReturnType, class... ArgTypes>
 inline function_ref<ReturnType(ArgTypes...)>&
-function_ref<ReturnType(ArgTypes...)>::operator=(function_ref<ReturnType(ArgTypes...)>&& rhs) & noexcept
-{
-    if (this != &rhs)
-    {
+function_ref<ReturnType(ArgTypes...)>::operator=(function_ref<ReturnType(ArgTypes...)>&& rhs) & noexcept {
+    if (this != &rhs) {
         m_pointerToCallable = rhs.m_pointerToCallable;
         m_functionPointer = rhs.m_functionPointer;
         // Make sure no undefined behavior can happen by marking the rhs as invalid
@@ -92,27 +86,23 @@ function_ref<ReturnType(ArgTypes...)>::operator=(function_ref<ReturnType(ArgType
 
 template <class ReturnType, class... ArgTypes>
 // AXIVION Next Construct AutosarC++19_03-A15.4.2, AutosarC++19_03-A15.5.3, FaultDetection-NoexceptViolations : Intentional behavior. The library itself does not throw and on the implementation side a try-catch block can be used
-inline ReturnType function_ref<ReturnType(ArgTypes...)>::operator()(ArgTypes... args) const noexcept
-{
+inline ReturnType function_ref<ReturnType(ArgTypes...)>::operator()(ArgTypes... args) const noexcept {
     auto wasCallableAssignedBeforehand = (m_pointerToCallable != nullptr) && (m_functionPointer != nullptr);
-    if (!wasCallableAssignedBeforehand)
-    {
+    if (!wasCallableAssignedBeforehand) {
         IOX_PANIC("Empty function_ref invoked");
     }
     return m_functionPointer(m_pointerToCallable, std::forward<ArgTypes>(args)...);
 }
 
 template <class ReturnType, class... ArgTypes>
-inline void function_ref<ReturnType(ArgTypes...)>::swap(function_ref<ReturnType(ArgTypes...)>& rhs) noexcept
-{
+inline void function_ref<ReturnType(ArgTypes...)>::swap(function_ref<ReturnType(ArgTypes...)>& rhs) noexcept {
     std::swap(m_pointerToCallable, rhs.m_pointerToCallable);
     std::swap(m_functionPointer, rhs.m_functionPointer);
 }
 
 template <class ReturnType, class... ArgTypes>
 // AXIVION Next Line AutosarC++19_03-A2.10.5 : False positive, overload for swap(function_ref, function_ref) as in STL
-inline void swap(function_ref<ReturnType(ArgTypes...)>& lhs, function_ref<ReturnType(ArgTypes...)>& rhs) noexcept
-{
+inline void swap(function_ref<ReturnType(ArgTypes...)>& lhs, function_ref<ReturnType(ArgTypes...)>& rhs) noexcept {
     lhs.swap(rhs);
 }
 

@@ -20,16 +20,13 @@
 #include "iox/cli/option_definition.hpp"
 #include <cstdint>
 
-namespace iox
-{
-namespace cli
-{
+namespace iox {
+namespace cli {
 /// @brief Factory class for the CommandLineOption. First, one has to register
 ///        all switches and options before calling parse. This is required for
 ///        the help page which is generated and printed on failure as well as
 ///        for consistency and syntax checks.
-class CommandLineParser
-{
+class CommandLineParser {
   public:
     static constexpr uint64_t OPTION_OUTPUT_WIDTH = 45;
 

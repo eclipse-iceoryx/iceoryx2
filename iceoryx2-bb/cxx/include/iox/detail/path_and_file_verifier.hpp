@@ -21,25 +21,22 @@
 
 #include <cstdint>
 
-namespace iox
-{
-namespace detail
-{
+namespace iox {
+namespace detail {
 // AXIVION DISABLE STYLE AutosarC++19_03-A3.9.1: Not used as an integer but as actual character.
-constexpr char ASCII_A{'a'};
-constexpr char ASCII_Z{'z'};
-constexpr char ASCII_CAPITAL_A{'A'};
-constexpr char ASCII_CAPITAL_Z{'Z'};
-constexpr char ASCII_0{'0'};
-constexpr char ASCII_9{'9'};
-constexpr char ASCII_DASH{'-'};
-constexpr char ASCII_DOT{'.'};
-constexpr char ASCII_COLON{':'};
-constexpr char ASCII_UNDERSCORE{'_'};
+constexpr char ASCII_A { 'a' };
+constexpr char ASCII_Z { 'z' };
+constexpr char ASCII_CAPITAL_A { 'A' };
+constexpr char ASCII_CAPITAL_Z { 'Z' };
+constexpr char ASCII_0 { '0' };
+constexpr char ASCII_9 { '9' };
+constexpr char ASCII_DASH { '-' };
+constexpr char ASCII_DOT { '.' };
+constexpr char ASCII_COLON { ':' };
+constexpr char ASCII_UNDERSCORE { '_' };
 // AXIVION ENABLE STYLE AutosarC++19_03-A3.9.1
 
-enum class RelativePathComponents : uint8_t
-{
+enum class RelativePathComponents : uint8_t {
     Reject,
     Accept
 };

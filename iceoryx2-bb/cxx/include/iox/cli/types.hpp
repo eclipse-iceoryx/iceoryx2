@@ -21,13 +21,10 @@
 
 #include <cstdint>
 
-namespace iox
-{
-namespace cli
-{
+namespace iox {
+namespace cli {
 /// @brief defines the type of command line argument option
-enum class OptionType : uint8_t
-{
+enum class OptionType : uint8_t {
     /// @brief option when provided is true
     Switch,
     /// @brief option with value which has to be provided

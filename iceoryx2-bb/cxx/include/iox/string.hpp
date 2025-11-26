@@ -29,10 +29,8 @@
 #include <cstdint>
 #include <cstring>
 
-namespace iox
-{
-namespace log
-{
+namespace iox {
+namespace log {
 class LogStream;
 }
 
@@ -40,9 +38,7 @@ class LogStream;
 /// a custom 'T'
 /// @note The custom string needs a specialisation of 'GetData' and 'GetSize' as well
 template <typename T>
-struct is_custom_string : public std::false_type
-{
-};
+struct is_custom_string : public std::false_type { };
 
 // AXIVION DISABLE STYLE AutosarC++19_03-A18.1.1 : C-array type usage is intentional
 
@@ -123,17 +119,15 @@ operator+(const T1& str1, const T2& str2) noexcept;
 
 /// @brief struct used to define a compile time variable which is used to distinguish between
 /// constructors with certain behavior
-struct TruncateToCapacity_t
-{
+struct TruncateToCapacity_t {
     explicit TruncateToCapacity_t() = default;
 };
-constexpr TruncateToCapacity_t TruncateToCapacity{};
+constexpr TruncateToCapacity_t TruncateToCapacity {};
 
 /// @brief string implementation with some adjustments in the API, because we are not allowed to throw exceptions or use
 /// heap.
 template <uint64_t Capacity>
-class string final
-{
+class string final {
     static_assert(Capacity > 0U, "The capacity of the fixed string must be greater than 0!");
 
   public:
@@ -570,8 +564,8 @@ class string final
 
     // AXIVION Next Construct FaultDetection-IndirectAssignmentOverflow : False positive. Overflow checks are done before assigning and the data will be truncated if necessary
     // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays) safe access is guaranteed since the char array is wrapped inside the string class
-    char m_rawstring[Capacity + 1]{};
-    uint64_t m_rawstringSize{0U};
+    char m_rawstring[Capacity + 1] {};
+    uint64_t m_rawstringSize { 0U };
 };
 
 /// @brief Logging support for the fixed string

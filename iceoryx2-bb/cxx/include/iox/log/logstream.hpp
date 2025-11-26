@@ -23,16 +23,13 @@
 
 #include <string>
 
-namespace iox
-{
-namespace log
-{
+namespace iox {
+namespace log {
 class LogStream;
 
 /// @brief Helper struct to log in hexadecimal format
 template <typename T>
-class LogHex
-{
+class LogHex {
   public:
     friend class LogStream;
 
@@ -73,8 +70,7 @@ constexpr LogHex<const void* const> hex(const void* const ptr) noexcept;
 
 /// @brief Helper struct to log in octal format
 template <typename T>
-class LogOct
-{
+class LogOct {
   public:
     friend class LogStream;
 
@@ -106,8 +102,7 @@ constexpr LogOct<T> oct(const T value) noexcept;
 
 /// @brief Helper struct to log in binary format
 template <typename T>
-class LogBin
-{
+class LogBin {
   public:
     friend class LogStream;
 
@@ -138,8 +133,7 @@ template <typename T, typename = std::enable_if_t<std::is_integral<T>::value && 
 constexpr LogBin<T> bin(const T value) noexcept;
 
 /// @brief Helper struct to log in raw bytes
-class LogRaw
-{
+class LogRaw {
   public:
     friend class LogStream;
 
@@ -190,8 +184,7 @@ constexpr LogRaw raw(const void* const data, const uint64_t size) noexcept;
 ///     return stream;
 /// }
 /// @endcode
-class LogStream
-{
+class LogStream {
   public:
     /// @brief Constructor for a LogStream object with an externally provided logger
     /// @note This is not intended for public use! Use the 'IOX_LOG' macro instead
@@ -386,10 +379,10 @@ class LogStream
     // JUSTIFICATION it is fine to use a reference since the LogStream object is intentionally not movable
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members)
     Logger& m_logger;
-    bool m_isFlushed{false};
+    bool m_isFlushed { false };
 
     /// @todo iox-#1755 workaround due to deactivation of lazy evaluation
-    bool m_doFlush{true};
+    bool m_doFlush { true };
 };
 
 } // namespace log

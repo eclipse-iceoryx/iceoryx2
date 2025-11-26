@@ -18,18 +18,15 @@
 
 #include "iceoryx_platform/attributes.hpp"
 
-namespace iox
-{
-namespace internal
-{
+namespace iox {
+namespace internal {
 /// We use this as an alternative to "static_cast<void>(someVar)" to signal the
 /// compiler an unused variable. "static_cast" produces an useless-cast warning
 /// on gcc and this approach solves it cleanly.
 template <typename T>
 // AXIVION Next Construct AutosarC++19_03-M0.1.8 : No side effects are the intended behavior of the function
 // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward) intended for this function
-inline void IOX_DISCARD_RESULT_IMPL(T&&) noexcept
-{
+inline void IOX_DISCARD_RESULT_IMPL(T&&) noexcept {
 }
 } // namespace internal
 } // namespace iox

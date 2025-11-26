@@ -23,8 +23,7 @@
 
 #include <type_traits>
 
-namespace iox
-{
+namespace iox {
 template <typename SignatureType>
 class function_ref;
 
@@ -60,8 +59,7 @@ using has_same_decayed_type = typename std::
 ///         callback();
 /// @endcode
 template <class ReturnType, class... ArgTypes>
-class function_ref<ReturnType(ArgTypes...)> final
-{
+class function_ref<ReturnType(ArgTypes...)> final {
   public:
     ~function_ref() noexcept = default;
 
@@ -102,8 +100,8 @@ class function_ref<ReturnType(ArgTypes...)> final
     void swap(function_ref& rhs) noexcept;
 
   private:
-    void* m_pointerToCallable{nullptr};
-    ReturnType (*m_functionPointer)(void*, ArgTypes...){nullptr};
+    void* m_pointerToCallable { nullptr };
+    ReturnType (*m_functionPointer)(void*, ArgTypes...) { nullptr };
 };
 
 template <class ReturnType, class... ArgTypes>

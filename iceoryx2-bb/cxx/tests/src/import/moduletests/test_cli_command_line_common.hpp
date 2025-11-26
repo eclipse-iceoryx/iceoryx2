@@ -22,56 +22,47 @@
 #include <string>
 #include <vector>
 
-struct CmdArgs
-{
+struct CmdArgs {
     int argc = 0;
     char** argv = nullptr;
 
     explicit CmdArgs(const std::vector<std::string>& arguments)
-        : argc{static_cast<int>(arguments.size())}
-        , argv{new char*[static_cast<size_t>(argc)]}
-    {
+        : argc { static_cast<int>(arguments.size()) }
+        , argv { new char*[static_cast<size_t>(argc)] } {
         contents = std::make_unique<std::vector<std::string>>(arguments);
-        for (size_t i = 0; i < static_cast<size_t>(argc); ++i)
-        {
+        for (size_t i = 0; i < static_cast<size_t>(argc); ++i) {
             // NOLINTJUSTIFICATION required for test
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             argv[i] = const_cast<char*>((*contents)[i].data());
         }
     }
 
-    ~CmdArgs()
-    {
+    ~CmdArgs() {
         delete[] argv;
     }
 
     std::unique_ptr<std::vector<std::string>> contents;
 };
 
-class OutBuffer
-{
+class OutBuffer {
   public:
-    OutBuffer()
-    {
+    OutBuffer() {
         std::cout.rdbuf(m_capture.rdbuf());
     }
-    ~OutBuffer()
-    {
+    ~OutBuffer() {
         std::cout.rdbuf(m_originalOutBuffer);
     }
 
-    void clear()
-    {
+    void clear() {
         m_capture.str("");
     }
 
-    std::string output()
-    {
+    std::string output() {
         return m_capture.str();
     }
 
   private:
-    std::streambuf* m_originalOutBuffer{std::cout.rdbuf()};
+    std::streambuf* m_originalOutBuffer { std::cout.rdbuf() };
     std::stringstream m_capture;
 };
 

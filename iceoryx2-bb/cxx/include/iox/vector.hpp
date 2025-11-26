@@ -26,8 +26,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace iox
-{
+namespace iox {
 /// @brief  C++11 compatible vector implementation. We needed to do some
 ///         adjustments in the API since we do not use exceptions and we require
 ///         a data structure which can be located fully in the shared memory.
@@ -35,8 +34,7 @@ namespace iox
 /// @attention Out of bounds access or accessing an empty vector can lead to a program termination!
 ///
 template <typename T, uint64_t Capacity>
-class vector final
-{
+class vector final {
   public:
     using value_type = T;
     using iterator = T*;
@@ -224,8 +222,8 @@ class vector final
     void clearFrom(const uint64_t startPosition) noexcept;
 
     // AXIVION Next Construct AutosarC++19_03-A1.1.1 : object size depends on template parameter and has to be taken care of at the specific template instantiation
-    UninitializedArray<T, Capacity> m_data{};
-    uint64_t m_size{0U};
+    UninitializedArray<T, Capacity> m_data {};
+    uint64_t m_size { 0U };
 };
 
 // AXIVION Next Construct AutosarC++19_03-A13.5.5 : intentional implementation with different parameters to enable

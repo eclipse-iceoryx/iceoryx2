@@ -20,17 +20,14 @@
 #include "iox/error_reporting/source_location.hpp"
 #include "iox/error_reporting/types.hpp"
 
-namespace iox
-{
-namespace er
-{
+namespace iox {
+namespace er {
 
 /// @brief Defines the default reaction of dynamic error handling.
 /// The default reaction is to do nothing apart from logging and termination on panic.
 /// As this is common for all error handling of the given custom implementation, this happens in the
 /// reporting API before the (polymorphic) custom behavior is invoked.
-class DefaultErrorHandler : public ErrorHandlerInterface
-{
+class DefaultErrorHandler : public ErrorHandlerInterface {
   public:
     DefaultErrorHandler() = default;
     ~DefaultErrorHandler() override = default;

@@ -18,9 +18,8 @@
 
 #include "iox/detail/storable_function.hpp"
 
-namespace iox
-{
-constexpr uint64_t DEFAULT_FUNCTION_CAPACITY{128U};
+namespace iox {
+constexpr uint64_t DEFAULT_FUNCTION_CAPACITY { 128U };
 
 /// @brief A static memory replacement for std::function
 ///        Allows storing a callable with a given signature if its size does not exceed a limit.

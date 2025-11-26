@@ -18,16 +18,12 @@
 
 #include "iox/cli/arguments.hpp"
 
-namespace iox
-{
-namespace cli
-{
+namespace iox {
+namespace cli {
 template <typename T>
-inline expected<T, Arguments::Error> Arguments::convertFromString(const Argument_t& stringValue) const noexcept
-{
+inline expected<T, Arguments::Error> Arguments::convertFromString(const Argument_t& stringValue) const noexcept {
     auto result = convert::from_string<T>(stringValue.c_str());
-    if (!result.has_value())
-    {
+    if (!result.has_value()) {
         std::cout << "\"" << stringValue.c_str() << "\" could not be converted to the requested type" << std::endl;
         return err(Error::UNABLE_TO_CONVERT_VALUE);
     }
@@ -35,10 +31,8 @@ inline expected<T, Arguments::Error> Arguments::convertFromString(const Argument
 }
 
 template <>
-inline expected<bool, Arguments::Error> Arguments::convertFromString(const Argument_t& stringValue) const noexcept
-{
-    if (stringValue != "true" && stringValue != "false")
-    {
+inline expected<bool, Arguments::Error> Arguments::convertFromString(const Argument_t& stringValue) const noexcept {
+    if (stringValue != "true" && stringValue != "false") {
         std::cout << "\"" << stringValue.c_str() << "\" could not be converted to the requested type" << std::endl;
         return err(Error::UNABLE_TO_CONVERT_VALUE);
     }
@@ -47,12 +41,9 @@ inline expected<bool, Arguments::Error> Arguments::convertFromString(const Argum
 }
 
 template <typename T>
-inline expected<T, Arguments::Error> Arguments::get(const OptionName_t& optionName) const noexcept
-{
-    for (const auto& a : m_arguments)
-    {
-        if (a.hasOptionName(optionName))
-        {
+inline expected<T, Arguments::Error> Arguments::get(const OptionName_t& optionName) const noexcept {
+    for (const auto& a : m_arguments) {
+        if (a.hasOptionName(optionName)) {
             return convertFromString<T>(a.value);
         }
     }

@@ -18,11 +18,9 @@
 
 #include "iox/detail/static_storage.hpp"
 
-namespace iox
-{
+namespace iox {
 template <uint64_t Capacity, uint64_t Align>
-constexpr uint64_t static_storage<Capacity, Align>::align_mismatch(uint64_t align, uint64_t requiredAlign) noexcept
-{
+constexpr uint64_t static_storage<Capacity, Align>::align_mismatch(uint64_t align, uint64_t requiredAlign) noexcept {
     const uint64_t r = align % requiredAlign;
 
     // If r != 0 we are not aligned with requiredAlign and need to add r to an align
@@ -32,15 +30,13 @@ constexpr uint64_t static_storage<Capacity, Align>::align_mismatch(uint64_t alig
 }
 
 template <uint64_t Capacity, uint64_t Align>
-static_storage<Capacity, Align>::~static_storage() noexcept
-{
+static_storage<Capacity, Align>::~static_storage() noexcept {
     deallocate();
 }
 
 template <uint64_t Capacity, uint64_t Align>
 template <typename T>
-constexpr bool static_storage<Capacity, Align>::is_allocatable() noexcept
-{
+constexpr bool static_storage<Capacity, Align>::is_allocatable() noexcept {
     // note that we can guarantee it to be allocatable if we have
     // Capacity >= sizeof(T) + alignof(T) - 1
     return allocation_size<T>() <= Capacity;
@@ -48,8 +44,7 @@ constexpr bool static_storage<Capacity, Align>::is_allocatable() noexcept
 
 template <uint64_t Capacity, uint64_t Align>
 template <typename T>
-constexpr T* static_storage<Capacity, Align>::allocate() noexcept
-{
+constexpr T* static_storage<Capacity, Align>::allocate() noexcept {
     static_assert(is_allocatable<T>(), "type does not fit into static storage");
     // AXIVION Next Construct AutosarC++19_03-M5.2.8: conversion to typed pointer is intentional,
     // it is correctly aligned and points to sufficient memory for a T by design
@@ -57,17 +52,14 @@ constexpr T* static_storage<Capacity, Align>::allocate() noexcept
 }
 
 template <uint64_t Capacity, uint64_t Align>
-constexpr void* static_storage<Capacity, Align>::allocate(const uint64_t align, const uint64_t size) noexcept
-{
-    if (m_ptr != nullptr)
-    {
+constexpr void* static_storage<Capacity, Align>::allocate(const uint64_t align, const uint64_t size) noexcept {
+    if (m_ptr != nullptr) {
         return nullptr; // cannot allocate, already in use
     }
 
-    size_t space{Capacity};
+    size_t space { Capacity };
     m_ptr = m_bytes;
-    if (std::align(static_cast<size_t>(align), static_cast<size_t>(size), m_ptr, space) != nullptr)
-    {
+    if (std::align(static_cast<size_t>(align), static_cast<size_t>(size), m_ptr, space) != nullptr) {
         // fits, ptr was potentially modified to reflect alignment
         return m_ptr;
     }
@@ -77,16 +69,13 @@ constexpr void* static_storage<Capacity, Align>::allocate(const uint64_t align, 
 }
 
 template <uint64_t Capacity, uint64_t Align>
-constexpr void static_storage<Capacity, Align>::deallocate() noexcept
-{
+constexpr void static_storage<Capacity, Align>::deallocate() noexcept {
     m_ptr = nullptr;
 }
 
 template <uint64_t Capacity, uint64_t Align>
-constexpr bool static_storage<Capacity, Align>::clear() noexcept
-{
-    if (m_ptr == nullptr)
-    {
+constexpr bool static_storage<Capacity, Align>::clear() noexcept {
+    if (m_ptr == nullptr) {
         std::memset(m_bytes, 0, Capacity);
         return true;
     }
@@ -94,15 +83,13 @@ constexpr bool static_storage<Capacity, Align>::clear() noexcept
 }
 
 template <uint64_t Capacity, uint64_t Align>
-constexpr uint64_t static_storage<Capacity, Align>::capacity() noexcept
-{
+constexpr uint64_t static_storage<Capacity, Align>::capacity() noexcept {
     return Capacity;
 }
 
 template <uint64_t Capacity, uint64_t Align>
 template <typename T>
-constexpr uint64_t static_storage<Capacity, Align>::allocation_size() noexcept
-{
+constexpr uint64_t static_storage<Capacity, Align>::allocation_size() noexcept {
     return sizeof(T) + align_mismatch(Align, alignof(T));
 }
 

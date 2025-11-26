@@ -20,8 +20,7 @@
 #include <cstring>
 #include <memory>
 
-namespace iox
-{
+namespace iox {
 /// @brief Static storage class to allocate memory for objects of type not yet known.
 ///        This storage is not aware of any underlying type.
 ///        It can be used where abstract static memory for some object is required.
@@ -39,8 +38,7 @@ template <uint64_t Capacity, uint64_t Align = 1>
 // NOLINTJUSTIFICATION static_storage provides uninitialized memory, correct initialization is the users
 //                     responsibility whenever memory with "allocate" is acquired
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init,hicpp-member-init)
-class static_storage final
-{
+class static_storage final {
   public:
     constexpr static_storage() noexcept = default;
 
@@ -98,7 +96,7 @@ class static_storage final
     // AXIVION Next Construct AutosarC++19_03-A18.1.1 : safe access is guaranteed since the c-array is wrapped inside the static_storage
     // NOLINTNEXTLINE(hicpp-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
     alignas(Align) uint8_t m_bytes[Capacity];
-    void* m_ptr{nullptr};
+    void* m_ptr { nullptr };
 
     static constexpr uint64_t align_mismatch(uint64_t align, uint64_t requiredAlign) noexcept;
 };

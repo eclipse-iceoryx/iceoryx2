@@ -18,10 +18,8 @@
 
 #include "iox/semantic_string.hpp"
 
-namespace iox
-{
-namespace detail
-{
+namespace iox {
+namespace detail {
 bool file_path_does_contain_invalid_characters(const string<platform::IOX_MAX_PATH_LENGTH>& value) noexcept;
 bool file_path_does_contain_invalid_content(const string<platform::IOX_MAX_PATH_LENGTH>& value) noexcept;
 } // namespace detail
@@ -32,8 +30,7 @@ bool file_path_does_contain_invalid_content(const string<platform::IOX_MAX_PATH_
 class FilePath : public SemanticString<FilePath,
                                        platform::IOX_MAX_PATH_LENGTH,
                                        detail::file_path_does_contain_invalid_content,
-                                       detail::file_path_does_contain_invalid_characters>
-{
+                                       detail::file_path_does_contain_invalid_characters> {
     using Parent = SemanticString<FilePath,
                                   platform::IOX_MAX_PATH_LENGTH,
                                   detail::file_path_does_contain_invalid_content,

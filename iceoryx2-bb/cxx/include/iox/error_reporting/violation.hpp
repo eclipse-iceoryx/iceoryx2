@@ -21,10 +21,8 @@
 
 #include "iox/error_reporting/types.hpp"
 
-namespace iox
-{
-namespace er
-{
+namespace iox {
+namespace er {
 
 // We expect an error to have the following interface
 // 1. ErrorCode code() const
@@ -34,45 +32,36 @@ namespace er
 // Custom errors can be added but must satisfy the minimal interface.
 
 // NOLINTNEXTLINE(performance-enum-size) the type is required for error handling
-enum class ViolationErrorCode : iox::er::ErrorCode::type
-{
+enum class ViolationErrorCode : iox::er::ErrorCode::type {
     ASSERT_VIOLATION,
     ENFORCE_VIOLATION
 };
 
-class Violation
-{
+class Violation {
   public:
     explicit Violation(ViolationErrorCode code)
-        : m_code(static_cast<ErrorCode::type>(code))
-    {
+        : m_code(static_cast<ErrorCode::type>(code)) {
     }
 
     explicit Violation(ErrorCode code)
-        : m_code(code)
-    {
+        : m_code(code) {
     }
 
     Violation(ErrorCode code, ModuleId module)
         : m_code(code)
-        , m_module(module)
-    {
+        , m_module(module) {
     }
 
-    ErrorCode code() const
-    {
+    ErrorCode code() const {
         return m_code;
     }
 
-    ModuleId module() const
-    {
+    ModuleId module() const {
         return m_module;
     }
 
-    const char* name() const
-    {
-        switch (static_cast<ViolationErrorCode>(m_code.value))
-        {
+    const char* name() const {
+        switch (static_cast<ViolationErrorCode>(m_code.value)) {
         case ViolationErrorCode::ASSERT_VIOLATION:
             return "ASSERT_VIOLATION";
         case ViolationErrorCode::ENFORCE_VIOLATION:
@@ -81,34 +70,29 @@ class Violation
         return "unknown error";
     }
 
-    static const char* moduleName()
-    {
+    static const char* moduleName() {
         return "ANY";
     }
 
-    bool operator==(const Violation& rhs) const
-    {
+    bool operator==(const Violation& rhs) const {
         return m_code == rhs.m_code && m_module == rhs.m_module;
     }
 
-    bool operator!=(const Violation& rhs) const
-    {
+    bool operator!=(const Violation& rhs) const {
         return !(*this == rhs);
     }
 
-    static Violation createAssertViolation()
-    {
+    static Violation createAssertViolation() {
         return Violation(ViolationErrorCode::ASSERT_VIOLATION);
     }
 
-    static Violation createEnforceViolation()
-    {
+    static Violation createEnforceViolation() {
         return Violation(ViolationErrorCode::ENFORCE_VIOLATION);
     }
 
   private:
     ErrorCode m_code;
-    ModuleId m_module{ModuleId::ANY};
+    ModuleId m_module { ModuleId::ANY };
 };
 
 } // namespace er

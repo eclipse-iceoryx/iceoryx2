@@ -22,8 +22,7 @@
 #include <cstdint>
 #include <cstring>
 
-namespace iox
-{
+namespace iox {
 // AXIVION DISABLE STYLE AutosarC++19_03-A3.9.1: Basic numerical type of char shall be used
 // AXIVION DISABLE STYLE AutosarC++19_03-A18.1.1: C-style arrays are used to acquire size of c
 // array safely, strnlen only accesses N elements which is the maximum capacity of the array
@@ -31,8 +30,7 @@ namespace iox
 template <uint64_t>
 class string;
 
-namespace internal
-{
+namespace internal {
 template <uint64_t N>
 // c array not used here, it is a type alias for easier access
 // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays)
@@ -41,35 +39,30 @@ using charArray = char[N];
 /// @brief struct to get capacity of iox::string/char array/char
 /// @note capa is a dummy value for any type other than iox::string and char
 template <typename T>
-struct GetCapa
-{
-    static constexpr uint64_t capa{0U};
+struct GetCapa {
+    static constexpr uint64_t capa { 0U };
 };
 
 template <uint64_t N>
-struct GetCapa<string<N>>
-{
-    static constexpr uint64_t capa{N};
+struct GetCapa<string<N>> {
+    static constexpr uint64_t capa { N };
 };
 
 template <uint64_t N>
 // used to acquire char array capacity safely at compile time
 // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays)
-struct GetCapa<char[N]>
-{
-    static constexpr uint64_t capa{N - 1U};
+struct GetCapa<char[N]> {
+    static constexpr uint64_t capa { N - 1U };
 };
 
 template <>
-struct GetCapa<char>
-{
-    static constexpr uint64_t capa{1U};
+struct GetCapa<char> {
+    static constexpr uint64_t capa { 1U };
 };
 
 /// @brief generic empty implementation of the struct to get size of a string
 template <typename T>
-struct GetSize
-{
+struct GetSize {
     static_assert(always_false_v<T>, "\n \
         'GetSize' for the specified type is not implemented!\n \
         Please specialize 'iox::internal::GetSize'!\n");
@@ -77,10 +70,8 @@ struct GetSize
 
 /// @brief struct to get size of iox::string
 template <uint64_t N>
-struct GetSize<string<N>>
-{
-    static uint64_t call(const string<N>& data) noexcept
-    {
+struct GetSize<string<N>> {
+    static uint64_t call(const string<N>& data) noexcept {
         return data.size();
     }
 };
@@ -90,29 +81,24 @@ template <uint64_t N>
 // used to acquire size of c array safely, strnlen only accesses N elements which is the maximum capacity of the array
 // where N is a compile time constant
 // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays)
-struct GetSize<char[N]>
-{
+struct GetSize<char[N]> {
     // AXIVION Next Construct FaultDetection-TaintAnalysis : False positive! The size of the type is deduced
-    static uint64_t call(const charArray<N>& data) noexcept
-    {
+    static uint64_t call(const charArray<N>& data) noexcept {
         return strnlen(&data[0], N);
     }
 };
 
 /// @brief struct to get size of a single char
 template <>
-struct GetSize<char>
-{
-    static uint64_t call(char) noexcept
-    {
+struct GetSize<char> {
+    static uint64_t call(char) noexcept {
         return 1U;
     }
 };
 
 /// @brief generic empty implementation of the struct to get the data of a string
 template <typename T>
-struct GetData
-{
+struct GetData {
     static_assert(always_false_v<T>, "\n \
         'GetData' for the specified type is not implemented!\n \
         Please specialize 'iox::internal::GetData'!\n");
@@ -120,10 +106,8 @@ struct GetData
 
 /// @brief struct to get a pointer to the char array of the iox::string
 template <uint64_t N>
-struct GetData<string<N>>
-{
-    static const char* call(const string<N>& data) noexcept
-    {
+struct GetData<string<N>> {
+    static const char* call(const string<N>& data) noexcept {
         return data.c_str();
     }
 };
@@ -133,20 +117,16 @@ template <uint64_t N>
 // provides uniform and safe access (in combination with GetCapa and GetSize) to string like constructs like
 // iox::string, string literal, char
 // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays)
-struct GetData<char[N]>
-{
-    static const char* call(const charArray<N>& data) noexcept
-    {
+struct GetData<char[N]> {
+    static const char* call(const charArray<N>& data) noexcept {
         return &data[0];
     }
 };
 
 /// @brief struct to get a pointer to the single char
 template <>
-struct GetData<char>
-{
-    static const char* call(const char& data) noexcept
-    {
+struct GetData<char> {
+    static const char* call(const char& data) noexcept {
         // AXIVION Next Construct AutosarC++19_03-A7.5.1 : Used for template meta-programming and
         // safe in this context
         return &data;
@@ -158,15 +138,13 @@ template <typename... Targs>
 struct SumCapa;
 
 template <>
-struct SumCapa<>
-{
-    static constexpr uint64_t value{0U};
+struct SumCapa<> {
+    static constexpr uint64_t value { 0U };
 };
 
 template <typename T, typename... Targs>
-struct SumCapa<T, Targs...>
-{
-    static constexpr uint64_t value{GetCapa<T>::capa + SumCapa<Targs...>::value};
+struct SumCapa<T, Targs...> {
+    static constexpr uint64_t value { GetCapa<T>::capa + SumCapa<Targs...>::value };
 };
 } // namespace internal
 // AXIVION ENABLE STYLE AutosarC++19_03-A3.9.1

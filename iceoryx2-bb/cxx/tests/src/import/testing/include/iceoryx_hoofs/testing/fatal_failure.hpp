@@ -30,10 +30,8 @@
 // NOLINTNEXTLINE(hicpp-deprecated-headers) required to work on some platforms
 #include <setjmp.h>
 
-namespace iox
-{
-namespace testing
-{
+namespace iox {
+namespace testing {
 /// @brief This function is used in cases a fatal failure is expected. The function only works in combination with the
 /// iceoryx error handler.
 /// @code

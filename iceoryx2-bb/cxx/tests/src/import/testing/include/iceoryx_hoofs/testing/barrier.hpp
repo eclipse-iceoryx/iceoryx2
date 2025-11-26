@@ -21,35 +21,29 @@
 #include <mutex>
 
 
-class Barrier
-{
+class Barrier {
   public:
     explicit Barrier(uint32_t requiredCount = 0)
-        : m_requiredCount(requiredCount)
-    {
+        : m_requiredCount(requiredCount) {
     }
 
-    void notify()
-    {
+    void notify() {
         {
             std::lock_guard<std::mutex> lock(m_mutex);
             ++m_count;
         }
-        if (m_count >= m_requiredCount)
-        {
+        if (m_count >= m_requiredCount) {
             m_condVar.notify_all();
         }
     }
 
-    void wait()
-    {
+    void wait() {
         std::unique_lock<std::mutex> lock(m_mutex);
         auto cond = [&]() { return m_count >= m_requiredCount; };
         m_condVar.wait(lock, cond);
     }
 
-    void reset(uint32_t requiredCount)
-    {
+    void reset(uint32_t requiredCount) {
         {
             std::lock_guard<std::mutex> lock(m_mutex);
             m_requiredCount = requiredCount;
@@ -61,7 +55,7 @@ class Barrier
     }
 
   private:
-    uint32_t m_count{0};
+    uint32_t m_count { 0 };
     std::mutex m_mutex;
     std::condition_variable m_condVar;
     uint32_t m_requiredCount;

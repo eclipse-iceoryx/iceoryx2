@@ -21,49 +21,30 @@
 #include <cstdio>
 #include <cstdlib>
 
-namespace iox
-{
-namespace log
-{
-LogLevel logLevelFromEnvOr(const LogLevel logLevel) noexcept
-{
+namespace iox {
+namespace log {
+LogLevel logLevelFromEnvOr(const LogLevel logLevel) noexcept {
     auto specifiedLogLevel = logLevel;
 
     // AXIVION Next Construct AutosarC++19_03-M18.0.3 : Use of getenv is allowed in MISRA amendment#6312
     // JUSTIFICATION getenv is required for the functionality of this function; see also declaration in header
     // NOLINTNEXTLINE(concurrency-mt-unsafe)
-    if (const auto* logLevelString = std::getenv("IOX_LOG_LEVEL"))
-    {
-        if (equalStrings(logLevelString, "off"))
-        {
+    if (const auto* logLevelString = std::getenv("IOX_LOG_LEVEL")) {
+        if (equalStrings(logLevelString, "off")) {
             specifiedLogLevel = LogLevel::Off;
-        }
-        else if (equalStrings(logLevelString, "fatal"))
-        {
+        } else if (equalStrings(logLevelString, "fatal")) {
             specifiedLogLevel = LogLevel::Fatal;
-        }
-        else if (equalStrings(logLevelString, "error"))
-        {
+        } else if (equalStrings(logLevelString, "error")) {
             specifiedLogLevel = LogLevel::Error;
-        }
-        else if (equalStrings(logLevelString, "warn"))
-        {
+        } else if (equalStrings(logLevelString, "warn")) {
             specifiedLogLevel = LogLevel::Warn;
-        }
-        else if (equalStrings(logLevelString, "info"))
-        {
+        } else if (equalStrings(logLevelString, "info")) {
             specifiedLogLevel = LogLevel::Info;
-        }
-        else if (equalStrings(logLevelString, "debug"))
-        {
+        } else if (equalStrings(logLevelString, "debug")) {
             specifiedLogLevel = LogLevel::Debug;
-        }
-        else if (equalStrings(logLevelString, "trace"))
-        {
+        } else if (equalStrings(logLevelString, "trace")) {
             specifiedLogLevel = LogLevel::Trace;
-        }
-        else
-        {
+        } else {
             puts("Invalid value for 'IOX_LOG_LEVEL' environment variable!'");
             puts("Found:");
             puts(logLevelString);

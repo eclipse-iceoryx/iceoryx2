@@ -18,17 +18,14 @@
 
 #include "iox/std_string_support.hpp"
 
-namespace iox
-{
+namespace iox {
 template <uint64_t N>
-inline std::string FromImpl<string<N>, std::string>::fromImpl(const string<N>& value) noexcept
-{
+inline std::string FromImpl<string<N>, std::string>::fromImpl(const string<N>& value) noexcept {
     return std::string(value.c_str(), static_cast<size_t>(value.size()));
 }
 
 template <uint64_t N>
-inline string<N> FromImpl<std::string, string<N>>::fromImpl(const std::string&) noexcept
-{
+inline string<N> FromImpl<std::string, string<N>>::fromImpl(const std::string&) noexcept {
     static_assert(always_false_v<std::string> && always_false_v<string<N>>, "\n \
         The conversion from 'std::string' to 'iox::string<N>' is potentially lossy!\n \
         This happens when the size of source string exceeds the capacity of the destination string!\n \
@@ -40,27 +37,23 @@ inline string<N> FromImpl<std::string, string<N>>::fromImpl(const std::string&) 
 }
 
 template <uint64_t N>
-inline optional<string<N>> FromImpl<std::string, optional<string<N>>>::fromImpl(const std::string& value) noexcept
-{
+inline optional<string<N>> FromImpl<std::string, optional<string<N>>>::fromImpl(const std::string& value) noexcept {
     const auto stringLength = value.size();
-    if (stringLength <= N)
-    {
+    if (stringLength <= N) {
         return string<N>(TruncateToCapacity, value.c_str(), stringLength);
     }
     return nullopt;
 }
 
 template <uint64_t N>
-inline string<N> FromImpl<std::string, lossy<string<N>>>::fromImpl(const std::string& value) noexcept
-{
+inline string<N> FromImpl<std::string, lossy<string<N>>>::fromImpl(const std::string& value) noexcept {
     return string<N>(TruncateToCapacity, value.c_str(), value.size());
 }
 
 // AXIVION Next Construct AutosarC++19_03-M5.17.1: This is not used as shift operator but as stream operator and does
 // not require to implement '<<='
 template <uint64_t Capacity>
-inline std::ostream& operator<<(std::ostream& stream, const string<Capacity>& str) noexcept
-{
+inline std::ostream& operator<<(std::ostream& stream, const string<Capacity>& str) noexcept {
     stream << str.c_str();
     return stream;
 }

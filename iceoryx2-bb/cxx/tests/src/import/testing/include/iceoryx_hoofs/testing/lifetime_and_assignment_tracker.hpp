@@ -21,46 +21,37 @@
 #include <cstdint>
 #include <vector>
 
-namespace iox
-{
-namespace testing
-{
+namespace iox {
+namespace testing {
 template <typename T = uint64_t, T DEFAULT_VALUE = 0>
-class LifetimeAndAssignmentTracker
-{
+class LifetimeAndAssignmentTracker {
   public:
-    LifetimeAndAssignmentTracker()
-    {
+    LifetimeAndAssignmentTracker() {
         stats.cTor++;
         stats.classValue = value;
     }
 
     // NOLINTNEXTLINE(hicpp-explicit-conversions) we want to use this class in tests transparently to a 'T'
     LifetimeAndAssignmentTracker(const T value)
-        : value(value)
-    {
+        : value(value) {
         stats.customCTor++;
         stats.classValue = value;
     }
 
     LifetimeAndAssignmentTracker(const LifetimeAndAssignmentTracker& rhs)
-        : value(rhs.value)
-    {
+        : value(rhs.value) {
         stats.copyCTor++;
         stats.classValue = value;
     }
 
     LifetimeAndAssignmentTracker(LifetimeAndAssignmentTracker&& rhs) noexcept
-        : value(rhs.value)
-    {
+        : value(rhs.value) {
         stats.moveCTor++;
         stats.classValue = value;
     }
 
-    LifetimeAndAssignmentTracker& operator=(const LifetimeAndAssignmentTracker& rhs)
-    {
-        if (this != &rhs)
-        {
+    LifetimeAndAssignmentTracker& operator=(const LifetimeAndAssignmentTracker& rhs) {
+        if (this != &rhs) {
             stats.copyAssignment++;
             value = rhs.value;
             stats.classValue = value;
@@ -68,10 +59,8 @@ class LifetimeAndAssignmentTracker
         return *this;
     }
 
-    LifetimeAndAssignmentTracker& operator=(LifetimeAndAssignmentTracker&& rhs) noexcept
-    {
-        if (this != &rhs)
-        {
+    LifetimeAndAssignmentTracker& operator=(LifetimeAndAssignmentTracker&& rhs) noexcept {
+        if (this != &rhs) {
             stats.moveAssignment++;
             value = rhs.value;
             stats.classValue = value;
@@ -79,43 +68,37 @@ class LifetimeAndAssignmentTracker
         return *this;
     }
 
-    bool operator==(const LifetimeAndAssignmentTracker& rhs) const
-    {
+    bool operator==(const LifetimeAndAssignmentTracker& rhs) const {
         return value == rhs.value;
     }
 
-    ~LifetimeAndAssignmentTracker()
-    {
+    ~LifetimeAndAssignmentTracker() {
         stats.dTor++;
         stats.classValue = value;
         stats.dTorOrder.emplace_back(value);
     }
 
-    T& ref()
-    {
+    T& ref() {
         return value;
     }
 
-    const T& ref() const
-    {
+    const T& ref() const {
         return value;
     }
 
-    struct Statistics
-    {
-        uint64_t cTor{0};
-        uint64_t customCTor{0};
-        uint64_t copyCTor{0};
-        uint64_t moveCTor{0};
-        uint64_t moveAssignment{0};
-        uint64_t copyAssignment{0};
-        uint64_t dTor{0};
-        T classValue{0};
+    struct Statistics {
+        uint64_t cTor { 0 };
+        uint64_t customCTor { 0 };
+        uint64_t copyCTor { 0 };
+        uint64_t moveCTor { 0 };
+        uint64_t moveAssignment { 0 };
+        uint64_t copyAssignment { 0 };
+        uint64_t dTor { 0 };
+        T classValue { 0 };
 
         std::vector<T> dTorOrder;
 
-        void reset()
-        {
+        void reset() {
             cTor = 0;
             customCTor = 0;
             copyCTor = 0;
@@ -135,19 +118,16 @@ class LifetimeAndAssignmentTracker
 };
 
 template <typename T = uint64_t, T DEFAULT_VALUE = 0>
-class MoveOnlyLifetimeAndAssignmentTracker
-{
+class MoveOnlyLifetimeAndAssignmentTracker {
   public:
-    MoveOnlyLifetimeAndAssignmentTracker()
-    {
+    MoveOnlyLifetimeAndAssignmentTracker() {
         move_only_stats.cTor++;
         move_only_stats.classValue = value;
     }
 
     // NOLINTNEXTLINE(hicpp-explicit-conversions) we want to use this class in tests transparently to a 'T'
     MoveOnlyLifetimeAndAssignmentTracker(const T value)
-        : value(value)
-    {
+        : value(value) {
         move_only_stats.customCTor++;
         move_only_stats.classValue = value;
     }
@@ -155,18 +135,15 @@ class MoveOnlyLifetimeAndAssignmentTracker
     MoveOnlyLifetimeAndAssignmentTracker(const MoveOnlyLifetimeAndAssignmentTracker& rhs) = delete;
 
     MoveOnlyLifetimeAndAssignmentTracker(MoveOnlyLifetimeAndAssignmentTracker&& rhs) noexcept
-        : value(rhs.value)
-    {
+        : value(rhs.value) {
         move_only_stats.moveCTor++;
         move_only_stats.classValue = value;
     }
 
     MoveOnlyLifetimeAndAssignmentTracker& operator=(const MoveOnlyLifetimeAndAssignmentTracker& rhs) = delete;
 
-    MoveOnlyLifetimeAndAssignmentTracker& operator=(MoveOnlyLifetimeAndAssignmentTracker&& rhs) noexcept
-    {
-        if (this != &rhs)
-        {
+    MoveOnlyLifetimeAndAssignmentTracker& operator=(MoveOnlyLifetimeAndAssignmentTracker&& rhs) noexcept {
+        if (this != &rhs) {
             move_only_stats.moveAssignment++;
             value = rhs.value;
             move_only_stats.classValue = value;
@@ -174,43 +151,37 @@ class MoveOnlyLifetimeAndAssignmentTracker
         return *this;
     }
 
-    bool operator==(const MoveOnlyLifetimeAndAssignmentTracker& rhs) const
-    {
+    bool operator==(const MoveOnlyLifetimeAndAssignmentTracker& rhs) const {
         return value == rhs.value;
     }
 
-    ~MoveOnlyLifetimeAndAssignmentTracker()
-    {
+    ~MoveOnlyLifetimeAndAssignmentTracker() {
         move_only_stats.dTor++;
         move_only_stats.classValue = value;
         move_only_stats.dTorOrder.emplace_back(value);
     }
 
-    T& ref()
-    {
+    T& ref() {
         return value;
     }
 
-    const T& ref() const
-    {
+    const T& ref() const {
         return value;
     }
 
-    struct Statistics
-    {
-        uint64_t cTor{0};
-        uint64_t customCTor{0};
-        uint64_t copyCTor{0};
-        uint64_t moveCTor{0};
-        uint64_t moveAssignment{0};
-        uint64_t copyAssignment{0};
-        uint64_t dTor{0};
-        T classValue{0};
+    struct Statistics {
+        uint64_t cTor { 0 };
+        uint64_t customCTor { 0 };
+        uint64_t copyCTor { 0 };
+        uint64_t moveCTor { 0 };
+        uint64_t moveAssignment { 0 };
+        uint64_t copyAssignment { 0 };
+        uint64_t dTor { 0 };
+        T classValue { 0 };
 
         std::vector<T> dTorOrder;
 
-        void reset()
-        {
+        void reset() {
             cTor = 0;
             customCTor = 0;
             copyCTor = 0;
@@ -232,11 +203,11 @@ class MoveOnlyLifetimeAndAssignmentTracker
 //NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables) only used for tests
 template <typename T, T DEFAULT_VALUE>
 typename LifetimeAndAssignmentTracker<T, DEFAULT_VALUE>::Statistics
-    LifetimeAndAssignmentTracker<T, DEFAULT_VALUE>::stats{};
+    LifetimeAndAssignmentTracker<T, DEFAULT_VALUE>::stats {};
 
 template <typename T, T DEFAULT_VALUE>
 typename MoveOnlyLifetimeAndAssignmentTracker<T, DEFAULT_VALUE>::Statistics
-    MoveOnlyLifetimeAndAssignmentTracker<T, DEFAULT_VALUE>::move_only_stats{};
+    MoveOnlyLifetimeAndAssignmentTracker<T, DEFAULT_VALUE>::move_only_stats {};
 //NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables)
 
 } // namespace testing

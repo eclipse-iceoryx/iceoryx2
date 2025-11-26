@@ -23,10 +23,8 @@
 
 #include <mutex>
 
-namespace iox
-{
-namespace testing
-{
+namespace iox {
+namespace testing {
 /// @brief This logger is used for tests. It caches all the log messages and prints them to the console when a test
 /// fails. For debug purposes this behaviour can be overwritten with the 'IOX_TESTING_ALLOW_LOG' environment variable,
 /// e.g. 'IOX_TESTING_ALLOW_LOG=ON ./hoofs_moduletests --gtest_filter=SharedMemoryObject_Test\*'. Furthermore, it can
@@ -39,8 +37,7 @@ namespace testing
 ///     EXPECT_THAT(logMessages[0], HasSubstr(expectedOutput));
 /// });
 /// @endcode
-class TestingLogger : public log::TestingLoggerBase
-{
+class TestingLogger : public log::TestingLoggerBase {
     using Base = log::TestingLoggerBase;
 
   public:
@@ -89,8 +86,7 @@ class TestingLogger : public log::TestingLoggerBase
     /// @param[in] logLevel is the log level to check if it is supported
     /// @return true if the log level support is compiled into the binary, false otherwise
     /// @note This can be used in tests which check for a specific log output
-    static inline constexpr bool doesLoggerSupportLogLevel(const log::LogLevel logLevel) noexcept
-    {
+    static inline constexpr bool doesLoggerSupportLogLevel(const log::LogLevel logLevel) noexcept {
         return log::MINIMAL_LOG_LEVEL >= logLevel;
     }
 
@@ -100,10 +96,9 @@ class TestingLogger : public log::TestingLoggerBase
     void flush() noexcept override;
     static std::vector<std::string> getLogMessages() noexcept;
 
-    struct LoggerData
-    {
+    struct LoggerData {
         std::vector<std::string> buffer;
-        bool allowLog{true};
+        bool allowLog { true };
     };
 
     concurrent::smart_lock<LoggerData> m_loggerData;
@@ -111,8 +106,7 @@ class TestingLogger : public log::TestingLoggerBase
 
 /// @brief This class hooks into gTest to automatically clear the log messages on the start of a test an print the
 /// cached log messages from failed tests
-class LogPrinter : public ::testing::EmptyTestEventListener
-{
+class LogPrinter : public ::testing::EmptyTestEventListener {
     void OnTestStart(const ::testing::TestInfo&) override;
     void OnTestPartResult(const ::testing::TestPartResult& result) override;
 };

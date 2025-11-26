@@ -18,46 +18,40 @@
 
 #include "iox/error_reporting/types.hpp"
 
-namespace
-{
+namespace {
 using namespace ::testing;
 using namespace iox::er;
 
 template <typename T>
-class RegularType_test : public Test
-{
+class RegularType_test : public Test {
   public:
-    void SetUp() override
-    {
+    void SetUp() override {
     }
 
-    void TearDown() override
-    {
+    void TearDown() override {
     }
 
     using Sut = T;
     using V = typename Sut::type;
 
-    static constexpr V VALUE{73};
+    static constexpr V VALUE { 73 };
     // could be constexpr but is more cumbersome to access
-    V value{VALUE};
-    V differentValue{VALUE + 1};
+    V value { VALUE };
+    V differentValue { VALUE + 1 };
 
-    Sut sut{VALUE};
+    Sut sut { VALUE };
 };
 
 using TestTypes = Types<ErrorCode, ModuleId>;
 TYPED_TEST_SUITE(RegularType_test, TestTypes, );
 
-TYPED_TEST(RegularType_test, constructionAndDestructionWorks)
-{
+TYPED_TEST(RegularType_test, constructionAndDestructionWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "d2482a4d-5cbd-4de9-8890-db4659752409");
 
     EXPECT_EQ(this->sut.value, this->value);
 }
 
-TYPED_TEST(RegularType_test, copyCtorWorks)
-{
+TYPED_TEST(RegularType_test, copyCtorWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "51c80f47-0b22-4641-94bd-fa1cec8028d0");
 
     typename TestFixture::Sut copy(this->sut);
@@ -66,8 +60,7 @@ TYPED_TEST(RegularType_test, copyCtorWorks)
     EXPECT_EQ(copy, this->sut);
 }
 
-TYPED_TEST(RegularType_test, copyAssignmentWorks)
-{
+TYPED_TEST(RegularType_test, copyAssignmentWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "ffc6dec9-6ac6-45e3-b3d6-39f1a04c0475");
 
     typename TestFixture::Sut copy(this->differentValue);
@@ -77,8 +70,7 @@ TYPED_TEST(RegularType_test, copyAssignmentWorks)
     EXPECT_EQ(copy, this->sut);
 }
 
-TYPED_TEST(RegularType_test, moveCtorWorks)
-{
+TYPED_TEST(RegularType_test, moveCtorWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "04a18398-9122-48ce-8bad-28e5331f9e68");
 
     typename TestFixture::Sut copy(this->sut);
@@ -88,8 +80,7 @@ TYPED_TEST(RegularType_test, moveCtorWorks)
     EXPECT_EQ(movedTo, copy);
 }
 
-TYPED_TEST(RegularType_test, moveAssignmentWorks)
-{
+TYPED_TEST(RegularType_test, moveAssignmentWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "46d8ce73-7b6b-4c0f-aca2-d2e404e8e0e6");
 
     typename TestFixture::Sut copy(this->sut);
@@ -100,8 +91,7 @@ TYPED_TEST(RegularType_test, moveAssignmentWorks)
     EXPECT_EQ(movedTo, copy);
 }
 
-TYPED_TEST(RegularType_test, equalComparisonWorks)
-{
+TYPED_TEST(RegularType_test, equalComparisonWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "f6474ff1-b202-43c3-ae1b-de26a20bffcd");
 
     typename TestFixture::Sut same(this->value);
@@ -114,8 +104,7 @@ TYPED_TEST(RegularType_test, equalComparisonWorks)
     EXPECT_FALSE(this->sut == different);
 }
 
-TYPED_TEST(RegularType_test, unequalComparisonWorks)
-{
+TYPED_TEST(RegularType_test, unequalComparisonWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "941b75b6-6627-40aa-aac2-689686430107");
 
     typename TestFixture::Sut same(this->value);

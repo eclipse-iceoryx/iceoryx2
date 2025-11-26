@@ -14,8 +14,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 #include "test_design_functional_interface_types.hpp"
 
-namespace
-{
+namespace {
 using namespace test_design_functional_interface;
 using namespace ::testing;
 
@@ -42,11 +41,9 @@ template <bool HasValue, bool HasError>
 struct AndThenOrElseConcatenatedWorksWhenInvalid;
 
 template <>
-struct AndThenOrElseConcatenatedWorksWhenInvalid<TYPE_HAS_NO_VALUE_METHOD, TYPE_HAS_NO_GET_ERROR_METHOD>
-{
+struct AndThenOrElseConcatenatedWorksWhenInvalid<TYPE_HAS_NO_VALUE_METHOD, TYPE_HAS_NO_GET_ERROR_METHOD> {
     template <typename TestFactory, typename SutCall>
-    static void performTest(const SutCall& sutCall)
-    {
+    static void performTest(const SutCall& sutCall) {
         auto sut = TestFactory::createInvalidObject();
         bool wasAndThenCalled = false;
         bool wasOrElseCalled = false;
@@ -58,11 +55,9 @@ struct AndThenOrElseConcatenatedWorksWhenInvalid<TYPE_HAS_NO_VALUE_METHOD, TYPE_
 };
 
 template <>
-struct AndThenOrElseConcatenatedWorksWhenInvalid<TYPE_HAS_VALUE_METHOD, TYPE_HAS_NO_GET_ERROR_METHOD>
-{
+struct AndThenOrElseConcatenatedWorksWhenInvalid<TYPE_HAS_VALUE_METHOD, TYPE_HAS_NO_GET_ERROR_METHOD> {
     template <typename TestFactory, typename SutCall>
-    static void performTest(const SutCall& sutCall)
-    {
+    static void performTest(const SutCall& sutCall) {
         auto sut = TestFactory::createInvalidObject();
         bool wasAndThenCalled = false;
         bool wasOrElseCalled = false;
@@ -74,11 +69,9 @@ struct AndThenOrElseConcatenatedWorksWhenInvalid<TYPE_HAS_VALUE_METHOD, TYPE_HAS
 };
 
 template <>
-struct AndThenOrElseConcatenatedWorksWhenInvalid<TYPE_HAS_NO_VALUE_METHOD, TYPE_HAS_GET_ERROR_METHOD>
-{
+struct AndThenOrElseConcatenatedWorksWhenInvalid<TYPE_HAS_NO_VALUE_METHOD, TYPE_HAS_GET_ERROR_METHOD> {
     template <typename TestFactory, typename SutCall>
-    static void performTest(const SutCall& sutCall)
-    {
+    static void performTest(const SutCall& sutCall) {
         auto sut = TestFactory::createInvalidObject();
         bool wasAndThenCalled = false;
         bool wasOrElseCalled = false;
@@ -96,11 +89,9 @@ struct AndThenOrElseConcatenatedWorksWhenInvalid<TYPE_HAS_NO_VALUE_METHOD, TYPE_
 };
 
 template <>
-struct AndThenOrElseConcatenatedWorksWhenInvalid<TYPE_HAS_VALUE_METHOD, TYPE_HAS_GET_ERROR_METHOD>
-{
+struct AndThenOrElseConcatenatedWorksWhenInvalid<TYPE_HAS_VALUE_METHOD, TYPE_HAS_GET_ERROR_METHOD> {
     template <typename TestFactory, typename SutCall>
-    static void performTest(const SutCall& sutCall)
-    {
+    static void performTest(const SutCall& sutCall) {
         auto sut = TestFactory::createInvalidObject();
         bool wasAndThenCalled = false;
         bool wasOrElseCalled = false;
@@ -117,28 +108,24 @@ struct AndThenOrElseConcatenatedWorksWhenInvalid<TYPE_HAS_VALUE_METHOD, TYPE_HAS
     }
 };
 
-TYPED_TEST(FunctionalInterface_test, AndThenOrElseConcatenatedWorksWhenInvalid_LValueCase)
-{
+TYPED_TEST(FunctionalInterface_test, AndThenOrElseConcatenatedWorksWhenInvalid_LValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "e3deeadd-425a-48bb-a77b-89fcdfea0178");
     IOX_TEST_FUNCTIONAL_INTERFACE(AndThenOrElseConcatenatedWorksWhenInvalid, sut);
 }
 
-TYPED_TEST(FunctionalInterface_test, AndThenOrElseConcatenatedWorksWhenInvalid_ConstLValueCase)
-{
+TYPED_TEST(FunctionalInterface_test, AndThenOrElseConcatenatedWorksWhenInvalid_ConstLValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "7810e0de-ac7f-4247-9adc-4177294bb60f");
     // const_cast avoids code duplication
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     IOX_TEST_FUNCTIONAL_INTERFACE(AndThenOrElseConcatenatedWorksWhenInvalid, const_cast<const SutType&>(sut));
 }
 
-TYPED_TEST(FunctionalInterface_test, AndThenOrElseConcatenatedWorksWhenInvalid_RValueCase)
-{
+TYPED_TEST(FunctionalInterface_test, AndThenOrElseConcatenatedWorksWhenInvalid_RValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "2e034af1-52af-48ac-b9b9-4c2d3e7cd60c");
     IOX_TEST_FUNCTIONAL_INTERFACE(AndThenOrElseConcatenatedWorksWhenInvalid, std::move(sut));
 }
 
-TYPED_TEST(FunctionalInterface_test, AndThenOrElseConcatenatedWorksWhenInvalid_ConstRValueCase)
-{
+TYPED_TEST(FunctionalInterface_test, AndThenOrElseConcatenatedWorksWhenInvalid_ConstRValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "4ca6c6d0-fa72-45ff-a2ae-9b7a9574c450");
     IOX_TEST_FUNCTIONAL_INTERFACE(AndThenOrElseConcatenatedWorksWhenInvalid,
                                   // const_cast avoids code duplication
@@ -150,11 +137,9 @@ template <bool HasValue, bool HasError>
 struct AndThenOrElseConcatenatedWorkWhenValid;
 
 template <>
-struct AndThenOrElseConcatenatedWorkWhenValid<TYPE_HAS_NO_VALUE_METHOD, TYPE_HAS_NO_GET_ERROR_METHOD>
-{
+struct AndThenOrElseConcatenatedWorkWhenValid<TYPE_HAS_NO_VALUE_METHOD, TYPE_HAS_NO_GET_ERROR_METHOD> {
     template <typename TestFactory, typename SutCall>
-    static void performTest(const SutCall& sutCall)
-    {
+    static void performTest(const SutCall& sutCall) {
         auto sut = TestFactory::createValidObject();
         bool wasAndThenCalled = false;
         bool wasOrElseCalled = false;
@@ -166,11 +151,9 @@ struct AndThenOrElseConcatenatedWorkWhenValid<TYPE_HAS_NO_VALUE_METHOD, TYPE_HAS
 };
 
 template <>
-struct AndThenOrElseConcatenatedWorkWhenValid<TYPE_HAS_VALUE_METHOD, TYPE_HAS_NO_GET_ERROR_METHOD>
-{
+struct AndThenOrElseConcatenatedWorkWhenValid<TYPE_HAS_VALUE_METHOD, TYPE_HAS_NO_GET_ERROR_METHOD> {
     template <typename TestFactory, typename SutCall>
-    static void performTest(const SutCall& sutCall)
-    {
+    static void performTest(const SutCall& sutCall) {
         auto sut = TestFactory::createValidObject();
         bool wasAndThenCalled = false;
         bool wasOrElseCalled = false;
@@ -188,11 +171,9 @@ struct AndThenOrElseConcatenatedWorkWhenValid<TYPE_HAS_VALUE_METHOD, TYPE_HAS_NO
 };
 
 template <>
-struct AndThenOrElseConcatenatedWorkWhenValid<TYPE_HAS_NO_VALUE_METHOD, TYPE_HAS_GET_ERROR_METHOD>
-{
+struct AndThenOrElseConcatenatedWorkWhenValid<TYPE_HAS_NO_VALUE_METHOD, TYPE_HAS_GET_ERROR_METHOD> {
     template <typename TestFactory, typename SutCall>
-    static void performTest(const SutCall& sutCall)
-    {
+    static void performTest(const SutCall& sutCall) {
         auto sut = TestFactory::createValidObject();
         bool wasAndThenCalled = false;
         bool wasOrElseCalled = false;
@@ -204,11 +185,9 @@ struct AndThenOrElseConcatenatedWorkWhenValid<TYPE_HAS_NO_VALUE_METHOD, TYPE_HAS
 };
 
 template <>
-struct AndThenOrElseConcatenatedWorkWhenValid<TYPE_HAS_VALUE_METHOD, TYPE_HAS_GET_ERROR_METHOD>
-{
+struct AndThenOrElseConcatenatedWorkWhenValid<TYPE_HAS_VALUE_METHOD, TYPE_HAS_GET_ERROR_METHOD> {
     template <typename TestFactory, typename SutCall>
-    static void performTest(const SutCall& sutCall)
-    {
+    static void performTest(const SutCall& sutCall) {
         auto sut = TestFactory::createValidObject();
         bool wasAndThenCalled = false;
         bool wasOrElseCalled = false;
@@ -225,28 +204,24 @@ struct AndThenOrElseConcatenatedWorkWhenValid<TYPE_HAS_VALUE_METHOD, TYPE_HAS_GE
     }
 };
 
-TYPED_TEST(FunctionalInterface_test, AndThenOrElseConcatenatedWorkWhenValid_LValueCase)
-{
+TYPED_TEST(FunctionalInterface_test, AndThenOrElseConcatenatedWorkWhenValid_LValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "99af4d72-8e30-4f63-97a2-92fdd861c615");
     IOX_TEST_FUNCTIONAL_INTERFACE(AndThenOrElseConcatenatedWorkWhenValid, sut);
 }
 
-TYPED_TEST(FunctionalInterface_test, AndThenOrElseConcatenatedWorkWhenValid_ConstLValueCase)
-{
+TYPED_TEST(FunctionalInterface_test, AndThenOrElseConcatenatedWorkWhenValid_ConstLValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "d70fd26a-f8bb-4976-b119-409651301e1b");
     // const_cast avoids code duplication
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     IOX_TEST_FUNCTIONAL_INTERFACE(AndThenOrElseConcatenatedWorkWhenValid, const_cast<SutType&>(sut));
 }
 
-TYPED_TEST(FunctionalInterface_test, AndThenOrElseConcatenatedWorkWhenValid_RValueCase)
-{
+TYPED_TEST(FunctionalInterface_test, AndThenOrElseConcatenatedWorkWhenValid_RValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "469b0b63-c06d-44b9-8dae-2bb6629d49ba");
     IOX_TEST_FUNCTIONAL_INTERFACE(AndThenOrElseConcatenatedWorkWhenValid, std::move(sut));
 }
 
-TYPED_TEST(FunctionalInterface_test, AndThenOrElseConcatenatedWorkWhenValid_ConstRValueCase)
-{
+TYPED_TEST(FunctionalInterface_test, AndThenOrElseConcatenatedWorkWhenValid_ConstRValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "96b3f8d5-07e0-407e-8e7e-5c7ae258a623");
     // const_cast avoids code duplication
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)

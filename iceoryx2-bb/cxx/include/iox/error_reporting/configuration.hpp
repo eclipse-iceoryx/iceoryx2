@@ -22,23 +22,18 @@
 // * Configure active checks and other compile time parameters
 // ***
 
-namespace iox
-{
-namespace er
-{
+namespace iox {
+namespace er {
 
 // tag type that can be used to override the configuration in a custom implementation
-struct ConfigurationTag
-{
-};
+struct ConfigurationTag { };
 
 // can be specialized here to change parameters at compile time
 template <typename T>
-struct ConfigurationParameters
-{
+struct ConfigurationParameters {
     static_assert(std::is_same<T, ConfigurationTag>::value, "Incorrect configuration tag type");
 
-    static constexpr bool CHECK_ASSERT{true}; /// @todo iox-#1032 deactive for release builds
+    static constexpr bool CHECK_ASSERT { true }; /// @todo iox-#1032 deactive for release builds
 };
 
 // used by the API to obtain the compile time parameters

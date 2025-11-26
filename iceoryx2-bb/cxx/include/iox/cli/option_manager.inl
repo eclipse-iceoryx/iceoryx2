@@ -18,16 +18,13 @@
 
 #include "iox/cli/option_manager.hpp"
 
-namespace iox
-{
-namespace cli
-{
+namespace iox {
+namespace cli {
 template <typename T>
 inline T OptionManager::extractOptionArgumentValue(const Arguments& arguments,
                                                    const char shortName,
                                                    const OptionName_t& name,
-                                                   const OptionType)
-{
+                                                   const OptionType) {
     return arguments.get<T>(getLookupName(shortName, name))
         .or_else([this](auto&) { m_parser.printHelpAndExit(); })
         .value();
@@ -37,10 +34,8 @@ template <>
 inline bool OptionManager::extractOptionArgumentValue(const Arguments& arguments,
                                                       const char shortName,
                                                       const OptionName_t& name,
-                                                      const OptionType optionType)
-{
-    if (optionType == OptionType::Switch)
-    {
+                                                      const OptionType optionType) {
+    if (optionType == OptionType::Switch) {
         return arguments.isSwitchSet(getLookupName(shortName, name));
     }
 
@@ -57,14 +52,13 @@ inline T OptionManager::defineOption(T& referenceToMember,
                                      const OptionName_t& name,
                                      const OptionDescription_t& description,
                                      const OptionType optionType,
-                                     T defaultArgumentValue)
-{
+                                     T defaultArgumentValue) {
     constexpr bool IS_NO_SWITCH = false;
-    m_optionSet.addOption(OptionWithDetails{
-        {shortName, IS_NO_SWITCH, name, into<lossy<Argument_t>>(convert::toString(defaultArgumentValue))},
+    m_optionSet.addOption(OptionWithDetails {
+        { shortName, IS_NO_SWITCH, name, into<lossy<Argument_t>>(convert::toString(defaultArgumentValue)) },
         description,
         optionType,
-        {TypeInfo<T>::NAME}});
+        { TypeInfo<T>::NAME } });
 
     m_assignments.emplace_back([this, &referenceToMember, optionType, shortName, name](Arguments& arguments) {
         referenceToMember = extractOptionArgumentValue<T>(arguments, shortName, name, optionType);

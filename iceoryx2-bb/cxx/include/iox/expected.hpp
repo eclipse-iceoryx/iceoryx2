@@ -21,8 +21,7 @@
 #include "iox/functional_interface.hpp"
 #include "iox/optional.hpp"
 
-namespace iox
-{
+namespace iox {
 template <typename T = void>
 using success = detail::ok<T>;
 
@@ -122,8 +121,7 @@ detail::err<T> err(Targs&&... args);
 /// @param ValueType type of the value which can be stored in the expected
 /// @param ErrorType type of the error which can be stored in the expected
 template <typename ValueType, typename ErrorType>
-class IOX_NO_DISCARD expected final : public FunctionalInterface<expected<ValueType, ErrorType>, ValueType, ErrorType>
-{
+class IOX_NO_DISCARD expected final : public FunctionalInterface<expected<ValueType, ErrorType>, ValueType, ErrorType> {
   public:
     /// @brief default ctor is deleted since you have to clearly state if the
     ///         expected contains a success value or an error value

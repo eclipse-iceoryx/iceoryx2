@@ -19,8 +19,7 @@
 #include "iox/semantic_string.hpp"
 #include "iox/string.hpp"
 
-namespace iox
-{
+namespace iox {
 
 template <typename Child,
           uint64_t Capacity,
@@ -29,8 +28,7 @@ template <typename Child,
 template <uint64_t N>
 inline SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::SemanticString(
     const string<N>& value) noexcept
-    : m_data{value}
-{
+    : m_data { value } {
 }
 
 template <typename Child,
@@ -40,27 +38,23 @@ template <typename Child,
 template <uint64_t N>
 inline expected<Child, SemanticStringError>
 SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::create_impl(
-    const char* value) noexcept
-{
-    if (N > Capacity)
-    {
+    const char* value) noexcept {
+    if (N > Capacity) {
         IOX_LOG(Debug,
                 "Unable to create semantic string since the value \""
                     << value << "\" exceeds the maximum valid length of " << Capacity << ".");
         return err(SemanticStringError::ExceedsMaximumLength);
     }
 
-    string<Capacity> str{TruncateToCapacity, value};
+    string<Capacity> str { TruncateToCapacity, value };
 
-    if (DoesContainInvalidCharacterCall(str))
-    {
+    if (DoesContainInvalidCharacterCall(str)) {
         IOX_LOG(Debug,
                 "Unable to create semantic string since the value \"" << value << "\" contains invalid characters");
         return err(SemanticStringError::ContainsInvalidCharacters);
     }
 
-    if (DoesContainInvalidContentCall(str))
-    {
+    if (DoesContainInvalidContentCall(str)) {
         IOX_LOG(Debug, "Unable to create semantic string since the value \"" << value << "\" contains invalid content");
         return err(SemanticStringError::ContainsInvalidContent);
     }
@@ -77,8 +71,7 @@ inline expected<Child, SemanticStringError>
 SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::create(
     // avoid-c-arrays: justification in header
     // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays, hicpp-explicit-conversions)
-    const char (&value)[N]) noexcept
-{
+    const char (&value)[N]) noexcept {
     return SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::
         template create_impl<N>(value);
 }
@@ -90,8 +83,7 @@ template <typename Child,
 template <uint64_t N>
 inline expected<Child, SemanticStringError>
 SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::create(
-    const string<N>& value) noexcept
-{
+    const string<N>& value) noexcept {
     return SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::
         template create_impl<N>(value.c_str());
 }
@@ -101,8 +93,7 @@ template <typename Child,
           DoesContainInvalidContent<Capacity> DoesContainInvalidContentCall,
           DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
 inline constexpr uint64_t
-SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::size() const noexcept
-{
+SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::size() const noexcept {
     return m_data.size();
 }
 
@@ -111,8 +102,7 @@ template <typename Child,
           DoesContainInvalidContent<Capacity> DoesContainInvalidContentCall,
           DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
 inline constexpr uint64_t
-SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::capacity() noexcept
-{
+SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::capacity() noexcept {
     return Capacity;
 }
 
@@ -122,8 +112,7 @@ template <typename Child,
           DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
 inline constexpr const string<Capacity>&
 SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::as_string()
-    const noexcept
-{
+    const noexcept {
     return m_data;
 }
 
@@ -134,8 +123,7 @@ template <typename Child,
 template <typename T>
 inline expected<void, SemanticStringError>
 SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::append(
-    const T& value) noexcept
-{
+    const T& value) noexcept {
     return insert(size(), value, internal::GetSize<T>::call(value));
 }
 
@@ -146,11 +134,9 @@ template <typename Child,
 template <typename T>
 inline expected<void, SemanticStringError>
 SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::insert(
-    const uint64_t pos, const T& str, const uint64_t count) noexcept
-{
+    const uint64_t pos, const T& str, const uint64_t count) noexcept {
     auto temp = m_data;
-    if (!temp.insert(pos, str, count))
-    {
+    if (!temp.insert(pos, str, count)) {
         IOX_LOG(Debug,
                 "Unable to insert the value \""
                     << str << "\" to the semantic string since it would exceed the maximum valid length of " << Capacity
@@ -158,16 +144,14 @@ SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvali
         return err(SemanticStringError::ExceedsMaximumLength);
     }
 
-    if (DoesContainInvalidCharacterCall(temp))
-    {
+    if (DoesContainInvalidCharacterCall(temp)) {
         IOX_LOG(Debug,
                 "Unable to insert the value \"" << str
                                                 << "\" to the semantic string since it contains invalid characters.");
         return err(SemanticStringError::ContainsInvalidCharacters);
     }
 
-    if (DoesContainInvalidContentCall(str))
-    {
+    if (DoesContainInvalidContentCall(str)) {
         IOX_LOG(Debug,
                 "Unable to insert the value \"" << str
                                                 << "\" to the semantic string since it would lead to invalid content.");
@@ -183,8 +167,7 @@ template <typename Child,
           DoesContainInvalidContent<Capacity> DoesContainInvalidContentCall,
           DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
 inline bool SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator==(
-    const SemanticString& rhs) const noexcept
-{
+    const SemanticString& rhs) const noexcept {
     return as_string() == rhs.as_string();
 }
 
@@ -195,8 +178,7 @@ template <typename Child,
 template <typename T>
 inline IsStringOrCharArray<T, bool>
 SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator==(
-    const T& rhs) const noexcept
-{
+    const T& rhs) const noexcept {
     return as_string() == rhs;
 }
 
@@ -205,8 +187,7 @@ template <typename Child,
           DoesContainInvalidContent<Capacity> DoesContainInvalidContentCall,
           DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
 inline bool SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator!=(
-    const SemanticString& rhs) const noexcept
-{
+    const SemanticString& rhs) const noexcept {
     return as_string() != rhs.as_string();
 }
 
@@ -217,8 +198,7 @@ template <typename Child,
 template <typename T>
 inline IsStringOrCharArray<T, bool>
 SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator!=(
-    const T& rhs) const noexcept
-{
+    const T& rhs) const noexcept {
     return as_string() != rhs;
 }
 
@@ -227,8 +207,7 @@ template <typename Child,
           DoesContainInvalidContent<Capacity> DoesContainInvalidContentCall,
           DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
 inline bool SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator<=(
-    const SemanticString& rhs) const noexcept
-{
+    const SemanticString& rhs) const noexcept {
     return as_string() <= rhs.as_string();
 }
 
@@ -239,8 +218,7 @@ template <typename Child,
 template <typename T>
 inline IsStringOrCharArray<T, bool>
 SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator<=(
-    const T& rhs) const noexcept
-{
+    const T& rhs) const noexcept {
     return as_string() <= rhs;
 }
 
@@ -249,8 +227,7 @@ template <typename Child,
           DoesContainInvalidContent<Capacity> DoesContainInvalidContentCall,
           DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
 inline bool SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator<(
-    const SemanticString& rhs) const noexcept
-{
+    const SemanticString& rhs) const noexcept {
     return as_string() < rhs.as_string();
 }
 
@@ -261,8 +238,7 @@ template <typename Child,
 template <typename T>
 inline IsStringOrCharArray<T, bool>
 SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator<(
-    const T& rhs) const noexcept
-{
+    const T& rhs) const noexcept {
     return as_string() < rhs;
 }
 
@@ -271,8 +247,7 @@ template <typename Child,
           DoesContainInvalidContent<Capacity> DoesContainInvalidContentCall,
           DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
 inline bool SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator>=(
-    const SemanticString& rhs) const noexcept
-{
+    const SemanticString& rhs) const noexcept {
     return as_string() >= rhs.as_string();
 }
 
@@ -283,8 +258,7 @@ template <typename Child,
 template <typename T>
 inline IsStringOrCharArray<T, bool>
 SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator>=(
-    const T& rhs) const noexcept
-{
+    const T& rhs) const noexcept {
     return as_string() >= rhs;
 }
 
@@ -293,8 +267,7 @@ template <typename Child,
           DoesContainInvalidContent<Capacity> DoesContainInvalidContentCall,
           DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
 inline bool SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator>(
-    const SemanticString& rhs) const noexcept
-{
+    const SemanticString& rhs) const noexcept {
     return as_string() > rhs.as_string();
 }
 
@@ -305,8 +278,7 @@ template <typename Child,
 template <typename T>
 inline IsStringOrCharArray<T, bool>
 SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator>(
-    const T& rhs) const noexcept
-{
+    const T& rhs) const noexcept {
     return as_string() > rhs;
 }
 } // namespace iox

@@ -24,29 +24,25 @@
 #include "iox/iceoryx_hoofs_deployment.hpp"
 #include "iox/logging.hpp"
 
-namespace iox
-{
+namespace iox {
 ///@brief specialization for  uint8_t and int8_t is required  since uint8_t is unsigned char and int8_t is signed char
 /// and stringstream will not convert these to string as it is already a character.
 template <>
 inline typename std::enable_if<!std::is_convertible<uint8_t, std::string>::value, std::string>::type
-convert::toString(const uint8_t& t) noexcept
-{
+convert::toString(const uint8_t& t) noexcept {
     return toString(static_cast<uint16_t>(t));
 }
 
 template <>
 inline typename std::enable_if<!std::is_convertible<int8_t, std::string>::value, std::string>::type
-convert::toString(const int8_t& t) noexcept
-{
+convert::toString(const int8_t& t) noexcept {
     return toString(static_cast<int16_t>(t));
 }
 
 
 template <typename Source>
 inline typename std::enable_if<!std::is_convertible<Source, std::string>::value, std::string>::type
-convert::toString(const Source& t) noexcept
-{
+convert::toString(const Source& t) noexcept {
     std::stringstream ss;
     ss << t;
     return ss.str();
@@ -54,35 +50,29 @@ convert::toString(const Source& t) noexcept
 
 template <typename Source>
 inline typename std::enable_if<std::is_convertible<Source, std::string>::value, std::string>::type
-convert::toString(const Source& t) noexcept
-{
+convert::toString(const Source& t) noexcept {
     return t;
 }
 
 template <typename TargetType, typename std::enable_if_t<is_iox_string<TargetType>::value, int>>
-inline iox::optional<TargetType> convert::from_string(const char* v) noexcept
-{
+inline iox::optional<TargetType> convert::from_string(const char* v) noexcept {
     using IoxString = TargetType;
-    if (strlen(v) > IoxString::capacity())
-    {
+    if (strlen(v) > IoxString::capacity()) {
         return iox::nullopt;
     }
     return iox::optional<IoxString>(IoxString(TruncateToCapacity, v));
 }
 
 template <typename TargetType, typename std::enable_if_t<!is_iox_string<TargetType>::value, int>>
-inline iox::optional<TargetType> convert::from_string(const char* v IOX_MAYBE_UNUSED) noexcept
-{
+inline iox::optional<TargetType> convert::from_string(const char* v IOX_MAYBE_UNUSED) noexcept {
     static_assert(always_false_v<TargetType>,
                   "For a conversion to 'std::string' please include 'iox/std_string_support.hpp'!\nConversion not "
                   "supported!");
 }
 
 template <>
-inline iox::optional<char> convert::from_string<char>(const char* v) noexcept
-{
-    if (strlen(v) != 1U)
-    {
+inline iox::optional<char> convert::from_string<char>(const char* v) noexcept {
+    if (strlen(v) != 1U) {
         IOX_LOG(Debug, v << " is not a char");
         return iox::nullopt;
     }
@@ -93,12 +83,10 @@ inline iox::optional<char> convert::from_string<char>(const char* v) noexcept
 }
 
 template <>
-inline iox::optional<bool> convert::from_string<bool>(const char* v) noexcept
-{
+inline iox::optional<bool> convert::from_string<bool>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
-    if (start_with_neg_sign(v))
-    {
+    if (start_with_neg_sign(v)) {
         return iox::nullopt;
     }
 
@@ -113,8 +101,7 @@ inline iox::optional<bool> convert::from_string<bool>(const char* v) noexcept
 }
 
 template <>
-inline iox::optional<float> convert::from_string<float>(const char* v) noexcept
-{
+inline iox::optional<float> convert::from_string<float>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     auto call = IOX_POSIX_CALL(strtof)(v, &end_ptr)
@@ -126,8 +113,7 @@ inline iox::optional<float> convert::from_string<float>(const char* v) noexcept
 }
 
 template <>
-inline iox::optional<double> convert::from_string<double>(const char* v) noexcept
-{
+inline iox::optional<double> convert::from_string<double>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     auto call = IOX_POSIX_CALL(strtod)(v, &end_ptr)
@@ -139,8 +125,7 @@ inline iox::optional<double> convert::from_string<double>(const char* v) noexcep
 }
 
 template <>
-inline iox::optional<long double> convert::from_string<long double>(const char* v) noexcept
-{
+inline iox::optional<long double> convert::from_string<long double>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     auto call = IOX_POSIX_CALL(strtold)(v, &end_ptr)
@@ -152,12 +137,10 @@ inline iox::optional<long double> convert::from_string<long double>(const char* 
 }
 
 template <>
-inline iox::optional<unsigned long long> convert::from_string<unsigned long long>(const char* v) noexcept
-{
+inline iox::optional<unsigned long long> convert::from_string<unsigned long long>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
-    if (start_with_neg_sign(v))
-    {
+    if (start_with_neg_sign(v)) {
         return iox::nullopt;
     }
 
@@ -170,12 +153,10 @@ inline iox::optional<unsigned long long> convert::from_string<unsigned long long
 }
 
 template <>
-inline iox::optional<unsigned long> convert::from_string<unsigned long>(const char* v) noexcept
-{
+inline iox::optional<unsigned long> convert::from_string<unsigned long>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
-    if (start_with_neg_sign(v))
-    {
+    if (start_with_neg_sign(v)) {
         return iox::nullopt;
     }
 
@@ -188,12 +169,10 @@ inline iox::optional<unsigned long> convert::from_string<unsigned long>(const ch
 }
 
 template <>
-inline iox::optional<unsigned int> convert::from_string<unsigned int>(const char* v) noexcept
-{
+inline iox::optional<unsigned int> convert::from_string<unsigned int>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
-    if (start_with_neg_sign(v))
-    {
+    if (start_with_neg_sign(v)) {
         return iox::nullopt;
     }
 
@@ -207,12 +186,10 @@ inline iox::optional<unsigned int> convert::from_string<unsigned int>(const char
 }
 
 template <>
-inline iox::optional<unsigned short> convert::from_string<unsigned short>(const char* v) noexcept
-{
+inline iox::optional<unsigned short> convert::from_string<unsigned short>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
-    if (start_with_neg_sign(v))
-    {
+    if (start_with_neg_sign(v)) {
         return iox::nullopt;
     }
 
@@ -225,12 +202,10 @@ inline iox::optional<unsigned short> convert::from_string<unsigned short>(const 
 }
 
 template <>
-inline iox::optional<unsigned char> convert::from_string<unsigned char>(const char* v) noexcept
-{
+inline iox::optional<unsigned char> convert::from_string<unsigned char>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
-    if (start_with_neg_sign(v))
-    {
+    if (start_with_neg_sign(v)) {
         return iox::nullopt;
     }
 
@@ -243,8 +218,7 @@ inline iox::optional<unsigned char> convert::from_string<unsigned char>(const ch
 }
 
 template <>
-inline iox::optional<long long> convert::from_string<long long>(const char* v) noexcept
-{
+inline iox::optional<long long> convert::from_string<long long>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     auto call = IOX_POSIX_CALL(strtoll)(v, &end_ptr, STRTOLL_BASE)
@@ -256,8 +230,7 @@ inline iox::optional<long long> convert::from_string<long long>(const char* v) n
 }
 
 template <>
-inline iox::optional<long> convert::from_string<long>(const char* v) noexcept
-{
+inline iox::optional<long> convert::from_string<long>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     auto call = IOX_POSIX_CALL(strtol)(v, &end_ptr, STRTOL_BASE)
@@ -269,8 +242,7 @@ inline iox::optional<long> convert::from_string<long>(const char* v) noexcept
 }
 
 template <>
-inline iox::optional<int> convert::from_string<int>(const char* v) noexcept
-{
+inline iox::optional<int> convert::from_string<int>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     // use alwaysSuccess for the conversion edge cases in 32-bit system?
@@ -283,8 +255,7 @@ inline iox::optional<int> convert::from_string<int>(const char* v) noexcept
 }
 
 template <>
-inline iox::optional<short> convert::from_string<short>(const char* v) noexcept
-{
+inline iox::optional<short> convert::from_string<short>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     auto call = IOX_POSIX_CALL(strtol)(v, &end_ptr, STRTOL_BASE)
@@ -296,8 +267,7 @@ inline iox::optional<short> convert::from_string<short>(const char* v) noexcept
 }
 
 template <>
-inline iox::optional<signed char> convert::from_string<signed char>(const char* v) noexcept
-{
+inline iox::optional<signed char> convert::from_string<signed char>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     auto call = IOX_POSIX_CALL(strtol)(v, &end_ptr, STRTOL_BASE)
@@ -312,23 +282,19 @@ template <typename TargetType, typename SourceType>
 inline bool convert::check_edge_case(decltype(errno) errno_cache,
                                      const char* end_ptr,
                                      const char* v,
-                                     const SourceType& source_val) noexcept
-{
+                                     const SourceType& source_val) noexcept {
     return is_valid_input(end_ptr, v, source_val) && is_valid_errno(errno_cache, v)
            && is_within_range<TargetType>(source_val);
 }
 
 template <typename TargetType, typename CallType>
 inline iox::optional<TargetType>
-convert::evaluate_return_value(CallType& call, const char* end_ptr, const char* v) noexcept
-{
-    if (call.has_error())
-    {
+convert::evaluate_return_value(CallType& call, const char* end_ptr, const char* v) noexcept {
+    if (call.has_error()) {
         return iox::nullopt;
     }
 
-    if (!check_edge_case<TargetType>(call->errnum, end_ptr, v, call->value))
-    {
+    if (!check_edge_case<TargetType>(call->errnum, end_ptr, v, call->value)) {
         return iox::nullopt;
     }
 
@@ -336,18 +302,15 @@ convert::evaluate_return_value(CallType& call, const char* end_ptr, const char* 
 }
 
 template <typename SourceType>
-inline bool convert::is_valid_input(const char* end_ptr, const char* v, const SourceType& source_val) noexcept
-{
+inline bool convert::is_valid_input(const char* end_ptr, const char* v, const SourceType& source_val) noexcept {
     // invalid string
-    if (v == end_ptr && source_val == 0)
-    {
+    if (v == end_ptr && source_val == 0) {
         IOX_LOG(Debug, "invalid input");
         return false;
     }
 
     // end_ptr is not '\0' which means conversion failure at end_ptr
-    if (end_ptr != nullptr && v != end_ptr && *end_ptr != '\0')
-    {
+    if (end_ptr != nullptr && v != end_ptr && *end_ptr != '\0') {
         IOX_LOG(Debug, "conversion failed at " << end_ptr - v << " : " << *end_ptr);
         return false;
     }
@@ -356,8 +319,7 @@ inline bool convert::is_valid_input(const char* end_ptr, const char* v, const So
 }
 
 template <typename TargetType, typename SourceType>
-inline bool convert::is_within_range(const SourceType& source_val) noexcept
-{
+inline bool convert::is_within_range(const SourceType& source_val) noexcept {
 #if IOX_HOOFS_SUBSET
     if (std::is_arithmetic<TargetType>::value == false)
 #else
@@ -368,37 +330,31 @@ inline bool convert::is_within_range(const SourceType& source_val) noexcept
     }
 
 #if IOX_HOOFS_SUBSET
-    if (std::is_floating_point<SourceType>::value)
-    {
+    if (std::is_floating_point<SourceType>::value) {
         auto source_val_fp = static_cast<double>(source_val);
 #else
-    if constexpr (std::is_floating_point_v<SourceType>)
-    {
+    if constexpr (std::is_floating_point_v<SourceType>) {
         auto source_val_fp = source_val;
 #endif
         // special cases for floating point
         // can be nan or inf
-        if (std::isnan(source_val) || std::isinf(source_val))
-        {
+        if (std::isnan(source_val) || std::isinf(source_val)) {
             return true;
         }
         // should be normal or zero
-        if (!std::isnormal(source_val) && (source_val_fp != 0.0F))
-        {
+        if (!std::isnormal(source_val) && (source_val_fp != 0.0F)) {
             return false;
         }
     }
     // out of range (upper bound)
-    if (source_val > std::numeric_limits<TargetType>::max())
-    {
+    if (source_val > std::numeric_limits<TargetType>::max()) {
         IOX_LOG(Debug,
                 source_val << " is out of range (upper bound), should be less than "
                            << std::numeric_limits<TargetType>::max());
         return false;
     }
     // out of range (lower bound)
-    if (source_val < std::numeric_limits<TargetType>::lowest())
-    {
+    if (source_val < std::numeric_limits<TargetType>::lowest()) {
         IOX_LOG(Debug,
                 source_val << " is out of range (lower bound), should be larger than "
                            << std::numeric_limits<TargetType>::lowest());
@@ -407,16 +363,13 @@ inline bool convert::is_within_range(const SourceType& source_val) noexcept
     return true;
 }
 
-inline bool convert::start_with_neg_sign(const char* v) noexcept
-{
-    if (v == nullptr)
-    {
+inline bool convert::start_with_neg_sign(const char* v) noexcept {
+    if (v == nullptr) {
         return false;
     }
 
     // remove space
-    while (*v != '\0' && (isspace((unsigned char)*v) != 0))
-    {
+    while (*v != '\0' && (isspace((unsigned char) *v) != 0)) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         ++v;
     }
@@ -424,22 +377,18 @@ inline bool convert::start_with_neg_sign(const char* v) noexcept
     return (*v == '-');
 }
 
-inline bool convert::is_valid_errno(decltype(errno) errno_cache, const char* v) noexcept
-{
-    if (errno_cache == ERANGE)
-    {
+inline bool convert::is_valid_errno(decltype(errno) errno_cache, const char* v) noexcept {
+    if (errno_cache == ERANGE) {
         IOX_LOG(Debug, "ERANGE triggered during conversion of string: '" << v << "'");
         return false;
     }
 
-    if (errno_cache == EINVAL)
-    {
+    if (errno_cache == EINVAL) {
         IOX_LOG(Debug, "EINVAL triggered during conversion of string: " << v);
         return false;
     }
 
-    if (errno_cache != 0)
-    {
+    if (errno_cache != 0) {
         IOX_LOG(Debug, "Unexpected errno: " << errno_cache << ". The input string is: " << v);
         return false;
     }

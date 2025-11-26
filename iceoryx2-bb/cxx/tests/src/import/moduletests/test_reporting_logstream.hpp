@@ -24,17 +24,14 @@ using namespace ::testing;
 
 using iox::testing::Logger_Mock;
 
-class LogStreamSut : public iox::log::LogStream
-{
+class LogStreamSut : public iox::log::LogStream {
   public:
     explicit LogStreamSut(iox::log::Logger& logger)
-        : iox::log::LogStream(logger, "file", 42, "function", iox::log::LogLevel::Trace)
-    {
+        : iox::log::LogStream(logger, "file", 42, "function", iox::log::LogLevel::Trace) {
     }
 };
 
-class IoxLogStreamBase_test : public Test
-{
+class IoxLogStreamBase_test : public Test {
   public:
     Logger_Mock loggerMock;
 };

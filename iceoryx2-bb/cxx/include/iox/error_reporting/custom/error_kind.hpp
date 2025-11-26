@@ -22,19 +22,16 @@
 // * Extend error kinds
 // ***
 
-namespace iox
-{
-namespace er
-{
+namespace iox {
+namespace er {
 
 // The non-fatal error kinds can all be defined here.
 
-struct RuntimeErrorKind
-{
+struct RuntimeErrorKind {
     static constexpr char const* name = "Runtime Error";
 };
 
-constexpr RuntimeErrorKind RUNTIME_ERROR{};
+constexpr RuntimeErrorKind RUNTIME_ERROR {};
 
 } // namespace er
 } // namespace iox

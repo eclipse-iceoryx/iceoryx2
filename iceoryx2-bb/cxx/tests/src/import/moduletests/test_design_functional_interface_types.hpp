@@ -20,10 +20,8 @@
 #include "iox/optional.hpp"
 #include "test_design_functional_interface_common.hpp"
 
-namespace test_design_functional_interface
-{
-struct GenericValueErrorFactory
-{
+namespace test_design_functional_interface {
+struct GenericValueErrorFactory {
     using Type = GenericValueError;
 
     using value_t = typename Type::value_t;
@@ -43,8 +41,7 @@ struct GenericValueErrorFactory
     static Type createInvalidObject() noexcept;
 };
 
-struct GenericPlainFactory
-{
+struct GenericPlainFactory {
     using Type = GenericPlain;
 
     static constexpr bool EXPECT_AND_THEN_WITH_VALUE = false;
@@ -55,8 +52,7 @@ struct GenericPlainFactory
     static Type createInvalidObject() noexcept;
 };
 
-struct OptionalFactory
-{
+struct OptionalFactory {
     using value_t = uint64_t;
     using Type = iox::optional<value_t>;
 
@@ -71,8 +67,7 @@ struct OptionalFactory
     static Type createInvalidObject() noexcept;
 };
 
-struct ExpectedValueErrorFactory
-{
+struct ExpectedValueErrorFactory {
     using value_t = uint64_t;
     using error_t = uint64_t;
 
@@ -92,8 +87,7 @@ struct ExpectedValueErrorFactory
     static Type createInvalidObject() noexcept;
 };
 
-struct ExpectedErrorFactory
-{
+struct ExpectedErrorFactory {
     using error_t = uint64_t;
 
     using Type = iox::expected<void, error_t>;

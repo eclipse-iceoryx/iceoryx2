@@ -21,10 +21,8 @@
 
 #include <cstdint>
 
-namespace iox
-{
-namespace log
-{
+namespace iox {
+namespace log {
 // AXIVION DISABLE STYLE AutosarC++19_03-A3.9.1 : Basic numeric types are used in order to get the correct format string
 // on all platforms. Fixed width types are used on a higher abstraction layer. Furthermore are 'const char*' used for
 // string literals with static lifetime and as a pointer to a buffer of character
@@ -40,14 +38,12 @@ constexpr const char* logLevelDisplayColor(const LogLevel value) noexcept;
 constexpr const char* logLevelDisplayText(const LogLevel value) noexcept;
 
 /// @brief Provides access to the log buffer if direct access is required
-struct LogBuffer
-{
-    const char* buffer{nullptr};
-    uint64_t writeIndex{0};
+struct LogBuffer {
+    const char* buffer { nullptr };
+    uint64_t writeIndex { 0 };
 };
 
-namespace internal
-{
+namespace internal {
 template <typename T>
 constexpr const char* logFormatDec() noexcept;
 template <>
@@ -116,15 +112,15 @@ constexpr const char* logFormatOct<unsigned long long>() noexcept;
 
 /// @brief printf-like format string for decimal formatting of numbers
 template <typename T>
-static constexpr const char* LOG_FORMAT_DEC{internal::logFormatDec<T>()};
+static constexpr const char* LOG_FORMAT_DEC { internal::logFormatDec<T>() };
 
 /// @brief printf-like format string for hexadecimal formatting of numbers
 template <typename T>
-static constexpr const char* LOG_FORMAT_HEX{internal::logFormatHex<T>()};
+static constexpr const char* LOG_FORMAT_HEX { internal::logFormatHex<T>() };
 
 /// @brief printf-like format string for octal formatting of numbers
 template <typename T>
-static constexpr const char* LOG_FORMAT_OCT{internal::logFormatOct<T>()};
+static constexpr const char* LOG_FORMAT_OCT { internal::logFormatOct<T>() };
 
 // AXIVION ENABLE STYLE AutosarC++19_03-A3.9.1
 

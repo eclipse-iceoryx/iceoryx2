@@ -21,40 +21,33 @@
 
 #include <cstdint>
 
-namespace
-{
+namespace {
 using namespace testing;
 
-namespace
-{
-struct Bar
-{
+namespace {
+struct Bar {
     // required for testing, a struct with a defined size
     // NOLINTNEXTLINE(hicpp-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
     alignas(8) uint8_t m_dummy[73];
 };
-struct Foo
-{
+struct Foo {
     // required for testing, a struct with a defined size
     // NOLINTNEXTLINE(hicpp-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
     uint8_t m_dummy[73];
 };
-struct FooBar
-{
+struct FooBar {
     // required for testing, a struct with a defined size
     // NOLINTNEXTLINE(hicpp-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
     alignas(32) uint8_t m_dummy[73];
 };
-struct FuBar
-{
+struct FuBar {
     // required for testing, a struct with a defined size
     // NOLINTNEXTLINE(hicpp-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
     alignas(32) uint8_t m_dummy[73];
 };
 } // namespace
 
-TEST(memory_test, MaxSizeWorksAsExpected)
-{
+TEST(memory_test, MaxSizeWorksAsExpected) {
     ::testing::Test::RecordProperty("TEST_ID", "5b3e938d-aec5-478d-b1c1-49ff2cc4e3ef");
     EXPECT_THAT(iox::maxSize<Foo>(), Eq(sizeof(Foo)));
 
@@ -69,8 +62,7 @@ TEST(memory_test, MaxSizeWorksAsExpected)
     EXPECT_THAT((iox::maxSize<FooBar, FuBar>()), Eq(sizeof(FooBar)));
 }
 
-TEST(memory_test, MaxAlignmentWorksAsExpected)
-{
+TEST(memory_test, MaxAlignmentWorksAsExpected) {
     ::testing::Test::RecordProperty("TEST_ID", "7d5d3de1-f22c-47c1-b7fd-cacc35eef13c");
     EXPECT_THAT(iox::maxAlignment<Foo>(), Eq(alignof(Foo)));
 

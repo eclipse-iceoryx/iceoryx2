@@ -15,32 +15,25 @@
 
 #include "iox/cli/option_manager.hpp"
 
-namespace iox
-{
-namespace cli
-{
+namespace iox {
+namespace cli {
 OptionManager::OptionManager(const OptionDescription_t& programDescription, const function<void()>& onFailureCallback)
-    : m_optionSet{programDescription, onFailureCallback}
-{
+    : m_optionSet { programDescription, onFailureCallback } {
 }
 
-void OptionManager::populateDefinedOptions(const char*& binaryName, int argc, char** argv, const uint64_t argcOffset)
-{
+void OptionManager::populateDefinedOptions(const char*& binaryName, int argc, char** argv, const uint64_t argcOffset) {
     auto options = m_parser.parse(m_optionSet, argc, argv, argcOffset);
 
-    for (const auto& assignment : m_assignments)
-    {
+    for (const auto& assignment : m_assignments) {
         assignment(options);
     }
 
     binaryName = options.binaryName();
 }
 
-OptionName_t OptionManager::getLookupName(const char shortName, const OptionName_t& name) noexcept
-{
-    if (shortName == NO_SHORT_OPTION)
-    {
-        return OptionName_t{TruncateToCapacity, &shortName, 1};
+OptionName_t OptionManager::getLookupName(const char shortName, const OptionName_t& name) noexcept {
+    if (shortName == NO_SHORT_OPTION) {
+        return OptionName_t { TruncateToCapacity, &shortName, 1 };
     }
 
     return name;

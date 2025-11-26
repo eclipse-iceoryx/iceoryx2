@@ -21,15 +21,12 @@
 #include "iox/logging.hpp"
 #include "iox/variant.hpp"
 
-namespace iox
-{
+namespace iox {
 template <typename... Types>
 // AXIVION Next Construct AutosarC++19_03-A12.1.5: constructor delegation is not feasible here due to lack of sufficient common initialization
 inline constexpr variant<Types...>::variant(const variant& rhs) noexcept
-    : m_type_index(rhs.m_type_index)
-{
-    if (m_type_index != INVALID_VARIANT_INDEX)
-    {
+    : m_type_index(rhs.m_type_index) {
+    if (m_type_index != INVALID_VARIANT_INDEX) {
         internal::call_at_index<0, Types...>::copyConstructor(m_type_index, &rhs.m_storage, &m_storage);
     }
 }
@@ -38,8 +35,7 @@ template <typename... Types>
 template <uint64_t N, typename... CTorArguments>
 // NOLINTJUSTIFICATION First param is helper struct only
 // NOLINTNEXTLINE(hicpp-named-parameter)
-inline constexpr variant<Types...>::variant(const in_place_index<N>&, CTorArguments&&... args) noexcept
-{
+inline constexpr variant<Types...>::variant(const in_place_index<N>&, CTorArguments&&... args) noexcept {
     emplace_at_index<N>(std::forward<CTorArguments>(args)...);
 }
 
@@ -47,8 +43,7 @@ template <typename... Types>
 template <typename T, typename... CTorArguments>
 // NOLINTJUSTIFICATION First param is helper struct only
 // NOLINTNEXTLINE(hicpp-named-parameter)
-inline constexpr variant<Types...>::variant(const in_place_type<T>&, CTorArguments&&... args) noexcept
-{
+inline constexpr variant<Types...>::variant(const in_place_type<T>&, CTorArguments&&... args) noexcept {
     emplace<T>(std::forward<CTorArguments>(args)...);
 }
 
@@ -58,30 +53,22 @@ template <typename T,
           typename std::enable_if_t<!internal::is_in_place_index<std::decay_t<T>>::value, bool>,
           typename std::enable_if_t<!internal::is_in_place_type<std::decay_t<T>>::value, bool>>
 inline constexpr variant<Types...>::variant(T&& arg) noexcept
-    : variant(in_place_type<std::decay_t<T>>(), std::forward<T>(arg))
-{
+    : variant(in_place_type<std::decay_t<T>>(), std::forward<T>(arg)) {
 }
 
 // AXIVION Next Construct AutosarC++19_03-A13.3.1 : False positive. Overload excluded via std::enable_if in operator=(T&& rhs)
 template <typename... Types>
-inline constexpr variant<Types...>& variant<Types...>::operator=(const variant& rhs) noexcept
-{
-    if (this != &rhs)
-    {
-        if (m_type_index != rhs.m_type_index)
-        {
+inline constexpr variant<Types...>& variant<Types...>::operator=(const variant& rhs) noexcept {
+    if (this != &rhs) {
+        if (m_type_index != rhs.m_type_index) {
             call_element_destructor();
             m_type_index = rhs.m_type_index;
 
-            if (m_type_index != INVALID_VARIANT_INDEX)
-            {
+            if (m_type_index != INVALID_VARIANT_INDEX) {
                 internal::call_at_index<0, Types...>::copyConstructor(m_type_index, &rhs.m_storage, &m_storage);
             }
-        }
-        else
-        {
-            if (m_type_index != INVALID_VARIANT_INDEX)
-            {
+        } else {
+            if (m_type_index != INVALID_VARIANT_INDEX) {
                 internal::call_at_index<0, Types...>::copy(m_type_index, &rhs.m_storage, &m_storage);
             }
         }
@@ -91,34 +78,25 @@ inline constexpr variant<Types...>& variant<Types...>::operator=(const variant& 
 
 template <typename... Types>
 inline constexpr variant<Types...>::variant(variant&& rhs) noexcept
-    : m_type_index{std::move(rhs.m_type_index)}
-{
-    if (m_type_index != INVALID_VARIANT_INDEX)
-    {
+    : m_type_index { std::move(rhs.m_type_index) } {
+    if (m_type_index != INVALID_VARIANT_INDEX) {
         internal::call_at_index<0, Types...>::moveConstructor(m_type_index, &rhs.m_storage, &m_storage);
     }
 }
 
 // AXIVION Next Construct AutosarC++19_03-A13.3.1 : False positive. Overload excluded via std::enable_if in operator=(T&& rhs)
 template <typename... Types>
-inline constexpr variant<Types...>& variant<Types...>::operator=(variant&& rhs) noexcept
-{
+inline constexpr variant<Types...>& variant<Types...>::operator=(variant&& rhs) noexcept {
     // AXIVION Next Construct AutosarC++19_03-M0.1.2, AutosarC++19_03-M0.1.9, FaultDetection-DeadBranches : False positive. Check needed to avoid self assignment.
-    if (this != &rhs)
-    {
-        if (m_type_index != rhs.m_type_index)
-        {
+    if (this != &rhs) {
+        if (m_type_index != rhs.m_type_index) {
             call_element_destructor();
             m_type_index = std::move(rhs.m_type_index);
-            if (m_type_index != INVALID_VARIANT_INDEX)
-            {
+            if (m_type_index != INVALID_VARIANT_INDEX) {
                 internal::call_at_index<0, Types...>::moveConstructor(m_type_index, &rhs.m_storage, &m_storage);
             }
-        }
-        else
-        {
-            if (m_type_index != INVALID_VARIANT_INDEX)
-            {
+        } else {
+            if (m_type_index != INVALID_VARIANT_INDEX) {
                 internal::call_at_index<0, Types...>::move(m_type_index, &rhs.m_storage, &m_storage);
             }
         }
@@ -127,16 +105,13 @@ inline constexpr variant<Types...>& variant<Types...>::operator=(variant&& rhs) 
 }
 
 template <typename... Types>
-inline variant<Types...>::~variant() noexcept
-{
+inline variant<Types...>::~variant() noexcept {
     call_element_destructor();
 }
 
 template <typename... Types>
-inline void variant<Types...>::call_element_destructor() noexcept
-{
-    if (m_type_index != INVALID_VARIANT_INDEX)
-    {
+inline void variant<Types...>::call_element_destructor() noexcept {
+    if (m_type_index != INVALID_VARIANT_INDEX) {
         internal::call_at_index<0, Types...>::destructor(m_type_index, &m_storage);
     }
 }
@@ -146,22 +121,17 @@ inline void variant<Types...>::call_element_destructor() noexcept
 template <typename... Types>
 template <typename T>
 inline typename std::enable_if<!std::is_same<T, variant<Types...>&>::value, variant<Types...>>::type&
-variant<Types...>::operator=(T&& rhs) noexcept
-{
-    if (m_type_index == INVALID_VARIANT_INDEX)
-    {
+variant<Types...>::operator=(T&& rhs) noexcept {
+    if (m_type_index == INVALID_VARIANT_INDEX) {
         m_type_index = internal::get_index_of_type<0, T, Types...>::index;
     }
 
-    if (!has_bad_variant_element_access<T>())
-    {
+    if (!has_bad_variant_element_access<T>()) {
         // AXIVION Next Construct AutosarC++19_03-M5.2.8: conversion to typed pointer is intentional, it is correctly aligned and points to sufficient memory for a T by design
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         auto storage = reinterpret_cast<T*>(&m_storage);
         *storage = std::forward<T>(rhs);
-    }
-    else
-    {
+    } else {
         error_message(__PRETTY_FUNCTION__,
                       "wrong variant type assignment, another type is already "
                       "set in variant");
@@ -172,8 +142,7 @@ variant<Types...>::operator=(T&& rhs) noexcept
 
 template <typename... Types>
 template <uint64_t TypeIndex, typename... CTorArguments>
-inline void variant<Types...>::emplace_at_index(CTorArguments&&... args) noexcept
-{
+inline void variant<Types...>::emplace_at_index(CTorArguments&&... args) noexcept {
     static_assert(TypeIndex <= sizeof...(Types), "TypeIndex is out of bounds");
 
     using T = typename internal::get_type_at_index<0, TypeIndex, Types...>::type;
@@ -186,8 +155,7 @@ inline void variant<Types...>::emplace_at_index(CTorArguments&&... args) noexcep
 
 template <typename... Types>
 template <typename T, typename... CTorArguments>
-inline void variant<Types...>::emplace(CTorArguments&&... args) noexcept
-{
+inline void variant<Types...>::emplace(CTorArguments&&... args) noexcept {
     static_assert(internal::does_contain_type<T, Types...>::value, "variant does not contain given type");
 
     call_element_destructor();
@@ -198,10 +166,8 @@ inline void variant<Types...>::emplace(CTorArguments&&... args) noexcept
 
 template <typename... Types>
 template <uint64_t TypeIndex>
-inline typename internal::get_type_at_index<0, TypeIndex, Types...>::type* variant<Types...>::get_at_index() noexcept
-{
-    if (TypeIndex != m_type_index)
-    {
+inline typename internal::get_type_at_index<0, TypeIndex, Types...>::type* variant<Types...>::get_at_index() noexcept {
+    if (TypeIndex != m_type_index) {
         return nullptr;
     }
 
@@ -211,8 +177,7 @@ inline typename internal::get_type_at_index<0, TypeIndex, Types...>::type* varia
 template <typename... Types>
 template <uint64_t TypeIndex>
 inline typename internal::get_type_at_index<0, TypeIndex, Types...>::type*
-variant<Types...>::unsafe_get_at_index_unchecked() noexcept
-{
+variant<Types...>::unsafe_get_at_index_unchecked() noexcept {
     using T = typename internal::get_type_at_index<0, TypeIndex, Types...>::type;
 
     // AXIVION Next Construct AutosarC++19_03-M5.2.8 : conversion to typed pointer is intentional, it is correctly aligned and points to sufficient memory for a T by design
@@ -223,8 +188,7 @@ variant<Types...>::unsafe_get_at_index_unchecked() noexcept
 template <typename... Types>
 template <uint64_t TypeIndex>
 inline const typename internal::get_type_at_index<0, TypeIndex, Types...>::type*
-variant<Types...>::get_at_index() const noexcept
-{
+variant<Types...>::get_at_index() const noexcept {
     using T = typename internal::get_type_at_index<0, TypeIndex, Types...>::type;
     // AXIVION Next Construct AutosarC++19_03-A5.2.3 : avoid code duplication
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
@@ -234,8 +198,7 @@ variant<Types...>::get_at_index() const noexcept
 template <typename... Types>
 template <uint64_t TypeIndex>
 inline const typename internal::get_type_at_index<0, TypeIndex, Types...>::type*
-variant<Types...>::unsafe_get_at_index_unchecked() const noexcept
-{
+variant<Types...>::unsafe_get_at_index_unchecked() const noexcept {
     using T = typename internal::get_type_at_index<0, TypeIndex, Types...>::type;
     // AXIVION Next Construct AutosarC++19_03-A5.2.3 : avoid code duplication
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
@@ -244,10 +207,8 @@ variant<Types...>::unsafe_get_at_index_unchecked() const noexcept
 
 template <typename... Types>
 template <typename T>
-inline const T* variant<Types...>::get() const noexcept
-{
-    if (has_bad_variant_element_access<T>())
-    {
+inline const T* variant<Types...>::get() const noexcept {
+    if (has_bad_variant_element_access<T>()) {
         return nullptr;
     }
     // AXIVION Next Construct AutosarC++19_03-M5.2.8 : conversion to typed pointer is intentional, it is correctly aligned and points to sufficient memory for a T by design
@@ -257,8 +218,7 @@ inline const T* variant<Types...>::get() const noexcept
 
 template <typename... Types>
 template <typename T>
-inline T* variant<Types...>::get() noexcept
-{
+inline T* variant<Types...>::get() noexcept {
     // AXIVION Next Construct AutosarC++19_03-A5.2.3 : avoid code duplication
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     return const_cast<T*>(const_cast<const variant*>(this)->get<T>());
@@ -266,8 +226,7 @@ inline T* variant<Types...>::get() noexcept
 
 template <typename... Types>
 template <typename T>
-inline T* variant<Types...>::get_if(T* defaultValue) noexcept
-{
+inline T* variant<Types...>::get_if(T* defaultValue) noexcept {
     // AXIVION Next Construct AutosarC++19_03-A5.2.3 : avoid code duplication
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     return const_cast<T*>(const_cast<const variant*>(this)->get_if<T>(const_cast<const T*>(defaultValue)));
@@ -275,10 +234,8 @@ inline T* variant<Types...>::get_if(T* defaultValue) noexcept
 
 template <typename... Types>
 template <typename T>
-inline const T* variant<Types...>::get_if(const T* defaultValue) const noexcept
-{
-    if (has_bad_variant_element_access<T>())
-    {
+inline const T* variant<Types...>::get_if(const T* defaultValue) const noexcept {
+    if (has_bad_variant_element_access<T>()) {
         return defaultValue;
     }
 
@@ -286,49 +243,41 @@ inline const T* variant<Types...>::get_if(const T* defaultValue) const noexcept
 }
 
 template <typename... Types>
-constexpr uint64_t variant<Types...>::index() const noexcept
-{
+constexpr uint64_t variant<Types...>::index() const noexcept {
     return m_type_index;
 }
 
 template <typename... Types>
 template <typename T>
-inline bool variant<Types...>::has_bad_variant_element_access() const noexcept
-{
+inline bool variant<Types...>::has_bad_variant_element_access() const noexcept {
     static_assert(internal::does_contain_type<T, Types...>::value, "variant does not contain given type");
     return (m_type_index != internal::get_index_of_type<0, T, Types...>::index);
 }
 
 template <typename... Types>
 // AXIVION Next Construct AutosarC++19_03-A3.9.1 : see at declaration in header
-inline void variant<Types...>::error_message(const char* source, const char* msg) noexcept
-{
+inline void variant<Types...>::error_message(const char* source, const char* msg) noexcept {
     IOX_LOG(Error, source << " ::: " << msg);
 }
 
 template <typename T, typename... Types>
-inline constexpr bool holds_alternative(const variant<Types...>& variant) noexcept
-{
+inline constexpr bool holds_alternative(const variant<Types...>& variant) noexcept {
     return variant.template get<T>() != nullptr;
 }
 
 template <typename... Types>
-inline constexpr bool operator==(const variant<Types...>& lhs, const variant<Types...>& rhs) noexcept
-{
-    if ((lhs.index() == INVALID_VARIANT_INDEX) && (rhs.index() == INVALID_VARIANT_INDEX))
-    {
+inline constexpr bool operator==(const variant<Types...>& lhs, const variant<Types...>& rhs) noexcept {
+    if ((lhs.index() == INVALID_VARIANT_INDEX) && (rhs.index() == INVALID_VARIANT_INDEX)) {
         return true;
     }
-    if (lhs.index() != rhs.index())
-    {
+    if (lhs.index() != rhs.index()) {
         return false;
     }
     return internal::call_at_index<0, Types...>::equality(lhs.index(), &lhs.m_storage, &rhs.m_storage);
 }
 
 template <typename... Types>
-inline constexpr bool operator!=(const variant<Types...>& lhs, const variant<Types...>& rhs) noexcept
-{
+inline constexpr bool operator!=(const variant<Types...>& lhs, const variant<Types...>& rhs) noexcept {
     return !(lhs == rhs);
 }
 } // namespace iox

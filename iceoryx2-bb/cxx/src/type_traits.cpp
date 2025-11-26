@@ -15,8 +15,7 @@
 
 #include "iox/type_traits.hpp"
 
-namespace iox
-{
+namespace iox {
 // NOLINTJUSTIFICATION See definitions in header file.
 // NOLINTBEGIN(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays)
 constexpr const char TypeInfo<int8_t>::NAME[];

@@ -24,15 +24,12 @@
 
 #include <iostream>
 
-namespace iox
-{
-namespace testing
-{
+namespace iox {
+namespace testing {
 
 using namespace iox::er;
 
-void TestingErrorHandler::init() noexcept
-{
+void TestingErrorHandler::init() noexcept {
     iox::testing::ErrorHandler handler;
     iox::er::ErrorHandler::set(handler);
 
@@ -41,31 +38,26 @@ void TestingErrorHandler::init() noexcept
     listeners.Append(new (std::nothrow) ErrorHandlerSetup);
 }
 
-void TestingErrorHandler::onPanic()
-{
+void TestingErrorHandler::onPanic() {
     m_panicked = true;
     jump();
 }
 
-void TestingErrorHandler::onReportError(er::ErrorDescriptor desc)
-{
+void TestingErrorHandler::onReportError(er::ErrorDescriptor desc) {
     std::lock_guard<std::mutex> g(m_mutex);
     m_errors.push_back(desc);
 }
 
-void TestingErrorHandler::onReportViolation(er::ErrorDescriptor desc)
-{
+void TestingErrorHandler::onReportViolation(er::ErrorDescriptor desc) {
     std::lock_guard<std::mutex> g(m_mutex);
     m_violations.push_back(desc);
 }
 
-bool TestingErrorHandler::hasPanicked() const noexcept
-{
+bool TestingErrorHandler::hasPanicked() const noexcept {
     return m_panicked.load(std::memory_order_relaxed);
 }
 
-void TestingErrorHandler::reset() noexcept
-{
+void TestingErrorHandler::reset() noexcept {
     std::lock_guard<std::mutex> g(m_mutex);
     m_panicked = false;
     m_errors.clear();
@@ -73,22 +65,17 @@ void TestingErrorHandler::reset() noexcept
     m_jumpState.store(JumpState::Obtainable);
 }
 
-bool TestingErrorHandler::hasError() const noexcept
-{
+bool TestingErrorHandler::hasError() const noexcept {
     std::lock_guard<std::mutex> g(m_mutex);
     return !m_errors.empty();
 }
 
-bool TestingErrorHandler::hasError(ErrorCode code, iox::er::ModuleId module) const noexcept
-{
-    constexpr iox::er::ModuleId ANY_MODULE{iox::er::ModuleId::ANY};
+bool TestingErrorHandler::hasError(ErrorCode code, iox::er::ModuleId module) const noexcept {
+    constexpr iox::er::ModuleId ANY_MODULE { iox::er::ModuleId::ANY };
     std::lock_guard<std::mutex> g(m_mutex);
-    for (auto desc : m_errors)
-    {
-        if (desc.code == code)
-        {
-            if (module == ANY_MODULE)
-            {
+    for (auto desc : m_errors) {
+        if (desc.code == code) {
+            if (module == ANY_MODULE) {
                 return true;
             }
             return desc.module == module;
@@ -97,24 +84,19 @@ bool TestingErrorHandler::hasError(ErrorCode code, iox::er::ModuleId module) con
     return false;
 }
 
-bool TestingErrorHandler::hasViolation(ErrorCode code) const noexcept
-{
+bool TestingErrorHandler::hasViolation(ErrorCode code) const noexcept {
     std::lock_guard<std::mutex> g(m_mutex);
-    for (auto desc : m_violations)
-    {
-        if (desc.code == code)
-        {
+    for (auto desc : m_violations) {
+        if (desc.code == code) {
             return true;
         }
     }
     return false;
 }
 
-bool TestingErrorHandler::fatalFailureTestContext(const function_ref<void()> testFunction)
-{
+bool TestingErrorHandler::fatalFailureTestContext(const function_ref<void()> testFunction) {
     // if there are multiple threads trying to perform a test, only the winner can proceed with the jump
-    if (m_jumpState.exchange(JumpState::Pending) == JumpState::Pending)
-    {
+    if (m_jumpState.exchange(JumpState::Pending) == JumpState::Pending) {
         return false;
     };
 
@@ -122,25 +104,21 @@ bool TestingErrorHandler::fatalFailureTestContext(const function_ref<void()> tes
     // Therefore there cannot be a convenient abstraction that does not also
     // know the test function that is being called.
     // NOLINTNEXTLINE(cert-err52-cpp) exception cannot be used, required for testing to jump in case of failure
-    if (setjmp(&(m_jumpBuffer)[0]) != JUMPED_INDICATOR)
-    {
+    if (setjmp(&(m_jumpBuffer)[0]) != JUMPED_INDICATOR) {
         testFunction();
     }
 
     return true;
 }
 
-void TestingErrorHandler::jump() noexcept
-{
-    if (m_jumpState.load(std::memory_order_relaxed) == JumpState::Pending)
-    {
+void TestingErrorHandler::jump() noexcept {
+    if (m_jumpState.load(std::memory_order_relaxed) == JumpState::Pending) {
         // NOLINTNEXTLINE(cert-err52-cpp) exception handling is not used by design
         longjmp(&m_jumpBuffer[0], JUMPED_INDICATOR);
     }
 }
 
-void ErrorHandlerSetup::OnTestStart(const ::testing::TestInfo&)
-{
+void ErrorHandlerSetup::OnTestStart(const ::testing::TestInfo&) {
     ErrorHandler::instance().reset();
 }
 
