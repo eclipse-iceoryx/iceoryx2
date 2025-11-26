@@ -677,6 +677,37 @@ jobs:
           USE_BAZEL_VERSION: "7.4.1"
         run: bazel test //...
 
+  x86_64_nostd:
+    needs: [preflight-check, static-code-analysis]
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    strategy:
+      matrix:
+        os: [ubuntu-24.04]
+        toolchain: [stable]
+    timeout-minutes: 60
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          components: rustfmt, clippy
+          targets: armv7r-none-eabihf
+
+      - name: Prepare Linux
+        run: |
+          internal/scripts/ci_prepare_ubuntu.sh
+          uname -a
+
+      - name: Build iceoryx2 (no_std)
+        run: cargo build --package iceoryx2 --no-default-features
+
+      - name: Build bare-metal examples (no_std)
+        run: cd examples/bare-metal/rust && cargo build && cd -
+
   cargo-publish-dry-run:
     needs: [preflight-check, static-code-analysis]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
