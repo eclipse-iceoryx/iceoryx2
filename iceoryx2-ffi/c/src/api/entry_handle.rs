@@ -130,20 +130,18 @@ pub unsafe extern "C" fn iox2_entry_handle_get(
     let entry_handle = &*entry_handle_handle.as_type();
 
     match entry_handle.service_type {
-        iox2_service_type_e::IPC => {
-            entry_handle
-                .value
-                .as_ref()
-                .ipc
-                .get(value_ptr as *mut u8, value_size, value_alignment)
-        }
-        iox2_service_type_e::LOCAL => {
-            entry_handle
-                .value
-                .as_ref()
-                .local
-                .get(value_ptr as *mut u8, value_size, value_alignment)
-        }
+        iox2_service_type_e::IPC => entry_handle.value.as_ref().ipc.get(
+            value_ptr as *mut u8,
+            value_size,
+            value_alignment,
+            core::ptr::null_mut::<u8>(),
+        ),
+        iox2_service_type_e::LOCAL => entry_handle.value.as_ref().local.get(
+            value_ptr as *mut u8,
+            value_size,
+            value_alignment,
+            core::ptr::null_mut::<u8>(),
+        ),
     };
 }
 
