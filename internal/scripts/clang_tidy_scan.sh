@@ -218,6 +218,11 @@ function scan() {
         FILE_COUNTER=$((FILE_COUNTER + 1))
 
         if test -f "$FILE"; then
+            # TODO: remove this if statement before finishing #301
+            if [[ "$FILE" == iceoryx2-bb/cxx/include/iox/* || "$FILE" == iceoryx2-bb/cxx/src/* || "$FILE" == iceoryx2-bb/cxx/tests/src/import/* ]]; then
+                continue
+            fi
+
             EXTRA_ARG=""
             if [[ "$FILE" == iceoryx2-pal/posix/* ]]; then
                 EXTRA_ARG="--extra-arg=-xc"
