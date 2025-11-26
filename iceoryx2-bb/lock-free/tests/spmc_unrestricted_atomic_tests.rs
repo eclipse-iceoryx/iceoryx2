@@ -279,8 +279,8 @@ fn spmc_unrestricted_atomic_internal_ptr_calculation_works_with_integers() {
 }
 
 fn internal_get_data_cell_calculation_works<ValueType: Copy + Default>() {
-    const INITIAL_READ_CELL: u32 = 0;
-    const INITIAL_WRITE_CELL: u32 = 1;
+    const INITIAL_READ_CELL: u64 = 0;
+    const INITIAL_WRITE_CELL: u64 = 1;
 
     let value_size = size_of::<ValueType>();
     let value_alignment = align_of::<ValueType>();

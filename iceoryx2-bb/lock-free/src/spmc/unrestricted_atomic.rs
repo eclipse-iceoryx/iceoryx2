@@ -34,7 +34,7 @@
 use core::{cell::UnsafeCell, fmt::Debug, mem::MaybeUninit, sync::atomic::Ordering};
 
 use iceoryx2_bb_elementary::math::{align, max};
-use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU32};
+use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64};
 
 // ATTENTION: To ensure the functionality also in the case of an overflow with the 'write_cell'
 // value, the value of `NUMBER_OF_CELLS` must be a power of two
@@ -90,14 +90,14 @@ unsafe impl<T: Copy> Sync for Producer<'_, T> {}
 #[doc(hidden)]
 #[repr(C)]
 pub struct UnrestrictedAtomicMgmt {
-    write_cell: IoxAtomicU32,
+    write_cell: IoxAtomicU64,
     has_producer: IoxAtomicBool,
 }
 
 impl Default for UnrestrictedAtomicMgmt {
     fn default() -> Self {
         Self {
-            write_cell: IoxAtomicU32::new(1),
+            write_cell: IoxAtomicU64::new(1),
             has_producer: IoxAtomicBool::new(true),
         }
     }
@@ -219,7 +219,7 @@ impl UnrestrictedAtomicMgmt {
         value_size: usize,
         value_alignment: usize,
         data_ptr: *const u8,
-        cell: u32,
+        cell: u64,
     ) -> usize {
         align(
             unsafe { data_ptr.add(value_size * (cell as usize % NUMBER_OF_CELLS)) } as usize,
@@ -288,7 +288,7 @@ impl<T: Copy> UnrestrictedAtomic<T> {
         Self {
             mgmt: UnrestrictedAtomicMgmt {
                 has_producer: IoxAtomicBool::new(true),
-                write_cell: IoxAtomicU32::new(1),
+                write_cell: IoxAtomicU64::new(1),
             },
             data: [
                 UnsafeCell::new(MaybeUninit::new(value)),
