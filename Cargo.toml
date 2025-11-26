@@ -86,7 +86,7 @@ iceoryx2-bb-posix = { version = "0.7.0", path = "iceoryx2-bb/posix/" }
 iceoryx2-bb-system-types = { version = "0.7.0", path = "iceoryx2-bb/system-types/" }
 iceoryx2-bb-trait-tests = { version = "0.7.0", path = "iceoryx2-bb/trait-tests/" }
 iceoryx2-bb-testing = { version = "0.7.0", path = "iceoryx2-bb/testing/" }
-iceoryx2-pal-concurrency-sync = { version = "0.7.0", path = "iceoryx2-pal/concurrency-sync/" }
+iceoryx2-pal-concurrency-sync = { version = "0.7.0", path = "iceoryx2-pal/concurrency-sync/", default-features = false }
 iceoryx2-pal-posix = { version = "0.7.0", path = "iceoryx2-pal/posix/" }
 iceoryx2-pal-os-api = { version = "0.7.0", path = "iceoryx2-pal/os-api/" }
 iceoryx2-pal-configuration = { version = "0.7.0", path = "iceoryx2-pal/configuration/" }

@@ -20,6 +20,7 @@ std = [
   "iceoryx2-cal/std",
   "iceoryx2-bb-posix/std",
   "iceoryx2-bb-log/std",
+  "iceoryx2-pal-concurrency-sync/std",
 ]
 
 # Enables logging to console
