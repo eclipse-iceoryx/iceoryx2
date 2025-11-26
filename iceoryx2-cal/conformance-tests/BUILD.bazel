@@ -44,6 +44,7 @@ rust_library(
 rust_test_suite(
     name = "iceoryx2-cal-conformance-tests-tests",
     srcs = glob(["tests/**/*.rs"]),
+    crate_features = ["std"],
     deps = [
         ":iceoryx2-cal-conformance-tests",
         "//iceoryx2-bb/lock-free:iceoryx2-bb-lock-free",

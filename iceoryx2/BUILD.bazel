@@ -60,10 +60,6 @@ rust_library(
             "logger_file"
         ],
         "//conditions:default": [
-            "std",
-            "logger_buffer",
-            "logger_console",
-            "logger_file"
         ],
     }),
     deps = [
