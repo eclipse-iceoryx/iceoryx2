@@ -64,6 +64,8 @@
     [#1171](https://github.com/eclipse-iceoryx/iceoryx2/issues/1171)
 * Fix C binding linker error on QNX
     [#1174](https://github.com/eclipse-iceoryx/iceoryx2/issues/1116)
+* Fix panic during cleanup
+    [#1198](https://github.com/eclipse-iceoryx/iceoryx2/issues/1198)
 
 ### Refactoring
 
