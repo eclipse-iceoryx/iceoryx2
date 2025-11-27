@@ -21,6 +21,11 @@ filegroup(
 
 cc_library(
     name = "iceoryx2-bb-containers-cxx",
+    srcs = glob(
+        [
+            "src/**",
+            ],
+        ),
     hdrs = glob(["include/**"]),
     strip_include_prefix = "include",
 )

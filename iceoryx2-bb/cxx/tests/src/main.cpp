@@ -10,10 +10,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include "iceoryx_hoofs/testing/error_reporting/testing_error_handler.hpp"
+#include "iceoryx_hoofs/testing/testing_logger.hpp"
+
 #include <gtest/gtest.h>
 
 auto main(int argc, char* argv[]) -> int {
     ::testing::InitGoogleTest(&argc, argv);
+
+    iox::testing::TestingLogger::init();
+    iox::testing::TestingErrorHandler::init();
 
     return RUN_ALL_TESTS();
 }
