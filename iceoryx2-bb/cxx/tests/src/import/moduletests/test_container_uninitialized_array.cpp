@@ -14,9 +14,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "test.hpp"
-
 #include "iox/uninitialized_array.hpp"
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 namespace {
 using namespace ::testing;

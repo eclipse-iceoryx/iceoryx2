@@ -17,7 +17,8 @@
 #include "iox/polymorphic_handler.hpp"
 #include "iox/static_lifetime_guard.hpp"
 
-#include "test.hpp"
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include <chrono>
 #include <iostream>

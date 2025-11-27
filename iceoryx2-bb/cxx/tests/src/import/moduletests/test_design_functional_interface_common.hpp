@@ -17,7 +17,9 @@
 #define IOX_HOOFS_MODULETESTS_TEST_DESIGN_FUNCTIONAL_INTERFACE_COMMON_HPP
 
 #include "iox/functional_interface.hpp"
-#include "test.hpp"
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 namespace test_design_functional_interface {
 /// @brief Every test file uses this as a common base and extends the TYPED_TEST

@@ -16,8 +16,10 @@
 #include "iox/cli_definition.hpp"
 #include "iox/detail/hoofs_error_reporting.hpp"
 #include "iox/optional.hpp"
-#include "test.hpp"
 #include "test_cli_command_line_common.hpp"
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include <cstdlib>
 #include <iostream>

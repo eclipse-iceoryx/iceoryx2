@@ -14,8 +14,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox/cli/option.hpp"
-#include "test.hpp"
 
+#include <gtest/gtest.h>
 
 namespace {
 using namespace ::testing;

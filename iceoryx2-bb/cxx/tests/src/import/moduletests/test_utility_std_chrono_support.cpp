@@ -16,7 +16,8 @@
 
 #include "iox/std_chrono_support.hpp"
 
-#include "test.hpp"
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 namespace {
 using namespace ::testing;

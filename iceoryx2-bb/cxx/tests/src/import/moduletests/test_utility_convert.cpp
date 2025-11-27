@@ -18,7 +18,9 @@
 
 #include "iox/detail/convert.hpp"
 #include "iox/std_string_support.hpp"
-#include "test.hpp"
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include <cmath>
 #include <cstdint>

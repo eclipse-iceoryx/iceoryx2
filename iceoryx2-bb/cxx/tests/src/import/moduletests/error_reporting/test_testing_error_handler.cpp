@@ -15,7 +15,7 @@
 
 #include "iox/error_reporting/error_kind.hpp"
 #include "iox/error_reporting/types.hpp"
-#include "test.hpp"
+
 #include <gtest/gtest.h>
 
 #include "iceoryx_hoofs/testing/error_reporting/testing_error_handler.hpp"

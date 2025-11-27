@@ -18,7 +18,9 @@
 #include "iox/attributes.hpp"
 #include "iox/detail/hoofs_error_reporting.hpp"
 #include "iox/function_ref.hpp"
-#include "test.hpp"
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 namespace {
 using namespace ::testing;

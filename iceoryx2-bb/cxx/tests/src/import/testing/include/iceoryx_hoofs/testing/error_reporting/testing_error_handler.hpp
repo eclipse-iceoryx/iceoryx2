@@ -26,7 +26,8 @@
 #include "iox/function_ref.hpp"
 #include "iox/static_lifetime_guard.hpp"
 
-#include "iceoryx_hoofs/testing/test.hpp"
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include <vector>
 

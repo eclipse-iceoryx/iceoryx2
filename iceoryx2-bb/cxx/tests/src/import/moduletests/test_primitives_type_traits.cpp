@@ -16,8 +16,9 @@
 
 #include "iox/string.hpp"
 #include "iox/type_traits.hpp"
-#include "test.hpp"
 
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 namespace iox {
 namespace test {

@@ -21,7 +21,8 @@
 #include "test_cli_command_line_common.hpp"
 
 #include "iceoryx_hoofs/testing/error_reporting/testing_support.hpp"
-#include "test.hpp"
+
+#include <gtest/gtest.h>
 
 #include <cstdlib>
 #include <iostream>

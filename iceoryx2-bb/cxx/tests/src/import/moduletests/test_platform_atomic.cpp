@@ -13,9 +13,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iceoryx_platform/atomic.hpp"
+#include "iox/atomic.hpp"
 
-#include "test.hpp"
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include <atomic>
 

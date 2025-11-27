@@ -15,7 +15,9 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox/optional.hpp"
-#include "test.hpp"
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include <memory>
 

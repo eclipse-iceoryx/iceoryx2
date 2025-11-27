@@ -19,7 +19,9 @@
 #include "iox/string.hpp"
 
 #include "iceoryx_hoofs/testing/fatal_failure.hpp"
-#include "test.hpp"
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 using namespace ::testing;
 using namespace ::iox;
