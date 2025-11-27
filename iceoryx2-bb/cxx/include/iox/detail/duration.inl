@@ -137,11 +137,6 @@ inline constexpr Duration::Duration(const struct timespec& value) noexcept
     : Duration(static_cast<Seconds_t>(value.tv_sec), static_cast<Nanoseconds_t>(value.tv_nsec)) {
 }
 
-// AXIVION Next Construct AutosarC++19_03-A8.4.7 : Argument is larger than two words
-inline constexpr Duration::Duration(const struct itimerspec& value) noexcept
-    : Duration(value.it_interval) {
-}
-
 inline constexpr uint64_t Duration::toNanoseconds() const noexcept {
     constexpr Seconds_t MAX_SECONDS_BEFORE_OVERFLOW { std::numeric_limits<uint64_t>::max()
                                                       / static_cast<uint64_t>(NANOSECS_PER_SEC) };

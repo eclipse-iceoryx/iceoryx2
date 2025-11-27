@@ -16,22 +16,16 @@
 #ifndef IOX_HOOFS_TIME_UNITS_DURATION_HPP
 #define IOX_HOOFS_TIME_UNITS_DURATION_HPP
 
-#include "iceoryx_platform/time.hpp" // required for QNX
 #include "iox/expected.hpp"
 #include "iox/log/logstream.hpp"
 #include "iox/logging.hpp"
 #include "iox/type_traits.hpp"
 
 #include <cmath>
+#include <ctime>
 
 namespace iox {
 namespace units {
-enum class TimeSpecReference : uint8_t {
-    None,
-    Epoch,
-    Monotonic
-};
-
 class Duration;
 
 namespace duration_literals {
@@ -155,12 +149,6 @@ class Duration {
     // AXIVION Next Line AutosarC++19_03-A8.4.7 : Argument is larger than two words
     constexpr explicit Duration(const struct timespec& value) noexcept;
 
-    /// @brief Construct a Duration object from itimerspec
-    /// @param[in] value as itimerspec
-    /// @note only it_interval from the itimerspec is used
-    // AXIVION Next Line AutosarC++19_03-A8.4.7 : Argument is larger than two words
-    constexpr explicit Duration(const struct itimerspec& value) noexcept;
-
     // END CONSTRUCTORS AND ASSIGNMENT
 
     // BEGIN COMPARISON
@@ -264,7 +252,7 @@ class Duration {
     constexpr uint64_t toDays() const noexcept;
 
     /// @brief converts duration in a timespec c struct
-    struct timespec timespec(const TimeSpecReference reference = TimeSpecReference::None) const noexcept;
+    struct timespec timespec() const noexcept;
 
     /// @brief converts duration in a timeval c struct
     ///     timeval::tv_sec = seconds since the Epoch (01.01.1970)
