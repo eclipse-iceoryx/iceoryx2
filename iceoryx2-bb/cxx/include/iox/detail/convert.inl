@@ -21,7 +21,6 @@
 
 #include "iox/detail/convert.hpp"
 #include "iox/detail/string_type_traits.hpp"
-#include "iox/iceoryx_hoofs_deployment.hpp"
 #include "iox/logging.hpp"
 
 namespace iox {
@@ -320,21 +319,21 @@ inline bool convert::is_valid_input(const char* end_ptr, const char* v, const So
 
 template <typename TargetType, typename SourceType>
 inline bool convert::is_within_range(const SourceType& source_val) noexcept {
-#if IOX_HOOFS_SUBSET
-    if (std::is_arithmetic<TargetType>::value == false)
-#else
+#if __cplusplus >= 201703L
     if constexpr (std::is_arithmetic_v<TargetType> == false)
+#else
+    if (std::is_arithmetic<TargetType>::value == false)
 #endif
     {
         return true;
     }
 
-#if IOX_HOOFS_SUBSET
-    if (std::is_floating_point<SourceType>::value) {
-        auto source_val_fp = static_cast<double>(source_val);
-#else
+#if __cplusplus >= 201703L
     if constexpr (std::is_floating_point_v<SourceType>) {
         auto source_val_fp = source_val;
+#else
+    if (std::is_floating_point<SourceType>::value) {
+        auto source_val_fp = static_cast<double>(source_val);
 #endif
         // special cases for floating point
         // can be nan or inf
