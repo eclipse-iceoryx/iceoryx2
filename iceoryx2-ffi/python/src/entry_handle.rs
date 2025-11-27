@@ -69,7 +69,7 @@ impl EntryHandle {
                         value_buffer,
                         value_size,
                         value_alignment,
-                        generation_counter_ptr as *mut u8,
+                        generation_counter_ptr,
                     )
                 };
                 (value_buffer as usize, generation_counter)
@@ -80,7 +80,7 @@ impl EntryHandle {
                         value_buffer,
                         value_size,
                         value_alignment,
-                        generation_counter_ptr as *mut u8,
+                        generation_counter_ptr,
                     )
                 };
                 (value_buffer as usize, generation_counter)
