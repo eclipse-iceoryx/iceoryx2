@@ -172,9 +172,9 @@ def get(self: EntryHandle) -> BlackboardValue:
     return BlackboardValue(raw_bytes, generation_counter)
 
 
-def is_up_to_date(self: EntryHandle, value: BlackboardValue) -> bool:
-    """Checks whether `value` is up to date."""
-    return self.__is_up_to_date(value._generation_counter)
+def is_current(self: EntryHandle, value: BlackboardValue) -> bool:
+    """Checks if `value` is up-to-date."""
+    return self.__is_current(value._generation_counter)
 
 
 def entry_handle_mut(self: Writer, key: Type[K], value: Type[V]) -> EntryHandleMut:
@@ -260,7 +260,7 @@ def assume_init_and_update(self: EntryValueUninit) -> EntryHandleMut:
 
 
 EntryHandle.get = get
-EntryHandle.is_up_to_date = is_up_to_date
+EntryHandle.is_current = is_current
 
 EntryHandleMut.update_with_copy = update_with_copy_on_entry_handle
 

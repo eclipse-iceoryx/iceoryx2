@@ -59,8 +59,8 @@ class EntryHandle {
     /// Returns a copy of the value wrapped in a [`BlackboardValue`].
     auto get() const -> BlackboardValue<ValueType>;
 
-    /// Checks whether `value` is up to date.
-    auto is_up_to_date(BlackboardValue<ValueType>& value) const -> bool;
+    /// Checks if the passed `value` is up-to-date.
+    auto is_current(BlackboardValue<ValueType>& value) const -> bool;
 
     /// Returns an ID corresponding to the entry which can be used in an event based communication
     /// setup.
@@ -130,8 +130,8 @@ inline auto EntryHandle<S, KeyType, ValueType>::get() const -> BlackboardValue<V
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>
-inline auto EntryHandle<S, KeyType, ValueType>::is_up_to_date(BlackboardValue<ValueType>& value) const -> bool {
-    return iox2_entry_handle_is_up_to_date(&m_handle, value.m_generation_counter);
+inline auto EntryHandle<S, KeyType, ValueType>::is_current(BlackboardValue<ValueType>& value) const -> bool {
+    return iox2_entry_handle_is_current(&m_handle, value.m_generation_counter);
 }
 } // namespace iox2
 

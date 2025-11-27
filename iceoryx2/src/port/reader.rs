@@ -398,8 +398,7 @@ impl<
         }
     }
 
-    // TODO: rename to is_latest?
-    /// Checks whether `value` is up to date.
+    /// Checks if the passed `value` is up-to-date.
     ///
     /// # Example
     ///
@@ -415,11 +414,12 @@ impl<
     /// # let reader = service.reader_builder().create()?;
     /// # let entry_handle = reader.entry::<i32>(&1)?;
     /// let value = entry_handle.get();
-    /// let is_latest = entry_handle.is_up_to_date(&value);
+    /// let is_latest = entry_handle.is_current(&value);
     /// # Ok(())
     /// # }
     /// ```
-    pub fn is_up_to_date(&self, value: &BlackboardValue<ValueType>) -> bool {
+    pub fn is_current(&self, value: &BlackboardValue<ValueType>) -> bool {
+        // TODO: use in examples?
         unsafe { (*self.atomic).__internal_get_write_cell() == value.generation_counter }
     }
 
@@ -532,9 +532,9 @@ impl<Service: service::Service> __InternalEntryHandle<Service> {
         self.entry_id
     }
 
-    /// Checks whether the blackboard value that corresponds to the `generation_counter` is up to
-    /// date.
-    pub fn is_up_to_date(&self, generation_counter: u64) -> bool {
+    /// Checks if the blackboard value that corresponds to the `generation_counter` is
+    /// up-to-date.
+    pub fn is_current(&self, generation_counter: u64) -> bool {
         unsafe { (*self.atomic_mgmt_ptr).__internal_get_write_cell() == generation_counter }
     }
 }
