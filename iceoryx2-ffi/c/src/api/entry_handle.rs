@@ -147,14 +147,14 @@ pub unsafe extern "C" fn iox2_entry_handle_get(
     };
 }
 
-/// Checks whether the blackboard value that corresponds to the `generation_counter` is up to
-/// date.
+/// Checks if the blackboard value that corresponds to the `generation_counter` is
+/// up-to-date.
 ///
 /// # Safety
 ///
 /// * `entry_handle_handle` obtained by [`iox2_reader_entry()`](crate::iox2_reader_entry())
 #[no_mangle]
-pub unsafe extern "C" fn iox2_entry_handle_is_up_to_date(
+pub unsafe extern "C" fn iox2_entry_handle_is_current(
     entry_handle_handle: iox2_entry_handle_h_ref,
     generation_counter: u64,
 ) -> bool {
@@ -167,12 +167,12 @@ pub unsafe extern "C" fn iox2_entry_handle_is_up_to_date(
             .value
             .as_ref()
             .ipc
-            .is_up_to_date(generation_counter),
+            .is_current(generation_counter),
         iox2_service_type_e::LOCAL => entry_handle
             .value
             .as_ref()
             .local
-            .is_up_to_date(generation_counter),
+            .is_current(generation_counter),
     }
 }
 

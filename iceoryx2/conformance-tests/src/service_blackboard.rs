@@ -1637,7 +1637,7 @@ pub mod service_blackboard {
     }
 
     #[conformance_test]
-    pub fn entry_handle_is_up_to_date_works_correctly<Sut: Service>() {
+    pub fn entry_handle_is_current_works_correctly<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -1656,17 +1656,17 @@ pub mod service_blackboard {
 
         let value = entry_handle.get();
         assert_that!(*value, eq 0);
-        assert_that!(entry_handle.is_up_to_date(&value), eq true);
+        assert_that!(entry_handle.is_current(&value), eq true);
 
         entry_handle_mut.update_with_copy(1234);
-        assert_that!(entry_handle.is_up_to_date(&value), eq false);
+        assert_that!(entry_handle.is_current(&value), eq false);
         let value = entry_handle.get();
         assert_that!(*value, eq 1234);
 
         entry_handle_mut.update_with_copy(4567);
         let value = entry_handle.get();
         assert_that!(*value, eq 4567);
-        assert_that!(entry_handle.is_up_to_date(&value), eq true);
+        assert_that!(entry_handle.is_current(&value), eq true);
     }
 
     #[repr(C)]
@@ -2008,7 +2008,7 @@ pub mod service_blackboard {
     }
 
     #[conformance_test]
-    pub fn entry_handle_is_up_to_date_works_correctly_with_custom_key_type<Sut: Service>() {
+    pub fn entry_handle_is_current_works_correctly_with_custom_key_type<Sut: Service>() {
         type KeyType = Foo;
         let key = Foo {
             a: 0,
@@ -2064,7 +2064,7 @@ pub mod service_blackboard {
             );
         }
         assert_that!(read_value, eq default_value);
-        assert_that!(entry_handle.is_up_to_date(generation_counter), eq true);
+        assert_that!(entry_handle.is_current(generation_counter), eq true);
 
         let entry_handle_mut = unsafe {
             writer
@@ -2079,7 +2079,7 @@ pub mod service_blackboard {
         }
         let _entry_handle_mut = entry_value_uninit.update();
 
-        assert_that!(entry_handle.is_up_to_date(generation_counter), eq false);
+        assert_that!(entry_handle.is_current(generation_counter), eq false);
         unsafe {
             entry_handle.get(
                 read_value_ptr as *mut u8,
@@ -2089,7 +2089,7 @@ pub mod service_blackboard {
             );
         }
         assert_that!(read_value, eq 8);
-        assert_that!(entry_handle.is_up_to_date(generation_counter), eq true);
+        assert_that!(entry_handle.is_current(generation_counter), eq true);
     }
 
     #[conformance_test]
