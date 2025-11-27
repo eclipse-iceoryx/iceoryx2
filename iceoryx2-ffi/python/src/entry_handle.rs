@@ -54,7 +54,8 @@ impl EntryHandle {
         });
     }
 
-    // TODO: documentation
+    // Stores a copy of the blackboard value into `value_ptr` and returns a tuple containing the
+    // pointer as usize and the value's generation counter.
     pub fn __get(&self) -> (usize, u64) {
         let value_size = self.value_type_details.0.size();
         let value_alignment = self.value_type_details.0.alignment();
@@ -89,11 +90,13 @@ impl EntryHandle {
 
     pub fn __is_up_to_date(&self, generation_counter: u64) -> bool {
         match &*self.value.lock() {
-            EntryHandleType::Ipc(v) => v.is_up_to_date(generation_counter as usize),
-            EntryHandleType::Local(v) => v.is_up_to_date(generation_counter as usize),
+            EntryHandleType::Ipc(v) => v.is_up_to_date(generation_counter),
+            EntryHandleType::Local(v) => v.is_up_to_date(generation_counter),
         }
     }
 
+    /// Returns an ID corresponding to the entry which can be used in an event based communication
+    /// setup.
     #[getter]
     pub fn entry_id(&self) -> EventId {
         match &*self.value.lock() {

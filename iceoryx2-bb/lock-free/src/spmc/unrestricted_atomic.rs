@@ -257,7 +257,7 @@ impl UnrestrictedAtomicMgmt {
         )
     }
 
-    // TODO: make unsafe?
+    // TODO: make unsafe? documentation, test
     pub fn __internal_get_write_cell(&self, write_cell_ptr: *mut u8) {
         let write_cell = self.write_cell.load(Ordering::Relaxed);
         let ptr: *const u64 = &write_cell;
@@ -353,6 +353,7 @@ impl<T: Copy> UnrestrictedAtomic<T> {
         self.data.as_ptr() as *mut u8
     }
 
+    // TODO: documentation/hidden, tests, needed?
     pub fn write_cell(&self) -> u64 {
         self.mgmt.write_cell.load(Ordering::Relaxed)
     }

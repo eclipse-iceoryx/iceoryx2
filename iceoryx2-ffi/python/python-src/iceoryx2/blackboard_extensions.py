@@ -160,7 +160,7 @@ class BlackboardValue:
 
 def get(self: EntryHandle) -> BlackboardValue:
     """
-    Returns a copy of the value as bytes.
+    Returns a copy of the value as bytes wrapped in a `BlackboardValue`.
 
     Use decode_as() to reinterpret the raw bytes as a ctypes type.
     """
@@ -172,8 +172,8 @@ def get(self: EntryHandle) -> BlackboardValue:
     return BlackboardValue(raw_bytes, generation_counter)
 
 
-# TODO: documentation
 def is_up_to_date(self: EntryHandle, value: BlackboardValue) -> bool:
+    """Checks whether `value` is up to date."""
     return self.__is_up_to_date(value._generation_counter)
 
 
