@@ -16,7 +16,9 @@
 #ifndef IOX_HOOFS_UTILITY_DEPRECATION_MARKER_HPP
 #define IOX_HOOFS_UTILITY_DEPRECATION_MARKER_HPP
 
-#include "iceoryx_versions.hpp"
+// #include "iceoryx_versions.hpp"
+// FIXME introduce versions for iceoryx2
+#define ICEORYX_VERSION_MAJOR 0
 
 namespace iox {
 namespace detail {
