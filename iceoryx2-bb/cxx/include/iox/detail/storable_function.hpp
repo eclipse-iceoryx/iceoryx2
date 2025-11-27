@@ -16,7 +16,7 @@
 #ifndef IOX_HOOFS_FUNCTIONAL_STORABLE_FUNCTION_HPP
 #define IOX_HOOFS_FUNCTIONAL_STORABLE_FUNCTION_HPP
 
-#include "iox/iceoryx_hoofs_types.hpp"
+#include "iox/memory.hpp"
 #include "iox/type_traits.hpp"
 
 #include <iostream>
