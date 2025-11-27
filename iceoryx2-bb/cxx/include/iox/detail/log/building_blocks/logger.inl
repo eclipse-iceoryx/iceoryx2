@@ -25,6 +25,27 @@
 
 namespace iox {
 namespace log {
+inline constexpr const char* asStringLiteral(const LogLevel value) noexcept {
+    switch (value) {
+    case LogLevel::Off:
+        return "LogLevel::Off";
+    case LogLevel::Fatal:
+        return "LogLevel::Fatal";
+    case LogLevel::Error:
+        return "LogLevel::Error";
+    case LogLevel::Warn:
+        return "LogLevel::Warn";
+    case LogLevel::Info:
+        return "LogLevel::Info";
+    case LogLevel::Debug:
+        return "LogLevel::Debug";
+    case LogLevel::Trace:
+        return "LogLevel::Trace";
+    }
+
+    return "[Undefined LogLevel]";
+}
+
 template <uint32_t N>
 // NOLINTJUSTIFICATION See at declaration in header
 // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays)
@@ -94,7 +115,6 @@ inline void Logger<BaseLogger>::initLoggerInternal(const LogLevel logLevel) noex
     if (!m_isFinalized.load(std::memory_order_relaxed)) {
         BaseLogger::setLogLevel(logLevel);
         BaseLogger::initLogger(logLevel);
-        iox_platform_set_log_backend(&platform_log_backend);
         m_isFinalized.store(true, std::memory_order_relaxed);
     } else {
         BaseLogger::createLogMessageHeader(__FILE__, __LINE__, __FUNCTION__, LogLevel::Error);

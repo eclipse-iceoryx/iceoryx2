@@ -17,9 +17,7 @@
 #ifndef IOX_HOOFS_REPORTING_LOG_BUILDING_BLOCKS_LOGGER_HPP
 #define IOX_HOOFS_REPORTING_LOG_BUILDING_BLOCKS_LOGGER_HPP
 
-#include "iceoryx_platform/logging.hpp"
 #include "iox/atomic.hpp"
-#include "iox/iceoryx_hoofs_types.hpp"
 
 #include <cstdint>
 #include <cstring>
@@ -28,6 +26,24 @@
 namespace iox {
 namespace log {
 class LogStream;
+
+/// @brief This enum defines the log levels used for logging.
+enum class LogLevel : uint8_t {
+    Off = 0,
+    Fatal,
+    Error,
+    Warn,
+    Info,
+    Debug,
+    Trace,
+};
+
+/// @brief converts LogLevel into a string literal
+/// @param[in] value the LogLevel to convert
+/// @return string literal of the LogLevel value
+// AXIVION Next Construct AutosarC++19_03-A3.9.1 : This function return a string literal
+// which corresponds to a const char *
+constexpr const char* asStringLiteral(const LogLevel value) noexcept;
 
 /// @todo iox-#1755 move this to e.g. helplets once we are able to depend on on it
 /// @brief Compares C-style strings with a char array, i.g. string literal for equality
@@ -49,12 +65,6 @@ bool equalStrings(const char* lhs, const char (&rhs)[N]) noexcept;
 LogLevel logLevelFromEnvOr(const LogLevel logLevel) noexcept;
 
 namespace internal {
-/// @brief The backend for the platform logging frontend
-/// @copydoc IceoryxPlatformLogBackend
-/// @note Needs to be implemented in 'logging.cpp' in order to use the high level log API
-void platform_log_backend(
-    const char* file, int line, const char* function, IceoryxPlatformLogLevel log_level, const char* msg);
-
 /// @brief This class acts as common interface for the Logger. It provides the common functionality and inherits from
 /// the BaseLogger which is provided as template parameter. Please have a look at the design document for more details.
 /// @tparam[in] BaseLogger is the actual implementation

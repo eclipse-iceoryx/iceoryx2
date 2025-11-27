@@ -14,11 +14,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iceoryx_platform/logging.hpp"
 #include "iox/logging.hpp"
 
 #include "iceoryx_hoofs/testing/testing_logger.hpp"
-#include "test.hpp"
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 namespace {
 using namespace ::testing;
@@ -75,23 +76,6 @@ TEST(LoggingLogLevelThreshold_test, LogLevel) {
         SCOPED_TRACE(std::string("Logger LogLevel: ") + iox::log::asStringLiteral(loggerLogLevel));
 
         testLogLevelThreshold(loggerLogLevel, [](auto logLevel) { IOX_LOG_INTERNAL("", 0, "", logLevel, ""); });
-    }
-}
-
-TEST(LoggingLogLevelThreshold_test, LogLevelForPlatform) {
-    ::testing::Test::RecordProperty("TEST_ID", "574007ac-62ed-4cd1-95e8-e18a9f20e1e1");
-    for (const auto loggerLogLevel : { iox::log::LogLevel::Off,
-                                       iox::log::LogLevel::Fatal,
-                                       iox::log::LogLevel::Error,
-                                       iox::log::LogLevel::Warn,
-                                       iox::log::LogLevel::Info,
-                                       iox::log::LogLevel::Debug,
-                                       iox::log::LogLevel::Trace }) {
-        SCOPED_TRACE(std::string("Logger LogLevel: ") + iox::log::asStringLiteral(loggerLogLevel));
-
-        testLogLevelThreshold(loggerLogLevel, [](auto logLevel) {
-            iox_platform_detail_log("", 0, "", static_cast<IceoryxPlatformLogLevel>(logLevel), "");
-        });
     }
 }
 

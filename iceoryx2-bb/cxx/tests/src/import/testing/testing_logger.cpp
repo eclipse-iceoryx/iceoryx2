@@ -33,21 +33,24 @@ void TestingLogger::init() noexcept {
     static TestingLogger logger;
     log::Logger::setActiveLogger(logger);
     log::Logger::init(log::logLevelFromEnvOr(log::LogLevel::Trace));
+
+    const std::lock_guard<std::mutex> lock(logger.m_loggerDataLock);
+
     // disable logger output only after initializing the logger to get error messages from initialization
     // JUSTIFICATION getenv is required for the functionality of the testing logger and will be called only once in main
     // NOLINTNEXTLINE(concurrency-mt-unsafe)
     if (const auto* allowLogString = std::getenv("IOX_TESTING_ALLOW_LOG")) {
         if (log::equalStrings(allowLogString, "on") || log::equalStrings(allowLogString, "ON")) {
-            logger.m_loggerData->allowLog = true;
+            logger.m_loggerData.allowLog = true;
         } else {
-            logger.m_loggerData->allowLog = false;
+            logger.m_loggerData.allowLog = false;
             std::cout << "" << std::endl;
             std::cout << "Invalid value for 'IOX_TESTING_ALLOW_LOG' environment variable!'" << std::endl;
             std::cout << "Found: " << allowLogString << std::endl;
             std::cout << "Allowed is one of: on, ON" << std::endl;
         }
     } else {
-        logger.m_loggerData->allowLog = false;
+        logger.m_loggerData.allowLog = false;
     }
 
     auto& listeners = ::testing::UnitTest::GetInstance()->listeners();
@@ -56,25 +59,27 @@ void TestingLogger::init() noexcept {
 }
 
 void TestingLogger::clearLogBuffer() noexcept {
-    m_loggerData->buffer.clear();
+    const std::lock_guard<std::mutex> lock(m_loggerDataLock);
+    m_loggerData.buffer.clear();
 }
 
 void TestingLogger::printLogBuffer() noexcept {
-    auto loggerData = m_loggerData.get_scope_guard();
-    if (loggerData->buffer.empty()) {
+    const std::lock_guard<std::mutex> lock(m_loggerDataLock);
+    if (m_loggerData.buffer.empty()) {
         return;
     }
     puts("#### Log start ####");
-    for (const auto& log : loggerData->buffer) {
+    for (const auto& log : m_loggerData.buffer) {
         puts(log.c_str());
     }
     puts("#### Log end ####");
-    loggerData->buffer.clear();
+    m_loggerData.buffer.clear();
 }
 
 uint64_t TestingLogger::getNumberOfLogMessages() noexcept {
     auto& logger = dynamic_cast<TestingLogger&>(log::Logger::get());
-    return logger.m_loggerData->buffer.size();
+    const std::lock_guard<std::mutex> lock(logger.m_loggerDataLock);
+    return logger.m_loggerData.buffer.size();
 }
 
 void TestingLogger::checkLogMessageIfLogLevelIsSupported(
@@ -86,11 +91,11 @@ void TestingLogger::checkLogMessageIfLogLevelIsSupported(
 
 
 void TestingLogger::flush() noexcept {
-    auto loggerData = m_loggerData.get_scope_guard();
+    const std::lock_guard<std::mutex> lock(m_loggerDataLock);
     const auto logBuffer = Base::getLogBuffer();
-    loggerData->buffer.emplace_back(logBuffer.buffer, logBuffer.writeIndex);
+    m_loggerData.buffer.emplace_back(logBuffer.buffer, logBuffer.writeIndex);
 
-    if (loggerData->allowLog) {
+    if (m_loggerData.allowLog) {
         Base::flush();
     }
 
@@ -99,7 +104,8 @@ void TestingLogger::flush() noexcept {
 
 std::vector<std::string> TestingLogger::getLogMessages() noexcept {
     auto& logger = dynamic_cast<TestingLogger&>(log::Logger::get());
-    return logger.m_loggerData->buffer;
+    const std::lock_guard<std::mutex> lock(logger.m_loggerDataLock);
+    return logger.m_loggerData.buffer;
 }
 
 #if !defined(_WIN32)

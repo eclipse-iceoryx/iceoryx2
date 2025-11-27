@@ -27,7 +27,6 @@
 #ifndef IOX_HOOFS_REPORTING_LOG_LOGGER_HPP
 #define IOX_HOOFS_REPORTING_LOG_LOGGER_HPP
 
-#include "iox/iceoryx_hoofs_deployment.hpp"
 #include "iox/log/building_blocks/console_logger.hpp"
 #include "iox/log/building_blocks/logger.hpp"
 
@@ -46,7 +45,7 @@ static constexpr bool IGNORE_ACTIVE_LOG_LEVEL { false };
 /// @brief The minimal log level which will be compiled into the application. All log levels below this will be
 /// optimized out at compile time
 /// @note This is different than IGNORE_ACTIVE_LOG_LEVEL since the active log level could still be set to off at runtime
-static constexpr LogLevel MINIMAL_LOG_LEVEL { build::IOX_MINIMAL_LOG_LEVEL };
+static constexpr LogLevel MINIMAL_LOG_LEVEL { LogLevel::Trace /* TODO: build::IOX_MINIMAL_LOG_LEVEL */ };
 
 } // namespace log
 } // namespace iox
