@@ -16,7 +16,6 @@
 #ifndef IOX_HOOFS_VOCABULARY_EXPECTED_HPP
 #define IOX_HOOFS_VOCABULARY_EXPECTED_HPP
 
-#include "iox/detail/deprecation_marker.hpp"
 #include "iox/detail/expected_helper.hpp"
 #include "iox/functional_interface.hpp"
 #include "iox/optional.hpp"
@@ -235,18 +234,6 @@ class IOX_NO_DISCARD expected final : public FunctionalInterface<expected<ValueT
     ///         does not contain an error the error handler is called
     /// @return const rvalue reference to the internally contained error
     const ErrorType&& error() const&& noexcept;
-
-    /// @copydoc expected::error()&
-    /// @deprecated use 'error' instead of 'get_error'
-    IOX_DEPRECATED_SINCE(3, "Please use 'error' instead of 'get_error'") ErrorType& get_error() & noexcept;
-
-    /// @copydoc expected::error()const&
-    /// @deprecated use 'error' instead of 'get_error'
-    IOX_DEPRECATED_SINCE(3, "Please use 'error' instead of 'get_error'") const ErrorType& get_error() const& noexcept;
-
-    /// @copydoc expected::error()&&
-    /// @deprecated use 'error' instead of 'get_error'
-    IOX_DEPRECATED_SINCE(3, "Please use 'error' instead of 'get_error'") ErrorType&& get_error() && noexcept;
 
     /// @brief  returns a lvalue reference to the contained success value, if the expected
     ///         does not contain a success value the error handler is called
