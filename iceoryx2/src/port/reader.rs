@@ -405,6 +405,7 @@ impl<
     // get returns pair of value and generation counter
     // extra type, implements Deref to get value
     // has_updates/is_up_to_date takes reference to that type and compares generation counter
+    // TODO: rename to is_latest?
     pub fn is_up_to_date(&self, value: &BlackboardValue<ValueType>) -> bool {
         unsafe { (*self.atomic).write_cell() == value.generation_counter }
     }
