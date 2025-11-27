@@ -18,26 +18,32 @@
 #include <cstdint>
 
 namespace iox2 {
+/// A wrapper for the value returned by [`EntryHandle::get()`].
 template <typename ValueType>
 class BlackboardValue {
-    // TODO: make implementation inline
   public:
-    auto operator*() -> ValueType& {
-        return m_value;
-    }
+    auto operator*() -> ValueType&;
 
   private:
     template <ServiceType, typename, typename>
     friend class EntryHandle;
 
-    BlackboardValue(ValueType& value, uint64_t counter)
-        : m_value { value }
-        , m_counter { counter } {
-    }
+    BlackboardValue(ValueType& value, uint64_t generation_counter);
 
     ValueType m_value;
-    uint64_t m_counter;
+    uint64_t m_generation_counter;
 };
+
+template <typename ValueType>
+inline BlackboardValue<ValueType>::BlackboardValue(ValueType& value, uint64_t generation_counter)
+    : m_value { value }
+    , m_generation_counter { generation_counter } {
+}
+
+template <typename ValueType>
+inline auto BlackboardValue<ValueType>::operator*() -> ValueType& {
+    return m_value;
+}
 
 /// A handle for direct read access to a specific blackboard value.
 template <ServiceType S, typename KeyType, typename ValueType>
@@ -50,10 +56,10 @@ class EntryHandle {
     EntryHandle(const EntryHandle&) = delete;
     auto operator=(const EntryHandle&) -> EntryHandle& = delete;
 
-    /// Returns a copy of the value.
+    /// Returns a copy of the value wrapped in a [`BlackboardValue`].
     auto get() const -> BlackboardValue<ValueType>;
-    // TODO: introduce BlackboardValue and return it here, same for Python
 
+    /// Checks whether `value` is up to date.
     auto is_up_to_date(BlackboardValue<ValueType>& value) const -> bool;
 
     /// Returns an ID corresponding to the entry which can be used in an event based communication
@@ -125,7 +131,7 @@ inline auto EntryHandle<S, KeyType, ValueType>::get() const -> BlackboardValue<V
 
 template <ServiceType S, typename KeyType, typename ValueType>
 inline auto EntryHandle<S, KeyType, ValueType>::is_up_to_date(BlackboardValue<ValueType>& value) const -> bool {
-    return iox2_entry_handle_is_up_to_date(&m_handle, value.m_counter);
+    return iox2_entry_handle_is_up_to_date(&m_handle, value.m_generation_counter);
 }
 } // namespace iox2
 

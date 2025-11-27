@@ -2053,8 +2053,8 @@ pub mod service_blackboard {
         };
         let mut read_value: ValueType = 9;
         let read_value_ptr: *mut ValueType = &mut read_value;
-        let mut generation_counter: usize = 0;
-        let generation_counter_ptr: *mut usize = &mut generation_counter;
+        let mut generation_counter: u64 = 0;
+        let generation_counter_ptr: *mut u64 = &mut generation_counter;
         unsafe {
             entry_handle.get(
                 read_value_ptr as *mut u8,

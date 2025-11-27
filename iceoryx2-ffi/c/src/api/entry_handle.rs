@@ -109,7 +109,8 @@ impl HandleToType for iox2_entry_handle_h_ref {
 
 // BEGIN C API
 
-/// Copies the value to `value_ptr`.
+/// Copies the value to `value_ptr`. If a `generation_counter_ptr` is passed, a copy of the
+/// value's generation counter is stored in it which can be used to check for value updates.
 ///
 /// # Safety
 ///
@@ -123,7 +124,7 @@ pub unsafe extern "C" fn iox2_entry_handle_get(
     value_ptr: *mut c_void,
     value_size: c_size_t,
     value_alignment: c_size_t,
-    generation_counter: *mut c_void,
+    generation_counter_ptr: *mut c_void,
 ) {
     entry_handle_handle.assert_non_null();
     debug_assert!(!value_ptr.is_null());
@@ -135,21 +136,27 @@ pub unsafe extern "C" fn iox2_entry_handle_get(
             value_ptr as *mut u8,
             value_size,
             value_alignment,
-            generation_counter as *mut u8,
+            generation_counter_ptr as *mut u8, // TODO: what happens if ptr is null?
         ),
         iox2_service_type_e::LOCAL => entry_handle.value.as_ref().local.get(
             value_ptr as *mut u8,
             value_size,
             value_alignment,
-            generation_counter as *mut u8,
+            generation_counter_ptr as *mut u8,
         ),
     };
 }
 
+/// Checks whether the blackboard value that corresponds to the `generation_counter` is up to
+/// date.
+///
+/// # Safety
+///
+/// * `entry_handle_handle` obtained by [`iox2_reader_entry()`](crate::iox2_reader_entry())
 #[no_mangle]
 pub unsafe extern "C" fn iox2_entry_handle_is_up_to_date(
     entry_handle_handle: iox2_entry_handle_h_ref,
-    generation_counter: usize,
+    generation_counter: u64,
 ) -> bool {
     entry_handle_handle.assert_non_null();
 

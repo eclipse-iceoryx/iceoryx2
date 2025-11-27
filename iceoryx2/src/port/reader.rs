@@ -64,6 +64,7 @@ use alloc::sync::Arc;
 
 use super::port_identifiers::UniqueReaderId;
 
+/// A wrapper for the value returned by [`EntryHandle::get()`].
 pub struct BlackboardValue<ValueType: Copy> {
     value: ValueType,
     generation_counter: u64,
@@ -364,7 +365,41 @@ impl<
         }
     }
 
-    /// Returns a copy of the value.
+    /// Returns a copy of the value wrapped in a [`BlackboardValue`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #     .blackboard_creator::<u64>()
+    /// #     .add::<i32>(1, -1)
+    /// #     .create()?;
+    /// #
+    /// # let reader = service.reader_builder().create()?;
+    /// # let entry_handle = reader.entry::<i32>(&1)?;
+    /// let value = *entry_handle.get();
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn get(&self) -> BlackboardValue<ValueType> {
+        unsafe {
+            let generation_counter = (*self.atomic).write_cell();
+            BlackboardValue {
+                value: (*self.atomic).load(),
+                // The generation_counter may be outdated as the blackboard value could have been
+                // updated between reading the counter and setting it here. This is not a problem,
+                // as is_up_to_date() returns a false positive but never a false negative, so no
+                // updates are lost.
+                generation_counter,
+            }
+        }
+    }
+
+    // TODO: rename to is_latest?
+    /// Checks whether `value` is up to date.
     ///
     /// # Example
     ///
@@ -380,34 +415,18 @@ impl<
     /// # let reader = service.reader_builder().create()?;
     /// # let entry_handle = reader.entry::<i32>(&1)?;
     /// let value = entry_handle.get();
+    /// let is_latest = entry_handle.is_up_to_date(&value);
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get(&self) -> BlackboardValue<ValueType> {
-        // TODO: update documentation
-        unsafe {
-            let generation_counter = (*self.atomic).write_cell();
-            BlackboardValue {
-                value: (*self.atomic).load(),
-                // TODO: counter and value may not match (counter older than value)
-                // -> has_updated would return true but get won't update value - ok?
-                generation_counter,
-            }
-        }
+    pub fn is_up_to_date(&self, value: &BlackboardValue<ValueType>) -> bool {
+        unsafe { (*self.atomic).write_cell() == value.generation_counter }
     }
 
     /// Returns an ID corresponding to the entry which can be used in an event based communication
     /// setup.
     pub fn entry_id(&self) -> EventId {
         self.entry_id
-    }
-
-    // get returns pair of value and generation counter
-    // extra type, implements Deref to get value
-    // has_updates/is_up_to_date takes reference to that type and compares generation counter
-    // TODO: rename to is_latest?
-    pub fn is_up_to_date(&self, value: &BlackboardValue<ValueType>) -> bool {
-        unsafe { (*self.atomic).write_cell() == value.generation_counter }
     }
 }
 
@@ -482,7 +501,9 @@ unsafe impl<Service: service::Service> Send for __InternalEntryHandle<Service> {
 unsafe impl<Service: service::Service> Sync for __InternalEntryHandle<Service> {}
 
 impl<Service: service::Service> __InternalEntryHandle<Service> {
-    /// Stores a copy of the value in `value_ptr`.
+    /// Stores a copy of the value in `value_ptr`. If a `generation_counter_ptr` is passed, a
+    /// copy of the value's generation counter is stored in it which can be used to check for
+    /// value updates.
     ///
     /// # Safety
     ///
@@ -492,13 +513,15 @@ impl<Service: service::Service> __InternalEntryHandle<Service> {
         value_ptr: *mut u8,
         value_size: usize,
         value_alignment: usize,
-        generation_counter: *mut u8,
+        generation_counter_ptr: *mut u8,
     ) {
-        // TODO: update documentation
-        if !generation_counter.is_null() {
-            (*self.atomic_mgmt_ptr).__internal_get_write_cell(generation_counter);
+        if !generation_counter_ptr.is_null() {
+            (*self.atomic_mgmt_ptr).__internal_get_write_cell(generation_counter_ptr);
         }
-        // TODO: generation counter can be outdated
+        // The generation_counter may be outdated as the blackboard value could have been
+        // updated between reading the counter and writing the value to the value_ptr. This
+        // is not a problem, as is_up_to_date() returns a false positive but never a false
+        // negative, so no updates are lost.
         (*self.atomic_mgmt_ptr).load(value_ptr, value_size, value_alignment, self.data_ptr);
     }
 
@@ -508,9 +531,11 @@ impl<Service: service::Service> __InternalEntryHandle<Service> {
         self.entry_id
     }
 
-    pub fn is_up_to_date(&self, generation_counter: usize) -> bool {
-        let mut write_cell: usize = 0;
-        let write_cell_ptr: *mut usize = &mut write_cell;
+    /// Checks whether the blackboard value that corresponds to the `generation_counter` is up to
+    /// date.
+    pub fn is_up_to_date(&self, generation_counter: u64) -> bool {
+        let mut write_cell: u64 = 0;
+        let write_cell_ptr: *mut u64 = &mut write_cell;
         unsafe {
             (*self.atomic_mgmt_ptr).__internal_get_write_cell(write_cell_ptr as *mut u8);
         }
