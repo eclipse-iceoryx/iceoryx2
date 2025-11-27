@@ -736,6 +736,44 @@ def test_handle_can_still_be_used_after_every_previous_service_state_owner_was_d
     assert entry_handle.get().decode_as(ctypes.c_uint32).value == 0
 
 
+@pytest.mark.parametrize("service_type", service_types)
+def test_entry_handle_is_up_to_date_works_correctly(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    service_name = iox2.testing.generate_service_name()
+    key = ctypes.c_uint64(0)
+    value = ctypes.c_uint16(0)
+
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service = (
+        node.service_builder(service_name)
+        .blackboard_creator(ctypes.c_uint64)
+        .add(key, value)
+        .create()
+    )
+
+    reader = service.reader_builder().create()
+    entry_handle = reader.entry(key, ctypes.c_uint16)
+    writer = service.writer_builder().create()
+    entry_handle_mut = writer.entry(key, ctypes.c_uint16)
+
+    read_value = entry_handle.get()
+    assert read_value.decode_as(ctypes.c_uint16).value == 0
+    assert entry_handle.is_up_to_date(read_value)
+
+    entry_handle_mut.update_with_copy(ctypes.c_uint16(1))
+    assert not entry_handle.is_up_to_date(read_value)
+    read_value = entry_handle.get()
+    assert read_value.decode_as(ctypes.c_uint16).value == 1
+    assert entry_handle.is_up_to_date(read_value)
+
+    entry_handle_mut.update_with_copy(ctypes.c_uint16(4))
+    read_value = entry_handle.get()
+    assert read_value.decode_as(ctypes.c_uint16).value == 4
+    assert entry_handle.is_up_to_date(read_value)
+
+
 class Foo(ctypes.Structure):
     _fields_ = [
         ("a", ctypes.c_uint8),

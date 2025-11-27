@@ -144,29 +144,37 @@ def entry_handle(self: Reader, key: Type[K], value: Type[V]) -> EntryHandle:
     return entry_handle
 
 
-class RawValue:
+class BlackboardValue:
     """A wrapper class for the value returned by `EntryHandle.get()`."""
 
-    def __init__(self, data: bytes):
-        """Initializes `RawValue` from bytes."""
+    def __init__(self, data: bytes, generation_counter: ctypes.c_uint64):
+        """Initializes `BlackboardValue` from bytes."""
         self.data = data
         self.size = len(data)
+        self._generation_counter = generation_counter
 
     def decode_as(self, ct_type):
         """Interpret the raw bytes as a ctypes type."""
         return ct_type.from_buffer_copy(self.data)
 
 
-def get(self: EntryHandle) -> RawValue:
+def get(self: EntryHandle) -> BlackboardValue:
     """
     Returns a copy of the value as bytes.
 
     Use decode_as() to reinterpret the raw bytes as a ctypes type.
     """
-    value_ptr = self.__get()
+    result = self.__get()
+    value_ptr = result[0]
+    generation_counter = result[1]
     value_size = ctypes.sizeof(self.__value_type)
     raw_bytes = ctypes.string_at(value_ptr, value_size)
-    return RawValue(raw_bytes)
+    return BlackboardValue(raw_bytes, generation_counter)
+
+
+# TODO: documentation
+def is_up_to_date(self: EntryHandle, value: BlackboardValue) -> bool:
+    return self.__is_up_to_date(value._generation_counter)
 
 
 def entry_handle_mut(self: Writer, key: Type[K], value: Type[V]) -> EntryHandleMut:
@@ -252,6 +260,7 @@ def assume_init_and_update(self: EntryValueUninit) -> EntryHandleMut:
 
 
 EntryHandle.get = get
+EntryHandle.is_up_to_date = is_up_to_date
 
 EntryHandleMut.update_with_copy = update_with_copy_on_entry_handle
 
