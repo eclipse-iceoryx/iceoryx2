@@ -17,6 +17,8 @@
 #ifndef IOX_HOOFS_VOCABULARY_VARIANT_HPP
 #define IOX_HOOFS_VOCABULARY_VARIANT_HPP
 
+#include "iox/detail/platform_correction.hpp"
+
 #include "iox/detail/variant_internal.hpp"
 #include "iox/memory.hpp"
 
