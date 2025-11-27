@@ -164,10 +164,10 @@ int main(void) {
     int32_t value_0 = 0;
     double value_1 = 0.0;
     while (iox2_node_wait(&node_handle, 1, 0) == IOX2_OK) {
-        iox2_entry_handle_get(&entry_handle_key_0, &value_0, sizeof(int32_t), alignof(int32_t));
+        iox2_entry_handle_get(&entry_handle_key_0, &value_0, sizeof(int32_t), alignof(int32_t), NULL);
         printf("Read value %d for key 0...\n", value_0);
 
-        iox2_entry_handle_get(&entry_handle_key_1, &value_1, sizeof(double), alignof(double));
+        iox2_entry_handle_get(&entry_handle_key_1, &value_1, sizeof(double), alignof(double), NULL);
         printf("Read value %f for key 1 ...\n\n", value_1);
     }
 

@@ -15,8 +15,30 @@
 
 #include "iox2/event_id.hpp"
 #include "iox2/service_type.hpp"
+#include <cstdint>
 
 namespace iox2 {
+template <typename ValueType>
+class BlackboardValue {
+    // TODO: make implementation inline
+  public:
+    auto operator*() -> ValueType& {
+        return m_value;
+    }
+
+  private:
+    template <ServiceType, typename, typename>
+    friend class EntryHandle;
+
+    BlackboardValue(ValueType& value, uint64_t counter)
+        : m_value { value }
+        , m_counter { counter } {
+    }
+
+    ValueType m_value;
+    uint64_t m_counter;
+};
+
 /// A handle for direct read access to a specific blackboard value.
 template <ServiceType S, typename KeyType, typename ValueType>
 class EntryHandle {
@@ -29,7 +51,10 @@ class EntryHandle {
     auto operator=(const EntryHandle&) -> EntryHandle& = delete;
 
     /// Returns a copy of the value.
-    auto get() const -> ValueType;
+    auto get() const -> BlackboardValue<ValueType>;
+    // TODO: introduce BlackboardValue and return it here, same for Python
+
+    auto is_up_to_date(BlackboardValue<ValueType>& value) const -> bool;
 
     /// Returns an ID corresponding to the entry which can be used in an event based communication
     /// setup.
@@ -89,12 +114,18 @@ inline auto EntryHandle<S, KeyType, ValueType>::entry_id() const -> EventId {
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>
-inline auto EntryHandle<S, KeyType, ValueType>::get() const -> ValueType {
+inline auto EntryHandle<S, KeyType, ValueType>::get() const -> BlackboardValue<ValueType> {
     ValueType value;
+    uint64_t counter { 0 };
 
-    iox2_entry_handle_get(&m_handle, &value, sizeof(ValueType), alignof(ValueType));
+    iox2_entry_handle_get(&m_handle, &value, sizeof(ValueType), alignof(ValueType), &counter);
 
-    return value;
+    return BlackboardValue<ValueType>(value, counter);
+}
+
+template <ServiceType S, typename KeyType, typename ValueType>
+inline auto EntryHandle<S, KeyType, ValueType>::is_up_to_date(BlackboardValue<ValueType>& value) const -> bool {
+    return iox2_entry_handle_is_up_to_date(&m_handle, value.m_counter);
 }
 } // namespace iox2
 

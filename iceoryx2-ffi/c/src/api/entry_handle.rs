@@ -123,6 +123,7 @@ pub unsafe extern "C" fn iox2_entry_handle_get(
     value_ptr: *mut c_void,
     value_size: c_size_t,
     value_alignment: c_size_t,
+    generation_counter: *mut c_void,
 ) {
     entry_handle_handle.assert_non_null();
     debug_assert!(!value_ptr.is_null());
@@ -134,15 +135,38 @@ pub unsafe extern "C" fn iox2_entry_handle_get(
             value_ptr as *mut u8,
             value_size,
             value_alignment,
-            core::ptr::null_mut::<u8>(),
+            generation_counter as *mut u8,
         ),
         iox2_service_type_e::LOCAL => entry_handle.value.as_ref().local.get(
             value_ptr as *mut u8,
             value_size,
             value_alignment,
-            core::ptr::null_mut::<u8>(),
+            generation_counter as *mut u8,
         ),
     };
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_entry_handle_is_up_to_date(
+    entry_handle_handle: iox2_entry_handle_h_ref,
+    generation_counter: usize,
+) -> bool {
+    entry_handle_handle.assert_non_null();
+
+    let entry_handle = &*entry_handle_handle.as_type();
+
+    match entry_handle.service_type {
+        iox2_service_type_e::IPC => entry_handle
+            .value
+            .as_ref()
+            .ipc
+            .is_up_to_date(generation_counter),
+        iox2_service_type_e::LOCAL => entry_handle
+            .value
+            .as_ref()
+            .local
+            .is_up_to_date(generation_counter),
+    }
 }
 
 /// Returns an id corresponding to the entry which can be used in an event based communication setup.
