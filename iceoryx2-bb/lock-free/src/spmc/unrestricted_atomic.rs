@@ -59,7 +59,7 @@ impl<T: Copy> Producer<'_, T> {
     //   * the memory position must not be modified after
     //     [`Producer::__internal_update_write_cell()`] has been called
     pub unsafe fn __internal_get_ptr_to_write_cell(&self) -> *mut T {
-        let write_cell = self.atomic.mgmt.write_cell.load(Ordering::Relaxed);
+        let write_cell = self.atomic.mgmt.__internal_get_write_cell();
         unsafe { (*self.atomic.data[write_cell as usize % NUMBER_OF_CELLS].get()).as_mut_ptr() }
     }
 
@@ -144,7 +144,7 @@ impl UnrestrictedAtomicMgmt {
         value_alignment: usize,
         data_ptr: *mut u8,
     ) -> *mut u8 {
-        let write_cell = self.write_cell.load(Ordering::Relaxed);
+        let write_cell = self.__internal_get_write_cell();
         unsafe {
             let data_cell_ptr =
                 Self::__internal_get_data_cell(value_size, value_alignment, data_ptr, write_cell);
@@ -257,11 +257,9 @@ impl UnrestrictedAtomicMgmt {
         )
     }
 
-    // TODO: make unsafe? documentation, test
-    pub fn __internal_get_write_cell(&self, write_cell_ptr: *mut u8) {
-        let write_cell = self.write_cell.load(Ordering::Relaxed);
-        let ptr: *const u64 = &write_cell;
-        unsafe { core::ptr::copy_nonoverlapping(ptr as *const u8, write_cell_ptr, 8) };
+    #[doc(hidden)]
+    pub fn __internal_get_write_cell(&self) -> u64 {
+        self.write_cell.load(Ordering::Relaxed)
     }
 }
 
@@ -279,7 +277,7 @@ impl<T: Copy + Debug> Debug for UnrestrictedAtomic<T> {
             f,
             "UnrestrictedAtomic<{}> {{ write_cell: {}, data: {:?}, has_producer: {} }}",
             core::any::type_name::<T>(),
-            self.mgmt.write_cell.load(Ordering::Relaxed),
+            self.mgmt.__internal_get_write_cell(),
             self.load(),
             self.mgmt.has_producer.load(Ordering::Relaxed)
         )
@@ -353,9 +351,9 @@ impl<T: Copy> UnrestrictedAtomic<T> {
         self.data.as_ptr() as *mut u8
     }
 
-    // TODO: documentation/hidden, tests, needed?
-    pub fn write_cell(&self) -> u64 {
-        self.mgmt.write_cell.load(Ordering::Relaxed)
+    #[doc(hidden)]
+    pub fn __internal_get_write_cell(&self) -> u64 {
+        self.mgmt.__internal_get_write_cell()
     }
 }
 

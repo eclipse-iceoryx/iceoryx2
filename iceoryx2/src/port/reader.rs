@@ -386,7 +386,7 @@ impl<
     /// ```
     pub fn get(&self) -> BlackboardValue<ValueType> {
         unsafe {
-            let generation_counter = (*self.atomic).write_cell();
+            let generation_counter = (*self.atomic).__internal_get_write_cell();
             BlackboardValue {
                 value: (*self.atomic).load(),
                 // The generation_counter may be outdated as the blackboard value could have been
@@ -420,7 +420,7 @@ impl<
     /// # }
     /// ```
     pub fn is_up_to_date(&self, value: &BlackboardValue<ValueType>) -> bool {
-        unsafe { (*self.atomic).write_cell() == value.generation_counter }
+        unsafe { (*self.atomic).__internal_get_write_cell() == value.generation_counter }
     }
 
     /// Returns an ID corresponding to the entry which can be used in an event based communication
@@ -513,10 +513,11 @@ impl<Service: service::Service> __InternalEntryHandle<Service> {
         value_ptr: *mut u8,
         value_size: usize,
         value_alignment: usize,
-        generation_counter_ptr: *mut u8,
+        generation_counter_ptr: *mut u64,
     ) {
         if !generation_counter_ptr.is_null() {
-            (*self.atomic_mgmt_ptr).__internal_get_write_cell(generation_counter_ptr);
+            let generation_counter = (*self.atomic_mgmt_ptr).__internal_get_write_cell();
+            core::ptr::copy_nonoverlapping(&generation_counter, generation_counter_ptr, 1);
         }
         // The generation_counter may be outdated as the blackboard value could have been
         // updated between reading the counter and writing the value to the value_ptr. This
@@ -534,11 +535,6 @@ impl<Service: service::Service> __InternalEntryHandle<Service> {
     /// Checks whether the blackboard value that corresponds to the `generation_counter` is up to
     /// date.
     pub fn is_up_to_date(&self, generation_counter: u64) -> bool {
-        let mut write_cell: u64 = 0;
-        let write_cell_ptr: *mut u64 = &mut write_cell;
-        unsafe {
-            (*self.atomic_mgmt_ptr).__internal_get_write_cell(write_cell_ptr as *mut u8);
-        }
-        write_cell == generation_counter
+        unsafe { (*self.atomic_mgmt_ptr).__internal_get_write_cell() == generation_counter }
     }
 }

@@ -136,13 +136,13 @@ pub unsafe extern "C" fn iox2_entry_handle_get(
             value_ptr as *mut u8,
             value_size,
             value_alignment,
-            generation_counter_ptr as *mut u8, // TODO: what happens if ptr is null?
+            generation_counter_ptr as *mut u64,
         ),
         iox2_service_type_e::LOCAL => entry_handle.value.as_ref().local.get(
             value_ptr as *mut u8,
             value_size,
             value_alignment,
-            generation_counter_ptr as *mut u8,
+            generation_counter_ptr as *mut u64,
         ),
     };
 }

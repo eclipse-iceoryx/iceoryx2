@@ -182,7 +182,7 @@ pub mod reader {
                 read_value_ptr as *mut u8,
                 size_of::<ValueType>(),
                 align_of::<ValueType>(),
-                core::ptr::null_mut::<u8>(),
+                core::ptr::null_mut::<u64>(),
             );
         }
         assert_that!(read_value, eq default_value);
