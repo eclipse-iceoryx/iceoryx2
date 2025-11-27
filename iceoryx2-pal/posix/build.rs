@@ -76,7 +76,7 @@ fn configure_cargo(target_os: &str) {
         "macos" => {
             macos::configure_cargo();
         }
-        "qnx" => {
+        "nto" => {
             qnx::configure_cargo();
         }
         "windows" => {
@@ -95,7 +95,7 @@ fn configure_builder(target_os: &str, builder: bindgen::Builder) -> bindgen::Bui
         "freebsd" => freebsd::configure_builder(builder),
         "linux" => linux::configure_builder(builder),
         "macos" => macos::configure_builder(builder),
-        "qnx" => qnx::configure_builder(builder),
+        "nto" => qnx::configure_builder(builder),
         "windows" => windows::configure_builder(builder),
         "android" => android::configure_builder(builder),
         _ => panic!("Unsupported target OS: {}", target_os),
