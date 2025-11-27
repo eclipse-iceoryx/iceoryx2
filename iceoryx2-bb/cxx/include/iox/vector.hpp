@@ -16,7 +16,6 @@
 #ifndef IOX_HOOFS_CONTAINER_VECTOR_HPP
 #define IOX_HOOFS_CONTAINER_VECTOR_HPP
 
-#include "iox/algorithm.hpp"
 #include "iox/assertions.hpp"
 #include "iox/attributes.hpp"
 #include "iox/logging.hpp"

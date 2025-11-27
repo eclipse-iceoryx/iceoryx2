@@ -16,7 +16,6 @@
 #ifndef IOX_HOOFS_POSIX_DESIGN_POSIX_CALL_HPP
 #define IOX_HOOFS_POSIX_DESIGN_POSIX_CALL_HPP
 
-#include "iox/algorithm.hpp"
 #include "iox/attributes.hpp"
 #include "iox/expected.hpp"
 #include "iox/string.hpp"

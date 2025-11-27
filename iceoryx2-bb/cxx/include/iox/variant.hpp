@@ -17,16 +17,14 @@
 #ifndef IOX_HOOFS_VOCABULARY_VARIANT_HPP
 #define IOX_HOOFS_VOCABULARY_VARIANT_HPP
 
-#include "iox/algorithm.hpp"
 #include "iox/detail/variant_internal.hpp"
 #include "iox/iceoryx_hoofs_types.hpp"
+#include "iox/memory.hpp"
 
 #include <cstdint>
 #include <iostream>
 #include <limits>
 #include <type_traits>
-
-#include "iceoryx_platform/platform_correction.hpp"
 
 namespace iox {
 /// @brief helper struct to perform an emplacement at a predefined index
@@ -102,7 +100,7 @@ template <typename... Types>
 class variant final {
   private:
     /// @brief contains the size of the largest element
-    static constexpr uint64_t TYPE_SIZE { algorithm::maxVal(sizeof(Types)...) };
+    static constexpr uint64_t TYPE_SIZE { maxSize<Types...>() };
 
   public:
     /// @brief the default constructor constructs a variant which does not contain

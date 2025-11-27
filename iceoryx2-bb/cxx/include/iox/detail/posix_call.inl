@@ -60,6 +60,29 @@ inline string<POSIX_CALL_ERROR_STRING_SIZE> errorLiteralToString(const int retur
 inline string<POSIX_CALL_ERROR_STRING_SIZE> errorLiteralToString(const char* msg, char* const buffer IOX_MAYBE_UNUSED) {
     return string<POSIX_CALL_ERROR_STRING_SIZE>(TruncateToCapacity, msg);
 }
+
+/// @brief Finalizes the recursion of doesContainValue
+/// @return always false
+template <typename T>
+inline constexpr bool doesContainValue(const T) noexcept {
+    return false;
+}
+
+/// @brief Returns true if value of T is found in the ValueList, otherwise false
+/// @tparam T type of the value to check
+/// @tparam ValueList is a list of values to check for a specific value
+/// @param[in] value to look for in the ValueList
+/// @param[in] firstValueListEntry is the first variadic argument of ValueList
+/// @param[in] remainingValueListEntries are the remaining variadic arguments of ValueList
+/// @return true if value is contained in the ValueList, otherwise false
+/// @note be aware that value is tested for exact equality with the entries of ValueList and regular floating-point
+/// comparison rules apply
+template <typename T1, typename T2, typename... ValueList>
+inline constexpr bool
+doesContainValue(const T1 value, const T2 firstValueListEntry, const ValueList... remainingValueListEntries) noexcept {
+    // AXIVION Next Line AutosarC++19_03-M6.2.2 : intentional check for exact equality
+    return (value == firstValueListEntry) ? true : doesContainValue(value, remainingValueListEntries...);
+}
 } // namespace detail
 
 template <typename ReturnType, typename... FunctionArguments>
@@ -97,7 +120,7 @@ template <typename ReturnType>
 template <typename... SuccessReturnValues>
 inline PosixCallEvaluator<ReturnType>
 PosixCallVerificator<ReturnType>::successReturnValue(const SuccessReturnValues... successReturnValues) && noexcept {
-    m_details.hasSuccess = algorithm::doesContainValue(m_details.result.value, successReturnValues...);
+    m_details.hasSuccess = detail::doesContainValue(m_details.result.value, successReturnValues...);
 
     return PosixCallEvaluator<ReturnType>(m_details);
 }
@@ -108,7 +131,7 @@ inline PosixCallEvaluator<ReturnType>
 PosixCallVerificator<ReturnType>::failureReturnValue(const FailureReturnValues... failureReturnValues) && noexcept {
     using ValueType = decltype(m_details.result.value);
     m_details.hasSuccess =
-        !algorithm::doesContainValue(m_details.result.value, static_cast<ValueType>(failureReturnValues)...);
+        !detail::doesContainValue(m_details.result.value, static_cast<ValueType>(failureReturnValues)...);
 
     return PosixCallEvaluator<ReturnType>(m_details);
 }
@@ -131,7 +154,7 @@ template <typename... IgnoredErrnos>
 inline PosixCallEvaluator<ReturnType>
 PosixCallEvaluator<ReturnType>::ignoreErrnos(const IgnoredErrnos... ignoredErrnos) const&& noexcept {
     if (!m_details.hasSuccess) {
-        m_details.hasIgnoredErrno |= algorithm::doesContainValue(m_details.result.errnum, ignoredErrnos...);
+        m_details.hasIgnoredErrno |= detail::doesContainValue(m_details.result.errnum, ignoredErrnos...);
     }
 
     return *this;
@@ -142,7 +165,7 @@ template <typename... SilentErrnos>
 inline PosixCallEvaluator<ReturnType>
 PosixCallEvaluator<ReturnType>::suppressErrorMessagesForErrnos(const SilentErrnos... silentErrnos) const&& noexcept {
     if (!m_details.hasSuccess) {
-        m_details.hasSilentErrno |= algorithm::doesContainValue(m_details.result.errnum, silentErrnos...);
+        m_details.hasSilentErrno |= detail::doesContainValue(m_details.result.errnum, silentErrnos...);
     }
 
     return *this;

@@ -82,7 +82,7 @@ inline vector<T, Capacity>& vector<T, Capacity>::operator=(const vector& rhs) no
         } else
 #endif
         {
-            const uint64_t minSize { algorithm::minVal(m_size, rhsSize) };
+            const uint64_t minSize { std::min(m_size, rhsSize) };
 
             // copy using copy assignment
             for (; i < minSize; ++i) {
@@ -117,7 +117,7 @@ inline vector<T, Capacity>& vector<T, Capacity>::operator=(vector&& rhs) noexcep
         } else
 #endif
         {
-            const uint64_t minSize { algorithm::minVal(m_size, rhsSize) };
+            const uint64_t minSize { std::min(m_size, rhsSize) };
 
             // move using move assignment
             for (; i < minSize; ++i) {
