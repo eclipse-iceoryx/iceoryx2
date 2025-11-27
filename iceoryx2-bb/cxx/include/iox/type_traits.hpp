@@ -20,8 +20,6 @@
 #include <cstdint>
 #include <type_traits>
 
-#include "iceoryx_platform/platform_settings.hpp"
-
 namespace iox {
 template <uint64_t Capacity>
 class string;
@@ -53,6 +51,14 @@ using add_const_conditionally_t = typename add_const_conditionally<T, C>::type;
 template <typename>
 constexpr bool always_false_v { false };
 
+#if __cplusplus >= 201703L
+template <typename C, typename... Cargs>
+using invoke_result = std::invoke_result<C, Cargs...>;
+#else
+template <typename C, typename... Cargs>
+using invoke_result = std::result_of<C(Cargs...)>;
+#endif
+
 ///
 /// @brief Verifies whether the passed Callable type is in fact invocable with the given arguments
 ///
@@ -60,7 +66,7 @@ template <typename Callable, typename... ArgTypes>
 struct is_invocable {
     // This variant is chosen when Callable(ArgTypes) successfully resolves to a valid type, i.e. is invocable.
     template <typename C, typename... As>
-    static constexpr std::true_type test(typename platform::invoke_result<C, As...>::type*) noexcept {
+    static constexpr std::true_type test(typename iox::invoke_result<C, As...>::type*) noexcept {
         return {};
     }
 
@@ -88,7 +94,7 @@ struct is_invocable_r {
     template <typename C, typename... As>
     static constexpr std::true_type
     test(std::enable_if_t<
-         std::is_convertible<typename platform::invoke_result<C, As...>::type, ReturnType>::value>*) noexcept {
+         std::is_convertible<typename iox::invoke_result<C, As...>::type, ReturnType>::value>*) noexcept {
         return {};
     }
     // AXIVION Next Construct AutosarC++19_03-A8.4.1 : we require a SFINEA failure case where all
