@@ -22,6 +22,16 @@
 #include <cstdint>
 
 namespace iox {
+namespace platform {
+#if defined(_WIN32)
+constexpr uint64_t IOX_NUMBER_OF_PATH_SEPARATORS = 2U;
+constexpr const char IOX_PATH_SEPARATORS[IOX_NUMBER_OF_PATH_SEPARATORS] = { '/', '\\' };
+#else
+constexpr uint64_t IOX_NUMBER_OF_PATH_SEPARATORS = 1U;
+constexpr const char IOX_PATH_SEPARATORS[IOX_NUMBER_OF_PATH_SEPARATORS] = { '/' };
+#endif
+} // namespace platform
+
 namespace detail {
 // AXIVION DISABLE STYLE AutosarC++19_03-A3.9.1: Not used as an integer but as actual character.
 constexpr char ASCII_A { 'a' };

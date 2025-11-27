@@ -15,9 +15,12 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox/detail/path_and_file_verifier.hpp"
+#include "iox/file_name.hpp"
 
 #include "iceoryx_hoofs/testing/mocks/logger_mock.hpp"
-#include "test.hpp"
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include <array>
 
