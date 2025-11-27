@@ -16,7 +16,6 @@
 #ifndef IOX_HOOFS_POSIX_DESIGN_POSIX_CALL_INL
 #define IOX_HOOFS_POSIX_DESIGN_POSIX_CALL_INL
 
-#include "iceoryx_platform/errno.hpp"
 #include "iox/logging.hpp"
 #include "iox/posix_call.hpp"
 
@@ -62,15 +61,6 @@ inline string<POSIX_CALL_ERROR_STRING_SIZE> errorLiteralToString(const char* msg
     return string<POSIX_CALL_ERROR_STRING_SIZE>(TruncateToCapacity, msg);
 }
 } // namespace detail
-
-template <typename T>
-inline string<POSIX_CALL_ERROR_STRING_SIZE> PosixCallResult<T>::getHumanReadableErrnum() const noexcept {
-    // NOLINTJUSTIFICATION needed by POSIX function which is wrapped here
-    // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays)
-    char buffer[POSIX_CALL_ERROR_STRING_SIZE];
-    return string<POSIX_CALL_ERROR_STRING_SIZE>(TruncateToCapacity,
-                                                iox_gnu_strerror_r(errnum, &buffer[0], POSIX_CALL_ERROR_STRING_SIZE));
-}
 
 template <typename ReturnType, typename... FunctionArguments>
 inline PosixCallBuilder<ReturnType, FunctionArguments...>::PosixCallBuilder(FunctionType_t IOX_POSIX_CALL,
@@ -168,8 +158,8 @@ PosixCallEvaluator<ReturnType>::evaluate() const&& noexcept {
     if (!m_details.hasSilentErrno) {
         IOX_LOG(Error,
                 m_details.file << ":" << m_details.line << " { " << m_details.callingFunction << " -> "
-                               << m_details.posixFunctionName << " }  :::  [ " << m_details.result.errnum << " ]  "
-                               << m_details.result.getHumanReadableErrnum());
+                               << m_details.posixFunctionName << " }  :::  [ errno: " << m_details.result.errnum
+                               << " ]");
     }
 
     return err<PosixCallResult<ReturnType>>(m_details.result);
