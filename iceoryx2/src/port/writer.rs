@@ -32,7 +32,7 @@
 //! entry_handle_mut.update_with_copy(8);
 //!
 //! // loan an uninitialized entry value and write to it without copying
-//! let entry_value_uninit = entry_handle_mut.loan_uninit();
+//! let mut entry_value_uninit = entry_handle_mut.loan_uninit();
 //! entry_value_uninit.value_mut().write(-8);
 //! entry_handle_mut = unsafe { entry_value_uninit.assume_init_and_update() };
 //!
@@ -525,13 +525,13 @@ impl<
     ///
     /// # let writer = service.writer_builder().create()?;
     /// # let mut entry_handle_mut = writer.entry::<i32>(&1)?;
-    /// let entry_value_uninit = entry_handle_mut.loan_uninit();
+    /// let mut entry_value_uninit = entry_handle_mut.loan_uninit();
     /// entry_value_uninit.value_mut().write(-8);
     /// entry_handle_mut = unsafe { entry_value_uninit.assume_init_and_update() };
     /// # Ok(())
     /// # }
     /// ```
-    pub fn value_mut(&self) -> &mut MaybeUninit<ValueType> {
+    pub fn value_mut(&mut self) -> &mut MaybeUninit<ValueType> {
         unsafe {
             &mut *core::mem::transmute::<*mut ValueType, *mut MaybeUninit<ValueType>>(self.ptr)
         }
@@ -558,7 +558,7 @@ impl<
     ///
     /// # let writer = service.writer_builder().create()?;
     /// # let mut entry_handle_mut = writer.entry::<i32>(&1)?;
-    /// let entry_value_uninit = entry_handle_mut.loan_uninit();
+    /// let mut entry_value_uninit = entry_handle_mut.loan_uninit();
     /// entry_value_uninit.value_mut().write(-8);
     /// entry_handle_mut = unsafe { entry_value_uninit.assume_init_and_update() };
     /// # Ok(())

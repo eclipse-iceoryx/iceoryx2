@@ -57,7 +57,6 @@ use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::{
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shared_memory::SharedMemory;
-use std::fmt::Display;
 
 extern crate alloc;
 use alloc::sync::Arc;
@@ -77,7 +76,7 @@ impl<ValueType: Copy> Deref for BlackboardValue<ValueType> {
     }
 }
 
-impl<ValueType: Copy + Display> core::fmt::Display for BlackboardValue<ValueType> {
+impl<ValueType: Copy + core::fmt::Display> core::fmt::Display for BlackboardValue<ValueType> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}", self.value)
     }
@@ -419,7 +418,6 @@ impl<
     /// # }
     /// ```
     pub fn is_current(&self, value: &BlackboardValue<ValueType>) -> bool {
-        // TODO: use in examples?
         unsafe { (*self.atomic).__internal_get_write_cell() == value.generation_counter }
     }
 

@@ -2229,18 +2229,18 @@ pub mod service_blackboard {
         let entry_handle = reader.entry::<u16>(&0).unwrap();
         let writer = sut.writer_builder().create().unwrap();
         let mut entry_handle_mut = writer.entry::<u16>(&0).unwrap();
-        let entry_value_uninit = entry_handle_mut.loan_uninit();
+        let mut entry_value_uninit = entry_handle_mut.loan_uninit();
 
         entry_value_uninit.value_mut().write(1234);
         entry_handle_mut = unsafe { entry_value_uninit.assume_init_and_update() };
         assert_that!(*entry_handle.get(), eq 1234);
 
-        let entry_value_uninit = entry_handle_mut.loan_uninit();
+        let mut entry_value_uninit = entry_handle_mut.loan_uninit();
         unsafe { *entry_value_uninit.value_mut().as_mut_ptr() = 4321 };
         entry_handle_mut = unsafe { entry_value_uninit.assume_init_and_update() };
         assert_that!(*entry_handle.get(), eq 4321);
 
-        let entry_value_uninit = entry_handle_mut.loan_uninit();
+        let mut entry_value_uninit = entry_handle_mut.loan_uninit();
         entry_value_uninit.value_mut().write(4567);
         // before calling assume_init_and_update(), the old value is read
         assert_that!(*entry_handle.get(), eq 4321);
