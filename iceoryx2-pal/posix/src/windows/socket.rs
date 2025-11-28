@@ -149,6 +149,38 @@ pub unsafe fn socketpair(
     socket_vector.add(1).write(socket_data_2);
     remove(socket_path.as_ptr().cast());
 
+    // Harmonize the send/receive buffers for both sockets
+    let buffer_size: int = 2_i32.pow(15);
+    setsockopt(
+        *socket_vector.add(0) as _,
+        SOL_SOCKET,
+        SO_SNDBUF,
+        (&buffer_size as *const int).cast(),
+        core::mem::size_of::<int>() as _,
+    );
+    setsockopt(
+        *socket_vector.add(0) as _,
+        SOL_SOCKET,
+        SO_RCVBUF,
+        (&buffer_size as *const int).cast(),
+        core::mem::size_of::<int>() as _,
+    );
+
+    setsockopt(
+        *socket_vector.add(1) as _,
+        SOL_SOCKET,
+        SO_SNDBUF,
+        (&buffer_size as *const int).cast(),
+        core::mem::size_of::<int>() as _,
+    );
+    setsockopt(
+        *socket_vector.add(1) as _,
+        SOL_SOCKET,
+        SO_RCVBUF,
+        (&buffer_size as *const int).cast(),
+        core::mem::size_of::<int>() as _,
+    );
+
     0
 }
 

@@ -1,0 +1,107 @@
+name: Nightly iceoryx2 run
+
+on:
+  schedule:
+  - cron: "0 6 * * 1-5"
+  workflow_dispatch:
+
+jobs:
+
+  cargo-nextest-nightly:
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+      - name: Build and cache cargo-nextest
+        uses: ./.github/actions/build-and-cache-rust-tool
+        with:
+          rust-toolchain: stable
+          check-and-install-cmd: cargo-nextest --version > /dev/null || cargo install cargo-nextest --locked
+          print-version-cmd: cargo-nextest --version
+          # increment cache-N-${{}} if a new nextest version is required
+          cache-key: cache-2-${{ runner.os }}-cargo-nextest
+          artifact-bin-name: cargo-nextest
+          artifact-upload-name: ${{ runner.os }}-cargo-nextest
+
+  static-code-analysis-rust-nightly:
+    strategy:
+      matrix:
+        os: [windows-latest]
+        cargo-features-flag: [""]
+    uses: ./.github/workflows/static_code_analysis_workflow.yml
+    with:
+      os: ${{ matrix.os }}
+      cargo-features-flag: ${{ matrix.cargo-features-flag }}
+
+  x86_32-nightly:
+    needs: [static-code-analysis-rust-nightly, cargo-nextest-nightly]
+    strategy:
+      matrix:
+        os: [ubuntu-latest] # [windows-latest, ubuntu-latest, macos-latest]
+        toolchain: [stable] # [stable, 1.83.0, beta, nightly]
+    uses: ./.github/workflows/x86_32_workflow.yml
+    with: 
+      os: ${{ matrix.os }}
+      toolchain: ${{ matrix.toolchain }}
+      name: "release"
+      mode: "release"
+      cmake-build-type: "-DCMAKE_BUILD_TYPE=Release"
+
+  x86_64-stable-nightly:
+    needs: [static-code-analysis-rust-nightly, cargo-nextest-nightly]
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        # NOTE: enable for MinGW
+        # toolchain: [stable, stable-gnu, 1.83.0]
+        toolchain: [stable, 1.83.0]
+        mode:
+          - name: "release"
+            arg: "--release"
+            cmake-build-type: "-DCMAKE_BUILD_TYPE=Release" # required for Makefile Generators at config time
+            cmake-build-config: "--config Release" # required for Visual Studio at build and install time
+        cargo-features-flag: ["", "--features libc_platform"]
+        include:
+          - os: windows-latest
+            toolchain: stable
+            cmake-cxx-flags: '-DCMAKE_CXX_FLAGS="/MP"'
+        exclude:
+          - os: windows-latest
+            cargo-features-flag: "--features libc_platform"
+          - os: macos-latest
+            cargo-features-flag: "--features libc_platform"
+    uses: ./.github/workflows/x86_64_stable_workflow.yml
+    with:
+      os: ${{ matrix.os }}
+      toolchain: ${{ matrix.toolchain }}
+      mode-name: ${{ matrix.mode.name }}
+      mode-arg: ${{ matrix.mode.arg }}
+      mode-cmake-build-type: ${{ matrix.mode.cmake-build-type }}
+      mode-cmake-build-config: ${{ matrix.mode.cmake-build-config }}
+      mode-cmake-cxx-flags: ${{ matrix.mode.cmake-cxx-flags }}
+      cargo-features-flag: ${{ matrix.cargo-features-flag }}
+
+  x86_64_unstable-nightly:
+    needs: [static-code-analysis-rust-nightly, cargo-nextest-nightly]
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        toolchain: [beta, nightly]
+        mode: 
+          - name: "release"
+            arg: "--release"
+          - name: "debug"
+            arg: ""
+        exclude:
+          - os: ubuntu-latest # Already run in Pull-Requests
+            toolchain: [nightly]
+            mode:
+              - name: "debug"
+                arg: ""
+    uses: ./.github/workflows/x86_64_unstable_workflow.yml
+    with:
+      os: ${{ matrix.os }}
+      toolchain: ${{ matrix.toolchain }}
+      mode-arg: ${{ matrix.mode.arg }}

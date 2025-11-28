@@ -16,3 +16,5 @@ if ($?) { mkdir "C:\Temp\iceoryx2\services" }
 if ($?) { mkdir "C:\Temp\iceoryx2\tests" }
 if ($?) { mkdir "C:\Temp\iceoryx2\shm" }
 if ($?) { icacls "C:\Temp" /t /c /grant Everyone:F }
+
+exit $LASTEXITCODE

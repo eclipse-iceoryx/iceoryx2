@@ -77,6 +77,15 @@ get `llvm` with the following command.
 choco install -y llvm
 ```
 
+### Install Python
+
+In order to use the Python Bindings in `iceoryx2`, it is recommended
+to install Python 3.x.
+
+```powershell
+choco install -y python
+```
+
 ### Install cargo-nextest [optional]
 
 [cargo-nextest](https://nexte.st/) is a next-gen test runner for Rust. It can be
@@ -84,7 +93,7 @@ used as direct replacement for `cargo test` and has a nicer output than the
 default test runner.
 
 ```powershell
-cargo install cargo-nextest
+cargo install -y cargo-nextest
 ```
 
 ## Build iceoryx2
@@ -92,9 +101,9 @@ cargo install cargo-nextest
 ### Get iceoryx2
 
 > [!NOTE]
-> If you installed `llvm`, `git` and `cmake` with `choco`, you need to open a
-> new powershell instance to execute the following commands, else you will get
-> a `the term 'git' is not recognized` error!
+> If you installed `llvm`, `git`, `python` and `cmake` with `choco`, you need
+> to open a new powershell instance to execute the following commands,
+> else you will get a `the term 'git' is not recognized` error!
 
 ```powershell
 git clone https://github.com/eclipse-iceoryx/iceoryx2.git
