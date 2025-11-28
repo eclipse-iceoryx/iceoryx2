@@ -7,6 +7,7 @@ members = [
 
     "iceoryx2-bb/lock-free/",
     "iceoryx2-bb/threadsafe/",
+    "iceoryx2-bb/concurrency",
     "iceoryx2-bb/conformance-test-macros",
     "iceoryx2-bb/container",
     "iceoryx2-bb/derive-macros",
@@ -81,6 +82,7 @@ iceoryx2-log-types = { version = "0.7.0", path = "iceoryx2-log/types/" }
 iceoryx2-loggers = { version = "0.7.0", path = "iceoryx2-log/loggers/", default-features = false }
 iceoryx2-bb-threadsafe = { version = "0.7.0", path = "iceoryx2-bb/threadsafe/" }
 iceoryx2-bb-lock-free = { version = "0.7.0", path = "iceoryx2-bb/lock-free/" }
+iceoryx2-bb-concurrency = { version = "0.7.0", path = "iceoryx2-bb/concurrency/" }
 iceoryx2-bb-conformance-test-macros = { version = "0.7.0", path = "iceoryx2-bb/conformance-test-macros"}
 iceoryx2-bb-container = { version = "0.7.0", path = "iceoryx2-bb/container/" }
 iceoryx2-bb-derive-macros = { version = "0.7.0", path = "iceoryx2-bb/derive-macros/" }

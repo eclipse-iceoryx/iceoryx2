@@ -1304,6 +1304,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "iceoryx2-bb-concurrency"
+version = "0.7.0"
+dependencies = [
+ "iceoryx2-pal-concurrency-sync",
+]
+
+[[package]]
 name = "iceoryx2-bb-conformance-test-macros"
 version = "0.7.0"
 dependencies = [
