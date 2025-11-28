@@ -68,6 +68,10 @@ rust_library(
         # - therefore the path needs to be corrected
         "BAZEL_BINDGEN_PATH_CORRECTION": "/.."
     },
+    crate_features = select({
+        "//:custom_pal_posix_enabled": ["custom_pal_posix"],
+        "//conditions:default": [""],
+    }),
 )
 
 rust_test_suite(
