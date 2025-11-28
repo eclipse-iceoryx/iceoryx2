@@ -382,6 +382,9 @@ jobs:
           cmake --build target/ff/cc/build
           cmake --install target/ff/cc/build
 
+      - name: Run C++ iceoryx2-bb tests
+        run: target/ff/cc/build/tests/iceoryx2-bb-container-tests
+
       - name: Run C language binding tests
         run: target/ff/cc/build/tests/iceoryx2-c-tests
 
@@ -511,6 +514,9 @@ jobs:
                 -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/${{ matrix.mode.name }}"
           cmake --build target/ff/cc/build ${{ matrix.mode.cmake-build-config }}
           cmake --install target/ff/cc/build ${{ matrix.mode.cmake-build-config }}
+
+      - name: Run C++ iceoryx2-bb tests
+        run: target/ff/cc/build/tests/iceoryx2-bb-container-tests
 
       - name: Run C language binding tests
         run: target/ff/cc/build/tests/iceoryx2-c-tests
