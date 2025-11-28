@@ -24,8 +24,7 @@ cc_library(
     srcs = glob(
         [
             "src/**",
-            ],
-        ),
+        ]),
     hdrs = glob(["include/**"]),
     strip_include_prefix = "include",
 )

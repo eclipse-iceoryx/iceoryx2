@@ -18,7 +18,7 @@ cc_binary(
         "src/ipc_publisher.cpp",
     ],
     deps = [
-        "//iceoryx2-bb/cxx:iceoryx2-bb-cxx",
+        "//:iceoryx2-bb-cxx",
         "//:iceoryx2-cxx-static",
     ],
 )
@@ -29,7 +29,7 @@ cc_binary(
         "src/ipc_threadsafe_subscriber.cpp",
     ],
     deps = [
-        "//iceoryx2-bb/cxx:iceoryx2-bb-cxx",
+        "//:iceoryx2-bb-cxx",
         "//:iceoryx2-cxx-static",
     ],
 )
@@ -40,7 +40,7 @@ cc_binary(
         "src/local_pubsub.cpp",
     ],
     deps = [
-        "//iceoryx2-bb/cxx:iceoryx2-bb-cxx",
+        "//:iceoryx2-bb-cxx",
         "//:iceoryx2-cxx-static",
     ],
 )

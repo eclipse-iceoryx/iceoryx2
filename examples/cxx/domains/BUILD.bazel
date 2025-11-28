@@ -19,7 +19,7 @@ cc_binary(
         "src/transmission_data.hpp",
     ],
     deps = [
-        "//iceoryx2-bb/cxx:iceoryx2-bb-cxx",
+        "//:iceoryx2-bb-cxx",
         "//:iceoryx2-cxx-static",
     ],
 )
@@ -31,7 +31,7 @@ cc_binary(
         "src/transmission_data.hpp",
     ],
     deps = [
-        "//iceoryx2-bb/cxx:iceoryx2-bb-cxx",
+        "//:iceoryx2-bb-cxx",
         "//:iceoryx2-cxx-static",
     ],
 )
@@ -42,7 +42,7 @@ cc_binary(
         "src/discovery.cpp",
     ],
     deps = [
-        "//iceoryx2-bb/cxx:iceoryx2-bb-cxx",
+        "//:iceoryx2-bb-cxx",
         "//:iceoryx2-cxx-static",
     ],
 )
