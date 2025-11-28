@@ -10,6 +10,9 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 version = { workspace = true }
 
+[lints]
+workspace = true
+
 [features]
 # Use https://crates.io/crates/libc for the platform abstraction. This simplifies
 # cross-compilation since bindgen is not required anymore. Unfortunately, the libc crate

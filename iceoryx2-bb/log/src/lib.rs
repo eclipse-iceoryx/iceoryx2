@@ -197,8 +197,20 @@ static DEFAULT_LOGGER: logger::null::Logger = logger::null::Logger::new();
 const DEFAULT_LOG_LEVEL: LogLevel = LogLevel::Info;
 
 static mut LOGGER: Option<&'static dyn Log> = None;
+
+#[cfg(not(all(test, loom)))]
 static LOG_LEVEL: IoxAtomicU8 = IoxAtomicU8::new(DEFAULT_LOG_LEVEL as u8);
+#[cfg(all(test, loom))]
+static LOG_LEVEL: std::sync::LazyLock<IoxAtomicU8> = std::sync::LazyLock::new(|| {
+    unimplemented!("loom does not provide const-initialization for atomic variables.")
+});
+
+#[cfg(not(all(test, loom)))]
 static INIT: Once = Once::new();
+#[cfg(all(test, loom))]
+static INIT: std::sync::LazyLock<Once> = std::sync::LazyLock::new(|| {
+    unimplemented!("loom does not provide const-initialization for atomic variables.")
+});
 
 pub trait Log: Send + Sync {
     /// logs a message

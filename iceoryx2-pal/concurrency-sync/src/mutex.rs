@@ -27,7 +27,15 @@ impl Default for Mutex {
 }
 
 impl Mutex {
+    #[cfg(not(all(test, loom)))]
     pub const fn new() -> Self {
+        Self {
+            state: IoxAtomicU32::new(0),
+        }
+    }
+
+    #[cfg(all(test, loom))]
+    pub fn new() -> Self {
         Self {
             state: IoxAtomicU32::new(0),
         }

@@ -151,6 +151,7 @@ impl Errno {
     }
 }
 
+#[cfg(not(all(test, loom)))]
 pub unsafe fn strerror_r(errnum: int, buf: *mut c_char, buflen: size_t) -> int {
     use core::sync::atomic::Ordering;
     use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;

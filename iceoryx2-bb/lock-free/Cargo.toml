@@ -10,6 +10,9 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 version = { workspace = true }
 
+[lints]
+workspace = true
+
 [dependencies]
 iceoryx2-bb-log = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }
@@ -21,3 +24,6 @@ iceoryx2-bb-posix = { workspace = true }
 iceoryx2-bb-testing = { workspace = true }
 iceoryx2-pal-testing = { workspace = true }
 generic-tests = { workspace = true }
+
+[target.'cfg(loom)'.dev-dependencies]
+loom = { workspace = true }
