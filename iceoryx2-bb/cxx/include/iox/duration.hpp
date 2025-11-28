@@ -139,11 +139,6 @@ class Duration {
 
     // BEGIN CONSTRUCTORS AND ASSIGNMENT
 
-    /// @brief Construct a Duration object from timeval
-    /// @param[in] value as timeval
-    // AXIVION Next Line AutosarC++19_03-A8.4.7 : Argument is larger than two words
-    constexpr explicit Duration(const struct timeval& value) noexcept;
-
     /// @brief Construct a Duration object from timespec
     /// @param[in] value as timespec
     // AXIVION Next Line AutosarC++19_03-A8.4.7 : Argument is larger than two words
@@ -253,11 +248,6 @@ class Duration {
 
     /// @brief converts duration in a timespec c struct
     struct timespec timespec() const noexcept;
-
-    /// @brief converts duration in a timeval c struct
-    ///     timeval::tv_sec = seconds since the Epoch (01.01.1970)
-    ///     timeval::tv_usec = microseconds
-    constexpr struct timeval timeval() const noexcept;
 
     // END CONVERSION
 
