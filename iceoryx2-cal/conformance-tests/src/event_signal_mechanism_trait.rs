@@ -18,7 +18,7 @@ pub mod event_signal_mechanism_trait {
     use core::time::Duration;
     use std::sync::Barrier;
 
-    use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicU64;
+    use iceoryx2_bb_concurrency::atomic::AtomicU64;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_posix::clock::Time;
     use iceoryx2_bb_testing::{assert_that, watchdog::Watchdog};
@@ -60,7 +60,7 @@ pub mod event_signal_mechanism_trait {
         let _watchdog = Watchdog::new();
         let mut sut = Sut::new();
         let barrier = Barrier::new(2);
-        let counter = IoxAtomicU64::new(0);
+        let counter = AtomicU64::new(0);
 
         unsafe {
             assert_that!(sut.init(), is_ok);
