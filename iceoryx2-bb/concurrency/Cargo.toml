@@ -21,4 +21,6 @@ iceoryx2-pal-concurrency-sync = { workspace = true }
 paste = { workspace = true }
 
 [dev-dependencies]
+iceoryx2-bb-posix = { workspace = true }
+iceoryx2-bb-testing = { workspace = true }
 iceoryx2-pal-testing = { workspace = true }
