@@ -66,6 +66,7 @@ target_sources(iceoryx2-bb-cxx-tests
     PRIVATE
     ${PROJECT_SOURCE_DIR}/src/import/moduletests/error_reporting/test_auxiliary_types.cpp
     ${PROJECT_SOURCE_DIR}/src/import/moduletests/error_reporting/test_custom_error_reporting.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/error_reporting/test_default_error_handler.cpp
     ${PROJECT_SOURCE_DIR}/src/import/moduletests/error_reporting/test_error_kind.cpp
     ${PROJECT_SOURCE_DIR}/src/import/moduletests/error_reporting/test_error_reporting_macros.cpp
     ${PROJECT_SOURCE_DIR}/src/import/moduletests/error_reporting/test_error_reporting_violation.cpp
