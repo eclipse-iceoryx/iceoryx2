@@ -14,8 +14,8 @@
 #define IOX2_ATTRIBUTE_VERIFIER_HPP
 
 #include "attribute_error.hpp"
-#include "iox/expected.hpp"
-#include "iox/vector.hpp"
+#include "iox2/legacy/expected.hpp"
+#include "iox2/legacy/vector.hpp"
 #include "iox2/attribute.hpp"
 #include "iox2/attribute_set.hpp"
 #include "iox2/internal/iceoryx2.hpp"

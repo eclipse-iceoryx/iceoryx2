@@ -13,8 +13,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox/cli/command_line_parser.hpp"
-#include "iox/std_string_support.hpp"
+#include "iox2/legacy/cli/command_line_parser.hpp"
+#include "iox2/legacy/std_string_support.hpp"
 
 #include <algorithm>
 

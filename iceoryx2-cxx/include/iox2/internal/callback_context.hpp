@@ -13,7 +13,7 @@
 #ifndef IOX2_INTERNAL_CALLBACK_CONTEXT_HPP
 #define IOX2_INTERNAL_CALLBACK_CONTEXT_HPP
 
-#include "iox/optional.hpp"
+#include "iox2/legacy/optional.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/node_details.hpp"
 #include "iox2/node_id.hpp"

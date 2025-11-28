@@ -13,8 +13,8 @@
 #ifndef IOX2_PENDING_RESPONSE_HPP
 #define IOX2_PENDING_RESPONSE_HPP
 
-#include "iox/expected.hpp"
-#include "iox/optional.hpp"
+#include "iox2/legacy/expected.hpp"
+#include "iox2/legacy/optional.hpp"
 #include "iox/slice.hpp"
 #include "iox2/header_request_response.hpp"
 #include "iox2/payload_info.hpp"

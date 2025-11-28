@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/node_name.hpp"
-#include "iox/assertions.hpp"
+#include "iox2/legacy/assertions.hpp"
 
 #include <cstring>
 

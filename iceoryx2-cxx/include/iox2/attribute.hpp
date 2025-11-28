@@ -13,7 +13,7 @@
 #ifndef IOX2_ATTRIBUTE_HPP
 #define IOX2_ATTRIBUTE_HPP
 
-#include "iox/string.hpp"
+#include "iox2/legacy/string.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 
 namespace iox2 {

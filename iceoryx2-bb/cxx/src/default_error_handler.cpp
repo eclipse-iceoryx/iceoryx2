@@ -13,7 +13,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox/error_reporting/custom/default/default_error_handler.hpp"
+#include "iox2/legacy/error_reporting/custom/default/default_error_handler.hpp"
 
 namespace iox {
 namespace er {

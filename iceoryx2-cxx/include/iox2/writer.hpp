@@ -13,7 +13,7 @@
 #ifndef IOX2_WRITER_HPP
 #define IOX2_WRITER_HPP
 
-#include "iox/expected.hpp"
+#include "iox2/legacy/expected.hpp"
 #include "iox2/entry_handle_mut.hpp"
 #include "iox2/entry_handle_mut_error.hpp"
 #include "iox2/internal/service_builder_internal.hpp"

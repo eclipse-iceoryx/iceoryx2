@@ -14,11 +14,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox/duration.hpp"
-#include "iox/assertions.hpp"
-#include "iox/logging.hpp"
+#include "iox2/legacy/duration.hpp"
+#include "iox2/legacy/assertions.hpp"
+#include "iox2/legacy/logging.hpp"
 
-#include "iox/posix_call.hpp"
+#include "iox2/legacy/posix_call.hpp"
 
 namespace iox {
 namespace units {

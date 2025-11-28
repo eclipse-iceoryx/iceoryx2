@@ -13,7 +13,7 @@
 #ifndef IOX2_REQUEST_MUT_HPP
 #define IOX2_REQUEST_MUT_HPP
 
-#include "iox/expected.hpp"
+#include "iox2/legacy/expected.hpp"
 #include "iox/slice.hpp"
 #include "iox2/header_request_response.hpp"
 #include "iox2/internal/iceoryx2.hpp"

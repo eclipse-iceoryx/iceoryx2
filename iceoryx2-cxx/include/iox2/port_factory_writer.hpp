@@ -13,7 +13,7 @@
 #ifndef IOX2_PORTFACTORY_WRITER_HPP
 #define IOX2_PORTFACTORY_WRITER_HPP
 
-#include "iox/expected.hpp"
+#include "iox2/legacy/expected.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/writer.hpp"
 #include "iox2/writer_error.hpp"

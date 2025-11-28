@@ -13,7 +13,7 @@
 #ifndef IOX2_EXAMPLE_HEALTH_MONITORING_PUBSUB_EVENT_HPP
 #define IOX2_EXAMPLE_HEALTH_MONITORING_PUBSUB_EVENT_HPP
 
-#include "iox/into.hpp"
+#include "iox2/legacy/into.hpp"
 #include "iox2/iceoryx2.hpp"
 
 #include <cstdint>

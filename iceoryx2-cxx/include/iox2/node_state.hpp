@@ -13,10 +13,10 @@
 #ifndef IOX2_NODE_STATE_HPP
 #define IOX2_NODE_STATE_HPP
 
-#include "iox/expected.hpp"
-#include "iox/function.hpp"
-#include "iox/optional.hpp"
-#include "iox/variant.hpp"
+#include "iox2/legacy/expected.hpp"
+#include "iox2/legacy/function.hpp"
+#include "iox2/legacy/optional.hpp"
+#include "iox2/legacy/variant.hpp"
 #include "node_details.hpp"
 #include "node_failure_enums.hpp"
 #include "node_id.hpp"

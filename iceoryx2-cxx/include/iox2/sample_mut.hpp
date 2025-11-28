@@ -13,7 +13,7 @@
 #ifndef IOX2_SAMPLE_MUT_HPP
 #define IOX2_SAMPLE_MUT_HPP
 
-#include "iox/expected.hpp"
+#include "iox2/legacy/expected.hpp"
 #include "iox/slice.hpp"
 #include "iox2/header_publish_subscribe.hpp"
 #include "iox2/iceoryx2.h"

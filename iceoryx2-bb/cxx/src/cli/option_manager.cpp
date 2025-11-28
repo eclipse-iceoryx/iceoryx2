@@ -13,7 +13,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox/cli/option_manager.hpp"
+#include "iox2/legacy/cli/option_manager.hpp"
 
 namespace iox {
 namespace cli {

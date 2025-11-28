@@ -13,7 +13,7 @@
 #ifndef IOX2_DYNAMIC_CONFIG_PUBLISH_SUBSCRIBE_HPP
 #define IOX2_DYNAMIC_CONFIG_PUBLISH_SUBSCRIBE_HPP
 
-#include "iox/function.hpp"
+#include "iox2/legacy/function.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/publisher_details.hpp"
 #include "iox2/subscriber_details.hpp"

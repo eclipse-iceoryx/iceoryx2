@@ -13,7 +13,7 @@
 #ifndef IOX2_ATTRIBUTE_SET_HPP
 #define IOX2_ATTRIBUTE_SET_HPP
 
-#include "iox/function.hpp"
+#include "iox2/legacy/function.hpp"
 #include "iox2/attribute.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 

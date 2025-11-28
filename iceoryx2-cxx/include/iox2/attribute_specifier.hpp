@@ -14,7 +14,7 @@
 #define IOX2_ATTRIBUTE_SPECIFIER_HPP
 
 #include "attribute_error.hpp"
-#include "iox/expected.hpp"
+#include "iox2/legacy/expected.hpp"
 #include "iox2/attribute_error.hpp"
 #include "iox2/attribute_set.hpp"
 

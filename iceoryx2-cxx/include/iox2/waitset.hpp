@@ -14,8 +14,8 @@
 #define IOX2_WAITSET_HPP
 
 #include "iox/builder_addendum.hpp"
-#include "iox/duration.hpp"
-#include "iox/expected.hpp"
+#include "iox2/legacy/duration.hpp"
+#include "iox2/legacy/expected.hpp"
 #include "iox2/callback_progression.hpp"
 #include "iox2/file_descriptor.hpp"
 #include "iox2/internal/iceoryx2.hpp"

@@ -13,9 +13,9 @@
 #ifndef IOX2_CONFIG_HPP
 #define IOX2_CONFIG_HPP
 
-#include "iox/duration.hpp"
-#include "iox/file_name.hpp"
-#include "iox/path.hpp"
+#include "iox2/legacy/duration.hpp"
+#include "iox2/legacy/file_name.hpp"
+#include "iox2/legacy/path.hpp"
 #include "iox2/config_creation_error.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/unable_to_deliver_strategy.hpp"

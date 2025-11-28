@@ -13,7 +13,7 @@
 #ifndef IOX2_READER_HPP
 #define IOX2_READER_HPP
 
-#include "iox/expected.hpp"
+#include "iox2/legacy/expected.hpp"
 #include "iox2/entry_handle.hpp"
 #include "iox2/entry_handle_error.hpp"
 #include "iox2/internal/service_builder_internal.hpp"

@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox/cli_definition.hpp"
+#include "iox2/legacy/cli_definition.hpp"
 #include "iox2/iceoryx2.hpp"
 #include "transmission_data.hpp"
 

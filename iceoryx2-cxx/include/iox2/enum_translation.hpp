@@ -13,8 +13,8 @@
 #ifndef IOX2_ENUM_TRANSLATION_HPP
 #define IOX2_ENUM_TRANSLATION_HPP
 
-#include "iox/assertions.hpp"
-#include "iox/into.hpp"
+#include "iox2/legacy/assertions.hpp"
+#include "iox2/legacy/into.hpp"
 #include "iox2/allocation_strategy.hpp"
 #include "iox2/attribute_error.hpp"
 #include "iox2/callback_progression.hpp"

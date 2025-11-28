@@ -13,7 +13,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox/path.hpp"
+#include "iox2/legacy/path.hpp"
 
 namespace iox {
 namespace detail {

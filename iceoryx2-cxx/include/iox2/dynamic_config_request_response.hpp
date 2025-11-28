@@ -13,7 +13,7 @@
 #ifndef IOX2_DYNAMIC_CONFIG_REQUEST_RESPONSE_HPP
 #define IOX2_DYNAMIC_CONFIG_REQUEST_RESPONSE_HPP
 
-#include "iox/function.hpp"
+#include "iox2/legacy/function.hpp"
 #include "iox2/client_details.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/server_details.hpp"

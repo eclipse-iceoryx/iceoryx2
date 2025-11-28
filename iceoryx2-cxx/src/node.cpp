@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/node.hpp"
-#include "iox/into.hpp"
+#include "iox2/legacy/into.hpp"
 #include "iox2/internal/callback_context.hpp"
 
 namespace iox2 {

@@ -13,7 +13,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox/type_traits.hpp"
+#include "iox2/legacy/type_traits.hpp"
 
 namespace iox {
 // NOLINTJUSTIFICATION See definitions in header file.

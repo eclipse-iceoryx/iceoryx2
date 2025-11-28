@@ -13,7 +13,7 @@
 #ifndef IOX2_SAMPLE_MUT_UNINIT_HPP
 #define IOX2_SAMPLE_MUT_UNINIT_HPP
 
-#include "iox/function.hpp"
+#include "iox2/legacy/function.hpp"
 #include "iox/slice.hpp"
 #include "iox2/header_publish_subscribe.hpp"
 #include "iox2/sample_mut.hpp"

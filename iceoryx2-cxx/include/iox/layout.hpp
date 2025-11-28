@@ -13,7 +13,7 @@
 #ifndef IOX_LAYOUT_HPP
 #define IOX_LAYOUT_HPP
 
-#include "iox/expected.hpp"
+#include "iox2/legacy/expected.hpp"
 #include <cstdint>
 #include <type_traits>
 

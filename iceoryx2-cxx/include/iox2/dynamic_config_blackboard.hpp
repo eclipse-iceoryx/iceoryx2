@@ -13,7 +13,7 @@
 #ifndef IOX2_DYNAMIC_CONFIG_BLACKBOARD_HPP
 #define IOX2_DYNAMIC_CONFIG_BLACKBOARD_HPP
 
-#include "iox/function.hpp"
+#include "iox2/legacy/function.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/reader_details.hpp"
 #include "iox2/writer_details.hpp"

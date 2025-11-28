@@ -13,7 +13,7 @@
 #ifndef IOX2_RESPONSE_MUT_UNINIT_HPP
 #define IOX2_RESPONSE_MUT_UNINIT_HPP
 
-#include "iox/function.hpp"
+#include "iox2/legacy/function.hpp"
 #include "iox/slice.hpp"
 #include "iox2/payload_info.hpp"
 #include "iox2/response_mut.hpp"

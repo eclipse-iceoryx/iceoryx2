@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox/string.hpp"
-#include "iox/vector.hpp"
+#include "iox2/legacy/string.hpp"
+#include "iox2/legacy/vector.hpp"
 #include "iox2/log.hpp"
 #include "iox2/log_level.hpp"
 

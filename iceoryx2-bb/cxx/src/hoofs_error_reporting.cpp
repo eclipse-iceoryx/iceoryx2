@@ -16,7 +16,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 
-#include "iox/detail/hoofs_error_reporting.hpp"
+#include "iox2/legacy/detail/hoofs_error_reporting.hpp"
 
 namespace iox {
 // NOLINTJUSTIFICATION Use to map enum tag names to strings

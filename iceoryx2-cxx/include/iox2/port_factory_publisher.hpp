@@ -14,7 +14,7 @@
 #define IOX2_PORTFACTORY_PUBLISHER_HPP
 
 #include "iox/builder_addendum.hpp"
-#include "iox/expected.hpp"
+#include "iox2/legacy/expected.hpp"
 #include "iox2/allocation_strategy.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/publisher.hpp"

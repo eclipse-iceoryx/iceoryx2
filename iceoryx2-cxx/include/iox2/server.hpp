@@ -13,7 +13,7 @@
 #ifndef IOX2_SERVER_HPP
 #define IOX2_SERVER_HPP
 
-#include "iox/expected.hpp"
+#include "iox2/legacy/expected.hpp"
 #include "iox/slice.hpp"
 #include "iox2/active_request.hpp"
 #include "iox2/service_type.hpp"

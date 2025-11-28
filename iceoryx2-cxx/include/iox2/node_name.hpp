@@ -13,8 +13,8 @@
 #ifndef IOX2_NODE_NAME_HPP
 #define IOX2_NODE_NAME_HPP
 
-#include "iox/expected.hpp"
-#include "iox/string.hpp"
+#include "iox2/legacy/expected.hpp"
+#include "iox2/legacy/string.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/semantic_string.hpp"
 

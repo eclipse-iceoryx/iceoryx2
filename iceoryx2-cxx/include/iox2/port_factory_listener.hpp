@@ -13,7 +13,7 @@
 #ifndef IOX2_PORTFACTORY_LISTENER_HPP
 #define IOX2_PORTFACTORY_LISTENER_HPP
 
-#include "iox/expected.hpp"
+#include "iox2/legacy/expected.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/listener.hpp"
 #include "iox2/service_type.hpp"

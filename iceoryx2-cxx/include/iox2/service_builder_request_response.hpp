@@ -14,7 +14,7 @@
 #define IOX2_SERVICE_BUILDER_REQUEST_RESPONSE_HPP
 
 #include "iox/builder_addendum.hpp"
-#include "iox/expected.hpp"
+#include "iox2/legacy/expected.hpp"
 #include "iox/layout.hpp"
 #include "iox2/attribute_specifier.hpp"
 #include "iox2/attribute_verifier.hpp"

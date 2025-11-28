@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox/uninitialized_array.hpp"
+#include "iox2/legacy/uninitialized_array.hpp"
 #include "iox2/node.hpp"
 #include "iox2/service.hpp"
 

@@ -13,7 +13,7 @@
 #ifndef IOX_ASSERTIONS_ADDENDUM_HPP
 #define IOX_ASSERTIONS_ADDENDUM_HPP
 
-#include "iox/assertions.hpp"
+#include "iox2/legacy/assertions.hpp"
 
 // NOLINTBEGIN(cppcoreguidelines-macro-usage)
 #define IOX_TODO() iox::er::forwardPanic(IOX_CURRENT_SOURCE_LOCATION, "Not yet implemented!")

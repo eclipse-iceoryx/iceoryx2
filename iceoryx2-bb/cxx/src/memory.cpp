@@ -14,7 +14,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox/memory.hpp"
+#include "iox2/legacy/memory.hpp"
 
 #include <cstdlib>
 

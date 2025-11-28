@@ -13,11 +13,11 @@
 #ifndef IOX2_ICEORYX2_HPP
 #define IOX2_ICEORYX2_HPP
 
-#include "iox/duration.hpp"
+#include "iox2/legacy/duration.hpp"
 #include "iox/layout.hpp"
 #include "iox/slice.hpp"
-#include "iox/string.hpp"
-#include "iox/vector.hpp"
+#include "iox2/legacy/string.hpp"
+#include "iox2/legacy/vector.hpp"
 
 #include "iox2/active_request.hpp"
 #include "iox2/allocation_strategy.hpp"

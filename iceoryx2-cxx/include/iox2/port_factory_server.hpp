@@ -14,7 +14,7 @@
 #define IOX2_PORTFACTORY_SERVER_HPP
 
 #include "iox/builder_addendum.hpp"
-#include "iox/expected.hpp"
+#include "iox2/legacy/expected.hpp"
 #include "iox2/server.hpp"
 #include "iox2/server_error.hpp"
 #include "iox2/service_type.hpp"

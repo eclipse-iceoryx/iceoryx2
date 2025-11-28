@@ -13,8 +13,8 @@
 #ifndef IOX2_STATIC_CONFIG_EVENT_HPP
 #define IOX2_STATIC_CONFIG_EVENT_HPP
 
-#include "iox/duration.hpp"
-#include "iox/optional.hpp"
+#include "iox2/legacy/duration.hpp"
+#include "iox2/legacy/optional.hpp"
 #include "iox2/attribute_set.hpp"
 #include "iox2/event_id.hpp"
 #include "iox2/iceoryx2.h"

@@ -14,12 +14,12 @@
 #define IOX2_NODE_HPP
 
 #include "iox/builder_addendum.hpp"
-#include "iox/duration.hpp"
-#include "iox/expected.hpp"
-#include "iox/function.hpp"
 #include "iox2/callback_progression.hpp"
 #include "iox2/config.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/legacy/duration.hpp"
+#include "iox2/legacy/expected.hpp"
+#include "iox2/legacy/function.hpp"
 #include "iox2/node_id.hpp"
 #include "iox2/node_name.hpp"
 #include "iox2/node_state.hpp"

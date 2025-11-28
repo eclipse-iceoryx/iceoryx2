@@ -13,8 +13,8 @@
 #ifndef IOX2_UNIQUE_PORT_ID_HPP
 #define IOX2_UNIQUE_PORT_ID_HPP
 
-#include "iox/optional.hpp"
-#include "iox/vector.hpp"
+#include "iox2/legacy/optional.hpp"
+#include "iox2/legacy/vector.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 
 namespace iox2 {

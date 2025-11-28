@@ -13,8 +13,8 @@
 #ifndef IOX2_PORTFACTORY_BLACKBOARD_HPP
 #define IOX2_PORTFACTORY_BLACKBOARD_HPP
 
-#include "iox/expected.hpp"
-#include "iox/uninitialized_array.hpp"
+#include "iox2/legacy/expected.hpp"
+#include "iox2/legacy/uninitialized_array.hpp"
 #include "iox2/attribute_set.hpp"
 #include "iox2/dynamic_config_blackboard.hpp"
 #include "iox2/iceoryx2.h"

@@ -13,7 +13,7 @@
 #ifndef IOX2_CLIENT_HPP
 #define IOX2_CLIENT_HPP
 
-#include "iox/expected.hpp"
+#include "iox2/legacy/expected.hpp"
 #include "iox/slice.hpp"
 #include "iox2/internal/helper.hpp"
 #include "iox2/payload_info.hpp"

@@ -13,7 +13,7 @@
 #ifndef IOX2_PUBLISHER_HPP
 #define IOX2_PUBLISHER_HPP
 
-#include "iox/expected.hpp"
+#include "iox2/legacy/expected.hpp"
 #include "iox/slice.hpp"
 #include "iox2/connection_failure.hpp"
 #include "iox2/iceoryx2.h"
