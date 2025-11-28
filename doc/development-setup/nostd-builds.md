@@ -34,6 +34,16 @@ with the `std` feature disabled by disabling the default features.
 cargo build --package iceoryx2 --no-default-features
 ```
 
+### CMake
+
+To build CMake projects (C/C++) for `no_std` targets with CMake, disable the
+`std` feature via a CMake options
+
+```console
+cmake -S . -B target/ff/cc/build -DIOX2_FEATURE_STD=OFF
+cmake --build target/ff/cc/build
+```
+
 ### Bazel
 
 To build for `no_std` targets with Bazel, disable every feature requiring
