@@ -17,7 +17,7 @@
 
 use core::{fmt::Display, ptr::NonNull, sync::atomic::Ordering};
 
-use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicUsize;
+use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_elementary::math::align;
 use iceoryx2_log::fail;
 
@@ -27,7 +27,7 @@ pub use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocato
 pub struct BumpAllocator {
     pub(crate) start: usize,
     size: usize,
-    current_position: IoxAtomicUsize,
+    current_position: AtomicUsize,
 }
 
 impl Display for BumpAllocator {
@@ -48,7 +48,7 @@ impl BumpAllocator {
         Self {
             start: ptr.as_ptr() as usize,
             size,
-            current_position: IoxAtomicUsize::new(0),
+            current_position: AtomicUsize::new(0),
         }
     }
 

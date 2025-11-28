@@ -24,7 +24,7 @@ pub mod client {
     use iceoryx2::port::LoanError;
     use iceoryx2::prelude::*;
     use iceoryx2::testing::*;
-    use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicBool;
+    use iceoryx2_bb_concurrency::atomic::AtomicBool;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
@@ -152,7 +152,7 @@ pub mod client {
             .create()
             .unwrap();
         let server = service.server_builder().create().unwrap();
-        let has_sent_request = IoxAtomicBool::new(false);
+        let has_sent_request = AtomicBool::new(false);
         let barrier = Barrier::new(2);
 
         std::thread::scope(|s| {

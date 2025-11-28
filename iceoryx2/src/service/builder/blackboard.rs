@@ -22,7 +22,7 @@ use alloc::boxed::Box;
 use alloc::format;
 use alloc::vec::Vec;
 
-use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicU64;
+use iceoryx2_bb_concurrency::atomic::AtomicU64;
 use iceoryx2_bb_container::flatmap::RelocatableFlatMap;
 use iceoryx2_bb_container::queue::RelocatableContainer;
 use iceoryx2_bb_container::string::*;
@@ -316,7 +316,7 @@ impl BuilderInternals {
 #[derive(Debug, ZeroCopySend)]
 pub(crate) struct Entry {
     pub(crate) type_details: TypeDetail,
-    pub(crate) offset: IoxAtomicU64,
+    pub(crate) offset: AtomicU64,
 }
 
 #[repr(C)]
@@ -725,7 +725,7 @@ impl<
                                 };
                                 (*self.builder.internals[i].value_writer)(mem.data_ptr);
                                 // write offset to value in payload_shm to entries vector
-                                let res = entry.entries.push(Entry{type_details: self.builder.internals[i].value_type_details.clone(), offset: IoxAtomicU64::new(mem.offset.offset() as u64)});
+                                let res = entry.entries.push(Entry{type_details: self.builder.internals[i].value_type_details.clone(), offset: AtomicU64::new(mem.offset.offset() as u64)});
                                 if res.is_err() {
                                     error!(from self, "Writing the value offset to the blackboard management segment failed.");
                                     return false

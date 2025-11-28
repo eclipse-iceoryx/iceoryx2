@@ -63,7 +63,7 @@
 //! }
 //! ```
 
-use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicU64;
+use iceoryx2_bb_concurrency::atomic::AtomicU64;
 
 use core::{marker::PhantomData, sync::atomic::Ordering};
 
@@ -76,7 +76,7 @@ pub struct UniqueId {
 impl Default for UniqueId {
     fn default() -> Self {
         #[cfg(not(all(test, loom, feature = "std")))]
-        static COUNTER: IoxAtomicU64 = IoxAtomicU64::new(0);
+        static COUNTER: AtomicU64 = AtomicU64::new(0);
         #[cfg(all(test, loom, feature = "std"))]
         static COUNTER: std::sync::LazyLock<IoxAtomicU64> = std::sync::LazyLock::new(|| {
             unimplemented!("loom does not provide const-initialization for atomic variables.")
@@ -111,7 +111,7 @@ pub struct TypedUniqueId<T> {
 impl<T> Default for TypedUniqueId<T> {
     fn default() -> Self {
         #[cfg(not(all(test, loom, feature = "std")))]
-        static COUNTER: IoxAtomicU64 = IoxAtomicU64::new(0);
+        static COUNTER: AtomicU64 = AtomicU64::new(0);
         #[cfg(all(test, loom, feature = "std"))]
         static COUNTER: std::sync::LazyLock<IoxAtomicU64> = std::sync::LazyLock::new(|| {
             unimplemented!("loom does not provide const-initialization for atomic variables.")

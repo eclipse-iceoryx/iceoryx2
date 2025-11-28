@@ -23,7 +23,7 @@ pub mod server {
     use iceoryx2::prelude::*;
     use iceoryx2::service::port_factory::request_response::PortFactory;
     use iceoryx2::testing::*;
-    use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicBool;
+    use iceoryx2_bb_concurrency::atomic::AtomicBool;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -316,7 +316,7 @@ pub mod server {
         let barrier = Barrier::new(2);
         let send_barrier = Barrier::new(2);
 
-        let has_sent_response = IoxAtomicBool::new(false);
+        let has_sent_response = AtomicBool::new(false);
         std::thread::scope(|s| {
             s.spawn(|| {
                 let sut = service

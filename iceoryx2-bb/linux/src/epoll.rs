@@ -59,7 +59,7 @@ use core::mem::MaybeUninit;
 use core::sync::atomic::Ordering;
 use core::time::Duration;
 
-use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicUsize;
+use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_posix::{
     file::{AccessMode, FileBuilder, FileOpenError, FileReadError},
@@ -316,7 +316,7 @@ impl EpollBuilder {
 
         if !self.has_enabled_signal_handling {
             return Ok(Epoll {
-                len: IoxAtomicUsize::new(0),
+                len: AtomicUsize::new(0),
                 epoll_fd,
                 signal_fd: None,
             });
@@ -368,7 +368,7 @@ impl EpollBuilder {
         Ok(Epoll {
             epoll_fd,
             signal_fd: Some(signal_fd),
-            len: IoxAtomicUsize::new(0),
+            len: AtomicUsize::new(0),
         })
     }
 }
@@ -422,7 +422,7 @@ impl FileDescriptorEvent<'_> {
 pub struct Epoll {
     epoll_fd: FileDescriptor,
     signal_fd: Option<SignalFd>,
-    len: IoxAtomicUsize,
+    len: AtomicUsize,
 }
 
 impl Epoll {

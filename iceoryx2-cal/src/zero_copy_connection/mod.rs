@@ -25,7 +25,7 @@ pub use iceoryx2_bb_system_types::file_name::*;
 pub use iceoryx2_bb_system_types::path::Path;
 
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
-use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicU64;
+use iceoryx2_bb_concurrency::atomic::AtomicU64;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 
@@ -173,7 +173,7 @@ pub trait ZeroCopyPortDetails {
     fn max_borrowed_samples(&self) -> usize;
     fn max_supported_shared_memory_segments(&self) -> u8;
     fn is_connected(&self) -> bool;
-    fn channel_state(&self, channel_id: ChannelId) -> &IoxAtomicU64;
+    fn channel_state(&self, channel_id: ChannelId) -> &AtomicU64;
 }
 
 pub trait ZeroCopySender: Debug + ZeroCopyPortDetails + NamedConcept + Send {

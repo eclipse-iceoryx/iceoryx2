@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::{cell::UnsafeCell, sync::atomic::Ordering};
-use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicBool;
+use iceoryx2_bb_concurrency::atomic::AtomicBool;
 
 pub(crate) mod internal {
     use core::fmt::Debug;
@@ -28,8 +28,8 @@ pub(crate) mod internal {
     /// semaphore or mutex handle.
     pub struct HandleStorage<T> {
         handle: UnsafeCell<T>,
-        is_inter_process_capable: IoxAtomicBool,
-        is_initialized: IoxAtomicBool,
+        is_inter_process_capable: AtomicBool,
+        is_initialized: AtomicBool,
     }
 
     unsafe impl<T> Send for HandleStorage<T> {}
@@ -58,8 +58,8 @@ pub(crate) mod internal {
         pub fn new(handle: T) -> Self {
             Self {
                 handle: UnsafeCell::new(handle),
-                is_initialized: IoxAtomicBool::new(false),
-                is_inter_process_capable: IoxAtomicBool::new(false),
+                is_initialized: AtomicBool::new(false),
+                is_inter_process_capable: AtomicBool::new(false),
             }
         }
 

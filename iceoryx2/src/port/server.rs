@@ -76,7 +76,7 @@
 use alloc::sync::Arc;
 use core::{cell::UnsafeCell, sync::atomic::Ordering};
 use core::{fmt::Debug, marker::PhantomData};
-use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicUsize;
+use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_container::slotmap::SlotMap;
 use iceoryx2_bb_container::vector::polymorphic_vec::*;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -403,7 +403,7 @@ impl<
             degradation_callback: server_factory.response_degradation_callback,
             service_state: service.clone(),
             tagger: CyclicTagger::new(),
-            loan_counter: IoxAtomicUsize::new(0),
+            loan_counter: AtomicUsize::new(0),
             unable_to_deliver_strategy: server_factory.config.unable_to_deliver_strategy,
             message_type_details: static_config.response_message_type_details.clone(),
             number_of_channels: number_of_requests_per_client,
@@ -539,7 +539,7 @@ impl<
 
         ActiveRequest {
             details,
-            shared_loan_counter: Arc::new(IoxAtomicUsize::new(0)),
+            shared_loan_counter: Arc::new(AtomicUsize::new(0)),
             max_loan_count: self.max_loaned_responses_per_request,
             request_id: header.request_id,
             channel_id: header.channel_id,
@@ -648,7 +648,7 @@ impl<
 
         ActiveRequest {
             details,
-            shared_loan_counter: Arc::new(IoxAtomicUsize::new(0)),
+            shared_loan_counter: Arc::new(AtomicUsize::new(0)),
             max_loan_count: self.max_loaned_responses_per_request,
             request_id: header.request_id,
             channel_id: header.channel_id,

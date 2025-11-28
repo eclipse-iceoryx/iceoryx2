@@ -78,7 +78,7 @@ use core::{
 };
 use iceoryx2_bb_container::{queue::Queue, slotmap::SlotMap, vector::polymorphic_vec::*};
 
-use iceoryx2_bb_concurrency::iox_atomic::{IoxAtomicBool, IoxAtomicU64, IoxAtomicUsize};
+use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64, AtomicUsize};
 use iceoryx2_bb_elementary::{cyclic_tagger::CyclicTagger, CallbackProgression};
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
@@ -167,7 +167,7 @@ pub(crate) struct ClientSharedState<Service: service::Service> {
     pub(crate) response_receiver: Receiver<Service>,
     client_handle: UnsafeCell<Option<ContainerHandle>>,
     server_list_state: UnsafeCell<ContainerState<ServerDetails>>,
-    pub(crate) active_request_counter: IoxAtomicUsize,
+    pub(crate) active_request_counter: AtomicUsize,
     pub(crate) available_channel_ids: UnsafeCell<Queue<ChannelId>>,
 }
 
@@ -301,7 +301,7 @@ pub struct Client<
 > {
     client_id: UniqueClientId,
     client_shared_state: Service::ArcThreadSafetyPolicy<ClientSharedState<Service>>,
-    request_id_counter: IoxAtomicU64,
+    request_id_counter: AtomicU64,
     _request_payload: PhantomData<RequestPayload>,
     _request_header: PhantomData<RequestHeader>,
     _response_payload: PhantomData<ResponsePayload>,
@@ -427,7 +427,7 @@ impl<
             max_number_of_segments,
             service_state: service.clone(),
             tagger: CyclicTagger::new(),
-            loan_counter: IoxAtomicUsize::new(0),
+            loan_counter: AtomicUsize::new(0),
             sender_max_borrowed_samples: static_config.max_loaned_requests,
             unable_to_deliver_strategy: client_factory.config.unable_to_deliver_strategy,
             message_type_details: static_config.request_message_type_details.clone(),
@@ -486,7 +486,7 @@ impl<
             request_sender,
             response_receiver,
             server_list_state: UnsafeCell::new(unsafe { server_list.get_state() }),
-            active_request_counter: IoxAtomicUsize::new(0),
+            active_request_counter: AtomicUsize::new(0),
         });
 
         let client_shared_state = match client_shared_state {
@@ -498,7 +498,7 @@ impl<
         };
 
         let new_self = Self {
-            request_id_counter: IoxAtomicU64::new(0),
+            request_id_counter: AtomicU64::new(0),
             client_shared_state,
             client_id,
             _request_payload: PhantomData,
@@ -693,7 +693,7 @@ impl<
                 client_shared_state: self.client_shared_state.clone(),
                 _response_payload: PhantomData,
                 _response_header: PhantomData,
-                was_sample_sent: IoxAtomicBool::new(false),
+                was_sample_sent: AtomicBool::new(false),
             },
         })
     }
@@ -978,7 +978,7 @@ impl<
                 client_shared_state: self.client_shared_state.clone(),
                 _response_payload: PhantomData,
                 _response_header: PhantomData,
-                was_sample_sent: IoxAtomicBool::new(false),
+                was_sample_sent: AtomicBool::new(false),
             },
         })
     }

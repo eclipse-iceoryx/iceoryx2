@@ -21,7 +21,7 @@ use crate::posix::{
 };
 use crate::win32call;
 
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU32;
+use iceoryx2_pal_concurrency_sync::atomic::AtomicU32;
 use iceoryx2_pal_concurrency_sync::mutex::Mutex;
 use iceoryx2_pal_concurrency_sync::WaitAction;
 use iceoryx2_pal_configuration::PATH_SEPARATOR;
@@ -66,7 +66,7 @@ impl FileMappingsSet {
         self.mtx.lock(|atomic, value| {
             unsafe {
                 WaitOnAddress(
-                    (atomic as *const IoxAtomicU32).cast(),
+                    (atomic as *const AtomicU32).cast(),
                     (value as *const u32).cast(),
                     4,
                     INFINITE,
@@ -78,7 +78,7 @@ impl FileMappingsSet {
 
     fn unlock(&self) {
         self.mtx.unlock(|atomic| unsafe {
-            WakeByAddressSingle((atomic as *const IoxAtomicU32).cast());
+            WakeByAddressSingle((atomic as *const AtomicU32).cast());
         });
     }
 

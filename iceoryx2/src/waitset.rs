@@ -222,7 +222,7 @@ use alloc::collections::BTreeMap;
 use alloc::vec;
 use alloc::vec::Vec;
 
-use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicUsize;
+use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_posix::{
     deadline_queue::{DeadlineQueue, DeadlineQueueBuilder, DeadlineQueueGuard, DeadlineQueueIndex},
@@ -509,7 +509,7 @@ impl WaitSetBuilder {
                 deadline_queue,
                 attachment_to_deadline: RefCell::new(BTreeMap::new()),
                 deadline_to_attachment: RefCell::new(BTreeMap::new()),
-                attachment_counter: IoxAtomicUsize::new(0),
+                attachment_counter: AtomicUsize::new(0),
                 signal_handling_mode: self.signal_handling_mode,
             }),
             Err(ReactorCreateError::InternalError) => {
@@ -541,7 +541,7 @@ pub struct WaitSet<Service: crate::service::Service> {
     deadline_queue: DeadlineQueue,
     attachment_to_deadline: RefCell<BTreeMap<i32, DeadlineQueueIndex>>,
     deadline_to_attachment: RefCell<BTreeMap<DeadlineQueueIndex, i32>>,
-    attachment_counter: IoxAtomicUsize,
+    attachment_counter: AtomicUsize,
     signal_handling_mode: SignalHandlingMode,
 }
 

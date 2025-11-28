@@ -13,7 +13,7 @@
 extern crate iceoryx2_loggers;
 
 use core::time::Duration;
-use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicUsize;
+use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_posix::socket_pair::*;
 use iceoryx2_bb_testing::{assert_that, watchdog::Watchdog};
 use std::{
@@ -141,7 +141,7 @@ fn timed_receive_blocks_for_at_least_timeout() {
 fn timed_receive_blocks_until_message_arrives() {
     let _watchdog = Watchdog::new();
 
-    let counter = IoxAtomicUsize::new(0);
+    let counter = AtomicUsize::new(0);
     let barrier = Barrier::new(2);
     let send_message = Vec::from(b"are you in a deadlock - call Ted Krabovsky");
     let (sut_lhs, sut_rhs) = StreamingSocket::create_pair().unwrap();
@@ -167,7 +167,7 @@ fn timed_receive_blocks_until_message_arrives() {
 fn blocking_receive_blocks_until_message_arrives() {
     let _watchdog = Watchdog::new();
 
-    let counter = IoxAtomicUsize::new(0);
+    let counter = AtomicUsize::new(0);
     let barrier = Barrier::new(2);
     let send_message = Vec::from(b"are you in a deadlock - call Ted Krabovsky");
     let (sut_lhs, sut_rhs) = StreamingSocket::create_pair().unwrap();
@@ -229,7 +229,7 @@ fn timed_send_blocks_until_message_buffer_is_free_again() {
     }
 
     let barrier = Barrier::new(2);
-    let counter = IoxAtomicUsize::new(0);
+    let counter = AtomicUsize::new(0);
     std::thread::scope(|s| {
         s.spawn(|| {
             barrier.wait();
@@ -269,7 +269,7 @@ fn blocking_send_blocks_until_message_buffer_is_free_again() {
     }
 
     let barrier = Barrier::new(2);
-    let counter = IoxAtomicUsize::new(0);
+    let counter = AtomicUsize::new(0);
     std::thread::scope(|s| {
         s.spawn(|| {
             barrier.wait();

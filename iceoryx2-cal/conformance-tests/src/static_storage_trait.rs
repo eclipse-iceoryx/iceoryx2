@@ -17,7 +17,7 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 pub mod static_storage_trait {
     use core::sync::atomic::Ordering;
     use core::time::Duration;
-    use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicU64;
+    use iceoryx2_bb_concurrency::atomic::AtomicU64;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
@@ -290,7 +290,7 @@ pub mod static_storage_trait {
         const NUMBER_OF_THREADS: usize = 4;
         const NUMBER_OF_ITERATIONS: usize = 1000;
 
-        let success_counter = IoxAtomicU64::new(0);
+        let success_counter = AtomicU64::new(0);
         let barrier_enter = Barrier::new(NUMBER_OF_THREADS);
         let barrier_exit = Barrier::new(NUMBER_OF_THREADS);
         let storage_name = generate_name();

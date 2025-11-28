@@ -35,14 +35,14 @@
 
 use core::{cell::UnsafeCell, sync::atomic::Ordering};
 
-use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicBool;
+use iceoryx2_bb_concurrency::atomic::AtomicBool;
 
 /// The lazy initialized singleton building block of type T
 #[derive(Debug)]
 pub struct LazySingleton<T> {
     data: UnsafeCell<Option<T>>,
-    is_initialized: IoxAtomicBool,
-    is_finalized: IoxAtomicBool,
+    is_initialized: AtomicBool,
+    is_finalized: AtomicBool,
 }
 
 unsafe impl<T: Send> Send for LazySingleton<T> {}
@@ -60,8 +60,8 @@ impl<T> LazySingleton<T> {
     pub const fn new() -> Self {
         Self {
             data: UnsafeCell::new(None),
-            is_initialized: IoxAtomicBool::new(false),
-            is_finalized: IoxAtomicBool::new(false),
+            is_initialized: AtomicBool::new(false),
+            is_finalized: AtomicBool::new(false),
         }
     }
 

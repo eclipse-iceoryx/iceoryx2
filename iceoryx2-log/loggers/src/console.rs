@@ -12,7 +12,7 @@
 
 //! The default [`Logger`] implementation.
 
-use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicU64;
+use iceoryx2_bb_concurrency::atomic::AtomicU64;
 
 use core::sync::atomic::Ordering;
 use std::io::IsTerminal;
@@ -27,7 +27,7 @@ enum ConsoleLogOrder {
 }
 
 pub struct Logger {
-    counter: IoxAtomicU64,
+    counter: AtomicU64,
     ordering_mode: ConsoleLogOrder,
 }
 
@@ -40,7 +40,7 @@ impl Default for Logger {
 impl Logger {
     pub const fn new() -> Self {
         Self {
-            counter: IoxAtomicU64::new(0),
+            counter: AtomicU64::new(0),
             ordering_mode: ConsoleLogOrder::Counter,
         }
     }

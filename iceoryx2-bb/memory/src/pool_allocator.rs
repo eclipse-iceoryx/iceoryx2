@@ -49,20 +49,19 @@
 //!                              Layout::from_size_align_unchecked(32, 4))};
 //! ```
 
-use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-use iceoryx2_bb_elementary::math::align;
-use iceoryx2_bb_elementary_traits::relocatable_container::*;
-use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
-
 pub use core::alloc::Layout;
 pub use iceoryx2_bb_elementary_traits::allocator::*;
 
 use core::cell::UnsafeCell;
 use core::sync::atomic::Ordering;
-pub use iceoryx2_bb_elementary_traits::allocator::*;
+
+use iceoryx2_bb_concurrency::atomic::AtomicBool;
+use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
+use iceoryx2_bb_elementary::math::align;
+use iceoryx2_bb_elementary_traits::relocatable_container::*;
+use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
 use iceoryx2_log::fail;
 use iceoryx2_log::fatal_panic;
-use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicBool;
 
 #[derive(Debug)]
 pub struct PoolAllocator {
@@ -71,7 +70,7 @@ pub struct PoolAllocator {
     bucket_alignment: usize,
     start: usize,
     size: usize,
-    is_memory_initialized: IoxAtomicBool,
+    is_memory_initialized: AtomicBool,
 }
 
 impl PoolAllocator {
@@ -132,7 +131,7 @@ impl PoolAllocator {
             bucket_alignment: bucket_layout.align(),
             start: adjusted_start,
             size,
-            is_memory_initialized: IoxAtomicBool::new(false),
+            is_memory_initialized: AtomicBool::new(false),
         }
     }
 
@@ -339,7 +338,7 @@ impl<const MAX_NUMBER_OF_BUCKETS: usize> FixedSizePoolAllocator<MAX_NUMBER_OF_BU
                 bucket_alignment: bucket_layout.align(),
                 start: adjusted_start,
                 size,
-                is_memory_initialized: IoxAtomicBool::new(true),
+                is_memory_initialized: AtomicBool::new(true),
             },
             next_free_index: core::array::from_fn(|i| UnsafeCell::new(i as u32 + 1)),
             next_free_index_plus_one: UnsafeCell::new(MAX_NUMBER_OF_BUCKETS as u32 + 1),

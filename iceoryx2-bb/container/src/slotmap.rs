@@ -50,7 +50,7 @@ use crate::queue::MetaQueue;
 use crate::vec::MetaVec;
 use crate::{queue::RelocatableQueue, vec::RelocatableVec};
 use core::mem::MaybeUninit;
-use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicBool;
+use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::relocatable_ptr::GenericRelocatablePointer;
@@ -128,7 +128,7 @@ pub struct MetaSlotMap<T, Ptr: GenericPointer> {
     data: MetaVec<Option<T>, Ptr>,
     data_next_free_index: MetaQueue<usize, Ptr>,
     idx_to_data_free_list_head: usize,
-    is_initialized: IoxAtomicBool,
+    is_initialized: AtomicBool,
     len: usize,
 }
 
@@ -343,7 +343,7 @@ impl<T> RelocatableContainer for RelocatableSlotMap<T> {
             idx_to_data_free_list: RelocatableVec::new_uninit(capacity),
             data: RelocatableVec::new_uninit(capacity),
             data_next_free_index: RelocatableQueue::new_uninit(capacity),
-            is_initialized: IoxAtomicBool::new(false),
+            is_initialized: AtomicBool::new(false),
         }
     }
 
@@ -392,7 +392,7 @@ impl<T> SlotMap<T> {
             idx_to_data_free_list: MetaVec::new(capacity),
             data: MetaVec::new(capacity),
             data_next_free_index: MetaQueue::new(capacity),
-            is_initialized: IoxAtomicBool::new(true),
+            is_initialized: AtomicBool::new(true),
         };
         unsafe { new_self.initialize_data_structures() };
         new_self

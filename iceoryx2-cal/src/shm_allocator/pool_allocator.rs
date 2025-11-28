@@ -13,7 +13,7 @@
 use core::{alloc::Layout, ptr::NonNull, sync::atomic::Ordering};
 
 use crate::shm_allocator::{ShmAllocator, ShmAllocatorConfig};
-use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicUsize;
+use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_elementary_traits::allocator::BaseAllocator;
 use iceoryx2_log::fail;
 
@@ -45,7 +45,7 @@ pub struct PoolAllocator {
     // the allocator only manages a range of numbers
     base_address: usize,
     max_supported_alignment_by_memory: usize,
-    number_of_used_buckets: IoxAtomicUsize,
+    number_of_used_buckets: AtomicUsize,
 }
 
 impl PoolAllocator {
@@ -165,7 +165,7 @@ impl ShmAllocator for PoolAllocator {
             ),
             base_address: (managed_memory.as_ptr() as *mut u8) as usize,
             max_supported_alignment_by_memory,
-            number_of_used_buckets: IoxAtomicUsize::new(0),
+            number_of_used_buckets: AtomicUsize::new(0),
         }
     }
 
