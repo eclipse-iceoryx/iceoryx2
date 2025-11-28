@@ -34,7 +34,8 @@
 //! ```
 
 use core::{cell::UnsafeCell, sync::atomic::Ordering};
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
+
+use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicBool;
 
 /// The lazy initialized singleton building block of type T
 #[derive(Debug)]

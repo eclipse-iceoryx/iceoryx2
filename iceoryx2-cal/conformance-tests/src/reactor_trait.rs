@@ -15,6 +15,7 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod reactor_trait {
+    use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicU64;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_posix::file_descriptor::FileDescriptorBased;
     use iceoryx2_bb_testing::assert_that;
@@ -22,7 +23,6 @@ pub mod reactor_trait {
     use iceoryx2_cal::event::{Listener, ListenerBuilder, Notifier, NotifierBuilder};
     use iceoryx2_cal::reactor::{Reactor, *};
     use iceoryx2_cal::testing::{generate_isolated_config, generate_name};
-    use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 
     use core::sync::atomic::Ordering;
     use core::time::Duration;

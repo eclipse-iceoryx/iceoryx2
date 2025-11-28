@@ -12,7 +12,7 @@
 
 //! The default [`Logger`] implementation.
 
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
+use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicU64;
 
 use core::sync::atomic::Ordering;
 use std::io::IsTerminal;

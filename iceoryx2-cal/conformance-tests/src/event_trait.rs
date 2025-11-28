@@ -23,6 +23,7 @@ pub mod event_trait {
     use std::sync::{Barrier, Mutex};
     use std::time::Instant;
 
+    use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicU64;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_posix::barrier::*;
@@ -32,7 +33,6 @@ pub mod event_trait {
     use iceoryx2_cal::event::{TriggerId, *};
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::testing::*;
-    use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 
     const TIMEOUT: Duration = Duration::from_millis(25);
 

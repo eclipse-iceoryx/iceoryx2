@@ -158,6 +158,7 @@ use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
 
+use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicBool;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::CallbackProgression;
@@ -178,7 +179,6 @@ use iceoryx2_cal::{
     monitoring::*, named_concept::NamedConceptListError, serialize::*, static_storage::*,
 };
 use iceoryx2_log::{debug, fail, fatal_panic, trace, warn};
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
 use crate::node::node_name::NodeName;
 use crate::service::builder::{Builder, OpenDynamicStorageFailure};

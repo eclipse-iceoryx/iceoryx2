@@ -222,6 +222,7 @@ use alloc::collections::BTreeMap;
 use alloc::vec;
 use alloc::vec::Vec;
 
+use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicUsize;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_posix::{
     deadline_queue::{DeadlineQueue, DeadlineQueueBuilder, DeadlineQueueGuard, DeadlineQueueIndex},
@@ -231,7 +232,6 @@ use iceoryx2_bb_posix::{
 };
 use iceoryx2_cal::reactor::*;
 use iceoryx2_log::fail;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 use crate::signal_handling_mode::SignalHandlingMode;
 

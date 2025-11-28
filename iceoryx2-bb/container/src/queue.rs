@@ -111,6 +111,7 @@
 //!
 use core::marker::PhantomData;
 use core::{alloc::Layout, fmt::Debug, mem::MaybeUninit};
+use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicBool;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
 use iceoryx2_bb_elementary::relocatable_ptr::{GenericRelocatablePointer, RelocatablePointer};
@@ -122,7 +123,6 @@ use iceoryx2_bb_elementary_traits::pointer_trait::PointerTrait;
 pub use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::{fail, fatal_panic};
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
 /// Queue with run-time fixed size capacity. In contrast to its counterpart the
 /// [`RelocatableQueue`] it is movable but is not shared memory compatible.

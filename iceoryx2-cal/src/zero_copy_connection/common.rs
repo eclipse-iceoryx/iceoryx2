@@ -20,6 +20,7 @@ pub mod details {
     use alloc::vec;
     use alloc::vec::Vec;
 
+    use iceoryx2_bb_concurrency::iox_atomic::{IoxAtomicU64, IoxAtomicU8, IoxAtomicUsize};
     use iceoryx2_bb_container::vector::relocatable_vec::*;
     use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
     use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
@@ -30,7 +31,6 @@ pub mod details {
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
     use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
     use iceoryx2_log::{fail, fatal_panic};
-    use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicU64, IoxAtomicU8, IoxAtomicUsize};
 
     pub use crate::zero_copy_connection::*;
 

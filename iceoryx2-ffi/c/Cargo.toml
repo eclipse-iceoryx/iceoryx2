@@ -40,7 +40,7 @@ iceoryx2-bb-system-types = { workspace = true }
 iceoryx2-bb-posix = { workspace = true }
 iceoryx2-cal = { workspace = true }
 iceoryx2-ffi-macros = { workspace = true }
-iceoryx2-pal-concurrency-sync = { workspace = true }
+iceoryx2-bb-concurrency = { workspace = true }
 
 [dev-dependencies]
 iceoryx2-bb-testing = { workspace = true }

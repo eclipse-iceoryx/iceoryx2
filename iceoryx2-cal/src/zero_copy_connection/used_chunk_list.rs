@@ -11,6 +11,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::{alloc::Layout, sync::atomic::Ordering};
+
+use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicBool;
 use iceoryx2_bb_elementary::{
     bump_allocator::BumpAllocator,
     relocatable_ptr::{PointerTrait, RelocatablePointer},
@@ -18,8 +20,12 @@ use iceoryx2_bb_elementary::{
 use iceoryx2_bb_elementary_traits::{
     owning_pointer::OwningPointer, relocatable_container::RelocatableContainer,
 };
+<<<<<<< HEAD
 use iceoryx2_log::{fail, fatal_panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
+=======
+use iceoryx2_bb_log::{fail, fatal_panic};
+>>>>>>> 26bf1c24 ([#1202] Remove dependency on iceoryx2-pal-concurrency-sync in upper layers)
 
 pub type UsedChunkList = details::UsedChunkList<OwningPointer<IoxAtomicBool>>;
 pub type RelocatableUsedChunkList = details::UsedChunkList<RelocatablePointer<IoxAtomicBool>>;

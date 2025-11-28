@@ -55,6 +55,7 @@ use alloc::string::ToString;
 use alloc::vec;
 use alloc::vec::Vec;
 
+use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicU64;
 use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_bb_posix::directory::*;
@@ -63,7 +64,6 @@ use iceoryx2_bb_posix::shared_memory::*;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_log::fail;
 use iceoryx2_log::warn;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 
 use crate::static_storage::file::NamedConceptConfiguration;
 use crate::static_storage::file::NamedConceptRemoveError;

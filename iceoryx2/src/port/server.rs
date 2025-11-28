@@ -76,12 +76,12 @@
 use alloc::sync::Arc;
 use core::{cell::UnsafeCell, sync::atomic::Ordering};
 use core::{fmt::Debug, marker::PhantomData};
+use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicUsize;
 use iceoryx2_bb_container::slotmap::SlotMap;
 use iceoryx2_bb_container::vector::polymorphic_vec::*;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 use iceoryx2_bb_elementary::{cyclic_tagger::CyclicTagger, CallbackProgression};
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};

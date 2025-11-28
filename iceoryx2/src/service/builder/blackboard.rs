@@ -22,6 +22,7 @@ use alloc::boxed::Box;
 use alloc::format;
 use alloc::vec::Vec;
 
+use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicU64;
 use iceoryx2_bb_container::flatmap::RelocatableFlatMap;
 use iceoryx2_bb_container::queue::RelocatableContainer;
 use iceoryx2_bb_container::string::*;
@@ -34,7 +35,6 @@ use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 use iceoryx2_cal::shared_memory::{SharedMemory, SharedMemoryBuilder};
 use iceoryx2_log::{error, fatal_panic};
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 
 use crate::constants::{MAX_BLACKBOARD_KEY_ALIGNMENT, MAX_BLACKBOARD_KEY_SIZE};
 use crate::service;

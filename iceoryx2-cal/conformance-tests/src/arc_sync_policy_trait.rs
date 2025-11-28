@@ -17,10 +17,10 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 pub mod arc_sync_policy_trait {
     use core::sync::atomic::Ordering;
 
+    use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicU64;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
-    use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 
     #[conformance_test]
     pub fn create_and_locked_access_to_value_works<Sut: ArcSyncPolicy<IoxAtomicU64>>() {

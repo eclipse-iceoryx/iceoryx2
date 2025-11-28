@@ -110,6 +110,7 @@ use core::{marker::PhantomData, mem::MaybeUninit};
 use alloc::sync::Arc;
 use alloc::vec::Vec;
 
+use iceoryx2_bb_concurrency::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
 use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::cyclic_tagger::CyclicTagger;
 use iceoryx2_bb_elementary::CallbackProgression;
@@ -123,7 +124,6 @@ use iceoryx2_cal::zero_copy_connection::{
     ChannelId, ZeroCopyCreationError, ZeroCopyPortDetails, ZeroCopySender,
 };
 use iceoryx2_log::{fail, warn};
-use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
 
 use crate::port::details::sender::*;
 use crate::port::update_connections::{ConnectionFailure, UpdateConnections};

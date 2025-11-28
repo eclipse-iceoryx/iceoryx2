@@ -12,4 +12,4 @@ version = { workspace = true }
 
 [dependencies]
 # required to implement ZeroCopySend for IoxAtomic*
-iceoryx2-pal-concurrency-sync = { workspace = true }
+iceoryx2-bb-concurrency = { workspace = true }
