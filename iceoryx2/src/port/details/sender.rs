@@ -18,6 +18,7 @@ use alloc::format;
 use alloc::sync::Arc;
 use alloc::vec::Vec;
 
+use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicUsize;
 use iceoryx2_bb_elementary::cyclic_tagger::*;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::shm_allocator::{AllocationError, PointerOffset, ShmAllocationError};
@@ -26,7 +27,6 @@ use iceoryx2_cal::zero_copy_connection::{
     ZeroCopySendError, ZeroCopySender,
 };
 use iceoryx2_log::{error, fail, fatal_panic, warn};
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 use crate::node::SharedNode;
 use crate::port::{DegradationAction, DegradationCallback, LoanError, SendError};

@@ -59,6 +59,7 @@ pub use crate::mpmc::unique_index_set::ReleaseMode;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 pub use iceoryx2_bb_elementary::CallbackProgression;
 
+use iceoryx2_bb_concurrency::iox_atomic::{IoxAtomicBool, IoxAtomicU64};
 use iceoryx2_bb_elementary::math::align_to;
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
 use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
@@ -68,7 +69,6 @@ use iceoryx2_bb_elementary_traits::allocator::BaseAllocator;
 use iceoryx2_bb_elementary_traits::pointer_trait::PointerTrait;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_log::{fail, fatal_panic};
-use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64};
 
 use crate::mpmc::unique_index_set::*;
 

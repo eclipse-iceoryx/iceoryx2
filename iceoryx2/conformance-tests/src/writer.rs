@@ -15,7 +15,9 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod writer {
+
     use core::sync::atomic::Ordering;
+
     use iceoryx2::constants::MAX_BLACKBOARD_KEY_SIZE;
     use iceoryx2::port::writer::*;
     use iceoryx2::prelude::*;
@@ -24,12 +26,12 @@ pub mod writer {
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::Service;
     use iceoryx2::testing::*;
+    use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicU64;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
-    use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
     use std::sync::Barrier;
 
     fn generate_name() -> ServiceName {

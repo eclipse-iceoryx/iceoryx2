@@ -26,11 +26,12 @@
 //! # Ok(())
 //! # }
 //! ```
+
+use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicU64;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_lock_free::mpmc::{container::*, unique_index_set::ReleaseMode};
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_log::fatal_panic;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 
 use crate::{
     node::NodeId,

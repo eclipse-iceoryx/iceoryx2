@@ -10,9 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicI64;
 use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicI64;
 
 #[derive(Debug)]
 pub struct TestData {

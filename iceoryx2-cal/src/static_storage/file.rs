@@ -55,12 +55,12 @@ use alloc::vec::Vec;
 pub use crate::named_concept::*;
 pub use crate::static_storage::*;
 
+use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicBool;
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_bb_posix::{
     directory::*, file::*, file_descriptor::FileDescriptorManagement, file_type::FileType,
 };
 use iceoryx2_log::{fail, trace, warn};
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
 #[cfg(not(feature = "dev_permissions"))]
 const FINAL_PERMISSIONS: Permission = Permission::OWNER_READ;

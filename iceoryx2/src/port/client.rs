@@ -78,6 +78,7 @@ use core::{
 };
 use iceoryx2_bb_container::{queue::Queue, slotmap::SlotMap, vector::polymorphic_vec::*};
 
+use iceoryx2_bb_concurrency::iox_atomic::{IoxAtomicBool, IoxAtomicU64, IoxAtomicUsize};
 use iceoryx2_bb_elementary::{cyclic_tagger::CyclicTagger, CallbackProgression};
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
@@ -89,7 +90,6 @@ use iceoryx2_cal::{
     zero_copy_connection::ChannelId,
 };
 use iceoryx2_log::{fail, fatal_panic, warn};
-use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64, IoxAtomicUsize};
 
 use crate::{
     pending_response::PendingResponse,

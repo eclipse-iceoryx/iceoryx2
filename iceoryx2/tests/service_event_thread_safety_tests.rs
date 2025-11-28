@@ -15,11 +15,11 @@ use std::sync::Barrier;
 
 use iceoryx2::prelude::*;
 use iceoryx2::testing::*;
+use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicBool;
+use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicUsize;
 use iceoryx2_bb_posix::system_configuration::SystemInfo;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::watchdog::Watchdog;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 #[test]
 fn notifying_events_concurrently_works() {

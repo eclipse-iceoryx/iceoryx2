@@ -44,12 +44,12 @@
 //! unsafe{ allocator.deallocate(NonNull::new(grown_memory.as_mut().as_mut_ptr()).unwrap(),
 //!                              Layout::from_size_align_unchecked(32, 4))};
 //! ```
+
 use core::sync::atomic::Ordering;
 use iceoryx2_log::fail;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
+use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicUsize;
 
 pub use core::alloc::Layout;
-use iceoryx2_bb_elementary::math::align;
 pub use iceoryx2_bb_elementary_traits::allocator::*;
 
 #[derive(Debug)]

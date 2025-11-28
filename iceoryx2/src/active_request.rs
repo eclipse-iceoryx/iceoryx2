@@ -45,6 +45,7 @@ use core::{
     sync::atomic::Ordering,
 };
 
+use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicUsize;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::{
@@ -52,7 +53,6 @@ use iceoryx2_cal::{
     zero_copy_connection::ChannelId,
 };
 use iceoryx2_log::fail;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 use crate::{
     port::{

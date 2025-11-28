@@ -50,6 +50,7 @@ use crate::queue::MetaQueue;
 use crate::vec::MetaVec;
 use crate::{queue::RelocatableQueue, vec::RelocatableVec};
 use core::mem::MaybeUninit;
+use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicBool;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::relocatable_ptr::GenericRelocatablePointer;
@@ -59,7 +60,6 @@ use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 pub use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::{fail, fatal_panic};
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
 /// A key of a [`SlotMap`], [`RelocatableSlotMap`] or [`FixedSizeSlotMap`] that identifies a
 /// value.

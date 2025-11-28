@@ -40,13 +40,14 @@ use core::{
     ops::{Deref, DerefMut},
     sync::atomic::Ordering,
 };
+
+use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicBool;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
 use iceoryx2_log::fatal_panic;
-
 use iceoryx2_cal::shm_allocator::PointerOffset;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
+use iceoryx2_cal::zero_copy_connection::ChannelId;
 
 use crate::{
     pending_response::PendingResponse,

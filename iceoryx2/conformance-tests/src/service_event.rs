@@ -26,11 +26,11 @@ pub mod service_event {
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::event::{EventCreateError, EventOpenError};
     use iceoryx2::testing::*;
+    use iceoryx2_bb_concurrency::iox_atomic::{IoxAtomicBool, IoxAtomicU64};
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
-    use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64};
 
     const TIMEOUT: Duration = Duration::from_millis(50);
 

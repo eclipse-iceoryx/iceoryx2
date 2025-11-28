@@ -47,7 +47,8 @@
 //! ```
 
 use core::sync::atomic::Ordering;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU8;
+
+use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicU8;
 
 /// The [`CyclicTagger`] can tag any object that implements [`Taggable`]. When tagging elements
 /// cyclicly the cycle shall always start with [`CyclicTagger::next_cycle()`].
