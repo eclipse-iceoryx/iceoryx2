@@ -20,7 +20,7 @@ crate-type = ["cdylib"]
 custom_pal_config = ["iceoryx2/custom_pal_config"]
 
 [dependencies]
-iceoryx2 = { workspace = true }
+iceoryx2 = { workspace = true, features = ["std"] }
 iceoryx2-bb-log = { workspace = true }
 
 [dependencies.pyo3]

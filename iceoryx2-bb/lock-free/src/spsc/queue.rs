@@ -82,6 +82,7 @@ impl<T: Copy, const CAPACITY: usize> Drop for Consumer<'_, T, CAPACITY> {
 }
 
 /// The threadsafe lock-free with a compile time fixed capacity.
+#[derive(Debug)]
 pub struct Queue<T: Copy, const CAPACITY: usize> {
     data: [UnsafeCell<MaybeUninit<T>>; CAPACITY],
     write_position: IoxAtomicU64,

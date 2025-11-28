@@ -11,6 +11,11 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [features]
+default = [
+  "lazy_static/spin_no_std"
+]
+std = []
+
 # Use https://crates.io/crates/libc for the platform abstraction. This simplifies
 # cross-compilation since bindgen is not required anymore. Unfortunately, the libc crate
 # does not offer all the functionality iceoryx2 requires on all of the supported

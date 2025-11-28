@@ -1,0 +1,15 @@
+[workspace]
+resolver = "2"
+members = [
+    "common/",
+    "publish-subscribe/"
+]
+
+[workspace.dependencies]
+bare-metal-common = { path = "common/", default-features = false }
+bare-metal-publish-subscribe = { path = "publish-subscribe/", default-features = false }
+
+iceoryx2 = { path = "../../../iceoryx2/", default-features = false }
+iceoryx2-bb-memory = { path = "../../../iceoryx2-bb/memory" }
+
+spin = "0.10.0"

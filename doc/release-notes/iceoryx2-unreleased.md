@@ -18,6 +18,9 @@
   [#832](https://github.com/eclipse-iceoryx/iceoryx2/issues/832)
 * Add traits to facilitate implementation of custom tunnelling mechanisms
   [#845](https://github.com/eclipse-iceoryx/iceoryx2/issues/845)
+* Add support for `no_std` builds that can be enabled by disabling the new
+  `std` feature when building `iceoryx2`
+  [#865](https://github.com/eclipse-iceoryx/iceoryx2/issues/865)
 * Add a C++ string container type with fixed compile-time capacity
   [#938](https://github.com/eclipse-iceoryx/iceoryx2/issues/938)
 * Add a C++ vector container type with fixed compile-time capacity
@@ -76,6 +79,8 @@
 
 * Decoupled tunnel implementation from tunelling mechanism
     [#845](https://github.com/eclipse-iceoryx/iceoryx2/issues/845)
+* Factored out platform-specific build logic from common logic
+    [#865](https://github.com/eclipse-iceoryx/iceoryx2/issues/865)
 * Explicitly use components from `core` and `alloc` in all Rust code
     [#865](https://github.com/eclipse-iceoryx/iceoryx2/issues/865)
 * Enable -Wconversion warning for the C and C++ code
@@ -199,3 +204,6 @@
    let mut tunnel =
        Tunnel::<Service, Backend>::create(&tunnel_config, &iceoryx_config, &backend_config).unwrap();
    ```
+
+6. Removed the `cdr` serializer from `iceoryx2-cal`, it is recommended to
+   switch to the `postcard` serializer in its place

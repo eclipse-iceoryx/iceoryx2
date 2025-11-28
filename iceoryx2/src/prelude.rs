@@ -35,6 +35,7 @@ pub use iceoryx2_bb_log::set_log_level_from_env_or;
 #[cfg(feature = "std")]
 pub use iceoryx2_bb_log::set_log_level_from_env_or_default;
 pub use iceoryx2_bb_log::LogLevel;
+pub use iceoryx2_bb_log::{cerr, cout};
 pub use iceoryx2_bb_posix::file_descriptor::{FileDescriptor, FileDescriptorBased};
 pub use iceoryx2_bb_posix::file_descriptor_set::SynchronousMultiplexing;
 pub use iceoryx2_bb_posix::process::ProcessId;

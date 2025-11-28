@@ -65,6 +65,13 @@ add_param(
 message(STATUS "[i] iceoryx2 dev setup Rust feature flags (only used when 'RUST_BUILD_ARTIFACT_PATH' is not set):")
 
 add_rust_feature(
+    NAME IOX2_FEATURE_STD
+    DESCRIPTION "Build iceoryx2 with std library."
+    DEFAULT_VALUE ON
+    RUST_FEATURE "std"
+)
+
+add_rust_feature(
     NAME IOX2_FEATURE_DEV_PERMISSIONS
     DESCRIPTION "The permissions of all resources will be set to read, write, execute for everyone."
     DEFAULT_VALUE OFF

@@ -25,7 +25,6 @@ bindgen = { workspace = true }
 [dependencies]
 iceoryx2-pal-concurrency-sync = { workspace = true }
 iceoryx2-pal-configuration = { workspace = true }
-lazy_static = { workspace = true }
 libc = { workspace = true, optional = true }
 
 [target.'cfg(windows)'.dependencies]

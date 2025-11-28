@@ -18,7 +18,7 @@ iceoryx2-bb-memory = { workspace = true }
 iceoryx2-bb-posix = { workspace = true }
 iceoryx2-bb-system-types = { workspace = true }
 iceoryx2-bb-testing = { workspace = true }
-iceoryx2-cal = { workspace = true }
+iceoryx2-cal = { workspace = true, features = ["std"] }
 iceoryx2-pal-concurrency-sync = { workspace = true }
 iceoryx2-pal-posix = { workspace = true }
 iceoryx2-pal-testing = { workspace = true }
@@ -27,6 +27,5 @@ serde = { workspace = true }
 
 [dev-dependencies]
 iceoryx2-bb-lock-free = { workspace = true }
-cdr = { workspace = true }
 postcard = { workspace = true }
 toml = { workspace = true }
