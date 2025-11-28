@@ -26,7 +26,7 @@ pub mod service_event {
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::event::{EventCreateError, EventOpenError};
     use iceoryx2::testing::*;
-    use iceoryx2_bb_concurrency::iox_atomic::{IoxAtomicBool, IoxAtomicU64};
+    use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64};
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
@@ -738,7 +738,7 @@ pub mod service_event {
         const NUMBER_OF_ITERATIONS: usize = 100;
         const EVENT_ID: EventId = EventId::new(8);
 
-        let keep_running = IoxAtomicBool::new(true);
+        let keep_running = AtomicBool::new(true);
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -798,7 +798,7 @@ pub mod service_event {
         const NUMBER_OF_ITERATIONS: usize = 100;
         const EVENT_ID: EventId = EventId::new(8);
 
-        let keep_running = IoxAtomicBool::new(true);
+        let keep_running = AtomicBool::new(true);
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -1046,7 +1046,7 @@ pub mod service_event {
             .create()
             .unwrap();
         let notifier = sut.notifier_builder().create().unwrap();
-        let counter = IoxAtomicU64::new(0);
+        let counter = AtomicU64::new(0);
         let barrier = Barrier::new(2);
 
         std::thread::scope(|s| {

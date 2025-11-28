@@ -28,7 +28,7 @@
 //! ```
 use core::sync::atomic::Ordering;
 use core::time::Duration;
-use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicBool;
+use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_log::fail;
 use iceoryx2_pal_posix::posix::{self, Errno};
 
@@ -204,7 +204,7 @@ impl core::error::Error for StreamingSocketPairReceiveError {}
 #[derive(Debug)]
 pub struct StreamingSocket {
     file_descriptor: FileDescriptor,
-    is_non_blocking: IoxAtomicBool,
+    is_non_blocking: AtomicBool,
 }
 
 impl FileDescriptorBased for StreamingSocket {
@@ -253,13 +253,13 @@ impl StreamingSocket {
             let fd_2 = Self::create_type_safe_fd(fd_values[1], origin, msg)?;
             let socket_1 = StreamingSocket {
                 file_descriptor: fd_1,
-                is_non_blocking: IoxAtomicBool::new(false),
+                is_non_blocking: AtomicBool::new(false),
             };
             fail!(from origin, when socket_1.set_non_blocking(true),
                 "{msg} since the first file descriptor of the socket pair could not be set to non-blocking.");
             let socket_2 = StreamingSocket {
                 file_descriptor: fd_2,
-                is_non_blocking: IoxAtomicBool::new(false),
+                is_non_blocking: AtomicBool::new(false),
             };
             fail!(from origin, when socket_2.set_non_blocking(true),
                 "{msg} since the second file descriptor of the socket pair could not be set to non-blocking.");
@@ -285,7 +285,7 @@ impl StreamingSocket {
             let new_socket = StreamingSocket {
                 file_descriptor: Self::create_type_safe_fd(duplicated_fd, origin, msg)
                     .map_err(|_| StreamingSocketDuplicateError::FileDescriptorBroken)?,
-                is_non_blocking: IoxAtomicBool::new(false),
+                is_non_blocking: AtomicBool::new(false),
             };
 
             fail!(from origin, when new_socket.set_non_blocking(true),
