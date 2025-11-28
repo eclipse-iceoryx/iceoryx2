@@ -178,9 +178,10 @@ endif()
 
 
 if(BUILD_CXX)
-    # C++ containers
+    # C++ containers and building blocks
     add_subdirectory(iceoryx2-bb/cxx)
 
+    # C++ binding
     add_subdirectory(iceoryx2-cxx)
 
     if(BUILD_EXAMPLES)

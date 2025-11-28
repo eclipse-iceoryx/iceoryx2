@@ -91,12 +91,14 @@
 
 ### Workflow
 
-<!--
-    NOTE: Add new entries sorted by issue number to minimize the possibility of
-    conflicts when merging.
--->
+1. **iceoryx_hoofs** dependency
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+The `iceoryx_hoofs` dependency was removed by importing the relevant files to
+the iceoryx2 repository. This simplifies the build process makes it trivial to
+add iceoryx2 specific features to the base lib.
+
+The files from the `iceoryx_hoofs` subset are available via the `iceoryx2-bb-cxx`
+CMake package.
 
 ### New API features
 
