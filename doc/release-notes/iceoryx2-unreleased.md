@@ -44,6 +44,8 @@
   [#1144](https://github.com/eclipse-iceoryx/iceoryx2/issues/1144)
 * Add option to provide custom `iceoryx2-pal-configuration`
   [#1176](https://github.com/eclipse-iceoryx/iceoryx2/issues/1176)
+* Add option to provide custom `iceoryx2-pal-posix`
+  [#1176](https://github.com/eclipse-iceoryx/iceoryx2/issues/1176)
 
 ### Bugfixes
 
