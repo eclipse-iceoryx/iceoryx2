@@ -23,6 +23,5 @@ rust_library(
     name = "iceoryx2-bb-elementary-traits",
     srcs = glob(["src/**/*.rs"]),
     deps = [
-        "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
     ],
 )
