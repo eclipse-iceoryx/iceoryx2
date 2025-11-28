@@ -72,7 +72,7 @@ rust_library(
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
         "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
         "//iceoryx2-cal:iceoryx2-cal",
-        "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
+        "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
         "//iceoryx2-pal/configuration:iceoryx2-pal-configuration",
         "@crate_index//:serde",
         "@crate_index//:tiny-fn",
@@ -97,7 +97,7 @@ rust_test_suite(
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
         "//iceoryx2-pal/testing:iceoryx2-pal-testing",
         "//iceoryx2-cal:iceoryx2-cal",
-        "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
+        "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
     ],
     proc_macro_deps = [
         "//iceoryx2-bb/derive-macros:iceoryx2-bb-derive-macros",
