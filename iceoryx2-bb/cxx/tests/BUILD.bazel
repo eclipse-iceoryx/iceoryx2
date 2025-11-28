@@ -22,7 +22,9 @@ cc_test(
     srcs = glob([
         "src/**/*.cpp",
         "src/**/*.hpp",
-    ]),
+        ],
+        exclude = ["src/import/**/*"]
+    ),
     includes = [
         "src",
     ],
