@@ -29,7 +29,7 @@ rust_library(
         "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
         "//iceoryx2-pal/os-api:iceoryx2-pal-os-api",
         "//iceoryx2-pal/posix:iceoryx2-pal-posix",
-        "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
+        "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
         "@crate_index//:enum-iterator",
     ],
 )
@@ -43,8 +43,8 @@ rust_test_suite(
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
         "//iceoryx2-pal/testing:iceoryx2-pal-testing",
-        "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
         "//iceoryx2-log/loggers:iceoryx2-loggers",
+        "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
     ],
     tags = ["exclusive"],
 )
