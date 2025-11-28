@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::alloc::Layout;
-use iceoryx2_bb_concurrency::spin::SpinLock;
+use iceoryx2_bb_concurrency::spin_lock::SpinLock;
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_posix::system_configuration::SystemInfo;
 use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;

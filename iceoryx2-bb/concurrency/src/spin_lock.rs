@@ -14,7 +14,7 @@
 //!
 //! ```
 //! use std::thread;
-//! use iceoryx2_bb_concurrency::spin::SpinLock;
+//! use iceoryx2_bb_concurrency::spin_lock::SpinLock;
 //!
 //! let lk = SpinLock::new(Vec::new());
 //! thread::scope(|s| {

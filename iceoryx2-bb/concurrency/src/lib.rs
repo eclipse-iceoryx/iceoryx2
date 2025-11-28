@@ -13,7 +13,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub mod atomic;
-pub mod spin;
+pub mod spin_lock;
 
 #[cfg(not(feature = "std"))]
 pub mod once;
