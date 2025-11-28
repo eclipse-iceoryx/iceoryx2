@@ -13,7 +13,9 @@
 #[cfg(feature = "semihosting")]
 use crate::semihosting;
 
-pub static OUTPUT: spin::Mutex<OutputWriter> = spin::Mutex::new(OutputWriter);
+use iceoryx2_bb_concurrency::spin::SpinLock;
+
+pub static OUTPUT: SpinLock<OutputWriter> = SpinLock::new(OutputWriter);
 
 pub struct OutputWriter;
 

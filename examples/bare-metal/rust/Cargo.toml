@@ -11,5 +11,4 @@ bare-metal-publish-subscribe = { path = "publish-subscribe/", default-features =
 
 iceoryx2 = { path = "../../../iceoryx2/", default-features = false }
 iceoryx2-bb-memory = { path = "../../../iceoryx2-bb/memory" }
-
-spin = "0.10.0"
+iceoryx2-bb-concurrency = { path = "../../../iceoryx2-bb/concurrency" }
