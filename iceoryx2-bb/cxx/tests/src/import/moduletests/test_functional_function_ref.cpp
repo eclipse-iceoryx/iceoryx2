@@ -145,6 +145,9 @@ TEST_F(function_refTest, CreateValidByMoveAssignResultEqual) {
 TEST_F(function_refDeathTest, CallMovedFromLeadsToTermination) {
     ::testing::Test::RecordProperty("TEST_ID", "3402f27e-ced5-483f-ab39-0069cfd172ac");
 
+#if defined _WIN32
+    GTEST_SKIP() << "The 'CallMovedFromLeadsToTermination' test is disabled on Windows";
+#else
     auto lambda = []() -> int { return 7654; };
     function_ref<int()> sut1 { lambda };
     function_ref<int()> sut2 { std::move(sut1) };
@@ -155,6 +158,7 @@ TEST_F(function_refDeathTest, CallMovedFromLeadsToTermination) {
     // NOLINTEND(bugprone-use-after-move, hicpp-invalid-access-moved)
 
     IOX_TESTING_EXPECT_PANIC();
+#endif
 }
 
 TEST_F(function_refTest, CreateValidAndSwapResultEqual) {

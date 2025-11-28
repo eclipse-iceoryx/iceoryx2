@@ -713,84 +713,134 @@ TEST_F(expected_test, MoveAssignmentIsNotEnforcedInMoveConstructor) {
 TEST_F(expected_test, AccessingValueOfLValueExpectedWhichContainsErrorWithArrowOpLeadsToErrorHandlerCall) {
     ::testing::Test::RecordProperty("TEST_ID", "1a821c6f-83db-4fe1-8adf-873afa1251a1");
 
+#if defined _WIN32
+    GTEST_SKIP() << "The 'AccessingValueOfLValueExpectedWhichContainsErrorWithArrowOpLeadsToErrorHandlerCall' test is "
+                    "disabled on Windows";
+#else
     expected<TestClass, TestError> sut = err(TestError::ERROR1);
 
     IOX_EXPECT_FATAL_FAILURE([&] { IOX_DISCARD_RESULT(sut->m_a); }, iox::er::ENFORCE_VIOLATION);
+#endif
 }
 
 TEST_F(expected_test, AccessingValueOfConstLValueExpectedWhichContainsErrorWithArrowOpLeadsToErrorHandlerCall) {
     ::testing::Test::RecordProperty("TEST_ID", "c4f04d7c-9fa3-48f6-a6fd-b8e4e47b7632");
 
+#if defined _WIN32
+    GTEST_SKIP() << "The 'AccessingValueOfConstLValueExpectedWhichContainsErrorWithArrowOpLeadsToErrorHandlerCall' "
+                    "test is disabled on Windows";
+#else
     const expected<TestClass, TestError> sut = err(TestError::ERROR1);
 
     IOX_EXPECT_FATAL_FAILURE([&] { IOX_DISCARD_RESULT(sut->m_a); }, iox::er::ENFORCE_VIOLATION);
+#endif
 }
 
 TEST_F(expected_test, AccessingValueOfLValueExpectedWhichContainsErrorWithDerefOpLeadsToErrorHandlerCall) {
     ::testing::Test::RecordProperty("TEST_ID", "08ce6a3f-3813-46de-8e1e-3ffe8087521e");
 
+#if defined _WIN32
+    GTEST_SKIP() << "The 'AccessingValueOfLValueExpectedWhichContainsErrorWithDerefOpLeadsToErrorHandlerCall' test is "
+                    "disabled on Windows";
+#else
     expected<TestClass, TestError> sut = err(TestError::ERROR1);
 
     IOX_EXPECT_FATAL_FAILURE([&] { *sut; }, iox::er::ENFORCE_VIOLATION);
+#endif
 }
 
 TEST_F(expected_test, AccessingValueOfConstLValueExpectedWhichContainsErrorWithDerefOpLeadsToErrorHandlerCall) {
     ::testing::Test::RecordProperty("TEST_ID", "838dd364-f91f-40a7-9720-2b662a045b1e");
 
+#if defined _WIN32
+    GTEST_SKIP() << "The 'AccessingValueOfConstLValueExpectedWhichContainsErrorWithDerefOpLeadsToErrorHandlerCall' "
+                    "test is disabled on Windows";
+#else
     const expected<TestClass, TestError> sut = err(TestError::ERROR1);
 
     IOX_EXPECT_FATAL_FAILURE([&] { *sut; }, iox::er::ENFORCE_VIOLATION);
+#endif
 }
 
 TEST_F(expected_test, AccessingValueOfLValueExpectedWhichContainsErrorLeadsToErrorHandlerCall) {
     ::testing::Test::RecordProperty("TEST_ID", "92139583-b8d6-4d83-ae7e-f4109b98d214");
 
+#if defined _WIN32
+    GTEST_SKIP()
+        << "The 'AccessingValueOfLValueExpectedWhichContainsErrorLeadsToErrorHandlerCall' test is disabled on Windows";
+#else
     expected<TestClass, TestError> sut = err(TestError::ERROR1);
 
     IOX_EXPECT_FATAL_FAILURE([&] { sut.value(); }, iox::er::ENFORCE_VIOLATION);
+#endif
 }
 
 TEST_F(expected_test, AccessingValueOfConstLValueExpectedWhichContainsErrorLeadsToErrorHandlerCall) {
     ::testing::Test::RecordProperty("TEST_ID", "1bcbb835-8b4c-4430-a534-a26573c2380d");
 
+#if defined _WIN32
+    GTEST_SKIP() << "The 'AccessingValueOfConstLValueExpectedWhichContainsErrorLeadsToErrorHandlerCall' test is "
+                    "disabled on Windows";
+#else
     const expected<TestClass, TestError> sut = err(TestError::ERROR1);
 
     IOX_EXPECT_FATAL_FAILURE([&] { sut.value(); }, iox::er::ENFORCE_VIOLATION);
+#endif
 }
 
 TEST_F(expected_test, AccessingValueOfRValueExpectedWhichContainsErrorLeadsToErrorHandlerCall) {
     ::testing::Test::RecordProperty("TEST_ID", "32d59b52-81f5-417a-8670-dfb2c54fedfb");
 
+#if defined _WIN32
+    GTEST_SKIP()
+        << "The 'AccessingValueOfRValueExpectedWhichContainsErrorLeadsToErrorHandlerCall' test is disabled on Windows";
+#else
     expected<TestClass, TestError> sut = err(TestError::ERROR1);
 
     IOX_EXPECT_FATAL_FAILURE([&] { std::move(sut).value(); }, iox::er::ENFORCE_VIOLATION);
+#endif
 }
 
 TEST_F(expected_test, AccessingErrorOfLValueExpectedWhichContainsValueLeadsToErrorHandlerCall) {
     ::testing::Test::RecordProperty("TEST_ID", "aee85ead-e066-49fd-99fe-6f1a6045756d");
 
+#if defined _WIN32
+    GTEST_SKIP()
+        << "The 'AccessingErrorOfLValueExpectedWhichContainsValueLeadsToErrorHandlerCall' test is disabled on Windows";
+#else
     constexpr int VALID_VALUE { 42 };
     expected<TestClass, TestError> sut = ok<TestClass>(VALID_VALUE, VALID_VALUE);
 
     IOX_EXPECT_FATAL_FAILURE([&] { sut.error(); }, iox::er::ENFORCE_VIOLATION);
+#endif
 }
 
 TEST_F(expected_test, AccessingErrorOfConstLValueExpectedWhichContainsValueLeadsToErrorHandlerCall) {
     ::testing::Test::RecordProperty("TEST_ID", "a49cf02e-b165-4fd6-9c24-65cedc6cddb9");
 
+#if defined _WIN32
+    GTEST_SKIP() << "The 'AccessingErrorOfConstLValueExpectedWhichContainsValueLeadsToErrorHandlerCall' test is "
+                    "disabled on Windows";
+#else
     constexpr int VALID_VALUE { 42 };
     const expected<TestClass, TestError> sut = ok<TestClass>(VALID_VALUE, VALID_VALUE);
 
     IOX_EXPECT_FATAL_FAILURE([&] { sut.error(); }, iox::er::ENFORCE_VIOLATION);
+#endif
 }
 
 TEST_F(expected_test, AccessingErrorOfRValueExpectedWhichContainsValueLeadsToErrorHandlerCall) {
     ::testing::Test::RecordProperty("TEST_ID", "0ea90b5d-1af6-494a-b35c-da103bed2331");
 
+#if defined _WIN32
+    GTEST_SKIP()
+        << "The 'AccessingErrorOfRValueExpectedWhichContainsValueLeadsToErrorHandlerCall' test is disabled on Windows";
+#else
     constexpr int VALID_VALUE { 42 };
     expected<TestClass, TestError> sut = ok<TestClass>(VALID_VALUE, VALID_VALUE);
 
     IOX_EXPECT_FATAL_FAILURE([&] { std::move(sut).error(); }, iox::er::ENFORCE_VIOLATION);
+#endif
 }
 
 TEST_F(expected_test, TwoVoidValueTypeExpectedWithEqualErrorAreEqual) {

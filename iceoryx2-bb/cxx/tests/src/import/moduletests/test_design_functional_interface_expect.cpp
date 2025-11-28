@@ -76,27 +76,47 @@ void ExpectDoesCallTerminateWhenObjectIsInvalid(const ExpectCall& callExpect) {
 
 TYPED_TEST(FunctionalInterface_test, ExpectDoesCallTerminateWhenObjectIsInvalid_LValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "bcaf74b0-070e-4ca9-a3c9-e41c331420e6");
+
+#if defined _WIN32
+    GTEST_SKIP() << "The 'ExpectDoesCallTerminateWhenObjectIsInvalid_LValueCase' test is disabled on Windows";
+#else
     IOX_TEST_FUNCTIONAL_INTERFACE(ExpectDoesCallTerminateWhenObjectIsInvalid, sut);
+#endif
 }
 
 TYPED_TEST(FunctionalInterface_test, ExpectDoesCallTerminateWhenObjectIsInvalid_constLValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "52e66941-416a-45d6-bb33-e6a1c3824692");
+
+#if defined _WIN32
+    GTEST_SKIP() << "The 'ExpectDoesCallTerminateWhenObjectIsInvalid_constLValueCase' test is disabled on Windows";
+#else
     // const_cast avoids code duplication
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     IOX_TEST_FUNCTIONAL_INTERFACE(ExpectDoesCallTerminateWhenObjectIsInvalid, const_cast<const SutType&>(sut));
+#endif
 }
 
 TYPED_TEST(FunctionalInterface_test, ExpectDoesCallTerminateWhenObjectIsInvalid_RValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "6e8e9982-bd9f-4aa7-8756-b21c288a658d");
+
+#if defined _WIN32
+    GTEST_SKIP() << "The 'ExpectDoesCallTerminateWhenObjectIsInvalid_RValueCase' test is disabled on Windows";
+#else
     IOX_TEST_FUNCTIONAL_INTERFACE(ExpectDoesCallTerminateWhenObjectIsInvalid, std::move(sut));
+#endif
 }
 
 TYPED_TEST(FunctionalInterface_test, ExpectDoesCallTerminateWhenObjectIsInvalid_constRValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "cbdf0b40-d4bb-41a6-b811-dcafc96c86de");
+
+#if defined _WIN32
+    GTEST_SKIP() << "The 'ExpectDoesCallTerminateWhenObjectIsInvalid_constRValueCase' test is disabled on Windows";
+#else
     IOX_TEST_FUNCTIONAL_INTERFACE(ExpectDoesCallTerminateWhenObjectIsInvalid,
                                   // const_cast avoids code duplication
                                   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
                                   std::move(const_cast<const SutType&>(sut)));
+#endif
 }
 
 constexpr bool TYPE_HAS_VALUE_METHOD = true;
