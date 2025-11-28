@@ -10,8 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_concurrency::iox_atomic::*;
-
 /// Marks types that can be sent to another process in a zero-copy manner, i.e. the types can be
 /// safely used from within different process address spaces and can be uniquely identified by their
 /// [`ZeroCopySend::type_name()`] in an inter-process communication context.
@@ -68,18 +66,6 @@ unsafe impl ZeroCopySend for f64 {}
 
 unsafe impl ZeroCopySend for char {}
 unsafe impl ZeroCopySend for bool {}
-
-unsafe impl ZeroCopySend for IoxAtomicUsize {}
-unsafe impl ZeroCopySend for IoxAtomicU8 {}
-unsafe impl ZeroCopySend for IoxAtomicU16 {}
-unsafe impl ZeroCopySend for IoxAtomicU32 {}
-unsafe impl ZeroCopySend for IoxAtomicU64 {}
-
-unsafe impl ZeroCopySend for IoxAtomicIsize {}
-unsafe impl ZeroCopySend for IoxAtomicI8 {}
-unsafe impl ZeroCopySend for IoxAtomicI16 {}
-unsafe impl ZeroCopySend for IoxAtomicI32 {}
-unsafe impl ZeroCopySend for IoxAtomicI64 {}
 
 unsafe impl ZeroCopySend for () {}
 

@@ -1307,7 +1307,9 @@ dependencies = [
 name = "iceoryx2-bb-concurrency"
 version = "0.7.0"
 dependencies = [
+ "iceoryx2-bb-elementary-traits",
  "iceoryx2-pal-concurrency-sync",
+ "paste",
 ]
 
 [[package]]
@@ -1363,9 +1365,6 @@ dependencies = [
 [[package]]
 name = "iceoryx2-bb-elementary-traits"
 version = "0.7.0"
-dependencies = [
- "iceoryx2-bb-concurrency",
-]
 
 [[package]]
 name = "iceoryx2-bb-linux"
