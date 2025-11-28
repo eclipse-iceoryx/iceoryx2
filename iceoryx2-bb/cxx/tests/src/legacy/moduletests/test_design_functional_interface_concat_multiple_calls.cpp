@@ -24,8 +24,8 @@ using namespace ::testing;
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define IOX_TEST_FUNCTIONAL_INTERFACE(TestName, variationPoint)                                                        \
     using SutType = typename TestFixture::TestFactoryType::Type;                                                       \
-    constexpr bool HAS_VALUE_METHOD = iox::internal::HasValueMethod<SutType>::value;                                   \
-    constexpr bool HAS_GET_ERROR_METHOD = iox::internal::HasGetErrorMethod<SutType>::value;                            \
+    constexpr bool HAS_VALUE_METHOD = iox2::legacy::internal::HasValueMethod<SutType>::value;                          \
+    constexpr bool HAS_GET_ERROR_METHOD = iox2::legacy::internal::HasGetErrorMethod<SutType>::value;                   \
     /* NOLINTNEXTLINE(bugprone-macro-parentheses) prevents clang-tidy parsing failures */                              \
     TestName<HAS_VALUE_METHOD, HAS_GET_ERROR_METHOD>::template performTest<typename TestFixture::TestFactoryType>(     \
         [](auto& sut, auto andThenCallback, auto orElseCallback) {                                                     \

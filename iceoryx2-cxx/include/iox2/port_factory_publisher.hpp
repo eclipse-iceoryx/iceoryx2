@@ -14,9 +14,9 @@
 #define IOX2_PORTFACTORY_PUBLISHER_HPP
 
 #include "iox/builder_addendum.hpp"
-#include "iox2/legacy/expected.hpp"
 #include "iox2/allocation_strategy.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/legacy/expected.hpp"
 #include "iox2/publisher.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/unable_to_deliver_strategy.hpp"
@@ -64,7 +64,7 @@ class PortFactoryPublisher {
     auto allocation_strategy(AllocationStrategy value) && -> PortFactoryPublisher&&;
 
     /// Creates a new [`Publisher`] or returns a [`PublisherCreateError`] on failure.
-    auto create() && -> iox::expected<Publisher<S, Payload, UserHeader>, PublisherCreateError>;
+    auto create() && -> iox2::legacy::expected<Publisher<S, Payload, UserHeader>, PublisherCreateError>;
 
   private:
     template <ServiceType, typename, typename>
@@ -73,8 +73,8 @@ class PortFactoryPublisher {
     explicit PortFactoryPublisher(iox2_port_factory_publisher_builder_h handle);
 
     iox2_port_factory_publisher_builder_h m_handle = nullptr;
-    iox::optional<uint64_t> m_max_slice_len;
-    iox::optional<AllocationStrategy> m_allocation_strategy;
+    iox2::legacy::optional<uint64_t> m_max_slice_len;
+    iox2::legacy::optional<AllocationStrategy> m_allocation_strategy;
 };
 
 template <ServiceType S, typename Payload, typename UserHeader>
@@ -100,11 +100,11 @@ inline auto PortFactoryPublisher<S, Payload, UserHeader>::allocation_strategy(
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto
-PortFactoryPublisher<S, Payload, UserHeader>::create() && -> iox::expected<Publisher<S, Payload, UserHeader>,
-                                                                           PublisherCreateError> {
+PortFactoryPublisher<S, Payload, UserHeader>::create() && -> iox2::legacy::expected<Publisher<S, Payload, UserHeader>,
+                                                                                    PublisherCreateError> {
     m_unable_to_deliver_strategy.and_then([&](auto value) -> auto {
         iox2_port_factory_publisher_builder_unable_to_deliver_strategy(
-            &m_handle, static_cast<iox2_unable_to_deliver_strategy_e>(iox::into<int>(value)));
+            &m_handle, static_cast<iox2_unable_to_deliver_strategy_e>(iox2::legacy::into<int>(value)));
     });
     m_max_slice_len
         .and_then([&](auto value) -> auto {
@@ -114,8 +114,8 @@ PortFactoryPublisher<S, Payload, UserHeader>::create() && -> iox::expected<Publi
     m_max_loaned_samples.and_then(
         [&](auto value) -> auto { iox2_port_factory_publisher_builder_set_max_loaned_samples(&m_handle, value); });
     m_allocation_strategy.and_then([&](auto value) -> auto {
-        iox2_port_factory_publisher_builder_set_allocation_strategy(&m_handle,
-                                                                    iox::into<iox2_allocation_strategy_e>(value));
+        iox2_port_factory_publisher_builder_set_allocation_strategy(
+            &m_handle, iox2::legacy::into<iox2_allocation_strategy_e>(value));
     });
 
     iox2_publisher_h pub_handle {};
@@ -123,10 +123,10 @@ PortFactoryPublisher<S, Payload, UserHeader>::create() && -> iox::expected<Publi
     auto result = iox2_port_factory_publisher_builder_create(m_handle, nullptr, &pub_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(Publisher<S, Payload, UserHeader>(pub_handle));
+        return iox2::legacy::ok(Publisher<S, Payload, UserHeader>(pub_handle));
     }
 
-    return iox::err(iox::into<PublisherCreateError>(result));
+    return iox2::legacy::err(iox2::legacy::into<PublisherCreateError>(result));
 }
 } // namespace iox2
 

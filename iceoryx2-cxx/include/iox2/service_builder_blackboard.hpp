@@ -14,10 +14,10 @@
 #define IOX2_SERVICE_BLACKBOARD_BUILDER_HPP
 
 #include "iox/builder_addendum.hpp"
-#include "iox2/legacy/expected.hpp"
 #include "iox2/attribute_specifier.hpp"
 #include "iox2/attribute_verifier.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/legacy/expected.hpp"
 #include "iox2/port_factory_blackboard.hpp"
 #include "iox2/service_builder_blackboard_error.hpp"
 #include "iox2/service_type.hpp"
@@ -62,12 +62,12 @@ class ServiceBuilderBlackboardCreator {
     auto add_with_default(KeyType key) -> ServiceBuilderBlackboardCreator&&;
 
     /// Creates a new [`Service`].
-    auto create() && -> iox::expected<PortFactoryBlackboard<S, KeyType>, BlackboardCreateError>;
+    auto create() && -> iox2::legacy::expected<PortFactoryBlackboard<S, KeyType>, BlackboardCreateError>;
 
     /// Creates a new [`Service`] with a set of attributes.
-    auto
-    create_with_attributes(const AttributeSpecifier& attributes) && -> iox::expected<PortFactoryBlackboard<S, KeyType>,
-                                                                                     BlackboardCreateError>;
+    auto create_with_attributes(
+        const AttributeSpecifier&
+            attributes) && -> iox2::legacy::expected<PortFactoryBlackboard<S, KeyType>, BlackboardCreateError>;
 
   private:
     template <ServiceType>
@@ -99,13 +99,13 @@ class ServiceBuilderBlackboardOpener {
 
   public:
     /// Opens an existing [`Service`].
-    auto open() && -> iox::expected<PortFactoryBlackboard<S, KeyType>, BlackboardOpenError>;
+    auto open() && -> iox2::legacy::expected<PortFactoryBlackboard<S, KeyType>, BlackboardOpenError>;
 
     /// Opens an existing [`Service`] with attribute requirements. If the defined attribute
     /// requirements are not satisfied the open process will fail.
     auto open_with_attributes(
         const AttributeVerifier&
-            required_attributes) && -> iox::expected<PortFactoryBlackboard<S, KeyType>, BlackboardOpenError>;
+            required_attributes) && -> iox2::legacy::expected<PortFactoryBlackboard<S, KeyType>, BlackboardOpenError>;
 
   private:
     template <ServiceType>
@@ -189,24 +189,25 @@ inline auto ServiceBuilderBlackboardCreator<KeyType, S>::add_with_default(KeyTyp
 }
 
 template <typename KeyType, ServiceType S>
-inline auto ServiceBuilderBlackboardCreator<KeyType, S>::create() && -> iox::expected<PortFactoryBlackboard<S, KeyType>,
-                                                                                      BlackboardCreateError> {
+inline auto
+ServiceBuilderBlackboardCreator<KeyType, S>::create() && -> iox2::legacy::expected<PortFactoryBlackboard<S, KeyType>,
+                                                                                   BlackboardCreateError> {
     set_parameters();
 
     iox2_port_factory_blackboard_h port_factory_handle {};
     auto result = iox2_service_builder_blackboard_create(m_handle, nullptr, &port_factory_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(PortFactoryBlackboard<S, KeyType>(port_factory_handle));
+        return iox2::legacy::ok(PortFactoryBlackboard<S, KeyType>(port_factory_handle));
     }
 
-    return iox::err(iox::into<BlackboardCreateError>(result));
+    return iox2::legacy::err(iox2::legacy::into<BlackboardCreateError>(result));
 }
 
 template <typename KeyType, ServiceType S>
 inline auto ServiceBuilderBlackboardCreator<KeyType, S>::create_with_attributes(
     const AttributeSpecifier&
-        attributes) && -> iox::expected<PortFactoryBlackboard<S, KeyType>, BlackboardCreateError> {
+        attributes) && -> iox2::legacy::expected<PortFactoryBlackboard<S, KeyType>, BlackboardCreateError> {
     set_parameters();
 
     iox2_port_factory_blackboard_h port_factory_handle {};
@@ -214,10 +215,10 @@ inline auto ServiceBuilderBlackboardCreator<KeyType, S>::create_with_attributes(
         m_handle, &attributes.m_handle, nullptr, &port_factory_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(PortFactoryBlackboard<S, KeyType>(port_factory_handle));
+        return iox2::legacy::ok(PortFactoryBlackboard<S, KeyType>(port_factory_handle));
     }
 
-    return iox::err(iox::into<BlackboardCreateError>(result));
+    return iox2::legacy::err(iox2::legacy::into<BlackboardCreateError>(result));
 }
 
 template <typename KeyType, ServiceType S>
@@ -242,24 +243,25 @@ inline void ServiceBuilderBlackboardOpener<KeyType, S>::set_parameters() {
 }
 
 template <typename KeyType, ServiceType S>
-inline auto ServiceBuilderBlackboardOpener<KeyType, S>::open() && -> iox::expected<PortFactoryBlackboard<S, KeyType>,
-                                                                                   BlackboardOpenError> {
+inline auto
+ServiceBuilderBlackboardOpener<KeyType, S>::open() && -> iox2::legacy::expected<PortFactoryBlackboard<S, KeyType>,
+                                                                                BlackboardOpenError> {
     set_parameters();
 
     iox2_port_factory_blackboard_h port_factory_handle {};
     auto result = iox2_service_builder_blackboard_open(m_handle, nullptr, &port_factory_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(PortFactoryBlackboard<S, KeyType>(port_factory_handle));
+        return iox2::legacy::ok(PortFactoryBlackboard<S, KeyType>(port_factory_handle));
     }
 
-    return iox::err(iox::into<BlackboardOpenError>(result));
+    return iox2::legacy::err(iox2::legacy::into<BlackboardOpenError>(result));
 }
 
 template <typename KeyType, ServiceType S>
 inline auto ServiceBuilderBlackboardOpener<KeyType, S>::open_with_attributes(
     const AttributeVerifier&
-        required_attributes) && -> iox::expected<PortFactoryBlackboard<S, KeyType>, BlackboardOpenError> {
+        required_attributes) && -> iox2::legacy::expected<PortFactoryBlackboard<S, KeyType>, BlackboardOpenError> {
     set_parameters();
 
     iox2_port_factory_blackboard_h port_factory_handle {};
@@ -267,10 +269,10 @@ inline auto ServiceBuilderBlackboardOpener<KeyType, S>::open_with_attributes(
         m_handle, &required_attributes.m_handle, nullptr, &port_factory_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(PortFactoryBlackboard<S, KeyType>(port_factory_handle));
+        return iox2::legacy::ok(PortFactoryBlackboard<S, KeyType>(port_factory_handle));
     }
 
-    return iox::err(iox::into<BlackboardOpenError>(result));
+    return iox2::legacy::err(iox2::legacy::into<BlackboardOpenError>(result));
 }
 } // namespace iox2
 

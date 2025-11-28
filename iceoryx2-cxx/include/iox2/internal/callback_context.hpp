@@ -13,8 +13,8 @@
 #ifndef IOX2_INTERNAL_CALLBACK_CONTEXT_HPP
 #define IOX2_INTERNAL_CALLBACK_CONTEXT_HPP
 
-#include "iox2/legacy/optional.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/legacy/optional.hpp"
 #include "iox2/node_details.hpp"
 #include "iox2/node_id.hpp"
 #include "iox2/node_name.hpp"
@@ -68,8 +68,8 @@ inline auto ctx_cast(void* ptr) -> CallbackContext<T>* {
 
 template <typename T, typename ViewType>
 auto list_ports_callback(void* context, const T port_details_view) -> iox2_callback_progression_e {
-    auto* callback = internal::ctx_cast<iox::function<CallbackProgression(ViewType)>>(context);
-    return iox::into<iox2_callback_progression_e>(callback->value()(ViewType(port_details_view)));
+    auto* callback = internal::ctx_cast<iox2::legacy::function<CallbackProgression(ViewType)>>(context);
+    return iox2::legacy::into<iox2_callback_progression_e>(callback->value()(ViewType(port_details_view)));
 }
 
 template <ServiceType T>
@@ -82,14 +82,15 @@ auto list_callback(iox2_node_state_e node_state,
                    iox2_callback_context context) -> iox2_callback_progression_e {
     auto node_details = [&]() -> auto {
         if (node_id_ptr == nullptr || config == nullptr) {
-            return iox::optional<NodeDetails>();
+            return iox2::legacy::optional<NodeDetails>();
         }
 
-        return iox::optional<NodeDetails>(NodeDetails {
-            iox::FileName::create(iox::string<iox::FileName::capacity()>(iox::TruncateToCapacity, executable))
-                .expect("The executable file name is always valid."),
-            NodeNameView { node_name }.to_owned(),
-            Config {} });
+        return iox2::legacy::optional<NodeDetails>(
+            NodeDetails { iox2::legacy::FileName::create(iox2::legacy::string<iox2::legacy::FileName::capacity()>(
+                                                             iox2::legacy::TruncateToCapacity, executable))
+                              .expect("The executable file name is always valid."),
+                          NodeNameView { node_name }.to_owned(),
+                          Config {} });
     }();
 
     iox2_node_id_h node_id_handle = nullptr;
@@ -111,8 +112,8 @@ auto list_callback(iox2_node_state_e node_state,
         IOX_UNREACHABLE();
     }();
 
-    auto* callback = internal::ctx_cast<iox::function<CallbackProgression(NodeState<T>)>>(context);
-    return iox::into<iox2_callback_progression_e>(callback->value()(node_state_object));
+    auto* callback = internal::ctx_cast<iox2::legacy::function<CallbackProgression(NodeState<T>)>>(context);
+    return iox2::legacy::into<iox2_callback_progression_e>(callback->value()(node_state_object));
 }
 // NOLINTEND(readability-function-size)
 

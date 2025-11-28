@@ -28,8 +28,8 @@
 
 namespace {
 using namespace ::testing;
-using namespace iox;
-using namespace iox::testing;
+using namespace iox2::legacy;
+using namespace iox2::legacy::testing;
 
 template <typename T>
 struct TestValues {

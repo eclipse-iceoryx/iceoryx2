@@ -15,7 +15,8 @@
 
 #include "iox2/legacy/error_reporting/custom/default/default_error_handler.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace er {
 void DefaultErrorHandler::onPanic() {
 }
@@ -27,4 +28,5 @@ void DefaultErrorHandler::onReportViolation(ErrorDescriptor) {
 }
 
 } // namespace er
-} // namespace iox
+} // namespace legacy
+} // namespace iox2

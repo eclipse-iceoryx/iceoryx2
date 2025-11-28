@@ -11,9 +11,9 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "blackboard_complex_key.hpp"
-#include "iox2/legacy/duration.hpp"
 #include "iox2/entry_handle_mut.hpp"
 #include "iox2/entry_value.hpp"
+#include "iox2/legacy/duration.hpp"
 #include "iox2/log.hpp"
 #include "iox2/node.hpp"
 #include "iox2/service_name.hpp"
@@ -22,7 +22,7 @@
 #include <iostream>
 #include <utility>
 
-constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1);
+constexpr iox2::legacy::units::Duration CYCLE_TIME = iox2::legacy::units::Duration::fromSeconds(1);
 
 auto main() -> int {
     using namespace iox2;

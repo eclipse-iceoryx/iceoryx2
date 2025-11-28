@@ -18,7 +18,8 @@
 
 #include "iox2/legacy/semantic_string.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace platform {
 #if defined(_WIN32)
 constexpr uint64_t IOX_MAX_FILENAME_LENGTH = 128U;
@@ -44,6 +45,7 @@ class FileName : public SemanticString<FileName,
                                   detail::file_name_does_contain_invalid_characters>;
     using Parent::Parent;
 };
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif

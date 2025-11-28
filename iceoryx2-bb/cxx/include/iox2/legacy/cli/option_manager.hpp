@@ -22,7 +22,8 @@
 #include "iox2/legacy/std_string_support.hpp"
 #include "iox2/legacy/vector.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace cli {
 using CmdAssignments_t = vector<function<void(Arguments&)>, MAX_NUMBER_OF_ARGUMENTS>;
 
@@ -78,7 +79,8 @@ class OptionManager {
 };
 
 } // namespace cli
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #include "iox2/legacy/cli/option_manager.inl"
 

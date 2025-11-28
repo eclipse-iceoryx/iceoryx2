@@ -11,15 +11,15 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/attribute_set.hpp"
-#include "iox2/legacy/uninitialized_array.hpp"
 #include "iox2/internal/callback_context.hpp"
+#include "iox2/legacy/uninitialized_array.hpp"
 
 namespace iox2 {
 namespace {
 auto get_key_values_callback(const char* value, iox2_callback_context context) -> iox2_callback_progression_e {
-    auto* callback = internal::ctx_cast<iox::function<CallbackProgression(const Attribute::Value&)>>(context);
-    auto typed_value = Attribute::Value(iox::TruncateToCapacity, value);
-    return iox::into<iox2_callback_progression_e>(callback->value()(typed_value));
+    auto* callback = internal::ctx_cast<iox2::legacy::function<CallbackProgression(const Attribute::Value&)>>(context);
+    auto typed_value = Attribute::Value(iox2::legacy::TruncateToCapacity, value);
+    return iox2::legacy::into<iox2_callback_progression_e>(callback->value()(typed_value));
 }
 } // namespace
 
@@ -43,20 +43,22 @@ auto AttributeSetView::number_of_key_values(const Attribute::Key& key) const -> 
     return iox2_attribute_set_number_of_key_values(m_handle, key.c_str());
 }
 
-auto AttributeSetView::key_value(const Attribute::Key& key, const uint64_t idx) -> iox::optional<Attribute::Value> {
-    iox::UninitializedArray<char, Attribute::Value::capacity()> buffer;
+auto AttributeSetView::key_value(const Attribute::Key& key, const uint64_t idx)
+    -> iox2::legacy::optional<Attribute::Value> {
+    iox2::legacy::UninitializedArray<char, Attribute::Value::capacity()> buffer;
     bool has_value = false;
     iox2_attribute_set_key_value(m_handle, key.c_str(), idx, &buffer[0], Attribute::Value::capacity(), &has_value);
 
     if (!has_value) {
-        return iox::nullopt;
+        return iox2::legacy::nullopt;
     }
 
-    return Attribute::Value(iox::TruncateToCapacity, &buffer[0]);
+    return Attribute::Value(iox2::legacy::TruncateToCapacity, &buffer[0]);
 }
 
 void AttributeSetView::iter_key_values(
-    const Attribute::Key& key, const iox::function<CallbackProgression(const Attribute::Value&)>& callback) const {
+    const Attribute::Key& key,
+    const iox2::legacy::function<CallbackProgression(const Attribute::Value&)>& callback) const {
     auto ctx = internal::ctx(callback);
     iox2_attribute_set_iter_key_values(m_handle, key.c_str(), get_key_values_callback, static_cast<void*>(&ctx));
 }
@@ -124,12 +126,14 @@ auto AttributeSet::number_of_key_values(const Attribute::Key& key) const -> uint
     return m_view.number_of_key_values(key);
 }
 
-auto AttributeSet::key_value(const Attribute::Key& key, const uint64_t idx) -> iox::optional<Attribute::Value> {
+auto AttributeSet::key_value(const Attribute::Key& key, const uint64_t idx)
+    -> iox2::legacy::optional<Attribute::Value> {
     return m_view.key_value(key, idx);
 }
 
-void AttributeSet::iter_key_values(const Attribute::Key& key,
-                                   const iox::function<CallbackProgression(const Attribute::Value&)>& callback) const {
+void AttributeSet::iter_key_values(
+    const Attribute::Key& key,
+    const iox2::legacy::function<CallbackProgression(const Attribute::Value&)>& callback) const {
     m_view.iter_key_values(key, callback);
 }
 /////////////////////////////

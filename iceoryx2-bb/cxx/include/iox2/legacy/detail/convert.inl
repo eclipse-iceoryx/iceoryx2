@@ -23,7 +23,8 @@
 #include "iox2/legacy/detail/string_type_traits.hpp"
 #include "iox2/legacy/logging.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 ///@brief specialization for  uint8_t and int8_t is required  since uint8_t is unsigned char and int8_t is signed char
 /// and stringstream will not convert these to string as it is already a character.
 template <>
@@ -54,39 +55,39 @@ convert::toString(const Source& t) noexcept {
 }
 
 template <typename TargetType, typename std::enable_if_t<is_iox_string<TargetType>::value, int>>
-inline iox::optional<TargetType> convert::from_string(const char* v) noexcept {
+inline iox2::legacy::optional<TargetType> convert::from_string(const char* v) noexcept {
     using IoxString = TargetType;
     if (strlen(v) > IoxString::capacity()) {
-        return iox::nullopt;
+        return iox2::legacy::nullopt;
     }
-    return iox::optional<IoxString>(IoxString(TruncateToCapacity, v));
+    return iox2::legacy::optional<IoxString>(IoxString(TruncateToCapacity, v));
 }
 
 template <typename TargetType, typename std::enable_if_t<!is_iox_string<TargetType>::value, int>>
-inline iox::optional<TargetType> convert::from_string(const char* v IOX_MAYBE_UNUSED) noexcept {
+inline iox2::legacy::optional<TargetType> convert::from_string(const char* v IOX_MAYBE_UNUSED) noexcept {
     static_assert(always_false_v<TargetType>,
                   "For a conversion to 'std::string' please include 'iox/std_string_support.hpp'!\nConversion not "
                   "supported!");
 }
 
 template <>
-inline iox::optional<char> convert::from_string<char>(const char* v) noexcept {
+inline iox2::legacy::optional<char> convert::from_string<char>(const char* v) noexcept {
     if (strlen(v) != 1U) {
         IOX_LOG(Debug, v << " is not a char");
-        return iox::nullopt;
+        return iox2::legacy::nullopt;
     }
 
     // NOLINTJUSTIFICATION encapsulated in abstraction
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    return iox::optional<char>(v[0]);
+    return iox2::legacy::optional<char>(v[0]);
 }
 
 template <>
-inline iox::optional<bool> convert::from_string<bool>(const char* v) noexcept {
+inline iox2::legacy::optional<bool> convert::from_string<bool>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     if (start_with_neg_sign(v)) {
-        return iox::nullopt;
+        return iox2::legacy::nullopt;
     }
 
     auto call = IOX_POSIX_CALL(strtoul)(v, &end_ptr, STRTOUL_BASE)
@@ -100,7 +101,7 @@ inline iox::optional<bool> convert::from_string<bool>(const char* v) noexcept {
 }
 
 template <>
-inline iox::optional<float> convert::from_string<float>(const char* v) noexcept {
+inline iox2::legacy::optional<float> convert::from_string<float>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     auto call = IOX_POSIX_CALL(strtof)(v, &end_ptr)
@@ -112,7 +113,7 @@ inline iox::optional<float> convert::from_string<float>(const char* v) noexcept 
 }
 
 template <>
-inline iox::optional<double> convert::from_string<double>(const char* v) noexcept {
+inline iox2::legacy::optional<double> convert::from_string<double>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     auto call = IOX_POSIX_CALL(strtod)(v, &end_ptr)
@@ -124,7 +125,7 @@ inline iox::optional<double> convert::from_string<double>(const char* v) noexcep
 }
 
 template <>
-inline iox::optional<long double> convert::from_string<long double>(const char* v) noexcept {
+inline iox2::legacy::optional<long double> convert::from_string<long double>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     auto call = IOX_POSIX_CALL(strtold)(v, &end_ptr)
@@ -136,11 +137,11 @@ inline iox::optional<long double> convert::from_string<long double>(const char* 
 }
 
 template <>
-inline iox::optional<unsigned long long> convert::from_string<unsigned long long>(const char* v) noexcept {
+inline iox2::legacy::optional<unsigned long long> convert::from_string<unsigned long long>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     if (start_with_neg_sign(v)) {
-        return iox::nullopt;
+        return iox2::legacy::nullopt;
     }
 
     auto call = IOX_POSIX_CALL(strtoull)(v, &end_ptr, STRTOULL_BASE)
@@ -152,11 +153,11 @@ inline iox::optional<unsigned long long> convert::from_string<unsigned long long
 }
 
 template <>
-inline iox::optional<unsigned long> convert::from_string<unsigned long>(const char* v) noexcept {
+inline iox2::legacy::optional<unsigned long> convert::from_string<unsigned long>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     if (start_with_neg_sign(v)) {
-        return iox::nullopt;
+        return iox2::legacy::nullopt;
     }
 
     auto call = IOX_POSIX_CALL(strtoul)(v, &end_ptr, STRTOUL_BASE)
@@ -168,11 +169,11 @@ inline iox::optional<unsigned long> convert::from_string<unsigned long>(const ch
 }
 
 template <>
-inline iox::optional<unsigned int> convert::from_string<unsigned int>(const char* v) noexcept {
+inline iox2::legacy::optional<unsigned int> convert::from_string<unsigned int>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     if (start_with_neg_sign(v)) {
-        return iox::nullopt;
+        return iox2::legacy::nullopt;
     }
 
     // use alwaysSuccess for the conversion edge cases in 32-bit system?
@@ -185,11 +186,11 @@ inline iox::optional<unsigned int> convert::from_string<unsigned int>(const char
 }
 
 template <>
-inline iox::optional<unsigned short> convert::from_string<unsigned short>(const char* v) noexcept {
+inline iox2::legacy::optional<unsigned short> convert::from_string<unsigned short>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     if (start_with_neg_sign(v)) {
-        return iox::nullopt;
+        return iox2::legacy::nullopt;
     }
 
     auto call = IOX_POSIX_CALL(strtoul)(v, &end_ptr, STRTOUL_BASE)
@@ -201,11 +202,11 @@ inline iox::optional<unsigned short> convert::from_string<unsigned short>(const 
 }
 
 template <>
-inline iox::optional<unsigned char> convert::from_string<unsigned char>(const char* v) noexcept {
+inline iox2::legacy::optional<unsigned char> convert::from_string<unsigned char>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     if (start_with_neg_sign(v)) {
-        return iox::nullopt;
+        return iox2::legacy::nullopt;
     }
 
     auto call = IOX_POSIX_CALL(strtoul)(v, &end_ptr, STRTOULL_BASE)
@@ -217,7 +218,7 @@ inline iox::optional<unsigned char> convert::from_string<unsigned char>(const ch
 }
 
 template <>
-inline iox::optional<long long> convert::from_string<long long>(const char* v) noexcept {
+inline iox2::legacy::optional<long long> convert::from_string<long long>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     auto call = IOX_POSIX_CALL(strtoll)(v, &end_ptr, STRTOLL_BASE)
@@ -229,7 +230,7 @@ inline iox::optional<long long> convert::from_string<long long>(const char* v) n
 }
 
 template <>
-inline iox::optional<long> convert::from_string<long>(const char* v) noexcept {
+inline iox2::legacy::optional<long> convert::from_string<long>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     auto call = IOX_POSIX_CALL(strtol)(v, &end_ptr, STRTOL_BASE)
@@ -241,7 +242,7 @@ inline iox::optional<long> convert::from_string<long>(const char* v) noexcept {
 }
 
 template <>
-inline iox::optional<int> convert::from_string<int>(const char* v) noexcept {
+inline iox2::legacy::optional<int> convert::from_string<int>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     // use alwaysSuccess for the conversion edge cases in 32-bit system?
@@ -254,7 +255,7 @@ inline iox::optional<int> convert::from_string<int>(const char* v) noexcept {
 }
 
 template <>
-inline iox::optional<short> convert::from_string<short>(const char* v) noexcept {
+inline iox2::legacy::optional<short> convert::from_string<short>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     auto call = IOX_POSIX_CALL(strtol)(v, &end_ptr, STRTOL_BASE)
@@ -266,7 +267,7 @@ inline iox::optional<short> convert::from_string<short>(const char* v) noexcept 
 }
 
 template <>
-inline iox::optional<signed char> convert::from_string<signed char>(const char* v) noexcept {
+inline iox2::legacy::optional<signed char> convert::from_string<signed char>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     auto call = IOX_POSIX_CALL(strtol)(v, &end_ptr, STRTOL_BASE)
@@ -287,17 +288,17 @@ inline bool convert::check_edge_case(decltype(errno) errno_cache,
 }
 
 template <typename TargetType, typename CallType>
-inline iox::optional<TargetType>
+inline iox2::legacy::optional<TargetType>
 convert::evaluate_return_value(CallType& call, const char* end_ptr, const char* v) noexcept {
     if (call.has_error()) {
-        return iox::nullopt;
+        return iox2::legacy::nullopt;
     }
 
     if (!check_edge_case<TargetType>(call->errnum, end_ptr, v, call->value)) {
-        return iox::nullopt;
+        return iox2::legacy::nullopt;
     }
 
-    return iox::optional<TargetType>(static_cast<TargetType>(call->value));
+    return iox2::legacy::optional<TargetType>(static_cast<TargetType>(call->value));
 }
 
 template <typename SourceType>
@@ -395,6 +396,7 @@ inline bool convert::is_valid_errno(decltype(errno) errno_cache, const char* v) 
     return true;
 }
 
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_UTILITY_CONVERT_INL

@@ -24,19 +24,20 @@ constexpr uint64_t STRING_CAPACITY = 64;
 class Entry {
   private:
     LogLevel m_log_level;
-    iox::string<STRING_CAPACITY> m_origin;
-    iox::string<STRING_CAPACITY> m_message;
+    iox2::legacy::string<STRING_CAPACITY> m_origin;
+    iox2::legacy::string<STRING_CAPACITY> m_message;
 
   public:
     Entry(LogLevel log_level, const char* origin, const char* message)
         : m_log_level { log_level }
-        , m_origin { iox::TruncateToCapacity, origin }
-        , m_message { iox::TruncateToCapacity, message } {
+        , m_origin { iox2::legacy::TruncateToCapacity, origin }
+        , m_message { iox2::legacy::TruncateToCapacity, message } {
     }
 
     auto is_equal(LogLevel log_level, const char* origin, const char* message) -> bool {
-        return m_log_level == log_level && m_origin == iox::string<STRING_CAPACITY>(iox::TruncateToCapacity, origin)
-               && m_message == iox::string<STRING_CAPACITY>(iox::TruncateToCapacity, message);
+        return m_log_level == log_level
+               && m_origin == iox2::legacy::string<STRING_CAPACITY>(iox2::legacy::TruncateToCapacity, origin)
+               && m_message == iox2::legacy::string<STRING_CAPACITY>(iox2::legacy::TruncateToCapacity, message);
     }
 };
 
@@ -54,14 +55,14 @@ class TestLogger : public Log {
         }
     }
 
-    auto get_log_buffer() -> iox::vector<Entry, TEST_LOGGER_CAPACITY> {
+    auto get_log_buffer() -> iox2::legacy::vector<Entry, TEST_LOGGER_CAPACITY> {
         auto buffer = m_log_buffer;
         m_log_buffer.clear();
         return buffer;
     }
 
   private:
-    iox::vector<Entry, TEST_LOGGER_CAPACITY> m_log_buffer;
+    iox2::legacy::vector<Entry, TEST_LOGGER_CAPACITY> m_log_buffer;
 };
 
 TEST(Log, custom_logger_works) {

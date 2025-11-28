@@ -23,7 +23,8 @@
 #include <new> // needed for placement new in the construct_value member function
 #include <utility>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 /// @brief Helper struct which is used to signal an empty optional.
 ///         It is equivalent to no value.
 struct nullopt_t { };
@@ -298,7 +299,8 @@ struct is_optional : std::false_type { };
 template <typename T>
 struct is_optional<optional<T>> : std::true_type { };
 // AXIVION ENABLE STYLE AutosarC++19_03-A13.5.5
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #include "iox2/legacy/detail/optional.inl"
 

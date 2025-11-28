@@ -24,8 +24,8 @@
 
 namespace {
 using namespace ::testing;
-using namespace iox;
-using namespace iox::testing;
+using namespace iox2::legacy;
+using namespace iox2::legacy::testing;
 
 constexpr int FREE_FUNC_TEST_VALUE = 42 + 42;
 constexpr int FUNCTOR_TEST_VALUE = 11;
@@ -235,7 +235,7 @@ TEST_F(function_refTest, StoreInStdFunctionResultEqual) {
     ::testing::Test::RecordProperty("TEST_ID", "99d9ac22-dddb-44fc-a80b-fe559f6acf63");
     auto lambda = []() -> int { return 37; };
     function_ref<int()> moep(lambda);
-    // Moves iox::function_ref into std::function, needs copy c'tor
+    // Moves iox2::legacy::function_ref into std::function, needs copy c'tor
     std::function<int()> sut(moep);
     EXPECT_THAT(sut(), Eq(37));
 }

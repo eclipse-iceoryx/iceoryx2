@@ -22,7 +22,8 @@
 
 #include <string>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 // AXIVION Next Construct AutosarC++19_03-M2.10.1 : log is a sensible namespace for a logger; furthermore it is in the
 // iox namespace and when used as function the compiler will complain
 namespace log {
@@ -277,6 +278,7 @@ inline LogStream& LogStream::operator<<(const LogLevel value) noexcept {
 // AXIVION ENABLE STYLE AutosarC++19_03-M5.17.1
 
 } // namespace log
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_REPORTING_LOG_LOGSTREAM_INL

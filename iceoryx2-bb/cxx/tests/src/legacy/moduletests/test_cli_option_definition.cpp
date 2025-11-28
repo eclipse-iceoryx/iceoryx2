@@ -30,8 +30,8 @@
 
 namespace {
 using namespace ::testing;
-using namespace iox;
-using namespace iox::cli;
+using namespace iox2::legacy;
+using namespace iox2::legacy::cli;
 
 /// All the success tests are handled indirectly in the CommandLineArgumentParser_test
 /// where every combination of short and long option is parsed and verified
@@ -52,9 +52,9 @@ class OptionDefinition_test : public Test {
         }
     }
 
-    iox::optional<OutBuffer> outputBuffer;
+    iox2::legacy::optional<OutBuffer> outputBuffer;
     uint64_t numberOfErrorCallbackCalls = 0U;
-    iox::function<void()> errorCallback = [this] { ++numberOfErrorCallbackCalls; };
+    iox2::legacy::function<void()> errorCallback = [this] { ++numberOfErrorCallbackCalls; };
     static Argument_t defaultValue;
 };
 Argument_t OptionDefinition_test::defaultValue = "DEFAULT VALUE";

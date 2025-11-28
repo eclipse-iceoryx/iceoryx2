@@ -20,7 +20,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace test {
 template <typename, typename = void>
 struct has_mytype_as_member : std::false_type { };
@@ -28,11 +29,12 @@ struct has_mytype_as_member : std::false_type { };
 template <typename T>
 struct has_mytype_as_member<T, void_t<typename T::myType>> : std::true_type { };
 } // namespace test
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 namespace {
 using namespace ::testing;
-using namespace iox;
+using namespace iox2::legacy;
 
 TEST(TypeTraitsTest, IsInvocableResolvesToTrue) {
     ::testing::Test::RecordProperty("TEST_ID", "802f0044-ee40-47b7-9b83-519866c63508");
@@ -83,7 +85,7 @@ TEST(TypeTraitsTest, AddConstConditionallyAddsConstIfConditionTypeIsConst) {
     using SutType = uint8_t;
     using ConditionType = bool;
 
-    using SutTypeResult = iox::add_const_conditionally<SutType, const ConditionType>::type;
+    using SutTypeResult = iox2::legacy::add_const_conditionally<SutType, const ConditionType>::type;
 
     EXPECT_TRUE(std::is_const<SutTypeResult>::value);
     // EXPECT_TRUE macro is broken when std::is_same is used directly
@@ -96,7 +98,7 @@ TEST(TypeTraitsTest, AddConstConditionallyDoesNotAddsConstIfConditionTypeIsNotCo
     using SutType = uint8_t;
     using ConditionType = bool;
 
-    using SutTypeResult = iox::add_const_conditionally<SutType, ConditionType>::type;
+    using SutTypeResult = iox2::legacy::add_const_conditionally<SutType, ConditionType>::type;
 
     EXPECT_FALSE(std::is_const<SutTypeResult>::value);
     // EXPECT_TRUE macro is broken when std::is_same is used directly
@@ -109,7 +111,7 @@ TEST(TypeTraitsTest, AddConstConditionallyTypeAliasWorks) {
     using SutType = uint8_t;
     using ConditionType = bool;
 
-    using SutTypeResult = iox::add_const_conditionally_t<SutType, const ConditionType>;
+    using SutTypeResult = iox2::legacy::add_const_conditionally_t<SutType, const ConditionType>;
 
     EXPECT_TRUE(std::is_const<SutTypeResult>::value);
 }
@@ -146,8 +148,8 @@ TEST(TypeTraitsTest, IsFunctionPointerResolvesToFalse) {
 
 TEST(TypeTraitsTest, TypeInfo_StringTypeTranslatesCorrectly) {
     ::testing::Test::RecordProperty("TEST_ID", "e20e6698-3c0c-4b28-a8bb-f5c5dd05a107");
-    EXPECT_THAT(TypeInfo<iox::string<1>>::NAME, StrEq("string"));
-    EXPECT_THAT(TypeInfo<iox::string<123>>::NAME, StrEq("string"));
+    EXPECT_THAT(TypeInfo<iox2::legacy::string<1>>::NAME, StrEq("string"));
+    EXPECT_THAT(TypeInfo<iox2::legacy::string<123>>::NAME, StrEq("string"));
 }
 
 TEST(TypeTraitsTest, TypeInfo_int8_tTranslatesCorrectly) {
@@ -222,7 +224,7 @@ TEST(TypeTraitsTest, NonCharArraysAreIdentifiedCorrectly) {
     // NOLINTJUSTIFICATION we want test explicitly the c arrays case
     // NOLINTNEXTLINE(hicpp-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
     EXPECT_FALSE(is_char_array<int[10]>::value);
-    EXPECT_FALSE(is_char_array<iox::string<11>>::value);
+    EXPECT_FALSE(is_char_array<iox2::legacy::string<11>>::value);
     EXPECT_FALSE(is_char_array<char>::value);
 }
 

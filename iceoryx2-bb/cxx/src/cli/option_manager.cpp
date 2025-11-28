@@ -15,7 +15,8 @@
 
 #include "iox2/legacy/cli/option_manager.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace cli {
 OptionManager::OptionManager(const OptionDescription_t& programDescription, const function<void()>& onFailureCallback)
     : m_optionSet { programDescription, onFailureCallback } {
@@ -40,4 +41,5 @@ OptionName_t OptionManager::getLookupName(const char shortName, const OptionName
 }
 
 } // namespace cli
-} // namespace iox
+} // namespace legacy
+} // namespace iox2

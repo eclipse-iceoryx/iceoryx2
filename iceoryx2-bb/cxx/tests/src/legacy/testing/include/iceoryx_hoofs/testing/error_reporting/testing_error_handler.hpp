@@ -37,11 +37,12 @@
 // NOLINTNEXTLINE(hicpp-deprecated-headers) required to work on some platforms
 #include <setjmp.h>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace testing {
 
 /// @brief Defines the test reaction of dynamic error handling.
-class TestingErrorHandler : public iox::er::ErrorHandlerInterface {
+class TestingErrorHandler : public iox2::legacy::er::ErrorHandlerInterface {
   public:
     TestingErrorHandler() noexcept = default;
     ~TestingErrorHandler() noexcept override = default;
@@ -60,7 +61,7 @@ class TestingErrorHandler : public iox::er::ErrorHandlerInterface {
     /// {
     ///     ::testing::InitGoogleTest(&argc, argv);
     ///
-    ///     iox::testing::ErrorHandler::init();
+    ///     iox2::legacy::testing::ErrorHandler::init();
     ///
     ///     return RUN_ALL_TESTS();
     /// }
@@ -89,11 +90,12 @@ class TestingErrorHandler : public iox::er::ErrorHandlerInterface {
     bool hasError() const noexcept;
 
     /// @brief Indicates whether a specific error occurred previously.
-    bool hasError(iox::er::ErrorCode code, iox::er::ModuleId module = iox::er::ModuleId()) const noexcept;
+    bool hasError(iox2::legacy::er::ErrorCode code,
+                  iox2::legacy::er::ModuleId module = iox2::legacy::er::ModuleId()) const noexcept;
 
     /// @brief Indicates whether a assumption violation occurred previously.
     /// @note We do not track module id for violations.
-    bool hasViolation(iox::er::ErrorCode code) const noexcept;
+    bool hasViolation(iox2::legacy::er::ErrorCode code) const noexcept;
 
     /// @brief runs testFunction in a test context that can detect fatal failures;
     /// runs in the same thread
@@ -107,7 +109,7 @@ class TestingErrorHandler : public iox::er::ErrorHandlerInterface {
     static constexpr int JUMPED_INDICATOR { 1 };
 
     mutable std::mutex m_mutex;
-    iox::concurrent::Atomic<bool> m_panicked { false };
+    iox2::legacy::concurrent::Atomic<bool> m_panicked { false };
     std::vector<er::ErrorDescriptor> m_errors;
 
     // we track violations separately (leads to simple search)
@@ -125,7 +127,7 @@ class TestingErrorHandler : public iox::er::ErrorHandlerInterface {
     // (longjmp does not support this)
     // We need to ensure though that only one jump buffer is considered by panic and controlling
     // ownership of the buffer is one way to accomplish that.
-    iox::concurrent::Atomic<JumpState> m_jumpState { JumpState::Obtainable };
+    iox2::legacy::concurrent::Atomic<JumpState> m_jumpState { JumpState::Obtainable };
 };
 
 /// @brief This class hooks into gTest to automatically resets the error handler on the start of a test
@@ -133,9 +135,10 @@ class ErrorHandlerSetup : public ::testing::EmptyTestEventListener {
     void OnTestStart(const ::testing::TestInfo&) override;
 };
 
-using ErrorHandler = iox::StaticLifetimeGuard<iox::testing::TestingErrorHandler>;
+using ErrorHandler = iox2::legacy::StaticLifetimeGuard<iox2::legacy::testing::TestingErrorHandler>;
 
 } // namespace testing
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif

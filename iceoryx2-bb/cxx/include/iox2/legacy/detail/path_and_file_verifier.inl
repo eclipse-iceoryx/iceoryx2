@@ -19,14 +19,15 @@
 
 #include "iox2/legacy/detail/path_and_file_verifier.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace detail {
 
 template <uint64_t StringCapacity>
-inline bool isValidPathEntry(const iox::string<StringCapacity>& name,
+inline bool isValidPathEntry(const iox2::legacy::string<StringCapacity>& name,
                              const RelativePathComponents relativePathComponents) noexcept {
-    const iox::string<StringCapacity> currentDirectory { "." };
-    const iox::string<StringCapacity> parentDirectory { ".." };
+    const iox2::legacy::string<StringCapacity> currentDirectory { "." };
+    const iox2::legacy::string<StringCapacity> parentDirectory { ".." };
 
     if ((name == currentDirectory) || (name == parentDirectory)) {
         return relativePathComponents == RelativePathComponents::Accept;
@@ -64,7 +65,7 @@ inline bool isValidPathEntry(const iox::string<StringCapacity>& name,
 }
 
 template <uint64_t StringCapacity>
-inline bool isValidFileName(const iox::string<StringCapacity>& name) noexcept {
+inline bool isValidFileName(const iox2::legacy::string<StringCapacity>& name) noexcept {
     if (name.empty()) {
         return false;
     }
@@ -74,12 +75,12 @@ inline bool isValidFileName(const iox::string<StringCapacity>& name) noexcept {
 }
 
 template <uint64_t StringCapacity>
-inline bool isValidPathToFile(const iox::string<StringCapacity>& name) noexcept {
+inline bool isValidPathToFile(const iox2::legacy::string<StringCapacity>& name) noexcept {
     if (doesEndWithPathSeparator(name)) {
         return false;
     }
 
-    auto maybeSeparator = name.find_last_of(iox::string<platform::IOX_NUMBER_OF_PATH_SEPARATORS>(
+    auto maybeSeparator = name.find_last_of(iox2::legacy::string<platform::IOX_NUMBER_OF_PATH_SEPARATORS>(
         TruncateToCapacity, &platform::IOX_PATH_SEPARATORS[0], platform::IOX_NUMBER_OF_PATH_SEPARATORS));
 
     if (!maybeSeparator.has_value()) {
@@ -105,15 +106,15 @@ inline bool isValidPathToFile(const iox::string<StringCapacity>& name) noexcept 
 }
 
 template <uint64_t StringCapacity>
-inline bool isValidPathToDirectory(const iox::string<StringCapacity>& name) noexcept {
+inline bool isValidPathToDirectory(const iox2::legacy::string<StringCapacity>& name) noexcept {
     if (name.empty()) {
         return false;
     }
 
-    const iox::string<StringCapacity> currentDirectory { "." };
-    const iox::string<StringCapacity> parentDirectory { ".." };
+    const iox2::legacy::string<StringCapacity> currentDirectory { "." };
+    const iox2::legacy::string<StringCapacity> parentDirectory { ".." };
 
-    const iox::string<platform::IOX_NUMBER_OF_PATH_SEPARATORS> pathSeparators {
+    const iox2::legacy::string<platform::IOX_NUMBER_OF_PATH_SEPARATORS> pathSeparators {
         TruncateToCapacity, &platform::IOX_PATH_SEPARATORS[0], platform::IOX_NUMBER_OF_PATH_SEPARATORS
     };
 
@@ -155,14 +156,14 @@ inline bool isValidPathToDirectory(const iox::string<StringCapacity>& name) noex
 
 // AXIVION Next Construct AutosarC++19_03-A5.2.5, AutosarC++19_03-M5.0.16, FaultDetection-OutOfBounds : IOX_PATH_SEPARATORS is not a string but an array of chars without a null termination and all elements are valid characters
 template <uint64_t StringCapacity>
-inline bool doesEndWithPathSeparator(const iox::string<StringCapacity>& name) noexcept {
+inline bool doesEndWithPathSeparator(const iox2::legacy::string<StringCapacity>& name) noexcept {
     if (name.empty()) {
         return false;
     }
     // AXIVION Next Construct AutosarC++19_03-A3.9.1: Not used as an integer but as actual character
     const char lastCharacter { name[name.size() - 1U] };
 
-    for (const auto separator : iox::platform::IOX_PATH_SEPARATORS) {
+    for (const auto separator : iox2::legacy::platform::IOX_PATH_SEPARATORS) {
         if (lastCharacter == separator) {
             return true;
         }
@@ -171,6 +172,7 @@ inline bool doesEndWithPathSeparator(const iox::string<StringCapacity>& name) no
 }
 
 } // namespace detail
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_POSIX_VOCABULARY_DETAIL_PATH_AND_FILE_VERIFIER_INL

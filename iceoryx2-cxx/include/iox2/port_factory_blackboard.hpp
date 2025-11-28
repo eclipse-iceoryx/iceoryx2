@@ -13,12 +13,12 @@
 #ifndef IOX2_PORTFACTORY_BLACKBOARD_HPP
 #define IOX2_PORTFACTORY_BLACKBOARD_HPP
 
-#include "iox2/legacy/expected.hpp"
-#include "iox2/legacy/uninitialized_array.hpp"
 #include "iox2/attribute_set.hpp"
 #include "iox2/dynamic_config_blackboard.hpp"
 #include "iox2/iceoryx2.h"
 #include "iox2/internal/callback_context.hpp"
+#include "iox2/legacy/expected.hpp"
+#include "iox2/legacy/uninitialized_array.hpp"
 #include "iox2/node_state.hpp"
 #include "iox2/port_factory_reader.hpp"
 #include "iox2/port_factory_writer.hpp"
@@ -60,8 +60,8 @@ class PortFactoryBlackboard {
     /// and calls for every [`Node`] the provided callback. If an error occurs
     /// while acquiring the [`Node`]s corresponding [`NodeState`] the error is
     /// forwarded to the callback as input argument.
-    auto nodes(const iox::function<CallbackProgression(NodeState<S>)>& callback) const
-        -> iox::expected<void, NodeListFailure>;
+    auto nodes(const iox2::legacy::function<CallbackProgression(NodeState<S>)>& callback) const
+        -> iox2::legacy::expected<void, NodeListFailure>;
 
     /// Returns a [`PortFactoryWriter`] to create a new [`Writer`] port
     auto writer_builder() const -> PortFactoryWriter<S, KeyType>;
@@ -124,10 +124,10 @@ inline auto PortFactoryBlackboard<S, KeyType>::name() const -> ServiceNameView {
 
 template <ServiceType S, typename KeyType>
 inline auto PortFactoryBlackboard<S, KeyType>::service_id() const -> ServiceId {
-    iox::UninitializedArray<char, IOX2_SERVICE_ID_LENGTH> buffer;
+    iox2::legacy::UninitializedArray<char, IOX2_SERVICE_ID_LENGTH> buffer;
     iox2_port_factory_blackboard_service_id(&m_handle, &buffer[0], IOX2_SERVICE_ID_LENGTH);
 
-    return ServiceId(iox::string<IOX2_SERVICE_ID_LENGTH>(iox::TruncateToCapacity, &buffer[0]));
+    return ServiceId(iox2::legacy::string<IOX2_SERVICE_ID_LENGTH>(iox2::legacy::TruncateToCapacity, &buffer[0]));
 }
 
 template <ServiceType S, typename KeyType>
@@ -149,19 +149,19 @@ inline auto PortFactoryBlackboard<S, KeyType>::dynamic_config() const -> Dynamic
 }
 
 template <ServiceType S, typename KeyType>
-inline auto
-PortFactoryBlackboard<S, KeyType>::nodes(const iox::function<CallbackProgression(NodeState<S>)>& callback) const
-    -> iox::expected<void, NodeListFailure> {
+inline auto PortFactoryBlackboard<S, KeyType>::nodes(
+    const iox2::legacy::function<CallbackProgression(NodeState<S>)>& callback) const
+    -> iox2::legacy::expected<void, NodeListFailure> {
     auto ctx = internal::ctx(callback);
 
     const auto ret_val =
         iox2_port_factory_blackboard_nodes(&m_handle, internal::list_callback<S>, static_cast<void*>(&ctx));
 
     if (ret_val == IOX2_OK) {
-        return iox::ok();
+        return iox2::legacy::ok();
     }
 
-    return iox::err(iox::into<NodeListFailure>(ret_val));
+    return iox2::legacy::err(iox2::legacy::into<NodeListFailure>(ret_val));
 }
 
 template <ServiceType S, typename KeyType>

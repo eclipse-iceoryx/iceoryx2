@@ -21,7 +21,8 @@
 #include <cstdint>
 #include <vector>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace testing {
 template <typename T = uint64_t, T DEFAULT_VALUE = 0>
 class LifetimeAndAssignmentTracker {
@@ -211,6 +212,7 @@ typename MoveOnlyLifetimeAndAssignmentTracker<T, DEFAULT_VALUE>::Statistics
 //NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables)
 
 } // namespace testing
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_TESTING_LIFETIME_AND_ASSIGNMENT_TRACKER_HPP

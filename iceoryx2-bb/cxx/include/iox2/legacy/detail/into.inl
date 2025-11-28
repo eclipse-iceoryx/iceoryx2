@@ -18,7 +18,8 @@
 #include "iox2/legacy/into.hpp"
 #include "iox2/legacy/type_traits.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 template <typename SourceType, typename DestinationType>
 inline constexpr typename detail::extract_into_type<DestinationType>::type_t from(const SourceType value) noexcept {
     return FromImpl<SourceType, DestinationType>::fromImpl(value);
@@ -41,6 +42,7 @@ template <typename DestinationType, typename SourceType>
 inline constexpr typename detail::extract_into_type<DestinationType>::type_t into(const SourceType value) noexcept {
     return from<SourceType, DestinationType>(value);
 }
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_UTILITY_INTO_INL

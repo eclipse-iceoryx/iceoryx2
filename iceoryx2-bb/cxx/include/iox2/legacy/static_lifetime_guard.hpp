@@ -21,7 +21,8 @@
 #include <type_traits>
 #include <utility>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 /// @brief Manages a static instance of type T in a way so that each
 /// existing StaticLifetimeGuard prevents the destruction of
 /// the instance.
@@ -114,7 +115,8 @@ class StaticLifetimeGuard {
     static uint64_t setCount(uint64_t count);
 };
 
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #include "iox2/legacy/detail/static_lifetime_guard.inl"
 

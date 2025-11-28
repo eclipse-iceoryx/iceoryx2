@@ -16,7 +16,8 @@
 #ifndef IOX_HOOFS_UTILITY_INTO_HPP
 #define IOX_HOOFS_UTILITY_INTO_HPP
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 
 /// @brief Helper struct to indicate a lossy conversion, e.g. from an unbounded type into a bounded type
 template <typename D>
@@ -77,7 +78,7 @@ struct extract_into_type<lossy<T>> {
 ///         return HighLevel::Timeout;
 ///     }
 /// }
-/// } // namespace iox
+/// } } // namespace iox
 /// @endcode
 /// @tparam SourceType is the 'from' type
 /// @tparam DestinationType is the 'to' type
@@ -98,7 +99,7 @@ struct FromImpl {
 /// function which is automatically available when 'from' is implemented. This function shall therefore not be
 /// specialized but always the 'from' function.
 /// @code
-/// Bar b = iox::into<Bar>(Foo::ENUM_VALUE);
+/// Bar b = iox2::legacy::into<Bar>(Foo::ENUM_VALUE);
 /// @endcode
 /// @tparam DestinationType is the 'to' type
 /// @tparam SourceType is the 'from' type
@@ -107,7 +108,8 @@ struct FromImpl {
 template <typename DestinationType, typename SourceType>
 constexpr typename detail::extract_into_type<DestinationType>::type_t into(const SourceType value) noexcept;
 
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #include "iox2/legacy/detail/into.inl"
 

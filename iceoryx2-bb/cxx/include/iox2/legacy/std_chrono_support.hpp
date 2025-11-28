@@ -21,7 +21,8 @@
 
 #include <chrono>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 /// @brief Construct a Duration object from std::chrono::nanoseconds
 /// @param[in] value as nanoseconds
 /// @attention Since negative durations are not allowed, the duration will be clamped to 0
@@ -53,7 +54,8 @@ template <>
 struct FromImpl<std::chrono::seconds, units::Duration> {
     static units::Duration fromImpl(const std::chrono::seconds& value) noexcept;
 };
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #include "iox2/legacy/detail/std_chrono_support.inl"
 

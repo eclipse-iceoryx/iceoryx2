@@ -21,9 +21,9 @@
 
 namespace {
 using namespace ::testing;
-using namespace iox;
-using namespace iox::units;
-using namespace iox::units::duration_literals;
+using namespace iox2::legacy;
+using namespace iox2::legacy::units;
+using namespace iox2::legacy::units::duration_literals;
 
 constexpr uint64_t NANOSECS_PER_MILLISECOND = Duration::NANOSECS_PER_MILLISEC;
 constexpr uint64_t NANOSECS_PER_SECOND = Duration::NANOSECS_PER_SEC;

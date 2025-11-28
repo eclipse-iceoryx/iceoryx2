@@ -21,7 +21,8 @@
 
 #include "iox2/legacy/log/logstream.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace log {
 namespace internal {
 /// @brief Convenience function for the IOX_LOG_INTERNAL macro
@@ -35,7 +36,8 @@ inline bool isLogLevelActive(LogLevel logLevel) noexcept {
 }
 } // namespace internal
 } // namespace log
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 /// @brief Only for internal usage
 // AXIVION Next Construct AutosarC++19_03-A16.0.1 cannot be realized with templates or constexpr functions due to the
@@ -43,8 +45,8 @@ inline bool isLogLevelActive(LogLevel logLevel) noexcept {
 // NOLINTBEGIN(cppcoreguidelines-macro-usage)
 // NOLINTBEGIN(bugprone-macro-parentheses) 'msg_stream' cannot be wrapped in parentheses due to the '<<' operator
 #define IOX_LOG_INTERNAL(file, line, function, level, msg_stream)                                                      \
-    if (iox::log::internal::isLogLevelActive(level)) {                                                                 \
-        iox::log::LogStream(file, line, function, level).self() << msg_stream;                                         \
+    if (iox2::legacy::log::internal::isLogLevelActive(level)) {                                                        \
+        iox2::legacy::log::LogStream(file, line, function, level).self() << msg_stream;                                \
     }                                                                                                                  \
     [] { }() // the empty lambda forces a semicolon on the caller side
              // NOLINTEND(bugprone-macro-parentheses)
@@ -62,7 +64,8 @@ inline bool isLogLevelActive(LogLevel logLevel) noexcept {
 // sufficient for debugging
 // NOLINTBEGIN(bugprone-lambda-function-name)
 #define IOX_LOG(level, msg_stream)                                                                                     \
-    IOX_LOG_INTERNAL(__FILE__, __LINE__, static_cast<const char*>(__FUNCTION__), iox::log::LogLevel::level, msg_stream)
+    IOX_LOG_INTERNAL(                                                                                                  \
+        __FILE__, __LINE__, static_cast<const char*>(__FUNCTION__), iox2::legacy::log::LogLevel::level, msg_stream)
 // NOLINTEND(bugprone-lambda-function-name)
 
 // NOLINTEND(cppcoreguidelines-macro-usage)

@@ -18,7 +18,8 @@
 
 #include "iox2/legacy/log/building_blocks/logformat.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace log {
 // AXIVION DISABLE STYLE AutosarC++19_03-A3.9.1 : See at declaration in header
 // AXIVION DISABLE STYLE AutosarC++19_03-M2.13.2 : Octal numbers are required for the terminal color codes and it is
@@ -206,6 +207,7 @@ inline constexpr const char* logFormatOct<unsigned long long>() noexcept {
 // AXIVION ENABLE STYLE AutosarC++19_03-A3.9.1
 
 } // namespace log
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_REPORTING_LOG_BUILDING_BLOCKS_LOGFORMAT_INL

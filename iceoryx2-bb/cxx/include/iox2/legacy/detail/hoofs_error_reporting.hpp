@@ -31,7 +31,8 @@
 #include "iox2/legacy/error_reporting/types.hpp"
 #include "iox2/legacy/log/logstream.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 // clang-format off
 
 // NOLINTJUSTIFICATION This macro is usee to define an enum and an array with corresponding enum tag names
@@ -44,7 +45,7 @@ namespace iox {
 // DO NOT TOUCH THE ENUM, you can doodle around with the lines above!!!
 
 // NOLINTNEXTLINE(performance-enum-size) the type is required for error handling
-enum class HoofsError : iox::er::ErrorCode::type {
+enum class HoofsError : iox2::legacy::er::ErrorCode::type {
     IOX_HOOFS_ERRORS(IOX_CREATE_ERROR_ENUM)
 };
 
@@ -58,14 +59,14 @@ inline log::LogStream& operator<<(log::LogStream& stream, HoofsError value) noex
 class HoofsErrorType {
   public:
     explicit HoofsErrorType(HoofsError code)
-        : m_code(static_cast<iox::er::ErrorCode::type>(code)) {
+        : m_code(static_cast<iox2::legacy::er::ErrorCode::type>(code)) {
     }
 
-    static constexpr iox::er::ModuleId module() {
+    static constexpr iox2::legacy::er::ModuleId module() {
         return MODULE_ID;
     }
 
-    iox::er::ErrorCode code() const {
+    iox2::legacy::er::ErrorCode code() const {
         return m_code;
     }
 
@@ -77,10 +78,10 @@ class HoofsErrorType {
         return "iceoryx_hoofs";
     }
 
-    static constexpr iox::er::ModuleId MODULE_ID { iox::er::ModuleId::HOOFS };
+    static constexpr iox2::legacy::er::ModuleId MODULE_ID { iox2::legacy::er::ModuleId::HOOFS };
 
   protected:
-    iox::er::ErrorCode m_code;
+    iox2::legacy::er::ErrorCode m_code;
 };
 
 namespace er {
@@ -95,6 +96,7 @@ inline ModuleId toModule(HoofsError) {
 
 } // namespace er
 
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_ERROR_HANDLING_ERROR_HANDLING_HPP

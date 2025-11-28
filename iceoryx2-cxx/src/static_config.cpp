@@ -56,7 +56,7 @@ auto StaticConfig::name() const -> const char* {
 }
 
 auto StaticConfig::messaging_pattern() const -> MessagingPattern {
-    return iox::into<MessagingPattern>(static_cast<int>(m_value.messaging_pattern));
+    return iox2::legacy::into<MessagingPattern>(static_cast<int>(m_value.messaging_pattern));
 }
 } // namespace iox2
 

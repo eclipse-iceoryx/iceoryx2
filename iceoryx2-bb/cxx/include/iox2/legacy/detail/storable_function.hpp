@@ -23,7 +23,8 @@
 #include <utility>
 
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 template <typename ReturnType, typename... Args>
 using signature = ReturnType(Args...);
 
@@ -198,7 +199,8 @@ class storable_function<Capacity, signature<ReturnType, Args...>> final {
 template <uint64_t Capacity, typename T>
 void swap(storable_function<Capacity, T>& f, storable_function<Capacity, T>& g) noexcept;
 
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #include "iox2/legacy/detail/storable_function.inl"
 

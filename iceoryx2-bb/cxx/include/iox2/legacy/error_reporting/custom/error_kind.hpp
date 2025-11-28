@@ -22,7 +22,8 @@
 // * Extend error kinds
 // ***
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace er {
 
 // The non-fatal error kinds can all be defined here.
@@ -34,6 +35,7 @@ struct RuntimeErrorKind {
 constexpr RuntimeErrorKind RUNTIME_ERROR {};
 
 } // namespace er
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_REPORTING_ERROR_REPORTING_CUSTOM_ERROR_KIND_HPP

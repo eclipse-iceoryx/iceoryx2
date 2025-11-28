@@ -22,7 +22,7 @@ using namespace ::testing;
 TYPED_TEST(FunctionalInterface_test, OrElseHasCorrectSignature) {
     ::testing::Test::RecordProperty("TEST_ID", "ede81b23-cd69-45a4-86aa-b81baa8e281b");
     using Factory = typename TestFixture::TestFactoryType;
-    constexpr bool DOES_OR_ELSE_HAVE_A_VALUE = iox::internal::HasGetErrorMethod<typename Factory::Type>::value;
+    constexpr bool DOES_OR_ELSE_HAVE_A_VALUE = iox2::legacy::internal::HasGetErrorMethod<typename Factory::Type>::value;
 
     EXPECT_THAT(DOES_OR_ELSE_HAVE_A_VALUE, Eq(Factory::EXPECT_OR_ELSE_WITH_VALUE));
 }
@@ -33,7 +33,7 @@ TYPED_TEST(FunctionalInterface_test, OrElseHasCorrectSignature) {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define IOX_TEST_FUNCTIONAL_INTERFACE(TestName, variationPoint)                                                        \
     using SutType = typename TestFixture::TestFactoryType::Type;                                                       \
-    constexpr bool HAS_GET_ERROR_METHOD = iox::internal::HasGetErrorMethod<SutType>::value;                            \
+    constexpr bool HAS_GET_ERROR_METHOD = iox2::legacy::internal::HasGetErrorMethod<SutType>::value;                   \
     /* NOLINTNEXTLINE(bugprone-macro-parentheses) prevents clang-tidy parsing failures */                              \
     TestName<HAS_GET_ERROR_METHOD>::template performTest<typename TestFixture::TestFactoryType>(                       \
         [](auto& sut, auto callback) { (variationPoint).or_else(callback); })

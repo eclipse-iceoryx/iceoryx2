@@ -22,14 +22,16 @@
 #include "iox2/legacy/error_reporting/custom/default/default_error_handler.hpp"
 #include "iox2/legacy/error_reporting/custom/default/error_handler_interface.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace er {
 
-using ErrorHandler = iox::PolymorphicHandler<ErrorHandlerInterface, DefaultErrorHandler>;
+using ErrorHandler = iox2::legacy::PolymorphicHandler<ErrorHandlerInterface, DefaultErrorHandler>;
 
-using DefaultErrorHandlerGuard = iox::StaticLifetimeGuard<DefaultErrorHandler>;
+using DefaultErrorHandlerGuard = iox2::legacy::StaticLifetimeGuard<DefaultErrorHandler>;
 
 } // namespace er
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_REPORTING_ERROR_REPORTING_CUSTOM_ERROR_HANDLER_HPP

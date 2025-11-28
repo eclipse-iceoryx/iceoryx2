@@ -16,10 +16,10 @@
 #include <cstring>
 
 namespace iox2 {
-auto NodeNameView::to_string() const -> iox::string<IOX2_NODE_NAME_LENGTH> {
+auto NodeNameView::to_string() const -> iox2::legacy::string<IOX2_NODE_NAME_LENGTH> {
     size_t len = 0;
     const auto* chars = iox2_node_name_as_chars(m_ptr, &len);
-    return { iox::TruncateToCapacity, chars, len };
+    return { iox2::legacy::TruncateToCapacity, chars, len };
 }
 
 auto NodeNameView::to_owned() const -> NodeName {
@@ -79,25 +79,26 @@ void NodeName::drop() noexcept {
     }
 }
 
-auto NodeName::create(const char* value) -> iox::expected<NodeName, SemanticStringError> {
+auto NodeName::create(const char* value) -> iox2::legacy::expected<NodeName, SemanticStringError> {
     return NodeName::create_impl(value, strnlen(value, IOX2_NODE_NAME_LENGTH + 1));
 }
 
-auto NodeName::create_impl(const char* value, size_t value_len) -> iox::expected<NodeName, SemanticStringError> {
+auto NodeName::create_impl(const char* value, size_t value_len)
+    -> iox2::legacy::expected<NodeName, SemanticStringError> {
     if (value_len > IOX2_NODE_NAME_LENGTH) {
-        return iox::err(SemanticStringError::ExceedsMaximumLength);
+        return iox2::legacy::err(SemanticStringError::ExceedsMaximumLength);
     }
 
     iox2_node_name_h handle {};
     const auto ret_val = iox2_node_name_new(nullptr, value, value_len, &handle);
     if (ret_val == IOX2_OK) {
-        return iox::ok(NodeName { handle });
+        return iox2::legacy::ok(NodeName { handle });
     }
 
-    return iox::err(iox::into<SemanticStringError>(ret_val));
+    return iox2::legacy::err(iox2::legacy::into<SemanticStringError>(ret_val));
 }
 
-auto NodeName::to_string() const -> iox::string<IOX2_NODE_NAME_LENGTH> {
+auto NodeName::to_string() const -> iox2::legacy::string<IOX2_NODE_NAME_LENGTH> {
     return as_view().to_string();
 }
 

@@ -24,7 +24,8 @@
 
 #include <cstdint>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 static constexpr uint32_t POSIX_CALL_ERROR_STRING_SIZE = 128U;
 static constexpr uint64_t POSIX_CALL_EINTR_REPETITIONS = 5U;
 static constexpr int32_t POSIX_CALL_INVALID_ERRNO = -1;
@@ -166,7 +167,8 @@ class IOX_NO_DISCARD PosixCallBuilder {
     FunctionType_t m_IOX_POSIX_CALL = nullptr;
     detail::PosixCallDetails<ReturnType> m_details;
 };
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #include "iox2/legacy/detail/posix_call.inl"
 
@@ -197,7 +199,7 @@ class IOX_NO_DISCARD PosixCallBuilder {
 //                     name
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define IOX_POSIX_CALL(f)                                                                                              \
-    iox::detail::createPosixCallBuilder(                                                                               \
+    iox2::legacy::detail::createPosixCallBuilder(                                                                      \
         &(f),                                                                                                          \
         (#f),                                                                                                          \
         __FILE__,                                                                                                      \

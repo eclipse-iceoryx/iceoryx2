@@ -18,7 +18,8 @@
 
 #include "iox2/legacy/std_string_support.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 template <uint64_t N>
 inline std::string FromImpl<string<N>, std::string>::fromImpl(const string<N>& value) noexcept {
     return std::string(value.c_str(), static_cast<size_t>(value.size()));
@@ -27,12 +28,12 @@ inline std::string FromImpl<string<N>, std::string>::fromImpl(const string<N>& v
 template <uint64_t N>
 inline string<N> FromImpl<std::string, string<N>>::fromImpl(const std::string&) noexcept {
     static_assert(always_false_v<std::string> && always_false_v<string<N>>, "\n \
-        The conversion from 'std::string' to 'iox::string<N>' is potentially lossy!\n \
+        The conversion from 'std::string' to 'iox2::legacy::string<N>' is potentially lossy!\n \
         This happens when the size of source string exceeds the capacity of the destination string!\n \
         Please use either: \n \
-          - 'iox::into<iox::optional<iox::string<N>>>' which returns a 'iox::optional<iox::string<N>>'\n \
+          - 'iox2::legacy::into<iox2::legacy::optional<iox2::legacy::string<N>>>' which returns a 'iox2::legacy::optional<iox2::legacy::string<N>>'\n \
             with a 'nullopt' if the size of the source string exceeds the capacity of the destination string\n \
-          - 'iox::into<iox::lossy<iox::string<N>>>' which returns a 'iox::string<N>' and truncates the\n \
+          - 'iox2::legacy::into<iox2::legacy::lossy<iox2::legacy::string<N>>>' which returns a 'iox2::legacy::string<N>' and truncates the\n \
             source string if its size exceeds the capacity of the destination string");
 }
 
@@ -57,6 +58,7 @@ inline std::ostream& operator<<(std::ostream& stream, const string<Capacity>& st
     stream << str.c_str();
     return stream;
 }
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_UTILITY_STD_STRING_SUPPORT_INL

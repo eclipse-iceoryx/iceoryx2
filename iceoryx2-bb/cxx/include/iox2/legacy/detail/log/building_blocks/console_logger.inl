@@ -20,7 +20,8 @@
 
 #include "iox2/legacy/log/building_blocks/console_logger.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace log {
 // AXIVION Next Construct AutosarC++19_03-A3.9.1 : See at declaration in header
 // AXIVION Next Construct AutosarC++19_03-A18.1.1 : See at declaration in header
@@ -133,6 +134,7 @@ inline void ConsoleLogger::logArithmetic(const T value, const char* format) noex
 }
 
 } // namespace log
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_REPORTING_LOG_BUILDING_BLOCKS_CONSOLE_LOGGER_INL

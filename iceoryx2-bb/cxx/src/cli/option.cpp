@@ -15,7 +15,8 @@
 
 #include "iox2/legacy/cli/option.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace cli {
 bool Option::isEmpty() const noexcept {
     return longOption.empty() && shortOption == NO_SHORT_OPTION;
@@ -81,4 +82,5 @@ bool OptionWithDetails::operator<(const OptionWithDetails& rhs) const noexcept {
     return Option::operator<(rhs);
 }
 } // namespace cli
-} // namespace iox
+} // namespace legacy
+} // namespace iox2

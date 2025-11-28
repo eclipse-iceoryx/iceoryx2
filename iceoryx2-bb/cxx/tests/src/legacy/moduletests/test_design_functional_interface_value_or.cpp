@@ -28,7 +28,7 @@ constexpr bool TYPE_HAS_NO_VALUE_METHOD = false;
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define IOX_TEST_FUNCTIONAL_INTERFACE(variationPoint)                                                                  \
     using SutType = typename TestFixture::TestFactoryType::Type;                                                       \
-    constexpr bool HAS_VALUE_METHOD = iox::internal::HasValueMethod<SutType>::value;                                   \
+    constexpr bool HAS_VALUE_METHOD = iox2::legacy::internal::HasValueMethod<SutType>::value;                          \
     ValueOrReturnsValueWhenValid<HAS_VALUE_METHOD>::template performTest<typename TestFixture::TestFactoryType>(       \
         [](auto& sut, auto alternativeValue) { return (variationPoint).value_or(alternativeValue); });
 

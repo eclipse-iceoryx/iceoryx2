@@ -22,7 +22,7 @@ using namespace ::testing;
 TYPED_TEST(FunctionalInterface_test, AndThenHasCorrectSignature) {
     ::testing::Test::RecordProperty("TEST_ID", "7636fda5-090f-4dd6-b3a0-3d71bdbca787");
     using Factory = typename TestFixture::TestFactoryType;
-    constexpr bool DOES_AND_THEN_HAVE_A_VALUE = iox::internal::HasValueMethod<typename Factory::Type>::value;
+    constexpr bool DOES_AND_THEN_HAVE_A_VALUE = iox2::legacy::internal::HasValueMethod<typename Factory::Type>::value;
 
     EXPECT_THAT(DOES_AND_THEN_HAVE_A_VALUE, Eq(Factory::EXPECT_AND_THEN_WITH_VALUE));
 }
@@ -33,7 +33,7 @@ TYPED_TEST(FunctionalInterface_test, AndThenHasCorrectSignature) {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define IOX_TEST_FUNCTIONAL_INTERFACE(TestName, variationPoint)                                                        \
     using SutType = typename TestFixture::TestFactoryType::Type;                                                       \
-    constexpr bool HAS_VALUE_METHOD = iox::internal::HasValueMethod<SutType>::value;                                   \
+    constexpr bool HAS_VALUE_METHOD = iox2::legacy::internal::HasValueMethod<SutType>::value;                          \
     /* NOLINTNEXTLINE(bugprone-macro-parentheses) prevents clang-tidy parsing failures */                              \
     TestName<HAS_VALUE_METHOD>::template performTest<typename TestFixture::TestFactoryType>(                           \
         [](auto& sut, auto callback) { (variationPoint).and_then(callback); })

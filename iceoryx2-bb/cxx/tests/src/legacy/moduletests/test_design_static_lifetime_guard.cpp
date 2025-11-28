@@ -72,7 +72,7 @@ template <uint64_t N>
 uint32_t Fou<N>::instancesCreated { 0 };
 
 template <uint64_t N>
-using TestGuard = iox::StaticLifetimeGuard<Fou<N>>;
+using TestGuard = iox2::legacy::StaticLifetimeGuard<Fou<N>>;
 
 // create a bundle of types and functions that are relevant for the tests,
 // since we need a different static type for each test
@@ -312,7 +312,7 @@ TEST_F(StaticLifetimeGuard_test, constructionAfterDestructionWorks) {
 TEST_F(StaticLifetimeGuard_test, instanceCtorIsConcurrentlyCalledExactlyOnce) {
     ::testing::Test::RecordProperty("TEST_ID", "2b7e60e5-159d-4bcf-adc8-21f5a23d2f27");
     using Instance = DelayedFou<1>;
-    using Sut = iox::StaticLifetimeGuard<Instance>;
+    using Sut = iox2::legacy::StaticLifetimeGuard<Instance>;
     constexpr uint32_t NUM_THREADS = 8;
 
     EXPECT_EQ(Instance::ctorCalled, 0);
@@ -330,7 +330,7 @@ TEST_F(StaticLifetimeGuard_test, instanceCtorIsConcurrentlyCalledExactlyOnce) {
         Sut::instance(std::chrono::milliseconds(1));
     };
 
-    iox::vector<std::thread, NUM_THREADS> threads;
+    iox2::legacy::vector<std::thread, NUM_THREADS> threads;
 
     for (uint32_t i = 0; i < NUM_THREADS; ++i) {
         threads.emplace_back(createInstance);

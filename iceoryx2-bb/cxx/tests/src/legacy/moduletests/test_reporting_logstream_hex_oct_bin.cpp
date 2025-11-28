@@ -41,7 +41,7 @@ TYPED_TEST_SUITE(IoxLogStreamHexOctBinIntegral_test, LogHexOctBinIntegralTypes, 
 
 template <typename LogType>
 void testStreamOperatorLogHex(Logger_Mock& loggerMock, LogType logValue) {
-    LogStreamSut(loggerMock) << iox::log::hex(logValue);
+    LogStreamSut(loggerMock) << iox2::legacy::log::hex(logValue);
 
     // we need to check negative numbers in two's complement, therefore make the output value unsigned
     using TestType = typename std::make_unsigned<LogType>::type;
@@ -71,7 +71,7 @@ TYPED_TEST(IoxLogStreamHexOctBinIntegral_test, StreamOperatorLogHex_ValueMax) {
 
 template <typename LogType>
 void testStreamOperatorLogOct(Logger_Mock& loggerMock, LogType logValue) {
-    LogStreamSut(loggerMock) << iox::log::oct(logValue);
+    LogStreamSut(loggerMock) << iox2::legacy::log::oct(logValue);
 
     // we need to check negative numbers in two's complement, therefore make the output value unsigned
     using TestType = typename std::make_unsigned<LogType>::type;
@@ -101,7 +101,7 @@ TYPED_TEST(IoxLogStreamHexOctBinIntegral_test, StreamOperatorLogOct_ValueMax) {
 
 template <typename LogType>
 void testStreamOperatorLogBin(Logger_Mock& loggerMock, LogType logValue) {
-    LogStreamSut(loggerMock) << iox::log::bin(logValue);
+    LogStreamSut(loggerMock) << iox2::legacy::log::bin(logValue);
 
     // we need to check negative numbers in two's complement, therefore make the output value unsigned
     using TestType = typename std::make_unsigned<LogType>::type;
@@ -157,7 +157,7 @@ constexpr const char* floatingPointFormatSpecifier<long double>() {
 
 template <typename LogType>
 void testStreamOperatorLogHexFloatingPoint(Logger_Mock& loggerMock, LogType logValue) {
-    LogStreamSut(loggerMock) << iox::log::hex(logValue);
+    LogStreamSut(loggerMock) << iox2::legacy::log::hex(logValue);
 
     constexpr uint64_t BUFFER_SIZE { 1000 };
     std::array<char, BUFFER_SIZE> buffer { 0 };

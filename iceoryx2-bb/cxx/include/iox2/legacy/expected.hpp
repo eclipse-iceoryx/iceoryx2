@@ -20,7 +20,8 @@
 #include "iox2/legacy/functional_interface.hpp"
 #include "iox2/legacy/optional.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 template <typename T = void>
 using success = detail::ok<T>;
 
@@ -340,7 +341,7 @@ class IOX_NO_DISCARD expected final : public FunctionalInterface<expected<ValueT
     optional<enable_if_non_void_t<U>> to_optional() const noexcept;
 
     template <typename T, typename E>
-    friend constexpr bool ::iox::operator==(const expected<T, E>&, const expected<T, E>&) noexcept;
+    friend constexpr bool ::iox2::legacy::operator==(const expected<T, E>&, const expected<T, E>&) noexcept;
 
   private:
     template <typename U = ValueType>
@@ -375,7 +376,8 @@ template <typename ValueType, typename ErrorType>
 constexpr bool operator!=(const expected<ValueType, ErrorType>& lhs,
                           const expected<ValueType, ErrorType>& rhs) noexcept;
 
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #include "iox2/legacy/detail/expected.inl"
 

@@ -20,7 +20,8 @@
 #include <cstdint>
 #include <type_traits>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 template <uint64_t Capacity>
 class string;
 ///
@@ -66,7 +67,7 @@ template <typename Callable, typename... ArgTypes>
 struct is_invocable {
     // This variant is chosen when Callable(ArgTypes) successfully resolves to a valid type, i.e. is invocable.
     template <typename C, typename... As>
-    static constexpr std::true_type test(typename iox::invoke_result<C, As...>::type*) noexcept {
+    static constexpr std::true_type test(typename iox2::legacy::invoke_result<C, As...>::type*) noexcept {
         return {};
     }
 
@@ -94,7 +95,7 @@ struct is_invocable_r {
     template <typename C, typename... As>
     static constexpr std::true_type
     test(std::enable_if_t<
-         std::is_convertible<typename iox::invoke_result<C, As...>::type, ReturnType>::value>*) noexcept {
+         std::is_convertible<typename iox2::legacy::invoke_result<C, As...>::type, ReturnType>::value>*) noexcept {
         return {};
     }
     // AXIVION Next Construct AutosarC++19_03-A8.4.1 : we require a SFINEA failure case where all
@@ -174,7 +175,7 @@ template <typename T>
 using is_c_array_t = std::is_array<std::remove_reference_t<T>>;
 
 template <typename T>
-using is_not_c_array_t = iox::negation<is_c_array_t<T>>;
+using is_not_c_array_t = iox2::legacy::negation<is_c_array_t<T>>;
 
 template <typename From, typename To>
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays, hicpp-avoid-c-arrays)
@@ -184,7 +185,8 @@ template <typename Iter>
 using iter_reference_t = decltype(*std::declval<Iter&>());
 
 template <typename Iter, typename T>
-using iter_has_convertible_ref_type_t = iox::is_convertible_t<std::remove_reference_t<iter_reference_t<Iter>>, T>;
+using iter_has_convertible_ref_type_t =
+    iox2::legacy::is_convertible_t<std::remove_reference_t<iter_reference_t<Iter>>, T>;
 
 /// @brief Helper template from C++17
 /// @tparam From Source type
@@ -279,11 +281,11 @@ struct TypeInfo<long double> {
 };
 
 template <uint64_t N>
-struct TypeInfo<iox::string<N>> {
+struct TypeInfo<iox2::legacy::string<N>> {
     static constexpr const char NAME[] = "string";
 };
 template <uint64_t N>
-constexpr const char TypeInfo<iox::string<N>>::NAME[];
+constexpr const char TypeInfo<iox2::legacy::string<N>>::NAME[];
 // NOLINTEND(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays)
 // AXIVION ENABLE STYLE AutosarC++19_03-A3.1.4
 // AXIVION ENABLE STYLE AutosarC++19_03-A8.5.2
@@ -292,6 +294,7 @@ constexpr const char TypeInfo<iox::string<N>>::NAME[];
 /// END TypeInfo
 //////////////////
 
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_PRIMITIVES_TYPE_TRAITS_HPP

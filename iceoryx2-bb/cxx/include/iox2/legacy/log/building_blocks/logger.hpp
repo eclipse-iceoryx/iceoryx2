@@ -23,7 +23,8 @@
 #include <cstring>
 #include <mutex>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace log {
 class LogStream;
 
@@ -114,7 +115,8 @@ class Logger : public BaseLogger {
 
 } // namespace internal
 } // namespace log
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #include "iox2/legacy/detail/log/building_blocks/logger.inl"
 

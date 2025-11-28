@@ -24,7 +24,8 @@
 #include <cstdio>
 #include <mutex>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace log {
 /// @brief A minimal logger implementation which outputs the log messages to the console
 class ConsoleLogger {
@@ -138,7 +139,8 @@ class ConsoleLogger {
 };
 
 } // namespace log
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #include "iox2/legacy/detail/log/building_blocks/console_logger.inl"
 

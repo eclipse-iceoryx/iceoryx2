@@ -21,7 +21,7 @@
 namespace {
 using namespace test_design_functional_interface;
 using namespace ::testing;
-using namespace iox::testing;
+using namespace iox2::legacy::testing;
 
 // the macro is used as code generator to make the tests more readable. because of the
 // template nature of those tests this cannot be implemented in the same readable fashion
@@ -71,7 +71,7 @@ template <typename FactoryType, typename SutType, typename ExpectCall>
 void ExpectDoesCallTerminateWhenObjectIsInvalid(const ExpectCall& callExpect) {
     SutType sut = FactoryType::createInvalidObject();
 
-    IOX_EXPECT_FATAL_FAILURE([&] { callExpect(sut); }, iox::er::FATAL);
+    IOX_EXPECT_FATAL_FAILURE([&] { callExpect(sut); }, iox2::legacy::er::FATAL);
 }
 
 TYPED_TEST(FunctionalInterface_test, ExpectDoesCallTerminateWhenObjectIsInvalid_LValueCase) {
@@ -148,7 +148,7 @@ struct ExpectReturnsValueWhenValid<TYPE_HAS_VALUE_METHOD> {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define IOX_TEST_FUNCTIONAL_INTERFACE(TestName, variationPoint)                                                        \
     using SutType = typename TestFixture::TestFactoryType::Type;                                                       \
-    constexpr bool HAS_VALUE_METHOD = iox::internal::HasValueMethod<SutType>::value;                                   \
+    constexpr bool HAS_VALUE_METHOD = iox2::legacy::internal::HasValueMethod<SutType>::value;                          \
     /* NOLINTNEXTLINE(bugprone-macro-parentheses) prevents clang-tidy parsing failures */                              \
     TestName<HAS_VALUE_METHOD>::template performTest<typename TestFixture::TestFactoryType>([](auto& sut) {            \
         return (variationPoint)                                                                                        \

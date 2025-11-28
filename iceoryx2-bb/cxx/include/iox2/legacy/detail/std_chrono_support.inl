@@ -18,7 +18,8 @@
 
 #include "iox2/legacy/std_chrono_support.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 
 inline units::Duration
 FromImpl<std::chrono::nanoseconds, units::Duration>::fromImpl(const std::chrono::nanoseconds& value) noexcept {
@@ -39,6 +40,7 @@ FromImpl<std::chrono::seconds, units::Duration>::fromImpl(const std::chrono::sec
     return units::Duration::fromSeconds(value.count());
 }
 
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_UTILITY_STD_CHRONO_SUPPORT_INL

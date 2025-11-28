@@ -38,7 +38,7 @@ struct StdAtomic {
 };
 struct IoxAtomic {
     template <typename T>
-    using SutType = iox::concurrent::Atomic<T>;
+    using SutType = iox2::legacy::concurrent::Atomic<T>;
 };
 
 template <typename T>
@@ -82,7 +82,8 @@ TYPED_TEST(Atomic_test, DefaultCtorWorks) {
     SutStruct sut_struct;
 
     if (std::is_same<SutInt, std::atomic<uint64_t>>::value) {
-        GTEST_SKIP() << "Default CTor test skipped for std::atomic since the iox::Atomic always initialized the value!";
+        GTEST_SKIP()
+            << "Default CTor test skipped for std::atomic since the iox2::legacy::Atomic always initialized the value!";
     }
 
     EXPECT_THAT(sut_int.load(), Eq(uint64_t()));

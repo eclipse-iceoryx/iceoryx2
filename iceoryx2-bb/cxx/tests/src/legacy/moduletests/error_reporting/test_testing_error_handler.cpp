@@ -27,9 +27,9 @@
 
 namespace {
 using namespace ::testing;
-using namespace iox::er;
-using namespace iox::testing;
-using iox::er::ErrorDescriptor;
+using namespace iox2::legacy::er;
+using namespace iox2::legacy::testing;
+using iox2::legacy::er::ErrorDescriptor;
 
 constexpr ErrorCode CODE1 { 73 };
 constexpr ErrorCode CODE2 { 37 };

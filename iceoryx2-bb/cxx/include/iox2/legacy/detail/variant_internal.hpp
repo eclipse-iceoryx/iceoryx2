@@ -22,7 +22,8 @@
 #include <type_traits>
 #include <utility>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 template <uint64_t N>
 struct in_place_index;
 
@@ -186,6 +187,7 @@ struct call_at_index<N, T> {
 // AXIVION ENABLE STYLE AutosarC++19_03-M5.2.8
 
 } // namespace internal
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_VOCABULARY_VARIANT_INTERNAL_HPP

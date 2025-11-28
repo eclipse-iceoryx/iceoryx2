@@ -19,7 +19,8 @@
 #include <cstdint>
 #include <utility>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace er {
 
 static constexpr const char* UNKNOWN_ERROR_NAME = "unknown error";
@@ -107,7 +108,8 @@ inline const char* toErrorName(const Error& error) {
 }
 
 } // namespace er
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 // NOLINTJUSTIFICATION These macros are used to create enums and corresponding string arrays with the names of the enum tags
 // NOLINTBEGIN(cppcoreguidelines-macro-usage)

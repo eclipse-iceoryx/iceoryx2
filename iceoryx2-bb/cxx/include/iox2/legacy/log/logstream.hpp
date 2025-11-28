@@ -23,7 +23,8 @@
 
 #include <string>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace log {
 class LogStream;
 
@@ -58,14 +59,14 @@ class LogHex {
 /// @tparam[in] T the arithmetic data type of the value to log
 /// @param[in] value to be logged
 /// @return a helper struct which will be used by the LogStream
-// AXIVION Next Construct AutosarC++19_03-M17.0.3 : The function is in the iox::log namespace which prevents easy misuse
+// AXIVION Next Construct AutosarC++19_03-M17.0.3 : The function is in the iox2::legacy::log namespace which prevents easy misuse
 template <typename T, typename = std::enable_if_t<std::is_arithmetic<T>::value && !std::is_same<T, bool>::value>>
 constexpr LogHex<T> hex(const T value) noexcept;
 
 /// @brief Log a pointer in hexadecimal format
 /// @param[in] ptr is the pointer to be logged
 /// @return a helper struct which will be used by the LogStream
-// AXIVION Next Construct AutosarC++19_03-M17.0.3 : The function is in the iox::log namespace which prevents easy misuse
+// AXIVION Next Construct AutosarC++19_03-M17.0.3 : The function is in the iox2::legacy::log namespace which prevents easy misuse
 constexpr LogHex<const void* const> hex(const void* const ptr) noexcept;
 
 /// @brief Helper struct to log in octal format
@@ -96,7 +97,7 @@ class LogOct {
 /// @tparam[in] T the integral data type of the value to log
 /// @param[in] value to be logged
 /// @return a helper struct which will be used by the LogStream
-// AXIVION Next Construct AutosarC++19_03-M17.0.3 : The function is in the iox::log namespace which prevents easy misuse
+// AXIVION Next Construct AutosarC++19_03-M17.0.3 : The function is in the iox2::legacy::log namespace which prevents easy misuse
 template <typename T, typename = std::enable_if_t<std::is_integral<T>::value && !std::is_same<T, bool>::value>>
 constexpr LogOct<T> oct(const T value) noexcept;
 
@@ -128,7 +129,7 @@ class LogBin {
 /// @tparam[in] T the integral data type of the value to log
 /// @param[in] value to be logged
 /// @return a helper struct which will be used by the LogStream
-// AXIVION Next Construct AutosarC++19_03-M17.0.3 : The function is in the iox::log namespace which prevents easy misuse
+// AXIVION Next Construct AutosarC++19_03-M17.0.3 : The function is in the iox2::legacy::log namespace which prevents easy misuse
 template <typename T, typename = std::enable_if_t<std::is_integral<T>::value && !std::is_same<T, bool>::value>>
 constexpr LogBin<T> bin(const T value) noexcept;
 
@@ -164,7 +165,7 @@ class LogRaw {
 /// @tparam[in] T the data type of the object to log
 /// @param[in] object to be logged
 /// @return a helper struct which will be used by the LogStream
-// AXIVION Next Construct AutosarC++19_03-M17.0.3 : The function is in the iox::log namespace which prevents easy misuse
+// AXIVION Next Construct AutosarC++19_03-M17.0.3 : The function is in the iox2::legacy::log namespace which prevents easy misuse
 template <typename T>
 constexpr typename std::enable_if<!std::is_pointer<T>::value, LogRaw>::type raw(const T& object) noexcept;
 
@@ -172,13 +173,13 @@ constexpr typename std::enable_if<!std::is_pointer<T>::value, LogRaw>::type raw(
 /// @param[in] data pointer to the data to be logged
 /// @param[in] size of the data to be logged
 /// @return a helper struct which will be used by the LogStream
-// AXIVION Next Construct AutosarC++19_03-M17.0.3 : The function is in the iox::log namespace which prevents easy misuse
+// AXIVION Next Construct AutosarC++19_03-M17.0.3 : The function is in the iox2::legacy::log namespace which prevents easy misuse
 constexpr LogRaw raw(const void* const data, const uint64_t size) noexcept;
 
 /// @brief This class provides the public interface to the logger and is used with the 'IOX_LOG' macro. In order to add
 /// support for custom data types 'operator<<' needs to be implement for the custom type.
 /// @code
-/// iox::log::LogStream& operator<<(iox::log::LogStream& stream, const MyType& myType) noexcept
+/// iox2::legacy::log::LogStream& operator<<(iox2::legacy::log::LogStream& stream, const MyType& myType) noexcept
 /// {
 ///     stream << "MyType { member = " << myType.member << " }";
 ///     return stream;
@@ -198,7 +199,7 @@ class LogStream {
     // platform agnostic way
     LogStream(Logger& logger, const char* file, const int line, const char* function, LogLevel logLevel) noexcept;
 
-    /// @brief Constructor for a LogStream object with the logger from iox::log::Logger::get
+    /// @brief Constructor for a LogStream object with the logger from iox2::legacy::log::Logger::get
     /// @note This is not intended for public use! Use the 'IOX_LOG' macro instead
     /// @param[in] file the file of the log message. Please use the '__FILE__' compiler intrinsic
     /// @param[in] line the line of the log message. Please use the '__LINE__' compiler intrinsic
@@ -355,7 +356,7 @@ class LogStream {
 
     /// @brief Logging support for callable. This gives access to the LogStream instance which e.g. can be used in a
     /// loop
-    /// @tparam[in] Callable with a signature 'iox::log::LogStream&(iox::log::LogStream&)'
+    /// @tparam[in] Callable with a signature 'iox2::legacy::log::LogStream&(iox2::legacy::log::LogStream&)'
     /// @param[in] c is the callable which receives a LogStream object for the actual logging
     /// @code
     /// IOX_LOG(Info, [] (auto& stream) -> auto& {
@@ -386,7 +387,8 @@ class LogStream {
 };
 
 } // namespace log
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #include "iox2/legacy/detail/log/logstream.inl"
 

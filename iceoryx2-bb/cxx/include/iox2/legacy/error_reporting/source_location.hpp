@@ -16,7 +16,8 @@
 #ifndef IOX_HOOFS_REPORTING_ERROR_REPORTING_LOCATION_HPP
 #define IOX_HOOFS_REPORTING_ERROR_REPORTING_LOCATION_HPP
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace er {
 struct SourceLocation {
     constexpr SourceLocation(const char* file, int line, const char* function)
@@ -31,11 +32,12 @@ struct SourceLocation {
 };
 
 } // namespace er
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage) macro is required for use of location intrinsics (__FILE__ etc.)
 #define IOX_CURRENT_SOURCE_LOCATION                                                                                    \
-    iox::er::SourceLocation {                                                                                          \
+    iox2::legacy::er::SourceLocation {                                                                                 \
         __FILE__, __LINE__, static_cast<const char*>(__FUNCTION__)                                                     \
     } // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
       // needed for source code location, safely wrapped in macro

@@ -22,7 +22,8 @@
 // * Configure active checks and other compile time parameters
 // ***
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace er {
 
 // tag type that can be used to override the configuration in a custom implementation
@@ -40,6 +41,7 @@ struct ConfigurationParameters {
 using Configuration = ConfigurationParameters<ConfigurationTag>;
 
 } // namespace er
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_REPORTING_ERROR_REPORTING_CONFIGURATION_HPP

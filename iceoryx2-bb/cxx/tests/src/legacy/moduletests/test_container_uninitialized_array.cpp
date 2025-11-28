@@ -22,7 +22,7 @@
 namespace {
 using namespace ::testing;
 
-using iox::UninitializedArray;
+using iox2::legacy::UninitializedArray;
 
 struct Integer {
     static uint32_t ctor;
@@ -124,8 +124,8 @@ TEST(UninitializedArrayTest, isNotMoveAssignable) {
 
 typedef ::testing::Types<UninitializedArray<int, 10>,
                          UninitializedArray<Integer, 10>,
-                         UninitializedArray<int, 10, iox::ZeroedBuffer>,
-                         UninitializedArray<Integer, 10, iox::ZeroedBuffer>>
+                         UninitializedArray<int, 10, iox2::legacy::ZeroedBuffer>,
+                         UninitializedArray<Integer, 10, iox2::legacy::ZeroedBuffer>>
     TestArrays;
 
 TYPED_TEST_SUITE(UninitializedArrayTest, TestArrays, );
@@ -162,14 +162,14 @@ TYPED_TEST(UninitializedArrayTest, accessElementsOfConstUinitializedArray) {
 TEST(UninitializedArrayTest, AllElementsInitializedWithZeroWhenBufferSetToZeroedBuffer) {
     ::testing::Test::RecordProperty("TEST_ID", "bb213516-ab37-43e3-b2ec-098c98d777d1");
     constexpr uint64_t CAPACITY { 32 };
-    UninitializedArray<uint32_t, CAPACITY, iox::ZeroedBuffer> buffer;
+    UninitializedArray<uint32_t, CAPACITY, iox2::legacy::ZeroedBuffer> buffer;
     for (auto& e : buffer) {
         new (&e) uint32_t(std::numeric_limits<uint32_t>::max());
         // Access 'e' to prevent the compiler from optimizing away the loop
         EXPECT_EQ(e, std::numeric_limits<uint32_t>::max());
     }
 
-    new (&buffer) UninitializedArray<uint32_t, CAPACITY, iox::ZeroedBuffer>();
+    new (&buffer) UninitializedArray<uint32_t, CAPACITY, iox2::legacy::ZeroedBuffer>();
 
     for (auto& e : buffer) {
         EXPECT_EQ(e, 0);
@@ -179,14 +179,14 @@ TEST(UninitializedArrayTest, AllElementsInitializedWithZeroWhenBufferSetToZeroed
 TEST(UninitializedArrayTest, AllElementsAreNotZeroedWhenBufferSetToNonZeroedBuffer) {
     ::testing::Test::RecordProperty("TEST_ID", "35666437-6ee5-4940-b053-e82d8e312a11");
     constexpr uint64_t CAPACITY { 32 };
-    UninitializedArray<uint32_t, CAPACITY, iox::ZeroedBuffer> buffer;
+    UninitializedArray<uint32_t, CAPACITY, iox2::legacy::ZeroedBuffer> buffer;
     for (auto& e : buffer) {
         new (&e) uint32_t(std::numeric_limits<uint32_t>::max());
         // Access 'e' to prevent the compiler from optimizing away the loop
         EXPECT_EQ(e, std::numeric_limits<uint32_t>::max());
     }
 
-    new (&buffer) UninitializedArray<uint32_t, CAPACITY, iox::NonZeroedBuffer>();
+    new (&buffer) UninitializedArray<uint32_t, CAPACITY, iox2::legacy::NonZeroedBuffer>();
 
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,hicpp-avoid-c-arrays) : explicitly required for test
     uint32_t result[CAPACITY];
@@ -328,7 +328,7 @@ TYPED_TEST(UninitializedArrayTest, SizeOfUninitializedArrayEqualsCStyleArray) {
     ::testing::Test::RecordProperty("TEST_ID", "e1c7ddec-b883-4eee-a4a4-a8dfbcaaec6d");
     using Buffer = typename TestFixture::Buffer;
     if (std::is_same<Buffer, UninitializedArray<Integer, 10>>::value
-        || std::is_same<Buffer, UninitializedArray<Integer, 10, iox::ZeroedBuffer>>::value) {
+        || std::is_same<Buffer, UninitializedArray<Integer, 10, iox2::legacy::ZeroedBuffer>>::value) {
         // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays) : needed for test purpose
         Integer testArray[10];
         EXPECT_EQ(sizeof(this->buffer), sizeof(testArray));

@@ -43,7 +43,7 @@ class PortFactoryNotifier {
     auto operator=(const PortFactoryNotifier&) -> PortFactoryNotifier& = delete;
 
     /// Creates a new [`Notifier`] port or returns a [`NotifierCreateError`] on failure.
-    auto create() && -> iox::expected<Notifier<S>, NotifierCreateError>;
+    auto create() && -> iox2::legacy::expected<Notifier<S>, NotifierCreateError>;
 
   private:
     template <ServiceType>

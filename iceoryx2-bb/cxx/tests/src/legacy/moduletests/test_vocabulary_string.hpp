@@ -23,7 +23,7 @@
 #include <gtest/gtest.h>
 
 using namespace ::testing;
-using namespace iox;
+using namespace iox2::legacy;
 
 template <typename T>
 class stringTyped_test : public Test {

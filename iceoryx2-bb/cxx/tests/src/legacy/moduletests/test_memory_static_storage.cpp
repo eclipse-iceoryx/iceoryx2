@@ -21,7 +21,7 @@
 #include <iostream>
 
 using namespace ::testing;
-using namespace iox;
+using namespace iox2::legacy;
 
 
 // note we cannot enforce size and alignment at the same time,

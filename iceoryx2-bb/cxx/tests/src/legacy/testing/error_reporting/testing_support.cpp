@@ -15,7 +15,8 @@
 
 #include "iceoryx_hoofs/testing/error_reporting/testing_support.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace testing {
 
 bool hasPanicked() {
@@ -27,12 +28,12 @@ bool hasError() {
 }
 
 bool hasAssertViolation() {
-    auto code = iox::er::Violation(iox::er::ViolationErrorCode::ASSERT_VIOLATION).code();
+    auto code = iox2::legacy::er::Violation(iox2::legacy::er::ViolationErrorCode::ASSERT_VIOLATION).code();
     return ErrorHandler::instance().hasViolation(code);
 }
 
 bool hasEnforceViolation() {
-    auto code = iox::er::Violation(iox::er::ViolationErrorCode::ENFORCE_VIOLATION).code();
+    auto code = iox2::legacy::er::Violation(iox2::legacy::er::ViolationErrorCode::ENFORCE_VIOLATION).code();
     return ErrorHandler::instance().hasViolation(code);
 }
 
@@ -58,4 +59,5 @@ void runInTestThread(const function_ref<void()> testFunction) {
 }
 
 } // namespace testing
-} // namespace iox
+} // namespace legacy
+} // namespace iox2

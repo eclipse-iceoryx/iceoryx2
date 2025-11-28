@@ -13,10 +13,10 @@
 #ifndef IOX2_PENDING_RESPONSE_HPP
 #define IOX2_PENDING_RESPONSE_HPP
 
-#include "iox2/legacy/expected.hpp"
-#include "iox2/legacy/optional.hpp"
 #include "iox/slice.hpp"
 #include "iox2/header_request_response.hpp"
+#include "iox2/legacy/expected.hpp"
+#include "iox2/legacy/optional.hpp"
 #include "iox2/payload_info.hpp"
 #include "iox2/response.hpp"
 #include "iox2/service_type.hpp"
@@ -50,7 +50,8 @@ class PendingResponse {
     /// Receives a [`Response`] from one of the [`Server`]s that
     /// received the [`RequestMut`].
     auto receive()
-        -> iox::expected<iox::optional<Response<Service, ResponsePayload, ResponseUserHeader>>, ReceiveError>;
+        -> iox2::legacy::expected<iox2::legacy::optional<Response<Service, ResponsePayload, ResponseUserHeader>>,
+                                  ReceiveError>;
 
     /// Returns a reference to the iceoryx2 internal [`RequestHeader`] of
     /// the corresponding [`RequestMut`]
@@ -102,8 +103,9 @@ class PendingResponse {
               typename ResponseUserHeaderT>
     friend auto
     send(RequestMut<S, RequestPayloadT, RequestUserHeaderT, ResponsePayloadT, ResponseUserHeaderT>&& request)
-        -> iox::expected<PendingResponse<S, RequestPayloadT, RequestUserHeaderT, ResponsePayloadT, ResponseUserHeaderT>,
-                         RequestSendError>;
+        -> iox2::legacy::expected<
+            PendingResponse<S, RequestPayloadT, RequestUserHeaderT, ResponsePayloadT, ResponseUserHeaderT>,
+            RequestSendError>;
 
     explicit PendingResponse(iox2_pending_response_h handle) noexcept;
 
@@ -154,18 +156,21 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseUserHeader>
 inline auto PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::receive()
-    -> iox::expected<iox::optional<Response<Service, ResponsePayload, ResponseUserHeader>>, ReceiveError> {
+    -> iox2::legacy::expected<iox2::legacy::optional<Response<Service, ResponsePayload, ResponseUserHeader>>,
+                              ReceiveError> {
     iox2_response_h response_handle {};
     auto result = iox2_pending_response_receive(&m_handle, nullptr, &response_handle);
 
     if (result == IOX2_OK) {
         if (response_handle != nullptr) {
             Response<Service, ResponsePayload, ResponseUserHeader> response(response_handle);
-            return iox::ok(iox::optional<Response<Service, ResponsePayload, ResponseUserHeader>>(std::move(response)));
+            return iox2::legacy::ok(
+                iox2::legacy::optional<Response<Service, ResponsePayload, ResponseUserHeader>>(std::move(response)));
         }
-        return iox::ok(iox::optional<Response<Service, ResponsePayload, ResponseUserHeader>>(iox::nullopt));
+        return iox2::legacy::ok(
+            iox2::legacy::optional<Response<Service, ResponsePayload, ResponseUserHeader>>(iox2::legacy::nullopt));
     }
-    return iox::err(iox::into<ReceiveError>(result));
+    return iox2::legacy::err(iox2::legacy::into<ReceiveError>(result));
 }
 
 template <ServiceType Service,

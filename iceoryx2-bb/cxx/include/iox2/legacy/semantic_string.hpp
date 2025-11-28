@@ -21,7 +21,8 @@
 
 #include <cstdint>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 /// @brief Defines errors which can occur when modifying or creating a
 ///         SemanticString
 enum class SemanticStringError : uint8_t {
@@ -200,7 +201,8 @@ class SemanticString {
   private:
     string<Capacity> m_data;
 };
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #include "iox2/legacy/detail/semantic_string.inl"
 

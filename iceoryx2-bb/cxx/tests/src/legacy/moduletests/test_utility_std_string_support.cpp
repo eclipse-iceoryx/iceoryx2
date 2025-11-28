@@ -21,7 +21,7 @@
 
 namespace {
 using namespace ::testing;
-using namespace iox;
+using namespace iox2::legacy;
 
 
 template <typename T>
@@ -528,7 +528,7 @@ TYPED_TEST(StdString_test, FindEmptyStdStringInEmptyStringWorks) {
 }
 
 /// @note template <typename T>
-/// iox::optional<uint64_t> find_first_of(const T& t, uint64_t pos = 0) const noexcept
+/// iox2::legacy::optional<uint64_t> find_first_of(const T& t, uint64_t pos = 0) const noexcept
 TYPED_TEST(StdString_test, FindFirstOfFailsForEmptyStdStringInEmptyString) {
     ::testing::Test::RecordProperty("TEST_ID", "207671e4-cef3-40d2-8984-e8ae5c2b42ec");
     std::string testStdString;
@@ -602,7 +602,7 @@ TEST(String100, FindNotIncludedStdStringFails) {
 }
 
 /// @note template <typename T>
-/// iox::optional<uint64_t> find_last_of(const T& t, uint64_t pos = 0) const noexcept
+/// iox2::legacy::optional<uint64_t> find_last_of(const T& t, uint64_t pos = 0) const noexcept
 TYPED_TEST(StdString_test, FindLastOfFailsForEmptyStdStringInEmptyString) {
     ::testing::Test::RecordProperty("TEST_ID", "15f72273-8b90-407f-b7d0-07372f3cee29");
     std::string testStdString;

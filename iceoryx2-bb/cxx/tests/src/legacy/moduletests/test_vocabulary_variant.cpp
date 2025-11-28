@@ -100,7 +100,7 @@ class variant_Test : public Test {
         bool doDtorCall { true };
     };
 
-    iox::variant<int, float, ComplexClass> sut;
+    iox2::legacy::variant<int, float, ComplexClass> sut;
 };
 bool variant_Test::DTorTest::dtorWasCalled = false;
 int variant_Test::DoubleDelete::dtorCalls = 0;
@@ -108,7 +108,7 @@ int variant_Test::DoubleDelete::ctorCalls = 0;
 
 TEST_F(variant_Test, DefaultCTorCreatesInvalidVariant) {
     ::testing::Test::RecordProperty("TEST_ID", "368fdd21-fd98-4f7a-abb6-8e8b8da5cd8d");
-    EXPECT_THAT(sut.index(), Eq(iox::INVALID_VARIANT_INDEX));
+    EXPECT_THAT(sut.index(), Eq(iox2::legacy::INVALID_VARIANT_INDEX));
 }
 
 TEST_F(variant_Test, InitializedVariantReturnsCorrectIndex) {
@@ -119,7 +119,7 @@ TEST_F(variant_Test, InitializedVariantReturnsCorrectIndex) {
 
 TEST_F(variant_Test, CreatingVariantFromPODTypeReturnsProvidedValue) {
     ::testing::Test::RecordProperty("TEST_ID", "d087b440-a669-4467-a016-3a4ae5b5882a");
-    iox::variant<ComplexClass, float> sut2 { 42.42F };
+    iox2::legacy::variant<ComplexClass, float> sut2 { 42.42F };
 
     ASSERT_THAT(sut2.index(), Eq(1U));
     ASSERT_THAT(sut2.get<float>(), Ne(nullptr));
@@ -129,7 +129,7 @@ TEST_F(variant_Test, CreatingVariantFromPODTypeReturnsProvidedValue) {
 TEST_F(variant_Test, CreatingVariantFromLValueReturnsProvidedValue) {
     ::testing::Test::RecordProperty("TEST_ID", "ff991aeb-15de-45fe-b6fb-a0a3d3c36c68");
     std::string string("Buhh");
-    iox::variant<std::string, float> sut2 { string };
+    iox2::legacy::variant<std::string, float> sut2 { string };
     ASSERT_THAT(sut2.index(), Eq(0U));
     ASSERT_THAT(sut2.get<std::string>(), Ne(nullptr));
     EXPECT_THAT(sut2.get<std::string>()->c_str(), StrEq("Buhh"));
@@ -137,7 +137,7 @@ TEST_F(variant_Test, CreatingVariantFromLValueReturnsProvidedValue) {
 
 TEST_F(variant_Test, CreatingVariantWithSameTypeChoosesFirstFittingType) {
     ::testing::Test::RecordProperty("TEST_ID", "819b5c7d-106c-476a-a49e-aaa78e092e3f");
-    iox::variant<float, float> sut2 { 73.73F };
+    iox2::legacy::variant<float, float> sut2 { 73.73F };
 
     ASSERT_THAT(sut2.index(), Eq(0U));
     ASSERT_THAT(sut2.get<float>(), Ne(nullptr));
@@ -231,7 +231,7 @@ TEST_F(variant_Test, DTorIsCalled) {
     ::testing::Test::RecordProperty("TEST_ID", "46f16073-af10-4d4b-9944-a316bc5847ef");
     DTorTest::dtorWasCalled = false;
     {
-        iox::variant<int, DTorTest> schlomo;
+        iox2::legacy::variant<int, DTorTest> schlomo;
         schlomo.emplace<DTorTest>();
     }
     EXPECT_THAT(DTorTest::dtorWasCalled, Eq(true));
@@ -240,7 +240,7 @@ TEST_F(variant_Test, DTorIsCalled) {
 TEST_F(variant_Test, DTorIsCalledAfterEmplace) {
     ::testing::Test::RecordProperty("TEST_ID", "0de8d215-76be-4727-9fb4-42c54cb1b742");
     {
-        iox::variant<int, float, DTorTest, double> ignatz;
+        iox2::legacy::variant<int, float, DTorTest, double> ignatz;
         ignatz.emplace<DTorTest>();
         DTorTest::dtorWasCalled = false;
     }
@@ -249,28 +249,28 @@ TEST_F(variant_Test, DTorIsCalledAfterEmplace) {
 
 TEST_F(variant_Test, CopyCTorWithValueLeadsToSameValue) {
     ::testing::Test::RecordProperty("TEST_ID", "710f8add-4a3c-4b9c-b429-5f42689b49da");
-    iox::variant<int, char> schlomo;
+    iox2::legacy::variant<int, char> schlomo;
     schlomo.emplace<int>(123);
-    iox::variant<int, char> ignatz(schlomo);
+    iox2::legacy::variant<int, char> ignatz(schlomo);
     ASSERT_THAT(ignatz.get<int>(), Ne(nullptr));
     EXPECT_THAT(*ignatz.get<int>(), Eq(123));
 }
 
 TEST_F(variant_Test, CopyCTorWithoutValueResultsInInvalidVariant) {
     ::testing::Test::RecordProperty("TEST_ID", "31b12efc-4f2d-4b3c-ad72-c12ca8a0cfc3");
-    iox::variant<int, char> schlomo;
+    iox2::legacy::variant<int, char> schlomo;
     // NOLINTJUSTIFICATION Copy c'tor shall be tested
     // NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
-    iox::variant<int, char> ignatz(schlomo);
-    ASSERT_THAT(ignatz.index(), Eq(iox::INVALID_VARIANT_INDEX));
+    iox2::legacy::variant<int, char> ignatz(schlomo);
+    ASSERT_THAT(ignatz.index(), Eq(iox2::legacy::INVALID_VARIANT_INDEX));
 }
 
 TEST_F(variant_Test, CopyAssignmentWithValueLeadsToSameValue) {
     ::testing::Test::RecordProperty("TEST_ID", "ebf341fa-c218-4ab8-ae13-a35d707bb5b2");
-    iox::variant<int, char> ignatz;
+    iox2::legacy::variant<int, char> ignatz;
     ignatz.emplace<char>('c');
     {
-        iox::variant<int, char> schlomo;
+        iox2::legacy::variant<int, char> schlomo;
         schlomo.emplace<int>(447);
         ignatz = schlomo;
     }
@@ -280,21 +280,21 @@ TEST_F(variant_Test, CopyAssignmentWithValueLeadsToSameValue) {
 
 TEST_F(variant_Test, CopyAssignmentWithoutValueResultsInInvalidVariant) {
     ::testing::Test::RecordProperty("TEST_ID", "75466e8c-78b3-4a2f-84cb-06849cf80baa");
-    iox::variant<int, char> ignatz;
+    iox2::legacy::variant<int, char> ignatz;
     ignatz.emplace<char>('c');
     {
-        iox::variant<int, char> schlomo;
+        iox2::legacy::variant<int, char> schlomo;
         ignatz = schlomo;
     }
-    ASSERT_THAT(ignatz.index(), Eq(iox::INVALID_VARIANT_INDEX));
+    ASSERT_THAT(ignatz.index(), Eq(iox2::legacy::INVALID_VARIANT_INDEX));
     ASSERT_THAT(ignatz.get<char>(), Eq(nullptr));
 }
 
 TEST_F(variant_Test, MoveCTorWithValueLeadsToSameValue) {
     ::testing::Test::RecordProperty("TEST_ID", "34962242-8319-48e5-a064-5118c6ffa080");
-    iox::variant<int, char> schlomo;
+    iox2::legacy::variant<int, char> schlomo;
     schlomo.emplace<int>(123);
-    iox::variant<int, char> ignatz(std::move(schlomo));
+    iox2::legacy::variant<int, char> ignatz(std::move(schlomo));
     ASSERT_THAT(ignatz.get<int>(), Ne(nullptr));
     EXPECT_THAT(*ignatz.get<int>(), Eq(123));
     // NOLINTJUSTIFICATION check if move is invalidating the object
@@ -304,17 +304,17 @@ TEST_F(variant_Test, MoveCTorWithValueLeadsToSameValue) {
 
 TEST_F(variant_Test, MoveCTorWithoutValueResultsInInvalidVariant) {
     ::testing::Test::RecordProperty("TEST_ID", "83db1777-3e66-4755-9072-0c90973ae303");
-    iox::variant<int, char> schlomo;
-    iox::variant<int, char> ignatz(std::move(schlomo));
-    ASSERT_THAT(ignatz.index(), Eq(iox::INVALID_VARIANT_INDEX));
+    iox2::legacy::variant<int, char> schlomo;
+    iox2::legacy::variant<int, char> ignatz(std::move(schlomo));
+    ASSERT_THAT(ignatz.index(), Eq(iox2::legacy::INVALID_VARIANT_INDEX));
 }
 
 TEST_F(variant_Test, MoveAssignmentWithValueLeadsToSameValue) {
     ::testing::Test::RecordProperty("TEST_ID", "ee36df28-545f-42bc-9ef6-3699284f1a42");
-    iox::variant<int, char> ignatz;
+    iox2::legacy::variant<int, char> ignatz;
     ignatz.emplace<char>('c');
     {
-        iox::variant<int, char> schlomo;
+        iox2::legacy::variant<int, char> schlomo;
         schlomo.emplace<int>(447);
         ignatz = std::move(schlomo);
     }
@@ -324,26 +324,26 @@ TEST_F(variant_Test, MoveAssignmentWithValueLeadsToSameValue) {
 
 TEST_F(variant_Test, MoveAssignmentWithoutValueResultsInInvalidVariant) {
     ::testing::Test::RecordProperty("TEST_ID", "5b6c8183-3ea1-44ee-ac99-7f427127b82b");
-    iox::variant<int, char> ignatz;
+    iox2::legacy::variant<int, char> ignatz;
     ignatz.emplace<char>('c');
     {
-        iox::variant<int, char> schlomo;
+        iox2::legacy::variant<int, char> schlomo;
         ignatz = std::move(schlomo);
     }
     ASSERT_THAT(ignatz.get<int>(), Eq(nullptr));
-    ASSERT_THAT(ignatz.index(), Eq(iox::INVALID_VARIANT_INDEX));
+    ASSERT_THAT(ignatz.index(), Eq(iox2::legacy::INVALID_VARIANT_INDEX));
 }
 
 TEST_F(variant_Test, CreatingSecondObjectViaCopyCTorResultsInTwoDTorCalls) {
     ::testing::Test::RecordProperty("TEST_ID", "57a5836f-d981-445a-9040-6c3358cee6c4");
     {
-        iox::variant<int, DTorTest> ignatz;
+        iox2::legacy::variant<int, DTorTest> ignatz;
         ignatz.emplace<DTorTest>();
         DTorTest::dtorWasCalled = false;
         {
             // NOLINTJUSTIFICATION Copy c'tor shall be tested
             // NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
-            iox::variant<int, DTorTest> schlomo(ignatz);
+            iox2::legacy::variant<int, DTorTest> schlomo(ignatz);
             EXPECT_THAT(DTorTest::dtorWasCalled, Eq(false));
         }
         EXPECT_THAT(DTorTest::dtorWasCalled, Eq(true));
@@ -355,11 +355,11 @@ TEST_F(variant_Test, CreatingSecondObjectViaCopyCTorResultsInTwoDTorCalls) {
 TEST_F(variant_Test, CreatingSecondObjectViaCopyAssignmentResultsInTwoDTorCalls) {
     ::testing::Test::RecordProperty("TEST_ID", "6932e30b-f24f-46be-88e0-d745d9f0db92");
     {
-        iox::variant<int, DTorTest> ignatz;
+        iox2::legacy::variant<int, DTorTest> ignatz;
         ignatz.emplace<DTorTest>();
         DTorTest::dtorWasCalled = false;
         {
-            iox::variant<int, DTorTest> schlomo;
+            iox2::legacy::variant<int, DTorTest> schlomo;
             schlomo.emplace<int>(123);
             schlomo = ignatz;
             EXPECT_THAT(DTorTest::dtorWasCalled, Eq(false));
@@ -373,11 +373,11 @@ TEST_F(variant_Test, CreatingSecondObjectViaCopyAssignmentResultsInTwoDTorCalls)
 TEST_F(variant_Test, CreatingSecondObjectViaMoveCTorResultsInTwoDTorCalls) {
     ::testing::Test::RecordProperty("TEST_ID", "0cb220db-be81-4279-b646-a35b0d177451");
     {
-        iox::variant<int, DTorTest> ignatz;
+        iox2::legacy::variant<int, DTorTest> ignatz;
         ignatz.emplace<DTorTest>();
         DTorTest::dtorWasCalled = false;
         {
-            iox::variant<int, DTorTest> schlomo(std::move(ignatz));
+            iox2::legacy::variant<int, DTorTest> schlomo(std::move(ignatz));
             EXPECT_THAT(DTorTest::dtorWasCalled, Eq(false));
             // NOLINTJUSTIFICATION check if move is invalidating the object
             // NOLINTNEXTLINE(bugprone-use-after-move,hicpp-invalid-access-moved,clang-analyzer-cplusplus.Move)
@@ -392,11 +392,11 @@ TEST_F(variant_Test, CreatingSecondObjectViaMoveCTorResultsInTwoDTorCalls) {
 TEST_F(variant_Test, CreatingSecondObjectViaMoveAssignmentResultsInTwoDTorCalls) {
     ::testing::Test::RecordProperty("TEST_ID", "24a7b31a-eafa-4492-a57b-26ee7f9801f1");
     {
-        iox::variant<int, DTorTest> ignatz;
+        iox2::legacy::variant<int, DTorTest> ignatz;
         ignatz.emplace<DTorTest>();
         DTorTest::dtorWasCalled = false;
         {
-            iox::variant<int, DTorTest> schlomo;
+            iox2::legacy::variant<int, DTorTest> schlomo;
             schlomo.emplace<int>(123);
             schlomo = std::move(ignatz);
             // NOLINTJUSTIFICATION check if move is invalidating the object
@@ -412,14 +412,14 @@ TEST_F(variant_Test, CreatingSecondObjectViaMoveAssignmentResultsInTwoDTorCalls)
 
 TEST_F(variant_Test, DirectValueAssignmentResultsInCorrectIndex) {
     ::testing::Test::RecordProperty("TEST_ID", "55377419-08dc-4d6b-b163-b2da7ad70417");
-    iox::variant<int, float> schlomo;
+    iox2::legacy::variant<int, float> schlomo;
     schlomo = 123;
     EXPECT_THAT(schlomo.index(), Eq(0U));
 }
 
 TEST_F(variant_Test, DirectValueAssignmentWhenAlreadyAssignedWithDifferentType) {
     ::testing::Test::RecordProperty("TEST_ID", "a058c173-497b-43ec-ba03-2702f3ba8190");
-    iox::variant<int, float> schlomo;
+    iox2::legacy::variant<int, float> schlomo;
     schlomo = 123;
     schlomo = 123.01F;
     EXPECT_THAT(schlomo.index(), Eq(0U));
@@ -427,21 +427,21 @@ TEST_F(variant_Test, DirectValueAssignmentWhenAlreadyAssignedWithDifferentType) 
 
 TEST_F(variant_Test, HoldsAlternativeForCorrectType) {
     ::testing::Test::RecordProperty("TEST_ID", "9da264db-a84e-41cd-94ff-92af529e2d6b");
-    iox::variant<int, float> schlomo;
+    iox2::legacy::variant<int, float> schlomo;
     schlomo = 123;
-    EXPECT_THAT(iox::holds_alternative<int>(schlomo), Eq(true));
+    EXPECT_THAT(iox2::legacy::holds_alternative<int>(schlomo), Eq(true));
 }
 
 TEST_F(variant_Test, HoldsAlternativeForIncorrectType) {
     ::testing::Test::RecordProperty("TEST_ID", "63f3690f-1f66-407c-8050-97f47f62638e");
-    iox::variant<int, float> schlomo;
+    iox2::legacy::variant<int, float> schlomo;
     schlomo = 123;
-    EXPECT_THAT(iox::holds_alternative<float>(schlomo), Eq(false));
+    EXPECT_THAT(iox2::legacy::holds_alternative<float>(schlomo), Eq(false));
 }
 
 TEST_F(variant_Test, SameTypeVariantAndEmplaceWithIndexResultsInCorrectValue) {
     ::testing::Test::RecordProperty("TEST_ID", "fb55e6d8-d42d-4073-b5db-5300c56df540");
-    iox::variant<int, float, int> schlomo;
+    iox2::legacy::variant<int, float, int> schlomo;
 
     schlomo.emplace_at_index<2>(123);
     EXPECT_THAT(*schlomo.get_at_index<2>(), Eq(123));
@@ -449,7 +449,7 @@ TEST_F(variant_Test, SameTypeVariantAndEmplaceWithIndexResultsInCorrectValue) {
 
 TEST_F(variant_Test, SameTypeVariantResultsInCorrectIndex) {
     ::testing::Test::RecordProperty("TEST_ID", "10994259-9fb5-411f-9e12-365f2d8e09fd");
-    iox::variant<int, float, int> schlomo;
+    iox2::legacy::variant<int, float, int> schlomo;
 
     schlomo.emplace_at_index<1>(1.23F);
     EXPECT_THAT(schlomo.index(), Eq(1U));
@@ -457,7 +457,7 @@ TEST_F(variant_Test, SameTypeVariantResultsInCorrectIndex) {
 
 TEST_F(variant_Test, SameTypeVariantReturnsNothingForIncorrectIndex) {
     ::testing::Test::RecordProperty("TEST_ID", "04c16cb1-f67f-47fa-bde8-f15ff0d044c3");
-    iox::variant<int, float, int> schlomo;
+    iox2::legacy::variant<int, float, int> schlomo;
 
     schlomo.emplace_at_index<2>(123);
     EXPECT_THAT(schlomo.get_at_index<1>(), Eq(nullptr));
@@ -465,8 +465,8 @@ TEST_F(variant_Test, SameTypeVariantReturnsNothingForIncorrectIndex) {
 
 TEST_F(variant_Test, ConstSameTypeVariantAndEmplaceWithIndexResultsInCorrectValue) {
     ::testing::Test::RecordProperty("TEST_ID", "89511ef2-46e6-49f5-8272-713a860ff070");
-    iox::variant<int, float, int> schlomo;
-    const iox::variant<int, float, int>* ignatz = &schlomo;
+    iox2::legacy::variant<int, float, int> schlomo;
+    const iox2::legacy::variant<int, float, int>* ignatz = &schlomo;
 
     schlomo.emplace_at_index<2>(4123);
     EXPECT_THAT(*ignatz->get_at_index<2>(), Eq(4123));
@@ -474,7 +474,7 @@ TEST_F(variant_Test, ConstSameTypeVariantAndEmplaceWithIndexResultsInCorrectValu
 
 TEST_F(variant_Test, InPlaceAtIndexCTorResultsInCorrectIndexAndValue) {
     ::testing::Test::RecordProperty("TEST_ID", "6a1fe90d-da43-4d82-b5f5-e940b4724e86");
-    iox::variant<int, float, int> schlomo(iox::in_place_index<0>(), 445);
+    iox2::legacy::variant<int, float, int> schlomo(iox2::legacy::in_place_index<0>(), 445);
 
     ASSERT_THAT(schlomo.index(), Eq(0U));
     EXPECT_THAT(*schlomo.get_at_index<0>(), Eq(445));
@@ -482,7 +482,7 @@ TEST_F(variant_Test, InPlaceAtIndexCTorResultsInCorrectIndexAndValue) {
 
 TEST_F(variant_Test, InPlaceAtTypeCTorResultsInCorrectIndexAndValue) {
     ::testing::Test::RecordProperty("TEST_ID", "71ddd0cd-125f-4f69-b12d-f0f024c541a4");
-    iox::variant<int, float, double> schlomo(iox::in_place_type<double>(), 90.12);
+    iox2::legacy::variant<int, float, double> schlomo(iox2::legacy::in_place_type<double>(), 90.12);
 
     ASSERT_THAT(schlomo.index(), Eq(2U));
     EXPECT_THAT(*schlomo.get_at_index<2>(), Eq(90.12));
@@ -492,7 +492,7 @@ TEST_F(variant_Test, ComplexDTorUsingWrongTypeResultsInNoDTorCall) {
     ::testing::Test::RecordProperty("TEST_ID", "6a686a84-bbbf-47e4-b2a2-8c8f295cf999");
     DoubleDelete::dtorCalls = 0;
     {
-        iox::variant<int, DoubleDelete> schlomo(iox::in_place_type<int>(), 90);
+        iox2::legacy::variant<int, DoubleDelete> schlomo(iox2::legacy::in_place_type<int>(), 90);
     }
 
     EXPECT_THAT(DoubleDelete::dtorCalls, Eq(0));
@@ -503,7 +503,7 @@ TEST_F(variant_Test, ComplexDTorUsingCorrectTypeWithEmplace) {
     DoubleDelete::ctorCalls = 0;
     DoubleDelete::dtorCalls = 0;
     {
-        iox::variant<int, DoubleDelete> schlomo;
+        iox2::legacy::variant<int, DoubleDelete> schlomo;
         schlomo.emplace<DoubleDelete>();
     }
 
@@ -516,7 +516,7 @@ TEST_F(variant_Test, ComplexDTorUsingCorrectTypeWithInPlace) {
     DoubleDelete::ctorCalls = 0;
     DoubleDelete::dtorCalls = 0;
     {
-        iox::variant<int, DoubleDelete> schlomo { iox::in_place_type<DoubleDelete>() };
+        iox2::legacy::variant<int, DoubleDelete> schlomo { iox2::legacy::in_place_type<DoubleDelete>() };
     }
 
     EXPECT_THAT(DoubleDelete::ctorCalls, Eq(1));
@@ -528,10 +528,10 @@ TEST_F(variant_Test, ComplexDTorWithCopyCTor) {
     DoubleDelete::ctorCalls = 0;
     DoubleDelete::dtorCalls = 0;
     {
-        iox::variant<int, DoubleDelete> schlomo { iox::in_place_type<DoubleDelete>() };
+        iox2::legacy::variant<int, DoubleDelete> schlomo { iox2::legacy::in_place_type<DoubleDelete>() };
         // NOLINTJUSTIFICATION Copy c'tor shall be tested
         // NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
-        iox::variant<int, DoubleDelete> sut { schlomo };
+        iox2::legacy::variant<int, DoubleDelete> sut { schlomo };
     }
 
     EXPECT_THAT(DoubleDelete::ctorCalls, Eq(1));
@@ -543,8 +543,8 @@ TEST_F(variant_Test, ComplexDTorWithCopyAssignmentTwoVariantsWithValue) {
     DoubleDelete::ctorCalls = 0;
     DoubleDelete::dtorCalls = 0;
     {
-        iox::variant<int, DoubleDelete> schlomo { iox::in_place_type<DoubleDelete>() };
-        iox::variant<int, DoubleDelete> sut { iox::in_place_type<DoubleDelete>() };
+        iox2::legacy::variant<int, DoubleDelete> schlomo { iox2::legacy::in_place_type<DoubleDelete>() };
+        iox2::legacy::variant<int, DoubleDelete> sut { iox2::legacy::in_place_type<DoubleDelete>() };
         sut = schlomo;
     }
 
@@ -557,8 +557,8 @@ TEST_F(variant_Test, ComplexDTorWithMove) {
     DoubleDelete::ctorCalls = 0;
     DoubleDelete::dtorCalls = 0;
     {
-        iox::variant<int, DoubleDelete> schlomo { iox::in_place_type<DoubleDelete>() };
-        iox::variant<int, DoubleDelete> sut = std::move(schlomo);
+        iox2::legacy::variant<int, DoubleDelete> schlomo { iox2::legacy::in_place_type<DoubleDelete>() };
+        iox2::legacy::variant<int, DoubleDelete> sut = std::move(schlomo);
     }
 
     EXPECT_THAT(DoubleDelete::ctorCalls, Eq(1));
@@ -570,8 +570,8 @@ TEST_F(variant_Test, ComplexDTorWithMoveAssignment) {
     DoubleDelete::ctorCalls = 0;
     DoubleDelete::dtorCalls = 0;
     {
-        iox::variant<int, DoubleDelete> sut;
-        iox::variant<int, DoubleDelete> schlomo { iox::in_place_type<DoubleDelete>() };
+        iox2::legacy::variant<int, DoubleDelete> sut;
+        iox2::legacy::variant<int, DoubleDelete> schlomo { iox2::legacy::in_place_type<DoubleDelete>() };
         sut = std::move(schlomo);
     }
 
@@ -584,8 +584,8 @@ TEST_F(variant_Test, ComplexDTorWithMoveAssignmentTwoVariantsWithValue) {
     DoubleDelete::ctorCalls = 0;
     DoubleDelete::dtorCalls = 0;
     {
-        iox::variant<int, DoubleDelete> sut { iox::in_place_type<DoubleDelete>() };
-        iox::variant<int, DoubleDelete> schlomo { iox::in_place_type<DoubleDelete>() };
+        iox2::legacy::variant<int, DoubleDelete> sut { iox2::legacy::in_place_type<DoubleDelete>() };
+        iox2::legacy::variant<int, DoubleDelete> schlomo { iox2::legacy::in_place_type<DoubleDelete>() };
         sut = std::move(schlomo);
     }
 
@@ -597,8 +597,8 @@ TEST_F(variant_Test, MoveVariantIntoVariantOfDifferentType) {
     ::testing::Test::RecordProperty("TEST_ID", "1f292f13-8a88-4f73-8589-df4d5259c791");
     DoubleDelete::ctorCalls = 0;
     DoubleDelete::dtorCalls = 0;
-    iox::variant<DoubleDelete, ComplexClass> sut1;
-    iox::variant<DoubleDelete, ComplexClass> sut2;
+    iox2::legacy::variant<DoubleDelete, ComplexClass> sut1;
+    iox2::legacy::variant<DoubleDelete, ComplexClass> sut2;
     sut1.emplace<DoubleDelete>();
     sut2.emplace<ComplexClass>(12, 12.12F);
 
@@ -611,8 +611,8 @@ TEST_F(variant_Test, CopyVariantIntoVariantOfDifferentType) {
     ::testing::Test::RecordProperty("TEST_ID", "d0ea4fed-7b18-4d0d-aa05-d76911fb29f7");
     DoubleDelete::ctorCalls = 0;
     DoubleDelete::dtorCalls = 0;
-    iox::variant<DoubleDelete, ComplexClass> sut1;
-    iox::variant<DoubleDelete, ComplexClass> sut2;
+    iox2::legacy::variant<DoubleDelete, ComplexClass> sut1;
+    iox2::legacy::variant<DoubleDelete, ComplexClass> sut2;
     sut1.emplace<DoubleDelete>();
     sut2.emplace<ComplexClass>(12, 12.12F);
 
@@ -623,8 +623,8 @@ TEST_F(variant_Test, CopyVariantIntoVariantOfDifferentType) {
 
 TEST_F(variant_Test, TwoInvalidVariantsAreEqual) {
     ::testing::Test::RecordProperty("TEST_ID", "4b2b7516-48ef-4aa6-a0c5-43a204e1e348");
-    iox::variant<std::string, float> sut1;
-    iox::variant<std::string, float> sut2;
+    iox2::legacy::variant<std::string, float> sut1;
+    iox2::legacy::variant<std::string, float> sut2;
     EXPECT_TRUE(sut1 == sut2);
     EXPECT_FALSE(sut1 != sut2);
 }
@@ -632,8 +632,8 @@ TEST_F(variant_Test, TwoInvalidVariantsAreEqual) {
 TEST_F(variant_Test, InvalidAndValidVariantAreUnequal) {
     ::testing::Test::RecordProperty("TEST_ID", "0c77c24f-059b-4298-b4a2-0a7d8eb70364");
     std::string string { "Foo" };
-    iox::variant<std::string, float> sut1 { string };
-    iox::variant<std::string, float> sut2;
+    iox2::legacy::variant<std::string, float> sut1 { string };
+    iox2::legacy::variant<std::string, float> sut2;
     EXPECT_FALSE(sut1 == sut2);
     EXPECT_TRUE(sut1 != sut2);
 }
@@ -641,8 +641,8 @@ TEST_F(variant_Test, InvalidAndValidVariantAreUnequal) {
 TEST_F(variant_Test, TwoVariantsWithEqualValuesAreEqual) {
     ::testing::Test::RecordProperty("TEST_ID", "6496566e-647d-426b-b369-7ec27c6ee673");
     std::string string { "Foo" };
-    iox::variant<std::string, float> sut1 { string };
-    iox::variant<std::string, float> sut2 { string };
+    iox2::legacy::variant<std::string, float> sut1 { string };
+    iox2::legacy::variant<std::string, float> sut2 { string };
     EXPECT_TRUE(sut1 == sut2);
     EXPECT_FALSE(sut1 != sut2);
 }
@@ -651,8 +651,8 @@ TEST_F(variant_Test, TwoVariantsWithUnequalValueAreUnequal) {
     ::testing::Test::RecordProperty("TEST_ID", "b37c2f64-6ba6-42c8-9b6d-73bb344b8c8e");
     std::string string { "Foo" };
     float floatNum { 42.42F };
-    iox::variant<std::string, float> sut1 { string };
-    iox::variant<std::string, float> sut2 { floatNum };
+    iox2::legacy::variant<std::string, float> sut1 { string };
+    iox2::legacy::variant<std::string, float> sut2 { floatNum };
     EXPECT_TRUE(sut1 != sut2);
     EXPECT_FALSE(sut1 == sut2);
 }

@@ -38,7 +38,7 @@
 /// @brief calls panic handler and does not return
 /// @param message message to be forwarded
 /// @note could actually throw if desired without breaking control flow asssumptions
-#define IOX_PANIC(message) iox::er::forwardPanic(IOX_CURRENT_SOURCE_LOCATION, message)
+#define IOX_PANIC(message) iox2::legacy::er::forwardPanic(IOX_CURRENT_SOURCE_LOCATION, message)
 
 //************************************************************************************************
 //* For documentation of intent, defensive programming and debugging
@@ -52,12 +52,12 @@
 /// @param condition boolean expression that must hold
 /// @param message message to be forwarded in case of violation
 #define IOX_ASSERT(condition, message)                                                                                 \
-    if (iox::er::Configuration::CHECK_ASSERT && !(condition)) {                                                        \
-        iox::er::forwardFatalError(iox::er::Violation::createAssertViolation(),                                        \
-                                   iox::er::ASSERT_VIOLATION,                                                          \
-                                   IOX_CURRENT_SOURCE_LOCATION,                                                        \
-                                   #condition,                                                                         \
-                                   message);                                                                           \
+    if (iox2::legacy::er::Configuration::CHECK_ASSERT && !(condition)) {                                               \
+        iox2::legacy::er::forwardFatalError(iox2::legacy::er::Violation::createAssertViolation(),                      \
+                                            iox2::legacy::er::ASSERT_VIOLATION,                                        \
+                                            IOX_CURRENT_SOURCE_LOCATION,                                               \
+                                            #condition,                                                                \
+                                            message);                                                                  \
     }                                                                                                                  \
     []() -> void { }() // the empty lambda forces a semicolon on the caller side
 
@@ -67,18 +67,18 @@
 /// @param message message to be forwarded in case of violation
 #define IOX_ENFORCE(condition, message)                                                                                \
     if (!(condition)) {                                                                                                \
-        iox::er::forwardFatalError(iox::er::Violation::createEnforceViolation(),                                       \
-                                   iox::er::ENFORCE_VIOLATION,                                                         \
-                                   IOX_CURRENT_SOURCE_LOCATION,                                                        \
-                                   #condition,                                                                         \
-                                   message);                                                                           \
+        iox2::legacy::er::forwardFatalError(iox2::legacy::er::Violation::createEnforceViolation(),                     \
+                                            iox2::legacy::er::ENFORCE_VIOLATION,                                       \
+                                            IOX_CURRENT_SOURCE_LOCATION,                                               \
+                                            #condition,                                                                \
+                                            message);                                                                  \
     }                                                                                                                  \
     []() -> void { }() // the empty lambda forces a semicolon on the caller side
 
 /// @brief panic if control flow reaches this code at runtime
 #define IOX_UNREACHABLE()                                                                                              \
-    iox::er::detail::unreachable_wrapped<void, void>(IOX_CURRENT_SOURCE_LOCATION,                                      \
-                                                     "Reached code that was supposed to be unreachable.")
+    iox2::legacy::er::detail::unreachable_wrapped<void, void>(IOX_CURRENT_SOURCE_LOCATION,                             \
+                                                              "Reached code that was supposed to be unreachable.")
 
 // NOLINTEND(cppcoreguidelines-macro-usage)
 

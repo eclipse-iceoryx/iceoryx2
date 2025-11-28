@@ -13,7 +13,7 @@
 #include "iox2/node_details.hpp"
 
 namespace iox2 {
-NodeDetails::NodeDetails(iox::FileName executable, NodeName name, Config config)
+NodeDetails::NodeDetails(iox2::legacy::FileName executable, NodeName name, Config config)
     : m_executable { std::move(executable) }
     , m_node_name { std::move(name) }
     , m_config { std::move(config) } {

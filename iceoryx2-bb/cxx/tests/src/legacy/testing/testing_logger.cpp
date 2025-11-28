@@ -27,7 +27,8 @@
 // NOLINTNEXTLINE(hicpp-deprecated-headers) required to work on some platforms
 #include <setjmp.h>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace testing {
 void TestingLogger::init() noexcept {
     static TestingLogger logger;
@@ -83,7 +84,7 @@ uint64_t TestingLogger::getNumberOfLogMessages() noexcept {
 }
 
 void TestingLogger::checkLogMessageIfLogLevelIsSupported(
-    iox::log::LogLevel logLevel, const std::function<void(const std::vector<std::string>&)>& check) {
+    iox2::legacy::log::LogLevel logLevel, const std::function<void(const std::vector<std::string>&)>& check) {
     if (doesLoggerSupportLogLevel(logLevel)) {
         check(getLogMessages());
     }
@@ -115,8 +116,8 @@ jmp_buf exitJmpBuffer;
 static void sigHandler(int sig, siginfo_t*, void*) {
     constexpr const char* COLOR_RESET { "\033[m" };
 
-    std::cout << iox::log::logLevelDisplayColor(iox::log::LogLevel::Warn)
-              << "Catched signal: " << iox::log::logLevelDisplayColor(iox::log::LogLevel::Fatal);
+    std::cout << iox2::legacy::log::logLevelDisplayColor(iox2::legacy::log::LogLevel::Warn)
+              << "Catched signal: " << iox2::legacy::log::logLevelDisplayColor(iox2::legacy::log::LogLevel::Fatal);
     switch (sig) {
     case SIGSEGV:
         std::cout << "SIGSEGV" << std::flush;
@@ -137,7 +138,7 @@ static void sigHandler(int sig, siginfo_t*, void*) {
     dynamic_cast<TestingLogger&>(log::Logger::get()).printLogBuffer();
 
     std::cout << "\n"
-              << iox::log::logLevelDisplayColor(iox::log::LogLevel::Warn)
+              << iox2::legacy::log::logLevelDisplayColor(iox2::legacy::log::LogLevel::Warn)
               << "Aborting execution by causing a SIGSEV with 'longjmp' to prevent triggering the signal handler again!"
               << COLOR_RESET << "\n"
               << std::flush;
@@ -181,4 +182,5 @@ void LogPrinter::OnTestPartResult(const ::testing::TestPartResult& result) {
 }
 
 } // namespace testing
-} // namespace iox
+} // namespace legacy
+} // namespace iox2

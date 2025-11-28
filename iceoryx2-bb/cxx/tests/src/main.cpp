@@ -18,8 +18,8 @@
 auto main(int argc, char* argv[]) -> int {
     ::testing::InitGoogleTest(&argc, argv);
 
-    iox::testing::TestingLogger::init();
-    iox::testing::TestingErrorHandler::init();
+    iox2::legacy::testing::TestingLogger::init();
+    iox2::legacy::testing::TestingErrorHandler::init();
 
     return RUN_ALL_TESTS();
 }

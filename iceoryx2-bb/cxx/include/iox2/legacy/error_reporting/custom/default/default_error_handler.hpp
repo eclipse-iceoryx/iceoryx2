@@ -20,7 +20,8 @@
 #include "iox2/legacy/error_reporting/source_location.hpp"
 #include "iox2/legacy/error_reporting/types.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace er {
 
 /// @brief Defines the default reaction of dynamic error handling.
@@ -49,6 +50,7 @@ class DefaultErrorHandler : public ErrorHandlerInterface {
 };
 
 } // namespace er
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_REPORTING_ERROR_REPORTING_CUSTOM_DEFAULT_ERROR_HANDLER_HPP

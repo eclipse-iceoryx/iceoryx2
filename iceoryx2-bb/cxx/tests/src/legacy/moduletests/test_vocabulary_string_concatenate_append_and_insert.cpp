@@ -29,8 +29,8 @@
 
 namespace {
 using namespace ::testing;
-using namespace iox;
-using namespace iox::testing;
+using namespace iox2::legacy;
+using namespace iox2::legacy::testing;
 
 TYPED_TEST_SUITE(stringTyped_test, StringImplementations, );
 
@@ -242,7 +242,7 @@ TYPED_TEST(stringTyped_test, ConcatenateEmptyStringAndStringLiteralWithOperatorP
     EXPECT_THAT(testString1.size(), Eq(1U));
     EXPECT_THAT(testString1.c_str(), StrEq("M"));
 
-    // required to verify string literal functionality of iox::string
+    // required to verify string literal functionality of iox2::legacy::string
     // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays)
     char testChar[3] = "ab";
     testChar[2] = 'c';
@@ -524,7 +524,7 @@ TYPED_TEST(stringTyped_test, AppendStringContainingNullWorks) {
     string<RESULT_CAPACITY> sut("i");
     const string<RESULT_CAPACITY> testCxxString(TruncateToCapacity, expectedString.substr(1).c_str(), 6U);
 
-    // append iox::string
+    // append iox2::legacy::string
     sut.append(TruncateToCapacity, testCxxString);
     EXPECT_THAT(sut.capacity(), Eq(RESULT_CAPACITY));
     EXPECT_THAT(sut.size(), Eq(7U));

@@ -29,7 +29,8 @@
 #include <cstdint>
 #include <cstring>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace log {
 class LogStream;
 }
@@ -77,29 +78,31 @@ using IsIoxStringAndIoxStringOrCharArrayOrChar =
                                         || (is_iox_string<T1>::value && is_iox_string<T2>::value))),
                             ReturnType>::type;
 
-/// @brief concatenates two iox::strings/string literals/chars
+/// @brief concatenates two iox2::legacy::strings/string literals/chars
 ///
-/// @param [in] iox::strings/string literals/chars to concatenate
+/// @param [in] iox2::legacy::strings/string literals/chars to concatenate
 ///
-/// @return a new iox::string with capacity equal to the sum of the capacities of the concatenated strings/chars
+/// @return a new iox2::legacy::string with capacity equal to the sum of the capacities of the concatenated
+/// strings/chars
 ///
 /// @code
 ///     string<5> fuu("cdefg");
-///     auto bar = iox::concatenate(fuu, "ahc");
+///     auto bar = iox2::legacy::concatenate(fuu, "ahc");
 /// @endcode
 template <typename T1, typename T2>
 IsIoxStringOrCharArrayOrChar<T1, T2, string<internal::SumCapa<T1, T2>::value>> concatenate(const T1& str1,
                                                                                            const T2& str2) noexcept;
 
-/// @brief concatenates an arbitrary number of iox::strings, string literals or chars
+/// @brief concatenates an arbitrary number of iox2::legacy::strings, string literals or chars
 ///
-/// @param [in] iox::strings/string literals/chars to concatenate
+/// @param [in] iox2::legacy::strings/string literals/chars to concatenate
 ///
-/// @return a new iox::string with capacity equal to the sum of the capacities of the concatenated strings/chars
+/// @return a new iox2::legacy::string with capacity equal to the sum of the capacities of the concatenated
+/// strings/chars
 ///
 /// @code
 ///     string<4> fuu("cdef");
-///     auto bar = iox::concatenate(fuu, "g", "ah", fuu);
+///     auto bar = iox2::legacy::concatenate(fuu, "g", "ah", fuu);
 /// @endcode
 template <typename T1, typename T2, typename... Targs>
 IsIoxStringOrCharArrayOrChar<T1, T2, string<internal::SumCapa<T1, T2, Targs...>::value>>
@@ -107,12 +110,13 @@ concatenate(const T1& str1, const T2& str2, const Targs&... targs) noexcept;
 
 // AXIVION Next Construct AutosarC++19_03-M17.0.3 : operator+ is defined within iox namespace which prevents easy
 // misuse
-/// @brief concatenates two iox::strings or one iox::string and one string literal/char; concatenation of two
-/// string literals/chars is not possible
+/// @brief concatenates two iox2::legacy::strings or one iox2::legacy::string and one string literal/char; concatenation
+/// of two string literals/chars is not possible
 ///
-/// @param [in] iox::strings/string literal/char to concatenate
+/// @param [in] iox2::legacy::strings/string literal/char to concatenate
 ///
-/// @return a new iox::string with capacity equal to the sum of the capacities of the concatenated strings/chars
+/// @return a new iox2::legacy::string with capacity equal to the sum of the capacities of the concatenated
+/// strings/chars
 template <typename T1, typename T2>
 IsIoxStringAndIoxStringOrCharArrayOrChar<T1, T2, string<internal::SumCapa<T1, T2>::value>>
 operator+(const T1& str1, const T2& str2) noexcept;
@@ -205,7 +209,7 @@ class string final {
     ///
     /// @code
     ///     #include "iox2/legacy/string.hpp"
-    ///     using namespace iox;
+    ///     using namespace iox2::legacy;
     ///
     ///     int main()
     ///     {
@@ -213,9 +217,9 @@ class string final {
     ///     }
     /// @endcode
     template <uint64_t N>
-    // avoid-c-arrays: iox::string wraps char array
+    // avoid-c-arrays: iox2::legacy::string wraps char array
     // explicit-conversions: we want to assign string literals to the string, like string<10> str = "abc"; this is safe
-    // because iox::string wraps char array
+    // because iox2::legacy::string wraps char array
     // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays, hicpp-explicit-conversions)
     string(const char (&other)[N]) noexcept;
 
@@ -230,7 +234,7 @@ class string final {
     ///
     /// @code
     ///     #include "iox2/legacy/string.hpp"
-    ///     using namespace iox;
+    ///     using namespace iox2::legacy;
     ///
     ///     int main()
     ///     {
@@ -252,7 +256,7 @@ class string final {
     ///
     /// @code
     ///     #include "iox2/legacy/string.hpp"
-    ///     using namespace iox;
+    ///     using namespace iox2::legacy;
     ///
     ///     int main()
     ///     {
@@ -275,7 +279,7 @@ class string final {
     ///
     /// @code
     ///     #include "iox2/legacy/string.hpp"
-    ///     using namespace iox;
+    ///     using namespace iox2::legacy;
     ///
     ///     int main()
     ///     {
@@ -283,7 +287,7 @@ class string final {
     ///     }
     /// @endcode
     template <uint64_t N>
-    // We want to assign string literals to the iox::string, like myString = "abc";
+    // We want to assign string literals to the iox2::legacy::string, like myString = "abc";
     // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays)
     string& operator=(const char (&rhs)[N]) noexcept;
 
@@ -309,7 +313,7 @@ class string final {
     /// @code
     ///
     ///     #include "iox2/legacy/string.hpp"
-    ///     using namespace iox;
+    ///     using namespace iox2::legacy;
     ///
     ///     int main()
     ///     {
@@ -319,7 +323,7 @@ class string final {
     ///     }
     /// @endcode
     template <uint64_t N>
-    // We want to assign string literals to the iox::string, like myString.assign("abc");
+    // We want to assign string literals to the iox2::legacy::string, like myString.assign("abc");
     // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays)
     string& assign(const char (&str)[N]) noexcept;
 
@@ -332,7 +336,7 @@ class string final {
     /// @return true if the assignment succeeds, otherwise false
     bool unsafe_assign(const char* const str) noexcept;
 
-    /// @brief compares self and an iox::string, custom string or char array
+    /// @brief compares self and an iox2::legacy::string, custom string or char array
     ///
     /// @param [in] other is the string to compare with self
     ///
@@ -383,12 +387,12 @@ class string final {
     // NOLINTNEXTLINE(hicpp-named-parameter, readability-named-parameter) method is disabled via static_assert
     string& operator+=(const T&) noexcept;
 
-    /// @brief appends a iox::string/string literal/custom string to the end of this. If this' capacity is too
+    /// @brief appends a iox2::legacy::string/string literal/custom string to the end of this. If this' capacity is too
     /// small for appending the whole string (literal), the remainder of the characters are truncated.
     ///
     /// @param [in] TruncateToCapacity_t is a compile time variable which is used to make the user aware of the possible
     /// truncation
-    /// @param [in] str is the iox::string/string literal/custom string to append
+    /// @param [in] str is the iox2::legacy::string/string literal/custom string to append
     ///
     /// @return reference to self
     ///
@@ -410,10 +414,10 @@ class string final {
     // NOLINTNEXTLINE(hicpp-named-parameter, readability-named-parameter)
     string& append(TruncateToCapacity_t, char cstr) noexcept;
 
-    /// @brief appends a iox::string/string literal/char/custom string to the end of this. The appending fails if the
-    /// sum of both sizes is greater than this' capacity.
+    /// @brief appends a iox2::legacy::string/string literal/char/custom string to the end of this. The appending fails
+    /// if the sum of both sizes is greater than this' capacity.
     ///
-    /// @param [in] iox::string/string literal/char/custom string to append
+    /// @param [in] iox2::legacy::string/string literal/char/custom string to append
     ///
     /// @return true if the appending succeeds, otherwise false
     template <typename T>
@@ -426,20 +430,21 @@ class string final {
     /// and total size, including the space for the zero termination. The return value is the string length.
     ///
     /// @code
-    ///     iox::string<100> s;
+    ///     iox2::legacy::string<100> s;
     ///     s.unsafe_raw_access([] (auto* str, const auto info) {
     ///         strncpy(str, "Hello World", info.total_size);
     ///         return strlen("Hello World");
     ///     });
     /// @endcode
-    void unsafe_raw_access(const iox::function_ref<uint64_t(char*, const iox::BufferInfo info)>& func) noexcept;
+    void unsafe_raw_access(
+        const iox2::legacy::function_ref<uint64_t(char*, const iox2::legacy::BufferInfo info)>& func) noexcept;
 
-    /// @brief inserts a iox::string or char array in the range [str[0], str[count]) at position pos. The insertion
-    /// fails if the string capacity would be exceeded or pos is greater than the string size or count is greater than
-    /// the string to be inserted.
+    /// @brief inserts a iox2::legacy::string or char array in the range [str[0], str[count]) at position pos. The
+    /// insertion fails if the string capacity would be exceeded or pos is greater than the string size or count is
+    /// greater than the string to be inserted.
     ///
     /// @param [in] pos position at which the string shall be inserted
-    /// @param [in] str the iox::string or char array to be inserted
+    /// @param [in] str the iox2::legacy::string or char array to be inserted
     /// @param [in] count number of characters to be inserted
     ///
     /// @return true if the insertion was successful, otherwise false
@@ -448,55 +453,58 @@ class string final {
 
     /// @brief creates a substring containing the characters from pos until count; if pos+count is greater than the size
     /// of the original string the returned substring only contains the characters from pos until size();
-    /// iox::nullopt is returned if pos is greater than the size of the original string;
+    /// iox2::legacy::nullopt is returned if pos is greater than the size of the original string;
     ///
     /// @param [in] pos is the position of the first character used for the substring
     /// @param [in] count is the requested length of the substring
     ///
-    /// @return an optional containing the substring, iox::nullopt if pos is greater than the size of the original
-    /// string
+    /// @return an optional containing the substring, iox2::legacy::nullopt if pos is greater than the size of the
+    /// original string
     optional<string<Capacity>> substr(const uint64_t pos, const uint64_t count) const noexcept;
 
-    /// @brief creates a substring containing the characters from pos until size(); iox::nullopt is returned if pos
-    /// is greater than the size of the original string
+    /// @brief creates a substring containing the characters from pos until size(); iox2::legacy::nullopt is returned if
+    /// pos is greater than the size of the original string
     ///
     /// @param [in] pos is the position of the first character used for the substring
     ///
-    /// @return an optional containing the substring, iox::nullopt if pos is greater than the size of the original
-    /// string
+    /// @return an optional containing the substring, iox2::legacy::nullopt if pos is greater than the size of the
+    /// original string
     optional<string<Capacity>> substr(const uint64_t pos = 0U) const noexcept;
 
     /// @brief finds the first occurence of the given character sequence; returns the position of the first character of
-    /// the found substring, returns iox::nullopt if no substring is found or if pos is greater than this' size
+    /// the found substring, returns iox2::legacy::nullopt if no substring is found or if pos is greater than this' size
     ///
-    /// @param [in] str is the character sequence to search for; must be a iox::string, string literal or custom string
+    /// @param [in] str is the character sequence to search for; must be a iox2::legacy::string, string literal or
+    /// custom string
     /// @param [in] pos is the position at which to start the search
     ///
-    /// @return an optional containing the position of the first character of the found substring, iox::nullopt if
-    /// no substring is found
+    /// @return an optional containing the position of the first character of the found substring, iox2::legacy::nullopt
+    /// if no substring is found
     template <typename T>
     IsStringOrCharArray<T, optional<uint64_t>> find(const T& str, const uint64_t pos = 0U) const noexcept;
 
     /// @brief finds the first occurence of a character equal to one of the characters of the given character sequence
-    /// and returns its position; returns iox::nullopt if no character is found or if pos is greater than this'
+    /// and returns its position; returns iox2::legacy::nullopt if no character is found or if pos is greater than this'
     /// size
     ///
-    /// @param [in] str is the character sequence to search for; must be a iox::string, string literal or custom string
+    /// @param [in] str is the character sequence to search for; must be a iox2::legacy::string, string literal or
+    /// custom string
     /// @param [in] pos is the position at which to start the search
     ///
     /// @return an optional containing the position of the first character equal to one of the characters of the given
-    /// character sequence, iox::nullopt if no character is found
+    /// character sequence, iox2::legacy::nullopt if no character is found
     template <typename T>
     IsStringOrCharArray<T, optional<uint64_t>> find_first_of(const T& str, const uint64_t pos = 0U) const noexcept;
 
     /// @brief finds the last occurence of a character equal to one of the characters of the given character sequence
-    /// and returns its position; returns iox::nullopt if no character is found
+    /// and returns its position; returns iox2::legacy::nullopt if no character is found
     ///
-    /// @param [in] str is the character sequence to search for; must be a iox::string, string literal or custom string
+    /// @param [in] str is the character sequence to search for; must be a iox2::legacy::string, string literal or
+    /// custom string
     /// @param [in] pos is the position at which to finish the search
     ///
     /// @return an optional containing the position of the last character equal to one of the characters of the given
-    /// character sequence, iox::nullopt if no character is found
+    /// character sequence, iox2::legacy::nullopt if no character is found
     template <typename T>
     IsStringOrCharArray<T, optional<uint64_t>> find_last_of(const T& str, const uint64_t pos = Capacity) const noexcept;
 
@@ -578,54 +586,54 @@ log::LogStream& operator<<(log::LogStream& stream, const string<Capacity>& str) 
 
 // AXIVION DISABLE STYLE AutosarC++19_03-A13.5.5: Comparison with custom string, char array or
 // char is also intended
-/// @brief checks if a lhs custom string, char array or char is equal to a rhs iox::string
+/// @brief checks if a lhs custom string, char array or char is equal to a rhs iox2::legacy::string
 ///
-/// @param [in] rhs is the iox::string
+/// @param [in] rhs is the iox2::legacy::string
 ///
 /// @return true if the contents of lhs and rhs are equal, otherwise false
 template <typename T, uint64_t Capacity>
 IsCustomStringOrCharArrayOrChar<T, bool> operator==(const T& lhs, const string<Capacity>& rhs) noexcept;
 
-/// @brief checks if a lhs custom string, char array or char is not equal to a rhs iox::string
+/// @brief checks if a lhs custom string, char array or char is not equal to a rhs iox2::legacy::string
 ///
 /// @param [in] lhs is the custom string, char array or char
-/// @param [in] rhs is the iox::string
+/// @param [in] rhs is the iox2::legacy::string
 ///
 /// @return true if the contents of lhs and rhs are not equal, otherwise false
 template <typename T, uint64_t Capacity>
 IsCustomStringOrCharArrayOrChar<T, bool> operator!=(const T& lhs, const string<Capacity>& rhs) noexcept;
 
-/// @brief checks if a lhs custom string, char array or char is less than a rhs iox::string
+/// @brief checks if a lhs custom string, char array or char is less than a rhs iox2::legacy::string
 ///
 /// @param [in] lhs is the custom string, char array or char
-/// @param [in] rhs is the iox::string
+/// @param [in] rhs is the iox2::legacy::string
 ///
 /// @return true if lhs is less than rhs, otherwise false
 template <typename T, uint64_t Capacity>
 IsCustomStringOrCharArrayOrChar<T, bool> operator<(const T& lhs, const string<Capacity>& rhs) noexcept;
 
-/// @brief checks if a lhs custom string, char array or char is less than or equal to a rhs iox::string
+/// @brief checks if a lhs custom string, char array or char is less than or equal to a rhs iox2::legacy::string
 ///
 /// @param [in] lhs is the custom string, char array or char
-/// @param [in] rhs is the iox::string
+/// @param [in] rhs is the iox2::legacy::string
 ///
 /// @return true if lhs is less than or equal to rhs, otherwise false
 template <typename T, uint64_t Capacity>
 IsCustomStringOrCharArrayOrChar<T, bool> operator<=(const T& lhs, const string<Capacity>& rhs) noexcept;
 
-/// @brief checks if a lhs custom string, char array or char is greater than a rhs iox::string
+/// @brief checks if a lhs custom string, char array or char is greater than a rhs iox2::legacy::string
 ///
 /// @param [in] lhs is the custom string, char array or char
-/// @param [in] rhs is the iox::string
+/// @param [in] rhs is the iox2::legacy::string
 ///
 /// @return true if lhs is greater than rhs, otherwise false
 template <typename T, uint64_t Capacity>
 IsCustomStringOrCharArrayOrChar<T, bool> operator>(const T& lhs, const string<Capacity>& rhs) noexcept;
 
-/// @brief checks if a lhs custom string, char array or char is greater than or equal to a rhs iox::string
+/// @brief checks if a lhs custom string, char array or char is greater than or equal to a rhs iox2::legacy::string
 ///
 /// @param [in] lhs is the custom string, char array or char
-/// @param [in] rhs is the iox::string
+/// @param [in] rhs is the iox2::legacy::string
 ///
 /// @return true if lhs is greater than or equal to rhs, otherwise false
 template <typename T, uint64_t Capacity>
@@ -633,8 +641,8 @@ IsCustomStringOrCharArrayOrChar<T, bool> operator>=(const T& lhs, const string<C
 
 /// @brief checks if lhs is equal to rhs
 ///
-/// @param [in] lhs is the iox::string
-/// @param [in] rhs is the iox::string, custom string, char array or char to compare with lhs
+/// @param [in] lhs is the iox2::legacy::string
+/// @param [in] rhs is the iox2::legacy::string, custom string, char array or char to compare with lhs
 ///
 /// @return true if both strings are equal, otherwise false
 template <typename T, uint64_t Capacity>
@@ -642,8 +650,8 @@ IsStringOrCharArrayOrChar<T, bool> operator==(const string<Capacity>& lhs, const
 
 /// @brief checks if lhs is not equal to rhs
 ///
-/// @param [in] lhs is the iox::string
-/// @param [in] rhs is the iox::string, custom string, char array or char to compare with lhs
+/// @param [in] lhs is the iox2::legacy::string
+/// @param [in] rhs is the iox2::legacy::string, custom string, char array or char to compare with lhs
 ///
 /// @return true if both strings are not equal, otherwise false
 template <typename T, uint64_t Capacity>
@@ -651,8 +659,8 @@ IsStringOrCharArrayOrChar<T, bool> operator!=(const string<Capacity>& lhs, const
 
 /// @brief checks if lhs is less than rhs, in lexicographical order
 ///
-/// @param [in] lhs is the iox::string
-/// @param [in] rhs is the iox::string, custom string, char array or char to compare with lhs
+/// @param [in] lhs is the iox2::legacy::string
+/// @param [in] rhs is the iox2::legacy::string, custom string, char array or char to compare with lhs
 ///
 /// @return true if lhs is less than rhs, otherwise false
 template <typename T, uint64_t Capacity>
@@ -660,8 +668,8 @@ IsStringOrCharArrayOrChar<T, bool> operator<(const string<Capacity>& lhs, const 
 
 /// @brief checks if lhs is less than or equal to rhs, in lexicographical order
 ///
-/// @param [in] lhs is the iox::string
-/// @param [in] rhs is the iox::string, custom string, char array or char to compare with lhs
+/// @param [in] lhs is the iox2::legacy::string
+/// @param [in] rhs is the iox2::legacy::string, custom string, char array or char to compare with lhs
 ///
 /// @return true if lhs is less than or equal to rhs, otherwise false
 template <typename T, uint64_t Capacity>
@@ -669,8 +677,8 @@ IsStringOrCharArrayOrChar<T, bool> operator<=(const string<Capacity>& lhs, const
 
 /// @brief checks if lhs is greater than rhs, in lexicographical order
 ///
-/// @param [in] lhs is the iox::string
-/// @param [in] rhs is the iox::string, custom string, char array or char to compare with lhs
+/// @param [in] lhs is the iox2::legacy::string
+/// @param [in] rhs is the iox2::legacy::string, custom string, char array or char to compare with lhs
 ///
 /// @return true if lhs is greater than rhs, otherwise false
 template <typename T, uint64_t Capacity>
@@ -678,8 +686,8 @@ IsStringOrCharArrayOrChar<T, bool> operator>(const string<Capacity>& lhs, const 
 
 /// @brief checks if lhs is greater than or equal to rhs, in lexicographical order
 ///
-/// @param [in] lhs is the iox::string
-/// @param [in] rhs is the iox::string, custom string, char array or char to compare with lhs
+/// @param [in] lhs is the iox2::legacy::string
+/// @param [in] rhs is the iox2::legacy::string, custom string, char array or char to compare with lhs
 ///
 /// @return true if lhs is greater than or equal to rhs, otherwise false
 template <typename T, uint64_t Capacity>
@@ -687,7 +695,8 @@ IsStringOrCharArrayOrChar<T, bool> operator>=(const string<Capacity>& lhs, const
 // AXIVION ENABLE STYLE AutosarC++19_03-A13.5.5
 // AXIVION ENABLE STYLE AutosarC++19_03-A18.1.1
 
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 #include "iox2/legacy/detail/string.inl"
 
 #endif // IOX_HOOFS_VOCABULARY_STRING_HPP

@@ -20,7 +20,8 @@
 
 #include <cstdint>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace cli {
 /// @brief defines the type of command line argument option
 enum class OptionType : uint8_t {
@@ -45,6 +46,7 @@ using Argument_t = string<MAX_OPTION_ARGUMENT_LENGTH>;
 using TypeName_t = string<MAX_TYPE_NAME_LENGTH>;
 
 } // namespace cli
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_CLI_TYPES_HPP

@@ -30,8 +30,8 @@
 
 namespace {
 using namespace ::testing;
-using namespace iox::units;
-using namespace iox::units::duration_literals;
+using namespace iox2::legacy::units;
+using namespace iox2::legacy::units::duration_literals;
 
 constexpr uint64_t SECONDS_PER_MINUTE = Duration::SECS_PER_MINUTE;
 constexpr uint64_t SECONDS_PER_HOUR = Duration::SECS_PER_HOUR;
@@ -1769,7 +1769,7 @@ TEST(Duration_test, StdStreamingOperator) {
 TEST(Duration_test, LogStreamingOperator) {
     ::testing::Test::RecordProperty("TEST_ID", "2ce98e19-17be-47fa-b5e7-f4d9dacd0855");
 
-    iox::testing::Logger_Mock loggerMock {};
+    iox2::legacy::testing::Logger_Mock loggerMock {};
 
     {
         IOX_LOGSTREAM_MOCK(loggerMock) << 0_s;

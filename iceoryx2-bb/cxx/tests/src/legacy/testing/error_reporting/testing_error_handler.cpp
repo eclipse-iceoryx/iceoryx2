@@ -24,14 +24,15 @@
 
 #include <iostream>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace testing {
 
-using namespace iox::er;
+using namespace iox2::legacy::er;
 
 void TestingErrorHandler::init() noexcept {
-    iox::testing::ErrorHandler handler;
-    iox::er::ErrorHandler::set(handler);
+    iox2::legacy::testing::ErrorHandler handler;
+    iox2::legacy::er::ErrorHandler::set(handler);
 
     auto& listeners = ::testing::UnitTest::GetInstance()->listeners();
     // NOLINTNEXTLINE(cppcoreguidelines-owning-memory) required by the callee
@@ -70,8 +71,8 @@ bool TestingErrorHandler::hasError() const noexcept {
     return !m_errors.empty();
 }
 
-bool TestingErrorHandler::hasError(ErrorCode code, iox::er::ModuleId module) const noexcept {
-    constexpr iox::er::ModuleId ANY_MODULE { iox::er::ModuleId::ANY };
+bool TestingErrorHandler::hasError(ErrorCode code, iox2::legacy::er::ModuleId module) const noexcept {
+    constexpr iox2::legacy::er::ModuleId ANY_MODULE { iox2::legacy::er::ModuleId::ANY };
     std::lock_guard<std::mutex> g(m_mutex);
     for (auto desc : m_errors) {
         if (desc.code == code) {
@@ -123,4 +124,5 @@ void ErrorHandlerSetup::OnTestStart(const ::testing::TestInfo&) {
 }
 
 } // namespace testing
-} // namespace iox
+} // namespace legacy
+} // namespace iox2

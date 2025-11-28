@@ -30,7 +30,8 @@
 #include "iox2/legacy/log/building_blocks/console_logger.hpp"
 #include "iox2/legacy/log/building_blocks/logger.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace log {
 using Logger = internal::Logger<ConsoleLogger>;
 using TestingLoggerBase = internal::Logger<ConsoleLogger>;
@@ -48,6 +49,7 @@ static constexpr bool IGNORE_ACTIVE_LOG_LEVEL { false };
 static constexpr LogLevel MINIMAL_LOG_LEVEL { LogLevel::Trace /* TODO: build::IOX_MINIMAL_LOG_LEVEL */ };
 
 } // namespace log
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_REPORTING_LOG_LOGGER_HPP

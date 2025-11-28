@@ -23,16 +23,17 @@
 #include <mutex>
 #include <vector>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace testing {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage) required to be able to easily test custom types
 #define IOX_LOGSTREAM_MOCK(logger)                                                                                     \
-    iox::log::LogStream((logger), "file", 42, "function", iox::log::LogLevel::Trace).self()
+    iox2::legacy::log::LogStream((logger), "file", 42, "function", iox2::legacy::log::LogLevel::Trace).self()
 
 /// @brief This mock can be used to test implementations of LogStream::operator<< for custom types. It should be used
 /// with the 'IOX_LOGSTREAM_MOCK' macro
 /// @code
-/// iox::testing::Logger_Mock loggerMock;
+/// iox2::legacy::testing::Logger_Mock loggerMock;
 ///
 /// MyType sut;
 /// IOX_LOGSTREAM_MOCK(loggerMock) << sut;
@@ -50,7 +51,7 @@ class Logger_Mock : public log::TestingLoggerBase {
         std::string file;
         int line { 0 };
         std::string function;
-        log::LogLevel logLevel { iox::log::LogLevel::Off };
+        log::LogLevel logLevel { iox2::legacy::log::LogLevel::Off };
         std::string message;
     };
 
@@ -81,6 +82,7 @@ class Logger_Mock : public log::TestingLoggerBase {
 };
 
 } // namespace testing
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_MOCKS_LOGGER_MOCK_HPP

@@ -49,7 +49,7 @@ class FunctionalInterface_test : public testing::Test {
 
 /// @brief This types is used for testing the functional interface in the case
 ///        of a 'value' and a 'error' method
-struct GenericValueError : public iox::FunctionalInterface<GenericValueError, int, int> {
+struct GenericValueError : public iox2::legacy::FunctionalInterface<GenericValueError, int, int> {
     using value_t = int;
     using error_t = int;
 
@@ -76,7 +76,7 @@ struct GenericValueError : public iox::FunctionalInterface<GenericValueError, in
 
 /// @brief This types is used for testing the functional interface in the case
 ///        that it is only nullable
-struct GenericPlain : public iox::FunctionalInterface<GenericPlain, void, void> {
+struct GenericPlain : public iox2::legacy::FunctionalInterface<GenericPlain, void, void> {
     static constexpr int VALID_VALUE = 5;
     static constexpr int INVALID_VALUE = 0;
 

@@ -18,7 +18,8 @@
 
 #include "iox2/legacy/detail/static_storage.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 template <uint64_t Capacity, uint64_t Align>
 constexpr uint64_t static_storage<Capacity, Align>::align_mismatch(uint64_t align, uint64_t requiredAlign) noexcept {
     const uint64_t r = align % requiredAlign;
@@ -93,7 +94,8 @@ constexpr uint64_t static_storage<Capacity, Align>::allocation_size() noexcept {
     return sizeof(T) + align_mismatch(Align, alignof(T));
 }
 
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 
 #endif // IOX_HOOFS_MEMORY_STATIC_STORAGE_INL

@@ -25,7 +25,8 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 /// @brief  C++11 compatible vector implementation. We needed to do some
 ///         adjustments in the API since we do not use exceptions and we require
 ///         a data structure which can be located fully in the shared memory.
@@ -234,7 +235,8 @@ constexpr bool operator==(const vector<T, CapacityLeft>& lhs, const vector<T, Ca
 // comparison of vectors with different capacity
 template <typename T, uint64_t CapacityLeft, uint64_t CapacityRight>
 constexpr bool operator!=(const vector<T, CapacityLeft>& lhs, const vector<T, CapacityRight>& rhs) noexcept;
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #include "iox2/legacy/detail/vector.inl"
 

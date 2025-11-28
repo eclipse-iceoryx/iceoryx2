@@ -21,7 +21,8 @@
 
 #include <utility>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace internal {
 template <typename Derived, class = void>
 struct HasValueMethod : std::false_type { };
@@ -44,7 +45,7 @@ template <typename Derived>
 struct Expect {
     /// @brief Expects that the object is valid, otherwise the method prints the
     ///        provided message and induces a fatal error
-    /// @tparam StringType the string type of the message. Allowed types are a char array and a iox::string
+    /// @tparam StringType the string type of the message. Allowed types are a char array and a iox2::legacy::string
     /// @param[in] msg Message which will be printed when the object is invalid
     template <typename StringType>
     void expect(const StringType& msg) const noexcept;
@@ -62,7 +63,7 @@ template <typename Derived, typename ValueType>
 struct ExpectWithValue {
     /// @brief Expects that the object is valid and returns the contained value, otherwise
     //         the method prints the provided message and induces a fatal error
-    /// @tparam StringType the string type of the message. Allowed types are a char array and a iox::string
+    /// @tparam StringType the string type of the message. Allowed types are a char array and a iox2::legacy::string
     /// @param[in] msg Message which will be printed when the object is invalid
     /// @return a reference to the contained value
     template <typename StringType>
@@ -70,7 +71,7 @@ struct ExpectWithValue {
 
     /// @brief Expects that the object is valid and returns the contained value, otherwise
     //         the method prints the provided message and induces a fatal error
-    /// @tparam StringType the string type of the message. Allowed types are a char array and a iox::string
+    /// @tparam StringType the string type of the message. Allowed types are a char array and a iox2::legacy::string
     /// @param[in] msg Message which will be printed when the object is invalid
     /// @return a const reference the contained value
     template <typename StringType>
@@ -78,7 +79,7 @@ struct ExpectWithValue {
 
     /// @brief Expects that the object is valid and returns the contained value, otherwise
     //         the method prints the provided message and induces a fatal error
-    /// @tparam StringType the string type of the message. Allowed types are a char array and a iox::string
+    /// @tparam StringType the string type of the message. Allowed types are a char array and a iox2::legacy::string
     /// @param[in] msg Message which will be printed when the object is invalid
     /// @return rvalue reference to the contained value
     template <typename StringType>
@@ -86,7 +87,7 @@ struct ExpectWithValue {
 
     /// @brief Expects that the object is valid and returns the contained value, otherwise
     //         the method prints the provided message and induces a fatal error
-    /// @tparam StringType the string type of the message. Allowed types are a char array and a iox::string
+    /// @tparam StringType the string type of the message. Allowed types are a char array and a iox2::legacy::string
     /// @param[in] msg Message which will be printed when the object is invalid
     /// @return const rvalue reference to the contained value
     template <typename StringType>
@@ -404,7 +405,8 @@ struct FunctionalInterfaceImpl<Derived, void, ErrorType>
 template <typename Derived, typename ValueType, typename ErrorType>
 using FunctionalInterface = internal::FunctionalInterfaceImpl<Derived, ValueType, ErrorType>;
 
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #include "iox2/legacy/detail/functional_interface.inl"
 

@@ -24,7 +24,7 @@
 namespace {
 
 using namespace ::testing;
-using namespace iox::er;
+using namespace iox2::legacy::er;
 
 constexpr ErrorCode CODE1 { 73 };
 constexpr ErrorCode CODE2 { 21 };
@@ -184,7 +184,7 @@ TEST(Violation_test, createEnforceViolationWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "9a2f9d1c-41dc-4a7e-a0dc-aa40047ae9a0");
 
     auto sut = Violation::createEnforceViolation();
-    auto exp = Violation { iox::er::ViolationErrorCode::ENFORCE_VIOLATION };
+    auto exp = Violation { iox2::legacy::er::ViolationErrorCode::ENFORCE_VIOLATION };
 
     EXPECT_EQ(sut, exp);
 }
@@ -193,7 +193,7 @@ TEST(Violation_test, createAssertViolationWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "2a5f24a7-4d82-4c27-bc45-57d9f1c759fa");
 
     auto sut = Violation::createAssertViolation();
-    auto exp = Violation { iox::er::ViolationErrorCode::ASSERT_VIOLATION };
+    auto exp = Violation { iox2::legacy::er::ViolationErrorCode::ASSERT_VIOLATION };
 
     EXPECT_EQ(sut, exp);
 }

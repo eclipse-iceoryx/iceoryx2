@@ -20,7 +20,8 @@
 #include <cstdio>
 #include <cstdlib>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace log {
 LogLevel logLevelFromEnvOr(const LogLevel logLevel) noexcept {
     auto specifiedLogLevel = logLevel;
@@ -54,4 +55,5 @@ LogLevel logLevelFromEnvOr(const LogLevel logLevel) noexcept {
 }
 
 } // namespace log
-} // namespace iox
+} // namespace legacy
+} // namespace iox2

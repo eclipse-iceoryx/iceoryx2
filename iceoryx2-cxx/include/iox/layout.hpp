@@ -41,7 +41,7 @@ class Layout {
     ///  * If the `size` is not a multiple of `align` it will be rounded up so that it
     ///      becomes a multiple of `align`.
     ///  * If `align` is not a power of two it fails.
-    static auto create(uint64_t size, uint64_t align) -> iox::expected<Layout, LayoutCreationError>;
+    static auto create(uint64_t size, uint64_t align) -> iox2::legacy::expected<Layout, LayoutCreationError>;
 
     /// Returns the stored size.
     auto size() const -> uint64_t;
@@ -71,12 +71,13 @@ inline auto Layout::from() -> std::enable_if_t<std::is_same<T, void>::value, Lay
     return Layout { 0, 1 };
 }
 
-inline auto Layout::create(const uint64_t size, const uint64_t align) -> iox::expected<Layout, LayoutCreationError> {
+inline auto Layout::create(const uint64_t size, const uint64_t align)
+    -> iox2::legacy::expected<Layout, LayoutCreationError> {
     if (!is_power_of_two(align)) {
-        return iox::err(LayoutCreationError::InvalidAlignment);
+        return iox2::legacy::err(LayoutCreationError::InvalidAlignment);
     }
 
-    return iox::ok(Layout(round_up_to(size, align), align));
+    return iox2::legacy::ok(Layout(round_up_to(size, align), align));
 }
 
 inline auto Layout::size() const -> uint64_t {

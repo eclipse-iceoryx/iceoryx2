@@ -19,17 +19,19 @@
 
 #include "iox2/legacy/type_traits.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 template <uint64_t Capacity>
 class string;
 
-/// @brief struct to check whether an argument is a iox::string
+/// @brief struct to check whether an argument is a iox2::legacy::string
 template <typename T>
 struct is_iox_string : std::false_type { };
 
 template <uint64_t N>
-struct is_iox_string<::iox::string<N>> : std::true_type { };
+struct is_iox_string<::iox2::legacy::string<N>> : std::true_type { };
 
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_VOCABULARY_STRING_TYPE_TRAITS_HPP

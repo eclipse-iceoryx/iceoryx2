@@ -18,7 +18,8 @@
 
 #include "iox2/legacy/cli/option_manager.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace cli {
 template <typename T>
 inline T OptionManager::extractOptionArgumentValue(const Arguments& arguments,
@@ -67,6 +68,7 @@ inline T OptionManager::defineOption(T& referenceToMember,
     return defaultArgumentValue;
 }
 } // namespace cli
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_CLI_OPTION_MANAGER_HPP

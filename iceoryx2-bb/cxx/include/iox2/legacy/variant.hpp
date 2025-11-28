@@ -27,7 +27,8 @@
 #include <limits>
 #include <type_traits>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 /// @brief helper struct to perform an emplacement at a predefined index
 ///        in the constructor of a variant
 /// @tparam[in] N index where to perform the placement new
@@ -318,7 +319,8 @@ constexpr bool operator==(const variant<Types...>& lhs, const variant<Types...>&
 template <typename... Types>
 constexpr bool operator!=(const variant<Types...>& lhs, const variant<Types...>& rhs) noexcept;
 
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #include "iox2/legacy/detail/variant.inl"
 

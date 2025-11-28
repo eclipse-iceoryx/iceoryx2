@@ -23,7 +23,8 @@
 
 #include <type_traits>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 template <typename SignatureType>
 class function_ref;
 
@@ -34,7 +35,7 @@ template <typename T1, typename T2>
 using has_same_decayed_type = typename std::
     integral_constant<bool, bool(std::is_same<typename std::decay<T1>::type, typename std::decay<T2>::type>::value)>;
 
-/// @brief iox::function_ref is a non-owning reference to a callable.
+/// @brief iox2::legacy::function_ref is a non-owning reference to a callable.
 ///
 ///        It has these features:
 ///         * No heap usage
@@ -44,7 +45,7 @@ using has_same_decayed_type = typename std::
 ///
 /// @code
 ///         // Usage as function parameter
-///         void fuu(iox::function_ref<void()> callback)
+///         void fuu(iox2::legacy::function_ref<void()> callback)
 ///         {
 ///             callback();
 ///         }
@@ -54,7 +55,7 @@ using has_same_decayed_type = typename std::
 ///         // Usage with l-values
 ///         // Pitfall: Ensure that lifetime of callable suits the point in time of calling callback()
 ///         auto callable = [&]{ doSomething(); };
-///         iox::function_ref<void()> callback(callable);
+///         iox2::legacy::function_ref<void()> callback(callable);
 ///         // Call the callback
 ///         callback();
 /// @endcode
@@ -107,7 +108,8 @@ class function_ref<ReturnType(ArgTypes...)> final {
 template <class ReturnType, class... ArgTypes>
 void swap(function_ref<ReturnType(ArgTypes...)>& lhs, function_ref<ReturnType(ArgTypes...)>& rhs) noexcept;
 
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 // AXIVION Next Line AutosarC++19_03-M16.0.1 : Include needed to split template declaration and definition
 #include "iox2/legacy/detail/function_ref.inl"

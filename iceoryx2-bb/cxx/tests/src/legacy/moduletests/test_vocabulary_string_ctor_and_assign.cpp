@@ -29,8 +29,8 @@
 
 namespace {
 using namespace ::testing;
-using namespace iox;
-using namespace iox::testing;
+using namespace iox2::legacy;
+using namespace iox2::legacy::testing;
 
 TYPED_TEST_SUITE(stringTyped_test, StringImplementations, );
 
@@ -362,7 +362,7 @@ TYPED_TEST(stringTyped_test, CharToStringConvConstrWithSizeCapaResultsInSizeCapa
     ::testing::Test::RecordProperty("TEST_ID", "de81475a-527e-43e0-97b8-faf7a9300204");
     using MyString = typename TestFixture::stringType;
     constexpr auto STRINGCAP = MyString::capacity();
-    // required to verify string literal functionality of iox::string
+    // required to verify string literal functionality of iox2::legacy::string
     // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays)
     char testChar[STRINGCAP];
     for (uint64_t i = 0U; i < STRINGCAP - 1U; i++) {
@@ -393,7 +393,7 @@ TYPED_TEST(stringTyped_test, UnsafeCharToStringConvConstrWithSizeCapaResultsInSi
     using MyString = typename TestFixture::stringType;
     constexpr auto STRINGCAP = MyString::capacity();
     // increase capacity by one to circumvent gcc -Werror=array-bounds
-    // required to verify string literal functionality of iox::string
+    // required to verify string literal functionality of iox2::legacy::string
     // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays)
     char testChar[STRINGCAP + 1];
     for (uint64_t i = 0U; i < STRINGCAP - 1U; i++) {
@@ -412,7 +412,7 @@ TYPED_TEST(stringTyped_test, UnsafeCharToStringConvConstrWithSizeGreaterCapaResu
     ::testing::Test::RecordProperty("TEST_ID", "5e0a2023-ea15-43d5-aae8-980a75be6122");
     using MyString = typename TestFixture::stringType;
     constexpr auto STRINGCAP = MyString::capacity();
-    // required to verify string literal functionality of iox::string
+    // required to verify string literal functionality of iox2::legacy::string
     // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays)
     char testChar[STRINGCAP + 1U];
     for (uint64_t i = 0U; i < STRINGCAP; i++) {
@@ -485,7 +485,7 @@ TEST(String100, UnsafeCharToStringConstrIncludingNullCharWithCountResultsInSizeC
 TEST(CharArrayAssignment, AssignCharArrayWithStringSizeLessThanArraySize) {
     ::testing::Test::RecordProperty("TEST_ID", "886f580d-e57c-4685-90bf-2399737779be");
     constexpr uint64_t STRING_CAPACITY = 20U;
-    // required to verify string literal functionality of iox::string
+    // required to verify string literal functionality of iox2::legacy::string
     // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays)
     char testString[STRING_CAPACITY] = "iceoryx";
     string<STRING_CAPACITY> testSubject(testString);
@@ -496,7 +496,7 @@ TEST(CharArrayAssignment, AssignCharArrayWithStringSizeLessThanArraySize) {
 TEST(CharArrayAssignment, AssignZeroTerminatedCharArrayWithSizeForFullCapa) {
     ::testing::Test::RecordProperty("TEST_ID", "884e724a-f5d3-41d1-89fa-96f55ce99a96");
     constexpr uint64_t STRING_CAPACITY = 7U;
-    // required to verify string literal functionality of iox::string
+    // required to verify string literal functionality of iox2::legacy::string
     // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays)
     char testString[STRING_CAPACITY + 1U] = "iceoryx";
     string<STRING_CAPACITY> testSubject(testString);
@@ -507,7 +507,7 @@ TEST(CharArrayAssignment, AssignZeroTerminatedCharArrayWithSizeForFullCapa) {
 TEST(CharArrayAssignment, AssignNonZeroTerminatedCharArrayOfSizeForFullCapa) {
     ::testing::Test::RecordProperty("TEST_ID", "2a43553f-4358-4c41-a885-1495de0d7f4f");
     constexpr uint64_t STRING_CAPACITY = 7U;
-    // required to verify string literal functionality of iox::string
+    // required to verify string literal functionality of iox2::legacy::string
     // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays)
     char testString[STRING_CAPACITY + 1U] = "iceoryx";
     testString[STRING_CAPACITY] = 'x'; // overwrite the 0 termination
@@ -539,7 +539,7 @@ TYPED_TEST(stringTyped_test, AssignCStringOfSizeCapaWithOperatorResultsInSizeCap
     ::testing::Test::RecordProperty("TEST_ID", "19b0a4af-acfa-4d9b-b432-145ab1e7f59d");
     using MyString = typename TestFixture::stringType;
     constexpr auto STRINGCAP = MyString::capacity();
-    // required to verify string literal functionality of iox::string
+    // required to verify string literal functionality of iox2::legacy::string
     // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays)
     char testChar[STRINGCAP];
     for (uint64_t i = 0U; i < STRINGCAP - 1U; i++) {
@@ -635,7 +635,7 @@ TYPED_TEST(stringTyped_test, AssignCStringOfSizeCapaResultsInSizeCapa) {
     ::testing::Test::RecordProperty("TEST_ID", "25f4f306-2303-4cc8-a42b-d0cbb600d833");
     using MyString = typename TestFixture::stringType;
     constexpr auto STRINGCAP = MyString::capacity();
-    // required to verify string literal functionality of iox::string
+    // required to verify string literal functionality of iox2::legacy::string
     // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays)
     char testChar[STRINGCAP];
     for (uint64_t i = 0U; i < STRINGCAP - 1U; i++) {

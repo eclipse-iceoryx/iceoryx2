@@ -18,7 +18,8 @@
 
 #include "iox2/legacy/duration.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace units {
 // NOLINTJUSTIFICATION @todo iox-#1617 Seconds_t and Nanoseconds_t should use Newtype pattern to solve this issue
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
@@ -473,5 +474,6 @@ inline constexpr Duration operator""_d(unsigned long long int value) noexcept {
 }
 } // namespace duration_literals
 } // namespace units
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 #endif // IOX_HOOFS_TIME_UNITS_DURATION_INL

@@ -19,7 +19,8 @@
 #include "iox2/legacy/optional.hpp"
 #include "iox2/legacy/variant.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 /// @brief helper struct which is used to call the in-place-construction constructor for error types
 struct unexpect_t { };
 constexpr unexpect_t unexpect {};
@@ -141,7 +142,7 @@ class expected_storage {
     static constexpr uint64_t VALUE_INDEX { 0 };
     static constexpr uint64_t ERROR_INDEX { 1 };
 
-    iox::variant<ValueType, ErrorType> data;
+    iox2::legacy::variant<ValueType, ErrorType> data;
 };
 
 /// @brief helper struct to handle 'void' value type specialization
@@ -188,7 +189,7 @@ class expected_storage<void, ErrorType> {
     using DummyValueType = bool;
     static constexpr DummyValueType DUMMY_VALUE { true };
 
-    iox::variant<DummyValueType, ErrorType> data;
+    iox2::legacy::variant<DummyValueType, ErrorType> data;
 };
 
 template <typename ErrorType>
@@ -212,6 +213,7 @@ struct compare_expected_value<void, E> {
 };
 
 } // namespace detail
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_VOCABULARY_EXPECTED_HELPER_HPP

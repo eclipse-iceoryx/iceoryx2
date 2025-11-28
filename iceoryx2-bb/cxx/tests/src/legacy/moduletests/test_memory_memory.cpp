@@ -49,31 +49,31 @@ struct FuBar {
 
 TEST(memory_test, MaxSizeWorksAsExpected) {
     ::testing::Test::RecordProperty("TEST_ID", "5b3e938d-aec5-478d-b1c1-49ff2cc4e3ef");
-    EXPECT_THAT(iox::maxSize<Foo>(), Eq(sizeof(Foo)));
+    EXPECT_THAT(iox2::legacy::maxSize<Foo>(), Eq(sizeof(Foo)));
 
     EXPECT_THAT(sizeof(Bar), Ne(sizeof(Foo)));
-    EXPECT_THAT((iox::maxSize<Bar, Foo>()), Eq(sizeof(Bar)));
+    EXPECT_THAT((iox2::legacy::maxSize<Bar, Foo>()), Eq(sizeof(Bar)));
 
     EXPECT_THAT(sizeof(Bar), Ne(sizeof(FooBar)));
     EXPECT_THAT(sizeof(Foo), Ne(sizeof(FooBar)));
-    EXPECT_THAT((iox::maxSize<Bar, Foo, FooBar>()), Eq(sizeof(FooBar)));
+    EXPECT_THAT((iox2::legacy::maxSize<Bar, Foo, FooBar>()), Eq(sizeof(FooBar)));
 
     EXPECT_THAT(sizeof(FooBar), Eq(sizeof(FuBar)));
-    EXPECT_THAT((iox::maxSize<FooBar, FuBar>()), Eq(sizeof(FooBar)));
+    EXPECT_THAT((iox2::legacy::maxSize<FooBar, FuBar>()), Eq(sizeof(FooBar)));
 }
 
 TEST(memory_test, MaxAlignmentWorksAsExpected) {
     ::testing::Test::RecordProperty("TEST_ID", "7d5d3de1-f22c-47c1-b7fd-cacc35eef13c");
-    EXPECT_THAT(iox::maxAlignment<Foo>(), Eq(alignof(Foo)));
+    EXPECT_THAT(iox2::legacy::maxAlignment<Foo>(), Eq(alignof(Foo)));
 
     EXPECT_THAT(alignof(Bar), Ne(alignof(Foo)));
-    EXPECT_THAT((iox::maxAlignment<Bar, Foo>()), Eq(alignof(Bar)));
+    EXPECT_THAT((iox2::legacy::maxAlignment<Bar, Foo>()), Eq(alignof(Bar)));
 
     EXPECT_THAT(alignof(Bar), Ne(alignof(FooBar)));
     EXPECT_THAT(alignof(Foo), Ne(alignof(FooBar)));
-    EXPECT_THAT((iox::maxAlignment<Bar, Foo, FooBar>()), Eq(alignof(FooBar)));
+    EXPECT_THAT((iox2::legacy::maxAlignment<Bar, Foo, FooBar>()), Eq(alignof(FooBar)));
 
     EXPECT_THAT(alignof(FooBar), Eq(alignof(FuBar)));
-    EXPECT_THAT((iox::maxAlignment<FooBar, FuBar>()), Eq(alignof(FooBar)));
+    EXPECT_THAT((iox2::legacy::maxAlignment<FooBar, FuBar>()), Eq(alignof(FooBar)));
 }
 } // namespace

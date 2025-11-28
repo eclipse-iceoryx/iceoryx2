@@ -23,7 +23,8 @@
 #include <cstring>
 #include <mutex>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace log {
 inline constexpr const char* asStringLiteral(const LogLevel value) noexcept {
     switch (value) {
@@ -126,6 +127,7 @@ inline void Logger<BaseLogger>::initLoggerInternal(const LogLevel logLevel) noex
 
 } // namespace internal
 } // namespace log
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_REPORTING_LOG_BUILDING_BLOCKS_LOGGER_INL

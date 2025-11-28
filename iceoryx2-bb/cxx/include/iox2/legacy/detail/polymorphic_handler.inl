@@ -22,7 +22,8 @@
 #include <cstdlib>
 #include <type_traits>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace detail {
 
 template <typename Interface>
@@ -156,6 +157,7 @@ PolymorphicHandler<Interface, Default, Hooks>::guard() noexcept {
     return StaticLifetimeGuard<Self>();
 }
 
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_DESIGN_POLYMORPHIC_HANDLER_INL

@@ -21,7 +21,8 @@
 #include "iox2/legacy/logging.hpp"
 #include "iox2/legacy/variant.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 template <typename... Types>
 // AXIVION Next Construct AutosarC++19_03-A12.1.5: constructor delegation is not feasible here due to lack of sufficient common initialization
 inline constexpr variant<Types...>::variant(const variant& rhs) noexcept
@@ -280,6 +281,7 @@ template <typename... Types>
 inline constexpr bool operator!=(const variant<Types...>& lhs, const variant<Types...>& rhs) noexcept {
     return !(lhs == rhs);
 }
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_VOCABULARY_VARIANT_INL

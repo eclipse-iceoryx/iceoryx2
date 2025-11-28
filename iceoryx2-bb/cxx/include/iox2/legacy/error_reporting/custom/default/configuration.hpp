@@ -18,7 +18,8 @@
 
 #include "iox2/legacy/error_reporting/configuration.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace er {
 
 // Specialize to change the checks (and other options if needed) at compile time.
@@ -30,6 +31,7 @@ struct ConfigurationParameters<ConfigurationTag> {
 };
 
 } // namespace er
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_REPORTING_ERROR_REPORTING_CUSTOM_DEFAULT_CONFIGURATION_HPP

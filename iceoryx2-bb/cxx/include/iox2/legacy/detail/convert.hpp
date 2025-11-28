@@ -32,19 +32,20 @@
 #include <sstream>
 #include <string>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 /// @brief Collection of static methods for conversion from and to string.
 /// @code
-///     std::string number      = iox::convert::toString(123);
-///     std::string someClass   = iox::convert::toString(someToStringConvertableObject);
+///     std::string number      = iox2::legacy::convert::toString(123);
+///     std::string someClass   = iox2::legacy::convert::toString(someToStringConvertableObject);
 ///
 ///     int i;
 ///     unsigned int a;
-///     if ( iox::convert::from_string("123", i) ) {}  // will succeed
-///     if ( iox::convert::from_string("-123", a) ) {} // will fail since -123 is not unsigned
+///     if ( iox2::legacy::convert::from_string("123", i) ) {}  // will succeed
+///     if ( iox2::legacy::convert::from_string("-123", a) ) {} // will fail since -123 is not unsigned
 /// @endcode
 /// @todo iox-#260 Refactor 'convert' so that one can use 'into' to directly to convert numbers to strings:
-/// 'ClassExpectingAnIoxString(iox::into<iox::string<100>>(42)'
+/// 'ClassExpectingAnIoxString(iox2::legacy::into<iox2::legacy::string<100>>(42)'
 class convert {
   public:
     enum class NumberType : uint8_t {
@@ -79,26 +80,27 @@ class convert {
     static typename std::enable_if<std::is_convertible<Source, std::string>::value, std::string>::type
     toString(const Source& t) noexcept;
 
-    /// @brief  convert the input based on the 'TargetType', allowing only 'iox::string' and numeric types as valid
-    /// destination types
+    /// @brief  convert the input based on the 'TargetType', allowing only 'iox2::legacy::string' and numeric types as
+    /// valid destination types
     /// @note   for the 'TargetType' equal to 'std::string,' please include 'iox/std_string_support.hpp'
     /// @tparam TargetType the desired target type for converting text
     /// @param v the input string in c type
-    /// @return an iox::optional<TargetType> where, if the return value is iox::nullopt, it indicates a failed
-    /// conversion process
+    /// @return an iox2::legacy::optional<TargetType> where, if the return value is iox2::legacy::nullopt, it indicates
+    /// a failed conversion process
     template <typename TargetType, typename std::enable_if_t<is_iox_string<TargetType>::value, int> = 0>
-    static iox::optional<TargetType> from_string(const char* v) noexcept;
+    static iox2::legacy::optional<TargetType> from_string(const char* v) noexcept;
 
-    /// @brief  for non iox::string TargetTypes
+    /// @brief  for non iox2::legacy::string TargetTypes
     /// @note   for the 'TargetType' equal to 'std::string,' please include 'iox/std_string_support.hpp'
     /// @tparam TargetType the desired target type for converting text
     /// @param v the input string in c type
     template <typename TargetType, typename std::enable_if_t<!is_iox_string<TargetType>::value, int> = 0>
-    static iox::optional<TargetType> from_string(const char* v) noexcept;
+    static iox2::legacy::optional<TargetType> from_string(const char* v) noexcept;
 
   private:
     template <typename TargetType, typename CallType>
-    static iox::optional<TargetType> evaluate_return_value(CallType& call, const char* end_ptr, const char* v) noexcept;
+    static iox2::legacy::optional<TargetType>
+    evaluate_return_value(CallType& call, const char* end_ptr, const char* v) noexcept;
 
     template <typename TargetType, typename SourceType>
     static bool check_edge_case(decltype(errno) errno_cache,
@@ -116,7 +118,8 @@ class convert {
     static bool start_with_neg_sign(const char* v) noexcept;
 };
 
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #include "iox2/legacy/detail/convert.inl"
 

@@ -23,7 +23,8 @@
 #include <iostream>
 #include <type_traits>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 template <typename T, uint64_t Capacity>
 inline vector<T, Capacity>::vector(const uint64_t count, const T& value) noexcept {
     if (count > Capacity) {
@@ -438,5 +439,6 @@ template <typename T, uint64_t CapacityLeft, uint64_t CapacityRight>
 inline bool constexpr operator!=(const vector<T, CapacityLeft>& lhs, const vector<T, CapacityRight>& rhs) noexcept {
     return !(lhs == rhs);
 }
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 #endif // IOX_HOOFS_CONTAINER_VECTOR_INL

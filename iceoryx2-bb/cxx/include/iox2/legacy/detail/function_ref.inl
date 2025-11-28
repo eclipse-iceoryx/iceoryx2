@@ -22,7 +22,8 @@
 
 #include <memory>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 template <class ReturnType, class... ArgTypes>
 template <typename CallableType, typename>
 // AXIVION Next Construct AutosarC++19_03-A12.1.5 : Other c'tors can't be used as delegating c'tor
@@ -106,6 +107,7 @@ inline void swap(function_ref<ReturnType(ArgTypes...)>& lhs, function_ref<Return
     lhs.swap(rhs);
 }
 
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_FUNCTIONAL_FUNCTION_REF_INL

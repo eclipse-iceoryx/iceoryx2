@@ -25,7 +25,8 @@
 #include <type_traits>
 #include <utility>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace er {
 // This is lightweight and only exists to hide some complexity that would otherwise be part of the
 // macro API.
@@ -104,6 +105,7 @@ template <typename Error, typename Kind, typename Message>
 }
 
 } // namespace er
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_REPORTING_ERROR_REPORTING_ERROR_FORWARDING_HPP

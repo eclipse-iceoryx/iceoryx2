@@ -13,8 +13,8 @@
 #ifndef IOX2_DYNAMIC_CONFIG_EVENT_HPP
 #define IOX2_DYNAMIC_CONFIG_EVENT_HPP
 
-#include "iox2/legacy/function.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/legacy/function.hpp"
 #include "iox2/listener_details.hpp"
 #include "iox2/notifier_details.hpp"
 
@@ -42,13 +42,13 @@ class DynamicConfigEvent {
     /// callback with the corresponding [`NotifierDetailsView`].
     /// The callback shall return [`CallbackProgression::Continue`] when the iteration shall
     /// continue otherwise [`CallbackProgression::Stop`].
-    void list_notifiers(const iox::function<CallbackProgression(NotifierDetailsView)>& callback) const;
+    void list_notifiers(const iox2::legacy::function<CallbackProgression(NotifierDetailsView)>& callback) const;
 
     /// Iterates over all [`Listener`]s and calls the
     /// callback with the corresponding [`ListenerDetailsView`].
     /// The callback shall return [`CallbackProgression::Continue`] when the iteration shall
     /// continue otherwise [`CallbackProgression::Stop`].
-    void list_listeners(const iox::function<CallbackProgression(ListenerDetailsView)>& callback) const;
+    void list_listeners(const iox2::legacy::function<CallbackProgression(ListenerDetailsView)>& callback) const;
 
   private:
     template <ServiceType>

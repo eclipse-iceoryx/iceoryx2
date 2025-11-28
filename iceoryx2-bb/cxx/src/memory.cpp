@@ -18,7 +18,8 @@
 
 #include <cstdlib>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 void* alignedAlloc(const size_t alignment, const size_t size) noexcept {
     // -1 == since the max alignment addition is alignment - 1 otherwise the
     // memory is already aligned and we have to do nothing
@@ -50,4 +51,5 @@ void alignedFree(void* const memory) noexcept {
         std::free(reinterpret_cast<void**>(memory)[-1]);
     }
 }
-} // namespace iox
+} // namespace legacy
+} // namespace iox2

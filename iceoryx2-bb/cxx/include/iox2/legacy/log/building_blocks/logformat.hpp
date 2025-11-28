@@ -21,7 +21,8 @@
 
 #include <cstdint>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace log {
 // AXIVION DISABLE STYLE AutosarC++19_03-A3.9.1 : Basic numeric types are used in order to get the correct format string
 // on all platforms. Fixed width types are used on a higher abstraction layer. Furthermore are 'const char*' used for
@@ -125,7 +126,8 @@ static constexpr const char* LOG_FORMAT_OCT { internal::logFormatOct<T>() };
 // AXIVION ENABLE STYLE AutosarC++19_03-A3.9.1
 
 } // namespace log
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #include "iox2/legacy/detail/log/building_blocks/logformat.inl"
 

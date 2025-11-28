@@ -19,7 +19,8 @@
 #include "iox2/legacy/assertions.hpp"
 #include "iox2/legacy/expected.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 template <typename T, typename>
 inline detail::ok<void> ok() {
     return detail::ok<void> {};
@@ -267,6 +268,7 @@ inline constexpr bool operator!=(const expected<ValueType, ErrorType>& lhs,
                                  const expected<ValueType, ErrorType>& rhs) noexcept {
     return !(lhs == rhs);
 }
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_VOCABULARY_EXPECTED_INL

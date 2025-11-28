@@ -20,7 +20,8 @@
 #include "iox2/legacy/cli/option_definition.hpp"
 #include <cstdint>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace cli {
 /// @brief Factory class for the CommandLineOption. First, one has to register
 ///        all switches and options before calling parse. This is required for
@@ -85,6 +86,7 @@ Arguments parseCommandLineArguments(const OptionDefinition& optionSet,
                                     const uint64_t argcOffset = 1U) noexcept;
 
 } // namespace cli
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_CLI_COMMAND_PARSER_HPP

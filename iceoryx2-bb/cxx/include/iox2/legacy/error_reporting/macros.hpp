@@ -40,12 +40,13 @@
 /// @param error error object (or code)
 /// @param kind kind of error, must be non-fatal
 #define IOX_REPORT(error, kind)                                                                                        \
-    iox::er::forwardNonFatalError(iox::er::toError(error), kind, IOX_CURRENT_SOURCE_LOCATION, "")
+    iox2::legacy::er::forwardNonFatalError(iox2::legacy::er::toError(error), kind, IOX_CURRENT_SOURCE_LOCATION, "")
 
 /// @brief report fatal error
 /// @param error error object (or code)
 #define IOX_REPORT_FATAL(error)                                                                                        \
-    iox::er::forwardFatalError(iox::er::toError(error), iox::er::FATAL, IOX_CURRENT_SOURCE_LOCATION, "")
+    iox2::legacy::er::forwardFatalError(                                                                               \
+        iox2::legacy::er::toError(error), iox2::legacy::er::FATAL, IOX_CURRENT_SOURCE_LOCATION, "")
 
 /// @brief report error of some non-fatal kind if expr evaluates to true
 /// @param condition boolean expression
@@ -53,7 +54,8 @@
 /// @param kind kind of error, must be non-fatal
 #define IOX_REPORT_IF(condition, error, kind)                                                                          \
     if (condition) {                                                                                                   \
-        iox::er::forwardNonFatalError(iox::er::toError(error), kind, IOX_CURRENT_SOURCE_LOCATION, #condition);         \
+        iox2::legacy::er::forwardNonFatalError(                                                                        \
+            iox2::legacy::er::toError(error), kind, IOX_CURRENT_SOURCE_LOCATION, #condition);                          \
     }                                                                                                                  \
     [] { }() // the empty lambda forces a semicolon on the caller side
 
@@ -62,7 +64,8 @@
 /// @param error error object (or code)
 #define IOX_REPORT_FATAL_IF(condition, error)                                                                          \
     if (condition) {                                                                                                   \
-        iox::er::forwardFatalError(iox::er::toError(error), iox::er::FATAL, IOX_CURRENT_SOURCE_LOCATION, #condition);  \
+        iox2::legacy::er::forwardFatalError(                                                                           \
+            iox2::legacy::er::toError(error), iox2::legacy::er::FATAL, IOX_CURRENT_SOURCE_LOCATION, #condition);       \
     }                                                                                                                  \
     [] { }() // the empty lambda forces a semicolon on the caller side
 

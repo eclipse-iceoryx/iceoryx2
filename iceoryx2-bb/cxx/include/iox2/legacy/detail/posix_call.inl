@@ -19,7 +19,8 @@
 #include "iox2/legacy/logging.hpp"
 #include "iox2/legacy/posix_call.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace detail {
 template <typename ReturnType, typename... FunctionArguments>
 inline PosixCallBuilder<ReturnType, FunctionArguments...>
@@ -188,6 +189,7 @@ PosixCallEvaluator<ReturnType>::evaluate() const&& noexcept {
     return err<PosixCallResult<ReturnType>>(m_details.result);
 }
 
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_POSIX_WRAPPER_POSIX_CALL_INL

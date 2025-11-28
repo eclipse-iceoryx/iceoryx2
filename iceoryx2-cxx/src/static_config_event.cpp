@@ -33,37 +33,37 @@ auto StaticConfigEvent::event_id_max_value() const -> size_t {
     return m_value.event_id_max_value;
 }
 
-auto StaticConfigEvent::notifier_created_event() const -> iox::optional<EventId> {
+auto StaticConfigEvent::notifier_created_event() const -> iox2::legacy::optional<EventId> {
     if (!m_value.has_notifier_created_event) {
-        return iox::nullopt;
+        return iox2::legacy::nullopt;
     }
 
     return { EventId(m_value.notifier_created_event) };
 }
 
-auto StaticConfigEvent::notifier_dropped_event() const -> iox::optional<EventId> {
+auto StaticConfigEvent::notifier_dropped_event() const -> iox2::legacy::optional<EventId> {
     if (!m_value.has_notifier_dropped_event) {
-        return iox::nullopt;
+        return iox2::legacy::nullopt;
     }
 
     return { EventId(m_value.notifier_dropped_event) };
 }
 
-auto StaticConfigEvent::notifier_dead_event() const -> iox::optional<EventId> {
+auto StaticConfigEvent::notifier_dead_event() const -> iox2::legacy::optional<EventId> {
     if (!m_value.has_notifier_dead_event) {
-        return iox::nullopt;
+        return iox2::legacy::nullopt;
     }
 
     return { EventId(m_value.notifier_dead_event) };
 }
 
-auto StaticConfigEvent::deadline() const -> iox::optional<iox::units::Duration> {
+auto StaticConfigEvent::deadline() const -> iox2::legacy::optional<iox2::legacy::units::Duration> {
     if (!m_value.has_deadline) {
-        return iox::nullopt;
+        return iox2::legacy::nullopt;
     }
 
-    return { iox::units::Duration::fromSeconds(m_value.deadline_seconds)
-             + iox::units::Duration::fromNanoseconds(m_value.deadline_nanoseconds) };
+    return { iox2::legacy::units::Duration::fromSeconds(m_value.deadline_seconds)
+             + iox2::legacy::units::Duration::fromNanoseconds(m_value.deadline_nanoseconds) };
 }
 
 } // namespace iox2

@@ -18,7 +18,8 @@
 
 #include <type_traits>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace er {
 
 // Tag types for mandatory fatal error categories that always exist.
@@ -91,6 +92,7 @@ constexpr AssertViolationKind ASSERT_VIOLATION;
 constexpr EnforceViolationKind ENFORCE_VIOLATION;
 
 } // namespace er
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_REPORTING_ERROR_REPORTING_ERROR_LOGGING_HPP

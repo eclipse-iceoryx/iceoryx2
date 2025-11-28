@@ -15,10 +15,12 @@
 
 #include "iox2/legacy/path.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace detail {
 bool path_does_contain_invalid_content(const string<platform::IOX_MAX_PATH_LENGTH>&) noexcept {
     return false;
 }
 } // namespace detail
-} // namespace iox
+} // namespace legacy
+} // namespace iox2

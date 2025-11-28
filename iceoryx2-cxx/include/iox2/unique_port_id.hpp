@@ -13,14 +13,14 @@
 #ifndef IOX2_UNIQUE_PORT_ID_HPP
 #define IOX2_UNIQUE_PORT_ID_HPP
 
+#include "iox2/internal/iceoryx2.hpp"
 #include "iox2/legacy/optional.hpp"
 #include "iox2/legacy/vector.hpp"
-#include "iox2/internal/iceoryx2.hpp"
 
 namespace iox2 {
 
 constexpr uint64_t UNIQUE_PORT_ID_LENGTH = 16;
-using RawIdType = iox::vector<uint8_t, UNIQUE_PORT_ID_LENGTH>;
+using RawIdType = iox2::legacy::vector<uint8_t, UNIQUE_PORT_ID_LENGTH>;
 
 /// The system-wide unique id of a [`Publisher`].
 class UniquePublisherId {
@@ -31,7 +31,7 @@ class UniquePublisherId {
     auto operator=(UniquePublisherId&& rhs) noexcept -> UniquePublisherId&;
     ~UniquePublisherId();
 
-    auto bytes() const -> const iox::optional<RawIdType>&;
+    auto bytes() const -> const iox2::legacy::optional<RawIdType>&;
 
   private:
     template <ServiceType, typename, typename>
@@ -45,7 +45,7 @@ class UniquePublisherId {
     void drop();
 
     iox2_unique_publisher_id_h m_handle = nullptr;
-    mutable iox::optional<RawIdType> m_raw_id;
+    mutable iox2::legacy::optional<RawIdType> m_raw_id;
 };
 
 /// The system-wide unique id of a [`Subscriber`].
@@ -57,7 +57,7 @@ class UniqueSubscriberId {
     auto operator=(UniqueSubscriberId&& rhs) noexcept -> UniqueSubscriberId&;
     ~UniqueSubscriberId();
 
-    auto bytes() const -> const iox::optional<RawIdType>&;
+    auto bytes() const -> const iox2::legacy::optional<RawIdType>&;
 
   private:
     template <ServiceType, typename, typename>
@@ -70,7 +70,7 @@ class UniqueSubscriberId {
     void drop();
 
     iox2_unique_subscriber_id_h m_handle = nullptr;
-    mutable iox::optional<RawIdType> m_raw_id;
+    mutable iox2::legacy::optional<RawIdType> m_raw_id;
 };
 
 /// The system-wide unique id of a [`Notifier`].
@@ -82,7 +82,7 @@ class UniqueNotifierId {
     auto operator=(UniqueNotifierId&& rhs) noexcept -> UniqueNotifierId&;
     ~UniqueNotifierId();
 
-    auto bytes() const -> const iox::optional<RawIdType>&;
+    auto bytes() const -> const iox2::legacy::optional<RawIdType>&;
 
   private:
     template <ServiceType>
@@ -95,7 +95,7 @@ class UniqueNotifierId {
     void drop();
 
     iox2_unique_notifier_id_h m_handle = nullptr;
-    mutable iox::optional<RawIdType> m_raw_id;
+    mutable iox2::legacy::optional<RawIdType> m_raw_id;
 };
 
 /// The system-wide unique id of a [`Listener`].
@@ -107,7 +107,7 @@ class UniqueListenerId {
     auto operator=(UniqueListenerId&& rhs) noexcept -> UniqueListenerId&;
     ~UniqueListenerId();
 
-    auto bytes() const -> const iox::optional<RawIdType>&;
+    auto bytes() const -> const iox2::legacy::optional<RawIdType>&;
 
   private:
     template <ServiceType>
@@ -120,7 +120,7 @@ class UniqueListenerId {
     void drop();
 
     iox2_unique_listener_id_h m_handle = nullptr;
-    mutable iox::optional<RawIdType> m_raw_id;
+    mutable iox2::legacy::optional<RawIdType> m_raw_id;
 };
 
 /// The system-wide unique id of a [`Client`].
@@ -132,7 +132,7 @@ class UniqueClientId {
     auto operator=(UniqueClientId&& rhs) noexcept -> UniqueClientId&;
     ~UniqueClientId();
 
-    auto bytes() const -> const iox::optional<RawIdType>&;
+    auto bytes() const -> const iox2::legacy::optional<RawIdType>&;
 
   private:
     template <ServiceType, typename, typename, typename, typename>
@@ -146,7 +146,7 @@ class UniqueClientId {
     void drop();
 
     iox2_unique_client_id_h m_handle = nullptr;
-    mutable iox::optional<RawIdType> m_raw_id;
+    mutable iox2::legacy::optional<RawIdType> m_raw_id;
 };
 
 /// The system-wide unique id of a [`Server`].
@@ -158,7 +158,7 @@ class UniqueServerId {
     auto operator=(UniqueServerId&& rhs) noexcept -> UniqueServerId&;
     ~UniqueServerId();
 
-    auto bytes() const -> const iox::optional<RawIdType>&;
+    auto bytes() const -> const iox2::legacy::optional<RawIdType>&;
 
   private:
     template <ServiceType, typename, typename, typename, typename>
@@ -172,7 +172,7 @@ class UniqueServerId {
     void drop();
 
     iox2_unique_server_id_h m_handle = nullptr;
-    mutable iox::optional<RawIdType> m_raw_id;
+    mutable iox2::legacy::optional<RawIdType> m_raw_id;
 };
 
 /// The system-wide unique id of a [`Reader`].
@@ -184,7 +184,7 @@ class UniqueReaderId {
     auto operator=(UniqueReaderId&& rhs) noexcept -> UniqueReaderId&;
     ~UniqueReaderId();
 
-    auto bytes() const -> const iox::optional<RawIdType>&;
+    auto bytes() const -> const iox2::legacy::optional<RawIdType>&;
 
   private:
     template <ServiceType, typename>
@@ -197,7 +197,7 @@ class UniqueReaderId {
     void drop();
 
     iox2_unique_reader_id_h m_handle = nullptr;
-    mutable iox::optional<RawIdType> m_raw_id;
+    mutable iox2::legacy::optional<RawIdType> m_raw_id;
 };
 
 /// The system-wide unique id of a [`Writer`].
@@ -209,7 +209,7 @@ class UniqueWriterId {
     auto operator=(UniqueWriterId&& rhs) noexcept -> UniqueWriterId&;
     ~UniqueWriterId();
 
-    auto bytes() const -> const iox::optional<RawIdType>&;
+    auto bytes() const -> const iox2::legacy::optional<RawIdType>&;
 
   private:
     template <ServiceType, typename>
@@ -222,7 +222,7 @@ class UniqueWriterId {
     void drop();
 
     iox2_unique_writer_id_h m_handle = nullptr;
-    mutable iox::optional<RawIdType> m_raw_id;
+    mutable iox2::legacy::optional<RawIdType> m_raw_id;
 };
 
 auto operator==(const UniquePublisherId& lhs, const UniquePublisherId& rhs) -> bool;

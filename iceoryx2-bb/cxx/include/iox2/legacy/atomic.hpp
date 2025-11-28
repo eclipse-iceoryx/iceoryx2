@@ -21,7 +21,8 @@
 #include <iostream>
 #include <type_traits>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace concurrent {
 /// @brief An alias to the std::atomic_flag
 using AtomicFlag = std::atomic_flag;
@@ -44,33 +45,35 @@ class Atomic {
 
   public:
 #if __cplusplus >= 201703L
-    static_assert(std::atomic<T>::is_always_lock_free,
-                  "The 'iox::Atomic' must work across process boundaries and must therefore be always lock-free!");
+    static_assert(
+        std::atomic<T>::is_always_lock_free,
+        "The 'iox2::legacy::Atomic' must work across process boundaries and must therefore be always lock-free!");
 
-    /// @brief This is always 'true' for 'iox::Atomic'
+    /// @brief This is always 'true' for 'iox2::legacy::Atomic'
     static constexpr bool is_always_lock_free = std::atomic<T>::is_always_lock_free;
 #endif
 
-    /// @brief Constructs a new 'iox::Atomic' with a default value
+    /// @brief Constructs a new 'iox2::legacy::Atomic' with a default value
     constexpr Atomic() noexcept
         : m_value { T() } {
 #if __cplusplus < 201703L
         if (!std::atomic_is_lock_free(&m_value)) {
-            std::cerr << "The 'iox::Atomic' must work across process boundaries and must therefore be always lock-free!"
+            std::cerr << "The 'iox2::legacy::Atomic' must work across process boundaries and must therefore be always "
+                         "lock-free!"
                       << std::endl;
             std::abort();
         }
 #endif
     }
 
-    /// @brief Constructs a new 'iox::Atomic' with the given value
+    /// @brief Constructs a new 'iox2::legacy::Atomic' with the given value
     explicit constexpr Atomic(T value) noexcept
         : m_value { value } {
     }
 
-    /// @brief Similar to the std::atomic, the 'iox::Atomic' is not copy constructible
+    /// @brief Similar to the std::atomic, the 'iox2::legacy::Atomic' is not copy constructible
     Atomic(const Atomic& other) = delete;
-    /// @brief Similar to the std::atomic, the 'iox::Atomic' is not copy assignable
+    /// @brief Similar to the std::atomic, the 'iox2::legacy::Atomic' is not copy assignable
     Atomic& operator=(const Atomic&) = delete;
 
     Atomic(Atomic&& rhs) noexcept = default;
@@ -78,16 +81,16 @@ class Atomic {
 
     ~Atomic() = default;
 
-    /// @brief Atomically assigns the given value to the 'iox::Atomic' and returns the given value. Equivalent to
-    /// 'store(value)'
+    /// @brief Atomically assigns the given value to the 'iox2::legacy::Atomic' and returns the given value. Equivalent
+    /// to 'store(value)'
     // NOLINTNEXTLINE(cppcoreguidelines-c-copy-assignment-signature) This mimics the std::atomic copy assignment operator
     T operator=(T value) noexcept {
         m_value = value;
         return value;
     }
 
-    /// @brief Atomically assigns the given value to the 'iox::Atomic' and returns the given value. Equivalent to
-    /// 'store(value)'
+    /// @brief Atomically assigns the given value to the 'iox2::legacy::Atomic' and returns the given value. Equivalent
+    /// to 'store(value)'
     // NOLINTNEXTLINE(cppcoreguidelines-c-copy-assignment-signature) This mimics the std::atomic copy assignment operator
     T operator=(T value) volatile noexcept {
         m_value = value;
@@ -469,6 +472,7 @@ class Atomic {
     std::atomic<T> m_value;
 };
 } // namespace concurrent
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_PLATFORM_ATOMIC_HPP

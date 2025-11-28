@@ -55,7 +55,7 @@ struct Alternate : public Interface {
 };
 
 template <typename T>
-using Guard = iox::StaticLifetimeGuard<T>;
+using Guard = iox2::legacy::StaticLifetimeGuard<T>;
 
 // should the handler instances be accessed, they will live at least as
 // long as the guard objects
@@ -74,7 +74,7 @@ struct Hooks {
     }
 };
 
-using Handler = iox::PolymorphicHandler<Interface, Default, Hooks>;
+using Handler = iox2::legacy::PolymorphicHandler<Interface, Default, Hooks>;
 
 class PolymorphicHandler_test : public Test {
   public:
@@ -162,7 +162,7 @@ TEST_F(PolymorphicHandler_test, defaultHandlerIsVisibleInAllThreads) {
 
     Handler::set(defaultGuard);
 
-    iox::concurrent::Atomic<uint32_t> count { 0 };
+    iox2::legacy::concurrent::Atomic<uint32_t> count { 0 };
 
     auto checkHandler = [&]() {
         auto& h = Handler::get();

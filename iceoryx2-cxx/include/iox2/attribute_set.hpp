@@ -13,9 +13,9 @@
 #ifndef IOX2_ATTRIBUTE_SET_HPP
 #define IOX2_ATTRIBUTE_SET_HPP
 
-#include "iox2/legacy/function.hpp"
 #include "iox2/attribute.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/legacy/function.hpp"
 
 #include <iostream>
 
@@ -45,11 +45,11 @@ class AttributeSetView {
     /// process when the system restarts.
     /// If the key does not exist or it does not have a value at the specified index, it returns
     /// [`None`].
-    auto key_value(const Attribute::Key& key, uint64_t idx) -> iox::optional<Attribute::Value>;
+    auto key_value(const Attribute::Key& key, uint64_t idx) -> iox2::legacy::optional<Attribute::Value>;
 
     /// Returns all values to a specific key
     void iter_key_values(const Attribute::Key& key,
-                         const iox::function<CallbackProgression(const Attribute::Value&)>& callback) const;
+                         const iox2::legacy::function<CallbackProgression(const Attribute::Value&)>& callback) const;
 
     /// Creates a copy of the [`AttributeSetView`] that owns the attributes.
     auto to_owned() const -> AttributeSet;
@@ -99,11 +99,11 @@ class AttributeSet {
     /// process when the system restarts.
     /// If the key does not exist or it does not have a value at the specified index, it returns
     /// [`None`].
-    auto key_value(const Attribute::Key& key, uint64_t idx) -> iox::optional<Attribute::Value>;
+    auto key_value(const Attribute::Key& key, uint64_t idx) -> iox2::legacy::optional<Attribute::Value>;
 
     /// Returns all values to a specific key
     void iter_key_values(const Attribute::Key& key,
-                         const iox::function<CallbackProgression(const Attribute::Value&)>& callback) const;
+                         const iox2::legacy::function<CallbackProgression(const Attribute::Value&)>& callback) const;
 
   private:
     friend class AttributeSetView;

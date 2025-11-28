@@ -22,8 +22,8 @@
 namespace module_b {
 namespace errors {
 
-using ErrorCode = iox::er::ErrorCode;
-using ModuleId = iox::er::ModuleId;
+using ErrorCode = iox2::legacy::er::ErrorCode;
+using ModuleId = iox2::legacy::er::ModuleId;
 
 constexpr ModuleId MODULE_ID { 13 };
 
@@ -76,7 +76,8 @@ class Error {
 } // namespace errors
 } // namespace module_b
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace er {
 
 // This definition must exist in this namespace for overload resolution.
@@ -103,6 +104,7 @@ inline const char* toErrorName<module_b::errors::Error>(const module_b::errors::
 }
 
 } // namespace er
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif

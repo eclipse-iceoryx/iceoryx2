@@ -21,7 +21,8 @@
 
 #include <type_traits>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace detail {
 
 /// @brief default hooks for the PolymorphicHandler
@@ -117,7 +118,8 @@ class PolymorphicHandler {
     concurrent::Atomic<Interface*> m_current { nullptr };
 };
 
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #include "iox2/legacy/detail/polymorphic_handler.inl"
 

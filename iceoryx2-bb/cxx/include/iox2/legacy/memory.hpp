@@ -20,7 +20,8 @@
 #include <cstdint>
 #include <cstdlib>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 using byte = uint8_t;
 
 /// @note value + alignment - 1 must not exceed the maximum value for type T
@@ -68,5 +69,6 @@ template <typename T, typename... Args>
 constexpr std::size_t maxSize() noexcept {
     return (sizeof(T) > maxSize<Args...>()) ? sizeof(T) : maxSize<Args...>();
 }
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 #endif // IOX_HOOFS_MEMORY_MEMORY_HPP

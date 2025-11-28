@@ -19,7 +19,8 @@
 #include "iox2/legacy/semantic_string.hpp"
 #include "iox2/legacy/string.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 
 template <typename Child,
           uint64_t Capacity,
@@ -281,6 +282,7 @@ SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvali
     const T& rhs) const noexcept {
     return as_string() > rhs;
 }
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif

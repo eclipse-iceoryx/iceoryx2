@@ -21,7 +21,8 @@
 
 #include <cstdint>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace platform {
 #if defined(_WIN32)
 constexpr uint64_t IOX_NUMBER_OF_PATH_SEPARATORS = 2U;
@@ -96,7 +97,8 @@ template <uint64_t StringCapacity>
 bool doesEndWithPathSeparator(const string<StringCapacity>& name) noexcept;
 
 } // namespace detail
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #include "iox2/legacy/detail/path_and_file_verifier.inl"
 

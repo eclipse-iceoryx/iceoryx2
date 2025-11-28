@@ -21,7 +21,8 @@
 
 #include <thread>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 
 // NOLINTJUSTIFICATION these static variables are private and mutability is required
 // NOLINTBEGIN (cppcoreguidelines-avoid-non-const-global-variables)
@@ -137,6 +138,7 @@ void StaticLifetimeGuard<T>::destroy() {
     }
 }
 
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_DESIGN_STATIC_LIFETIME_GUARD_INL

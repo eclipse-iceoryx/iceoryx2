@@ -32,7 +32,7 @@ class PortFactoryReader {
     auto operator=(const PortFactoryReader&) -> PortFactoryReader& = delete;
 
     /// Creates a new [`Reader`] port or returns a [`ReaderCreateError`] on failure.
-    auto create() && -> iox::expected<Reader<S, KeyType>, ReaderCreateError>;
+    auto create() && -> iox2::legacy::expected<Reader<S, KeyType>, ReaderCreateError>;
 
   private:
     template <ServiceType, typename>
@@ -49,15 +49,16 @@ inline PortFactoryReader<S, KeyType>::PortFactoryReader(iox2_port_factory_reader
 }
 
 template <ServiceType S, typename KeyType>
-inline auto PortFactoryReader<S, KeyType>::create() && -> iox::expected<Reader<S, KeyType>, ReaderCreateError> {
+inline auto
+PortFactoryReader<S, KeyType>::create() && -> iox2::legacy::expected<Reader<S, KeyType>, ReaderCreateError> {
     iox2_reader_h reader_handle {};
     auto result = iox2_port_factory_reader_builder_create(m_handle, nullptr, &reader_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(Reader<S, KeyType>(reader_handle));
+        return iox2::legacy::ok(Reader<S, KeyType>(reader_handle));
     }
 
-    return iox::err(iox::into<ReaderCreateError>(result));
+    return iox2::legacy::err(iox2::legacy::into<ReaderCreateError>(result));
 }
 } // namespace iox2
 

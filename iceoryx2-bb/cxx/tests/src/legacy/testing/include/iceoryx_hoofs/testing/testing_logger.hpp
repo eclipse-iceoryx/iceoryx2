@@ -24,7 +24,8 @@
 #include <functional>
 #include <mutex>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace testing {
 /// @brief This logger is used for tests. It caches all the log messages and prints them to the console when a test
 /// fails. For debug purposes this behaviour can be overwritten with the 'IOX_TESTING_ALLOW_LOG' environment variable,
@@ -32,8 +33,8 @@ namespace testing {
 /// also be used to check for the occurrence on specific log messages, e.g. when a function is expected to log an error.
 /// @code
 /// callToFunctionWhichLogsAnError();
-/// iox::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(iox::log::LogLevel::Error, [](const auto&
-/// logMessages){
+/// iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(iox2::legacy::log::LogLevel::Error,
+/// [](const auto& logMessages){
 ///     ASSERT_THAT(logMessages.size(), Eq(1U));
 ///     EXPECT_THAT(logMessages[0], HasSubstr(expectedOutput));
 /// });
@@ -60,7 +61,7 @@ class TestingLogger : public log::TestingLoggerBase {
     /// {
     ///     ::testing::InitGoogleTest(&argc, argv);
     ///
-    ///     iox::testing::TestingLogger::init();
+    ///     iox2::legacy::testing::TestingLogger::init();
     ///
     ///     return RUN_ALL_TESTS();
     /// }
@@ -80,7 +81,7 @@ class TestingLogger : public log::TestingLoggerBase {
 
     /// @brief Runs the provided checker function for the collected log messages
     /// @note This can be used in tests to verify the collected log messages
-    static void checkLogMessageIfLogLevelIsSupported(iox::log::LogLevel logLevel,
+    static void checkLogMessageIfLogLevelIsSupported(iox2::legacy::log::LogLevel logLevel,
                                                      const std::function<void(const std::vector<std::string>&)>& check);
 
     /// @brief Checks if the the LogLevel is above the minimal supported LogLevel compiled into the binary
@@ -114,6 +115,7 @@ class LogPrinter : public ::testing::EmptyTestEventListener {
 };
 
 } // namespace testing
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_TESTING_TESTING_LOGGER_HPP

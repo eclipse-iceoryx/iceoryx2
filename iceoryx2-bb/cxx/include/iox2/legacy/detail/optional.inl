@@ -19,7 +19,8 @@
 #include "iox2/legacy/attributes.hpp"
 #include "iox2/legacy/optional.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 // AXIVION DISABLE STYLE AutosarC++19_03-A12.6.1 : m_data is not initialized here, since this is a
 // constructor for an optional with no value; an access of the value would lead to the
 // application's termination
@@ -283,6 +284,7 @@ bool operator!=(const nullopt_t, const optional<T>& rhs) noexcept {
     return rhs.has_value();
 }
 // AXIVION ENABLE STYLE AutosarC++19_03-A13.5.5
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_VOCABULARY_OPTIONAL_INL

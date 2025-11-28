@@ -22,7 +22,8 @@
 #include "iox2/legacy/expected.hpp"
 #include "iox2/legacy/vector.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace cli {
 /// @brief This class provides access to the command line argument values.
 ///        When constructed with the default constructor it is empty. Calling
@@ -64,7 +65,8 @@ class Arguments {
     vector<Option, MAX_NUMBER_OF_ARGUMENTS> m_arguments;
 };
 } // namespace cli
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #include "iox2/legacy/cli/arguments.inl"
 

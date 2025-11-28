@@ -24,7 +24,8 @@
 #include <sstream>
 #include <string>
 
-// NOTE: To speed up compilation and the clang-tidy check, the tests for 'iox::string' are split into multiple files
+// NOTE: To speed up compilation and the clang-tidy check, the tests for 'iox2::legacy::string' are split into multiple
+// files
 
 namespace {
 using namespace ::testing;
@@ -36,8 +37,8 @@ TEST_F(IoxLogStream_test, CTorDelegatesParameterToLogger) {
     constexpr const char* EXPECTED_FILE { "hypnotoad.hpp" };
     constexpr const char* EXPECTED_FUNCTION { "void all_glory_to_the_hypnotoad()" };
     constexpr int EXPECTED_LINE { 42 };
-    constexpr auto EXPECTED_LOG_LEVEL { iox::log::LogLevel::Warn };
-    iox::log::LogStream(loggerMock, EXPECTED_FILE, EXPECTED_LINE, EXPECTED_FUNCTION, EXPECTED_LOG_LEVEL) << "";
+    constexpr auto EXPECTED_LOG_LEVEL { iox2::legacy::log::LogLevel::Warn };
+    iox2::legacy::log::LogStream(loggerMock, EXPECTED_FILE, EXPECTED_LINE, EXPECTED_FUNCTION, EXPECTED_LOG_LEVEL) << "";
 
     ASSERT_THAT(loggerMock.logs.size(), Eq(1U));
     EXPECT_THAT(loggerMock.logs.back().file, StrEq(EXPECTED_FILE));
@@ -147,7 +148,7 @@ TEST_F(IoxLogStream_test, StreamOperator8BitTypesWithCharAsCharacterAndEverythin
 TEST_F(IoxLogStream_test, StreamOperatorLogLevel) {
     ::testing::Test::RecordProperty("TEST_ID", "d85b7ef4-35de-4e11-b0fd-f0de6581a9e6");
     std::string logValue { "This is the iceoryx logger!" };
-    const auto logLevel = iox::log::LogLevel::Warn;
+    const auto logLevel = iox2::legacy::log::LogLevel::Warn;
     LogStreamSut(loggerMock) << logValue << logLevel;
 
     EXPECT_THAT(loggerMock.logs[0].message, StrEq("This is the iceoryx logger!LogLevel::Warn"));
@@ -170,7 +171,7 @@ TEST_F(IoxLogStream_test, StreamOperatorLogRawBufferWithObject) {
 
     DummyStruct d;
 
-    LogStreamSut(loggerMock) << iox::log::raw(d);
+    LogStreamSut(loggerMock) << iox2::legacy::log::raw(d);
 
     EXPECT_THAT(loggerMock.logs[0].message, StrEq(EXPECTED_DATA));
 }
@@ -187,7 +188,7 @@ TEST_F(IoxLogStream_test, StreamOperatorLogRawBufferWithPointer) {
 
     DummyStruct d;
 
-    LogStreamSut(loggerMock) << iox::log::raw(&d, sizeof(d));
+    LogStreamSut(loggerMock) << iox2::legacy::log::raw(&d, sizeof(d));
 
     EXPECT_THAT(loggerMock.logs[0].message, StrEq(EXPECTED_DATA));
 }
@@ -196,7 +197,7 @@ TEST_F(IoxLogStream_test, StreamOperatorLogRawBufferWithNullpointer) {
     ::testing::Test::RecordProperty("TEST_ID", "4b1306cb-68d8-4345-b5dd-46fadff02c8d");
     constexpr const char* EXPECTED_DATA { "0x[nullptr, 42]" };
 
-    LogStreamSut(loggerMock) << iox::log::raw(nullptr, 42);
+    LogStreamSut(loggerMock) << iox2::legacy::log::raw(nullptr, 42);
 
     EXPECT_THAT(loggerMock.logs[0].message, StrEq(EXPECTED_DATA));
 }

@@ -20,7 +20,8 @@
 #include "iox2/legacy/detail/storable_function.hpp"
 #include "iox2/legacy/memory.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 // AXIVION DISABLE STYLE AutosarC++19_03-A12.6.1: members are initialized before read access
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init, hicpp-member-init)
 template <uint64_t Capacity, typename ReturnType, typename... Args>
@@ -347,6 +348,7 @@ storable_function<Capacity, signature<ReturnType, Args...>>::operations::destroy
     }
 }
 
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_FUNCTIONAL_STORABLE_FUNCTION_INL

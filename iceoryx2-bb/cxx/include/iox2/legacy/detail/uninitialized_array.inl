@@ -19,7 +19,8 @@
 
 #include "iox2/legacy/uninitialized_array.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 template <typename ElementType, uint64_t Capacity, template <typename, uint64_t> class Buffer>
 inline constexpr ElementType&
 UninitializedArray<ElementType, Capacity, Buffer>::operator[](const uint64_t index) noexcept {
@@ -73,6 +74,7 @@ template <typename T, uint64_t N, template <typename, uint64_t> class Buffer>
 inline constexpr uint64_t size(const UninitializedArray<T, N, Buffer>&) noexcept {
     return N;
 }
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_CONTAINER_UNINITIALIZED_ARRAY_INL

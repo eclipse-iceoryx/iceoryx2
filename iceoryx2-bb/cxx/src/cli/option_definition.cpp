@@ -16,7 +16,8 @@
 #include "iox2/legacy/cli/option_definition.hpp"
 #include "iox2/legacy/std_string_support.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace cli {
 OptionDefinition::OptionDefinition(const OptionDescription_t& programDescription,
                                    const function<void()>& onFailureCallback) noexcept
@@ -122,4 +123,5 @@ std::ostream& operator<<(std::ostream& stream, const OptionWithDetails& option) 
     return stream;
 }
 } // namespace cli
-} // namespace iox
+} // namespace legacy
+} // namespace iox2

@@ -67,7 +67,7 @@ class PortFactoryServer {
     auto allocation_strategy(AllocationStrategy value) && -> PortFactoryServer&&;
 
     /// Creates a new [`Server`] or returns a [`ServerCreateError`] on failure.
-    auto create() && -> iox::expected<
+    auto create() && -> iox2::legacy::expected<
         Server<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         ServerCreateError>;
 
@@ -78,8 +78,8 @@ class PortFactoryServer {
     explicit PortFactoryServer(iox2_port_factory_server_builder_h handle);
 
     iox2_port_factory_server_builder_h m_handle = nullptr;
-    iox::optional<uint64_t> m_max_slice_len;
-    iox::optional<AllocationStrategy> m_allocation_strategy;
+    iox2::legacy::optional<uint64_t> m_max_slice_len;
+    iox2::legacy::optional<AllocationStrategy> m_allocation_strategy;
 };
 
 template <ServiceType Service,
@@ -112,13 +112,13 @@ template <ServiceType Service,
           typename RequestUserHeader,
           typename ResponsePayload,
           typename ResponseUserHeader>
-inline auto
-PortFactoryServer<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::create() && -> iox::
-    expected<Server<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
-             ServerCreateError> {
+inline auto PortFactoryServer<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
+    create() && -> iox2::legacy::expected<
+        Server<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
+        ServerCreateError> {
     m_unable_to_deliver_strategy.and_then([&](auto value) -> auto {
         iox2_port_factory_server_builder_unable_to_deliver_strategy(
-            &m_handle, static_cast<iox2_unable_to_deliver_strategy_e>(iox::into<int>(value)));
+            &m_handle, static_cast<iox2_unable_to_deliver_strategy_e>(iox2::legacy::into<int>(value)));
     });
     m_max_slice_len
         .and_then(
@@ -129,18 +129,18 @@ PortFactoryServer<Service, RequestPayload, RequestUserHeader, ResponsePayload, R
     });
     m_allocation_strategy.and_then([&](auto value) -> auto {
         iox2_port_factory_server_builder_set_allocation_strategy(&m_handle,
-                                                                 iox::into<iox2_allocation_strategy_e>(value));
+                                                                 iox2::legacy::into<iox2_allocation_strategy_e>(value));
     });
 
     iox2_server_h server_handle {};
     auto result = iox2_port_factory_server_builder_create(m_handle, nullptr, &server_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(
+        return iox2::legacy::ok(
             Server<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(server_handle));
     }
 
-    return iox::err(iox::into<ServerCreateError>(result));
+    return iox2::legacy::err(iox2::legacy::into<ServerCreateError>(result));
 }
 
 template <ServiceType Service,

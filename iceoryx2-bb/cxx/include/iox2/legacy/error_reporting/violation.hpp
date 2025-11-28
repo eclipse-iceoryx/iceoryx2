@@ -21,7 +21,8 @@
 
 #include "iox2/legacy/error_reporting/types.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace er {
 
 // We expect an error to have the following interface
@@ -32,7 +33,7 @@ namespace er {
 // Custom errors can be added but must satisfy the minimal interface.
 
 // NOLINTNEXTLINE(performance-enum-size) the type is required for error handling
-enum class ViolationErrorCode : iox::er::ErrorCode::type {
+enum class ViolationErrorCode : iox2::legacy::er::ErrorCode::type {
     ASSERT_VIOLATION,
     ENFORCE_VIOLATION
 };
@@ -99,6 +100,7 @@ class Violation {
 
 const char* asStringLiteral(const er::ViolationErrorCode error) noexcept;
 
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_ERROR_REPORTING_VIOLATION_HPP

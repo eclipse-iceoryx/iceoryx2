@@ -18,7 +18,8 @@
 
 #include "iox2/legacy/detail/hoofs_error_reporting.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 // NOLINTJUSTIFICATION Use to map enum tag names to strings
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,hicpp-avoid-c-arrays)
 const char* const HOOFS_ERROR_NAMES[] = { IOX_HOOFS_ERRORS(IOX_CREATE_ERROR_STRING) };
@@ -34,4 +35,5 @@ const char* asStringLiteral(const HoofsError error) noexcept {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
     return HOOFS_ERROR_NAMES[index];
 }
-} // namespace iox
+} // namespace legacy
+} // namespace iox2

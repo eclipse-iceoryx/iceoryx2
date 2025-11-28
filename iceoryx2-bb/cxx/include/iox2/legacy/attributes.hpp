@@ -16,7 +16,8 @@
 #ifndef IOX_HOOFS_PRIMITIVES_ATTRIBUTES_HPP
 #define IOX_HOOFS_PRIMITIVES_ATTRIBUTES_HPP
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace internal {
 /// We use this as an alternative to "static_cast<void>(someVar)" to signal the
 /// compiler an unused variable. "static_cast" produces an useless-cast warning
@@ -27,7 +28,8 @@ template <typename T>
 inline void IOX_DISCARD_RESULT_IMPL(T&&) noexcept {
 }
 } // namespace internal
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 // AXIVION Next Construct AutosarC++19_03-A16.0.1 : Aliasing of fully qualified templated function.
 //                                                  Improves readability. No risks apparent.
@@ -40,7 +42,7 @@ inline void IOX_DISCARD_RESULT_IMPL(T&&) noexcept {
 ///     uint32_t foo();
 ///     IOX_DISCARD_RESULT(foo()); // suppress compiler warning for unused return value
 /// @endcode
-#define IOX_DISCARD_RESULT(expr) ::iox::internal::IOX_DISCARD_RESULT_IMPL(expr)
+#define IOX_DISCARD_RESULT(expr) ::iox2::legacy::internal::IOX_DISCARD_RESULT_IMPL(expr)
 
 /// @brief IOX_NO_DISCARD adds the [[nodiscard]] keyword if it is available for the current compiler.
 

@@ -18,7 +18,8 @@
 
 #include "iox2/legacy/cli/types.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace cli {
 /// @brief Represents a command line option
 struct Option {
@@ -90,6 +91,7 @@ struct OptionWithDetails : public Option // can this be melt together
     } details;
 };
 } // namespace cli
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_CLI_OPTION_HPP

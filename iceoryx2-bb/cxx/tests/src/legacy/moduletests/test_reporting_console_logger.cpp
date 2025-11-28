@@ -27,10 +27,10 @@
 namespace {
 using namespace ::testing;
 
-class LoggerSUT : public iox::log::ConsoleLogger {
+class LoggerSUT : public iox2::legacy::log::ConsoleLogger {
   public:
-    using iox::log::ConsoleLogger::flush;
-    using iox::log::ConsoleLogger::logString;
+    using iox2::legacy::log::ConsoleLogger::flush;
+    using iox2::legacy::log::ConsoleLogger::logString;
 };
 
 TEST(ConsoleLogger_test, TestOutput) {
@@ -44,7 +44,7 @@ TEST(ConsoleLogger_test, TestOutput) {
 
 TEST(ConsoleLogger_test, SettingTheLogLevelWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "e8225d29-ee35-4864-8528-b1e290a83311");
-    constexpr auto LOG_LEVEL { iox::log::LogLevel::Info };
+    constexpr auto LOG_LEVEL { iox2::legacy::log::LogLevel::Info };
     EXPECT_THAT(LoggerSUT::getLogLevel(), Ne(LOG_LEVEL));
 
     LoggerSUT::setLogLevel(LOG_LEVEL);

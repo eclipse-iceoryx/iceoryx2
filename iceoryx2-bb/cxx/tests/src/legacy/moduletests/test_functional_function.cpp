@@ -23,7 +23,7 @@
 #include <iostream>
 
 using namespace ::testing;
-using namespace iox;
+using namespace iox2::legacy;
 
 namespace {
 

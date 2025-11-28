@@ -17,7 +17,8 @@
 #include "iox2/legacy/detail/path_and_file_verifier.hpp"
 #include "iox2/legacy/string.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace detail {
 bool file_path_does_contain_invalid_characters(const string<platform::IOX_MAX_PATH_LENGTH>& value) noexcept {
     const auto valueSize = value.size();
@@ -53,4 +54,5 @@ bool file_path_does_contain_invalid_content(const string<platform::IOX_MAX_PATH_
     return !isValidPathToFile(value);
 }
 } // namespace detail
-} // namespace iox
+} // namespace legacy
+} // namespace iox2

@@ -13,8 +13,8 @@
 #ifndef IOX2_NODE_DETAILS_HPP
 #define IOX2_NODE_DETAILS_HPP
 
-#include "iox2/legacy/file_name.hpp"
 #include "iox2/config.hpp"
+#include "iox2/legacy/file_name.hpp"
 #include "iox2/node_name.hpp"
 
 namespace iox2 {
@@ -22,7 +22,7 @@ namespace iox2 {
 class NodeDetails {
   public:
     /// Returns the executable [`FileName`] of the [`Node`]s owner process.
-    auto executable() const -> const iox::FileName&;
+    auto executable() const -> const iox2::legacy::FileName&;
     /// Returns a reference of the [`NodeName`].
     auto name() const -> const NodeName&;
     /// Returns a reference to the [`Config`] the [`Node`] uses.
@@ -37,9 +37,9 @@ class NodeDetails {
                                         iox2_config_ptr,
                                         iox2_callback_context) -> iox2_callback_progression_e;
 
-    NodeDetails(iox::FileName executable, NodeName name, Config config);
+    NodeDetails(iox2::legacy::FileName executable, NodeName name, Config config);
 
-    iox::FileName m_executable;
+    iox2::legacy::FileName m_executable;
     NodeName m_node_name;
     Config m_config;
 };

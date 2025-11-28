@@ -22,7 +22,8 @@
 #include "iox2/legacy/assertions.hpp"
 #include "iox2/legacy/logging.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 template <uint64_t Capacity>
 inline string<Capacity>::string(const string& other) noexcept {
     copy(other);
@@ -88,7 +89,7 @@ inline string<Capacity>& string<Capacity>::operator=(string<N>&& rhs) noexcept {
 template <uint64_t Capacity>
 template <uint64_t N>
 // AXIVION Next Construct AutosarC++19_03-A18.1.1 : C-array type usage is intentional
-// NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays) iox::string wraps char array
+// NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays) iox2::legacy::string wraps char array
 inline string<Capacity>::string(const char (&other)[N]) noexcept {
     *this = other;
 }
@@ -136,7 +137,7 @@ inline string<Capacity>::string(TruncateToCapacity_t, const char* const other, c
 template <uint64_t Capacity>
 template <uint64_t N>
 // AXIVION Next Construct AutosarC++19_03-A18.1.1 : C-array type usage is intentional
-// NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays) iox::string wraps char array
+// NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays) iox2::legacy::string wraps char array
 inline string<Capacity>& string<Capacity>::operator=(const char (&rhs)[N]) noexcept {
     static_assert(N <= (Capacity + 1U),
                   "Assignment failed. The given char array is larger than the capacity of the fixed string.");
@@ -151,9 +152,9 @@ inline string<Capacity>& string<Capacity>::operator=(const char (&rhs)[N]) noexc
     } else {
         m_rawstringSize = Capacity;
 
-        IOX_LOG(
-            Warn,
-            "iox::string: Assignment of array which is not zero-terminated! Last value of array overwritten with 0!");
+        IOX_LOG(Warn,
+                "iox2::legacy::string: Assignment of array which is not zero-terminated! Last value of array "
+                "overwritten with 0!");
     }
 
     // AXIVION DISABLE STYLE AutosarC++19_03-A16.0.1: pre-processor is required for setting gcc diagnostics, since gcc 8 incorrectly warns here about out of bounds array access
@@ -186,7 +187,7 @@ inline string<Capacity>& string<Capacity>::assign(const string<N>& str) noexcept
 template <uint64_t Capacity>
 template <uint64_t N>
 // AXIVION Next Construct AutosarC++19_03-A18.1.1 : C-array type usage is intentional
-// NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays) iox::string wraps char array
+// NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays) iox2::legacy::string wraps char array
 inline string<Capacity>& string<Capacity>::assign(const char (&str)[N]) noexcept {
     *this = str;
     return *this;
@@ -212,8 +213,8 @@ inline bool string<Capacity>::unsafe_assign(const char* const str) noexcept {
 
 template <uint64_t Capacity>
 inline void string<Capacity>::unsafe_raw_access(
-    const iox::function_ref<uint64_t(char*, const iox::BufferInfo info)>& func) noexcept {
-    iox::BufferInfo info { m_rawstringSize, Capacity + 1 };
+    const iox2::legacy::function_ref<uint64_t(char*, const iox2::legacy::BufferInfo info)>& func) noexcept {
+    iox2::legacy::BufferInfo info { m_rawstringSize, Capacity + 1 };
     uint64_t len = func(m_rawstring, info);
 
     if (len > Capacity) {
@@ -318,7 +319,7 @@ template <typename T>
 // NOLINTNEXTLINE(hicpp-named-parameter, readability-named-parameter) method is disabled via static_assert
 inline string<Capacity>& string<Capacity>::operator+=(const T&) noexcept {
     static_assert(always_false_v<string<Capacity>>,
-                  "operator += is not supported by iox::string, please use append or unsafe_append instead");
+                  "operator += is not supported by iox2::legacy::string, please use append or unsafe_append instead");
     return *this;
 }
 
@@ -616,6 +617,7 @@ inline IsStringOrCharArrayOrChar<T, bool> operator>=(const string<Capacity>& lhs
     return (lhs.compare(rhs) >= 0);
 }
 // AXIVION ENABLE Style AutosarC++19_03-A13.5.5
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_VOCABULARY_STRING_INL

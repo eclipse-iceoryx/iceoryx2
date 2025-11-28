@@ -13,11 +13,11 @@
 #ifndef IOX2_CONFIG_HPP
 #define IOX2_CONFIG_HPP
 
+#include "iox2/config_creation_error.hpp"
+#include "iox2/internal/iceoryx2.hpp"
 #include "iox2/legacy/duration.hpp"
 #include "iox2/legacy/file_name.hpp"
 #include "iox2/legacy/path.hpp"
-#include "iox2/config_creation_error.hpp"
-#include "iox2/internal/iceoryx2.hpp"
 #include "iox2/unable_to_deliver_strategy.hpp"
 
 namespace iox2 {
@@ -33,19 +33,19 @@ class Node {
     /// The directory in which all node files are stored
     auto directory() && -> const char*;
     /// Set the directory in which all node files are stored
-    void set_directory(const iox::Path& value) &&;
+    void set_directory(const iox2::legacy::Path& value) &&;
     /// The suffix of the monitor token
     auto monitor_suffix() && -> const char*;
     /// Set the suffix of the monitor token
-    void set_monitor_suffix(const iox::FileName& value) &&;
+    void set_monitor_suffix(const iox2::legacy::FileName& value) &&;
     /// The suffix of the files where the node configuration is stored.
     auto static_config_suffix() && -> const char*;
     /// Set the suffix of the files where the node configuration is stored.
-    void set_static_config_suffix(const iox::FileName& value) &&;
+    void set_static_config_suffix(const iox2::legacy::FileName& value) &&;
     /// The suffix of the service tags.
     auto service_tag_suffix() && -> const char*;
     /// Set the suffix of the service tags.
-    void set_service_tag_suffix(const iox::FileName& value) &&;
+    void set_service_tag_suffix(const iox2::legacy::FileName& value) &&;
     /// When true, the [`NodeBuilder`](NodeBuilder) checks for dead nodes and
     /// cleans up all their stale resources whenever a new [`Node`](Node) is
     /// created.
@@ -72,32 +72,32 @@ class Service {
     /// The directory in which all service files are stored
     auto directory() && -> const char*;
     /// Set the directory in which all service files are stored
-    void set_directory(const iox::Path& value) &&;
+    void set_directory(const iox2::legacy::Path& value) &&;
     /// The suffix of the ports data segment
     auto data_segment_suffix() && -> const char*;
     /// Set the suffix of the ports data segment
-    void set_data_segment_suffix(const iox::FileName& value) &&;
+    void set_data_segment_suffix(const iox2::legacy::FileName& value) &&;
     /// The suffix of the static config file
     auto static_config_storage_suffix() && -> const char*;
     /// Set the suffix of the static config file
-    void set_static_config_storage_suffix(const iox::FileName& value) &&;
+    void set_static_config_storage_suffix(const iox2::legacy::FileName& value) &&;
     /// The suffix of the dynamic config file
     auto dynamic_config_storage_suffix() && -> const char*;
     /// Set the suffix of the dynamic config file
-    void set_dynamic_config_storage_suffix(const iox::FileName& value) &&;
+    void set_dynamic_config_storage_suffix(const iox2::legacy::FileName& value) &&;
     /// Defines the time of how long another process will wait until the service creation is
     /// finalized
-    auto creation_timeout() && -> iox::units::Duration;
+    auto creation_timeout() && -> iox2::legacy::units::Duration;
     /// Set the creation timeout
-    void set_creation_timeout(const iox::units::Duration& value) &&;
+    void set_creation_timeout(const iox2::legacy::units::Duration& value) &&;
     /// The suffix of a one-to-one connection
     auto connection_suffix() && -> const char*;
     /// Set the suffix of a one-to-one connection
-    void set_connection_suffix(const iox::FileName& value) &&;
+    void set_connection_suffix(const iox2::legacy::FileName& value) &&;
     /// The suffix of a one-to-one connection
     auto event_connection_suffix() && -> const char*;
     /// Set the suffix of a one-to-one connection
-    void set_event_connection_suffix(const iox::FileName& value) &&;
+    void set_event_connection_suffix(const iox2::legacy::FileName& value) &&;
 
   private:
     friend class Global;
@@ -112,11 +112,11 @@ class Global {
     /// Prefix used for all files created during runtime
     auto prefix() && -> const char*;
     /// Set the prefix used for all files created during runtime
-    void set_prefix(const iox::FileName& value) &&;
+    void set_prefix(const iox2::legacy::FileName& value) &&;
     /// The path under which all other directories or files will be created
     auto root_path() && -> const char*;
     /// Defines the path under which all other directories or files will be created
-    void set_root_path(const iox::Path& value) &&;
+    void set_root_path(const iox2::legacy::Path& value) &&;
 
     /// Returns the service part of the global configuration
     auto service() -> Service;
@@ -213,23 +213,23 @@ class Event {
     /// Set the largest event id supported by the event service
     void set_event_id_max_value(size_t value) &&;
     /// Defines the event id value that is emitted after a new notifier was created.
-    auto notifier_created_event() && -> iox::optional<size_t>;
+    auto notifier_created_event() && -> iox2::legacy::optional<size_t>;
     /// Sets the event id value that is emitted after a new notifier was created.
-    void set_notifier_created_event(iox::optional<size_t> value) &&;
+    void set_notifier_created_event(iox2::legacy::optional<size_t> value) &&;
     /// Defines the event id value that is emitted before a new notifier is dropped.
-    auto notifier_dropped_event() && -> iox::optional<size_t>;
+    auto notifier_dropped_event() && -> iox2::legacy::optional<size_t>;
     /// Sets the event id value that is emitted before a new notifier is dropped.
-    void set_notifier_dropped_event(iox::optional<size_t> value) &&;
+    void set_notifier_dropped_event(iox2::legacy::optional<size_t> value) &&;
     /// Defines the event id value that is emitted if a notifier was identified as dead.
-    auto notifier_dead_event() && -> iox::optional<size_t>;
+    auto notifier_dead_event() && -> iox2::legacy::optional<size_t>;
     /// Sets the event id value that is emitted if a notifier was identified as dead.
-    void set_notifier_dead_event(iox::optional<size_t> value) &&;
+    void set_notifier_dead_event(iox2::legacy::optional<size_t> value) &&;
     /// Defines the maximum allowed time between two consecutive notifications. If a notifiation
     /// is not sent after the defined time, every [`Listener`]
     /// that is attached to a [`WaitSet`] will be notified.
-    auto deadline() && -> iox::optional<iox::units::Duration>;
+    auto deadline() && -> iox2::legacy::optional<iox2::legacy::units::Duration>;
     /// Sets the deadline of the event service.
-    void set_deadline(iox::optional<iox::units::Duration> value) &&;
+    void set_deadline(iox2::legacy::optional<iox2::legacy::units::Duration> value) &&;
 
   private:
     friend class Defaults;
@@ -437,7 +437,7 @@ class Config {
 
     /// Loads a configuration from a file. On success it returns a [`Config`] object otherwise a
     /// [`ConfigCreationError`] describing the failure.
-    static auto from_file(const iox::FilePath& file) -> iox::expected<Config, ConfigCreationError>;
+    static auto from_file(const iox2::legacy::FilePath& file) -> iox2::legacy::expected<Config, ConfigCreationError>;
 
     /// Returns the [`config::Global`] part of the config
     auto global() -> config::Global;

@@ -21,7 +21,8 @@
 
 #include <cstdint>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 /// @brief struct used as policy parameter in UninitializedArray to wrap an array with all elements zeroed
 /// @tparam ElementType is the array type
 /// @tparam Capacity is the array size
@@ -120,14 +121,15 @@ class UninitializedArray final {
 };
 
 /// @brief Returns N
-/// @tparam T Type of the iox::UninitializedArray
-/// @tparam N Size of the iox::UninitializedArray
-/// @param An iox::UninitializedArray
-/// @return Size of the iox::UninitializedArray
+/// @tparam T Type of the iox2::legacy::UninitializedArray
+/// @tparam N Size of the iox2::legacy::UninitializedArray
+/// @param An iox2::legacy::UninitializedArray
+/// @return Size of the iox2::legacy::UninitializedArray
 template <typename T, uint64_t N, template <typename, uint64_t> class Buffer>
 constexpr uint64_t size(const UninitializedArray<T, N, Buffer>&) noexcept;
 
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #include "iox2/legacy/detail/uninitialized_array.inl"
 

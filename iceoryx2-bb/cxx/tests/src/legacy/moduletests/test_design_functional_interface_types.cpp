@@ -80,11 +80,11 @@ void OptionalFactory::configureNextTestCase() noexcept {
 }
 
 OptionalFactory::Type OptionalFactory::createValidObject() noexcept {
-    return OptionalFactory::Type(iox::in_place, usedTestValue);
+    return OptionalFactory::Type(iox2::legacy::in_place, usedTestValue);
 }
 
 OptionalFactory::Type OptionalFactory::createInvalidObject() noexcept {
-    return iox::nullopt;
+    return iox2::legacy::nullopt;
 }
 ///////////////////////
 /// END OptionalFactory
@@ -111,11 +111,11 @@ void ExpectedValueErrorFactory::configureNextTestCase() noexcept {
 }
 
 ExpectedValueErrorFactory::Type ExpectedValueErrorFactory::createValidObject() noexcept {
-    return iox::ok(usedTestValue);
+    return iox2::legacy::ok(usedTestValue);
 }
 
 ExpectedValueErrorFactory::Type ExpectedValueErrorFactory::createInvalidObject() noexcept {
-    return iox::err(usedErrorValue);
+    return iox2::legacy::err(usedErrorValue);
 }
 //////////////////////////////////
 /// END ExpectedValueErrorFactory
@@ -137,11 +137,11 @@ void ExpectedErrorFactory::configureNextTestCase() noexcept {
 }
 
 ExpectedErrorFactory::Type ExpectedErrorFactory::createValidObject() noexcept {
-    return iox::ok();
+    return iox2::legacy::ok();
 }
 
 ExpectedErrorFactory::Type ExpectedErrorFactory::createInvalidObject() noexcept {
-    return iox::err(usedErrorValue);
+    return iox2::legacy::err(usedErrorValue);
 }
 ////////////////////////////
 /// END ExpectedErrorFactory

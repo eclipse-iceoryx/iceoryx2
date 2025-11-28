@@ -22,7 +22,8 @@
 #include "iox2/legacy/vector.hpp"
 #include <cstdint>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace cli {
 /// @brief A set of options which is provided to the CommandLineParser.
 ///     Description, short and long name as well as type and value can be defined for every
@@ -89,6 +90,7 @@ class OptionDefinition {
 
 std::ostream& operator<<(std::ostream& stream, const OptionWithDetails& option) noexcept;
 } // namespace cli
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_CLI_OPTION_DEFINITION_HPP

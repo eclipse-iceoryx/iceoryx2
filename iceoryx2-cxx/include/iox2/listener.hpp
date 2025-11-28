@@ -13,14 +13,14 @@
 #ifndef IOX2_LISTENER_HPP
 #define IOX2_LISTENER_HPP
 
-#include "iox2/legacy/duration.hpp"
-#include "iox2/legacy/expected.hpp"
-#include "iox2/legacy/function.hpp"
-#include "iox2/legacy/optional.hpp"
 #include "iox2/event_id.hpp"
 #include "iox2/file_descriptor.hpp"
 #include "iox2/internal/callback_context.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/legacy/duration.hpp"
+#include "iox2/legacy/expected.hpp"
+#include "iox2/legacy/function.hpp"
+#include "iox2/legacy/optional.hpp"
 #include "iox2/listener_error.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/unique_port_id.hpp"
@@ -48,7 +48,8 @@ class Listener {
     /// currently available [`EventId`]s in buffer.
     /// For every received [`EventId`] the provided callback is called with the [`EventId`] as
     /// input argument.
-    auto try_wait_all(const iox::function<void(EventId)>& callback) -> iox::expected<void, ListenerWaitError>;
+    auto try_wait_all(const iox2::legacy::function<void(EventId)>& callback)
+        -> iox2::legacy::expected<void, ListenerWaitError>;
 
     /// Blocking wait for new [`EventId`]s until the provided timeout has passed. Collects either
     /// all [`EventId`]s that were received
@@ -56,8 +57,9 @@ class Listener {
     /// currently available [`EventId`]s in buffer.
     /// For every received [`EventId`] the provided callback is called with the [`EventId`] as
     /// input argument.
-    auto timed_wait_all(const iox::function<void(EventId)>& callback, const iox::units::Duration& timeout)
-        -> iox::expected<void, ListenerWaitError>;
+    auto timed_wait_all(const iox2::legacy::function<void(EventId)>& callback,
+                        const iox2::legacy::units::Duration& timeout)
+        -> iox2::legacy::expected<void, ListenerWaitError>;
 
     /// Blocking wait for new [`EventId`]s. Collects either
     /// all [`EventId`]s that were received
@@ -65,28 +67,29 @@ class Listener {
     /// currently available [`EventId`]s in buffer.
     /// For every received [`EventId`] the provided callback is called with the [`EventId`] as
     /// input argument.
-    auto blocking_wait_all(const iox::function<void(EventId)>& callback) -> iox::expected<void, ListenerWaitError>;
+    auto blocking_wait_all(const iox2::legacy::function<void(EventId)>& callback)
+        -> iox2::legacy::expected<void, ListenerWaitError>;
 
     /// Non-blocking wait for a new [`EventId`]. If no [`EventId`] was notified it returns [`None`].
     /// On error it returns [`ListenerWaitError`] is returned which describes the error
     /// in detail.
-    auto try_wait_one() -> iox::expected<iox::optional<EventId>, ListenerWaitError>;
+    auto try_wait_one() -> iox2::legacy::expected<iox2::legacy::optional<EventId>, ListenerWaitError>;
 
     /// Blocking wait for a new [`EventId`] until either an [`EventId`] was received or the timeout
     /// has passed. If no [`EventId`] was notified it returns [`None`].
     /// On error it returns [`ListenerWaitError`] is returned which describes the error
     /// in detail.
-    auto timed_wait_one(const iox::units::Duration& timeout)
-        -> iox::expected<iox::optional<EventId>, ListenerWaitError>;
+    auto timed_wait_one(const iox2::legacy::units::Duration& timeout)
+        -> iox2::legacy::expected<iox2::legacy::optional<EventId>, ListenerWaitError>;
 
     /// Blocking wait for a new [`EventId`].
     /// Sporadic wakeups can occur and if no [`EventId`] was notified it returns [`None`].
     /// On error it returns [`ListenerWaitError`] is returned which describes the error
     /// in detail.
-    auto blocking_wait_one() -> iox::expected<iox::optional<EventId>, ListenerWaitError>;
+    auto blocking_wait_one() -> iox2::legacy::expected<iox2::legacy::optional<EventId>, ListenerWaitError>;
 
     /// Returns the deadline of the corresponding [`Service`].
-    auto deadline() const -> iox::optional<iox::units::Duration>;
+    auto deadline() const -> iox2::legacy::optional<iox2::legacy::units::Duration>;
 
   private:
     template <ServiceType>
@@ -164,38 +167,40 @@ inline auto Listener<S>::id() const -> UniqueListenerId {
 }
 
 template <ServiceType S>
-inline auto Listener<S>::deadline() const -> iox::optional<iox::units::Duration> {
+inline auto Listener<S>::deadline() const -> iox2::legacy::optional<iox2::legacy::units::Duration> {
     uint64_t seconds = 0;
     uint32_t nanoseconds = 0;
 
     if (iox2_listener_deadline(&m_handle, &seconds, &nanoseconds)) {
-        return { iox::units::Duration::fromSeconds(seconds) + iox::units::Duration::fromNanoseconds(nanoseconds) };
+        return { iox2::legacy::units::Duration::fromSeconds(seconds)
+                 + iox2::legacy::units::Duration::fromNanoseconds(nanoseconds) };
     }
 
-    return iox::nullopt;
+    return iox2::legacy::nullopt;
 }
 
 inline void wait_callback(const iox2_event_id_t* event_id, iox2_callback_context context) {
-    auto* callback = internal::ctx_cast<iox::function<void(EventId)>>(context);
+    auto* callback = internal::ctx_cast<iox2::legacy::function<void(EventId)>>(context);
     callback->value()(EventId(*event_id));
 }
 
 template <ServiceType S>
-inline auto Listener<S>::try_wait_all(const iox::function<void(EventId)>& callback)
-    -> iox::expected<void, ListenerWaitError> {
+inline auto Listener<S>::try_wait_all(const iox2::legacy::function<void(EventId)>& callback)
+    -> iox2::legacy::expected<void, ListenerWaitError> {
     auto ctx = internal::ctx(callback);
 
     auto result = iox2_listener_try_wait_all(&m_handle, wait_callback, static_cast<void*>(&ctx));
     if (result == IOX2_OK) {
-        return iox::ok();
+        return iox2::legacy::ok();
     }
 
-    return iox::err(iox::into<ListenerWaitError>(result));
+    return iox2::legacy::err(iox2::legacy::into<ListenerWaitError>(result));
 }
 
 template <ServiceType S>
-inline auto Listener<S>::timed_wait_all(const iox::function<void(EventId)>& callback,
-                                        const iox::units::Duration& timeout) -> iox::expected<void, ListenerWaitError> {
+inline auto Listener<S>::timed_wait_all(const iox2::legacy::function<void(EventId)>& callback,
+                                        const iox2::legacy::units::Duration& timeout)
+    -> iox2::legacy::expected<void, ListenerWaitError> {
     auto ctx = internal::ctx(callback);
     auto timeout_timespec = timeout.timespec();
 
@@ -205,27 +210,27 @@ inline auto Listener<S>::timed_wait_all(const iox::function<void(EventId)>& call
                                                static_cast<uint64_t>(timeout_timespec.tv_sec),
                                                static_cast<uint32_t>(timeout_timespec.tv_nsec));
     if (result == IOX2_OK) {
-        return iox::ok();
+        return iox2::legacy::ok();
     }
 
-    return iox::err(iox::into<ListenerWaitError>(result));
+    return iox2::legacy::err(iox2::legacy::into<ListenerWaitError>(result));
 }
 
 template <ServiceType S>
-inline auto Listener<S>::blocking_wait_all(const iox::function<void(EventId)>& callback)
-    -> iox::expected<void, ListenerWaitError> {
+inline auto Listener<S>::blocking_wait_all(const iox2::legacy::function<void(EventId)>& callback)
+    -> iox2::legacy::expected<void, ListenerWaitError> {
     auto ctx = internal::ctx(callback);
 
     auto result = iox2_listener_blocking_wait_all(&m_handle, wait_callback, static_cast<void*>(&ctx));
     if (result == IOX2_OK) {
-        return iox::ok();
+        return iox2::legacy::ok();
     }
 
-    return iox::err(iox::into<ListenerWaitError>(result));
+    return iox2::legacy::err(iox2::legacy::into<ListenerWaitError>(result));
 }
 
 template <ServiceType S>
-inline auto Listener<S>::try_wait_one() -> iox::expected<iox::optional<EventId>, ListenerWaitError> {
+inline auto Listener<S>::try_wait_one() -> iox2::legacy::expected<iox2::legacy::optional<EventId>, ListenerWaitError> {
     iox2_event_id_t event_id {};
     bool has_received_one { false };
 
@@ -233,18 +238,18 @@ inline auto Listener<S>::try_wait_one() -> iox::expected<iox::optional<EventId>,
 
     if (result == IOX2_OK) {
         if (has_received_one) {
-            return iox::ok(iox::optional<EventId>(EventId { event_id }));
+            return iox2::legacy::ok(iox2::legacy::optional<EventId>(EventId { event_id }));
         }
 
-        return iox::ok(iox::optional<EventId>());
+        return iox2::legacy::ok(iox2::legacy::optional<EventId>());
     }
 
-    return iox::err(iox::into<ListenerWaitError>(result));
+    return iox2::legacy::err(iox2::legacy::into<ListenerWaitError>(result));
 }
 
 template <ServiceType S>
-inline auto Listener<S>::timed_wait_one(const iox::units::Duration& timeout)
-    -> iox::expected<iox::optional<EventId>, ListenerWaitError> {
+inline auto Listener<S>::timed_wait_one(const iox2::legacy::units::Duration& timeout)
+    -> iox2::legacy::expected<iox2::legacy::optional<EventId>, ListenerWaitError> {
     iox2_event_id_t event_id {};
     bool has_received_one { false };
 
@@ -257,17 +262,18 @@ inline auto Listener<S>::timed_wait_one(const iox::units::Duration& timeout)
 
     if (result == IOX2_OK) {
         if (has_received_one) {
-            return iox::ok(iox::optional<EventId>(EventId { event_id }));
+            return iox2::legacy::ok(iox2::legacy::optional<EventId>(EventId { event_id }));
         }
 
-        return iox::ok(iox::optional<EventId>());
+        return iox2::legacy::ok(iox2::legacy::optional<EventId>());
     }
 
-    return iox::err(iox::into<ListenerWaitError>(result));
+    return iox2::legacy::err(iox2::legacy::into<ListenerWaitError>(result));
 }
 
 template <ServiceType S>
-inline auto Listener<S>::blocking_wait_one() -> iox::expected<iox::optional<EventId>, ListenerWaitError> {
+inline auto Listener<S>::blocking_wait_one()
+    -> iox2::legacy::expected<iox2::legacy::optional<EventId>, ListenerWaitError> {
     iox2_event_id_t event_id {};
     bool has_received_one { false };
 
@@ -275,13 +281,13 @@ inline auto Listener<S>::blocking_wait_one() -> iox::expected<iox::optional<Even
 
     if (result == IOX2_OK) {
         if (has_received_one) {
-            return iox::ok(iox::optional<EventId>(EventId { event_id }));
+            return iox2::legacy::ok(iox2::legacy::optional<EventId>(EventId { event_id }));
         }
 
-        return iox::ok(iox::optional<EventId>());
+        return iox2::legacy::ok(iox2::legacy::optional<EventId>());
     }
 
-    return iox::err(iox::into<ListenerWaitError>(result));
+    return iox2::legacy::err(iox2::legacy::into<ListenerWaitError>(result));
 }
 } // namespace iox2
 

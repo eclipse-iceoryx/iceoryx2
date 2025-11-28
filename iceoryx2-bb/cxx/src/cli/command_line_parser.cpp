@@ -18,7 +18,8 @@
 
 #include <algorithm>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace cli {
 Arguments parseCommandLineArguments(const OptionDefinition& optionSet,
                                     int argc,
@@ -327,4 +328,5 @@ void CommandLineParser::printHelpAndExit() const noexcept {
 }
 
 } // namespace cli
-} // namespace iox
+} // namespace legacy
+} // namespace iox2

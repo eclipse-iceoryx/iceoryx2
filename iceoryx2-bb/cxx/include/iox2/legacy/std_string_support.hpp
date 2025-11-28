@@ -25,7 +25,8 @@
 #include <ostream>
 #include <string>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 
 template <>
 struct is_custom_string<std::string> : public std::true_type { };
@@ -79,14 +80,15 @@ std::ostream& operator<<(std::ostream& stream, const string<Capacity>& str) noex
 
 /// @brief A specialization function of convert::from_string for std::string
 /// @param v the input string in c type
-/// @return an iox::optional<Destination> where, if the return value is iox::nullopt, it indicates a failed conversion
-/// process
+/// @return an iox2::legacy::optional<Destination> where, if the return value is iox2::legacy::nullopt, it indicates a
+/// failed conversion process
 template <>
-inline iox::optional<std::string> convert::from_string(const char* v) noexcept {
-    return iox::optional<std::string>(v);
+inline iox2::legacy::optional<std::string> convert::from_string(const char* v) noexcept {
+    return iox2::legacy::optional<std::string>(v);
 }
 
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #include "iox2/legacy/detail/std_string_support.inl"
 

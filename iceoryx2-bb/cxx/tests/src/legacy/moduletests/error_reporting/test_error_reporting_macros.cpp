@@ -28,8 +28,8 @@
 
 namespace {
 using namespace ::testing;
-using namespace iox::er;
-using namespace iox::testing;
+using namespace iox2::legacy::er;
+using namespace iox2::legacy::testing;
 
 using MyErrorA = module_a::errors::Error;
 using MyCodeA = module_a::errors::Code;

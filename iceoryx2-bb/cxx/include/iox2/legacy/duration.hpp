@@ -24,7 +24,8 @@
 #include <cmath>
 #include <ctime>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace units {
 class Duration;
 
@@ -266,7 +267,7 @@ class Duration {
     friend constexpr Duration operator*(const T& lhs, const Duration& rhs) noexcept;
 
     friend std::ostream& operator<<(std::ostream& stream, const Duration t);
-    friend iox::log::LogStream& operator<<(iox::log::LogStream& stream, const Duration t) noexcept;
+    friend iox2::legacy::log::LogStream& operator<<(iox2::legacy::log::LogStream& stream, const Duration t) noexcept;
 
     static constexpr uint32_t SECS_PER_MINUTE { 60U };
     static constexpr uint32_t SECS_PER_HOUR { 3600U };
@@ -376,7 +377,8 @@ constexpr bool operator<=(const Duration& lhs, const Duration& rhs) noexcept;
 constexpr bool operator>=(const Duration& lhs, const Duration& rhs) noexcept;
 
 } // namespace units
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #include "iox2/legacy/detail/duration.inl"
 

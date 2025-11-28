@@ -19,7 +19,8 @@
 #include "iox2/legacy/detail/string_type_traits.hpp"
 #include "iox2/legacy/functional_interface.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace internal {
 ///////////////
 // BEGIN expect
@@ -28,7 +29,7 @@ template <typename Derived>
 template <typename StringType>
 inline void Expect<Derived>::expect(const StringType& msg) const noexcept {
     static_assert(is_char_array<StringType>::value || is_iox_string<StringType>::value,
-                  "Only char arrays and iox::strings are allowed as message type.");
+                  "Only char arrays and iox2::legacy::strings are allowed as message type.");
 
     const auto& derivedThis = *static_cast<const Derived*>(this);
 
@@ -41,7 +42,7 @@ template <typename Derived, typename ValueType>
 template <typename StringType>
 inline ValueType& ExpectWithValue<Derived, ValueType>::expect(const StringType& msg) & noexcept {
     static_assert(is_char_array<StringType>::value || is_iox_string<StringType>::value,
-                  "Only char arrays and iox::strings are allowed as message type.");
+                  "Only char arrays and iox2::legacy::strings are allowed as message type.");
 
     auto& derivedThis = *static_cast<Derived*>(this);
 
@@ -269,5 +270,6 @@ inline const Derived&& OrElse<Derived>::or_else(const or_else_callback_t& callab
 
 
 } // namespace internal
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 #endif

@@ -18,13 +18,14 @@
 
 #include "iox2/legacy/detail/storable_function.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 constexpr uint64_t DEFAULT_FUNCTION_CAPACITY { 128U };
 
 /// @brief A static memory replacement for std::function
 ///        Allows storing a callable with a given signature if its size does not exceed a limit.
 ///        This limit can be adjusted by changing the Bytes parameter.
-///        In contrast to iox::function_ref iox::function objects own everything needed
+///        In contrast to iox2::legacy::function_ref iox2::legacy::function objects own everything needed
 ///        to invoke the underlying callable and can be safely stored.
 ///        They also support copy and move semantics in natural way
 ///        by copying or moving the underlying callable.
@@ -43,6 +44,7 @@ constexpr uint64_t DEFAULT_FUNCTION_CAPACITY { 128U };
 template <typename Signature, uint64_t Capacity = DEFAULT_FUNCTION_CAPACITY>
 using function = storable_function<Capacity, Signature>;
 
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_FUNCTIONAL_FUNCTION_HPP

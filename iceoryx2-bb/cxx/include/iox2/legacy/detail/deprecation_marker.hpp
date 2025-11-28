@@ -20,10 +20,12 @@
 // FIXME introduce versions for iceoryx2
 #define ICEORYX_VERSION_MAJOR 0
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace detail {
 struct DeprecationMarker { };
 } // namespace detail
+}
 } // namespace iox
 
 // NOLINTJUSTIFICATION there is no other way to create the intended functionality for the deprecation marker
@@ -51,11 +53,12 @@ static_assert(ICEORYX_VERSION_MAJOR < IOX_INTERNAL_NEXT_DEPRECATED_VERSION,
 // when the namespace is called 'header' the warning will be "warning: 'header' is deprecated: Deprecated since v#.0
 // ..." with the file and line where the 'IOX_DEPRECATED_HEADER_SINCE' macro is used
 #define IOX_INTERNAL_DEPRECATED_HEADER_SINCE(VERSION, MESSAGE)                                                         \
-    namespace iox {                                                                                                    \
+    namespace iox2 {                                                                                                   \
+    namespace legacy {                                                                                                 \
     namespace detail {                                                                                                 \
     namespace                                                                                                          \
         [[deprecated("Deprecated since v" #VERSION ".0 and will be removed at a later version! " MESSAGE)]] header {   \
-    using iox::detail::DeprecationMarker;                                                                              \
+    using iox2::legacy::detail::DeprecationMarker;                                                                     \
     }                                                                                                                  \
     using header::DeprecationMarker;                                                                                   \
     }                                                                                                                  \
@@ -122,7 +125,7 @@ static_assert(ICEORYX_VERSION_MAJOR < IOX_INTERNAL_NEXT_DEPRECATED_VERSION,
 // This indirection is required to expand defines passed to 'IOX_DEPRECATED_SINCE' make code like this work
 // ----
 // #define V 3
-// IOX_DEPRECATED_SINCE(V, "Please use 'iox::foo' instead.") void bar() {}
+// IOX_DEPRECATED_SINCE(V, "Please use 'iox2::legacy::foo' instead.") void bar() {}
 // ----
 #define IOX_INTERNAL_DEPRECATED_SINCE_EXPANSION(VERSION, MESSAGE)                                                      \
     IOX_INTERNAL_DEPRECATED_SINCE_V##VERSION(VERSION, MESSAGE)
@@ -131,7 +134,7 @@ static_assert(ICEORYX_VERSION_MAJOR < IOX_INTERNAL_NEXT_DEPRECATED_VERSION,
 /// @param[in] VERSION from when the code is deprecated
 /// @param[in] MESSAGE custom message to be printed after 'Deprecated since vX and will be remove at a later version!'
 /// @code
-///     IOX_DEPRECATED_SINCE(3, "Please use 'iox::foo' instead.") void bar() {}
+///     IOX_DEPRECATED_SINCE(3, "Please use 'iox2::legacy::foo' instead.") void bar() {}
 /// @endcode
 #define IOX_DEPRECATED_SINCE(VERSION, MESSAGE) IOX_INTERNAL_DEPRECATED_SINCE_EXPANSION(VERSION, MESSAGE)
 

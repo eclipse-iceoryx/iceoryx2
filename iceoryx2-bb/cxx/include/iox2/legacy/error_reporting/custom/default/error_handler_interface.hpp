@@ -20,7 +20,8 @@
 #include "iox2/legacy/error_reporting/types.hpp"
 #include "iox2/legacy/error_reporting/violation.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace er {
 /// @brief Contains all required information about the error.
 /// Can be extended as needed without breaking the interface.
@@ -60,6 +61,7 @@ class ErrorHandlerInterface {
 };
 
 } // namespace er
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_REPORTING_ERROR_REPORTING_CUSTOM_ERROR_HANDLER_INTERFACE_HPP

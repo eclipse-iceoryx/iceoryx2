@@ -27,8 +27,8 @@
 
 namespace {
 using namespace ::testing;
-using namespace iox;
-using namespace iox::testing;
+using namespace iox2::legacy;
+using namespace iox2::legacy::testing;
 
 class vector_test : public Test {
   public:
@@ -790,7 +790,7 @@ TEST_F(vector_test, AccessOfNonExistingElementOnEmptyVectorLeadTermination) {
     ASSERT_THAT(sut.empty(), Eq(true));
 
     const uint64_t accessOffset { sut.size() + 1U };
-    IOX_EXPECT_FATAL_FAILURE([&] { sut.at(accessOffset); }, iox::er::ENFORCE_VIOLATION);
+    IOX_EXPECT_FATAL_FAILURE([&] { sut.at(accessOffset); }, iox2::legacy::er::ENFORCE_VIOLATION);
 #endif
 }
 
@@ -808,7 +808,7 @@ TEST_F(vector_test, AccessOfNonExistingElementOnPartiallyFilledVectorLeadTermina
     }
 
     const uint64_t accessOffset { sut.size() + 1U };
-    IOX_EXPECT_FATAL_FAILURE([&] { sut.at(accessOffset); }, iox::er::ENFORCE_VIOLATION);
+    IOX_EXPECT_FATAL_FAILURE([&] { sut.at(accessOffset); }, iox2::legacy::er::ENFORCE_VIOLATION);
 #endif
 }
 
@@ -827,7 +827,7 @@ TEST_F(vector_test, AccessOfNonExistingElementOnFullVectorLeadTermination) {
     ASSERT_THAT(sut.size(), Eq(VECTOR_CAPACITY));
 
     const uint64_t accessOffset { sut.size() + 1U };
-    IOX_EXPECT_FATAL_FAILURE([&] { sut.at(accessOffset); }, iox::er::ENFORCE_VIOLATION);
+    IOX_EXPECT_FATAL_FAILURE([&] { sut.at(accessOffset); }, iox2::legacy::er::ENFORCE_VIOLATION);
 #endif
 }
 
@@ -840,7 +840,7 @@ TEST_F(vector_test, OutOfBoundsAccessOnEmptyVectorLeadsToTermination) {
     ASSERT_THAT(sut.empty(), Eq(true));
 
     const uint64_t accessOffset { sut.size() + 1U };
-    IOX_EXPECT_FATAL_FAILURE([&] { sut[accessOffset]; }, iox::er::ENFORCE_VIOLATION);
+    IOX_EXPECT_FATAL_FAILURE([&] { sut[accessOffset]; }, iox2::legacy::er::ENFORCE_VIOLATION);
 #endif
 }
 
@@ -857,7 +857,7 @@ TEST_F(vector_test, OutOfBoundsAccessOnPartiallyFilledVectorLeadsToTermination) 
     }
 
     const uint64_t accessOffset { sut.size() + 1U };
-    IOX_EXPECT_FATAL_FAILURE([&] { sut[accessOffset]; }, iox::er::ENFORCE_VIOLATION);
+    IOX_EXPECT_FATAL_FAILURE([&] { sut[accessOffset]; }, iox2::legacy::er::ENFORCE_VIOLATION);
 #endif
 }
 
@@ -874,7 +874,7 @@ TEST_F(vector_test, OutOfBoundsAccessOnFullVectorLeadsToTermination) {
     }
 
     const uint64_t accessOffset { sut.size() + 1U };
-    IOX_EXPECT_FATAL_FAILURE([&] { sut[accessOffset]; }, iox::er::ENFORCE_VIOLATION);
+    IOX_EXPECT_FATAL_FAILURE([&] { sut[accessOffset]; }, iox2::legacy::er::ENFORCE_VIOLATION);
 #endif
 }
 

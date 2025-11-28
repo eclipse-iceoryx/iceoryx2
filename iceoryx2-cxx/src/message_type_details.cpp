@@ -19,7 +19,7 @@ TypeDetail::TypeDetail(iox2_type_detail_t value)
 }
 
 auto TypeDetail::variant() const -> TypeVariant {
-    return iox::into<TypeVariant>(static_cast<int>(m_value.variant));
+    return iox2::legacy::into<TypeVariant>(static_cast<int>(m_value.variant));
 }
 
 auto TypeDetail::type_name() const -> const char* {

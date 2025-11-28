@@ -25,7 +25,8 @@
 #include "iox2/legacy/error_reporting/custom/default/error_handler.hpp"
 #include "iox2/legacy/error_reporting/custom/error_kind.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace er {
 
 // The static reporting interface that must be defined to at least do nothing.
@@ -96,8 +97,10 @@ inline void report(const SourceLocation& location, Kind, const Error& error, con
 // Here the logging is subtly different and does not easily allow to factor out common parts.
 
 template <class Error>
-inline void
-report(const SourceLocation& location, iox::er::FatalKind kind, const Error& error, const char* stringifiedCondition) {
+inline void report(const SourceLocation& location,
+                   iox2::legacy::er::FatalKind kind,
+                   const Error& error,
+                   const char* stringifiedCondition) {
     auto code = toCode(error);
     auto module = toModule(error);
     auto moduleName = toModuleName(error);
@@ -147,7 +150,7 @@ report(const SourceLocation& location, Kind kind, const Error& error, const char
 
 template <class Error>
 inline void report(const SourceLocation& location,
-                   iox::er::AssertViolationKind kind,
+                   iox2::legacy::er::AssertViolationKind kind,
                    const Error& error,
                    const char* stringifiedCondition) {
     detail::report(location, kind, error, stringifiedCondition);
@@ -155,7 +158,7 @@ inline void report(const SourceLocation& location,
 
 template <class Error>
 inline void report(const SourceLocation& location,
-                   iox::er::EnforceViolationKind kind,
+                   iox2::legacy::er::EnforceViolationKind kind,
                    const Error& error,
                    const char* stringifiedCondition) {
     detail::report(location, kind, error, stringifiedCondition);
@@ -164,7 +167,7 @@ inline void report(const SourceLocation& location,
 template <class Error, class Message>
 // NOLINTNEXTLINE(readability-function-size) Not used directly but via a macro which hides the number of parameter away
 inline void report(const SourceLocation& location,
-                   iox::er::AssertViolationKind kind,
+                   iox2::legacy::er::AssertViolationKind kind,
                    const Error& error,
                    const char* stringifiedCondition,
                    Message&& msg) {
@@ -174,7 +177,7 @@ inline void report(const SourceLocation& location,
 template <class Error, class Message>
 // NOLINTNEXTLINE(readability-function-size) Not used directly but via a macro which hides the number of parameter away
 inline void report(const SourceLocation& location,
-                   iox::er::EnforceViolationKind kind,
+                   iox2::legacy::er::EnforceViolationKind kind,
                    const Error& error,
                    const char* stringifiedCondition,
                    Message&& msg) {
@@ -182,6 +185,7 @@ inline void report(const SourceLocation& location,
 }
 
 } // namespace er
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_REPORTING_ERROR_REPORTING_CUSTOM_DEFAULT_ERROR_REPORTING_IMPL_HPP

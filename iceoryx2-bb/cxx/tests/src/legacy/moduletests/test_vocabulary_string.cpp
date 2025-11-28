@@ -27,12 +27,13 @@
 
 #include <cstring>
 
-// NOTE: To speed up compilation and the clang-tidy check, the tests for 'iox::string' are split into multiple files
+// NOTE: To speed up compilation and the clang-tidy check, the tests for 'iox2::legacy::string' are split into multiple
+// files
 
 namespace {
 using namespace ::testing;
-using namespace iox;
-using namespace iox::testing;
+using namespace iox2::legacy;
+using namespace iox2::legacy::testing;
 
 TYPED_TEST_SUITE(stringTyped_test, StringImplementations, );
 
@@ -175,7 +176,7 @@ TYPED_TEST(stringTyped_test, ChangeStringAfterClearWorks) {
     EXPECT_THAT(this->testSubject.c_str(), StrEq("M"));
 }
 
-/// @note iox::optional<string<Capacity>> substr(uint64_t pos = 0) const noexcept;
+/// @note iox2::legacy::optional<string<Capacity>> substr(uint64_t pos = 0) const noexcept;
 TYPED_TEST(stringTyped_test, SubstrWithDefaultPosAndSizeResultsInWholeString) {
     ::testing::Test::RecordProperty("TEST_ID", "da66bb36-2a1c-435b-8a47-874eb12315ef");
     using MyString = typename TestFixture::stringType;
@@ -211,7 +212,7 @@ TEST(String100, SubstrWithDefaultSizeWorks) {
     EXPECT_THAT(testSubstring.c_str(), StrEq(testStdSubstring));
 }
 
-/// @note iox::optional<string<Capacity>> substr(uint64_t pos, uint64_t count) const noexcept
+/// @note iox2::legacy::optional<string<Capacity>> substr(uint64_t pos, uint64_t count) const noexcept
 TEST(String100, SubstrWithValidPosAndSizeWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "3cd90af2-97f4-4767-854d-d3ca726bd348");
     constexpr uint64_t STRINGCAP = 100U;
@@ -268,7 +269,7 @@ TYPED_TEST(stringTyped_test, SubstrWithInvalidPosFails) {
 }
 
 /// @note template <typename T>
-/// iox::optional<uint64_t> find(const T& t, uint64_t pos = 0) const noexcept
+/// iox2::legacy::optional<uint64_t> find(const T& t, uint64_t pos = 0) const noexcept
 TYPED_TEST(stringTyped_test, FindEmptyStringInEmptyStringWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "3ceb4ed6-1395-445e-afe4-94f6c9b2cee8");
     using MyString = typename TestFixture::stringType;
@@ -363,7 +364,7 @@ TEST(String100, FindNotIncludedStringLiteralFails) {
 }
 
 /// @note template <typename T>
-/// iox::optional<uint64_t> find_first_of(const T& t, uint64_t pos = 0) const noexcept
+/// iox2::legacy::optional<uint64_t> find_first_of(const T& t, uint64_t pos = 0) const noexcept
 TYPED_TEST(stringTyped_test, FindFirstOfFailsForEmptyStringInEmptyString) {
     ::testing::Test::RecordProperty("TEST_ID", "21f90f13-6b15-4ce1-9258-c21154b6043c");
     using MyString = typename TestFixture::stringType;
@@ -473,7 +474,7 @@ TEST(String100, FindFirstOfForNotIncludedStringLiteralFails) {
 }
 
 /// @note template <typename T>
-/// iox::optional<uint64_t> find_last_of(const T& t, uint64_t pos = 0) const noexcept
+/// iox2::legacy::optional<uint64_t> find_last_of(const T& t, uint64_t pos = 0) const noexcept
 TYPED_TEST(stringTyped_test, FindLastOfFailsForEmptyStringInEmptyString) {
     ::testing::Test::RecordProperty("TEST_ID", "7e09947d-762f-4d7f-a1ab-65696877da06");
     using MyString = typename TestFixture::stringType;
@@ -581,7 +582,7 @@ TYPED_TEST(stringTyped_test, AccessPositionOfEmptyStringViaAtFails) {
 #if defined _WIN32
     GTEST_SKIP() << "The 'AccessPositionOfEmptyStringViaAtFails' test is disabled on Windows";
 #else
-    IOX_EXPECT_FATAL_FAILURE([&] { this->testSubject.at(0U); }, iox::er::ENFORCE_VIOLATION);
+    IOX_EXPECT_FATAL_FAILURE([&] { this->testSubject.at(0U); }, iox2::legacy::er::ENFORCE_VIOLATION);
 #endif
 }
 
@@ -594,7 +595,7 @@ TYPED_TEST(stringTyped_test, AccessPositionOutOfBoundsViaAtFails) {
     using MyString = typename TestFixture::stringType;
     constexpr auto STRINGCAP = MyString().capacity();
 
-    IOX_EXPECT_FATAL_FAILURE([&] { this->testSubject.at(STRINGCAP); }, iox::er::ENFORCE_VIOLATION);
+    IOX_EXPECT_FATAL_FAILURE([&] { this->testSubject.at(STRINGCAP); }, iox2::legacy::er::ENFORCE_VIOLATION);
 #endif
 }
 
@@ -630,7 +631,7 @@ TYPED_TEST(stringTyped_test, AccessPositionOfEmptyStringViaConstAtFails) {
     constexpr auto STRINGCAP = MyString().capacity();
     const string<STRINGCAP> sut;
 
-    IOX_EXPECT_FATAL_FAILURE([&] { sut.at(0U); }, iox::er::ENFORCE_VIOLATION);
+    IOX_EXPECT_FATAL_FAILURE([&] { sut.at(0U); }, iox2::legacy::er::ENFORCE_VIOLATION);
 #endif
 }
 
@@ -644,7 +645,7 @@ TYPED_TEST(stringTyped_test, AccessPositionOutOfBoundsViaConstAtFails) {
     constexpr auto STRINGCAP = MyString().capacity();
     const string<STRINGCAP> sut;
 
-    IOX_EXPECT_FATAL_FAILURE([&] { sut.at(STRINGCAP); }, iox::er::ENFORCE_VIOLATION);
+    IOX_EXPECT_FATAL_FAILURE([&] { sut.at(STRINGCAP); }, iox2::legacy::er::ENFORCE_VIOLATION);
 #endif
 }
 
@@ -674,7 +675,7 @@ TYPED_TEST(stringTyped_test, AccessPositionOfEmptyStringViaSubscriptOperatorFail
 #if defined _WIN32
     GTEST_SKIP() << "The 'AccessPositionOfEmptyStringViaSubscriptOperatorFails' test is disabled on Windows";
 #else
-    IOX_EXPECT_FATAL_FAILURE([&] { this->testSubject[0U]; }, iox::er::ENFORCE_VIOLATION);
+    IOX_EXPECT_FATAL_FAILURE([&] { this->testSubject[0U]; }, iox2::legacy::er::ENFORCE_VIOLATION);
 #endif
 }
 
@@ -687,7 +688,7 @@ TYPED_TEST(stringTyped_test, AccessPositionOutOfBoundsViaSubscriptOperatorFails)
     using MyString = typename TestFixture::stringType;
     constexpr auto STRINGCAP = MyString().capacity();
 
-    IOX_EXPECT_FATAL_FAILURE([&] { this->testSubject[STRINGCAP]; }, iox::er::ENFORCE_VIOLATION);
+    IOX_EXPECT_FATAL_FAILURE([&] { this->testSubject[STRINGCAP]; }, iox2::legacy::er::ENFORCE_VIOLATION);
 #endif
 }
 
@@ -723,7 +724,7 @@ TYPED_TEST(stringTyped_test, AccessPositionOfEmptyStringViaConstSubscriptOperato
     constexpr auto STRINGCAP = MyString().capacity();
     const string<STRINGCAP> sut;
 
-    IOX_EXPECT_FATAL_FAILURE([&] { sut[0U]; }, iox::er::ENFORCE_VIOLATION);
+    IOX_EXPECT_FATAL_FAILURE([&] { sut[0U]; }, iox2::legacy::er::ENFORCE_VIOLATION);
 #endif
 }
 
@@ -737,7 +738,7 @@ TYPED_TEST(stringTyped_test, AccessPositionOutOfBoundsViaConstSubscriptOperatorF
     constexpr auto STRINGCAP = MyString().capacity();
     const string<STRINGCAP> sut;
 
-    IOX_EXPECT_FATAL_FAILURE([&] { sut[STRINGCAP]; }, iox::er::ENFORCE_VIOLATION);
+    IOX_EXPECT_FATAL_FAILURE([&] { sut[STRINGCAP]; }, iox2::legacy::er::ENFORCE_VIOLATION);
 #endif
 }
 
@@ -775,8 +776,8 @@ TEST(stringTyped_test, NonCxxStringsAreIdentifiedCorrectly) {
 TEST(stringTyped_test, CxxStringsAreIdentifiedCorrectly) {
     ::testing::Test::RecordProperty("TEST_ID", "778995dc-9be4-47f1-9490-cd111930d3d3");
 
-    EXPECT_TRUE(is_iox_string<iox::string<1>>::value);
-    EXPECT_TRUE(is_iox_string<iox::string<10>>::value);
+    EXPECT_TRUE(is_iox_string<iox2::legacy::string<1>>::value);
+    EXPECT_TRUE(is_iox_string<iox2::legacy::string<10>>::value);
 }
 
 TYPED_TEST(stringTyped_test, UncheckedAtWorks) {

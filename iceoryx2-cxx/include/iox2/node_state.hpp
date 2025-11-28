@@ -33,18 +33,18 @@ class AliveNodeView {
     auto operator=(AliveNodeView&&) -> AliveNodeView& = default;
     ~AliveNodeView() = default;
 
-    AliveNodeView(NodeId node_id, const iox::optional<NodeDetails>& details);
+    AliveNodeView(NodeId node_id, const iox2::legacy::optional<NodeDetails>& details);
 
     /// Returns the [`NodeId`].
     auto id() const -> const NodeId&;
 
     /// Returns optional [`NodeDetails`] that contains further information about the [`Node`].
     /// Can only be acquired when the process has the access right to read it.
-    auto details() const -> const iox::optional<NodeDetails>&;
+    auto details() const -> const iox2::legacy::optional<NodeDetails>&;
 
   private:
     NodeId m_id;
-    iox::optional<NodeDetails> m_details;
+    iox2::legacy::optional<NodeDetails> m_details;
 };
 
 /// Contains all details of a [`Node`] that is dead.
@@ -64,11 +64,11 @@ class DeadNodeView {
 
     /// Returns a optional [`NodeDetails`] that contains further information about the [`Node`].
     /// Can only be acquired when the process has the access right to read it.
-    auto details() const -> iox::optional<NodeDetails>;
+    auto details() const -> iox2::legacy::optional<NodeDetails>;
 
     /// Removes all stale resources of the dead [`Node`]. On error it returns a [`NodeCleanupFailure`].
     /// It returns true if the stale resources could be removed, otherwise false.
-    auto remove_stale_resources() -> iox::expected<bool, NodeCleanupFailure>;
+    auto remove_stale_resources() -> iox2::legacy::expected<bool, NodeCleanupFailure>;
 
   private:
     AliveNodeView<T> m_view;
@@ -86,19 +86,19 @@ class NodeState {
 
     /// If the [`Node`] is alive the provided callback is called with an [`AliveNodeView`]
     /// as argument.
-    auto alive(const iox::function<void(AliveNodeView<T>&)>& callback) -> NodeState&;
+    auto alive(const iox2::legacy::function<void(AliveNodeView<T>&)>& callback) -> NodeState&;
 
     /// If the [`Node`] is dead the provided callback is called with a [`DeadNodeView`] as
     /// argument.
-    auto dead(const iox::function<void(DeadNodeView<T>&)>& callback) -> NodeState&;
+    auto dead(const iox2::legacy::function<void(DeadNodeView<T>&)>& callback) -> NodeState&;
 
     /// If the [`Node`] is inaccessible due to a lack of permissions the provided callback is
     /// called with a [`NodeId`] as argument.
-    auto inaccessible(const iox::function<void(NodeId&)>& callback) -> NodeState&;
+    auto inaccessible(const iox2::legacy::function<void(NodeId&)>& callback) -> NodeState&;
 
     /// If the [`Node`] is files are corrupted or some essential constructs are missing the
     /// provided callback is called with a [`NodeId`] as argument.
-    auto undefined(const iox::function<void(NodeId&)>& callback) -> NodeState&;
+    auto undefined(const iox2::legacy::function<void(NodeId&)>& callback) -> NodeState&;
 
   private:
     template <ServiceType>
@@ -110,7 +110,7 @@ class NodeState {
     explicit NodeState(const DeadNodeView<T>& view);
     NodeState(iox2_node_state_e node_state, const NodeId& node_id);
 
-    iox::variant<AliveNodeView<T>, DeadNodeView<T>, NodeId, NodeId> m_state;
+    iox2::legacy::variant<AliveNodeView<T>, DeadNodeView<T>, NodeId, NodeId> m_state;
 };
 } // namespace iox2
 

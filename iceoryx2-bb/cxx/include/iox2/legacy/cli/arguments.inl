@@ -18,7 +18,8 @@
 
 #include "iox2/legacy/cli/arguments.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace cli {
 template <typename T>
 inline expected<T, Arguments::Error> Arguments::convertFromString(const Argument_t& stringValue) const noexcept {
@@ -51,6 +52,7 @@ inline expected<T, Arguments::Error> Arguments::get(const OptionName_t& optionNa
     return err(Error::NO_SUCH_VALUE);
 }
 } // namespace cli
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_CLI_CLI_DEFINITION_INL

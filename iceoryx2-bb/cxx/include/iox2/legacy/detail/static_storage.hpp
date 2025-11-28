@@ -20,7 +20,8 @@
 #include <cstring>
 #include <memory>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 /// @brief Static storage class to allocate memory for objects of type not yet known.
 ///        This storage is not aware of any underlying type.
 ///        It can be used where abstract static memory for some object is required.
@@ -101,7 +102,8 @@ class static_storage final {
     static constexpr uint64_t align_mismatch(uint64_t align, uint64_t requiredAlign) noexcept;
 };
 
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #include "iox2/legacy/detail/static_storage.inl"
 #endif // IOX_HOOFS_MEMORY_STATIC_STORAGE_HPP
