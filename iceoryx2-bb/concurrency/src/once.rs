@@ -10,8 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::iox_atomic::IoxAtomicU8;
 use core::sync::atomic::Ordering;
+
+use crate::atomic::AtomicU8;
 
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -52,7 +53,7 @@ impl From<u8> for State {
 /// }
 /// ```
 pub struct Once {
-    state: IoxAtomicU8,
+    state: AtomicU8,
 }
 
 impl Default for Once {
@@ -65,7 +66,7 @@ impl Once {
     /// Creates a new `Once` in the uninitialized state.
     pub const fn new() -> Self {
         Self {
-            state: IoxAtomicU8::new(State::Incomplete as u8),
+            state: AtomicU8::new(State::Incomplete as u8),
         }
     }
 

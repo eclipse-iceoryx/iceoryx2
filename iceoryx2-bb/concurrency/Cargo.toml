@@ -15,4 +15,7 @@ default = []
 std = []
 
 [dependencies]
+iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-pal-concurrency-sync = { workspace = true }
+
+paste = { workspace = true }
