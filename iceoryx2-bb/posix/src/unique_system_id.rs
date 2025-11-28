@@ -187,7 +187,7 @@ mod tests {
         let id1 = UniqueSystemId::create(pid, now);
         // ideally, fork and exec the current process to reset the static counter inside UniqueSystemId::create
         // is better, but to ease the test now, we can duplicate the logic inside the lambda instead.
-        static COUNTER: IoxAtomicU32 = IoxAtomicU32::new(0);
+        static COUNTER: AtomicU32 = AtomicU32::new(0);
         let id2 = UniqueSystemId {
             pid: pid + 1,
             seconds: now.seconds() as u32,
