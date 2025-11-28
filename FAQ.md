@@ -61,8 +61,8 @@
 
 1. Ensure to only use data types suitable for shared memory communication like
    pod-types (plain old data, e.g. `uint64_t`, `int32_t`, ...) or explicitly
-   shared-memory compatible containers like some of the constructs in the
-   `iceoryx-hoofs`.
+   shared-memory compatible containers like some of the constructs in
+   `iceoryx2-bb-cxx`.
 2. **Do not use pointers, or data types that are not self-contained or use
    pointers for their internal management!**
 3. The type must be trivially destructible

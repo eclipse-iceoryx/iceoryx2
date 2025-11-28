@@ -172,7 +172,6 @@ endif()
 
 # END C binding
 
-
 if(BUILD_EXAMPLES)
     add_subdirectory(examples/c)
 endif()
@@ -181,10 +180,6 @@ endif()
 if(BUILD_CXX)
     # C++ containers
     add_subdirectory(iceoryx2-bb/cxx)
-
-    # C++ binding
-    set(ICEORYX_HOOFS_VERSION 2.95.8)
-    include(${CMAKE_CURRENT_LIST_DIR}/iceoryx2-cxx/cmake/fetch-iceoryx-hoofs.cmake)
 
     add_subdirectory(iceoryx2-cxx)
 
