@@ -11,9 +11,9 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::time::Duration;
+use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicUsize;
 use iceoryx2_bb_posix::socket_pair::*;
 use iceoryx2_bb_testing::{assert_that, watchdog::Watchdog};
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 use std::{
     sync::{atomic::Ordering, Barrier},
     time::Instant,

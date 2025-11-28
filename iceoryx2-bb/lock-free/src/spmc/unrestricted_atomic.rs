@@ -33,8 +33,8 @@
 
 use core::{cell::UnsafeCell, fmt::Debug, mem::MaybeUninit, sync::atomic::Ordering};
 
+use iceoryx2_bb_concurrency::iox_atomic::{IoxAtomicBool, IoxAtomicU32};
 use iceoryx2_bb_elementary::math::{align, max};
-use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU32};
 
 // ATTENTION: To ensure the functionality also in the case of an overflow with the 'write_cell'
 // value, the value of `NUMBER_OF_CELLS` must be a power of two

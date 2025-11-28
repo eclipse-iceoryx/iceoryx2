@@ -24,11 +24,11 @@ pub mod client {
     use iceoryx2::port::LoanError;
     use iceoryx2::prelude::*;
     use iceoryx2::testing::*;
+    use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicBool;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
     use iceoryx2_bb_testing::watchdog::Watchdog;
-    use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
     const TIMEOUT: Duration = Duration::from_millis(50);
 

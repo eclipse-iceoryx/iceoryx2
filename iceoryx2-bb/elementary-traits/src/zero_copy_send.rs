@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_pal_concurrency_sync::iox_atomic::*;
+use iceoryx2_bb_concurrency::iox_atomic::*;
 
 /// Marks types that can be sent to another process in a zero-copy manner, i.e. the types can be
 /// safely used from within different process address spaces and can be uniquely identified by their

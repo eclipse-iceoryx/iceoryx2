@@ -11,9 +11,9 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2::prelude::*;
+use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicU32;
 use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU32;
 
 use iceoryx2::config::Config;
 use iceoryx2::node::testing::__internal_node_staged_death;

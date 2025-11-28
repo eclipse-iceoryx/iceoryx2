@@ -16,7 +16,7 @@
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 
-use iceoryx2_pal_concurrency_sync::iox_atomic::*;
+use iceoryx2_bb_concurrency::iox_atomic::*;
 
 /// A trait that allows types to perform a placement new based on their
 /// [`Default::default()`] implementation. This can be used to avoid additional

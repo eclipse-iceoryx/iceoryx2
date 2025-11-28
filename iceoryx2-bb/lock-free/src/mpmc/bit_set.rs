@@ -37,6 +37,8 @@
 //!  ```
 
 use core::{alloc::Layout, fmt::Debug, sync::atomic::Ordering};
+
+use iceoryx2_bb_concurrency::iox_atomic::{IoxAtomicBool, IoxAtomicU8, IoxAtomicUsize};
 use iceoryx2_bb_elementary::{
     bump_allocator::BumpAllocator,
     math::unaligned_mem_size,
@@ -45,7 +47,6 @@ use iceoryx2_bb_elementary::{
 use iceoryx2_bb_elementary_traits::{
     owning_pointer::OwningPointer, relocatable_container::RelocatableContainer,
 };
-use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU8, IoxAtomicUsize};
 
 use iceoryx2_bb_log::{fail, fatal_panic};
 
