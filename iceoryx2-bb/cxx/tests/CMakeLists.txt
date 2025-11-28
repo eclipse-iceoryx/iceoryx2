@@ -120,7 +120,7 @@ target_include_directories(iceoryx2-bb-cxx-tests
 target_link_libraries(
     iceoryx2-bb-cxx-tests
     PRIVATE
-    iceoryx2-bb-cxx::iceoryx2-bb-cxx-tests
+    iceoryx2-bb-cxx::iceoryx2-bb-cxx
     GTest::gtest GTest::gmock
     ${ICEORYX2_SANITIZER_FLAGS}
     ${ICEORYX2_COVERAGE_FLAGS}

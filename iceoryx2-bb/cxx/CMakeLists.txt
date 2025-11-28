@@ -26,19 +26,19 @@ include(cmake/GdbPrettyPrinter.cmake)
 
 include(Iceoryx2PlatformSettings)
 
-add_library(iceoryx2-bb-cxx-tests)
-add_library(iceoryx2-bb-cxx::iceoryx2-bb-cxx-tests ALIAS iceoryx2-bb-cxx-tests)
+add_library(iceoryx2-bb-cxx)
+add_library(iceoryx2-bb-cxx::iceoryx2-bb-cxx ALIAS iceoryx2-bb-cxx)
 
-target_sources(iceoryx2-bb-cxx-tests PUBLIC
+target_sources(iceoryx2-bb-cxx PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/config.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/optional.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/static_string.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/static_vector.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/detail/raw_byte_storage.hpp>
-    $<BUILD_INTERFACE:$<$<CXX_COMPILER_ID:MSVC>:${PROJECT_SOURCE_DIR}/iceoryx2-bb-cxx-tests.natvis>>
+    $<BUILD_INTERFACE:$<$<CXX_COMPILER_ID:MSVC>:${PROJECT_SOURCE_DIR}/iceoryx2-bb-cxx.natvis>>
 )
 
-target_sources(iceoryx2-bb-cxx-tests
+target_sources(iceoryx2-bb-cxx
     PRIVATE
     src/cli/arguments.cpp
     src/cli/command_line_parser.cpp
@@ -57,20 +57,20 @@ target_sources(iceoryx2-bb-cxx-tests
     src/type_traits.cpp
 )
 
-target_include_directories(iceoryx2-bb-cxx-tests
+target_include_directories(iceoryx2-bb-cxx
     PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include/${PREFIX}>
 )
 
-target_compile_features(iceoryx2-bb-cxx-tests PRIVATE ${ICEORYX2_CXX_STD})
+target_compile_features(iceoryx2-bb-cxx PRIVATE ${ICEORYX2_CXX_STD})
 
 # NOTE: position independent code is required due to the usage of thread-local-storage
-set_target_properties(iceoryx2-bb-cxx-tests PROPERTIES POSITION_INDEPENDENT_CODE ON)
+set_target_properties(iceoryx2-bb-cxx PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-target_gdb_pretty_printer(iceoryx2-bb-cxx-tests
+target_gdb_pretty_printer(iceoryx2-bb-cxx
     PUBLIC
-    ${PROJECT_SOURCE_DIR}/iceoryx2-bb-cxx-tests-pretty-printer.py
+    ${PROJECT_SOURCE_DIR}/iceoryx2-bb-cxx-pretty-printer.py
 )
 
 # include install setup

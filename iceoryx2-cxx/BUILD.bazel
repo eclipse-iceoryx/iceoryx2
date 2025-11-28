@@ -30,7 +30,7 @@ cc_library(
     strip_include_prefix = "include",
     deps = [
         "//:iceoryx2-c-shared",
-        "//iceoryx2-bb/cxx:iceoryx2-bb-cxx-tests",
+        "//iceoryx2-bb/cxx:iceoryx2-bb-cxx",
     ],
     linkstatic = False,
 )
@@ -46,7 +46,7 @@ cc_library(
     strip_include_prefix = "include",
     deps = [
         "//:iceoryx2-c-static",
-        "//iceoryx2-bb/cxx:iceoryx2-bb-cxx-tests",
+        "//iceoryx2-bb/cxx:iceoryx2-bb-cxx",
     ],
     linkstatic = True,
 )

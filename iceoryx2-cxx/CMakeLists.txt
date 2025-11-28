@@ -105,7 +105,7 @@ set_target_properties(iceoryx2-cxx-object-lib
 
 target_link_libraries(iceoryx2-cxx-object-lib
     PUBLIC
-    iceoryx2-bb-cxx::iceoryx2-bb-cxx-tests
+    iceoryx2-bb-cxx::iceoryx2-bb-cxx
     iceoryx2-c::includes-only
     iceoryx2-cxx::includes-only-cxx
     ${ICEORYX2_SANITIZER_FLAGS}
@@ -126,7 +126,7 @@ set_target_properties(static-lib-cxx
 
 target_link_libraries(static-lib-cxx
     PUBLIC
-    iceoryx2-bb-cxx::iceoryx2-bb-cxx-tests
+    iceoryx2-bb-cxx::iceoryx2-bb-cxx
     iceoryx2-c::static-lib
     iceoryx2-cxx::includes-only-cxx
 )
@@ -145,7 +145,7 @@ set_target_properties(shared-lib-cxx
 
 target_link_libraries(shared-lib-cxx
     PUBLIC
-    iceoryx2-bb-cxx::iceoryx2-bb-cxx-tests
+    iceoryx2-bb-cxx::iceoryx2-bb-cxx
     iceoryx2-c::shared-lib
     iceoryx2-cxx::includes-only-cxx
 )
