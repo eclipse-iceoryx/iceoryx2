@@ -12,7 +12,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub use iceoryx2_pal_concurrency_sync::iox_atomic;
+pub mod atomic;
 
 #[cfg(not(feature = "std"))]
 pub mod once;

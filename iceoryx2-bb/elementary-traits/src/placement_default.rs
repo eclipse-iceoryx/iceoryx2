@@ -16,8 +16,6 @@
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 
-use iceoryx2_bb_concurrency::iox_atomic::*;
-
 /// A trait that allows types to perform a placement new based on their
 /// [`Default::default()`] implementation. This can be used to avoid additional
 /// copies when a type must be written into a specific memory location.
@@ -91,17 +89,6 @@ Impl!(isize);
 Impl!(usize);
 Impl!(char);
 Impl!(bool);
-Impl!(IoxAtomicBool);
-Impl!(IoxAtomicU8);
-Impl!(IoxAtomicU16);
-Impl!(IoxAtomicU32);
-Impl!(IoxAtomicU64);
-Impl!(IoxAtomicI8);
-Impl!(IoxAtomicI16);
-Impl!(IoxAtomicI32);
-Impl!(IoxAtomicI64);
-Impl!(IoxAtomicIsize);
-Impl!(IoxAtomicUsize);
 
 impl<T: PlacementDefault> PlacementDefault for [T] {
     unsafe fn placement_default(ptr: *mut Self) {
