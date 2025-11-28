@@ -28,9 +28,9 @@ mod recorder_replayer {
     };
 
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeName};
+    use iceoryx2_bb_concurrency::atomic::AtomicU8;
     use iceoryx2_bb_posix::testing::generate_file_name;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
-    use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU8;
 
     fn generate_type_detail(variant: TypeVariant, size: usize, alignment: usize) -> TypeDetail {
         iceoryx2::testing::create_custom_type_detail(
@@ -50,7 +50,7 @@ mod recorder_replayer {
     }
 
     fn generate_data(len: usize) -> Vec<u8> {
-        static COUNTER: IoxAtomicU8 = IoxAtomicU8::new(0);
+        static COUNTER: AtomicU8 = AtomicU8::new(0);
 
         let mut data = vec![];
 

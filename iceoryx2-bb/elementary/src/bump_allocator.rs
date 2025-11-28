@@ -12,13 +12,13 @@
 
 use crate::math::align;
 use core::sync::atomic::Ordering;
-use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicUsize;
+use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
 
 /// A minimalistic [`BumpAllocator`].
 pub struct BumpAllocator {
     start: *mut u8,
-    pos: IoxAtomicUsize,
+    pos: AtomicUsize,
 }
 
 impl BumpAllocator {
@@ -26,7 +26,7 @@ impl BumpAllocator {
     pub fn new(start: *mut u8) -> Self {
         Self {
             start,
-            pos: IoxAtomicUsize::new(start as usize),
+            pos: AtomicUsize::new(start as usize),
         }
     }
 }

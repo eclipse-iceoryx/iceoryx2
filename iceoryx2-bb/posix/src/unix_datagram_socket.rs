@@ -129,7 +129,7 @@ use core::{mem::size_of, time::Duration};
 
 use alloc::format;
 
-use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicBool;
+use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary::scope_guard::ScopeGuardBuilder;
@@ -303,7 +303,7 @@ const BLOCKING_TIMEOUT: Duration = Duration::from_secs(i16::MAX as _);
 #[derive(Debug)]
 struct UnixDatagramSocket {
     name: FilePath,
-    is_non_blocking: IoxAtomicBool,
+    is_non_blocking: AtomicBool,
     file_descriptor: FileDescriptor,
 }
 
@@ -511,7 +511,7 @@ impl UnixDatagramSocket {
 
         Ok(Self {
             name: *name,
-            is_non_blocking: IoxAtomicBool::new(false),
+            is_non_blocking: AtomicBool::new(false),
             file_descriptor: FileDescriptor::new(raw_fd).unwrap(),
         })
     }

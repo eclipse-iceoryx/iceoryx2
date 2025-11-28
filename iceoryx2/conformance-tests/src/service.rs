@@ -34,7 +34,7 @@ pub mod service {
     use iceoryx2::service::port_factory::{blackboard, event, publish_subscribe, request_response};
     use iceoryx2::service::{ServiceDetailsError, ServiceListError};
     use iceoryx2::testing::*;
-    use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicU64;
+    use iceoryx2_bb_concurrency::atomic::AtomicU64;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
@@ -452,7 +452,7 @@ pub mod service {
         const NUMBER_OF_ITERATIONS: usize = 25;
         let test = Factory::new();
 
-        let success_counter = IoxAtomicU64::new(0);
+        let success_counter = AtomicU64::new(0);
         let barrier_enter = Barrier::new(number_of_threads);
         let barrier_exit = Barrier::new(number_of_threads);
         let service_name = generate_name();

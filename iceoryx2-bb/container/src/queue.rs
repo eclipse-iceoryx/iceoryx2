@@ -111,7 +111,7 @@
 //!
 use core::marker::PhantomData;
 use core::{alloc::Layout, fmt::Debug, mem::MaybeUninit};
-use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicBool;
+use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
 use iceoryx2_bb_elementary::relocatable_ptr::{GenericRelocatablePointer, RelocatablePointer};
@@ -139,7 +139,7 @@ pub struct MetaQueue<T, Ptr: GenericPointer> {
     start: usize,
     len: usize,
     capacity: usize,
-    is_initialized: IoxAtomicBool,
+    is_initialized: AtomicBool,
     _phantom_data: PhantomData<T>,
 }
 
@@ -153,7 +153,7 @@ impl<T> Queue<T> {
             start: 0,
             len: 0,
             capacity,
-            is_initialized: IoxAtomicBool::new(true),
+            is_initialized: AtomicBool::new(true),
             _phantom_data: PhantomData,
         }
     }
@@ -227,7 +227,7 @@ impl<T> RelocatableContainer for RelocatableQueue<T> {
             start: 0,
             len: 0,
             capacity,
-            is_initialized: IoxAtomicBool::new(false),
+            is_initialized: AtomicBool::new(false),
             _phantom_data: PhantomData,
         }
     }

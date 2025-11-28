@@ -23,7 +23,7 @@ pub mod event_trait {
     use std::sync::{Barrier, Mutex};
     use std::time::Instant;
 
-    use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicU64;
+    use iceoryx2_bb_concurrency::atomic::AtomicU64;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_posix::barrier::*;
@@ -336,7 +336,7 @@ pub mod event_trait {
         let name = generate_name();
         let config = Mutex::new(generate_isolated_config::<Sut>());
 
-        let counter = IoxAtomicU64::new(0);
+        let counter = AtomicU64::new(0);
         let handle = BarrierHandle::new();
         let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
 
@@ -376,7 +376,7 @@ pub mod event_trait {
         let name = generate_name();
         let config = Mutex::new(generate_isolated_config::<Sut>());
 
-        let counter = IoxAtomicU64::new(0);
+        let counter = AtomicU64::new(0);
         let handle = BarrierHandle::new();
         let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
 
@@ -674,7 +674,7 @@ pub mod event_trait {
         let _watchdog = Watchdog::new();
         let name = generate_name();
         let barrier = Barrier::new(2);
-        let counter = IoxAtomicU64::new(0);
+        let counter = AtomicU64::new(0);
         let id = TriggerId::new(5);
         let config = Mutex::new(generate_isolated_config::<Sut>());
 

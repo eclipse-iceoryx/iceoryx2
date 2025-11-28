@@ -39,7 +39,7 @@
 //! }
 //! ```
 
-use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicU32;
+use iceoryx2_bb_concurrency::atomic::AtomicU32;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -116,7 +116,7 @@ impl UniqueSystemId {
     }
 
     fn create(pid: u32, now: Time) -> UniqueSystemId {
-        static COUNTER: IoxAtomicU32 = IoxAtomicU32::new(0);
+        static COUNTER: AtomicU32 = AtomicU32::new(0);
         UniqueSystemId {
             pid,
             seconds: now.seconds() as u32,

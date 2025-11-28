@@ -18,7 +18,7 @@ use alloc::format;
 use alloc::sync::Arc;
 use alloc::vec::Vec;
 
-use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicUsize;
+use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_elementary::cyclic_tagger::*;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::shm_allocator::{AllocationError, PointerOffset, ShmAllocationError};
@@ -117,7 +117,7 @@ pub(crate) struct Sender<Service: service::Service> {
     pub(crate) degradation_callback: Option<DegradationCallback<'static>>,
     pub(crate) service_state: Arc<ServiceState<Service, NoResource>>,
     pub(crate) tagger: CyclicTagger,
-    pub(crate) loan_counter: IoxAtomicUsize,
+    pub(crate) loan_counter: AtomicUsize,
     pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
     pub(crate) message_type_details: MessageTypeDetails,
     pub(crate) number_of_channels: usize,

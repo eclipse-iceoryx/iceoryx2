@@ -16,10 +16,10 @@ pub mod details {
 
     use alloc::vec::Vec;
 
+    use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicUsize};
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
     use iceoryx2_bb_system_types::{file_name::FileName, path::Path};
     use iceoryx2_log::{debug, fail};
-    use iceoryx2_bb_concurrency::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
 
     use crate::{
         dynamic_storage::{
@@ -42,8 +42,8 @@ pub mod details {
     pub struct Management<Tracker: IdTracker, WaitMechanism: SignalMechanism> {
         id_tracker: Tracker,
         signal_mechanism: WaitMechanism,
-        reference_counter: IoxAtomicUsize,
-        has_listener: IoxAtomicBool,
+        reference_counter: AtomicUsize,
+        has_listener: AtomicBool,
     }
 
     #[derive(PartialEq, Eq)]
@@ -626,8 +626,8 @@ pub mod details {
                 .create(Management {
                     id_tracker: unsafe { Tracker::new_uninit(id_tracker_capacity) },
                     signal_mechanism: WaitMechanism::new(),
-                    reference_counter: IoxAtomicUsize::new(1),
-                    has_listener: IoxAtomicBool::new(true),
+                    reference_counter: AtomicUsize::new(1),
+                    has_listener: AtomicBool::new(true),
                 }) {
                 Ok(storage) => Ok(Listener {
                     storage,

@@ -32,7 +32,7 @@ pub mod service_publish_subscribe {
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::{Service, ServiceDetails};
     use iceoryx2::testing;
-    use iceoryx2_bb_concurrency::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
+    use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicUsize};
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_derive_macros::ZeroCopySend;
     use iceoryx2_bb_elementary::alignment::Alignment;
@@ -1240,7 +1240,7 @@ pub mod service_publish_subscribe {
 
         let create_service_barrier = Barrier::new(2);
         let service_name = generate_name();
-        let keep_running = IoxAtomicBool::new(true);
+        let keep_running = AtomicBool::new(true);
         let config = testing::generate_isolated_config();
         let node = Mutex::new(NodeBuilder::new().config(&config).create::<Sut>().unwrap());
 
@@ -1307,8 +1307,8 @@ pub mod service_publish_subscribe {
 
         let create_service_barrier = Barrier::new(1 + NUMBER_OF_PUBLISHER_THREADS);
         let service_name = generate_name();
-        let keep_running = IoxAtomicBool::new(true);
-        let reconnection_cycle = IoxAtomicUsize::new(0);
+        let keep_running = AtomicBool::new(true);
+        let reconnection_cycle = AtomicUsize::new(0);
         let config = testing::generate_isolated_config();
         let node = Mutex::new(NodeBuilder::new().config(&config).create::<Sut>().unwrap());
 

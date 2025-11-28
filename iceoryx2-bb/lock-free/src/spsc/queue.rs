@@ -46,7 +46,7 @@
 
 use core::{cell::UnsafeCell, mem::MaybeUninit, sync::atomic::Ordering};
 
-use iceoryx2_bb_concurrency::iox_atomic::{IoxAtomicBool, IoxAtomicU64};
+use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64};
 
 /// The [`Producer`] of the [`Queue`] which can add values to it via [`Producer::push()`].
 pub struct Producer<'a, T: Copy, const CAPACITY: usize> {
@@ -88,10 +88,10 @@ impl<T: Copy, const CAPACITY: usize> Drop for Consumer<'_, T, CAPACITY> {
 #[derive(Debug)]
 pub struct Queue<T: Copy, const CAPACITY: usize> {
     data: [UnsafeCell<MaybeUninit<T>>; CAPACITY],
-    write_position: IoxAtomicU64,
-    read_position: IoxAtomicU64,
-    has_producer: IoxAtomicBool,
-    has_consumer: IoxAtomicBool,
+    write_position: AtomicU64,
+    read_position: AtomicU64,
+    has_producer: AtomicBool,
+    has_consumer: AtomicBool,
 }
 
 unsafe impl<T: Copy + Sync, const CAPACITY: usize> Sync for Queue<T, CAPACITY> {}
@@ -101,10 +101,10 @@ impl<T: Copy, const CAPACITY: usize> Queue<T, CAPACITY> {
     pub fn new() -> Self {
         Self {
             data: core::array::from_fn(|_| UnsafeCell::new(MaybeUninit::uninit())),
-            write_position: IoxAtomicU64::new(0),
-            read_position: IoxAtomicU64::new(0),
-            has_producer: IoxAtomicBool::new(true),
-            has_consumer: IoxAtomicBool::new(true),
+            write_position: AtomicU64::new(0),
+            read_position: AtomicU64::new(0),
+            has_producer: AtomicBool::new(true),
+            has_consumer: AtomicBool::new(true),
         }
     }
 

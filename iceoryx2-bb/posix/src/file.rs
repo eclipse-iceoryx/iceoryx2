@@ -48,11 +48,11 @@ use core::sync::atomic::Ordering;
 use alloc::string::String;
 use alloc::vec::Vec;
 
+use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_log::{fail, trace, warn};
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::posix::MemZeroedStruct;
 use iceoryx2_pal_posix::*;
@@ -551,7 +551,7 @@ impl FileCreationBuilder {
 pub struct File {
     path: Option<FilePath>,
     file_descriptor: FileDescriptor,
-    has_ownership: IoxAtomicBool,
+    has_ownership: AtomicBool,
 }
 
 impl Drop for File {
@@ -622,7 +622,7 @@ impl File {
             return Ok(File {
                 path: Some(config.file_path),
                 file_descriptor: v,
-                has_ownership: IoxAtomicBool::new(config.has_ownership),
+                has_ownership: AtomicBool::new(config.has_ownership),
             });
         }
 
@@ -655,7 +655,7 @@ impl File {
             return Ok(File {
                 path: Some(config.file_path),
                 file_descriptor: v,
-                has_ownership: IoxAtomicBool::new(config.has_ownership),
+                has_ownership: AtomicBool::new(config.has_ownership),
             });
         }
 
@@ -700,7 +700,7 @@ impl File {
         Self {
             path: None,
             file_descriptor,
-            has_ownership: IoxAtomicBool::new(false),
+            has_ownership: AtomicBool::new(false),
         }
     }
 
