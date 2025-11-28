@@ -10,10 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicU64;
 use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
 use iceoryx2_cal::arc_sync_policy::mutex_protected::MutexProtected;
 use iceoryx2_cal::arc_sync_policy::single_threaded::SingleThreaded;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 
 instantiate_conformance_tests_with_module!(
     mutex_protected,

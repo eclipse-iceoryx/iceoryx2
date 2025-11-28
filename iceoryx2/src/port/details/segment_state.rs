@@ -14,7 +14,7 @@ use core::sync::atomic::Ordering;
 
 use alloc::vec::Vec;
 
-use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicU64, IoxAtomicUsize};
+use iceoryx2_bb_concurrency::iox_atomic::{IoxAtomicU64, IoxAtomicUsize};
 
 #[derive(Debug)]
 pub(crate) struct SegmentState {

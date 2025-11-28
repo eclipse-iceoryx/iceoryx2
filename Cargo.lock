@@ -1267,6 +1267,7 @@ dependencies = [
 name = "iceoryx2"
 version = "0.7.0"
 dependencies = [
+ "iceoryx2-bb-concurrency",
  "iceoryx2-bb-container",
  "iceoryx2-bb-derive-macros",
  "iceoryx2-bb-elementary",
@@ -1278,7 +1279,6 @@ dependencies = [
  "iceoryx2-bb-system-types",
  "iceoryx2-bb-testing",
  "iceoryx2-cal",
- "iceoryx2-pal-concurrency-sync",
  "iceoryx2-pal-configuration",
  "iceoryx2-pal-posix",
  "iceoryx2-pal-testing",
@@ -1308,12 +1308,12 @@ name = "iceoryx2-bb-container"
 version = "0.7.0"
 dependencies = [
  "generic-tests",
+ "iceoryx2-bb-concurrency",
  "iceoryx2-bb-derive-macros",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-log",
  "iceoryx2-bb-testing",
- "iceoryx2-pal-concurrency-sync",
  "iceoryx2-pal-testing",
  "serde",
  "serde_test",
@@ -1337,9 +1337,9 @@ name = "iceoryx2-bb-elementary"
 version = "0.7.0"
 dependencies = [
  "generic-tests",
+ "iceoryx2-bb-concurrency",
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-testing",
- "iceoryx2-pal-concurrency-sync",
  "iceoryx2-pal-testing",
 ]
 
@@ -1347,19 +1347,19 @@ dependencies = [
 name = "iceoryx2-bb-elementary-traits"
 version = "0.7.0"
 dependencies = [
- "iceoryx2-pal-concurrency-sync",
+ "iceoryx2-bb-concurrency",
 ]
 
 [[package]]
 name = "iceoryx2-bb-linux"
 version = "0.7.0"
 dependencies = [
+ "iceoryx2-bb-concurrency",
  "iceoryx2-bb-container",
  "iceoryx2-bb-log",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-system-types",
  "iceoryx2-bb-testing",
- "iceoryx2-pal-concurrency-sync",
  "iceoryx2-pal-os-api",
  "iceoryx2-pal-posix",
  "iceoryx2-pal-testing",
@@ -1370,12 +1370,12 @@ name = "iceoryx2-bb-lock-free"
 version = "0.7.0"
 dependencies = [
  "generic-tests",
+ "iceoryx2-bb-concurrency",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-log",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
- "iceoryx2-pal-concurrency-sync",
  "iceoryx2-pal-testing",
 ]
 
@@ -1392,13 +1392,13 @@ dependencies = [
 name = "iceoryx2-bb-memory"
 version = "0.7.0"
 dependencies = [
+ "iceoryx2-bb-concurrency",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-lock-free",
  "iceoryx2-bb-log",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
- "iceoryx2-pal-concurrency-sync",
  "iceoryx2-pal-testing",
 ]
 
@@ -1408,6 +1408,7 @@ version = "0.7.0"
 dependencies = [
  "enum-iterator",
  "generic-tests",
+ "iceoryx2-bb-concurrency",
  "iceoryx2-bb-container",
  "iceoryx2-bb-derive-macros",
  "iceoryx2-bb-elementary",
@@ -1415,7 +1416,6 @@ dependencies = [
  "iceoryx2-bb-log",
  "iceoryx2-bb-system-types",
  "iceoryx2-bb-testing",
- "iceoryx2-pal-concurrency-sync",
  "iceoryx2-pal-configuration",
  "iceoryx2-pal-posix",
  "iceoryx2-pal-testing",
@@ -1484,6 +1484,7 @@ name = "iceoryx2-cal"
 version = "0.7.0"
 dependencies = [
  "generic-tests",
+ "iceoryx2-bb-concurrency",
  "iceoryx2-bb-container",
  "iceoryx2-bb-derive-macros",
  "iceoryx2-bb-elementary",
@@ -1495,7 +1496,6 @@ dependencies = [
  "iceoryx2-bb-posix",
  "iceoryx2-bb-system-types",
  "iceoryx2-bb-testing",
- "iceoryx2-pal-concurrency-sync",
  "lazy_static",
  "postcard",
  "serde",
@@ -1508,6 +1508,7 @@ dependencies = [
 name = "iceoryx2-cal-conformance-tests"
 version = "0.7.0"
 dependencies = [
+ "iceoryx2-bb-concurrency",
  "iceoryx2-bb-conformance-test-macros",
  "iceoryx2-bb-container",
  "iceoryx2-bb-elementary-traits",
@@ -1517,7 +1518,6 @@ dependencies = [
  "iceoryx2-bb-system-types",
  "iceoryx2-bb-testing",
  "iceoryx2-cal",
- "iceoryx2-pal-concurrency-sync",
  "iceoryx2-pal-posix",
  "iceoryx2-pal-testing",
  "lazy_static",
@@ -1567,6 +1567,7 @@ name = "iceoryx2-conformance-tests"
 version = "0.7.0"
 dependencies = [
  "iceoryx2",
+ "iceoryx2-bb-concurrency",
  "iceoryx2-bb-conformance-test-macros",
  "iceoryx2-bb-container",
  "iceoryx2-bb-derive-macros",
@@ -1575,7 +1576,6 @@ dependencies = [
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
  "iceoryx2-cal",
- "iceoryx2-pal-concurrency-sync",
  "iceoryx2-pal-testing",
 ]
 
@@ -1586,6 +1586,7 @@ dependencies = [
  "cbindgen",
  "generic-tests",
  "iceoryx2",
+ "iceoryx2-bb-concurrency",
  "iceoryx2-bb-container",
  "iceoryx2-bb-derive-macros",
  "iceoryx2-bb-elementary",
@@ -1597,7 +1598,6 @@ dependencies = [
  "iceoryx2-bb-testing",
  "iceoryx2-cal",
  "iceoryx2-ffi-macros",
- "iceoryx2-pal-concurrency-sync",
  "iceoryx2-pal-testing",
 ]
 

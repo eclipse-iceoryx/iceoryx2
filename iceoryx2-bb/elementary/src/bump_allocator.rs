@@ -12,8 +12,8 @@
 
 use crate::math::align;
 use core::sync::atomic::Ordering;
+use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicUsize;
 use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 /// A minimalistic [`BumpAllocator`].
 pub struct BumpAllocator {

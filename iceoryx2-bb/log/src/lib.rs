@@ -169,8 +169,8 @@ pub mod logger;
 #[cfg(feature = "std")]
 pub use from_env::{set_log_level_from_env_or, set_log_level_from_env_or_default};
 
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU8;
-use iceoryx2_pal_concurrency_sync::once::Once;
+use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicU8;
+use iceoryx2_bb_concurrency::once::Once;
 
 use core::{fmt::Arguments, sync::atomic::Ordering};
 

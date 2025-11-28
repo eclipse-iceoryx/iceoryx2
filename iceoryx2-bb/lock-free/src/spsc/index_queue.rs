@@ -43,6 +43,9 @@
 //! ```
 
 use core::{alloc::Layout, cell::UnsafeCell, fmt::Debug, sync::atomic::Ordering};
+
+use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicBool;
+use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicU64;
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
 use iceoryx2_bb_elementary::{bump_allocator::BumpAllocator, relocatable_ptr::RelocatablePointer};
 use iceoryx2_bb_elementary_traits::{
@@ -50,8 +53,6 @@ use iceoryx2_bb_elementary_traits::{
     relocatable_container::RelocatableContainer,
 };
 use iceoryx2_bb_log::{fail, fatal_panic};
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 
 /// The [`Producer`] of the [`IndexQueue`]/[`FixedSizeIndexQueue`] which can add values to it
 /// via [`Producer::push()`].

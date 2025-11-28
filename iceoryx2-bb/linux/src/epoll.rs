@@ -57,6 +57,7 @@ use core::mem::MaybeUninit;
 use core::sync::atomic::Ordering;
 use core::time::Duration;
 
+use iceoryx2_bb_concurrency::iox_atomic::IoxAtomicUsize;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_bb_posix::{
@@ -66,7 +67,6 @@ use iceoryx2_bb_posix::{
     signal_set::FetchableSignalSet,
 };
 use iceoryx2_bb_system_types::file_path::FilePath;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 use iceoryx2_pal_os_api::linux;
 use iceoryx2_pal_posix::posix::{self};
 
