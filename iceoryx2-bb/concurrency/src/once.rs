@@ -41,7 +41,7 @@ impl From<u8> for State {
 /// # Examples
 ///
 /// ```
-/// use iceoryx2_pal_concurrency_sync::once::Once;
+/// use iceoryx2_bb_concurrency::once::Once;
 ///
 /// static INIT: Once = Once::new();
 ///
