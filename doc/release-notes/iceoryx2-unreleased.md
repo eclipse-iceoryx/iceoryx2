@@ -74,6 +74,8 @@
     conflicts when merging.
 -->
 
+* Integrate the iceoryx_hoofs subset directly into the iceoryx2 repository
+    [#301](https://github.com/eclipse-iceoryx/iceoryx2/issues/301)
 * Decoupled tunnel implementation from tunelling mechanism
     [#845](https://github.com/eclipse-iceoryx/iceoryx2/issues/845)
 * Explicitly use components from `core` and `alloc` in all Rust code
