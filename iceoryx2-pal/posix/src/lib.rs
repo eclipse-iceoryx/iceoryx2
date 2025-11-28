@@ -20,31 +20,58 @@ extern crate alloc;
 
 mod common;
 
-#[cfg(all(target_os = "linux", feature = "libc_platform"))]
-#[path = "libc/mod.rs"]
-mod platform;
+#[cfg(feature = "custom_pal_posix")]
+mod os {
+    #![allow(non_upper_case_globals)]
+    #![allow(non_camel_case_types)]
+    #![allow(non_snake_case)]
+    #![allow(unused)]
+    #![allow(improper_ctypes)]
+    #![allow(unknown_lints)]
+    #![allow(unnecessary_transmutes)]
+    #![allow(clippy::all)]
+    include!(concat!(env!("IOX2_CUSTOM_PAL_POSIX_PATH"), "/os.rs"));
+}
 
+#[cfg(not(feature = "custom_pal_posix"))]
+#[cfg(all(target_os = "linux", feature = "libc_platform"))]
+#[path = "libc/os.rs"]
+mod os;
+
+#[cfg(not(feature = "custom_pal_posix"))]
 #[cfg(target_os = "android")]
-#[path = "android/mod.rs"]
-pub mod platform;
+#[path = "android/os.rs"]
+mod os;
+
+#[cfg(not(feature = "custom_pal_posix"))]
 #[cfg(target_os = "freebsd")]
-#[path = "freebsd/mod.rs"]
-mod platform;
+#[path = "freebsd/os.rs"]
+mod os;
+
+#[cfg(not(feature = "custom_pal_posix"))]
 #[cfg(target_os = "macos")]
-#[path = "macos/mod.rs"]
-mod platform;
+#[path = "macos/os.rs"]
+mod os;
+
+#[cfg(not(feature = "custom_pal_posix"))]
 #[cfg(all(target_os = "linux", not(feature = "libc_platform")))]
-#[path = "linux/mod.rs"]
-pub mod platform;
+#[path = "linux/os.rs"]
+pub mod os;
+
+#[cfg(not(feature = "custom_pal_posix"))]
 #[cfg(target_os = "nto")]
-#[path = "qnx/mod.rs"]
-mod platform;
+#[path = "qnx/os.rs"]
+mod os;
+
+#[cfg(not(feature = "custom_pal_posix"))]
 #[cfg(target_os = "windows")]
-#[path = "windows/mod.rs"]
-mod platform;
+#[path = "windows/os.rs"]
+mod os;
+
+#[cfg(not(feature = "custom_pal_posix"))]
 #[cfg(all(target_os = "none", not(feature = "libc_platform")))]
-#[path = "stub/mod.rs"]
-mod platform;
+#[path = "stub/os.rs"]
+mod os;
 
 #[cfg(all(not(feature = "libc_platform"), not(target_os = "none")))]
 pub(crate) mod internal {
@@ -81,5 +108,5 @@ pub mod posix {
     #[allow(unused_imports)]
     pub(crate) use common::string_operations::*;
 
-    pub use crate::platform::*;
+    pub use crate::os::posix::*;
 }

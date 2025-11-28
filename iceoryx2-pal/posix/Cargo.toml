@@ -18,6 +18,11 @@ version = { workspace = true }
 # feature flag.
 libc_platform = ["dep:libc"]
 
+# Uses a custom POSIX abstraction for the iceoryx2 platform abstraction layer
+# The location of posix abstraction can be set via environment variable
+# `IOX2_CUSTOM_PAL_POSIX_PATH`.
+custom_pal_posix = []
+
 [build-dependencies]
 cc = { workspace = true }
 bindgen = { workspace = true }

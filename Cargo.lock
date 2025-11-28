@@ -1280,6 +1280,7 @@ dependencies = [
  "iceoryx2-cal",
  "iceoryx2-pal-concurrency-sync",
  "iceoryx2-pal-configuration",
+ "iceoryx2-pal-posix",
  "iceoryx2-pal-testing",
  "serde",
  "tiny-fn",
