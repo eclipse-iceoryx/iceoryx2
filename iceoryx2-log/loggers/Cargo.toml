@@ -15,7 +15,9 @@ workspace = true
 
 [features]
 default = []
-std = []
+std = [
+  "iceoryx2-bb-concurrency/std"
+]
 
 # Enables logging to buffer
 logger_buffer = ["std"]
