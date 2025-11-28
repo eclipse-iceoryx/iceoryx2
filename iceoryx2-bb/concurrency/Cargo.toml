@@ -19,3 +19,6 @@ iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-pal-concurrency-sync = { workspace = true }
 
 paste = { workspace = true }
+
+[dev-dependencies]
+iceoryx2-pal-testing = { workspace = true }
