@@ -383,7 +383,7 @@ jobs:
           cmake --install target/ff/cc/build
 
       - name: Run C++ iceoryx2-bb tests
-        run: target/ff/cc/build/tests/iceoryx2-bb-container-tests
+        run: target/ff/cc/build/tests/iceoryx2-bb-cxx-tests
 
       - name: Run C language binding tests
         run: target/ff/cc/build/tests/iceoryx2-c-tests
@@ -516,7 +516,7 @@ jobs:
           cmake --install target/ff/cc/build ${{ matrix.mode.cmake-build-config }}
 
       - name: Run C++ iceoryx2-bb tests
-        run: target/ff/cc/build/tests/iceoryx2-bb-container-tests
+        run: target/ff/cc/build/tests/iceoryx2-bb-cxx-tests
 
       - name: Run C language binding tests
         run: target/ff/cc/build/tests/iceoryx2-c-tests

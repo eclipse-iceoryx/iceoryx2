@@ -45,7 +45,7 @@ target_include_directories(component-tests_cxx
 target_link_libraries(component-tests_cxx
     PRIVATE
     iceoryx2-cxx::static-lib-cxx
-    iceoryx2-bb-cxx::iceoryx2-bb-containers-cxx
+    iceoryx2-bb-cxx::iceoryx2-bb-cxx-tests
     ${ICEORYX2_SANITIZER_FLAGS}
     ${ICEORYX2_COVERAGE_FLAGS}
 )

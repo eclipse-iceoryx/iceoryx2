@@ -31,7 +31,7 @@ cc_test(
     tags = ["exclusive"],
     visibility = ["//visibility:private"],
     deps = [
-        "//iceoryx2-bb/cxx:iceoryx2-bb-containers-cxx",
+        "//iceoryx2-bb/cxx:iceoryx2-bb-cxx-tests",
         "@googletest//:gtest",
     ],
 )

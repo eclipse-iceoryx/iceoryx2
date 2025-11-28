@@ -24,8 +24,8 @@ include(Iceoryx2PlatformSettings)
 
 include(Iceoryx2GTest)
 
-add_executable(iceoryx2-bb-containers-tests ${TEST_FILES})
-target_sources(iceoryx2-bb-containers-tests
+add_executable(iceoryx2-bb-cxx-tests ${TEST_FILES})
+target_sources(iceoryx2-bb-cxx-tests
     PRIVATE
     ${PROJECT_SOURCE_DIR}/src/testing/observable.hpp
     ${PROJECT_SOURCE_DIR}/src/testing/test_utils.hpp
@@ -113,29 +113,29 @@ target_sources(iceoryx2-bb-containers-tests
     ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_vocabulary_string_ctor_and_assign.cpp
     ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_vocabulary_variant.cpp
 )
-target_include_directories(iceoryx2-bb-containers-tests
+target_include_directories(iceoryx2-bb-cxx-tests
     PRIVATE ${PROJECT_SOURCE_DIR}/src
     PRIVATE ${PROJECT_SOURCE_DIR}/src/import/testing/include
 )
 target_link_libraries(
-    iceoryx2-bb-containers-tests
+    iceoryx2-bb-cxx-tests
     PRIVATE
-    iceoryx2-bb-cxx::iceoryx2-bb-containers-cxx
+    iceoryx2-bb-cxx::iceoryx2-bb-cxx-tests
     GTest::gtest GTest::gmock
     ${ICEORYX2_SANITIZER_FLAGS}
     ${ICEORYX2_COVERAGE_FLAGS}
 )
 target_compile_options(
-    iceoryx2-bb-containers-tests
+    iceoryx2-bb-cxx-tests
     PRIVATE
     ${ICEORYX2_TEST_CXX_FLAGS}
     ${ICEORYX2_CXX_WARNINGS}
     ${ICEORYX2_SANITIZER_FLAGS}
     ${ICEORYX2_COVERAGE_FLAGS}
 )
-target_compile_features(iceoryx2-bb-containers-tests PRIVATE ${ICEORYX2_CXX_STD})
+target_compile_features(iceoryx2-bb-cxx-tests PRIVATE ${ICEORYX2_CXX_STD})
 
-set_target_properties(iceoryx2-bb-containers-tests PROPERTIES
+set_target_properties(iceoryx2-bb-cxx-tests PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tests"
     RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/tests"
     RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/tests"
@@ -143,4 +143,4 @@ set_target_properties(iceoryx2-bb-containers-tests PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_BINARY_DIR}/tests"
 )
 
-add_test(NAME "iceoryx2 C++ BB Container Tests" COMMAND iceoryx2-bb-containers-tests)
+add_test(NAME "iceoryx2 C++ BB Container Tests" COMMAND iceoryx2-bb-cxx-tests)

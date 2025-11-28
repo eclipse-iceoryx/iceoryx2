@@ -20,7 +20,7 @@ filegroup(
 )
 
 cc_library(
-    name = "iceoryx2-bb-containers-cxx",
+    name = "iceoryx2-bb-cxx-tests",
     srcs = glob(
         [
             "src/**",

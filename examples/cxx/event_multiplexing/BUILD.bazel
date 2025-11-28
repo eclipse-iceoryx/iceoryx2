@@ -18,7 +18,7 @@ cc_binary(
         "src/wait.cpp",
     ],
     deps = [
-        "//iceoryx2-bb/cxx:iceoryx2-bb-containers-cxx",
+        "//iceoryx2-bb/cxx:iceoryx2-bb-cxx-tests",
         "//:iceoryx2-cxx-static",
     ],
 )
@@ -29,7 +29,7 @@ cc_binary(
         "src/notifier.cpp",
     ],
     deps = [
-        "//iceoryx2-bb/cxx:iceoryx2-bb-containers-cxx",
+        "//iceoryx2-bb/cxx:iceoryx2-bb-cxx-tests",
         "//:iceoryx2-cxx-static",
     ],
 )
