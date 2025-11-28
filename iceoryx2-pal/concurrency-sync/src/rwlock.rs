@@ -12,14 +12,14 @@
 
 use core::{hint::spin_loop, sync::atomic::Ordering};
 
-use crate::iox_atomic::IoxAtomicU32;
+use crate::atomic::AtomicU32;
 use crate::{WaitAction, WaitResult, SPIN_REPETITIONS};
 
 const WRITE_LOCKED: u32 = u32::MAX;
 const UNLOCKED: u32 = 0;
 
 pub struct RwLockReaderPreference {
-    reader_count: IoxAtomicU32,
+    reader_count: AtomicU32,
 }
 
 impl Default for RwLockReaderPreference {
@@ -31,7 +31,7 @@ impl Default for RwLockReaderPreference {
 impl RwLockReaderPreference {
     pub const fn new() -> Self {
         Self {
-            reader_count: IoxAtomicU32::new(UNLOCKED),
+            reader_count: AtomicU32::new(UNLOCKED),
         }
     }
 
@@ -58,7 +58,7 @@ impl RwLockReaderPreference {
         }
     }
 
-    pub fn read_lock<F: Fn(&IoxAtomicU32, &u32) -> WaitAction>(&self, wait: F) -> WaitResult {
+    pub fn read_lock<F: Fn(&AtomicU32, &u32) -> WaitAction>(&self, wait: F) -> WaitResult {
         let mut reader_count = self.reader_count.load(Ordering::Relaxed);
         let mut retry_counter = 0;
 
@@ -97,7 +97,7 @@ impl RwLockReaderPreference {
         }
     }
 
-    pub fn unlock<WakeOne: Fn(&IoxAtomicU32)>(&self, wake_one: WakeOne) {
+    pub fn unlock<WakeOne: Fn(&AtomicU32)>(&self, wake_one: WakeOne) {
         let state = self.reader_count.load(Ordering::Relaxed);
         if state == WRITE_LOCKED {
             self.reader_count.store(UNLOCKED, Ordering::Release);
@@ -119,7 +119,7 @@ impl RwLockReaderPreference {
         }
     }
 
-    pub fn write_lock<F: Fn(&IoxAtomicU32, &u32) -> WaitAction>(&self, wait: F) -> WaitResult {
+    pub fn write_lock<F: Fn(&AtomicU32, &u32) -> WaitAction>(&self, wait: F) -> WaitResult {
         let mut retry_counter = 0;
         let mut reader_count;
 
@@ -150,8 +150,8 @@ impl RwLockReaderPreference {
 }
 
 pub struct RwLockWriterPreference {
-    state: IoxAtomicU32,
-    writer_wake_counter: IoxAtomicU32,
+    state: AtomicU32,
+    writer_wake_counter: AtomicU32,
 }
 
 impl Default for RwLockWriterPreference {
@@ -163,8 +163,8 @@ impl Default for RwLockWriterPreference {
 impl RwLockWriterPreference {
     pub const fn new() -> Self {
         Self {
-            state: IoxAtomicU32::new(UNLOCKED),
-            writer_wake_counter: IoxAtomicU32::new(0),
+            state: AtomicU32::new(UNLOCKED),
+            writer_wake_counter: AtomicU32::new(0),
         }
     }
 
@@ -185,7 +185,7 @@ impl RwLockWriterPreference {
         }
     }
 
-    pub fn read_lock<F: Fn(&IoxAtomicU32, &u32) -> WaitAction>(&self, wait: F) -> WaitResult {
+    pub fn read_lock<F: Fn(&AtomicU32, &u32) -> WaitAction>(&self, wait: F) -> WaitResult {
         let mut state = self.state.load(Ordering::Relaxed);
 
         let mut retry_counter = 0;
@@ -217,7 +217,7 @@ impl RwLockWriterPreference {
         }
     }
 
-    pub fn unlock<WakeOne: Fn(&IoxAtomicU32), WakeAll: Fn(&IoxAtomicU32)>(
+    pub fn unlock<WakeOne: Fn(&AtomicU32), WakeAll: Fn(&AtomicU32)>(
         &self,
         wake_one: WakeOne,
         wake_all: WakeAll,
@@ -247,9 +247,9 @@ impl RwLockWriterPreference {
     }
 
     pub fn write_lock<
-        Wait: Fn(&IoxAtomicU32, &u32) -> WaitAction,
-        WakeOne: Fn(&IoxAtomicU32),
-        WakeAll: Fn(&IoxAtomicU32),
+        Wait: Fn(&AtomicU32, &u32) -> WaitAction,
+        WakeOne: Fn(&AtomicU32),
+        WakeAll: Fn(&AtomicU32),
     >(
         &self,
         wait: Wait,
