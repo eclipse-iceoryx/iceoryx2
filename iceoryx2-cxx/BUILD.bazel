@@ -31,7 +31,6 @@ cc_library(
     deps = [
         "//:iceoryx2-c-shared",
         "//iceoryx2-bb/cxx:iceoryx2-bb-containers-cxx",
-        "@iceoryx//:iceoryx_hoofs",
     ],
     linkstatic = False,
 )
@@ -48,7 +47,6 @@ cc_library(
     deps = [
         "//:iceoryx2-c-static",
         "//iceoryx2-bb/cxx:iceoryx2-bb-containers-cxx",
-        "@iceoryx//:iceoryx_hoofs",
     ],
     linkstatic = True,
 )

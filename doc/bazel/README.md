@@ -21,26 +21,6 @@ http_archive(
 )
 
 
-# Load iceoryx rules
-ICEORYX_VERSION = "2.95.8"
-
-maybe(
-    name = "iceoryx",
-    repo_rule = http_archive,
-    sha256 = "82c4fe7507d1609e1275a04a3fe8278ae20620aa30e1eede63f96a9c23308ab6",
-    strip_prefix = "iceoryx-{}".format(ICEORYX_VERSION),
-    url = "https://github.com/eclipse-iceoryx/iceoryx/archive/v{}.tar.gz".format(ICEORYX_VERSION),
-)
-
-load("@iceoryx//bazel:load_repositories.bzl", "load_repositories")
-
-load_repositories()
-
-load("@iceoryx//bazel:setup_repositories.bzl", "setup_repositories")
-
-setup_repositories()
-
-
 # Load Rust rules
 # Use v0.26 to support bazel v6.2
 maybe(

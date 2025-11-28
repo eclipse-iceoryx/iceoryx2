@@ -19,7 +19,6 @@ cc_binary(
         "src/publisher.cpp",
     ],
     deps = [
-        "@iceoryx//:iceoryx_hoofs",
         "//iceoryx2-bb/cxx:iceoryx2-bb-containers-cxx",
         "//:iceoryx2-cxx-static",
     ],
@@ -32,7 +31,6 @@ cc_binary(
         "src/subscriber.cpp",
     ],
     deps = [
-        "@iceoryx//:iceoryx_hoofs",
         "//iceoryx2-bb/cxx:iceoryx2-bb-containers-cxx",
         "//:iceoryx2-cxx-static",
     ],
