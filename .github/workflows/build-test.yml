@@ -368,6 +368,7 @@ jobs:
         run: cargo nextest run --workspace --exclude iceoryx2-ffi-python --all-targets --no-fail-fast ${{ matrix.mode.arg }} --target i686-unknown-linux-gnu
 
       - name: Build language bindings
+        shell: bash
         run: |
           cmake -S . \
                 -B target/ff/cc/build \
@@ -389,6 +390,7 @@ jobs:
         run: target/ff/cc/build/tests/iceoryx2-cxx-tests --gtest_filter="-ServiceTest/*.list_works:ServiceTest/*.list_works_with_attributes:ServiceTest/*.details_works"
 
       - name: Build C language binding examples in out-of-tree configuration
+        shell: bash
         run: |
           rm -rf target/ff/cc/build
           cmake -S examples/c \
@@ -400,6 +402,7 @@ jobs:
           cmake --build target/ff/out-of-tree-c
 
       - name: Build C++ language binding examples in out-of-tree configuration
+        shell: bash
         run: |
           cmake -S examples/cxx \
                 -B target/ff/out-of-tree-cxx \
@@ -494,9 +497,18 @@ jobs:
           cargo rustc -q -- --print=native-static-libs
 
       - name: Build language bindings
-        # NOTE: the cmake command is in a single line since Windows complains about breaking up lines with '\'
+        shell: bash
         run: |
-          cmake -S . -B target/ff/cc/build -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON -DWARNING_AS_ERROR=ON ${{ matrix.mode.cmake-build-type }} ${{ matrix.mode.cmake-cxx-flags }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_INSTALL_PREFIX=target/ff/cc/install -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/${{ matrix.mode.name }}"
+          cmake -S . \
+                -B target/ff/cc/build \
+                -DBUILD_EXAMPLES=ON \
+                -DBUILD_TESTING=ON \
+                -DWARNING_AS_ERROR=ON \
+                ${{ matrix.mode.cmake-build-type }} \
+                ${{ matrix.mode.cmake-cxx-flags }} \
+                ${{ matrix.cmake-build-system-generator }} \
+                -DCMAKE_INSTALL_PREFIX=target/ff/cc/install \
+                -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/${{ matrix.mode.name }}"
           cmake --build target/ff/cc/build ${{ matrix.mode.cmake-build-config }}
           cmake --install target/ff/cc/build ${{ matrix.mode.cmake-build-config }}
 
@@ -515,15 +527,25 @@ jobs:
         run: rm -rf target/ff/cc/build
 
       - name: Build C language binding examples in out-of-tree configuration
-        # NOTE: the cmake command is in a single line since Windows complains about breaking up lines with '\'
+        shell: bash
         run: |
-          cmake -S examples/c -B target/ff/out-of-tree-c ${{ matrix.mode.cmake-build-type }} ${{ matrix.mode.cmake-cxx-flags }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/cc/install"
+          cmake -S examples/c \
+                -B target/ff/out-of-tree-c \
+                ${{ matrix.mode.cmake-build-type }} \
+                ${{ matrix.mode.cmake-cxx-flags }} \
+                ${{ matrix.cmake-build-system-generator }} \
+                -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/cc/install"
           cmake --build target/ff/out-of-tree-c ${{ matrix.mode.cmake-build-config }}
 
       - name: Build C++ language binding examples in out-of-tree configuration
-        # NOTE: the cmake command is in a single line since Windows complains about breaking up lines with '\'
+        shell: bash
         run: |
-          cmake -S examples/cxx -B target/ff/out-of-tree-cxx ${{ matrix.mode.cmake-build-type }} ${{ matrix.mode.cmake-cxx-flags }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/cc/install"
+          cmake -S examples/cxx \
+                -B target/ff/out-of-tree-cxx \
+                ${{ matrix.mode.cmake-build-type }} \
+                ${{ matrix.mode.cmake-cxx-flags }} \
+                ${{ matrix.cmake-build-system-generator }} \
+                -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/cc/install"
           cmake --build target/ff/out-of-tree-cxx ${{ matrix.mode.cmake-build-config }}
 
   x86_64_unstable:
