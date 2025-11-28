@@ -43,7 +43,7 @@ rust_test_suite(
         "//iceoryx2:iceoryx2",
         "//iceoryx2-log/log:iceoryx2-log",
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
-        "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
+        "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
         "//iceoryx2-pal/testing:iceoryx2-pal-testing",
         "@crate_index//:serde_test",
     ],
