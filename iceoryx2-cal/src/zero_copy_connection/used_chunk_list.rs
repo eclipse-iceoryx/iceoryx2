@@ -49,12 +49,7 @@ pub mod details {
             let mut data_ptr = OwningPointer::<AtomicBool>::new_with_alloc(capacity);
 
             for i in 0..capacity {
-                unsafe {
-                    data_ptr
-                        .as_mut_ptr()
-                        .add(i)
-                        .write(AtomicBool::new(false))
-                };
+                unsafe { data_ptr.as_mut_ptr().add(i).write(AtomicBool::new(false)) };
             }
 
             Self {
