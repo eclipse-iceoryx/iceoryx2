@@ -155,6 +155,10 @@ TEST_F(TestingErrorHandler_test, fatalFailureTestContextWorksAfterReset) {
 
 TEST_F(TestingErrorHandler_test, panicTriggersJump) {
     ::testing::Test::RecordProperty("TEST_ID", "2d99e382-ed43-4357-86f2-ef8d70c6acd8");
+
+#if defined _WIN32
+    GTEST_SKIP() << "The 'panicTriggersJump' test is disabled on Windows";
+#else
     std::thread t([&] {
         // regular control flow panics
         sut.fatalFailureTestContext([&] {
@@ -170,6 +174,7 @@ TEST_F(TestingErrorHandler_test, panicTriggersJump) {
     t.join();
 
     EXPECT_TRUE(sut.hasPanicked());
+#endif
 }
 
 } // namespace
