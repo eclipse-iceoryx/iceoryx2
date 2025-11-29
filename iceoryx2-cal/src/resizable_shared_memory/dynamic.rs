@@ -30,7 +30,6 @@ use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_log::fatal_panic;
 use iceoryx2_log::{fail, warn};
->>>>>>> 26bf1c24 ([#1202] Remove dependency on iceoryx2-pal-concurrency-sync in upper layers)
 
 use crate::shared_memory::{
     AllocationStrategy, SegmentId, SharedMemoryForPoolAllocator, ShmPointer,

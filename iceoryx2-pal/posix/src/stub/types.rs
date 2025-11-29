@@ -19,8 +19,8 @@ use core::unimplemented;
 
 use crate::common::mem_zeroed_struct::MemZeroedStruct;
 use crate::posix::*;
-use iceoryx2_pal_concurrency_sync::barrier::Barrier;
 use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
+use iceoryx2_pal_concurrency_sync::barrier::Barrier;
 use iceoryx2_pal_concurrency_sync::mutex::Mutex;
 use iceoryx2_pal_concurrency_sync::rwlock::*;
 use iceoryx2_pal_concurrency_sync::semaphore::Semaphore;

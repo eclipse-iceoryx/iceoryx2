@@ -199,8 +199,7 @@ impl<T: Copy + Debug> RelocatableContainer for Container<T> {
             container_id: UniqueId::new(),
             active_index_ptr: RelocatablePointer::new(distance_to_active_index),
             data_ptr: RelocatablePointer::new(align_to::<MaybeUninit<T>>(
-                distance_to_active_index as usize
-                    + capacity * core::mem::size_of::<AtomicBool>(),
+                distance_to_active_index as usize + capacity * core::mem::size_of::<AtomicBool>(),
             ) as isize),
             capacity,
             change_counter: AtomicU64::new(0),

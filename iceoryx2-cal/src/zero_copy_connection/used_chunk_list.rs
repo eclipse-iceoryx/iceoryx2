@@ -20,12 +20,7 @@ use iceoryx2_bb_elementary::{
 use iceoryx2_bb_elementary_traits::{
     owning_pointer::OwningPointer, relocatable_container::RelocatableContainer,
 };
-<<<<<<< HEAD
 use iceoryx2_log::{fail, fatal_panic};
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
-=======
-use iceoryx2_bb_log::{fail, fatal_panic};
->>>>>>> 26bf1c24 ([#1202] Remove dependency on iceoryx2-pal-concurrency-sync in upper layers)
 
 pub type UsedChunkList = details::UsedChunkList<OwningPointer<AtomicBool>>;
 pub type RelocatableUsedChunkList = details::UsedChunkList<RelocatablePointer<AtomicBool>>;
@@ -54,12 +49,7 @@ pub mod details {
             let mut data_ptr = OwningPointer::<AtomicBool>::new_with_alloc(capacity);
 
             for i in 0..capacity {
-                unsafe {
-                    data_ptr
-                        .as_mut_ptr()
-                        .add(i)
-                        .write(AtomicBool::new(false))
-                };
+                unsafe { data_ptr.as_mut_ptr().add(i).write(AtomicBool::new(false)) };
             }
 
             Self {
