@@ -35,6 +35,7 @@ use crate::slotmap::FreeListEntry;
 use crate::slotmap::{MetaSlotMap, RelocatableSlotMap};
 use core::fmt::Debug;
 use core::mem::MaybeUninit;
+use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::relocatable_ptr::GenericRelocatablePointer;
 use iceoryx2_bb_elementary_traits::generic_pointer::GenericPointer;
@@ -44,7 +45,6 @@ use iceoryx2_bb_elementary_traits::{
     placement_default::PlacementDefault, zero_copy_send::ZeroCopySend,
 };
 use iceoryx2_bb_log::{fail, fatal_panic};
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
 /// Failures caused by insert()
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
@@ -74,7 +74,7 @@ pub type RelocatableFlatMap<K, V> = MetaFlatMap<K, V, GenericRelocatablePointer>
 #[repr(C)]
 pub struct MetaFlatMap<K: Eq, V: Clone, Ptr: GenericPointer> {
     map: MetaSlotMap<Entry<K, V>, Ptr>,
-    is_initialized: IoxAtomicBool,
+    is_initialized: AtomicBool,
 }
 
 impl<K: Eq + Debug, V: Clone + Debug, Ptr: GenericPointer> Debug for MetaFlatMap<K, V, Ptr> {
@@ -234,7 +234,7 @@ impl<K: Eq, V: Clone> FlatMap<K, V> {
     pub fn new(capacity: usize) -> Self {
         Self {
             map: MetaSlotMap::new(capacity),
-            is_initialized: IoxAtomicBool::new(true),
+            is_initialized: AtomicBool::new(true),
         }
     }
 
@@ -398,7 +398,7 @@ impl<K: Eq, V: Clone> RelocatableContainer for RelocatableFlatMap<K, V> {
     unsafe fn new_uninit(capacity: usize) -> Self {
         Self {
             map: RelocatableSlotMap::new_uninit(capacity),
-            is_initialized: IoxAtomicBool::new(false),
+            is_initialized: AtomicBool::new(false),
         }
     }
 

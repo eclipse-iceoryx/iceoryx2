@@ -24,4 +24,4 @@ serde = { workspace = true }
 
 [dev-dependencies]
 iceoryx2-pal-testing = { workspace = true }
-iceoryx2-pal-concurrency-sync = { workspace = true, features = ["std"] }
+iceoryx2-bb-concurrency = { workspace = true, features = ["std"] }

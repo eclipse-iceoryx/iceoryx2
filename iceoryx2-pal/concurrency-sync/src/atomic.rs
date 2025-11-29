@@ -13,6 +13,7 @@
 use core::{
     cell::UnsafeCell,
     fmt::Debug,
+    marker::Copy,
     ops::{AddAssign, BitAndAssign, BitOrAssign, BitXorAssign, Not, SubAssign},
     sync::atomic::Ordering,
 };
@@ -21,47 +22,47 @@ use crate::{rwlock::RwLockWriterPreference, WaitAction};
 
 /// Behaves like [`core::sync::atomic::AtomicBool`]
 #[allow(clippy::disallowed_types)]
-pub type IoxAtomicBool = core::sync::atomic::AtomicBool;
+pub type AtomicBool = core::sync::atomic::AtomicBool;
 
 /// Behaves like [`core::sync::atomic::AtomicUsize`]
 #[allow(clippy::disallowed_types)]
-pub type IoxAtomicUsize = core::sync::atomic::AtomicUsize;
+pub type AtomicUsize = core::sync::atomic::AtomicUsize;
 
 /// Behaves like [`core::sync::atomic::AtomicIsize`]
 #[allow(clippy::disallowed_types)]
-pub type IoxAtomicIsize = core::sync::atomic::AtomicIsize;
+pub type AtomicIsize = core::sync::atomic::AtomicIsize;
 
 /// Behaves like [`core::sync::atomic::AtomicU8`]
 #[allow(clippy::disallowed_types)]
-pub type IoxAtomicU8 = core::sync::atomic::AtomicU8;
+pub type AtomicU8 = core::sync::atomic::AtomicU8;
 
 /// Behaves like [`core::sync::atomic::AtomicU16`]
 #[allow(clippy::disallowed_types)]
-pub type IoxAtomicU16 = core::sync::atomic::AtomicU16;
+pub type AtomicU16 = core::sync::atomic::AtomicU16;
 
 /// Behaves like [`core::sync::atomic::AtomicU32`]
 #[allow(clippy::disallowed_types)]
-pub type IoxAtomicU32 = core::sync::atomic::AtomicU32;
+pub type AtomicU32 = core::sync::atomic::AtomicU32;
 
 /// Behaves like [`core::sync::atomic::AtomicI8`]
 #[allow(clippy::disallowed_types)]
-pub type IoxAtomicI8 = core::sync::atomic::AtomicI8;
+pub type AtomicI8 = core::sync::atomic::AtomicI8;
 
 /// Behaves like [`core::sync::atomic::AtomicI16`]
 #[allow(clippy::disallowed_types)]
-pub type IoxAtomicI16 = core::sync::atomic::AtomicI16;
+pub type AtomicI16 = core::sync::atomic::AtomicI16;
 
 /// Behaves like [`core::sync::atomic::AtomicI32`]
 #[allow(clippy::disallowed_types)]
-pub type IoxAtomicI32 = core::sync::atomic::AtomicI32;
+pub type AtomicI32 = core::sync::atomic::AtomicI32;
 
 /// Behaves like [`core::sync::atomic::AtomicI64`]
 #[allow(clippy::disallowed_types)]
-pub type IoxAtomicI64 = core::sync::atomic::AtomicI64;
+pub type AtomicI64 = core::sync::atomic::AtomicI64;
 
 /// Behaves like [`core::sync::atomic::AtomicU64`]
 #[allow(clippy::disallowed_types)]
-pub type IoxAtomicU64 = core::sync::atomic::AtomicU64;
+pub type AtomicU64 = core::sync::atomic::AtomicU64;
 
 type LockType = RwLockWriterPreference;
 
@@ -136,26 +137,26 @@ pub mod internal {
 /// those operations are no longer lock-free.
 #[derive(Default)]
 #[repr(C)]
-pub struct IoxAtomic<T: internal::AtomicInteger> {
+pub struct Atomic<T: internal::AtomicInteger> {
     data: UnsafeCell<T>,
     lock: LockType,
 }
 
-unsafe impl<T: internal::AtomicInteger> Send for IoxAtomic<T> {}
-unsafe impl<T: internal::AtomicInteger> Sync for IoxAtomic<T> {}
+unsafe impl<T: internal::AtomicInteger> Send for Atomic<T> {}
+unsafe impl<T: internal::AtomicInteger> Sync for Atomic<T> {}
 
-impl<T: internal::AtomicInteger> Debug for IoxAtomic<T> {
+impl<T: internal::AtomicInteger> Debug for Atomic<T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
-            "IoxAtomic<{}> {{ value: {:?} }}",
+            "Atomic<{}> {{ value: {:?} }}",
             core::any::type_name::<T>(),
             self.load(Ordering::Relaxed),
         )
     }
 }
 
-impl<T: internal::AtomicInteger> IoxAtomic<T> {
+impl<T: internal::AtomicInteger> Atomic<T> {
     /// See [`core::sync::atomic::AtomicU64::new()`]
     pub const fn new(v: T) -> Self {
         Self {

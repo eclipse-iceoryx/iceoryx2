@@ -44,9 +44,9 @@ use crate::process::{Process, ProcessId};
 use core::fmt::Debug;
 use core::sync::atomic::Ordering;
 use core::{ops::Deref, ops::DerefMut};
+use iceoryx2_bb_concurrency::atomic::AtomicI64;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::fail;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicI64;
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::posix::MemZeroedStruct;
 use iceoryx2_pal_posix::*;
@@ -211,7 +211,7 @@ impl FileLockBuilder {
 #[derive(Debug)]
 pub struct FileLock<'a, T: FileDescriptorBased + Debug> {
     file: ReadWriteMutex<'a, 'a, T>,
-    lock_state: IoxAtomicI64,
+    lock_state: AtomicI64,
 }
 
 unsafe impl<T: Send + FileDescriptorBased + Debug> Send for FileLock<'_, T> {}
@@ -261,7 +261,7 @@ impl<'a, T: FileDescriptorBased + Debug> FileLock<'a, T> {
                 .is_interprocess_capable(false)
                 .create(value, handle),
                 "Failed to create ReadWriteMutex for FileLock."),
-            lock_state: IoxAtomicI64::new(0),
+            lock_state: AtomicI64::new(0),
         })
     }
 

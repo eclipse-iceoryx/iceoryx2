@@ -37,7 +37,7 @@ macro_rules! debug {
     ($($arg:tt)*) => {{
         use core::fmt::Write;
         use writer::OUTPUT;
-        write!(OUTPUT.lock(), $($arg)*).unwrap();
+        write!(OUTPUT.blocking_lock(), $($arg)*).unwrap();
     }};
 }
 

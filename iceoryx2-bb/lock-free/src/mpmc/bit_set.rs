@@ -37,6 +37,8 @@
 //!  ```
 
 use core::{alloc::Layout, fmt::Debug, sync::atomic::Ordering};
+
+use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU8, AtomicUsize};
 use iceoryx2_bb_elementary::{
     bump_allocator::BumpAllocator,
     math::unaligned_mem_size,
@@ -45,7 +47,6 @@ use iceoryx2_bb_elementary::{
 use iceoryx2_bb_elementary_traits::{
     owning_pointer::OwningPointer, relocatable_container::RelocatableContainer,
 };
-use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU8, IoxAtomicUsize};
 
 use iceoryx2_bb_log::{fail, fatal_panic};
 
@@ -59,7 +60,7 @@ pub mod details {
 
     use super::*;
 
-    pub type BitsetElement = IoxAtomicU8;
+    pub type BitsetElement = AtomicU8;
     const BITSET_ELEMENT_BITSIZE: usize = core::mem::size_of::<BitsetElement>() * 8;
 
     struct Id {
@@ -82,8 +83,8 @@ pub mod details {
         data_ptr: PointerType,
         capacity: usize,
         array_capacity: usize,
-        reset_position: IoxAtomicUsize,
-        is_memory_initialized: IoxAtomicBool,
+        reset_position: AtomicUsize,
+        is_memory_initialized: AtomicBool,
     }
 
     unsafe impl<PointerType: PointerTrait<BitsetElement>> Send for BitSet<PointerType> {}
@@ -108,8 +109,8 @@ pub mod details {
                 data_ptr,
                 capacity,
                 array_capacity,
-                is_memory_initialized: IoxAtomicBool::new(true),
-                reset_position: IoxAtomicUsize::new(0),
+                is_memory_initialized: AtomicBool::new(true),
+                reset_position: AtomicUsize::new(0),
             }
         }
     }
@@ -120,8 +121,8 @@ pub mod details {
                 data_ptr: RelocatablePointer::new_uninit(),
                 capacity,
                 array_capacity: Self::array_capacity(capacity),
-                is_memory_initialized: IoxAtomicBool::new(false),
-                reset_position: IoxAtomicUsize::new(0),
+                is_memory_initialized: AtomicBool::new(false),
+                reset_position: AtomicUsize::new(0),
             }
         }
 

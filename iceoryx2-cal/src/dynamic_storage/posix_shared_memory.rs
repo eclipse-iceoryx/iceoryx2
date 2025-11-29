@@ -53,6 +53,7 @@ use alloc::string::ToString;
 use alloc::vec;
 use alloc::vec::Vec;
 
+use iceoryx2_bb_concurrency::atomic::AtomicU64;
 use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_log::warn;
@@ -61,7 +62,6 @@ use iceoryx2_bb_posix::directory::*;
 use iceoryx2_bb_posix::file_descriptor::FileDescriptorManagement;
 use iceoryx2_bb_posix::shared_memory::*;
 use iceoryx2_bb_system_types::path::Path;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 
 use crate::static_storage::file::NamedConceptConfiguration;
 use crate::static_storage::file::NamedConceptRemoveError;
@@ -112,7 +112,7 @@ impl<T: Send + Sync + Debug> Clone for Configuration<T> {
 
 #[repr(C)]
 struct Data<T: Send + Sync + Debug> {
-    version: IoxAtomicU64,
+    version: AtomicU64,
     call_drop_on_destruction: bool,
     data: T,
 }
@@ -307,7 +307,7 @@ impl<T: Send + Sync + Debug> Builder<'_, T> {
         let msg = "Failed to init dynamic_storage::PosixSharedMemory";
         let value = shm.base_address().as_ptr() as *mut Data<T>;
         let version_ptr = unsafe { core::ptr::addr_of_mut!((*value).version) };
-        unsafe { version_ptr.write(IoxAtomicU64::new(0)) };
+        unsafe { version_ptr.write(AtomicU64::new(0)) };
 
         unsafe { core::ptr::addr_of_mut!((*value).data).write(initial_value) };
         unsafe {

@@ -18,6 +18,7 @@ pub mod tests {
         time::Instant,
     };
 
+    use iceoryx2_bb_concurrency::atomic::AtomicBool;
     use iceoryx2_bb_linux::epoll::*;
     use iceoryx2_bb_posix::{
         file_descriptor::FileDescriptorBased,
@@ -27,7 +28,6 @@ pub mod tests {
         user::User,
     };
     use iceoryx2_bb_testing::{assert_that, watchdog::Watchdog};
-    use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
     const TIMEOUT: core::time::Duration = core::time::Duration::from_millis(50);
 
@@ -261,7 +261,7 @@ pub mod tests {
             .attach()
             .unwrap();
 
-        let callback_was_called = IoxAtomicBool::new(false);
+        let callback_was_called = AtomicBool::new(false);
         let barrier = Barrier::new(2);
         std::thread::scope(|s| {
             s.spawn(|| {
@@ -289,7 +289,7 @@ pub mod tests {
             .attach()
             .unwrap();
 
-        let callback_was_called = IoxAtomicBool::new(false);
+        let callback_was_called = AtomicBool::new(false);
         let barrier = Barrier::new(2);
         std::thread::scope(|s| {
             s.spawn(|| {
@@ -320,7 +320,7 @@ pub mod tests {
             .attach()
             .unwrap();
 
-        let callback_was_called = IoxAtomicBool::new(false);
+        let callback_was_called = AtomicBool::new(false);
         let barrier = Barrier::new(2);
         std::thread::scope(|s| {
             let t = s.spawn(|| {

@@ -37,11 +37,11 @@
 //! }
 //! ```
 
+use iceoryx2_bb_concurrency::atomic::AtomicU32;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::fail;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU32;
 use iceoryx2_pal_posix::posix;
 use serde::{Deserialize, Serialize};
 
@@ -114,7 +114,7 @@ impl UniqueSystemId {
     }
 
     fn create(pid: u32, now: Time) -> UniqueSystemId {
-        static COUNTER: IoxAtomicU32 = IoxAtomicU32::new(0);
+        static COUNTER: AtomicU32 = AtomicU32::new(0);
         UniqueSystemId {
             pid,
             seconds: now.seconds() as u32,
@@ -173,7 +173,7 @@ fn test_unique_system_id_across_processes() {
     let id1 = UniqueSystemId::create(pid, now);
     // ideally, fork and exec the current process to reset the static counter inside UniqueSystemId::create
     // is better, but to ease the test now, we can duplicate the logic inside the lambda instead.
-    static COUNTER: IoxAtomicU32 = IoxAtomicU32::new(0);
+    static COUNTER: AtomicU32 = AtomicU32::new(0);
     let id2 = UniqueSystemId {
         pid: pid + 1,
         seconds: now.seconds() as u32,

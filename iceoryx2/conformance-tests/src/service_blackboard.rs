@@ -29,13 +29,13 @@ pub mod service_blackboard {
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::Service;
     use iceoryx2::testing::*;
+    use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64};
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_container::string::*;
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
-    use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64};
     use std::sync::Arc;
     use std::sync::Barrier;
 
@@ -1577,8 +1577,8 @@ pub mod service_blackboard {
             .create()
             .unwrap();
 
-        let counter = IoxAtomicU64::new(0);
-        let keep_running = IoxAtomicBool::new(true);
+        let counter = AtomicU64::new(0);
+        let keep_running = AtomicBool::new(true);
 
         std::thread::scope(|s| {
             let t = s.spawn(|| {
@@ -2000,7 +2000,7 @@ pub mod service_blackboard {
 
     #[conformance_test]
     pub fn value_cleanup_callback_works_when_custom_key_type_is_used<S: Service>() {
-        let counter = Arc::new(IoxAtomicU64::new(0));
+        let counter = Arc::new(AtomicU64::new(0));
 
         type KeyType = Foo;
         let key_0 = Foo {
