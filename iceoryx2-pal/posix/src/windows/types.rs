@@ -16,8 +16,8 @@
 
 use core::fmt::Debug;
 
-use iceoryx2_pal_concurrency_sync::barrier::Barrier;
 use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
+use iceoryx2_pal_concurrency_sync::barrier::Barrier;
 use iceoryx2_pal_concurrency_sync::mutex::Mutex;
 use iceoryx2_pal_concurrency_sync::rwlock::*;
 use iceoryx2_pal_concurrency_sync::semaphore::Semaphore;
