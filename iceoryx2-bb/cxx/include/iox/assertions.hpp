@@ -59,7 +59,7 @@
                                    #condition,                                                                         \
                                    message);                                                                           \
     }                                                                                                                  \
-    [] { }() // the empty lambda forces a semicolon on the caller side
+    []() -> void { }() // the empty lambda forces a semicolon on the caller side
 
 /// @brief report fatal enforce violation if expression evaluates to false
 /// @note for conditions that may actually happen during correct use
@@ -73,7 +73,7 @@
                                    #condition,                                                                         \
                                    message);                                                                           \
     }                                                                                                                  \
-    [] { }() // the empty lambda forces a semicolon on the caller side
+    []() -> void { }() // the empty lambda forces a semicolon on the caller side
 
 /// @brief panic if control flow reaches this code at runtime
 #define IOX_UNREACHABLE()                                                                                              \
