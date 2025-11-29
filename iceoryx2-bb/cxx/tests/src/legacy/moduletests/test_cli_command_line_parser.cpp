@@ -20,7 +20,7 @@
 #include "iox2/legacy/std_string_support.hpp"
 #include "test_cli_command_line_common.hpp"
 
-#include "iceoryx_hoofs/testing/error_reporting/testing_support.hpp"
+#include "iox2/legacy/testing/error_reporting/testing_support.hpp"
 
 #include <gtest/gtest.h>
 

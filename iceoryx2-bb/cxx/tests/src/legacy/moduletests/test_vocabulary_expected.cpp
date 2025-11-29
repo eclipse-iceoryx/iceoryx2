@@ -18,7 +18,7 @@
 #include "iox2/legacy/expected.hpp"
 #include "iox2/legacy/string.hpp"
 
-#include "iceoryx_hoofs/testing/fatal_failure.hpp"
+#include "iox2/legacy/testing/fatal_failure.hpp"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

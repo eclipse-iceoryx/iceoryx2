@@ -19,8 +19,8 @@
 #include "iox2/legacy/detail/hoofs_error_reporting.hpp"
 #include "iox2/legacy/string.hpp"
 
-#include "iceoryx_hoofs/testing/error_reporting/testing_support.hpp"
-#include "iceoryx_hoofs/testing/fatal_failure.hpp"
+#include "iox2/legacy/testing/error_reporting/testing_support.hpp"
+#include "iox2/legacy/testing/fatal_failure.hpp"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

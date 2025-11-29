@@ -22,7 +22,7 @@
 #include "module_b/error_reporting.hpp"
 
 // simplifies checking for errors during test execution
-#include "iceoryx_hoofs/testing/error_reporting/testing_support.hpp"
+#include "iox2/legacy/testing/error_reporting/testing_support.hpp"
 
 #include <iostream>
 

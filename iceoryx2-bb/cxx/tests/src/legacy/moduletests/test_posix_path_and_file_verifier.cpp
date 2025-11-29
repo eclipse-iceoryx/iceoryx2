@@ -17,7 +17,7 @@
 #include "iox2/legacy/detail/path_and_file_verifier.hpp"
 #include "iox2/legacy/file_name.hpp"
 
-#include "iceoryx_hoofs/testing/mocks/logger_mock.hpp"
+#include "iox2/legacy/testing/mocks/logger_mock.hpp"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

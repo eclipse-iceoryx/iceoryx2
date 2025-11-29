@@ -14,7 +14,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iceoryx_hoofs/testing/error_reporting/testing_error_handler.hpp"
+#include "iox2/legacy/testing/error_reporting/testing_error_handler.hpp"
 #include "iox2/legacy/error_reporting/custom/default/error_handler.hpp"
 #include "iox2/legacy/error_reporting/custom/default/error_handler_interface.hpp"
 #include "iox2/legacy/error_reporting/types.hpp"

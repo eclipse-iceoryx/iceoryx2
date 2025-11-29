@@ -53,7 +53,7 @@ class TestingErrorHandler : public iox2::legacy::er::ErrorHandlerInterface {
 
     /// @brief Initialized the error handler. This should be called in the main function of the test binary
     /// @code
-    /// #include "iceoryx_hoofs/testing/error_reporting/testing_error_handler.hpp"
+    /// #include "iox2/legacy/testing/error_reporting/testing_error_handler.hpp"
     ///
     /// #include "test.hpp"
     ///

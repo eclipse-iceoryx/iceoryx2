@@ -14,11 +14,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iceoryx_hoofs/testing/lifetime_and_assignment_tracker.hpp"
 #include "iox2/legacy/detail/hoofs_error_reporting.hpp"
+#include "iox2/legacy/testing/lifetime_and_assignment_tracker.hpp"
 #include "iox2/legacy/vector.hpp"
 
-#include "iceoryx_hoofs/testing/fatal_failure.hpp"
+#include "iox2/legacy/testing/fatal_failure.hpp"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

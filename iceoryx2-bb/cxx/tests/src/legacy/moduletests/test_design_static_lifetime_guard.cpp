@@ -16,7 +16,7 @@
 #include "iox2/legacy/static_lifetime_guard.hpp"
 #include "iox2/legacy/vector.hpp"
 
-#include "iceoryx_hoofs/testing/barrier.hpp"
+#include "iox2/legacy/testing/barrier.hpp"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -26,6 +26,7 @@
 
 namespace {
 using namespace ::testing;
+using namespace ::iox2::legacy::testing;
 
 // allows to create different types for independent tests
 template <uint64_t N>

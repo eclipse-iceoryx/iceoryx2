@@ -13,7 +13,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iceoryx_hoofs/testing/error_reporting/testing_support.hpp"
+#include "iox2/legacy/testing/error_reporting/testing_support.hpp"
 
 namespace iox2 {
 namespace legacy {

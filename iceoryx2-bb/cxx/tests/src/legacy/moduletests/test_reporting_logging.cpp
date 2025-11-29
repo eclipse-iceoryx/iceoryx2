@@ -16,7 +16,7 @@
 
 #include "iox2/legacy/logging.hpp"
 
-#include "iceoryx_hoofs/testing/testing_logger.hpp"
+#include "iox2/legacy/testing/testing_logger.hpp"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

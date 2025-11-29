@@ -20,6 +20,9 @@
 #include <cstdint>
 #include <mutex>
 
+namespace iox2 {
+namespace legacy {
+namespace testing {
 
 class Barrier {
   public:
@@ -60,5 +63,9 @@ class Barrier {
     std::condition_variable m_condVar;
     uint32_t m_requiredCount;
 };
+
+} // namespace testing
+} // namespace legacy
+} // namespace iox2
 
 #endif // IOX_HOOFS_TESTUTILS_BARRIER_HPP

@@ -14,7 +14,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iceoryx_hoofs/testing/testing_logger.hpp"
+#include "iox2/legacy/testing/testing_logger.hpp"
 #include "iox2/legacy/log/building_blocks/logformat.hpp"
 #include "iox2/legacy/log/logger.hpp"
 

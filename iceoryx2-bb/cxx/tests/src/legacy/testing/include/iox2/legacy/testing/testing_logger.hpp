@@ -53,7 +53,7 @@ class TestingLogger : public log::TestingLoggerBase {
 
     /// @brief Initialized the logger. This should be called in the main function of the test binary
     /// @code
-    /// #include "iceoryx_hoofs/testing/testing_logger.hpp"
+    /// #include "iox2/legacy/testing/testing_logger.hpp"
     ///
     /// #include "test.hpp"
     ///

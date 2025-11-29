@@ -21,8 +21,8 @@
 
 #include <gtest/gtest.h>
 
-#include "iceoryx_hoofs/testing/error_reporting/testing_support.hpp"
 #include "iox2/legacy/error_reporting/custom/error_reporting.hpp"
+#include "iox2/legacy/testing/error_reporting/testing_support.hpp"
 
 #include "module_a/errors.hpp"
 
