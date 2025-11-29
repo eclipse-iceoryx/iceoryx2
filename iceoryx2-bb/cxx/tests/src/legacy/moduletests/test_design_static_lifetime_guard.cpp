@@ -16,7 +16,7 @@
 #include "iox2/legacy/static_lifetime_guard.hpp"
 #include "iox2/legacy/vector.hpp"
 
-#include "iceoryx_hoofs/testing/barrier.hpp"
+#include "iox2/legacy/testing/barrier.hpp"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

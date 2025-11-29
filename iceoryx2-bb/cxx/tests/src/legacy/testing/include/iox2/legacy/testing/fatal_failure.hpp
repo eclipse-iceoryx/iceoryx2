@@ -22,7 +22,7 @@
 #include "iox2/legacy/function_ref.hpp"
 #include "iox2/legacy/logging.hpp"
 
-#include "iceoryx_hoofs/testing/error_reporting/testing_support.hpp"
+#include "iox2/legacy/testing/error_reporting/testing_support.hpp"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -82,6 +82,6 @@ bool IOX_EXPECT_NO_FATAL_FAILURE(const function_ref<void()> testFunction);
 } // namespace legacy
 } // namespace iox2
 
-#include "iceoryx_hoofs/testing/fatal_failure.inl"
+#include "iox2/legacy/testing/fatal_failure.inl"
 
 #endif // IOX_HOOFS_TESTING_FATAL_FAILURE_HPP

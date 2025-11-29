@@ -17,7 +17,7 @@
 #ifndef IOX_HOOFS_TESTING_FATAL_FAILURE_INL
 #define IOX_HOOFS_TESTING_FATAL_FAILURE_INL
 
-#include "iceoryx_hoofs/testing/fatal_failure.hpp"
+#include "iox2/legacy/testing/fatal_failure.hpp"
 
 namespace iox2 {
 namespace legacy {

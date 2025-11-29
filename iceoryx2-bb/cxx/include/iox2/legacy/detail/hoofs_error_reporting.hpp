@@ -75,7 +75,7 @@ class HoofsErrorType {
     }
 
     static const char* moduleName() {
-        return "iceoryx_hoofs";
+        return "iceoryx2-bb-cxx";
     }
 
     static constexpr iox2::legacy::er::ModuleId MODULE_ID { iox2::legacy::er::ModuleId::HOOFS };

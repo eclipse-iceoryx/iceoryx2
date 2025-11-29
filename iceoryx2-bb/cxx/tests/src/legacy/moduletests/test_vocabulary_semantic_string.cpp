@@ -13,12 +13,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iceoryx_hoofs/testing/fatal_failure.hpp"
 #include "iox2/legacy/detail/hoofs_error_reporting.hpp"
 #include "iox2/legacy/file_name.hpp"
 #include "iox2/legacy/file_path.hpp"
 #include "iox2/legacy/path.hpp"
 #include "iox2/legacy/semantic_string.hpp"
+#include "iox2/legacy/testing/fatal_failure.hpp"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

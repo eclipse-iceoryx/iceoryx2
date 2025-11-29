@@ -15,9 +15,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iceoryx_hoofs/testing/mocks/logger_mock.hpp"
 #include "iox2/legacy/log/logstream.hpp"
 #include "iox2/legacy/logging.hpp"
+#include "iox2/legacy/testing/mocks/logger_mock.hpp"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

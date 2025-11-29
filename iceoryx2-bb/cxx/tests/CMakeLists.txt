@@ -39,14 +39,14 @@ target_sources(iceoryx2-bb-cxx-tests
     ${PROJECT_SOURCE_DIR}/src/static_string_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/static_vector_tests.cpp
     PRIVATE
-    ${PROJECT_SOURCE_DIR}/src/legacy/testing/include/iceoryx_hoofs/testing/error_reporting/testing_error_handler.hpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/testing/include/iceoryx_hoofs/testing/error_reporting/testing_support.hpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/testing/include/iceoryx_hoofs/testing/mocks/logger_mock.hpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/testing/include/iceoryx_hoofs/testing/barrier.hpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/testing/include/iceoryx_hoofs/testing/fatal_failure.hpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/testing/include/iceoryx_hoofs/testing/fatal_failure.inl
-    ${PROJECT_SOURCE_DIR}/src/legacy/testing/include/iceoryx_hoofs/testing/lifetime_and_assignment_tracker.hpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/testing/include/iceoryx_hoofs/testing/testing_logger.hpp
+    ${PROJECT_SOURCE_DIR}/src/legacy/testing/include/iox2/legacy/testing/error_reporting/testing_error_handler.hpp
+    ${PROJECT_SOURCE_DIR}/src/legacy/testing/include/iox2/legacy/testing/error_reporting/testing_support.hpp
+    ${PROJECT_SOURCE_DIR}/src/legacy/testing/include/iox2/legacy/testing/mocks/logger_mock.hpp
+    ${PROJECT_SOURCE_DIR}/src/legacy/testing/include/iox2/legacy/testing/barrier.hpp
+    ${PROJECT_SOURCE_DIR}/src/legacy/testing/include/iox2/legacy/testing/fatal_failure.hpp
+    ${PROJECT_SOURCE_DIR}/src/legacy/testing/include/iox2/legacy/testing/fatal_failure.inl
+    ${PROJECT_SOURCE_DIR}/src/legacy/testing/include/iox2/legacy/testing/lifetime_and_assignment_tracker.hpp
+    ${PROJECT_SOURCE_DIR}/src/legacy/testing/include/iox2/legacy/testing/testing_logger.hpp
     PRIVATE
     ${PROJECT_SOURCE_DIR}/src/legacy/testing/error_reporting/testing_error_handler.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/testing/error_reporting/testing_support.cpp

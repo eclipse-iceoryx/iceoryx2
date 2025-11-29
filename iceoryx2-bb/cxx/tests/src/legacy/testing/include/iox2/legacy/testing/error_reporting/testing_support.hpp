@@ -18,8 +18,8 @@
 
 #include <gtest/gtest.h>
 
-#include "iceoryx_hoofs/testing/error_reporting/testing_error_handler.hpp"
 #include "iox2/legacy/function_ref.hpp"
+#include "iox2/legacy/testing/error_reporting/testing_error_handler.hpp"
 
 #include <thread>
 #include <utility>

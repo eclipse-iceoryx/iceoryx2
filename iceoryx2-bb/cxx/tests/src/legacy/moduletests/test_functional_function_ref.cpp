@@ -14,10 +14,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iceoryx_hoofs/testing/error_reporting/testing_support.hpp"
 #include "iox2/legacy/attributes.hpp"
 #include "iox2/legacy/detail/hoofs_error_reporting.hpp"
 #include "iox2/legacy/function_ref.hpp"
+#include "iox2/legacy/testing/error_reporting/testing_support.hpp"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
