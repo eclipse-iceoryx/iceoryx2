@@ -18,7 +18,6 @@
 #define IOX_HOOFS_REPORTING_LOG_BUILDING_BLOCKS_CONSOLE_LOGGER_HPP
 
 #include "iox/atomic.hpp"
-#include "iox/iceoryx_hoofs_types.hpp"
 #include "iox/log/building_blocks/logformat.hpp"
 
 #include <cstdint>
@@ -124,7 +123,9 @@ class ConsoleLogger {
         // Safe access is guaranteed since the char array is wrapped inside the class
         // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays)
         char buffer[NULL_TERMINATED_BUFFER_SIZE];
-        uint32_t bufferWriteIndex; // initialized in corresponding cpp file
+        uint32_t bufferWriteIndex;             // initialized in corresponding cpp file
+        LogLevel logLevel { LogLevel::Trace }; // required for a temporary workaround to print only LogLevel::Error and
+                                               // LogLevel::Fatal with the ConsoleLogger
         /// @todo iox-#1755 add thread local storage with thread id and print it in the log messages
     };
 

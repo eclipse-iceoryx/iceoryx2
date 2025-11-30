@@ -16,10 +16,14 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[conformance_test_module]
 pub mod subscriber {
     use iceoryx2::port::ReceiveError;
-    use iceoryx2::service::builder::CustomPayloadMarker;
-    use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use std::collections::HashSet;
+
+    #[cfg(debug_assertions)]
+    use iceoryx2::service::{
+        builder::CustomPayloadMarker,
+        static_config::message_type_details::{TypeDetail, TypeVariant},
+    };
 
     use iceoryx2::{
         node::NodeBuilder,

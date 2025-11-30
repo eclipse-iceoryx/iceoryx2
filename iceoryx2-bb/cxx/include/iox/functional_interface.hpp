@@ -15,7 +15,6 @@
 #ifndef IOX_HOOFS_DESIGN_FUNCTIONAL_INTERFACE_HPP
 #define IOX_HOOFS_DESIGN_FUNCTIONAL_INTERFACE_HPP
 
-#include "iceoryx_platform/unistd.hpp"
 #include "iox/assertions.hpp"
 #include "iox/function_ref.hpp"
 #include "iox/type_traits.hpp"

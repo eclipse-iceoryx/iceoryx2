@@ -16,7 +16,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox/log/building_blocks/logger.hpp"
-#include "iox/iceoryx_hoofs_types.hpp"
 
 #include <cstdio>
 #include <cstdlib>

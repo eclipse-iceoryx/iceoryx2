@@ -14,7 +14,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox/path.hpp"
-#include "iceoryx_platform/platform_settings.hpp"
 
 namespace iox {
 namespace detail {

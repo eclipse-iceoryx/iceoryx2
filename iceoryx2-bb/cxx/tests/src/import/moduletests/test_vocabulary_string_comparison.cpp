@@ -21,7 +21,9 @@
 
 #include "iceoryx_hoofs/testing/error_reporting/testing_support.hpp"
 #include "iceoryx_hoofs/testing/fatal_failure.hpp"
-#include "test.hpp"
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include <cstring>
 

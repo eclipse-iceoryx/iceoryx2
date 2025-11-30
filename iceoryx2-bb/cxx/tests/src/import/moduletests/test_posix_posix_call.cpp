@@ -15,7 +15,8 @@
 
 #include "iceoryx_hoofs/testing/testing_logger.hpp"
 #include "iox/posix_call.hpp"
-#include "test.hpp"
+
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 using namespace ::testing;

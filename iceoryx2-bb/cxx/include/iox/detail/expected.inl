@@ -163,21 +163,6 @@ inline const ErrorType& expected<ValueType, ErrorType>::error() const& noexcept 
 }
 
 template <typename ValueType, typename ErrorType>
-inline ErrorType&& expected<ValueType, ErrorType>::get_error() && noexcept {
-    return std::move(error_checked());
-}
-
-template <typename ValueType, typename ErrorType>
-inline ErrorType& expected<ValueType, ErrorType>::get_error() & noexcept {
-    return error_checked();
-}
-
-template <typename ValueType, typename ErrorType>
-inline const ErrorType& expected<ValueType, ErrorType>::get_error() const& noexcept {
-    return error_checked();
-}
-
-template <typename ValueType, typename ErrorType>
 template <typename U>
 inline const enable_if_non_void_t<U>& expected<ValueType, ErrorType>::value_checked() const& noexcept {
     IOX_ENFORCE(has_value(), "Trying to access a value but an error is stored!");

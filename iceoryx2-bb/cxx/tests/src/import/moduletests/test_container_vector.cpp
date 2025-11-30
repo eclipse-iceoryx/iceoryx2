@@ -19,7 +19,9 @@
 #include "iox/vector.hpp"
 
 #include "iceoryx_hoofs/testing/fatal_failure.hpp"
-#include "test.hpp"
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include <vector>
 
@@ -782,14 +784,23 @@ TEST_F(vector_test, EraseOfMiddleElementCallsDTorAndMove) {
 TEST_F(vector_test, AccessOfNonExistingElementOnEmptyVectorLeadTermination) {
     ::testing::Test::RecordProperty("TEST_ID", "31a4f0fb-31dd-4119-baba-31efab42c42b");
 
+#if defined _WIN32
+    GTEST_SKIP() << "The 'AccessOfNonExistingElementOnEmptyVectorLeadTermination' test is disabled on Windows";
+#else
     ASSERT_THAT(sut.empty(), Eq(true));
 
     const uint64_t accessOffset { sut.size() + 1U };
     IOX_EXPECT_FATAL_FAILURE([&] { sut.at(accessOffset); }, iox::er::ENFORCE_VIOLATION);
+#endif
 }
 
 TEST_F(vector_test, AccessOfNonExistingElementOnPartiallyFilledVectorLeadTermination) {
     ::testing::Test::RecordProperty("TEST_ID", "13a1f2fb-01dd-3265-9bec-31ef0542c42b");
+
+#if defined _WIN32
+    GTEST_SKIP()
+        << "The 'AccessOfNonExistingElementOnPartiallyFilledVectorLeadTermination' test is disabled on Windows";
+#else
     constexpr int a { 5 };
 
     for (uint64_t i = 0U; i < (VECTOR_CAPACITY - 2U); ++i) {
@@ -798,10 +809,15 @@ TEST_F(vector_test, AccessOfNonExistingElementOnPartiallyFilledVectorLeadTermina
 
     const uint64_t accessOffset { sut.size() + 1U };
     IOX_EXPECT_FATAL_FAILURE([&] { sut.at(accessOffset); }, iox::er::ENFORCE_VIOLATION);
+#endif
 }
 
 TEST_F(vector_test, AccessOfNonExistingElementOnFullVectorLeadTermination) {
     ::testing::Test::RecordProperty("TEST_ID", "42a4f0fb-71ad-1269-9b1c-71efca72c42b");
+
+#if defined _WIN32
+    GTEST_SKIP() << "The 'AccessOfNonExistingElementOnFullVectorLeadTermination' test is disabled on Windows";
+#else
     constexpr int a { 5 };
 
     for (uint64_t i = 0U; i < VECTOR_CAPACITY; ++i) {
@@ -812,19 +828,28 @@ TEST_F(vector_test, AccessOfNonExistingElementOnFullVectorLeadTermination) {
 
     const uint64_t accessOffset { sut.size() + 1U };
     IOX_EXPECT_FATAL_FAILURE([&] { sut.at(accessOffset); }, iox::er::ENFORCE_VIOLATION);
+#endif
 }
 
 TEST_F(vector_test, OutOfBoundsAccessOnEmptyVectorLeadsToTermination) {
     ::testing::Test::RecordProperty("TEST_ID", "13d4f0fb-baba-1273-9b1c-acab15a4212b");
 
+#if defined _WIN32
+    GTEST_SKIP() << "The 'OutOfBoundsAccessOnEmptyVectorLeadsToTermination' test is disabled on Windows";
+#else
     ASSERT_THAT(sut.empty(), Eq(true));
 
     const uint64_t accessOffset { sut.size() + 1U };
     IOX_EXPECT_FATAL_FAILURE([&] { sut[accessOffset]; }, iox::er::ENFORCE_VIOLATION);
+#endif
 }
 
 TEST_F(vector_test, OutOfBoundsAccessOnPartiallyFilledVectorLeadsToTermination) {
     ::testing::Test::RecordProperty("TEST_ID", "59a4f0fb-ad31-c273-9b41-69153564242b");
+
+#if defined _WIN32
+    GTEST_SKIP() << "The 'OutOfBoundsAccessOnPartiallyFilledVectorLeadsToTermination' test is disabled on Windows";
+#else
     constexpr int a { 5 };
 
     for (uint64_t i = 0U; i < (VECTOR_CAPACITY - 2U); ++i) {
@@ -833,10 +858,15 @@ TEST_F(vector_test, OutOfBoundsAccessOnPartiallyFilledVectorLeadsToTermination) 
 
     const uint64_t accessOffset { sut.size() + 1U };
     IOX_EXPECT_FATAL_FAILURE([&] { sut[accessOffset]; }, iox::er::ENFORCE_VIOLATION);
+#endif
 }
 
 TEST_F(vector_test, OutOfBoundsAccessOnFullVectorLeadsToTermination) {
     ::testing::Test::RecordProperty("TEST_ID", "09a4fafa-3d31-3113-5bec-62ef01a4212b");
+
+#if defined _WIN32
+    GTEST_SKIP() << "The 'OutOfBoundsAccessOnFullVectorLeadsToTermination' test is disabled on Windows";
+#else
     constexpr int a { 5 };
 
     for (uint64_t i = 0U; i < VECTOR_CAPACITY; ++i) {
@@ -845,6 +875,7 @@ TEST_F(vector_test, OutOfBoundsAccessOnFullVectorLeadsToTermination) {
 
     const uint64_t accessOffset { sut.size() + 1U };
     IOX_EXPECT_FATAL_FAILURE([&] { sut[accessOffset]; }, iox::er::ENFORCE_VIOLATION);
+#endif
 }
 
 TEST_F(vector_test, EraseOfFrontElementCallsDTorAndMove) {

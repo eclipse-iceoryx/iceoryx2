@@ -14,10 +14,8 @@
 
 This example demonstrates how the zero-copy compatible versions of
 `std::vector` or `std::string` can be sent.
-The library
-[iceoryx_hoofs](https://github.com/eclipse-iceoryx/iceoryx/tree/main/iceoryx_hoofs)
-provides versions that are shared memory compatible like the
-`iox::string` and the `iox::vector`.
+The library `iceoryx2-bb-cxx` provides versions that are shared memory
+compatible like the `iox::string` and the `iox::vector`.
 
 ## How to Build
 
@@ -46,7 +44,7 @@ would then receive the samples from every publisher from every running instance.
 
 1. Ensure to only use data types suitable for shared memory communication like
    pod-types (plain old data, e.g. `usize`, `f32`, ...) or explicitly
-   shared-memory compatible containers like some of the constructs in the
-   `iceoryx-hoofs`.
+   shared-memory compatible containers like some of the constructs in
+   `iceoryx2-bb-cxx`.
 2. **Do not use pointers, or data types that are not self-contained or use
    pointers for their internal management!**

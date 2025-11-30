@@ -17,7 +17,8 @@
 #include "iox/assertions.hpp"
 #include "iox/detail/hoofs_error_reporting.hpp"
 
-#include "test.hpp"
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 namespace {
 using namespace ::testing;
@@ -26,9 +27,13 @@ using namespace ::iox::testing;
 TEST(FatalFailure, UsingExpectFatalFailureWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "26393210-9738-462f-9d35-dbd53fbae9d2");
 
+#if defined _WIN32
+    GTEST_SKIP() << "The 'UsingExpectFatalFailureWorks' test is disabled on Windows";
+#else
     auto hasFatalFailure = IOX_EXPECT_FATAL_FAILURE([&] { IOX_ENFORCE(false, ""); }, iox::er::ENFORCE_VIOLATION);
 
     EXPECT_TRUE(hasFatalFailure);
+#endif
 }
 
 TEST(FatalFailure, UsingExpectNoFatalFailureWorks) {

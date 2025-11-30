@@ -17,8 +17,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox/log/building_blocks/console_logger.hpp"
-#include "iceoryx_platform/time.hpp"
-#include "iceoryx_platform/unistd.hpp"
 
 #include <cstdio>
 #include <cstring>
@@ -52,7 +50,9 @@ void ConsoleLogger::createLogMessageHeader(const char* file,
                                            LogLevel logLevel) noexcept {
     timespec timestamp { 0, 0 };
     // intentionally avoid using 'IOX_POSIX_CALL' here to keep the logger dependency free
-    if (iox_clock_gettime(CLOCK_REALTIME, &timestamp) != 0) {
+    // NOTE: the log message will eventually be forwarded to iceoryx2-bb-log; temporarily, we ignore the timestamp
+    // if (iox_clock_gettime(CLOCK_REALTIME, &timestamp) != 0)
+    {
         timestamp = { 0, 0 };
         // intentionally do nothing since a timestamp from 01.01.1970 already indicates  an issue with the clock
     }
@@ -145,6 +145,7 @@ void ConsoleLogger::createLogMessageHeader(const char* file,
             getThreadLocalData().bufferWriteIndex = ThreadLocalData::BUFFER_SIZE;
         }
     }
+    getThreadLocalData().logLevel = logLevel;
 }
 
 void ConsoleLogger::flush() noexcept {
@@ -152,11 +153,17 @@ void ConsoleLogger::flush() noexcept {
     // NOLINTJUSTIFICATION it is ensured that the index cannot be out of bounds
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
     data.buffer[data.bufferWriteIndex] = '\n'; // overwrite null-termination with line ending
-    constexpr uint32_t LINE_ENDING_SIZE { 1 };
+    // constexpr uint32_t LINE_ENDING_SIZE { 1 };
 
-    if (iox_write(STDERR_FILENO, &data.buffer[0], data.bufferWriteIndex + LINE_ENDING_SIZE) < 0) {
-        /// @todo iox-#1755 printing to the console failed; call the error handler after the error handler refactoring
-        /// was merged
+    // NOTE: the log message will eventually be forwarded to iceoryx2-bb-log; for now, we just use cerr for critical log
+    // messages if (iox_write(STDERR_FILENO, &data.buffer[0], data.bufferWriteIndex + LINE_ENDING_SIZE) < 0)
+    // {
+    //     /// @todo iox-#1755 printing to the console failed; call the error handler after the error handler
+    //     refactoring
+    //     /// was merged
+    //}
+    if (getThreadLocalData().logLevel == LogLevel::Error || getThreadLocalData().logLevel == LogLevel::Fatal) {
+        std::cerr << getThreadLocalData().buffer << std::endl;
     }
     assumeFlushed();
 }

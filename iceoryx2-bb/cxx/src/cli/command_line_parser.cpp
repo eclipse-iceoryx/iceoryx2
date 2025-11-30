@@ -14,8 +14,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox/cli/command_line_parser.hpp"
-#include "iox/algorithm.hpp"
-#include "iox/detail/hoofs_error_reporting.hpp"
 #include "iox/std_string_support.hpp"
 
 #include <algorithm>
@@ -154,7 +152,7 @@ Arguments
 CommandLineParser::parse(const OptionDefinition& optionSet, int argc, char** argv, const uint64_t argcOffset) noexcept {
     m_optionSet = &optionSet;
 
-    m_argc = static_cast<uint64_t>(algorithm::maxVal(0, argc));
+    m_argc = static_cast<uint64_t>(std::max(0, argc));
     m_argv = argv;
     m_argcOffset = argcOffset;
     // reset options otherwise multiple parse calls work on already parsed options
@@ -168,7 +166,7 @@ CommandLineParser::parse(const OptionDefinition& optionSet, int argc, char** arg
     // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     m_optionValue.m_binaryName = m_argv[0];
 
-    for (uint64_t i = algorithm::maxVal(argcOffset, static_cast<uint64_t>(1U)); i < m_argc; ++i) {
+    for (uint64_t i = std::max(argcOffset, static_cast<uint64_t>(1U)); i < m_argc; ++i) {
         const auto skipCommandLineArgument = [&] { ++i; };
 
         if (!hasLexicallyValidOption(m_argv[i])) {

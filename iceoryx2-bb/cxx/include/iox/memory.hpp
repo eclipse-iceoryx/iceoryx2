@@ -21,6 +21,7 @@
 #include <cstdlib>
 
 namespace iox {
+using byte = uint8_t;
 
 /// @note value + alignment - 1 must not exceed the maximum value for type T
 /// @note alignment must be a power of two

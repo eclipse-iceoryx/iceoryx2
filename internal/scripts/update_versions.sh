@@ -19,7 +19,6 @@ C_GREEN='\033[1;32m'
 C_YELLOW='\033[1;33m'
 C_BLUE='\033[1;34m'
 
-UPDATE_ICEORYX_HOOFS_VERSION=false
 UPDATE_ICEORYX2_VERSION=false
 
 while (( "$#" )); do
@@ -29,23 +28,16 @@ while (( "$#" )); do
             UPDATE_ICEORYX2_VERSION=true
             shift 2
             ;;
-        --iceoryx-hoofs)
-            NEW_ICEORYX_HOOFS_VERSION=$2
-            UPDATE_ICEORYX_HOOFS_VERSION=true
-            shift 2
-            ;;
         "help")
-            echo -e "Script to update the iceoryx2 and iceoryx-hoofs version"
+            echo -e "Script to update the iceoryx2 version"
             echo -e ""
             echo -e ""
             echo -e "Usage: ${C_GREEN}$(basename $0)${C_OFF} ${C_BLUE}SCRIPT-OPTION${C_OFF}"
             echo -e "Command:"
-            echo -e "    get-current-iceoryx2-version  Print the current iceoryx2 version"
             echo -e "    help                          Print this help"
             echo -e "Options:"
             echo -e "    "
             echo -e "    --iceoryx2 <VERSION>          Change all iceoryx2 versions to <VERSION>"
-            echo -e "    --iceoryx-hoofs <VERSION>     Change all iceoryx-hoofs versions to <VERSION>"
             echo -e ""
             exit 0
             ;;
@@ -56,73 +48,12 @@ while (( "$#" )); do
     esac
 done
 
-if [[ ${UPDATE_ICEORYX_HOOFS_VERSION} == false && ${UPDATE_ICEORYX2_VERSION} == false ]]; then
+if [[ ${UPDATE_ICEORYX2_VERSION} == false ]]; then
     echo -e "${C_RED}ERROR:${C_OFF} No arguments provided. Try 'help' for options."
     exit 1
 fi
 
 cd $(git rev-parse --show-toplevel)
-
-if [[ ${UPDATE_ICEORYX_HOOFS_VERSION} == true ]]; then
-    echo -e "Updating ${C_BLUE}iceoryx-hoofs${C_OFF} version to: ${C_BLUE}${NEW_ICEORYX_HOOFS_VERSION}${C_OFF}!"
-
-    OLD_VERSION=$(grep 'ICEORYX_HOOFS' internal/VERSIONS | sed 's/ICEORYX_HOOFS: //')
-    NEW_VERSION=${NEW_ICEORYX_HOOFS_VERSION}
-
-    sed -i 's/ICEORYX_HOOFS_VERSION '"${OLD_VERSION}"'/ICEORYX_HOOFS_VERSION '"${NEW_VERSION}"'/g' \
-        CMakeLists.txt
-    sed -i 's/ICEORYX_HOOFS_VERSION '"${OLD_VERSION}"'/ICEORYX_HOOFS_VERSION '"${NEW_VERSION}"'/g' \
-        iceoryx2-cxx/CMakeLists.txt
-
-    sed -i 's/ICEORYX_VERSION = "'"${OLD_VERSION}"'"/ICEORYX_VERSION = "'"${NEW_VERSION}"'"/g' \
-        WORKSPACE.bazel
-    sed -i 's/ICEORYX_VERSION = "'"${OLD_VERSION}"'"/ICEORYX_VERSION = "'"${NEW_VERSION}"'"/g' \
-        doc/bazel/README.md
-
-    sed -i 's/"'"${OLD_VERSION}"'">iceoryx_hoofs/"'"${NEW_VERSION}"'">iceoryx_hoofs/g' \
-        package.xml
-
-    sed -i 's/branch v'"${OLD_VERSION}"' https/branch v'"${NEW_VERSION}"' https/g' \
-        iceoryx2-cxx/README.md
-    sed -i 's/branch v'"${OLD_VERSION}"' https/branch v'"${NEW_VERSION}"' https/g' \
-        internal/scripts/ci_build_and_install_iceoryx_hoofs.ps1
-    sed -i 's/branch v'"${OLD_VERSION}"' https/branch v'"${NEW_VERSION}"' https/g' \
-        internal/scripts/ci_build_and_install_iceoryx_hoofs.sh
-
-    if grep -rF \
-        --exclude-dir=.env \
-        --exclude-dir=.git \
-        --exclude-dir=landing-page \
-        --exclude-dir=plots \
-        --exclude-dir=release-notes \
-        --exclude-dir=target \
-        --exclude=Cargo.lock \
-        --exclude=Cargo.Bazel.lock \
-        --exclude=MODULE.bazel.lock \
-        --exclude=CHANGELOG.md \
-        --exclude=header.html \
-        --exclude=poetry.lock \
-        --exclude=VERSIONS \
-        ${OLD_VERSION}; then
-
-        echo -e "${C_RED}ERROR:${C_OFF} Found the old iceoryx-hoofs version string!"
-        echo -e "Please update the script to include the new occurrences of '${OLD_VERSION}'"
-
-        exit 1
-    fi
-
-    sed -i 's/ICEORYX_HOOFS: '"${OLD_VERSION}"'/ICEORYX_HOOFS: '"${NEW_VERSION}"'/g' \
-        internal/VERSIONS
-
-    if grep -q "ICEORYX_HOOFS: ${OLD_VERSION}" internal/VERSIONS; then
-        echo -e "${C_RED}ERROR:${C_OFF} Could not update 'ICEORYX_HOOFS' version in 'internal/VERSIONS'"
-
-        exit 1
-    fi
-
-    echo -e "${C_GREEN}Successuflly updated the iceoryx-hoofs version to '${NEW_VERSION}'${C_OFF}!"
-    echo -e "${C_YELLOW}Please also update the sha256 sum for iceoryx in 'doc/bazel/README.md' and 'WORKSPACE.bazel'!${C_OFF}"
-fi
 
 update_package_version_rs() {
     OLD=$1

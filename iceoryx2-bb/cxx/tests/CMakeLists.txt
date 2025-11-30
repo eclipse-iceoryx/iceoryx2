@@ -24,8 +24,8 @@ include(Iceoryx2PlatformSettings)
 
 include(Iceoryx2GTest)
 
-add_executable(iceoryx2-bb-containers-tests ${TEST_FILES})
-target_sources(iceoryx2-bb-containers-tests
+add_executable(iceoryx2-bb-cxx-tests ${TEST_FILES})
+target_sources(iceoryx2-bb-cxx-tests
     PRIVATE
     ${PROJECT_SOURCE_DIR}/src/testing/observable.hpp
     ${PROJECT_SOURCE_DIR}/src/testing/test_utils.hpp
@@ -38,27 +38,105 @@ target_sources(iceoryx2-bb-containers-tests
     ${PROJECT_SOURCE_DIR}/src/raw_byte_storage_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/static_string_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/static_vector_tests.cpp
-)
-target_include_directories(iceoryx2-bb-containers-tests PRIVATE ${PROJECT_SOURCE_DIR}/src)
-target_link_libraries(
-    iceoryx2-bb-containers-tests
     PRIVATE
-    iceoryx2-bb-cxx::iceoryx2-bb-containers-cxx
+    ${PROJECT_SOURCE_DIR}/src/import/testing/include/iceoryx_hoofs/testing/error_reporting/testing_error_handler.hpp
+    ${PROJECT_SOURCE_DIR}/src/import/testing/include/iceoryx_hoofs/testing/error_reporting/testing_support.hpp
+    ${PROJECT_SOURCE_DIR}/src/import/testing/include/iceoryx_hoofs/testing/mocks/logger_mock.hpp
+    ${PROJECT_SOURCE_DIR}/src/import/testing/include/iceoryx_hoofs/testing/barrier.hpp
+    ${PROJECT_SOURCE_DIR}/src/import/testing/include/iceoryx_hoofs/testing/fatal_failure.hpp
+    ${PROJECT_SOURCE_DIR}/src/import/testing/include/iceoryx_hoofs/testing/fatal_failure.inl
+    ${PROJECT_SOURCE_DIR}/src/import/testing/include/iceoryx_hoofs/testing/lifetime_and_assignment_tracker.hpp
+    ${PROJECT_SOURCE_DIR}/src/import/testing/include/iceoryx_hoofs/testing/testing_logger.hpp
+    PRIVATE
+    ${PROJECT_SOURCE_DIR}/src/import/testing/error_reporting/testing_error_handler.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/testing/error_reporting/testing_support.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/testing/testing_logger.cpp
+    PRIVATE
+    ${PROJECT_SOURCE_DIR}/src/import/mocktests/test_fatal_failure.cpp
+    PRIVATE
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/error_reporting/module_a/errors.hpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/error_reporting/module_a/error_reporting.hpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/error_reporting/module_b/errors.hpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/error_reporting/module_b/error_reporting.hpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_cli_command_line_common.hpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_design_functional_interface_common.hpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_design_functional_interface_types.hpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_reporting_logstream.hpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_vocabulary_string.hpp
+    PRIVATE
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/error_reporting/test_auxiliary_types.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/error_reporting/test_custom_error_reporting.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/error_reporting/test_default_error_handler.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/error_reporting/test_error_kind.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/error_reporting/test_error_reporting_macros.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/error_reporting/test_error_reporting_violation.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/error_reporting/test_testing_error_handler.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_cli_cli_definition.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_cli_command_line_parser.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_cli_option.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_cli_option_definition.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_container_uninitialized_array.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_container_vector.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_design_functional_interface_and_then.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_design_functional_interface_common.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_design_functional_interface_concat_multiple_calls.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_design_functional_interface_expect.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_design_functional_interface_or_else.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_design_functional_interface_types.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_design_functional_interface_value_or.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_design_polymorphic_handler.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_design_static_lifetime_guard.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_functional_function.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_functional_function_ref.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_memory_memory.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_memory_static_storage.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_platform_atomic.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_posix_path_and_file_verifier.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_posix_posix_call.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_primitives_type_traits.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_reporting_console_logger.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_reporting_logging.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_reporting_logstream.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_reporting_logstream_arithmetic.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_reporting_logstream_hex_oct_bin.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_time_unit_duration.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_utility_convert.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_utility_deprecation_marker.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_utility_into.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_utility_std_chrono_support.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_utility_std_string_support.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_vocabulary_expected.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_vocabulary_optional.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_vocabulary_semantic_string.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_vocabulary_string.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_vocabulary_string_comparison.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_vocabulary_string_concatenate_append_and_insert.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_vocabulary_string_ctor_and_assign.cpp
+    ${PROJECT_SOURCE_DIR}/src/import/moduletests/test_vocabulary_variant.cpp
+)
+target_include_directories(iceoryx2-bb-cxx-tests
+    PRIVATE ${PROJECT_SOURCE_DIR}/src
+    PRIVATE ${PROJECT_SOURCE_DIR}/src/import/testing/include
+)
+target_link_libraries(
+    iceoryx2-bb-cxx-tests
+    PRIVATE
+    iceoryx2-bb-cxx::iceoryx2-bb-cxx
     GTest::gtest GTest::gmock
     ${ICEORYX2_SANITIZER_FLAGS}
     ${ICEORYX2_COVERAGE_FLAGS}
 )
 target_compile_options(
-    iceoryx2-bb-containers-tests
+    iceoryx2-bb-cxx-tests
     PRIVATE
     ${ICEORYX2_TEST_CXX_FLAGS}
     ${ICEORYX2_CXX_WARNINGS}
     ${ICEORYX2_SANITIZER_FLAGS}
     ${ICEORYX2_COVERAGE_FLAGS}
 )
-target_compile_features(iceoryx2-bb-containers-tests PRIVATE ${ICEORYX2_CXX_STD})
+target_compile_features(iceoryx2-bb-cxx-tests PRIVATE ${ICEORYX2_CXX_STD})
 
-set_target_properties(iceoryx2-bb-containers-tests PROPERTIES
+set_target_properties(iceoryx2-bb-cxx-tests PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tests"
     RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/tests"
     RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/tests"
@@ -66,4 +144,4 @@ set_target_properties(iceoryx2-bb-containers-tests PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_BINARY_DIR}/tests"
 )
 
-add_test(NAME "iceoryx2 C++ BB Container Tests" COMMAND iceoryx2-bb-containers-tests)
+add_test(NAME "iceoryx2 C++ BB Container Tests" COMMAND iceoryx2-bb-cxx-tests)

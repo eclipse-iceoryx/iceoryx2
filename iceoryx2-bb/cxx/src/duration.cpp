@@ -15,7 +15,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox/duration.hpp"
-#include "iceoryx_platform/platform_correction.hpp"
 #include "iox/assertions.hpp"
 #include "iox/logging.hpp"
 
@@ -23,43 +22,18 @@
 
 namespace iox {
 namespace units {
-struct timespec Duration::timespec(const TimeSpecReference reference) const noexcept {
+struct timespec Duration::timespec() const noexcept {
     using SEC_TYPE = decltype(std::declval<struct timespec>().tv_sec);
     using NSEC_TYPE = decltype(std::declval<struct timespec>().tv_nsec);
 
-    // AXIVION Next Construct AutosarC++19_03-M0.1.2, AutosarC++19_03-M0.1.9, FaultDetection-DeadBranches : False positive! Branching depends on input parameter
-    if (reference == TimeSpecReference::None) {
-        static_assert(sizeof(uint64_t) >= sizeof(SEC_TYPE), "casting might alter result");
-        if (this->m_seconds > static_cast<uint64_t>(std::numeric_limits<SEC_TYPE>::max())) {
-            IOX_LOG(Trace, ": Result of conversion would overflow, clamping to max value!");
-            return { std::numeric_limits<SEC_TYPE>::max(), NANOSECS_PER_SEC - 1U };
-        }
-
-        const auto tv_sec = static_cast<SEC_TYPE>(this->m_seconds);
-        const auto tv_nsec = static_cast<NSEC_TYPE>(this->m_nanoseconds);
-        return { tv_sec, tv_nsec };
-    }
-
-    struct timespec referenceTime {};
-
-    // AXIVION Next Construct AutosarC++19_03-M0.1.2, AutosarC++19_03-M0.1.9, FaultDetection-DeadBranches : False positive! Branching depends on input parameter
-    // AXIVION Next Construct AutosarC++19_03-M5.0.3: False positive! CLOCK_REALTIME and CLOCK_MONOTONIC are of type clockid_t
-    const iox_clockid_t clockId { (reference == TimeSpecReference::Epoch) ? CLOCK_REALTIME : CLOCK_MONOTONIC };
-    IOX_ENFORCE(
-        !IOX_POSIX_CALL(iox_clock_gettime)(clockId, &referenceTime).failureReturnValue(-1).evaluate().has_error(),
-        "An error which should never happen occured during 'iox_clock_gettime'!");
-
-    const auto targetTime = Duration(referenceTime) + *this;
-
     static_assert(sizeof(uint64_t) >= sizeof(SEC_TYPE), "casting might alter result");
-    // AXIVION Next Construct AutosarC++19_03-M0.1.2, AutosarC++19_03-M0.1.9, FaultDetection-DeadBranches : False positive! Branching depends on input parameter
-    if (targetTime.m_seconds > static_cast<uint64_t>(std::numeric_limits<SEC_TYPE>::max())) {
+    if (this->m_seconds > static_cast<uint64_t>(std::numeric_limits<SEC_TYPE>::max())) {
         IOX_LOG(Trace, ": Result of conversion would overflow, clamping to max value!");
         return { std::numeric_limits<SEC_TYPE>::max(), NANOSECS_PER_SEC - 1U };
     }
 
-    const auto tv_sec = static_cast<SEC_TYPE>(targetTime.m_seconds);
-    const auto tv_nsec = static_cast<NSEC_TYPE>(targetTime.m_nanoseconds);
+    const auto tv_sec = static_cast<SEC_TYPE>(this->m_seconds);
+    const auto tv_nsec = static_cast<NSEC_TYPE>(this->m_nanoseconds);
     return { tv_sec, tv_nsec };
 }
 

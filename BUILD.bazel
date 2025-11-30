@@ -299,6 +299,12 @@ alias(
 )
 
 alias(
+    name = "iceoryx2-bb-cxx",
+    actual = "//iceoryx2-bb/cxx:iceoryx2-bb-cxx",
+    visibility = ["//visibility:public"],
+)
+
+alias(
     name = "iceoryx2-cxx-shared",
     actual = "//iceoryx2-cxx:iceoryx2-cxx-shared",
     visibility = ["//visibility:public"],

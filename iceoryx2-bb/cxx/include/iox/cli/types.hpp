@@ -16,7 +16,6 @@
 #ifndef IOX_HOOFS_CLI_TYPES_HPP
 #define IOX_HOOFS_CLI_TYPES_HPP
 
-#include "iceoryx_platform/platform_settings.hpp"
 #include "iox/string.hpp"
 
 #include <cstdint>

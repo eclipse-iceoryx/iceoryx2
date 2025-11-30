@@ -13,7 +13,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "test.hpp"
 #include <gtest/gtest.h>
 
 #include "iox/error_reporting/types.hpp"

@@ -17,10 +17,11 @@
 #define IOX_HOOFS_TESTING_TESTING_LOGGER_HPP
 
 #include "iox/log/logger.hpp"
-#include "iox/smart_lock.hpp"
 
-#include "test.hpp"
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
+#include <functional>
 #include <mutex>
 
 namespace iox {
@@ -101,7 +102,8 @@ class TestingLogger : public log::TestingLoggerBase {
         bool allowLog { true };
     };
 
-    concurrent::smart_lock<LoggerData> m_loggerData;
+    std::mutex m_loggerDataLock;
+    LoggerData m_loggerData;
 };
 
 /// @brief This class hooks into gTest to automatically clear the log messages on the start of a test an print the

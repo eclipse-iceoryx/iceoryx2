@@ -16,8 +16,8 @@
 #ifndef IOX_HOOFS_POSIX_DESIGN_POSIX_CALL_HPP
 #define IOX_HOOFS_POSIX_DESIGN_POSIX_CALL_HPP
 
-#include "iceoryx_platform/string.hpp"
-#include "iox/algorithm.hpp"
+#include "iox/detail/platform_correction.hpp"
+
 #include "iox/attributes.hpp"
 #include "iox/expected.hpp"
 #include "iox/string.hpp"
@@ -36,10 +36,6 @@ class PosixCallBuilder;
 template <typename T>
 struct PosixCallResult {
     PosixCallResult() noexcept = default;
-
-    /// @brief returns the result of strerror_r(errnum, ...) which acquires a
-    ///        human readable error string
-    string<POSIX_CALL_ERROR_STRING_SIZE> getHumanReadableErrnum() const noexcept;
 
     /// @brief the return value of the posix function call
     T value {};
@@ -186,12 +182,10 @@ class IOX_NO_DISCARD PosixCallBuilder {
 ///             .and_then([](auto & result){
 ///                 IOX_LOG(Info, result.value); // return value of sem_timedwait
 ///                 IOX_LOG(Info, result.errno); // errno which was set by sem_timedwait
-///                 IOX_LOG(Info, result.getHumanReadableErrnum()); // get string returned by strerror_r(errno, ...)
 ///             })
 ///             .or_else([](auto & result){
 ///                 IOX_LOG(Info, result.value); // return value of sem_timedwait
 ///                 IOX_LOG(Info, result.errno); // errno which was set by sem_timedwait
-///                 IOX_LOG(Info, result.getHumanReadableErrnum()); // get string returned by strerror_r(errno, ...)
 ///             })
 ///
 ///        // when your posix call signals failure with one specific return value use

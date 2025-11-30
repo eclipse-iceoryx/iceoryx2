@@ -17,7 +17,9 @@
 #include "iox/log/building_blocks/console_logger.hpp"
 
 #include "iox/logging.hpp"
-#include "test.hpp"
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include <cstdio>
 #include <iostream>

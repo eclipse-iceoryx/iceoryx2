@@ -17,7 +17,7 @@
 #ifndef IOX_HOOFS_CONTAINER_UNINITIALIZED_ARRAY_HPP
 #define IOX_HOOFS_CONTAINER_UNINITIALIZED_ARRAY_HPP
 
-#include "iox/iceoryx_hoofs_types.hpp"
+#include "iox/memory.hpp"
 
 #include <cstdint>
 

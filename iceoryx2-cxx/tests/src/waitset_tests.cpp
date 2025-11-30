@@ -115,7 +115,7 @@ TYPED_TEST(WaitSetTest, attaching_same_deadline_twice_fails) {
 
     ASSERT_THAT(result_1.has_error(), Eq(false));
     ASSERT_THAT(result_2.has_error(), Eq(true));
-    ASSERT_THAT(result_2.get_error(), Eq(WaitSetAttachmentError::AlreadyAttached));
+    ASSERT_THAT(result_2.error(), Eq(WaitSetAttachmentError::AlreadyAttached));
 }
 
 TYPED_TEST(WaitSetTest, attaching_same_notification_twice_fails) {
@@ -127,7 +127,7 @@ TYPED_TEST(WaitSetTest, attaching_same_notification_twice_fails) {
 
     ASSERT_THAT(result_1.has_error(), Eq(false));
     ASSERT_THAT(result_2.has_error(), Eq(true));
-    ASSERT_THAT(result_2.get_error(), Eq(WaitSetAttachmentError::AlreadyAttached));
+    ASSERT_THAT(result_2.error(), Eq(WaitSetAttachmentError::AlreadyAttached));
 }
 
 TYPED_TEST(WaitSetTest, empty_waitset_returns_error_on_run) {
@@ -135,7 +135,7 @@ TYPED_TEST(WaitSetTest, empty_waitset_returns_error_on_run) {
     auto result = sut.wait_and_process([](auto) -> auto { return CallbackProgression::Continue; });
 
     ASSERT_THAT(result.has_error(), Eq(true));
-    ASSERT_THAT(result.get_error(), Eq(WaitSetRunError::NoAttachments));
+    ASSERT_THAT(result.error(), Eq(WaitSetRunError::NoAttachments));
 }
 
 TYPED_TEST(WaitSetTest, empty_waitset_returns_error_on_run_once) {
@@ -143,7 +143,7 @@ TYPED_TEST(WaitSetTest, empty_waitset_returns_error_on_run_once) {
     auto result = sut.wait_and_process_once([](auto) -> auto { return CallbackProgression::Continue; });
 
     ASSERT_THAT(result.has_error(), Eq(true));
-    ASSERT_THAT(result.get_error(), Eq(WaitSetRunError::NoAttachments));
+    ASSERT_THAT(result.error(), Eq(WaitSetRunError::NoAttachments));
 }
 
 TYPED_TEST(WaitSetTest, interval_attachment_blocks_for_at_least_timeout) {

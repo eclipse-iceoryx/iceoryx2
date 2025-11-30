@@ -22,16 +22,16 @@ cc_test(
     srcs = glob([
         "src/**/*.cpp",
         "src/**/*.hpp",
-        ],
-        exclude = ["src/import/**/*"]
-    ),
+        "src/**/*.inl",
+        ]),
     includes = [
         "src",
+        "src/import/testing/include",
     ],
     tags = ["exclusive"],
     visibility = ["//visibility:private"],
     deps = [
-        "//iceoryx2-bb/cxx:iceoryx2-bb-containers-cxx",
+        "//:iceoryx2-bb-cxx",
         "@googletest//:gtest",
     ],
 )

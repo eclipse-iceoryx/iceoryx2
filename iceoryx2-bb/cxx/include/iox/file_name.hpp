@@ -19,6 +19,14 @@
 #include "iox/semantic_string.hpp"
 
 namespace iox {
+namespace platform {
+#if defined(_WIN32)
+constexpr uint64_t IOX_MAX_FILENAME_LENGTH = 128U;
+#else
+constexpr uint64_t IOX_MAX_FILENAME_LENGTH = 255U;
+#endif
+} // namespace platform
+
 namespace detail {
 bool file_name_does_contain_invalid_characters(const string<platform::IOX_MAX_FILENAME_LENGTH>& value) noexcept;
 bool file_name_does_contain_invalid_content(const string<platform::IOX_MAX_FILENAME_LENGTH>& value) noexcept;

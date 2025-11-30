@@ -17,6 +17,8 @@
 #ifndef IOX_HOOFS_REPORTING_LOGGING_HPP
 #define IOX_HOOFS_REPORTING_LOGGING_HPP
 
+#include "iox/detail/platform_correction.hpp"
+
 #include "iox/log/logstream.hpp"
 
 namespace iox {

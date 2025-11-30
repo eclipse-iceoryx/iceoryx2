@@ -14,15 +14,14 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iceoryx_hoofs/testing/fatal_failure.hpp"
-#include "iceoryx_platform/platform_settings.hpp"
 #include "iox/detail/hoofs_error_reporting.hpp"
 #include "iox/file_name.hpp"
 #include "iox/file_path.hpp"
-#include "iox/group_name.hpp"
 #include "iox/path.hpp"
 #include "iox/semantic_string.hpp"
-#include "iox/user_name.hpp"
-#include "test.hpp"
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include <string>
 #include <vector>
@@ -45,74 +44,6 @@ struct TestValues {
     static const std::vector<std::string> ADD_VALID_CHARS_TO_CREATE_INVALID_CONTENT_AT_BEGIN;
     static const std::vector<std::string> ADD_VALID_CHARS_TO_CREATE_INVALID_CONTENT_AT_END;
 };
-
-///////////////////
-// START: UserName
-///////////////////
-template <>
-const uint64_t TestValues<UserName>::CAPACITY = platform::MAX_USER_NAME_LENGTH;
-template <>
-const std::vector<std::string> TestValues<UserName>::VALID_VALUES { { "some-user" }, { "user2" } };
-template <>
-const std::vector<std::string> TestValues<UserName>::INVALID_CHARACTER_VALUES {
-    { "some-!user" }, { "*kasjd" }, { "_fuuuas" }, { "asd/asd" }, { ";'1'fuuuu" }, { "argh/" }, { "fuu/arg/bla" }
-};
-template <>
-const std::vector<std::string> TestValues<UserName>::INVALID_CONTENT_VALUES { { "" },
-                                                                              { "-do-not-start-with-dash" },
-                                                                              { "5do-not-start-with-a-number" } };
-template <>
-const std::vector<std::string> TestValues<UserName>::TOO_LONG_CONTENT_VALUES {
-    { "i-am-waaaaay-toooooooo-loooooooong" }
-};
-template <>
-const std::string TestValues<UserName>::GREATER_VALID_VALUE { "zebra-zusel" };
-template <>
-const std::string TestValues<UserName>::SMALLER_VALID_VALUE { "alfons-alf" };
-template <>
-const std::string TestValues<UserName>::MAX_CAPACITY_VALUE { "all-glory-to-the-incredible-and-legendary-hypno-toad" };
-template <>
-const std::vector<std::string> TestValues<UserName>::ADD_VALID_CHARS_TO_CREATE_INVALID_CONTENT_AT_BEGIN { "-bla",
-                                                                                                          "81923" };
-template <>
-const std::vector<std::string> TestValues<UserName>::ADD_VALID_CHARS_TO_CREATE_INVALID_CONTENT_AT_END {};
-///////////////////
-// END: UserName
-///////////////////
-
-///////////////////
-// START: GroupName
-///////////////////
-template <>
-const uint64_t TestValues<GroupName>::CAPACITY = platform::MAX_GROUP_NAME_LENGTH;
-template <>
-const std::vector<std::string> TestValues<GroupName>::VALID_VALUES { { "a-group" }, { "group2" } };
-template <>
-const std::vector<std::string> TestValues<GroupName>::INVALID_CHARACTER_VALUES { { "se-!ur" }, { "*kad" },   { "_fus" },
-                                                                                 { "a/sd" },   { ";'1'fu" }, { "ah/" },
-                                                                                 { "fuu/bla" } };
-template <>
-const std::vector<std::string> TestValues<GroupName>::INVALID_CONTENT_VALUES { { "" },
-                                                                               { "-no-dash" },
-                                                                               { "5no-number" } };
-template <>
-const std::vector<std::string> TestValues<GroupName>::TOO_LONG_CONTENT_VALUES {
-    { "i-am-waaaaay-toooooooo-loooooooong" }
-};
-template <>
-const std::string TestValues<GroupName>::GREATER_VALID_VALUE { "zebra-zusel" };
-template <>
-const std::string TestValues<GroupName>::SMALLER_VALID_VALUE { "alfons-alf" };
-template <>
-const std::string TestValues<GroupName>::MAX_CAPACITY_VALUE { "all-glory-to-the-incredible-and-legendary-hypno-toad" };
-template <>
-const std::vector<std::string> TestValues<GroupName>::ADD_VALID_CHARS_TO_CREATE_INVALID_CONTENT_AT_BEGIN { "-fuu",
-                                                                                                           "8number" };
-template <>
-const std::vector<std::string> TestValues<GroupName>::ADD_VALID_CHARS_TO_CREATE_INVALID_CONTENT_AT_END {};
-///////////////////
-// END: GroupName
-///////////////////
 
 ///////////////////
 // START: FileName
@@ -260,7 +191,7 @@ class SemanticString_test : public Test {
     SutType smaller_value = SutType::create(smaller_value_str).expect("Failed to create test string.");
 };
 
-using Implementations = Types<UserName, FileName, GroupName, FilePath, Path>;
+using Implementations = Types<FileName, FilePath, Path>;
 
 TYPED_TEST_SUITE(SemanticString_test, Implementations, );
 
@@ -322,7 +253,7 @@ TYPED_TEST(SemanticString_test, InitializeWithValidStringValueWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "0100d764-628c-44ad-9af7-fe7a4540491a");
     using SutType = typename TestFixture::SutType;
 
-    for (const auto& value : TestValues<UserName>::VALID_VALUES) {
+    for (const auto& value : TestValues<SutType>::VALID_VALUES) {
         auto sut = SutType::create(string<SutType::capacity()>(TruncateToCapacity, value.c_str()));
 
         ASSERT_THAT(sut.has_error(), Eq(false));

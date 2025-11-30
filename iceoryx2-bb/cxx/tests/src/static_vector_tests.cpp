@@ -1260,24 +1260,27 @@ TEST(StaticVector, ostream_insertion_converts_contents_to_string) {
     ASSERT_TRUE(sstr);
     EXPECT_EQ(sstr.str(), "StaticVector::<5> { m_size: 0, m_data: [  ] }");
 }
+} // namespace
 
-class Printable {
+// NOTE: the class needs to be outside to the anonymous namespace, else MSVC is not able to find the ostream operator
+class StaticVectorePrintable {
     static int32_t s_print_count;
 
   public:
     static void reset_print_count() {
         s_print_count = 0;
     }
-    friend auto operator<<(std::ostream& ostr, Printable const& /*unused*/) -> std::ostream& {
+    friend auto operator<<(std::ostream& ostr, StaticVectorePrintable const& /*unused*/) -> std::ostream& {
         return ostr << ++s_print_count;
     }
 };
-int32_t Printable::s_print_count = 0;
+int32_t StaticVectorePrintable::s_print_count = 0;
 
+namespace {
 TEST(StaticVector, ostream_insertion_calls_ostream_inserter_for_values) {
     constexpr size_t const VECTOR_CAPACITY = 5;
-    iox2::container::StaticVector<Printable, VECTOR_CAPACITY> sut;
-    Printable::reset_print_count();
+    iox2::container::StaticVector<StaticVectorePrintable, VECTOR_CAPACITY> sut;
+    StaticVectorePrintable::reset_print_count();
     std::ostringstream sstr;
     sstr << sut;
     ASSERT_TRUE(sstr);

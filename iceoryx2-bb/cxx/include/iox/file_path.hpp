@@ -19,6 +19,14 @@
 #include "iox/semantic_string.hpp"
 
 namespace iox {
+namespace platform {
+#if defined(_WIN32)
+constexpr uint64_t IOX_MAX_PATH_LENGTH = 255U;
+#else
+constexpr uint64_t IOX_MAX_PATH_LENGTH = 1023U;
+#endif
+} // namespace platform
+
 namespace detail {
 bool file_path_does_contain_invalid_characters(const string<platform::IOX_MAX_PATH_LENGTH>& value) noexcept;
 bool file_path_does_contain_invalid_content(const string<platform::IOX_MAX_PATH_LENGTH>& value) noexcept;

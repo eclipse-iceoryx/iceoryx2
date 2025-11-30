@@ -9,9 +9,8 @@ cmake -S . -B target/ff/cc/build
 cmake --build target/ff/cc/build
 ```
 
-This is the most simple way to build the C++ bindings for `iceoryx2`, which rely
-on the `iceorx_hoofs` C++ base library and utilizes cargo to build the Rust part
-of iceoryx2.
+This is the most simple way to build the C++ bindings for `iceoryx2`, which
+utilizes cargo to build the Rust part of iceoryx2.
 
 Note that since the C++ bindings are implemented with the C bindings, both
 libraries are built.
@@ -19,10 +18,10 @@ libraries are built.
 ## Build instructions for integrator
 
 For production, it is recommended to separately build and install
-`iceoryx2-ffi-c` and `iceoryx_hoofs`, and specify the path to the install
-directory with `-DCMAKE_PREFIX_PATH`.
+`iceoryx2-ffi-c`, and specify the path to the install directory with
+`-DCMAKE_PREFIX_PATH`.
 
-### Build and install `iceoryx2_ffi`
+### Build and install `iceoryx2-c`
 
 > [!NOTE]
 > To pass `iceoryx2` feature flags to the `iceoryx2-ffi-c` crate, one needs to
@@ -47,30 +46,7 @@ cmake --build target/ff/c/build
 cmake --install target/ff/c/build --prefix target/ff/cc/install
 ```
 
-### Build and install `iceoryx_hoofs`
-
-Next, build the `iceoryx_platform` and `iceoryx_hoofs` libraries and install
-the CMake packages at a discoverable location:
-
-```bash
-git clone --depth 1 --branch v2.95.8 https://github.com/eclipse-iceoryx/iceoryx.git target/ff/iceoryx/src
-
-cmake -S target/ff/iceoryx/src/iceoryx_platform -B target/ff/iceoryx/build/platform \
-      -DCMAKE_BUILD_TYPE=Release
-cmake --build target/ff/iceoryx/build/platform
-cmake --install target/ff/iceoryx/build/platform --prefix target/ff/cc/install
-
-cmake -S target/ff/iceoryx/src/iceoryx_hoofs -B target/ff/iceoryx/build/hoofs \
-      -DCMAKE_PREFIX_PATH="$( pwd )/target/ff/cc/install" \
-      -DCMAKE_BUILD_TYPE=Release
-cmake --build target/ff/iceoryx/build/hoofs
-cmake --install target/ff/iceoryx/build/hoofs --prefix target/ff/cc/install
-```
-
 ### Build and install `iceoryx2-bb-cxx`
-
-This is the package which will replace the components from `iceoryx_hoofs` in
-the long term.
 
 ```bash
 cmake -S iceoryx2-bb/cxx -B target/ff/bb-cxx/build \
@@ -92,7 +68,7 @@ cmake --build target/ff/cxx/build
 cmake --install target/ff/cxx/build --prefix target/ff/cc/install
 ```
 
-The installed libraries can the be used for out-of-tree builds of the example or
+The installed libraries can be used for out-of-tree builds of the example or
 custom C++ projects. This are the required steps:
 
 ```bash

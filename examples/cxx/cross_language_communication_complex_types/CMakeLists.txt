@@ -19,12 +19,12 @@ add_executable(example_cxx_cross_language_communication_complex_types_publisher 
 target_link_libraries(example_cxx_cross_language_communication_complex_types_publisher
     PRIVATE
     iceoryx2-cxx::static-lib-cxx
-    iceoryx2-bb-cxx::iceoryx2-bb-containers-cxx
+    iceoryx2-bb-cxx::iceoryx2-bb-cxx
 )
 
 add_executable(example_cxx_cross_language_communication_complex_types_subscriber src/subscriber.cpp)
 target_link_libraries(example_cxx_cross_language_communication_complex_types_subscriber
     PRIVATE
     iceoryx2-cxx::static-lib-cxx
-    iceoryx2-bb-cxx::iceoryx2-bb-containers-cxx
+    iceoryx2-bb-cxx::iceoryx2-bb-cxx
 )

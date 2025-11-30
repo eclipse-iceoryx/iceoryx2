@@ -23,7 +23,9 @@
 #include "iox/logging.hpp"
 
 #include "iceoryx_hoofs/testing/error_reporting/testing_support.hpp"
-#include "test.hpp"
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include <thread>
 
