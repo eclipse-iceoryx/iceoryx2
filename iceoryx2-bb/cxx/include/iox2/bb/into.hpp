@@ -29,13 +29,13 @@ namespace detail {
 /// 'into<lossy<T>>'
 template <typename T>
 struct extract_into_type {
-    using type_t = T;
+    using TargetType = T;
 };
 
 /// @brief Helper struct to get the actual destination type 'T' for 'into<lossy<T>>'
 template <typename T>
 struct extract_into_type<lossy<T>> {
-    using type_t = T;
+    using TargetType = T;
 };
 } // namespace detail
 
@@ -101,7 +101,7 @@ constexpr DestinationType FromTrait::from(const SourceType&) noexcept;\n \
 /// @param[in] value of type SourceType to convert to DestinationType
 /// @return converted value of SourceType to corresponding value of DestinationType
 template <typename SourceType, typename DestinationType>
-constexpr typename detail::extract_into_type<DestinationType>::type_t from(const SourceType value) noexcept {
+constexpr typename detail::extract_into_type<DestinationType>::TargetType from(const SourceType value) noexcept {
     return FromTrait<SourceType, DestinationType>::from(value);
 }
 
@@ -116,7 +116,7 @@ constexpr typename detail::extract_into_type<DestinationType>::type_t from(const
 /// @param[in] value of type SourceType to convert to DestinationType
 /// @return converted value of SourceType to corresponding value of DestinationType
 template <typename DestinationType, typename SourceType>
-constexpr typename detail::extract_into_type<DestinationType>::type_t into(const SourceType value) noexcept {
+constexpr typename detail::extract_into_type<DestinationType>::TargetType into(const SourceType value) noexcept {
     return from<SourceType, DestinationType>(value);
 }
 
