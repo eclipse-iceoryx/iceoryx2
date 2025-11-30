@@ -12,8 +12,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_BB_UTILITY_INTO_HPP
-#define IOX2_BB_UTILITY_INTO_HPP
+#ifndef IOX2_BB_INTO_HPP
+#define IOX2_BB_INTO_HPP
+
+#include "iox2/legacy/type_traits.hpp"
 
 namespace iox2 {
 namespace legacy {
@@ -36,6 +38,21 @@ struct extract_into_type<lossy<T>> {
     using type_t = T;
 };
 } // namespace detail
+
+// Using a struct as impl, as free functions do not support partially specialized templates
+template <typename SourceType, typename DestinationType>
+struct FromImpl {
+    // AXIVION Next Construct AutosarC++19_03-A7.1.5 : 'auto' is only used for the generic implementation which will always result in a compile error
+    static auto fromImpl(const SourceType& value) noexcept {
+        static_assert(always_false_v<SourceType> && always_false_v<DestinationType>, "\n \
+Conversion for the specified types is not implemented!\n \
+Please specialize 'FromImpl::fromImpl'!\n \
+-------------------------------------------------------------------------\n \
+template <typename SourceType, typename DestinationType>\n \
+constexpr DestinationType FromImpl::fromImpl(const SourceType&) noexcept;\n \
+-------------------------------------------------------------------------");
+    }
+};
 
 /// @brief Converts a value of type SourceType to a corresponding value of type DestinationType. This function needs to
 /// be specialized by the user for the types to be converted. If a partial specialization is needed, please have a look
@@ -84,15 +101,9 @@ struct extract_into_type<lossy<T>> {
 /// @param[in] value of type SourceType to convert to DestinationType
 /// @return converted value of SourceType to corresponding value of DestinationType
 template <typename SourceType, typename DestinationType>
-constexpr typename detail::extract_into_type<DestinationType>::type_t from(const SourceType value) noexcept;
-
-
-// Using a struct as impl, as free functions do not support partially specialized templates
-template <typename SourceType, typename DestinationType>
-struct FromImpl {
-    // AXIVION Next Construct AutosarC++19_03-A7.1.5 : 'auto' is only used for the generic implementation which will always result in a compile error
-    static auto fromImpl(const SourceType& value) noexcept;
-};
+constexpr typename detail::extract_into_type<DestinationType>::type_t from(const SourceType value) noexcept {
+    return FromImpl<SourceType, DestinationType>::fromImpl(value);
+}
 
 /// @brief Converts a value of type SourceType to a corresponding value of type DestinationType. This is a convenience
 /// function which is automatically available when 'from' is implemented. This function shall therefore not be
@@ -105,11 +116,11 @@ struct FromImpl {
 /// @param[in] value of type SourceType to convert to DestinationType
 /// @return converted value of SourceType to corresponding value of DestinationType
 template <typename DestinationType, typename SourceType>
-constexpr typename detail::extract_into_type<DestinationType>::type_t into(const SourceType value) noexcept;
+constexpr typename detail::extract_into_type<DestinationType>::type_t into(const SourceType value) noexcept {
+    return from<SourceType, DestinationType>(value);
+}
 
 } // namespace legacy
 } // namespace iox2
 
-#include "iox2/legacy/detail/into.inl"
-
-#endif // IOX2_BB_UTILITY_INTO_HPP
+#endif // IOX2_BB_INTO_HPP
