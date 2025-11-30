@@ -19,12 +19,12 @@
 namespace iox2 {
 namespace bb {
 template <uint64_t N>
-inline std::string FromImpl<legacy::string<N>, std::string>::fromImpl(const legacy::string<N>& value) noexcept {
+inline std::string FromTrait<legacy::string<N>, std::string>::from(const legacy::string<N>& value) noexcept {
     return std::string(value.c_str(), static_cast<size_t>(value.size()));
 }
 
 template <uint64_t N>
-inline legacy::string<N> FromImpl<std::string, legacy::string<N>>::fromImpl(const std::string&) noexcept {
+inline legacy::string<N> FromTrait<std::string, legacy::string<N>>::from(const std::string&) noexcept {
     static_assert(legacy::always_false_v<std::string> && legacy::always_false_v<legacy::string<N>>, "\n \
         The conversion from 'std::string' to 'iox2::legacy::string<N>' is potentially lossy!\n \
         This happens when the size of source string exceeds the capacity of the destination string!\n \
@@ -37,7 +37,7 @@ inline legacy::string<N> FromImpl<std::string, legacy::string<N>>::fromImpl(cons
 
 template <uint64_t N>
 inline legacy::optional<legacy::string<N>>
-FromImpl<std::string, legacy::optional<legacy::string<N>>>::fromImpl(const std::string& value) noexcept {
+FromTrait<std::string, legacy::optional<legacy::string<N>>>::from(const std::string& value) noexcept {
     const auto stringLength = value.size();
     if (stringLength <= N) {
         return legacy::string<N>(legacy::TruncateToCapacity, value.c_str(), stringLength);
@@ -46,7 +46,7 @@ FromImpl<std::string, legacy::optional<legacy::string<N>>>::fromImpl(const std::
 }
 
 template <uint64_t N>
-inline legacy::string<N> FromImpl<std::string, lossy<legacy::string<N>>>::fromImpl(const std::string& value) noexcept {
+inline legacy::string<N> FromTrait<std::string, lossy<legacy::string<N>>>::from(const std::string& value) noexcept {
     return legacy::string<N>(legacy::TruncateToCapacity, value.c_str(), value.size());
 }
 } // namespace bb

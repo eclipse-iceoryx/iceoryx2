@@ -27,23 +27,23 @@ namespace iox2 {
 
 namespace bb {
 template <uint64_t N>
-struct FromImpl<legacy::string<N>, std::string> {
-    static std::string fromImpl(const legacy::string<N>& value) noexcept;
+struct FromTrait<legacy::string<N>, std::string> {
+    static std::string from(const legacy::string<N>& value) noexcept;
 };
 
 template <uint64_t N>
-struct FromImpl<std::string, legacy::string<N>> {
-    static legacy::string<N> fromImpl(const std::string& value) noexcept;
+struct FromTrait<std::string, legacy::string<N>> {
+    static legacy::string<N> from(const std::string& value) noexcept;
 };
 
 template <uint64_t N>
-struct FromImpl<std::string, legacy::optional<legacy::string<N>>> {
-    static legacy::optional<legacy::string<N>> fromImpl(const std::string& value) noexcept;
+struct FromTrait<std::string, legacy::optional<legacy::string<N>>> {
+    static legacy::optional<legacy::string<N>> from(const std::string& value) noexcept;
 };
 
 template <uint64_t N>
-struct FromImpl<std::string, bb::lossy<legacy::string<N>>> {
-    static legacy::string<N> fromImpl(const std::string& value) noexcept;
+struct FromTrait<std::string, bb::lossy<legacy::string<N>>> {
+    static legacy::string<N> from(const std::string& value) noexcept;
 };
 } // namespace bb
 

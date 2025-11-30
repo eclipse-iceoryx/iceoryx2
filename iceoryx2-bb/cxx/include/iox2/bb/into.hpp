@@ -41,22 +41,22 @@ struct extract_into_type<lossy<T>> {
 
 // Using a struct as impl, as free functions do not support partially specialized templates
 template <typename SourceType, typename DestinationType>
-struct FromImpl {
+struct FromTrait {
     // AXIVION Next Construct AutosarC++19_03-A7.1.5 : 'auto' is only used for the generic implementation which will always result in a compile error
-    static auto fromImpl(const SourceType& value) noexcept {
+    static auto from(const SourceType& value) noexcept {
         static_assert(legacy::always_false_v<SourceType> && legacy::always_false_v<DestinationType>, "\n \
 Conversion for the specified types is not implemented!\n \
-Please specialize 'FromImpl::fromImpl'!\n \
+Please specialize 'FromTrait::from'!\n \
 -------------------------------------------------------------------------\n \
 template <typename SourceType, typename DestinationType>\n \
-constexpr DestinationType FromImpl::fromImpl(const SourceType&) noexcept;\n \
+constexpr DestinationType FromTrait::from(const SourceType&) noexcept;\n \
 -------------------------------------------------------------------------");
     }
 };
 
 /// @brief Converts a value of type SourceType to a corresponding value of type DestinationType. This function needs to
 /// be specialized by the user for the types to be converted. If a partial specialization is needed, please have a look
-/// at 'FromImpl'.
+/// at 'FromTrait'.
 /// @note If the conversion is potentially lossy 'Destination from<Source, Destination>(...)' should not be used but
 /// instead either one or both of:
 ///   - 'Destination from<Source, lossy<Destination>>(...)'
@@ -102,7 +102,7 @@ constexpr DestinationType FromImpl::fromImpl(const SourceType&) noexcept;\n \
 /// @return converted value of SourceType to corresponding value of DestinationType
 template <typename SourceType, typename DestinationType>
 constexpr typename detail::extract_into_type<DestinationType>::type_t from(const SourceType value) noexcept {
-    return FromImpl<SourceType, DestinationType>::fromImpl(value);
+    return FromTrait<SourceType, DestinationType>::from(value);
 }
 
 /// @brief Converts a value of type SourceType to a corresponding value of type DestinationType. This is a convenience
