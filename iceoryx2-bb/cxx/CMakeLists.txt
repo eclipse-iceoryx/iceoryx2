@@ -49,7 +49,6 @@ target_sources(iceoryx2-bb-cxx
     src/cli/option_manager.cpp
     src/console_logger.cpp
     src/default_error_handler.cpp
-    src/duration.cpp
     src/file_name.cpp
     src/file_path.cpp
     src/hoofs_error_reporting.cpp

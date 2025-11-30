@@ -247,7 +247,7 @@ class Duration {
     constexpr uint64_t toDays() const noexcept;
 
     /// @brief converts duration in a timespec c struct
-    struct timespec timespec() const noexcept;
+    constexpr struct timespec timespec() const noexcept;
 
     // END CONVERSION
 
@@ -336,9 +336,6 @@ constexpr T& operator*=(T& lhs, const Duration& rhs) noexcept {
         "Assigning the result of a Duration multiplication with 'operator*=' to an arithmetic type is not supported");
     return T();
 }
-
-/// @brief stream operator for the Duration class
-std::ostream& operator<<(std::ostream& stream, const Duration t);
 
 /// @brief Equal to operator
 /// @param[in] lhs is the left hand side of the comparison
@@ -586,6 +583,20 @@ inline constexpr Duration Duration::operator+(const Duration& rhs) const noexcep
     return sum;
 }
 
+inline constexpr struct timespec Duration::timespec() const noexcept {
+    using SEC_TYPE = decltype(std::declval<struct timespec>().tv_sec);
+    using NSEC_TYPE = decltype(std::declval<struct timespec>().tv_nsec);
+
+    static_assert(sizeof(uint64_t) >= sizeof(SEC_TYPE), "casting might alter result");
+    if (this->m_seconds > static_cast<uint64_t>(std::numeric_limits<SEC_TYPE>::max())) {
+        return { std::numeric_limits<SEC_TYPE>::max(), NANOSECS_PER_SEC - 1U };
+    }
+
+    const auto tv_sec = static_cast<SEC_TYPE>(this->m_seconds);
+    const auto tv_nsec = static_cast<NSEC_TYPE>(this->m_nanoseconds);
+    return { tv_sec, tv_nsec };
+}
+
 // AXIVION Next Construct AutosarC++19_03-A8.4.7 : Argument is larger than two words
 inline constexpr Duration& Duration::operator+=(const Duration& rhs) noexcept {
     *this = *this + rhs;
@@ -804,5 +815,18 @@ inline constexpr Duration operator""_d(unsigned long long int value) noexcept {
 } // namespace units
 } // namespace legacy
 } // namespace iox2
+
+// AXIVION Next Construct AutosarC++19_03-M5.17.1 : This is not used as shift operator but as stream operator and does not require to implement '<<='
+iox2::legacy::log::LogStream& operator<<(iox2::legacy::log::LogStream& stream,
+                                         const iox2::legacy::units::Duration t) noexcept {
+    stream << t.m_seconds << "s " << t.m_nanoseconds << "ns";
+    return stream;
+}
+
+// AXIVION Next Construct AutosarC++19_03-M5.17.1 : This is not used as shift operator but as stream operator and does not require to implement '<<='
+std::ostream& operator<<(std::ostream& stream, const iox2::legacy::units::Duration t) {
+    stream << t.m_seconds << "s " << t.m_nanoseconds << "ns";
+    return stream;
+}
 
 #endif // IOX2_BB_DURATION_HPP
