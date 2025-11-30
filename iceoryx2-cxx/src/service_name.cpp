@@ -96,7 +96,7 @@ auto ServiceName::create_impl(const char* value, const size_t value_len)
         return iox2::legacy::ok(ServiceName { handle });
     }
 
-    return iox2::legacy::err(iox2::legacy::into<SemanticStringError>(ret_val));
+    return iox2::legacy::err(iox2::bb::into<SemanticStringError>(ret_val));
 }
 
 auto ServiceName::to_string() const -> iox2::legacy::string<IOX2_SERVICE_NAME_LENGTH> {

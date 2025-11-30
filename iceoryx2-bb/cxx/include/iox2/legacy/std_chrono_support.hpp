@@ -14,45 +14,45 @@
 #ifndef IOX2_BB_UTILITY_STD_CHRONO_SUPPORT_HPP
 #define IOX2_BB_UTILITY_STD_CHRONO_SUPPORT_HPP
 
+#include "iox2/bb/into.hpp"
 #include "iox2/legacy/duration.hpp"
-#include "iox2/legacy/into.hpp"
 
 #include <chrono>
 
 namespace iox2 {
-namespace legacy {
+namespace bb {
 /// @brief Construct a Duration object from std::chrono::nanoseconds
 /// @param[in] value as nanoseconds
 /// @attention Since negative durations are not allowed, the duration will be clamped to 0
 template <>
-struct FromImpl<std::chrono::nanoseconds, units::Duration> {
-    static units::Duration fromImpl(const std::chrono::nanoseconds& value) noexcept;
+struct FromImpl<std::chrono::nanoseconds, legacy::units::Duration> {
+    static legacy::units::Duration fromImpl(const std::chrono::nanoseconds& value) noexcept;
 };
 
 /// @brief Construct a Duration object from std::chrono::microseconds
 /// @param[in] value as microseconds
 /// @attention Since negative durations are not allowed, the duration will be clamped to 0
 template <>
-struct FromImpl<std::chrono::microseconds, units::Duration> {
-    static units::Duration fromImpl(const std::chrono::microseconds& value) noexcept;
+struct FromImpl<std::chrono::microseconds, legacy::units::Duration> {
+    static legacy::units::Duration fromImpl(const std::chrono::microseconds& value) noexcept;
 };
 
 /// @brief Construct a Duration object from std::chrono::milliseconds
 /// @param[in] value as milliseconds
 /// @attention Since negative durations are not allowed, the duration will be clamped to 0
 template <>
-struct FromImpl<std::chrono::milliseconds, units::Duration> {
-    static units::Duration fromImpl(const std::chrono::milliseconds& value) noexcept;
+struct FromImpl<std::chrono::milliseconds, legacy::units::Duration> {
+    static legacy::units::Duration fromImpl(const std::chrono::milliseconds& value) noexcept;
 };
 
 /// @brief Construct a Duration object from std::chrono::seconds
 /// @param[in] value as seconds
 /// @attention Since negative durations are not allowed, the duration will be clamped to 0
 template <>
-struct FromImpl<std::chrono::seconds, units::Duration> {
-    static units::Duration fromImpl(const std::chrono::seconds& value) noexcept;
+struct FromImpl<std::chrono::seconds, legacy::units::Duration> {
+    static legacy::units::Duration fromImpl(const std::chrono::seconds& value) noexcept;
 };
-} // namespace legacy
+} // namespace bb
 } // namespace iox2
 
 #include "iox2/legacy/detail/std_chrono_support.inl"

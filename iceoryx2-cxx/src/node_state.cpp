@@ -56,7 +56,7 @@ auto DeadNodeView<T>::remove_stale_resources() -> iox2::legacy::expected<bool, N
     }
 
     bool has_success = false;
-    auto result = iox2_dead_node_remove_stale_resources(iox2::legacy::into<iox2_service_type_e>(T),
+    auto result = iox2_dead_node_remove_stale_resources(iox2::bb::into<iox2_service_type_e>(T),
                                                         &m_view.id().m_handle,
                                                         &m_view.details().value().config().m_handle,
                                                         &has_success);
@@ -65,7 +65,7 @@ auto DeadNodeView<T>::remove_stale_resources() -> iox2::legacy::expected<bool, N
         return iox2::legacy::ok(has_success);
     }
 
-    return iox2::legacy::err(iox2::legacy::into<NodeCleanupFailure>(result));
+    return iox2::legacy::err(iox2::bb::into<NodeCleanupFailure>(result));
 }
 
 template <ServiceType T>

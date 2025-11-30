@@ -113,7 +113,7 @@ inline auto Writer<S, KeyType>::entry(const KeyType& key)
         return iox2::legacy::ok(EntryHandleMut<S, KeyType, ValueType>(entry_handle));
     }
 
-    return iox2::legacy::err(iox2::legacy::into<EntryHandleMutError>(result));
+    return iox2::legacy::err(iox2::bb::into<EntryHandleMutError>(result));
 }
 } // namespace iox2
 

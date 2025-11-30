@@ -42,7 +42,7 @@ auto AttributeSpecifier::define(const Attribute::Key& key, const Attribute::Valu
     if (result == IOX2_OK) {
         return iox2::legacy::ok();
     }
-    return iox2::legacy::err(iox2::legacy::into<AttributeDefinitionError>(result));
+    return iox2::legacy::err(iox2::bb::into<AttributeDefinitionError>(result));
 }
 
 auto AttributeSpecifier::attributes() const -> AttributeSetView {

@@ -18,7 +18,7 @@
 #include "iox2/legacy/type_traits.hpp"
 
 namespace iox2 {
-namespace legacy {
+namespace bb {
 
 /// @brief Helper struct to indicate a lossy conversion, e.g. from an unbounded type into a bounded type
 template <typename D>
@@ -44,7 +44,7 @@ template <typename SourceType, typename DestinationType>
 struct FromImpl {
     // AXIVION Next Construct AutosarC++19_03-A7.1.5 : 'auto' is only used for the generic implementation which will always result in a compile error
     static auto fromImpl(const SourceType& value) noexcept {
-        static_assert(always_false_v<SourceType> && always_false_v<DestinationType>, "\n \
+        static_assert(legacy::always_false_v<SourceType> && legacy::always_false_v<DestinationType>, "\n \
 Conversion for the specified types is not implemented!\n \
 Please specialize 'FromImpl::fromImpl'!\n \
 -------------------------------------------------------------------------\n \
@@ -109,7 +109,7 @@ constexpr typename detail::extract_into_type<DestinationType>::type_t from(const
 /// function which is automatically available when 'from' is implemented. This function shall therefore not be
 /// specialized but always the 'from' function.
 /// @code
-/// Bar b = iox2::legacy::into<Bar>(Foo::ENUM_VALUE);
+/// Bar b = iox2::bb::into<Bar>(Foo::ENUM_VALUE);
 /// @endcode
 /// @tparam DestinationType is the 'to' type
 /// @tparam SourceType is the 'from' type
@@ -120,7 +120,7 @@ constexpr typename detail::extract_into_type<DestinationType>::type_t into(const
     return from<SourceType, DestinationType>(value);
 }
 
-} // namespace legacy
+} // namespace bb
 } // namespace iox2
 
 #endif // IOX2_BB_INTO_HPP

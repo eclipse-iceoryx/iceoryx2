@@ -161,7 +161,7 @@ inline auto PortFactoryBlackboard<S, KeyType>::nodes(
         return iox2::legacy::ok();
     }
 
-    return iox2::legacy::err(iox2::legacy::into<NodeListFailure>(ret_val));
+    return iox2::legacy::err(iox2::bb::into<NodeListFailure>(ret_val));
 }
 
 template <ServiceType S, typename KeyType>

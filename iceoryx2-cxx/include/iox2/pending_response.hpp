@@ -170,7 +170,7 @@ inline auto PendingResponse<Service, RequestPayload, RequestUserHeader, Response
         return iox2::legacy::ok(
             iox2::legacy::optional<Response<Service, ResponsePayload, ResponseUserHeader>>(iox2::legacy::nullopt));
     }
-    return iox2::legacy::err(iox2::legacy::into<ReceiveError>(result));
+    return iox2::legacy::err(iox2::bb::into<ReceiveError>(result));
 }
 
 template <ServiceType Service,

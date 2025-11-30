@@ -190,7 +190,7 @@ inline auto send(ResponseMut<Service, ResponsePayload, ResponseUserHeader>&& res
     if (result == IOX2_OK) {
         return iox2::legacy::ok();
     }
-    return iox2::legacy::err(iox2::legacy::into<SendError>(result));
+    return iox2::legacy::err(iox2::bb::into<SendError>(result));
 }
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>

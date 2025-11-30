@@ -201,7 +201,7 @@ ServiceBuilderBlackboardCreator<KeyType, S>::create() && -> iox2::legacy::expect
         return iox2::legacy::ok(PortFactoryBlackboard<S, KeyType>(port_factory_handle));
     }
 
-    return iox2::legacy::err(iox2::legacy::into<BlackboardCreateError>(result));
+    return iox2::legacy::err(iox2::bb::into<BlackboardCreateError>(result));
 }
 
 template <typename KeyType, ServiceType S>
@@ -218,7 +218,7 @@ inline auto ServiceBuilderBlackboardCreator<KeyType, S>::create_with_attributes(
         return iox2::legacy::ok(PortFactoryBlackboard<S, KeyType>(port_factory_handle));
     }
 
-    return iox2::legacy::err(iox2::legacy::into<BlackboardCreateError>(result));
+    return iox2::legacy::err(iox2::bb::into<BlackboardCreateError>(result));
 }
 
 template <typename KeyType, ServiceType S>
@@ -255,7 +255,7 @@ ServiceBuilderBlackboardOpener<KeyType, S>::open() && -> iox2::legacy::expected<
         return iox2::legacy::ok(PortFactoryBlackboard<S, KeyType>(port_factory_handle));
     }
 
-    return iox2::legacy::err(iox2::legacy::into<BlackboardOpenError>(result));
+    return iox2::legacy::err(iox2::bb::into<BlackboardOpenError>(result));
 }
 
 template <typename KeyType, ServiceType S>
@@ -272,7 +272,7 @@ inline auto ServiceBuilderBlackboardOpener<KeyType, S>::open_with_attributes(
         return iox2::legacy::ok(PortFactoryBlackboard<S, KeyType>(port_factory_handle));
     }
 
-    return iox2::legacy::err(iox2::legacy::into<BlackboardOpenError>(result));
+    return iox2::legacy::err(iox2::bb::into<BlackboardOpenError>(result));
 }
 } // namespace iox2
 

@@ -269,7 +269,7 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
                 port_factory_handle));
     }
 
-    return iox2::legacy::err(iox2::legacy::into<RequestResponseOpenOrCreateError>(result));
+    return iox2::legacy::err(iox2::bb::into<RequestResponseOpenOrCreateError>(result));
 }
 
 template <typename RequestPayload,
@@ -293,7 +293,7 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
                 port_factory_handle));
     }
 
-    return iox2::legacy::err(iox2::legacy::into<RequestResponseOpenOrCreateError>(result));
+    return iox2::legacy::err(iox2::bb::into<RequestResponseOpenOrCreateError>(result));
 }
 
 template <typename RequestPayload,
@@ -316,7 +316,7 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
                 port_factory_handle));
     }
 
-    return iox2::legacy::err(iox2::legacy::into<RequestResponseOpenError>(result));
+    return iox2::legacy::err(iox2::bb::into<RequestResponseOpenError>(result));
 }
 
 template <typename RequestPayload,
@@ -340,7 +340,7 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
                 port_factory_handle));
     }
 
-    return iox2::legacy::err(iox2::legacy::into<RequestResponseOpenError>(result));
+    return iox2::legacy::err(iox2::bb::into<RequestResponseOpenError>(result));
 }
 
 template <typename RequestPayload,
@@ -363,7 +363,7 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
                 port_factory_handle));
     }
 
-    return iox2::legacy::err(iox2::legacy::into<RequestResponseCreateError>(result));
+    return iox2::legacy::err(iox2::bb::into<RequestResponseCreateError>(result));
 }
 
 template <typename RequestPayload,
@@ -387,7 +387,7 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
                 port_factory_handle));
     }
 
-    return iox2::legacy::err(iox2::legacy::into<RequestResponseCreateError>(result));
+    return iox2::legacy::err(iox2::bb::into<RequestResponseCreateError>(result));
 }
 
 template <typename RequestPayload,

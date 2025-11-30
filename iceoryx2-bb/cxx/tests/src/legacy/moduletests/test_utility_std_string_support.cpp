@@ -19,6 +19,7 @@
 
 namespace {
 using namespace ::testing;
+using namespace iox2::bb;
 using namespace iox2::legacy;
 
 

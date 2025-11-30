@@ -13,8 +13,8 @@
 #ifndef IOX2_EXAMPLES_PUBSUB_EVENT_HPP
 #define IOX2_EXAMPLES_PUBSUB_EVENT_HPP
 
+#include "iox2/bb/into.hpp"
 #include "iox2/iceoryx2.hpp"
-#include "iox2/legacy/into.hpp"
 
 #include <cstdint>
 
@@ -30,7 +30,7 @@ enum class PubSubEvent : uint8_t {
 };
 
 namespace iox2 {
-namespace legacy {
+namespace bb {
 template <>
 constexpr auto from<PubSubEvent, size_t>(const PubSubEvent value) noexcept -> size_t {
     return static_cast<uint8_t>(value);
@@ -58,7 +58,7 @@ constexpr auto from<size_t, PubSubEvent>(const size_t value) noexcept -> PubSubE
     }
     IOX2_UNREACHABLE();
 }
-} // namespace legacy
+} // namespace bb
 } // namespace iox2
 
 

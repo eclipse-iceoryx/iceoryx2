@@ -93,7 +93,7 @@ auto PortFactoryEvent<S>::nodes(const iox2::legacy::function<CallbackProgression
         return iox2::legacy::ok();
     }
 
-    return iox2::legacy::err(iox2::legacy::into<NodeListFailure>(ret_val));
+    return iox2::legacy::err(iox2::bb::into<NodeListFailure>(ret_val));
 }
 
 template <ServiceType S>

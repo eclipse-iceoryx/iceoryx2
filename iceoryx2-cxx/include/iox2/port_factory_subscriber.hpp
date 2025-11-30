@@ -74,7 +74,7 @@ PortFactorySubscriber<S, Payload, UserHeader>::create() && -> iox2::legacy::expe
         return iox2::legacy::ok(Subscriber<S, Payload, UserHeader>(sub_handle));
     }
 
-    return iox2::legacy::err(iox2::legacy::into<SubscriberCreateError>(result));
+    return iox2::legacy::err(iox2::bb::into<SubscriberCreateError>(result));
 }
 } // namespace iox2
 

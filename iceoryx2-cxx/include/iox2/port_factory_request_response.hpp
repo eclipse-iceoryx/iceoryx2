@@ -208,7 +208,7 @@ PortFactoryRequestResponse<Service, RequestPayload, RequestUserHeader, ResponseP
         return iox2::legacy::ok();
     }
 
-    return iox2::legacy::err(iox2::legacy::into<NodeListFailure>(ret_val));
+    return iox2::legacy::err(iox2::bb::into<NodeListFailure>(ret_val));
 }
 
 template <ServiceType Service,

@@ -148,7 +148,7 @@ inline Publisher<S, Payload, UserHeader>::~Publisher() {
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Publisher<S, Payload, UserHeader>::unable_to_deliver_strategy() const -> UnableToDeliverStrategy {
-    return iox2::legacy::into<UnableToDeliverStrategy>(
+    return iox2::bb::into<UnableToDeliverStrategy>(
         static_cast<int>(iox2_publisher_unable_to_deliver_strategy(&m_handle)));
 }
 
@@ -182,7 +182,7 @@ inline auto Publisher<S, Payload, UserHeader>::send_copy(const Payload& payload)
         return iox2::legacy::ok(number_of_recipients);
     }
 
-    return iox2::legacy::err(iox2::legacy::into<SendError>(result));
+    return iox2::legacy::err(iox2::bb::into<SendError>(result));
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
@@ -200,7 +200,7 @@ inline auto Publisher<S, Payload, UserHeader>::send_slice_copy(iox::ImmutableSli
         return iox2::legacy::ok(number_of_recipients);
     }
 
-    return iox2::legacy::err(iox2::legacy::into<SendError>(result));
+    return iox2::legacy::err(iox2::bb::into<SendError>(result));
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
@@ -216,7 +216,7 @@ inline auto Publisher<S, Payload, UserHeader>::loan_uninit()
         return iox2::legacy::ok(std::move(sample));
     }
 
-    return iox2::legacy::err(iox2::legacy::into<LoanError>(result));
+    return iox2::legacy::err(iox2::bb::into<LoanError>(result));
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
@@ -266,14 +266,14 @@ inline auto Publisher<S, Payload, UserHeader>::loan_slice_uninit(const uint64_t 
         return iox2::legacy::ok(std::move(sample));
     }
 
-    return iox2::legacy::err(iox2::legacy::into<LoanError>(result));
+    return iox2::legacy::err(iox2::bb::into<LoanError>(result));
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Publisher<S, Payload, UserHeader>::update_connections() -> iox2::legacy::expected<void, ConnectionFailure> {
     auto result = iox2_publisher_update_connections(&m_handle);
     if (result != IOX2_OK) {
-        return iox2::legacy::err(iox2::legacy::into<ConnectionFailure>(result));
+        return iox2::legacy::err(iox2::bb::into<ConnectionFailure>(result));
     }
 
     return iox2::legacy::ok();

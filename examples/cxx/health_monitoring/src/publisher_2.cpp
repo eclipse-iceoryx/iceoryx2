@@ -33,7 +33,7 @@ auto main() -> int {
                         .notifier_builder()
                         // we only want to notify the other side explicitly when we have sent a sample
                         // so we can define it as default event id
-                        .default_event_id(iox2::legacy::into<EventId>(PubSubEvent::SentSample))
+                        .default_event_id(iox2::bb::into<EventId>(PubSubEvent::SentSample))
                         .create()
                         .expect("");
     auto counter = 1000000U; // NOLINT, magic number is fine in an example

@@ -30,6 +30,7 @@
 
 namespace {
 using namespace ::testing;
+using namespace iox2::bb;
 using namespace iox2::legacy::cli;
 using namespace iox2::legacy;
 
@@ -88,13 +89,13 @@ void FailureTest(const std::vector<std::string>& options,
     {
         OptionDefinition optionSet("", [&] { wasErrorHandlerCalled = true; });
         for (const auto& o : optionsToRegister) {
-            optionSet.addOptional(o[0], iox2::legacy::into<iox2::legacy::lossy<OptionName_t>>(o), "", "int", "0");
+            optionSet.addOptional(o[0], into<lossy<OptionName_t>>(o), "", "int", "0");
         }
         for (const auto& s : switchesToRegister) {
-            optionSet.addSwitch(s[0], iox2::legacy::into<iox2::legacy::lossy<OptionName_t>>(s), "");
+            optionSet.addSwitch(s[0], into<lossy<OptionName_t>>(s), "");
         }
         for (const auto& r : requiredValuesToRegister) {
-            optionSet.addRequired(r[0], iox2::legacy::into<iox2::legacy::lossy<OptionName_t>>(r), "", "int");
+            optionSet.addRequired(r[0], into<lossy<OptionName_t>>(r), "", "int");
         }
 
         IOX2_DISCARD_RESULT(parseCommandLineArguments(optionSet, args.argc, args.argv, 1U));
@@ -833,17 +834,13 @@ Arguments SuccessTest(const std::vector<std::string>& options,
     {
         OptionDefinition optionSet("");
         for (const auto& o : optionsToRegister) {
-            optionSet.addOptional(o[0],
-                                  iox2::legacy::into<iox2::legacy::lossy<OptionName_t>>(o),
-                                  "",
-                                  "int",
-                                  CommandLineParser_test::defaultValue);
+            optionSet.addOptional(o[0], into<lossy<OptionName_t>>(o), "", "int", CommandLineParser_test::defaultValue);
         }
         for (const auto& s : switchesToRegister) {
-            optionSet.addSwitch(s[0], iox2::legacy::into<iox2::legacy::lossy<OptionName_t>>(s), "");
+            optionSet.addSwitch(s[0], into<lossy<OptionName_t>>(s), "");
         }
         for (const auto& r : requiredValuesToRegister) {
-            optionSet.addRequired(r[0], iox2::legacy::into<iox2::legacy::lossy<OptionName_t>>(r), "", "int");
+            optionSet.addRequired(r[0], into<lossy<OptionName_t>>(r), "", "int");
         }
 
         {

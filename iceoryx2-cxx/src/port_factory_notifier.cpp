@@ -31,7 +31,7 @@ auto PortFactoryNotifier<S>::create() && -> iox2::legacy::expected<Notifier<S>, 
         return iox2::legacy::ok(Notifier<S> { notifier_handle });
     }
 
-    return iox2::legacy::err(iox2::legacy::into<NotifierCreateError>(result));
+    return iox2::legacy::err(iox2::bb::into<NotifierCreateError>(result));
 }
 
 template class PortFactoryNotifier<ServiceType::Ipc>;

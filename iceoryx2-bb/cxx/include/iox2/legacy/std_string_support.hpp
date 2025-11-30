@@ -14,8 +14,8 @@
 #ifndef IOX2_BB_UTILITY_STD_STRING_SUPPORT_HPP
 #define IOX2_BB_UTILITY_STD_STRING_SUPPORT_HPP
 
+#include "iox2/bb/into.hpp"
 #include "iox2/legacy/detail/convert.hpp"
-#include "iox2/legacy/into.hpp"
 #include "iox2/legacy/optional.hpp"
 #include "iox2/legacy/string.hpp"
 
@@ -24,6 +24,29 @@
 #include <string>
 
 namespace iox2 {
+
+namespace bb {
+template <uint64_t N>
+struct FromImpl<legacy::string<N>, std::string> {
+    static std::string fromImpl(const legacy::string<N>& value) noexcept;
+};
+
+template <uint64_t N>
+struct FromImpl<std::string, legacy::string<N>> {
+    static legacy::string<N> fromImpl(const std::string& value) noexcept;
+};
+
+template <uint64_t N>
+struct FromImpl<std::string, legacy::optional<legacy::string<N>>> {
+    static legacy::optional<legacy::string<N>> fromImpl(const std::string& value) noexcept;
+};
+
+template <uint64_t N>
+struct FromImpl<std::string, bb::lossy<legacy::string<N>>> {
+    static legacy::string<N> fromImpl(const std::string& value) noexcept;
+};
+} // namespace bb
+
 namespace legacy {
 
 template <>
@@ -46,26 +69,6 @@ struct GetSize<std::string> {
     }
 };
 } // namespace internal
-
-template <uint64_t N>
-struct FromImpl<string<N>, std::string> {
-    static std::string fromImpl(const string<N>& value) noexcept;
-};
-
-template <uint64_t N>
-struct FromImpl<std::string, string<N>> {
-    static string<N> fromImpl(const std::string& value) noexcept;
-};
-
-template <uint64_t N>
-struct FromImpl<std::string, optional<string<N>>> {
-    static optional<string<N>> fromImpl(const std::string& value) noexcept;
-};
-
-template <uint64_t N>
-struct FromImpl<std::string, lossy<string<N>>> {
-    static string<N> fromImpl(const std::string& value) noexcept;
-};
 
 /// @brief outputs the fixed string on stream
 ///

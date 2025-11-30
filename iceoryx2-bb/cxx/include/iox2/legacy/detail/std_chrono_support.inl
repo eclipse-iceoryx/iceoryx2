@@ -17,28 +17,28 @@
 #include "iox2/legacy/std_chrono_support.hpp"
 
 namespace iox2 {
-namespace legacy {
+namespace bb {
 
-inline units::Duration
-FromImpl<std::chrono::nanoseconds, units::Duration>::fromImpl(const std::chrono::nanoseconds& value) noexcept {
-    return units::Duration::fromNanoseconds(value.count());
+inline legacy::units::Duration
+FromImpl<std::chrono::nanoseconds, legacy::units::Duration>::fromImpl(const std::chrono::nanoseconds& value) noexcept {
+    return legacy::units::Duration::fromNanoseconds(value.count());
 }
-inline units::Duration
-FromImpl<std::chrono::microseconds, units::Duration>::fromImpl(const std::chrono::microseconds& value) noexcept {
-    return units::Duration::fromMicroseconds(value.count());
-}
-
-inline units::Duration
-FromImpl<std::chrono::milliseconds, units::Duration>::fromImpl(const std::chrono::milliseconds& value) noexcept {
-    return units::Duration::fromMilliseconds(value.count());
+inline legacy::units::Duration FromImpl<std::chrono::microseconds, legacy::units::Duration>::fromImpl(
+    const std::chrono::microseconds& value) noexcept {
+    return legacy::units::Duration::fromMicroseconds(value.count());
 }
 
-inline units::Duration
-FromImpl<std::chrono::seconds, units::Duration>::fromImpl(const std::chrono::seconds& value) noexcept {
-    return units::Duration::fromSeconds(value.count());
+inline legacy::units::Duration FromImpl<std::chrono::milliseconds, legacy::units::Duration>::fromImpl(
+    const std::chrono::milliseconds& value) noexcept {
+    return legacy::units::Duration::fromMilliseconds(value.count());
 }
 
-} // namespace legacy
+inline legacy::units::Duration
+FromImpl<std::chrono::seconds, legacy::units::Duration>::fromImpl(const std::chrono::seconds& value) noexcept {
+    return legacy::units::Duration::fromSeconds(value.count());
+}
+
+} // namespace bb
 } // namespace iox2
 
 #endif // IOX2_BB_UTILITY_STD_CHRONO_SUPPORT_INL

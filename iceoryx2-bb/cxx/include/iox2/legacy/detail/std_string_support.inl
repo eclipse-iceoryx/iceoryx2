@@ -17,38 +17,41 @@
 #include "iox2/legacy/std_string_support.hpp"
 
 namespace iox2 {
-namespace legacy {
+namespace bb {
 template <uint64_t N>
-inline std::string FromImpl<string<N>, std::string>::fromImpl(const string<N>& value) noexcept {
+inline std::string FromImpl<legacy::string<N>, std::string>::fromImpl(const legacy::string<N>& value) noexcept {
     return std::string(value.c_str(), static_cast<size_t>(value.size()));
 }
 
 template <uint64_t N>
-inline string<N> FromImpl<std::string, string<N>>::fromImpl(const std::string&) noexcept {
-    static_assert(always_false_v<std::string> && always_false_v<string<N>>, "\n \
+inline legacy::string<N> FromImpl<std::string, legacy::string<N>>::fromImpl(const std::string&) noexcept {
+    static_assert(legacy::always_false_v<std::string> && legacy::always_false_v<legacy::string<N>>, "\n \
         The conversion from 'std::string' to 'iox2::legacy::string<N>' is potentially lossy!\n \
         This happens when the size of source string exceeds the capacity of the destination string!\n \
         Please use either: \n \
-          - 'iox2::legacy::into<iox2::legacy::optional<iox2::legacy::string<N>>>' which returns a 'iox2::legacy::optional<iox2::legacy::string<N>>'\n \
+          - 'iox2::bb::into<iox2::legacy::optional<iox2::legacy::string<N>>>' which returns a 'iox2::legacy::optional<iox2::legacy::string<N>>'\n \
             with a 'nullopt' if the size of the source string exceeds the capacity of the destination string\n \
-          - 'iox2::legacy::into<iox2::legacy::lossy<iox2::legacy::string<N>>>' which returns a 'iox2::legacy::string<N>' and truncates the\n \
+          - 'iox2::bb::into<iox2::bb::lossy<iox2::legacy::string<N>>>' which returns a 'iox2::legacy::string<N>' and truncates the\n \
             source string if its size exceeds the capacity of the destination string");
 }
 
 template <uint64_t N>
-inline optional<string<N>> FromImpl<std::string, optional<string<N>>>::fromImpl(const std::string& value) noexcept {
+inline legacy::optional<legacy::string<N>>
+FromImpl<std::string, legacy::optional<legacy::string<N>>>::fromImpl(const std::string& value) noexcept {
     const auto stringLength = value.size();
     if (stringLength <= N) {
-        return string<N>(TruncateToCapacity, value.c_str(), stringLength);
+        return legacy::string<N>(legacy::TruncateToCapacity, value.c_str(), stringLength);
     }
-    return nullopt;
+    return legacy::nullopt;
 }
 
 template <uint64_t N>
-inline string<N> FromImpl<std::string, lossy<string<N>>>::fromImpl(const std::string& value) noexcept {
-    return string<N>(TruncateToCapacity, value.c_str(), value.size());
+inline legacy::string<N> FromImpl<std::string, lossy<legacy::string<N>>>::fromImpl(const std::string& value) noexcept {
+    return legacy::string<N>(legacy::TruncateToCapacity, value.c_str(), value.size());
 }
+} // namespace bb
 
+namespace legacy {
 // AXIVION Next Construct AutosarC++19_03-M5.17.1: This is not used as shift operator but as stream operator and does
 // not require to implement '<<='
 template <uint64_t Capacity>

@@ -109,7 +109,7 @@ inline auto PortFactoryClient<Service, RequestPayload, RequestUserHeader, Respon
         ClientCreateError> {
     m_unable_to_deliver_strategy.and_then([&](auto value) -> auto {
         iox2_port_factory_client_builder_unable_to_deliver_strategy(
-            &m_handle, static_cast<iox2_unable_to_deliver_strategy_e>(iox2::legacy::into<int>(value)));
+            &m_handle, static_cast<iox2_unable_to_deliver_strategy_e>(iox2::bb::into<int>(value)));
     });
     m_max_slice_len
         .and_then(
@@ -117,7 +117,7 @@ inline auto PortFactoryClient<Service, RequestPayload, RequestUserHeader, Respon
         .or_else([&]() -> auto { iox2_port_factory_client_builder_set_initial_max_slice_len(&m_handle, 1); });
     m_allocation_strategy.and_then([&](auto value) -> auto {
         iox2_port_factory_client_builder_set_allocation_strategy(&m_handle,
-                                                                 iox2::legacy::into<iox2_allocation_strategy_e>(value));
+                                                                 iox2::bb::into<iox2_allocation_strategy_e>(value));
     });
 
     iox2_client_h client_handle {};
@@ -128,7 +128,7 @@ inline auto PortFactoryClient<Service, RequestPayload, RequestUserHeader, Respon
             Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(client_handle));
     }
 
-    return iox2::legacy::err(iox2::legacy::into<ClientCreateError>(result));
+    return iox2::legacy::err(iox2::bb::into<ClientCreateError>(result));
 }
 
 template <ServiceType Service,

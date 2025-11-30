@@ -95,7 +95,7 @@ auto NodeName::create_impl(const char* value, size_t value_len)
         return iox2::legacy::ok(NodeName { handle });
     }
 
-    return iox2::legacy::err(iox2::legacy::into<SemanticStringError>(ret_val));
+    return iox2::legacy::err(iox2::bb::into<SemanticStringError>(ret_val));
 }
 
 auto NodeName::to_string() const -> iox2::legacy::string<IOX2_NODE_NAME_LENGTH> {
