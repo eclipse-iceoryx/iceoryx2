@@ -17,7 +17,7 @@
 #include "iox2/event_id.hpp"
 #include "iox2/iceoryx2.h"
 #include "iox2/internal/iceoryx2.hpp"
-#include "iox2/legacy/duration.hpp"
+#include "iox2/bb/duration.hpp"
 #include "iox2/legacy/optional.hpp"
 
 namespace iox2 {

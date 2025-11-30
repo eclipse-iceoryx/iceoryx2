@@ -15,7 +15,7 @@
 
 #include "iox2/event_id.hpp"
 #include "iox2/internal/iceoryx2.hpp"
-#include "iox2/legacy/duration.hpp"
+#include "iox2/bb/duration.hpp"
 #include "iox2/legacy/expected.hpp"
 #include "iox2/notifier_error.hpp"
 #include "iox2/service_type.hpp"

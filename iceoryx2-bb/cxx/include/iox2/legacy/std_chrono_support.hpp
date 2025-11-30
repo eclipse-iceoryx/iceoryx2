@@ -15,7 +15,7 @@
 #define IOX2_BB_UTILITY_STD_CHRONO_SUPPORT_HPP
 
 #include "iox2/bb/into.hpp"
-#include "iox2/legacy/duration.hpp"
+#include "iox2/bb/duration.hpp"
 
 #include <chrono>
 

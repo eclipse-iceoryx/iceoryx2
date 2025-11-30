@@ -17,7 +17,7 @@
 #include "iox2/file_descriptor.hpp"
 #include "iox2/internal/callback_context.hpp"
 #include "iox2/internal/iceoryx2.hpp"
-#include "iox2/legacy/duration.hpp"
+#include "iox2/bb/duration.hpp"
 #include "iox2/legacy/expected.hpp"
 #include "iox2/legacy/function.hpp"
 #include "iox2/legacy/optional.hpp"

@@ -12,7 +12,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/legacy/duration.hpp"
+#include "iox2/bb/duration.hpp"
 #include "iox2/legacy/posix_call.hpp"
 #include "iox2/legacy/testing/mocks/logger_mock.hpp"
 #include "iox2/legacy/testing/testing_logger.hpp"
