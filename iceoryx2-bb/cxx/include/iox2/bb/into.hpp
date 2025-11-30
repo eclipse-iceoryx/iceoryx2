@@ -15,6 +15,7 @@
 #ifndef IOX2_BB_INTO_HPP
 #define IOX2_BB_INTO_HPP
 
+#include "iox2/legacy/attributes.hpp"
 #include "iox2/legacy/type_traits.hpp"
 
 namespace iox2 {
@@ -43,7 +44,7 @@ struct extract_into_type<lossy<T>> {
 template <typename SourceType, typename DestinationType>
 struct FromTrait {
     // AXIVION Next Construct AutosarC++19_03-A7.1.5 : 'auto' is only used for the generic implementation which will always result in a compile error
-    static auto from(const SourceType& value) noexcept {
+    static auto from(const SourceType& value IOX2_MAYBE_UNUSED) noexcept {
         static_assert(legacy::always_false_v<SourceType> && legacy::always_false_v<DestinationType>, "\n \
 Conversion for the specified types is not implemented!\n \
 Please specialize 'FromTrait::from'!\n \

@@ -32,8 +32,8 @@ enum class B : uint8_t {
 namespace iox2 {
 namespace bb {
 template <>
-constexpr auto from<A, B>(A e) noexcept -> B {
-    switch (e) {
+constexpr auto from<A, B>(A value) noexcept -> B {
+    switch (value) {
     case A::A1:
         return B::B1;
     case A::A2:
