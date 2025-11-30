@@ -17,9 +17,9 @@
 
 using namespace iox2;
 
-constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromMilliseconds(100);
-constexpr iox::units::Duration DEADLINE_SERVICE_1 = iox::units::Duration::fromMilliseconds(1500);
-constexpr iox::units::Duration DEADLINE_SERVICE_2 = iox::units::Duration::fromMilliseconds(2000);
+constexpr iox2::legacy::units::Duration CYCLE_TIME = iox2::legacy::units::Duration::fromMilliseconds(100);
+constexpr iox2::legacy::units::Duration DEADLINE_SERVICE_1 = iox2::legacy::units::Duration::fromMilliseconds(1500);
+constexpr iox2::legacy::units::Duration DEADLINE_SERVICE_2 = iox2::legacy::units::Duration::fromMilliseconds(2000);
 
 namespace {
 void find_and_cleanup_dead_nodes();
@@ -55,11 +55,11 @@ auto main() -> int {
                                // created.
                                // The task of the notifier/event is it to inform and wake up other processes when
                                // certain system event have happened.
-                               .notifier_created_event(iox::into<EventId>(PubSubEvent::PublisherConnected))
-                               .notifier_dropped_event(iox::into<EventId>(PubSubEvent::PublisherDisconnected))
+                               .notifier_created_event(iox2::legacy::into<EventId>(PubSubEvent::PublisherConnected))
+                               .notifier_dropped_event(iox2::legacy::into<EventId>(PubSubEvent::PublisherDisconnected))
                                // This event is emitted when either the central daemon or a decentralized process
                                // detects a dead node and cleaned up all of its stale resources succesfully.
-                               .notifier_dead_event(iox::into<EventId>(PubSubEvent::ProcessDied))
+                               .notifier_dead_event(iox2::legacy::into<EventId>(PubSubEvent::ProcessDied))
                                .open_or_create()
                                .expect("successful service creation/opening");
 
@@ -71,9 +71,9 @@ auto main() -> int {
     auto service_event_2 = node.service_builder(service_name_2)
                                .event()
                                .deadline(DEADLINE_SERVICE_2)
-                               .notifier_created_event(iox::into<EventId>(PubSubEvent::PublisherConnected))
-                               .notifier_dropped_event(iox::into<EventId>(PubSubEvent::PublisherDisconnected))
-                               .notifier_dead_event(iox::into<EventId>(PubSubEvent::ProcessDied))
+                               .notifier_created_event(iox2::legacy::into<EventId>(PubSubEvent::PublisherConnected))
+                               .notifier_dropped_event(iox2::legacy::into<EventId>(PubSubEvent::PublisherDisconnected))
+                               .notifier_dead_event(iox2::legacy::into<EventId>(PubSubEvent::ProcessDied))
                                .open_or_create()
                                .expect("successful service creation/opening");
 

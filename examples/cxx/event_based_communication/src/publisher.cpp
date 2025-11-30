@@ -17,7 +17,7 @@
 
 using namespace iox2;
 
-constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1);
+constexpr iox2::legacy::units::Duration CYCLE_TIME = iox2::legacy::units::Duration::fromSeconds(1);
 
 auto main() -> int {
     set_log_level_from_env_or(LogLevel::Info);

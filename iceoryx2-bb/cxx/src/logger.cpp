@@ -15,12 +15,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox/log/building_blocks/logger.hpp"
+#include "iox2/legacy/log/building_blocks/logger.hpp"
 
 #include <cstdio>
 #include <cstdlib>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace log {
 LogLevel logLevelFromEnvOr(const LogLevel logLevel) noexcept {
     auto specifiedLogLevel = logLevel;
@@ -54,4 +55,5 @@ LogLevel logLevelFromEnvOr(const LogLevel logLevel) noexcept {
 }
 
 } // namespace log
-} // namespace iox
+} // namespace legacy
+} // namespace iox2

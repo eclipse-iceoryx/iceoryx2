@@ -151,7 +151,7 @@ TYPED_TEST(ServiceRequestResponseTest, open_or_create_service_does_exist) {
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
 
     {
-        auto sut = iox::optional<PortFactoryRequestResponse<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(
+        auto sut = iox2::legacy::optional<PortFactoryRequestResponse<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(
             node.service_builder(service_name)
                 .template request_response<uint64_t, uint64_t>()
                 .open_or_create()
@@ -161,7 +161,7 @@ TYPED_TEST(ServiceRequestResponseTest, open_or_create_service_does_exist) {
             Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::RequestResponse)
                 .expect(""));
 
-        auto sut_2 = iox::optional<PortFactoryRequestResponse<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(
+        auto sut_2 = iox2::legacy::optional<PortFactoryRequestResponse<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(
             node.service_builder(service_name)
                 .template request_response<uint64_t, uint64_t>()
                 .open_or_create()
@@ -581,7 +581,7 @@ TYPED_TEST(ServiceRequestResponseTest, send_slice_copy_and_receive_works) {
     auto sut_client = service.client_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().expect("");
     auto sut_server = service.server_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().expect("");
 
-    iox::UninitializedArray<DummyData, SLICE_MAX_LENGTH, iox::ZeroedBuffer> elements;
+    iox2::legacy::UninitializedArray<DummyData, SLICE_MAX_LENGTH, iox2::legacy::ZeroedBuffer> elements;
     for (auto& item : elements) {
         new (&item) DummyData {};
     }
@@ -638,7 +638,7 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_uninit_write_payload_send_rece
     ASSERT_FALSE(request_uninit.has_error());
     EXPECT_THAT(request_uninit.value().payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
 
-    iox::UninitializedArray<DummyData, SLICE_MAX_LENGTH, iox::ZeroedBuffer> elements;
+    iox2::legacy::UninitializedArray<DummyData, SLICE_MAX_LENGTH, iox2::legacy::ZeroedBuffer> elements;
     for (auto& item : elements) {
         new (&item) DummyData {};
     }
@@ -1162,7 +1162,7 @@ TYPED_TEST(ServiceRequestResponseTest, is_connected_works_for_active_request) {
     auto sut_client = service.client_builder().create().expect("");
     auto sut_server = service.server_builder().create().expect("");
 
-    auto pending_response = iox::make_optional<PendingResponse<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(
+    auto pending_response = iox2::legacy::make_optional<PendingResponse<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(
         sut_client.send_copy(3).expect(""));
 
     auto active_request = sut_server.receive().expect("");
@@ -1190,12 +1190,12 @@ TYPED_TEST(ServiceRequestResponseTest, is_connected_works_for_pending_response) 
 
     auto tmp = server1.receive().expect("");
     ASSERT_TRUE(tmp.has_value());
-    auto active_request_1 =
-        iox::make_optional<ActiveRequest<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(std::move(tmp.value()));
+    auto active_request_1 = iox2::legacy::make_optional<ActiveRequest<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(
+        std::move(tmp.value()));
     tmp = server2.receive().expect("");
     ASSERT_TRUE(tmp.has_value());
-    auto active_request_2 =
-        iox::make_optional<ActiveRequest<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(std::move(tmp.value()));
+    auto active_request_2 = iox2::legacy::make_optional<ActiveRequest<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(
+        std::move(tmp.value()));
     EXPECT_TRUE(pending_response.is_connected());
 
     active_request_1.reset();
@@ -2056,7 +2056,7 @@ TYPED_TEST(ServiceRequestResponseTest, only_max_clients_can_be_created) {
                        .max_clients(1)
                        .create()
                        .expect("");
-    auto client = iox::optional<Client<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(
+    auto client = iox2::legacy::optional<Client<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(
         service.client_builder().create().expect(""));
 
     auto failing_sut = service.client_builder().create();
@@ -2079,7 +2079,7 @@ TYPED_TEST(ServiceRequestResponseTest, only_max_servers_can_be_created) {
                        .max_servers(1)
                        .create()
                        .expect("");
-    auto server = iox::optional<Server<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(
+    auto server = iox2::legacy::optional<Server<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(
         service.server_builder().create().expect(""));
 
     auto failing_sut = service.server_builder().create();
@@ -2103,8 +2103,9 @@ TYPED_TEST(ServiceRequestResponseTest, client_can_request_graceful_disconnect) {
     auto sut_client = service.client_builder().create().expect("");
     auto sut_server = service.server_builder().create().expect("");
 
-    auto pending_response = iox::make_optional<iox2::PendingResponse<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(
-        sut_client.send_copy(0).expect(""));
+    auto pending_response =
+        iox2::legacy::make_optional<iox2::PendingResponse<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(
+            sut_client.send_copy(0).expect(""));
     auto active_request = sut_server.receive().expect("").value();
 
     ASSERT_TRUE(pending_response->is_connected());

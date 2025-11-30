@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/static_config.hpp"
-#include "iox/into.hpp"
+#include "iox2/legacy/into.hpp"
 
 namespace iox2 {
 StaticConfig::StaticConfig(iox2_static_config_t value)
@@ -56,7 +56,7 @@ auto StaticConfig::name() const -> const char* {
 }
 
 auto StaticConfig::messaging_pattern() const -> MessagingPattern {
-    return iox::into<MessagingPattern>(static_cast<int>(m_value.messaging_pattern));
+    return iox2::legacy::into<MessagingPattern>(static_cast<int>(m_value.messaging_pattern));
 }
 } // namespace iox2
 

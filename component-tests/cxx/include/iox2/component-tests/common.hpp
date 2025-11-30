@@ -45,7 +45,7 @@ struct RequestResponseServer {
 template <typename RequestType, typename ResponseType>
 auto create_server(iox2::Node<iox2::ServiceType::Ipc> const& node,
                    char const* service_name,
-                   iox::units::Duration const& refresh_interval)
+                   iox2::legacy::units::Duration const& refresh_interval)
     -> iox2::container::Optional<RequestResponseServer<RequestType, ResponseType>> {
     auto exp_service_name = iox2::ServiceName::create(service_name);
     if (!exp_service_name) {

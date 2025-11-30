@@ -14,7 +14,7 @@
 
 #include <iostream>
 
-constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1);
+constexpr iox2::legacy::units::Duration CYCLE_TIME = iox2::legacy::units::Duration::fromSeconds(1);
 
 auto main() -> int {
     using namespace iox2;
@@ -30,7 +30,7 @@ auto main() -> int {
 
     std::cout << "Listener ready to receive events!" << std::endl;
 
-    while (node.wait(iox::units::Duration::zero()).has_value()) {
+    while (node.wait(iox2::legacy::units::Duration::zero()).has_value()) {
         listener.timed_wait_one(CYCLE_TIME).and_then([](auto maybe_event_id) -> auto {
             maybe_event_id.and_then(
                 [](auto event_id) -> auto { std::cout << "event was triggered with id: " << event_id << std::endl; });

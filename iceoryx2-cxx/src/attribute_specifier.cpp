@@ -37,12 +37,12 @@ auto AttributeSpecifier::operator=(AttributeSpecifier&& rhs) noexcept -> Attribu
 }
 
 auto AttributeSpecifier::define(const Attribute::Key& key, const Attribute::Value& value)
-    -> iox::expected<void, AttributeDefinitionError> {
+    -> iox2::legacy::expected<void, AttributeDefinitionError> {
     auto result = iox2_attribute_specifier_define(&m_handle, key.c_str(), value.c_str());
     if (result == IOX2_OK) {
-        return iox::ok();
+        return iox2::legacy::ok();
     }
-    return iox::err(iox::into<AttributeDefinitionError>(result));
+    return iox2::legacy::err(iox2::legacy::into<AttributeDefinitionError>(result));
 }
 
 auto AttributeSpecifier::attributes() const -> AttributeSetView {

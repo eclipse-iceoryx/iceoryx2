@@ -13,9 +13,9 @@
 #ifndef IOX2_SERVICE_NAME_HPP
 #define IOX2_SERVICE_NAME_HPP
 
-#include "iox/expected.hpp"
-#include "iox/string.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/legacy/expected.hpp"
+#include "iox2/legacy/string.hpp"
 #include "iox2/semantic_string.hpp"
 
 namespace iox2 {
@@ -30,8 +30,8 @@ class ServiceNameView {
     auto operator=(const ServiceNameView&) -> ServiceNameView& = default;
     ~ServiceNameView() = default;
 
-    /// Returns a [`iox::string`] containing the [`ServiceName`].
-    auto to_string() const -> iox::string<IOX2_SERVICE_NAME_LENGTH>;
+    /// Returns a [`iox2::legacy::string`] containing the [`ServiceName`].
+    auto to_string() const -> iox2::legacy::string<IOX2_SERVICE_NAME_LENGTH>;
 
     /// Creates a copy of the corresponding [`ServiceName`] and returns it.
     auto to_owned() const -> ServiceName;
@@ -68,15 +68,16 @@ class ServiceName {
     auto as_view() const -> ServiceNameView;
 
     /// Creates a new [`ServiceName`]. The name is not allowed to be empty.
-    static auto create(const char* value) -> iox::expected<ServiceName, SemanticStringError>;
+    static auto create(const char* value) -> iox2::legacy::expected<ServiceName, SemanticStringError>;
 
-    /// Returns a [`iox::string`] containing the [`ServiceName`].
-    auto to_string() const -> iox::string<IOX2_SERVICE_NAME_LENGTH>;
+    /// Returns a [`iox2::legacy::string`] containing the [`ServiceName`].
+    auto to_string() const -> iox2::legacy::string<IOX2_SERVICE_NAME_LENGTH>;
 
   private:
     friend class ServiceNameView;
     explicit ServiceName(iox2_service_name_h handle);
-    static auto create_impl(const char* value, size_t value_len) -> iox::expected<ServiceName, SemanticStringError>;
+    static auto create_impl(const char* value, size_t value_len)
+        -> iox2::legacy::expected<ServiceName, SemanticStringError>;
     void drop() noexcept;
 
     iox2_service_name_h m_handle = nullptr;

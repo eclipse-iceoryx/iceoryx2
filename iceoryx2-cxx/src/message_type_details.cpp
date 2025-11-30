@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/message_type_details.hpp"
-#include "iox/into.hpp"
+#include "iox2/legacy/into.hpp"
 
 namespace iox2 {
 TypeDetail::TypeDetail(iox2_type_detail_t value)
@@ -19,7 +19,7 @@ TypeDetail::TypeDetail(iox2_type_detail_t value)
 }
 
 auto TypeDetail::variant() const -> TypeVariant {
-    return iox::into<TypeVariant>(static_cast<int>(m_value.variant));
+    return iox2::legacy::into<TypeVariant>(static_cast<int>(m_value.variant));
 }
 
 auto TypeDetail::type_name() const -> const char* {

@@ -16,13 +16,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox/log/building_blocks/console_logger.hpp"
+#include "iox2/legacy/log/building_blocks/console_logger.hpp"
 
 #include <cstdio>
 #include <cstring>
 #include <ctime>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace log {
 // NOLINTJUSTIFICATION See at declaration in header
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
@@ -245,4 +246,5 @@ void ConsoleLogger::initLogger(const LogLevel) noexcept {
     // nothing to do in the base implementation
 }
 } // namespace log
-} // namespace iox
+} // namespace legacy
+} // namespace iox2

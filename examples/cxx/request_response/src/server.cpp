@@ -13,7 +13,7 @@
 #include "iox2/iceoryx2.hpp"
 #include "transmission_data.hpp"
 
-constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromMilliseconds(100);
+constexpr iox2::legacy::units::Duration CYCLE_TIME = iox2::legacy::units::Duration::fromMilliseconds(100);
 
 auto main() -> int {
     using namespace iox2;

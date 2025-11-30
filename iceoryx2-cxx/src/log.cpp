@@ -11,17 +11,17 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/log.hpp"
-#include "iox/into.hpp"
-#include "iox/optional.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/legacy/into.hpp"
+#include "iox2/legacy/optional.hpp"
 
 namespace iox2 {
 namespace {
 //NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables): it is in an anonymous namespace and therefore only accessible in this compilation unit
-iox::optional<Log*> global_logger = iox::nullopt;
+iox2::legacy::optional<Log*> global_logger = iox2::legacy::nullopt;
 
 void internal_log_callback(iox2_log_level_e log_level, const char* origin, const char* message) {
-    (*global_logger)->log(iox::into<LogLevel>(static_cast<int>(log_level)), origin, message);
+    (*global_logger)->log(iox2::legacy::into<LogLevel>(static_cast<int>(log_level)), origin, message);
 }
 
 } // namespace
@@ -35,7 +35,7 @@ auto set_logger(Log& logger) -> bool {
 }
 
 void log(LogLevel log_level, const char* origin, const char* message) {
-    iox2_log(iox::into<iox2_log_level_e>(log_level), origin, message);
+    iox2_log(iox2::legacy::into<iox2_log_level_e>(log_level), origin, message);
 }
 
 auto set_log_level_from_env_or_default() -> void {
@@ -43,11 +43,11 @@ auto set_log_level_from_env_or_default() -> void {
 }
 
 auto set_log_level_from_env_or(LogLevel level) -> void {
-    iox2_set_log_level_from_env_or(iox::into<iox2_log_level_e>(level));
+    iox2_set_log_level_from_env_or(iox2::legacy::into<iox2_log_level_e>(level));
 }
 
 auto set_log_level(LogLevel level) -> void {
-    iox2_set_log_level(iox::into<iox2_log_level_e>(level));
+    iox2_set_log_level(iox2::legacy::into<iox2_log_level_e>(level));
 }
 
 auto get_log_level() -> LogLevel {

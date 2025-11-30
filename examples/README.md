@@ -71,7 +71,6 @@ For C++, we provide:
 
 * `iox2::container::StaticVector`
 * `iox2::container::StaticString`
-* `iox::list`
 
 These types are demonstrated in the complex data types example.
 

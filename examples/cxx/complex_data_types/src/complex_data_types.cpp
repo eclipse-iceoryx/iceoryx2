@@ -17,18 +17,18 @@
 #include <utility>
 
 struct ComplexData {
-    iox::string<4> name;           // NOLINT
-    iox::vector<uint64_t, 4> data; // NOLINT
+    iox2::legacy::string<4> name;           // NOLINT
+    iox2::legacy::vector<uint64_t, 4> data; // NOLINT
 };
 
 struct ComplexDataType {
     uint64_t plain_old_data;
-    iox::string<8> text;                                  // NOLINT
-    iox::vector<uint64_t, 4> vec_of_data;                 // NOLINT
-    iox::vector<ComplexData, 404857> vec_of_complex_data; // NOLINT
+    iox2::legacy::string<8> text;                                  // NOLINT
+    iox2::legacy::vector<uint64_t, 4> vec_of_data;                 // NOLINT
+    iox2::legacy::vector<ComplexData, 404857> vec_of_complex_data; // NOLINT
 };
 
-constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1);
+constexpr iox2::legacy::units::Duration CYCLE_TIME = iox2::legacy::units::Duration::fromSeconds(1);
 
 auto main() -> int {
     using namespace iox2;
@@ -53,10 +53,10 @@ auto main() -> int {
 
         auto& payload = sample.payload_mut();
         payload.plain_old_data = counter;
-        payload.text = iox::string<8>("hello"); // NOLINT
+        payload.text = iox2::legacy::string<8>("hello"); // NOLINT
         payload.vec_of_data.push_back(counter);
         payload.vec_of_complex_data.push_back(
-            ComplexData { iox::string<4>("bla"), iox::vector<uint64_t, 4>(2, counter) });
+            ComplexData { iox2::legacy::string<4>("bla"), iox2::legacy::vector<uint64_t, 4>(2, counter) });
 
         auto initialized_sample = assume_init(std::move(sample));
         send(std::move(initialized_sample)).expect("send successful");

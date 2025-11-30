@@ -216,7 +216,7 @@ function scan() {
 
         if test -f "$FILE"; then
             # TODO: remove this if statement before finishing #301
-            if [[ "$FILE" == iceoryx2-bb/cxx/include/iox/* || "$FILE" == iceoryx2-bb/cxx/src/* || "$FILE" == iceoryx2-bb/cxx/tests/src/import/* ]]; then
+            if [[ "$FILE" == iceoryx2-bb/cxx/include/iox2/legacy/* || "$FILE" == iceoryx2-bb/cxx/src/* || "$FILE" == iceoryx2-bb/cxx/tests/src/legacy/* ]]; then
                 continue
             fi
 

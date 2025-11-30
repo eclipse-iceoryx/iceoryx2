@@ -26,7 +26,7 @@ cc_test(
         ]),
     includes = [
         "src",
-        "src/import/testing/include",
+        "src/legacy/testing/include",
     ],
     tags = ["exclusive"],
     visibility = ["//visibility:private"],

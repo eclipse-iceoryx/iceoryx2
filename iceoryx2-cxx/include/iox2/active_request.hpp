@@ -42,22 +42,24 @@ class ActiveRequest {
 
     /// Loans uninitialized memory for a [`ResponseMutUninit`] where the user can write its payload to.
     template <typename T = ResponsePayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
-    auto loan_uninit() -> iox::expected<ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>, LoanError>;
+    auto loan_uninit()
+        -> iox2::legacy::expected<ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>, LoanError>;
 
     /// Loans uninitialized memory for a [`ResponseMutUninit`] where the user can write its payload to.
     template <typename T = ResponsePayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto loan_slice_uninit(uint64_t number_of_elements)
-        -> iox::expected<ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>, LoanError>;
+        -> iox2::legacy::expected<ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>, LoanError>;
 
     /// Sends a copy of the provided data to the [`PendingResponse`] of the corresponding
     /// [`Client`]. This is not a zero-copy API. Use [`ActiveRequest::loan_uninit()`] instead.
     template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
-    auto send_copy(const ResponsePayload& payload) const -> iox::expected<void, SendError>;
+    auto send_copy(const ResponsePayload& payload) const -> iox2::legacy::expected<void, SendError>;
 
     /// Sends a copy of the provided data to the [`PendingResponse`] of the corresponding
     /// [`Client`]. This is not a zero-copy API. Use [`ActiveRequest::loan_slice_uninit()`] instead.
     template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
-    auto send_slice_copy(const iox::ImmutableSlice<ValueType>& payload) const -> iox::expected<void, SendError>;
+    auto send_slice_copy(const iox::ImmutableSlice<ValueType>& payload) const
+        -> iox2::legacy::expected<void, SendError>;
 
     /// Returns a reference to the payload of the received [`RequestMut`]
     template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
@@ -91,13 +93,13 @@ class ActiveRequest {
     /// Loans default initialized memory for a [`ResponseMut`] where the user can write its
     /// payload to.
     template <typename T = ResponsePayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
-    auto loan() -> iox::expected<ResponseMut<Service, ResponsePayload, ResponseUserHeader>, LoanError>;
+    auto loan() -> iox2::legacy::expected<ResponseMut<Service, ResponsePayload, ResponseUserHeader>, LoanError>;
 
     /// Loans default initialized memory for a [`ResponseMut`] where the user can write its
     /// payload to.
     template <typename T = ResponsePayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto loan_slice(uint64_t number_of_elements)
-        -> iox::expected<ResponseMut<Service, ResponsePayload, ResponseUserHeader>, LoanError>;
+        -> iox2::legacy::expected<ResponseMut<Service, ResponsePayload, ResponseUserHeader>, LoanError>;
 
   private:
     template <ServiceType, typename, typename, typename, typename>
@@ -154,16 +156,16 @@ template <ServiceType Service,
 template <typename T, typename>
 inline auto
 ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::loan_uninit()
-    -> iox::expected<ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>, LoanError> {
+    -> iox2::legacy::expected<ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>, LoanError> {
     constexpr uint64_t NUMBER_OF_ELEMENTS = 1;
     ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader> response;
     auto result = iox2_active_request_loan_slice_uninit(
         &m_handle, &response.m_response.m_response, &response.m_response.m_handle, NUMBER_OF_ELEMENTS);
     internal::PlacementDefault<ResponseUserHeader>::placement_default(response);
     if (result == IOX2_OK) {
-        return iox::ok(std::move(response));
+        return iox2::legacy::ok(std::move(response));
     }
-    return iox::err(iox::into<LoanError>(result));
+    return iox2::legacy::err(iox2::legacy::into<LoanError>(result));
 }
 
 template <ServiceType Service,
@@ -175,15 +177,15 @@ template <typename T, typename>
 inline auto
 ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::loan_slice_uninit(
     uint64_t number_of_elements)
-    -> iox::expected<ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>, LoanError> {
+    -> iox2::legacy::expected<ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>, LoanError> {
     ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader> response;
     auto result = iox2_active_request_loan_slice_uninit(
         &m_handle, &response.m_response.m_response, &response.m_response.m_handle, number_of_elements);
     internal::PlacementDefault<ResponseUserHeader>::placement_default(response);
     if (result == IOX2_OK) {
-        return iox::ok(std::move(response));
+        return iox2::legacy::ok(std::move(response));
     }
-    return iox::err(iox::into<LoanError>(result));
+    return iox2::legacy::err(iox2::legacy::into<LoanError>(result));
 }
 
 template <ServiceType Service,
@@ -193,7 +195,7 @@ template <ServiceType Service,
           typename ResponseUserHeader>
 template <typename T, typename>
 inline auto ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::send_copy(
-    const ResponsePayload& payload) const -> iox::expected<void, SendError> {
+    const ResponsePayload& payload) const -> iox2::legacy::expected<void, SendError> {
     static_assert(std::is_trivially_copyable<ResponsePayload>::value,
                   "The server supports only trivially copyable response payload types.");
     constexpr uint64_t NUMBER_OF_ELEMENTS = 1;
@@ -201,9 +203,9 @@ inline auto ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePa
     auto result = iox2_active_request_send_copy(
         &m_handle, static_cast<const void*>(&payload), sizeof(ResponsePayload), NUMBER_OF_ELEMENTS);
     if (result == IOX2_OK) {
-        return iox::ok();
+        return iox2::legacy::ok();
     }
-    return iox::err(iox::into<SendError>(result));
+    return iox2::legacy::err(iox2::legacy::into<SendError>(result));
 }
 
 template <ServiceType Service,
@@ -214,16 +216,16 @@ template <ServiceType Service,
 template <typename T, typename>
 inline auto
 ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::send_slice_copy(
-    const iox::ImmutableSlice<ValueType>& payload) const -> iox::expected<void, SendError> {
+    const iox::ImmutableSlice<ValueType>& payload) const -> iox2::legacy::expected<void, SendError> {
     static_assert(std::is_trivially_copyable<ValueType>::value,
                   "The server supports only trivially copyable response payload types.");
 
     auto result = iox2_active_request_send_copy(
         &m_handle, payload.data(), sizeof(typename ResponsePayload::ValueType), payload.number_of_elements());
     if (result == IOX2_OK) {
-        return iox::ok();
+        return iox2::legacy::ok();
     }
-    return iox::err(iox::into<SendError>(result));
+    return iox2::legacy::err(iox2::legacy::into<SendError>(result));
 }
 
 template <ServiceType Service,
@@ -324,14 +326,14 @@ template <ServiceType Service,
           typename ResponseUserHeader>
 template <typename T, typename>
 inline auto ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::loan()
-    -> iox::expected<ResponseMut<Service, ResponsePayload, ResponseUserHeader>, LoanError> {
+    -> iox2::legacy::expected<ResponseMut<Service, ResponsePayload, ResponseUserHeader>, LoanError> {
     auto response = loan_uninit();
     if (response.has_error()) {
-        return iox::err(response.error());
+        return iox2::legacy::err(response.error());
     }
 
     new (&response->payload_mut()) ResponsePayload();
-    return iox::ok(assume_init(std::move(*response)));
+    return iox2::legacy::ok(assume_init(std::move(*response)));
 }
 
 template <ServiceType Service,
@@ -342,10 +344,10 @@ template <ServiceType Service,
 template <typename T, typename>
 inline auto ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::loan_slice(
     uint64_t number_of_elements)
-    -> iox::expected<ResponseMut<Service, ResponsePayload, ResponseUserHeader>, LoanError> {
+    -> iox2::legacy::expected<ResponseMut<Service, ResponsePayload, ResponseUserHeader>, LoanError> {
     auto response_uninit = loan_slice_uninit(number_of_elements);
     if (response_uninit.has_error()) {
-        return iox::err(response_uninit.error());
+        return iox2::legacy::err(response_uninit.error());
     }
 
     auto response_init = std::move(response_uninit.value());
@@ -353,7 +355,7 @@ inline auto ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePa
         new (&item) ValueType();
     }
 
-    return iox::ok(assume_init(std::move(response_init)));
+    return iox2::legacy::ok(assume_init(std::move(response_init)));
 }
 
 template <ServiceType Service,
