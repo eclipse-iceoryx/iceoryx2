@@ -101,7 +101,8 @@ constexpr DestinationType FromTrait::from(const SourceType&) noexcept;\n \
 /// @param[in] value of type SourceType to convert to DestinationType
 /// @return converted value of SourceType to corresponding value of DestinationType
 template <typename SourceType, typename DestinationType>
-constexpr typename detail::extract_into_type<DestinationType>::TargetType from(const SourceType value) noexcept {
+constexpr auto from(const SourceType value) noexcept ->
+    typename detail::extract_into_type<DestinationType>::TargetType {
     return FromTrait<SourceType, DestinationType>::from(value);
 }
 
@@ -116,7 +117,8 @@ constexpr typename detail::extract_into_type<DestinationType>::TargetType from(c
 /// @param[in] value of type SourceType to convert to DestinationType
 /// @return converted value of SourceType to corresponding value of DestinationType
 template <typename DestinationType, typename SourceType>
-constexpr typename detail::extract_into_type<DestinationType>::TargetType into(const SourceType value) noexcept {
+constexpr auto into(const SourceType value) noexcept ->
+    typename detail::extract_into_type<DestinationType>::TargetType {
     return from<SourceType, DestinationType>(value);
 }
 
