@@ -76,8 +76,8 @@ auto Service<S>::list(const ConfigView config,
                       const iox2::legacy::function<CallbackProgression(ServiceDetails<S>)>& callback)
     -> iox2::legacy::expected<void, ServiceListError> {
     auto mutable_callback = callback;
-    auto result = iox2_service_list(
-        iox2::bb::into<iox2_service_type_e>(S), config.m_ptr, list_callback<S>, &mutable_callback);
+    auto result =
+        iox2_service_list(iox2::bb::into<iox2_service_type_e>(S), config.m_ptr, list_callback<S>, &mutable_callback);
 
     if (result == IOX2_OK) {
         return iox2::legacy::ok();

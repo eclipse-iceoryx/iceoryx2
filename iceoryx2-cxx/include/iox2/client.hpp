@@ -162,8 +162,7 @@ template <ServiceType Service,
 inline auto
 Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::unable_to_deliver_strategy()
     const -> UnableToDeliverStrategy {
-    return iox2::bb::into<UnableToDeliverStrategy>(
-        static_cast<int>(iox2_client_unable_to_deliver_strategy(&m_handle)));
+    return iox2::bb::into<UnableToDeliverStrategy>(static_cast<int>(iox2_client_unable_to_deliver_strategy(&m_handle)));
 }
 
 template <ServiceType Service,

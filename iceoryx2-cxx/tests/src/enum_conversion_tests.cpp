@@ -202,8 +202,7 @@ TEST(EnumConversionTest, publish_subscribe_open_or_create_into_c_str) {
     ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::OpenIncompatibleAttributes)), 1U);
     ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::OpenDoesNotSupportRequestedMinBufferSize)), 1U);
     ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::OpenDoesNotSupportRequestedMinHistorySize)), 1U);
-    ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::OpenDoesNotSupportRequestedMinSubscriberBorrowedSamples)),
-              1U);
+    ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::OpenDoesNotSupportRequestedMinSubscriberBorrowedSamples)), 1U);
     ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::OpenDoesNotSupportRequestedAmountOfPublishers)), 1U);
     ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::OpenDoesNotSupportRequestedAmountOfSubscribers)), 1U);
     ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::OpenDoesNotSupportRequestedAmountOfNodes)), 1U);

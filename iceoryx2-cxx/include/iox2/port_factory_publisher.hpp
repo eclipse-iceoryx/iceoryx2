@@ -114,8 +114,8 @@ PortFactoryPublisher<S, Payload, UserHeader>::create() && -> iox2::legacy::expec
     m_max_loaned_samples.and_then(
         [&](auto value) -> auto { iox2_port_factory_publisher_builder_set_max_loaned_samples(&m_handle, value); });
     m_allocation_strategy.and_then([&](auto value) -> auto {
-        iox2_port_factory_publisher_builder_set_allocation_strategy(
-            &m_handle, iox2::bb::into<iox2_allocation_strategy_e>(value));
+        iox2_port_factory_publisher_builder_set_allocation_strategy(&m_handle,
+                                                                    iox2::bb::into<iox2_allocation_strategy_e>(value));
     });
 
     iox2_publisher_h pub_handle {};

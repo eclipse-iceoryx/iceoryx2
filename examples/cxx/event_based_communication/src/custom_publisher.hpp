@@ -65,8 +65,7 @@ class CustomPublisher : public iox2::FileDescriptorBased {
             case PubSubEvent::SubscriberConnected: {
                 std::cout << "new subscriber connected - delivering history" << std::endl;
                 m_publisher.update_connections().expect("");
-                m_notifier
-                    .notify_with_custom_event_id(iox2::EventId(iox2::bb::into<size_t>(PubSubEvent::SentHistory)))
+                m_notifier.notify_with_custom_event_id(iox2::EventId(iox2::bb::into<size_t>(PubSubEvent::SentHistory)))
                     .expect("");
                 break;
             }

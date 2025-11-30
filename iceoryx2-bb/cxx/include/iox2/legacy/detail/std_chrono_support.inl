@@ -23,13 +23,13 @@ inline legacy::units::Duration
 FromTrait<std::chrono::nanoseconds, legacy::units::Duration>::from(const std::chrono::nanoseconds& value) noexcept {
     return legacy::units::Duration::fromNanoseconds(value.count());
 }
-inline legacy::units::Duration FromTrait<std::chrono::microseconds, legacy::units::Duration>::from(
-    const std::chrono::microseconds& value) noexcept {
+inline legacy::units::Duration
+FromTrait<std::chrono::microseconds, legacy::units::Duration>::from(const std::chrono::microseconds& value) noexcept {
     return legacy::units::Duration::fromMicroseconds(value.count());
 }
 
-inline legacy::units::Duration FromTrait<std::chrono::milliseconds, legacy::units::Duration>::from(
-    const std::chrono::milliseconds& value) noexcept {
+inline legacy::units::Duration
+FromTrait<std::chrono::milliseconds, legacy::units::Duration>::from(const std::chrono::milliseconds& value) noexcept {
     return legacy::units::Duration::fromMilliseconds(value.count());
 }
 
