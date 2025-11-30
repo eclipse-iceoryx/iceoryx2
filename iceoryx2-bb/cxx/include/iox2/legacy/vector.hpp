@@ -13,8 +13,8 @@
 // limitations under the License.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-#ifndef IOX_HOOFS_CONTAINER_VECTOR_HPP
-#define IOX_HOOFS_CONTAINER_VECTOR_HPP
+#ifndef IOX2_BB_CONTAINER_VECTOR_HPP
+#define IOX2_BB_CONTAINER_VECTOR_HPP
 
 #include "iox2/legacy/assertions.hpp"
 #include "iox2/legacy/attributes.hpp"
@@ -240,4 +240,4 @@ constexpr bool operator!=(const vector<T, CapacityLeft>& lhs, const vector<T, Ca
 
 #include "iox2/legacy/detail/vector.inl"
 
-#endif // IOX_HOOFS_CONTAINER_VECTOR_HPP
+#endif // IOX2_BB_CONTAINER_VECTOR_HPP

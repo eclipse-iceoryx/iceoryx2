@@ -18,7 +18,7 @@
 namespace iox2 {
 namespace legacy {
 namespace detail {
-bool path_does_contain_invalid_content(const string<platform::IOX_MAX_PATH_LENGTH>&) noexcept {
+bool path_does_contain_invalid_content(const string<platform::IOX2_MAX_PATH_LENGTH>&) noexcept {
     return false;
 }
 } // namespace detail

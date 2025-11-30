@@ -14,8 +14,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_REPORTING_ASSERTIONS_HPP
-#define IOX_HOOFS_REPORTING_ASSERTIONS_HPP
+#ifndef IOX2_BB_REPORTING_ASSERTIONS_HPP
+#define IOX2_BB_REPORTING_ASSERTIONS_HPP
 
 #include "iox2/legacy/error_reporting/configuration.hpp"
 #include "iox2/legacy/error_reporting/error_forwarding.hpp"
@@ -38,7 +38,7 @@
 /// @brief calls panic handler and does not return
 /// @param message message to be forwarded
 /// @note could actually throw if desired without breaking control flow asssumptions
-#define IOX_PANIC(message) iox2::legacy::er::forwardPanic(IOX_CURRENT_SOURCE_LOCATION, message)
+#define IOX2_PANIC(message) iox2::legacy::er::forwardPanic(IOX2_CURRENT_SOURCE_LOCATION, message)
 
 //************************************************************************************************
 //* For documentation of intent, defensive programming and debugging
@@ -51,11 +51,11 @@
 /// @note for conditions that should not happen with correct use
 /// @param condition boolean expression that must hold
 /// @param message message to be forwarded in case of violation
-#define IOX_ASSERT(condition, message)                                                                                 \
+#define IOX2_ASSERT(condition, message)                                                                                \
     if (iox2::legacy::er::Configuration::CHECK_ASSERT && !(condition)) {                                               \
         iox2::legacy::er::forwardFatalError(iox2::legacy::er::Violation::createAssertViolation(),                      \
                                             iox2::legacy::er::ASSERT_VIOLATION,                                        \
-                                            IOX_CURRENT_SOURCE_LOCATION,                                               \
+                                            IOX2_CURRENT_SOURCE_LOCATION,                                              \
                                             #condition,                                                                \
                                             message);                                                                  \
     }                                                                                                                  \
@@ -65,21 +65,21 @@
 /// @note for conditions that may actually happen during correct use
 /// @param condition boolean expression that must hold
 /// @param message message to be forwarded in case of violation
-#define IOX_ENFORCE(condition, message)                                                                                \
+#define IOX2_ENFORCE(condition, message)                                                                               \
     if (!(condition)) {                                                                                                \
         iox2::legacy::er::forwardFatalError(iox2::legacy::er::Violation::createEnforceViolation(),                     \
                                             iox2::legacy::er::ENFORCE_VIOLATION,                                       \
-                                            IOX_CURRENT_SOURCE_LOCATION,                                               \
+                                            IOX2_CURRENT_SOURCE_LOCATION,                                              \
                                             #condition,                                                                \
                                             message);                                                                  \
     }                                                                                                                  \
     []() -> void { }() // the empty lambda forces a semicolon on the caller side
 
 /// @brief panic if control flow reaches this code at runtime
-#define IOX_UNREACHABLE()                                                                                              \
-    iox2::legacy::er::detail::unreachable_wrapped<void, void>(IOX_CURRENT_SOURCE_LOCATION,                             \
+#define IOX2_UNREACHABLE()                                                                                             \
+    iox2::legacy::er::detail::unreachable_wrapped<void, void>(IOX2_CURRENT_SOURCE_LOCATION,                            \
                                                               "Reached code that was supposed to be unreachable.")
 
 // NOLINTEND(cppcoreguidelines-macro-usage)
 
-#endif // IOX_HOOFS_REPORTING_ASSERTIONS_HPP
+#endif // IOX2_BB_REPORTING_ASSERTIONS_HPP

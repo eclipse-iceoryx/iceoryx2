@@ -87,7 +87,7 @@ class NodeBuilder {
 #ifdef DOXYGEN_MACRO_FIX
     auto name(const NodeName value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(NodeName, name);
+    IOX2_BUILDER_OPTIONAL(NodeName, name);
 #endif
 
     /// The [`Config`] that shall be used for the [`Node`]. If no [`Config`]
@@ -95,7 +95,7 @@ class NodeBuilder {
 #ifdef DOXYGEN_MACRO_FIX
     auto config(const Config value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(Config, config);
+    IOX2_BUILDER_OPTIONAL(Config, config);
 #endif
 
     /// Defines the [`SignalHandlingMode`] for the [`Node`]. It affects the [`Node::wait()`] call
@@ -103,7 +103,7 @@ class NodeBuilder {
 #ifdef DOXYGEN_MACRO_FIX
     auto signal_handling_mode(const SignalHandlingMode value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(SignalHandlingMode, signal_handling_mode);
+    IOX2_BUILDER_OPTIONAL(SignalHandlingMode, signal_handling_mode);
 #endif
 
   public:

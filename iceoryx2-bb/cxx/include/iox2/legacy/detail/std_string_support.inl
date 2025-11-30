@@ -13,8 +13,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_UTILITY_STD_STRING_SUPPORT_INL
-#define IOX_HOOFS_UTILITY_STD_STRING_SUPPORT_INL
+#ifndef IOX2_BB_UTILITY_STD_STRING_SUPPORT_INL
+#define IOX2_BB_UTILITY_STD_STRING_SUPPORT_INL
 
 #include "iox2/legacy/std_string_support.hpp"
 
@@ -61,4 +61,4 @@ inline std::ostream& operator<<(std::ostream& stream, const string<Capacity>& st
 } // namespace legacy
 } // namespace iox2
 
-#endif // IOX_HOOFS_UTILITY_STD_STRING_SUPPORT_INL
+#endif // IOX2_BB_UTILITY_STD_STRING_SUPPORT_INL

@@ -157,7 +157,7 @@ TEST_F(function_refDeathTest, CallMovedFromLeadsToTermination) {
     runInTestThread([&] { sut1(); });
     // NOLINTEND(bugprone-use-after-move, hicpp-invalid-access-moved)
 
-    IOX_TESTING_EXPECT_PANIC();
+    IOX2_TESTING_EXPECT_PANIC();
 #endif
 }
 
@@ -254,7 +254,7 @@ TEST_F(function_refTest, CallOverloadedFunctionResultsInCallOfVoid) {
 
 TEST_F(function_refTest, CallOverloadedFunctionResultsInCallOfIntInt) {
     ::testing::Test::RecordProperty("TEST_ID", "b37158b6-8100-4f80-bd62-d2957a7d9c46");
-    auto value = SameSignature([](int value1, int value2 IOX_MAYBE_UNUSED) -> int { return value1; });
+    auto value = SameSignature([](int value1, int value2 IOX2_MAYBE_UNUSED) -> int { return value1; });
     EXPECT_THAT(value, Eq(SAME_SIGNATURE_INT_INT_TEST_VALUE));
 }
 

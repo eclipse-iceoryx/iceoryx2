@@ -56,7 +56,7 @@ TEST_F(ErrorReporting_test, panicWorks) {
 
     iox2::legacy::testing::runInTestThread(f);
 
-    IOX_TESTING_EXPECT_PANIC();
+    IOX2_TESTING_EXPECT_PANIC();
 #endif
 }
 
@@ -66,11 +66,11 @@ TEST_F(ErrorReporting_test, panicWithLocationWorks) {
 #if defined _WIN32
     GTEST_SKIP() << "The 'panicWithLocationWorks' test is disabled on Windows";
 #else
-    auto f = []() { panic(IOX_CURRENT_SOURCE_LOCATION); };
+    auto f = []() { panic(IOX2_CURRENT_SOURCE_LOCATION); };
 
     iox2::legacy::testing::runInTestThread(f);
 
-    IOX_TESTING_EXPECT_PANIC();
+    IOX2_TESTING_EXPECT_PANIC();
 #endif
 }
 
@@ -80,11 +80,11 @@ TEST_F(ErrorReporting_test, panicWithMessageWorks) {
 #if defined _WIN32
     GTEST_SKIP() << "The 'panicWithMessageWorks' test is disabled on Windows";
 #else
-    auto f = []() { panic(IOX_CURRENT_SOURCE_LOCATION, "message"); };
+    auto f = []() { panic(IOX2_CURRENT_SOURCE_LOCATION, "message"); };
 
     iox2::legacy::testing::runInTestThread(f);
 
-    IOX_TESTING_EXPECT_PANIC();
+    IOX2_TESTING_EXPECT_PANIC();
 #endif
 }
 
@@ -93,13 +93,13 @@ TEST_F(ErrorReporting_test, reportNonFatalErrorWorks) {
 
     auto f = []() {
         constexpr const char* STRINGIFIED_CONDITION { "" };
-        report(IOX_CURRENT_SOURCE_LOCATION, RUNTIME_ERROR, ERROR_MODULE, STRINGIFIED_CONDITION);
+        report(IOX2_CURRENT_SOURCE_LOCATION, RUNTIME_ERROR, ERROR_MODULE, STRINGIFIED_CONDITION);
     };
 
     iox2::legacy::testing::runInTestThread(f);
 
-    IOX_TESTING_EXPECT_NO_PANIC();
-    IOX_TESTING_EXPECT_ERROR(ERROR_CODE);
+    IOX2_TESTING_EXPECT_NO_PANIC();
+    IOX2_TESTING_EXPECT_ERROR(ERROR_CODE);
 }
 
 TEST_F(ErrorReporting_test, reportFatalErrorWorks) {
@@ -107,7 +107,7 @@ TEST_F(ErrorReporting_test, reportFatalErrorWorks) {
 
     auto f = []() {
         constexpr const char* STRINGIFIED_CONDITION { "" };
-        report(IOX_CURRENT_SOURCE_LOCATION, FATAL, ERROR_MODULE, STRINGIFIED_CONDITION);
+        report(IOX2_CURRENT_SOURCE_LOCATION, FATAL, ERROR_MODULE, STRINGIFIED_CONDITION);
     };
 
     iox2::legacy::testing::runInTestThread(f);
@@ -115,7 +115,7 @@ TEST_F(ErrorReporting_test, reportFatalErrorWorks) {
     // panic is not required at this level as we cannot trust the custom API to enforce it
     // While we could also call panic in the custom API, there should only be one decison point
     // for it at a higher level
-    IOX_TESTING_EXPECT_ERROR(ERROR_CODE);
+    IOX2_TESTING_EXPECT_ERROR(ERROR_CODE);
 }
 
 TEST_F(ErrorReporting_test, reportAssertViolatonWorks) {
@@ -124,12 +124,12 @@ TEST_F(ErrorReporting_test, reportAssertViolatonWorks) {
     auto f = []() {
         auto v = Violation::createAssertViolation();
         constexpr const char* STRINGIFIED_CONDITION { "" };
-        report(IOX_CURRENT_SOURCE_LOCATION, ASSERT_VIOLATION, v, STRINGIFIED_CONDITION);
+        report(IOX2_CURRENT_SOURCE_LOCATION, ASSERT_VIOLATION, v, STRINGIFIED_CONDITION);
     };
 
     iox2::legacy::testing::runInTestThread(f);
 
-    IOX_TESTING_EXPECT_ASSERT_VIOLATION();
+    IOX2_TESTING_EXPECT_ASSERT_VIOLATION();
 }
 
 // the message is printed but otherwise lost, so we cannot check for it
@@ -139,12 +139,12 @@ TEST_F(ErrorReporting_test, reportAssertViolatonWithMessageWorks) {
     auto f = []() {
         auto v = Violation::createAssertViolation();
         constexpr const char* STRINGIFIED_CONDITION { "" };
-        report(IOX_CURRENT_SOURCE_LOCATION, ASSERT_VIOLATION, v, STRINGIFIED_CONDITION, "message");
+        report(IOX2_CURRENT_SOURCE_LOCATION, ASSERT_VIOLATION, v, STRINGIFIED_CONDITION, "message");
     };
 
     iox2::legacy::testing::runInTestThread(f);
 
-    IOX_TESTING_EXPECT_ASSERT_VIOLATION();
+    IOX2_TESTING_EXPECT_ASSERT_VIOLATION();
 }
 
 TEST_F(ErrorReporting_test, reportEnforceViolatonWorks) {
@@ -153,12 +153,12 @@ TEST_F(ErrorReporting_test, reportEnforceViolatonWorks) {
     auto f = []() {
         auto v = Violation::createEnforceViolation();
         constexpr const char* STRINGIFIED_CONDITION { "" };
-        report(IOX_CURRENT_SOURCE_LOCATION, ENFORCE_VIOLATION, v, STRINGIFIED_CONDITION);
+        report(IOX2_CURRENT_SOURCE_LOCATION, ENFORCE_VIOLATION, v, STRINGIFIED_CONDITION);
     };
 
     iox2::legacy::testing::runInTestThread(f);
 
-    IOX_TESTING_EXPECT_ENFORCE_VIOLATION();
+    IOX2_TESTING_EXPECT_ENFORCE_VIOLATION();
 }
 
 // the message is printed but otherwise lost, so we cannot check for it
@@ -168,12 +168,12 @@ TEST_F(ErrorReporting_test, reportEnforceViolatonWithMessageWorks) {
     auto f = []() {
         auto v = Violation::createEnforceViolation();
         constexpr const char* STRINGIFIED_CONDITION { "" };
-        report(IOX_CURRENT_SOURCE_LOCATION, ENFORCE_VIOLATION, v, STRINGIFIED_CONDITION, "message");
+        report(IOX2_CURRENT_SOURCE_LOCATION, ENFORCE_VIOLATION, v, STRINGIFIED_CONDITION, "message");
     };
 
     iox2::legacy::testing::runInTestThread(f);
 
-    IOX_TESTING_EXPECT_ENFORCE_VIOLATION();
+    IOX2_TESTING_EXPECT_ENFORCE_VIOLATION();
 }
 
 } // namespace

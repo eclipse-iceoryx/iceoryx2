@@ -10,12 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_BUILDER_ADDENDUM_HPP
-#define IOX_BUILDER_ADDENDUM_HPP
+#ifndef IOX2_BUILDER_ADDENDUM_HPP
+#define IOX2_BUILDER_ADDENDUM_HPP
 
 // NOLINTBEGIN(cppcoreguidelines-macro-usage)
 // NOLINTBEGIN(bugprone-macro-parentheses)
-#define IOX_BUILDER_SWITCH(name)                                                                                       \
+#define IOX2_BUILDER_SWITCH(name)                                                                                      \
   public:                                                                                                              \
     auto name()&& noexcept -> decltype(auto) {                                                                         \
         m_##name = true;                                                                                               \
@@ -25,7 +25,7 @@
   private:                                                                                                             \
     bool m_##name { false };
 
-#define IOX_BUILDER_PARAMETER(type, name, defaultValue)                                                                \
+#define IOX2_BUILDER_PARAMETER(type, name, defaultValue)                                                               \
   public:                                                                                                              \
     auto name(type const& value)&& noexcept -> decltype(auto) {                                                        \
         m_##name = value;                                                                                              \
@@ -42,7 +42,7 @@
         defaultValue                                                                                                   \
     }
 
-#define IOX_BUILDER_OPTIONAL(type, name)                                                                               \
+#define IOX2_BUILDER_OPTIONAL(type, name)                                                                              \
   public:                                                                                                              \
     auto name(type const& value)&& -> decltype(auto) {                                                                 \
         m_##name = iox2::legacy::optional<type>(value);                                                                \

@@ -31,7 +31,7 @@ class PortFactoryNotifier {
 #ifdef DOXYGEN_MACRO_FIX
     auto default_event_id(const EventId value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(EventId, default_event_id);
+    IOX2_BUILDER_OPTIONAL(EventId, default_event_id);
 #endif
 
   public:

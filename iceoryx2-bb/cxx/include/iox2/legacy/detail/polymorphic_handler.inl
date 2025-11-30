@@ -13,8 +13,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_DESIGN_POLYMORPHIC_HANDLER_INL
-#define IOX_HOOFS_DESIGN_POLYMORPHIC_HANDLER_INL
+#ifndef IOX2_BB_DESIGN_POLYMORPHIC_HANDLER_INL
+#define IOX2_BB_DESIGN_POLYMORPHIC_HANDLER_INL
 
 #include "iox2/legacy/polymorphic_handler.hpp"
 #include "iox2/legacy/static_lifetime_guard.hpp"
@@ -28,7 +28,7 @@ namespace detail {
 
 template <typename Interface>
 [[noreturn]] void DefaultHooks<Interface>::onSetAfterFinalize(Interface&, Interface&) noexcept {
-    // we should not use an error handling construct (e.g. some IOX_ASSERT) here for dependency reasons
+    // we should not use an error handling construct (e.g. some IOX2_ASSERT) here for dependency reasons
     // we could in principle do nothing by default as well, but the misuse failure should have visible consequences
     std::abort();
 }
@@ -160,4 +160,4 @@ PolymorphicHandler<Interface, Default, Hooks>::guard() noexcept {
 } // namespace legacy
 } // namespace iox2
 
-#endif // IOX_HOOFS_DESIGN_POLYMORPHIC_HANDLER_INL
+#endif // IOX2_BB_DESIGN_POLYMORPHIC_HANDLER_INL

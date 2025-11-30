@@ -13,8 +13,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_CLI_OPTION_MANAGER_HPP
-#define IOX_HOOFS_CLI_OPTION_MANAGER_HPP
+#ifndef IOX2_BB_CLI_OPTION_MANAGER_HPP
+#define IOX2_BB_CLI_OPTION_MANAGER_HPP
 
 #include "iox2/legacy/cli/command_line_parser.hpp"
 #include "iox2/legacy/cli/option_definition.hpp"
@@ -27,10 +27,10 @@ namespace legacy {
 namespace cli {
 using CmdAssignments_t = vector<function<void(Arguments&)>, MAX_NUMBER_OF_ARGUMENTS>;
 
-/// @brief Manages command line options which were defined via the IOX_CLI_ macros in a
+/// @brief Manages command line options which were defined via the IOX2_CLI_ macros in a
 ///        user defined struct.
 ///        This class ensures that the option values are assigned to the member variables
-///        of the struct when the constructor of the IOX_CLI_DEFINITION struct is called.
+///        of the struct when the constructor of the IOX2_CLI_DEFINITION struct is called.
 class OptionManager {
   public:
     /// @brief Create OptionManager
@@ -84,4 +84,4 @@ class OptionManager {
 
 #include "iox2/legacy/cli/option_manager.inl"
 
-#endif // IOX_HOOFS_CLI_OPTION_MANAGER_HPP
+#endif // IOX2_BB_CLI_OPTION_MANAGER_HPP

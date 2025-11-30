@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-#ifndef IOX_HOOFS_VOCABULARY_VARIANT_HPP
-#define IOX_HOOFS_VOCABULARY_VARIANT_HPP
+#ifndef IOX2_BB_VOCABULARY_VARIANT_HPP
+#define IOX2_BB_VOCABULARY_VARIANT_HPP
 
 #include "iox2/legacy/detail/platform_correction.hpp"
 
@@ -85,17 +85,17 @@ static constexpr uint64_t INVALID_VARIANT_INDEX { std::numeric_limits<uint64_t>:
 ///     else if ( someVariant.index() == 1)
 ///     {
 ///         auto blubb = someVariant.template get_at_index<1>();
-///         IOX_LOG(Info, *blubb);
+///         IOX2_LOG(Info, *blubb);
 ///
 ///         auto sameAsBlubb = someVariant.get<float>();
-///         IOX_LOG(Info, *sameAsBlubb);
+///         IOX2_LOG(Info, *sameAsBlubb);
 ///     }
 ///
 ///     // .. do stuff
 ///
 ///     int defaultValue = 123;
 ///     int * fuu = someVariant.get_if<int>(&defaultValue);
-///     IOX_LOG(Info, *fuu);
+///     IOX2_LOG(Info, *fuu);
 ///
 /// @endcode
 template <typename... Types>
@@ -288,7 +288,7 @@ class variant final {
   private:
     template <typename T>
     bool has_bad_variant_element_access() const noexcept;
-    // AXIVION Next Construct AutosarC++19_03-A3.9.1 : internal convenience function to easily use IOX_LOG
+    // AXIVION Next Construct AutosarC++19_03-A3.9.1 : internal convenience function to easily use IOX2_LOG
     static void error_message(const char* source, const char* msg) noexcept;
 
     void call_element_destructor() noexcept;
@@ -324,4 +324,4 @@ constexpr bool operator!=(const variant<Types...>& lhs, const variant<Types...>&
 
 #include "iox2/legacy/detail/variant.inl"
 
-#endif // IOX_HOOFS_VOCABULARY_VARIANT_HPP
+#endif // IOX2_BB_VOCABULARY_VARIANT_HPP

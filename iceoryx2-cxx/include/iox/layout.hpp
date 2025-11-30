@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_LAYOUT_HPP
-#define IOX_LAYOUT_HPP
+#ifndef IOX2_LAYOUT_HPP
+#define IOX2_LAYOUT_HPP
 
 #include "iox2/legacy/expected.hpp"
 #include <cstdint>

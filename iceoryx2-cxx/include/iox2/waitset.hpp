@@ -265,7 +265,7 @@ class WaitSetBuilder {
 #ifdef DOXYGEN_MACRO_FIX
     auto signal_handling_mode(const SignalHandlingMode value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(SignalHandlingMode, signal_handling_mode);
+    IOX2_BUILDER_OPTIONAL(SignalHandlingMode, signal_handling_mode);
 #endif
 
   public:

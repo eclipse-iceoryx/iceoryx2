@@ -14,8 +14,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_POSIX_VOCABULARY_DETAIL_PATH_AND_FILE_VERIFIER_INL
-#define IOX_HOOFS_POSIX_VOCABULARY_DETAIL_PATH_AND_FILE_VERIFIER_INL
+#ifndef IOX2_BB_POSIX_VOCABULARY_DETAIL_PATH_AND_FILE_VERIFIER_INL
+#define IOX2_BB_POSIX_VOCABULARY_DETAIL_PATH_AND_FILE_VERIFIER_INL
 
 #include "iox2/legacy/detail/path_and_file_verifier.hpp"
 
@@ -80,8 +80,8 @@ inline bool isValidPathToFile(const iox2::legacy::string<StringCapacity>& name) 
         return false;
     }
 
-    auto maybeSeparator = name.find_last_of(iox2::legacy::string<platform::IOX_NUMBER_OF_PATH_SEPARATORS>(
-        TruncateToCapacity, &platform::IOX_PATH_SEPARATORS[0], platform::IOX_NUMBER_OF_PATH_SEPARATORS));
+    auto maybeSeparator = name.find_last_of(iox2::legacy::string<platform::IOX2_NUMBER_OF_PATH_SEPARATORS>(
+        TruncateToCapacity, &platform::IOX2_PATH_SEPARATORS[0], platform::IOX2_NUMBER_OF_PATH_SEPARATORS));
 
     if (!maybeSeparator.has_value()) {
         return isValidFileName(name);
@@ -114,8 +114,8 @@ inline bool isValidPathToDirectory(const iox2::legacy::string<StringCapacity>& n
     const iox2::legacy::string<StringCapacity> currentDirectory { "." };
     const iox2::legacy::string<StringCapacity> parentDirectory { ".." };
 
-    const iox2::legacy::string<platform::IOX_NUMBER_OF_PATH_SEPARATORS> pathSeparators {
-        TruncateToCapacity, &platform::IOX_PATH_SEPARATORS[0], platform::IOX_NUMBER_OF_PATH_SEPARATORS
+    const iox2::legacy::string<platform::IOX2_NUMBER_OF_PATH_SEPARATORS> pathSeparators {
+        TruncateToCapacity, &platform::IOX2_PATH_SEPARATORS[0], platform::IOX2_NUMBER_OF_PATH_SEPARATORS
     };
 
     auto remaining = name;
@@ -154,7 +154,7 @@ inline bool isValidPathToDirectory(const iox2::legacy::string<StringCapacity>& n
     return true;
 }
 
-// AXIVION Next Construct AutosarC++19_03-A5.2.5, AutosarC++19_03-M5.0.16, FaultDetection-OutOfBounds : IOX_PATH_SEPARATORS is not a string but an array of chars without a null termination and all elements are valid characters
+// AXIVION Next Construct AutosarC++19_03-A5.2.5, AutosarC++19_03-M5.0.16, FaultDetection-OutOfBounds : IOX2_PATH_SEPARATORS is not a string but an array of chars without a null termination and all elements are valid characters
 template <uint64_t StringCapacity>
 inline bool doesEndWithPathSeparator(const iox2::legacy::string<StringCapacity>& name) noexcept {
     if (name.empty()) {
@@ -163,7 +163,7 @@ inline bool doesEndWithPathSeparator(const iox2::legacy::string<StringCapacity>&
     // AXIVION Next Construct AutosarC++19_03-A3.9.1: Not used as an integer but as actual character
     const char lastCharacter { name[name.size() - 1U] };
 
-    for (const auto separator : iox2::legacy::platform::IOX_PATH_SEPARATORS) {
+    for (const auto separator : iox2::legacy::platform::IOX2_PATH_SEPARATORS) {
         if (lastCharacter == separator) {
             return true;
         }
@@ -175,4 +175,4 @@ inline bool doesEndWithPathSeparator(const iox2::legacy::string<StringCapacity>&
 } // namespace legacy
 } // namespace iox2
 
-#endif // IOX_HOOFS_POSIX_VOCABULARY_DETAIL_PATH_AND_FILE_VERIFIER_INL
+#endif // IOX2_BB_POSIX_VOCABULARY_DETAIL_PATH_AND_FILE_VERIFIER_INL

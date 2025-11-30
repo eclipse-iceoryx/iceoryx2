@@ -16,8 +16,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_UTILITY_CONVERT_INL
-#define IOX_HOOFS_UTILITY_CONVERT_INL
+#ifndef IOX2_BB_UTILITY_CONVERT_INL
+#define IOX2_BB_UTILITY_CONVERT_INL
 
 #include "iox2/legacy/detail/convert.hpp"
 #include "iox2/legacy/detail/string_type_traits.hpp"
@@ -64,7 +64,7 @@ inline iox2::legacy::optional<TargetType> convert::from_string(const char* v) no
 }
 
 template <typename TargetType, typename std::enable_if_t<!is_iox_string<TargetType>::value, int>>
-inline iox2::legacy::optional<TargetType> convert::from_string(const char* v IOX_MAYBE_UNUSED) noexcept {
+inline iox2::legacy::optional<TargetType> convert::from_string(const char* v IOX2_MAYBE_UNUSED) noexcept {
     static_assert(always_false_v<TargetType>,
                   "For a conversion to 'std::string' please include 'iox/std_string_support.hpp'!\nConversion not "
                   "supported!");
@@ -73,7 +73,7 @@ inline iox2::legacy::optional<TargetType> convert::from_string(const char* v IOX
 template <>
 inline iox2::legacy::optional<char> convert::from_string<char>(const char* v) noexcept {
     if (strlen(v) != 1U) {
-        IOX_LOG(Debug, v << " is not a char");
+        IOX2_LOG(Debug, v << " is not a char");
         return iox2::legacy::nullopt;
     }
 
@@ -90,12 +90,12 @@ inline iox2::legacy::optional<bool> convert::from_string<bool>(const char* v) no
         return iox2::legacy::nullopt;
     }
 
-    auto call = IOX_POSIX_CALL(strtoul)(v, &end_ptr, STRTOUL_BASE)
+    auto call = IOX2_POSIX_CALL(strtoul)(v, &end_ptr, STRTOUL_BASE)
                     .failureReturnValue(ULONG_MAX)
                     .ignoreErrnos(0, EINVAL, ERANGE)
                     .evaluate();
 
-    // we assume that in the IOX_POSIX_CALL procedure, no other POSIX call will change errno,
+    // we assume that in the IOX2_POSIX_CALL procedure, no other POSIX call will change errno,
     // except for the target function 'f'.
     return evaluate_return_value<bool>(call, end_ptr, v);
 }
@@ -104,7 +104,7 @@ template <>
 inline iox2::legacy::optional<float> convert::from_string<float>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
-    auto call = IOX_POSIX_CALL(strtof)(v, &end_ptr)
+    auto call = IOX2_POSIX_CALL(strtof)(v, &end_ptr)
                     .failureReturnValue(HUGE_VALF, -HUGE_VALF)
                     .ignoreErrnos(0, EINVAL, ERANGE)
                     .evaluate();
@@ -116,7 +116,7 @@ template <>
 inline iox2::legacy::optional<double> convert::from_string<double>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
-    auto call = IOX_POSIX_CALL(strtod)(v, &end_ptr)
+    auto call = IOX2_POSIX_CALL(strtod)(v, &end_ptr)
                     .failureReturnValue(HUGE_VAL, -HUGE_VAL)
                     .ignoreErrnos(0, EINVAL, ERANGE)
                     .evaluate();
@@ -128,7 +128,7 @@ template <>
 inline iox2::legacy::optional<long double> convert::from_string<long double>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
-    auto call = IOX_POSIX_CALL(strtold)(v, &end_ptr)
+    auto call = IOX2_POSIX_CALL(strtold)(v, &end_ptr)
                     .failureReturnValue(HUGE_VALL, -HUGE_VALL)
                     .ignoreErrnos(0, EINVAL, ERANGE)
                     .evaluate();
@@ -144,7 +144,7 @@ inline iox2::legacy::optional<unsigned long long> convert::from_string<unsigned 
         return iox2::legacy::nullopt;
     }
 
-    auto call = IOX_POSIX_CALL(strtoull)(v, &end_ptr, STRTOULL_BASE)
+    auto call = IOX2_POSIX_CALL(strtoull)(v, &end_ptr, STRTOULL_BASE)
                     .failureReturnValue(ULLONG_MAX)
                     .ignoreErrnos(0, EINVAL, ERANGE)
                     .evaluate();
@@ -160,7 +160,7 @@ inline iox2::legacy::optional<unsigned long> convert::from_string<unsigned long>
         return iox2::legacy::nullopt;
     }
 
-    auto call = IOX_POSIX_CALL(strtoul)(v, &end_ptr, STRTOUL_BASE)
+    auto call = IOX2_POSIX_CALL(strtoul)(v, &end_ptr, STRTOUL_BASE)
                     .failureReturnValue(ULONG_MAX)
                     .ignoreErrnos(0, EINVAL, ERANGE)
                     .evaluate();
@@ -177,7 +177,7 @@ inline iox2::legacy::optional<unsigned int> convert::from_string<unsigned int>(c
     }
 
     // use alwaysSuccess for the conversion edge cases in 32-bit system?
-    auto call = IOX_POSIX_CALL(strtoul)(v, &end_ptr, STRTOUL_BASE)
+    auto call = IOX2_POSIX_CALL(strtoul)(v, &end_ptr, STRTOUL_BASE)
                     .failureReturnValue(ULONG_MAX)
                     .ignoreErrnos(0, EINVAL, ERANGE)
                     .evaluate();
@@ -193,7 +193,7 @@ inline iox2::legacy::optional<unsigned short> convert::from_string<unsigned shor
         return iox2::legacy::nullopt;
     }
 
-    auto call = IOX_POSIX_CALL(strtoul)(v, &end_ptr, STRTOUL_BASE)
+    auto call = IOX2_POSIX_CALL(strtoul)(v, &end_ptr, STRTOUL_BASE)
                     .failureReturnValue(ULONG_MAX)
                     .ignoreErrnos(0, EINVAL, ERANGE)
                     .evaluate();
@@ -209,7 +209,7 @@ inline iox2::legacy::optional<unsigned char> convert::from_string<unsigned char>
         return iox2::legacy::nullopt;
     }
 
-    auto call = IOX_POSIX_CALL(strtoul)(v, &end_ptr, STRTOULL_BASE)
+    auto call = IOX2_POSIX_CALL(strtoul)(v, &end_ptr, STRTOULL_BASE)
                     .failureReturnValue(ULONG_MAX)
                     .ignoreErrnos(0, EINVAL, ERANGE)
                     .evaluate();
@@ -221,7 +221,7 @@ template <>
 inline iox2::legacy::optional<long long> convert::from_string<long long>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
-    auto call = IOX_POSIX_CALL(strtoll)(v, &end_ptr, STRTOLL_BASE)
+    auto call = IOX2_POSIX_CALL(strtoll)(v, &end_ptr, STRTOLL_BASE)
                     .failureReturnValue(LLONG_MAX, LLONG_MIN)
                     .ignoreErrnos(0, EINVAL, ERANGE)
                     .evaluate();
@@ -233,7 +233,7 @@ template <>
 inline iox2::legacy::optional<long> convert::from_string<long>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
-    auto call = IOX_POSIX_CALL(strtol)(v, &end_ptr, STRTOL_BASE)
+    auto call = IOX2_POSIX_CALL(strtol)(v, &end_ptr, STRTOL_BASE)
                     .failureReturnValue(LONG_MAX, LONG_MIN)
                     .ignoreErrnos(0, EINVAL, ERANGE)
                     .evaluate();
@@ -246,7 +246,7 @@ inline iox2::legacy::optional<int> convert::from_string<int>(const char* v) noex
     char* end_ptr = nullptr;
 
     // use alwaysSuccess for the conversion edge cases in 32-bit system?
-    auto call = IOX_POSIX_CALL(strtol)(v, &end_ptr, STRTOL_BASE)
+    auto call = IOX2_POSIX_CALL(strtol)(v, &end_ptr, STRTOL_BASE)
                     .failureReturnValue(LONG_MAX, LONG_MIN)
                     .ignoreErrnos(0, EINVAL, ERANGE)
                     .evaluate();
@@ -258,7 +258,7 @@ template <>
 inline iox2::legacy::optional<short> convert::from_string<short>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
-    auto call = IOX_POSIX_CALL(strtol)(v, &end_ptr, STRTOL_BASE)
+    auto call = IOX2_POSIX_CALL(strtol)(v, &end_ptr, STRTOL_BASE)
                     .failureReturnValue(LONG_MAX, LONG_MIN)
                     .ignoreErrnos(0, EINVAL, ERANGE)
                     .evaluate();
@@ -270,7 +270,7 @@ template <>
 inline iox2::legacy::optional<signed char> convert::from_string<signed char>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
-    auto call = IOX_POSIX_CALL(strtol)(v, &end_ptr, STRTOL_BASE)
+    auto call = IOX2_POSIX_CALL(strtol)(v, &end_ptr, STRTOL_BASE)
                     .failureReturnValue(LONG_MAX, LONG_MIN)
                     .ignoreErrnos(0, EINVAL, ERANGE)
                     .evaluate();
@@ -305,13 +305,13 @@ template <typename SourceType>
 inline bool convert::is_valid_input(const char* end_ptr, const char* v, const SourceType& source_val) noexcept {
     // invalid string
     if (v == end_ptr && source_val == 0) {
-        IOX_LOG(Debug, "invalid input");
+        IOX2_LOG(Debug, "invalid input");
         return false;
     }
 
     // end_ptr is not '\0' which means conversion failure at end_ptr
     if (end_ptr != nullptr && v != end_ptr && *end_ptr != '\0') {
-        IOX_LOG(Debug, "conversion failed at " << end_ptr - v << " : " << *end_ptr);
+        IOX2_LOG(Debug, "conversion failed at " << end_ptr - v << " : " << *end_ptr);
         return false;
     }
 
@@ -348,16 +348,16 @@ inline bool convert::is_within_range(const SourceType& source_val) noexcept {
     }
     // out of range (upper bound)
     if (source_val > std::numeric_limits<TargetType>::max()) {
-        IOX_LOG(Debug,
-                source_val << " is out of range (upper bound), should be less than "
-                           << std::numeric_limits<TargetType>::max());
+        IOX2_LOG(Debug,
+                 source_val << " is out of range (upper bound), should be less than "
+                            << std::numeric_limits<TargetType>::max());
         return false;
     }
     // out of range (lower bound)
     if (source_val < std::numeric_limits<TargetType>::lowest()) {
-        IOX_LOG(Debug,
-                source_val << " is out of range (lower bound), should be larger than "
-                           << std::numeric_limits<TargetType>::lowest());
+        IOX2_LOG(Debug,
+                 source_val << " is out of range (lower bound), should be larger than "
+                            << std::numeric_limits<TargetType>::lowest());
         return false;
     }
     return true;
@@ -379,17 +379,17 @@ inline bool convert::start_with_neg_sign(const char* v) noexcept {
 
 inline bool convert::is_valid_errno(decltype(errno) errno_cache, const char* v) noexcept {
     if (errno_cache == ERANGE) {
-        IOX_LOG(Debug, "ERANGE triggered during conversion of string: '" << v << "'");
+        IOX2_LOG(Debug, "ERANGE triggered during conversion of string: '" << v << "'");
         return false;
     }
 
     if (errno_cache == EINVAL) {
-        IOX_LOG(Debug, "EINVAL triggered during conversion of string: " << v);
+        IOX2_LOG(Debug, "EINVAL triggered during conversion of string: " << v);
         return false;
     }
 
     if (errno_cache != 0) {
-        IOX_LOG(Debug, "Unexpected errno: " << errno_cache << ". The input string is: " << v);
+        IOX2_LOG(Debug, "Unexpected errno: " << errno_cache << ". The input string is: " << v);
         return false;
     }
 
@@ -399,4 +399,4 @@ inline bool convert::is_valid_errno(decltype(errno) errno_cache, const char* v) 
 } // namespace legacy
 } // namespace iox2
 
-#endif // IOX_HOOFS_UTILITY_CONVERT_INL
+#endif // IOX2_BB_UTILITY_CONVERT_INL

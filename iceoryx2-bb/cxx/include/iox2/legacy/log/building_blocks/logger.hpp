@@ -14,8 +14,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_REPORTING_LOG_BUILDING_BLOCKS_LOGGER_HPP
-#define IOX_HOOFS_REPORTING_LOG_BUILDING_BLOCKS_LOGGER_HPP
+#ifndef IOX2_BB_REPORTING_LOG_BUILDING_BLOCKS_LOGGER_HPP
+#define IOX2_BB_REPORTING_LOG_BUILDING_BLOCKS_LOGGER_HPP
 
 #include "iox2/legacy/atomic.hpp"
 
@@ -57,7 +57,7 @@ template <uint32_t N>
 // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays)
 bool equalStrings(const char* lhs, const char (&rhs)[N]) noexcept;
 
-/// @brief Tries to get the log level from the 'IOX_LOG_LEVEL' env variable or uses the specified one if the env
+/// @brief Tries to get the log level from the 'IOX2_LOG_LEVEL' env variable or uses the specified one if the env
 /// variable is not set
 /// @param[in] logLevel is the log level to be used when the env variable is not set
 /// @note The function uses 'getenv' which is not thread safe and can result in undefined behavior when it is called
@@ -90,7 +90,7 @@ class Logger : public BaseLogger {
 
     /// @brief Initializes the logger
     /// @param[in] logLevel the log level which will be used to determine which messages will be logged. By default it
-    /// is everything with a log level higher than specified by the 'IOX_LOG_LEVEL' environment variable or equal to
+    /// is everything with a log level higher than specified by the 'IOX2_LOG_LEVEL' environment variable or equal to
     /// 'INFO' if the environment variable is not set.
     /// @note The function uses 'getenv' which is not thread safe and can result in undefined behavior when it is called
     /// from multiple threads or the env variable is changed while the function holds a pointer to the data. For this
@@ -120,4 +120,4 @@ class Logger : public BaseLogger {
 
 #include "iox2/legacy/detail/log/building_blocks/logger.inl"
 
-#endif // IOX_HOOFS_REPORTING_LOG_BUILDING_BLOCKS_LOGGER_HPP
+#endif // IOX2_BB_REPORTING_LOG_BUILDING_BLOCKS_LOGGER_HPP

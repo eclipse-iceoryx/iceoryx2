@@ -16,8 +16,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_UTILITY_CONVERT_HPP
-#define IOX_HOOFS_UTILITY_CONVERT_HPP
+#ifndef IOX2_BB_UTILITY_CONVERT_HPP
+#define IOX2_BB_UTILITY_CONVERT_HPP
 
 #include "iox2/legacy/posix_call.hpp"
 #include "iox2/legacy/string.hpp"
@@ -123,4 +123,4 @@ class convert {
 
 #include "iox2/legacy/detail/convert.inl"
 
-#endif // IOX_HOOFS_UTILITY_CONVERT_HPP
+#endif // IOX2_BB_UTILITY_CONVERT_HPP

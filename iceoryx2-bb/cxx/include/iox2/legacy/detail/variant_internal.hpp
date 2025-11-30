@@ -13,8 +13,8 @@
 // limitations under the License.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-#ifndef IOX_HOOFS_VOCABULARY_VARIANT_INTERNAL_HPP
-#define IOX_HOOFS_VOCABULARY_VARIANT_INTERNAL_HPP
+#ifndef IOX2_BB_VOCABULARY_VARIANT_INTERNAL_HPP
+#define IOX2_BB_VOCABULARY_VARIANT_INTERNAL_HPP
 
 #include "iox2/legacy/assertions.hpp"
 
@@ -135,7 +135,7 @@ struct call_at_index<N, T> {
         if (N == index) {
             reinterpret_cast<T*>(ptr)->~T();
         } else {
-            IOX_PANIC("Could not call destructor for variant element");
+            IOX2_PANIC("Could not call destructor for variant element");
         }
     }
 
@@ -143,7 +143,7 @@ struct call_at_index<N, T> {
         if (N == index) {
             *reinterpret_cast<T*>(destination) = std::move(*reinterpret_cast<T*>(source));
         } else {
-            IOX_PANIC("Could not call move assignment for variant element");
+            IOX2_PANIC("Could not call move assignment for variant element");
         }
     }
 
@@ -151,7 +151,7 @@ struct call_at_index<N, T> {
         if (N == index) {
             new (destination) T(std::move(*reinterpret_cast<T*>(source)));
         } else {
-            IOX_PANIC("Could not call move constructor for variant element");
+            IOX2_PANIC("Could not call move constructor for variant element");
         }
     }
 
@@ -159,7 +159,7 @@ struct call_at_index<N, T> {
         if (N == index) {
             *reinterpret_cast<T*>(destination) = *reinterpret_cast<const T*>(source);
         } else {
-            IOX_PANIC("Could not call copy assignment for variant element");
+            IOX2_PANIC("Could not call copy assignment for variant element");
         }
     }
 
@@ -167,7 +167,7 @@ struct call_at_index<N, T> {
         if (N == index) {
             new (destination) T(*reinterpret_cast<const T*>(source));
         } else {
-            IOX_PANIC("Could not call copy constructor for variant element");
+            IOX2_PANIC("Could not call copy constructor for variant element");
         }
     }
 
@@ -175,7 +175,7 @@ struct call_at_index<N, T> {
         if (N == index) {
             return *reinterpret_cast<const T*>(lhs) == *reinterpret_cast<const T*>(rhs);
         }
-        IOX_PANIC("Could not call equality operator for variant element");
+        IOX2_PANIC("Could not call equality operator for variant element");
         return false;
     }
 };
@@ -190,4 +190,4 @@ struct call_at_index<N, T> {
 } // namespace legacy
 } // namespace iox2
 
-#endif // IOX_HOOFS_VOCABULARY_VARIANT_INTERNAL_HPP
+#endif // IOX2_BB_VOCABULARY_VARIANT_INTERNAL_HPP

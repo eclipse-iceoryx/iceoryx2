@@ -31,7 +31,7 @@ TEST(FatalFailure, UsingExpectFatalFailureWorks) {
     GTEST_SKIP() << "The 'UsingExpectFatalFailureWorks' test is disabled on Windows";
 #else
     auto hasFatalFailure =
-        IOX_EXPECT_FATAL_FAILURE([&] { IOX_ENFORCE(false, ""); }, iox2::legacy::er::ENFORCE_VIOLATION);
+        IOX2_EXPECT_FATAL_FAILURE([&] { IOX2_ENFORCE(false, ""); }, iox2::legacy::er::ENFORCE_VIOLATION);
 
     EXPECT_TRUE(hasFatalFailure);
 #endif
@@ -40,7 +40,7 @@ TEST(FatalFailure, UsingExpectFatalFailureWorks) {
 TEST(FatalFailure, UsingExpectNoFatalFailureWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "80bf8050-bfaa-4482-b69c-d0c80699bd4b");
 
-    auto hasNoFatalFailure = IOX_EXPECT_NO_FATAL_FAILURE([&] { });
+    auto hasNoFatalFailure = IOX2_EXPECT_NO_FATAL_FAILURE([&] { });
 
     EXPECT_TRUE(hasNoFatalFailure);
 }

@@ -27,7 +27,7 @@ using namespace iox2::legacy::testing;
 // template nature of those tests this cannot be implemented in the same readable fashion
 // as with macros
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define IOX_TEST_FUNCTIONAL_INTERFACE(TestName, variationPoint)                                                        \
+#define IOX2_TEST_FUNCTIONAL_INTERFACE(TestName, variationPoint)                                                       \
     using SutType = typename TestFixture::TestFactoryType::Type;                                                       \
     /* NOLINTNEXTLINE(bugprone-macro-parentheses) prevents clang-tidy parsing failures */                              \
     TestName<typename TestFixture::TestFactoryType, SutType>([](auto& sut) {                                           \
@@ -39,39 +39,39 @@ template <typename FactoryType, typename SutType, typename ExpectCall>
 void ExpectDoesNotCallTerminateWhenObjectIsValid(const ExpectCall& callExpect) {
     SutType sut = FactoryType::createValidObject();
 
-    IOX_EXPECT_NO_FATAL_FAILURE([&] { callExpect(sut); });
+    IOX2_EXPECT_NO_FATAL_FAILURE([&] { callExpect(sut); });
 }
 
 TYPED_TEST(FunctionalInterface_test, ExpectDoesNotCallTerminateWhenObjectIsValid_LValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "21d71373-39ae-499f-856e-96014f1c2c25");
-    IOX_TEST_FUNCTIONAL_INTERFACE(ExpectDoesNotCallTerminateWhenObjectIsValid, sut);
+    IOX2_TEST_FUNCTIONAL_INTERFACE(ExpectDoesNotCallTerminateWhenObjectIsValid, sut);
 }
 
 TYPED_TEST(FunctionalInterface_test, ExpectDoesNotCallTerminateWhenObjectIsValid_ConstLValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "252fe5e0-eb3e-4e9b-a03d-36c4e2344d39");
     // const_cast avoids code duplication
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
-    IOX_TEST_FUNCTIONAL_INTERFACE(ExpectDoesNotCallTerminateWhenObjectIsValid, const_cast<const SutType&>(sut));
+    IOX2_TEST_FUNCTIONAL_INTERFACE(ExpectDoesNotCallTerminateWhenObjectIsValid, const_cast<const SutType&>(sut));
 }
 
 TYPED_TEST(FunctionalInterface_test, ExpectDoesNotCallTerminateWhenObjectIsValid_RValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "1739aa02-568b-4f6f-89d6-423ef6ab6bdc");
-    IOX_TEST_FUNCTIONAL_INTERFACE(ExpectDoesNotCallTerminateWhenObjectIsValid, std::move(sut));
+    IOX2_TEST_FUNCTIONAL_INTERFACE(ExpectDoesNotCallTerminateWhenObjectIsValid, std::move(sut));
 }
 
 TYPED_TEST(FunctionalInterface_test, ExpectDoesNotCallTerminateWhenObjectIsValid_ConstRValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "86bd8ee1-7b05-4e64-88c6-b4359f87d346");
-    IOX_TEST_FUNCTIONAL_INTERFACE(ExpectDoesNotCallTerminateWhenObjectIsValid,
-                                  // const_cast avoids code duplication
-                                  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
-                                  std::move(const_cast<const SutType&>(sut)));
+    IOX2_TEST_FUNCTIONAL_INTERFACE(ExpectDoesNotCallTerminateWhenObjectIsValid,
+                                   // const_cast avoids code duplication
+                                   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+                                   std::move(const_cast<const SutType&>(sut)));
 }
 
 template <typename FactoryType, typename SutType, typename ExpectCall>
 void ExpectDoesCallTerminateWhenObjectIsInvalid(const ExpectCall& callExpect) {
     SutType sut = FactoryType::createInvalidObject();
 
-    IOX_EXPECT_FATAL_FAILURE([&] { callExpect(sut); }, iox2::legacy::er::FATAL);
+    IOX2_EXPECT_FATAL_FAILURE([&] { callExpect(sut); }, iox2::legacy::er::FATAL);
 }
 
 TYPED_TEST(FunctionalInterface_test, ExpectDoesCallTerminateWhenObjectIsInvalid_LValueCase) {
@@ -80,7 +80,7 @@ TYPED_TEST(FunctionalInterface_test, ExpectDoesCallTerminateWhenObjectIsInvalid_
 #if defined _WIN32
     GTEST_SKIP() << "The 'ExpectDoesCallTerminateWhenObjectIsInvalid_LValueCase' test is disabled on Windows";
 #else
-    IOX_TEST_FUNCTIONAL_INTERFACE(ExpectDoesCallTerminateWhenObjectIsInvalid, sut);
+    IOX2_TEST_FUNCTIONAL_INTERFACE(ExpectDoesCallTerminateWhenObjectIsInvalid, sut);
 #endif
 }
 
@@ -92,7 +92,7 @@ TYPED_TEST(FunctionalInterface_test, ExpectDoesCallTerminateWhenObjectIsInvalid_
 #else
     // const_cast avoids code duplication
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
-    IOX_TEST_FUNCTIONAL_INTERFACE(ExpectDoesCallTerminateWhenObjectIsInvalid, const_cast<const SutType&>(sut));
+    IOX2_TEST_FUNCTIONAL_INTERFACE(ExpectDoesCallTerminateWhenObjectIsInvalid, const_cast<const SutType&>(sut));
 #endif
 }
 
@@ -102,7 +102,7 @@ TYPED_TEST(FunctionalInterface_test, ExpectDoesCallTerminateWhenObjectIsInvalid_
 #if defined _WIN32
     GTEST_SKIP() << "The 'ExpectDoesCallTerminateWhenObjectIsInvalid_RValueCase' test is disabled on Windows";
 #else
-    IOX_TEST_FUNCTIONAL_INTERFACE(ExpectDoesCallTerminateWhenObjectIsInvalid, std::move(sut));
+    IOX2_TEST_FUNCTIONAL_INTERFACE(ExpectDoesCallTerminateWhenObjectIsInvalid, std::move(sut));
 #endif
 }
 
@@ -112,10 +112,10 @@ TYPED_TEST(FunctionalInterface_test, ExpectDoesCallTerminateWhenObjectIsInvalid_
 #if defined _WIN32
     GTEST_SKIP() << "The 'ExpectDoesCallTerminateWhenObjectIsInvalid_constRValueCase' test is disabled on Windows";
 #else
-    IOX_TEST_FUNCTIONAL_INTERFACE(ExpectDoesCallTerminateWhenObjectIsInvalid,
-                                  // const_cast avoids code duplication
-                                  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
-                                  std::move(const_cast<const SutType&>(sut)));
+    IOX2_TEST_FUNCTIONAL_INTERFACE(ExpectDoesCallTerminateWhenObjectIsInvalid,
+                                   // const_cast avoids code duplication
+                                   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+                                   std::move(const_cast<const SutType&>(sut)));
 #endif
 }
 
@@ -128,7 +128,7 @@ struct ExpectReturnsValueWhenValid;
 template <>
 struct ExpectReturnsValueWhenValid<TYPE_HAS_NO_VALUE_METHOD> {
     template <typename TestFactory, typename ExpectCall>
-    static void performTest(const ExpectCall& callExpect IOX_MAYBE_UNUSED) {
+    static void performTest(const ExpectCall& callExpect IOX2_MAYBE_UNUSED) {
     }
 };
 
@@ -141,12 +141,12 @@ struct ExpectReturnsValueWhenValid<TYPE_HAS_VALUE_METHOD> {
     }
 };
 
-#undef IOX_TEST_FUNCTIONAL_INTERFACE
+#undef IOX2_TEST_FUNCTIONAL_INTERFACE
 // the macro is used as code generator to make the tests more readable. because of the
 // template nature of those tests this cannot be implemented in the same readable fashion
 // as with macros
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define IOX_TEST_FUNCTIONAL_INTERFACE(TestName, variationPoint)                                                        \
+#define IOX2_TEST_FUNCTIONAL_INTERFACE(TestName, variationPoint)                                                       \
     using SutType = typename TestFixture::TestFactoryType::Type;                                                       \
     constexpr bool HAS_VALUE_METHOD = iox2::legacy::internal::HasValueMethod<SutType>::value;                          \
     /* NOLINTNEXTLINE(bugprone-macro-parentheses) prevents clang-tidy parsing failures */                              \
@@ -158,27 +158,27 @@ struct ExpectReturnsValueWhenValid<TYPE_HAS_VALUE_METHOD> {
 
 TYPED_TEST(FunctionalInterface_test, ExpectReturnsValueWhenValid_LValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "ab3c6a55-f218-4750-a6b6-e40d946d5b7e");
-    IOX_TEST_FUNCTIONAL_INTERFACE(ExpectReturnsValueWhenValid, sut);
+    IOX2_TEST_FUNCTIONAL_INTERFACE(ExpectReturnsValueWhenValid, sut);
 }
 
 TYPED_TEST(FunctionalInterface_test, ExpectReturnsValueWhenValid_ConstLValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "b699d117-ba1d-4806-86b3-0a92dc255cbb");
     // const_cast avoids code duplication
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
-    IOX_TEST_FUNCTIONAL_INTERFACE(ExpectReturnsValueWhenValid, const_cast<const SutType&>(sut));
+    IOX2_TEST_FUNCTIONAL_INTERFACE(ExpectReturnsValueWhenValid, const_cast<const SutType&>(sut));
 }
 
 TYPED_TEST(FunctionalInterface_test, ExpectReturnsValueWhenValid_RValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "0fdd90d0-30b1-432f-97f5-2d98125051fe");
-    IOX_TEST_FUNCTIONAL_INTERFACE(ExpectReturnsValueWhenValid, std::move(sut));
+    IOX2_TEST_FUNCTIONAL_INTERFACE(ExpectReturnsValueWhenValid, std::move(sut));
 }
 
 TYPED_TEST(FunctionalInterface_test, ExpectReturnsValueWhenValid_ConstRValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "49e22cde-eae3-4fb5-b078-7a5d53916171");
     // const_cast avoids code duplication
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
-    IOX_TEST_FUNCTIONAL_INTERFACE(ExpectReturnsValueWhenValid, std::move(const_cast<const SutType&>(sut)));
+    IOX2_TEST_FUNCTIONAL_INTERFACE(ExpectReturnsValueWhenValid, std::move(const_cast<const SutType&>(sut)));
 }
 
-#undef IOX_TEST_FUNCTIONAL_INTERFACE
+#undef IOX2_TEST_FUNCTIONAL_INTERFACE
 } // namespace

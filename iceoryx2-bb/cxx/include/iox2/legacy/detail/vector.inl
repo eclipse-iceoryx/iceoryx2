@@ -13,8 +13,8 @@
 // limitations under the License.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-#ifndef IOX_HOOFS_CONTAINER_VECTOR_INL
-#define IOX_HOOFS_CONTAINER_VECTOR_INL
+#ifndef IOX2_BB_CONTAINER_VECTOR_INL
+#define IOX2_BB_CONTAINER_VECTOR_INL
 
 #include "iox2/legacy/assertions.hpp"
 #include "iox2/legacy/vector.hpp"
@@ -28,24 +28,24 @@ namespace legacy {
 template <typename T, uint64_t Capacity>
 inline vector<T, Capacity>::vector(const uint64_t count, const T& value) noexcept {
     if (count > Capacity) {
-        IOX_LOG(Error,
-                "Attempting to initialize a vector of capacity "
-                    << Capacity << " with " << count << " elements. This exceeds the capacity and only " << Capacity
-                    << " elements will be created!");
+        IOX2_LOG(Error,
+                 "Attempting to initialize a vector of capacity "
+                     << Capacity << " with " << count << " elements. This exceeds the capacity and only " << Capacity
+                     << " elements will be created!");
     }
 
     for (uint64_t i { 0U }; (i < count) && (i < Capacity); ++i) {
-        IOX_DISCARD_RESULT(emplace_back(value));
+        IOX2_DISCARD_RESULT(emplace_back(value));
     }
 }
 
 template <typename T, uint64_t Capacity>
 inline vector<T, Capacity>::vector(const uint64_t count) noexcept {
     if (count > Capacity) {
-        IOX_LOG(Error,
-                "Attempting to initialize a vector of capacity "
-                    << Capacity << " with " << count << " elements. This exceeds the capacity and only " << Capacity
-                    << " elements will be created!");
+        IOX2_LOG(Error,
+                 "Attempting to initialize a vector of capacity "
+                     << Capacity << " with " << count << " elements. This exceeds the capacity and only " << Capacity
+                     << " elements will be created!");
     }
 
     m_size = std::min(count, Capacity);
@@ -93,7 +93,7 @@ inline vector<T, Capacity>& vector<T, Capacity>::operator=(const vector& rhs) no
 
             // copy using copy ctor
             for (; i < rhsSize; ++i) {
-                IOX_DISCARD_RESULT(emplace_back(rhs.at(i)));
+                IOX2_DISCARD_RESULT(emplace_back(rhs.at(i)));
             }
         }
 
@@ -128,7 +128,7 @@ inline vector<T, Capacity>& vector<T, Capacity>::operator=(vector&& rhs) noexcep
 
             // move using move ctor
             for (; i < rhsSize; ++i) {
-                IOX_DISCARD_RESULT(emplace_back(std::move(rhs.at(i))));
+                IOX2_DISCARD_RESULT(emplace_back(std::move(rhs.at(i))));
             }
         }
 
@@ -202,7 +202,7 @@ inline bool vector<T, Capacity>::emplace(const uint64_t position, Targs&&... arg
     } else
 #endif
     {
-        IOX_DISCARD_RESULT(emplace_back(std::move(at_unchecked(sizeBeforeEmplace - 1U))));
+        IOX2_DISCARD_RESULT(emplace_back(std::move(at_unchecked(sizeBeforeEmplace - 1U))));
         for (uint64_t i { sizeBeforeEmplace - 1U }; i > position; --i) {
             at_unchecked(i) = std::move(at_unchecked(i - 1U));
         }
@@ -260,7 +260,7 @@ inline bool vector<T, Capacity>::resize(const uint64_t count, const Targs&... ar
         clearFrom(count);
     } else {
         while (count != m_size) {
-            IOX_DISCARD_RESULT(emplace_back(args...));
+            IOX2_DISCARD_RESULT(emplace_back(args...));
         }
     }
     return true;
@@ -288,7 +288,7 @@ inline T& vector<T, Capacity>::at(const uint64_t index) noexcept {
 
 template <typename T, uint64_t Capacity>
 inline const T& vector<T, Capacity>::at(const uint64_t index) const noexcept {
-    IOX_ENFORCE(index < m_size, "Out of bounds access");
+    IOX2_ENFORCE(index < m_size, "Out of bounds access");
     return at_unchecked(index);
 }
 
@@ -304,7 +304,7 @@ inline const T& vector<T, Capacity>::operator[](const uint64_t index) const noex
 
 template <typename T, uint64_t Capacity>
 inline T& vector<T, Capacity>::front() noexcept {
-    IOX_ENFORCE(!empty(), "Attempting to access the front of an empty vector");
+    IOX2_ENFORCE(!empty(), "Attempting to access the front of an empty vector");
     return at(0);
 }
 
@@ -317,7 +317,7 @@ inline const T& vector<T, Capacity>::front() const noexcept {
 
 template <typename T, uint64_t Capacity>
 inline T& vector<T, Capacity>::back() noexcept {
-    IOX_ENFORCE(!empty(), "Attempting to access the back of an empty vector");
+    IOX2_ENFORCE(!empty(), "Attempting to access the back of an empty vector");
     return at(size() - 1U);
 }
 
@@ -441,4 +441,4 @@ inline bool constexpr operator!=(const vector<T, CapacityLeft>& lhs, const vecto
 }
 } // namespace legacy
 } // namespace iox2
-#endif // IOX_HOOFS_CONTAINER_VECTOR_INL
+#endif // IOX2_BB_CONTAINER_VECTOR_INL

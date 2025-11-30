@@ -13,8 +13,8 @@
 // limitations under the License.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-#ifndef IOX_HOOFS_VOCABULARY_EXPECTED_INL
-#define IOX_HOOFS_VOCABULARY_EXPECTED_INL
+#ifndef IOX2_BB_VOCABULARY_EXPECTED_INL
+#define IOX2_BB_VOCABULARY_EXPECTED_INL
 
 #include "iox2/legacy/assertions.hpp"
 #include "iox2/legacy/expected.hpp"
@@ -139,7 +139,7 @@ inline ErrorType& expected<ValueType, ErrorType>::error_checked() & noexcept {
 
 template <typename ValueType, typename ErrorType>
 inline const ErrorType& expected<ValueType, ErrorType>::error_checked() const& noexcept {
-    IOX_ENFORCE(has_error(), "Trying to access an error but a value is stored!");
+    IOX2_ENFORCE(has_error(), "Trying to access an error but a value is stored!");
     return m_store.error_unchecked();
 }
 
@@ -166,7 +166,7 @@ inline const ErrorType& expected<ValueType, ErrorType>::error() const& noexcept 
 template <typename ValueType, typename ErrorType>
 template <typename U>
 inline const enable_if_non_void_t<U>& expected<ValueType, ErrorType>::value_checked() const& noexcept {
-    IOX_ENFORCE(has_value(), "Trying to access a value but an error is stored!");
+    IOX2_ENFORCE(has_value(), "Trying to access a value but an error is stored!");
     return m_store.value_unchecked();
 }
 
@@ -271,4 +271,4 @@ inline constexpr bool operator!=(const expected<ValueType, ErrorType>& lhs,
 } // namespace legacy
 } // namespace iox2
 
-#endif // IOX_HOOFS_VOCABULARY_EXPECTED_INL
+#endif // IOX2_BB_VOCABULARY_EXPECTED_INL

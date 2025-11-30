@@ -14,8 +14,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_CONTAINER_UNINITIALIZED_ARRAY_INL
-#define IOX_HOOFS_CONTAINER_UNINITIALIZED_ARRAY_INL
+#ifndef IOX2_BB_CONTAINER_UNINITIALIZED_ARRAY_INL
+#define IOX2_BB_CONTAINER_UNINITIALIZED_ARRAY_INL
 
 #include "iox2/legacy/uninitialized_array.hpp"
 
@@ -77,4 +77,4 @@ inline constexpr uint64_t size(const UninitializedArray<T, N, Buffer>&) noexcept
 } // namespace legacy
 } // namespace iox2
 
-#endif // IOX_HOOFS_CONTAINER_UNINITIALIZED_ARRAY_INL
+#endif // IOX2_BB_CONTAINER_UNINITIALIZED_ARRAY_INL

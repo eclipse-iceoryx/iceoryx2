@@ -13,8 +13,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_REPORTING_ERROR_REPORTING_TYPES_HPP
-#define IOX_HOOFS_REPORTING_ERROR_REPORTING_TYPES_HPP
+#ifndef IOX2_BB_REPORTING_ERROR_REPORTING_TYPES_HPP
+#define IOX2_BB_REPORTING_ERROR_REPORTING_TYPES_HPP
 
 #include <cstdint>
 #include <utility>
@@ -53,9 +53,8 @@ struct ModuleId {
     type value;
 
     static constexpr type ANY { 0 };
-    static constexpr type HOOFS { 1 };
-    static constexpr type POSH { 2 };
-    static constexpr type BINDING_C { 3 };
+    static constexpr type IOX2_BB { 1 };
+    static constexpr type IOX2 { 2 };
 
     // User module ids should be larger or equal than this to avoid conflicts
     // with internal modules.
@@ -113,8 +112,8 @@ inline const char* toErrorName(const Error& error) {
 
 // NOLINTJUSTIFICATION These macros are used to create enums and corresponding string arrays with the names of the enum tags
 // NOLINTBEGIN(cppcoreguidelines-macro-usage)
-#define IOX_CREATE_ERROR_ENUM(name) name,
-#define IOX_CREATE_ERROR_STRING(name) #name,
+#define IOX2_CREATE_ERROR_ENUM(name) name,
+#define IOX2_CREATE_ERROR_STRING(name) #name,
 // NOLINTEND(cppcoreguidelines-macro-usage)
 
-#endif // IOX_HOOFS_REPORTING_ERROR_REPORTING_TYPES_HPP
+#endif // IOX2_BB_REPORTING_ERROR_REPORTING_TYPES_HPP

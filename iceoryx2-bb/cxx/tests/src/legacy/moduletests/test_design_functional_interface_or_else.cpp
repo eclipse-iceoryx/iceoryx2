@@ -31,7 +31,7 @@ TYPED_TEST(FunctionalInterface_test, OrElseHasCorrectSignature) {
 // template nature of those tests this cannot be implemented in the same readable fashion
 // as with macros
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define IOX_TEST_FUNCTIONAL_INTERFACE(TestName, variationPoint)                                                        \
+#define IOX2_TEST_FUNCTIONAL_INTERFACE(TestName, variationPoint)                                                       \
     using SutType = typename TestFixture::TestFactoryType::Type;                                                       \
     constexpr bool HAS_GET_ERROR_METHOD = iox2::legacy::internal::HasGetErrorMethod<SutType>::value;                   \
     /* NOLINTNEXTLINE(bugprone-macro-parentheses) prevents clang-tidy parsing failures */                              \
@@ -71,26 +71,26 @@ struct OrElseIsCalledCorrectlyWhenInvalid<TYPE_HAS_GET_ERROR_METHOD> {
 
 TYPED_TEST(FunctionalInterface_test, OrElseIsCalledCorrectlyWhenInvalid_LValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "deddc99a-eec0-466f-a5ba-4018dd372c47");
-    IOX_TEST_FUNCTIONAL_INTERFACE(OrElseIsCalledCorrectlyWhenInvalid, sut);
+    IOX2_TEST_FUNCTIONAL_INTERFACE(OrElseIsCalledCorrectlyWhenInvalid, sut);
 }
 
 TYPED_TEST(FunctionalInterface_test, OrElseIsCalledCorrectlyWhenInvalid_ConstLValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "851ca90c-4433-4a6d-9a7b-08cdca78b3c4");
     // const_cast avoids code duplication
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
-    IOX_TEST_FUNCTIONAL_INTERFACE(OrElseIsCalledCorrectlyWhenInvalid, const_cast<const SutType&>(sut));
+    IOX2_TEST_FUNCTIONAL_INTERFACE(OrElseIsCalledCorrectlyWhenInvalid, const_cast<const SutType&>(sut));
 }
 
 TYPED_TEST(FunctionalInterface_test, OrElseIsCalledCorrectlyWhenInvalid_RValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "eb4d7b93-201e-44d9-8482-af23a6ae854b");
-    IOX_TEST_FUNCTIONAL_INTERFACE(OrElseIsCalledCorrectlyWhenInvalid, std::move(sut));
+    IOX2_TEST_FUNCTIONAL_INTERFACE(OrElseIsCalledCorrectlyWhenInvalid, std::move(sut));
 }
 
 TYPED_TEST(FunctionalInterface_test, OrElseIsCalledCorrectlyWhenInvalid_ConstRValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "1c85d1bb-7934-43ad-b08e-87cafa5dce26");
     // const_cast avoids code duplication
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
-    IOX_TEST_FUNCTIONAL_INTERFACE(OrElseIsCalledCorrectlyWhenInvalid, std::move(const_cast<const SutType&>(sut)));
+    IOX2_TEST_FUNCTIONAL_INTERFACE(OrElseIsCalledCorrectlyWhenInvalid, std::move(const_cast<const SutType&>(sut)));
 }
 
 template <bool HasError>
@@ -120,27 +120,27 @@ struct OrElseIsNotCalledWhenValid<TYPE_HAS_GET_ERROR_METHOD> {
 
 TYPED_TEST(FunctionalInterface_test, OrElseIsNotCalledWhenValid_LValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "d9dcf588-f15b-4065-8427-cbf7b6873038");
-    IOX_TEST_FUNCTIONAL_INTERFACE(OrElseIsNotCalledWhenValid, sut);
+    IOX2_TEST_FUNCTIONAL_INTERFACE(OrElseIsNotCalledWhenValid, sut);
 }
 
 TYPED_TEST(FunctionalInterface_test, OrElseIsNotCalledWhenValid_ConstLValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "4a061c42-eb93-4fc4-ad30-a117f8703659");
     // const_cast avoids code duplication
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
-    IOX_TEST_FUNCTIONAL_INTERFACE(OrElseIsNotCalledWhenValid, const_cast<const SutType&>(sut));
+    IOX2_TEST_FUNCTIONAL_INTERFACE(OrElseIsNotCalledWhenValid, const_cast<const SutType&>(sut));
 }
 
 TYPED_TEST(FunctionalInterface_test, OrElseIsNotCalledWhenValid_RValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "2e371008-c74c-408b-ae4f-70329b487874");
-    IOX_TEST_FUNCTIONAL_INTERFACE(OrElseIsNotCalledWhenValid, std::move(sut));
+    IOX2_TEST_FUNCTIONAL_INTERFACE(OrElseIsNotCalledWhenValid, std::move(sut));
 }
 
 TYPED_TEST(FunctionalInterface_test, OrElseIsNotCalledWhenValid_ConstRValueCase) {
     ::testing::Test::RecordProperty("TEST_ID", "6e58eee9-9c99-4ade-b144-d83821a25170");
     // const_cast avoids code duplication
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
-    IOX_TEST_FUNCTIONAL_INTERFACE(OrElseIsNotCalledWhenValid, std::move(const_cast<const SutType&>(sut)));
+    IOX2_TEST_FUNCTIONAL_INTERFACE(OrElseIsNotCalledWhenValid, std::move(const_cast<const SutType&>(sut)));
 }
 
-#undef IOX_TEST_FUNCTIONAL_INTERFACE
+#undef IOX2_TEST_FUNCTIONAL_INTERFACE
 } // namespace

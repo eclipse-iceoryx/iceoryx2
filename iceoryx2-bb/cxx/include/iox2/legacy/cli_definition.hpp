@@ -13,8 +13,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_CLI_CLI_DEFINITION_HPP
-#define IOX_HOOFS_CLI_CLI_DEFINITION_HPP
+#ifndef IOX2_BB_CLI_CLI_DEFINITION_HPP
+#define IOX2_BB_CLI_CLI_DEFINITION_HPP
 
 #include "iox2/legacy/cli/option_manager.hpp"
 
@@ -23,7 +23,7 @@
 // intended usage of building a class
 // NOLINTBEGIN(cppcoreguidelines-macro-usage)
 
-#define IOX_INTERNAL_CMD_LINE_VALUE(type, memberName, defaultValue, shortName, longName, description, optionType)      \
+#define IOX2_INTERNAL_CMD_LINE_VALUE(type, memberName, defaultValue, shortName, longName, description, optionType)     \
   public:                                                                                                              \
     const type& memberName() const noexcept {                                                                          \
         return m_##memberName;                                                                                         \
@@ -42,8 +42,8 @@
 /// @param[in] shortName a single character for the short option like '-s' for instance
 /// @param[in] longName a long option name under which this can be accessed like '--some-name' for instance
 /// @param[in] description a description of the optional value
-#define IOX_CLI_OPTIONAL(type, memberName, defaultValue, shortName, longName, description)                             \
-    IOX_INTERNAL_CMD_LINE_VALUE(                                                                                       \
+#define IOX2_CLI_OPTIONAL(type, memberName, defaultValue, shortName, longName, description)                            \
+    IOX2_INTERNAL_CMD_LINE_VALUE(                                                                                      \
         type, memberName, defaultValue, shortName, longName, description, iox2::legacy::cli::OptionType::Optional)
 
 /// @brief Adds a required value to the command line, if it is not provided the program will print the help and
@@ -53,8 +53,8 @@
 /// @param[in] shortName a single character for the short option like '-s' for instance
 /// @param[in] longName a long option name under which this can be accessed like '--some-name' for instance
 /// @param[in] description a description of the required value
-#define IOX_CLI_REQUIRED(type, memberName, shortName, longName, description)                                           \
-    IOX_INTERNAL_CMD_LINE_VALUE(                                                                                       \
+#define IOX2_CLI_REQUIRED(type, memberName, shortName, longName, description)                                          \
+    IOX2_INTERNAL_CMD_LINE_VALUE(                                                                                      \
         type, memberName, type(), shortName, longName, description, iox2::legacy::cli::OptionType::Required)
 
 /// @brief Adds a switch to the command line
@@ -62,8 +62,8 @@
 /// @param[in] shortName a single character for the short option like '-s' for instance
 /// @param[in] longName a long option name under which this can be accessed like '--some-name' for instance
 /// @param[in] description a description of the switch
-#define IOX_CLI_SWITCH(memberName, shortName, longName, description)                                                   \
-    IOX_INTERNAL_CMD_LINE_VALUE(                                                                                       \
+#define IOX2_CLI_SWITCH(memberName, shortName, longName, description)                                                  \
+    IOX2_INTERNAL_CMD_LINE_VALUE(                                                                                      \
         bool, memberName, false, shortName, longName, description, iox2::legacy::cli::OptionType::Switch)
 
 /// @brief Helper macro to create a struct with full command line parsing from argc, argv.
@@ -73,12 +73,12 @@
 /// // With those macros a struct can be generated easily like this:
 /// struct CommandLine
 /// {
-///     IOX_CLI_DEFINITION(CommandLine);
+///     IOX2_CLI_DEFINITION(CommandLine);
 ///
-///     IOX_CLI_OPTIONAL(string<100>, stringValue, {"default Value"}, 's', "string-value", "some description");
-///     IOX_CLI_REQUIRED(string<100>, anotherString, 'a', "another-string", "some description");
-///     IOX_CLI_SWITCH(doStuff, 'd', "do-stuff", "do some stuff - some description");
-///     IOX_CLI_OPTIONAL(uint64_t, version, 0, 'v', "version", "some description");
+///     IOX2_CLI_OPTIONAL(string<100>, stringValue, {"default Value"}, 's', "string-value", "some description");
+///     IOX2_CLI_REQUIRED(string<100>, anotherString, 'a', "another-string", "some description");
+///     IOX2_CLI_SWITCH(doStuff, 'd', "do-stuff", "do some stuff - some description");
+///     IOX2_CLI_OPTIONAL(uint64_t, version, 0, 'v', "version", "some description");
 /// };
 ///
 /// // This struct parses all command line arguments and stores them. In
@@ -98,7 +98,7 @@
 ///   std::cout << cmd.stringValue() << " " << cmd.anotherString() << std::endl;
 /// }
 /// @endcode
-#define IOX_CLI_DEFINITION(Name)                                                                                       \
+#define IOX2_CLI_DEFINITION(Name)                                                                                      \
   private:                                                                                                             \
     Name(::iox2::legacy::cli::OptionManager& optionManager, int argc, char** argv, const uint64_t argcOffset = 1U)     \
         : m_optionManager { &optionManager } {                                                                         \
@@ -126,4 +126,4 @@
 
 // NOLINTEND(cppcoreguidelines-macro-usage)
 
-#endif // IOX_HOOFS_CLI_CLI_DEFINITION_HPP
+#endif // IOX2_BB_CLI_CLI_DEFINITION_HPP

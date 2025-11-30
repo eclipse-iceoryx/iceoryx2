@@ -16,8 +16,8 @@
 
 // AXIVION DISABLE STYLE AutosarC++19_03-A16.2.3 : <type_traits> is included through "type_traits.hpp"
 
-#ifndef IOX_HOOFS_FUNCTIONAL_FUNCTION_REF_HPP
-#define IOX_HOOFS_FUNCTIONAL_FUNCTION_REF_HPP
+#ifndef IOX2_BB_FUNCTIONAL_FUNCTION_REF_HPP
+#define IOX2_BB_FUNCTIONAL_FUNCTION_REF_HPP
 
 #include "iox2/legacy/type_traits.hpp"
 
@@ -114,4 +114,4 @@ void swap(function_ref<ReturnType(ArgTypes...)>& lhs, function_ref<ReturnType(Ar
 // AXIVION Next Line AutosarC++19_03-M16.0.1 : Include needed to split template declaration and definition
 #include "iox2/legacy/detail/function_ref.inl"
 
-#endif // IOX_HOOFS_FUNCTIONAL_FUNCTION_REF_HPP
+#endif // IOX2_BB_FUNCTIONAL_FUNCTION_REF_HPP

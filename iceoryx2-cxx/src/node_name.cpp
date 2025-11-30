@@ -65,8 +65,8 @@ auto NodeName::operator=(const NodeName& rhs) -> NodeName& {
         const auto* ptr = iox2_cast_node_name_ptr(rhs.m_handle);
         size_t len = 0;
         const auto* chars = iox2_node_name_as_chars(ptr, &len);
-        IOX_ASSERT(iox2_node_name_new(nullptr, chars, len, &m_handle) == IOX2_OK,
-                   "NodeName shall always contain a valid value.");
+        IOX2_ASSERT(iox2_node_name_new(nullptr, chars, len, &m_handle) == IOX2_OK,
+                    "NodeName shall always contain a valid value.");
     }
 
     return *this;

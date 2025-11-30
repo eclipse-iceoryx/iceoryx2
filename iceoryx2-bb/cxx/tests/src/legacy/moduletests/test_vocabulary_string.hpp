@@ -14,8 +14,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_MODULETESTS_TEST_VOCABULARY_STRING_HPP
-#define IOX_HOOFS_MODULETESTS_TEST_VOCABULARY_STRING_HPP
+#ifndef IOX2_BB_MODULETESTS_TEST_VOCABULARY_STRING_HPP
+#define IOX2_BB_MODULETESTS_TEST_VOCABULARY_STRING_HPP
 
 #include "iox2/legacy/string.hpp"
 
@@ -35,4 +35,4 @@ class stringTyped_test : public Test {
 
 using StringImplementations = Types<string<1>, string<15>, string<100>, string<1000>>;
 
-#endif // IOX_HOOFS_MODULETESTS_TEST_VOCABULARY_STRING_HPP
+#endif // IOX2_BB_MODULETESTS_TEST_VOCABULARY_STRING_HPP

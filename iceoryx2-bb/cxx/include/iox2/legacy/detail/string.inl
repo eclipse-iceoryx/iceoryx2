@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-#ifndef IOX_HOOFS_VOCABULARY_STRING_INL
-#define IOX_HOOFS_VOCABULARY_STRING_INL
+#ifndef IOX2_BB_VOCABULARY_STRING_INL
+#define IOX2_BB_VOCABULARY_STRING_INL
 
 #include "iox2/legacy/string.hpp"
 
@@ -124,9 +124,9 @@ inline string<Capacity>::string(TruncateToCapacity_t, const char* const other, c
 
         m_rawstring[Capacity] = '\0';
         m_rawstringSize = Capacity;
-        IOX_LOG(Warn,
-                "Constructor truncates the last " << count - Capacity << " characters of " << other
-                                                  << ", because the char array length is larger than the capacity.");
+        IOX2_LOG(Warn,
+                 "Constructor truncates the last " << count - Capacity << " characters of " << other
+                                                   << ", because the char array length is larger than the capacity.");
     } else {
         std::memcpy(m_rawstring, other, static_cast<size_t>(count));
         m_rawstring[count] = '\0';
@@ -152,9 +152,9 @@ inline string<Capacity>& string<Capacity>::operator=(const char (&rhs)[N]) noexc
     } else {
         m_rawstringSize = Capacity;
 
-        IOX_LOG(Warn,
-                "iox2::legacy::string: Assignment of array which is not zero-terminated! Last value of array "
-                "overwritten with 0!");
+        IOX2_LOG(Warn,
+                 "iox2::legacy::string: Assignment of array which is not zero-terminated! Last value of array "
+                 "overwritten with 0!");
     }
 
     // AXIVION DISABLE STYLE AutosarC++19_03-A16.0.1: pre-processor is required for setting gcc diagnostics, since gcc 8 incorrectly warns here about out of bounds array access
@@ -200,9 +200,9 @@ inline bool string<Capacity>::unsafe_assign(const char* const str) noexcept {
     }
     const uint64_t strSize { strnlen(str, Capacity + 1U) };
     if (Capacity < strSize) {
-        IOX_LOG(Debug,
-                "Assignment failed. The given cstring is larger (" << strSize << ") than the capacity (" << Capacity
-                                                                   << ") of the fixed string.");
+        IOX2_LOG(Debug,
+                 "Assignment failed. The given cstring is larger (" << strSize << ") than the capacity (" << Capacity
+                                                                    << ") of the fixed string.");
         return false;
     }
     std::memcpy(m_rawstring, str, static_cast<size_t>(strSize));
@@ -218,9 +218,9 @@ inline void string<Capacity>::unsafe_raw_access(
     uint64_t len = func(m_rawstring, info);
 
     if (len > Capacity) {
-        IOX_PANIC("'unsafe_auto_raw_access' failed. Data wrote outside the maximun string capacity.");
+        IOX2_PANIC("'unsafe_auto_raw_access' failed. Data wrote outside the maximun string capacity.");
     } else if (m_rawstring[len] != '\0') {
-        IOX_PANIC("String does not have the terminator at the returned size");
+        IOX2_PANIC("String does not have the terminator at the returned size");
     }
     m_rawstringSize = len;
 }
@@ -361,7 +361,7 @@ inline IsStringOrCharArrayOrChar<T, bool> string<Capacity>::unsafe_append(const 
     const uint64_t clampedTSize { std::min(Capacity - m_rawstringSize, tSize) };
 
     if (tSize > clampedTSize) {
-        IOX_LOG(Debug, "Appending failed because the sum of sizes exceeds this' capacity.");
+        IOX2_LOG(Debug, "Appending failed because the sum of sizes exceeds this' capacity.");
         return false;
     }
 
@@ -383,9 +383,9 @@ inline IsStringOrCharArrayOrChar<T, string<Capacity>&> string<Capacity>::append(
 
     std::memcpy(&(m_rawstring[m_rawstringSize]), tData, static_cast<size_t>(clampedTSize));
     if (tSize > clampedTSize) {
-        IOX_LOG(Warn,
-                "The last " << (tSize - clampedTSize) << " characters of " << tData
-                            << " are truncated, because the length is larger than the capacity.");
+        IOX2_LOG(Warn,
+                 "The last " << (tSize - clampedTSize) << " characters of " << tData
+                             << " are truncated, because the length is larger than the capacity.");
     }
 
     m_rawstringSize += clampedTSize;
@@ -398,9 +398,9 @@ template <uint64_t Capacity>
 // NOLINTNEXTLINE(hicpp-named-parameter, readability-named-parameter)
 inline string<Capacity>& string<Capacity>::append(TruncateToCapacity_t, char cstr) noexcept {
     if (m_rawstringSize == Capacity) {
-        IOX_LOG(Warn,
-                "Appending of " << static_cast<unsigned char>(cstr)
-                                << " failed because this' capacity would be exceeded.");
+        IOX2_LOG(Warn,
+                 "Appending of " << static_cast<unsigned char>(cstr)
+                                 << " failed because this' capacity would be exceeded.");
         return *this;
     }
     m_rawstring[m_rawstringSize] = cstr;
@@ -526,7 +526,7 @@ inline constexpr char& string<Capacity>::at(const uint64_t pos) noexcept {
 
 template <uint64_t Capacity>
 inline constexpr const char& string<Capacity>::at(const uint64_t pos) const noexcept {
-    IOX_ENFORCE((pos < size()), "Out of bounds access!");
+    IOX2_ENFORCE((pos < size()), "Out of bounds access!");
     return m_rawstring[pos];
 }
 
@@ -620,4 +620,4 @@ inline IsStringOrCharArrayOrChar<T, bool> operator>=(const string<Capacity>& lhs
 } // namespace legacy
 } // namespace iox2
 
-#endif // IOX_HOOFS_VOCABULARY_STRING_INL
+#endif // IOX2_BB_VOCABULARY_STRING_INL

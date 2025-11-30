@@ -13,8 +13,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_DESIGN_FUNCTIONAL_INTERFACE_INL
-#define IOX_HOOFS_DESIGN_FUNCTIONAL_INTERFACE_INL
+#ifndef IOX2_BB_DESIGN_FUNCTIONAL_INTERFACE_INL
+#define IOX2_BB_DESIGN_FUNCTIONAL_INTERFACE_INL
 
 #include "iox2/legacy/detail/string_type_traits.hpp"
 #include "iox2/legacy/functional_interface.hpp"
@@ -34,7 +34,7 @@ inline void Expect<Derived>::expect(const StringType& msg) const noexcept {
     const auto& derivedThis = *static_cast<const Derived*>(this);
 
     if (!derivedThis) {
-        IOX_PANIC(&msg[0]);
+        IOX2_PANIC(&msg[0]);
     }
 }
 
@@ -47,7 +47,7 @@ inline ValueType& ExpectWithValue<Derived, ValueType>::expect(const StringType& 
     auto& derivedThis = *static_cast<Derived*>(this);
 
     if (!derivedThis) {
-        IOX_PANIC(&msg[0]);
+        IOX2_PANIC(&msg[0]);
     }
 
     return derivedThis.value();

@@ -49,7 +49,7 @@ struct TestValues {
 // START: FileName
 ///////////////////
 template <>
-const uint64_t TestValues<FileName>::CAPACITY = platform::IOX_MAX_FILENAME_LENGTH;
+const uint64_t TestValues<FileName>::CAPACITY = platform::IOX2_MAX_FILENAME_LENGTH;
 template <>
 const std::vector<std::string> TestValues<FileName>::VALID_VALUES {
     { "file" }, { "another_file.bla" }, { "123.456" }, { ".hidden_me" }
@@ -62,13 +62,13 @@ template <>
 const std::vector<std::string> TestValues<FileName>::INVALID_CONTENT_VALUES { { "" }, { "." }, { ".." } };
 template <>
 const std::vector<std::string> TestValues<FileName>::TOO_LONG_CONTENT_VALUES { std::string(
-    platform::IOX_MAX_FILENAME_LENGTH + 2, 'a') };
+    platform::IOX2_MAX_FILENAME_LENGTH + 2, 'a') };
 template <>
 const std::string TestValues<FileName>::GREATER_VALID_VALUE { "9-i-am-a-file" };
 template <>
 const std::string TestValues<FileName>::SMALLER_VALID_VALUE { "0.me.too.be.file" };
 template <>
-const std::string TestValues<FileName>::MAX_CAPACITY_VALUE { std::string(platform::IOX_MAX_FILENAME_LENGTH, 'b') };
+const std::string TestValues<FileName>::MAX_CAPACITY_VALUE { std::string(platform::IOX2_MAX_FILENAME_LENGTH, 'b') };
 template <>
 const std::vector<std::string> TestValues<FileName>::ADD_VALID_CHARS_TO_CREATE_INVALID_CONTENT_AT_BEGIN {};
 template <>
@@ -81,7 +81,7 @@ const std::vector<std::string> TestValues<FileName>::ADD_VALID_CHARS_TO_CREATE_I
 // START: FilePath
 ///////////////////
 template <>
-const uint64_t TestValues<FilePath>::CAPACITY = platform::IOX_MAX_PATH_LENGTH;
+const uint64_t TestValues<FilePath>::CAPACITY = platform::IOX2_MAX_PATH_LENGTH;
 template <>
 const std::vector<std::string> TestValues<FilePath>::VALID_VALUES { { "file" },
                                                                     { "another_file.bla" },
@@ -108,13 +108,13 @@ const std::vector<std::string> TestValues<FilePath>::INVALID_CONTENT_VALUES {
 };
 template <>
 const std::vector<std::string> TestValues<FilePath>::TOO_LONG_CONTENT_VALUES { std::string(
-    platform::IOX_MAX_PATH_LENGTH + 2, 'a') };
+    platform::IOX2_MAX_PATH_LENGTH + 2, 'a') };
 template <>
 const std::string TestValues<FilePath>::GREATER_VALID_VALUE { "9-i-am-a-file" };
 template <>
 const std::string TestValues<FilePath>::SMALLER_VALID_VALUE { "0.me.too.be.file" };
 template <>
-const std::string TestValues<FilePath>::MAX_CAPACITY_VALUE { std::string(platform::IOX_MAX_PATH_LENGTH, 'b') };
+const std::string TestValues<FilePath>::MAX_CAPACITY_VALUE { std::string(platform::IOX2_MAX_PATH_LENGTH, 'b') };
 template <>
 const std::vector<std::string> TestValues<FilePath>::ADD_VALID_CHARS_TO_CREATE_INVALID_CONTENT_AT_BEGIN {};
 template <>
@@ -127,7 +127,7 @@ const std::vector<std::string> TestValues<FilePath>::ADD_VALID_CHARS_TO_CREATE_I
 // START: Path
 ///////////////////
 template <>
-const uint64_t TestValues<Path>::CAPACITY = platform::IOX_MAX_PATH_LENGTH;
+const uint64_t TestValues<Path>::CAPACITY = platform::IOX2_MAX_PATH_LENGTH;
 template <>
 const std::vector<std::string> TestValues<Path>::VALID_VALUES { { "file" },
                                                                 { "another_file.bla" },
@@ -150,13 +150,13 @@ template <>
 const std::vector<std::string> TestValues<Path>::INVALID_CONTENT_VALUES {};
 template <>
 const std::vector<std::string> TestValues<Path>::TOO_LONG_CONTENT_VALUES { std::string(
-    platform::IOX_MAX_PATH_LENGTH + 2, 'a') };
+    platform::IOX2_MAX_PATH_LENGTH + 2, 'a') };
 template <>
 const std::string TestValues<Path>::GREATER_VALID_VALUE { "9-i-am-a-file/blubb/di/whoop" };
 template <>
 const std::string TestValues<Path>::SMALLER_VALID_VALUE { "0.me.too.be.file/whoop/whoop" };
 template <>
-const std::string TestValues<Path>::MAX_CAPACITY_VALUE { std::string(platform::IOX_MAX_PATH_LENGTH, 'b') };
+const std::string TestValues<Path>::MAX_CAPACITY_VALUE { std::string(platform::IOX2_MAX_PATH_LENGTH, 'b') };
 template <>
 const std::vector<std::string> TestValues<Path>::ADD_VALID_CHARS_TO_CREATE_INVALID_CONTENT_AT_BEGIN {};
 template <>

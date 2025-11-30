@@ -34,24 +34,24 @@ using NumberType = iox2::legacy::convert::NumberType;
 class LongDouble {
   public:
     static bool Eq(long double a, long double b) {
-        IOX_LOG(Debug, "a: " << a << ", b: " << b);
+        IOX2_LOG(Debug, "a: " << a << ", b: " << b);
 
         long double min_val = std::min(std::fabs(a), std::fabs(b));
         long double epsilon = std::fabs(min_val - std::nextafter(min_val, static_cast<long double>(0)));
 
-        IOX_LOG(Debug, "epsilon from min_val: " << epsilon);
-        IOX_LOG(Debug, "abs min_val: " << min_val);
+        IOX2_LOG(Debug, "epsilon from min_val: " << epsilon);
+        IOX2_LOG(Debug, "abs min_val: " << min_val);
 
         if (epsilon <= 0 || epsilon < std::numeric_limits<long double>::min()) {
             epsilon = std::numeric_limits<long double>::min();
         }
-        IOX_LOG(Debug, "epsilon: " << epsilon);
+        IOX2_LOG(Debug, "epsilon: " << epsilon);
 
         long double abs_diff = std::fabs(a - b);
-        IOX_LOG(Debug, "fabs result: " << abs_diff);
+        IOX2_LOG(Debug, "fabs result: " << abs_diff);
 
         bool is_equal = abs_diff <= epsilon;
-        IOX_LOG(Debug, "<< a and b " << ((is_equal) ? "IS" : "IS NOT") << " considered equal! >>");
+        IOX2_LOG(Debug, "<< a and b " << ((is_equal) ? "IS" : "IS NOT") << " considered equal! >>");
 
         return is_equal;
     }

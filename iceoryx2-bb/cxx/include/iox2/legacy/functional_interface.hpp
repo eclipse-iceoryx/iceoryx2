@@ -12,8 +12,8 @@
 // limitations under the License.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-#ifndef IOX_HOOFS_DESIGN_FUNCTIONAL_INTERFACE_HPP
-#define IOX_HOOFS_DESIGN_FUNCTIONAL_INTERFACE_HPP
+#ifndef IOX2_BB_DESIGN_FUNCTIONAL_INTERFACE_HPP
+#define IOX2_BB_DESIGN_FUNCTIONAL_INTERFACE_HPP
 
 #include "iox2/legacy/assertions.hpp"
 #include "iox2/legacy/function_ref.hpp"

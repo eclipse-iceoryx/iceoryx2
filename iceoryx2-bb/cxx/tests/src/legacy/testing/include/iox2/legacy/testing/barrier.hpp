@@ -13,8 +13,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_TESTUTILS_BARRIER_HPP
-#define IOX_HOOFS_TESTUTILS_BARRIER_HPP
+#ifndef IOX2_BB_TESTUTILS_BARRIER_HPP
+#define IOX2_BB_TESTUTILS_BARRIER_HPP
 
 #include <condition_variable>
 #include <cstdint>
@@ -68,4 +68,4 @@ class Barrier {
 } // namespace legacy
 } // namespace iox2
 
-#endif // IOX_HOOFS_TESTUTILS_BARRIER_HPP
+#endif // IOX2_BB_TESTUTILS_BARRIER_HPP

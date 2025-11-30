@@ -14,8 +14,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_REPORTING_LOGGING_HPP
-#define IOX_HOOFS_REPORTING_LOGGING_HPP
+#ifndef IOX2_BB_REPORTING_LOGGING_HPP
+#define IOX2_BB_REPORTING_LOGGING_HPP
 
 #include "iox2/legacy/detail/platform_correction.hpp"
 
@@ -25,7 +25,7 @@ namespace iox2 {
 namespace legacy {
 namespace log {
 namespace internal {
-/// @brief Convenience function for the IOX_LOG_INTERNAL macro
+/// @brief Convenience function for the IOX2_LOG_INTERNAL macro
 inline bool isLogLevelActive(LogLevel logLevel) noexcept {
     // AXIVION Next Construct FaultDetection-DeadBranches this is a configurable compile time option to be able to
     // optimize the logger call away during compilation and intended
@@ -44,7 +44,7 @@ inline bool isLogLevelActive(LogLevel logLevel) noexcept {
 // intended lazy evaluation technique with the if statement
 // NOLINTBEGIN(cppcoreguidelines-macro-usage)
 // NOLINTBEGIN(bugprone-macro-parentheses) 'msg_stream' cannot be wrapped in parentheses due to the '<<' operator
-#define IOX_LOG_INTERNAL(file, line, function, level, msg_stream)                                                      \
+#define IOX2_LOG_INTERNAL(file, line, function, level, msg_stream)                                                     \
     if (iox2::legacy::log::internal::isLogLevelActive(level)) {                                                        \
         iox2::legacy::log::LogStream(file, line, function, level).self() << msg_stream;                                \
     }                                                                                                                  \
@@ -55,7 +55,7 @@ inline bool isLogLevelActive(LogLevel logLevel) noexcept {
 /// @param[in] level is the log level to be used for the log message
 /// @param[in] msg_stream is the log message stream; multiple items can be logged by using the '<<' operator
 /// @code
-///     IOX_LOG(Info, "Hello" << " World");
+///     IOX2_LOG(Info, "Hello" << " World");
 /// @endcode
 // AXIVION Next Construct AutosarC++19_03-A16.0.1 needed for source code location, safely wrapped in macro
 // AXIVION Next Construct AutosarC++19_03-M16.0.6 brackets around macro parameter would lead to compile time failures in this case
@@ -63,11 +63,11 @@ inline bool isLogLevelActive(LogLevel logLevel) noexcept {
 // templates the resulting string is too large; we also get the file name and the line of the invocation which should be
 // sufficient for debugging
 // NOLINTBEGIN(bugprone-lambda-function-name)
-#define IOX_LOG(level, msg_stream)                                                                                     \
-    IOX_LOG_INTERNAL(                                                                                                  \
+#define IOX2_LOG(level, msg_stream)                                                                                    \
+    IOX2_LOG_INTERNAL(                                                                                                 \
         __FILE__, __LINE__, static_cast<const char*>(__FUNCTION__), iox2::legacy::log::LogLevel::level, msg_stream)
 // NOLINTEND(bugprone-lambda-function-name)
 
 // NOLINTEND(cppcoreguidelines-macro-usage)
 
-#endif // IOX_HOOFS_REPORTING_LOGGING_HPP
+#endif // IOX2_BB_REPORTING_LOGGING_HPP

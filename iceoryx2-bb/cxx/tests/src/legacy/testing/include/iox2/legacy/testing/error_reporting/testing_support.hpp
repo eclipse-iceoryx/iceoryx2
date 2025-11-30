@@ -13,8 +13,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_TESTING_ERROR_REPORTING_TESTING_SUPPORT_HPP
-#define IOX_HOOFS_TESTING_ERROR_REPORTING_TESTING_SUPPORT_HPP
+#ifndef IOX2_BB_TESTING_ERROR_REPORTING_TESTING_SUPPORT_HPP
+#define IOX2_BB_TESTING_ERROR_REPORTING_TESTING_SUPPORT_HPP
 
 #include <gtest/gtest.h>
 
@@ -71,43 +71,43 @@ void runInTestThread(const function_ref<void()> testFunction);
 
 // NOLINTBEGIN(cppcoreguidelines-macro-usage) macro required for source location in tests
 
-#define IOX_TESTING_ASSERT_OK() ASSERT_TRUE(iox2::legacy::testing::isInNormalState())
+#define IOX2_TESTING_ASSERT_OK() ASSERT_TRUE(iox2::legacy::testing::isInNormalState())
 
-#define IOX_TESTING_ASSERT_NO_PANIC() ASSERT_FALSE(iox2::legacy::testing::hasPanicked())
+#define IOX2_TESTING_ASSERT_NO_PANIC() ASSERT_FALSE(iox2::legacy::testing::hasPanicked())
 
-#define IOX_TESTING_ASSERT_PANIC() ASSERT_TRUE(iox2::legacy::testing::hasPanicked())
+#define IOX2_TESTING_ASSERT_PANIC() ASSERT_TRUE(iox2::legacy::testing::hasPanicked())
 
-#define IOX_TESTING_ASSERT_ERROR(code) ASSERT_TRUE(iox2::legacy::testing::hasError(code))
+#define IOX2_TESTING_ASSERT_ERROR(code) ASSERT_TRUE(iox2::legacy::testing::hasError(code))
 
-#define IOX_TESTING_ASSERT_NO_ERROR() ASSERT_FALSE(iox2::legacy::testing::hasError())
+#define IOX2_TESTING_ASSERT_NO_ERROR() ASSERT_FALSE(iox2::legacy::testing::hasError())
 
-#define IOX_TESTING_ASSERT_VIOLATION() ASSERT_TRUE(iox2::legacy::testing::hasViolation())
+#define IOX2_TESTING_ASSERT_VIOLATION() ASSERT_TRUE(iox2::legacy::testing::hasViolation())
 
-#define IOX_TESTING_ASSERT_NO_VIOLATION() ASSERT_FALSE(iox2::legacy::testing::hasViolation())
+#define IOX2_TESTING_ASSERT_NO_VIOLATION() ASSERT_FALSE(iox2::legacy::testing::hasViolation())
 
-#define IOX_TESTING_ASSERT_ASSERT_VIOLATION() ASSERT_TRUE(iox2::legacy::testing::hasAssertViolation())
+#define IOX2_TESTING_ASSERT_ASSERT_VIOLATION() ASSERT_TRUE(iox2::legacy::testing::hasAssertViolation())
 
-#define IOX_TESTING_ASSERT_ENFORCE_VIOLATION() ASSERT_TRUE(iox2::legacy::testing::hasEnforceViolation())
+#define IOX2_TESTING_ASSERT_ENFORCE_VIOLATION() ASSERT_TRUE(iox2::legacy::testing::hasEnforceViolation())
 
 // EXPECT_* continues with test if the check fails.
 
-#define IOX_TESTING_EXPECT_OK() EXPECT_TRUE(iox2::legacy::testing::isInNormalState())
+#define IOX2_TESTING_EXPECT_OK() EXPECT_TRUE(iox2::legacy::testing::isInNormalState())
 
-#define IOX_TESTING_EXPECT_NO_PANIC() EXPECT_FALSE(iox2::legacy::testing::hasPanicked())
+#define IOX2_TESTING_EXPECT_NO_PANIC() EXPECT_FALSE(iox2::legacy::testing::hasPanicked())
 
-#define IOX_TESTING_EXPECT_PANIC() EXPECT_TRUE(iox2::legacy::testing::hasPanicked())
+#define IOX2_TESTING_EXPECT_PANIC() EXPECT_TRUE(iox2::legacy::testing::hasPanicked())
 
-#define IOX_TESTING_EXPECT_ERROR(code) EXPECT_TRUE(iox2::legacy::testing::hasError(code))
+#define IOX2_TESTING_EXPECT_ERROR(code) EXPECT_TRUE(iox2::legacy::testing::hasError(code))
 
-#define IOX_TESTING_EXPECT_NO_ERROR() EXPECT_FALSE(iox2::legacy::testing::hasError())
+#define IOX2_TESTING_EXPECT_NO_ERROR() EXPECT_FALSE(iox2::legacy::testing::hasError())
 
-#define IOX_TESTING_EXPECT_VIOLATION() EXPECT_TRUE(iox2::legacy::testing::hasViolation())
+#define IOX2_TESTING_EXPECT_VIOLATION() EXPECT_TRUE(iox2::legacy::testing::hasViolation())
 
-#define IOX_TESTING_EXPECT_NO_VIOLATION() EXPECT_FALSE(iox2::legacy::testing::hasViolation())
+#define IOX2_TESTING_EXPECT_NO_VIOLATION() EXPECT_FALSE(iox2::legacy::testing::hasViolation())
 
-#define IOX_TESTING_EXPECT_ASSERT_VIOLATION() EXPECT_TRUE(iox2::legacy::testing::hasAssertViolation())
+#define IOX2_TESTING_EXPECT_ASSERT_VIOLATION() EXPECT_TRUE(iox2::legacy::testing::hasAssertViolation())
 
-#define IOX_TESTING_EXPECT_ENFORCE_VIOLATION() EXPECT_TRUE(iox2::legacy::testing::hasEnforceViolation())
+#define IOX2_TESTING_EXPECT_ENFORCE_VIOLATION() EXPECT_TRUE(iox2::legacy::testing::hasEnforceViolation())
 
 // NOLINTEND(cppcoreguidelines-macro-usage)
 

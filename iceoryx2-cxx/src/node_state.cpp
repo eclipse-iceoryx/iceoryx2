@@ -88,7 +88,7 @@ NodeState<T>::NodeState(iox2_node_state_e node_state, const NodeId& node_id) {
         m_state.template emplace_at_index<UNDEFINED_STATE>(node_id);
         break;
     default:
-        IOX_UNREACHABLE();
+        IOX2_UNREACHABLE();
     }
 }
 

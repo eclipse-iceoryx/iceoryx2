@@ -110,7 +110,7 @@ TYPED_TEST(stringTyped_test, UnsafeRawAccessCStringOutOfBoundFail) {
             return info.total_size + 1U;
         });
     });
-    IOX_TESTING_EXPECT_PANIC();
+    IOX2_TESTING_EXPECT_PANIC();
 #endif
 }
 
@@ -127,7 +127,7 @@ TYPED_TEST(stringTyped_test, UnsafeRawAccessCStringWrongLenghtFail) {
             return 0U;
         });
     });
-    IOX_TESTING_EXPECT_PANIC();
+    IOX2_TESTING_EXPECT_PANIC();
 #endif
 }
 
@@ -582,7 +582,7 @@ TYPED_TEST(stringTyped_test, AccessPositionOfEmptyStringViaAtFails) {
 #if defined _WIN32
     GTEST_SKIP() << "The 'AccessPositionOfEmptyStringViaAtFails' test is disabled on Windows";
 #else
-    IOX_EXPECT_FATAL_FAILURE([&] { this->testSubject.at(0U); }, iox2::legacy::er::ENFORCE_VIOLATION);
+    IOX2_EXPECT_FATAL_FAILURE([&] { this->testSubject.at(0U); }, iox2::legacy::er::ENFORCE_VIOLATION);
 #endif
 }
 
@@ -595,7 +595,7 @@ TYPED_TEST(stringTyped_test, AccessPositionOutOfBoundsViaAtFails) {
     using MyString = typename TestFixture::stringType;
     constexpr auto STRINGCAP = MyString().capacity();
 
-    IOX_EXPECT_FATAL_FAILURE([&] { this->testSubject.at(STRINGCAP); }, iox2::legacy::er::ENFORCE_VIOLATION);
+    IOX2_EXPECT_FATAL_FAILURE([&] { this->testSubject.at(STRINGCAP); }, iox2::legacy::er::ENFORCE_VIOLATION);
 #endif
 }
 
@@ -631,7 +631,7 @@ TYPED_TEST(stringTyped_test, AccessPositionOfEmptyStringViaConstAtFails) {
     constexpr auto STRINGCAP = MyString().capacity();
     const string<STRINGCAP> sut;
 
-    IOX_EXPECT_FATAL_FAILURE([&] { sut.at(0U); }, iox2::legacy::er::ENFORCE_VIOLATION);
+    IOX2_EXPECT_FATAL_FAILURE([&] { sut.at(0U); }, iox2::legacy::er::ENFORCE_VIOLATION);
 #endif
 }
 
@@ -645,7 +645,7 @@ TYPED_TEST(stringTyped_test, AccessPositionOutOfBoundsViaConstAtFails) {
     constexpr auto STRINGCAP = MyString().capacity();
     const string<STRINGCAP> sut;
 
-    IOX_EXPECT_FATAL_FAILURE([&] { sut.at(STRINGCAP); }, iox2::legacy::er::ENFORCE_VIOLATION);
+    IOX2_EXPECT_FATAL_FAILURE([&] { sut.at(STRINGCAP); }, iox2::legacy::er::ENFORCE_VIOLATION);
 #endif
 }
 
@@ -675,7 +675,7 @@ TYPED_TEST(stringTyped_test, AccessPositionOfEmptyStringViaSubscriptOperatorFail
 #if defined _WIN32
     GTEST_SKIP() << "The 'AccessPositionOfEmptyStringViaSubscriptOperatorFails' test is disabled on Windows";
 #else
-    IOX_EXPECT_FATAL_FAILURE([&] { this->testSubject[0U]; }, iox2::legacy::er::ENFORCE_VIOLATION);
+    IOX2_EXPECT_FATAL_FAILURE([&] { this->testSubject[0U]; }, iox2::legacy::er::ENFORCE_VIOLATION);
 #endif
 }
 
@@ -688,7 +688,7 @@ TYPED_TEST(stringTyped_test, AccessPositionOutOfBoundsViaSubscriptOperatorFails)
     using MyString = typename TestFixture::stringType;
     constexpr auto STRINGCAP = MyString().capacity();
 
-    IOX_EXPECT_FATAL_FAILURE([&] { this->testSubject[STRINGCAP]; }, iox2::legacy::er::ENFORCE_VIOLATION);
+    IOX2_EXPECT_FATAL_FAILURE([&] { this->testSubject[STRINGCAP]; }, iox2::legacy::er::ENFORCE_VIOLATION);
 #endif
 }
 
@@ -724,7 +724,7 @@ TYPED_TEST(stringTyped_test, AccessPositionOfEmptyStringViaConstSubscriptOperato
     constexpr auto STRINGCAP = MyString().capacity();
     const string<STRINGCAP> sut;
 
-    IOX_EXPECT_FATAL_FAILURE([&] { sut[0U]; }, iox2::legacy::er::ENFORCE_VIOLATION);
+    IOX2_EXPECT_FATAL_FAILURE([&] { sut[0U]; }, iox2::legacy::er::ENFORCE_VIOLATION);
 #endif
 }
 
@@ -738,7 +738,7 @@ TYPED_TEST(stringTyped_test, AccessPositionOutOfBoundsViaConstSubscriptOperatorF
     constexpr auto STRINGCAP = MyString().capacity();
     const string<STRINGCAP> sut;
 
-    IOX_EXPECT_FATAL_FAILURE([&] { sut[STRINGCAP]; }, iox2::legacy::er::ENFORCE_VIOLATION);
+    IOX2_EXPECT_FATAL_FAILURE([&] { sut[STRINGCAP]; }, iox2::legacy::er::ENFORCE_VIOLATION);
 #endif
 }
 

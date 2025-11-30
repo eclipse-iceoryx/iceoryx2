@@ -14,8 +14,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_PRIMITIVES_TYPE_TRAITS_HPP
-#define IOX_HOOFS_PRIMITIVES_TYPE_TRAITS_HPP
+#ifndef IOX2_BB_PRIMITIVES_TYPE_TRAITS_HPP
+#define IOX2_BB_PRIMITIVES_TYPE_TRAITS_HPP
 
 #include <cstdint>
 #include <type_traits>
@@ -297,4 +297,4 @@ constexpr const char TypeInfo<iox2::legacy::string<N>>::NAME[];
 } // namespace legacy
 } // namespace iox2
 
-#endif // IOX_HOOFS_PRIMITIVES_TYPE_TRAITS_HPP
+#endif // IOX2_BB_PRIMITIVES_TYPE_TRAITS_HPP

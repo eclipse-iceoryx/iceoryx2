@@ -13,8 +13,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_CLI_OPTION_MANAGER_INL
-#define IOX_HOOFS_CLI_OPTION_MANAGER_INL
+#ifndef IOX2_BB_CLI_OPTION_MANAGER_INL
+#define IOX2_BB_CLI_OPTION_MANAGER_INL
 
 #include "iox2/legacy/cli/option_manager.hpp"
 
@@ -71,4 +71,4 @@ inline T OptionManager::defineOption(T& referenceToMember,
 } // namespace legacy
 } // namespace iox2
 
-#endif // IOX_HOOFS_CLI_OPTION_MANAGER_HPP
+#endif // IOX2_BB_CLI_OPTION_MANAGER_HPP

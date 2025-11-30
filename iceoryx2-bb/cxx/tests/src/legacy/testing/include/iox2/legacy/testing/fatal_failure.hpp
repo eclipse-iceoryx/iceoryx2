@@ -13,8 +13,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_TESTING_FATAL_FAILURE_HPP
-#define IOX_HOOFS_TESTING_FATAL_FAILURE_HPP
+#ifndef IOX2_BB_TESTING_FATAL_FAILURE_HPP
+#define IOX2_BB_TESTING_FATAL_FAILURE_HPP
 
 #include "iox2/legacy/attributes.hpp"
 #include "iox2/legacy/error_reporting/error_kind.hpp"
@@ -40,7 +40,7 @@ namespace testing {
 /// @code
 /// TEST(MyTest, valueOnNulloptIsFatal) {
 ///     iox2::legacy::optional<bool> sut;
-///     IOX_EXPECT_FATAL_FAILURE([&] { sut.value(); }, iox2::legacy::er::ENFORCE_VIOLATION));
+///     IOX2_EXPECT_FATAL_FAILURE([&] { sut.value(); }, iox2::legacy::er::ENFORCE_VIOLATION));
 /// }
 /// @endcode
 /// @tparam[in] ErrorType The error type which is expected, e.g. 'iox2::legacy::HoofsError'
@@ -52,31 +52,31 @@ template <typename ErrorType,
                                && !std::is_same<ErrorType, iox2::legacy::er::EnforceViolationKind>::value
                                && !std::is_same<ErrorType, iox2::legacy::er::AssertViolationKind>::value,
                            bool> = true>
-bool IOX_EXPECT_FATAL_FAILURE(const function_ref<void()> testFunction, const ErrorType expectedError);
+bool IOX2_EXPECT_FATAL_FAILURE(const function_ref<void()> testFunction, const ErrorType expectedError);
 
 template <typename ErrorType,
           std::enable_if_t<std::is_same<ErrorType, iox2::legacy::er::FatalKind>::value, bool> = true>
-bool IOX_EXPECT_FATAL_FAILURE(const function_ref<void()> testFunction, const ErrorType expectedError);
+bool IOX2_EXPECT_FATAL_FAILURE(const function_ref<void()> testFunction, const ErrorType expectedError);
 
 template <typename ErrorType,
           std::enable_if_t<std::is_same<ErrorType, iox2::legacy::er::EnforceViolationKind>::value, bool> = true>
-bool IOX_EXPECT_FATAL_FAILURE(const function_ref<void()> testFunction, const ErrorType expectedError);
+bool IOX2_EXPECT_FATAL_FAILURE(const function_ref<void()> testFunction, const ErrorType expectedError);
 
 template <typename ErrorType,
           std::enable_if_t<std::is_same<ErrorType, iox2::legacy::er::AssertViolationKind>::value, bool> = true>
-bool IOX_EXPECT_FATAL_FAILURE(const function_ref<void()> testFunction, const ErrorType expectedError);
+bool IOX2_EXPECT_FATAL_FAILURE(const function_ref<void()> testFunction, const ErrorType expectedError);
 
 /// @brief This function is used in cases no fatal failure is expected but could potentially occur. The function only
 /// works in combination with the iceoryx error handler.
 /// @code
 /// TEST(MyTest, valueIsNotFatal) {
 ///     iox2::legacy::optional<bool> sut{false};
-///     IOX_EXPECT_NO_FATAL_FAILURE([&] { sut.value(); });
+///     IOX2_EXPECT_NO_FATAL_FAILURE([&] { sut.value(); });
 /// }
 /// @endcode
 /// @param[in] testFunction This function will be executed as SUT and is not expected to call the error handler
 /// @return true if no fatal failure occurs, false otherwise
-bool IOX_EXPECT_NO_FATAL_FAILURE(const function_ref<void()> testFunction);
+bool IOX2_EXPECT_NO_FATAL_FAILURE(const function_ref<void()> testFunction);
 
 } // namespace testing
 } // namespace legacy
@@ -84,4 +84,4 @@ bool IOX_EXPECT_NO_FATAL_FAILURE(const function_ref<void()> testFunction);
 
 #include "iox2/legacy/testing/fatal_failure.inl"
 
-#endif // IOX_HOOFS_TESTING_FATAL_FAILURE_HPP
+#endif // IOX2_BB_TESTING_FATAL_FAILURE_HPP

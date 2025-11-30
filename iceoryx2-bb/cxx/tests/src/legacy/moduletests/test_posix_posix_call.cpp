@@ -54,7 +54,7 @@ TEST_F(PosixCall_test, CallingFunctionWithSuccessReturnValue_GoodCase) {
     constexpr int RETURN_VALUE = 1;
     constexpr int ERRNO_VALUE = 2;
 
-    IOX_POSIX_CALL(testFunction)
+    IOX2_POSIX_CALL(testFunction)
     (RETURN_VALUE, ERRNO_VALUE)
         .successReturnValue(RETURN_VALUE)
         .evaluate()
@@ -74,7 +74,7 @@ TEST_F(PosixCall_test, CallingFunctionWithSuccessReturnValue_BadCase) {
     constexpr int RETURN_VALUE = 3;
     constexpr int ERRNO_VALUE = 4;
 
-    IOX_POSIX_CALL(testFunction)
+    IOX2_POSIX_CALL(testFunction)
     (RETURN_VALUE, ERRNO_VALUE)
         .successReturnValue(RETURN_VALUE + 1)
         .evaluate()
@@ -97,7 +97,7 @@ TEST_F(PosixCall_test, CallingFunctionWithFailureReturnValue_GoodCase) {
     constexpr int RETURN_VALUE = 5;
     constexpr int ERRNO_VALUE = 6;
 
-    IOX_POSIX_CALL(testFunction)
+    IOX2_POSIX_CALL(testFunction)
     (RETURN_VALUE, ERRNO_VALUE)
         .failureReturnValue(RETURN_VALUE + 1)
         .evaluate()
@@ -117,7 +117,7 @@ TEST_F(PosixCall_test, CallingFunctionWithFailureReturnValue_BadCase) {
     constexpr int RETURN_VALUE = 7;
     constexpr int ERRNO_VALUE = 8;
 
-    IOX_POSIX_CALL(testFunction)
+    IOX2_POSIX_CALL(testFunction)
     (RETURN_VALUE, ERRNO_VALUE)
         .failureReturnValue(RETURN_VALUE)
         .evaluate()
@@ -140,7 +140,7 @@ TEST_F(PosixCall_test, CallingFunctionWithSuccessReturnValueAndIgnoredErrno_Good
     constexpr int RETURN_VALUE = 9;
     constexpr int ERRNO_VALUE = 10;
 
-    IOX_POSIX_CALL(testFunction)
+    IOX2_POSIX_CALL(testFunction)
     (RETURN_VALUE, ERRNO_VALUE)
         .successReturnValue(RETURN_VALUE + 1)
         .ignoreErrnos(ERRNO_VALUE)
@@ -161,7 +161,7 @@ TEST_F(PosixCall_test, CallingFunctionWithSuccessReturnValueAndIgnoredErrno_BadC
     constexpr int RETURN_VALUE = 11;
     constexpr int ERRNO_VALUE = 12;
 
-    IOX_POSIX_CALL(testFunction)
+    IOX2_POSIX_CALL(testFunction)
     (RETURN_VALUE, ERRNO_VALUE)
         .successReturnValue(RETURN_VALUE + 1)
         .ignoreErrnos(ERRNO_VALUE + 1)
@@ -185,7 +185,7 @@ TEST_F(PosixCall_test, CallingFunctionWithFailureReturnValueAndIgnoredErrno_Good
     constexpr int RETURN_VALUE = 13;
     constexpr int ERRNO_VALUE = 14;
 
-    IOX_POSIX_CALL(testFunction)
+    IOX2_POSIX_CALL(testFunction)
     (RETURN_VALUE, ERRNO_VALUE)
         .failureReturnValue(RETURN_VALUE)
         .ignoreErrnos(ERRNO_VALUE)
@@ -206,7 +206,7 @@ TEST_F(PosixCall_test, CallingFunctionWithFailureReturnValueAndIgnoredErrno_BadC
     constexpr int RETURN_VALUE = 15;
     constexpr int ERRNO_VALUE = 16;
 
-    IOX_POSIX_CALL(testFunction)
+    IOX2_POSIX_CALL(testFunction)
     (RETURN_VALUE, ERRNO_VALUE)
         .failureReturnValue(RETURN_VALUE)
         .ignoreErrnos(ERRNO_VALUE + 1)
@@ -230,7 +230,7 @@ TEST_F(PosixCall_test, IgnoringMultipleErrnosWorks) {
     constexpr int RETURN_VALUE = 17;
     constexpr int ERRNO_VALUE = 18;
 
-    IOX_POSIX_CALL(testFunction)
+    IOX2_POSIX_CALL(testFunction)
     (RETURN_VALUE, ERRNO_VALUE)
         .successReturnValue(1)
         .ignoreErrnos(ERRNO_VALUE - 10, ERRNO_VALUE, ERRNO_VALUE + 17)
@@ -251,7 +251,7 @@ TEST_F(PosixCall_test, IgnoringMultipleErrnosWhereOccurringErrnoIsNotListedFails
     constexpr int RETURN_VALUE = 19;
     constexpr int ERRNO_VALUE = 20;
 
-    IOX_POSIX_CALL(testFunction)
+    IOX2_POSIX_CALL(testFunction)
     (RETURN_VALUE, ERRNO_VALUE)
         .successReturnValue(1)
         .ignoreErrnos(ERRNO_VALUE - 10, ERRNO_VALUE + 17, ERRNO_VALUE + 1337, ERRNO_VALUE - 2)
@@ -272,7 +272,7 @@ TEST_F(PosixCall_test, IgnoringMultipleErrnosWhereOccurringErrnoIsFirstInListSuc
     constexpr int RETURN_VALUE = 21;
     constexpr int ERRNO_VALUE = 22;
 
-    IOX_POSIX_CALL(testFunction)
+    IOX2_POSIX_CALL(testFunction)
     (RETURN_VALUE, ERRNO_VALUE)
         .successReturnValue(1)
         .ignoreErrnos(ERRNO_VALUE, ERRNO_VALUE - 91, ERRNO_VALUE + 137, ERRNO_VALUE + 17, ERRNO_VALUE - 29)
@@ -293,7 +293,7 @@ TEST_F(PosixCall_test, IgnoringMultipleErrnosWhereOccurringErrnoIsLastInListSucc
     constexpr int RETURN_VALUE = 23;
     constexpr int ERRNO_VALUE = 24;
 
-    IOX_POSIX_CALL(testFunction)
+    IOX2_POSIX_CALL(testFunction)
     (RETURN_VALUE, ERRNO_VALUE)
         .successReturnValue(1)
         .ignoreErrnos(ERRNO_VALUE - 918, ERRNO_VALUE + 8137, ERRNO_VALUE + 187, ERRNO_VALUE - 289, ERRNO_VALUE)
@@ -314,7 +314,7 @@ TEST_F(PosixCall_test, IgnoringErrnosByMultipleIgnoreErrnosCallsWorksWhenErrnoIs
     constexpr int RETURN_VALUE = 117;
     constexpr int ERRNO_VALUE = 118;
 
-    IOX_POSIX_CALL(testFunction)
+    IOX2_POSIX_CALL(testFunction)
     (RETURN_VALUE, ERRNO_VALUE)
         .successReturnValue(1)
         .ignoreErrnos(ERRNO_VALUE)
@@ -337,7 +337,7 @@ TEST_F(PosixCall_test, IgnoringErrnosByMultipleIgnoreErrnosCallsWorksWhenErrnoIs
     constexpr int RETURN_VALUE = 217;
     constexpr int ERRNO_VALUE = 218;
 
-    IOX_POSIX_CALL(testFunction)
+    IOX2_POSIX_CALL(testFunction)
     (RETURN_VALUE, ERRNO_VALUE)
         .successReturnValue(1)
         .ignoreErrnos(ERRNO_VALUE - 10)
@@ -360,7 +360,7 @@ TEST_F(PosixCall_test, IgnoringErrnosByMultipleIgnoreErrnosCallsWorksWhenErrnoIs
     constexpr int RETURN_VALUE = 317;
     constexpr int ERRNO_VALUE = 318;
 
-    IOX_POSIX_CALL(testFunction)
+    IOX2_POSIX_CALL(testFunction)
     (RETURN_VALUE, ERRNO_VALUE)
         .successReturnValue(1)
         .ignoreErrnos(ERRNO_VALUE - 10)
@@ -383,7 +383,7 @@ TEST_F(PosixCall_test, IgnoringErrnosByMultipleIgnoreErrnosCallsFails) {
     constexpr int RETURN_VALUE = 417;
     constexpr int ERRNO_VALUE = 418;
 
-    IOX_POSIX_CALL(testFunction)
+    IOX2_POSIX_CALL(testFunction)
     (RETURN_VALUE, ERRNO_VALUE)
         .successReturnValue(1)
         .ignoreErrnos(ERRNO_VALUE - 10)
@@ -406,7 +406,7 @@ TEST_F(PosixCall_test, SuppressErrnoLoggingWithNonPresentErrnoPrintsErrorMessage
     constexpr int RETURN_VALUE = 111;
     constexpr int ERRNO_VALUE = 112;
 
-    IOX_POSIX_CALL(testFunction)
+    IOX2_POSIX_CALL(testFunction)
     (RETURN_VALUE, ERRNO_VALUE)
         .successReturnValue(1)
         .suppressErrorMessagesForErrnos(ERRNO_VALUE - 10)
@@ -427,7 +427,7 @@ TEST_F(PosixCall_test, SuppressErrnoLoggingWithPresentErrnoDoesNotPrintErrorMess
     constexpr int RETURN_VALUE = 113;
     constexpr int ERRNO_VALUE = 114;
 
-    IOX_POSIX_CALL(testFunction)
+    IOX2_POSIX_CALL(testFunction)
     (RETURN_VALUE, ERRNO_VALUE)
         .successReturnValue(1)
         .suppressErrorMessagesForErrnos(ERRNO_VALUE)
@@ -448,7 +448,7 @@ TEST_F(PosixCall_test, SuppressMultipleErrnoLoggingWithNoPresentErrnoPrintsError
     constexpr int RETURN_VALUE = 115;
     constexpr int ERRNO_VALUE = 116;
 
-    IOX_POSIX_CALL(testFunction)
+    IOX2_POSIX_CALL(testFunction)
     (RETURN_VALUE, ERRNO_VALUE)
         .successReturnValue(1)
         .suppressErrorMessagesForErrnos(ERRNO_VALUE - 10, ERRNO_VALUE + 16, ERRNO_VALUE + 17)
@@ -469,7 +469,7 @@ TEST_F(PosixCall_test, SuppressMultipleErrnoLoggingWithPresentErrnoDoesNotPrintE
     constexpr int RETURN_VALUE = 117;
     constexpr int ERRNO_VALUE = 118;
 
-    IOX_POSIX_CALL(testFunction)
+    IOX2_POSIX_CALL(testFunction)
     (RETURN_VALUE, ERRNO_VALUE)
         .successReturnValue(1)
         .suppressErrorMessagesForErrnos(ERRNO_VALUE - 10, ERRNO_VALUE, ERRNO_VALUE + 17)
@@ -490,7 +490,7 @@ TEST_F(PosixCall_test, SuppressErrnoLoggingByMultipleCallsWithNonPresentErrnoPri
     constexpr int RETURN_VALUE = 119;
     constexpr int ERRNO_VALUE = 120;
 
-    IOX_POSIX_CALL(testFunction)
+    IOX2_POSIX_CALL(testFunction)
     (RETURN_VALUE, ERRNO_VALUE)
         .successReturnValue(1)
         .suppressErrorMessagesForErrnos(ERRNO_VALUE - 10)
@@ -513,7 +513,7 @@ TEST_F(PosixCall_test, SuppressErrnoLoggingByMultipleCallsWithPresentErrnoDoesNo
     constexpr int RETURN_VALUE = 121;
     constexpr int ERRNO_VALUE = 122;
 
-    IOX_POSIX_CALL(testFunction)
+    IOX2_POSIX_CALL(testFunction)
     (RETURN_VALUE, ERRNO_VALUE)
         .successReturnValue(1)
         .suppressErrorMessagesForErrnos(ERRNO_VALUE - 10)
@@ -536,7 +536,7 @@ TEST_F(PosixCall_test, SuppressErrnoLoggingOfIgnoredErrnoDoesNotPrintErrorMessag
     constexpr int RETURN_VALUE = 123;
     constexpr int ERRNO_VALUE = 124;
 
-    IOX_POSIX_CALL(testFunction)
+    IOX2_POSIX_CALL(testFunction)
     (RETURN_VALUE, ERRNO_VALUE)
         .successReturnValue(1)
         .ignoreErrnos(ERRNO_VALUE)
@@ -558,7 +558,7 @@ TEST_F(PosixCall_test, SuppressErrnoLoggingOfNotIgnoredErrnoDoesNotPrintErrorMes
     constexpr int RETURN_VALUE = 123;
     constexpr int ERRNO_VALUE = 124;
 
-    IOX_POSIX_CALL(testFunction)
+    IOX2_POSIX_CALL(testFunction)
     (RETURN_VALUE, ERRNO_VALUE)
         .successReturnValue(1)
         .ignoreErrnos(ERRNO_VALUE + 10)
@@ -578,7 +578,7 @@ TEST_F(PosixCall_test, RecallingFunctionWithEintrWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "c613542f-dead-409e-9630-f05486faa8f3");
 
     eintrRepetition = iox2::legacy::POSIX_CALL_EINTR_REPETITIONS;
-    IOX_POSIX_CALL(testEintr)
+    IOX2_POSIX_CALL(testEintr)
     ().successReturnValue(0)
         .evaluate()
         .and_then([](auto& r) {
@@ -597,7 +597,7 @@ TEST_F(PosixCall_test, FunctionReturnsEINTRTooOftenResultsInFailure) {
     ::testing::Test::RecordProperty("TEST_ID", "a63b36d3-bccc-4d5c-9fad-502dd6f163f1");
 
     eintrRepetition = iox2::legacy::POSIX_CALL_EINTR_REPETITIONS + 1;
-    IOX_POSIX_CALL(testEintr)
+    IOX2_POSIX_CALL(testEintr)
     ().successReturnValue(0).evaluate().and_then([](auto&) { EXPECT_TRUE(false); }).or_else([](auto& r) {
         EXPECT_THAT(r.value, Eq(1));
         EXPECT_THAT(r.errnum, Eq(EINTR));
@@ -614,7 +614,7 @@ TEST_F(PosixCall_test, CallingFunctionWithMultipleSuccessReturnValuesWhereGoodVa
     constexpr int RETURN_VALUE = 25;
     constexpr int ERRNO_VALUE = 26;
 
-    IOX_POSIX_CALL(testFunction)
+    IOX2_POSIX_CALL(testFunction)
     (RETURN_VALUE, ERRNO_VALUE)
         .successReturnValue(RETURN_VALUE, RETURN_VALUE - 1, RETURN_VALUE + 1, RETURN_VALUE + 2)
         .evaluate()
@@ -634,7 +634,7 @@ TEST_F(PosixCall_test, CallingFunctionWithMultipleSuccessReturnValuesWhereGoodVa
     constexpr int RETURN_VALUE = 27;
     constexpr int ERRNO_VALUE = 28;
 
-    IOX_POSIX_CALL(testFunction)
+    IOX2_POSIX_CALL(testFunction)
     (RETURN_VALUE, ERRNO_VALUE)
         .successReturnValue(RETURN_VALUE - 1, RETURN_VALUE + 1, RETURN_VALUE, RETURN_VALUE + 2)
         .evaluate()
@@ -654,7 +654,7 @@ TEST_F(PosixCall_test, CallingFunctionWithMultipleSuccessReturnValuesWhereGoodVa
     constexpr int RETURN_VALUE = 29;
     constexpr int ERRNO_VALUE = 30;
 
-    IOX_POSIX_CALL(testFunction)
+    IOX2_POSIX_CALL(testFunction)
     (RETURN_VALUE, ERRNO_VALUE)
         .successReturnValue(RETURN_VALUE - 1, RETURN_VALUE + 1, RETURN_VALUE + 2, RETURN_VALUE)
         .evaluate()
@@ -674,7 +674,7 @@ TEST_F(PosixCall_test, CallingFunctionWithMultipleSuccessReturnValuesWhereGoodVa
     constexpr int RETURN_VALUE = 31;
     constexpr int ERRNO_VALUE = 32;
 
-    IOX_POSIX_CALL(testFunction)
+    IOX2_POSIX_CALL(testFunction)
     (RETURN_VALUE, ERRNO_VALUE)
         .successReturnValue(RETURN_VALUE - 1, RETURN_VALUE + 1, RETURN_VALUE + 2)
         .evaluate()
@@ -694,7 +694,7 @@ TEST_F(PosixCall_test, CallingFunctionWithMultipleFailureReturnValuesWhereFailur
     constexpr int RETURN_VALUE = 33;
     constexpr int ERRNO_VALUE = 34;
 
-    IOX_POSIX_CALL(testFunction)
+    IOX2_POSIX_CALL(testFunction)
     (RETURN_VALUE, ERRNO_VALUE)
         .failureReturnValue(RETURN_VALUE, RETURN_VALUE - 1, RETURN_VALUE + 1, RETURN_VALUE + 2)
         .evaluate()
@@ -714,7 +714,7 @@ TEST_F(PosixCall_test, CallingFunctionWithMultipleFailureReturnValuesWhereFailur
     constexpr int RETURN_VALUE = 35;
     constexpr int ERRNO_VALUE = 36;
 
-    IOX_POSIX_CALL(testFunction)
+    IOX2_POSIX_CALL(testFunction)
     (RETURN_VALUE, ERRNO_VALUE)
         .failureReturnValue(RETURN_VALUE - 1, RETURN_VALUE, RETURN_VALUE + 1, RETURN_VALUE + 2)
         .evaluate()
@@ -734,7 +734,7 @@ TEST_F(PosixCall_test, CallingFunctionWithMultipleFailureReturnValuesWhereFailur
     constexpr int RETURN_VALUE = 37;
     constexpr int ERRNO_VALUE = 38;
 
-    IOX_POSIX_CALL(testFunction)
+    IOX2_POSIX_CALL(testFunction)
     (RETURN_VALUE, ERRNO_VALUE)
         .failureReturnValue(RETURN_VALUE - 1, RETURN_VALUE + 1, RETURN_VALUE + 2, RETURN_VALUE)
         .evaluate()
@@ -754,7 +754,7 @@ TEST_F(PosixCall_test, CallingFunctionWithMultipleFailureReturnValuesWhereFailur
     constexpr int RETURN_VALUE = 39;
     constexpr int ERRNO_VALUE = 40;
 
-    IOX_POSIX_CALL(testFunction)
+    IOX2_POSIX_CALL(testFunction)
     (RETURN_VALUE, ERRNO_VALUE)
         .failureReturnValue(RETURN_VALUE - 1, RETURN_VALUE + 1, RETURN_VALUE + 2)
         .evaluate()
@@ -773,7 +773,7 @@ TEST_F(PosixCall_test, ErrnoIsSetFromReturnValueWhenFunctionHandlesErrnosInRetur
 
     constexpr int RETURN_VALUE = 0;
 
-    IOX_POSIX_CALL(returnValueIsErrno)
+    IOX2_POSIX_CALL(returnValueIsErrno)
     (RETURN_VALUE)
         .returnValueMatchesErrno()
         .evaluate()
@@ -792,7 +792,7 @@ TEST_F(PosixCall_test, ErrnoIsSetFromReturnValueWhenFunctionHandlesErrnosInRetur
 
     constexpr int RETURN_VALUE = 42;
 
-    IOX_POSIX_CALL(returnValueIsErrno)
+    IOX2_POSIX_CALL(returnValueIsErrno)
     (RETURN_VALUE)
         .returnValueMatchesErrno()
         .evaluate()

@@ -13,8 +13,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_UTILITY_STD_STRING_SUPPORT_HPP
-#define IOX_HOOFS_UTILITY_STD_STRING_SUPPORT_HPP
+#ifndef IOX2_BB_UTILITY_STD_STRING_SUPPORT_HPP
+#define IOX2_BB_UTILITY_STD_STRING_SUPPORT_HPP
 
 #include "iox2/legacy/detail/convert.hpp"
 #include "iox2/legacy/into.hpp"
@@ -92,4 +92,4 @@ inline iox2::legacy::optional<std::string> convert::from_string(const char* v) n
 
 #include "iox2/legacy/detail/std_string_support.inl"
 
-#endif // IOX_HOOFS_UTILITY_STD_STRING_SUPPORT_HPP
+#endif // IOX2_BB_UTILITY_STD_STRING_SUPPORT_HPP

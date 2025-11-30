@@ -13,8 +13,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_REPORTING_LOG_BUILDING_BLOCKS_LOGFORMAT_INL
-#define IOX_HOOFS_REPORTING_LOG_BUILDING_BLOCKS_LOGFORMAT_INL
+#ifndef IOX2_BB_REPORTING_LOG_BUILDING_BLOCKS_LOGFORMAT_INL
+#define IOX2_BB_REPORTING_LOG_BUILDING_BLOCKS_LOGFORMAT_INL
 
 #include "iox2/legacy/log/building_blocks/logformat.hpp"
 
@@ -210,4 +210,4 @@ inline constexpr const char* logFormatOct<unsigned long long>() noexcept {
 } // namespace legacy
 } // namespace iox2
 
-#endif // IOX_HOOFS_REPORTING_LOG_BUILDING_BLOCKS_LOGFORMAT_INL
+#endif // IOX2_BB_REPORTING_LOG_BUILDING_BLOCKS_LOGFORMAT_INL

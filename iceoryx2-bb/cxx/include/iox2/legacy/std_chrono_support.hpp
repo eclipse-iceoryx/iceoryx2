@@ -13,8 +13,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_UTILITY_STD_CHRONO_SUPPORT_HPP
-#define IOX_HOOFS_UTILITY_STD_CHRONO_SUPPORT_HPP
+#ifndef IOX2_BB_UTILITY_STD_CHRONO_SUPPORT_HPP
+#define IOX2_BB_UTILITY_STD_CHRONO_SUPPORT_HPP
 
 #include "iox2/legacy/duration.hpp"
 #include "iox2/legacy/into.hpp"
@@ -59,4 +59,4 @@ struct FromImpl<std::chrono::seconds, units::Duration> {
 
 #include "iox2/legacy/detail/std_chrono_support.inl"
 
-#endif // IOX_HOOFS_UTILITY_STD_CHRONO_SUPPORT_HPP
+#endif // IOX2_BB_UTILITY_STD_CHRONO_SUPPORT_HPP

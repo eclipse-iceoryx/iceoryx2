@@ -13,8 +13,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_CLI_OPTION_HPP
-#define IOX_HOOFS_CLI_OPTION_HPP
+#ifndef IOX2_BB_CLI_OPTION_HPP
+#define IOX2_BB_CLI_OPTION_HPP
 
 #include "iox2/legacy/cli/types.hpp"
 
@@ -94,4 +94,4 @@ struct OptionWithDetails : public Option // can this be melt together
 } // namespace legacy
 } // namespace iox2
 
-#endif // IOX_HOOFS_CLI_OPTION_HPP
+#endif // IOX2_BB_CLI_OPTION_HPP

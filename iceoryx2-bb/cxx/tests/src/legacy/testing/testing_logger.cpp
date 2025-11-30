@@ -40,13 +40,13 @@ void TestingLogger::init() noexcept {
     // disable logger output only after initializing the logger to get error messages from initialization
     // JUSTIFICATION getenv is required for the functionality of the testing logger and will be called only once in main
     // NOLINTNEXTLINE(concurrency-mt-unsafe)
-    if (const auto* allowLogString = std::getenv("IOX_TESTING_ALLOW_LOG")) {
+    if (const auto* allowLogString = std::getenv("IOX2_TESTING_ALLOW_LOG")) {
         if (log::equalStrings(allowLogString, "on") || log::equalStrings(allowLogString, "ON")) {
             logger.m_loggerData.allowLog = true;
         } else {
             logger.m_loggerData.allowLog = false;
             std::cout << "" << std::endl;
-            std::cout << "Invalid value for 'IOX_TESTING_ALLOW_LOG' environment variable!'" << std::endl;
+            std::cout << "Invalid value for 'IOX2_TESTING_ALLOW_LOG' environment variable!'" << std::endl;
             std::cout << "Found: " << allowLogString << std::endl;
             std::cout << "Allowed is one of: on, ON" << std::endl;
         }

@@ -13,8 +13,8 @@
 // limitations under the License.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-#ifndef IOX_HOOFS_VOCABULARY_OPTIONAL_INL
-#define IOX_HOOFS_VOCABULARY_OPTIONAL_INL
+#ifndef IOX2_BB_VOCABULARY_OPTIONAL_INL
+#define IOX2_BB_VOCABULARY_OPTIONAL_INL
 
 #include "iox2/legacy/attributes.hpp"
 #include "iox2/legacy/optional.hpp"
@@ -194,7 +194,7 @@ inline void optional<T>::reset() noexcept {
 
 template <typename T>
 inline T& optional<T>::value() & noexcept {
-    IOX_ENFORCE(has_value(), "Calling 'value' on an 'optional' which does not have a value");
+    IOX2_ENFORCE(has_value(), "Calling 'value' on an 'optional' which does not have a value");
     // AXIVION Next Construct AutosarC++19_03-M5.2.8 : The optional has the type T defined
     // during compile time and the type is unchangeable during the lifetime of the object.
     // All accesses to the underlying data is done via the same static type and therefore the
@@ -212,7 +212,7 @@ inline const T& optional<T>::value() const& noexcept {
 
 template <typename T>
 inline T&& optional<T>::value() && noexcept {
-    IOX_ENFORCE(has_value(), "Calling 'value' on an 'optional' which does not have a value");
+    IOX2_ENFORCE(has_value(), "Calling 'value' on an 'optional' which does not have a value");
     // AXIVION Next Construct AutosarC++19_03-M5.2.8 : The optional has the type T defined
     // during compile time and the type is unchangeable during the lifetime of the object.
     // All accesses to the underlying data is done via the same static type and therefore the
@@ -287,4 +287,4 @@ bool operator!=(const nullopt_t, const optional<T>& rhs) noexcept {
 } // namespace legacy
 } // namespace iox2
 
-#endif // IOX_HOOFS_VOCABULARY_OPTIONAL_INL
+#endif // IOX2_BB_VOCABULARY_OPTIONAL_INL

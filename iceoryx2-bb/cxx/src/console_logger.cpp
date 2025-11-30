@@ -50,7 +50,7 @@ void ConsoleLogger::createLogMessageHeader(const char* file,
                                            const char* function,
                                            LogLevel logLevel) noexcept {
     timespec timestamp { 0, 0 };
-    // intentionally avoid using 'IOX_POSIX_CALL' here to keep the logger dependency free
+    // intentionally avoid using 'IOX2_POSIX_CALL' here to keep the logger dependency free
     // NOTE: the log message will eventually be forwarded to iceoryx2-bb-log; temporarily, we ignore the timestamp
     // if (iox_clock_gettime(CLOCK_REALTIME, &timestamp) != 0)
     {

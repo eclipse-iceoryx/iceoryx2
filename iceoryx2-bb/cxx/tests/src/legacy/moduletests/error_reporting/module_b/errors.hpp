@@ -13,8 +13,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_MODULETESTS_ERROR_REPORTING_MODULE_B_ERRORS_HPP
-#define IOX_HOOFS_MODULETESTS_ERROR_REPORTING_MODULE_B_ERRORS_HPP
+#ifndef IOX2_BB_MODULETESTS_ERROR_REPORTING_MODULE_B_ERRORS_HPP
+#define IOX2_BB_MODULETESTS_ERROR_REPORTING_MODULE_B_ERRORS_HPP
 
 #include "iox2/legacy/error_reporting/types.hpp"
 #include "iox2/legacy/error_reporting/violation.hpp"

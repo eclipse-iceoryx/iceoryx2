@@ -12,8 +12,8 @@
 // limitations under the License.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-#ifndef IOX_HOOFS_BUFFER_BUFFER_INFO_HPP
-#define IOX_HOOFS_BUFFER_BUFFER_INFO_HPP
+#ifndef IOX2_BB_BUFFER_BUFFER_INFO_HPP
+#define IOX2_BB_BUFFER_BUFFER_INFO_HPP
 
 #include <cstdint>
 

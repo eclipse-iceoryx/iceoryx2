@@ -13,8 +13,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_CLI_ARGUMENTS_HPP
-#define IOX_HOOFS_CLI_ARGUMENTS_HPP
+#ifndef IOX2_BB_CLI_ARGUMENTS_HPP
+#define IOX2_BB_CLI_ARGUMENTS_HPP
 
 #include "iox2/legacy/cli/option.hpp"
 #include "iox2/legacy/cli/types.hpp"
@@ -70,4 +70,4 @@ class Arguments {
 
 #include "iox2/legacy/cli/arguments.inl"
 
-#endif // IOX_HOOFS_CLI_ARGUMENTS_HPP
+#endif // IOX2_BB_CLI_ARGUMENTS_HPP

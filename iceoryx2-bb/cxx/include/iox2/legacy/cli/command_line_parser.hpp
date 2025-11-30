@@ -13,8 +13,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_CLI_COMMAND_PARSER_HPP
-#define IOX_HOOFS_CLI_COMMAND_PARSER_HPP
+#ifndef IOX2_BB_CLI_COMMAND_PARSER_HPP
+#define IOX2_BB_CLI_COMMAND_PARSER_HPP
 
 #include "iox2/legacy/cli/arguments.hpp"
 #include "iox2/legacy/cli/option_definition.hpp"
@@ -89,4 +89,4 @@ Arguments parseCommandLineArguments(const OptionDefinition& optionSet,
 } // namespace legacy
 } // namespace iox2
 
-#endif // IOX_HOOFS_CLI_COMMAND_PARSER_HPP
+#endif // IOX2_BB_CLI_COMMAND_PARSER_HPP

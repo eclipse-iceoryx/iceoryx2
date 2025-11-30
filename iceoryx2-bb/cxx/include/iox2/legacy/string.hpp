@@ -13,8 +13,8 @@
 // limitations under the License.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-#ifndef IOX_HOOFS_VOCABULARY_STRING_HPP
-#define IOX_HOOFS_VOCABULARY_STRING_HPP
+#ifndef IOX2_BB_VOCABULARY_STRING_HPP
+#define IOX2_BB_VOCABULARY_STRING_HPP
 
 #include "iox2/legacy/assertions.hpp"
 #include "iox2/legacy/buffer_info.hpp"
@@ -699,4 +699,4 @@ IsStringOrCharArrayOrChar<T, bool> operator>=(const string<Capacity>& lhs, const
 } // namespace iox2
 #include "iox2/legacy/detail/string.inl"
 
-#endif // IOX_HOOFS_VOCABULARY_STRING_HPP
+#endif // IOX2_BB_VOCABULARY_STRING_HPP

@@ -13,8 +13,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_MEMORY_STATIC_STORAGE_HPP
-#define IOX_HOOFS_MEMORY_STATIC_STORAGE_HPP
+#ifndef IOX2_BB_MEMORY_STATIC_STORAGE_HPP
+#define IOX2_BB_MEMORY_STATIC_STORAGE_HPP
 
 #include <cstdint>
 #include <cstring>
@@ -106,4 +106,4 @@ class static_storage final {
 } // namespace iox2
 
 #include "iox2/legacy/detail/static_storage.inl"
-#endif // IOX_HOOFS_MEMORY_STATIC_STORAGE_HPP
+#endif // IOX2_BB_MEMORY_STATIC_STORAGE_HPP

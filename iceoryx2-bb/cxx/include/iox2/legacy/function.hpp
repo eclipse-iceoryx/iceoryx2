@@ -13,8 +13,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_FUNCTIONAL_FUNCTION_HPP
-#define IOX_HOOFS_FUNCTIONAL_FUNCTION_HPP
+#ifndef IOX2_BB_FUNCTIONAL_FUNCTION_HPP
+#define IOX2_BB_FUNCTIONAL_FUNCTION_HPP
 
 #include "iox2/legacy/detail/storable_function.hpp"
 
@@ -47,4 +47,4 @@ using function = storable_function<Capacity, Signature>;
 } // namespace legacy
 } // namespace iox2
 
-#endif // IOX_HOOFS_FUNCTIONAL_FUNCTION_HPP
+#endif // IOX2_BB_FUNCTIONAL_FUNCTION_HPP

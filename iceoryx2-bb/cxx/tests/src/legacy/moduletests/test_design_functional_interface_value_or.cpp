@@ -26,7 +26,7 @@ constexpr bool TYPE_HAS_NO_VALUE_METHOD = false;
 // template nature of those tests this cannot be implemented in the same readable fashion
 // as with macros
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define IOX_TEST_FUNCTIONAL_INTERFACE(variationPoint)                                                                  \
+#define IOX2_TEST_FUNCTIONAL_INTERFACE(variationPoint)                                                                 \
     using SutType = typename TestFixture::TestFactoryType::Type;                                                       \
     constexpr bool HAS_VALUE_METHOD = iox2::legacy::internal::HasValueMethod<SutType>::value;                          \
     ValueOrReturnsValueWhenValid<HAS_VALUE_METHOD>::template performTest<typename TestFixture::TestFactoryType>(       \
@@ -39,7 +39,7 @@ struct ValueOrReturnsValueWhenValid;
 template <>
 struct ValueOrReturnsValueWhenValid<TYPE_HAS_NO_VALUE_METHOD> {
     template <typename TestFactory, typename ValueOrCall>
-    static void performTest(const ValueOrCall& callValueOr IOX_MAYBE_UNUSED) {
+    static void performTest(const ValueOrCall& callValueOr IOX2_MAYBE_UNUSED) {
     }
 };
 
@@ -54,12 +54,12 @@ struct ValueOrReturnsValueWhenValid<TYPE_HAS_VALUE_METHOD> {
 
 TYPED_TEST(FunctionalInterface_test, ValueOrReturnsValueWhenValid_LValue) {
     ::testing::Test::RecordProperty("TEST_ID", "88a8f419-6df9-4d8c-9e60-039100d67efa");
-    IOX_TEST_FUNCTIONAL_INTERFACE(sut);
+    IOX2_TEST_FUNCTIONAL_INTERFACE(sut);
 }
 
 TYPED_TEST(FunctionalInterface_test, ValueOrReturnsValueWhenValid_RValue) {
     ::testing::Test::RecordProperty("TEST_ID", "2783061c-e746-4413-88e9-6b10065dd06a");
-    IOX_TEST_FUNCTIONAL_INTERFACE(std::move(sut));
+    IOX2_TEST_FUNCTIONAL_INTERFACE(std::move(sut));
 }
 
 template <bool HasValue>
@@ -68,7 +68,7 @@ struct ValueOrReturnsArgumentWhenInalid;
 template <>
 struct ValueOrReturnsArgumentWhenInalid<TYPE_HAS_NO_VALUE_METHOD> {
     template <typename TestFactory, typename ValueOrCall>
-    static void performTest(const ValueOrCall& callValueOr IOX_MAYBE_UNUSED) {
+    static void performTest(const ValueOrCall& callValueOr IOX2_MAYBE_UNUSED) {
     }
 };
 
@@ -83,13 +83,13 @@ struct ValueOrReturnsArgumentWhenInalid<TYPE_HAS_VALUE_METHOD> {
 
 TYPED_TEST(FunctionalInterface_test, ValueOrReturnsArgumentWhenInalid_LValue) {
     ::testing::Test::RecordProperty("TEST_ID", "b1398860-a440-4857-9a25-7e5bb9dc2fc9");
-    IOX_TEST_FUNCTIONAL_INTERFACE(sut);
+    IOX2_TEST_FUNCTIONAL_INTERFACE(sut);
 }
 
 TYPED_TEST(FunctionalInterface_test, ValueOrReturnsArgumentWhenInalid_RValue) {
     ::testing::Test::RecordProperty("TEST_ID", "f85dcc3d-684d-4b32-9f1d-e7ac5ee45c0f");
-    IOX_TEST_FUNCTIONAL_INTERFACE(std::move(sut));
+    IOX2_TEST_FUNCTIONAL_INTERFACE(std::move(sut));
 }
 
-#undef IOX_TEST_FUNCTIONAL_INTERFACE
+#undef IOX2_TEST_FUNCTIONAL_INTERFACE
 } // namespace

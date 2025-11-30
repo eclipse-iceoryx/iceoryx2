@@ -109,7 +109,7 @@ auto list_callback(iox2_node_state_e node_state,
             return NodeState<T> { iox2_node_state_e_INACCESSIBLE, node_id };
         }
 
-        IOX_UNREACHABLE();
+        IOX2_UNREACHABLE();
     }();
 
     auto* callback = internal::ctx_cast<iox2::legacy::function<CallbackProgression(NodeState<T>)>>(context);

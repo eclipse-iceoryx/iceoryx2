@@ -15,8 +15,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_REPORTING_LOG_LOGSTREAM_HPP
-#define IOX_HOOFS_REPORTING_LOG_LOGSTREAM_HPP
+#ifndef IOX2_BB_REPORTING_LOG_LOGSTREAM_HPP
+#define IOX2_BB_REPORTING_LOG_LOGSTREAM_HPP
 
 #include "iox2/legacy/log/logger.hpp"
 #include "iox2/legacy/type_traits.hpp"
@@ -176,7 +176,7 @@ constexpr typename std::enable_if<!std::is_pointer<T>::value, LogRaw>::type raw(
 // AXIVION Next Construct AutosarC++19_03-M17.0.3 : The function is in the iox2::legacy::log namespace which prevents easy misuse
 constexpr LogRaw raw(const void* const data, const uint64_t size) noexcept;
 
-/// @brief This class provides the public interface to the logger and is used with the 'IOX_LOG' macro. In order to add
+/// @brief This class provides the public interface to the logger and is used with the 'IOX2_LOG' macro. In order to add
 /// support for custom data types 'operator<<' needs to be implement for the custom type.
 /// @code
 /// iox2::legacy::log::LogStream& operator<<(iox2::legacy::log::LogStream& stream, const MyType& myType) noexcept
@@ -188,7 +188,7 @@ constexpr LogRaw raw(const void* const data, const uint64_t size) noexcept;
 class LogStream {
   public:
     /// @brief Constructor for a LogStream object with an externally provided logger
-    /// @note This is not intended for public use! Use the 'IOX_LOG' macro instead
+    /// @note This is not intended for public use! Use the 'IOX2_LOG' macro instead
     /// @param[in] logger to be used by the LogStream instance
     /// @param[in] file the file of the log message. Please use the '__FILE__' compiler intrinsic
     /// @param[in] line the line of the log message. Please use the '__LINE__' compiler intrinsic
@@ -200,7 +200,7 @@ class LogStream {
     LogStream(Logger& logger, const char* file, const int line, const char* function, LogLevel logLevel) noexcept;
 
     /// @brief Constructor for a LogStream object with the logger from iox2::legacy::log::Logger::get
-    /// @note This is not intended for public use! Use the 'IOX_LOG' macro instead
+    /// @note This is not intended for public use! Use the 'IOX2_LOG' macro instead
     /// @param[in] file the file of the log message. Please use the '__FILE__' compiler intrinsic
     /// @param[in] line the line of the log message. Please use the '__LINE__' compiler intrinsic
     /// @param[in] function the function of the log message. Please use the '__FUNCTION__' compiler intrinsic
@@ -359,7 +359,7 @@ class LogStream {
     /// @tparam[in] Callable with a signature 'iox2::legacy::log::LogStream&(iox2::legacy::log::LogStream&)'
     /// @param[in] c is the callable which receives a LogStream object for the actual logging
     /// @code
-    /// IOX_LOG(Info, [] (auto& stream) -> auto& {
+    /// IOX2_LOG(Info, [] (auto& stream) -> auto& {
     ///     for(const auto& num: {13, 37, 42, 73}) {
     ///         stream << num << " ";
     ///     }
@@ -392,4 +392,4 @@ class LogStream {
 
 #include "iox2/legacy/detail/log/logstream.inl"
 
-#endif // IOX_HOOFS_REPORTING_LOG_LOGSTREAM_HPP
+#endif // IOX2_BB_REPORTING_LOG_LOGSTREAM_HPP

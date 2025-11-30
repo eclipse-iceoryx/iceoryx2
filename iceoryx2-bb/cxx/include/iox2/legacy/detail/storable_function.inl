@@ -13,8 +13,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_FUNCTIONAL_STORABLE_FUNCTION_INL
-#define IOX_HOOFS_FUNCTIONAL_STORABLE_FUNCTION_INL
+#ifndef IOX2_BB_FUNCTIONAL_STORABLE_FUNCTION_INL
+#define IOX2_BB_FUNCTIONAL_STORABLE_FUNCTION_INL
 
 #include "iox2/legacy/assertions.hpp"
 #include "iox2/legacy/detail/storable_function.hpp"
@@ -44,7 +44,7 @@ inline storable_function<Capacity, signature<ReturnType, Args...>>::storable_fun
       // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     m_callable(reinterpret_cast<void*>(function))
     , m_invoker(&invokeFreeFunction) {
-    IOX_ENFORCE(function != nullptr, "parameter must not be a 'nullptr'");
+    IOX2_ENFORCE(function != nullptr, "parameter must not be a 'nullptr'");
 
     m_operations.copyFunction = &copyFreeFunction;
     m_operations.moveFunction = &moveFreeFunction;
@@ -149,7 +149,7 @@ inline ReturnType storable_function<Capacity, signature<ReturnType, Args...>>::o
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
-    IOX_ENFORCE(m_callable != nullptr, "should not happen unless incorrectly used after move");
+    IOX2_ENFORCE(m_callable != nullptr, "should not happen unless incorrectly used after move");
     // AXIVION Next Construct AutosarC++19_03-M0.3.1, FaultDetection-NullPointerDereference: m_invoker is initialized in ctor or assignment,
     // can only be nullptr if this was moved from (calling operator() is illegal in this case)
     return m_invoker(m_callable, std::forward<Args>(args)...);
@@ -211,7 +211,7 @@ inline void storable_function<Capacity, signature<ReturnType, Args...>>::copy(co
 
     // AXIVION Next Construct AutosarC++19_03-M5.2.8: type erasure - conversion to compatible type
     const auto obj = static_cast<CallableType*>(src.m_callable);
-    IOX_ENFORCE(obj != nullptr, "should not happen unless src is incorrectly used after move");
+    IOX2_ENFORCE(obj != nullptr, "should not happen unless src is incorrectly used after move");
 
     // AXIVION Next Construct AutosarC++19_03-A18.5.10: False positive! 'safeAlign' takes care of proper alignment and size
     // NOLINTNEXTLINE(clang-analyzer-core.NonNullParamChecker) checked two lines above
@@ -229,7 +229,7 @@ inline void storable_function<Capacity, signature<ReturnType, Args...>>::move(st
 
     // AXIVION Next Construct AutosarC++19_03-M5.2.8: type erasure - conversion to compatible type
     const auto obj = static_cast<CallableType*>(src.m_callable);
-    IOX_ENFORCE(obj != nullptr, "should not happen unless src is incorrectly used after move");
+    IOX2_ENFORCE(obj != nullptr, "should not happen unless src is incorrectly used after move");
 
     // AXIVION Next Construct AutosarC++19_03-A18.5.10: False positive! 'safeAlign' takes care of proper alignment and size
     // NOLINTNEXTLINE(clang-analyzer-core.NonNullParamChecker) checked two lines above
@@ -351,4 +351,4 @@ storable_function<Capacity, signature<ReturnType, Args...>>::operations::destroy
 } // namespace legacy
 } // namespace iox2
 
-#endif // IOX_HOOFS_FUNCTIONAL_STORABLE_FUNCTION_INL
+#endif // IOX2_BB_FUNCTIONAL_STORABLE_FUNCTION_INL

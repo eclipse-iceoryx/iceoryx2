@@ -56,7 +56,7 @@ constexpr auto from<size_t, PubSubEvent>(const size_t value) noexcept -> PubSubE
     default:
         return PubSubEvent::Unknown;
     }
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 } // namespace legacy
 } // namespace iox2

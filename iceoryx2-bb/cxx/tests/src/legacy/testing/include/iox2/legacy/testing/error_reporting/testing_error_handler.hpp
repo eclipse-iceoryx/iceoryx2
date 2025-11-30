@@ -14,8 +14,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_TESTING_ERROR_REPORTING_TESTING_ERROR_HANDLER_HPP
-#define IOX_HOOFS_TESTING_ERROR_REPORTING_TESTING_ERROR_HANDLER_HPP
+#ifndef IOX2_BB_TESTING_ERROR_REPORTING_TESTING_ERROR_HANDLER_HPP
+#define IOX2_BB_TESTING_ERROR_REPORTING_TESTING_ERROR_HANDLER_HPP
 
 #include "iox2/legacy/atomic.hpp"
 #include "iox2/legacy/error_reporting/custom/default/error_handler_interface.hpp"

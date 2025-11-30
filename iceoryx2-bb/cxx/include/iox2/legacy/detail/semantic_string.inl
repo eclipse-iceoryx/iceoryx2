@@ -12,8 +12,8 @@
 // limitations under the License.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-#ifndef IOX_HOOFS_VOCABULARY_SEMANTIC_STRING_INL
-#define IOX_HOOFS_VOCABULARY_SEMANTIC_STRING_INL
+#ifndef IOX2_BB_VOCABULARY_SEMANTIC_STRING_INL
+#define IOX2_BB_VOCABULARY_SEMANTIC_STRING_INL
 
 #include "iox2/legacy/logging.hpp"
 #include "iox2/legacy/semantic_string.hpp"
@@ -41,22 +41,23 @@ inline expected<Child, SemanticStringError>
 SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::create_impl(
     const char* value) noexcept {
     if (N > Capacity) {
-        IOX_LOG(Debug,
-                "Unable to create semantic string since the value \""
-                    << value << "\" exceeds the maximum valid length of " << Capacity << ".");
+        IOX2_LOG(Debug,
+                 "Unable to create semantic string since the value \""
+                     << value << "\" exceeds the maximum valid length of " << Capacity << ".");
         return err(SemanticStringError::ExceedsMaximumLength);
     }
 
     string<Capacity> str { TruncateToCapacity, value };
 
     if (DoesContainInvalidCharacterCall(str)) {
-        IOX_LOG(Debug,
-                "Unable to create semantic string since the value \"" << value << "\" contains invalid characters");
+        IOX2_LOG(Debug,
+                 "Unable to create semantic string since the value \"" << value << "\" contains invalid characters");
         return err(SemanticStringError::ContainsInvalidCharacters);
     }
 
     if (DoesContainInvalidContentCall(str)) {
-        IOX_LOG(Debug, "Unable to create semantic string since the value \"" << value << "\" contains invalid content");
+        IOX2_LOG(Debug,
+                 "Unable to create semantic string since the value \"" << value << "\" contains invalid content");
         return err(SemanticStringError::ContainsInvalidContent);
     }
 
@@ -138,24 +139,24 @@ SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvali
     const uint64_t pos, const T& str, const uint64_t count) noexcept {
     auto temp = m_data;
     if (!temp.insert(pos, str, count)) {
-        IOX_LOG(Debug,
-                "Unable to insert the value \""
-                    << str << "\" to the semantic string since it would exceed the maximum valid length of " << Capacity
-                    << ".");
+        IOX2_LOG(Debug,
+                 "Unable to insert the value \""
+                     << str << "\" to the semantic string since it would exceed the maximum valid length of "
+                     << Capacity << ".");
         return err(SemanticStringError::ExceedsMaximumLength);
     }
 
     if (DoesContainInvalidCharacterCall(temp)) {
-        IOX_LOG(Debug,
-                "Unable to insert the value \"" << str
-                                                << "\" to the semantic string since it contains invalid characters.");
+        IOX2_LOG(Debug,
+                 "Unable to insert the value \"" << str
+                                                 << "\" to the semantic string since it contains invalid characters.");
         return err(SemanticStringError::ContainsInvalidCharacters);
     }
 
     if (DoesContainInvalidContentCall(str)) {
-        IOX_LOG(Debug,
-                "Unable to insert the value \"" << str
-                                                << "\" to the semantic string since it would lead to invalid content.");
+        IOX2_LOG(Debug,
+                 "Unable to insert the value \""
+                     << str << "\" to the semantic string since it would lead to invalid content.");
         return err(SemanticStringError::ContainsInvalidContent);
     }
 

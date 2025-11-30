@@ -86,7 +86,7 @@ TEST_F(TestingErrorHandler_test, panicWorks) {
 
 TEST_F(TestingErrorHandler_test, reportErrorWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "90bd13cf-ece2-4221-8cce-7b2a99568a6a");
-    sut.onReportError(ErrorDescriptor { IOX_CURRENT_SOURCE_LOCATION, CODE1, MODULE });
+    sut.onReportError(ErrorDescriptor { IOX2_CURRENT_SOURCE_LOCATION, CODE1, MODULE });
     EXPECT_FALSE(sut.hasPanicked());
     EXPECT_TRUE(sut.hasError());
     EXPECT_TRUE(sut.hasError(CODE1, MODULE));
@@ -98,7 +98,7 @@ TEST_F(TestingErrorHandler_test, reportErrorWorks) {
 
 TEST_F(TestingErrorHandler_test, reportViolationWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "5746886e-7309-4435-9e0a-2e6856a318f5");
-    sut.onReportViolation(ErrorDescriptor { IOX_CURRENT_SOURCE_LOCATION, VIOLATION, MODULE });
+    sut.onReportViolation(ErrorDescriptor { IOX2_CURRENT_SOURCE_LOCATION, VIOLATION, MODULE });
 
     EXPECT_TRUE(hasViolation());
 
@@ -108,8 +108,8 @@ TEST_F(TestingErrorHandler_test, reportViolationWorks) {
 
 TEST_F(TestingErrorHandler_test, hasErrorDetectsOnlyreportErroredErrors) {
     ::testing::Test::RecordProperty("TEST_ID", "0ee52915-88b7-4041-9f63-93ec5c882e95");
-    sut.onReportError(ErrorDescriptor { IOX_CURRENT_SOURCE_LOCATION, CODE1, MODULE });
-    sut.onReportError(ErrorDescriptor { IOX_CURRENT_SOURCE_LOCATION, CODE2, MODULE });
+    sut.onReportError(ErrorDescriptor { IOX2_CURRENT_SOURCE_LOCATION, CODE1, MODULE });
+    sut.onReportError(ErrorDescriptor { IOX2_CURRENT_SOURCE_LOCATION, CODE2, MODULE });
 
     EXPECT_FALSE(sut.hasPanicked());
     EXPECT_TRUE(sut.hasError(CODE1, MODULE));
@@ -124,9 +124,9 @@ TEST_F(TestingErrorHandler_test, hasErrorDetectsOnlyreportErroredErrors) {
 
 TEST_F(TestingErrorHandler_test, resettingMultipleErrorsWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "9715c394-5576-4fd8-a0f6-24560f60c161");
-    sut.onReportError(ErrorDescriptor { IOX_CURRENT_SOURCE_LOCATION, CODE1, MODULE });
-    sut.onReportError(ErrorDescriptor { IOX_CURRENT_SOURCE_LOCATION, CODE2, MODULE });
-    sut.onReportViolation(ErrorDescriptor { IOX_CURRENT_SOURCE_LOCATION, VIOLATION, MODULE });
+    sut.onReportError(ErrorDescriptor { IOX2_CURRENT_SOURCE_LOCATION, CODE1, MODULE });
+    sut.onReportError(ErrorDescriptor { IOX2_CURRENT_SOURCE_LOCATION, CODE2, MODULE });
+    sut.onReportViolation(ErrorDescriptor { IOX2_CURRENT_SOURCE_LOCATION, VIOLATION, MODULE });
 
     sut.onPanic();
 

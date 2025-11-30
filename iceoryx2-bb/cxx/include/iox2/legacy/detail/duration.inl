@@ -13,8 +13,8 @@
 // limitations under the License.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-#ifndef IOX_HOOFS_TIME_UNITS_DURATION_INL
-#define IOX_HOOFS_TIME_UNITS_DURATION_INL
+#ifndef IOX2_BB_TIME_UNITS_DURATION_INL
+#define IOX2_BB_TIME_UNITS_DURATION_INL
 
 #include "iox2/legacy/duration.hpp"
 
@@ -476,4 +476,4 @@ inline constexpr Duration operator""_d(unsigned long long int value) noexcept {
 } // namespace units
 } // namespace legacy
 } // namespace iox2
-#endif // IOX_HOOFS_TIME_UNITS_DURATION_INL
+#endif // IOX2_BB_TIME_UNITS_DURATION_INL

@@ -52,11 +52,11 @@ TEST_F(ErrorReportingMacroApi_test, panicWithoutMessage) {
 #if defined _WIN32
     GTEST_SKIP() << "The 'panicWithoutMessage' test is disabled on Windows";
 #else
-    auto f = []() { IOX_PANIC(""); };
+    auto f = []() { IOX2_PANIC(""); };
 
     runInTestThread(f);
 
-    IOX_TESTING_EXPECT_PANIC();
+    IOX2_TESTING_EXPECT_PANIC();
 #endif
 }
 
@@ -66,22 +66,22 @@ TEST_F(ErrorReportingMacroApi_test, panicWithMessage) {
 #if defined _WIN32
     GTEST_SKIP() << "The 'panicWithMessage' test is disabled on Windows";
 #else
-    auto f = []() { IOX_PANIC("message"); };
+    auto f = []() { IOX2_PANIC("message"); };
 
     runInTestThread(f);
 
-    IOX_TESTING_EXPECT_PANIC();
+    IOX2_TESTING_EXPECT_PANIC();
 #endif
 }
 
 TEST_F(ErrorReportingMacroApi_test, reportNonFatal) {
     ::testing::Test::RecordProperty("TEST_ID", "408a30b5-2764-4792-a5c6-97bff74f8902");
-    auto f = []() { IOX_REPORT(MyCodeA::OutOfBounds, RUNTIME_ERROR); };
+    auto f = []() { IOX2_REPORT(MyCodeA::OutOfBounds, RUNTIME_ERROR); };
 
     runInTestThread(f);
 
-    IOX_TESTING_EXPECT_NO_PANIC(); // but also not OK as there is an error!
-    IOX_TESTING_EXPECT_ERROR(MyCodeA::OutOfBounds);
+    IOX2_TESTING_EXPECT_NO_PANIC(); // but also not OK as there is an error!
+    IOX2_TESTING_EXPECT_ERROR(MyCodeA::OutOfBounds);
 }
 
 TEST_F(ErrorReportingMacroApi_test, reportFatal) {
@@ -90,22 +90,22 @@ TEST_F(ErrorReportingMacroApi_test, reportFatal) {
 #if defined _WIN32
     GTEST_SKIP() << "The 'reportFatal' test is disabled on Windows";
 #else
-    auto f = []() { IOX_REPORT_FATAL(MyCodeA::OutOfBounds); };
+    auto f = []() { IOX2_REPORT_FATAL(MyCodeA::OutOfBounds); };
 
     runInTestThread(f);
 
-    IOX_TESTING_EXPECT_PANIC();
-    IOX_TESTING_EXPECT_ERROR(MyCodeA::OutOfBounds);
+    IOX2_TESTING_EXPECT_PANIC();
+    IOX2_TESTING_EXPECT_ERROR(MyCodeA::OutOfBounds);
 #endif
 }
 
 TEST_F(ErrorReportingMacroApi_test, reportConditionalError) {
     ::testing::Test::RecordProperty("TEST_ID", "d95fe843-5e1b-422f-bd15-a791b639b43e");
-    auto f = []() { IOX_REPORT_IF(true, MyCodeA::OutOfBounds, RUNTIME_ERROR); };
+    auto f = []() { IOX2_REPORT_IF(true, MyCodeA::OutOfBounds, RUNTIME_ERROR); };
 
     runInTestThread(f);
 
-    IOX_TESTING_EXPECT_ERROR(MyCodeA::OutOfBounds);
+    IOX2_TESTING_EXPECT_ERROR(MyCodeA::OutOfBounds);
 }
 
 TEST_F(ErrorReportingMacroApi_test, reportConditionalFatalError) {
@@ -114,31 +114,31 @@ TEST_F(ErrorReportingMacroApi_test, reportConditionalFatalError) {
 #if defined _WIN32
     GTEST_SKIP() << "The 'reportConditionalFatalError' test is disabled on Windows";
 #else
-    auto f = []() { IOX_REPORT_FATAL_IF(true, MyCodeA::OutOfMemory); };
+    auto f = []() { IOX2_REPORT_FATAL_IF(true, MyCodeA::OutOfMemory); };
 
     runInTestThread(f);
 
-    IOX_TESTING_EXPECT_PANIC();
-    IOX_TESTING_EXPECT_ERROR(MyCodeA::OutOfMemory);
+    IOX2_TESTING_EXPECT_PANIC();
+    IOX2_TESTING_EXPECT_ERROR(MyCodeA::OutOfMemory);
 #endif
 }
 
 TEST_F(ErrorReportingMacroApi_test, reportConditionalNoError) {
     ::testing::Test::RecordProperty("TEST_ID", "9d9d6464-4586-4382-8d5f-38f3795af791");
-    auto f = []() { IOX_REPORT_IF(false, MyCodeA::Unknown, RUNTIME_ERROR); };
+    auto f = []() { IOX2_REPORT_IF(false, MyCodeA::Unknown, RUNTIME_ERROR); };
 
     runInTestThread(f);
 
-    IOX_TESTING_EXPECT_OK();
+    IOX2_TESTING_EXPECT_OK();
 }
 
 TEST_F(ErrorReportingMacroApi_test, checkEnforceConditionSatisfied) {
     ::testing::Test::RecordProperty("TEST_ID", "3c684878-20f8-426f-bb8b-7576b567d04f");
-    auto f = []() { IOX_ENFORCE(true, ""); };
+    auto f = []() { IOX2_ENFORCE(true, ""); };
 
     runInTestThread(f);
 
-    IOX_TESTING_EXPECT_OK();
+    IOX2_TESTING_EXPECT_OK();
 }
 
 TEST_F(ErrorReportingMacroApi_test, checkEnforceConditionViolate) {
@@ -147,22 +147,22 @@ TEST_F(ErrorReportingMacroApi_test, checkEnforceConditionViolate) {
 #if defined _WIN32
     GTEST_SKIP() << "The 'checkEnforceConditionViolate' test is disabled on Windows";
 #else
-    auto f = []() { IOX_ENFORCE(false, ""); };
+    auto f = []() { IOX2_ENFORCE(false, ""); };
 
     runInTestThread(f);
 
-    IOX_TESTING_EXPECT_PANIC();
-    IOX_TESTING_EXPECT_ENFORCE_VIOLATION();
+    IOX2_TESTING_EXPECT_PANIC();
+    IOX2_TESTING_EXPECT_ENFORCE_VIOLATION();
 #endif
 }
 
 TEST_F(ErrorReportingMacroApi_test, checkAssertConditionSatisfied) {
     ::testing::Test::RecordProperty("TEST_ID", "a76ce780-3387-4ae8-8e4c-c96bdb8aa753");
-    auto f = [](int x) { IOX_ASSERT(x > 0, ""); };
+    auto f = [](int x) { IOX2_ASSERT(x > 0, ""); };
 
     runInTestThread([&]() { f(1); });
 
-    IOX_TESTING_EXPECT_OK();
+    IOX2_TESTING_EXPECT_OK();
 }
 
 TEST_F(ErrorReportingMacroApi_test, checkAssertConditionNotSatisfied) {
@@ -171,12 +171,12 @@ TEST_F(ErrorReportingMacroApi_test, checkAssertConditionNotSatisfied) {
 #if defined _WIN32
     GTEST_SKIP() << "The 'checkAssertConditionNotSatisfied' test is disabled on Windows";
 #else
-    auto f = [](int x) { IOX_ASSERT(x > 0, ""); };
+    auto f = [](int x) { IOX2_ASSERT(x > 0, ""); };
 
     runInTestThread([&]() { f(0); });
 
-    IOX_TESTING_EXPECT_PANIC();
-    IOX_TESTING_EXPECT_ASSERT_VIOLATION();
+    IOX2_TESTING_EXPECT_PANIC();
+    IOX2_TESTING_EXPECT_ASSERT_VIOLATION();
 #endif
 }
 
@@ -186,12 +186,12 @@ TEST_F(ErrorReportingMacroApi_test, checkEnforceConditionNotSatisfiedWithMessage
 #if defined _WIN32
     GTEST_SKIP() << "The 'checkEnforceConditionNotSatisfiedWithMessage' test is disabled on Windows";
 #else
-    auto f = [](int x) { IOX_ENFORCE(x > 0, "some message"); };
+    auto f = [](int x) { IOX2_ENFORCE(x > 0, "some message"); };
 
     runInTestThread([&]() { f(0); });
 
-    IOX_TESTING_EXPECT_PANIC();
-    IOX_TESTING_EXPECT_ENFORCE_VIOLATION();
+    IOX2_TESTING_EXPECT_PANIC();
+    IOX2_TESTING_EXPECT_ENFORCE_VIOLATION();
 #endif
 }
 
@@ -201,37 +201,37 @@ TEST_F(ErrorReportingMacroApi_test, checkAssertNotSatisfiedWithMessage) {
 #if defined _WIN32
     GTEST_SKIP() << "The 'checkAssertNotSatisfiedWithMessage' test is disabled on Windows";
 #else
-    auto f = [](int x) { IOX_ASSERT(x > 0, "some message"); };
+    auto f = [](int x) { IOX2_ASSERT(x > 0, "some message"); };
 
     runInTestThread([&]() { f(0); });
 
-    IOX_TESTING_EXPECT_PANIC();
-    IOX_TESTING_EXPECT_ASSERT_VIOLATION();
+    IOX2_TESTING_EXPECT_PANIC();
+    IOX2_TESTING_EXPECT_ASSERT_VIOLATION();
 #endif
 }
 
 TEST_F(ErrorReportingMacroApi_test, reportErrorsFromDifferentModules) {
     ::testing::Test::RecordProperty("TEST_ID", "5bc53c41-4e4b-466e-b706-603ed5a3d0cf");
     auto f = []() {
-        IOX_REPORT(MyCodeA::OutOfBounds, RUNTIME_ERROR);
-        IOX_REPORT(MyCodeB::OutOfMemory, RUNTIME_ERROR);
+        IOX2_REPORT(MyCodeA::OutOfBounds, RUNTIME_ERROR);
+        IOX2_REPORT(MyCodeB::OutOfMemory, RUNTIME_ERROR);
     };
 
     runInTestThread(f);
 
-    IOX_TESTING_EXPECT_NO_PANIC();
-    IOX_TESTING_EXPECT_ERROR(MyCodeA::OutOfBounds);
-    IOX_TESTING_EXPECT_ERROR(MyCodeB::OutOfMemory);
+    IOX2_TESTING_EXPECT_NO_PANIC();
+    IOX2_TESTING_EXPECT_ERROR(MyCodeA::OutOfBounds);
+    IOX2_TESTING_EXPECT_ERROR(MyCodeB::OutOfMemory);
 }
 
 TEST_F(ErrorReportingMacroApi_test, distinguishErrorsFromDifferentModules) {
     ::testing::Test::RecordProperty("TEST_ID", "f9547051-2ff7-477b-8144-e58995ff8366");
-    auto f = []() { IOX_REPORT(MyCodeA::OutOfBounds, RUNTIME_ERROR); };
+    auto f = []() { IOX2_REPORT(MyCodeA::OutOfBounds, RUNTIME_ERROR); };
 
     runInTestThread(f);
 
     // these two are equivalent
-    IOX_TESTING_EXPECT_ERROR(MyCodeA::OutOfBounds);
+    IOX2_TESTING_EXPECT_ERROR(MyCodeA::OutOfBounds);
     EXPECT_TRUE(hasError(MyCodeA::OutOfBounds));
 
     // note that the below fails due to different enums (the errors are not the same)
@@ -245,17 +245,17 @@ TEST_F(ErrorReportingMacroApi_test, reportErrorsAndViolations) {
     GTEST_SKIP() << "The 'reportErrorsAndViolations' test is disabled on Windows";
 #else
     auto f = []() {
-        IOX_REPORT(MyCodeA::OutOfBounds, RUNTIME_ERROR);
-        IOX_REPORT(MyCodeB::OutOfMemory, RUNTIME_ERROR);
-        IOX_ENFORCE(false, "");
+        IOX2_REPORT(MyCodeA::OutOfBounds, RUNTIME_ERROR);
+        IOX2_REPORT(MyCodeB::OutOfMemory, RUNTIME_ERROR);
+        IOX2_ENFORCE(false, "");
     };
 
     runInTestThread(f);
 
-    IOX_TESTING_EXPECT_PANIC();
-    IOX_TESTING_EXPECT_VIOLATION();
-    IOX_TESTING_EXPECT_ERROR(MyCodeA::OutOfBounds);
-    IOX_TESTING_EXPECT_ERROR(MyCodeB::OutOfMemory);
+    IOX2_TESTING_EXPECT_PANIC();
+    IOX2_TESTING_EXPECT_VIOLATION();
+    IOX2_TESTING_EXPECT_ERROR(MyCodeA::OutOfBounds);
+    IOX2_TESTING_EXPECT_ERROR(MyCodeB::OutOfMemory);
 #endif
 }
 
@@ -265,11 +265,11 @@ TEST_F(ErrorReportingMacroApi_test, panicAtUnreachableCode) {
 #if defined _WIN32
     GTEST_SKIP() << "The 'panicAtUnreachableCode' test is disabled on Windows";
 #else
-    auto f = []() { IOX_UNREACHABLE(); };
+    auto f = []() { IOX2_UNREACHABLE(); };
 
     runInTestThread(f);
 
-    IOX_TESTING_EXPECT_PANIC();
+    IOX2_TESTING_EXPECT_PANIC();
 #endif
 }
 

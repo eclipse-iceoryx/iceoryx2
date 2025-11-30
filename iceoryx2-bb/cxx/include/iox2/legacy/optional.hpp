@@ -13,8 +13,8 @@
 // limitations under the License.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-#ifndef IOX_HOOFS_VOCABULARY_OPTIONAL_HPP
-#define IOX_HOOFS_VOCABULARY_OPTIONAL_HPP
+#ifndef IOX2_BB_VOCABULARY_OPTIONAL_HPP
+#define IOX2_BB_VOCABULARY_OPTIONAL_HPP
 
 #include "iox2/legacy/assertions.hpp"
 #include "iox2/legacy/functional_interface.hpp"
@@ -304,4 +304,4 @@ struct is_optional<optional<T>> : std::true_type { };
 
 #include "iox2/legacy/detail/optional.inl"
 
-#endif // IOX_HOOFS_VOCABULARY_OPTIONAL_HPP
+#endif // IOX2_BB_VOCABULARY_OPTIONAL_HPP

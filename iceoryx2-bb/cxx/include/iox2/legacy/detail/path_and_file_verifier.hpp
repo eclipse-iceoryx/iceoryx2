@@ -14,8 +14,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_POSIX_VOCABULARY_DETAIL_PATH_AND_FILE_VERIFIER_HPP
-#define IOX_HOOFS_POSIX_VOCABULARY_DETAIL_PATH_AND_FILE_VERIFIER_HPP
+#ifndef IOX2_BB_POSIX_VOCABULARY_DETAIL_PATH_AND_FILE_VERIFIER_HPP
+#define IOX2_BB_POSIX_VOCABULARY_DETAIL_PATH_AND_FILE_VERIFIER_HPP
 
 #include "iox2/legacy/string.hpp"
 
@@ -25,11 +25,11 @@ namespace iox2 {
 namespace legacy {
 namespace platform {
 #if defined(_WIN32)
-constexpr uint64_t IOX_NUMBER_OF_PATH_SEPARATORS = 2U;
-constexpr const char IOX_PATH_SEPARATORS[IOX_NUMBER_OF_PATH_SEPARATORS] = { '/', '\\' };
+constexpr uint64_t IOX2_NUMBER_OF_PATH_SEPARATORS = 2U;
+constexpr const char IOX2_PATH_SEPARATORS[IOX2_NUMBER_OF_PATH_SEPARATORS] = { '/', '\\' };
 #else
-constexpr uint64_t IOX_NUMBER_OF_PATH_SEPARATORS = 1U;
-constexpr const char IOX_PATH_SEPARATORS[IOX_NUMBER_OF_PATH_SEPARATORS] = { '/' };
+constexpr uint64_t IOX2_NUMBER_OF_PATH_SEPARATORS = 1U;
+constexpr const char IOX2_PATH_SEPARATORS[IOX2_NUMBER_OF_PATH_SEPARATORS] = { '/' };
 #endif
 } // namespace platform
 
@@ -102,4 +102,4 @@ bool doesEndWithPathSeparator(const string<StringCapacity>& name) noexcept;
 
 #include "iox2/legacy/detail/path_and_file_verifier.inl"
 
-#endif // IOX_HOOFS_POSIX_VOCABULARY_DETAIL_PATH_AND_FILE_VERIFIER_HPP
+#endif // IOX2_BB_POSIX_VOCABULARY_DETAIL_PATH_AND_FILE_VERIFIER_HPP

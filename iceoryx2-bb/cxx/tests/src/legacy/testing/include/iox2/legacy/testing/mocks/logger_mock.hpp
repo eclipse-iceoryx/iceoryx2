@@ -12,8 +12,8 @@
 // limitations under the License.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-#ifndef IOX_HOOFS_MOCKS_LOGGER_MOCK_HPP
-#define IOX_HOOFS_MOCKS_LOGGER_MOCK_HPP
+#ifndef IOX2_BB_MOCKS_LOGGER_MOCK_HPP
+#define IOX2_BB_MOCKS_LOGGER_MOCK_HPP
 
 #include "iox2/legacy/log/logger.hpp"
 #include "iox2/legacy/log/logstream.hpp"
@@ -27,16 +27,16 @@ namespace iox2 {
 namespace legacy {
 namespace testing {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage) required to be able to easily test custom types
-#define IOX_LOGSTREAM_MOCK(logger)                                                                                     \
+#define IOX2_LOGSTREAM_MOCK(logger)                                                                                    \
     iox2::legacy::log::LogStream((logger), "file", 42, "function", iox2::legacy::log::LogLevel::Trace).self()
 
 /// @brief This mock can be used to test implementations of LogStream::operator<< for custom types. It should be used
-/// with the 'IOX_LOGSTREAM_MOCK' macro
+/// with the 'IOX2_LOGSTREAM_MOCK' macro
 /// @code
 /// iox2::legacy::testing::Logger_Mock loggerMock;
 ///
 /// MyType sut;
-/// IOX_LOGSTREAM_MOCK(loggerMock) << sut;
+/// IOX2_LOGSTREAM_MOCK(loggerMock) << sut;
 ///
 /// ASSERT_THAT(loggerMock.logs.size(), Eq(1U));
 /// EXPECT_THAT(loggerMock.logs[0].message, StrEq(EXPECTED_STRING_REPRESENTATION);
@@ -85,4 +85,4 @@ class Logger_Mock : public log::TestingLoggerBase {
 } // namespace legacy
 } // namespace iox2
 
-#endif // IOX_HOOFS_MOCKS_LOGGER_MOCK_HPP
+#endif // IOX2_BB_MOCKS_LOGGER_MOCK_HPP

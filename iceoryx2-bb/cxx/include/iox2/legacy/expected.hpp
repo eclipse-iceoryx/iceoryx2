@@ -13,8 +13,8 @@
 // limitations under the License.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-#ifndef IOX_HOOFS_VOCABULARY_EXPECTED_HPP
-#define IOX_HOOFS_VOCABULARY_EXPECTED_HPP
+#ifndef IOX2_BB_VOCABULARY_EXPECTED_HPP
+#define IOX2_BB_VOCABULARY_EXPECTED_HPP
 
 #include "iox2/legacy/detail/expected_helper.hpp"
 #include "iox2/legacy/functional_interface.hpp"
@@ -121,7 +121,8 @@ detail::err<T> err(Targs&&... args);
 /// @param ValueType type of the value which can be stored in the expected
 /// @param ErrorType type of the error which can be stored in the expected
 template <typename ValueType, typename ErrorType>
-class IOX_NO_DISCARD expected final : public FunctionalInterface<expected<ValueType, ErrorType>, ValueType, ErrorType> {
+class IOX2_NO_DISCARD expected final
+    : public FunctionalInterface<expected<ValueType, ErrorType>, ValueType, ErrorType> {
   public:
     /// @brief default ctor is deleted since you have to clearly state if the
     ///         expected contains a success value or an error value
@@ -274,7 +275,7 @@ class IOX_NO_DISCARD expected final : public FunctionalInterface<expected<ValueT
     /// @code
     ///     expected<int, float> frodo(ok(45));
     ///     *frodo += 12;
-    ///     IOX_LOG(Info, *frodo); // prints 57
+    ///     IOX2_LOG(Info, *frodo); // prints 57
     /// @endcode
     template <typename U = ValueType>
     enable_if_non_void_t<U>& operator*() noexcept;
@@ -287,7 +288,7 @@ class IOX_NO_DISCARD expected final : public FunctionalInterface<expected<ValueT
     /// @code
     ///     expected<int, float> frodo(ok(45));
     ///     *frodo += 12;
-    ///     IOX_LOG(Info, *frodo); // prints 57
+    ///     IOX2_LOG(Info, *frodo); // prints 57
     /// @endcode
     template <typename U = ValueType>
     const enable_if_non_void_t<U>& operator*() const noexcept;
@@ -381,4 +382,4 @@ constexpr bool operator!=(const expected<ValueType, ErrorType>& lhs,
 
 #include "iox2/legacy/detail/expected.inl"
 
-#endif // IOX_HOOFS_VOCABULARY_EXPECTED_HPP
+#endif // IOX2_BB_VOCABULARY_EXPECTED_HPP

@@ -16,8 +16,8 @@
 // Each module must define its errors and afterwards provide the reporting API it intends to use.
 // This header is to be included in every file of the module that relies on error reporting.
 
-#ifndef IOX_HOOFS_MODULETESTS_ERROR_REPORTING_MODULE_A_ERROR_REPORTING_HPP
-#define IOX_HOOFS_MODULETESTS_ERROR_REPORTING_MODULE_A_ERROR_REPORTING_HPP
+#ifndef IOX2_BB_MODULETESTS_ERROR_REPORTING_MODULE_A_ERROR_REPORTING_HPP
+#define IOX2_BB_MODULETESTS_ERROR_REPORTING_MODULE_A_ERROR_REPORTING_HPP
 
 #include "errors.hpp"
 

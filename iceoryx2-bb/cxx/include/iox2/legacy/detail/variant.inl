@@ -15,8 +15,8 @@
 // limitations under the License.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-#ifndef IOX_HOOFS_VOCABULARY_VARIANT_INL
-#define IOX_HOOFS_VOCABULARY_VARIANT_INL
+#ifndef IOX2_BB_VOCABULARY_VARIANT_INL
+#define IOX2_BB_VOCABULARY_VARIANT_INL
 
 #include "iox2/legacy/logging.hpp"
 #include "iox2/legacy/variant.hpp"
@@ -258,7 +258,7 @@ inline bool variant<Types...>::has_bad_variant_element_access() const noexcept {
 template <typename... Types>
 // AXIVION Next Construct AutosarC++19_03-A3.9.1 : see at declaration in header
 inline void variant<Types...>::error_message(const char* source, const char* msg) noexcept {
-    IOX_LOG(Error, source << " ::: " << msg);
+    IOX2_LOG(Error, source << " ::: " << msg);
 }
 
 template <typename T, typename... Types>
@@ -284,4 +284,4 @@ inline constexpr bool operator!=(const variant<Types...>& lhs, const variant<Typ
 } // namespace legacy
 } // namespace iox2
 
-#endif // IOX_HOOFS_VOCABULARY_VARIANT_INL
+#endif // IOX2_BB_VOCABULARY_VARIANT_INL

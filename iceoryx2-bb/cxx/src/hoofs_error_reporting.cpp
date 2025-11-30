@@ -22,7 +22,7 @@ namespace iox2 {
 namespace legacy {
 // NOLINTJUSTIFICATION Use to map enum tag names to strings
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,hicpp-avoid-c-arrays)
-const char* const HOOFS_ERROR_NAMES[] = { IOX_HOOFS_ERRORS(IOX_CREATE_ERROR_STRING) };
+const char* const BB_ERROR_NAMES[] = { IOX2_BB_ERRORS(IOX2_CREATE_ERROR_STRING) };
 
 const char* asStringLiteral(const HoofsError error) noexcept {
     auto end =
@@ -33,7 +33,7 @@ const char* asStringLiteral(const HoofsError error) noexcept {
     }
     // NOLINTJUSTIFICATION Bounds are checked and access is safe
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
-    return HOOFS_ERROR_NAMES[index];
+    return BB_ERROR_NAMES[index];
 }
 } // namespace legacy
 } // namespace iox2

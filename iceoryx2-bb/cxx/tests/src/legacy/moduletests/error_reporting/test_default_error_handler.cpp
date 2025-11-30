@@ -45,8 +45,8 @@ TEST_F(DefaultErrorHandler_test, panicDoesNothing) {
 // Can only check that it can be called, there are no observable effects.
 TEST_F(DefaultErrorHandler_test, reportDoesNothing) {
     ::testing::Test::RecordProperty("TEST_ID", "9e288318-c756-4666-b779-b944b89ffaf5");
-    sut.onReportError(ErrorDescriptor { IOX_CURRENT_SOURCE_LOCATION, CODE });
-    sut.onReportViolation(ErrorDescriptor { IOX_CURRENT_SOURCE_LOCATION, CODE });
+    sut.onReportError(ErrorDescriptor { IOX2_CURRENT_SOURCE_LOCATION, CODE });
+    sut.onReportViolation(ErrorDescriptor { IOX2_CURRENT_SOURCE_LOCATION, CODE });
 }
 
 } // namespace

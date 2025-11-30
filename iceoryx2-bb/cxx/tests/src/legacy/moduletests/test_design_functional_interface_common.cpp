@@ -74,7 +74,7 @@ const GenericValueError::error_t&& GenericValueError::error() const&& noexcept {
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) only for testing purposes
 GenericPlain::GenericPlain(const int value, const int error)
     : m_isValid { value != INVALID_VALUE } {
-    IOX_DISCARD_RESULT(error);
+    IOX2_DISCARD_RESULT(error);
 }
 
 GenericPlain::operator bool() const noexcept {

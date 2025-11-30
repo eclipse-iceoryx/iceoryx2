@@ -156,8 +156,8 @@ template <typename T, typename>
 inline auto SampleMutUninit<S, Payload, UserHeader>::write_from_slice(iox::ImmutableSlice<ValueType>& value)
     -> SampleMut<S, Payload, UserHeader> {
     auto dest = payload_mut();
-    IOX_ASSERT(dest.number_of_bytes() >= value.number_of_bytes(),
-               "Destination payload size is smaller than source slice size");
+    IOX2_ASSERT(dest.number_of_bytes() >= value.number_of_bytes(),
+                "Destination payload size is smaller than source slice size");
     std::memcpy(dest.begin(), value.begin(), value.number_of_bytes());
     return std::move(m_sample);
 }

@@ -42,14 +42,14 @@ class ServiceBuilderBlackboardCreator {
 #ifdef DOXYGEN_MACRO_FIX
     auto max_readers(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, max_readers);
+    IOX2_BUILDER_OPTIONAL(uint64_t, max_readers);
 #endif
 
     /// Defines how many [`Node`]s shall be able to open it in parallel.
 #ifdef DOXYGEN_MACRO_FIX
     auto max_nodes(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, max_nodes);
+    IOX2_BUILDER_OPTIONAL(uint64_t, max_nodes);
 #endif
 
   public:
@@ -87,14 +87,14 @@ class ServiceBuilderBlackboardOpener {
 #ifdef DOXYGEN_MACRO_FIX
     auto max_readers(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, max_readers);
+    IOX2_BUILDER_OPTIONAL(uint64_t, max_readers);
 #endif
 
     /// Defines how many [`Node`]s must be at least supported.
 #ifdef DOXYGEN_MACRO_FIX
     auto max_nodes(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, max_nodes);
+    IOX2_BUILDER_OPTIONAL(uint64_t, max_nodes);
 #endif
 
   public:
@@ -134,7 +134,7 @@ inline ServiceBuilderBlackboardCreator<KeyType, S>::ServiceBuilderBlackboardCrea
     const auto key_type_result = iox2_service_builder_blackboard_creator_set_key_type_details(
         &m_handle, type_name.unchecked_access().c_str(), type_name.size(), sizeof(KeyType), alignof(KeyType));
     if (key_type_result != IOX2_OK) {
-        IOX_PANIC("This should never happen! Implementation failure while setting the key type.");
+        IOX2_PANIC("This should never happen! Implementation failure while setting the key type.");
     }
 }
 
@@ -238,7 +238,7 @@ inline void ServiceBuilderBlackboardOpener<KeyType, S>::set_parameters() {
     const auto key_type_result = iox2_service_builder_blackboard_opener_set_key_type_details(
         &m_handle, type_name.unchecked_access().c_str(), type_name.size(), sizeof(KeyType), alignof(KeyType));
     if (key_type_result != IOX2_OK) {
-        IOX_PANIC("This should never happen! Implementation failure while setting the Key-Type.");
+        IOX2_PANIC("This should never happen! Implementation failure while setting the Key-Type.");
     }
 }
 

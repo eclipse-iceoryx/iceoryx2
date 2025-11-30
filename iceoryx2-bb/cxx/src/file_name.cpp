@@ -19,7 +19,7 @@
 namespace iox2 {
 namespace legacy {
 namespace detail {
-bool file_name_does_contain_invalid_characters(const string<platform::IOX_MAX_FILENAME_LENGTH>& value) noexcept {
+bool file_name_does_contain_invalid_characters(const string<platform::IOX2_MAX_FILENAME_LENGTH>& value) noexcept {
     const auto valueSize = value.size();
 
     for (uint64_t i { 0 }; i < valueSize; ++i) {
@@ -40,7 +40,7 @@ bool file_name_does_contain_invalid_characters(const string<platform::IOX_MAX_FI
     return false;
 }
 
-bool file_name_does_contain_invalid_content(const string<platform::IOX_MAX_FILENAME_LENGTH>& value) noexcept {
+bool file_name_does_contain_invalid_content(const string<platform::IOX2_MAX_FILENAME_LENGTH>& value) noexcept {
     return (value.empty() || value == "." || value == "..");
 }
 } // namespace detail

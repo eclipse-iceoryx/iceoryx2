@@ -14,8 +14,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_REPORTING_LOG_BUILDING_BLOCKS_CONSOLE_LOGGER_HPP
-#define IOX_HOOFS_REPORTING_LOG_BUILDING_BLOCKS_CONSOLE_LOGGER_HPP
+#ifndef IOX2_BB_REPORTING_LOG_BUILDING_BLOCKS_CONSOLE_LOGGER_HPP
+#define IOX2_BB_REPORTING_LOG_BUILDING_BLOCKS_CONSOLE_LOGGER_HPP
 
 #include "iox2/legacy/atomic.hpp"
 #include "iox2/legacy/log/building_blocks/logformat.hpp"
@@ -144,4 +144,4 @@ class ConsoleLogger {
 
 #include "iox2/legacy/detail/log/building_blocks/console_logger.inl"
 
-#endif // IOX_HOOFS_REPORTING_LOG_BUILDING_BLOCKS_CONSOLE_LOGGER_HPP
+#endif // IOX2_BB_REPORTING_LOG_BUILDING_BLOCKS_CONSOLE_LOGGER_HPP

@@ -13,8 +13,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_DESIGN_POLYMORPHIC_HANDLER_HPP
-#define IOX_HOOFS_DESIGN_POLYMORPHIC_HANDLER_HPP
+#ifndef IOX2_BB_DESIGN_POLYMORPHIC_HANDLER_HPP
+#define IOX2_BB_DESIGN_POLYMORPHIC_HANDLER_HPP
 
 #include "iox2/legacy/atomic.hpp"
 #include "iox2/legacy/static_lifetime_guard.hpp"
@@ -123,4 +123,4 @@ class PolymorphicHandler {
 
 #include "iox2/legacy/detail/polymorphic_handler.inl"
 
-#endif // IOX_HOOFS_DESIGN_POLYMORPHIC_HANDLER_HPP
+#endif // IOX2_BB_DESIGN_POLYMORPHIC_HANDLER_HPP

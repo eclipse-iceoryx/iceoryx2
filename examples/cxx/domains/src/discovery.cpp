@@ -17,14 +17,14 @@
 
 // NOLINTBEGIN
 struct Args {
-    IOX_CLI_DEFINITION(Args);
-    IOX_CLI_OPTIONAL(iox2::legacy::string<32>,
-                     domain,
-                     { "iox2_" },
-                     'd',
-                     "domain",
-                     "The name of the domain. Must be a valid file name.");
-    IOX_CLI_SWITCH(debug, 'e', "debug", "Enable full debug log output");
+    IOX2_CLI_DEFINITION(Args);
+    IOX2_CLI_OPTIONAL(iox2::legacy::string<32>,
+                      domain,
+                      { "iox2_" },
+                      'd',
+                      "domain",
+                      "The name of the domain. Must be a valid file name.");
+    IOX2_CLI_SWITCH(debug, 'e', "debug", "Enable full debug log output");
 };
 // NOLINTEND
 

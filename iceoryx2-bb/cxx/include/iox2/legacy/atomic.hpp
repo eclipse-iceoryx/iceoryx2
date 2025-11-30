@@ -13,8 +13,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_PLATFORM_ATOMIC_HPP
-#define IOX_PLATFORM_ATOMIC_HPP
+#ifndef IOX2_BB_ATOMIC_HPP
+#define IOX2_BB_ATOMIC_HPP
 
 #include <atomic>
 #include <cstdlib>
@@ -475,4 +475,4 @@ class Atomic {
 } // namespace legacy
 } // namespace iox2
 
-#endif // IOX_PLATFORM_ATOMIC_HPP
+#endif // IOX2_BB_ATOMIC_HPP

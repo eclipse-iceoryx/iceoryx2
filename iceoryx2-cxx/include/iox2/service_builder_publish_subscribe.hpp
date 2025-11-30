@@ -37,7 +37,7 @@ class ServiceBuilderPublishSubscribe {
 #ifdef DOXYGEN_MACRO_FIX
     auto payload_alignment(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, payload_alignment);
+    IOX2_BUILDER_OPTIONAL(uint64_t, payload_alignment);
 #endif
 
     /// If the [`Service`] is created, defines the overflow behavior of the service. If an existing
@@ -45,7 +45,7 @@ class ServiceBuilderPublishSubscribe {
 #ifdef DOXYGEN_MACRO_FIX
     auto enable_safe_overflow(const bool value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(bool, enable_safe_overflow);
+    IOX2_BUILDER_OPTIONAL(bool, enable_safe_overflow);
 #endif
 
     /// If the [`Service`] is created it defines how many [`Sample`]s a
@@ -54,7 +54,7 @@ class ServiceBuilderPublishSubscribe {
 #ifdef DOXYGEN_MACRO_FIX
     auto subscriber_max_borrowed_samples(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, subscriber_max_borrowed_samples);
+    IOX2_BUILDER_OPTIONAL(uint64_t, subscriber_max_borrowed_samples);
 #endif
 
     /// If the [`Service`] is created it defines the maximum history size a
@@ -63,7 +63,7 @@ class ServiceBuilderPublishSubscribe {
 #ifdef DOXYGEN_MACRO_FIX
     auto history_size(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, history_size);
+    IOX2_BUILDER_OPTIONAL(uint64_t, history_size);
 #endif
 
     /// If the [`Service`] is created it defines how many [`Sample`] a `Subscriber` can store in
@@ -71,7 +71,7 @@ class ServiceBuilderPublishSubscribe {
 #ifdef DOXYGEN_MACRO_FIX
     auto subscriber_max_buffer_size(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, subscriber_max_buffer_size);
+    IOX2_BUILDER_OPTIONAL(uint64_t, subscriber_max_buffer_size);
 #endif
 
     /// If the [`Service`] is created it defines how many [`Subscriber`] shall be supported at
@@ -80,7 +80,7 @@ class ServiceBuilderPublishSubscribe {
 #ifdef DOXYGEN_MACRO_FIX
     auto max_subscribers(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, max_subscribers);
+    IOX2_BUILDER_OPTIONAL(uint64_t, max_subscribers);
 #endif
 
     /// If the [`Service`] is created it defines how many [`Publisher`] shall be supported at
@@ -89,7 +89,7 @@ class ServiceBuilderPublishSubscribe {
 #ifdef DOXYGEN_MACRO_FIX
     auto max_publishers(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, max_publishers);
+    IOX2_BUILDER_OPTIONAL(uint64_t, max_publishers);
 #endif
 
     /// If the [`Service`] is created it defines how many [`Node`]s shall be able to open it in
@@ -98,7 +98,7 @@ class ServiceBuilderPublishSubscribe {
 #ifdef DOXYGEN_MACRO_FIX
     auto max_nodes(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, max_nodes);
+    IOX2_BUILDER_OPTIONAL(uint64_t, max_nodes);
 #endif
 
   public:
@@ -188,7 +188,7 @@ inline void ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_paramete
                                                               payload_type_align);
 
     if (payload_result != IOX2_OK) {
-        IOX_PANIC("This should never happen! Implementation failure while setting the Payload-Type.");
+        IOX2_PANIC("This should never happen! Implementation failure while setting the Payload-Type.");
     }
 
     // user header type details
@@ -206,7 +206,7 @@ inline void ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_paramete
                                                                   user_header_type_align);
 
     if (user_header_result != IOX2_OK) {
-        IOX_PANIC("This should never happen! Implementation failure while setting the User-Header-Type.");
+        IOX2_PANIC("This should never happen! Implementation failure while setting the User-Header-Type.");
     }
 }
 

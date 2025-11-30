@@ -251,7 +251,7 @@ TEST(path_and_flie_verifier_test_isValidPathToFile_isValidPathToDirectory_isVali
 
         // ignore path separators since they are valid path characters
         bool isPathSeparator = false;
-        for (const auto separator : iox2::legacy::platform::IOX_PATH_SEPARATORS) {
+        for (const auto separator : iox2::legacy::platform::IOX2_PATH_SEPARATORS) {
             if (static_cast<char>(i) == separator) {
                 isPathSeparator = true;
                 break;
@@ -420,7 +420,7 @@ TEST(path_and_flie_verifier_test_doesEndWithPathSeparator,
     string<FILE_PATH_LENGTH> sut = "isThereOnlyOneHypnotoad";
     EXPECT_FALSE(doesEndWithPathSeparator(sut));
 
-    sut.unsafe_append(iox2::legacy::platform::IOX_PATH_SEPARATORS);
+    sut.unsafe_append(iox2::legacy::platform::IOX2_PATH_SEPARATORS);
     sut.unsafe_append("thereIsOnlyOne");
     EXPECT_FALSE(doesEndWithPathSeparator(sut));
 }
@@ -428,7 +428,7 @@ TEST(path_and_flie_verifier_test_doesEndWithPathSeparator,
 TEST(path_and_flie_verifier_test_doesEndWithPathSeparator, SingleCharacterStringOnlyWithPathSeparatorAsOneAtTheEnd) {
     ::testing::Test::RecordProperty("TEST_ID", "18bf45aa-9b65-4351-956a-8ddc98fa0296");
 
-    for (const auto separator : iox2::legacy::platform::IOX_PATH_SEPARATORS) {
+    for (const auto separator : iox2::legacy::platform::IOX2_PATH_SEPARATORS) {
         string<FILE_PATH_LENGTH> sut = " ";
         sut[0] = separator;
         EXPECT_TRUE(doesEndWithPathSeparator(sut));
@@ -438,7 +438,7 @@ TEST(path_and_flie_verifier_test_doesEndWithPathSeparator, SingleCharacterString
 TEST(path_and_flie_verifier_test_doesEndWithPathSeparator, MultiCharacterStringEndingWithPathSeparatorAsOneAtTheEnd) {
     ::testing::Test::RecordProperty("TEST_ID", "c702ec34-8f7f-4220-b50e-6b231ac4e736");
 
-    for (const auto separator : iox2::legacy::platform::IOX_PATH_SEPARATORS) {
+    for (const auto separator : iox2::legacy::platform::IOX2_PATH_SEPARATORS) {
         string<FILE_PATH_LENGTH> sut = "HypnotoadAteTheSpagettiMonster";
         ASSERT_TRUE(sut.unsafe_append(separator));
         EXPECT_TRUE(doesEndWithPathSeparator(sut));
@@ -448,104 +448,106 @@ TEST(path_and_flie_verifier_test_doesEndWithPathSeparator, MultiCharacterStringE
 TEST(path_and_flie_verifier_test_isValidPathEntry, EmptyPathEntryIsValid) {
     ::testing::Test::RecordProperty("TEST_ID", "1280b360-f26c-4ddf-8305-e01a99d58178");
     EXPECT_TRUE(
-        isValidPathEntry(string<iox2::legacy::platform::IOX_MAX_FILENAME_LENGTH>(""), RelativePathComponents::Accept));
+        isValidPathEntry(string<iox2::legacy::platform::IOX2_MAX_FILENAME_LENGTH>(""), RelativePathComponents::Accept));
 }
 
 TEST(path_and_flie_verifier_test_isValidPathEntry, PathEntryWithOnlyValidCharactersIsValid) {
     ::testing::Test::RecordProperty("TEST_ID", "166fb334-05c6-4b8c-a117-223d6cadb29b");
-    EXPECT_TRUE(
-        isValidPathEntry(string<iox2::legacy::platform::IOX_MAX_FILENAME_LENGTH>("a"), RelativePathComponents::Accept));
-    EXPECT_TRUE(isValidPathEntry(string<iox2::legacy::platform::IOX_MAX_FILENAME_LENGTH>("agc"),
+    EXPECT_TRUE(isValidPathEntry(string<iox2::legacy::platform::IOX2_MAX_FILENAME_LENGTH>("a"),
                                  RelativePathComponents::Accept));
-    EXPECT_TRUE(isValidPathEntry(string<iox2::legacy::platform::IOX_MAX_FILENAME_LENGTH>("a.213jkgc"),
+    EXPECT_TRUE(isValidPathEntry(string<iox2::legacy::platform::IOX2_MAX_FILENAME_LENGTH>("agc"),
+                                 RelativePathComponents::Accept));
+    EXPECT_TRUE(isValidPathEntry(string<iox2::legacy::platform::IOX2_MAX_FILENAME_LENGTH>("a.213jkgc"),
                                  RelativePathComponents::Accept));
 }
 
 TEST(path_and_flie_verifier_test_isValidPathEntry, RelativePathEntriesAreValid) {
     ::testing::Test::RecordProperty("TEST_ID", "d3432692-7cee-416a-a3f3-c246a02ad1a2");
-    EXPECT_TRUE(
-        isValidPathEntry(string<iox2::legacy::platform::IOX_MAX_FILENAME_LENGTH>("."), RelativePathComponents::Accept));
-    EXPECT_TRUE(isValidPathEntry(string<iox2::legacy::platform::IOX_MAX_FILENAME_LENGTH>(".."),
+    EXPECT_TRUE(isValidPathEntry(string<iox2::legacy::platform::IOX2_MAX_FILENAME_LENGTH>("."),
+                                 RelativePathComponents::Accept));
+    EXPECT_TRUE(isValidPathEntry(string<iox2::legacy::platform::IOX2_MAX_FILENAME_LENGTH>(".."),
                                  RelativePathComponents::Accept));
 }
 
 TEST(path_and_flie_verifier_test_isValidPathEntry, EntriesWithEndingDotAreInvalid) {
     ::testing::Test::RecordProperty("TEST_ID", "f937de46-19fc-48da-bce6-51292cd9d75e");
-    EXPECT_FALSE(isValidPathEntry(string<iox2::legacy::platform::IOX_MAX_FILENAME_LENGTH>("abc."),
+    EXPECT_FALSE(isValidPathEntry(string<iox2::legacy::platform::IOX2_MAX_FILENAME_LENGTH>("abc."),
                                   RelativePathComponents::Accept));
-    EXPECT_FALSE(isValidPathEntry(string<iox2::legacy::platform::IOX_MAX_FILENAME_LENGTH>("19283912asdb.."),
+    EXPECT_FALSE(isValidPathEntry(string<iox2::legacy::platform::IOX2_MAX_FILENAME_LENGTH>("19283912asdb.."),
                                   RelativePathComponents::Accept));
-    EXPECT_FALSE(isValidPathEntry(string<iox2::legacy::platform::IOX_MAX_FILENAME_LENGTH>("..19283912asdb.."),
+    EXPECT_FALSE(isValidPathEntry(string<iox2::legacy::platform::IOX2_MAX_FILENAME_LENGTH>("..19283912asdb.."),
                                   RelativePathComponents::Accept));
-    EXPECT_FALSE(isValidPathEntry(string<iox2::legacy::platform::IOX_MAX_FILENAME_LENGTH>("..192839.12a.sdb.."),
+    EXPECT_FALSE(isValidPathEntry(string<iox2::legacy::platform::IOX2_MAX_FILENAME_LENGTH>("..192839.12a.sdb.."),
                                   RelativePathComponents::Accept));
 }
 
 TEST(path_and_flie_verifier_test_isValidPathEntry, EntriesWithDotsNotAtTheEndAreValid) {
     ::testing::Test::RecordProperty("TEST_ID", "569aa328-2c47-418d-96e2-ddf73925e52f");
-    EXPECT_TRUE(isValidPathEntry(string<iox2::legacy::platform::IOX_MAX_FILENAME_LENGTH>(".abc"),
+    EXPECT_TRUE(isValidPathEntry(string<iox2::legacy::platform::IOX2_MAX_FILENAME_LENGTH>(".abc"),
                                  RelativePathComponents::Accept));
-    EXPECT_TRUE(isValidPathEntry(string<iox2::legacy::platform::IOX_MAX_FILENAME_LENGTH>(".19283912asdb"),
+    EXPECT_TRUE(isValidPathEntry(string<iox2::legacy::platform::IOX2_MAX_FILENAME_LENGTH>(".19283912asdb"),
                                  RelativePathComponents::Accept));
-    EXPECT_TRUE(isValidPathEntry(string<iox2::legacy::platform::IOX_MAX_FILENAME_LENGTH>("..19283912asdb"),
+    EXPECT_TRUE(isValidPathEntry(string<iox2::legacy::platform::IOX2_MAX_FILENAME_LENGTH>("..19283912asdb"),
                                  RelativePathComponents::Accept));
-    EXPECT_TRUE(isValidPathEntry(string<iox2::legacy::platform::IOX_MAX_FILENAME_LENGTH>("..192839.12a.sdb"),
+    EXPECT_TRUE(isValidPathEntry(string<iox2::legacy::platform::IOX2_MAX_FILENAME_LENGTH>("..192839.12a.sdb"),
                                  RelativePathComponents::Accept));
 }
 
 TEST(path_and_flie_verifier_test_isValidPathEntry, StringContainingAllValidCharactersIsValid) {
     ::testing::Test::RecordProperty("TEST_ID", "b2c19516-e8fb-4fb8-a366-2b7b5fd9a84b");
-    EXPECT_TRUE(isValidPathEntry(string<iox2::legacy::platform::IOX_MAX_FILENAME_LENGTH>(
+    EXPECT_TRUE(isValidPathEntry(string<iox2::legacy::platform::IOX2_MAX_FILENAME_LENGTH>(
                                      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-.:_"),
                                  RelativePathComponents::Accept));
 }
 
 TEST(path_and_flie_verifier_test_isValidPathEntry, StringWithSlashIsInvalid) {
     ::testing::Test::RecordProperty("TEST_ID", "b1119db1-f897-48a5-af92-9a92eb3f9832");
-    EXPECT_FALSE(isValidPathEntry(string<iox2::legacy::platform::IOX_MAX_FILENAME_LENGTH>("/fuuuu/"),
+    EXPECT_FALSE(isValidPathEntry(string<iox2::legacy::platform::IOX2_MAX_FILENAME_LENGTH>("/fuuuu/"),
                                   RelativePathComponents::Accept));
-    EXPECT_FALSE(isValidPathEntry(string<iox2::legacy::platform::IOX_MAX_FILENAME_LENGTH>("fuu/uu"),
+    EXPECT_FALSE(isValidPathEntry(string<iox2::legacy::platform::IOX2_MAX_FILENAME_LENGTH>("fuu/uu"),
                                   RelativePathComponents::Accept));
-    EXPECT_FALSE(isValidPathEntry(string<iox2::legacy::platform::IOX_MAX_FILENAME_LENGTH>("/fuuuu"),
+    EXPECT_FALSE(isValidPathEntry(string<iox2::legacy::platform::IOX2_MAX_FILENAME_LENGTH>("/fuuuu"),
                                   RelativePathComponents::Accept));
-    EXPECT_FALSE(isValidPathEntry(string<iox2::legacy::platform::IOX_MAX_FILENAME_LENGTH>("uuuubbuu/"),
+    EXPECT_FALSE(isValidPathEntry(string<iox2::legacy::platform::IOX2_MAX_FILENAME_LENGTH>("uuuubbuu/"),
                                   RelativePathComponents::Accept));
 }
 
 TEST(path_and_flie_verifier_test_isValidPathEntry,
      StringWithRelativeComponentsIsInvalidWhenItContainsRelativeComponents) {
     ::testing::Test::RecordProperty("TEST_ID", "6c73e08e-3b42-446e-b8d4-a4ed7685f28e");
-    EXPECT_FALSE(isValidPathEntry(string<iox2::legacy::platform::IOX_MAX_FILENAME_LENGTH>("../to/be"),
+    EXPECT_FALSE(isValidPathEntry(string<iox2::legacy::platform::IOX2_MAX_FILENAME_LENGTH>("../to/be"),
                                   RelativePathComponents::Reject));
-    EXPECT_FALSE(isValidPathEntry(string<iox2::legacy::platform::IOX_MAX_FILENAME_LENGTH>("../../or/not"),
+    EXPECT_FALSE(isValidPathEntry(string<iox2::legacy::platform::IOX2_MAX_FILENAME_LENGTH>("../../or/not"),
                                   RelativePathComponents::Reject));
-    EXPECT_FALSE(isValidPathEntry(string<iox2::legacy::platform::IOX_MAX_FILENAME_LENGTH>("to/../be"),
-                                  RelativePathComponents::Reject));
-    EXPECT_FALSE(isValidPathEntry(string<iox2::legacy::platform::IOX_MAX_FILENAME_LENGTH>("that/../../is/the/question"),
-                                  RelativePathComponents::Reject));
-    EXPECT_FALSE(isValidPathEntry(string<iox2::legacy::platform::IOX_MAX_FILENAME_LENGTH>("whether/tis/nobler/.."),
+    EXPECT_FALSE(isValidPathEntry(string<iox2::legacy::platform::IOX2_MAX_FILENAME_LENGTH>("to/../be"),
                                   RelativePathComponents::Reject));
     EXPECT_FALSE(
-        isValidPathEntry(string<iox2::legacy::platform::IOX_MAX_FILENAME_LENGTH>("in/the/mind/to/suffer//../.."),
+        isValidPathEntry(string<iox2::legacy::platform::IOX2_MAX_FILENAME_LENGTH>("that/../../is/the/question"),
                          RelativePathComponents::Reject));
-    EXPECT_FALSE(
-        isValidPathEntry(string<iox2::legacy::platform::IOX_MAX_FILENAME_LENGTH>("../the/slings/and/arrows/../.."),
-                         RelativePathComponents::Reject));
-    EXPECT_FALSE(
-        isValidPathEntry(string<iox2::legacy::platform::IOX_MAX_FILENAME_LENGTH>("../of/../outrageous/fortune/../.."),
-                         RelativePathComponents::Reject));
-    EXPECT_FALSE(isValidPathEntry(string<iox2::legacy::platform::IOX_MAX_FILENAME_LENGTH>("./or/to/take/../arms/../.."),
+    EXPECT_FALSE(isValidPathEntry(string<iox2::legacy::platform::IOX2_MAX_FILENAME_LENGTH>("whether/tis/nobler/.."),
                                   RelativePathComponents::Reject));
     EXPECT_FALSE(
-        isValidPathEntry(string<iox2::legacy::platform::IOX_MAX_FILENAME_LENGTH>("./agains/a/see/./of/troubles/../.."),
+        isValidPathEntry(string<iox2::legacy::platform::IOX2_MAX_FILENAME_LENGTH>("in/the/mind/to/suffer//../.."),
                          RelativePathComponents::Reject));
-    EXPECT_FALSE(isValidPathEntry(string<iox2::legacy::platform::IOX_MAX_FILENAME_LENGTH>("./and/by/../opposing/./."),
+    EXPECT_FALSE(
+        isValidPathEntry(string<iox2::legacy::platform::IOX2_MAX_FILENAME_LENGTH>("../the/slings/and/arrows/../.."),
+                         RelativePathComponents::Reject));
+    EXPECT_FALSE(
+        isValidPathEntry(string<iox2::legacy::platform::IOX2_MAX_FILENAME_LENGTH>("../of/../outrageous/fortune/../.."),
+                         RelativePathComponents::Reject));
+    EXPECT_FALSE(
+        isValidPathEntry(string<iox2::legacy::platform::IOX2_MAX_FILENAME_LENGTH>("./or/to/take/../arms/../.."),
+                         RelativePathComponents::Reject));
+    EXPECT_FALSE(
+        isValidPathEntry(string<iox2::legacy::platform::IOX2_MAX_FILENAME_LENGTH>("./agains/a/see/./of/troubles/../.."),
+                         RelativePathComponents::Reject));
+    EXPECT_FALSE(isValidPathEntry(string<iox2::legacy::platform::IOX2_MAX_FILENAME_LENGTH>("./and/by/../opposing/./."),
                                   RelativePathComponents::Reject));
-    EXPECT_FALSE(isValidPathEntry(string<iox2::legacy::platform::IOX_MAX_FILENAME_LENGTH>("./end/them"),
+    EXPECT_FALSE(isValidPathEntry(string<iox2::legacy::platform::IOX2_MAX_FILENAME_LENGTH>("./end/them"),
                                   RelativePathComponents::Reject));
-    EXPECT_FALSE(isValidPathEntry(string<iox2::legacy::platform::IOX_MAX_FILENAME_LENGTH>("to/./die"),
+    EXPECT_FALSE(isValidPathEntry(string<iox2::legacy::platform::IOX2_MAX_FILENAME_LENGTH>("to/./die"),
                                   RelativePathComponents::Reject));
-    EXPECT_FALSE(isValidPathEntry(string<iox2::legacy::platform::IOX_MAX_FILENAME_LENGTH>("to/./sleep/."),
+    EXPECT_FALSE(isValidPathEntry(string<iox2::legacy::platform::IOX2_MAX_FILENAME_LENGTH>("to/./sleep/."),
                                   RelativePathComponents::Reject));
 }
 

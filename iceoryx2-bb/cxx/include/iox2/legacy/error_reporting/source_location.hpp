@@ -13,8 +13,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_REPORTING_ERROR_REPORTING_LOCATION_HPP
-#define IOX_HOOFS_REPORTING_ERROR_REPORTING_LOCATION_HPP
+#ifndef IOX2_BB_REPORTING_ERROR_REPORTING_LOCATION_HPP
+#define IOX2_BB_REPORTING_ERROR_REPORTING_LOCATION_HPP
 
 namespace iox2 {
 namespace legacy {
@@ -36,10 +36,10 @@ struct SourceLocation {
 } // namespace iox2
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage) macro is required for use of location intrinsics (__FILE__ etc.)
-#define IOX_CURRENT_SOURCE_LOCATION                                                                                    \
+#define IOX2_CURRENT_SOURCE_LOCATION                                                                                   \
     iox2::legacy::er::SourceLocation {                                                                                 \
         __FILE__, __LINE__, static_cast<const char*>(__FUNCTION__)                                                     \
     } // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
       // needed for source code location, safely wrapped in macro
 
-#endif // IOX_HOOFS_REPORTING_ERROR_REPORTING_LOCATION_HPP
+#endif // IOX2_BB_REPORTING_ERROR_REPORTING_LOCATION_HPP

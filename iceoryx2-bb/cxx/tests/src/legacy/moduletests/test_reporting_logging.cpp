@@ -75,7 +75,7 @@ TEST(LoggingLogLevelThreshold_test, LogLevel) {
                                        iox2::legacy::log::LogLevel::Trace }) {
         SCOPED_TRACE(std::string("Logger LogLevel: ") + iox2::legacy::log::asStringLiteral(loggerLogLevel));
 
-        testLogLevelThreshold(loggerLogLevel, [](auto logLevel) { IOX_LOG_INTERNAL("", 0, "", logLevel, ""); });
+        testLogLevelThreshold(loggerLogLevel, [](auto logLevel) { IOX2_LOG_INTERNAL("", 0, "", logLevel, ""); });
     }
 }
 

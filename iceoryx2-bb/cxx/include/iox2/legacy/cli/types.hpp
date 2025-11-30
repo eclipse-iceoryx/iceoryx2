@@ -13,8 +13,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_CLI_TYPES_HPP
-#define IOX_HOOFS_CLI_TYPES_HPP
+#ifndef IOX2_BB_CLI_TYPES_HPP
+#define IOX2_BB_CLI_TYPES_HPP
 
 #include "iox2/legacy/string.hpp"
 
@@ -49,4 +49,4 @@ using TypeName_t = string<MAX_TYPE_NAME_LENGTH>;
 } // namespace legacy
 } // namespace iox2
 
-#endif // IOX_HOOFS_CLI_TYPES_HPP
+#endif // IOX2_BB_CLI_TYPES_HPP

@@ -13,8 +13,8 @@
 // limitations under the License.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-#ifndef IOX_HOOFS_MEMORY_MEMORY_HPP
-#define IOX_HOOFS_MEMORY_MEMORY_HPP
+#ifndef IOX2_BB_MEMORY_MEMORY_HPP
+#define IOX2_BB_MEMORY_MEMORY_HPP
 
 #include <cassert>
 #include <cstdint>
@@ -71,4 +71,4 @@ constexpr std::size_t maxSize() noexcept {
 }
 } // namespace legacy
 } // namespace iox2
-#endif // IOX_HOOFS_MEMORY_MEMORY_HPP
+#endif // IOX2_BB_MEMORY_MEMORY_HPP

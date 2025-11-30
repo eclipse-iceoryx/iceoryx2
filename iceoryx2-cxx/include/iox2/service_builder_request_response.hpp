@@ -40,7 +40,7 @@ class ServiceBuilderRequestResponse {
 #ifdef DOXYGEN_MACRO_FIX
     auto request_payload_alignment(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, request_payload_alignment);
+    IOX2_BUILDER_OPTIONAL(uint64_t, request_payload_alignment);
 #endif
 
     /// If the [`Service`] is created, it defines the response [`Alignment`] of the payload for the
@@ -50,7 +50,7 @@ class ServiceBuilderRequestResponse {
 #ifdef DOXYGEN_MACRO_FIX
     auto response_payload_alignment(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, response_payload_alignment);
+    IOX2_BUILDER_OPTIONAL(uint64_t, response_payload_alignment);
 #endif
 
     /// If the [`Service`] is created, defines the overflow behavior of the service for requests.
@@ -59,7 +59,7 @@ class ServiceBuilderRequestResponse {
 #ifdef DOXYGEN_MACRO_FIX
     auto enable_safe_overflow_for_requests(const bool value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(bool, enable_safe_overflow_for_requests);
+    IOX2_BUILDER_OPTIONAL(bool, enable_safe_overflow_for_requests);
 #endif
 
     /// If the [`Service`] is created, defines the overflow behavior of the service for responses.
@@ -68,7 +68,7 @@ class ServiceBuilderRequestResponse {
 #ifdef DOXYGEN_MACRO_FIX
     auto enable_safe_overflow_for_responses(const bool value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(bool, enable_safe_overflow_for_responses);
+    IOX2_BUILDER_OPTIONAL(bool, enable_safe_overflow_for_responses);
 #endif
 
     /// Defines how many active requests a [`Server`] can hold in
@@ -77,7 +77,7 @@ class ServiceBuilderRequestResponse {
 #ifdef DOXYGEN_MACRO_FIX
     auto max_active_requests_per_client(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, max_active_requests_per_client);
+    IOX2_BUILDER_OPTIONAL(uint64_t, max_active_requests_per_client);
 #endif
 
     /// If the [`Service`] is created it defines how many responses fit in the
@@ -86,7 +86,7 @@ class ServiceBuilderRequestResponse {
 #ifdef DOXYGEN_MACRO_FIX
     auto max_response_buffer_size(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, max_response_buffer_size);
+    IOX2_BUILDER_OPTIONAL(uint64_t, max_response_buffer_size);
 #endif
 
     /// If the [`Service`] is created it defines how many [`Server`]s shall
@@ -95,7 +95,7 @@ class ServiceBuilderRequestResponse {
 #ifdef DOXYGEN_MACRO_FIX
     auto max_servers(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, max_servers);
+    IOX2_BUILDER_OPTIONAL(uint64_t, max_servers);
 #endif
 
     /// If the [`Service`] is created it defines how many [`Client`]s shall
@@ -104,7 +104,7 @@ class ServiceBuilderRequestResponse {
 #ifdef DOXYGEN_MACRO_FIX
     auto max_clients(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, max_clients);
+    IOX2_BUILDER_OPTIONAL(uint64_t, max_clients);
 #endif
 
     /// If the [`Service`] is created it defines how many [`Node`]s shall
@@ -113,7 +113,7 @@ class ServiceBuilderRequestResponse {
 #ifdef DOXYGEN_MACRO_FIX
     auto max_nodes(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, max_nodes);
+    IOX2_BUILDER_OPTIONAL(uint64_t, max_nodes);
 #endif
 
     /// If the [`Service`] is created it defines how many [`Response`]s shall
@@ -122,7 +122,7 @@ class ServiceBuilderRequestResponse {
 #ifdef DOXYGEN_MACRO_FIX
     auto max_borrowed_responses_per_pending_response(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, max_borrowed_responses_per_pending_response);
+    IOX2_BUILDER_OPTIONAL(uint64_t, max_borrowed_responses_per_pending_response);
 #endif
 
     /// If the [`Service`] is created it defines how many [`RequestMut`] a
@@ -130,14 +130,14 @@ class ServiceBuilderRequestResponse {
 #ifdef DOXYGEN_MACRO_FIX
     auto max_loaned_requests(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, max_loaned_requests);
+    IOX2_BUILDER_OPTIONAL(uint64_t, max_loaned_requests);
 #endif
 
     /// If the [`Service`] is created, defines the fire-and-forget behavior of the service for requests.
 #ifdef DOXYGEN_MACRO_FIX
     auto enable_fire_and_forget_requests(const bool value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(bool, enable_fire_and_forget_requests);
+    IOX2_BUILDER_OPTIONAL(bool, enable_fire_and_forget_requests);
 #endif
 
   public:
@@ -456,7 +456,7 @@ inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
         request_payload_type_align);
 
     if (request_payload_result != IOX2_OK) {
-        IOX_PANIC("This should never happen! Implementation failure while setting the RequestPayload-Type.");
+        IOX2_PANIC("This should never happen! Implementation failure while setting the RequestPayload-Type.");
     }
 
     // response payload type details
@@ -477,7 +477,7 @@ inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
         response_payload_type_align);
 
     if (response_payload_result != IOX2_OK) {
-        IOX_PANIC("This should never happen! Implementation failure while setting the ResponsePayload-Type.");
+        IOX2_PANIC("This should never happen! Implementation failure while setting the ResponsePayload-Type.");
     }
 
     // request header type details
@@ -495,7 +495,7 @@ inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
         request_header_type_align);
 
     if (request_header_result != IOX2_OK) {
-        IOX_PANIC("This should never happen! Implementation failure while setting the Request-Header-Type.");
+        IOX2_PANIC("This should never happen! Implementation failure while setting the Request-Header-Type.");
     }
 
     // response header type details
@@ -513,7 +513,7 @@ inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
         response_header_type_align);
 
     if (response_header_result != IOX2_OK) {
-        IOX_PANIC("This should never happen! Implementation failure while setting the Response-Header-Type.");
+        IOX2_PANIC("This should never happen! Implementation failure while setting the Response-Header-Type.");
     }
 }
 } // namespace iox2

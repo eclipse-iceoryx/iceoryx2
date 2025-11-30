@@ -13,8 +13,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_TESTING_TESTING_LOGGER_HPP
-#define IOX_HOOFS_TESTING_TESTING_LOGGER_HPP
+#ifndef IOX2_BB_TESTING_TESTING_LOGGER_HPP
+#define IOX2_BB_TESTING_TESTING_LOGGER_HPP
 
 #include "iox2/legacy/log/logger.hpp"
 
@@ -28,8 +28,8 @@ namespace iox2 {
 namespace legacy {
 namespace testing {
 /// @brief This logger is used for tests. It caches all the log messages and prints them to the console when a test
-/// fails. For debug purposes this behaviour can be overwritten with the 'IOX_TESTING_ALLOW_LOG' environment variable,
-/// e.g. 'IOX_TESTING_ALLOW_LOG=ON ./hoofs_moduletests --gtest_filter=SharedMemoryObject_Test\*'. Furthermore, it can
+/// fails. For debug purposes this behaviour can be overwritten with the 'IOX2_TESTING_ALLOW_LOG' environment variable,
+/// e.g. 'IOX2_TESTING_ALLOW_LOG=ON ./hoofs_moduletests --gtest_filter=SharedMemoryObject_Test\*'. Furthermore, it can
 /// also be used to check for the occurrence on specific log messages, e.g. when a function is expected to log an error.
 /// @code
 /// callToFunctionWhichLogsAnError();
@@ -118,4 +118,4 @@ class LogPrinter : public ::testing::EmptyTestEventListener {
 } // namespace legacy
 } // namespace iox2
 
-#endif // IOX_HOOFS_TESTING_TESTING_LOGGER_HPP
+#endif // IOX2_BB_TESTING_TESTING_LOGGER_HPP

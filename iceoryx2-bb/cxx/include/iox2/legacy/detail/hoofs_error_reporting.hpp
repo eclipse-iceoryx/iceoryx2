@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-#ifndef IOX_HOOFS_ERROR_HANDLING_ERROR_HANDLING_HPP
-#define IOX_HOOFS_ERROR_HANDLING_ERROR_HANDLING_HPP
+#ifndef IOX2_BB_ERROR_HANDLING_ERROR_HANDLING_HPP
+#define IOX2_BB_ERROR_HANDLING_ERROR_HANDLING_HPP
 
 // Each module (= some unit with its own errors) must provide the following.
 
@@ -37,7 +37,7 @@ namespace legacy {
 
 // NOLINTJUSTIFICATION This macro is usee to define an enum and an array with corresponding enum tag names
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define IOX_HOOFS_ERRORS(error) \
+#define IOX2_BB_ERRORS(error) \
     error(DO_NOT_USE_AS_ERROR_THIS_IS_AN_INTERNAL_MARKER) // keep this always at the end of the error list
 
 // clang-format on
@@ -46,7 +46,7 @@ namespace legacy {
 
 // NOLINTNEXTLINE(performance-enum-size) the type is required for error handling
 enum class HoofsError : iox2::legacy::er::ErrorCode::type {
-    IOX_HOOFS_ERRORS(IOX_CREATE_ERROR_ENUM)
+    IOX2_BB_ERRORS(IOX2_CREATE_ERROR_ENUM)
 };
 
 const char* asStringLiteral(const HoofsError error) noexcept;
@@ -78,7 +78,7 @@ class HoofsErrorType {
         return "iceoryx2-bb-cxx";
     }
 
-    static constexpr iox2::legacy::er::ModuleId MODULE_ID { iox2::legacy::er::ModuleId::HOOFS };
+    static constexpr iox2::legacy::er::ModuleId MODULE_ID { iox2::legacy::er::ModuleId::IOX2_BB };
 
   protected:
     iox2::legacy::er::ErrorCode m_code;
@@ -99,4 +99,4 @@ inline ModuleId toModule(HoofsError) {
 } // namespace legacy
 } // namespace iox2
 
-#endif // IOX_HOOFS_ERROR_HANDLING_ERROR_HANDLING_HPP
+#endif // IOX2_BB_ERROR_HANDLING_ERROR_HANDLING_HPP

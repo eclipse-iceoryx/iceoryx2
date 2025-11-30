@@ -13,8 +13,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_VOCABULARY_EXPECTED_HELPER_HPP
-#define IOX_HOOFS_VOCABULARY_EXPECTED_HELPER_HPP
+#ifndef IOX2_BB_VOCABULARY_EXPECTED_HELPER_HPP
+#define IOX2_BB_VOCABULARY_EXPECTED_HELPER_HPP
 
 #include "iox2/legacy/optional.hpp"
 #include "iox2/legacy/variant.hpp"
@@ -216,4 +216,4 @@ struct compare_expected_value<void, E> {
 } // namespace legacy
 } // namespace iox2
 
-#endif // IOX_HOOFS_VOCABULARY_EXPECTED_HELPER_HPP
+#endif // IOX2_BB_VOCABULARY_EXPECTED_HELPER_HPP

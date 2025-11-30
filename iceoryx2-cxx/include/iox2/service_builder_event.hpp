@@ -36,7 +36,7 @@ class ServiceBuilderEvent {
 #ifdef DOXYGEN_MACRO_FIX
     auto max_nodes(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, max_nodes);
+    IOX2_BUILDER_OPTIONAL(uint64_t, max_nodes);
 #endif
 
     /// If the [`Service`] is created it set the greatest supported [`NodeId`] value
@@ -45,7 +45,7 @@ class ServiceBuilderEvent {
 #ifdef DOXYGEN_MACRO_FIX
     auto event_id_max_value(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, event_id_max_value);
+    IOX2_BUILDER_OPTIONAL(uint64_t, event_id_max_value);
 #endif
 
     /// If the [`Service`] is created it defines how many [`Notifier`] shall
@@ -54,7 +54,7 @@ class ServiceBuilderEvent {
 #ifdef DOXYGEN_MACRO_FIX
     auto max_notifiers(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, max_notifiers);
+    IOX2_BUILDER_OPTIONAL(uint64_t, max_notifiers);
 #endif
 
     /// If the [`Service`] is created it defines how many [`Listener`] shall
@@ -63,7 +63,7 @@ class ServiceBuilderEvent {
 #ifdef DOXYGEN_MACRO_FIX
     auto max_listeners(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, max_listeners);
+    IOX2_BUILDER_OPTIONAL(uint64_t, max_listeners);
 #endif
 
   public:

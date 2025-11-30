@@ -14,8 +14,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_REPORTING_ERROR_REPORTING_MACROS_HPP
-#define IOX_HOOFS_REPORTING_ERROR_REPORTING_MACROS_HPP
+#ifndef IOX2_BB_REPORTING_ERROR_REPORTING_MACROS_HPP
+#define IOX2_BB_REPORTING_ERROR_REPORTING_MACROS_HPP
 
 #include "iox2/legacy/error_reporting/configuration.hpp"
 #include "iox2/legacy/error_reporting/error_forwarding.hpp"
@@ -39,36 +39,36 @@
 /// @brief report error of some non-fatal kind
 /// @param error error object (or code)
 /// @param kind kind of error, must be non-fatal
-#define IOX_REPORT(error, kind)                                                                                        \
-    iox2::legacy::er::forwardNonFatalError(iox2::legacy::er::toError(error), kind, IOX_CURRENT_SOURCE_LOCATION, "")
+#define IOX2_REPORT(error, kind)                                                                                       \
+    iox2::legacy::er::forwardNonFatalError(iox2::legacy::er::toError(error), kind, IOX2_CURRENT_SOURCE_LOCATION, "")
 
 /// @brief report fatal error
 /// @param error error object (or code)
-#define IOX_REPORT_FATAL(error)                                                                                        \
+#define IOX2_REPORT_FATAL(error)                                                                                       \
     iox2::legacy::er::forwardFatalError(                                                                               \
-        iox2::legacy::er::toError(error), iox2::legacy::er::FATAL, IOX_CURRENT_SOURCE_LOCATION, "")
+        iox2::legacy::er::toError(error), iox2::legacy::er::FATAL, IOX2_CURRENT_SOURCE_LOCATION, "")
 
 /// @brief report error of some non-fatal kind if expr evaluates to true
 /// @param condition boolean expression
 /// @param error error object (or code)
 /// @param kind kind of error, must be non-fatal
-#define IOX_REPORT_IF(condition, error, kind)                                                                          \
+#define IOX2_REPORT_IF(condition, error, kind)                                                                         \
     if (condition) {                                                                                                   \
         iox2::legacy::er::forwardNonFatalError(                                                                        \
-            iox2::legacy::er::toError(error), kind, IOX_CURRENT_SOURCE_LOCATION, #condition);                          \
+            iox2::legacy::er::toError(error), kind, IOX2_CURRENT_SOURCE_LOCATION, #condition);                         \
     }                                                                                                                  \
     [] { }() // the empty lambda forces a semicolon on the caller side
 
 /// @brief report fatal error if expr evaluates to true
 /// @param condition boolean expression
 /// @param error error object (or code)
-#define IOX_REPORT_FATAL_IF(condition, error)                                                                          \
+#define IOX2_REPORT_FATAL_IF(condition, error)                                                                         \
     if (condition) {                                                                                                   \
         iox2::legacy::er::forwardFatalError(                                                                           \
-            iox2::legacy::er::toError(error), iox2::legacy::er::FATAL, IOX_CURRENT_SOURCE_LOCATION, #condition);       \
+            iox2::legacy::er::toError(error), iox2::legacy::er::FATAL, IOX2_CURRENT_SOURCE_LOCATION, #condition);      \
     }                                                                                                                  \
     [] { }() // the empty lambda forces a semicolon on the caller side
 
 // NOLINTEND(cppcoreguidelines-macro-usage)
 
-#endif // IOX_HOOFS_REPORTING_ERROR_REPORTING_MACROS_HPP
+#endif // IOX2_BB_REPORTING_ERROR_REPORTING_MACROS_HPP

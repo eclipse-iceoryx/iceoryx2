@@ -13,8 +13,8 @@
 // limitations under the License.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-#ifndef IOX_HOOFS_TIME_UNITS_DURATION_HPP
-#define IOX_HOOFS_TIME_UNITS_DURATION_HPP
+#ifndef IOX2_BB_TIME_UNITS_DURATION_HPP
+#define IOX2_BB_TIME_UNITS_DURATION_HPP
 
 #include "iox2/legacy/expected.hpp"
 #include "iox2/legacy/log/logstream.hpp"
@@ -66,9 +66,9 @@ constexpr Duration operator""_d(unsigned long long int value) noexcept;
 ///   using namespace units::duration_literals;
 ///   auto someDays = 2 * 7_d + 5_ns;
 ///   auto someSeconds = 42_s + 500_ms;
-///   IOX_LOG(Info, someDays);
-///   IOX_LOG(Info, someDays.nanoSeconds<uint64_t>() << " ns");
-///   IOX_LOG(Info, someSeconds.milliSeconds<int64_t>() << " ms");
+///   IOX2_LOG(Info, someDays);
+///   IOX2_LOG(Info, someDays.nanoSeconds<uint64_t>() << " ns");
+///   IOX2_LOG(Info, someSeconds.milliSeconds<int64_t>() << " ms");
 /// @endcode
 class Duration {
   public:
@@ -382,4 +382,4 @@ constexpr bool operator>=(const Duration& lhs, const Duration& rhs) noexcept;
 
 #include "iox2/legacy/detail/duration.inl"
 
-#endif // IOX_HOOFS_TIME_UNITS_DURATION_HPP
+#endif // IOX2_BB_TIME_UNITS_DURATION_HPP

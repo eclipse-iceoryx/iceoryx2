@@ -13,8 +13,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_DESIGN_STATIC_LIFETIME_GUARD_HPP
-#define IOX_HOOFS_DESIGN_STATIC_LIFETIME_GUARD_HPP
+#ifndef IOX2_BB_DESIGN_STATIC_LIFETIME_GUARD_HPP
+#define IOX2_BB_DESIGN_STATIC_LIFETIME_GUARD_HPP
 
 #include "iox2/legacy/atomic.hpp"
 
@@ -120,4 +120,4 @@ class StaticLifetimeGuard {
 
 #include "iox2/legacy/detail/static_lifetime_guard.inl"
 
-#endif // IOX_HOOFS_DESIGN_STATIC_LIFETIME_GUARD_HPP
+#endif // IOX2_BB_DESIGN_STATIC_LIFETIME_GUARD_HPP

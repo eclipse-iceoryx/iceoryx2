@@ -13,8 +13,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_CLI_CLI_DEFINITION_INL
-#define IOX_HOOFS_CLI_CLI_DEFINITION_INL
+#ifndef IOX2_BB_CLI_CLI_DEFINITION_INL
+#define IOX2_BB_CLI_CLI_DEFINITION_INL
 
 #include "iox2/legacy/cli/arguments.hpp"
 
@@ -55,4 +55,4 @@ inline expected<T, Arguments::Error> Arguments::get(const OptionName_t& optionNa
 } // namespace legacy
 } // namespace iox2
 
-#endif // IOX_HOOFS_CLI_CLI_DEFINITION_INL
+#endif // IOX2_BB_CLI_CLI_DEFINITION_INL

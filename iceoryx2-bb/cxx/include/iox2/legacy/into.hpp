@@ -13,8 +13,8 @@
 // limitations under the License.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-#ifndef IOX_HOOFS_UTILITY_INTO_HPP
-#define IOX_HOOFS_UTILITY_INTO_HPP
+#ifndef IOX2_BB_UTILITY_INTO_HPP
+#define IOX2_BB_UTILITY_INTO_HPP
 
 namespace iox2 {
 namespace legacy {
@@ -113,4 +113,4 @@ constexpr typename detail::extract_into_type<DestinationType>::type_t into(const
 
 #include "iox2/legacy/detail/into.inl"
 
-#endif // IOX_HOOFS_UTILITY_INTO_HPP
+#endif // IOX2_BB_UTILITY_INTO_HPP

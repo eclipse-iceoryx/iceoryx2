@@ -13,8 +13,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_MEMORY_STATIC_STORAGE_INL
-#define IOX_HOOFS_MEMORY_STATIC_STORAGE_INL
+#ifndef IOX2_BB_MEMORY_STATIC_STORAGE_INL
+#define IOX2_BB_MEMORY_STATIC_STORAGE_INL
 
 #include "iox2/legacy/detail/static_storage.hpp"
 
@@ -98,4 +98,4 @@ constexpr uint64_t static_storage<Capacity, Align>::allocation_size() noexcept {
 } // namespace iox2
 
 
-#endif // IOX_HOOFS_MEMORY_STATIC_STORAGE_INL
+#endif // IOX2_BB_MEMORY_STATIC_STORAGE_INL

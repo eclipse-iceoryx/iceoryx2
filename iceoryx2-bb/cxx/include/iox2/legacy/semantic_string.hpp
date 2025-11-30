@@ -13,8 +13,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_VOCABULARY_SEMANTIC_STRING_HPP
-#define IOX_HOOFS_VOCABULARY_SEMANTIC_STRING_HPP
+#ifndef IOX2_BB_VOCABULARY_SEMANTIC_STRING_HPP
+#define IOX2_BB_VOCABULARY_SEMANTIC_STRING_HPP
 
 #include "iox2/legacy/expected.hpp"
 #include "iox2/legacy/string.hpp"

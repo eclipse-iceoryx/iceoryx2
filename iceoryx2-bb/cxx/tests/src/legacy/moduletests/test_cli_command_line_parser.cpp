@@ -70,7 +70,7 @@ TEST_F(CommandLineParser_test, SettingBinaryNameWorks) {
 
 TEST_F(CommandLineParser_test, EmptyArgcLeadsToExit) {
     ::testing::Test::RecordProperty("TEST_ID", "627e7d26-7ba8-466f-8160-61dbff7f3a4d");
-    IOX_DISCARD_RESULT(parseCommandLineArguments(OptionDefinition("", errorCallback), 0, nullptr));
+    IOX2_DISCARD_RESULT(parseCommandLineArguments(OptionDefinition("", errorCallback), 0, nullptr));
 
     EXPECT_THAT(numberOfErrorCallbackCalls, Eq(1));
 }
@@ -99,7 +99,7 @@ void FailureTest(const std::vector<std::string>& options,
             optionSet.addRequired(r[0], iox2::legacy::into<iox2::legacy::lossy<OptionName_t>>(r), "", "int");
         }
 
-        IOX_DISCARD_RESULT(parseCommandLineArguments(optionSet, args.argc, args.argv, 1U));
+        IOX2_DISCARD_RESULT(parseCommandLineArguments(optionSet, args.argc, args.argv, 1U));
     }
 
     EXPECT_TRUE(wasErrorHandlerCalled);
@@ -853,7 +853,7 @@ Arguments SuccessTest(const std::vector<std::string>& options,
         }
     }
 
-    IOX_TESTING_EXPECT_OK();
+    IOX2_TESTING_EXPECT_OK();
 
     return retVal;
 }

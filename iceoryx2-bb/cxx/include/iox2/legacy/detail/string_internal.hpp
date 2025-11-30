@@ -13,8 +13,8 @@
 // limitations under the License.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-#ifndef IOX_HOOFS_VOCABULARY_STRING_INTERNAL_HPP
-#define IOX_HOOFS_VOCABULARY_STRING_INTERNAL_HPP
+#ifndef IOX2_BB_VOCABULARY_STRING_INTERNAL_HPP
+#define IOX2_BB_VOCABULARY_STRING_INTERNAL_HPP
 
 #include "iox2/legacy/attributes.hpp"
 #include "iox2/legacy/type_traits.hpp"
@@ -152,4 +152,4 @@ struct SumCapa<T, Targs...> {
 // AXIVION ENABLE STYLE AutosarC++19_03-A18.1.1
 } // namespace legacy
 } // namespace iox2
-#endif // IOX_HOOFS_VOCABULARY_STRING_INTERNAL_HPP
+#endif // IOX2_BB_VOCABULARY_STRING_INTERNAL_HPP

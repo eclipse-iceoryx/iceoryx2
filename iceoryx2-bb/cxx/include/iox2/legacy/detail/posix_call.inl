@@ -13,8 +13,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_POSIX_DESIGN_POSIX_CALL_INL
-#define IOX_HOOFS_POSIX_DESIGN_POSIX_CALL_INL
+#ifndef IOX2_BB_POSIX_DESIGN_POSIX_CALL_INL
+#define IOX2_BB_POSIX_DESIGN_POSIX_CALL_INL
 
 #include "iox2/legacy/logging.hpp"
 #include "iox2/legacy/posix_call.hpp"
@@ -24,15 +24,15 @@ namespace legacy {
 namespace detail {
 template <typename ReturnType, typename... FunctionArguments>
 inline PosixCallBuilder<ReturnType, FunctionArguments...>
-// NOLINTJUSTIFICATION this function is never used directly, only be the macro IOX_POSIX_CALL
+// NOLINTJUSTIFICATION this function is never used directly, only be the macro IOX2_POSIX_CALL
 // NOLINTNEXTLINE(readability-function-size)
-createPosixCallBuilder(ReturnType (*IOX_POSIX_CALL)(FunctionArguments...),
+createPosixCallBuilder(ReturnType (*IOX2_POSIX_CALL)(FunctionArguments...),
                        const char* posixFunctionName,
                        const char* file,
                        const int32_t line,
                        const char* callingFunction) noexcept {
     return PosixCallBuilder<ReturnType, FunctionArguments...>(
-        IOX_POSIX_CALL, posixFunctionName, file, line, callingFunction);
+        IOX2_POSIX_CALL, posixFunctionName, file, line, callingFunction);
 }
 
 template <typename ReturnType>
@@ -53,12 +53,13 @@ inline PosixCallDetails<ReturnType>::PosixCallDetails(const char* posixFunctionN
 /// of "strerror_r", the posix compliant one which returns an int and stores the message in the buffer
 /// and a gnu version which returns a pointer to the message and sometimes stores the message
 /// in the buffer
-inline string<POSIX_CALL_ERROR_STRING_SIZE> errorLiteralToString(const int returnCode IOX_MAYBE_UNUSED,
+inline string<POSIX_CALL_ERROR_STRING_SIZE> errorLiteralToString(const int returnCode IOX2_MAYBE_UNUSED,
                                                                  char* const buffer) {
     return string<POSIX_CALL_ERROR_STRING_SIZE>(TruncateToCapacity, buffer);
 }
 
-inline string<POSIX_CALL_ERROR_STRING_SIZE> errorLiteralToString(const char* msg, char* const buffer IOX_MAYBE_UNUSED) {
+inline string<POSIX_CALL_ERROR_STRING_SIZE> errorLiteralToString(const char* msg,
+                                                                 char* const buffer IOX2_MAYBE_UNUSED) {
     return string<POSIX_CALL_ERROR_STRING_SIZE>(TruncateToCapacity, msg);
 }
 
@@ -87,12 +88,12 @@ doesContainValue(const T1 value, const T2 firstValueListEntry, const ValueList..
 } // namespace detail
 
 template <typename ReturnType, typename... FunctionArguments>
-inline PosixCallBuilder<ReturnType, FunctionArguments...>::PosixCallBuilder(FunctionType_t IOX_POSIX_CALL,
+inline PosixCallBuilder<ReturnType, FunctionArguments...>::PosixCallBuilder(FunctionType_t IOX2_POSIX_CALL,
                                                                             const char* posixFunctionName,
                                                                             const char* file,
                                                                             const int32_t line,
                                                                             const char* callingFunction) noexcept
-    : m_IOX_POSIX_CALL { IOX_POSIX_CALL }
+    : m_IOX2_POSIX_CALL { IOX2_POSIX_CALL }
     , m_details { posixFunctionName, file, line, callingFunction } {
 }
 
@@ -101,7 +102,7 @@ inline PosixCallVerificator<ReturnType>
 PosixCallBuilder<ReturnType, FunctionArguments...>::operator()(FunctionArguments... arguments) && noexcept {
     for (uint64_t i = 0U; i < POSIX_CALL_EINTR_REPETITIONS; ++i) {
         errno = 0;
-        m_details.result.value = m_IOX_POSIX_CALL(arguments...);
+        m_details.result.value = m_IOX2_POSIX_CALL(arguments...);
         m_details.result.errnum = errno;
 
         if (m_details.result.errnum != EINTR) {
@@ -180,10 +181,10 @@ PosixCallEvaluator<ReturnType>::evaluate() const&& noexcept {
     }
 
     if (!m_details.hasSilentErrno) {
-        IOX_LOG(Error,
-                m_details.file << ":" << m_details.line << " { " << m_details.callingFunction << " -> "
-                               << m_details.posixFunctionName << " }  :::  [ errno: " << m_details.result.errnum
-                               << " ]");
+        IOX2_LOG(Error,
+                 m_details.file << ":" << m_details.line << " { " << m_details.callingFunction << " -> "
+                                << m_details.posixFunctionName << " }  :::  [ errno: " << m_details.result.errnum
+                                << " ]");
     }
 
     return err<PosixCallResult<ReturnType>>(m_details.result);
@@ -192,4 +193,4 @@ PosixCallEvaluator<ReturnType>::evaluate() const&& noexcept {
 } // namespace legacy
 } // namespace iox2
 
-#endif // IOX_HOOFS_POSIX_WRAPPER_POSIX_CALL_INL
+#endif // IOX2_BB_POSIX_WRAPPER_POSIX_CALL_INL

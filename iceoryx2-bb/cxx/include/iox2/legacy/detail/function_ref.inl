@@ -14,8 +14,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_HOOFS_FUNCTIONAL_FUNCTION_REF_INL
-#define IOX_HOOFS_FUNCTIONAL_FUNCTION_REF_INL
+#ifndef IOX2_BB_FUNCTIONAL_FUNCTION_REF_INL
+#define IOX2_BB_FUNCTIONAL_FUNCTION_REF_INL
 
 #include "iox2/legacy/assertions.hpp"
 #include "iox2/legacy/function_ref.hpp"
@@ -90,7 +90,7 @@ template <class ReturnType, class... ArgTypes>
 inline ReturnType function_ref<ReturnType(ArgTypes...)>::operator()(ArgTypes... args) const noexcept {
     auto wasCallableAssignedBeforehand = (m_pointerToCallable != nullptr) && (m_functionPointer != nullptr);
     if (!wasCallableAssignedBeforehand) {
-        IOX_PANIC("Empty function_ref invoked");
+        IOX2_PANIC("Empty function_ref invoked");
     }
     return m_functionPointer(m_pointerToCallable, std::forward<ArgTypes>(args)...);
 }
@@ -110,4 +110,4 @@ inline void swap(function_ref<ReturnType(ArgTypes...)>& lhs, function_ref<Return
 } // namespace legacy
 } // namespace iox2
 
-#endif // IOX_HOOFS_FUNCTIONAL_FUNCTION_REF_INL
+#endif // IOX2_BB_FUNCTIONAL_FUNCTION_REF_INL

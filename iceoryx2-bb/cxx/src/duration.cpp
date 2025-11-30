@@ -29,7 +29,7 @@ struct timespec Duration::timespec() const noexcept {
 
     static_assert(sizeof(uint64_t) >= sizeof(SEC_TYPE), "casting might alter result");
     if (this->m_seconds > static_cast<uint64_t>(std::numeric_limits<SEC_TYPE>::max())) {
-        IOX_LOG(Trace, ": Result of conversion would overflow, clamping to max value!");
+        IOX2_LOG(Trace, ": Result of conversion would overflow, clamping to max value!");
         return { std::numeric_limits<SEC_TYPE>::max(), NANOSECS_PER_SEC - 1U };
     }
 
