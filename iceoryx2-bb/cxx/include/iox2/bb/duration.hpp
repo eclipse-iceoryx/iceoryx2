@@ -85,7 +85,7 @@ class Duration {
     /// @return a new Duration object
     /// @attention Since negative durations are not allowed, the duration will be clamped to 0
     template <typename T>
-    static constexpr auto from_nanoseconds(const T value) noexcept -> Duration;
+    static constexpr auto from_nanoseconds(T value) noexcept -> Duration;
 
     /// @brief Constructs a new Duration object from microseconds
     /// @tparam T is an integer type for the value
@@ -93,7 +93,7 @@ class Duration {
     /// @return a new Duration object
     /// @attention Since negative durations are not allowed, the duration will be clamped to 0
     template <typename T>
-    static constexpr auto from_microseconds(const T value) noexcept -> Duration;
+    static constexpr auto from_microseconds(T value) noexcept -> Duration;
 
     /// @brief Constructs a new Duration object from milliseconds
     /// @tparam T is an integer type for the value
@@ -101,7 +101,7 @@ class Duration {
     /// @return a new Duration object
     /// @attention Since negative durations are not allowed, the duration will be clamped to 0
     template <typename T>
-    static constexpr auto from_milliseconds(const T value) noexcept -> Duration;
+    static constexpr auto from_milliseconds(T value) noexcept -> Duration;
 
     /// @brief Constructs a new Duration object from seconds
     /// @tparam T is an integer type for the value
@@ -109,7 +109,7 @@ class Duration {
     /// @return a new Duration object
     /// @attention Since negative durations are not allowed, the duration will be clamped to 0
     template <typename T>
-    static constexpr auto from_seconds(const T value) noexcept -> Duration;
+    static constexpr auto from_seconds(T value) noexcept -> Duration;
 
     /// @brief Constructs a new Duration object from minutes
     /// @tparam T is an integer type for the value
@@ -117,7 +117,7 @@ class Duration {
     /// @return a new Duration object
     /// @attention Since negative durations are not allowed, the duration will be clamped to 0
     template <typename T>
-    static constexpr auto from_minutes(const T value) noexcept -> Duration;
+    static constexpr auto from_minutes(T value) noexcept -> Duration;
 
     /// @brief Constructs a new Duration object from hours
     /// @tparam T is an integer type for the value
@@ -125,7 +125,7 @@ class Duration {
     /// @return a new Duration object
     /// @attention Since negative durations are not allowed, the duration will be clamped to 0
     template <typename T>
-    static constexpr auto from_hours(const T value) noexcept -> Duration;
+    static constexpr auto from_hours(T value) noexcept -> Duration;
 
     /// @brief Constructs a new Duration object from days
     /// @tparam T is an integer type for the value
@@ -133,7 +133,7 @@ class Duration {
     /// @return a new Duration object
     /// @attention Since negative durations are not allowed, the duration will be clamped to 0
     template <typename T>
-    static constexpr auto from_days(const T value) noexcept -> Duration;
+    static constexpr auto from_days(T value) noexcept -> Duration;
 
     /// @brief Constructs a new Duration object of maximum allowed length. Useful for functions which should have an
     /// "infinite" timeout.
@@ -297,20 +297,20 @@ class Duration {
     /// @param[in] seconds portion of the duration
     /// @param[in] nanoseconds portion of the duration
     /// @note this is protected to be able to use it in unit tests
-    constexpr Duration(const SecondsT seconds, const NanosecondsT nanoseconds) noexcept;
+    constexpr Duration(SecondsT seconds, NanosecondsT nanoseconds) noexcept;
 
     /// @note this is factory method is necessary to build with msvc due to issues calling a protected constexpr ctor
     /// from public methods
-    static constexpr auto create_duration(const SecondsT seconds, const NanosecondsT nanoseconds) noexcept -> Duration;
+    static constexpr auto create_duration(SecondsT seconds, NanosecondsT nanoseconds) noexcept -> Duration;
 
   private:
     template <typename T>
-    static constexpr auto positive_value_or_clamp_to_zero(const T value) noexcept -> uint64_t;
+    static constexpr auto positive_value_or_clamp_to_zero(T value) noexcept -> uint64_t;
 
     template <typename T>
-    constexpr auto from_floating_point_seconds(const T floating_point_seconds) const noexcept -> Duration;
+    constexpr auto from_floating_point_seconds(T floating_point_seconds) const noexcept -> Duration;
     template <typename From, typename To>
-    constexpr auto would_cast_from_floating_point_probably_overflow(const From floating_point) const noexcept -> bool;
+    constexpr auto would_cast_from_floating_point_probably_overflow(From floating_point) const noexcept -> bool;
 
     template <typename T>
     constexpr auto multiply_with(const std::enable_if_t<!std::is_floating_point<T>::value, T>& rhs) const noexcept
