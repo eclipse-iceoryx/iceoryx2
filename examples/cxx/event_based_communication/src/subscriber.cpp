@@ -15,7 +15,7 @@
 #include "custom_subscriber.hpp"
 #include "iox2/iceoryx2.hpp"
 
-constexpr iox2::bb::Duration DEADLINE = iox2::bb::Duration::fromSeconds(2);
+constexpr iox2::bb::Duration DEADLINE = iox2::bb::Duration::from_seconds(2);
 
 using namespace iox2;
 

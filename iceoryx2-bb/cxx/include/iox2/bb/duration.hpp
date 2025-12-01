@@ -841,15 +841,15 @@ constexpr auto operator""_d(unsigned long long int value) noexcept -> Duration {
 } // namespace iox2
 
 // AXIVION Next Construct AutosarC++19_03-M5.17.1 : This is not used as shift operator but as stream operator and does not require to implement '<<='
-inline auto operator<<(iox2::legacy::log::LogStream& stream, const iox2::bb::Duration t) noexcept
+inline auto operator<<(iox2::legacy::log::LogStream& stream, const iox2::bb::Duration duration) noexcept
     -> iox2::legacy::log::LogStream& {
-    stream << t.to_seconds() << "s " << t.subsec_nanos() << "ns";
+    stream << duration.to_seconds() << "s " << duration.subsec_nanos() << "ns";
     return stream;
 }
 
 // AXIVION Next Construct AutosarC++19_03-M5.17.1 : This is not used as shift operator but as stream operator and does not require to implement '<<='
-inline auto operator<<(std::ostream& stream, const iox2::bb::Duration t) -> std::ostream& {
-    stream << t.to_seconds() << "s " << t.subsec_nanos() << "ns";
+inline auto operator<<(std::ostream& stream, const iox2::bb::Duration duration) -> std::ostream& {
+    stream << duration.to_seconds() << "s " << duration.subsec_nanos() << "ns";
     return stream;
 }
 

@@ -165,7 +165,7 @@ TEST(Duration_test, ConstructFromTimespecWithZeroValue) {
     constexpr uint64_t NANOSECONDS { 0U };
     constexpr Duration EXPECTED_DURATION = create_duration(SECONDS, NANOSECONDS);
 
-    timespec ts = {};
+    timespec ts = {}; // NOLINT
     ts.tv_sec = SECONDS;
     ts.tv_nsec = NANOSECONDS;
 
@@ -206,7 +206,7 @@ TEST(Duration_test, ConstructFromTimespecWithMaxValue) {
     constexpr uint64_t SECONDS { std::numeric_limits<DurationAccessor::SecondsType>::max() };
     constexpr uint64_t NANOSECONDS { NANOSECS_PER_SECOND - 1U };
 
-    timespec ts = {};
+    timespec ts = {}; // NOLINT
     ts.tv_sec = static_cast<time_t>(SECONDS);
     ts.tv_nsec = static_cast<long>(NANOSECONDS);
 
