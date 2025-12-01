@@ -13,7 +13,6 @@
 use core::alloc::Layout;
 use iceoryx2_bb_concurrency::spin_lock::SpinLock;
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
-use iceoryx2_bb_posix::system_configuration::SystemInfo;
 use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
 use iceoryx2_bb_testing::{assert_that, watchdog::Watchdog};
 use std::alloc::{alloc, dealloc};
@@ -48,12 +47,13 @@ fn lock_guard_behaves_like_reference() {
 
 #[test]
 fn blocking_lock_locks_exclusively() {
+    const NUMBER_OF_THREADS: usize = 2;
+
     let _watchdog = Watchdog::new();
-    let number_of_threads = SystemInfo::NumberOfCpuCores.value() * 2;
-    let barrier = Barrier::new(number_of_threads);
+    let barrier = Barrier::new(NUMBER_OF_THREADS);
     let lk = SpinLock::new(0);
     thread::scope(|s| {
-        for _ in 0..number_of_threads {
+        for _ in 0..NUMBER_OF_THREADS {
             s.spawn(|| {
                 barrier.wait();
                 let mut guard = lk.blocking_lock();
@@ -62,17 +62,18 @@ fn blocking_lock_locks_exclusively() {
         }
     });
     let guard = lk.blocking_lock();
-    assert_that!(*guard, eq number_of_threads);
+    assert_that!(*guard, eq NUMBER_OF_THREADS);
 }
 
 #[test]
 fn try_lock_locks_exclusively() {
+    const NUMBER_OF_THREADS: usize = 2;
+
     let _watchdog = Watchdog::new();
-    let number_of_threads = SystemInfo::NumberOfCpuCores.value() * 2;
-    let barrier = Barrier::new(number_of_threads);
+    let barrier = Barrier::new(NUMBER_OF_THREADS);
     let lk = SpinLock::new(0);
     thread::scope(|s| {
-        for _n in 0..number_of_threads {
+        for _n in 0..NUMBER_OF_THREADS {
             s.spawn(|| {
                 barrier.wait();
                 let guard = lk.try_lock();
@@ -84,7 +85,7 @@ fn try_lock_locks_exclusively() {
     });
     let guard = lk.blocking_lock();
     assert_that!(*guard, gt 0);
-    assert_that!(*guard, le number_of_threads);
+    assert_that!(*guard, le NUMBER_OF_THREADS);
 }
 
 #[test]
