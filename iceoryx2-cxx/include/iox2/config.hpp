@@ -16,8 +16,8 @@
 #include "iox2/bb/duration.hpp"
 #include "iox2/config_creation_error.hpp"
 #include "iox2/internal/iceoryx2.hpp"
-#include "iox2/legacy/file_name.hpp"
-#include "iox2/legacy/path.hpp"
+#include "iox2/bb/file_name.hpp"
+#include "iox2/bb/path.hpp"
 #include "iox2/unable_to_deliver_strategy.hpp"
 
 namespace iox2 {

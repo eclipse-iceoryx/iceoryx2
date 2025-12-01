@@ -14,7 +14,7 @@
 #define IOX2_NODE_DETAILS_HPP
 
 #include "iox2/config.hpp"
-#include "iox2/legacy/file_name.hpp"
+#include "iox2/bb/file_name.hpp"
 #include "iox2/node_name.hpp"
 
 namespace iox2 {

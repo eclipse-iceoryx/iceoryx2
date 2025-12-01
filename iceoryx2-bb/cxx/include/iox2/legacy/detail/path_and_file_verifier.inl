@@ -15,7 +15,7 @@
 #ifndef IOX2_BB_POSIX_VOCABULARY_DETAIL_PATH_AND_FILE_VERIFIER_INL
 #define IOX2_BB_POSIX_VOCABULARY_DETAIL_PATH_AND_FILE_VERIFIER_INL
 
-#include "iox2/legacy/detail/path_and_file_verifier.hpp"
+#include "iox2/bb/detail/path_and_file_verifier.hpp"
 
 namespace iox2 {
 namespace legacy {

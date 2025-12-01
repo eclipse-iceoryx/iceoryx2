@@ -11,7 +11,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/legacy/path.hpp"
+#include "iox2/bb/path.hpp"
 #include "iox2/legacy/attributes.hpp"
 
 namespace iox2 {

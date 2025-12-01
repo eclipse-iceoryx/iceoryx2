@@ -15,7 +15,7 @@
 #define IOX2_BB_VOCABULARY_SEMANTIC_STRING_INL
 
 #include "iox2/legacy/logging.hpp"
-#include "iox2/legacy/semantic_string.hpp"
+#include "iox2/bb/semantic_string.hpp"
 #include "iox2/legacy/string.hpp"
 
 namespace iox2 {

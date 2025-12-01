@@ -14,8 +14,8 @@
 #ifndef IOX2_BB_POSIX_VOCABULARY_PATH_HPP
 #define IOX2_BB_POSIX_VOCABULARY_PATH_HPP
 
-#include "iox2/legacy/file_path.hpp"
-#include "iox2/legacy/semantic_string.hpp"
+#include "iox2/bb/file_path.hpp"
+#include "iox2/bb/semantic_string.hpp"
 
 namespace iox2 {
 namespace legacy {
