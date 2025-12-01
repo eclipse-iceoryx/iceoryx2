@@ -5,6 +5,7 @@
 [![Examples](https://img.shields.io/badge/Examples-gray)](examples/)
 [![FAQ](https://img.shields.io/badge/FAQ-gray)](FAQ.md)
 [![Gitter](https://badges.gitter.im/eclipse-iceoryx/iceoryx.svg)](https://gitter.im/eclipse/iceoryx)
+[![Developer Meetup](https://img.shields.io/badge/Developer_Meetup-gray?style=social)](https://github.com/eclipse-iceoryx/iceoryx2/wiki/Developer-Meetup)
 [![Roadmap](https://img.shields.io/badge/Roadmap-gray)](ROADMAP.md)
 
 <p align="center">
@@ -67,6 +68,10 @@ a seamless transition and offering enhanced capabilities for your inter-process
 communication needs. So, if you're looking for lightning-fast, cross-platform
 communication that doesn't compromise on performance or modularity, iceoryx2 is
 your answer.
+
+Feel free to join the [Gitter Chat](https://gitter.im/eclipse/iceoryx) or
+the [Developer Meetup](https://github.com/eclipse-iceoryx/iceoryx2/wiki/Developer-Meetup)
+if you want to have a chat with the developers of iceoryx.
 
 ## Performance
 
