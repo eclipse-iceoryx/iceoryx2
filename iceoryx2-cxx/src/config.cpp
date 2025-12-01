@@ -265,8 +265,8 @@ auto Event::deadline() && -> iox2::legacy::optional<iox2::bb::Duration> {
     uint64_t seconds = 0;
     uint32_t nanoseconds = 0;
     if (iox2_config_defaults_event_deadline(m_config, &seconds, &nanoseconds)) {
-        return { iox2::bb::Duration::fromSeconds(seconds)
-                 + iox2::bb::Duration::fromNanoseconds(nanoseconds) };
+        return { iox2::bb::Duration::from_seconds(seconds)
+                 + iox2::bb::Duration::from_nanoseconds(nanoseconds) };
     }
 
     return iox2::legacy::nullopt;
@@ -422,7 +422,7 @@ auto Service::creation_timeout() && -> iox2::bb::Duration {
     uint32_t nsecs = 0;
     iox2_config_global_service_creation_timeout(m_config, &secs, &nsecs);
 
-    return iox2::bb::Duration::fromSeconds(secs) + iox2::bb::Duration::fromNanoseconds(nsecs);
+    return iox2::bb::Duration::from_seconds(secs) + iox2::bb::Duration::from_nanoseconds(nsecs);
 }
 
 void Service::set_creation_timeout(const iox2::bb::Duration& value) && {

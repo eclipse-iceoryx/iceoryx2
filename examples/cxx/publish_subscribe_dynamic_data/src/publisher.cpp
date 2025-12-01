@@ -16,7 +16,7 @@
 #include <iostream>
 #include <utility>
 
-constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::fromSeconds(1);
+constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_seconds(1);
 constexpr uint8_t MAX_VALUE = 255;
 
 auto main() -> int {

@@ -172,8 +172,8 @@ inline auto Listener<S>::deadline() const -> iox2::legacy::optional<iox2::bb::Du
     uint32_t nanoseconds = 0;
 
     if (iox2_listener_deadline(&m_handle, &seconds, &nanoseconds)) {
-        return { iox2::bb::Duration::fromSeconds(seconds)
-                 + iox2::bb::Duration::fromNanoseconds(nanoseconds) };
+        return { iox2::bb::Duration::from_seconds(seconds)
+                 + iox2::bb::Duration::from_nanoseconds(nanoseconds) };
     }
 
     return iox2::legacy::nullopt;

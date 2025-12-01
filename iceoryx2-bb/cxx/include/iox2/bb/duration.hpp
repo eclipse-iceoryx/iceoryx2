@@ -77,7 +77,7 @@ class Duration {
     /// @return a new Duration object
     /// @attention Since negative durations are not allowed, the duration will be clamped to 0
     template <typename T>
-    static constexpr auto fromNanoseconds(const T value) noexcept -> Duration;
+    static constexpr auto from_nanoseconds(const T value) noexcept -> Duration;
 
     /// @brief Constructs a new Duration object from microseconds
     /// @tparam T is an integer type for the value
@@ -85,7 +85,7 @@ class Duration {
     /// @return a new Duration object
     /// @attention Since negative durations are not allowed, the duration will be clamped to 0
     template <typename T>
-    static constexpr auto fromMicroseconds(const T value) noexcept -> Duration;
+    static constexpr auto from_microseconds(const T value) noexcept -> Duration;
 
     /// @brief Constructs a new Duration object from milliseconds
     /// @tparam T is an integer type for the value
@@ -93,7 +93,7 @@ class Duration {
     /// @return a new Duration object
     /// @attention Since negative durations are not allowed, the duration will be clamped to 0
     template <typename T>
-    static constexpr auto fromMilliseconds(const T value) noexcept -> Duration;
+    static constexpr auto from_milliseconds(const T value) noexcept -> Duration;
 
     /// @brief Constructs a new Duration object from seconds
     /// @tparam T is an integer type for the value
@@ -101,7 +101,7 @@ class Duration {
     /// @return a new Duration object
     /// @attention Since negative durations are not allowed, the duration will be clamped to 0
     template <typename T>
-    static constexpr auto fromSeconds(const T value) noexcept -> Duration;
+    static constexpr auto from_seconds(const T value) noexcept -> Duration;
 
     /// @brief Constructs a new Duration object from minutes
     /// @tparam T is an integer type for the value
@@ -109,7 +109,7 @@ class Duration {
     /// @return a new Duration object
     /// @attention Since negative durations are not allowed, the duration will be clamped to 0
     template <typename T>
-    static constexpr auto fromMinutes(const T value) noexcept -> Duration;
+    static constexpr auto from_minutes(const T value) noexcept -> Duration;
 
     /// @brief Constructs a new Duration object from hours
     /// @tparam T is an integer type for the value
@@ -117,7 +117,7 @@ class Duration {
     /// @return a new Duration object
     /// @attention Since negative durations are not allowed, the duration will be clamped to 0
     template <typename T>
-    static constexpr auto fromHours(const T value) noexcept -> Duration;
+    static constexpr auto from_hours(const T value) noexcept -> Duration;
 
     /// @brief Constructs a new Duration object from days
     /// @tparam T is an integer type for the value
@@ -125,7 +125,7 @@ class Duration {
     /// @return a new Duration object
     /// @attention Since negative durations are not allowed, the duration will be clamped to 0
     template <typename T>
-    static constexpr auto fromDays(const T value) noexcept -> Duration;
+    static constexpr auto from_days(const T value) noexcept -> Duration;
 
     /// @brief Constructs a new Duration object of maximum allowed length. Useful for functions which should have an
     /// "infinite" timeout.
@@ -214,46 +214,46 @@ class Duration {
     /// @brief returns the duration in nanoseconds
     /// @note If the duration in nanoseconds is larger than an uint64_t can represent, it will be clamped to the
     /// uint64_t max value.
-    constexpr auto toNanoseconds() const noexcept -> uint64_t;
+    constexpr auto to_nanoseconds() const noexcept -> uint64_t;
 
     /// @brief returns the duration in microseconds
     /// @note If the duration in microseconds is larger than an uint64_t can represent, it will be clamped to the
     /// uint64_t max value.
     /// @note The remaining nanoseconds are truncated, similar to the casting behavior of a float to an int.
-    constexpr auto toMicroseconds() const noexcept -> uint64_t;
+    constexpr auto to_microseconds() const noexcept -> uint64_t;
 
     /// @brief returns the duration in milliseconds
     /// @note If the duration in milliseconds is larger than an uint64_t can represent, it will be clamped to the
     /// uint64_t max value.
     /// @note The remaining microseconds are truncated, similar to the casting behavior of a float to an int.
-    constexpr auto toMilliseconds() const noexcept -> uint64_t;
+    constexpr auto to_milliseconds() const noexcept -> uint64_t;
 
     /// @brief returns the duration in seconds
     /// @note The remaining milliseconds are truncated, similar to the casting behavior of a float to an int.
-    constexpr auto toSeconds() const noexcept -> uint64_t;
+    constexpr auto to_seconds() const noexcept -> uint64_t;
 
     /// @brief returns the duration in minutes
     /// @note The remaining seconds are truncated, similar to the casting behavior of a float to an int.
-    constexpr auto toMinutes() const noexcept -> uint64_t;
+    constexpr auto to_minutes() const noexcept -> uint64_t;
 
     /// @brief returns the duration in hours
     /// @note The remaining minutes are truncated, similar to the casting behavior of a float to an int.
-    constexpr auto toHours() const noexcept -> uint64_t;
+    constexpr auto to_hours() const noexcept -> uint64_t;
 
     /// @brief returns the duration in days
     /// @note The remaining hours are truncated, similar to the casting behavior of a float to an int.
-    constexpr auto toDays() const noexcept -> uint64_t;
+    constexpr auto to_days() const noexcept -> uint64_t;
 
     /// @brief returns the subsecond part of the duration in nanoseconds
-    constexpr auto subsecNanos() const noexcept -> uint32_t;
+    constexpr auto subsec_nanos() const noexcept -> uint32_t;
 
     /// @brief returns the subsecond part of the duration in microseconds
     /// @note The remaining nanoseconds are truncated, similar to the casting behavior of a float to an int.
-    constexpr auto subsecMicros() const noexcept -> uint32_t;
+    constexpr auto subsec_micros() const noexcept -> uint32_t;
 
     /// @brief returns the subsecond part of the duration in milliseconds
     /// @note The remaining microseconds are truncated, similar to the casting behavior of a float to an int.
-    constexpr auto subsecMillis() const noexcept -> uint32_t;
+    constexpr auto subsec_millis() const noexcept -> uint32_t;
 
     /// @brief converts duration in a timespec c struct
     constexpr auto timespec() const noexcept -> struct timespec;
@@ -286,39 +286,40 @@ class Duration {
     static constexpr uint32_t NANOSECS_PER_SEC { NANOSECS_PER_MILLISEC * 1000U };
 
   protected:
-    using Seconds_t = uint64_t;
-    using Nanoseconds_t = uint32_t;
+    using SecondsType = uint64_t;
+    using NanosecondsType = uint32_t;
 
     /// @brief Constructs a Duration from seconds and nanoseconds
     /// @param[in] seconds portion of the duration
     /// @param[in] nanoseconds portion of the duration
     /// @note this is protected to be able to use it in unit tests
-    constexpr Duration(const Seconds_t seconds, const Nanoseconds_t nanoseconds) noexcept;
+    constexpr Duration(const SecondsType seconds, const NanosecondsType nanoseconds) noexcept;
 
     /// @note this is factory method is necessary to build with msvc due to issues calling a protected constexpr ctor
     /// from public methods
-    static constexpr auto createDuration(const Seconds_t seconds, const Nanoseconds_t nanoseconds) noexcept -> Duration;
+    static constexpr auto create_duration(const SecondsType seconds, const NanosecondsType nanoseconds) noexcept
+        -> Duration;
 
   private:
     template <typename T>
-    static constexpr auto positiveValueOrClampToZero(const T value) noexcept -> uint64_t;
+    static constexpr auto positive_value_or_clamp_to_zero(const T value) noexcept -> uint64_t;
 
     template <typename T>
-    constexpr auto fromFloatingPointSeconds(const T floatingPointSeconds) const noexcept -> Duration;
+    constexpr auto from_floating_point_seconds(const T floating_point_seconds) const noexcept -> Duration;
     template <typename From, typename To>
-    constexpr auto wouldCastFromFloatingPointProbablyOverflow(const From floatingPoint) const noexcept -> bool;
+    constexpr auto would_cast_from_floating_point_probably_overflow(const From floating_point) const noexcept -> bool;
 
     template <typename T>
-    constexpr auto multiplyWith(const std::enable_if_t<!std::is_floating_point<T>::value, T>& rhs) const noexcept
+    constexpr auto multiply_with(const std::enable_if_t<!std::is_floating_point<T>::value, T>& rhs) const noexcept
         -> Duration;
 
     template <typename T>
-    constexpr auto multiplyWith(const std::enable_if_t<std::is_floating_point<T>::value, T>& rhs) const noexcept
+    constexpr auto multiply_with(const std::enable_if_t<std::is_floating_point<T>::value, T>& rhs) const noexcept
         -> Duration;
 
   private:
-    Seconds_t m_seconds { 0U };
-    Nanoseconds_t m_nanoseconds { 0U };
+    SecondsType m_seconds { 0U };
+    NanosecondsType m_nanoseconds { 0U };
 };
 
 /// @brief creates Duration object by multiplying object T with a duration. On overflow
@@ -403,28 +404,29 @@ constexpr auto operator>=(const Duration& lhs, const Duration& rhs) noexcept -> 
 
 // NOLINTJUSTIFICATION @todo iox-#1617 Seconds_t and Nanoseconds_t should use Newtype pattern to solve this issue
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-constexpr Duration::Duration(const Seconds_t seconds, const Nanoseconds_t nanoseconds) noexcept
+constexpr Duration::Duration(const SecondsType seconds, const NanosecondsType nanoseconds) noexcept
     : m_seconds(seconds)
     , m_nanoseconds(nanoseconds) {
     if (nanoseconds >= NANOSECS_PER_SEC) {
-        const Seconds_t additionalSeconds { static_cast<Seconds_t>(nanoseconds)
-                                            / static_cast<Seconds_t>(NANOSECS_PER_SEC) };
-        if ((std::numeric_limits<Seconds_t>::max() - additionalSeconds) < m_seconds) {
-            m_seconds = std::numeric_limits<Seconds_t>::max();
+        const SecondsType additional_seconds { static_cast<SecondsType>(nanoseconds)
+                                               / static_cast<SecondsType>(NANOSECS_PER_SEC) };
+        if ((std::numeric_limits<SecondsType>::max() - additional_seconds) < m_seconds) {
+            m_seconds = std::numeric_limits<SecondsType>::max();
             m_nanoseconds = NANOSECS_PER_SEC - 1U;
         } else {
-            m_seconds += additionalSeconds;
+            m_seconds += additional_seconds;
             m_nanoseconds = m_nanoseconds % NANOSECS_PER_SEC;
         }
     }
 }
 
-constexpr auto Duration::createDuration(const Seconds_t seconds, const Nanoseconds_t nanoseconds) noexcept -> Duration {
+constexpr auto Duration::create_duration(const SecondsType seconds, const NanosecondsType nanoseconds) noexcept
+    -> Duration {
     return Duration(seconds, nanoseconds);
 }
 
 constexpr auto Duration::max() noexcept -> Duration {
-    return Duration { std::numeric_limits<Seconds_t>::max(), NANOSECS_PER_SEC - 1U };
+    return Duration { std::numeric_limits<SecondsType>::max(), NANOSECS_PER_SEC - 1U };
 }
 
 constexpr auto Duration::zero() noexcept -> Duration {
@@ -432,7 +434,7 @@ constexpr auto Duration::zero() noexcept -> Duration {
 }
 
 template <typename T>
-constexpr auto Duration::positiveValueOrClampToZero(const T value) noexcept -> uint64_t {
+constexpr auto Duration::positive_value_or_clamp_to_zero(const T value) noexcept -> uint64_t {
     static_assert(std::numeric_limits<T>::is_integer, "only integer types are supported");
 
     // AXIVION Next Construct AutosarC++19_03-A1.4.3 : Value is a templated an arbitrary integer
@@ -445,80 +447,80 @@ constexpr auto Duration::positiveValueOrClampToZero(const T value) noexcept -> u
 }
 
 template <typename T>
-constexpr auto Duration::fromNanoseconds(const T value) noexcept -> Duration {
-    const auto clampedValue = positiveValueOrClampToZero(value);
-    const auto seconds = static_cast<Duration::Seconds_t>(clampedValue / Duration::NANOSECS_PER_SEC);
-    const auto nanoseconds = static_cast<Duration::Nanoseconds_t>(clampedValue % Duration::NANOSECS_PER_SEC);
-    return createDuration(seconds, nanoseconds);
+constexpr auto Duration::from_nanoseconds(const T value) noexcept -> Duration {
+    const auto clamped_value = positive_value_or_clamp_to_zero(value);
+    const auto seconds = static_cast<Duration::SecondsType>(clamped_value / Duration::NANOSECS_PER_SEC);
+    const auto nanoseconds = static_cast<Duration::NanosecondsType>(clamped_value % Duration::NANOSECS_PER_SEC);
+    return create_duration(seconds, nanoseconds);
 }
 template <typename T>
-constexpr auto Duration::fromMicroseconds(const T value) noexcept -> Duration {
-    const auto clampedValue = positiveValueOrClampToZero(value);
-    const auto seconds = static_cast<Duration::Seconds_t>(clampedValue / Duration::MICROSECS_PER_SEC);
-    const auto nanoseconds = static_cast<Duration::Nanoseconds_t>((clampedValue % Duration::MICROSECS_PER_SEC)
-                                                                  * Duration::NANOSECS_PER_MICROSEC);
-    return createDuration(seconds, nanoseconds);
+constexpr auto Duration::from_microseconds(const T value) noexcept -> Duration {
+    const auto clamped_value = positive_value_or_clamp_to_zero(value);
+    const auto seconds = static_cast<Duration::SecondsType>(clamped_value / Duration::MICROSECS_PER_SEC);
+    const auto nanoseconds = static_cast<Duration::NanosecondsType>((clamped_value % Duration::MICROSECS_PER_SEC)
+                                                                    * Duration::NANOSECS_PER_MICROSEC);
+    return create_duration(seconds, nanoseconds);
 }
 template <typename T>
-constexpr auto Duration::fromMilliseconds(const T value) noexcept -> Duration {
-    const auto clampedValue = positiveValueOrClampToZero(value);
-    const auto seconds = static_cast<Duration::Seconds_t>(clampedValue / Duration::MILLISECS_PER_SEC);
-    const auto nanoseconds = static_cast<Duration::Nanoseconds_t>((clampedValue % Duration::MILLISECS_PER_SEC)
-                                                                  * Duration::NANOSECS_PER_MILLISEC);
-    return createDuration(seconds, nanoseconds);
+constexpr auto Duration::from_milliseconds(const T value) noexcept -> Duration {
+    const auto clamped_value = positive_value_or_clamp_to_zero(value);
+    const auto seconds = static_cast<Duration::SecondsType>(clamped_value / Duration::MILLISECS_PER_SEC);
+    const auto nanoseconds = static_cast<Duration::NanosecondsType>((clamped_value % Duration::MILLISECS_PER_SEC)
+                                                                    * Duration::NANOSECS_PER_MILLISEC);
+    return create_duration(seconds, nanoseconds);
 }
 template <typename T>
-constexpr auto Duration::fromSeconds(const T value) noexcept -> Duration {
-    const auto clampedValue = positiveValueOrClampToZero(value);
-    constexpr Duration::Seconds_t MAX_SECONDS_BEFORE_OVERFLOW { std::numeric_limits<Duration::Seconds_t>::max() };
+constexpr auto Duration::from_seconds(const T value) noexcept -> Duration {
+    const auto clamped_value = positive_value_or_clamp_to_zero(value);
+    constexpr Duration::SecondsType MAX_SECONDS_BEFORE_OVERFLOW { std::numeric_limits<Duration::SecondsType>::max() };
 
     // AXIVION Next Construct AutosarC++19_03-M0.1.2, AutosarC++19_03-M0.1.9, FaultDetection-DeadBranches : False positive, platform-dependent
-    if (clampedValue > MAX_SECONDS_BEFORE_OVERFLOW) {
+    if (clamped_value > MAX_SECONDS_BEFORE_OVERFLOW) {
         return Duration::max();
     }
-    return Duration { static_cast<Duration::Seconds_t>(clampedValue), 0U };
+    return Duration { static_cast<Duration::SecondsType>(clamped_value), 0U };
 }
 template <typename T>
-constexpr auto Duration::fromMinutes(const T value) noexcept -> Duration {
-    const auto clampedValue = positiveValueOrClampToZero(value);
+constexpr auto Duration::from_minutes(const T value) noexcept -> Duration {
+    const auto clamped_value = positive_value_or_clamp_to_zero(value);
     constexpr uint64_t MAX_MINUTES_BEFORE_OVERFLOW { std::numeric_limits<uint64_t>::max() / Duration::SECS_PER_MINUTE };
-    if (clampedValue > MAX_MINUTES_BEFORE_OVERFLOW) {
+    if (clamped_value > MAX_MINUTES_BEFORE_OVERFLOW) {
         return Duration::max();
     }
-    return Duration { static_cast<Duration::Seconds_t>(clampedValue * Duration::SECS_PER_MINUTE), 0U };
+    return Duration { static_cast<Duration::SecondsType>(clamped_value * Duration::SECS_PER_MINUTE), 0U };
 }
 template <typename T>
-constexpr auto Duration::fromHours(const T value) noexcept -> Duration {
-    const auto clampedValue = positiveValueOrClampToZero(value);
+constexpr auto Duration::from_hours(const T value) noexcept -> Duration {
+    const auto clamped_value = positive_value_or_clamp_to_zero(value);
     constexpr uint64_t MAX_HOURS_BEFORE_OVERFLOW { std::numeric_limits<uint64_t>::max() / Duration::SECS_PER_HOUR };
-    if (clampedValue > MAX_HOURS_BEFORE_OVERFLOW) {
+    if (clamped_value > MAX_HOURS_BEFORE_OVERFLOW) {
         return Duration::max();
     }
-    return Duration { static_cast<Duration::Seconds_t>(clampedValue * Duration::SECS_PER_HOUR), 0U };
+    return Duration { static_cast<Duration::SecondsType>(clamped_value * Duration::SECS_PER_HOUR), 0U };
 }
 template <typename T>
-constexpr auto Duration::fromDays(const T value) noexcept -> Duration {
-    const auto clampedValue = positiveValueOrClampToZero(value);
+constexpr auto Duration::from_days(const T value) noexcept -> Duration {
+    const auto clamped_value = positive_value_or_clamp_to_zero(value);
     constexpr uint64_t SECS_PER_DAY { static_cast<uint64_t>(Duration::HOURS_PER_DAY * Duration::SECS_PER_HOUR) };
     constexpr uint64_t MAX_DAYS_BEFORE_OVERFLOW { std::numeric_limits<uint64_t>::max() / SECS_PER_DAY };
-    if (clampedValue > MAX_DAYS_BEFORE_OVERFLOW) {
+    if (clamped_value > MAX_DAYS_BEFORE_OVERFLOW) {
         return Duration::max();
     }
-    return Duration { static_cast<Duration::Seconds_t>(clampedValue * SECS_PER_DAY), 0U };
+    return Duration { static_cast<Duration::SecondsType>(clamped_value * SECS_PER_DAY), 0U };
 }
 
 // AXIVION Next Construct AutosarC++19_03-A8.4.7 : Argument is larger than two words
 constexpr Duration::Duration(const struct timespec& value) noexcept
-    : Duration(static_cast<Seconds_t>(value.tv_sec), static_cast<Nanoseconds_t>(value.tv_nsec)) {
+    : Duration(static_cast<SecondsType>(value.tv_sec), static_cast<NanosecondsType>(value.tv_nsec)) {
 }
 
-constexpr auto Duration::toNanoseconds() const noexcept -> uint64_t {
-    constexpr Seconds_t MAX_SECONDS_BEFORE_OVERFLOW { std::numeric_limits<uint64_t>::max()
-                                                      / static_cast<uint64_t>(NANOSECS_PER_SEC) };
-    constexpr Nanoseconds_t MAX_NANOSECONDS_BEFORE_OVERFLOW { static_cast<Nanoseconds_t>(
+constexpr auto Duration::to_nanoseconds() const noexcept -> uint64_t {
+    constexpr SecondsType MAX_SECONDS_BEFORE_OVERFLOW { std::numeric_limits<uint64_t>::max()
+                                                        / static_cast<uint64_t>(NANOSECS_PER_SEC) };
+    constexpr NanosecondsType MAX_NANOSECONDS_BEFORE_OVERFLOW { static_cast<NanosecondsType>(
         std::numeric_limits<uint64_t>::max() % static_cast<uint64_t>(NANOSECS_PER_SEC)) };
-    constexpr Duration MAX_DURATION_BEFORE_OVERFLOW { createDuration(MAX_SECONDS_BEFORE_OVERFLOW,
-                                                                     MAX_NANOSECONDS_BEFORE_OVERFLOW) };
+    constexpr Duration MAX_DURATION_BEFORE_OVERFLOW { create_duration(MAX_SECONDS_BEFORE_OVERFLOW,
+                                                                      MAX_NANOSECONDS_BEFORE_OVERFLOW) };
 
     if (*this > MAX_DURATION_BEFORE_OVERFLOW) {
         return std::numeric_limits<uint64_t>::max();
@@ -527,76 +529,76 @@ constexpr auto Duration::toNanoseconds() const noexcept -> uint64_t {
     return (m_seconds * NANOSECS_PER_SEC) + m_nanoseconds;
 }
 
-constexpr auto Duration::toMicroseconds() const noexcept -> uint64_t {
-    constexpr Seconds_t MAX_SECONDS_BEFORE_OVERFLOW { std::numeric_limits<uint64_t>::max() / MICROSECS_PER_SEC };
-    constexpr Nanoseconds_t MAX_NANOSECONDS_BEFORE_OVERFLOW {
-        static_cast<Nanoseconds_t>(std::numeric_limits<uint64_t>::max() % MICROSECS_PER_SEC) * NANOSECS_PER_MICROSEC
+constexpr auto Duration::to_microseconds() const noexcept -> uint64_t {
+    constexpr SecondsType MAX_SECONDS_BEFORE_OVERFLOW { std::numeric_limits<uint64_t>::max() / MICROSECS_PER_SEC };
+    constexpr NanosecondsType MAX_NANOSECONDS_BEFORE_OVERFLOW {
+        static_cast<NanosecondsType>(std::numeric_limits<uint64_t>::max() % MICROSECS_PER_SEC) * NANOSECS_PER_MICROSEC
     };
-    constexpr Duration MAX_DURATION_BEFORE_OVERFLOW { createDuration(MAX_SECONDS_BEFORE_OVERFLOW,
-                                                                     MAX_NANOSECONDS_BEFORE_OVERFLOW) };
+    constexpr Duration MAX_DURATION_BEFORE_OVERFLOW { create_duration(MAX_SECONDS_BEFORE_OVERFLOW,
+                                                                      MAX_NANOSECONDS_BEFORE_OVERFLOW) };
 
     if (*this > MAX_DURATION_BEFORE_OVERFLOW) {
         return std::numeric_limits<uint64_t>::max();
     }
 
     return (m_seconds * MICROSECS_PER_SEC)
-           + (static_cast<Seconds_t>(m_nanoseconds) / static_cast<Seconds_t>(NANOSECS_PER_MICROSEC));
+           + (static_cast<SecondsType>(m_nanoseconds) / static_cast<SecondsType>(NANOSECS_PER_MICROSEC));
 }
 
-constexpr auto Duration::toMilliseconds() const noexcept -> uint64_t {
-    constexpr Seconds_t MAX_SECONDS_BEFORE_OVERFLOW { std::numeric_limits<uint64_t>::max() / MILLISECS_PER_SEC };
-    constexpr Nanoseconds_t MAX_NANOSECONDS_BEFORE_OVERFLOW {
-        static_cast<Nanoseconds_t>(std::numeric_limits<uint64_t>::max() % MILLISECS_PER_SEC) * NANOSECS_PER_MILLISEC
+constexpr auto Duration::to_milliseconds() const noexcept -> uint64_t {
+    constexpr SecondsType MAX_SECONDS_BEFORE_OVERFLOW { std::numeric_limits<uint64_t>::max() / MILLISECS_PER_SEC };
+    constexpr NanosecondsType MAX_NANOSECONDS_BEFORE_OVERFLOW {
+        static_cast<NanosecondsType>(std::numeric_limits<uint64_t>::max() % MILLISECS_PER_SEC) * NANOSECS_PER_MILLISEC
     };
-    constexpr Duration MAX_DURATION_BEFORE_OVERFLOW { createDuration(MAX_SECONDS_BEFORE_OVERFLOW,
-                                                                     MAX_NANOSECONDS_BEFORE_OVERFLOW) };
+    constexpr Duration MAX_DURATION_BEFORE_OVERFLOW { create_duration(MAX_SECONDS_BEFORE_OVERFLOW,
+                                                                      MAX_NANOSECONDS_BEFORE_OVERFLOW) };
 
     if (*this > MAX_DURATION_BEFORE_OVERFLOW) {
         return std::numeric_limits<uint64_t>::max();
     }
 
     return (m_seconds * MILLISECS_PER_SEC)
-           + (static_cast<Seconds_t>(m_nanoseconds) / static_cast<Seconds_t>(NANOSECS_PER_MILLISEC));
+           + (static_cast<SecondsType>(m_nanoseconds) / static_cast<SecondsType>(NANOSECS_PER_MILLISEC));
 }
 
-constexpr auto Duration::toSeconds() const noexcept -> uint64_t {
+constexpr auto Duration::to_seconds() const noexcept -> uint64_t {
     return m_seconds;
 }
 
-constexpr auto Duration::toMinutes() const noexcept -> uint64_t {
+constexpr auto Duration::to_minutes() const noexcept -> uint64_t {
     return m_seconds / SECS_PER_MINUTE;
 }
 
-constexpr auto Duration::toHours() const noexcept -> uint64_t {
+constexpr auto Duration::to_hours() const noexcept -> uint64_t {
     return m_seconds / SECS_PER_HOUR;
 }
 
-constexpr auto Duration::toDays() const noexcept -> uint64_t {
+constexpr auto Duration::to_days() const noexcept -> uint64_t {
     return m_seconds / static_cast<uint64_t>(HOURS_PER_DAY * SECS_PER_HOUR);
 }
 
-constexpr auto Duration::subsecNanos() const noexcept -> uint32_t {
+constexpr auto Duration::subsec_nanos() const noexcept -> uint32_t {
     return m_nanoseconds;
 }
 
-constexpr auto Duration::subsecMicros() const noexcept -> uint32_t {
+constexpr auto Duration::subsec_micros() const noexcept -> uint32_t {
     return m_nanoseconds / NANOSECS_PER_MICROSEC;
 }
 
-constexpr auto Duration::subsecMillis() const noexcept -> uint32_t {
+constexpr auto Duration::subsec_millis() const noexcept -> uint32_t {
     return m_nanoseconds / NANOSECS_PER_MILLISEC;
 }
 
 // AXIVION Next Construct AutosarC++19_03-A8.4.7 : Argument is larger than two words
 constexpr auto Duration::operator+(const Duration& rhs) const noexcept -> Duration {
-    Seconds_t seconds { m_seconds + rhs.m_seconds };
-    Nanoseconds_t nanoseconds { m_nanoseconds + rhs.m_nanoseconds };
+    SecondsType seconds { m_seconds + rhs.m_seconds };
+    NanosecondsType nanoseconds { m_nanoseconds + rhs.m_nanoseconds };
     if (nanoseconds >= NANOSECS_PER_SEC) {
         ++seconds;
         nanoseconds -= NANOSECS_PER_SEC;
     }
 
-    const auto sum = createDuration(seconds, nanoseconds);
+    const auto sum = create_duration(seconds, nanoseconds);
     if (sum < *this) {
         return Duration::max();
     }
@@ -604,16 +606,16 @@ constexpr auto Duration::operator+(const Duration& rhs) const noexcept -> Durati
 }
 
 constexpr auto Duration::timespec() const noexcept -> struct timespec {
-    using SEC_TYPE = decltype(std::declval<struct timespec>().tv_sec);
-    using NSEC_TYPE = decltype(std::declval<struct timespec>().tv_nsec);
+    using SecType = decltype(std::declval<struct timespec>().tv_sec);
+    using NsecType = decltype(std::declval<struct timespec>().tv_nsec);
 
-    static_assert(sizeof(uint64_t) >= sizeof(SEC_TYPE), "casting might alter result");
-    if (this->m_seconds > static_cast<uint64_t>(std::numeric_limits<SEC_TYPE>::max())) {
-        return { std::numeric_limits<SEC_TYPE>::max(), NANOSECS_PER_SEC - 1U };
+    static_assert(sizeof(uint64_t) >= sizeof(SecType), "casting might alter result");
+    if (this->m_seconds > static_cast<uint64_t>(std::numeric_limits<SecType>::max())) {
+        return { std::numeric_limits<SecType>::max(), NANOSECS_PER_SEC - 1U };
     }
 
-    const auto tv_sec = static_cast<SEC_TYPE>(this->m_seconds);
-    const auto tv_nsec = static_cast<NSEC_TYPE>(this->m_nanoseconds);
+    const auto tv_sec = static_cast<SecType>(this->m_seconds);
+    const auto tv_nsec = static_cast<NsecType>(this->m_nanoseconds);
     return { tv_sec, tv_nsec };
 }
 
@@ -629,9 +631,9 @@ constexpr auto Duration::operator-(const Duration& rhs) const noexcept -> Durati
     if (*this < rhs) {
         return Duration::zero();
     }
-    Seconds_t seconds { m_seconds - rhs.m_seconds };
+    SecondsType seconds { m_seconds - rhs.m_seconds };
     // AXIVION Next Construct AutosarC++19_03-M0.1.9, AutosarC++19_03-A0.1.1, FaultDetection-UnusedAssignments : False positive, variable IS used
-    Nanoseconds_t nanoseconds { 0U };
+    NanosecondsType nanoseconds { 0U };
     if (m_nanoseconds >= rhs.m_nanoseconds) {
         nanoseconds = m_nanoseconds - rhs.m_nanoseconds;
     } else {
@@ -639,7 +641,7 @@ constexpr auto Duration::operator-(const Duration& rhs) const noexcept -> Durati
         nanoseconds = (NANOSECS_PER_SEC - rhs.m_nanoseconds) + m_nanoseconds;
         --seconds;
     }
-    return createDuration(seconds, nanoseconds);
+    return create_duration(seconds, nanoseconds);
 }
 
 // AXIVION Next Construct AutosarC++19_03-A8.4.7 : Argument is larger than two words
@@ -649,31 +651,31 @@ constexpr auto Duration::operator-=(const Duration& rhs) noexcept -> Duration& {
 }
 
 template <typename T>
-constexpr auto Duration::multiplyWith(const std::enable_if_t<!std::is_floating_point<T>::value, T>& rhs) const noexcept
+constexpr auto Duration::multiply_with(const std::enable_if_t<!std::is_floating_point<T>::value, T>& rhs) const noexcept
     -> Duration {
     if ((rhs <= static_cast<T>(0)) || (*this == Duration::zero())) {
         return Duration::zero();
     }
 
-    static_assert(sizeof(T) <= sizeof(Seconds_t),
+    static_assert(sizeof(T) <= sizeof(SecondsType),
                   "only integer types with less or equal to size of uint64_t are allowed for multiplication");
-    const auto multiplicator = static_cast<Seconds_t>(rhs);
+    const auto multiplicator = static_cast<SecondsType>(rhs);
 
-    const Seconds_t maxBeforeOverflow { std::numeric_limits<Seconds_t>::max() / multiplicator };
+    const SecondsType max_before_overflow { std::numeric_limits<SecondsType>::max() / multiplicator };
 
     // check if the result of the m_seconds multiplication would already overflow
-    if (m_seconds > maxBeforeOverflow) {
+    if (m_seconds > max_before_overflow) {
         return Duration::max();
     }
-    const auto durationFromSeconds = Duration(m_seconds * multiplicator, 0U);
+    const auto duration_from_seconds = Duration(m_seconds * multiplicator, 0U);
 
     // the m_nanoseconds multiplication cannot exceed the limits of a Duration, since m_nanoseconds is always less than
     // a second and m_seconds can hold 64 bits and the multiplicator is at max 64 bits
 
     // check if the result of the m_nanoseconds multiplication can easily be converted into a Duration
     // AXIVION Next Construct AutosarC++19_03-M0.1.2, AutosarC++19_03-M0.1.9, FaultDetection-DeadBranches : False positive! Branching depends on input parameter
-    if (m_nanoseconds <= maxBeforeOverflow) {
-        return durationFromSeconds + Duration::fromNanoseconds(m_nanoseconds * multiplicator);
+    if (m_nanoseconds <= max_before_overflow) {
+        return duration_from_seconds + Duration::from_nanoseconds(m_nanoseconds * multiplicator);
     }
 
     // when we reach this, the multiplicator must be larger than 2^32, since smaller values multiplied with the
@@ -682,8 +684,8 @@ constexpr auto Duration::multiplyWith(const std::enable_if_t<!std::is_floating_p
     // multiplicator and another one with the upper 32 bits;
 
     // this is the easy part with the lower 32 bits
-    const uint64_t multiplicatorLow { static_cast<uint32_t>(multiplicator) };
-    const Duration durationFromNanosecondsLow { Duration::fromNanoseconds(m_nanoseconds * multiplicatorLow) };
+    const uint64_t multiplicator_low { static_cast<uint32_t>(multiplicator) };
+    const Duration duration_from_nanoseconds_low { Duration::from_nanoseconds(m_nanoseconds * multiplicator_low) };
 
     // this is the complicated part with the upper 32 bits;
     // the m_nanoseconds are multiplied with the upper 32 bits of the multiplicator shifted by 32 bit to the right, thus
@@ -706,22 +708,24 @@ constexpr auto Duration::multiplyWith(const std::enable_if_t<!std::is_floating_p
     constexpr uint64_t ONE_FULL_BLOCK_OF_SECONDS_ONLY { LEAST_COMMON_MULTIPLE >> NUMBER_OF_BITS_IN_UINT32 };
     constexpr uint64_t SECONDS_PER_FULL_BLOCK { LEAST_COMMON_MULTIPLE / NANOSECS_PER_SEC };
 
-    const uint64_t multiplicatorHigh { static_cast<uint32_t>(multiplicator >> NUMBER_OF_BITS_IN_UINT32) };
-    const uint64_t nanosecondsFromHigh { m_nanoseconds * multiplicatorHigh };
-    const uint64_t fullBlocksOfSecondsOnly { nanosecondsFromHigh / ONE_FULL_BLOCK_OF_SECONDS_ONLY };
-    const uint64_t remainingBlockWithFullAndFractionalSeconds { nanosecondsFromHigh % ONE_FULL_BLOCK_OF_SECONDS_ONLY };
+    const uint64_t multiplicator_high { static_cast<uint32_t>(multiplicator >> NUMBER_OF_BITS_IN_UINT32) };
+    const uint64_t nanoseconds_from_high { m_nanoseconds * multiplicator_high };
+    const uint64_t full_blocks_of_seconds_only { nanoseconds_from_high / ONE_FULL_BLOCK_OF_SECONDS_ONLY };
+    const uint64_t remaining_block_with_full_and_fractional_seconds { nanoseconds_from_high
+                                                                      % ONE_FULL_BLOCK_OF_SECONDS_ONLY };
 
     // AXIVION Next Construct AutosarC++19_03-A4.7.1, AutosarC++19_03-M0.3.1, FaultDetection-IntegerOverflow : The logic from above prevents overflows
-    const auto durationFromNanosecondsHigh =
-        Duration { fullBlocksOfSecondsOnly * SECONDS_PER_FULL_BLOCK, 0U }
-        + Duration::fromNanoseconds(remainingBlockWithFullAndFractionalSeconds << NUMBER_OF_BITS_IN_UINT32);
+    const auto duration_from_nanoseconds_high =
+        Duration { full_blocks_of_seconds_only * SECONDS_PER_FULL_BLOCK, 0U }
+        + Duration::from_nanoseconds(remaining_block_with_full_and_fractional_seconds << NUMBER_OF_BITS_IN_UINT32);
 
-    return durationFromSeconds + durationFromNanosecondsLow + durationFromNanosecondsHigh;
+    return duration_from_seconds + duration_from_nanoseconds_low + duration_from_nanoseconds_high;
 }
 
 
 template <typename From, typename To>
-constexpr auto Duration::wouldCastFromFloatingPointProbablyOverflow(const From floatingPoint) const noexcept -> bool {
+constexpr auto Duration::would_cast_from_floating_point_probably_overflow(const From floating_point) const noexcept
+    -> bool {
     static_assert(std::is_floating_point<From>::value, "only floating point is allowed");
 
     // depending on the internal representation this could be either the last value to not cause an overflow
@@ -729,30 +733,30 @@ constexpr auto Duration::wouldCastFromFloatingPointProbablyOverflow(const From f
     // to be safe, this is handled like causing an overflow which would result in undefined behavior when casting to
     // Seconds_t
     constexpr From SECONDS_BEFORE_LIKELY_OVERFLOW { static_cast<From>(std::numeric_limits<To>::max()) };
-    return floatingPoint >= SECONDS_BEFORE_LIKELY_OVERFLOW;
+    return floating_point >= SECONDS_BEFORE_LIKELY_OVERFLOW;
 }
 
 template <typename T>
-constexpr auto Duration::fromFloatingPointSeconds(const T floatingPointSeconds) const noexcept -> Duration {
+constexpr auto Duration::from_floating_point_seconds(const T floating_point_seconds) const noexcept -> Duration {
     static_assert(std::is_floating_point<T>::value, "only floating point is allowed");
 
-    if (std::isinf(floatingPointSeconds)) {
+    if (std::isinf(floating_point_seconds)) {
         return Duration::max();
     }
 
-    T secondsFull { 0 };
-    T secondsFraction { std::modf(floatingPointSeconds, &secondsFull) };
+    T seconds_full { 0 };
+    T seconds_fraction { std::modf(floating_point_seconds, &seconds_full) };
 
-    if (wouldCastFromFloatingPointProbablyOverflow<T, Seconds_t>(secondsFull)) {
+    if (would_cast_from_floating_point_probably_overflow<T, SecondsType>(seconds_full)) {
         return Duration::max();
     }
 
-    return Duration { static_cast<Seconds_t>(secondsFull),
-                      static_cast<Nanoseconds_t>(secondsFraction * NANOSECS_PER_SEC) };
+    return Duration { static_cast<SecondsType>(seconds_full),
+                      static_cast<NanosecondsType>(seconds_fraction * NANOSECS_PER_SEC) };
 }
 
 template <typename T>
-constexpr auto Duration::multiplyWith(const std::enable_if_t<std::is_floating_point<T>::value, T>& rhs) const noexcept
+constexpr auto Duration::multiply_with(const std::enable_if_t<std::is_floating_point<T>::value, T>& rhs) const noexcept
     -> Duration {
     if (std::isnan(rhs)) {
         return (*this == Duration::zero()) ? Duration::zero() : Duration::max();
@@ -763,20 +767,20 @@ constexpr auto Duration::multiplyWith(const std::enable_if_t<std::is_floating_po
         return Duration::zero();
     }
 
-    auto durationFromSeconds = fromFloatingPointSeconds<T>(static_cast<T>(m_seconds) * rhs);
+    auto duration_from_seconds = from_floating_point_seconds<T>(static_cast<T>(m_seconds) * rhs);
 
-    auto resultNanoseconds = static_cast<T>(m_nanoseconds) * rhs;
+    auto result_nanoseconds = static_cast<T>(m_nanoseconds) * rhs;
 
-    if (!wouldCastFromFloatingPointProbablyOverflow<T, uint64_t>(resultNanoseconds)) {
-        return durationFromSeconds + Duration::fromNanoseconds(static_cast<uint64_t>(resultNanoseconds));
+    if (!would_cast_from_floating_point_probably_overflow<T, uint64_t>(result_nanoseconds)) {
+        return duration_from_seconds + Duration::from_nanoseconds(static_cast<uint64_t>(result_nanoseconds));
     }
 
     // the multiplication result of nanoseconds would exceed the value an uint64_t can represent
     // -> convert result to seconds and and calculate duration
-    auto floatingPointSeconds = resultNanoseconds / NANOSECS_PER_SEC;
-    auto durationFromNanoseconds = fromFloatingPointSeconds<T>(floatingPointSeconds);
+    auto floating_point_seconds = result_nanoseconds / NANOSECS_PER_SEC;
+    auto duration_from_nanoseconds = from_floating_point_seconds<T>(floating_point_seconds);
 
-    return durationFromSeconds + durationFromNanoseconds;
+    return duration_from_seconds + duration_from_nanoseconds;
 }
 
 // AXIVION Next Construct AutosarC++19_03-M5.17.1 : False positive! Corresponding assignment operator is implemented below
@@ -784,14 +788,14 @@ template <typename T>
 constexpr auto Duration::operator*(const T& rhs) const noexcept -> Duration {
     static_assert(std::is_arithmetic<T>::value, "non arithmetic types are not supported for multiplication");
 
-    return multiplyWith<T>(rhs);
+    return multiply_with<T>(rhs);
 }
 
 template <typename T>
 constexpr auto Duration::operator*=(const T& rhs) noexcept -> Duration& {
     static_assert(std::is_arithmetic<T>::value, "non arithmetic types are not supported for multiplication");
 
-    *this = multiplyWith<T>(rhs);
+    *this = multiply_with<T>(rhs);
 
     return *this;
 }
@@ -799,37 +803,37 @@ constexpr auto Duration::operator*=(const T& rhs) noexcept -> Duration& {
 namespace duration_literals {
 // AXIVION Next Construct AutosarC++19_03-A3.9.1 : Use of unsigned long long int in user-defined literals is enforced by the standard
 constexpr auto operator""_ns(unsigned long long int value) noexcept -> Duration {
-    return Duration::fromNanoseconds(value);
+    return Duration::from_nanoseconds(value);
 }
 
 // AXIVION Next Construct AutosarC++19_03-A3.9.1 : Use of unsigned long long int in user-defined literals is enforced by the standard
 constexpr auto operator""_us(unsigned long long int value) noexcept -> Duration {
-    return Duration::fromMicroseconds(value);
+    return Duration::from_microseconds(value);
 }
 
 // AXIVION Next Construct AutosarC++19_03-A3.9.1 : Use of unsigned long long int in user-defined literals is enforced by the standard
 constexpr auto operator""_ms(unsigned long long int value) noexcept -> Duration {
-    return Duration::fromMilliseconds(value);
+    return Duration::from_milliseconds(value);
 }
 
 // AXIVION Next Construct AutosarC++19_03-A3.9.1 : Use of unsigned long long int in user-defined literals is enforced by the standard
 constexpr auto operator""_s(unsigned long long int value) noexcept -> Duration {
-    return Duration::fromSeconds(value);
+    return Duration::from_seconds(value);
 }
 
 // AXIVION Next Construct AutosarC++19_03-A3.9.1 : Use of unsigned long long int in user-defined literals is enforced by the standard
 constexpr auto operator""_m(unsigned long long int value) noexcept -> Duration {
-    return Duration::fromMinutes(value);
+    return Duration::from_minutes(value);
 }
 
 // AXIVION Next Construct AutosarC++19_03-A3.9.1 : Use of unsigned long long int in user-defined literals is enforced by the standard
 constexpr auto operator""_h(unsigned long long int value) noexcept -> Duration {
-    return Duration::fromHours(value);
+    return Duration::from_hours(value);
 }
 
 // AXIVION Next Construct AutosarC++19_03-A3.9.1 : Use of unsigned long long int in user-defined literals is enforced by the standard
 constexpr auto operator""_d(unsigned long long int value) noexcept -> Duration {
-    return Duration::fromDays(value);
+    return Duration::from_days(value);
 }
 } // namespace duration_literals
 
@@ -839,13 +843,13 @@ constexpr auto operator""_d(unsigned long long int value) noexcept -> Duration {
 // AXIVION Next Construct AutosarC++19_03-M5.17.1 : This is not used as shift operator but as stream operator and does not require to implement '<<='
 inline auto operator<<(iox2::legacy::log::LogStream& stream, const iox2::bb::Duration t) noexcept
     -> iox2::legacy::log::LogStream& {
-    stream << t.toSeconds() << "s " << t.subsecNanos() << "ns";
+    stream << t.to_seconds() << "s " << t.subsec_nanos() << "ns";
     return stream;
 }
 
 // AXIVION Next Construct AutosarC++19_03-M5.17.1 : This is not used as shift operator but as stream operator and does not require to implement '<<='
 inline auto operator<<(std::ostream& stream, const iox2::bb::Duration t) -> std::ostream& {
-    stream << t.toSeconds() << "s " << t.subsecNanos() << "ns";
+    stream << t.to_seconds() << "s " << t.subsec_nanos() << "ns";
     return stream;
 }
 

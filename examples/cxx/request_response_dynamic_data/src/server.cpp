@@ -12,7 +12,7 @@
 
 #include "iox2/iceoryx2.hpp"
 
-constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::fromMilliseconds(100);
+constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_milliseconds(100);
 constexpr uint8_t MAX_VALUE = 255;
 
 auto main() -> int {

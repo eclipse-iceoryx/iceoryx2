@@ -15,7 +15,7 @@
 
 #include <iostream>
 
-constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::fromMilliseconds(1500);
+constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_milliseconds(1500);
 
 auto main() -> int {
     using namespace iox2;

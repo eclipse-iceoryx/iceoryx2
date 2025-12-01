@@ -73,12 +73,12 @@ auto main() -> int {
     std::cout << "Waiting for clients to connect..." << std::endl;
     int const receive_interval_ms = 100;
     while (service.dynamic_config().number_of_publishers() == 0) {
-        if (!node.wait(iox2::bb::Duration::fromMilliseconds(receive_interval_ms))) {
+        if (!node.wait(iox2::bb::Duration::from_milliseconds(receive_interval_ms))) {
             std::cout << "Aborting.\n";
             return 1;
         }
     }
-    while (node.wait(iox2::bb::Duration::fromMilliseconds(receive_interval_ms)).has_value()) {
+    while (node.wait(iox2::bb::Duration::from_milliseconds(receive_interval_ms)).has_value()) {
         auto sample = subscriber.receive().expect("Failure in receive");
         if (sample) {
             auto it_test = std::find_if(begin(tests), end(tests), [&sample](Test const& test) -> auto {

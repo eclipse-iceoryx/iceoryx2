@@ -17,9 +17,9 @@
 
 using namespace iox2;
 
-constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::fromMilliseconds(100);
-constexpr iox2::bb::Duration DEADLINE_SERVICE_1 = iox2::bb::Duration::fromMilliseconds(1500);
-constexpr iox2::bb::Duration DEADLINE_SERVICE_2 = iox2::bb::Duration::fromMilliseconds(2000);
+constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_milliseconds(100);
+constexpr iox2::bb::Duration DEADLINE_SERVICE_1 = iox2::bb::Duration::from_milliseconds(1500);
+constexpr iox2::bb::Duration DEADLINE_SERVICE_2 = iox2::bb::Duration::from_milliseconds(2000);
 
 namespace {
 void find_and_cleanup_dead_nodes();

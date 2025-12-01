@@ -218,7 +218,7 @@ auto check_request(ContainerTestRequest const& req) -> bool {
 }
 
 auto ContainerTest::run_test(iox2::Node<iox2::ServiceType::Ipc> const& node) -> bool {
-    auto const refresh_interval = iox2::bb::Duration::fromMilliseconds(100);
+    auto const refresh_interval = iox2::bb::Duration::from_milliseconds(100);
     auto opt_server = create_server<ContainerTestRequest, ContainerTestResponse>(
         node, "iox2-component-tests-containers", refresh_interval);
     if (!opt_server) {
