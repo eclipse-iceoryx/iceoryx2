@@ -11,10 +11,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_BB_VOCABULARY_SEMANTIC_STRING_HPP
-#define IOX2_BB_VOCABULARY_SEMANTIC_STRING_HPP
+#ifndef IOX2_BB_SEMANTIC_STRING_HPP
+#define IOX2_BB_SEMANTIC_STRING_HPP
 
 #include "iox2/legacy/expected.hpp"
+#include "iox2/legacy/logging.hpp"
 #include "iox2/legacy/string.hpp"
 
 #include <cstdint>
@@ -30,10 +31,10 @@ enum class SemanticStringError : uint8_t {
 };
 
 template <uint64_t Capacity>
-using DoesContainInvalidCharacter = bool (*)(const string<Capacity>& value);
+using DoesContainInvalidCharacter = bool (*)(const legacy::string<Capacity>& value);
 
 template <uint64_t Capacity>
-using DoesContainInvalidContent = bool (*)(const string<Capacity>& value);
+using DoesContainInvalidContent = bool (*)(const legacy::string<Capacity>& value);
 
 /// @brief The SemanticString is a string which has an inner syntax and restrictions
 ///         to valid content. Examples are for instance
@@ -70,7 +71,7 @@ template <typename Child,
           DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
 class SemanticString {
   private:
-    string<Capacity> m_data;
+    legacy::string<Capacity> m_data;
 
   public:
     /// @brief Creates a new SemanticString from the provided string literal.
@@ -82,7 +83,7 @@ class SemanticString {
     // avoid-c-arrays: we would like to assign string literals, safe since it is known
     //                 at compile time.
     // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays, hicpp-explicit-conversions, modernize-avoid-c-arrays)
-    static auto create(const char (&value)[N]) noexcept -> expected<Child, SemanticStringError>;
+    static auto create(const char (&value)[N]) noexcept -> legacy::expected<Child, SemanticStringError>;
 
     /// @brief Creates a new SemanticString from the provided string.
     ///         If the value contains invalid characters or invalid content
@@ -90,7 +91,7 @@ class SemanticString {
     /// @param[in] value the value of the SemanticString
     /// @return expected either containing the new SemanticString or an error
     template <uint64_t N>
-    static auto create(const string<N>& value) noexcept -> expected<Child, SemanticStringError>;
+    static auto create(const legacy::string<N>& value) noexcept -> legacy::expected<Child, SemanticStringError>;
 
     /// @brief Returns the number of characters.
     /// @return number of characters
@@ -104,7 +105,7 @@ class SemanticString {
     ///         and shall not be modified to guarantee the contract that a
     ///         SemanticString contains always a valid value.
     /// @return string reference containing the actual value.
-    constexpr auto as_string() const noexcept -> const string<Capacity>&;
+    constexpr auto as_string() const noexcept -> const legacy::string<Capacity>&;
 
     /// @brief Appends another string to the SemanticString. If the value contains
     ///        invalid characters or the result would end up in invalid content
@@ -112,7 +113,7 @@ class SemanticString {
     /// @param[in] value the value which should be added
     /// @return on failure the error inside the expected describes the failure
     template <typename T>
-    auto append(const T& value) noexcept -> expected<void, SemanticStringError>;
+    auto append(const T& value) noexcept -> legacy::expected<void, SemanticStringError>;
 
     /// @brief Inserts another string into the SemanticString. If the value contains
     ///        invalid characters or the result would end up in invalid content
@@ -122,7 +123,7 @@ class SemanticString {
     /// @param[in] count how many characters of str shall be inserted
     /// @return on failure the error inside the expected describes the failure
     template <typename T>
-    auto insert(uint64_t pos, const T& str, uint64_t count) noexcept -> expected<void, SemanticStringError>;
+    auto insert(uint64_t pos, const T& str, uint64_t count) noexcept -> legacy::expected<void, SemanticStringError>;
 
     /// @brief checks if another SemanticString is equal to this string
     /// @param [in] rhs the other SemanticString
@@ -133,7 +134,7 @@ class SemanticString {
     /// @param [in] rhs the other string
     /// @return true if the contents are equal, otherwise false
     template <typename T>
-    auto operator==(const T& rhs) const noexcept -> IsStringOrCharArray<T, bool>;
+    auto operator==(const T& rhs) const noexcept -> legacy::IsStringOrCharArray<T, bool>;
 
     /// @brief checks if another SemanticString is not equal to this string
     /// @param [in] rhs the other SemanticString
@@ -144,7 +145,7 @@ class SemanticString {
     /// @param [in] rhs the other string
     /// @return true if the contents are not equal, otherwise false
     template <typename T>
-    auto operator!=(const T& rhs) const noexcept -> IsStringOrCharArray<T, bool>;
+    auto operator!=(const T& rhs) const noexcept -> legacy::IsStringOrCharArray<T, bool>;
 
     /// @brief checks if another SemanticString is less than or equal this string
     /// @param [in] rhs the other SemanticString
@@ -155,7 +156,7 @@ class SemanticString {
     /// @param [in] rhs the other string
     /// @return true if the contents are less than or equal rhs, otherwise false
     template <typename T>
-    auto operator<=(const T& rhs) const noexcept -> IsStringOrCharArray<T, bool>;
+    auto operator<=(const T& rhs) const noexcept -> legacy::IsStringOrCharArray<T, bool>;
 
     /// @brief checks if another SemanticString is less than this string
     /// @param [in] rhs the other SemanticString
@@ -166,7 +167,7 @@ class SemanticString {
     /// @param [in] rhs the other string
     /// @return true if the contents are less than rhs, otherwise false
     template <typename T>
-    auto operator<(const T& rhs) const noexcept -> IsStringOrCharArray<T, bool>;
+    auto operator<(const T& rhs) const noexcept -> legacy::IsStringOrCharArray<T, bool>;
 
     /// @brief checks if another SemanticString is greater than or equal this string
     /// @param [in] rhs the other SemanticString
@@ -177,7 +178,7 @@ class SemanticString {
     /// @param [in] rhs the other string
     /// @return true if the contents are greater than or equal rhs, otherwise false
     template <typename T>
-    auto operator>=(const T& rhs) const noexcept -> IsStringOrCharArray<T, bool>;
+    auto operator>=(const T& rhs) const noexcept -> legacy::IsStringOrCharArray<T, bool>;
 
     /// @brief checks if another SemanticString is greater than this string
     /// @param [in] rhs the other SemanticString
@@ -188,19 +189,273 @@ class SemanticString {
     /// @param [in] rhs the other string
     /// @return true if the contents are greater than rhs, otherwise false
     template <typename T>
-    auto operator>(const T& rhs) const noexcept -> IsStringOrCharArray<T, bool>;
+    auto operator>(const T& rhs) const noexcept -> legacy::IsStringOrCharArray<T, bool>;
 
   protected:
     template <uint64_t N>
-    explicit SemanticString(const string<N>& value) noexcept;
+    explicit SemanticString(const legacy::string<N>& value) noexcept;
 
   private:
     template <uint64_t N>
-    static auto create_impl(const char* value) noexcept -> expected<Child, SemanticStringError>;
+    static auto create_impl(const char* value) noexcept -> legacy::expected<Child, SemanticStringError>;
 };
+
+
+template <typename Child,
+          uint64_t Capacity,
+          DoesContainInvalidContent<Capacity> DoesContainInvalidContentCall,
+          DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
+template <uint64_t N>
+inline SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::SemanticString(
+    const legacy::string<N>& value) noexcept
+    : m_data { value } {
+}
+
+template <typename Child,
+          uint64_t Capacity,
+          DoesContainInvalidContent<Capacity> DoesContainInvalidContentCall,
+          DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
+template <uint64_t N>
+inline auto
+SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::create_impl(
+    const char* value) noexcept -> legacy::expected<Child, SemanticStringError> {
+    if (N > Capacity) {
+        IOX2_LOG(Debug,
+                 "Unable to create semantic string since the value \""
+                     << value << "\" exceeds the maximum valid length of " << Capacity << ".");
+        return legacy::err(SemanticStringError::ExceedsMaximumLength);
+    }
+
+    legacy::string<Capacity> str { legacy::TruncateToCapacity, value };
+
+    if (DoesContainInvalidCharacterCall(str)) {
+        IOX2_LOG(Debug,
+                 "Unable to create semantic string since the value \"" << value << "\" contains invalid characters");
+        return legacy::err(SemanticStringError::ContainsInvalidCharacters);
+    }
+
+    if (DoesContainInvalidContentCall(str)) {
+        IOX2_LOG(Debug,
+                 "Unable to create semantic string since the value \"" << value << "\" contains invalid content");
+        return legacy::err(SemanticStringError::ContainsInvalidContent);
+    }
+
+    return legacy::ok(Child(str));
+}
+
+template <typename Child,
+          uint64_t Capacity,
+          DoesContainInvalidContent<Capacity> DoesContainInvalidContentCall,
+          DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
+template <uint64_t N>
+inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::create(
+    // avoid-c-arrays: justification in header
+    // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays, hicpp-explicit-conversions, modernize-avoid-c-arrays)
+    const char (&value)[N]) noexcept -> legacy::expected<Child, SemanticStringError> {
+    return SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::
+        template create_impl<N>(value);
+}
+
+template <typename Child,
+          uint64_t Capacity,
+          DoesContainInvalidContent<Capacity> DoesContainInvalidContentCall,
+          DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
+template <uint64_t N>
+inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::create(
+    const legacy::string<N>& value) noexcept -> legacy::expected<Child, SemanticStringError> {
+    return SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::
+        template create_impl<N>(value.c_str());
+}
+
+template <typename Child,
+          uint64_t Capacity,
+          DoesContainInvalidContent<Capacity> DoesContainInvalidContentCall,
+          DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
+constexpr auto
+SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::size() const noexcept
+    -> uint64_t {
+    return m_data.size();
+}
+
+template <typename Child,
+          uint64_t Capacity,
+          DoesContainInvalidContent<Capacity> DoesContainInvalidContentCall,
+          DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
+constexpr auto
+SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::capacity() noexcept
+    -> uint64_t {
+    return Capacity;
+}
+
+template <typename Child,
+          uint64_t Capacity,
+          DoesContainInvalidContent<Capacity> DoesContainInvalidContentCall,
+          DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
+constexpr auto
+SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::as_string()
+    const noexcept -> const legacy::string<Capacity>& {
+    return m_data;
+}
+
+template <typename Child,
+          uint64_t Capacity,
+          DoesContainInvalidContent<Capacity> DoesContainInvalidContentCall,
+          DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
+template <typename T>
+inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::append(
+    const T& value) noexcept -> legacy::expected<void, SemanticStringError> {
+    return insert(size(), value, legacy::internal::GetSize<T>::call(value));
+}
+
+template <typename Child,
+          uint64_t Capacity,
+          DoesContainInvalidContent<Capacity> DoesContainInvalidContentCall,
+          DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
+template <typename T>
+inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::insert(
+    const uint64_t pos, const T& str, const uint64_t count) noexcept -> legacy::expected<void, SemanticStringError> {
+    auto temp = m_data;
+    if (!temp.insert(pos, str, count)) {
+        IOX2_LOG(Debug,
+                 "Unable to insert the value \""
+                     << str << "\" to the semantic string since it would exceed the maximum valid length of "
+                     << Capacity << ".");
+        return legacy::err(SemanticStringError::ExceedsMaximumLength);
+    }
+
+    if (DoesContainInvalidCharacterCall(temp)) {
+        IOX2_LOG(Debug,
+                 "Unable to insert the value \"" << str
+                                                 << "\" to the semantic string since it contains invalid characters.");
+        return legacy::err(SemanticStringError::ContainsInvalidCharacters);
+    }
+
+    if (DoesContainInvalidContentCall(str)) {
+        IOX2_LOG(Debug,
+                 "Unable to insert the value \""
+                     << str << "\" to the semantic string since it would lead to invalid content.");
+        return legacy::err(SemanticStringError::ContainsInvalidContent);
+    }
+
+    m_data = temp;
+    return legacy::ok();
+}
+
+template <typename Child,
+          uint64_t Capacity,
+          DoesContainInvalidContent<Capacity> DoesContainInvalidContentCall,
+          DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
+inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator==(
+    const SemanticString& rhs) const noexcept -> bool {
+    return as_string() == rhs.as_string();
+}
+
+template <typename Child,
+          uint64_t Capacity,
+          DoesContainInvalidContent<Capacity> DoesContainInvalidContentCall,
+          DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
+template <typename T>
+inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator==(
+    const T& rhs) const noexcept -> legacy::IsStringOrCharArray<T, bool> {
+    return as_string() == rhs;
+}
+
+template <typename Child,
+          uint64_t Capacity,
+          DoesContainInvalidContent<Capacity> DoesContainInvalidContentCall,
+          DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
+inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator!=(
+    const SemanticString& rhs) const noexcept -> bool {
+    return as_string() != rhs.as_string();
+}
+
+template <typename Child,
+          uint64_t Capacity,
+          DoesContainInvalidContent<Capacity> DoesContainInvalidContentCall,
+          DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
+template <typename T>
+inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator!=(
+    const T& rhs) const noexcept -> legacy::IsStringOrCharArray<T, bool> {
+    return as_string() != rhs;
+}
+
+template <typename Child,
+          uint64_t Capacity,
+          DoesContainInvalidContent<Capacity> DoesContainInvalidContentCall,
+          DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
+inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator<=(
+    const SemanticString& rhs) const noexcept -> bool {
+    return as_string() <= rhs.as_string();
+}
+
+template <typename Child,
+          uint64_t Capacity,
+          DoesContainInvalidContent<Capacity> DoesContainInvalidContentCall,
+          DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
+template <typename T>
+inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator<=(
+    const T& rhs) const noexcept -> legacy::IsStringOrCharArray<T, bool> {
+    return as_string() <= rhs;
+}
+
+template <typename Child,
+          uint64_t Capacity,
+          DoesContainInvalidContent<Capacity> DoesContainInvalidContentCall,
+          DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
+inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator<(
+    const SemanticString& rhs) const noexcept -> bool {
+    return as_string() < rhs.as_string();
+}
+
+template <typename Child,
+          uint64_t Capacity,
+          DoesContainInvalidContent<Capacity> DoesContainInvalidContentCall,
+          DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
+template <typename T>
+inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator<(
+    const T& rhs) const noexcept -> legacy::IsStringOrCharArray<T, bool> {
+    return as_string() < rhs;
+}
+
+template <typename Child,
+          uint64_t Capacity,
+          DoesContainInvalidContent<Capacity> DoesContainInvalidContentCall,
+          DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
+inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator>=(
+    const SemanticString& rhs) const noexcept -> bool {
+    return as_string() >= rhs.as_string();
+}
+
+template <typename Child,
+          uint64_t Capacity,
+          DoesContainInvalidContent<Capacity> DoesContainInvalidContentCall,
+          DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
+template <typename T>
+inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator>=(
+    const T& rhs) const noexcept -> legacy::IsStringOrCharArray<T, bool> {
+    return as_string() >= rhs;
+}
+
+template <typename Child,
+          uint64_t Capacity,
+          DoesContainInvalidContent<Capacity> DoesContainInvalidContentCall,
+          DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
+inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator>(
+    const SemanticString& rhs) const noexcept -> bool {
+    return as_string() > rhs.as_string();
+}
+
+template <typename Child,
+          uint64_t Capacity,
+          DoesContainInvalidContent<Capacity> DoesContainInvalidContentCall,
+          DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
+template <typename T>
+inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator>(
+    const T& rhs) const noexcept -> legacy::IsStringOrCharArray<T, bool> {
+    return as_string() > rhs;
+}
+
 } // namespace legacy
 } // namespace iox2
 
-#include "iox2/legacy/detail/semantic_string.inl"
-
-#endif
+#endif // IOX2_BB_SEMANTIC_STRING_HPP
