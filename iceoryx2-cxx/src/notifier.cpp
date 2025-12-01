@@ -79,8 +79,7 @@ auto Notifier<S>::deadline() const -> iox2::legacy::optional<iox2::bb::Duration>
     uint32_t nanoseconds = 0;
 
     if (iox2_notifier_deadline(&m_handle, &seconds, &nanoseconds)) {
-        return { iox2::bb::Duration::from_seconds(seconds)
-                 + iox2::bb::Duration::from_nanoseconds(nanoseconds) };
+        return { iox2::bb::Duration::from_seconds(seconds) + iox2::bb::Duration::from_nanoseconds(nanoseconds) };
     }
 
     return iox2::legacy::nullopt;

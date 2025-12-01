@@ -265,8 +265,7 @@ auto Event::deadline() && -> iox2::legacy::optional<iox2::bb::Duration> {
     uint64_t seconds = 0;
     uint32_t nanoseconds = 0;
     if (iox2_config_defaults_event_deadline(m_config, &seconds, &nanoseconds)) {
-        return { iox2::bb::Duration::from_seconds(seconds)
-                 + iox2::bb::Duration::from_nanoseconds(nanoseconds) };
+        return { iox2::bb::Duration::from_seconds(seconds) + iox2::bb::Duration::from_nanoseconds(nanoseconds) };
     }
 
     return iox2::legacy::nullopt;

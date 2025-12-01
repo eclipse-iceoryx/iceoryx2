@@ -13,11 +13,11 @@
 #ifndef IOX2_LISTENER_HPP
 #define IOX2_LISTENER_HPP
 
+#include "iox2/bb/duration.hpp"
 #include "iox2/event_id.hpp"
 #include "iox2/file_descriptor.hpp"
 #include "iox2/internal/callback_context.hpp"
 #include "iox2/internal/iceoryx2.hpp"
-#include "iox2/bb/duration.hpp"
 #include "iox2/legacy/expected.hpp"
 #include "iox2/legacy/function.hpp"
 #include "iox2/legacy/optional.hpp"
@@ -57,8 +57,7 @@ class Listener {
     /// currently available [`EventId`]s in buffer.
     /// For every received [`EventId`] the provided callback is called with the [`EventId`] as
     /// input argument.
-    auto timed_wait_all(const iox2::legacy::function<void(EventId)>& callback,
-                        const iox2::bb::Duration& timeout)
+    auto timed_wait_all(const iox2::legacy::function<void(EventId)>& callback, const iox2::bb::Duration& timeout)
         -> iox2::legacy::expected<void, ListenerWaitError>;
 
     /// Blocking wait for new [`EventId`]s. Collects either
@@ -172,8 +171,7 @@ inline auto Listener<S>::deadline() const -> iox2::legacy::optional<iox2::bb::Du
     uint32_t nanoseconds = 0;
 
     if (iox2_listener_deadline(&m_handle, &seconds, &nanoseconds)) {
-        return { iox2::bb::Duration::from_seconds(seconds)
-                 + iox2::bb::Duration::from_nanoseconds(nanoseconds) };
+        return { iox2::bb::Duration::from_seconds(seconds) + iox2::bb::Duration::from_nanoseconds(nanoseconds) };
     }
 
     return iox2::legacy::nullopt;

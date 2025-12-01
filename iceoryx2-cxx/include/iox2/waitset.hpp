@@ -14,10 +14,10 @@
 #define IOX2_WAITSET_HPP
 
 #include "iox/builder_addendum.hpp"
+#include "iox2/bb/duration.hpp"
 #include "iox2/callback_progression.hpp"
 #include "iox2/file_descriptor.hpp"
 #include "iox2/internal/iceoryx2.hpp"
-#include "iox2/bb/duration.hpp"
 #include "iox2/legacy/expected.hpp"
 #include "iox2/listener.hpp"
 #include "iox2/service_type.hpp"
@@ -174,8 +174,8 @@ class WaitSet {
     /// When no signal was received and all events were handled, it will return
     /// [`WaitSetRunResult::AllEventsHandled`].
     auto wait_and_process_once_with_timeout(
-        const iox2::legacy::function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call,
-        iox2::bb::Duration timeout) -> iox2::legacy::expected<WaitSetRunResult, WaitSetRunError>;
+        const iox2::legacy::function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call, iox2::bb::Duration timeout)
+        -> iox2::legacy::expected<WaitSetRunResult, WaitSetRunError>;
 
     /// Returns the capacity of the [`WaitSet`]
     auto capacity() const -> uint64_t;

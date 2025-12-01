@@ -18,10 +18,8 @@
 using namespace iox2;
 
 constexpr iox2::bb::Duration REACTION_BUFFER = iox2::bb::Duration::from_milliseconds(100);
-constexpr iox2::bb::Duration CYCLE_TIME_1 =
-    iox2::bb::Duration::from_milliseconds(1000) + REACTION_BUFFER;
-constexpr iox2::bb::Duration CYCLE_TIME_2 =
-    iox2::bb::Duration::from_milliseconds(1500) + REACTION_BUFFER;
+constexpr iox2::bb::Duration CYCLE_TIME_1 = iox2::bb::Duration::from_milliseconds(1000) + REACTION_BUFFER;
+constexpr iox2::bb::Duration CYCLE_TIME_2 = iox2::bb::Duration::from_milliseconds(1500) + REACTION_BUFFER;
 
 namespace {
 void find_and_cleanup_dead_nodes();
@@ -58,8 +56,7 @@ auto main() -> int {
     auto listener_1_guard = waitset.attach_deadline(listener_1, deadline_1).expect("");
     auto listener_2_guard = waitset.attach_deadline(listener_2, deadline_2).expect("");
 
-    auto missed_deadline = [](const ServiceName& service_name,
-                              const iox2::bb::Duration& cycle_time) -> auto {
+    auto missed_deadline = [](const ServiceName& service_name, const iox2::bb::Duration& cycle_time) -> auto {
         std::cout << service_name.to_string().c_str() << ": voilated contract and did not send a message after "
                   << cycle_time << std::endl;
     };
