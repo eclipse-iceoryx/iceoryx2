@@ -18,6 +18,7 @@ crate-type = ["cdylib"]
 
 [features]
 custom_pal_config = ["iceoryx2/custom_pal_config"]
+custom_pal_posix = ["iceoryx2/custom_pal_posix"]
 
 [dependencies]
 iceoryx2 = { workspace = true, features = ["std"] }
