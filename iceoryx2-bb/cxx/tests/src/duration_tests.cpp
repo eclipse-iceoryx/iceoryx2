@@ -54,16 +54,16 @@ constexpr auto createDuration(DurationAccessor::Seconds_t seconds, DurationAcces
 
 TEST(Duration_test, ConversionConstants) {
     ::testing::Test::RecordProperty("TEST_ID", "1d9090fc-438c-41dc-9350-04910ef9b27d");
-    static_assert(Duration::SECS_PER_MINUTE == 60U, "Mismatch for conversion constants!");
-    static_assert(Duration::SECS_PER_HOUR == 3600U, "Mismatch for conversion constants!");
-    static_assert(Duration::HOURS_PER_DAY == 24U, "Mismatch for conversion constants!");
+    static_assert(Duration::SECS_PER_MINUTE == 60U, "Mismatch for conversion constants!"); // NOLINT
+    static_assert(Duration::SECS_PER_HOUR == 3600U, "Mismatch for conversion constants!"); // NOLINT
+    static_assert(Duration::HOURS_PER_DAY == 24U, "Mismatch for conversion constants!");   // NOLINT
 
-    static_assert(Duration::MILLISECS_PER_SEC == 1000U, "Mismatch for conversion constants!");
-    static_assert(Duration::MICROSECS_PER_SEC == 1000000U, "Mismatch for conversion constants!");
+    static_assert(Duration::MILLISECS_PER_SEC == 1000U, "Mismatch for conversion constants!");    // NOLINT
+    static_assert(Duration::MICROSECS_PER_SEC == 1000000U, "Mismatch for conversion constants!"); // NOLINT
 
-    static_assert(Duration::NANOSECS_PER_MICROSEC == 1000U, "Mismatch for conversion constants!");
-    static_assert(Duration::NANOSECS_PER_MILLISEC == 1000000U, "Mismatch for conversion constants!");
-    static_assert(Duration::NANOSECS_PER_SEC == 1000000000U, "Mismatch for conversion constants!");
+    static_assert(Duration::NANOSECS_PER_MICROSEC == 1000U, "Mismatch for conversion constants!");    // NOLINT
+    static_assert(Duration::NANOSECS_PER_MILLISEC == 1000000U, "Mismatch for conversion constants!"); // NOLINT
+    static_assert(Duration::NANOSECS_PER_SEC == 1000000000U, "Mismatch for conversion constants!");   // NOLINT
 }
 
 // BEGIN CONSTRUCTOR TESTS
@@ -1240,7 +1240,7 @@ TEST(Duration_test, AddAssignSecondsToDurationResultsInSecondsAdditionToLHS) {
 
     constexpr Duration EXPECTED_DURATION = createDuration(3U, 0U);
     auto sut = createDuration(2U, 0U);
-    auto otherDuration = createDuration(1U, 0U);
+    auto otherDuration = createDuration(1U, 0U); // NOLINT
 
     sut += otherDuration;
 
@@ -1251,8 +1251,8 @@ TEST(Duration_test, AddAssignNanosecondsToDurationResultsInNanosecondsAdditionTo
     ::testing::Test::RecordProperty("TEST_ID", "a0cd4bcf-59f5-4d84-88e6-0d11d34142a1");
 
     constexpr Duration EXPECTED_DURATION = createDuration(0U, 100U);
-    auto sut = createDuration(0U, 50U);
-    auto otherDuration = createDuration(0U, 50U);
+    auto sut = createDuration(0U, 50U);           // NOLINT
+    auto otherDuration = createDuration(0U, 50U); // NOLINT
 
     sut += otherDuration;
 
@@ -1263,8 +1263,8 @@ TEST(Duration_test, AddAssignDurationPastNanosecondBoundaryResultsInSecondIncrem
     ::testing::Test::RecordProperty("TEST_ID", "97ec3b19-31c9-41bb-8a1f-442cfdf5ed66");
 
     constexpr Duration EXPECTED_DURATION = createDuration(1U, 5U);
-    auto sut = createDuration(0U, NANOSECS_PER_SECOND - 5);
-    auto otherDuration = createDuration(0U, 10U);
+    auto sut = createDuration(0U, NANOSECS_PER_SECOND - 5); // NOLINT
+    auto otherDuration = createDuration(0U, 10U);           // NOLINT
 
     sut += otherDuration;
 
@@ -1275,7 +1275,7 @@ TEST(Duration_test, AddAssignDurationPastNanosecondBoundaryResultsInSecondIncrem
 TEST(Duration_test, AddAssignDurationResultsInSaturationFromSeconds) {
     ::testing::Test::RecordProperty("TEST_ID", "940e6a59-9b1c-4928-8fe1-af290beebb5d");
     auto sut = createDuration(std::numeric_limits<DurationAccessor::Seconds_t>::max() - 1U, NANOSECS_PER_SECOND - 1U);
-    auto otherDuration = createDuration(2U, 0U);
+    auto otherDuration = createDuration(2U, 0U); // NOLINT
 
     sut += otherDuration;
 
@@ -1435,8 +1435,8 @@ TEST(Duration_test, SubtractAssignNanosecondsFromDurationResultsInNanosecondSubt
     ::testing::Test::RecordProperty("TEST_ID", "b6051fe8-37d5-4225-b1ea-5038b56889ce");
 
     constexpr Duration EXPECTED_DURATION = createDuration(0U, 50U);
-    auto sut = createDuration(0U, 100U);
-    auto otherDuration = createDuration(0U, 50U);
+    auto sut = createDuration(0U, 100U);          // NOLINT
+    auto otherDuration = createDuration(0U, 50U); // NOLINT
 
     sut -= otherDuration;
 
@@ -1624,7 +1624,7 @@ TEST(Duration_test, MultiplyDurationWithSelfAssignOperatorWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "ac7e2f7e-984b-4aca-a472-9dc1f1c1f30c");
     constexpr int64_t MULTIPLICATOR { 3 };
     constexpr Duration EXPECTED_DURATION { 6_s + 36_ns };
-    auto duration = 2_s + 12_ns;
+    auto duration = 2_s + 12_ns; // NOLINT
 
     duration *= MULTIPLICATOR;
 
