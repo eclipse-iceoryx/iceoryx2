@@ -13,16 +13,16 @@
 #ifndef IOX2_ATTRIBUTE_HPP
 #define IOX2_ATTRIBUTE_HPP
 
-#include "iox/string.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/legacy/string.hpp"
 
 namespace iox2 {
 /// Represents a single service attribute (key-value) pair that can be defined when the service
 /// is being created.
 class Attribute {
   public:
-    using Key = iox::string<IOX2_ATTRIBUTE_KEY_LENGTH>;
-    using Value = iox::string<IOX2_ATTRIBUTE_VALUE_LENGTH>;
+    using Key = iox2::legacy::string<IOX2_ATTRIBUTE_KEY_LENGTH>;
+    using Value = iox2::legacy::string<IOX2_ATTRIBUTE_VALUE_LENGTH>;
 };
 
 /// Represents a single view service attribute (key-value) pair that can be defined when the service
@@ -45,7 +45,7 @@ class AttributeView {
     iox2_attribute_h_ref m_handle = nullptr;
 };
 } // namespace iox2
-  //
+
 auto operator<<(std::ostream& stream, const iox2::AttributeView& value) -> std::ostream&;
 
 #endif

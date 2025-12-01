@@ -16,13 +16,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox/log/building_blocks/console_logger.hpp"
+#include "iox2/legacy/log/building_blocks/console_logger.hpp"
 
 #include <cstdio>
 #include <cstring>
 #include <ctime>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace log {
 // NOLINTJUSTIFICATION See at declaration in header
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
@@ -49,7 +50,7 @@ void ConsoleLogger::createLogMessageHeader(const char* file,
                                            const char* function,
                                            LogLevel logLevel) noexcept {
     timespec timestamp { 0, 0 };
-    // intentionally avoid using 'IOX_POSIX_CALL' here to keep the logger dependency free
+    // intentionally avoid using 'IOX2_POSIX_CALL' here to keep the logger dependency free
     // NOTE: the log message will eventually be forwarded to iceoryx2-bb-log; temporarily, we ignore the timestamp
     // if (iox_clock_gettime(CLOCK_REALTIME, &timestamp) != 0)
     {
@@ -245,4 +246,5 @@ void ConsoleLogger::initLogger(const LogLevel) noexcept {
     // nothing to do in the base implementation
 }
 } // namespace log
-} // namespace iox
+} // namespace legacy
+} // namespace iox2

@@ -14,13 +14,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox/duration.hpp"
-#include "iox/assertions.hpp"
-#include "iox/logging.hpp"
+#include "iox2/legacy/duration.hpp"
+#include "iox2/legacy/assertions.hpp"
+#include "iox2/legacy/logging.hpp"
 
-#include "iox/posix_call.hpp"
+#include "iox2/legacy/posix_call.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace units {
 struct timespec Duration::timespec() const noexcept {
     using SEC_TYPE = decltype(std::declval<struct timespec>().tv_sec);
@@ -28,7 +29,7 @@ struct timespec Duration::timespec() const noexcept {
 
     static_assert(sizeof(uint64_t) >= sizeof(SEC_TYPE), "casting might alter result");
     if (this->m_seconds > static_cast<uint64_t>(std::numeric_limits<SEC_TYPE>::max())) {
-        IOX_LOG(Trace, ": Result of conversion would overflow, clamping to max value!");
+        IOX2_LOG(Trace, ": Result of conversion would overflow, clamping to max value!");
         return { std::numeric_limits<SEC_TYPE>::max(), NANOSECS_PER_SEC - 1U };
     }
 
@@ -44,10 +45,11 @@ std::ostream& operator<<(std::ostream& stream, const units::Duration t) {
 }
 
 // AXIVION Next Construct AutosarC++19_03-M5.17.1 : This is not used as shift operator but as stream operator and does not require to implement '<<='
-iox::log::LogStream& operator<<(iox::log::LogStream& stream, const Duration t) noexcept {
+iox2::legacy::log::LogStream& operator<<(iox2::legacy::log::LogStream& stream, const Duration t) noexcept {
     stream << t.m_seconds << "s " << t.m_nanoseconds << "ns";
     return stream;
 }
 
 } // namespace units
-} // namespace iox
+} // namespace legacy
+} // namespace iox2

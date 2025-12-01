@@ -26,7 +26,8 @@ DynamicConfigEvent::DynamicConfigEvent(iox2_port_factory_event_h handle)
     : m_handle { handle } {
 }
 
-void DynamicConfigEvent::list_notifiers(const iox::function<CallbackProgression(NotifierDetailsView)>& callback) const {
+void DynamicConfigEvent::list_notifiers(
+    const iox2::legacy::function<CallbackProgression(NotifierDetailsView)>& callback) const {
     auto ctx = internal::ctx(callback);
     iox2_port_factory_event_dynamic_config_list_notifiers(
         &m_handle,
@@ -34,7 +35,8 @@ void DynamicConfigEvent::list_notifiers(const iox::function<CallbackProgression(
         static_cast<void*>(&ctx));
 }
 
-void DynamicConfigEvent::list_listeners(const iox::function<CallbackProgression(ListenerDetailsView)>& callback) const {
+void DynamicConfigEvent::list_listeners(
+    const iox2::legacy::function<CallbackProgression(ListenerDetailsView)>& callback) const {
     auto ctx = internal::ctx(callback);
     iox2_port_factory_event_dynamic_config_list_listeners(
         &m_handle,

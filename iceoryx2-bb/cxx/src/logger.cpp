@@ -15,12 +15,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox/log/building_blocks/logger.hpp"
+#include "iox2/legacy/log/building_blocks/logger.hpp"
 
 #include <cstdio>
 #include <cstdlib>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace log {
 LogLevel logLevelFromEnvOr(const LogLevel logLevel) noexcept {
     auto specifiedLogLevel = logLevel;
@@ -28,7 +29,7 @@ LogLevel logLevelFromEnvOr(const LogLevel logLevel) noexcept {
     // AXIVION Next Construct AutosarC++19_03-M18.0.3 : Use of getenv is allowed in MISRA amendment#6312
     // JUSTIFICATION getenv is required for the functionality of this function; see also declaration in header
     // NOLINTNEXTLINE(concurrency-mt-unsafe)
-    if (const auto* logLevelString = std::getenv("IOX_LOG_LEVEL")) {
+    if (const auto* logLevelString = std::getenv("IOX2_LOG_LEVEL")) {
         if (equalStrings(logLevelString, "off")) {
             specifiedLogLevel = LogLevel::Off;
         } else if (equalStrings(logLevelString, "fatal")) {
@@ -44,7 +45,7 @@ LogLevel logLevelFromEnvOr(const LogLevel logLevel) noexcept {
         } else if (equalStrings(logLevelString, "trace")) {
             specifiedLogLevel = LogLevel::Trace;
         } else {
-            puts("Invalid value for 'IOX_LOG_LEVEL' environment variable!'");
+            puts("Invalid value for 'IOX2_LOG_LEVEL' environment variable!'");
             puts("Found:");
             puts(logLevelString);
             puts("Allowed is one of: off, fatal, error, warn, info, debug, trace");
@@ -54,4 +55,5 @@ LogLevel logLevelFromEnvOr(const LogLevel logLevel) noexcept {
 }
 
 } // namespace log
-} // namespace iox
+} // namespace legacy
+} // namespace iox2

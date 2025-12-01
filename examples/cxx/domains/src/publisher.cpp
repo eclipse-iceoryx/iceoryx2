@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox/cli_definition.hpp"
 #include "iox2/iceoryx2.hpp"
+#include "iox2/legacy/cli_definition.hpp"
 #include "transmission_data.hpp"
 
 #include <iostream>
@@ -19,15 +19,20 @@
 
 // NOLINTBEGIN
 struct Args {
-    IOX_CLI_DEFINITION(Args);
-    IOX_CLI_OPTIONAL(
-        iox::string<32>, domain, { "iox2_" }, 'd', "domain", "The name of the domain. Must be a valid file name.");
-    IOX_CLI_OPTIONAL(iox::string<256>, service, { "my_funky_service" }, 's', "service", "The name of the service.");
-    IOX_CLI_SWITCH(debug, 'e', "debug", "Enable full debug log output");
+    IOX2_CLI_DEFINITION(Args);
+    IOX2_CLI_OPTIONAL(iox2::legacy::string<32>,
+                      domain,
+                      { "iox2_" },
+                      'd',
+                      "domain",
+                      "The name of the domain. Must be a valid file name.");
+    IOX2_CLI_OPTIONAL(
+        iox2::legacy::string<256>, service, { "my_funky_service" }, 's', "service", "The name of the service.");
+    IOX2_CLI_SWITCH(debug, 'e', "debug", "Enable full debug log output");
 };
 // NOLINTEND
 
-constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1);
+constexpr iox2::legacy::units::Duration CYCLE_TIME = iox2::legacy::units::Duration::fromSeconds(1);
 
 auto main(int argc, char** argv) -> int {
     using namespace iox2;
@@ -39,7 +44,7 @@ auto main(int argc, char** argv) -> int {
 
     // The domain name becomes the prefix for all resources.
     // Therefore, different domain names never share the same resources.
-    config.global().set_prefix(iox::FileName::create(args.domain()).expect("valid domain name"));
+    config.global().set_prefix(iox2::legacy::FileName::create(args.domain()).expect("valid domain name"));
 
     auto node = NodeBuilder()
                     // use the custom config when creating the custom node

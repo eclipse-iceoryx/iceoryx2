@@ -14,12 +14,12 @@
 #define IOX2_NODE_HPP
 
 #include "iox/builder_addendum.hpp"
-#include "iox/duration.hpp"
-#include "iox/expected.hpp"
-#include "iox/function.hpp"
 #include "iox2/callback_progression.hpp"
 #include "iox2/config.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/legacy/duration.hpp"
+#include "iox2/legacy/expected.hpp"
+#include "iox2/legacy/function.hpp"
 #include "iox2/node_id.hpp"
 #include "iox2/node_name.hpp"
 #include "iox2/node_state.hpp"
@@ -57,14 +57,14 @@ class Node {
     auto service_builder(const ServiceName& name) const -> ServiceBuilder<T>;
 
     /// Waits for a given `cycle_time`.
-    auto wait(iox::units::Duration cycle_time) const -> iox::expected<void, NodeWaitFailure>;
+    auto wait(iox2::legacy::units::Duration cycle_time) const -> iox2::legacy::expected<void, NodeWaitFailure>;
 
     /// Lists all [`Node`]s under a provided config. The provided callback is
     /// called for every [`Node`] and gets the [`NodeState`] as input argument.
     /// The callback can return [`CallbackProgression::Stop`] if the iteration
     /// shall stop or [`CallbackProgression::Continue`];
-    static auto list(ConfigView config, const iox::function<CallbackProgression(NodeState<T>)>& callback)
-        -> iox::expected<void, NodeListFailure>;
+    static auto list(ConfigView config, const iox2::legacy::function<CallbackProgression(NodeState<T>)>& callback)
+        -> iox2::legacy::expected<void, NodeListFailure>;
 
     /// Returns the [`SignalHandlingMode`] with which the [`Node`] was created.
     auto signal_handling_mode() const -> SignalHandlingMode;
@@ -87,7 +87,7 @@ class NodeBuilder {
 #ifdef DOXYGEN_MACRO_FIX
     auto name(const NodeName value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(NodeName, name);
+    IOX2_BUILDER_OPTIONAL(NodeName, name);
 #endif
 
     /// The [`Config`] that shall be used for the [`Node`]. If no [`Config`]
@@ -95,7 +95,7 @@ class NodeBuilder {
 #ifdef DOXYGEN_MACRO_FIX
     auto config(const Config value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(Config, config);
+    IOX2_BUILDER_OPTIONAL(Config, config);
 #endif
 
     /// Defines the [`SignalHandlingMode`] for the [`Node`]. It affects the [`Node::wait()`] call
@@ -103,7 +103,7 @@ class NodeBuilder {
 #ifdef DOXYGEN_MACRO_FIX
     auto signal_handling_mode(const SignalHandlingMode value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(SignalHandlingMode, signal_handling_mode);
+    IOX2_BUILDER_OPTIONAL(SignalHandlingMode, signal_handling_mode);
 #endif
 
   public:
@@ -117,7 +117,7 @@ class NodeBuilder {
 
     /// Creates a new [`Node`] for a specified [`ServiceType`].
     template <ServiceType T>
-    auto create() const&& -> iox::expected<Node<T>, NodeCreationFailure>;
+    auto create() const&& -> iox2::legacy::expected<Node<T>, NodeCreationFailure>;
 
   private:
     iox2_node_builder_h m_handle = nullptr;

@@ -17,7 +17,7 @@
 #include <iostream>
 #include <mutex>
 
-constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1);
+constexpr iox2::legacy::units::Duration CYCLE_TIME = iox2::legacy::units::Duration::fromSeconds(1);
 namespace {
 std::atomic<bool> keep_running { true }; // NOLINT
 std::mutex cout_mtx;                     // NOLINT

@@ -1,0 +1,47 @@
+// Copyright (c) 2022 by Apex.AI Inc. All rights reserved.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Apache Software License 2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+// which is available at https://opensource.org/licenses/MIT.
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+#include "iox2/legacy/assertions.hpp"
+#include "iox2/legacy/detail/hoofs_error_reporting.hpp"
+#include "iox2/legacy/testing/fatal_failure.hpp"
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+
+namespace {
+using namespace ::testing;
+using namespace ::iox2::legacy::testing;
+
+TEST(FatalFailure, UsingExpectFatalFailureWorks) {
+    ::testing::Test::RecordProperty("TEST_ID", "26393210-9738-462f-9d35-dbd53fbae9d2");
+
+#if defined _WIN32
+    GTEST_SKIP() << "The 'UsingExpectFatalFailureWorks' test is disabled on Windows";
+#else
+    auto hasFatalFailure =
+        IOX2_EXPECT_FATAL_FAILURE([&] { IOX2_ENFORCE(false, ""); }, iox2::legacy::er::ENFORCE_VIOLATION);
+
+    EXPECT_TRUE(hasFatalFailure);
+#endif
+}
+
+TEST(FatalFailure, UsingExpectNoFatalFailureWorks) {
+    ::testing::Test::RecordProperty("TEST_ID", "80bf8050-bfaa-4482-b69c-d0c80699bd4b");
+
+    auto hasNoFatalFailure = IOX2_EXPECT_NO_FATAL_FAILURE([&] { });
+
+    EXPECT_TRUE(hasNoFatalFailure);
+}
+} // namespace

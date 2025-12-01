@@ -13,8 +13,8 @@
 #ifndef IOX2_RESPONSE_MUT_UNINIT_HPP
 #define IOX2_RESPONSE_MUT_UNINIT_HPP
 
-#include "iox/function.hpp"
 #include "iox/slice.hpp"
+#include "iox2/legacy/function.hpp"
 #include "iox2/payload_info.hpp"
 #include "iox2/response_mut.hpp"
 #include "iox2/service_type.hpp"
@@ -83,7 +83,7 @@ class ResponseMutUninit {
     /// Writes the provided payload into the [`ResponseMutUninit`] and returns an initialized
     /// [`ResponseMut`] that is ready to be sent.
     template <typename T = ResponsePayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, T>>
-    auto write_from_fn(const iox::function<typename T::ValueType(uint64_t)>& initializer)
+    auto write_from_fn(const iox2::legacy::function<typename T::ValueType(uint64_t)>& initializer)
         -> ResponseMut<Service, T, ResponseUserHeader>;
 
   private:
@@ -156,8 +156,8 @@ inline auto
 ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>::write_from_slice(iox::ImmutableSlice<ValueType>& value)
     -> ResponseMut<Service, T, ResponseUserHeader> {
     auto dest = payload_mut();
-    IOX_ASSERT(dest.number_of_bytes() >= value.number_of_bytes(),
-               "Destination payload size is smaller than source slice size");
+    IOX2_ASSERT(dest.number_of_bytes() >= value.number_of_bytes(),
+                "Destination payload size is smaller than source slice size");
     std::memcpy(dest.begin(), value.begin(), value.number_of_bytes());
     return std::move(m_response);
 }
@@ -165,7 +165,8 @@ ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>::write_from_slic
 template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
 template <typename T, typename>
 inline auto ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>::write_from_fn(
-    const iox::function<typename T::ValueType(uint64_t)>& initializer) -> ResponseMut<Service, T, ResponseUserHeader> {
+    const iox2::legacy::function<typename T::ValueType(uint64_t)>& initializer)
+    -> ResponseMut<Service, T, ResponseUserHeader> {
     auto slice = payload_mut();
     for (uint64_t i = 0; i < slice.number_of_elements(); ++i) {
         new (&slice[i]) typename T::ValueType(initializer(i));

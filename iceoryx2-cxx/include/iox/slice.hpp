@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_SLICE_HPP
-#define IOX_SLICE_HPP
+#ifndef IOX2_SLICE_HPP
+#define IOX2_SLICE_HPP
 
 #include "iox/assertions_addendum.hpp"
 
@@ -112,14 +112,14 @@ auto Slice<T>::number_of_elements() const -> uint64_t {
 
 template <typename T>
 auto Slice<T>::operator[](const uint64_t n) const -> const ValueType& {
-    IOX_ASSERT(n < m_number_of_elements, "Index out of bounds");
+    IOX2_ASSERT(n < m_number_of_elements, "Index out of bounds");
     return *(m_data + n);
 }
 
 template <typename T>
 auto Slice<T>::operator[](const uint64_t n)
     -> std::conditional_t<std::is_const<T>::value, const ValueType&, ValueType&> {
-    IOX_ASSERT(n < m_number_of_elements, "Index out of bounds");
+    IOX2_ASSERT(n < m_number_of_elements, "Index out of bounds");
     return *(m_data + n);
 }
 

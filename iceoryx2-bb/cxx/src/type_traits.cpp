@@ -13,9 +13,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox/type_traits.hpp"
+#include "iox2/legacy/type_traits.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 // NOLINTJUSTIFICATION See definitions in header file.
 // NOLINTBEGIN(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays)
 constexpr const char TypeInfo<int8_t>::NAME[];
@@ -32,4 +33,5 @@ constexpr const char TypeInfo<float>::NAME[];
 constexpr const char TypeInfo<double>::NAME[];
 constexpr const char TypeInfo<long double>::NAME[];
 // NOLINTEND(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays)
-} // namespace iox
+} // namespace legacy
+} // namespace iox2

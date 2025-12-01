@@ -11,8 +11,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/waitset.hpp"
-#include "iox/into.hpp"
 #include "iox2/internal/callback_context.hpp"
+#include "iox2/legacy/into.hpp"
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -163,20 +163,21 @@ WaitSetBuilder::WaitSetBuilder()
 }
 
 template <ServiceType S>
-auto WaitSetBuilder::create() const&& -> iox::expected<WaitSet<S>, WaitSetCreateError> {
+auto WaitSetBuilder::create() const&& -> iox2::legacy::expected<WaitSet<S>, WaitSetCreateError> {
     if (m_signal_handling_mode.has_value()) {
         iox2_waitset_builder_set_signal_handling_mode(
-            &m_handle, iox::into<iox2_signal_handling_mode_e>(m_signal_handling_mode.value()));
+            &m_handle, iox2::legacy::into<iox2_signal_handling_mode_e>(m_signal_handling_mode.value()));
     }
 
     iox2_waitset_h waitset_handle {};
-    auto result = iox2_waitset_builder_create(m_handle, iox::into<iox2_service_type_e>(S), nullptr, &waitset_handle);
+    auto result =
+        iox2_waitset_builder_create(m_handle, iox2::legacy::into<iox2_service_type_e>(S), nullptr, &waitset_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(WaitSet<S>(waitset_handle));
+        return iox2::legacy::ok(WaitSet<S>(waitset_handle));
     }
 
-    return iox::err(iox::into<WaitSetCreateError>(result));
+    return iox2::legacy::err(iox2::legacy::into<WaitSetCreateError>(result));
 }
 ////////////////////////////
 // END: WaitSetBuilder
@@ -221,7 +222,7 @@ void WaitSet<S>::drop() {
 
 template <ServiceType S>
 auto WaitSet<S>::signal_handling_mode() const -> SignalHandlingMode {
-    return iox::into<SignalHandlingMode>(static_cast<int>(iox2_waitset_signal_handling_mode(&m_handle)));
+    return iox2::legacy::into<SignalHandlingMode>(static_cast<int>(iox2_waitset_signal_handling_mode(&m_handle)));
 }
 
 template <ServiceType S>
@@ -240,8 +241,8 @@ auto WaitSet<S>::is_empty() const -> bool {
 }
 
 template <ServiceType S>
-auto WaitSet<S>::attach_interval(const iox::units::Duration deadline)
-    -> iox::expected<WaitSetGuard<S>, WaitSetAttachmentError> {
+auto WaitSet<S>::attach_interval(const iox2::legacy::units::Duration deadline)
+    -> iox2::legacy::expected<WaitSetGuard<S>, WaitSetAttachmentError> {
     iox2_waitset_guard_h guard_handle {};
     auto duration = deadline.timespec();
     auto result = iox2_waitset_attach_interval(&m_handle,
@@ -251,15 +252,15 @@ auto WaitSet<S>::attach_interval(const iox::units::Duration deadline)
                                                &guard_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(WaitSetGuard<S>(guard_handle));
+        return iox2::legacy::ok(WaitSetGuard<S>(guard_handle));
     }
 
-    return iox::err(iox::into<WaitSetAttachmentError>(result));
+    return iox2::legacy::err(iox2::legacy::into<WaitSetAttachmentError>(result));
 }
 
 template <ServiceType S>
-auto WaitSet<S>::attach_deadline(const FileDescriptorBased& attachment, const iox::units::Duration deadline)
-    -> iox::expected<WaitSetGuard<S>, WaitSetAttachmentError> {
+auto WaitSet<S>::attach_deadline(const FileDescriptorBased& attachment, const iox2::legacy::units::Duration deadline)
+    -> iox2::legacy::expected<WaitSetGuard<S>, WaitSetAttachmentError> {
     iox2_waitset_guard_h guard_handle {};
     auto duration = deadline.timespec();
     auto result = iox2_waitset_attach_deadline(&m_handle,
@@ -270,76 +271,77 @@ auto WaitSet<S>::attach_deadline(const FileDescriptorBased& attachment, const io
                                                &guard_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(WaitSetGuard<S>(guard_handle));
+        return iox2::legacy::ok(WaitSetGuard<S>(guard_handle));
     }
 
-    return iox::err(iox::into<WaitSetAttachmentError>(result));
+    return iox2::legacy::err(iox2::legacy::into<WaitSetAttachmentError>(result));
 }
 
 template <ServiceType S>
-auto WaitSet<S>::attach_deadline(const Listener<S>& listener, const iox::units::Duration deadline)
-    -> iox::expected<WaitSetGuard<S>, WaitSetAttachmentError> {
+auto WaitSet<S>::attach_deadline(const Listener<S>& listener, const iox2::legacy::units::Duration deadline)
+    -> iox2::legacy::expected<WaitSetGuard<S>, WaitSetAttachmentError> {
     return attach_deadline(FileDescriptorView(iox2_listener_get_file_descriptor(&listener.m_handle)), deadline);
 }
 
 template <ServiceType S>
 auto WaitSet<S>::attach_notification(const FileDescriptorBased& attachment)
-    -> iox::expected<WaitSetGuard<S>, WaitSetAttachmentError> {
+    -> iox2::legacy::expected<WaitSetGuard<S>, WaitSetAttachmentError> {
     iox2_waitset_guard_h guard_handle {};
     auto result =
         iox2_waitset_attach_notification(&m_handle, attachment.file_descriptor().m_handle, nullptr, &guard_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(WaitSetGuard<S>(guard_handle));
+        return iox2::legacy::ok(WaitSetGuard<S>(guard_handle));
     }
 
-    return iox::err(iox::into<WaitSetAttachmentError>(result));
+    return iox2::legacy::err(iox2::legacy::into<WaitSetAttachmentError>(result));
 }
 
 template <ServiceType S>
 auto WaitSet<S>::attach_notification(const Listener<S>& listener)
-    -> iox::expected<WaitSetGuard<S>, WaitSetAttachmentError> {
+    -> iox2::legacy::expected<WaitSetGuard<S>, WaitSetAttachmentError> {
     return attach_notification(FileDescriptorView(iox2_listener_get_file_descriptor(&listener.m_handle)));
 }
 
 template <ServiceType S>
 auto run_callback(iox2_waitset_attachment_id_h attachment_id, void* context) -> iox2_callback_progression_e {
-    auto* fn_call = internal::ctx_cast<iox::function<CallbackProgression(WaitSetAttachmentId<S>)>>(context);
-    return iox::into<iox2_callback_progression_e>(fn_call->value()(WaitSetAttachmentId<S>(attachment_id)));
+    auto* fn_call = internal::ctx_cast<iox2::legacy::function<CallbackProgression(WaitSetAttachmentId<S>)>>(context);
+    return iox2::legacy::into<iox2_callback_progression_e>(fn_call->value()(WaitSetAttachmentId<S>(attachment_id)));
 }
 
 template <ServiceType S>
-auto WaitSet<S>::wait_and_process(const iox::function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call)
-    -> iox::expected<WaitSetRunResult, WaitSetRunError> {
+auto WaitSet<S>::wait_and_process(const iox2::legacy::function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call)
+    -> iox2::legacy::expected<WaitSetRunResult, WaitSetRunError> {
     iox2_waitset_run_result_e run_result = iox2_waitset_run_result_e_STOP_REQUEST;
     auto ctx = internal::ctx(fn_call);
     auto result = iox2_waitset_wait_and_process(&m_handle, run_callback<S>, static_cast<void*>(&ctx), &run_result);
 
     if (result == IOX2_OK) {
-        return iox::ok(iox::into<WaitSetRunResult>(static_cast<int>(run_result)));
+        return iox2::legacy::ok(iox2::legacy::into<WaitSetRunResult>(static_cast<int>(run_result)));
     }
 
-    return iox::err(iox::into<WaitSetRunError>(result));
+    return iox2::legacy::err(iox2::legacy::into<WaitSetRunError>(result));
 }
 
 template <ServiceType S>
-auto WaitSet<S>::wait_and_process_once(const iox::function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call)
-    -> iox::expected<WaitSetRunResult, WaitSetRunError> {
+auto WaitSet<S>::wait_and_process_once(
+    const iox2::legacy::function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call)
+    -> iox2::legacy::expected<WaitSetRunResult, WaitSetRunError> {
     iox2_waitset_run_result_e run_result = iox2_waitset_run_result_e_STOP_REQUEST;
     auto ctx = internal::ctx(fn_call);
     auto result = iox2_waitset_wait_and_process_once(&m_handle, run_callback<S>, static_cast<void*>(&ctx), &run_result);
 
     if (result == IOX2_OK) {
-        return iox::ok(iox::into<WaitSetRunResult>(static_cast<int>(run_result)));
+        return iox2::legacy::ok(iox2::legacy::into<WaitSetRunResult>(static_cast<int>(run_result)));
     }
 
-    return iox::err(iox::into<WaitSetRunError>(result));
+    return iox2::legacy::err(iox2::legacy::into<WaitSetRunError>(result));
 }
 
 template <ServiceType S>
 auto WaitSet<S>::wait_and_process_once_with_timeout(
-    const iox::function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call, const iox::units::Duration timeout)
-    -> iox::expected<WaitSetRunResult, WaitSetRunError> {
+    const iox2::legacy::function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call,
+    const iox2::legacy::units::Duration timeout) -> iox2::legacy::expected<WaitSetRunResult, WaitSetRunError> {
     iox2_waitset_run_result_e run_result = iox2_waitset_run_result_e_STOP_REQUEST;
     auto ctx = internal::ctx(fn_call);
     auto duration = timeout.timespec();
@@ -349,10 +351,10 @@ auto WaitSet<S>::wait_and_process_once_with_timeout(
         &m_handle, run_callback<S>, static_cast<void*>(&ctx), timeout_secs, timeout_nsecs, &run_result);
 
     if (result == IOX2_OK) {
-        return iox::ok(iox::into<WaitSetRunResult>(static_cast<int>(run_result)));
+        return iox2::legacy::ok(iox2::legacy::into<WaitSetRunResult>(static_cast<int>(run_result)));
     }
 
-    return iox::err(iox::into<WaitSetRunError>(result));
+    return iox2::legacy::err(iox2::legacy::into<WaitSetRunError>(result));
 }
 
 ////////////////////////////
@@ -366,8 +368,9 @@ template class WaitSetGuard<ServiceType::Local>;
 template class WaitSet<ServiceType::Ipc>;
 template class WaitSet<ServiceType::Local>;
 
-template auto WaitSetBuilder::create() const&& -> iox::expected<WaitSet<ServiceType::Ipc>, WaitSetCreateError>;
-template auto WaitSetBuilder::create() const&& -> iox::expected<WaitSet<ServiceType::Local>, WaitSetCreateError>;
+template auto WaitSetBuilder::create() const&& -> iox2::legacy::expected<WaitSet<ServiceType::Ipc>, WaitSetCreateError>;
+template auto
+WaitSetBuilder::create() const&& -> iox2::legacy::expected<WaitSet<ServiceType::Local>, WaitSetCreateError>;
 
 template auto operator==(const WaitSetAttachmentId<ServiceType::Ipc>& lhs,
                          const WaitSetAttachmentId<ServiceType::Ipc>& rhs) -> bool;

@@ -14,11 +14,11 @@
 #define IOX2_WAITSET_HPP
 
 #include "iox/builder_addendum.hpp"
-#include "iox/duration.hpp"
-#include "iox/expected.hpp"
 #include "iox2/callback_progression.hpp"
 #include "iox2/file_descriptor.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/legacy/duration.hpp"
+#include "iox2/legacy/expected.hpp"
 #include "iox2/listener.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/signal_handling_mode.hpp"
@@ -135,8 +135,8 @@ class WaitSet {
     /// If an interrupt- (`SIGINT`) or a termination-signal (`SIGTERM`) was received, it will exit
     /// the loop and inform the user with [`WaitSetRunResult::Interrupt`] or
     /// [`WaitSetRunResult::TerminationRequest`].
-    auto wait_and_process(const iox::function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call)
-        -> iox::expected<WaitSetRunResult, WaitSetRunError>;
+    auto wait_and_process(const iox2::legacy::function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call)
+        -> iox2::legacy::expected<WaitSetRunResult, WaitSetRunError>;
 
     /// Waits until an event arrives on the [`WaitSet`], then
     /// collects all events by calling the provided `fn_call` callback with the corresponding
@@ -154,8 +154,8 @@ class WaitSet {
     ///
     /// When no signal was received and all events were handled, it will return
     /// [`WaitSetRunResult::AllEventsHandled`].
-    auto wait_and_process_once(const iox::function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call)
-        -> iox::expected<WaitSetRunResult, WaitSetRunError>;
+    auto wait_and_process_once(const iox2::legacy::function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call)
+        -> iox2::legacy::expected<WaitSetRunResult, WaitSetRunError>;
 
     /// Waits until an event arrives on the [`WaitSet`] or the provided timeout has passed, then
     /// collects all events by calling the provided `fn_call` callback with the corresponding
@@ -173,9 +173,9 @@ class WaitSet {
     ///
     /// When no signal was received and all events were handled, it will return
     /// [`WaitSetRunResult::AllEventsHandled`].
-    auto wait_and_process_once_with_timeout(const iox::function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call,
-                                            iox::units::Duration timeout)
-        -> iox::expected<WaitSetRunResult, WaitSetRunError>;
+    auto wait_and_process_once_with_timeout(
+        const iox2::legacy::function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call,
+        iox2::legacy::units::Duration timeout) -> iox2::legacy::expected<WaitSetRunResult, WaitSetRunError>;
 
     /// Returns the capacity of the [`WaitSet`]
     auto capacity() const -> uint64_t;
@@ -195,7 +195,8 @@ class WaitSet {
     ///
     /// * The [`Listener`] must life at least as long as the returned [`WaitSetGuard`].
     /// * The [`WaitSetGuard`] must life at least as long as the [`WaitsSet`].
-    auto attach_notification(const Listener<S>& listener) -> iox::expected<WaitSetGuard<S>, WaitSetAttachmentError>;
+    auto attach_notification(const Listener<S>& listener)
+        -> iox2::legacy::expected<WaitSetGuard<S>, WaitSetAttachmentError>;
 
     /// Attaches a [`FileDescriptorBased`] object as notification to the [`WaitSet`]. Whenever an event is received on
     /// the object the [`WaitSet`] informs the user in [`WaitSet::wait_and_process()`] to handle the event. The object
@@ -207,7 +208,7 @@ class WaitSet {
     /// * The corresponding [`FileDescriptor`] must life at least as long as the returned [`WaitSetGuard`].
     /// * The [`WaitSetGuard`] must life at least as long as the [`WaitsSet`].
     auto attach_notification(const FileDescriptorBased& attachment)
-        -> iox::expected<WaitSetGuard<S>, WaitSetAttachmentError>;
+        -> iox2::legacy::expected<WaitSetGuard<S>, WaitSetAttachmentError>;
 
     /// Attaches a [`Listener`] as deadline to the [`WaitSet`]. Whenever the event is received or the
     /// deadline is hit, the user is informed in [`WaitSet::wait_and_process()`].
@@ -219,8 +220,8 @@ class WaitSet {
     ///
     /// * The corresponding [`Listener`] must life at least as long as the returned [`WaitSetGuard`].
     /// * The [`WaitSetGuard`] must life at least as long as the [`WaitsSet`].
-    auto attach_deadline(const Listener<S>& listener, iox::units::Duration deadline)
-        -> iox::expected<WaitSetGuard<S>, WaitSetAttachmentError>;
+    auto attach_deadline(const Listener<S>& listener, iox2::legacy::units::Duration deadline)
+        -> iox2::legacy::expected<WaitSetGuard<S>, WaitSetAttachmentError>;
 
     /// Attaches a [`FileDescriptorBased`] object as deadline to the [`WaitSet`]. Whenever the event is received or the
     /// deadline is hit, the user is informed in [`WaitSet::wait_and_process()`].
@@ -232,8 +233,8 @@ class WaitSet {
     ///
     /// * The corresponding [`FileDescriptor`] must life at least as long as the returned [`WaitSetGuard`].
     /// * The [`WaitSetGuard`] must life at least as long as the [`WaitsSet`].
-    auto attach_deadline(const FileDescriptorBased& attachment, iox::units::Duration deadline)
-        -> iox::expected<WaitSetGuard<S>, WaitSetAttachmentError>;
+    auto attach_deadline(const FileDescriptorBased& attachment, iox2::legacy::units::Duration deadline)
+        -> iox2::legacy::expected<WaitSetGuard<S>, WaitSetAttachmentError>;
 
     /// Attaches a tick event to the [`WaitSet`]. Whenever the timeout is reached the [`WaitSet`]
     /// informs the user in [`WaitSet::wait_and_process()`].
@@ -241,7 +242,8 @@ class WaitSet {
     /// # Safety
     ///
     /// * The [`WaitSetGuard`] must life at least as long as the [`WaitsSet`].
-    auto attach_interval(iox::units::Duration deadline) -> iox::expected<WaitSetGuard<S>, WaitSetAttachmentError>;
+    auto attach_interval(iox2::legacy::units::Duration deadline)
+        -> iox2::legacy::expected<WaitSetGuard<S>, WaitSetAttachmentError>;
 
     /// Returns the [`SignalHandlingMode`] with which the [`WaitSet`] was created.
     auto signal_handling_mode() const -> SignalHandlingMode;
@@ -263,7 +265,7 @@ class WaitSetBuilder {
 #ifdef DOXYGEN_MACRO_FIX
     auto signal_handling_mode(const SignalHandlingMode value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(SignalHandlingMode, signal_handling_mode);
+    IOX2_BUILDER_OPTIONAL(SignalHandlingMode, signal_handling_mode);
 #endif
 
   public:
@@ -277,7 +279,7 @@ class WaitSetBuilder {
 
     /// Creates the [`WaitSet`].
     template <ServiceType S>
-    auto create() const&& -> iox::expected<WaitSet<S>, WaitSetCreateError>;
+    auto create() const&& -> iox2::legacy::expected<WaitSet<S>, WaitSetCreateError>;
 
   private:
     iox2_waitset_builder_h m_handle = nullptr;

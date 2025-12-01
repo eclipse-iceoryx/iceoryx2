@@ -16,7 +16,7 @@
 #include <cstdint>
 #include <iostream>
 
-constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromMilliseconds(1000);
+constexpr iox2::legacy::units::Duration CYCLE_TIME = iox2::legacy::units::Duration::fromMilliseconds(1000);
 
 auto main() -> int {
     using namespace iox2;
@@ -34,7 +34,7 @@ auto main() -> int {
                         .notifier_builder()
                         // we only want to notify the other side explicitly when we have sent a sample
                         // so we can define it as default event id
-                        .default_event_id(iox::into<EventId>(PubSubEvent::SentSample))
+                        .default_event_id(iox2::legacy::into<EventId>(PubSubEvent::SentSample))
                         .create()
                         .expect("");
     uint64_t counter = 0;

@@ -13,8 +13,6 @@
 #ifndef IOX2_ENUM_TRANSLATION_HPP
 #define IOX2_ENUM_TRANSLATION_HPP
 
-#include "iox/assertions.hpp"
-#include "iox/into.hpp"
 #include "iox2/allocation_strategy.hpp"
 #include "iox2/attribute_error.hpp"
 #include "iox2/callback_progression.hpp"
@@ -24,6 +22,8 @@
 #include "iox2/entry_handle_error.hpp"
 #include "iox2/entry_handle_mut_error.hpp"
 #include "iox2/iceoryx2.h"
+#include "iox2/legacy/assertions.hpp"
+#include "iox2/legacy/into.hpp"
 #include "iox2/listener_error.hpp"
 #include "iox2/log_level.hpp"
 #include "iox2/messaging_pattern.hpp"
@@ -48,7 +48,8 @@
 #include "iox2/waitset_enums.hpp"
 #include "iox2/writer_error.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 template <>
 constexpr auto from<int, iox2::SemanticStringError>(const int value) noexcept -> iox2::SemanticStringError {
     const auto error = static_cast<iox2_semantic_string_error_e>(value);
@@ -59,7 +60,7 @@ constexpr auto from<int, iox2::SemanticStringError>(const int value) noexcept ->
         return iox2::SemanticStringError::ExceedsMaximumLength;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -73,13 +74,13 @@ from<iox2::SemanticStringError, iox2_semantic_string_error_e>(const iox2::Semant
         return iox2_semantic_string_error_e_EXCEEDS_MAXIMUM_LENGTH;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
 inline auto from<iox2::SemanticStringError, const char*>(const iox2::SemanticStringError value) noexcept -> const
     char* {
-    return iox2_semantic_string_error_string(iox::into<iox2_semantic_string_error_e>(value));
+    return iox2_semantic_string_error_string(iox2::legacy::into<iox2_semantic_string_error_e>(value));
 }
 
 template <>
@@ -92,7 +93,7 @@ constexpr auto from<int, iox2::ServiceType>(const int value) noexcept -> iox2::S
         return iox2::ServiceType::Local;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -105,7 +106,7 @@ constexpr auto from<iox2::ServiceType, iox2_service_type_e>(const iox2::ServiceT
         return iox2_service_type_e_LOCAL;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -118,7 +119,7 @@ constexpr auto from<int, iox2::NodeCreationFailure>(const int value) noexcept ->
         return iox2::NodeCreationFailure::InternalError;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -132,13 +133,13 @@ from<iox2::NodeCreationFailure, iox2_node_creation_failure_e>(const iox2::NodeCr
         return iox2_node_creation_failure_e_INTERNAL_ERROR;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
 inline auto from<iox2::NodeCreationFailure, const char*>(const iox2::NodeCreationFailure value) noexcept -> const
     char* {
-    return iox2_node_creation_failure_string(iox::into<iox2_node_creation_failure_e>(value));
+    return iox2_node_creation_failure_string(iox2::legacy::into<iox2_node_creation_failure_e>(value));
 }
 
 template <>
@@ -151,7 +152,7 @@ constexpr auto from<int, iox2::CallbackProgression>(const int value) noexcept ->
         return iox2::CallbackProgression::Stop;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -165,7 +166,7 @@ from<iox2::CallbackProgression, iox2_callback_progression_e>(const iox2::Callbac
         return iox2_callback_progression_e_STOP;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -180,7 +181,7 @@ constexpr auto from<int, iox2::NodeListFailure>(const int value) noexcept -> iox
         return iox2::NodeListFailure::Interrupt;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -195,12 +196,12 @@ constexpr auto from<iox2::NodeListFailure, iox2_node_list_failure_e>(const iox2:
         return iox2_node_list_failure_e_INTERRUPT;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
 inline auto from<iox2::NodeListFailure, const char*>(const iox2::NodeListFailure value) noexcept -> const char* {
-    return iox2_node_list_failure_string(iox::into<iox2_node_list_failure_e>(value));
+    return iox2_node_list_failure_string(iox2::legacy::into<iox2_node_list_failure_e>(value));
 }
 
 template <>
@@ -213,7 +214,7 @@ constexpr auto from<int, iox2::NodeWaitFailure>(const int value) noexcept -> iox
         return iox2::NodeWaitFailure::Interrupt;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -226,12 +227,12 @@ constexpr auto from<iox2::NodeWaitFailure, iox2_node_wait_failure_e>(const iox2:
         return iox2_node_wait_failure_e_INTERRUPT;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
 inline auto from<iox2::NodeWaitFailure, const char*>(const iox2::NodeWaitFailure value) noexcept -> const char* {
-    return iox2_node_wait_failure_string(iox::into<iox2_node_wait_failure_e>(value));
+    return iox2_node_wait_failure_string(iox2::legacy::into<iox2_node_wait_failure_e>(value));
 }
 
 template <>
@@ -248,7 +249,7 @@ constexpr auto from<iox2::MessagingPattern, iox2_messaging_pattern_e>(const iox2
         return iox2_messaging_pattern_e_BLACKBOARD;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -271,7 +272,7 @@ constexpr auto from<int, iox2::ServiceDetailsError>(const int value) noexcept ->
         return iox2::ServiceDetailsError::VersionMismatch;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -295,13 +296,13 @@ from<iox2::ServiceDetailsError, iox2_service_details_error_e>(const iox2::Servic
         return iox2_service_details_error_e_VERSION_MISMATCH;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
 inline auto from<iox2::ServiceDetailsError, const char*>(const iox2::ServiceDetailsError value) noexcept -> const
     char* {
-    return iox2_service_details_error_string(iox::into<iox2_service_details_error_e>(value));
+    return iox2_service_details_error_string(iox2::legacy::into<iox2_service_details_error_e>(value));
 }
 
 template <>
@@ -360,7 +361,7 @@ constexpr auto from<int, iox2::EventOpenOrCreateError>(const int value) noexcept
         return iox2::EventOpenOrCreateError::SystemInFlux;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -410,14 +411,14 @@ from<iox2::EventOpenOrCreateError, iox2_event_open_or_create_error_e>(const iox2
     case iox2::EventOpenOrCreateError::CreateOldConnectionsStillActive:
         return iox2_event_open_or_create_error_e_C_OLD_CONNECTION_STILL_ACTIVE;
     default:
-        IOX_UNREACHABLE();
+        IOX2_UNREACHABLE();
     }
 }
 
 template <>
 inline auto from<iox2::EventOpenOrCreateError, const char*>(const iox2::EventOpenOrCreateError value) noexcept -> const
     char* {
-    return iox2_event_open_or_create_error_string(iox::into<iox2_event_open_or_create_error_e>(value));
+    return iox2_event_open_or_create_error_string(iox2::legacy::into<iox2_event_open_or_create_error_e>(value));
 }
 
 template <>
@@ -451,7 +452,7 @@ constexpr auto from<int, iox2::EventOpenError>(const int value) noexcept -> iox2
     case iox2_event_open_or_create_error_e_O_IS_MARKED_FOR_DESTRUCTION:
         return iox2::EventOpenError::IsMarkedForDestruction;
     default:
-        IOX_UNREACHABLE();
+        IOX2_UNREACHABLE();
     }
 }
 
@@ -486,13 +487,13 @@ constexpr auto from<iox2::EventOpenError, iox2_event_open_or_create_error_e>(con
     case iox2::EventOpenError::IsMarkedForDestruction:
         return iox2_event_open_or_create_error_e_O_IS_MARKED_FOR_DESTRUCTION;
     default:
-        IOX_UNREACHABLE();
+        IOX2_UNREACHABLE();
     }
 }
 
 template <>
 inline auto from<iox2::EventOpenError, const char*>(const iox2::EventOpenError value) noexcept -> const char* {
-    return iox2_event_open_or_create_error_string(iox::into<iox2_event_open_or_create_error_e>(value));
+    return iox2_event_open_or_create_error_string(iox2::legacy::into<iox2_event_open_or_create_error_e>(value));
 }
 
 template <>
@@ -512,7 +513,7 @@ constexpr auto from<int, iox2::EventCreateError>(const int value) noexcept -> io
     case iox2_event_open_or_create_error_e_C_INSUFFICIENT_PERMISSIONS:
         return iox2::EventCreateError::InsufficientPermissions;
     default:
-        IOX_UNREACHABLE();
+        IOX2_UNREACHABLE();
     }
 }
 
@@ -536,13 +537,13 @@ from<iox2::EventCreateError, iox2_event_open_or_create_error_e>(const iox2::Even
     case iox2::EventCreateError::OldConnectionsStillActive:
         return iox2_event_open_or_create_error_e_C_OLD_CONNECTION_STILL_ACTIVE;
     default:
-        IOX_UNREACHABLE();
+        IOX2_UNREACHABLE();
     }
 }
 
 template <>
 inline auto from<iox2::EventCreateError, const char*>(const iox2::EventCreateError value) noexcept -> const char* {
-    return iox2_event_open_or_create_error_string(iox::into<iox2_event_open_or_create_error_e>(value));
+    return iox2_event_open_or_create_error_string(iox2::legacy::into<iox2_event_open_or_create_error_e>(value));
 }
 
 template <>
@@ -605,7 +606,7 @@ constexpr auto from<int, iox2::PublishSubscribeOpenOrCreateError>(const int valu
         return iox2::PublishSubscribeOpenOrCreateError::SystemInFlux;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -647,7 +648,7 @@ constexpr auto from<int, iox2::PublishSubscribeOpenError>(const int value) noexc
     case iox2_pub_sub_open_or_create_error_e_O_IS_MARKED_FOR_DESTRUCTION:
         return iox2::PublishSubscribeOpenError::IsMarkedForDestruction;
     default:
-        IOX_UNREACHABLE();
+        IOX2_UNREACHABLE();
     }
 }
 
@@ -690,14 +691,14 @@ constexpr auto from<iox2::PublishSubscribeOpenError, iox2_pub_sub_open_or_create
     case iox2::PublishSubscribeOpenError::IsMarkedForDestruction:
         return iox2_pub_sub_open_or_create_error_e_O_IS_MARKED_FOR_DESTRUCTION;
     default:
-        IOX_UNREACHABLE();
+        IOX2_UNREACHABLE();
     }
 }
 
 template <>
 inline auto from<iox2::PublishSubscribeOpenError, const char*>(const iox2::PublishSubscribeOpenError value) noexcept
     -> const char* {
-    return iox2_pub_sub_open_or_create_error_string(iox::into<iox2_pub_sub_open_or_create_error_e>(value));
+    return iox2_pub_sub_open_or_create_error_string(iox2::legacy::into<iox2_pub_sub_open_or_create_error_e>(value));
 }
 
 template <>
@@ -720,7 +721,7 @@ constexpr auto from<int, iox2::PublishSubscribeCreateError>(const int value) noe
     case iox2_pub_sub_open_or_create_error_e_C_HANGS_IN_CREATION:
         return iox2::PublishSubscribeCreateError::HangsInCreation;
     default:
-        IOX_UNREACHABLE();
+        IOX2_UNREACHABLE();
     }
 }
 
@@ -743,14 +744,14 @@ constexpr auto from<iox2::PublishSubscribeCreateError, iox2_pub_sub_open_or_crea
     case iox2::PublishSubscribeCreateError::HangsInCreation:
         return iox2_pub_sub_open_or_create_error_e_C_HANGS_IN_CREATION;
     default:
-        IOX_UNREACHABLE();
+        IOX2_UNREACHABLE();
     }
 }
 
 template <>
 inline auto from<iox2::PublishSubscribeCreateError, const char*>(const iox2::PublishSubscribeCreateError value) noexcept
     -> const char* {
-    return iox2_pub_sub_open_or_create_error_string(iox::into<iox2_pub_sub_open_or_create_error_e>(value));
+    return iox2_pub_sub_open_or_create_error_string(iox2::legacy::into<iox2_pub_sub_open_or_create_error_e>(value));
 }
 
 template <>
@@ -808,7 +809,7 @@ constexpr auto from<iox2::PublishSubscribeOpenOrCreateError, iox2_pub_sub_open_o
     case iox2::PublishSubscribeOpenOrCreateError::CreateOldConnectionsStillActive:
         return iox2_pub_sub_open_or_create_error_e_C_OLD_CONNECTION_STILL_ACTIVE;
     default:
-        IOX_UNREACHABLE();
+        IOX2_UNREACHABLE();
     }
 }
 
@@ -816,7 +817,7 @@ template <>
 inline auto
 from<iox2::PublishSubscribeOpenOrCreateError, const char*>(const iox2::PublishSubscribeOpenOrCreateError value) noexcept
     -> const char* {
-    return iox2_pub_sub_open_or_create_error_string(iox::into<iox2_pub_sub_open_or_create_error_e>(value));
+    return iox2_pub_sub_open_or_create_error_string(iox2::legacy::into<iox2_pub_sub_open_or_create_error_e>(value));
 }
 
 template <>
@@ -837,7 +838,7 @@ constexpr auto from<int, iox2::RequestResponseCreateError>(const int value) noex
     case iox2_request_response_open_or_create_error_e_C_SERVICE_IN_CORRUPTED_STATE:
         return iox2::RequestResponseCreateError::ServiceInCorruptedState;
     default:
-        IOX_UNREACHABLE();
+        IOX2_UNREACHABLE();
     }
 }
 
@@ -858,7 +859,7 @@ constexpr auto from<iox2::RequestResponseCreateError, iox2_request_response_open
     case iox2::RequestResponseCreateError::ServiceInCorruptedState:
         return iox2_request_response_open_or_create_error_e_C_SERVICE_IN_CORRUPTED_STATE;
     default:
-        IOX_UNREACHABLE();
+        IOX2_UNREACHABLE();
     }
 }
 
@@ -866,7 +867,7 @@ template <>
 inline auto from<iox2::RequestResponseCreateError, const char*>(const iox2::RequestResponseCreateError value) noexcept
     -> const char* {
     return iox2_request_response_open_or_create_error_string(
-        iox::into<iox2_request_response_open_or_create_error_e>(value));
+        iox2::legacy::into<iox2_request_response_open_or_create_error_e>(value));
 }
 
 template <>
@@ -916,7 +917,7 @@ constexpr auto from<int, iox2::RequestResponseOpenError>(const int value) noexce
     case iox2_request_response_open_or_create_error_e_O_SERVICE_IN_CORRUPTED_STATE:
         return iox2::RequestResponseOpenError::ServiceInCorruptedState;
     default:
-        IOX_UNREACHABLE();
+        IOX2_UNREACHABLE();
     }
 }
 
@@ -967,7 +968,7 @@ constexpr auto from<iox2::RequestResponseOpenError, iox2_request_response_open_o
     case iox2::RequestResponseOpenError::ServiceInCorruptedState:
         return iox2_request_response_open_or_create_error_e_O_SERVICE_IN_CORRUPTED_STATE;
     default:
-        IOX_UNREACHABLE();
+        IOX2_UNREACHABLE();
     }
 }
 
@@ -975,7 +976,7 @@ template <>
 inline auto from<iox2::RequestResponseOpenError, const char*>(const iox2::RequestResponseOpenError value) noexcept
     -> const char* {
     return iox2_request_response_open_or_create_error_string(
-        iox::into<iox2_request_response_open_or_create_error_e>(value));
+        iox2::legacy::into<iox2_request_response_open_or_create_error_e>(value));
 }
 
 template <>
@@ -1043,7 +1044,7 @@ constexpr auto from<int, iox2::RequestResponseOpenOrCreateError>(const int value
         return iox2::RequestResponseOpenOrCreateError::SystemInFlux;
 
     default:
-        IOX_UNREACHABLE();
+        IOX2_UNREACHABLE();
     }
 }
 
@@ -1109,7 +1110,7 @@ constexpr auto from<iox2::RequestResponseOpenOrCreateError, iox2_request_respons
     case iox2::RequestResponseOpenOrCreateError::SystemInFlux:
         return iox2_request_response_open_or_create_error_e_SYSTEM_IN_FLUX;
     default:
-        IOX_UNREACHABLE();
+        IOX2_UNREACHABLE();
     }
 }
 
@@ -1118,7 +1119,7 @@ inline auto
 from<iox2::RequestResponseOpenOrCreateError, const char*>(const iox2::RequestResponseOpenOrCreateError value) noexcept
     -> const char* {
     return iox2_request_response_open_or_create_error_string(
-        iox::into<iox2_request_response_open_or_create_error_e>(value));
+        iox2::legacy::into<iox2_request_response_open_or_create_error_e>(value));
 }
 
 template <>
@@ -1140,7 +1141,7 @@ constexpr auto from<int, iox2::BlackboardCreateError>(const int value) noexcept 
     case iox2_blackboard_create_error_e_C_NO_ENTRIES_PROVIDED:
         return iox2::BlackboardCreateError::NoEntriesProvided;
     default:
-        IOX_UNREACHABLE();
+        IOX2_UNREACHABLE();
     }
 }
 
@@ -1164,14 +1165,14 @@ from<iox2::BlackboardCreateError, iox2_blackboard_create_error_e>(const iox2::Bl
     case iox2::BlackboardCreateError::NoEntriesProvided:
         return iox2_blackboard_create_error_e_C_NO_ENTRIES_PROVIDED;
     default:
-        IOX_UNREACHABLE();
+        IOX2_UNREACHABLE();
     }
 }
 
 template <>
 inline auto from<iox2::BlackboardCreateError, const char*>(const iox2::BlackboardCreateError value) noexcept -> const
     char* {
-    return iox2_blackboard_create_error_string(iox::into<iox2_blackboard_create_error_e>(value));
+    return iox2_blackboard_create_error_string(iox2::legacy::into<iox2_blackboard_create_error_e>(value));
 }
 
 template <>
@@ -1203,7 +1204,7 @@ constexpr auto from<int, iox2::BlackboardOpenError>(const int value) noexcept ->
     case iox2_blackboard_open_error_e_O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_NODES:
         return iox2::BlackboardOpenError::DoesNotSupportRequestedAmountOfNodes;
     default:
-        IOX_UNREACHABLE();
+        IOX2_UNREACHABLE();
     }
 }
 
@@ -1237,14 +1238,14 @@ from<iox2::BlackboardOpenError, iox2_blackboard_open_error_e>(const iox2::Blackb
     case iox2::BlackboardOpenError::DoesNotSupportRequestedAmountOfNodes:
         return iox2_blackboard_open_error_e_O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_NODES;
     default:
-        IOX_UNREACHABLE();
+        IOX2_UNREACHABLE();
     }
 }
 
 template <>
 inline auto from<iox2::BlackboardOpenError, const char*>(const iox2::BlackboardOpenError value) noexcept -> const
     char* {
-    return iox2_blackboard_open_error_string(iox::into<iox2_blackboard_open_error_e>(value));
+    return iox2_blackboard_open_error_string(iox2::legacy::into<iox2_blackboard_open_error_e>(value));
 }
 
 template <>
@@ -1256,7 +1257,7 @@ constexpr auto from<int, iox2::WriterCreateError>(const int value) noexcept -> i
     case iox2_writer_create_error_e_INTERNAL_FAILURE:
         return iox2::WriterCreateError::InternalFailure;
     default:
-        IOX_UNREACHABLE();
+        IOX2_UNREACHABLE();
     }
 }
 
@@ -1269,13 +1270,13 @@ constexpr auto from<iox2::WriterCreateError, iox2_writer_create_error_e>(const i
     case iox2::WriterCreateError::InternalFailure:
         return iox2_writer_create_error_e_INTERNAL_FAILURE;
     default:
-        IOX_UNREACHABLE();
+        IOX2_UNREACHABLE();
     }
 }
 
 template <>
 inline auto from<iox2::WriterCreateError, const char*>(const iox2::WriterCreateError value) noexcept -> const char* {
-    return iox2_writer_create_error_string(iox::into<iox2_writer_create_error_e>(value));
+    return iox2_writer_create_error_string(iox2::legacy::into<iox2_writer_create_error_e>(value));
 }
 
 template <>
@@ -1287,7 +1288,7 @@ constexpr auto from<int, iox2::EntryHandleMutError>(const int value) noexcept ->
     case iox2_entry_handle_mut_error_e_HANDLE_ALREADY_EXISTS:
         return iox2::EntryHandleMutError::HandleAlreadyExists;
     default:
-        IOX_UNREACHABLE();
+        IOX2_UNREACHABLE();
     }
 }
 
@@ -1301,14 +1302,14 @@ from<iox2::EntryHandleMutError, iox2_entry_handle_mut_error_e>(const iox2::Entry
     case iox2::EntryHandleMutError::HandleAlreadyExists:
         return iox2_entry_handle_mut_error_e_HANDLE_ALREADY_EXISTS;
     default:
-        IOX_UNREACHABLE();
+        IOX2_UNREACHABLE();
     }
 }
 
 template <>
 inline auto from<iox2::EntryHandleMutError, const char*>(const iox2::EntryHandleMutError value) noexcept -> const
     char* {
-    return iox2_entry_handle_mut_error_string(iox::into<iox2_entry_handle_mut_error_e>(value));
+    return iox2_entry_handle_mut_error_string(iox2::legacy::into<iox2_entry_handle_mut_error_e>(value));
 }
 
 template <>
@@ -1318,7 +1319,7 @@ constexpr auto from<int, iox2::ReaderCreateError>(const int value) noexcept -> i
     case iox2_reader_create_error_e_EXCEEDS_MAX_SUPPORTED_READERS:
         return iox2::ReaderCreateError::ExceedsMaxSupportedReaders;
     default:
-        IOX_UNREACHABLE();
+        IOX2_UNREACHABLE();
     }
 }
 
@@ -1329,13 +1330,13 @@ constexpr auto from<iox2::ReaderCreateError, iox2_reader_create_error_e>(const i
     case iox2::ReaderCreateError::ExceedsMaxSupportedReaders:
         return iox2_reader_create_error_e_EXCEEDS_MAX_SUPPORTED_READERS;
     default:
-        IOX_UNREACHABLE();
+        IOX2_UNREACHABLE();
     }
 }
 
 template <>
 inline auto from<iox2::ReaderCreateError, const char*>(const iox2::ReaderCreateError value) noexcept -> const char* {
-    return iox2_reader_create_error_string(iox::into<iox2_reader_create_error_e>(value));
+    return iox2_reader_create_error_string(iox2::legacy::into<iox2_reader_create_error_e>(value));
 }
 
 template <>
@@ -1345,7 +1346,7 @@ constexpr auto from<int, iox2::EntryHandleError>(const int value) noexcept -> io
     case iox2_entry_handle_error_e_ENTRY_DOES_NOT_EXIST:
         return iox2::EntryHandleError::EntryDoesNotExist;
     default:
-        IOX_UNREACHABLE();
+        IOX2_UNREACHABLE();
     }
 }
 
@@ -1356,13 +1357,13 @@ constexpr auto from<iox2::EntryHandleError, iox2_entry_handle_error_e>(const iox
     case iox2::EntryHandleError::EntryDoesNotExist:
         return iox2_entry_handle_error_e_ENTRY_DOES_NOT_EXIST;
     default:
-        IOX_UNREACHABLE();
+        IOX2_UNREACHABLE();
     }
 }
 
 template <>
 inline auto from<iox2::EntryHandleError, const char*>(const iox2::EntryHandleError value) noexcept -> const char* {
-    return iox2_entry_handle_error_string(iox::into<iox2_entry_handle_error_e>(value));
+    return iox2_entry_handle_error_string(iox2::legacy::into<iox2_entry_handle_error_e>(value));
 }
 
 template <>
@@ -1377,7 +1378,7 @@ constexpr auto from<int, iox2::ClientCreateError>(const int value) noexcept -> i
         return iox2::ClientCreateError::FailedToDeployThreadsafetyPolicy;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -1392,12 +1393,12 @@ constexpr auto from<iox2::ClientCreateError, iox2_client_create_error_e>(const i
         return iox2_client_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
 inline auto from<iox2::ClientCreateError, const char*>(const iox2::ClientCreateError value) noexcept -> const char* {
-    return iox2_client_create_error_string(iox::into<iox2_client_create_error_e>(value));
+    return iox2_client_create_error_string(iox2::legacy::into<iox2_client_create_error_e>(value));
 }
 
 template <>
@@ -1412,7 +1413,7 @@ constexpr auto from<int, iox2::ServerCreateError>(const int value) noexcept -> i
         return iox2::ServerCreateError::FailedToDeployThreadsafetyPolicy;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -1427,12 +1428,12 @@ constexpr auto from<iox2::ServerCreateError, iox2_server_create_error_e>(const i
         return iox2_server_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
 inline auto from<iox2::ServerCreateError, const char*>(const iox2::ServerCreateError value) noexcept -> const char* {
-    return iox2_server_create_error_string(iox::into<iox2_server_create_error_e>(value));
+    return iox2_server_create_error_string(iox2::legacy::into<iox2_server_create_error_e>(value));
 }
 
 template <>
@@ -1445,7 +1446,7 @@ constexpr auto from<int, iox2::NotifierCreateError>(const int value) noexcept ->
         return iox2::NotifierCreateError::FailedToDeployThreadsafetyPolicy;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -1459,13 +1460,13 @@ from<iox2::NotifierCreateError, iox2_notifier_create_error_e>(const iox2::Notifi
         return iox2_notifier_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
 inline auto from<iox2::NotifierCreateError, const char*>(const iox2::NotifierCreateError value) noexcept -> const
     char* {
-    return iox2_notifier_create_error_string(iox::into<iox2_notifier_create_error_e>(value));
+    return iox2_notifier_create_error_string(iox2::legacy::into<iox2_notifier_create_error_e>(value));
 }
 
 template <>
@@ -1480,7 +1481,7 @@ constexpr auto from<int, iox2::ListenerCreateError>(const int value) noexcept ->
         return iox2::ListenerCreateError::FailedToDeployThreadsafetyPolicy;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -1496,13 +1497,13 @@ from<iox2::ListenerCreateError, iox2_listener_create_error_e>(const iox2::Listen
         return iox2_listener_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
 inline auto from<iox2::ListenerCreateError, const char*>(const iox2::ListenerCreateError value) noexcept -> const
     char* {
-    return iox2_listener_create_error_string(iox::into<iox2_listener_create_error_e>(value));
+    return iox2_listener_create_error_string(iox2::legacy::into<iox2_listener_create_error_e>(value));
 }
 
 template <>
@@ -1517,7 +1518,7 @@ constexpr auto from<int, iox2::NotifierNotifyError>(const int value) noexcept ->
         return iox2::NotifierNotifyError::UnableToAcquireElapsedTime;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -1533,13 +1534,13 @@ from<iox2::NotifierNotifyError, iox2_notifier_notify_error_e>(const iox2::Notifi
         return iox2_notifier_notify_error_e_UNABLE_TO_ACQUIRE_ELAPSED_TIME;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
 inline auto from<iox2::NotifierNotifyError, const char*>(const iox2::NotifierNotifyError value) noexcept -> const
     char* {
-    return iox2_notifier_notify_error_string(iox::into<iox2_notifier_notify_error_e>(value));
+    return iox2_notifier_notify_error_string(iox2::legacy::into<iox2_notifier_notify_error_e>(value));
 }
 
 template <>
@@ -1554,7 +1555,7 @@ constexpr auto from<int, iox2::ListenerWaitError>(const int value) noexcept -> i
         return iox2::ListenerWaitError::InternalFailure;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -1569,12 +1570,12 @@ constexpr auto from<iox2::ListenerWaitError, iox2_listener_wait_error_e>(const i
         return iox2_listener_wait_error_e_INTERNAL_FAILURE;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
 inline auto from<iox2::ListenerWaitError, const char*>(const iox2::ListenerWaitError value) noexcept -> const char* {
-    return iox2_listener_wait_error_string(iox::into<iox2_listener_wait_error_e>(value));
+    return iox2_listener_wait_error_string(iox2::legacy::into<iox2_listener_wait_error_e>(value));
 }
 
 template <>
@@ -1589,7 +1590,7 @@ constexpr auto from<int, iox2::PublisherCreateError>(const int value) noexcept -
         return iox2::PublisherCreateError::FailedToDeployThreadsafetyPolicy;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -1605,13 +1606,13 @@ from<iox2::PublisherCreateError, iox2_publisher_create_error_e>(const iox2::Publ
         return iox2_publisher_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
 inline auto from<iox2::PublisherCreateError, const char*>(const iox2::PublisherCreateError value) noexcept -> const
     char* {
-    return iox2_publisher_create_error_string(iox::into<iox2_publisher_create_error_e>(value));
+    return iox2_publisher_create_error_string(iox2::legacy::into<iox2_publisher_create_error_e>(value));
 }
 
 template <>
@@ -1626,7 +1627,7 @@ constexpr auto from<int, iox2::SubscriberCreateError>(const int value) noexcept 
         return iox2::SubscriberCreateError::FailedToDeployThreadsafetyPolicy;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -1642,13 +1643,13 @@ from<iox2::SubscriberCreateError, iox2_subscriber_create_error_e>(const iox2::Su
         return iox2_subscriber_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
 inline auto from<iox2::SubscriberCreateError, const char*>(const iox2::SubscriberCreateError value) noexcept -> const
     char* {
-    return iox2_subscriber_create_error_string(iox::into<iox2_subscriber_create_error_e>(value));
+    return iox2_subscriber_create_error_string(iox2::legacy::into<iox2_subscriber_create_error_e>(value));
 }
 
 template <>
@@ -1671,7 +1672,7 @@ constexpr auto from<int, iox2::SendError>(const int value) noexcept -> iox2::Sen
         return iox2::SendError::ConnectionError;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -1693,12 +1694,12 @@ constexpr auto from<iox2::SendError, iox2_send_error_e>(const iox2::SendError va
         return iox2_send_error_e_CONNECTION_ERROR;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
 inline auto from<iox2::SendError, const char*>(const iox2::SendError value) noexcept -> const char* {
-    return iox2_send_error_string(iox::into<iox2_send_error_e>(value));
+    return iox2_send_error_string(iox2::legacy::into<iox2_send_error_e>(value));
 }
 
 template <>
@@ -1713,7 +1714,7 @@ constexpr auto from<int, iox2::ReceiveError>(const int value) noexcept -> iox2::
         return iox2::ReceiveError::ExceedsMaxBorrows;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -1728,12 +1729,12 @@ constexpr auto from<iox2::ReceiveError, iox2_receive_error_e>(const iox2::Receiv
         return iox2_receive_error_e_EXCEEDS_MAX_BORROWS;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
 inline auto from<iox2::ReceiveError, const char*>(const iox2::ReceiveError value) noexcept -> const char* {
-    return iox2_receive_error_string(iox::into<iox2_receive_error_e>(value));
+    return iox2_receive_error_string(iox2::legacy::into<iox2_receive_error_e>(value));
 }
 
 template <>
@@ -1750,7 +1751,7 @@ constexpr auto from<int, iox2::LoanError>(const int value) noexcept -> iox2::Loa
         return iox2::LoanError::InternalFailure;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -1766,12 +1767,12 @@ constexpr auto from<iox2::LoanError, iox2_loan_error_e>(const iox2::LoanError va
         return iox2_loan_error_e_INTERNAL_FAILURE;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
 inline auto from<iox2::LoanError, const char*>(const iox2::LoanError value) noexcept -> const char* {
-    return iox2_loan_error_string(iox::into<iox2_loan_error_e>(value));
+    return iox2_loan_error_string(iox2::legacy::into<iox2_loan_error_e>(value));
 }
 
 template <>
@@ -1796,7 +1797,7 @@ constexpr auto from<int, iox2::RequestSendError>(const int value) noexcept -> io
         return iox2::RequestSendError::ConnectionError;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -1821,12 +1822,12 @@ constexpr auto from<iox2::RequestSendError, iox2_request_send_error_e>(const iox
         return iox2_request_send_error_e_CONNECTION_ERROR;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
 inline auto from<iox2::RequestSendError, const char*>(const iox2::RequestSendError value) noexcept -> const char* {
-    return iox2_request_send_error_string(iox::into<iox2_request_send_error_e>(value));
+    return iox2_request_send_error_string(iox2::legacy::into<iox2_request_send_error_e>(value));
 }
 
 template <>
@@ -1839,7 +1840,7 @@ constexpr auto from<int, iox2::TypeVariant>(const int value) noexcept -> iox2::T
         return iox2::TypeVariant::FixedSize;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -1852,7 +1853,7 @@ constexpr auto from<int, iox2::ServiceListError>(const int value) noexcept -> io
         return iox2::ServiceListError::InternalError;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -1865,12 +1866,12 @@ constexpr auto from<iox2::ServiceListError, iox2_service_list_error_e>(const iox
         return iox2_service_list_error_e_INTERNAL_ERROR;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
 inline auto from<iox2::ServiceListError, const char*>(const iox2::ServiceListError value) noexcept -> const char* {
-    return iox2_service_list_error_string(iox::into<iox2_service_list_error_e>(value));
+    return iox2_service_list_error_string(iox2::legacy::into<iox2_service_list_error_e>(value));
 }
 
 template <>
@@ -1887,7 +1888,7 @@ constexpr auto from<int, iox2::MessagingPattern>(const int value) noexcept -> io
         return iox2::MessagingPattern::Blackboard;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -1900,7 +1901,7 @@ constexpr auto from<int, iox2::UnableToDeliverStrategy>(const int value) noexcep
         return iox2::UnableToDeliverStrategy::DiscardSample;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -1912,7 +1913,7 @@ constexpr auto from<iox2::UnableToDeliverStrategy, int>(const iox2::UnableToDeli
         return iox2_unable_to_deliver_strategy_e_BLOCK;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -1925,7 +1926,7 @@ constexpr auto from<int, iox2::ConnectionFailure>(const int value) noexcept -> i
         return iox2::ConnectionFailure::UnableToMapSendersDataSegment;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -1938,12 +1939,12 @@ constexpr auto from<iox2::ConnectionFailure, iox2_connection_failure_e>(const io
         return iox2_connection_failure_e_UNABLE_TO_MAP_SENDERS_DATA_SEGMENT;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
 inline auto from<iox2::ConnectionFailure, const char*>(const iox2::ConnectionFailure value) noexcept -> const char* {
-    return iox2_connection_failure_string(iox::into<iox2_connection_failure_e>(value));
+    return iox2_connection_failure_string(iox2::legacy::into<iox2_connection_failure_e>(value));
 }
 
 template <>
@@ -1961,11 +1962,11 @@ constexpr auto from<int, iox2::ConfigCreationError>(const int value) noexcept ->
     case iox2_config_creation_error_e_UNABLE_TO_OPEN_CONFIG_FILE:
         return iox2::ConfigCreationError::UnableToOpenConfigFile;
     case iox2_config_creation_error_e_INVALID_FILE_PATH:
-        // unreachable since this error case is excluded by using the strong type iox::FilePath
-        IOX_UNREACHABLE();
+        // unreachable since this error case is excluded by using the strong type iox2::legacy::FilePath
+        IOX2_UNREACHABLE();
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -1985,13 +1986,13 @@ from<iox2::ConfigCreationError, iox2_config_creation_error_e>(const iox2::Config
         return iox2_config_creation_error_e_UNABLE_TO_OPEN_CONFIG_FILE;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
 inline auto from<iox2::ConfigCreationError, const char*>(const iox2::ConfigCreationError value) noexcept -> const
     char* {
-    return iox2_config_creation_error_string(iox::into<iox2_config_creation_error_e>(value));
+    return iox2_config_creation_error_string(iox2::legacy::into<iox2_config_creation_error_e>(value));
 }
 
 template <>
@@ -2010,7 +2011,7 @@ constexpr auto from<iox2::LogLevel, iox2_log_level_e>(iox2::LogLevel value) noex
     case iox2::LogLevel::Fatal:
         return iox2_log_level_e_FATAL;
     }
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -2030,7 +2031,7 @@ constexpr auto from<int, iox2::LogLevel>(int value) noexcept -> iox2::LogLevel {
     case iox2_log_level_e_FATAL:
         return iox2::LogLevel::Fatal;
     default:
-        IOX_UNREACHABLE();
+        IOX2_UNREACHABLE();
     }
 }
 
@@ -2044,7 +2045,7 @@ constexpr auto from<int, iox2::WaitSetCreateError>(const int value) noexcept -> 
         return iox2::WaitSetCreateError::InsufficientResources;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -2058,12 +2059,12 @@ from<iox2::WaitSetCreateError, iox2_waitset_create_error_e>(const iox2::WaitSetC
         return iox2_waitset_create_error_e_INSUFFICIENT_RESOURCES;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
 inline auto from<iox2::WaitSetCreateError, const char*>(const iox2::WaitSetCreateError value) noexcept -> const char* {
-    return iox2_waitset_create_error_string(iox::into<iox2_waitset_create_error_e>(value));
+    return iox2_waitset_create_error_string(iox2::legacy::into<iox2_waitset_create_error_e>(value));
 }
 
 template <>
@@ -2080,7 +2081,7 @@ constexpr auto from<int, iox2::WaitSetRunResult>(const int value) noexcept -> io
         return iox2::WaitSetRunResult::AllEventsHandled;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -2097,7 +2098,7 @@ constexpr auto from<iox2::WaitSetRunResult, iox2_waitset_run_result_e>(const iox
         return iox2_waitset_run_result_e_ALL_EVENTS_HANDLED;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -2114,7 +2115,7 @@ constexpr auto from<int, iox2::WaitSetAttachmentError>(const int value) noexcept
         return iox2::WaitSetAttachmentError::InsufficientResources;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -2132,13 +2133,13 @@ from<iox2::WaitSetAttachmentError, iox2_waitset_attachment_error_e>(const iox2::
         return iox2_waitset_attachment_error_e_INSUFFICIENT_RESOURCES;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
 inline auto from<iox2::WaitSetAttachmentError, const char*>(const iox2::WaitSetAttachmentError value) noexcept -> const
     char* {
-    return iox2_waitset_attachment_error_string(iox::into<iox2_waitset_attachment_error_e>(value));
+    return iox2_waitset_attachment_error_string(iox2::legacy::into<iox2_waitset_attachment_error_e>(value));
 }
 
 template <>
@@ -2157,7 +2158,7 @@ constexpr auto from<int, iox2::WaitSetRunError>(const int value) noexcept -> iox
         return iox2::WaitSetRunError::Interrupt;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -2176,12 +2177,12 @@ constexpr auto from<iox2::WaitSetRunError, iox2_waitset_run_error_e>(const iox2:
         return iox2_waitset_run_error_e_INTERRUPT;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
 inline auto from<iox2::WaitSetRunError, const char*>(const iox2::WaitSetRunError value) noexcept -> const char* {
-    return iox2_waitset_run_error_string(iox::into<iox2_waitset_run_error_e>(value));
+    return iox2_waitset_run_error_string(iox2::legacy::into<iox2_waitset_run_error_e>(value));
 }
 
 template <>
@@ -2195,7 +2196,7 @@ from<iox2::SignalHandlingMode, iox2_signal_handling_mode_e>(const iox2::SignalHa
         return iox2_signal_handling_mode_e_HANDLE_TERMINATION_REQUESTS;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -2209,7 +2210,7 @@ constexpr auto from<int, iox2::SignalHandlingMode>(const int value) noexcept -> 
         return iox2::SignalHandlingMode::HandleTerminationRequests;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -2224,7 +2225,7 @@ constexpr auto from<iox2::AllocationStrategy, iox2_allocation_strategy_e>(const 
         return iox2_allocation_strategy_e_STATIC;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -2242,7 +2243,7 @@ constexpr auto from<int, iox2::NodeCleanupFailure>(const int value) noexcept -> 
         return iox2::NodeCleanupFailure::VersionMismatch;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -2256,7 +2257,7 @@ constexpr auto from<int, iox2::AttributeVerificationError>(const int value) noex
         return iox2::AttributeVerificationError::IncompatibleAttribute;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -2267,10 +2268,10 @@ constexpr auto from<int, iox2::AttributeDefinitionError>(const int value) noexce
         return iox2::AttributeDefinitionError::ExceedsMaxSupportedAttributes;
     }
 
-    IOX_UNREACHABLE();
+    IOX2_UNREACHABLE();
 }
 
-
-} // namespace iox
+} // namespace legacy
+} // namespace iox2
 
 #endif

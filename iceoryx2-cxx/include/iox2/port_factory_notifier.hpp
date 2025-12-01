@@ -14,8 +14,8 @@
 #define IOX2_PORTFACTORY_NOTIFIER_HPP
 
 #include "iox/builder_addendum.hpp"
-#include "iox/expected.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/legacy/expected.hpp"
 #include "iox2/notifier.hpp"
 #include "iox2/notifier_error.hpp"
 #include "iox2/service_type.hpp"
@@ -31,7 +31,7 @@ class PortFactoryNotifier {
 #ifdef DOXYGEN_MACRO_FIX
     auto default_event_id(const EventId value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(EventId, default_event_id);
+    IOX2_BUILDER_OPTIONAL(EventId, default_event_id);
 #endif
 
   public:
@@ -43,7 +43,7 @@ class PortFactoryNotifier {
     auto operator=(const PortFactoryNotifier&) -> PortFactoryNotifier& = delete;
 
     /// Creates a new [`Notifier`] port or returns a [`NotifierCreateError`] on failure.
-    auto create() && -> iox::expected<Notifier<S>, NotifierCreateError>;
+    auto create() && -> iox2::legacy::expected<Notifier<S>, NotifierCreateError>;
 
   private:
     template <ServiceType>

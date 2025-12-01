@@ -13,13 +13,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox/file_path.hpp"
-#include "iox/detail/path_and_file_verifier.hpp"
-#include "iox/string.hpp"
+#include "iox2/legacy/file_path.hpp"
+#include "iox2/legacy/detail/path_and_file_verifier.hpp"
+#include "iox2/legacy/string.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace detail {
-bool file_path_does_contain_invalid_characters(const string<platform::IOX_MAX_PATH_LENGTH>& value) noexcept {
+bool file_path_does_contain_invalid_characters(const string<platform::IOX2_MAX_PATH_LENGTH>& value) noexcept {
     const auto valueSize = value.size();
 
     for (uint64_t i { 0 }; i < valueSize; ++i) {
@@ -33,7 +34,7 @@ bool file_path_does_contain_invalid_characters(const string<platform::IOX_MAX_PA
                                         || c == detail::ASCII_UNDERSCORE };
 
         const bool isPathSeparator { [&] {
-            for (const auto separator : platform::IOX_PATH_SEPARATORS) {
+            for (const auto separator : platform::IOX2_PATH_SEPARATORS) {
                 if (c == separator) {
                     return true;
                 }
@@ -49,8 +50,9 @@ bool file_path_does_contain_invalid_characters(const string<platform::IOX_MAX_PA
     return false;
 }
 
-bool file_path_does_contain_invalid_content(const string<platform::IOX_MAX_PATH_LENGTH>& value) noexcept {
+bool file_path_does_contain_invalid_content(const string<platform::IOX2_MAX_PATH_LENGTH>& value) noexcept {
     return !isValidPathToFile(value);
 }
 } // namespace detail
-} // namespace iox
+} // namespace legacy
+} // namespace iox2

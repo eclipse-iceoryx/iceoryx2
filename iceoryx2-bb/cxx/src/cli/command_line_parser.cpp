@@ -13,12 +13,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox/cli/command_line_parser.hpp"
-#include "iox/std_string_support.hpp"
+#include "iox2/legacy/cli/command_line_parser.hpp"
+#include "iox2/legacy/std_string_support.hpp"
 
 #include <algorithm>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace cli {
 Arguments parseCommandLineArguments(const OptionDefinition& optionSet,
                                     int argc,
@@ -327,4 +328,5 @@ void CommandLineParser::printHelpAndExit() const noexcept {
 }
 
 } // namespace cli
-} // namespace iox
+} // namespace legacy
+} // namespace iox2

@@ -13,8 +13,8 @@
 #ifndef IOX2_DYNAMIC_CONFIG_BLACKBOARD_HPP
 #define IOX2_DYNAMIC_CONFIG_BLACKBOARD_HPP
 
-#include "iox/function.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/legacy/function.hpp"
 #include "iox2/reader_details.hpp"
 #include "iox2/writer_details.hpp"
 
@@ -42,13 +42,13 @@ class DynamicConfigBlackboard {
     /// corresponding [`ReaderDetailsView`].
     /// The callback shall return [`CallbackProgression::Continue`] when the iteration shall
     /// continue otherwise [`CallbackProgression::Stop`].
-    void list_readers(const iox::function<CallbackProgression(ReaderDetailsView)>& callback) const;
+    void list_readers(const iox2::legacy::function<CallbackProgression(ReaderDetailsView)>& callback) const;
 
     /// Iterates over all [`Writer`]s and calls the callback with the
     /// corresponding [`WriterDetailsView`].
     /// The callback shall return [`CallbackProgression::Continue`] when the iteration shall
     /// continue otherwise [`CallbackProgression::Stop`].
-    void list_writers(const iox::function<CallbackProgression(WriterDetailsView)>& callback) const;
+    void list_writers(const iox2::legacy::function<CallbackProgression(WriterDetailsView)>& callback) const;
 
   private:
     template <ServiceType, typename>

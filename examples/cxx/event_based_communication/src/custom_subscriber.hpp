@@ -31,8 +31,7 @@ class CustomSubscriber : public iox2::FileDescriptorBased {
     CustomSubscriber(CustomSubscriber&&) = default;
     ~CustomSubscriber() override {
         m_notifier
-            .notify_with_custom_event_id(
-                iox2::EventId(iox::from<PubSubEvent, size_t>(PubSubEvent::SubscriberDisconnected)))
+            .notify_with_custom_event_id(iox2::EventId(iox2::legacy::into<size_t>(PubSubEvent::SubscriberDisconnected)))
             .expect("");
     }
 
@@ -54,8 +53,7 @@ class CustomSubscriber : public iox2::FileDescriptorBased {
         auto subscriber = pubsub_service.subscriber_builder().create().expect("");
 
         notifier
-            .notify_with_custom_event_id(
-                iox2::EventId(iox::from<PubSubEvent, size_t>(PubSubEvent::SubscriberConnected)))
+            .notify_with_custom_event_id(iox2::EventId(iox2::legacy::into<size_t>(PubSubEvent::SubscriberConnected)))
             .expect("");
 
         return CustomSubscriber { std::move(subscriber), std::move(notifier), std::move(listener) };
@@ -68,7 +66,7 @@ class CustomSubscriber : public iox2::FileDescriptorBased {
     void handle_event() {
         for (auto event = m_listener.try_wait_one(); event.has_value() && event->has_value();
              event = m_listener.try_wait_one()) {
-            switch (iox::from<size_t, PubSubEvent>(event.value()->as_value())) {
+            switch (iox2::legacy::into<PubSubEvent>(event.value()->as_value())) {
             case PubSubEvent::SentHistory: {
                 std::cout << "History delivered" << std::endl;
                 for (auto sample = receive(); sample.has_value(); sample = receive()) {
@@ -97,11 +95,11 @@ class CustomSubscriber : public iox2::FileDescriptorBased {
         }
     }
 
-    auto receive() -> iox::optional<iox2::Sample<iox2::ServiceType::Ipc, TransmissionData, void>> {
+    auto receive() -> iox2::legacy::optional<iox2::Sample<iox2::ServiceType::Ipc, TransmissionData, void>> {
         auto sample = m_subscriber.receive().expect("");
         if (sample.has_value()) {
             m_notifier
-                .notify_with_custom_event_id(iox2::EventId(iox::from<PubSubEvent, size_t>(PubSubEvent::ReceivedSample)))
+                .notify_with_custom_event_id(iox2::EventId(iox2::legacy::into<size_t>(PubSubEvent::ReceivedSample)))
                 .expect("");
         }
 

@@ -14,11 +14,11 @@
 #define IOX2_SERVICE_EVENT_BUILDER_HPP
 
 #include "iox/builder_addendum.hpp"
-#include "iox/expected.hpp"
 #include "iox2/attribute_specifier.hpp"
 #include "iox2/attribute_verifier.hpp"
 #include "iox2/event_id.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/legacy/expected.hpp"
 #include "iox2/port_factory_event.hpp"
 #include "iox2/service_builder_event_error.hpp"
 #include "iox2/service_type.hpp"
@@ -36,7 +36,7 @@ class ServiceBuilderEvent {
 #ifdef DOXYGEN_MACRO_FIX
     auto max_nodes(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, max_nodes);
+    IOX2_BUILDER_OPTIONAL(uint64_t, max_nodes);
 #endif
 
     /// If the [`Service`] is created it set the greatest supported [`NodeId`] value
@@ -45,7 +45,7 @@ class ServiceBuilderEvent {
 #ifdef DOXYGEN_MACRO_FIX
     auto event_id_max_value(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, event_id_max_value);
+    IOX2_BUILDER_OPTIONAL(uint64_t, event_id_max_value);
 #endif
 
     /// If the [`Service`] is created it defines how many [`Notifier`] shall
@@ -54,7 +54,7 @@ class ServiceBuilderEvent {
 #ifdef DOXYGEN_MACRO_FIX
     auto max_notifiers(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, max_notifiers);
+    IOX2_BUILDER_OPTIONAL(uint64_t, max_notifiers);
 #endif
 
     /// If the [`Service`] is created it defines how many [`Listener`] shall
@@ -63,7 +63,7 @@ class ServiceBuilderEvent {
 #ifdef DOXYGEN_MACRO_FIX
     auto max_listeners(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, max_listeners);
+    IOX2_BUILDER_OPTIONAL(uint64_t, max_listeners);
 #endif
 
   public:
@@ -83,7 +83,7 @@ class ServiceBuilderEvent {
 
     /// Enables the deadline property of the service. There must be a notification emitted by any
     /// [`Notifier`] after at least the provided `deadline`.
-    auto deadline(iox::units::Duration deadline) && -> ServiceBuilderEvent&&;
+    auto deadline(iox2::legacy::units::Duration deadline) && -> ServiceBuilderEvent&&;
 
     /// If the [`Service`] is created it disables sending an event when a notifier was dropped.
     auto disable_notifier_dropped_event() && -> ServiceBuilderEvent&&;
@@ -101,29 +101,30 @@ class ServiceBuilderEvent {
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
     /// created.
-    auto open_or_create() && -> iox::expected<PortFactoryEvent<S>, EventOpenOrCreateError>;
+    auto open_or_create() && -> iox2::legacy::expected<PortFactoryEvent<S>, EventOpenOrCreateError>;
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
     /// created. It defines a set of attributes. If the [`Service`] already exists all attribute
     /// requirements must be satisfied otherwise the open process will fail. If the [`Service`]
     /// does not exist the required attributes will be defined in the [`Service`].
     auto open_or_create_with_attributes(
-        const AttributeVerifier& required_attributes) && -> iox::expected<PortFactoryEvent<S>, EventOpenOrCreateError>;
+        const AttributeVerifier&
+            required_attributes) && -> iox2::legacy::expected<PortFactoryEvent<S>, EventOpenOrCreateError>;
 
     /// Opens an existing [`Service`].
-    auto open() && -> iox::expected<PortFactoryEvent<S>, EventOpenError>;
+    auto open() && -> iox2::legacy::expected<PortFactoryEvent<S>, EventOpenError>;
 
     /// Opens an existing [`Service`] with attribute requirements. If the defined attribute
     /// requirements are not satisfied the open process will fail.
     auto open_with_attributes(
-        const AttributeVerifier& required_attributes) && -> iox::expected<PortFactoryEvent<S>, EventOpenError>;
+        const AttributeVerifier& required_attributes) && -> iox2::legacy::expected<PortFactoryEvent<S>, EventOpenError>;
 
     /// Creates a new [`Service`].
-    auto create() && -> iox::expected<PortFactoryEvent<S>, EventCreateError>;
+    auto create() && -> iox2::legacy::expected<PortFactoryEvent<S>, EventCreateError>;
 
     /// Creates a new [`Service`] with a set of attributes.
     auto create_with_attributes(
-        const AttributeSpecifier& attributes) && -> iox::expected<PortFactoryEvent<S>, EventCreateError>;
+        const AttributeSpecifier& attributes) && -> iox2::legacy::expected<PortFactoryEvent<S>, EventCreateError>;
 
   private:
     template <ServiceType>
@@ -135,10 +136,10 @@ class ServiceBuilderEvent {
 
     iox2_service_builder_event_h m_handle = nullptr;
 
-    iox::optional<EventId> m_notifier_dead_event;
-    iox::optional<EventId> m_notifier_created_event;
-    iox::optional<EventId> m_notifier_dropped_event;
-    iox::optional<iox::units::Duration> m_deadline;
+    iox2::legacy::optional<EventId> m_notifier_dead_event;
+    iox2::legacy::optional<EventId> m_notifier_created_event;
+    iox2::legacy::optional<EventId> m_notifier_dropped_event;
+    iox2::legacy::optional<iox2::legacy::units::Duration> m_deadline;
     bool m_verify_notifier_dead_event = false;
     bool m_verify_notifier_created_event = false;
     bool m_verify_notifier_dropped_event = false;

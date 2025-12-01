@@ -1,4 +1,0 @@
-InheritParentConfig:  true
-
-CheckOptions:
-  - { key: readability-identifier-naming.MacroDefinitionPrefix,   value: IOX_ }

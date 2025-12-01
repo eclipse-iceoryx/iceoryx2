@@ -21,66 +21,69 @@ namespace iox2 {
 template <ServiceType S>
 auto Service<S>::does_exist(const ServiceName& service_name,
                             const ConfigView config,
-                            const MessagingPattern messaging_pattern) -> iox::expected<bool, ServiceDetailsError> {
+                            const MessagingPattern messaging_pattern)
+    -> iox2::legacy::expected<bool, ServiceDetailsError> {
     bool does_exist_result = false;
-    auto result = iox2_service_does_exist(iox::into<iox2_service_type_e>(S),
+    auto result = iox2_service_does_exist(iox2::legacy::into<iox2_service_type_e>(S),
                                           service_name.as_view().m_ptr,
                                           config.m_ptr,
-                                          iox::into<iox2_messaging_pattern_e>(messaging_pattern),
+                                          iox2::legacy::into<iox2_messaging_pattern_e>(messaging_pattern),
                                           &does_exist_result);
 
     if (result == IOX2_OK) {
-        return iox::ok(does_exist_result);
+        return iox2::legacy::ok(does_exist_result);
     }
 
-    return iox::err(iox::into<ServiceDetailsError>(result));
+    return iox2::legacy::err(iox2::legacy::into<ServiceDetailsError>(result));
 }
 
 template <ServiceType S>
 auto Service<S>::details(const ServiceName& service_name,
                          const ConfigView config,
                          const MessagingPattern messaging_pattern)
-    -> iox::expected<iox::optional<ServiceDetails<S>>, ServiceDetailsError> {
+    -> iox2::legacy::expected<iox2::legacy::optional<ServiceDetails<S>>, ServiceDetailsError> {
     iox2_static_config_t raw_static_config;
     bool does_exist = false;
 
-    auto result = iox2_service_details(iox::into<iox2_service_type_e>(S),
+    auto result = iox2_service_details(iox2::legacy::into<iox2_service_type_e>(S),
                                        service_name.as_view().m_ptr,
                                        config.m_ptr,
-                                       iox::into<iox2_messaging_pattern_e>(messaging_pattern),
+                                       iox2::legacy::into<iox2_messaging_pattern_e>(messaging_pattern),
                                        &raw_static_config,
                                        &does_exist);
 
     if (result != IOX2_OK) {
-        return iox::err(iox::into<ServiceDetailsError>(result));
+        return iox2::legacy::err(iox2::legacy::into<ServiceDetailsError>(result));
     }
 
     if (!does_exist) {
-        return iox::ok(iox::optional<ServiceDetails<S>>());
+        return iox2::legacy::ok(iox2::legacy::optional<ServiceDetails<S>>());
     }
 
-    return iox::ok(iox::optional<ServiceDetails<S>>(ServiceDetails<S> { StaticConfig(raw_static_config) }));
+    return iox2::legacy::ok(
+        iox2::legacy::optional<ServiceDetails<S>>(ServiceDetails<S> { StaticConfig(raw_static_config) }));
 }
 
 template <ServiceType S>
 auto list_callback(const iox2_static_config_t* const static_config, void* ctx) -> iox2_callback_progression_e {
-    auto callback = static_cast<iox::function<CallbackProgression(ServiceDetails<S>)>*>(ctx);
+    auto callback = static_cast<iox2::legacy::function<CallbackProgression(ServiceDetails<S>)>*>(ctx);
     auto result = (*callback)(ServiceDetails<S> { StaticConfig(*static_config) });
-    return iox::into<iox2_callback_progression_e>(result);
+    return iox2::legacy::into<iox2_callback_progression_e>(result);
 }
 
 template <ServiceType S>
-auto Service<S>::list(const ConfigView config, const iox::function<CallbackProgression(ServiceDetails<S>)>& callback)
-    -> iox::expected<void, ServiceListError> {
+auto Service<S>::list(const ConfigView config,
+                      const iox2::legacy::function<CallbackProgression(ServiceDetails<S>)>& callback)
+    -> iox2::legacy::expected<void, ServiceListError> {
     auto mutable_callback = callback;
-    auto result =
-        iox2_service_list(iox::into<iox2_service_type_e>(S), config.m_ptr, list_callback<S>, &mutable_callback);
+    auto result = iox2_service_list(
+        iox2::legacy::into<iox2_service_type_e>(S), config.m_ptr, list_callback<S>, &mutable_callback);
 
     if (result == IOX2_OK) {
-        return iox::ok();
+        return iox2::legacy::ok();
     }
 
-    return iox::err(iox::into<ServiceListError>(result));
+    return iox2::legacy::err(iox2::legacy::into<ServiceListError>(result));
 }
 
 template class Service<ServiceType::Ipc>;

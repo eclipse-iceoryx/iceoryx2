@@ -48,40 +48,42 @@ auto Notifier<S>::id() const -> UniqueNotifierId {
 }
 
 template <ServiceType S>
-auto Notifier<S>::notify() const -> iox::expected<size_t, NotifierNotifyError> {
+auto Notifier<S>::notify() const -> iox2::legacy::expected<size_t, NotifierNotifyError> {
     size_t number_of_notified_listeners = 0;
     auto result = iox2_notifier_notify(&m_handle, &number_of_notified_listeners);
 
     if (result == IOX2_OK) {
-        return iox::ok(number_of_notified_listeners);
+        return iox2::legacy::ok(number_of_notified_listeners);
     }
 
-    return iox::err(iox::into<NotifierNotifyError>(result));
+    return iox2::legacy::err(iox2::legacy::into<NotifierNotifyError>(result));
 }
 
 template <ServiceType S>
-auto Notifier<S>::notify_with_custom_event_id(EventId event_id) const -> iox::expected<size_t, NotifierNotifyError> {
+auto Notifier<S>::notify_with_custom_event_id(EventId event_id) const
+    -> iox2::legacy::expected<size_t, NotifierNotifyError> {
     size_t number_of_notified_listeners = 0;
     auto result =
         iox2_notifier_notify_with_custom_event_id(&m_handle, &event_id.m_value, &number_of_notified_listeners);
 
     if (result == IOX2_OK) {
-        return iox::ok(number_of_notified_listeners);
+        return iox2::legacy::ok(number_of_notified_listeners);
     }
 
-    return iox::err(iox::into<NotifierNotifyError>(result));
+    return iox2::legacy::err(iox2::legacy::into<NotifierNotifyError>(result));
 }
 
 template <ServiceType S>
-auto Notifier<S>::deadline() const -> iox::optional<iox::units::Duration> {
+auto Notifier<S>::deadline() const -> iox2::legacy::optional<iox2::legacy::units::Duration> {
     uint64_t seconds = 0;
     uint32_t nanoseconds = 0;
 
     if (iox2_notifier_deadline(&m_handle, &seconds, &nanoseconds)) {
-        return { iox::units::Duration::fromSeconds(seconds) + iox::units::Duration::fromNanoseconds(nanoseconds) };
+        return { iox2::legacy::units::Duration::fromSeconds(seconds)
+                 + iox2::legacy::units::Duration::fromNanoseconds(nanoseconds) };
     }
 
-    return iox::nullopt;
+    return iox2::legacy::nullopt;
 }
 
 template <ServiceType S>

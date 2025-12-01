@@ -43,7 +43,7 @@ UniquePublisherId::UniquePublisherId(iox2_unique_publisher_id_h handle)
     : m_handle { handle } {
 }
 
-auto UniquePublisherId::bytes() const -> const iox::optional<RawIdType>& {
+auto UniquePublisherId::bytes() const -> const iox2::legacy::optional<RawIdType>& {
     if (!m_raw_id.has_value() && m_handle != nullptr) {
         RawIdType bytes { UNIQUE_PORT_ID_LENGTH, 0 };
         iox2_unique_publisher_id_value(m_handle, bytes.data(), bytes.size());
@@ -89,7 +89,7 @@ UniqueSubscriberId::UniqueSubscriberId(iox2_unique_subscriber_id_h handle)
     : m_handle { handle } {
 }
 
-auto UniqueSubscriberId::bytes() const -> const iox::optional<RawIdType>& {
+auto UniqueSubscriberId::bytes() const -> const iox2::legacy::optional<RawIdType>& {
     if (!m_raw_id.has_value() && m_handle != nullptr) {
         RawIdType bytes { UNIQUE_PORT_ID_LENGTH, 0 };
         iox2_unique_subscriber_id_value(m_handle, bytes.data(), bytes.size());
@@ -135,7 +135,7 @@ UniqueNotifierId::UniqueNotifierId(iox2_unique_notifier_id_h handle)
     : m_handle { handle } {
 }
 
-auto UniqueNotifierId::bytes() const -> const iox::optional<RawIdType>& {
+auto UniqueNotifierId::bytes() const -> const iox2::legacy::optional<RawIdType>& {
     if (!m_raw_id.has_value() && m_handle != nullptr) {
         RawIdType bytes { UNIQUE_PORT_ID_LENGTH, 0 };
         iox2_unique_notifier_id_value(m_handle, bytes.data(), bytes.size());
@@ -181,7 +181,7 @@ UniqueListenerId::UniqueListenerId(iox2_unique_listener_id_h handle)
     : m_handle { handle } {
 }
 
-auto UniqueListenerId::bytes() const -> const iox::optional<RawIdType>& {
+auto UniqueListenerId::bytes() const -> const iox2::legacy::optional<RawIdType>& {
     if (!m_raw_id.has_value() && m_handle != nullptr) {
         RawIdType bytes { UNIQUE_PORT_ID_LENGTH, 0 };
         iox2_unique_listener_id_value(m_handle, bytes.data(), bytes.size());
@@ -227,7 +227,7 @@ UniqueClientId::UniqueClientId(iox2_unique_client_id_h handle)
     : m_handle { handle } {
 }
 
-auto UniqueClientId::bytes() const -> const iox::optional<RawIdType>& {
+auto UniqueClientId::bytes() const -> const iox2::legacy::optional<RawIdType>& {
     if (!m_raw_id.has_value() && m_handle != nullptr) {
         RawIdType bytes { UNIQUE_PORT_ID_LENGTH, 0 };
         iox2_unique_client_id_value(m_handle, bytes.data(), bytes.size());
@@ -273,7 +273,7 @@ UniqueServerId::UniqueServerId(iox2_unique_server_id_h handle)
     : m_handle { handle } {
 }
 
-auto UniqueServerId::bytes() const -> const iox::optional<RawIdType>& {
+auto UniqueServerId::bytes() const -> const iox2::legacy::optional<RawIdType>& {
     if (!m_raw_id.has_value() && m_handle != nullptr) {
         RawIdType bytes { UNIQUE_PORT_ID_LENGTH, 0 };
         iox2_unique_server_id_value(m_handle, bytes.data(), bytes.size());
@@ -319,7 +319,7 @@ UniqueReaderId::UniqueReaderId(iox2_unique_reader_id_h handle)
     : m_handle { handle } {
 }
 
-auto UniqueReaderId::bytes() const -> const iox::optional<RawIdType>& {
+auto UniqueReaderId::bytes() const -> const iox2::legacy::optional<RawIdType>& {
     if (!m_raw_id.has_value() && m_handle != nullptr) {
         RawIdType bytes { UNIQUE_PORT_ID_LENGTH, 0 };
         iox2_unique_reader_id_value(m_handle, bytes.data(), bytes.size());
@@ -365,7 +365,7 @@ UniqueWriterId::UniqueWriterId(iox2_unique_writer_id_h handle)
     : m_handle { handle } {
 }
 
-auto UniqueWriterId::bytes() const -> const iox::optional<RawIdType>& {
+auto UniqueWriterId::bytes() const -> const iox2::legacy::optional<RawIdType>& {
     if (!m_raw_id.has_value() && m_handle != nullptr) {
         RawIdType bytes { UNIQUE_PORT_ID_LENGTH, 0 };
         iox2_unique_writer_id_value(m_handle, bytes.data(), bytes.size());

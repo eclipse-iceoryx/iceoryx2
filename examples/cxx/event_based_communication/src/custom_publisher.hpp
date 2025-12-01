@@ -30,8 +30,7 @@ class CustomPublisher : public iox2::FileDescriptorBased {
     CustomPublisher(CustomPublisher&&) = default;
     ~CustomPublisher() override {
         m_notifier
-            .notify_with_custom_event_id(
-                iox2::EventId(iox::from<PubSubEvent, size_t>(PubSubEvent::PublisherDisconnected)))
+            .notify_with_custom_event_id(iox2::EventId(iox2::legacy::into<size_t>(PubSubEvent::PublisherDisconnected)))
             .expect("");
     }
 
@@ -49,8 +48,7 @@ class CustomPublisher : public iox2::FileDescriptorBased {
         auto listener = event_service.listener_builder().create().expect("");
         auto publisher = pubsub_service.publisher_builder().create().expect("");
 
-        notifier
-            .notify_with_custom_event_id(iox2::EventId(iox::from<PubSubEvent, size_t>(PubSubEvent::PublisherConnected)))
+        notifier.notify_with_custom_event_id(iox2::EventId(iox2::legacy::into<size_t>(PubSubEvent::PublisherConnected)))
             .expect("");
 
         return CustomPublisher { std::move(publisher), std::move(listener), std::move(notifier) };
@@ -63,13 +61,12 @@ class CustomPublisher : public iox2::FileDescriptorBased {
     void handle_event() {
         for (auto event = m_listener.try_wait_one(); event.has_value() && event->has_value();
              event = m_listener.try_wait_one()) {
-            switch (iox::from<size_t, PubSubEvent>(event.value()->as_value())) {
+            switch (iox2::legacy::into<PubSubEvent>(event.value()->as_value())) {
             case PubSubEvent::SubscriberConnected: {
                 std::cout << "new subscriber connected - delivering history" << std::endl;
                 m_publisher.update_connections().expect("");
                 m_notifier
-                    .notify_with_custom_event_id(
-                        iox2::EventId(iox::from<PubSubEvent, size_t>(PubSubEvent::SentHistory)))
+                    .notify_with_custom_event_id(iox2::EventId(iox2::legacy::into<size_t>(PubSubEvent::SentHistory)))
                     .expect("");
                 break;
             }
@@ -95,7 +92,7 @@ class CustomPublisher : public iox2::FileDescriptorBased {
             static_cast<int32_t>(counter), static_cast<int32_t>(counter), static_cast<double>(counter) * SOME_NUMBER });
         ::iox2::send(std::move(initialized_sample)).expect("");
 
-        m_notifier.notify_with_custom_event_id(iox2::EventId(iox::from<PubSubEvent, size_t>(PubSubEvent::SentSample)))
+        m_notifier.notify_with_custom_event_id(iox2::EventId(iox2::legacy::into<size_t>(PubSubEvent::SentSample)))
             .expect("");
     }
 

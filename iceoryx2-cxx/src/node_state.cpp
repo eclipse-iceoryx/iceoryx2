@@ -19,7 +19,7 @@ constexpr uint64_t INACCESSIBLE_STATE = 2;
 constexpr uint64_t UNDEFINED_STATE = 3;
 
 template <ServiceType T>
-AliveNodeView<T>::AliveNodeView(NodeId node_id, const iox::optional<NodeDetails>& details)
+AliveNodeView<T>::AliveNodeView(NodeId node_id, const iox2::legacy::optional<NodeDetails>& details)
     : m_id { std::move(node_id) }
     , m_details { details } {
 }
@@ -30,7 +30,7 @@ auto AliveNodeView<T>::id() const -> const NodeId& {
 }
 
 template <ServiceType T>
-auto AliveNodeView<T>::details() const -> const iox::optional<NodeDetails>& {
+auto AliveNodeView<T>::details() const -> const iox2::legacy::optional<NodeDetails>& {
     return m_details;
 }
 
@@ -45,27 +45,27 @@ auto DeadNodeView<T>::id() const -> const NodeId& {
 }
 
 template <ServiceType T>
-auto DeadNodeView<T>::details() const -> iox::optional<NodeDetails> {
+auto DeadNodeView<T>::details() const -> iox2::legacy::optional<NodeDetails> {
     return m_view.details();
 }
 
 template <ServiceType T>
-auto DeadNodeView<T>::remove_stale_resources() -> iox::expected<bool, NodeCleanupFailure> {
+auto DeadNodeView<T>::remove_stale_resources() -> iox2::legacy::expected<bool, NodeCleanupFailure> {
     if (!m_view.details().has_value()) {
-        return iox::err(NodeCleanupFailure::InsufficientPermissions);
+        return iox2::legacy::err(NodeCleanupFailure::InsufficientPermissions);
     }
 
     bool has_success = false;
-    auto result = iox2_dead_node_remove_stale_resources(iox::into<iox2_service_type_e>(T),
+    auto result = iox2_dead_node_remove_stale_resources(iox2::legacy::into<iox2_service_type_e>(T),
                                                         &m_view.id().m_handle,
                                                         &m_view.details().value().config().m_handle,
                                                         &has_success);
 
     if (result == IOX2_OK) {
-        return iox::ok(has_success);
+        return iox2::legacy::ok(has_success);
     }
 
-    return iox::err(iox::into<NodeCleanupFailure>(result));
+    return iox2::legacy::err(iox2::legacy::into<NodeCleanupFailure>(result));
 }
 
 template <ServiceType T>
@@ -88,12 +88,12 @@ NodeState<T>::NodeState(iox2_node_state_e node_state, const NodeId& node_id) {
         m_state.template emplace_at_index<UNDEFINED_STATE>(node_id);
         break;
     default:
-        IOX_UNREACHABLE();
+        IOX2_UNREACHABLE();
     }
 }
 
 template <ServiceType T>
-auto NodeState<T>::alive(const iox::function<void(AliveNodeView<T>&)>& callback) -> NodeState& {
+auto NodeState<T>::alive(const iox2::legacy::function<void(AliveNodeView<T>&)>& callback) -> NodeState& {
     if (m_state.index() == ALIVE_STATE) {
         callback(*m_state.template get_at_index<ALIVE_STATE>());
     }
@@ -102,7 +102,7 @@ auto NodeState<T>::alive(const iox::function<void(AliveNodeView<T>&)>& callback)
 }
 
 template <ServiceType T>
-auto NodeState<T>::dead(const iox::function<void(DeadNodeView<T>&)>& callback) -> NodeState& {
+auto NodeState<T>::dead(const iox2::legacy::function<void(DeadNodeView<T>&)>& callback) -> NodeState& {
     if (m_state.index() == DEAD_STATE) {
         callback(*m_state.template get_at_index<DEAD_STATE>());
     }
@@ -111,7 +111,7 @@ auto NodeState<T>::dead(const iox::function<void(DeadNodeView<T>&)>& callback) -
 }
 
 template <ServiceType T>
-auto NodeState<T>::inaccessible(const iox::function<void(NodeId&)>& callback) -> NodeState& {
+auto NodeState<T>::inaccessible(const iox2::legacy::function<void(NodeId&)>& callback) -> NodeState& {
     if (m_state.index() == INACCESSIBLE_STATE) {
         callback(*m_state.template get_at_index<INACCESSIBLE_STATE>());
     }
@@ -120,7 +120,7 @@ auto NodeState<T>::inaccessible(const iox::function<void(NodeId&)>& callback) ->
 }
 
 template <ServiceType T>
-auto NodeState<T>::undefined(const iox::function<void(NodeId&)>& callback) -> NodeState& {
+auto NodeState<T>::undefined(const iox2::legacy::function<void(NodeId&)>& callback) -> NodeState& {
     if (m_state.index() == UNDEFINED_STATE) {
         callback(*m_state.template get_at_index<UNDEFINED_STATE>());
     }

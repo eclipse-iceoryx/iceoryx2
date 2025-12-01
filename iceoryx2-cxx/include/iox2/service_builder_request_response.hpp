@@ -14,12 +14,12 @@
 #define IOX2_SERVICE_BUILDER_REQUEST_RESPONSE_HPP
 
 #include "iox/builder_addendum.hpp"
-#include "iox/expected.hpp"
 #include "iox/layout.hpp"
 #include "iox2/attribute_specifier.hpp"
 #include "iox2/attribute_verifier.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/internal/service_builder_internal.hpp"
+#include "iox2/legacy/expected.hpp"
 #include "iox2/payload_info.hpp"
 #include "iox2/port_factory_request_response.hpp"
 #include "iox2/service_builder_request_response_error.hpp"
@@ -40,7 +40,7 @@ class ServiceBuilderRequestResponse {
 #ifdef DOXYGEN_MACRO_FIX
     auto request_payload_alignment(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, request_payload_alignment);
+    IOX2_BUILDER_OPTIONAL(uint64_t, request_payload_alignment);
 #endif
 
     /// If the [`Service`] is created, it defines the response [`Alignment`] of the payload for the
@@ -50,7 +50,7 @@ class ServiceBuilderRequestResponse {
 #ifdef DOXYGEN_MACRO_FIX
     auto response_payload_alignment(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, response_payload_alignment);
+    IOX2_BUILDER_OPTIONAL(uint64_t, response_payload_alignment);
 #endif
 
     /// If the [`Service`] is created, defines the overflow behavior of the service for requests.
@@ -59,7 +59,7 @@ class ServiceBuilderRequestResponse {
 #ifdef DOXYGEN_MACRO_FIX
     auto enable_safe_overflow_for_requests(const bool value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(bool, enable_safe_overflow_for_requests);
+    IOX2_BUILDER_OPTIONAL(bool, enable_safe_overflow_for_requests);
 #endif
 
     /// If the [`Service`] is created, defines the overflow behavior of the service for responses.
@@ -68,7 +68,7 @@ class ServiceBuilderRequestResponse {
 #ifdef DOXYGEN_MACRO_FIX
     auto enable_safe_overflow_for_responses(const bool value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(bool, enable_safe_overflow_for_responses);
+    IOX2_BUILDER_OPTIONAL(bool, enable_safe_overflow_for_responses);
 #endif
 
     /// Defines how many active requests a [`Server`] can hold in
@@ -77,7 +77,7 @@ class ServiceBuilderRequestResponse {
 #ifdef DOXYGEN_MACRO_FIX
     auto max_active_requests_per_client(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, max_active_requests_per_client);
+    IOX2_BUILDER_OPTIONAL(uint64_t, max_active_requests_per_client);
 #endif
 
     /// If the [`Service`] is created it defines how many responses fit in the
@@ -86,7 +86,7 @@ class ServiceBuilderRequestResponse {
 #ifdef DOXYGEN_MACRO_FIX
     auto max_response_buffer_size(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, max_response_buffer_size);
+    IOX2_BUILDER_OPTIONAL(uint64_t, max_response_buffer_size);
 #endif
 
     /// If the [`Service`] is created it defines how many [`Server`]s shall
@@ -95,7 +95,7 @@ class ServiceBuilderRequestResponse {
 #ifdef DOXYGEN_MACRO_FIX
     auto max_servers(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, max_servers);
+    IOX2_BUILDER_OPTIONAL(uint64_t, max_servers);
 #endif
 
     /// If the [`Service`] is created it defines how many [`Client`]s shall
@@ -104,7 +104,7 @@ class ServiceBuilderRequestResponse {
 #ifdef DOXYGEN_MACRO_FIX
     auto max_clients(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, max_clients);
+    IOX2_BUILDER_OPTIONAL(uint64_t, max_clients);
 #endif
 
     /// If the [`Service`] is created it defines how many [`Node`]s shall
@@ -113,7 +113,7 @@ class ServiceBuilderRequestResponse {
 #ifdef DOXYGEN_MACRO_FIX
     auto max_nodes(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, max_nodes);
+    IOX2_BUILDER_OPTIONAL(uint64_t, max_nodes);
 #endif
 
     /// If the [`Service`] is created it defines how many [`Response`]s shall
@@ -122,7 +122,7 @@ class ServiceBuilderRequestResponse {
 #ifdef DOXYGEN_MACRO_FIX
     auto max_borrowed_responses_per_pending_response(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, max_borrowed_responses_per_pending_response);
+    IOX2_BUILDER_OPTIONAL(uint64_t, max_borrowed_responses_per_pending_response);
 #endif
 
     /// If the [`Service`] is created it defines how many [`RequestMut`] a
@@ -130,14 +130,14 @@ class ServiceBuilderRequestResponse {
 #ifdef DOXYGEN_MACRO_FIX
     auto max_loaned_requests(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, max_loaned_requests);
+    IOX2_BUILDER_OPTIONAL(uint64_t, max_loaned_requests);
 #endif
 
     /// If the [`Service`] is created, defines the fire-and-forget behavior of the service for requests.
 #ifdef DOXYGEN_MACRO_FIX
     auto enable_fire_and_forget_requests(const bool value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(bool, enable_fire_and_forget_requests);
+    IOX2_BUILDER_OPTIONAL(bool, enable_fire_and_forget_requests);
 #endif
 
   public:
@@ -159,7 +159,7 @@ class ServiceBuilderRequestResponse {
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
     /// created.
-    auto open_or_create() && -> iox::expected<
+    auto open_or_create() && -> iox2::legacy::expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseOpenOrCreateError>;
 
@@ -169,28 +169,28 @@ class ServiceBuilderRequestResponse {
     /// If the [`Service`] already exists all attribute requirements must be satisfied,
     /// and service payload type must be the same, otherwise the open process will fail.
     /// If the [`Service`] does not exist the required attributes will be defined in the [`Service`].
-    auto open_or_create_with_attributes(const AttributeVerifier& required_attributes) && -> iox::expected<
+    auto open_or_create_with_attributes(const AttributeVerifier& required_attributes) && -> iox2::legacy::expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseOpenOrCreateError>;
 
     /// Opens an existing [`Service`].
-    auto open() && -> iox::expected<
+    auto open() && -> iox2::legacy::expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseOpenError>;
 
     /// Opens an existing [`Service`] with attribute requirements. If the defined attribute
     /// requirements are not satisfied the open process will fail.
-    auto open_with_attributes(const AttributeVerifier& required_attributes) && -> iox::expected<
+    auto open_with_attributes(const AttributeVerifier& required_attributes) && -> iox2::legacy::expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseOpenError>;
 
     /// Creates a new [`Service`].
-    auto create() && -> iox::expected<
+    auto create() && -> iox2::legacy::expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseCreateError>;
 
     /// Creates a new [`Service`] with a set of attributes.
-    auto create_with_attributes(const AttributeSpecifier& attributes) && -> iox::expected<
+    auto create_with_attributes(const AttributeSpecifier& attributes) && -> iox2::legacy::expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseCreateError>;
 
@@ -255,7 +255,7 @@ template <typename RequestPayload,
           typename ResponseUserHeader,
           ServiceType S>
 inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
-    open_or_create() && -> iox::expected<
+    open_or_create() && -> iox2::legacy::expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseOpenOrCreateError> {
     set_parameters();
@@ -264,12 +264,12 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
     auto result = iox2_service_builder_request_response_open_or_create(m_handle, nullptr, &port_factory_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(
+        return iox2::legacy::ok(
             PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(
                 port_factory_handle));
     }
 
-    return iox::err(iox::into<RequestResponseOpenOrCreateError>(result));
+    return iox2::legacy::err(iox2::legacy::into<RequestResponseOpenOrCreateError>(result));
 }
 
 template <typename RequestPayload,
@@ -278,7 +278,7 @@ template <typename RequestPayload,
           typename ResponseUserHeader,
           ServiceType S>
 inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
-    open_or_create_with_attributes(const AttributeVerifier& required_attributes) && -> iox::expected<
+    open_or_create_with_attributes(const AttributeVerifier& required_attributes) && -> iox2::legacy::expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseOpenOrCreateError> {
     set_parameters();
@@ -288,12 +288,12 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
         m_handle, &required_attributes.m_handle, nullptr, &port_factory_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(
+        return iox2::legacy::ok(
             PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(
                 port_factory_handle));
     }
 
-    return iox::err(iox::into<RequestResponseOpenOrCreateError>(result));
+    return iox2::legacy::err(iox2::legacy::into<RequestResponseOpenOrCreateError>(result));
 }
 
 template <typename RequestPayload,
@@ -302,7 +302,7 @@ template <typename RequestPayload,
           typename ResponseUserHeader,
           ServiceType S>
 inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
-    open() && -> iox::expected<
+    open() && -> iox2::legacy::expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseOpenError> {
     set_parameters();
@@ -311,12 +311,12 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
     auto result = iox2_service_builder_request_response_open(m_handle, nullptr, &port_factory_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(
+        return iox2::legacy::ok(
             PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(
                 port_factory_handle));
     }
 
-    return iox::err(iox::into<RequestResponseOpenError>(result));
+    return iox2::legacy::err(iox2::legacy::into<RequestResponseOpenError>(result));
 }
 
 template <typename RequestPayload,
@@ -325,7 +325,7 @@ template <typename RequestPayload,
           typename ResponseUserHeader,
           ServiceType S>
 inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
-    open_with_attributes(const AttributeVerifier& required_attributes) && -> iox::expected<
+    open_with_attributes(const AttributeVerifier& required_attributes) && -> iox2::legacy::expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseOpenError> {
     set_parameters();
@@ -335,12 +335,12 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
         m_handle, &required_attributes.m_handle, nullptr, &port_factory_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(
+        return iox2::legacy::ok(
             PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(
                 port_factory_handle));
     }
 
-    return iox::err(iox::into<RequestResponseOpenError>(result));
+    return iox2::legacy::err(iox2::legacy::into<RequestResponseOpenError>(result));
 }
 
 template <typename RequestPayload,
@@ -349,7 +349,7 @@ template <typename RequestPayload,
           typename ResponseUserHeader,
           ServiceType S>
 inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
-    create() && -> iox::expected<
+    create() && -> iox2::legacy::expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseCreateError> {
     set_parameters();
@@ -358,12 +358,12 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
     auto result = iox2_service_builder_request_response_create(m_handle, nullptr, &port_factory_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(
+        return iox2::legacy::ok(
             PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(
                 port_factory_handle));
     }
 
-    return iox::err(iox::into<RequestResponseCreateError>(result));
+    return iox2::legacy::err(iox2::legacy::into<RequestResponseCreateError>(result));
 }
 
 template <typename RequestPayload,
@@ -372,7 +372,7 @@ template <typename RequestPayload,
           typename ResponseUserHeader,
           ServiceType S>
 inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
-    create_with_attributes(const AttributeSpecifier& attributes) && -> iox::expected<
+    create_with_attributes(const AttributeSpecifier& attributes) && -> iox2::legacy::expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseCreateError> {
     set_parameters();
@@ -382,12 +382,12 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
         m_handle, &attributes.m_handle, nullptr, &port_factory_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(
+        return iox2::legacy::ok(
             PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(
                 port_factory_handle));
     }
 
-    return iox::err(iox::into<RequestResponseCreateError>(result));
+    return iox2::legacy::err(iox2::legacy::into<RequestResponseCreateError>(result));
 }
 
 template <typename RequestPayload,
@@ -456,7 +456,7 @@ inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
         request_payload_type_align);
 
     if (request_payload_result != IOX2_OK) {
-        IOX_PANIC("This should never happen! Implementation failure while setting the RequestPayload-Type.");
+        IOX2_PANIC("This should never happen! Implementation failure while setting the RequestPayload-Type.");
     }
 
     // response payload type details
@@ -477,7 +477,7 @@ inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
         response_payload_type_align);
 
     if (response_payload_result != IOX2_OK) {
-        IOX_PANIC("This should never happen! Implementation failure while setting the ResponsePayload-Type.");
+        IOX2_PANIC("This should never happen! Implementation failure while setting the ResponsePayload-Type.");
     }
 
     // request header type details
@@ -495,7 +495,7 @@ inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
         request_header_type_align);
 
     if (request_header_result != IOX2_OK) {
-        IOX_PANIC("This should never happen! Implementation failure while setting the Request-Header-Type.");
+        IOX2_PANIC("This should never happen! Implementation failure while setting the Request-Header-Type.");
     }
 
     // response header type details
@@ -513,7 +513,7 @@ inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
         response_header_type_align);
 
     if (response_header_result != IOX2_OK) {
-        IOX_PANIC("This should never happen! Implementation failure while setting the Response-Header-Type.");
+        IOX2_PANIC("This should never happen! Implementation failure while setting the Response-Header-Type.");
     }
 }
 } // namespace iox2
