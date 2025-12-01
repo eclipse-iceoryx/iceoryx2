@@ -200,13 +200,9 @@ inline auto Listener<S>::timed_wait_all(const iox2::legacy::function<void(EventI
                                         const iox2::bb::Duration& timeout)
     -> iox2::legacy::expected<void, ListenerWaitError> {
     auto ctx = internal::ctx(callback);
-    auto timeout_timespec = timeout.timespec();
 
-    auto result = iox2_listener_timed_wait_all(&m_handle,
-                                               wait_callback,
-                                               static_cast<void*>(&ctx),
-                                               static_cast<uint64_t>(timeout_timespec.tv_sec),
-                                               static_cast<uint32_t>(timeout_timespec.tv_nsec));
+    auto result = iox2_listener_timed_wait_all(
+        &m_handle, wait_callback, static_cast<void*>(&ctx), timeout.to_seconds(), timeout.subsec_nanos());
     if (result == IOX2_OK) {
         return iox2::legacy::ok();
     }
@@ -251,12 +247,8 @@ inline auto Listener<S>::timed_wait_one(const iox2::bb::Duration& timeout)
     iox2_event_id_t event_id {};
     bool has_received_one { false };
 
-    auto timespec_timeout = timeout.timespec();
-    auto result = iox2_listener_timed_wait_one(&m_handle,
-                                               &event_id,
-                                               &has_received_one,
-                                               static_cast<uint64_t>(timespec_timeout.tv_sec),
-                                               static_cast<uint32_t>(timespec_timeout.tv_nsec));
+    auto result = iox2_listener_timed_wait_one(
+        &m_handle, &event_id, &has_received_one, timeout.to_seconds(), timeout.subsec_nanos());
 
     if (result == IOX2_OK) {
         if (has_received_one) {

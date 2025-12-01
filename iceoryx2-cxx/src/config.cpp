@@ -273,10 +273,9 @@ auto Event::deadline() && -> iox2::legacy::optional<iox2::bb::Duration> {
 
 void Event::set_deadline(iox2::legacy::optional<iox2::bb::Duration> value) && {
     value
-        .and_then([&](auto value) -> auto {
-            auto duration = value.timespec();
-            const auto secs = static_cast<uint64_t>(duration.tv_sec);
-            const auto nsecs = static_cast<uint32_t>(duration.tv_nsec);
+        .and_then([&](auto duration) -> auto {
+            const auto secs = duration.to_seconds();
+            const auto nsecs = duration.subsec_nanos();
             iox2_config_defaults_event_set_deadline(m_config, &secs, &nsecs);
         })
         .or_else([&]() -> auto { iox2_config_defaults_event_set_deadline(m_config, nullptr, nullptr); });
@@ -425,9 +424,7 @@ auto Service::creation_timeout() && -> iox2::bb::Duration {
 }
 
 void Service::set_creation_timeout(const iox2::bb::Duration& value) && {
-    auto duration = value.timespec();
-    iox2_config_global_service_set_creation_timeout(
-        m_config, static_cast<uint64_t>(duration.tv_sec), static_cast<uint32_t>(duration.tv_nsec));
+    iox2_config_global_service_set_creation_timeout(m_config, value.to_seconds(), value.subsec_nanos());
 }
 
 auto Service::connection_suffix() && -> const char* {
