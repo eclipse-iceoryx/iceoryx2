@@ -237,26 +237,6 @@ selects.config_setting_group(
 )
 
 string_flag(
-    name = "custom_pal_posix",
-    build_setting_default = "off",
-    visibility = ["//visibility:public"],
-)
-
-config_setting(
-    name = "custom_pal_posix_enabled",
-    flag_values = {
-        ":custom_pal_posix": "on",
-    },
-)
-
-config_setting(
-    name = "custom_pal_posix_disabled",
-    flag_values = {
-        ":custom_pal_posix": "off",
-    },
-)
-
-string_flag(
     name = "custom_pal_config",
     build_setting_default = "off",
     visibility = ["//visibility:public"],

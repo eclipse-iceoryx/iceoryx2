@@ -284,77 +284,37 @@ For Bazel the equivalent build command is:
 bazel build //... --action_env=IOX2_CUSTOM_PAL_CONFIG_PATH=/my/funky/platform --//:custom_pal_config="on"
 ```
 
-## Custom Platform Abstraction Layer POSIX
+## Custom Platform Abstraction Layer
 
-Similar to the PAL configuration users may want to use an own
-POSIX abstraction (`iceoryx2/iceoryx2-pal/posix/src`) for a
-specific operating system.
+Similar to the platform configuration, users may want to use a completely
+different platform abstraction (from those in
+`iceoryx2/iceoryx2-pal/posix/src`) for a specific operating system.
 
-To achieve this we can use the environment variable
-`IOX2_CUSTOM_PAL_POSIX_PATH` together with the
-feature flag `custom_pal_posix`.
+To achieve this, the environment variable `IOX2_CUSTOM_POSIX_PLATFORM_PATH` can be
+utilized.
 
-The first step is to create a POSIX platform folder
-(can be outside of iceoryx2).
-For this example we use `/my/funky/platform/posix`
-The easiest is to copy an existing POSIX abstraction
-and adapt it to the specific needs.
+The first step is to prepare the customized platform at some location (which
+can be outside of the `iceoryx2` workspace).
+For this example the path `/my/funky/platform/posix` is used.
+A good starting point is to make a copy of one of the existing abstractions,
+then adapt it to the specific needs.
 
-Inside of the `posix` folder is the
-`os.rs` located that is loading
-`posix` mod.
-To make the custom POSIX abstraction discoverable
-we need to adapt the path to the mod.rs:
+The build steps are as follows:
 
-```rust
-#[cfg(target_os = "windows")]
-#[path = "/my/funky/platform/posix/mod.rs"]
-pub mod posix;
-```
+1. Set the environment variable with an absolute path to custom platform
+    abstraction (without a trailing slash)
 
-The `path` attribute needs to contain the absolute path to the mod.rs
-of the custom POSIX abstraction.
-Optionally a `#[cfg()]` attribute can be added for selecting
-the target operating system.
+    ```cli
+    export IOX2_CUSTOM_POSIX_PLATFORM_PATH=/my/funky/platform/posix
+    ```
 
-Once this is done the build steps follow:
+    To make it persistent, the variable can be set in a `./cargo/config.toml`
+    file, either globally ore locally within the project:
 
-1. Set environment variable with absolute path to POSIX abstraction
-(no trailing slash)
+    ```toml
+    [env]
+    IOX2_CUSTOM_POSIX_PLATFORM_PATH = "/my/funky/platform/posix"
+    ```
 
-```cli
-export IOX2_CUSTOM_PAL_POSIX_PATH=/my/funky/platform/posix
-```
-
-To make it persistent, the `./cargo/config.toml` file can be used,
-either the global one or the local one from the project:
-
-```toml
-[env]
-IOX2_CUSTOM_PAL_POSIX_PATH = "/my/funky/platform/posix"
-```
-
-1. Build iceoryx2 with feature `custom_pal_posix`
-for custom POSIX platform abstraction.
-
-```cli
-cargo build --features "custom_pal_posix"
-```
-
-For CMake the feature can be enabled with:
-
-```cli
-cmake . -Bbuild -DIOX2_CUSTOM_PAL_POSIX=ON -DBUILD_CXX=on
-```
-
-In Python:
-
-```cli
-poetry --project iceoryx2-ffi/python run maturin develop --manifest-path iceoryx2-ffi/python/Cargo.toml --target-dir target/ff/python --features custom_pal_posix
-```
-
-For Bazel the equivalent build command is:
-
-```cli
-bazel build //... --action_env=IOX2_CUSTOM_PAL_POSIX_PATH=/home/dietrich/devel/tmp/posix/src/linux --//:custom_pal_posix="on"
-```
+1. Build `iceoryx2` like normal, the platform will be automatically substituted
+   in at build time

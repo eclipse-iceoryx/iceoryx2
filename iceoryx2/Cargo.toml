@@ -54,11 +54,6 @@ libc_platform = ["iceoryx2-bb-posix/libc_platform"]
 # `IOX2_CUSTOM_PAL_CONFIG_PATH`.
 custom_pal_config = ["iceoryx2-pal-configuration/custom_pal_config"]
 
-# Uses a custom POSIX abstraction for the iceoryx2 platform abstraction layer
-# The location of posix abstraction can be set via environment variable
-# `IOX2_CUSTOM_PAL_POSIX_PATH`.
-custom_pal_posix = ["iceoryx2-pal-posix/custom_pal_posix"]
-
 [dependencies]
 iceoryx2-bb-container = { workspace = true }
 iceoryx2-bb-derive-macros = { workspace = true }
