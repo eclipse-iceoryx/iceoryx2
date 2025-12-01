@@ -54,7 +54,7 @@ inline T OptionManager::defineOption(T& referenceToMember,
                                      T defaultArgumentValue) {
     constexpr bool IS_NO_SWITCH = false;
     m_optionSet.addOption(OptionWithDetails {
-        { shortName, IS_NO_SWITCH, name, bb::into<bb::lossy<Argument_t>>(convert::toString(defaultArgumentValue)) },
+        { shortName, IS_NO_SWITCH, name, bb::into<bb::Lossy<Argument_t>>(convert::toString(defaultArgumentValue)) },
         description,
         optionType,
         { TypeInfo<T>::NAME } });

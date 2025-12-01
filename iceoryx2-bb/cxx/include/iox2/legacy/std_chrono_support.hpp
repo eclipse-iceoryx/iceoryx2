@@ -25,7 +25,7 @@ namespace bb {
 /// @param[in] value as nanoseconds
 /// @attention Since negative durations are not allowed, the duration will be clamped to 0
 template <>
-struct FromTrait<std::chrono::nanoseconds, legacy::units::Duration> {
+struct From<std::chrono::nanoseconds, legacy::units::Duration> {
     static legacy::units::Duration from(const std::chrono::nanoseconds& value) noexcept;
 };
 
@@ -33,7 +33,7 @@ struct FromTrait<std::chrono::nanoseconds, legacy::units::Duration> {
 /// @param[in] value as microseconds
 /// @attention Since negative durations are not allowed, the duration will be clamped to 0
 template <>
-struct FromTrait<std::chrono::microseconds, legacy::units::Duration> {
+struct From<std::chrono::microseconds, legacy::units::Duration> {
     static legacy::units::Duration from(const std::chrono::microseconds& value) noexcept;
 };
 
@@ -41,7 +41,7 @@ struct FromTrait<std::chrono::microseconds, legacy::units::Duration> {
 /// @param[in] value as milliseconds
 /// @attention Since negative durations are not allowed, the duration will be clamped to 0
 template <>
-struct FromTrait<std::chrono::milliseconds, legacy::units::Duration> {
+struct From<std::chrono::milliseconds, legacy::units::Duration> {
     static legacy::units::Duration from(const std::chrono::milliseconds& value) noexcept;
 };
 
@@ -49,7 +49,7 @@ struct FromTrait<std::chrono::milliseconds, legacy::units::Duration> {
 /// @param[in] value as seconds
 /// @attention Since negative durations are not allowed, the duration will be clamped to 0
 template <>
-struct FromTrait<std::chrono::seconds, legacy::units::Duration> {
+struct From<std::chrono::seconds, legacy::units::Duration> {
     static legacy::units::Duration from(const std::chrono::seconds& value) noexcept;
 };
 } // namespace bb
