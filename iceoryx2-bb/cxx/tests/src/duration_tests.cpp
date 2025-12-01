@@ -49,7 +49,8 @@ struct DurationAccessor : public Duration {
     using Duration::Seconds_t;
 };
 
-constexpr Duration createDuration(DurationAccessor::Seconds_t seconds, DurationAccessor::Nanoseconds_t nanoseconds) {
+constexpr auto createDuration(DurationAccessor::Seconds_t seconds, DurationAccessor::Nanoseconds_t nanoseconds)
+    -> Duration {
     return DurationAccessor::createDuration(seconds, nanoseconds);
 }
 
