@@ -37,7 +37,6 @@ using DoesContainInvalidContent = bool (*)(const string<Capacity>& value);
 
 /// @brief The SemanticString is a string which has an inner syntax and restrictions
 ///         to valid content. Examples are for instance
-///         * UserName, only characters and numbers are allowed
 ///         * FileNames, no slashes etc.
 ///        The SemanticString shall be a basic building block to create string
 ///        types with a semantic contract. It is used via inheritance. The user
@@ -47,14 +46,14 @@ using DoesContainInvalidContent = bool (*)(const string<Capacity>& value);
 /// bool user_name_does_contain_invalid_characters(const string<platform::MAX_USER_NAME_LENGTH>& value) noexcept;
 /// bool user_name_does_contain_invalid_content(const string<platform::MAX_USER_NAME_LENGTH>& value) noexcept;
 ///
-/// // define custom semantic string UserName
-/// class UserName : public SemanticString<UserName,
-///                                        platform::MAX_USER_NAME_LENGTH,
+/// // define custom semantic string FileName
+/// class FileName : public SemanticString<FileName,
+///                                        platform::IOX2_MAX_FILENAME_LENGTH,
 ///                                        user_name_does_contain_invalid_content,
 ///                                        user_name_does_contain_invalid_characters>
 /// {
-///     using Parent = SemanticString<UserName,
-///                                  platform::MAX_USER_NAME_LENGTH,
+///     using Parent = SemanticString<FileName,
+///                                  platform::IOX2_MAX_FILENAME_LENGTH,
 ///                                  details::user_name_does_contain_invalid_content,
 ///                                  details::user_name_does_contain_invalid_characters>;
 ///     using Parent::Parent;
