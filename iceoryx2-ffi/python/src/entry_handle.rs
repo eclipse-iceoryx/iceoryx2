@@ -88,10 +88,10 @@ impl EntryHandle {
         }
     }
 
-    pub fn __is_current(&self, generation_counter: u64) -> bool {
+    pub fn __is_up_to_date(&self, generation_counter: u64) -> bool {
         match &*self.value.lock() {
-            EntryHandleType::Ipc(v) => v.is_current(generation_counter),
-            EntryHandleType::Local(v) => v.is_current(generation_counter),
+            EntryHandleType::Ipc(v) => v.is_up_to_date(generation_counter),
+            EntryHandleType::Local(v) => v.is_up_to_date(generation_counter),
         }
     }
 

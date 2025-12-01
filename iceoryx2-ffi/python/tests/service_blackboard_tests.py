@@ -737,7 +737,7 @@ def test_handle_can_still_be_used_after_every_previous_service_state_owner_was_d
 
 
 @pytest.mark.parametrize("service_type", service_types)
-def test_entry_handle_is_current_works_correctly(
+def test_entry_handle_is_up_to_date_works_correctly(
     service_type: iox2.ServiceType,
 ) -> None:
     config = iox2.testing.generate_isolated_config()
@@ -760,18 +760,18 @@ def test_entry_handle_is_current_works_correctly(
 
     read_value = entry_handle.get()
     assert read_value.decode_as(ctypes.c_uint16).value == 0
-    assert entry_handle.is_current(read_value)
+    assert entry_handle.is_up_to_date(read_value)
 
     entry_handle_mut.update_with_copy(ctypes.c_uint16(1))
-    assert not entry_handle.is_current(read_value)
+    assert not entry_handle.is_up_to_date(read_value)
     read_value = entry_handle.get()
     assert read_value.decode_as(ctypes.c_uint16).value == 1
-    assert entry_handle.is_current(read_value)
+    assert entry_handle.is_up_to_date(read_value)
 
     entry_handle_mut.update_with_copy(ctypes.c_uint16(4))
     read_value = entry_handle.get()
     assert read_value.decode_as(ctypes.c_uint16).value == 4
-    assert entry_handle.is_current(read_value)
+    assert entry_handle.is_up_to_date(read_value)
 
 
 class Foo(ctypes.Structure):

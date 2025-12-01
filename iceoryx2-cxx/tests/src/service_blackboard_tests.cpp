@@ -1580,7 +1580,7 @@ TYPED_TEST(ServiceBlackboardTest, same_entry_id_for_same_key) {
     ASSERT_NE(entry_handle_0.entry_id(), entry_handle_1.entry_id());
 }
 
-TYPED_TEST(ServiceBlackboardTest, entry_handle_is_current_works_correctly) {
+TYPED_TEST(ServiceBlackboardTest, entry_handle_is_up_to_date_works_correctly) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
     const auto service_name = iox2_testing::generate_service_name();
@@ -1598,18 +1598,18 @@ TYPED_TEST(ServiceBlackboardTest, entry_handle_is_current_works_correctly) {
 
     auto value = entry_handle.get();
     ASSERT_EQ(*value, 0);
-    ASSERT_TRUE(entry_handle.is_current(value));
+    ASSERT_TRUE(entry_handle.is_up_to_date(value));
 
     entry_handle_mut.update_with_copy(1);
-    ASSERT_FALSE(entry_handle.is_current(value));
+    ASSERT_FALSE(entry_handle.is_up_to_date(value));
     value = entry_handle.get();
     ASSERT_EQ(*value, 1);
-    ASSERT_TRUE(entry_handle.is_current(value));
+    ASSERT_TRUE(entry_handle.is_up_to_date(value));
 
     entry_handle_mut.update_with_copy(4);
     value = entry_handle.get();
     ASSERT_EQ(*value, 4);
-    ASSERT_TRUE(entry_handle.is_current(value));
+    ASSERT_TRUE(entry_handle.is_up_to_date(value));
 }
 
 constexpr uint64_t const STRING_CAPACITY = 25;
