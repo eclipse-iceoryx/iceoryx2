@@ -15,8 +15,6 @@
 #include "iox2/bb/file_path.hpp"
 #include "iox2/bb/path.hpp"
 #include "iox2/bb/semantic_string.hpp"
-#include "iox2/legacy/detail/hoofs_error_reporting.hpp"
-#include "iox2/legacy/testing/fatal_failure.hpp"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -27,8 +25,8 @@
 namespace {
 using namespace ::testing;
 using namespace iox2::bb;
+using namespace iox2::bb::platform;
 using namespace iox2::legacy;
-using namespace iox2::legacy::testing;
 
 template <typename T>
 struct TestValues {
@@ -44,11 +42,13 @@ struct TestValues {
     static const std::vector<std::string> ADD_VALID_CHARS_TO_CREATE_INVALID_CONTENT_AT_END;
 };
 
+// NOLINTBEGIN(cert-err58-cpp): Ignore "initialization with static storage duration may throw an exception that cannot be caught" in tests
+
 ///////////////////
 // START: FileName
 ///////////////////
 template <>
-const uint64_t TestValues<FileName>::CAPACITY = platform::IOX2_MAX_FILENAME_LENGTH;
+const uint64_t TestValues<FileName>::CAPACITY = IOX2_MAX_FILENAME_LENGTH; // NOLINT: false positive unused variable
 template <>
 const std::vector<std::string> TestValues<FileName>::VALID_VALUES {
     { "file" }, { "another_file.bla" }, { "123.456" }, { ".hidden_me" }
@@ -60,14 +60,14 @@ const std::vector<std::string> TestValues<FileName>::INVALID_CHARACTER_VALUES {
 template <>
 const std::vector<std::string> TestValues<FileName>::INVALID_CONTENT_VALUES { { "" }, { "." }, { ".." } };
 template <>
-const std::vector<std::string> TestValues<FileName>::TOO_LONG_CONTENT_VALUES { std::string(
-    platform::IOX2_MAX_FILENAME_LENGTH + 2, 'a') };
+const std::vector<std::string> TestValues<FileName>::TOO_LONG_CONTENT_VALUES { std::string(IOX2_MAX_FILENAME_LENGTH + 2,
+                                                                                           'a') };
 template <>
 const std::string TestValues<FileName>::GREATER_VALID_VALUE { "9-i-am-a-file" };
 template <>
 const std::string TestValues<FileName>::SMALLER_VALID_VALUE { "0.me.too.be.file" };
 template <>
-const std::string TestValues<FileName>::MAX_CAPACITY_VALUE { std::string(platform::IOX2_MAX_FILENAME_LENGTH, 'b') };
+const std::string TestValues<FileName>::MAX_CAPACITY_VALUE { std::string(IOX2_MAX_FILENAME_LENGTH, 'b') };
 template <>
 const std::vector<std::string> TestValues<FileName>::ADD_VALID_CHARS_TO_CREATE_INVALID_CONTENT_AT_BEGIN {};
 template <>
@@ -80,7 +80,7 @@ const std::vector<std::string> TestValues<FileName>::ADD_VALID_CHARS_TO_CREATE_I
 // START: FilePath
 ///////////////////
 template <>
-const uint64_t TestValues<FilePath>::CAPACITY = platform::IOX2_MAX_PATH_LENGTH;
+const uint64_t TestValues<FilePath>::CAPACITY = IOX2_MAX_PATH_LENGTH; // NOLINT: false positive unused variable
 template <>
 const std::vector<std::string> TestValues<FilePath>::VALID_VALUES { { "file" },
                                                                     { "another_file.bla" },
@@ -106,14 +106,14 @@ const std::vector<std::string> TestValues<FilePath>::INVALID_CONTENT_VALUES {
     { "" }, { "." }, { ".." }, { "stop/with/relative/.." }, "another/relative/part/at/the/end/."
 };
 template <>
-const std::vector<std::string> TestValues<FilePath>::TOO_LONG_CONTENT_VALUES { std::string(
-    platform::IOX2_MAX_PATH_LENGTH + 2, 'a') };
+const std::vector<std::string> TestValues<FilePath>::TOO_LONG_CONTENT_VALUES { std::string(IOX2_MAX_PATH_LENGTH + 2,
+                                                                                           'a') };
 template <>
 const std::string TestValues<FilePath>::GREATER_VALID_VALUE { "9-i-am-a-file" };
 template <>
 const std::string TestValues<FilePath>::SMALLER_VALID_VALUE { "0.me.too.be.file" };
 template <>
-const std::string TestValues<FilePath>::MAX_CAPACITY_VALUE { std::string(platform::IOX2_MAX_PATH_LENGTH, 'b') };
+const std::string TestValues<FilePath>::MAX_CAPACITY_VALUE { std::string(IOX2_MAX_PATH_LENGTH, 'b') };
 template <>
 const std::vector<std::string> TestValues<FilePath>::ADD_VALID_CHARS_TO_CREATE_INVALID_CONTENT_AT_BEGIN {};
 template <>
@@ -126,7 +126,7 @@ const std::vector<std::string> TestValues<FilePath>::ADD_VALID_CHARS_TO_CREATE_I
 // START: Path
 ///////////////////
 template <>
-const uint64_t TestValues<Path>::CAPACITY = platform::IOX2_MAX_PATH_LENGTH;
+const uint64_t TestValues<Path>::CAPACITY = IOX2_MAX_PATH_LENGTH; // NOLINT: false positive unused variable
 template <>
 const std::vector<std::string> TestValues<Path>::VALID_VALUES { { "file" },
                                                                 { "another_file.bla" },
@@ -148,14 +148,13 @@ const std::vector<std::string> TestValues<Path>::INVALID_CHARACTER_VALUES {
 template <>
 const std::vector<std::string> TestValues<Path>::INVALID_CONTENT_VALUES {};
 template <>
-const std::vector<std::string> TestValues<Path>::TOO_LONG_CONTENT_VALUES { std::string(
-    platform::IOX2_MAX_PATH_LENGTH + 2, 'a') };
+const std::vector<std::string> TestValues<Path>::TOO_LONG_CONTENT_VALUES { std::string(IOX2_MAX_PATH_LENGTH + 2, 'a') };
 template <>
 const std::string TestValues<Path>::GREATER_VALID_VALUE { "9-i-am-a-file/blubb/di/whoop" };
 template <>
 const std::string TestValues<Path>::SMALLER_VALID_VALUE { "0.me.too.be.file/whoop/whoop" };
 template <>
-const std::string TestValues<Path>::MAX_CAPACITY_VALUE { std::string(platform::IOX2_MAX_PATH_LENGTH, 'b') };
+const std::string TestValues<Path>::MAX_CAPACITY_VALUE { std::string(IOX2_MAX_PATH_LENGTH, 'b') };
 template <>
 const std::vector<std::string> TestValues<Path>::ADD_VALID_CHARS_TO_CREATE_INVALID_CONTENT_AT_BEGIN {};
 template <>
@@ -164,10 +163,11 @@ const std::vector<std::string> TestValues<Path>::ADD_VALID_CHARS_TO_CREATE_INVAL
 // END: Path
 ///////////////////
 
+// NOLINTEND(cert-err58-cpp)
 
 template <typename T>
-class SemanticString_test : public Test {
-  protected:
+class SemanticStringTest : public Test {
+  public:
     void SetUp() override {
         EXPECT_FALSE(TestValues<T>::VALID_VALUES.empty());
         EXPECT_FALSE(TestValues<T>::TOO_LONG_CONTENT_VALUES.empty());
@@ -181,6 +181,7 @@ class SemanticString_test : public Test {
     }
 
     using SutType = T;
+    // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
     string<SutType::capacity()> greater_value_str =
         string<SutType::capacity()>(TruncateToCapacity, TestValues<SutType>::GREATER_VALID_VALUE.c_str());
     string<SutType::capacity()> smaller_value_str =
@@ -188,13 +189,14 @@ class SemanticString_test : public Test {
 
     SutType greater_value = SutType::create(greater_value_str).expect("Failed to create test string.");
     SutType smaller_value = SutType::create(smaller_value_str).expect("Failed to create test string.");
+    // NOLINTEND(misc-non-private-member-variables-in-classes)
 };
 
 using Implementations = Types<FileName, FilePath, Path>;
 
-TYPED_TEST_SUITE(SemanticString_test, Implementations, );
+TYPED_TEST_SUITE(SemanticStringTest, Implementations, );
 
-TYPED_TEST(SemanticString_test, InitializeWithValidStringLiteralWorks) {
+TYPED_TEST(SemanticStringTest, InitializeWithValidStringLiteralWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "31a2cd17-ca02-486a-b173-3f1f219d8ca3");
     using SutType = typename TestFixture::SutType;
 
@@ -206,7 +208,7 @@ TYPED_TEST(SemanticString_test, InitializeWithValidStringLiteralWorks) {
     EXPECT_TRUE(sut->as_string() == "alwaysvalid");
 }
 
-TYPED_TEST(SemanticString_test, SizeWorksCorrectly) {
+TYPED_TEST(SemanticStringTest, SizeWorksCorrectly) {
     ::testing::Test::RecordProperty("TEST_ID", "26cc39ac-84c6-45cf-b221-b6db7d210c44");
     using SutType = typename TestFixture::SutType;
 
@@ -218,7 +220,7 @@ TYPED_TEST(SemanticString_test, SizeWorksCorrectly) {
     EXPECT_THAT(sut->size(), Eq(test_string.size()));
 }
 
-TYPED_TEST(SemanticString_test, AsStringWorksCorrectly) {
+TYPED_TEST(SemanticStringTest, AsStringWorksCorrectly) {
     ::testing::Test::RecordProperty("TEST_ID", "c4d721d2-0cf8-41d6-a3fe-fbc4b19e9b10");
     using SutType = typename TestFixture::SutType;
 
@@ -230,14 +232,14 @@ TYPED_TEST(SemanticString_test, AsStringWorksCorrectly) {
     EXPECT_THAT(sut->as_string().c_str(), StrEq(test_string.c_str()));
 }
 
-TYPED_TEST(SemanticString_test, CapacityWorksCorrectly) {
+TYPED_TEST(SemanticStringTest, CapacityWorksCorrectly) {
     ::testing::Test::RecordProperty("TEST_ID", "d8f6eb13-8f2c-496f-901d-734ee22d85e3");
     using SutType = typename TestFixture::SutType;
 
     ASSERT_THAT(SutType::capacity(), Eq(TestValues<SutType>::CAPACITY));
 }
 
-TYPED_TEST(SemanticString_test, CanBeFilledUpToMaxCapacity) {
+TYPED_TEST(SemanticStringTest, CanBeFilledUpToMaxCapacity) {
     ::testing::Test::RecordProperty("TEST_ID", "c5ed0595-380c-4caa-a392-a8d2933646d9");
     using SutType = typename TestFixture::SutType;
 
@@ -248,7 +250,7 @@ TYPED_TEST(SemanticString_test, CanBeFilledUpToMaxCapacity) {
     EXPECT_THAT(sut->as_string().c_str(), StrEq(test_string.c_str()));
 }
 
-TYPED_TEST(SemanticString_test, InitializeWithValidStringValueWorks) {
+TYPED_TEST(SemanticStringTest, InitializeWithValidStringValueWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "0100d764-628c-44ad-9af7-fe7a4540491a");
     using SutType = typename TestFixture::SutType;
 
@@ -262,7 +264,7 @@ TYPED_TEST(SemanticString_test, InitializeWithValidStringValueWorks) {
     }
 }
 
-TYPED_TEST(SemanticString_test, InitializeWithStringContainingIllegalCharactersFails) {
+TYPED_TEST(SemanticStringTest, InitializeWithStringContainingIllegalCharactersFails) {
     ::testing::Test::RecordProperty("TEST_ID", "14483f4e-d556-4770-89df-84d873428eee");
     using SutType = typename TestFixture::SutType;
 
@@ -274,7 +276,7 @@ TYPED_TEST(SemanticString_test, InitializeWithStringContainingIllegalCharactersF
     }
 }
 
-TYPED_TEST(SemanticString_test, InitializeWithStringContainingIllegalContentFails) {
+TYPED_TEST(SemanticStringTest, InitializeWithStringContainingIllegalContentFails) {
     ::testing::Test::RecordProperty("TEST_ID", "9380f932-527f-4116-bd4f-dc8078b63330");
     using SutType = typename TestFixture::SutType;
 
@@ -286,7 +288,7 @@ TYPED_TEST(SemanticString_test, InitializeWithStringContainingIllegalContentFail
     }
 }
 
-TYPED_TEST(SemanticString_test, InitializeWithTooLongContentFails) {
+TYPED_TEST(SemanticStringTest, InitializeWithTooLongContentFails) {
     ::testing::Test::RecordProperty("TEST_ID", "b5597825-c559-48e7-96f3-5136fffc55d7");
     using SutType = typename TestFixture::SutType;
 
@@ -298,7 +300,8 @@ TYPED_TEST(SemanticString_test, InitializeWithTooLongContentFails) {
     }
 }
 
-TYPED_TEST(SemanticString_test, AppendValidContentToValidStringWorks) {
+// NOLINTBEGIN(readability-function-cognitive-complexity)
+TYPED_TEST(SemanticStringTest, AppendValidContentToValidStringWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "0994fccc-5baa-4408-b17e-e2955439608d");
     using SutType = typename TestFixture::SutType;
 
@@ -319,7 +322,7 @@ TYPED_TEST(SemanticString_test, AppendValidContentToValidStringWorks) {
     }
 }
 
-TYPED_TEST(SemanticString_test, AppendInvalidCharactersToValidStringFails) {
+TYPED_TEST(SemanticStringTest, AppendInvalidCharactersToValidStringFails) {
     ::testing::Test::RecordProperty("TEST_ID", "fddf4a56-c368-4ff0-8727-e732d6ebc87f");
     using SutType = typename TestFixture::SutType;
 
@@ -339,7 +342,7 @@ TYPED_TEST(SemanticString_test, AppendInvalidCharactersToValidStringFails) {
     }
 }
 
-TYPED_TEST(SemanticString_test, GenerateInvalidContentWithAppend) {
+TYPED_TEST(SemanticStringTest, GenerateInvalidContentWithAppend) {
     ::testing::Test::RecordProperty("TEST_ID", "a416c7c6-eaff-4e5e-8945-fe9f2d06ee6d");
     using SutType = typename TestFixture::SutType;
 
@@ -359,7 +362,7 @@ TYPED_TEST(SemanticString_test, GenerateInvalidContentWithAppend) {
     }
 }
 
-TYPED_TEST(SemanticString_test, GenerateInvalidContentWithInsert) {
+TYPED_TEST(SemanticStringTest, GenerateInvalidContentWithInsert) {
     ::testing::Test::RecordProperty("TEST_ID", "e7db87d3-2574-4b5f-9c3e-c103e05a6b46");
     using SutType = typename TestFixture::SutType;
 
@@ -380,7 +383,7 @@ TYPED_TEST(SemanticString_test, GenerateInvalidContentWithInsert) {
     }
 }
 
-TYPED_TEST(SemanticString_test, AppendTooLongContentToValidStringFails) {
+TYPED_TEST(SemanticStringTest, AppendTooLongContentToValidStringFails) {
     ::testing::Test::RecordProperty("TEST_ID", "b8616fbf-601d-43b9-b4a3-f6b96acdf555");
     using SutType = typename TestFixture::SutType;
 
@@ -399,7 +402,7 @@ TYPED_TEST(SemanticString_test, AppendTooLongContentToValidStringFails) {
     }
 }
 
-TYPED_TEST(SemanticString_test, InsertValidContentToValidStringWorks) {
+TYPED_TEST(SemanticStringTest, InsertValidContentToValidStringWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "56ea499f-5ac3-4ffe-abea-b56194cfd728");
     using SutType = typename TestFixture::SutType;
 
@@ -427,7 +430,7 @@ TYPED_TEST(SemanticString_test, InsertValidContentToValidStringWorks) {
     }
 }
 
-TYPED_TEST(SemanticString_test, InsertInvalidCharactersToValidStringFails) {
+TYPED_TEST(SemanticStringTest, InsertInvalidCharactersToValidStringFails) {
     ::testing::Test::RecordProperty("TEST_ID", "35229fb8-e6e9-44d9-9d47-d00b71a4ce01");
     using SutType = typename TestFixture::SutType;
 
@@ -452,7 +455,7 @@ TYPED_TEST(SemanticString_test, InsertInvalidCharactersToValidStringFails) {
     }
 }
 
-TYPED_TEST(SemanticString_test, InsertTooLongContentToValidStringFails) {
+TYPED_TEST(SemanticStringTest, InsertTooLongContentToValidStringFails) {
     ::testing::Test::RecordProperty("TEST_ID", "b6939126-a878-4d7f-9fea-c2b438226e65");
     using SutType = typename TestFixture::SutType;
 
@@ -478,7 +481,9 @@ TYPED_TEST(SemanticString_test, InsertTooLongContentToValidStringFails) {
     }
 }
 
-TYPED_TEST(SemanticString_test, EqualityOperatorWorks) {
+// NOLINTEND(readability-function-cognitive-complexity)
+
+TYPED_TEST(SemanticStringTest, EqualityOperatorWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "97889932-ac3b-4155-9958-34c843d2d323");
 
     EXPECT_TRUE(this->greater_value == this->greater_value);
@@ -488,7 +493,7 @@ TYPED_TEST(SemanticString_test, EqualityOperatorWorks) {
     EXPECT_FALSE(this->greater_value == this->smaller_value_str);
 }
 
-TYPED_TEST(SemanticString_test, InequalityOperatorWorks) {
+TYPED_TEST(SemanticStringTest, InequalityOperatorWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "32903b0b-3594-4c00-9869-d18e1dfc773f");
 
     EXPECT_FALSE(this->greater_value != this->greater_value);
@@ -498,7 +503,7 @@ TYPED_TEST(SemanticString_test, InequalityOperatorWorks) {
     EXPECT_TRUE(this->greater_value != this->smaller_value_str);
 }
 
-TYPED_TEST(SemanticString_test, LessThanOrEqualOperatorWorks) {
+TYPED_TEST(SemanticStringTest, LessThanOrEqualOperatorWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "53f5b765-b462-4cc1-bab7-9b937fbbcecf");
 
     EXPECT_TRUE(this->greater_value <= this->greater_value);
@@ -506,7 +511,7 @@ TYPED_TEST(SemanticString_test, LessThanOrEqualOperatorWorks) {
     EXPECT_FALSE(this->greater_value <= this->smaller_value);
 }
 
-TYPED_TEST(SemanticString_test, LessThanOperatorWorks) {
+TYPED_TEST(SemanticStringTest, LessThanOperatorWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "cea977a4-ccb3-42a6-9d13-e09dce24c273");
 
     EXPECT_FALSE(this->greater_value < this->greater_value);
@@ -514,7 +519,7 @@ TYPED_TEST(SemanticString_test, LessThanOperatorWorks) {
     EXPECT_FALSE(this->greater_value < this->smaller_value);
 }
 
-TYPED_TEST(SemanticString_test, GreaterThanOrEqualOperatorWorks) {
+TYPED_TEST(SemanticStringTest, GreaterThanOrEqualOperatorWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "5d731b17-f787-46fc-b64d-3d86c9102008");
 
     EXPECT_TRUE(this->greater_value >= this->greater_value);
@@ -522,7 +527,7 @@ TYPED_TEST(SemanticString_test, GreaterThanOrEqualOperatorWorks) {
     EXPECT_TRUE(this->greater_value >= this->smaller_value);
 }
 
-TYPED_TEST(SemanticString_test, GreaterThanOperatorWorks) {
+TYPED_TEST(SemanticStringTest, GreaterThanOperatorWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "8c046cff-fb69-43b4-9a45-e86f17c874db");
 
     EXPECT_FALSE(this->greater_value > this->greater_value);

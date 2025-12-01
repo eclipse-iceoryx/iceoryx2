@@ -20,7 +20,7 @@
 namespace iox2 {
 namespace bb {
 namespace platform {
-#if defined(_WIN32)
+#ifdef _WIN32
 constexpr uint64_t IOX2_MAX_PATH_LENGTH = 255U;
 #else
 constexpr uint64_t IOX2_MAX_PATH_LENGTH = 1023U;

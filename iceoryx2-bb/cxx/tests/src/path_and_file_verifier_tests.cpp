@@ -15,8 +15,6 @@
 #include "iox2/bb/detail/path_and_file_verifier.hpp"
 #include "iox2/bb/file_name.hpp"
 
-#include "iox2/legacy/testing/mocks/logger_mock.hpp"
-
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -28,11 +26,10 @@ using namespace iox2::bb;
 using namespace iox2::bb::detail;
 using namespace iox2::legacy;
 
-using iox2::legacy::testing::Logger_Mock;
-
 constexpr uint64_t FILE_PATH_LENGTH = 128U;
 
-bool isValidFileCharacter(const int32_t i) noexcept {
+// NOLINTNEXTLINE(readability-identifier-length)
+auto is_valid_file_character(const int32_t i) noexcept -> bool {
     return ((ASCII_A <= i && i <= ASCII_Z) || (ASCII_CAPITAL_A <= i && i <= ASCII_CAPITAL_Z)
             || (ASCII_0 <= i && i <= ASCII_9) || i == ASCII_DASH || i == ASCII_DOT || i == ASCII_COLON
             || i == ASCII_UNDERSCORE);
@@ -98,11 +95,11 @@ TEST(path_and_flie_verifier_test_isValidFileName, ValidLetterCombinationsAreVali
         // for simplicity we exclude the valid dot here, since it is
         // invalid when it occurs alone.
         // it is tested separately
-        if (i != ASCII_DOT && isValidFileCharacter(i)) {
-            uint32_t index = static_cast<uint32_t>(i) % COMBINATION_CAPACITY;
+        if (i != ASCII_DOT && is_valid_file_character(i)) {
+            const uint32_t index = static_cast<uint32_t>(i) % COMBINATION_CAPACITY;
 
             // index is always in the range of [0, COMBINATION_CAPACITY] since we calculate % COMBINATION_CAPACITY
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index,readability-identifier-length)
             auto& s = combinations[index];
             s.append(1, static_cast<char>(i));
 
@@ -114,35 +111,35 @@ TEST(path_and_flie_verifier_test_isValidFileName, ValidLetterCombinationsAreVali
 
 TEST(path_and_flie_verifier_test_isValidFileName, WhenOneInvalidCharacterIsContainedFileNameIsInvalid) {
     ::testing::Test::RecordProperty("TEST_ID", "067ddf95-8a5c-442b-8022-ecab580b5a7d");
-    std::string validName1 = "summon";
-    std::string validName2 = "TheHolyToad";
+    const std::string valid_name1 = "summon";
+    const std::string valid_name2 = "TheHolyToad";
 
     constexpr int32_t MAX_ASCII_CODE = 255;
     for (int32_t i = 0; i <= MAX_ASCII_CODE; ++i) {
-        if (isValidFileCharacter(i)) {
+        if (is_valid_file_character(i)) {
             continue;
         }
 
-        std::string invalidCharacterFront;
-        invalidCharacterFront.append(1, static_cast<char>(i));
-        invalidCharacterFront += validName1 + validName2;
+        std::string invalid_character_front;
+        invalid_character_front.append(1, static_cast<char>(i));
+        invalid_character_front += valid_name1 + valid_name2;
 
-        std::string invalidCharacterMiddle = validName1;
-        invalidCharacterMiddle.append(1, static_cast<char>(i));
+        std::string invalid_character_middle = valid_name1;
+        invalid_character_middle.append(1, static_cast<char>(i));
 
-        std::string invalidCharacterEnd = validName1 + validName2;
-        invalidCharacterEnd.append(1, static_cast<char>(i));
+        std::string invalid_character_end = valid_name1 + valid_name2;
+        invalid_character_end.append(1, static_cast<char>(i));
 
-        string<FILE_PATH_LENGTH> invalidCharacterFrontTest(
-            iox2::legacy::TruncateToCapacity, invalidCharacterFront.c_str(), invalidCharacterFront.size());
-        string<FILE_PATH_LENGTH> invalidCharacterMiddleTest(
-            iox2::legacy::TruncateToCapacity, invalidCharacterMiddle.c_str(), invalidCharacterMiddle.size());
-        string<FILE_PATH_LENGTH> invalidCharacterEndTest(
-            iox2::legacy::TruncateToCapacity, invalidCharacterEnd.c_str(), invalidCharacterEnd.size());
+        const string<FILE_PATH_LENGTH> invalid_character_front_test(
+            iox2::legacy::TruncateToCapacity, invalid_character_front.c_str(), invalid_character_front.size());
+        const string<FILE_PATH_LENGTH> invalid_character_middle_test(
+            iox2::legacy::TruncateToCapacity, invalid_character_middle.c_str(), invalid_character_middle.size());
+        const string<FILE_PATH_LENGTH> invalid_character_end_test(
+            iox2::legacy::TruncateToCapacity, invalid_character_end.c_str(), invalid_character_end.size());
 
-        EXPECT_FALSE(is_valid_file_name(invalidCharacterFrontTest));
-        EXPECT_FALSE(is_valid_file_name(invalidCharacterMiddleTest));
-        EXPECT_FALSE(is_valid_file_name(invalidCharacterEndTest));
+        EXPECT_FALSE(is_valid_file_name(invalid_character_front_test));
+        EXPECT_FALSE(is_valid_file_name(invalid_character_middle_test));
+        EXPECT_FALSE(is_valid_file_name(invalid_character_end_test));
     }
 }
 
@@ -185,7 +182,7 @@ TEST(path_and_flie_verifier_test_isValidPathToFile, RelativePathBeginningFromRoo
 
 TEST(path_and_flie_verifier_test_isValidPathToFile, SingleFileIsValidPath) {
     ::testing::Test::RecordProperty("TEST_ID", "264d792f-34cb-4bc0-886c-ac9de05bb1f9");
-    EXPECT_TRUE(is_valid_path_to_file(string<FILE_PATH_LENGTH>("gimme-blubb")));
+    EXPECT_TRUE(is_valid_path_to_file(string<FILE_PATH_LENGTH>("gimme-blubb"))); // NOLINT: false positive out-of-bounds
     EXPECT_TRUE(is_valid_path_to_file(string<FILE_PATH_LENGTH>("a")));
     EXPECT_TRUE(is_valid_path_to_file(string<FILE_PATH_LENGTH>("fuu:blubb")));
     EXPECT_TRUE(is_valid_path_to_file(string<FILE_PATH_LENGTH>("/blarbi")));
@@ -234,69 +231,70 @@ TEST(path_and_flie_verifier_test_isValidPathToFile, EmptyFilePathIsInvalid) {
     EXPECT_FALSE(is_valid_path_to_file(string<FILE_PATH_LENGTH>("")));
 }
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST(path_and_flie_verifier_test_isValidPathToFile_isValidPathToDirectory_isValidPathEntry,
      WhenOneInvalidCharacterIsContainedPathIsInvalid) {
     ::testing::Test::RecordProperty("TEST_ID", "a764cff3-2607-47bb-952b-4ca75f326721");
-    std::string validPath1 = "/hello";
-    std::string validPath2 = "fuu/world";
+    const std::string valid_path1 = "/hello";
+    const std::string valid_path2 = "fuu/world";
 
     // begin at 1 since 0 is string termination
     constexpr int32_t MAX_ASCII_CODE = 255;
     for (int32_t i = 1; i <= MAX_ASCII_CODE; ++i) {
         // ignore valid characters
-        if (isValidFileCharacter(i)) {
+        if (is_valid_file_character(i)) {
             continue;
         }
 
         // ignore path separators since they are valid path characters
-        bool isPathSeparator = false;
+        bool is_path_separator = false;
         for (const auto separator : platform::IOX2_PATH_SEPARATORS) {
             if (static_cast<char>(i) == separator) {
-                isPathSeparator = true;
+                is_path_separator = true;
                 break;
             }
         }
 
-        if (isPathSeparator) {
+        if (is_path_separator) {
             continue;
         }
 
         // test
-        std::string invalidCharacterFront;
-        invalidCharacterFront.resize(1);
-        invalidCharacterFront[0] = static_cast<char>(i);
-        invalidCharacterFront += validPath1 + validPath2;
+        std::string invalid_character_front;
+        invalid_character_front.resize(1);
+        invalid_character_front[0] = static_cast<char>(i);
+        invalid_character_front += valid_path1 + valid_path2;
 
-        std::string invalidCharacterMiddle = validPath1;
-        invalidCharacterMiddle.resize(invalidCharacterMiddle.size() + 1);
-        invalidCharacterMiddle[invalidCharacterMiddle.size() - 1] = static_cast<char>(i);
+        std::string invalid_character_middle = valid_path1;
+        invalid_character_middle.resize(invalid_character_middle.size() + 1);
+        invalid_character_middle[invalid_character_middle.size() - 1] = static_cast<char>(i);
 
-        std::string invalidCharacterEnd = validPath1 + validPath2;
-        invalidCharacterEnd.resize(invalidCharacterEnd.size() + 1);
-        invalidCharacterEnd[invalidCharacterEnd.size() - 1] = static_cast<char>(i);
+        std::string invalid_character_end = valid_path1 + valid_path2;
+        invalid_character_end.resize(invalid_character_end.size() + 1);
+        invalid_character_end[invalid_character_end.size() - 1] = static_cast<char>(i);
 
-        string<FILE_PATH_LENGTH> invalidCharacterFrontTest(
-            iox2::legacy::TruncateToCapacity, invalidCharacterFront.c_str(), invalidCharacterFront.size());
-        string<FILE_PATH_LENGTH> invalidCharacterMiddleTest(
-            iox2::legacy::TruncateToCapacity, invalidCharacterMiddle.c_str(), invalidCharacterMiddle.size());
-        string<FILE_PATH_LENGTH> invalidCharacterEndTest(
-            iox2::legacy::TruncateToCapacity, invalidCharacterEnd.c_str(), invalidCharacterEnd.size());
+        const string<FILE_PATH_LENGTH> invalid_character_front_test(
+            iox2::legacy::TruncateToCapacity, invalid_character_front.c_str(), invalid_character_front.size());
+        const string<FILE_PATH_LENGTH> invalid_character_middle_test(
+            iox2::legacy::TruncateToCapacity, invalid_character_middle.c_str(), invalid_character_middle.size());
+        const string<FILE_PATH_LENGTH> invalid_character_end_test(
+            iox2::legacy::TruncateToCapacity, invalid_character_end.c_str(), invalid_character_end.size());
 
-        EXPECT_FALSE(is_valid_path_to_file(invalidCharacterFrontTest));
-        EXPECT_FALSE(is_valid_path_to_file(invalidCharacterMiddleTest));
-        EXPECT_FALSE(is_valid_path_to_file(invalidCharacterEndTest));
+        EXPECT_FALSE(is_valid_path_to_file(invalid_character_front_test));
+        EXPECT_FALSE(is_valid_path_to_file(invalid_character_middle_test));
+        EXPECT_FALSE(is_valid_path_to_file(invalid_character_end_test));
 
-        EXPECT_FALSE(is_valid_path_to_directory(invalidCharacterFrontTest));
-        EXPECT_FALSE(is_valid_path_to_directory(invalidCharacterMiddleTest));
-        EXPECT_FALSE(is_valid_path_to_directory(invalidCharacterEndTest));
+        EXPECT_FALSE(is_valid_path_to_directory(invalid_character_front_test));
+        EXPECT_FALSE(is_valid_path_to_directory(invalid_character_middle_test));
+        EXPECT_FALSE(is_valid_path_to_directory(invalid_character_end_test));
 
-        EXPECT_FALSE(is_valid_path_entry(invalidCharacterFrontTest, RelativePathComponents::Accept));
-        EXPECT_FALSE(is_valid_path_entry(invalidCharacterMiddleTest, RelativePathComponents::Accept));
-        EXPECT_FALSE(is_valid_path_entry(invalidCharacterEndTest, RelativePathComponents::Accept));
+        EXPECT_FALSE(is_valid_path_entry(invalid_character_front_test, RelativePathComponents::Accept));
+        EXPECT_FALSE(is_valid_path_entry(invalid_character_middle_test, RelativePathComponents::Accept));
+        EXPECT_FALSE(is_valid_path_entry(invalid_character_end_test, RelativePathComponents::Accept));
 
-        EXPECT_FALSE(is_valid_path_entry(invalidCharacterFrontTest, RelativePathComponents::Reject));
-        EXPECT_FALSE(is_valid_path_entry(invalidCharacterMiddleTest, RelativePathComponents::Reject));
-        EXPECT_FALSE(is_valid_path_entry(invalidCharacterEndTest, RelativePathComponents::Reject));
+        EXPECT_FALSE(is_valid_path_entry(invalid_character_front_test, RelativePathComponents::Reject));
+        EXPECT_FALSE(is_valid_path_entry(invalid_character_middle_test, RelativePathComponents::Reject));
+        EXPECT_FALSE(is_valid_path_entry(invalid_character_end_test, RelativePathComponents::Reject));
     }
 }
 
@@ -427,6 +425,7 @@ TEST(path_and_flie_verifier_test_doesEndWithPathSeparator,
 TEST(path_and_flie_verifier_test_doesEndWithPathSeparator, SingleCharacterStringOnlyWithPathSeparatorAsOneAtTheEnd) {
     ::testing::Test::RecordProperty("TEST_ID", "18bf45aa-9b65-4351-956a-8ddc98fa0296");
 
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
     for (const auto separator : platform::IOX2_PATH_SEPARATORS) {
         string<FILE_PATH_LENGTH> sut = " ";
         sut[0] = separator;
