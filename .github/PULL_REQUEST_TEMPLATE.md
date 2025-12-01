@@ -11,11 +11,10 @@
 * [ ] Consider switching the PR to a draft (`Convert to draft`)
     * as draft PR, the CI will be skipped for pushes
 * [ ] Relevant issues are linked in the [References](#references) section
-* [ ] Every source code file has a copyright header with `SPDX-License-Identifier: Apache-2.0 OR MIT`
 * [ ] Branch follows the naming format (`iox2-123-introduce-posix-ipc-example`)
 * [ ] Commits messages are according to this [guideline][commit-guidelines]
     * [ ] Commit messages have the issue ID (`[#123] Add posix ipc example`)
-    * [ ] Commit author matches [Eclipse Contributor Agreement][eca](and ECA is signed)
+    * Keep in mind to use the same email that was used to sign the [Eclipse Contributor Agreement][eca]
 * [ ] Tests follow the [best practice for testing][testing]
 * [ ] Changelog updated [in the unreleased section][changelog] including API breaking changes
 * [ ] Assign PR to reviewer
@@ -26,16 +25,12 @@
 [testing]: https://github.com/eclipse-iceoryx/iceoryx/blob/master/doc/website/concepts/best-practice-for-testing.md
 [changelog]: https://github.com/eclipse-iceoryx/iceoryx2/blob/main/doc/release-notes/iceoryx2-unreleased.md
 
-## Checklist for the PR Reviewer
+## PR Reviewer Reminders
 
-* [ ] Commits are properly organized and messages are according to the guideline
-* [ ] Unit tests have been written for new behavior
-* [ ] Public API is documented
-* [ ] PR title describes the changes
-
-## Post-review Checklist for the PR Author
-
-* [ ] All open points are addressed and tracked via issues
+* Commits are properly organized and messages are according to the guideline
+* Unit tests have been written for new behavior
+* Public API is documented
+* PR title describes the changes
 
 ## References
 
