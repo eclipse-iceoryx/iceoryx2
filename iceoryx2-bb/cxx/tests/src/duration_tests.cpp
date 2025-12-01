@@ -18,7 +18,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include <ctime>
 #include <iostream>
 #include <limits>
 #include <ostream>
@@ -157,61 +156,6 @@ TEST(Duration_test, ConstructDurationWithOneNanosecondResultsNotInZeroNanosecond
     auto sut = create_duration(SECONDS, NANOSECONDS);
 
     EXPECT_THAT(sut.to_nanoseconds(), Eq(EXPECTED_DURATION_IN_NANOSECONDS));
-}
-
-TEST(Duration_test, ConstructFromTimespecWithZeroValue) {
-    ::testing::Test::RecordProperty("TEST_ID", "0360ae1d-b7e7-4b07-b515-fdc82703d16f");
-    constexpr uint64_t SECONDS { 0U };
-    constexpr uint64_t NANOSECONDS { 0U };
-    constexpr Duration EXPECTED_DURATION = create_duration(SECONDS, NANOSECONDS);
-
-    timespec ts = {}; // NOLINT
-    ts.tv_sec = SECONDS;
-    ts.tv_nsec = NANOSECONDS;
-
-    Duration sut { ts };
-    EXPECT_THAT(sut, Eq(EXPECTED_DURATION));
-}
-
-TEST(Duration_test, ConstructFromTimespecWithValueLessThanOneSecond) {
-    ::testing::Test::RecordProperty("TEST_ID", "3cc49b4b-2bdf-491a-9015-9e8d769ba113");
-    constexpr uint64_t SECONDS { 0U };
-    constexpr uint64_t NANOSECONDS { 456U };
-    constexpr Duration EXPECTED_DURATION = create_duration(SECONDS, NANOSECONDS);
-
-    timespec value = {};
-    value.tv_sec = SECONDS;
-    value.tv_nsec = NANOSECONDS;
-
-    Duration sut { value };
-    EXPECT_THAT(sut, Eq(EXPECTED_DURATION));
-}
-
-TEST(Duration_test, ConstructFromTimespecWithValueMoreThanOneSecond) {
-    ::testing::Test::RecordProperty("TEST_ID", "d8a165e4-3117-4897-bd16-3c5a0333c1b5");
-    constexpr uint64_t SECONDS { 73U };
-    constexpr uint64_t NANOSECONDS { 456U };
-    constexpr Duration EXPECTED_DURATION = create_duration(SECONDS, NANOSECONDS);
-
-    timespec value = {};
-    value.tv_sec = SECONDS;
-    value.tv_nsec = NANOSECONDS;
-
-    Duration sut { value };
-    EXPECT_THAT(sut, Eq(EXPECTED_DURATION));
-}
-
-TEST(Duration_test, ConstructFromTimespecWithMaxValue) {
-    ::testing::Test::RecordProperty("TEST_ID", "d160d324-914f-4a66-ac96-17828442d4bd");
-    constexpr uint64_t SECONDS { std::numeric_limits<DurationAccessor::SecondsT>::max() };
-    constexpr uint64_t NANOSECONDS { NANOSECS_PER_SECOND - 1U };
-
-    timespec ts = {}; // NOLINT
-    ts.tv_sec = static_cast<time_t>(SECONDS);
-    ts.tv_nsec = static_cast<long>(NANOSECONDS);
-
-    Duration sut { ts };
-    EXPECT_THAT(sut, Eq(DurationAccessor::max()));
 }
 
 // END CONSTRUCTOR TESTS
@@ -798,69 +742,6 @@ TEST(Duration_test, ConvertNanoecondsFromMaxDurationResultsInSaturation) {
     ::testing::Test::RecordProperty("TEST_ID", "c1376842-8eb7-4878-a60d-19460033f48c");
     const auto sut = DurationAccessor::max();
     EXPECT_THAT(sut.to_nanoseconds(), Eq(std::numeric_limits<uint64_t>::max()));
-}
-
-TEST(Duration_test, ConvertTimespecFromZeroDuration) {
-    ::testing::Test::RecordProperty("TEST_ID", "6a049ba6-885e-48c0-a9e8-3de6fa9a79f2");
-    constexpr int64_t SECONDS { 0 };
-    constexpr int64_t NANOSECONDS { 0 };
-
-    auto duration = create_duration(SECONDS, NANOSECONDS);
-
-    const timespec sut = duration.timespec();
-
-    EXPECT_THAT(sut.tv_sec, Eq(SECONDS));
-    EXPECT_THAT(sut.tv_nsec, Eq(NANOSECONDS));
-}
-
-TEST(Duration_test, ConvertTimespecFromDurationLessThanOneSecond) {
-    ::testing::Test::RecordProperty("TEST_ID", "d20435da-4585-44d9-9be7-24eb22c3ca85");
-    constexpr int64_t SECONDS { 0 };
-    constexpr int64_t NANOSECONDS { 55 };
-
-    auto duration = create_duration(SECONDS, NANOSECONDS);
-
-    const timespec sut = duration.timespec();
-
-    EXPECT_THAT(sut.tv_sec, Eq(SECONDS));
-    EXPECT_THAT(sut.tv_nsec, Eq(NANOSECONDS));
-}
-
-TEST(Duration_test, ConvertTimespecFromDurationMoreThanOneSecond) {
-    ::testing::Test::RecordProperty("TEST_ID", "1b298bc3-3a0b-48a2-8d9c-1ee03dea925c");
-    constexpr int64_t SECONDS { 44 };
-    constexpr int64_t NANOSECONDS { 55 };
-
-    auto duration = create_duration(SECONDS, NANOSECONDS);
-
-    const timespec sut = duration.timespec();
-
-    EXPECT_THAT(sut.tv_sec, Eq(SECONDS));
-    EXPECT_THAT(sut.tv_nsec, Eq(NANOSECONDS));
-}
-
-TEST(Duration_test, ConvertTimespecFromDurationResultsNotYetInSaturation) {
-    ::testing::Test::RecordProperty("TEST_ID", "70f11b99-78ec-442a-aefe-4dd9152b7903");
-    constexpr int64_t SECONDS { std::numeric_limits<decltype(timespec::tv_sec)>::max() };
-    constexpr int64_t NANOSECONDS { NANOSECS_PER_SECOND - 1U };
-
-    auto duration = create_duration(SECONDS, NANOSECONDS);
-
-    const timespec sut = duration.timespec();
-
-    EXPECT_THAT(sut.tv_sec, Eq(SECONDS));
-    EXPECT_THAT(sut.tv_nsec, Eq(NANOSECONDS));
-}
-
-TEST(Duration_test, ConvertTimespecFromMaxDurationResultsInSaturation) {
-    ::testing::Test::RecordProperty("TEST_ID", "3bf4bb34-46f3-4889-84f5-9220b32fff73");
-    constexpr int64_t SECONDS { std::numeric_limits<decltype(timespec::tv_sec)>::max() };
-    constexpr int64_t NANOSECONDS { NANOSECS_PER_SECOND - 1U };
-
-    const timespec sut = DurationAccessor::max().timespec();
-
-    EXPECT_THAT(sut.tv_sec, Eq(SECONDS));
-    EXPECT_THAT(sut.tv_nsec, Eq(NANOSECONDS));
 }
 
 // END CONVERSION FUNCTION TESTS

@@ -20,7 +20,6 @@
 #include "iox2/legacy/type_traits.hpp"
 
 #include <cmath>
-#include <ctime>
 
 namespace iox2 {
 namespace bb {
@@ -143,15 +142,6 @@ class Duration {
     static constexpr auto zero() noexcept -> Duration;
     // END CREATION FROM STATIC FUNCTIONS
 
-    // BEGIN CONSTRUCTORS AND ASSIGNMENT
-
-    /// @brief Construct a Duration object from timespec
-    /// @param[in] value as timespec
-    // AXIVION Next Line AutosarC++19_03-A8.4.7 : Argument is larger than two words
-    constexpr explicit Duration(const struct timespec& value) noexcept;
-
-    // END CONSTRUCTORS AND ASSIGNMENT
-
     // BEGIN COMPARISON
     // AXIVION DISABLE STYLE AutosarC++19_03-A8.4.7 : Each argument is larger than two words
     friend constexpr auto operator==(const Duration& lhs, const Duration& rhs) noexcept -> bool;
@@ -262,9 +252,6 @@ class Duration {
     /// @brief returns the subsecond part of the duration in milliseconds
     /// @note The remaining microseconds are truncated, similar to the casting behavior of a float to an int.
     constexpr auto subsec_millis() const noexcept -> uint32_t;
-
-    /// @brief converts duration in a timespec c struct
-    constexpr auto timespec() const noexcept -> struct timespec;
 
     // END CONVERSION
 
@@ -507,11 +494,6 @@ constexpr auto Duration::from_days(const T value) noexcept -> Duration {
     return Duration { static_cast<Duration::SecondsT>(clamped_value * SECS_PER_DAY), 0U };
 }
 
-// AXIVION Next Construct AutosarC++19_03-A8.4.7 : Argument is larger than two words
-constexpr Duration::Duration(const struct timespec& value) noexcept
-    : Duration(static_cast<SecondsT>(value.tv_sec), static_cast<NanosecondsT>(value.tv_nsec)) {
-}
-
 constexpr auto Duration::to_nanoseconds() const noexcept -> uint64_t {
     constexpr SecondsT MAX_SECONDS_BEFORE_OVERFLOW { std::numeric_limits<uint64_t>::max()
                                                      / static_cast<uint64_t>(NANOSECS_PER_SEC) };
@@ -603,23 +585,8 @@ constexpr auto Duration::operator+(const Duration& rhs) const noexcept -> Durati
     return sum;
 }
 
-constexpr auto Duration::timespec() const noexcept -> struct timespec {
-    using SecType = decltype(std::declval<struct timespec>().tv_sec);
-    using NsecType = decltype(std::declval<struct timespec>().tv_nsec);
-
-    static_assert(sizeof(uint64_t) >= sizeof(SecType), "casting might alter result");
-    if (this->m_seconds > static_cast<uint64_t>(std::numeric_limits<SecType>::max())) {
-        return { std::numeric_limits<SecType>::max(), NANOSECS_PER_SEC - 1U };
-    }
-
-    const auto tv_sec = static_cast<SecType>(this->m_seconds);
-    const auto tv_nsec = static_cast<NsecType>(this->m_nanoseconds);
-    return { tv_sec, tv_nsec };
-}
-
 // AXIVION Next Construct AutosarC++19_03-A8.4.7 : Argument is larger than two words
-constexpr auto
-Duration::operator+=(const Duration& rhs) noexcept -> Duration& {
+constexpr auto Duration::operator+=(const Duration& rhs) noexcept -> Duration& {
     *this = *this + rhs;
     return *this;
 }
