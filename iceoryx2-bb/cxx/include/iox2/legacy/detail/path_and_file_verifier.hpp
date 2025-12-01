@@ -24,9 +24,11 @@ namespace legacy {
 namespace platform {
 #if defined(_WIN32)
 constexpr uint64_t IOX2_NUMBER_OF_PATH_SEPARATORS = 2U;
+// NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays, hicpp-explicit-conversions, modernize-avoid-c-arrays)
 constexpr const char IOX2_PATH_SEPARATORS[IOX2_NUMBER_OF_PATH_SEPARATORS] = { '/', '\\' };
 #else
 constexpr uint64_t IOX2_NUMBER_OF_PATH_SEPARATORS = 1U;
+// NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays, hicpp-explicit-conversions, modernize-avoid-c-arrays)
 constexpr const char IOX2_PATH_SEPARATORS[IOX2_NUMBER_OF_PATH_SEPARATORS] = { '/' };
 #endif
 } // namespace platform
@@ -68,7 +70,8 @@ enum class RelativePathComponents : uint8_t {
 /// @param[in] relativePathComponents are relative path components are allowed for this path entry
 /// @return true if it is valid, otherwise false
 template <uint64_t StringCapacity>
-bool isValidPathEntry(const string<StringCapacity>& name, const RelativePathComponents relativePathComponents) noexcept;
+auto is_valid_path_entry(const string<StringCapacity>& name, RelativePathComponents relative_path_components) noexcept
+    -> bool;
 
 /// @brief checks if the given string is a valid filename. It must fulfill the
 ///        requirements of a valid path entry (see, isValidPathEntry) and is not allowed
@@ -76,23 +79,23 @@ bool isValidPathEntry(const string<StringCapacity>& name, const RelativePathComp
 /// @param[in] name the string to verify
 /// @return true if the string is a filename, otherwise false
 template <uint64_t StringCapacity>
-bool isValidFileName(const string<StringCapacity>& name) noexcept;
+auto is_valid_file_name(const string<StringCapacity>& name) noexcept -> bool;
 
 /// @brief verifies if the given string is a valid path to a file
 /// @param[in] name the string to verify
 /// @return true if the string is a path to a file, otherwise false
 template <uint64_t StringCapacity>
-bool isValidPathToFile(const string<StringCapacity>& name) noexcept;
+auto is_valid_path_to_file(const string<StringCapacity>& name) noexcept -> bool;
 
 /// @brief returns true if the provided name is a valid path, otherwise false
 /// @param[in] name the string to verify
 template <uint64_t StringCapacity>
-bool isValidPathToDirectory(const string<StringCapacity>& name) noexcept;
+auto is_valid_path_to_directory(const string<StringCapacity>& name) noexcept -> bool;
 
 /// @brief returns true if the provided name ends with a path separator, otherwise false
 /// @param[in] name the string which may contain a path separator at the end
 template <uint64_t StringCapacity>
-bool doesEndWithPathSeparator(const string<StringCapacity>& name) noexcept;
+auto does_end_with_path_separator(const string<StringCapacity>& name) noexcept -> bool;
 
 } // namespace detail
 } // namespace legacy

@@ -12,11 +12,13 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/legacy/path.hpp"
+#include "iox2/legacy/attributes.hpp"
 
 namespace iox2 {
 namespace legacy {
 namespace detail {
-bool path_does_contain_invalid_content(const string<platform::IOX2_MAX_PATH_LENGTH>&) noexcept {
+auto path_does_contain_invalid_content(const string<platform::IOX2_MAX_PATH_LENGTH>& value IOX2_MAYBE_UNUSED) noexcept
+    -> bool {
     return false;
 }
 } // namespace detail

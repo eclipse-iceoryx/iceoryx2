@@ -70,6 +70,9 @@ template <typename Child,
           DoesContainInvalidContent<Capacity> DoesContainInvalidContentCall,
           DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
 class SemanticString {
+  private:
+    string<Capacity> m_data;
+
   public:
     /// @brief Creates a new SemanticString from the provided string literal.
     ///         If the value contains invalid characters or invalid content
@@ -79,8 +82,8 @@ class SemanticString {
     template <uint64_t N>
     // avoid-c-arrays: we would like to assign string literals, safe since it is known
     //                 at compile time.
-    // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays, hicpp-explicit-conversions)
-    static expected<Child, SemanticStringError> create(const char (&value)[N]) noexcept;
+    // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays, hicpp-explicit-conversions, modernize-avoid-c-arrays)
+    static auto create(const char (&value)[N]) noexcept -> expected<Child, SemanticStringError>;
 
     /// @brief Creates a new SemanticString from the provided string.
     ///         If the value contains invalid characters or invalid content
@@ -88,21 +91,21 @@ class SemanticString {
     /// @param[in] value the value of the SemanticString
     /// @return expected either containing the new SemanticString or an error
     template <uint64_t N>
-    static expected<Child, SemanticStringError> create(const string<N>& value) noexcept;
+    static auto create(const string<N>& value) noexcept -> expected<Child, SemanticStringError>;
 
     /// @brief Returns the number of characters.
     /// @return number of characters
-    constexpr uint64_t size() const noexcept;
+    constexpr auto size() const noexcept -> uint64_t;
 
     /// @brief Returns the capacity of the string.
     /// @return the maximum amount of characters which can be stored.
-    static constexpr uint64_t capacity() noexcept;
+    static constexpr auto capacity() noexcept -> uint64_t;
 
     /// @brief Returns a const reference to the underlying string. It is const
     ///         and shall not be modified to guarantee the contract that a
     ///         SemanticString contains always a valid value.
     /// @return string reference containing the actual value.
-    constexpr const string<Capacity>& as_string() const noexcept;
+    constexpr auto as_string() const noexcept -> const string<Capacity>&;
 
     /// @brief Appends another string to the SemanticString. If the value contains
     ///        invalid characters or the result would end up in invalid content
@@ -110,7 +113,7 @@ class SemanticString {
     /// @param[in] value the value which should be added
     /// @return on failure the error inside the expected describes the failure
     template <typename T>
-    expected<void, SemanticStringError> append(const T& value) noexcept;
+    auto append(const T& value) noexcept -> expected<void, SemanticStringError>;
 
     /// @brief Inserts another string into the SemanticString. If the value contains
     ///        invalid characters or the result would end up in invalid content
@@ -120,73 +123,73 @@ class SemanticString {
     /// @param[in] count how many characters of str shall be inserted
     /// @return on failure the error inside the expected describes the failure
     template <typename T>
-    expected<void, SemanticStringError> insert(const uint64_t pos, const T& str, const uint64_t count) noexcept;
+    auto insert(uint64_t pos, const T& str, uint64_t count) noexcept -> expected<void, SemanticStringError>;
 
     /// @brief checks if another SemanticString is equal to this string
     /// @param [in] rhs the other SemanticString
     /// @return true if the contents are equal, otherwise false
-    bool operator==(const SemanticString& rhs) const noexcept;
+    auto operator==(const SemanticString& rhs) const noexcept -> bool;
 
     /// @brief checks if another string or char array is equal to this string
     /// @param [in] rhs the other string
     /// @return true if the contents are equal, otherwise false
     template <typename T>
-    IsStringOrCharArray<T, bool> operator==(const T& rhs) const noexcept;
+    auto operator==(const T& rhs) const noexcept -> IsStringOrCharArray<T, bool>;
 
     /// @brief checks if another SemanticString is not equal to this string
     /// @param [in] rhs the other SemanticString
     /// @return true if the contents are not equal, otherwise false
-    bool operator!=(const SemanticString& rhs) const noexcept;
+    auto operator!=(const SemanticString& rhs) const noexcept -> bool;
 
     /// @brief checks if another string or char array is not equal to this string
     /// @param [in] rhs the other string
     /// @return true if the contents are not equal, otherwise false
     template <typename T>
-    IsStringOrCharArray<T, bool> operator!=(const T& rhs) const noexcept;
+    auto operator!=(const T& rhs) const noexcept -> IsStringOrCharArray<T, bool>;
 
     /// @brief checks if another SemanticString is less than or equal this string
     /// @param [in] rhs the other SemanticString
     /// @return true if the contents are less than or equal rhs, otherwise false
-    bool operator<=(const SemanticString& rhs) const noexcept;
+    auto operator<=(const SemanticString& rhs) const noexcept -> bool;
 
     /// @brief checks if another string or char array is less than or equal this string
     /// @param [in] rhs the other string
     /// @return true if the contents are less than or equal rhs, otherwise false
     template <typename T>
-    IsStringOrCharArray<T, bool> operator<=(const T& rhs) const noexcept;
+    auto operator<=(const T& rhs) const noexcept -> IsStringOrCharArray<T, bool>;
 
     /// @brief checks if another SemanticString is less than this string
     /// @param [in] rhs the other SemanticString
     /// @return true if the contents are less than rhs, otherwise false
-    bool operator<(const SemanticString& rhs) const noexcept;
+    auto operator<(const SemanticString& rhs) const noexcept -> bool;
 
     /// @brief checks if another string or char array is less than this string
     /// @param [in] rhs the other string
     /// @return true if the contents are less than rhs, otherwise false
     template <typename T>
-    IsStringOrCharArray<T, bool> operator<(const T& rhs) const noexcept;
+    auto operator<(const T& rhs) const noexcept -> IsStringOrCharArray<T, bool>;
 
     /// @brief checks if another SemanticString is greater than or equal this string
     /// @param [in] rhs the other SemanticString
     /// @return true if the contents are greater than or equal rhs, otherwise false
-    bool operator>=(const SemanticString& rhs) const noexcept;
+    auto operator>=(const SemanticString& rhs) const noexcept -> bool;
 
     /// @brief checks if another string or char array is greater than or equal this string
     /// @param [in] rhs the other string
     /// @return true if the contents are greater than or equal rhs, otherwise false
     template <typename T>
-    IsStringOrCharArray<T, bool> operator>=(const T& rhs) const noexcept;
+    auto operator>=(const T& rhs) const noexcept -> IsStringOrCharArray<T, bool>;
 
     /// @brief checks if another SemanticString is greater than this string
     /// @param [in] rhs the other SemanticString
     /// @return true if the contents are greater than rhs, otherwise false
-    bool operator>(const SemanticString& rhs) const noexcept;
+    auto operator>(const SemanticString& rhs) const noexcept -> bool;
 
     /// @brief checks if another string or char array is greater than this string
     /// @param [in] rhs the other string
     /// @return true if the contents are greater than rhs, otherwise false
     template <typename T>
-    IsStringOrCharArray<T, bool> operator>(const T& rhs) const noexcept;
+    auto operator>(const T& rhs) const noexcept -> IsStringOrCharArray<T, bool>;
 
   protected:
     template <uint64_t N>
@@ -194,10 +197,7 @@ class SemanticString {
 
   private:
     template <uint64_t N>
-    static expected<Child, SemanticStringError> create_impl(const char* value) noexcept;
-
-  private:
-    string<Capacity> m_data;
+    static auto create_impl(const char* value) noexcept -> expected<Child, SemanticStringError>;
 };
 } // namespace legacy
 } // namespace iox2

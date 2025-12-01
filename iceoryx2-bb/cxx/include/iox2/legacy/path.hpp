@@ -20,7 +20,7 @@
 namespace iox2 {
 namespace legacy {
 namespace detail {
-bool path_does_contain_invalid_content(const string<platform::IOX2_MAX_PATH_LENGTH>& value) noexcept;
+auto path_does_contain_invalid_content(const string<platform::IOX2_MAX_PATH_LENGTH>& value) noexcept -> bool;
 } // namespace detail
 
 /// @brief Represents a path to a file or a directory.

@@ -27,8 +27,9 @@ constexpr uint64_t IOX2_MAX_FILENAME_LENGTH = 255U;
 } // namespace platform
 
 namespace detail {
-bool file_name_does_contain_invalid_characters(const string<platform::IOX2_MAX_FILENAME_LENGTH>& value) noexcept;
-bool file_name_does_contain_invalid_content(const string<platform::IOX2_MAX_FILENAME_LENGTH>& value) noexcept;
+auto file_name_does_contain_invalid_characters(const string<platform::IOX2_MAX_FILENAME_LENGTH>& value) noexcept
+    -> bool;
+auto file_name_does_contain_invalid_content(const string<platform::IOX2_MAX_FILENAME_LENGTH>& value) noexcept -> bool;
 } // namespace detail
 
 /// @brief Represents a single file name. It is not allowed to contain any path elements

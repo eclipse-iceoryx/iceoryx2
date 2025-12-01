@@ -27,8 +27,8 @@ constexpr uint64_t IOX2_MAX_PATH_LENGTH = 1023U;
 } // namespace platform
 
 namespace detail {
-bool file_path_does_contain_invalid_characters(const string<platform::IOX2_MAX_PATH_LENGTH>& value) noexcept;
-bool file_path_does_contain_invalid_content(const string<platform::IOX2_MAX_PATH_LENGTH>& value) noexcept;
+auto file_path_does_contain_invalid_characters(const string<platform::IOX2_MAX_PATH_LENGTH>& value) noexcept -> bool;
+auto file_path_does_contain_invalid_content(const string<platform::IOX2_MAX_PATH_LENGTH>& value) noexcept -> bool;
 } // namespace detail
 
 /// @brief Represents a path to a file. It is not allowed to end with a path separator
