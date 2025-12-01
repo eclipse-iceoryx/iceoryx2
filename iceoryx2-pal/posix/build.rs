@@ -11,7 +11,9 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #[cfg(feature = "libc_platform")]
-fn main() {}
+fn main() {
+    println!("cargo:rustc-check-cfg=cfg(platform_override)");
+}
 
 #[cfg(not(feature = "libc_platform"))]
 fn main() {
@@ -27,6 +29,29 @@ fn main() {
 
     // needed for bazel but can be empty for cargo builds
     println!("cargo:rustc-env=BAZEL_BINDGEN_PATH_CORRECTION=");
+
+    // support for overriding default posix abastraction for a target
+    println!("cargo:rustc-check-cfg=cfg(platform_override)");
+    if let Ok(custom_path) = std::env::var("IOX2_CUSTOM_PAL_POSIX_PATH") {
+        let os_rs_path = std::path::Path::new(&custom_path).join("os.rs");
+        if !os_rs_path.exists() {
+            panic!(
+                "Custom POSIX abstraction path does not contain os.rs: {}",
+                os_rs_path.display()
+            );
+        }
+
+        println!(
+            "cargo:warning=Building with custom POSIX abstraction from: {}",
+            custom_path
+        );
+
+        // expose platform_override as cfg option
+        println!("cargo:rustc-cfg=platform_override");
+        println!("cargo:rustc-env=IOX2_CUSTOM_PAL_POSIX_PATH={}", custom_path);
+        println!("cargo:rerun-if-env-changed=IOX2_CUSTOM_PAL_POSIX_PATH");
+        println!("cargo:rerun-if-changed={}", custom_path);
+    }
 
     // #[cfg(any(...))] does not work when cross-compiling
     // when cross compiling, 'target_os' is set to the environment the build script
