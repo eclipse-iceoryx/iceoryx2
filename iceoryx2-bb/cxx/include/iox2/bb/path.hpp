@@ -19,7 +19,7 @@
 #include "iox2/legacy/attributes.hpp"
 
 namespace iox2 {
-namespace legacy {
+namespace bb {
 namespace detail {
 inline auto path_does_contain_invalid_content(
     const legacy::string<platform::IOX2_MAX_PATH_LENGTH>& value IOX2_MAYBE_UNUSED) noexcept -> bool {
@@ -38,7 +38,7 @@ class Path : public SemanticString<Path,
                                   detail::file_path_does_contain_invalid_characters>;
     using Parent::Parent;
 };
-} // namespace legacy
+} // namespace bb
 } // namespace iox2
 
 #endif // IOX2_BB_PATH_HPP

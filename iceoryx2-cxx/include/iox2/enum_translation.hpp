@@ -1962,7 +1962,7 @@ constexpr auto from<int, iox2::ConfigCreationError>(const int value) noexcept ->
     case iox2_config_creation_error_e_UNABLE_TO_OPEN_CONFIG_FILE:
         return iox2::ConfigCreationError::UnableToOpenConfigFile;
     case iox2_config_creation_error_e_INVALID_FILE_PATH:
-        // unreachable since this error case is excluded by using the strong type iox2::legacy::FilePath
+        // unreachable since this error case is excluded by using the strong type iox2::bb::FilePath
         IOX2_UNREACHABLE();
     }
 

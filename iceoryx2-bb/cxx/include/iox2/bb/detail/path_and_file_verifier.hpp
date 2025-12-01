@@ -20,7 +20,7 @@
 #include <cstdint>
 
 namespace iox2 {
-namespace legacy {
+namespace bb {
 namespace platform {
 #if defined(_WIN32)
 constexpr uint64_t IOX2_NUMBER_OF_PATH_SEPARATORS = 2U;
@@ -251,7 +251,7 @@ inline auto does_end_with_path_separator(const legacy::string<StringCapacity>& n
 }
 
 } // namespace detail
-} // namespace legacy
+} // namespace bb
 } // namespace iox2
 
 #endif // IOX2_BB_DETAIL_PATH_AND_FILE_VERIFIER_HPP

@@ -86,7 +86,7 @@ auto list_callback(iox2_node_state_e node_state,
         }
 
         return iox2::legacy::optional<NodeDetails>(
-            NodeDetails { iox2::legacy::FileName::create(iox2::legacy::string<iox2::legacy::FileName::capacity()>(
+            NodeDetails { iox2::bb::FileName::create(iox2::legacy::string<iox2::bb::FileName::capacity()>(
                                                              iox2::legacy::TruncateToCapacity, executable))
                               .expect("The executable file name is always valid."),
                           NodeNameView { node_name }.to_owned(),

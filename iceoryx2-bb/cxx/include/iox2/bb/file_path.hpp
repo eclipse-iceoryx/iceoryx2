@@ -18,7 +18,7 @@
 #include "iox2/bb/semantic_string.hpp"
 
 namespace iox2 {
-namespace legacy {
+namespace bb {
 namespace platform {
 #if defined(_WIN32)
 constexpr uint64_t IOX2_MAX_PATH_LENGTH = 255U;
@@ -88,9 +88,7 @@ inline auto file_path_does_contain_invalid_content(const legacy::string<platform
     return !is_valid_path_to_file(value);
 }
 } // namespace detail
-
-
-} // namespace legacy
+} // namespace bb
 } // namespace iox2
 
 #endif // IOX2_BB_FILE_PATH_HPP

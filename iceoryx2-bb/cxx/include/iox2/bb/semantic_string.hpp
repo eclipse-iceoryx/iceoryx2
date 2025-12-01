@@ -21,7 +21,7 @@
 #include <cstdint>
 
 namespace iox2 {
-namespace legacy {
+namespace bb {
 /// @brief Defines errors which can occur when modifying or creating a
 ///         SemanticString
 enum class SemanticStringError : uint8_t {
@@ -455,7 +455,7 @@ inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesC
     return as_string() > rhs;
 }
 
-} // namespace legacy
+} // namespace bb
 } // namespace iox2
 
 #endif // IOX2_BB_SEMANTIC_STRING_HPP

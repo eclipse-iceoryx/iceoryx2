@@ -81,7 +81,7 @@ Config::Config(iox2_config_h handle)
     : m_handle { handle } {
 }
 
-auto Config::from_file(const iox2::legacy::FilePath& file) -> iox2::legacy::expected<Config, ConfigCreationError> {
+auto Config::from_file(const iox2::bb::FilePath& file) -> iox2::legacy::expected<Config, ConfigCreationError> {
     iox2_config_h handle = nullptr;
     auto result = iox2_config_from_file(nullptr, &handle, file.as_string().c_str());
     if (result == IOX2_OK) {
@@ -122,7 +122,7 @@ auto Global::prefix() && -> const char* {
     return iox2_config_global_prefix(m_config);
 }
 
-void Global::set_prefix(const iox2::legacy::FileName& value) && {
+void Global::set_prefix(const iox2::bb::FileName& value) && {
     iox2_config_global_set_prefix(m_config, value.as_string().c_str());
 }
 
@@ -130,7 +130,7 @@ auto Global::root_path() && -> const char* {
     return iox2_config_global_root_path(m_config);
 }
 
-void Global::set_root_path(const iox2::legacy::Path& value) && {
+void Global::set_root_path(const iox2::bb::Path& value) && {
     iox2_config_global_set_root_path(m_config, value.as_string().c_str());
 }
 
@@ -387,7 +387,7 @@ auto Service::directory() && -> const char* {
     return iox2_config_global_service_directory(m_config);
 }
 
-void Service::set_directory(const iox2::legacy::Path& value) && {
+void Service::set_directory(const iox2::bb::Path& value) && {
     iox2_config_global_service_set_directory(m_config, value.as_string().c_str());
 }
 
@@ -395,7 +395,7 @@ auto Service::data_segment_suffix() && -> const char* {
     return iox2_config_global_service_data_segment_suffix(m_config);
 }
 
-void Service::set_data_segment_suffix(const iox2::legacy::FileName& value) && {
+void Service::set_data_segment_suffix(const iox2::bb::FileName& value) && {
     iox2_config_global_service_set_data_segment_suffix(m_config, value.as_string().c_str());
 }
 
@@ -403,7 +403,7 @@ auto Service::static_config_storage_suffix() && -> const char* {
     return iox2_config_global_service_static_config_storage_suffix(m_config);
 }
 
-void Service::set_static_config_storage_suffix(const iox2::legacy::FileName& value) && {
+void Service::set_static_config_storage_suffix(const iox2::bb::FileName& value) && {
     iox2_config_global_service_set_static_config_storage_suffix(m_config, value.as_string().c_str());
 }
 
@@ -411,7 +411,7 @@ auto Service::dynamic_config_storage_suffix() && -> const char* {
     return iox2_config_global_service_dynamic_config_storage_suffix(m_config);
 }
 
-void Service::set_dynamic_config_storage_suffix(const iox2::legacy::FileName& value) && {
+void Service::set_dynamic_config_storage_suffix(const iox2::bb::FileName& value) && {
     iox2_config_global_service_set_dynamic_config_storage_suffix(m_config, value.as_string().c_str());
 }
 
@@ -431,7 +431,7 @@ auto Service::connection_suffix() && -> const char* {
     return iox2_config_global_service_connection_suffix(m_config);
 }
 
-void Service::set_connection_suffix(const iox2::legacy::FileName& value) && {
+void Service::set_connection_suffix(const iox2::bb::FileName& value) && {
     iox2_config_global_service_set_connection_suffix(m_config, value.as_string().c_str());
 }
 
@@ -439,7 +439,7 @@ auto Service::event_connection_suffix() && -> const char* {
     return iox2_config_global_service_event_connection_suffix(m_config);
 }
 
-void Service::set_event_connection_suffix(const iox2::legacy::FileName& value) && {
+void Service::set_event_connection_suffix(const iox2::bb::FileName& value) && {
     iox2_config_global_service_set_event_connection_suffix(m_config, value.as_string().c_str());
 }
 /////////////////////////
@@ -457,7 +457,7 @@ auto Node::directory() && -> const char* {
     return iox2_config_global_node_directory(m_config);
 }
 
-void Node::set_directory(const iox2::legacy::Path& value) && {
+void Node::set_directory(const iox2::bb::Path& value) && {
     iox2_config_global_node_set_directory(m_config, value.as_string().c_str());
 }
 
@@ -465,7 +465,7 @@ auto Node::monitor_suffix() && -> const char* {
     return iox2_config_global_node_monitor_suffix(m_config);
 }
 
-void Node::set_monitor_suffix(const iox2::legacy::FileName& value) && {
+void Node::set_monitor_suffix(const iox2::bb::FileName& value) && {
     iox2_config_global_node_set_monitor_suffix(m_config, value.as_string().c_str());
 }
 
@@ -473,7 +473,7 @@ auto Node::static_config_suffix() && -> const char* {
     return iox2_config_global_node_static_config_suffix(m_config);
 }
 
-void Node::set_static_config_suffix(const iox2::legacy::FileName& value) && {
+void Node::set_static_config_suffix(const iox2::bb::FileName& value) && {
     iox2_config_global_node_set_static_config_suffix(m_config, value.as_string().c_str());
 }
 
@@ -481,7 +481,7 @@ auto Node::service_tag_suffix() && -> const char* {
     return iox2_config_global_node_service_tag_suffix(m_config);
 }
 
-void Node::set_service_tag_suffix(const iox2::legacy::FileName& value) && {
+void Node::set_service_tag_suffix(const iox2::bb::FileName& value) && {
     iox2_config_global_node_set_service_tag_suffix(m_config, value.as_string().c_str());
 }
 

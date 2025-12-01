@@ -11,11 +11,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/legacy/detail/hoofs_error_reporting.hpp"
 #include "iox2/bb/file_name.hpp"
 #include "iox2/bb/file_path.hpp"
 #include "iox2/bb/path.hpp"
 #include "iox2/bb/semantic_string.hpp"
+#include "iox2/legacy/detail/hoofs_error_reporting.hpp"
 #include "iox2/legacy/testing/fatal_failure.hpp"
 
 #include <gmock/gmock.h>
@@ -26,6 +26,7 @@
 
 namespace {
 using namespace ::testing;
+using namespace iox2::bb;
 using namespace iox2::legacy;
 using namespace iox2::legacy::testing;
 
