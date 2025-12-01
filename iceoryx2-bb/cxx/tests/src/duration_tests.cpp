@@ -43,11 +43,11 @@ struct DurationAccessor : public Duration {
     using Duration::create_duration;
     using Duration::max;
 
-    using Duration::NanosecondsType;
-    using Duration::SecondsType;
+    using Duration::NanosecondsT;
+    using Duration::SecondsT;
 };
 
-constexpr auto create_duration(DurationAccessor::SecondsType seconds, DurationAccessor::NanosecondsType nanoseconds)
+constexpr auto create_duration(DurationAccessor::SecondsT seconds, DurationAccessor::NanosecondsT nanoseconds)
     -> Duration {
     return DurationAccessor::create_duration(seconds, nanoseconds);
 }
@@ -127,7 +127,7 @@ TEST(Duration_test, ConstructDurationWithNanosecondsMoreThanOneSecond) {
 TEST(Duration_test, ConstructDurationWithNanosecondsMaxValue) {
     ::testing::Test::RecordProperty("TEST_ID", "fe8152ca-cd14-4d99-aa68-0f56ab3007de");
     constexpr uint64_t SECONDS { 37U };
-    constexpr uint64_t MAX_NANOSECONDS_FOR_CTOR { std::numeric_limits<DurationAccessor::NanosecondsType>::max() };
+    constexpr uint64_t MAX_NANOSECONDS_FOR_CTOR { std::numeric_limits<DurationAccessor::NanosecondsT>::max() };
     constexpr uint64_t EXPECTED_SECONDS = SECONDS + (MAX_NANOSECONDS_FOR_CTOR / NANOSECS_PER_SECOND);
     constexpr uint64_t REMAINING_NANOSECONDS = MAX_NANOSECONDS_FOR_CTOR % NANOSECS_PER_SECOND;
     constexpr uint64_t EXPECTED_DURATION_IN_NANOSECONDS { ((EXPECTED_SECONDS) *NANOSECS_PER_SECOND)
@@ -140,8 +140,8 @@ TEST(Duration_test, ConstructDurationWithNanosecondsMaxValue) {
 
 TEST(Duration_test, ConstructDurationWithSecondsAndNanosecondsMaxValues) {
     ::testing::Test::RecordProperty("TEST_ID", "bf672288-064f-4033-9b6f-0345e38a066f");
-    constexpr uint64_t MAX_SECONDS_FOR_CTOR { std::numeric_limits<DurationAccessor::SecondsType>::max() };
-    constexpr uint64_t MAX_NANOSECONDS_FOR_CTOR { std::numeric_limits<DurationAccessor::NanosecondsType>::max() };
+    constexpr uint64_t MAX_SECONDS_FOR_CTOR { std::numeric_limits<DurationAccessor::SecondsT>::max() };
+    constexpr uint64_t MAX_NANOSECONDS_FOR_CTOR { std::numeric_limits<DurationAccessor::NanosecondsT>::max() };
 
     auto sut = create_duration(MAX_SECONDS_FOR_CTOR, MAX_NANOSECONDS_FOR_CTOR);
 
@@ -203,7 +203,7 @@ TEST(Duration_test, ConstructFromTimespecWithValueMoreThanOneSecond) {
 
 TEST(Duration_test, ConstructFromTimespecWithMaxValue) {
     ::testing::Test::RecordProperty("TEST_ID", "d160d324-914f-4a66-ac96-17828442d4bd");
-    constexpr uint64_t SECONDS { std::numeric_limits<DurationAccessor::SecondsType>::max() };
+    constexpr uint64_t SECONDS { std::numeric_limits<DurationAccessor::SecondsT>::max() };
     constexpr uint64_t NANOSECONDS { NANOSECS_PER_SECOND - 1U };
 
     timespec ts = {}; // NOLINT
@@ -301,7 +301,7 @@ TEST(Duration_test, CreateDurationFromDaysFunctionWithMultipleDays) {
 TEST(Duration_test, CreateDurationFromDaysFunctionWithDaysResultsNotYetInSaturation) {
     ::testing::Test::RecordProperty("TEST_ID", "3f34a190-d9bf-4206-b635-9d170df87053");
     constexpr uint64_t SECONDS_PER_DAY { HOURS_PER_DAY * SECONDS_PER_HOUR };
-    constexpr uint64_t MAX_DAYS_BEFORE_OVERFLOW { std::numeric_limits<DurationAccessor::SecondsType>::max()
+    constexpr uint64_t MAX_DAYS_BEFORE_OVERFLOW { std::numeric_limits<DurationAccessor::SecondsT>::max()
                                                   / SECONDS_PER_DAY };
     constexpr Duration EXPECTED_DURATION = create_duration(MAX_DAYS_BEFORE_OVERFLOW * SECONDS_PER_DAY, 0U);
     static_assert(EXPECTED_DURATION < DurationAccessor::max(),
@@ -350,7 +350,7 @@ TEST(Duration_test, CreateDurationFromHoursFunctionWithMultipleHours) {
 
 TEST(Duration_test, CreateDurationFromHoursFunctionWithHoursResultsNotYetInSaturation) {
     ::testing::Test::RecordProperty("TEST_ID", "90d340f5-09e2-4b8b-a916-f2da6a28377f");
-    constexpr uint64_t MAX_HOURS_BEFORE_OVERFLOW { std::numeric_limits<DurationAccessor::SecondsType>::max()
+    constexpr uint64_t MAX_HOURS_BEFORE_OVERFLOW { std::numeric_limits<DurationAccessor::SecondsT>::max()
                                                    / SECONDS_PER_HOUR };
     constexpr Duration EXPECTED_DURATION = create_duration(MAX_HOURS_BEFORE_OVERFLOW * SECONDS_PER_HOUR, 0U);
     static_assert(EXPECTED_DURATION < DurationAccessor::max(),
@@ -399,7 +399,7 @@ TEST(Duration_test, CreateDurationFromMinutesFunctionWithMultipleMinutes) {
 
 TEST(Duration_test, CreateDurationFromMinutesFunctionWithMinutesResultsNotYetInSaturation) {
     ::testing::Test::RecordProperty("TEST_ID", "21825950-16ff-4ade-b8f6-41fa8d00596a");
-    constexpr uint64_t MAX_MINUTES_BEFORE_OVERFLOW { std::numeric_limits<DurationAccessor::SecondsType>::max()
+    constexpr uint64_t MAX_MINUTES_BEFORE_OVERFLOW { std::numeric_limits<DurationAccessor::SecondsT>::max()
                                                      / SECONDS_PER_MINUTE };
     constexpr Duration EXPECTED_DURATION = create_duration(MAX_MINUTES_BEFORE_OVERFLOW * SECONDS_PER_MINUTE, 0U);
     static_assert(EXPECTED_DURATION < DurationAccessor::max(),
@@ -618,7 +618,7 @@ TEST(Duration_test, ConvertDaysFromDurationMoreThanOneDay) {
 TEST(Duration_test, ConvertDaysFromMaxDuration) {
     ::testing::Test::RecordProperty("TEST_ID", "32d1bc55-d2c5-4d83-8386-d199dfffb66d");
     constexpr uint64_t SECONDS_PER_DAY { static_cast<uint64_t>(60U * 60U * 24U) };
-    constexpr uint64_t EXPECTED_DAYS { std::numeric_limits<DurationAccessor::SecondsType>::max() / SECONDS_PER_DAY };
+    constexpr uint64_t EXPECTED_DAYS { std::numeric_limits<DurationAccessor::SecondsT>::max() / SECONDS_PER_DAY };
     const auto sut = DurationAccessor::max();
     EXPECT_THAT(sut.to_days(), Eq(EXPECTED_DAYS));
 }
@@ -644,7 +644,7 @@ TEST(Duration_test, ConvertHoursFromDurationMoreThanOneHour) {
 TEST(Duration_test, ConvertHoursFromMaxDuration) {
     ::testing::Test::RecordProperty("TEST_ID", "622e78aa-cdc6-4f8c-8de7-3f9433752893");
     constexpr uint64_t SECONDS_PER_HOUR { static_cast<uint64_t>(60U * 60U) };
-    constexpr uint64_t EXPECTED_HOURS { std::numeric_limits<DurationAccessor::SecondsType>::max() / SECONDS_PER_HOUR };
+    constexpr uint64_t EXPECTED_HOURS { std::numeric_limits<DurationAccessor::SecondsT>::max() / SECONDS_PER_HOUR };
     const auto sut = DurationAccessor::max();
     EXPECT_THAT(sut.to_hours(), Eq(EXPECTED_HOURS));
 }
@@ -670,8 +670,7 @@ TEST(Duration_test, ConvertMinutesFromDurationMoreThanOneMinute) {
 TEST(Duration_test, ConvertMinutesFromMaxDuration) {
     ::testing::Test::RecordProperty("TEST_ID", "f64e6a77-e481-4de7-bad0-0571d9aef1ad");
     constexpr uint64_t SECONDS_PER_MINUTE { 60U };
-    constexpr uint64_t EXPECTED_MINUTES { std::numeric_limits<DurationAccessor::SecondsType>::max()
-                                          / SECONDS_PER_MINUTE };
+    constexpr uint64_t EXPECTED_MINUTES { std::numeric_limits<DurationAccessor::SecondsT>::max() / SECONDS_PER_MINUTE };
     const auto sut = DurationAccessor::max();
     EXPECT_THAT(sut.to_minutes(), Eq(EXPECTED_MINUTES));
 }
@@ -696,14 +695,14 @@ TEST(Duration_test, ConvertSecondsFromDurationMoreThanOneSecond) {
 
 TEST(Duration_test, ConvertSecondsFromMaxSecondsMinusOne) {
     ::testing::Test::RecordProperty("TEST_ID", "eaa9153d-8503-4bea-8c41-6f702e49914a");
-    constexpr uint64_t EXPECTED_SECONDS { std::numeric_limits<DurationAccessor::SecondsType>::max() - 1U };
+    constexpr uint64_t EXPECTED_SECONDS { std::numeric_limits<DurationAccessor::SecondsT>::max() - 1U };
     const auto sut = DurationAccessor::max() - 1_s;
     EXPECT_THAT(sut.to_seconds(), Eq(EXPECTED_SECONDS));
 }
 
 TEST(Duration_test, ConvertSecondsFromMaxDuration) {
     ::testing::Test::RecordProperty("TEST_ID", "3109dfa7-9d2c-4b61-bb6f-e3ad256abed6");
-    constexpr uint64_t EXPECTED_SECONDS { std::numeric_limits<DurationAccessor::SecondsType>::max() };
+    constexpr uint64_t EXPECTED_SECONDS { std::numeric_limits<DurationAccessor::SecondsT>::max() };
     const auto sut = DurationAccessor::max();
     EXPECT_THAT(sut.to_seconds(), Eq(EXPECTED_SECONDS));
 }
@@ -1198,9 +1197,9 @@ TEST(Duration_test, AddDurationWithDurationsMoreThanOneSecondsResultsInMoreThanO
 TEST(Duration_test, AddDurationResultsNotYetInSaturation) {
     ::testing::Test::RecordProperty("TEST_ID", "289d9f13-01e0-4635-875b-5b239dc6f102");
     constexpr Duration EXPECTED_DURATION =
-        create_duration(std::numeric_limits<DurationAccessor::SecondsType>::max(), NANOSECS_PER_SECOND - 2U);
+        create_duration(std::numeric_limits<DurationAccessor::SecondsT>::max(), NANOSECS_PER_SECOND - 2U);
     auto duration1 =
-        create_duration(std::numeric_limits<DurationAccessor::SecondsType>::max() - 1U, NANOSECS_PER_SECOND - 1U);
+        create_duration(std::numeric_limits<DurationAccessor::SecondsT>::max() - 1U, NANOSECS_PER_SECOND - 1U);
     auto duration2 = create_duration(0U, NANOSECS_PER_SECOND - 1U);
 
     auto sut1 = duration1 + duration2;
@@ -1212,8 +1211,7 @@ TEST(Duration_test, AddDurationResultsNotYetInSaturation) {
 
 TEST(Duration_test, AddDurationResultsInSaturationFromNanoseconds) {
     ::testing::Test::RecordProperty("TEST_ID", "179b2630-1c16-4955-95e2-8dbd69429162");
-    auto duration1 =
-        create_duration(std::numeric_limits<DurationAccessor::SecondsType>::max(), NANOSECS_PER_SECOND - 2U);
+    auto duration1 = create_duration(std::numeric_limits<DurationAccessor::SecondsT>::max(), NANOSECS_PER_SECOND - 2U);
     auto duration2 = create_duration(0U, 2U);
 
     auto sut1 = duration1 + duration2;
@@ -1226,7 +1224,7 @@ TEST(Duration_test, AddDurationResultsInSaturationFromNanoseconds) {
 TEST(Duration_test, AddDurationResultsInSaturationFromSeconds) {
     ::testing::Test::RecordProperty("TEST_ID", "11766b56-cf0e-4fbe-a8a2-a167b6e4a36a");
     auto duration1 =
-        create_duration(std::numeric_limits<DurationAccessor::SecondsType>::max() - 1U, NANOSECS_PER_SECOND - 1U);
+        create_duration(std::numeric_limits<DurationAccessor::SecondsT>::max() - 1U, NANOSECS_PER_SECOND - 1U);
     auto duration2 = create_duration(2U, 0U);
 
     auto sut1 = duration1 + duration2;
@@ -1275,8 +1273,7 @@ TEST(Duration_test, AddAssignDurationPastNanosecondBoundaryResultsInSecondIncrem
 
 TEST(Duration_test, AddAssignDurationResultsInSaturationFromSeconds) {
     ::testing::Test::RecordProperty("TEST_ID", "940e6a59-9b1c-4928-8fe1-af290beebb5d");
-    auto sut =
-        create_duration(std::numeric_limits<DurationAccessor::SecondsType>::max() - 1U, NANOSECS_PER_SECOND - 1U);
+    auto sut = create_duration(std::numeric_limits<DurationAccessor::SecondsT>::max() - 1U, NANOSECS_PER_SECOND - 1U);
     auto otherDuration = create_duration(2U, 0U); // NOLINT
 
     sut += otherDuration;
@@ -1286,7 +1283,7 @@ TEST(Duration_test, AddAssignDurationResultsInSaturationFromSeconds) {
 
 TEST(Duration_test, AddAssignDurationResultsInSaturationFromNanoseconds) {
     ::testing::Test::RecordProperty("TEST_ID", "c8d972a8-cbb1-41e8-bf72-8d05963f95f7");
-    auto sut = create_duration(std::numeric_limits<DurationAccessor::SecondsType>::max(), NANOSECS_PER_SECOND - 2U);
+    auto sut = create_duration(std::numeric_limits<DurationAccessor::SecondsT>::max(), NANOSECS_PER_SECOND - 2U);
     auto other_duration = create_duration(0U, 2U);
 
     sut += other_duration;
@@ -1668,7 +1665,7 @@ TEST(Duration_test, MultiplyDurationResultsNotYetInSaturation) {
     constexpr uint64_t MULTIPLICATOR { 1343535617188545796U };
     constexpr Duration DURATION = 13_s + 730_ms + 37_ns;
     constexpr Duration EXPECTED_DURATION =
-        create_duration(std::numeric_limits<DurationAccessor::SecondsType>::max(), 56194452U);
+        create_duration(std::numeric_limits<DurationAccessor::SecondsT>::max(), 56194452U);
     static_assert(EXPECTED_DURATION < DurationAccessor::max(),
                   "EXPECTED_DURATION too large to exclude saturation! Please decrease!");
 
