@@ -57,7 +57,7 @@ class Node {
     auto service_builder(const ServiceName& name) const -> ServiceBuilder<T>;
 
     /// Waits for a given `cycle_time`.
-    auto wait(iox2::legacy::units::Duration cycle_time) const -> iox2::legacy::expected<void, NodeWaitFailure>;
+    auto wait(iox2::bb::Duration cycle_time) const -> iox2::legacy::expected<void, NodeWaitFailure>;
 
     /// Lists all [`Node`]s under a provided config. The provided callback is
     /// called for every [`Node`] and gets the [`NodeState`] as input argument.

@@ -24,8 +24,7 @@
 #include <ctime>
 
 namespace iox2 {
-namespace legacy {
-namespace units {
+namespace bb {
 class Duration;
 
 namespace duration_literals {
@@ -340,7 +339,7 @@ constexpr Duration operator*(const T& lhs, const Duration& rhs) noexcept {
 template <typename T>
 constexpr T& operator*=(T& lhs, const Duration& rhs) noexcept {
     static_assert(
-        always_false_v<T>,
+        legacy::always_false_v<T>,
         "Assigning the result of a Duration multiplication with 'operator*=' to an arithmetic type is not supported");
     return T();
 }
@@ -832,19 +831,18 @@ inline constexpr Duration operator""_d(unsigned long long int value) noexcept {
 }
 } // namespace duration_literals
 
-} // namespace units
-} // namespace legacy
+} // namespace bb
 } // namespace iox2
 
 // AXIVION Next Construct AutosarC++19_03-M5.17.1 : This is not used as shift operator but as stream operator and does not require to implement '<<='
 inline iox2::legacy::log::LogStream& operator<<(iox2::legacy::log::LogStream& stream,
-                                                const iox2::legacy::units::Duration t) noexcept {
+                                                const iox2::bb::Duration t) noexcept {
     stream << t.toSeconds() << "s " << t.subsecNanos() << "ns";
     return stream;
 }
 
 // AXIVION Next Construct AutosarC++19_03-M5.17.1 : This is not used as shift operator but as stream operator and does not require to implement '<<='
-inline std::ostream& operator<<(std::ostream& stream, const iox2::legacy::units::Duration t) {
+inline std::ostream& operator<<(std::ostream& stream, const iox2::bb::Duration t) {
     stream << t.toSeconds() << "s " << t.subsecNanos() << "ns";
     return stream;
 }

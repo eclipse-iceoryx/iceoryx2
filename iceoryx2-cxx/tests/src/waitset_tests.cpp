@@ -21,7 +21,7 @@
 
 namespace {
 using namespace iox2;
-using namespace iox2::legacy::units;
+using namespace iox2::bb;
 
 constexpr Duration TIMEOUT = Duration::fromMilliseconds(100);
 

@@ -48,7 +48,7 @@ class Notifier {
     auto notify_with_custom_event_id(EventId event_id) const -> iox2::legacy::expected<size_t, NotifierNotifyError>;
 
     /// Returns the deadline of the corresponding [`Service`].
-    auto deadline() const -> iox2::legacy::optional<iox2::legacy::units::Duration>;
+    auto deadline() const -> iox2::legacy::optional<iox2::bb::Duration>;
 
   private:
     template <ServiceType>

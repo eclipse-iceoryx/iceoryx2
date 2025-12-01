@@ -214,7 +214,7 @@ TEST(Config, global_service_dynamic_config_storage_suffix) {
 }
 
 TEST(Config, global_service_creation_timeout) {
-    const auto test_value = iox2::legacy::units::Duration::fromSeconds(1234);
+    const auto test_value = iox2::bb::Duration::fromSeconds(1234);
     auto config = Config();
 
     config.global().service().set_creation_timeout(test_value);

@@ -13,7 +13,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/bb/duration.hpp"
-#include "iox2/legacy/posix_call.hpp"
 #include "iox2/legacy/testing/mocks/logger_mock.hpp"
 #include "iox2/legacy/testing/testing_logger.hpp"
 
@@ -28,8 +27,8 @@
 
 namespace {
 using namespace ::testing;
-using namespace iox2::legacy::units;
-using namespace iox2::legacy::units::duration_literals;
+using namespace iox2::bb;
+using namespace iox2::bb::duration_literals;
 
 constexpr uint64_t SECONDS_PER_MINUTE = Duration::SECS_PER_MINUTE;
 constexpr uint64_t SECONDS_PER_HOUR = Duration::SECS_PER_HOUR;

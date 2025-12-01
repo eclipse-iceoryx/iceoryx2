@@ -175,7 +175,7 @@ class WaitSet {
     /// [`WaitSetRunResult::AllEventsHandled`].
     auto wait_and_process_once_with_timeout(
         const iox2::legacy::function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call,
-        iox2::legacy::units::Duration timeout) -> iox2::legacy::expected<WaitSetRunResult, WaitSetRunError>;
+        iox2::bb::Duration timeout) -> iox2::legacy::expected<WaitSetRunResult, WaitSetRunError>;
 
     /// Returns the capacity of the [`WaitSet`]
     auto capacity() const -> uint64_t;
@@ -220,7 +220,7 @@ class WaitSet {
     ///
     /// * The corresponding [`Listener`] must life at least as long as the returned [`WaitSetGuard`].
     /// * The [`WaitSetGuard`] must life at least as long as the [`WaitsSet`].
-    auto attach_deadline(const Listener<S>& listener, iox2::legacy::units::Duration deadline)
+    auto attach_deadline(const Listener<S>& listener, iox2::bb::Duration deadline)
         -> iox2::legacy::expected<WaitSetGuard<S>, WaitSetAttachmentError>;
 
     /// Attaches a [`FileDescriptorBased`] object as deadline to the [`WaitSet`]. Whenever the event is received or the
@@ -233,7 +233,7 @@ class WaitSet {
     ///
     /// * The corresponding [`FileDescriptor`] must life at least as long as the returned [`WaitSetGuard`].
     /// * The [`WaitSetGuard`] must life at least as long as the [`WaitsSet`].
-    auto attach_deadline(const FileDescriptorBased& attachment, iox2::legacy::units::Duration deadline)
+    auto attach_deadline(const FileDescriptorBased& attachment, iox2::bb::Duration deadline)
         -> iox2::legacy::expected<WaitSetGuard<S>, WaitSetAttachmentError>;
 
     /// Attaches a tick event to the [`WaitSet`]. Whenever the timeout is reached the [`WaitSet`]
@@ -242,7 +242,7 @@ class WaitSet {
     /// # Safety
     ///
     /// * The [`WaitSetGuard`] must life at least as long as the [`WaitsSet`].
-    auto attach_interval(iox2::legacy::units::Duration deadline)
+    auto attach_interval(iox2::bb::Duration deadline)
         -> iox2::legacy::expected<WaitSetGuard<S>, WaitSetAttachmentError>;
 
     /// Returns the [`SignalHandlingMode`] with which the [`WaitSet`] was created.

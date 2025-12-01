@@ -261,18 +261,18 @@ void Event::set_notifier_dead_event(iox2::legacy::optional<size_t> value) && {
     }
 }
 
-auto Event::deadline() && -> iox2::legacy::optional<iox2::legacy::units::Duration> {
+auto Event::deadline() && -> iox2::legacy::optional<iox2::bb::Duration> {
     uint64_t seconds = 0;
     uint32_t nanoseconds = 0;
     if (iox2_config_defaults_event_deadline(m_config, &seconds, &nanoseconds)) {
-        return { iox2::legacy::units::Duration::fromSeconds(seconds)
-                 + iox2::legacy::units::Duration::fromNanoseconds(nanoseconds) };
+        return { iox2::bb::Duration::fromSeconds(seconds)
+                 + iox2::bb::Duration::fromNanoseconds(nanoseconds) };
     }
 
     return iox2::legacy::nullopt;
 }
 
-void Event::set_deadline(iox2::legacy::optional<iox2::legacy::units::Duration> value) && {
+void Event::set_deadline(iox2::legacy::optional<iox2::bb::Duration> value) && {
     value
         .and_then([&](auto value) -> auto {
             auto duration = value.timespec();
@@ -417,15 +417,15 @@ void Service::set_dynamic_config_storage_suffix(const iox2::legacy::FileName& va
     iox2_config_global_service_set_dynamic_config_storage_suffix(m_config, value.as_string().c_str());
 }
 
-auto Service::creation_timeout() && -> iox2::legacy::units::Duration {
+auto Service::creation_timeout() && -> iox2::bb::Duration {
     uint64_t secs = 0;
     uint32_t nsecs = 0;
     iox2_config_global_service_creation_timeout(m_config, &secs, &nsecs);
 
-    return iox2::legacy::units::Duration::fromSeconds(secs) + iox2::legacy::units::Duration::fromNanoseconds(nsecs);
+    return iox2::bb::Duration::fromSeconds(secs) + iox2::bb::Duration::fromNanoseconds(nsecs);
 }
 
-void Service::set_creation_timeout(const iox2::legacy::units::Duration& value) && {
+void Service::set_creation_timeout(const iox2::bb::Duration& value) && {
     auto duration = value.timespec();
     iox2_config_global_service_set_creation_timeout(
         m_config, static_cast<uint64_t>(duration.tv_sec), static_cast<uint32_t>(duration.tv_nsec));

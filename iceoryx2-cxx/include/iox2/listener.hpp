@@ -58,7 +58,7 @@ class Listener {
     /// For every received [`EventId`] the provided callback is called with the [`EventId`] as
     /// input argument.
     auto timed_wait_all(const iox2::legacy::function<void(EventId)>& callback,
-                        const iox2::legacy::units::Duration& timeout)
+                        const iox2::bb::Duration& timeout)
         -> iox2::legacy::expected<void, ListenerWaitError>;
 
     /// Blocking wait for new [`EventId`]s. Collects either
@@ -79,7 +79,7 @@ class Listener {
     /// has passed. If no [`EventId`] was notified it returns [`None`].
     /// On error it returns [`ListenerWaitError`] is returned which describes the error
     /// in detail.
-    auto timed_wait_one(const iox2::legacy::units::Duration& timeout)
+    auto timed_wait_one(const iox2::bb::Duration& timeout)
         -> iox2::legacy::expected<iox2::legacy::optional<EventId>, ListenerWaitError>;
 
     /// Blocking wait for a new [`EventId`].
@@ -89,7 +89,7 @@ class Listener {
     auto blocking_wait_one() -> iox2::legacy::expected<iox2::legacy::optional<EventId>, ListenerWaitError>;
 
     /// Returns the deadline of the corresponding [`Service`].
-    auto deadline() const -> iox2::legacy::optional<iox2::legacy::units::Duration>;
+    auto deadline() const -> iox2::legacy::optional<iox2::bb::Duration>;
 
   private:
     template <ServiceType>
@@ -167,13 +167,13 @@ inline auto Listener<S>::id() const -> UniqueListenerId {
 }
 
 template <ServiceType S>
-inline auto Listener<S>::deadline() const -> iox2::legacy::optional<iox2::legacy::units::Duration> {
+inline auto Listener<S>::deadline() const -> iox2::legacy::optional<iox2::bb::Duration> {
     uint64_t seconds = 0;
     uint32_t nanoseconds = 0;
 
     if (iox2_listener_deadline(&m_handle, &seconds, &nanoseconds)) {
-        return { iox2::legacy::units::Duration::fromSeconds(seconds)
-                 + iox2::legacy::units::Duration::fromNanoseconds(nanoseconds) };
+        return { iox2::bb::Duration::fromSeconds(seconds)
+                 + iox2::bb::Duration::fromNanoseconds(nanoseconds) };
     }
 
     return iox2::legacy::nullopt;
@@ -199,7 +199,7 @@ inline auto Listener<S>::try_wait_all(const iox2::legacy::function<void(EventId)
 
 template <ServiceType S>
 inline auto Listener<S>::timed_wait_all(const iox2::legacy::function<void(EventId)>& callback,
-                                        const iox2::legacy::units::Duration& timeout)
+                                        const iox2::bb::Duration& timeout)
     -> iox2::legacy::expected<void, ListenerWaitError> {
     auto ctx = internal::ctx(callback);
     auto timeout_timespec = timeout.timespec();
@@ -248,7 +248,7 @@ inline auto Listener<S>::try_wait_one() -> iox2::legacy::expected<iox2::legacy::
 }
 
 template <ServiceType S>
-inline auto Listener<S>::timed_wait_one(const iox2::legacy::units::Duration& timeout)
+inline auto Listener<S>::timed_wait_one(const iox2::bb::Duration& timeout)
     -> iox2::legacy::expected<iox2::legacy::optional<EventId>, ListenerWaitError> {
     iox2_event_id_t event_id {};
     bool has_received_one { false };

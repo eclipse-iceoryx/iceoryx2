@@ -15,7 +15,7 @@
 #include "iox2/iceoryx2.hpp"
 #include "message_data.hpp"
 
-constexpr iox2::legacy::units::Duration CYCLE_TIME = iox2::legacy::units::Duration::fromSeconds(1);
+constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::fromSeconds(1);
 
 auto main() -> int {
     using namespace iox2;

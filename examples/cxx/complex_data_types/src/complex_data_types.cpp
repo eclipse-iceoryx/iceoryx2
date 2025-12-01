@@ -28,7 +28,7 @@ struct ComplexDataType {
     iox2::legacy::vector<ComplexData, 404857> vec_of_complex_data; // NOLINT
 };
 
-constexpr iox2::legacy::units::Duration CYCLE_TIME = iox2::legacy::units::Duration::fromSeconds(1);
+constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::fromSeconds(1);
 
 auto main() -> int {
     using namespace iox2;

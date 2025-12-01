@@ -74,13 +74,13 @@ auto Notifier<S>::notify_with_custom_event_id(EventId event_id) const
 }
 
 template <ServiceType S>
-auto Notifier<S>::deadline() const -> iox2::legacy::optional<iox2::legacy::units::Duration> {
+auto Notifier<S>::deadline() const -> iox2::legacy::optional<iox2::bb::Duration> {
     uint64_t seconds = 0;
     uint32_t nanoseconds = 0;
 
     if (iox2_notifier_deadline(&m_handle, &seconds, &nanoseconds)) {
-        return { iox2::legacy::units::Duration::fromSeconds(seconds)
-                 + iox2::legacy::units::Duration::fromNanoseconds(nanoseconds) };
+        return { iox2::bb::Duration::fromSeconds(seconds)
+                 + iox2::bb::Duration::fromNanoseconds(nanoseconds) };
     }
 
     return iox2::legacy::nullopt;

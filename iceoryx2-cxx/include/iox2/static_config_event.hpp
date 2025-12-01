@@ -53,7 +53,7 @@ class StaticConfigEvent {
     /// as an error and all [`Listener`]s that are attached
     /// to a [`WaitSet`] are woken up and notified about the missed
     /// deadline.
-    auto deadline() const -> iox2::legacy::optional<iox2::legacy::units::Duration>;
+    auto deadline() const -> iox2::legacy::optional<iox2::bb::Duration>;
 
   private:
     template <ServiceType>

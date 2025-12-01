@@ -87,7 +87,7 @@ auto ServiceBuilderEvent<S>::notifier_dead_event(EventId event_id) && -> Service
 
 
 template <ServiceType S>
-auto ServiceBuilderEvent<S>::deadline(iox2::legacy::units::Duration deadline) && -> ServiceBuilderEvent&& {
+auto ServiceBuilderEvent<S>::deadline(iox2::bb::Duration deadline) && -> ServiceBuilderEvent&& {
     m_deadline.emplace(deadline);
     m_verify_deadline = true;
     return std::move(*this);

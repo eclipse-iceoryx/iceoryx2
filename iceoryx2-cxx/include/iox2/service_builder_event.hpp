@@ -83,7 +83,7 @@ class ServiceBuilderEvent {
 
     /// Enables the deadline property of the service. There must be a notification emitted by any
     /// [`Notifier`] after at least the provided `deadline`.
-    auto deadline(iox2::legacy::units::Duration deadline) && -> ServiceBuilderEvent&&;
+    auto deadline(iox2::bb::Duration deadline) && -> ServiceBuilderEvent&&;
 
     /// If the [`Service`] is created it disables sending an event when a notifier was dropped.
     auto disable_notifier_dropped_event() && -> ServiceBuilderEvent&&;
@@ -139,7 +139,7 @@ class ServiceBuilderEvent {
     iox2::legacy::optional<EventId> m_notifier_dead_event;
     iox2::legacy::optional<EventId> m_notifier_created_event;
     iox2::legacy::optional<EventId> m_notifier_dropped_event;
-    iox2::legacy::optional<iox2::legacy::units::Duration> m_deadline;
+    iox2::legacy::optional<iox2::bb::Duration> m_deadline;
     bool m_verify_notifier_dead_event = false;
     bool m_verify_notifier_created_event = false;
     bool m_verify_notifier_dropped_event = false;

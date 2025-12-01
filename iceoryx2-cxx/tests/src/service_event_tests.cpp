@@ -22,7 +22,7 @@
 namespace {
 using namespace iox2;
 
-constexpr iox2::legacy::units::Duration TIMEOUT = iox2::legacy::units::Duration::fromMilliseconds(50);
+constexpr iox2::bb::Duration TIMEOUT = iox2::bb::Duration::fromMilliseconds(50);
 
 template <typename T>
 struct ServiceEventTest : public ::testing::Test {
@@ -480,7 +480,7 @@ TYPED_TEST(ServiceEventTest, open_fails_when_attributes_are_incompatible) {
 }
 
 TYPED_TEST(ServiceEventTest, deadline_can_be_set) {
-    using iox2::legacy::units::Duration;
+    using iox2::bb::Duration;
     constexpr Duration DEADLINE = Duration::fromMilliseconds(9281);
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name = iox2_testing::generate_service_name();
@@ -505,7 +505,7 @@ TYPED_TEST(ServiceEventTest, deadline_can_be_set) {
 }
 
 TYPED_TEST(ServiceEventTest, deadline_can_be_disabled) {
-    using iox2::legacy::units::Duration;
+    using iox2::bb::Duration;
     constexpr Duration DEADLINE = Duration::fromMilliseconds(9281);
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name = iox2_testing::generate_service_name();
@@ -530,7 +530,7 @@ TYPED_TEST(ServiceEventTest, deadline_can_be_disabled) {
 }
 
 TYPED_TEST(ServiceEventTest, notifier_is_informed_when_deadline_was_missed) {
-    constexpr iox2::legacy::units::Duration DEADLINE = iox2::legacy::units::Duration::fromNanoseconds(1);
+    constexpr iox2::bb::Duration DEADLINE = iox2::bb::Duration::fromNanoseconds(1);
     constexpr uint64_t TIMEOUT = 10;
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name = iox2_testing::generate_service_name();
@@ -557,7 +557,7 @@ TYPED_TEST(ServiceEventTest, notifier_is_informed_when_deadline_was_missed) {
 }
 
 TYPED_TEST(ServiceEventTest, when_deadline_is_not_missed_notification_works) {
-    constexpr iox2::legacy::units::Duration DEADLINE = iox2::legacy::units::Duration::fromSeconds(3600);
+    constexpr iox2::bb::Duration DEADLINE = iox2::bb::Duration::fromSeconds(3600);
     constexpr uint64_t TIMEOUT = 10;
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name = iox2_testing::generate_service_name();

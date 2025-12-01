@@ -19,23 +19,19 @@
 namespace iox2 {
 namespace bb {
 
-inline legacy::units::Duration
-From<std::chrono::nanoseconds, legacy::units::Duration>::from(const std::chrono::nanoseconds& value) noexcept {
-    return legacy::units::Duration::fromNanoseconds(value.count());
+inline Duration From<std::chrono::nanoseconds, Duration>::from(const std::chrono::nanoseconds& value) noexcept {
+    return Duration::fromNanoseconds(value.count());
 }
-inline legacy::units::Duration
-From<std::chrono::microseconds, legacy::units::Duration>::from(const std::chrono::microseconds& value) noexcept {
-    return legacy::units::Duration::fromMicroseconds(value.count());
+inline Duration From<std::chrono::microseconds, Duration>::from(const std::chrono::microseconds& value) noexcept {
+    return Duration::fromMicroseconds(value.count());
 }
 
-inline legacy::units::Duration
-From<std::chrono::milliseconds, legacy::units::Duration>::from(const std::chrono::milliseconds& value) noexcept {
-    return legacy::units::Duration::fromMilliseconds(value.count());
+inline Duration From<std::chrono::milliseconds, Duration>::from(const std::chrono::milliseconds& value) noexcept {
+    return Duration::fromMilliseconds(value.count());
 }
 
-inline legacy::units::Duration
-From<std::chrono::seconds, legacy::units::Duration>::from(const std::chrono::seconds& value) noexcept {
-    return legacy::units::Duration::fromSeconds(value.count());
+inline Duration From<std::chrono::seconds, Duration>::from(const std::chrono::seconds& value) noexcept {
+    return Duration::fromSeconds(value.count());
 }
 
 } // namespace bb

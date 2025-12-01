@@ -14,8 +14,8 @@
 #ifndef IOX2_BB_UTILITY_STD_CHRONO_SUPPORT_HPP
 #define IOX2_BB_UTILITY_STD_CHRONO_SUPPORT_HPP
 
-#include "iox2/bb/into.hpp"
 #include "iox2/bb/duration.hpp"
+#include "iox2/bb/into.hpp"
 
 #include <chrono>
 
@@ -25,32 +25,32 @@ namespace bb {
 /// @param[in] value as nanoseconds
 /// @attention Since negative durations are not allowed, the duration will be clamped to 0
 template <>
-struct From<std::chrono::nanoseconds, legacy::units::Duration> {
-    static legacy::units::Duration from(const std::chrono::nanoseconds& value) noexcept;
+struct From<std::chrono::nanoseconds, Duration> {
+    static Duration from(const std::chrono::nanoseconds& value) noexcept;
 };
 
 /// @brief Construct a Duration object from std::chrono::microseconds
 /// @param[in] value as microseconds
 /// @attention Since negative durations are not allowed, the duration will be clamped to 0
 template <>
-struct From<std::chrono::microseconds, legacy::units::Duration> {
-    static legacy::units::Duration from(const std::chrono::microseconds& value) noexcept;
+struct From<std::chrono::microseconds, Duration> {
+    static Duration from(const std::chrono::microseconds& value) noexcept;
 };
 
 /// @brief Construct a Duration object from std::chrono::milliseconds
 /// @param[in] value as milliseconds
 /// @attention Since negative durations are not allowed, the duration will be clamped to 0
 template <>
-struct From<std::chrono::milliseconds, legacy::units::Duration> {
-    static legacy::units::Duration from(const std::chrono::milliseconds& value) noexcept;
+struct From<std::chrono::milliseconds, Duration> {
+    static Duration from(const std::chrono::milliseconds& value) noexcept;
 };
 
 /// @brief Construct a Duration object from std::chrono::seconds
 /// @param[in] value as seconds
 /// @attention Since negative durations are not allowed, the duration will be clamped to 0
 template <>
-struct From<std::chrono::seconds, legacy::units::Duration> {
-    static legacy::units::Duration from(const std::chrono::seconds& value) noexcept;
+struct From<std::chrono::seconds, Duration> {
+    static Duration from(const std::chrono::seconds& value) noexcept;
 };
 } // namespace bb
 } // namespace iox2
