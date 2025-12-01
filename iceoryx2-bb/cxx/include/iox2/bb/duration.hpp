@@ -422,7 +422,7 @@ constexpr Duration::Duration(const SecondsType seconds, const NanosecondsType na
 
 constexpr auto Duration::create_duration(const SecondsType seconds, const NanosecondsType nanoseconds) noexcept
     -> Duration {
-    return Duration(seconds, nanoseconds);
+    return { seconds, nanoseconds };
 }
 
 constexpr auto Duration::max() noexcept -> Duration {
