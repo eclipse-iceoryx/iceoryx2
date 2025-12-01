@@ -868,6 +868,82 @@ TEST(Duration_test, ConvertTimespecFromMaxDurationResultsInSaturation) {
 
 // END CONVERSION FUNCTION TESTS
 
+// BEGIN SUBSECONDS ACCESS TESTS
+
+TEST(Duration_test, SubsecMillisFromZeroDuration) {
+    ::testing::Test::RecordProperty("TEST_ID", "b5ab2d0d-de0c-4bf0-b814-1fac235fac46");
+    const auto sut = 0_s;
+    EXPECT_THAT(sut.subsecMillis(), Eq(0U));
+}
+
+TEST(Duration_test, SubsecMillisFromDurationLessThanOneMillisecond) {
+    ::testing::Test::RecordProperty("TEST_ID", "edeffc53-7188-4431-a58f-f8c9099d81a4");
+    const auto sut = 373_us;
+    EXPECT_THAT(sut.subsecMillis(), Eq(0U));
+}
+
+TEST(Duration_test, SubsecMillisFromDurationMoreThanOneMillisecond) {
+    ::testing::Test::RecordProperty("TEST_ID", "bd7283fe-169d-4487-b78b-f53aab39e7a5");
+    const auto sut = 444_ms + 337_us;
+    EXPECT_THAT(sut.subsecMillis(), Eq(444U));
+}
+
+TEST(Duration_test, SubsecMillisFromDurationMoreThanOneSecond) {
+    ::testing::Test::RecordProperty("TEST_ID", "af6bb389-46ed-4dcb-91c1-50c5f68933b6");
+    const auto sut = 13_s + 6_ms + 13_us + 42_ns;
+    EXPECT_THAT(sut.subsecMillis(), Eq(6U));
+}
+
+TEST(Duration_test, SubsecMicrosFromZeroDuration) {
+    ::testing::Test::RecordProperty("TEST_ID", "48c99ad7-0327-49d2-9ed9-f5afcf501719");
+    const auto sut = 0_s;
+    EXPECT_THAT(sut.subsecMicros(), Eq(0U));
+}
+
+TEST(Duration_test, SubsecMicrosFromDurationLessThanOneMicrosecond) {
+    ::testing::Test::RecordProperty("TEST_ID", "eaf7535a-ab4a-4d3d-a7d7-10d4207a4355");
+    const auto sut = 733_ns;
+    EXPECT_THAT(sut.subsecMicros(), Eq(0U));
+}
+
+TEST(Duration_test, SubsecMicrosFromDurationMoreThanOneMicrosecond) {
+    ::testing::Test::RecordProperty("TEST_ID", "1f165cc7-df15-4ad2-a1e3-eabdba3a4e69");
+    const auto sut = 555_us + 733_ns;
+    EXPECT_THAT(sut.subsecMicros(), Eq(555U));
+}
+
+TEST(Duration_test, SubsecMicrosFromDurationMoreThanOneSecond) {
+    ::testing::Test::RecordProperty("TEST_ID", "2df33200-88a3-444e-b11a-a58317ac0818");
+    const auto sut = 13_s + 4_ms + 123_us + 43_ns;
+    EXPECT_THAT(sut.subsecMicros(), Eq(4123U));
+}
+
+TEST(Duration_test, SubsecNanosFromZeroDuration) {
+    ::testing::Test::RecordProperty("TEST_ID", "ede2a5ac-3064-499d-8fc5-d21a852d6d9c");
+    const auto sut = 0_s;
+    EXPECT_THAT(sut.subsecNanos(), Eq(0U));
+}
+
+TEST(Duration_test, SubsecNanosFromDurationMoreThanZeroNonoseconds) {
+    ::testing::Test::RecordProperty("TEST_ID", "9f15755f-ab9c-4472-9c80-74ba9e760239");
+    const auto sut = 373_ns;
+    EXPECT_THAT(sut.subsecNanos(), Eq(373U));
+}
+
+TEST(Duration_test, SubsecNanosFromDurationMoreThanOneMicrosecond) {
+    ::testing::Test::RecordProperty("TEST_ID", "e8298cdb-e9e0-4ca0-b506-416a5bf99ea0");
+    const auto sut = 42_ms + 666_us + 337_ns;
+    EXPECT_THAT(sut.subsecNanos(), Eq(42666337U));
+}
+
+TEST(Duration_test, SubsecNanosFromDurationMoreThanOneSecond) {
+    ::testing::Test::RecordProperty("TEST_ID", "f39764e1-4a05-4968-b0c4-674b4a5b5b64");
+    const auto sut = 13_s + 9_ms + 321_us + 73_ns;
+    EXPECT_THAT(sut.subsecNanos(), Eq(9321073U));
+}
+
+// END SUBSECONDS ACCESS TESTS
+
 // BEGIN COMPARISON TESTS
 
 TEST(Duration_test, CompareTwoEqualDurationsForEquality) {

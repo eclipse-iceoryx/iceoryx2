@@ -246,6 +246,17 @@ class Duration {
     /// @note The remaining hours are truncated, similar to the casting behavior of a float to an int.
     constexpr uint64_t toDays() const noexcept;
 
+    /// @brief returns the subsecond part of the duration in nanoseconds
+    constexpr uint32_t subsecNanos() const noexcept;
+
+    /// @brief returns the subsecond part of the duration in microseconds
+    /// @note The remaining nanoseconds are truncated, similar to the casting behavior of a float to an int.
+    constexpr uint32_t subsecMicros() const noexcept;
+
+    /// @brief returns the subsecond part of the duration in milliseconds
+    /// @note The remaining microseconds are truncated, similar to the casting behavior of a float to an int.
+    constexpr uint32_t subsecMillis() const noexcept;
+
     /// @brief converts duration in a timespec c struct
     constexpr struct timespec timespec() const noexcept;
 
@@ -264,9 +275,6 @@ class Duration {
     // AXIVION Next Construct AutosarC++19_03-A8.4.7 : Argument is larger than two words
     template <typename T>
     friend constexpr Duration operator*(const T& lhs, const Duration& rhs) noexcept;
-
-    friend std::ostream& operator<<(std::ostream& stream, const Duration t);
-    friend iox2::legacy::log::LogStream& operator<<(iox2::legacy::log::LogStream& stream, const Duration t) noexcept;
 
     static constexpr uint32_t SECS_PER_MINUTE { 60U };
     static constexpr uint32_t SECS_PER_HOUR { 3600U };
@@ -567,6 +575,18 @@ inline constexpr uint64_t Duration::toDays() const noexcept {
     return m_seconds / static_cast<uint64_t>(HOURS_PER_DAY * SECS_PER_HOUR);
 }
 
+inline constexpr uint32_t Duration::subsecNanos() const noexcept {
+    return m_nanoseconds;
+}
+
+inline constexpr uint32_t Duration::subsecMicros() const noexcept {
+    return m_nanoseconds / NANOSECS_PER_MICROSEC;
+}
+
+inline constexpr uint32_t Duration::subsecMillis() const noexcept {
+    return m_nanoseconds / NANOSECS_PER_MILLISEC;
+}
+
 // AXIVION Next Construct AutosarC++19_03-A8.4.7 : Argument is larger than two words
 inline constexpr Duration Duration::operator+(const Duration& rhs) const noexcept {
     Seconds_t seconds { m_seconds + rhs.m_seconds };
@@ -817,15 +837,15 @@ inline constexpr Duration operator""_d(unsigned long long int value) noexcept {
 } // namespace iox2
 
 // AXIVION Next Construct AutosarC++19_03-M5.17.1 : This is not used as shift operator but as stream operator and does not require to implement '<<='
-iox2::legacy::log::LogStream& operator<<(iox2::legacy::log::LogStream& stream,
-                                         const iox2::legacy::units::Duration t) noexcept {
-    stream << t.m_seconds << "s " << t.m_nanoseconds << "ns";
+inline iox2::legacy::log::LogStream& operator<<(iox2::legacy::log::LogStream& stream,
+                                                const iox2::legacy::units::Duration t) noexcept {
+    stream << t.toSeconds() << "s " << t.subsecNanos() << "ns";
     return stream;
 }
 
 // AXIVION Next Construct AutosarC++19_03-M5.17.1 : This is not used as shift operator but as stream operator and does not require to implement '<<='
-std::ostream& operator<<(std::ostream& stream, const iox2::legacy::units::Duration t) {
-    stream << t.m_seconds << "s " << t.m_nanoseconds << "ns";
+inline std::ostream& operator<<(std::ostream& stream, const iox2::legacy::units::Duration t) {
+    stream << t.toSeconds() << "s " << t.subsecNanos() << "ns";
     return stream;
 }
 
