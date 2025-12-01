@@ -14,12 +14,10 @@
 
 #include "iox2/bb/duration.hpp"
 #include "iox2/legacy/testing/mocks/logger_mock.hpp"
-#include "iox2/legacy/testing/testing_logger.hpp"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include <chrono>
 #include <ctime>
 #include <iostream>
 #include <limits>

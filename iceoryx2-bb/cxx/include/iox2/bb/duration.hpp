@@ -15,9 +15,8 @@
 #ifndef IOX2_BB_DURATION_HPP
 #define IOX2_BB_DURATION_HPP
 
-#include "iox2/legacy/expected.hpp"
+#include "iox2/legacy/attributes.hpp"
 #include "iox2/legacy/log/logstream.hpp"
-#include "iox2/legacy/logging.hpp"
 #include "iox2/legacy/type_traits.hpp"
 
 #include <cmath>
@@ -339,7 +338,7 @@ constexpr auto operator*(const T& lhs, const Duration& rhs) noexcept -> Duration
 /// multiplication with 'operator*=' to an arithmetic type is not supported
 // AXIVION Next Construct AutosarC++19_03-A8.4.7 : Each argument is larger than two words
 template <typename T>
-constexpr auto operator*=(T& lhs, const Duration& rhs) noexcept -> T& {
+constexpr auto operator*=(T& lhs IOX2_MAYBE_UNUSED, const Duration& rhs IOX2_MAYBE_UNUSED) noexcept -> T& {
     static_assert(
         legacy::always_false_v<T>,
         "Assigning the result of a Duration multiplication with 'operator*=' to an arithmetic type is not supported");
