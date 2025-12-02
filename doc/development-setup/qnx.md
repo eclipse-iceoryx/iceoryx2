@@ -82,7 +82,32 @@ mkqnximage \
     --type=qemu \
     --arch=x86_64 \
     --ip="$VM_IPV4_ADDR" \
-    --telnet=yes \
+    --telnet=yes \  # NOTE: Not available on QNX 8.0
+    --sys-size=256 \
+    --sys-inodes=24000 \
+    --data-size=256 \
+    --data-inodes=24000
+```
+
+##### QNX 8.0
+
+```bash
+export QNX_TOOLCHAIN="$HOME/qnx800"
+source $QNX_TOOLCHAIN/qnxsdp-env.sh
+
+export VM_HOSTNAME="x86_64-qnx-vm"
+export VM_IPV4_ADDR="172.31.1.11"
+
+export IMAGE_DIR="$HOME/images/minimal"
+mkdir -p $IMAGE_DIR
+cd $IMAGE_DIR
+
+mkqnximage \
+    --noprompt \
+    --hostname="$VM_HOSTNAME" \
+    --type=qemu \
+    --arch=x86_64 \
+    --ip="$VM_IPV4_ADDR" \
     --sys-size=256 \
     --sys-inodes=24000 \
     --data-size=256 \
@@ -100,8 +125,6 @@ Images build with `mkqnximage` can be run using the `--run` option.
 
 #### x86_64
 
-##### QNX 7.1
-
 ```bash
 export QNX_TOOLCHAIN="$HOME/qnx710"
 source $QNX_TOOLCHAIN/qnxsdp-env.sh
@@ -113,7 +136,9 @@ mkqnximage --run
 ```
 
 Alternatively, use QEMU directly for more fine-grained control over the
-emulation:
+emulation.
+
+##### QNX 7.1
 
 ```bash
 export QNX_TOOLCHAIN="$HOME/qnx710"
@@ -134,7 +159,36 @@ qemu-system-x86_64 \
   -drive file=${IMAGE_DIR}/output/disk-qemu.vmdk,if=ide,id=drv0 \
   -hdb fat:rw:${IMAGE_DIR}/shared \
   -netdev bridge,br=br0,id=net0 \
-  -device e1000,netdev=net0,mac=$MAC \
+  -device e1000,netdev=net0,mac=$MAC \  # NOTE: Different for QNX 7.1 and QNX 8.0
+  -nographic \
+  -kernel ${IMAGE_DIR}/output/ifs.bin \
+  -serial mon:stdio \
+  -object rng-random,filename=/dev/urandom,id=rng0 \
+  -device virtio-rng-pci,rng=rng0
+```
+
+##### QNX 8.0
+
+```bash
+export QNX_TOOLCHAIN="$HOME/qnx710"
+source $QNX_TOOLCHAIN/qnxsdp-env.sh
+
+export IMAGE_DIR="$HOME/images/minimal"
+export SHARED_DIR="${IMAGE_DIR}/shared"
+mkdir -p $SHARED_DIR
+
+export MAC=$(printf "52:54:00:%02x:%02x:%02x" $(( $RANDOM & 0xff)) $(( $RANDOM & 0xff )) $(( $RANDOM & 0xff)))
+
+sudo ${QNX_TOOLCHAIN}/host/common/mkqnximage/qemu/net.sh /usr/lib/qemu/qemu-bridge-helper /etc/qemu/bridge.conf
+
+qemu-system-x86_64 \
+  -smp 2 \
+  -m 1G \
+  -cpu max \
+  -drive file=${IMAGE_DIR}/output/disk-qemu.vmdk,if=ide,id=drv0 \
+  -hdb fat:rw:${IMAGE_DIR}/shared \
+  -netdev bridge,br=br0,id=net0 \
+  -device virtio-net-pci,netdev=net0,mac=$MAC \  # NOTE: Different for QNX 7.1 and QNX 8.0
   -nographic \
   -kernel ${IMAGE_DIR}/output/ifs.bin \
   -serial mon:stdio \
@@ -144,8 +198,13 @@ qemu-system-x86_64 \
 
 ### Connect to the QNX via telnet
 
+> [!WARN]
+> Only available in 7.1 images
+
 `telnet` can be used to connect to a running image with default credentials
 (root/root):
+
+##### QNX 7.1
 
 ```bash
 export VM_IPV4_ADDR="172.31.1.11" # Or whatever address you have chosen
@@ -196,11 +255,47 @@ export build_env='
 ./x.py build --target aarch64-unknown-nto-qnx710,x86_64-pc-nto-qnx710,x86_64-unknown-linux-gnu rustc library/core library/alloc library/std library tools/rustfmt
 
 # Create a symlink for easier use
-export RUST_TOOLCHAIN="qnx-custom"
-rustup toolchain link +${RUST_TOOLCHAIN} $RUSTDIR/build/host/stage1
+export RUST_TOOLCHAIN="qnx710"
+rustup toolchain link ${RUST_TOOLCHAIN} $RUSTDIR/build/host/stage1
+```
+
+#### QNX 8.0
+
+```bash
+export QNX_TOOLCHAIN="$HOME/qnx800"
+source ${QNX_TOOLCHAIN}/qnxsdp-env.sh
+
+# Clone Rust source
+export RUSTDIR=~/source/rust
+git clone https://github.com/rust-lang/rust.git -b 1.88.0 --depth 1 $RUSTDIR
+
+# Configure the build
+echo -e "[build]\nextended = true" > $RUSTDIR/config.toml
+
+# Build the compiler (x86_64 and aarch64 targets)
+cd $RUSTDIR
+
+export build_env='
+    CC_x86_64_pc_nto_qnx80=qcc
+    CFLAGS_x86_64_pc_nto_qnx800=-Vgcc_ntox86_64_cxx
+    CXX_x86_64_pc_nto_qnx800=qcc
+    AR_x86_64_pc_nto_qnx800=ntox86_64-ar
+    CC_aarch64_unknown_nto_qnx800=qcc
+    CFLAGS_aarch64_unknown_nto_qnx800=-Vgcc_ntoaarch64le_cxx
+    CXX_aarch64_unknown_nto_qnx800=qcc
+    AR_aarch64_unknown_nto_qnx800=ntoaarch64-ar
+    '
+./x.py build --target aarch64-unknown-nto-qnx800,x86_64-pc-nto-qnx800,x86_64-unknown-linux-gnu rustc library/core library/alloc library/std library tools/rustfmt
+
+# Create a symlink for easier use
+export RUST_TOOLCHAIN="qnx800"
+rustup toolchain link ${RUST_TOOLCHAIN} $RUSTDIR/build/host/stage1
 ```
 
 ### Build remote testing tools for QNX
+
+> [!WARN]
+> Unavailable on QNX 8.0 due to dependency on `std`.
 
 > [!TIP]
 > A convenience script is available for building the remote testing utilities.
@@ -226,7 +321,7 @@ mkdir -p "$SHARED_DIR"
 export RUSTDIR="$HOME/source/rust"
 cd $RUSTDIR
 
-export RUST_TOOLCHAIN="qnx-custom"
+export RUST_TOOLCHAIN="qnx710"
 
 # Build the remote-test-client for the host and copy it into the QNX toolchain
 cargo +${RUST_TOOLCHAIN} build --release --package remote-test-client
@@ -253,7 +348,7 @@ mkdir -p "$SHARED_DIR"
 export RUSTDIR="$HOME/source/rust"
 cd $RUSTDIR
 
-export RUST_TOOLCHAIN="qnx-custom"
+export RUST_TOOLCHAIN="qnx710"
 
 # Build the remote-test-client for the host and copy it into the QNX toolchain
 cargo +${RUST_TOOLCHAIN} build --release --package remote-test-client
@@ -276,8 +371,18 @@ Use the custom-built compiler to build for QNX targets:
 export QNX_TOOLCHAIN="$HOME/qnx710"
 source $QNX_TOOLCHAIN/qnxsdp-env.sh
 
-export RUST_TOOLCHAIN="qnx-custom"
+export RUST_TOOLCHAIN="qnx710"
 cargo +${RUST_TOOLCHAIN} build --target x86_64-pc-nto-qnx710 --package iceoryx2
+```
+
+##### QNX 8.0
+
+```bash
+export QNX_TOOLCHAIN="$HOME/qnx800"
+source $QNX_TOOLCHAIN/qnxsdp-env.sh
+
+export RUST_TOOLCHAIN="qnx800"
+cargo +${RUST_TOOLCHAIN} build --target x86_64-pc-nto-qnx800 --package iceoryx2
 ```
 
 #### Aarch64
@@ -288,11 +393,24 @@ cargo +${RUST_TOOLCHAIN} build --target x86_64-pc-nto-qnx710 --package iceoryx2
 export QNX_TOOLCHAIN="$HOME/qnx710"
 source $QNX_TOOLCHAIN/qnxsdp-env.sh
 
-export RUST_TOOLCHAIN="qnx-custom"
+export RUST_TOOLCHAIN="qnx710"
 cargo +${RUST_TOOLCHAIN} build --target aarch64-unknown-nto-qnx710 --package iceoryx2
 ```
 
+##### QNX 8.0
+
+```bash
+export QNX_TOOLCHAIN="$HOME/qnx800"
+source $QNX_TOOLCHAIN/qnxsdp-env.sh
+
+export RUST_TOOLCHAIN="qnx800"
+cargo +${RUST_TOOLCHAIN} build --target aarch64-unknown-nto-qnx800 --package iceoryx2
+```
+
 ## Testing
+
+> [!WARN]
+> Unavailable on QNX 8.0 due to dependency on `std`.
 
 ### Running the Test Suite
 
@@ -314,7 +432,7 @@ The tests can be built in a similar way to the library:
 export QNX_TOOLCHAIN="$HOME/qnx710"
 source $QNX_TOOLCHAIN/qnxsdp-env.sh
 
-export RUST_TOOLCHAIN="qnx-custom"
+export RUST_TOOLCHAIN="qnx710"
 cargo +{$RUST_TOOLCHAIN} build --target x86_64-pc-nto-qnx710 --package iceoryx2 --tests
 ```
 
@@ -340,6 +458,9 @@ $RUSTDIR/build/host/stage0-tools-bin/remote-test-client run 0 <test_binary>
 
 ### Running Benchmarks
 
+> [!WARN]
+> Unavailable on QNX 8.0 due to dependency on `std`.
+
 > [!TIP]
 > A convenience script is available for building and running benchmarks on a
 > remote target.
@@ -358,7 +479,7 @@ First build the benchmarks:
 export QNX_TOOLCHAIN="$HOME/qnx710"
 source $QNX_TOOLCHAIN/qnxsdp-env.sh
 
-export RUST_TOOLCHAIN="qnx-custom"
+export RUST_TOOLCHAIN="qnx710"
 cargo +${RUST_TOOLCHAIN} build --release --target x86_64-pc-nto-qnx710 --package benchmark-publish-subscribe --package benchmark-event --package benchmark-request-response --package benchmark-queue
 ```
 
