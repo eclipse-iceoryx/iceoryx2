@@ -111,7 +111,7 @@ inline auto Reader<S, KeyType>::entry(const KeyType& key)
         return iox2::legacy::ok(EntryHandle<S, KeyType, ValueType>(entry_handle));
     }
 
-    return iox2::legacy::err(iox2::legacy::into<EntryHandleError>(result));
+    return iox2::legacy::err(iox2::bb::into<EntryHandleError>(result));
 }
 } // namespace iox2
 

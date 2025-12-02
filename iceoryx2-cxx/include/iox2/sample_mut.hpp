@@ -216,7 +216,7 @@ inline auto send(SampleMut<S, Payload, UserHeader>&& sample) -> iox2::legacy::ex
         return iox2::legacy::ok(number_of_recipients);
     }
 
-    return iox2::legacy::err(iox2::legacy::into<SendError>(result));
+    return iox2::legacy::err(iox2::bb::into<SendError>(result));
 }
 
 } // namespace iox2

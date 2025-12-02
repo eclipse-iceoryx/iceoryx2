@@ -19,7 +19,7 @@
 
 namespace {
 using namespace ::testing;
-using namespace iox2::legacy;
+using namespace iox2::bb;
 using namespace iox2::legacy::units;
 using namespace iox2::legacy::units::duration_literals;
 

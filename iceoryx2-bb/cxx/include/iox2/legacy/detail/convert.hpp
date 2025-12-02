@@ -43,7 +43,7 @@ namespace legacy {
 ///     if ( iox2::legacy::convert::from_string("-123", a) ) {} // will fail since -123 is not unsigned
 /// @endcode
 /// @todo iox-#260 Refactor 'convert' so that one can use 'into' to directly to convert numbers to strings:
-/// 'ClassExpectingAnIoxString(iox2::legacy::into<iox2::legacy::string<100>>(42)'
+/// 'ClassExpectingAnIoxString(iox2::bb::into<iox2::legacy::string<100>>(42)'
 class convert {
   public:
     enum class NumberType : uint8_t {

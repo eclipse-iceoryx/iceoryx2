@@ -55,11 +55,11 @@ auto main() -> int {
                                // created.
                                // The task of the notifier/event is it to inform and wake up other processes when
                                // certain system event have happened.
-                               .notifier_created_event(iox2::legacy::into<EventId>(PubSubEvent::PublisherConnected))
-                               .notifier_dropped_event(iox2::legacy::into<EventId>(PubSubEvent::PublisherDisconnected))
+                               .notifier_created_event(iox2::bb::into<EventId>(PubSubEvent::PublisherConnected))
+                               .notifier_dropped_event(iox2::bb::into<EventId>(PubSubEvent::PublisherDisconnected))
                                // This event is emitted when either the central daemon or a decentralized process
                                // detects a dead node and cleaned up all of its stale resources succesfully.
-                               .notifier_dead_event(iox2::legacy::into<EventId>(PubSubEvent::ProcessDied))
+                               .notifier_dead_event(iox2::bb::into<EventId>(PubSubEvent::ProcessDied))
                                .open_or_create()
                                .expect("successful service creation/opening");
 
@@ -71,9 +71,9 @@ auto main() -> int {
     auto service_event_2 = node.service_builder(service_name_2)
                                .event()
                                .deadline(DEADLINE_SERVICE_2)
-                               .notifier_created_event(iox2::legacy::into<EventId>(PubSubEvent::PublisherConnected))
-                               .notifier_dropped_event(iox2::legacy::into<EventId>(PubSubEvent::PublisherDisconnected))
-                               .notifier_dead_event(iox2::legacy::into<EventId>(PubSubEvent::ProcessDied))
+                               .notifier_created_event(iox2::bb::into<EventId>(PubSubEvent::PublisherConnected))
+                               .notifier_dropped_event(iox2::bb::into<EventId>(PubSubEvent::PublisherDisconnected))
+                               .notifier_dead_event(iox2::bb::into<EventId>(PubSubEvent::ProcessDied))
                                .open_or_create()
                                .expect("successful service creation/opening");
 

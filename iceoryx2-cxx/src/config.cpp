@@ -88,7 +88,7 @@ auto Config::from_file(const iox2::legacy::FilePath& file) -> iox2::legacy::expe
         return iox2::legacy::ok(Config(handle));
     }
 
-    return iox2::legacy::err(iox2::legacy::into<ConfigCreationError>(result));
+    return iox2::legacy::err(iox2::bb::into<ConfigCreationError>(result));
 }
 
 auto Config::global() -> config::Global {
@@ -358,13 +358,13 @@ void PublishSubscribe::set_enable_safe_overflow(bool value) && {
 }
 
 auto PublishSubscribe::unable_to_deliver_strategy() && -> UnableToDeliverStrategy {
-    return iox2::legacy::into<UnableToDeliverStrategy>(
+    return iox2::bb::into<UnableToDeliverStrategy>(
         iox2_config_defaults_publish_subscribe_unable_to_deliver_strategy(m_config));
 }
 
 void PublishSubscribe::set_unable_to_deliver_strategy(UnableToDeliverStrategy value) && {
     iox2_config_defaults_publish_subscribe_set_unable_to_deliver_strategy(
-        m_config, static_cast<iox2_unable_to_deliver_strategy_e>(iox2::legacy::into<int>(value)));
+        m_config, static_cast<iox2_unable_to_deliver_strategy_e>(iox2::bb::into<int>(value)));
 }
 
 auto PublishSubscribe::subscriber_expired_connection_buffer() && -> size_t {
@@ -596,7 +596,7 @@ void RequestResponse::set_server_max_loaned_responses_per_request(size_t value) 
 }
 
 auto RequestResponse::client_unable_to_deliver_strategy() && -> UnableToDeliverStrategy {
-    return iox2::legacy::into<UnableToDeliverStrategy>(
+    return iox2::bb::into<UnableToDeliverStrategy>(
         iox2_config_defaults_request_response_client_unable_to_deliver_strategy(m_config));
 }
 
@@ -606,7 +606,7 @@ void RequestResponse::set_client_unable_to_deliver_strategy(UnableToDeliverStrat
 }
 
 auto RequestResponse::server_unable_to_deliver_strategy() && -> UnableToDeliverStrategy {
-    return iox2::legacy::into<UnableToDeliverStrategy>(
+    return iox2::bb::into<UnableToDeliverStrategy>(
         iox2_config_defaults_request_response_server_unable_to_deliver_strategy(m_config));
 }
 

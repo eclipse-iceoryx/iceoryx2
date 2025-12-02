@@ -104,13 +104,13 @@ void handle_incoming_events(Listener<ServiceType::Ipc>& listener,
                             const ServiceName& service_name) {
     listener
         .try_wait_all([&](auto event_id) -> auto {
-            if (event_id == iox2::legacy::into<EventId>(PubSubEvent::ProcessDied)) {
+            if (event_id == iox2::bb::into<EventId>(PubSubEvent::ProcessDied)) {
                 std::cout << service_name.to_string().c_str() << ": process died!" << std::endl;
-            } else if (event_id == iox2::legacy::into<EventId>(PubSubEvent::PublisherConnected)) {
+            } else if (event_id == iox2::bb::into<EventId>(PubSubEvent::PublisherConnected)) {
                 std::cout << service_name.to_string().c_str() << ": publisher connected!" << std::endl;
-            } else if (event_id == iox2::legacy::into<EventId>(PubSubEvent::PublisherDisconnected)) {
+            } else if (event_id == iox2::bb::into<EventId>(PubSubEvent::PublisherDisconnected)) {
                 std::cout << service_name.to_string().c_str() << ": publisher disconnected!" << std::endl;
-            } else if (event_id == iox2::legacy::into<EventId>(PubSubEvent::SentSample)) {
+            } else if (event_id == iox2::bb::into<EventId>(PubSubEvent::SentSample)) {
                 subscriber.receive().expect("").and_then([&](auto& sample) -> auto {
                     std::cout << service_name.to_string().c_str() << ": Received sample " << sample.payload() << " ..."
                               << std::endl;

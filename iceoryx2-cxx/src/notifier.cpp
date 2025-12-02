@@ -56,7 +56,7 @@ auto Notifier<S>::notify() const -> iox2::legacy::expected<size_t, NotifierNotif
         return iox2::legacy::ok(number_of_notified_listeners);
     }
 
-    return iox2::legacy::err(iox2::legacy::into<NotifierNotifyError>(result));
+    return iox2::legacy::err(iox2::bb::into<NotifierNotifyError>(result));
 }
 
 template <ServiceType S>
@@ -70,7 +70,7 @@ auto Notifier<S>::notify_with_custom_event_id(EventId event_id) const
         return iox2::legacy::ok(number_of_notified_listeners);
     }
 
-    return iox2::legacy::err(iox2::legacy::into<NotifierNotifyError>(result));
+    return iox2::legacy::err(iox2::bb::into<NotifierNotifyError>(result));
 }
 
 template <ServiceType S>

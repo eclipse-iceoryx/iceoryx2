@@ -13,8 +13,8 @@
 #ifndef IOX2_EXAMPLE_HEALTH_MONITORING_PUBSUB_EVENT_HPP
 #define IOX2_EXAMPLE_HEALTH_MONITORING_PUBSUB_EVENT_HPP
 
+#include "iox2/bb/into.hpp"
 #include "iox2/iceoryx2.hpp"
-#include "iox2/legacy/into.hpp"
 
 #include <cstdint>
 
@@ -44,12 +44,12 @@ inline auto open_service(const iox2::Node<iox2::ServiceType::Ipc>& node, const i
 }
 
 namespace iox2 {
-namespace legacy {
+namespace bb {
 template <>
 inline auto from<PubSubEvent, iox2::EventId>(const PubSubEvent value) noexcept -> iox2::EventId {
     return iox2::EventId(static_cast<uint64_t>(value));
 }
-} // namespace legacy
+} // namespace bb
 } // namespace iox2
 
 #endif

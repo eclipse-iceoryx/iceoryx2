@@ -231,7 +231,7 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::open_or_crea
         return iox2::legacy::ok(PortFactoryPublishSubscribe<S, Payload, UserHeader>(port_factory_handle));
     }
 
-    return iox2::legacy::err(iox2::legacy::into<PublishSubscribeOpenOrCreateError>(result));
+    return iox2::legacy::err(iox2::bb::into<PublishSubscribeOpenOrCreateError>(result));
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>
@@ -246,7 +246,7 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::open() && ->
         return iox2::legacy::ok(PortFactoryPublishSubscribe<S, Payload, UserHeader>(port_factory_handle));
     }
 
-    return iox2::legacy::err(iox2::legacy::into<PublishSubscribeOpenError>(result));
+    return iox2::legacy::err(iox2::bb::into<PublishSubscribeOpenError>(result));
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>
@@ -261,7 +261,7 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::create() && 
         return iox2::legacy::ok(PortFactoryPublishSubscribe<S, Payload, UserHeader>(port_factory_handle));
     }
 
-    return iox2::legacy::err(iox2::legacy::into<PublishSubscribeCreateError>(result));
+    return iox2::legacy::err(iox2::bb::into<PublishSubscribeCreateError>(result));
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>
@@ -279,7 +279,7 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::open_or_crea
         return iox2::legacy::ok(PortFactoryPublishSubscribe<S, Payload, UserHeader>(port_factory_handle));
     }
 
-    return iox2::legacy::err(iox2::legacy::into<PublishSubscribeOpenOrCreateError>(result));
+    return iox2::legacy::err(iox2::bb::into<PublishSubscribeOpenOrCreateError>(result));
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>
@@ -297,7 +297,7 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::open_with_at
         return iox2::legacy::ok(PortFactoryPublishSubscribe<S, Payload, UserHeader>(port_factory_handle));
     }
 
-    return iox2::legacy::err(iox2::legacy::into<PublishSubscribeOpenError>(result));
+    return iox2::legacy::err(iox2::bb::into<PublishSubscribeOpenError>(result));
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>
@@ -315,7 +315,7 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::create_with_
         return iox2::legacy::ok(PortFactoryPublishSubscribe<S, Payload, UserHeader>(port_factory_handle));
     }
 
-    return iox2::legacy::err(iox2::legacy::into<PublishSubscribeCreateError>(result));
+    return iox2::legacy::err(iox2::bb::into<PublishSubscribeCreateError>(result));
 }
 } // namespace iox2
 

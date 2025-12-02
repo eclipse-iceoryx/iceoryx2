@@ -58,7 +58,7 @@ PortFactoryReader<S, KeyType>::create() && -> iox2::legacy::expected<Reader<S, K
         return iox2::legacy::ok(Reader<S, KeyType>(reader_handle));
     }
 
-    return iox2::legacy::err(iox2::legacy::into<ReaderCreateError>(result));
+    return iox2::legacy::err(iox2::bb::into<ReaderCreateError>(result));
 }
 } // namespace iox2
 

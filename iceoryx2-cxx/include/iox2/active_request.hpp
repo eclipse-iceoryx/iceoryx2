@@ -165,7 +165,7 @@ ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload, Respo
     if (result == IOX2_OK) {
         return iox2::legacy::ok(std::move(response));
     }
-    return iox2::legacy::err(iox2::legacy::into<LoanError>(result));
+    return iox2::legacy::err(iox2::bb::into<LoanError>(result));
 }
 
 template <ServiceType Service,
@@ -185,7 +185,7 @@ ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload, Respo
     if (result == IOX2_OK) {
         return iox2::legacy::ok(std::move(response));
     }
-    return iox2::legacy::err(iox2::legacy::into<LoanError>(result));
+    return iox2::legacy::err(iox2::bb::into<LoanError>(result));
 }
 
 template <ServiceType Service,
@@ -205,7 +205,7 @@ inline auto ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePa
     if (result == IOX2_OK) {
         return iox2::legacy::ok();
     }
-    return iox2::legacy::err(iox2::legacy::into<SendError>(result));
+    return iox2::legacy::err(iox2::bb::into<SendError>(result));
 }
 
 template <ServiceType Service,
@@ -225,7 +225,7 @@ ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload, Respo
     if (result == IOX2_OK) {
         return iox2::legacy::ok();
     }
-    return iox2::legacy::err(iox2::legacy::into<SendError>(result));
+    return iox2::legacy::err(iox2::bb::into<SendError>(result));
 }
 
 template <ServiceType Service,

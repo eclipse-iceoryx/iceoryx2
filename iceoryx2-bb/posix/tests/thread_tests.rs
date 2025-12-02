@@ -292,7 +292,11 @@ fn thread_set_affinity_to_one_core_from_thread_works() {
             .spawn(move || {
                 barrier.wait();
                 let handle = ThreadHandle::from_self();
-                let affinity = handle.get_affinity().unwrap();
+                let mut affinity = Vec::new();
+                match handle.get_affinity() {
+                    Ok(value) => affinity = value,
+                    Err(error) => println!("Expected value but got error: {error:?}"),
+                }
                 barrier.wait();
                 assert_that!(affinity, len 1);
                 assert_that!(affinity[0], eq 0);

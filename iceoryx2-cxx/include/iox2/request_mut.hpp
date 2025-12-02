@@ -253,7 +253,7 @@ inline auto send(RequestMut<Service, RequestPayload, RequestUserHeader, Response
             PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(
                 pending_response_handle));
     }
-    return iox2::legacy::err(iox2::legacy::into<RequestSendError>(result));
+    return iox2::legacy::err(iox2::bb::into<RequestSendError>(result));
 }
 
 template <ServiceType Service,

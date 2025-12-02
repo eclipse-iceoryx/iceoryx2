@@ -57,7 +57,7 @@ inline auto PortFactoryListener<S>::create() && -> iox2::legacy::expected<Listen
         return iox2::legacy::ok(Listener<S> { listener_handle });
     }
 
-    return iox2::legacy::err(iox2::legacy::into<ListenerCreateError>(result));
+    return iox2::legacy::err(iox2::bb::into<ListenerCreateError>(result));
 }
 } // namespace iox2
 

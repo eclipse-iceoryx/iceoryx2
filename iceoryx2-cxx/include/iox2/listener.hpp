@@ -194,7 +194,7 @@ inline auto Listener<S>::try_wait_all(const iox2::legacy::function<void(EventId)
         return iox2::legacy::ok();
     }
 
-    return iox2::legacy::err(iox2::legacy::into<ListenerWaitError>(result));
+    return iox2::legacy::err(iox2::bb::into<ListenerWaitError>(result));
 }
 
 template <ServiceType S>
@@ -213,7 +213,7 @@ inline auto Listener<S>::timed_wait_all(const iox2::legacy::function<void(EventI
         return iox2::legacy::ok();
     }
 
-    return iox2::legacy::err(iox2::legacy::into<ListenerWaitError>(result));
+    return iox2::legacy::err(iox2::bb::into<ListenerWaitError>(result));
 }
 
 template <ServiceType S>
@@ -226,7 +226,7 @@ inline auto Listener<S>::blocking_wait_all(const iox2::legacy::function<void(Eve
         return iox2::legacy::ok();
     }
 
-    return iox2::legacy::err(iox2::legacy::into<ListenerWaitError>(result));
+    return iox2::legacy::err(iox2::bb::into<ListenerWaitError>(result));
 }
 
 template <ServiceType S>
@@ -244,7 +244,7 @@ inline auto Listener<S>::try_wait_one() -> iox2::legacy::expected<iox2::legacy::
         return iox2::legacy::ok(iox2::legacy::optional<EventId>());
     }
 
-    return iox2::legacy::err(iox2::legacy::into<ListenerWaitError>(result));
+    return iox2::legacy::err(iox2::bb::into<ListenerWaitError>(result));
 }
 
 template <ServiceType S>
@@ -268,7 +268,7 @@ inline auto Listener<S>::timed_wait_one(const iox2::legacy::units::Duration& tim
         return iox2::legacy::ok(iox2::legacy::optional<EventId>());
     }
 
-    return iox2::legacy::err(iox2::legacy::into<ListenerWaitError>(result));
+    return iox2::legacy::err(iox2::bb::into<ListenerWaitError>(result));
 }
 
 template <ServiceType S>
@@ -287,7 +287,7 @@ inline auto Listener<S>::blocking_wait_one()
         return iox2::legacy::ok(iox2::legacy::optional<EventId>());
     }
 
-    return iox2::legacy::err(iox2::legacy::into<ListenerWaitError>(result));
+    return iox2::legacy::err(iox2::bb::into<ListenerWaitError>(result));
 }
 } // namespace iox2
 

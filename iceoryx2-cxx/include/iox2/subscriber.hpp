@@ -102,7 +102,7 @@ inline auto Subscriber<S, Payload, UserHeader>::has_samples() const -> iox2::leg
         return iox2::legacy::ok(has_samples_result);
     }
 
-    return iox2::legacy::err(iox2::legacy::into<ConnectionFailure>(result));
+    return iox2::legacy::err(iox2::bb::into<ConnectionFailure>(result));
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
@@ -131,7 +131,7 @@ inline auto Subscriber<S, Payload, UserHeader>::receive() const
         return iox2::legacy::ok(iox2::legacy::optional<Sample<S, Payload, UserHeader>>(iox2::legacy::nullopt));
     }
 
-    return iox2::legacy::err(iox2::legacy::into<ReceiveError>(result));
+    return iox2::legacy::err(iox2::bb::into<ReceiveError>(result));
 }
 } // namespace iox2
 

@@ -114,7 +114,7 @@ ADDED_FILES=""
 FILE_LIST=""
 if [[ $FILES_MODE == true || $DIFF_TO_MAIN_MODE == true ]]; then
     if [[ $DIFF_TO_MAIN_MODE == true ]]; then
-        FILES_TO_SCAN=$(git diff --name-only --diff-filter=AM ${MAIN_ORIGIN}/main HEAD)
+        FILES_TO_SCAN=$(git diff --name-only --diff-filter=ACMRT ${MAIN_ORIGIN}/main HEAD)
     fi
 
     SEPARATOR=''

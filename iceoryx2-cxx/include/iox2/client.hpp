@@ -162,8 +162,7 @@ template <ServiceType Service,
 inline auto
 Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::unable_to_deliver_strategy()
     const -> UnableToDeliverStrategy {
-    return iox2::legacy::into<UnableToDeliverStrategy>(
-        static_cast<int>(iox2_client_unable_to_deliver_strategy(&m_handle)));
+    return iox2::bb::into<UnableToDeliverStrategy>(static_cast<int>(iox2_client_unable_to_deliver_strategy(&m_handle)));
 }
 
 template <ServiceType Service,
@@ -196,7 +195,7 @@ inline auto Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, 
     if (result == IOX2_OK) {
         return iox2::legacy::ok(std::move(request));
     }
-    return iox2::legacy::err(iox2::legacy::into<LoanError>(result));
+    return iox2::legacy::err(iox2::bb::into<LoanError>(result));
 }
 
 template <ServiceType Service,
@@ -216,7 +215,7 @@ inline auto Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, 
     if (result == IOX2_OK) {
         return iox2::legacy::ok(std::move(request));
     }
-    return iox2::legacy::err(iox2::legacy::into<LoanError>(result));
+    return iox2::legacy::err(iox2::bb::into<LoanError>(result));
 }
 
 template <ServiceType Service,
@@ -243,7 +242,7 @@ inline auto Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, 
                 pending_response_handle));
     }
 
-    return iox2::legacy::err(iox2::legacy::into<RequestSendError>(result));
+    return iox2::legacy::err(iox2::bb::into<RequestSendError>(result));
 }
 
 template <ServiceType Service,
@@ -274,7 +273,7 @@ inline auto Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, 
                 pending_response_handle));
     }
 
-    return iox2::legacy::err(iox2::legacy::into<RequestSendError>(result));
+    return iox2::legacy::err(iox2::bb::into<RequestSendError>(result));
 }
 
 template <ServiceType Service,

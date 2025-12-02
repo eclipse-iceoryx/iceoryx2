@@ -124,7 +124,7 @@ inline auto Server<Service, RequestPayload, RequestHeader, ResponsePayload, Resp
                                 ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>>(
             iox2::legacy::nullopt));
     }
-    return iox2::legacy::err(iox2::legacy::into<ReceiveError>(result));
+    return iox2::legacy::err(iox2::bb::into<ReceiveError>(result));
 }
 
 template <ServiceType Service,
@@ -165,7 +165,7 @@ inline auto Server<Service, RequestPayload, RequestHeader, ResponsePayload, Resp
         return iox2::legacy::ok(has_requests_result);
     }
 
-    return iox2::legacy::err(iox2::legacy::into<ConnectionFailure>(result));
+    return iox2::legacy::err(iox2::bb::into<ConnectionFailure>(result));
 }
 
 template <ServiceType Service,

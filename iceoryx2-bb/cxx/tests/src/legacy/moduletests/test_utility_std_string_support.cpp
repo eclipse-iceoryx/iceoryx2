@@ -19,6 +19,7 @@
 
 namespace {
 using namespace ::testing;
+using namespace iox2::bb;
 using namespace iox2::legacy;
 
 
@@ -39,7 +40,7 @@ TYPED_TEST(StdString_test, STDStringToLossyStringConvConstrWithSize0ResultsInSiz
     using MyString = typename TestFixture::stringType;
     constexpr auto STRINGCAP = MyString::capacity();
     std::string testString;
-    string<STRINGCAP> fuu = into<lossy<MyString>>(testString);
+    string<STRINGCAP> fuu = into<Lossy<MyString>>(testString);
     EXPECT_THAT(fuu.capacity(), Eq(STRINGCAP));
     EXPECT_THAT(fuu.size(), Eq(0U));
     EXPECT_THAT(fuu.c_str(), StrEq(""));
@@ -50,7 +51,7 @@ TYPED_TEST(StdString_test, STDStringToLossyStringConvConstrWithSizeSmallerCapaRe
     using MyString = typename TestFixture::stringType;
     constexpr auto STRINGCAP = MyString::capacity();
     std::string testString(STRINGCAP - 1U, 'M');
-    string<STRINGCAP> fuu = into<lossy<MyString>>(testString);
+    string<STRINGCAP> fuu = into<Lossy<MyString>>(testString);
     EXPECT_THAT(fuu.capacity(), Eq(STRINGCAP));
     EXPECT_THAT(fuu.size(), Eq(STRINGCAP - 1U));
     EXPECT_THAT(fuu.c_str(), Eq(testString));
@@ -61,7 +62,7 @@ TYPED_TEST(StdString_test, STDStringToLossyStringConvConstrWithSizeCapaResultsIn
     using MyString = typename TestFixture::stringType;
     constexpr auto STRINGCAP = MyString::capacity();
     std::string testString(STRINGCAP, 'M');
-    string<STRINGCAP> fuu = into<lossy<MyString>>(testString);
+    string<STRINGCAP> fuu = into<Lossy<MyString>>(testString);
     EXPECT_THAT(fuu.capacity(), Eq(STRINGCAP));
     EXPECT_THAT(fuu.size(), Eq(STRINGCAP));
     EXPECT_THAT(fuu.c_str(), Eq(testString));
@@ -72,7 +73,7 @@ TYPED_TEST(StdString_test, STDStringToLossyStringConvConstrWithSizeGreaterCapaRe
     using MyString = typename TestFixture::stringType;
     constexpr auto STRINGCAP = MyString::capacity();
     std::string testString(STRINGCAP + 1U, 'M');
-    string<STRINGCAP> fuu = into<lossy<MyString>>(testString);
+    string<STRINGCAP> fuu = into<Lossy<MyString>>(testString);
     EXPECT_THAT(fuu.capacity(), Eq(STRINGCAP));
     EXPECT_THAT(fuu.size(), Eq(STRINGCAP));
     EXPECT_THAT(fuu.c_str(), Eq(testString.substr(0U, STRINGCAP)));

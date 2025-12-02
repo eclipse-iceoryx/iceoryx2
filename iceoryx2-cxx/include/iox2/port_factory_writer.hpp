@@ -58,7 +58,7 @@ PortFactoryWriter<S, KeyType>::create() && -> iox2::legacy::expected<Writer<S, K
         return iox2::legacy::ok(Writer<S, KeyType>(writer_handle));
     }
 
-    return iox2::legacy::err(iox2::legacy::into<WriterCreateError>(result));
+    return iox2::legacy::err(iox2::bb::into<WriterCreateError>(result));
 }
 } // namespace iox2
 

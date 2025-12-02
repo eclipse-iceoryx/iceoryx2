@@ -19,7 +19,7 @@ namespace {
 auto get_key_values_callback(const char* value, iox2_callback_context context) -> iox2_callback_progression_e {
     auto* callback = internal::ctx_cast<iox2::legacy::function<CallbackProgression(const Attribute::Value&)>>(context);
     auto typed_value = Attribute::Value(iox2::legacy::TruncateToCapacity, value);
-    return iox2::legacy::into<iox2_callback_progression_e>(callback->value()(typed_value));
+    return iox2::bb::into<iox2_callback_progression_e>(callback->value()(typed_value));
 }
 } // namespace
 

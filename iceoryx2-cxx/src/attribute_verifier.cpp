@@ -50,7 +50,7 @@ auto AttributeVerifier::require(const Attribute::Key& key, const Attribute::Valu
         return iox2::legacy::ok();
     }
 
-    return iox2::legacy::err(iox2::legacy::into<AttributeDefinitionError>(result));
+    return iox2::legacy::err(iox2::bb::into<AttributeDefinitionError>(result));
 }
 
 auto AttributeVerifier::require_key(const Attribute::Key& key)
@@ -60,7 +60,7 @@ auto AttributeVerifier::require_key(const Attribute::Key& key)
         return iox2::legacy::ok();
     }
 
-    return iox2::legacy::err(iox2::legacy::into<AttributeDefinitionError>(result));
+    return iox2::legacy::err(iox2::bb::into<AttributeDefinitionError>(result));
 }
 
 auto AttributeVerifier::attributes() const -> AttributeSetView {

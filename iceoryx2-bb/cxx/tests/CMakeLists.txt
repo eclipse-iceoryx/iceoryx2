@@ -34,6 +34,7 @@ target_sources(iceoryx2-bb-cxx-tests
     ${PROJECT_SOURCE_DIR}/src/testing/test_utils.cpp
     PRIVATE
     ${PROJECT_SOURCE_DIR}/src/main.cpp
+    ${PROJECT_SOURCE_DIR}/src/into_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/optional_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/raw_byte_storage_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/static_string_tests.cpp
@@ -102,7 +103,6 @@ target_sources(iceoryx2-bb-cxx-tests
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_time_unit_duration.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_utility_convert.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_utility_deprecation_marker.cpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_utility_into.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_utility_std_chrono_support.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_utility_std_string_support.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_vocabulary_expected.cpp

@@ -132,7 +132,7 @@ auto ServiceBuilderEvent<S>::open_or_create() && -> iox2::legacy::expected<PortF
         return iox2::legacy::ok(PortFactoryEvent<S>(event_handle));
     }
 
-    return iox2::legacy::err(iox2::legacy::into<EventOpenOrCreateError>(result));
+    return iox2::legacy::err(iox2::bb::into<EventOpenOrCreateError>(result));
 }
 
 template <ServiceType S>
@@ -146,7 +146,7 @@ auto ServiceBuilderEvent<S>::open() && -> iox2::legacy::expected<PortFactoryEven
         return iox2::legacy::ok(PortFactoryEvent<S>(event_handle));
     }
 
-    return iox2::legacy::err(iox2::legacy::into<EventOpenError>(result));
+    return iox2::legacy::err(iox2::bb::into<EventOpenError>(result));
 }
 
 template <ServiceType S>
@@ -160,7 +160,7 @@ auto ServiceBuilderEvent<S>::create() && -> iox2::legacy::expected<PortFactoryEv
         return iox2::legacy::ok(PortFactoryEvent<S>(event_handle));
     }
 
-    return iox2::legacy::err(iox2::legacy::into<EventCreateError>(result));
+    return iox2::legacy::err(iox2::bb::into<EventCreateError>(result));
 }
 
 template <ServiceType S>
@@ -177,7 +177,7 @@ auto ServiceBuilderEvent<S>::open_or_create_with_attributes(
         return iox2::legacy::ok(PortFactoryEvent<S>(event_handle));
     }
 
-    return iox2::legacy::err(iox2::legacy::into<EventOpenOrCreateError>(result));
+    return iox2::legacy::err(iox2::bb::into<EventOpenOrCreateError>(result));
 }
 
 template <ServiceType S>
@@ -193,7 +193,7 @@ auto ServiceBuilderEvent<S>::open_with_attributes(
         return iox2::legacy::ok(PortFactoryEvent<S>(event_handle));
     }
 
-    return iox2::legacy::err(iox2::legacy::into<EventOpenError>(result));
+    return iox2::legacy::err(iox2::bb::into<EventOpenError>(result));
 }
 
 template <ServiceType S>
@@ -209,7 +209,7 @@ auto ServiceBuilderEvent<S>::create_with_attributes(
         return iox2::legacy::ok(PortFactoryEvent<S>(event_handle));
     }
 
-    return iox2::legacy::err(iox2::legacy::into<EventCreateError>(result));
+    return iox2::legacy::err(iox2::bb::into<EventCreateError>(result));
 }
 
 template class ServiceBuilderEvent<ServiceType::Ipc>;

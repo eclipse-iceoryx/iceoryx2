@@ -81,7 +81,7 @@ auto main() -> int {
     while (node.wait(iox2::legacy::units::Duration::fromMilliseconds(receive_interval_ms)).has_value()) {
         auto sample = subscriber.receive().expect("Failure in receive");
         if (sample) {
-            auto it_test = std::find_if(begin(tests), end(tests), [&sample](Test const& test) {
+            auto it_test = std::find_if(begin(tests), end(tests), [&sample](Test const& test) -> auto {
                 return test.test_name == sample->payload().test_name;
             });
             if (it_test == end(tests)) {
