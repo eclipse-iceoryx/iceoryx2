@@ -179,6 +179,13 @@ if [ ! -f "$QEMU_BRIDGE_HELPER" ]; then
     echo -e "${YELLOW}Network bridging may not work properly${NC}"
 fi
 
+# Select appropriate network device
+if [ "$QNX_VERSION" = "7.1" ]; then
+    NET_DEVICE="e1000"
+else
+    NET_DEVICE="virtio-net-pci"
+fi
+
 # Generate random MAC address
 MAC=$(printf "52:54:00:%02x:%02x:%02x" $(( $RANDOM & 0xff)) $(( $RANDOM & 0xff )) $(( $RANDOM & 0xff)))
 
@@ -197,6 +204,7 @@ echo -e "  CPU Cores:        ${SMP}"
 echo -e "  Memory:           ${MEMORY}"
 echo -e "  Bridge:           ${BRIDGE}"
 echo -e "  Bridge IP:        ${BRIDGE_IP}"
+echo -e "  Network Device:   ${NET_DEVICE}"
 echo -e "  MAC Address:      ${MAC}"
 echo ""
 echo -e "${BLUE}Image Files:${NC}"
@@ -312,10 +320,11 @@ echo ""
 QEMU_ARGS=(
     "-smp" "$SMP"
     "-m" "$MEMORY"
+    "-cpu" "max"
     "-drive" "file=$DISK_IMAGE,if=ide,id=drv0"
     "-hdb" "fat:rw:$SHARED_DIR"
     "-netdev" "bridge,br=$BRIDGE,id=net0"
-    "-device" "e1000,netdev=net0,mac=$MAC"
+    "-device" "$NET_DEVICE,netdev=net0,mac=$MAC"
     "-nographic"
     "-kernel" "$KERNEL_IMAGE"
     "-serial" "mon:stdio"

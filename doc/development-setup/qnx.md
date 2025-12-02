@@ -130,6 +130,7 @@ sudo ${QNX_TOOLCHAIN}/host/common/mkqnximage/qemu/net.sh /usr/lib/qemu/qemu-brid
 qemu-system-x86_64 \
   -smp 2 \
   -m 1G \
+  -cpu max \
   -drive file=${IMAGE_DIR}/output/disk-qemu.vmdk,if=ide,id=drv0 \
   -hdb fat:rw:${IMAGE_DIR}/shared \
   -netdev bridge,br=br0,id=net0 \
