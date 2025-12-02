@@ -55,7 +55,7 @@ rust_library(
         "//conditions:default": [],
     }),
     deps = [
-        "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
+        "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
     ] + select({
         "//:cfg_feature_logger_log": [
             "@crate_index//:log",

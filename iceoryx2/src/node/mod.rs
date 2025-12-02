@@ -158,6 +158,7 @@ use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
 
+use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::CallbackProgression;
@@ -178,7 +179,6 @@ use iceoryx2_cal::named_concept::{NamedConceptPathHintRemoveError, NamedConceptR
 use iceoryx2_cal::{
     monitoring::*, named_concept::NamedConceptListError, serialize::*, static_storage::*,
 };
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
 use crate::node::node_name::NodeName;
 use crate::service::builder::{Builder, OpenDynamicStorageFailure};
@@ -533,7 +533,7 @@ impl<Service: service::Service> DeadNodeView<Service> {
         // But the same process could acquire the same cleaner multiple times. To avoid intra-process
         // races an additional lock is introduced so that only one thread can call
         // remove_stale_resources.
-        static IN_CLEANUP_SECTION: IoxAtomicBool = IoxAtomicBool::new(false);
+        static IN_CLEANUP_SECTION: AtomicBool = AtomicBool::new(false);
 
         // if swap returns true, someone else is holding the lock
         if IN_CLEANUP_SECTION.swap(true, Ordering::Relaxed) {

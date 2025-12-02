@@ -12,7 +12,9 @@ version = { workspace = true }
 
 [features]
 default = []
-std = []
+std = [
+  "iceoryx2-bb-concurrency/std"
+]
 
 # Enables logging to buffer
 logger_buffer = ["std"]
@@ -26,6 +28,6 @@ logger_log = ["std", "dep:log"]
 logger_tracing = ["std", "dep:tracing"]
 
 [dependencies]
-iceoryx2-pal-concurrency-sync = { workspace = true }
+iceoryx2-bb-concurrency = { workspace = true }
 log = { workspace = true, optional = true }
 tracing = { workspace = true, optional = true }

@@ -43,8 +43,8 @@ use alloc::vec::Vec;
 
 pub use iceoryx2_bb_elementary::CallbackProgression;
 
+use iceoryx2_bb_concurrency::atomic::AtomicU64;
 use iceoryx2_bb_log::fail;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 
 use crate::{
     clock::ClockType,
@@ -119,7 +119,7 @@ impl DeadlineQueueBuilder {
 
         Ok(DeadlineQueue {
             attachments: RefCell::new(vec![]),
-            id_count: IoxAtomicU64::new(0),
+            id_count: AtomicU64::new(0),
             clock_type: self.clock_type,
             previous_iteration: RefCell::new(start_time),
         })
@@ -161,7 +161,7 @@ impl Attachment {
 #[derive(Debug)]
 pub struct DeadlineQueue {
     attachments: RefCell<Vec<Attachment>>,
-    id_count: IoxAtomicU64,
+    id_count: AtomicU64,
     previous_iteration: RefCell<u128>,
 
     clock_type: ClockType,

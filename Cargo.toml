@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "iceoryx2-bb/lock-free/",
     "iceoryx2-bb/threadsafe/",
+    "iceoryx2-bb/concurrency",
     "iceoryx2-bb/conformance-test-macros",
     "iceoryx2-bb/container",
     "iceoryx2-bb/derive-macros",
@@ -74,6 +75,7 @@ version = "0.7.0"
 [workspace.dependencies]
 iceoryx2-bb-threadsafe = { version = "0.7.0", path = "iceoryx2-bb/threadsafe/" }
 iceoryx2-bb-lock-free = { version = "0.7.0", path = "iceoryx2-bb/lock-free/" }
+iceoryx2-bb-concurrency = { version = "0.7.0", path = "iceoryx2-bb/concurrency/" }
 iceoryx2-bb-conformance-test-macros = { version = "0.7.0", path = "iceoryx2-bb/conformance-test-macros"}
 iceoryx2-bb-container = { version = "0.7.0", path = "iceoryx2-bb/container/" }
 iceoryx2-bb-derive-macros = { version = "0.7.0", path = "iceoryx2-bb/derive-macros/" }
@@ -121,6 +123,7 @@ human-panic = { version = "2.0.2" }
 lazy_static = { version = "1.4.0", default-features = false }
 libc = { version = "0.2.169", features = ['extra_traits'] }
 log = { version = "0.4.21" }
+paste = { version = "1.0.15" }
 postcard = { version = "1.1.3", default-features = false, features = ["alloc"] }
 proc-macro2 = { version = "1.0.84" }
 quote = { version = "1.0.36" }

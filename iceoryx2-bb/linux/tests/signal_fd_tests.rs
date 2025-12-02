@@ -14,6 +14,7 @@
 pub mod tests {
     use std::sync::{atomic::Ordering, Barrier};
 
+    use iceoryx2_bb_concurrency::atomic::AtomicU64;
     use iceoryx2_bb_linux::signalfd::SignalFdBuilder;
     use iceoryx2_bb_posix::{
         process::Process,
@@ -22,7 +23,6 @@ pub mod tests {
         user::User,
     };
     use iceoryx2_bb_testing::{assert_that, watchdog::Watchdog};
-    use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 
     #[test]
     fn registered_signal_can_be_try_read() {
@@ -60,7 +60,7 @@ pub mod tests {
     #[test]
     fn blocking_read_blocks() {
         let _watchdog = Watchdog::new();
-        let counter = IoxAtomicU64::new(0);
+        let counter = AtomicU64::new(0);
         let barrier = Barrier::new(2);
         let mut signals = FetchableSignalSet::new_empty();
         signals.add(FetchableSignal::UserDefined2);
