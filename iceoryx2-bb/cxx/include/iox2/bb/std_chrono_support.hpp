@@ -26,7 +26,7 @@ namespace bb {
 /// @attention Since negative durations are not allowed, the duration will be clamped to 0
 template <>
 struct From<std::chrono::nanoseconds, Duration> {
-    static constexpr Duration from(const std::chrono::nanoseconds& value) noexcept {
+    static constexpr auto from(const std::chrono::nanoseconds& value) noexcept -> Duration {
         return Duration::from_nanos(value.count());
     }
 };
@@ -36,7 +36,7 @@ struct From<std::chrono::nanoseconds, Duration> {
 /// @attention Since negative durations are not allowed, the duration will be clamped to 0
 template <>
 struct From<std::chrono::microseconds, Duration> {
-    static constexpr Duration from(const std::chrono::microseconds& value) noexcept {
+    static constexpr auto from(const std::chrono::microseconds& value) noexcept -> Duration {
         return Duration::from_micros(value.count());
     }
 };
@@ -46,7 +46,7 @@ struct From<std::chrono::microseconds, Duration> {
 /// @attention Since negative durations are not allowed, the duration will be clamped to 0
 template <>
 struct From<std::chrono::milliseconds, Duration> {
-    static constexpr Duration from(const std::chrono::milliseconds& value) noexcept {
+    static constexpr auto from(const std::chrono::milliseconds& value) noexcept -> Duration {
         return Duration::from_millis(value.count());
     }
 };
@@ -56,7 +56,7 @@ struct From<std::chrono::milliseconds, Duration> {
 /// @attention Since negative durations are not allowed, the duration will be clamped to 0
 template <>
 struct From<std::chrono::seconds, Duration> {
-    static constexpr Duration from(const std::chrono::seconds& value) noexcept {
+    static constexpr auto from(const std::chrono::seconds& value) noexcept -> Duration {
         return Duration::from_secs(value.count());
     }
 };
