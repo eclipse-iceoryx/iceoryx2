@@ -62,8 +62,8 @@ auto StaticConfigEvent::deadline() const -> iox2::legacy::optional<iox2::bb::Dur
         return iox2::legacy::nullopt;
     }
 
-    return { iox2::bb::Duration::from_seconds(m_value.deadline_seconds)
-             + iox2::bb::Duration::from_nanoseconds(m_value.deadline_nanoseconds) };
+    return { iox2::bb::Duration::from_secs(m_value.deadline_seconds)
+             + iox2::bb::Duration::from_nanos(m_value.deadline_nanoseconds) };
 }
 
 } // namespace iox2

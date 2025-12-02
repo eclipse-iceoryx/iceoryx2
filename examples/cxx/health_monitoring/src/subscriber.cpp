@@ -17,9 +17,9 @@
 
 using namespace iox2;
 
-constexpr iox2::bb::Duration REACTION_BUFFER = iox2::bb::Duration::from_milliseconds(100);
-constexpr iox2::bb::Duration CYCLE_TIME_1 = iox2::bb::Duration::from_milliseconds(1000) + REACTION_BUFFER;
-constexpr iox2::bb::Duration CYCLE_TIME_2 = iox2::bb::Duration::from_milliseconds(1500) + REACTION_BUFFER;
+constexpr iox2::bb::Duration REACTION_BUFFER = iox2::bb::Duration::from_millis(100);
+constexpr iox2::bb::Duration CYCLE_TIME_1 = iox2::bb::Duration::from_millis(1000) + REACTION_BUFFER;
+constexpr iox2::bb::Duration CYCLE_TIME_2 = iox2::bb::Duration::from_millis(1500) + REACTION_BUFFER;
 
 namespace {
 void find_and_cleanup_dead_nodes();

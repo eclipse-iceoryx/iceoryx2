@@ -171,7 +171,7 @@ inline auto Listener<S>::deadline() const -> iox2::legacy::optional<iox2::bb::Du
     uint32_t nanoseconds = 0;
 
     if (iox2_listener_deadline(&m_handle, &seconds, &nanoseconds)) {
-        return { iox2::bb::Duration::from_seconds(seconds) + iox2::bb::Duration::from_nanoseconds(nanoseconds) };
+        return { iox2::bb::Duration::from_secs(seconds) + iox2::bb::Duration::from_nanos(nanoseconds) };
     }
 
     return iox2::legacy::nullopt;
@@ -202,7 +202,7 @@ inline auto Listener<S>::timed_wait_all(const iox2::legacy::function<void(EventI
     auto ctx = internal::ctx(callback);
 
     auto result = iox2_listener_timed_wait_all(
-        &m_handle, wait_callback, static_cast<void*>(&ctx), timeout.to_seconds(), timeout.subsec_nanos());
+        &m_handle, wait_callback, static_cast<void*>(&ctx), timeout.as_secs(), timeout.subsec_nanos());
     if (result == IOX2_OK) {
         return iox2::legacy::ok();
     }
@@ -248,7 +248,7 @@ inline auto Listener<S>::timed_wait_one(const iox2::bb::Duration& timeout)
     bool has_received_one { false };
 
     auto result = iox2_listener_timed_wait_one(
-        &m_handle, &event_id, &has_received_one, timeout.to_seconds(), timeout.subsec_nanos());
+        &m_handle, &event_id, &has_received_one, timeout.as_secs(), timeout.subsec_nanos());
 
     if (result == IOX2_OK) {
         if (has_received_one) {

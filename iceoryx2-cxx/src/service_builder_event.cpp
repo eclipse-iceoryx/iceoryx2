@@ -52,7 +52,7 @@ void ServiceBuilderEvent<S>::set_parameters() {
     if (m_verify_deadline) {
         m_deadline
             .and_then([&](auto duration) -> auto {
-                iox2_service_builder_event_set_deadline(&m_handle, duration.to_seconds(), duration.subsec_nanos());
+                iox2_service_builder_event_set_deadline(&m_handle, duration.as_secs(), duration.subsec_nanos());
             })
             .or_else([&]() -> auto { iox2_service_builder_event_disable_deadline(&m_handle); });
     }

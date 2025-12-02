@@ -20,18 +20,18 @@ namespace iox2 {
 namespace bb {
 
 inline Duration From<std::chrono::nanoseconds, Duration>::from(const std::chrono::nanoseconds& value) noexcept {
-    return Duration::from_nanoseconds(value.count());
+    return Duration::from_nanos(value.count());
 }
 inline Duration From<std::chrono::microseconds, Duration>::from(const std::chrono::microseconds& value) noexcept {
-    return Duration::from_microseconds(value.count());
+    return Duration::from_micros(value.count());
 }
 
 inline Duration From<std::chrono::milliseconds, Duration>::from(const std::chrono::milliseconds& value) noexcept {
-    return Duration::from_milliseconds(value.count());
+    return Duration::from_millis(value.count());
 }
 
 inline Duration From<std::chrono::seconds, Duration>::from(const std::chrono::seconds& value) noexcept {
-    return Duration::from_seconds(value.count());
+    return Duration::from_secs(value.count());
 }
 
 } // namespace bb

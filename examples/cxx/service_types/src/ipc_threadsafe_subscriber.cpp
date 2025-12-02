@@ -15,7 +15,7 @@
 #include <cstdint>
 #include <thread>
 
-constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_seconds(1);
+constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_secs(1);
 
 auto main() -> int {
     using namespace iox2;
@@ -39,7 +39,7 @@ auto main() -> int {
     // so they can be shared between threads.
     auto background_thread = std::thread([&]() -> auto {
         while (keep_running.load()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(CYCLE_TIME.to_milliseconds()));
+            std::this_thread::sleep_for(std::chrono::milliseconds(CYCLE_TIME.as_millis()));
             auto sample = subscriber.receive().expect("sample received");
             if (sample.has_value()) {
                 const std::lock_guard<std::mutex> cout_guard(cout_mtx);

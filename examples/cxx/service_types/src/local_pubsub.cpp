@@ -17,7 +17,7 @@
 #include <iostream>
 #include <mutex>
 
-constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_seconds(1);
+constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_secs(1);
 namespace {
 std::atomic<bool> keep_running { true }; // NOLINT
 std::mutex cout_mtx;                     // NOLINT
@@ -39,7 +39,7 @@ void background_thread_fn() {
 
     auto subscriber = service.subscriber_builder().create().expect("successful subscriber creation");
     while (keep_running.load()) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(CYCLE_TIME.to_milliseconds()));
+        std::this_thread::sleep_for(std::chrono::milliseconds(CYCLE_TIME.as_millis()));
         auto sample = subscriber.receive().expect("sample received");
         while (sample.has_value()) {
             {

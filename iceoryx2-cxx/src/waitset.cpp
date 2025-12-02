@@ -245,7 +245,7 @@ auto WaitSet<S>::attach_interval(const iox2::bb::Duration deadline)
     -> iox2::legacy::expected<WaitSetGuard<S>, WaitSetAttachmentError> {
     iox2_waitset_guard_h guard_handle {};
     auto result =
-        iox2_waitset_attach_interval(&m_handle, deadline.to_seconds(), deadline.subsec_nanos(), nullptr, &guard_handle);
+        iox2_waitset_attach_interval(&m_handle, deadline.as_secs(), deadline.subsec_nanos(), nullptr, &guard_handle);
 
     if (result == IOX2_OK) {
         return iox2::legacy::ok(WaitSetGuard<S>(guard_handle));
@@ -260,7 +260,7 @@ auto WaitSet<S>::attach_deadline(const FileDescriptorBased& attachment, const io
     iox2_waitset_guard_h guard_handle {};
     auto result = iox2_waitset_attach_deadline(&m_handle,
                                                attachment.file_descriptor().m_handle,
-                                               deadline.to_seconds(),
+                                               deadline.as_secs(),
                                                deadline.subsec_nanos(),
                                                nullptr,
                                                &guard_handle);
@@ -339,12 +339,8 @@ auto WaitSet<S>::wait_and_process_once_with_timeout(
     const iox2::bb::Duration timeout) -> iox2::legacy::expected<WaitSetRunResult, WaitSetRunError> {
     iox2_waitset_run_result_e run_result = iox2_waitset_run_result_e_STOP_REQUEST;
     auto ctx = internal::ctx(fn_call);
-    auto result = iox2_waitset_wait_and_process_once_with_timeout(&m_handle,
-                                                                  run_callback<S>,
-                                                                  static_cast<void*>(&ctx),
-                                                                  timeout.to_seconds(),
-                                                                  timeout.subsec_nanos(),
-                                                                  &run_result);
+    auto result = iox2_waitset_wait_and_process_once_with_timeout(
+        &m_handle, run_callback<S>, static_cast<void*>(&ctx), timeout.as_secs(), timeout.subsec_nanos(), &run_result);
 
     if (result == IOX2_OK) {
         return iox2::legacy::ok(iox2::bb::into<WaitSetRunResult>(static_cast<int>(run_result)));

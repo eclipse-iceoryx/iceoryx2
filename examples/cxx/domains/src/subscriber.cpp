@@ -31,7 +31,7 @@ struct Args {
 };
 // NOLINTEND
 
-constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_seconds(1);
+constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_secs(1);
 
 auto main(int argc, char** argv) -> int {
     using namespace iox2;
