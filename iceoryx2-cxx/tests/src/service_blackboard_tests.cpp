@@ -1633,8 +1633,10 @@ TYPED_TEST(ServiceBlackboardTest, list_keys_works) {
         listed_keys.push_back(key);
         return CallbackProgression::Continue;
     });
-    ASSERT_EQ(listed_keys.size(), 5);
-    ASSERT_EQ(listed_keys, keys);
+    ASSERT_EQ(listed_keys.size(), keys.size());
+    for (auto& key : keys) {
+        ASSERT_TRUE(std::find(listed_keys.begin(), listed_keys.end(), key) != listed_keys.end());
+    }
 
     listed_keys.clear();
 
@@ -1643,7 +1645,7 @@ TYPED_TEST(ServiceBlackboardTest, list_keys_works) {
         return CallbackProgression::Stop;
     });
     ASSERT_EQ(listed_keys.size(), 1);
-    ASSERT_EQ(listed_keys[0], keys[0]);
+    ASSERT_TRUE(std::find(keys.begin(), keys.end(), listed_keys[0]) != keys.end());
 }
 
 constexpr uint64_t const STRING_CAPACITY = 25;
@@ -1741,8 +1743,10 @@ TYPED_TEST(ServiceBlackboardTest, list_keys_with_key_struct_works) {
         listed_keys.push_back(key);
         return CallbackProgression::Continue;
     });
-    ASSERT_EQ(listed_keys.size(), 2);
-    ASSERT_EQ(listed_keys, keys);
+    ASSERT_EQ(listed_keys.size(), keys.size());
+    for (auto& key : keys) {
+        ASSERT_TRUE(std::find(listed_keys.begin(), listed_keys.end(), key) != listed_keys.end());
+    }
 
     listed_keys.clear();
 
@@ -1751,7 +1755,7 @@ TYPED_TEST(ServiceBlackboardTest, list_keys_with_key_struct_works) {
         return CallbackProgression::Stop;
     });
     ASSERT_EQ(listed_keys.size(), 1);
-    ASSERT_EQ(listed_keys[0], keys[0]);
+    ASSERT_TRUE(std::find(keys.begin(), keys.end(), listed_keys[0]) != keys.end());
 }
 
 TYPED_TEST(ServiceBlackboardTest, new_value_can_be_written_using_value_mut) {

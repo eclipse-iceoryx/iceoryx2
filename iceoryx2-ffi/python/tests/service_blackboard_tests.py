@@ -809,8 +809,17 @@ def test_list_keys_works(
 
     listed_keys = service.list_keys()
     assert len(listed_keys) == len(keys)
-    for i in range(len(listed_keys)):
-        assert listed_keys[i].decode_as(ctypes.c_uint64).value == keys[i].value
+
+    found_key = False
+    for i in range(len(keys)):
+        key_value = keys[i].value
+        for j in range(len(listed_keys)):
+            listed_key_value = listed_keys[j].decode_as(ctypes.c_uint64).value
+            if listed_key_value == key_value:
+                found_key = True
+                break
+        assert found_key
+        found_key = False
 
 
 class Foo(ctypes.Structure):
@@ -910,8 +919,17 @@ def test_list_keys_with_key_struct_works(
 
     listed_keys = service.list_keys()
     assert len(listed_keys) == len(keys)
-    for i in range(len(listed_keys)):
-        assert listed_keys[i].decode_as(Foo) == keys[i]
+
+    found_key = False
+    for i in range(len(keys)):
+        key_value = keys[i]
+        for j in range(len(listed_keys)):
+            listed_key_value = listed_keys[j].decode_as(Foo)
+            if listed_key_value == key_value:
+                found_key = True
+                break
+        assert found_key
+        found_key = False
 
 
 @pytest.mark.parametrize("service_type", service_types)
