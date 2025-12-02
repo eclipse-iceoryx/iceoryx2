@@ -14,7 +14,7 @@
 #ifndef IOX2_BB_UTILITY_STD_CHRONO_SUPPORT_INL
 #define IOX2_BB_UTILITY_STD_CHRONO_SUPPORT_INL
 
-#include "iox2/legacy/std_chrono_support.hpp"
+#include "iox2/bb/std_chrono_support.hpp"
 
 namespace iox2 {
 namespace bb {

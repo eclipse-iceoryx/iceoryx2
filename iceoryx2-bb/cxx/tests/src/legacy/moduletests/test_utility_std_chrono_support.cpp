@@ -12,7 +12,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/legacy/std_chrono_support.hpp"
+#include "iox2/bb/std_chrono_support.hpp"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
