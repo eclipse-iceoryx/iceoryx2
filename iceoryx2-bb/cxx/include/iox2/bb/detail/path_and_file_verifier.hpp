@@ -22,7 +22,7 @@
 namespace iox2 {
 namespace bb {
 namespace platform {
-#if defined(_WIN32)
+#ifdef _WIN32
 constexpr uint64_t IOX2_NUMBER_OF_PATH_SEPARATORS = 2U;
 // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays, hicpp-explicit-conversions, modernize-avoid-c-arrays)
 constexpr const char IOX2_PATH_SEPARATORS[IOX2_NUMBER_OF_PATH_SEPARATORS] = { '/', '\\' };

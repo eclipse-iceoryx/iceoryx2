@@ -22,11 +22,9 @@
 
 namespace iox2 {
 namespace bb {
-/// @brief Defines errors which can occur when modifying or creating a
-///         SemanticString
+/// @brief Defines errors which can occur when modifying or creating a SemanticString
 enum class SemanticStringError : uint8_t {
-    ContainsInvalidCharacters,
-    ContainsInvalidContent,
+    InvalidContent,
     ExceedsMaximumLength
 };
 
@@ -230,14 +228,15 @@ SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvali
 
     if (DoesContainInvalidCharacterCall(str)) {
         IOX2_LOG(Debug,
-                 "Unable to create semantic string since the value \"" << value << "\" contains invalid characters");
-        return legacy::err(SemanticStringError::ContainsInvalidCharacters);
+                 "Unable to create semantic string since the value \"" << value
+                                                                       << "\" contains invalid characters as content");
+        return legacy::err(SemanticStringError::InvalidContent);
     }
 
     if (DoesContainInvalidContentCall(str)) {
         IOX2_LOG(Debug,
                  "Unable to create semantic string since the value \"" << value << "\" contains invalid content");
-        return legacy::err(SemanticStringError::ContainsInvalidContent);
+        return legacy::err(SemanticStringError::InvalidContent);
     }
 
     return legacy::ok(Child(str));
@@ -325,16 +324,16 @@ inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesC
 
     if (DoesContainInvalidCharacterCall(temp)) {
         IOX2_LOG(Debug,
-                 "Unable to insert the value \"" << str
-                                                 << "\" to the semantic string since it contains invalid characters.");
-        return legacy::err(SemanticStringError::ContainsInvalidCharacters);
+                 "Unable to insert the value \""
+                     << str << "\" to the semantic string since it contains invalid characters as content.");
+        return legacy::err(SemanticStringError::InvalidContent);
     }
 
     if (DoesContainInvalidContentCall(str)) {
         IOX2_LOG(Debug,
                  "Unable to insert the value \""
                      << str << "\" to the semantic string since it would lead to invalid content.");
-        return legacy::err(SemanticStringError::ContainsInvalidContent);
+        return legacy::err(SemanticStringError::InvalidContent);
     }
 
     m_data = temp;

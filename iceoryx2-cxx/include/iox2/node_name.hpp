@@ -13,10 +13,10 @@
 #ifndef IOX2_NODE_NAME_HPP
 #define IOX2_NODE_NAME_HPP
 
+#include "iox2/bb/semantic_string.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/legacy/expected.hpp"
 #include "iox2/legacy/string.hpp"
-#include "iox2/semantic_string.hpp"
 
 namespace iox2 {
 namespace internal {
@@ -76,7 +76,7 @@ class NodeName {
     /// Creates a new [`NodeName`].
     /// If the provided name does not contain a valid [`NodeName`] it will return a
     /// [`SemanticStringError`] otherwise the [`NodeName`].
-    static auto create(const char* value) -> iox2::legacy::expected<NodeName, SemanticStringError>;
+    static auto create(const char* value) -> iox2::legacy::expected<NodeName, bb::SemanticStringError>;
 
     /// Returns a [`iox2::legacy::string`] containing the [`NodeName`].
     auto to_string() const -> iox2::legacy::string<IOX2_NODE_NAME_LENGTH>;
@@ -88,7 +88,7 @@ class NodeName {
     explicit NodeName(iox2_node_name_h handle);
     void drop() noexcept;
     static auto create_impl(const char* value, size_t value_len)
-        -> iox2::legacy::expected<NodeName, SemanticStringError>;
+        -> iox2::legacy::expected<NodeName, bb::SemanticStringError>;
 
     iox2_node_name_h m_handle = nullptr;
 };

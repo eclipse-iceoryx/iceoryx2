@@ -34,7 +34,7 @@ TEST(ServiceName, creating_service_name_with_too_long_name_fails) {
         auto sut = ServiceName::create(invalid_name.c_str());
 
         ASSERT_THAT(sut.has_value(), Eq(false));
-        ASSERT_THAT(sut.error(), Eq(SemanticStringError::ExceedsMaximumLength));
+        ASSERT_THAT(sut.error(), Eq(bb::SemanticStringError::ExceedsMaximumLength));
     };
 
     for (uint64_t i = 1; i < MAX_OVERLENGTH; ++i) {

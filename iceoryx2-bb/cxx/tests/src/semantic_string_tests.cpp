@@ -272,7 +272,7 @@ TYPED_TEST(SemanticStringTest, InitializeWithStringContainingIllegalCharactersFa
         auto sut = SutType::create(string<SutType::capacity()>(TruncateToCapacity, value.c_str()));
 
         ASSERT_THAT(sut.has_error(), Eq(true));
-        ASSERT_THAT(sut.error(), Eq(SemanticStringError::ContainsInvalidCharacters));
+        ASSERT_THAT(sut.error(), Eq(SemanticStringError::InvalidContent));
     }
 }
 
@@ -284,7 +284,7 @@ TYPED_TEST(SemanticStringTest, InitializeWithStringContainingIllegalContentFails
         auto sut = SutType::create(string<SutType::capacity()>(TruncateToCapacity, value.c_str()));
 
         ASSERT_THAT(sut.has_error(), Eq(true));
-        ASSERT_THAT(sut.error(), Eq(SemanticStringError::ContainsInvalidContent));
+        ASSERT_THAT(sut.error(), Eq(SemanticStringError::InvalidContent));
     }
 }
 
@@ -333,7 +333,7 @@ TYPED_TEST(SemanticStringTest, AppendInvalidCharactersToValidStringFails) {
 
             auto result = sut->append(string<SutType::capacity()>(TruncateToCapacity, invalid_value.c_str()));
             ASSERT_TRUE(result.has_error());
-            EXPECT_THAT(result.error(), Eq(SemanticStringError::ContainsInvalidCharacters));
+            EXPECT_THAT(result.error(), Eq(SemanticStringError::InvalidContent));
             EXPECT_THAT(sut->size(), value.size());
             EXPECT_THAT(sut->capacity(), Eq(TestValues<SutType>::CAPACITY));
 
@@ -353,7 +353,7 @@ TYPED_TEST(SemanticStringTest, GenerateInvalidContentWithAppend) {
 
             auto result = sut->append(string<SutType::capacity()>(TruncateToCapacity, invalid_value.c_str()));
             ASSERT_TRUE(result.has_error());
-            EXPECT_THAT(result.error(), Eq(SemanticStringError::ContainsInvalidContent));
+            EXPECT_THAT(result.error(), Eq(SemanticStringError::InvalidContent));
             EXPECT_THAT(sut->size(), value.size());
             EXPECT_THAT(sut->capacity(), Eq(TestValues<SutType>::CAPACITY));
 
@@ -374,7 +374,7 @@ TYPED_TEST(SemanticStringTest, GenerateInvalidContentWithInsert) {
             auto result = sut->insert(
                 0, string<SutType::capacity()>(TruncateToCapacity, invalid_value.c_str()), invalid_value.size());
             ASSERT_TRUE(result.has_error());
-            EXPECT_THAT(result.error(), Eq(SemanticStringError::ContainsInvalidContent));
+            EXPECT_THAT(result.error(), Eq(SemanticStringError::InvalidContent));
             EXPECT_THAT(sut->size(), value.size());
             EXPECT_THAT(sut->capacity(), Eq(TestValues<SutType>::CAPACITY));
 
@@ -444,7 +444,7 @@ TYPED_TEST(SemanticStringTest, InsertInvalidCharactersToValidStringFails) {
                                           string<SutType::capacity()>(TruncateToCapacity, add_value.c_str()),
                                           add_value.size());
                 ASSERT_TRUE(result.has_error());
-                EXPECT_THAT(result.error(), Eq(SemanticStringError::ContainsInvalidCharacters));
+                EXPECT_THAT(result.error(), Eq(SemanticStringError::InvalidContent));
 
 
                 EXPECT_THAT(sut->size(), value.size());

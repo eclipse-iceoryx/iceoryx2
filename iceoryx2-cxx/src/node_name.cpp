@@ -79,14 +79,14 @@ void NodeName::drop() noexcept {
     }
 }
 
-auto NodeName::create(const char* value) -> iox2::legacy::expected<NodeName, SemanticStringError> {
+auto NodeName::create(const char* value) -> iox2::legacy::expected<NodeName, bb::SemanticStringError> {
     return NodeName::create_impl(value, strnlen(value, IOX2_NODE_NAME_LENGTH + 1));
 }
 
 auto NodeName::create_impl(const char* value, size_t value_len)
-    -> iox2::legacy::expected<NodeName, SemanticStringError> {
+    -> iox2::legacy::expected<NodeName, bb::SemanticStringError> {
     if (value_len > IOX2_NODE_NAME_LENGTH) {
-        return iox2::legacy::err(SemanticStringError::ExceedsMaximumLength);
+        return iox2::legacy::err(bb::SemanticStringError::ExceedsMaximumLength);
     }
 
     iox2_node_name_h handle {};
@@ -95,7 +95,7 @@ auto NodeName::create_impl(const char* value, size_t value_len)
         return iox2::legacy::ok(NodeName { handle });
     }
 
-    return iox2::legacy::err(iox2::bb::into<SemanticStringError>(ret_val));
+    return iox2::legacy::err(iox2::bb::into<bb::SemanticStringError>(ret_val));
 }
 
 auto NodeName::to_string() const -> iox2::legacy::string<IOX2_NODE_NAME_LENGTH> {
