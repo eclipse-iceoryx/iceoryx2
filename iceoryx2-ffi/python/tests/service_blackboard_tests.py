@@ -811,10 +811,10 @@ def test_list_keys_works(
     assert len(listed_keys) == len(keys)
 
     found_key = False
-    for i in range(len(keys)):
-        key_value = keys[i].value
-        for j in range(len(listed_keys)):
-            listed_key_value = listed_keys[j].decode_as(ctypes.c_uint64).value
+    for _i, key in enumerate(keys):
+        key_value = key.value
+        for _j, listed_key in enumerate(listed_keys):
+            listed_key_value = listed_key.decode_as(ctypes.c_uint64).value
             if listed_key_value == key_value:
                 found_key = True
                 break
@@ -921,11 +921,10 @@ def test_list_keys_with_key_struct_works(
     assert len(listed_keys) == len(keys)
 
     found_key = False
-    for i in range(len(keys)):
-        key_value = keys[i]
-        for j in range(len(listed_keys)):
-            listed_key_value = listed_keys[j].decode_as(Foo)
-            if listed_key_value == key_value:
+    for _i, key in enumerate(keys):
+        for _j, listed_key in enumerate(listed_keys):
+            listed_key_value = listed_key.decode_as(Foo)
+            if listed_key_value == key:
                 found_key = True
                 break
         assert found_key

@@ -572,6 +572,13 @@ fn list_keys_callback(
 
 /// Iterates over all keys of the blackboard and calls the provided
 /// callback with a void pointer to the key as argument.
+///
+/// # Safety
+///
+/// * The `handle` must be valid and obtained by [`iox2_service_builder_blackboard_open`](crate::iox2_service_builder_blackboard_open) or
+///   [`iox2_service_builder_blackboard_create`](crate::iox2_service_builder_blackboard_create)!
+/// * `callback` - A valid callback with [`iox2_port_factory_blackboard_list_keys_callback`} signature
+/// * `callback_ctx` - An optional callback context [`iox2_callback_context`} to e.g. store information across callback iterations
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_blackboard_list_keys(
     handle: iox2_port_factory_blackboard_h_ref,
