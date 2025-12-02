@@ -1697,7 +1697,7 @@ pub mod service_blackboard {
         });
         assert_that!(listed_keys.len(), eq keys.len());
         for key in &keys {
-            assert_that!(listed_keys.contains(&key), eq true);
+            assert_that!(listed_keys.contains(key), eq true);
         }
 
         listed_keys.clear();
