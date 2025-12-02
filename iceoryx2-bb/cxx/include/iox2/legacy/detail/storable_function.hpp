@@ -154,11 +154,6 @@ class storable_function<Capacity, signature<ReturnType, Args...>> final {
     ReturnType (*m_invoker)(void*, Args&&...) { nullptr }; // indirection to invoke the stored callable,
                                                            // nullptr if no callable is stored
 
-    /// @note For static_storage as the StorageType we detect at compile time if the functor can be stored.
-    ///       If this is not the case, compilation will fail.
-    ///       For other StorageTypes where storing might fail due to insufficent memory this may not be detectable
-    ///       at compile time and we call terminate at runtime if the functor could not be stored.
-
     template <typename Functor,
               typename = typename std::enable_if<std::is_class<Functor>::value
                                                      && is_invocable_r<ReturnType, Functor, Args...>::value,
