@@ -774,6 +774,45 @@ def test_entry_handle_is_up_to_date_works_correctly(
     assert entry_handle.is_up_to_date(read_value)
 
 
+@pytest.mark.parametrize("service_type", service_types)
+def test_list_keys_works(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    service_name = iox2.testing.generate_service_name()
+    keys = [
+        ctypes.c_uint64(0),
+        ctypes.c_uint64(1),
+        ctypes.c_uint64(2),
+        ctypes.c_uint64(3),
+        ctypes.c_uint64(4),
+        ctypes.c_uint64(5),
+        ctypes.c_uint64(6),
+        ctypes.c_uint64(7),
+    ]
+    value = ctypes.c_uint16(0)
+
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service = (
+        node.service_builder(service_name)
+        .blackboard_creator(ctypes.c_uint64)
+        .add(keys[0], value)
+        .add(keys[1], value)
+        .add(keys[2], value)
+        .add(keys[3], value)
+        .add(keys[4], value)
+        .add(keys[5], value)
+        .add(keys[6], value)
+        .add(keys[7], value)
+        .create()
+    )
+
+    listed_keys = service.list_keys()
+    assert len(listed_keys) == len(keys)
+    for i in range(len(listed_keys)):
+        assert listed_keys[i].decode_as(ctypes.c_uint64).value == keys[i].value
+
+
 class Foo(ctypes.Structure):
     _fields_ = [
         ("a", ctypes.c_uint8),
@@ -848,6 +887,31 @@ def test_adding_key_struct_twice_fails(
             .add(key, value_1)
             .create()
         )
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_list_keys_with_key_struct_works(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    service_name = iox2.testing.generate_service_name()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+
+    keys = [Foo(a=9, b=99, c=9.9), Foo(a=9, b=999, c=9.9)]
+    value = ctypes.c_uint32(3)
+
+    service = (
+        node.service_builder(service_name)
+        .blackboard_creator(Foo)
+        .add(keys[0], value)
+        .add(keys[1], value)
+        .create()
+    )
+
+    listed_keys = service.list_keys()
+    assert len(listed_keys) == len(keys)
+    for i in range(len(listed_keys)):
+        assert listed_keys[i].decode_as(Foo) == keys[i]
 
 
 @pytest.mark.parametrize("service_type", service_types)
