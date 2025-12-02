@@ -644,7 +644,7 @@ impl<K: Eq, V: Clone> RelocatableFlatMap<K, V> {
         self.map.len()
     }
 
-    // TODO: list for other implementations, documentation
+    // TODO: list for other implementations, documentation, tests
     pub fn list_keys<F: FnMut(&K) -> CallbackProgression>(&self, callback: F) {
         unsafe { self.list_keys_impl(callback) };
     }

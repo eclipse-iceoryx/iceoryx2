@@ -116,6 +116,34 @@ def add(
     )
 
 
+class BlackboardKey:
+    """A wrapper class for the keys returned by `PortFactoryBlackboard.list_keys()`."""
+
+    def __init__(self, data: bytes):
+        """Initializes `BlackboardKey` from bytes."""
+        self.data = data
+
+    def decode_as(self, ct_type):
+        """Interpret the raw bytes as a ctypes type."""
+        return ct_type.from_buffer_copy(self.data)
+
+
+def list_keys(self: PortFactoryBlackboard):
+    """
+    Returns a list containing copies of the blackboard keys as bytes.
+
+    The keys are wrapped in a `BlackboardKey`. Use decode_as() to
+    reinterpret the raw bytes as a ctypes type.
+    """
+    keys = self.__list_keys()
+    key_size = self.__key_type_details
+    key_list = []
+    for key in keys:
+        raw_bytes = ctypes.string_at(key, ctypes.sizeof(key_size))
+        key_list.append(BlackboardKey(raw_bytes))
+    return key_list
+
+
 def entry_handle(self: Reader, key: Type[K], value: Type[V]) -> EntryHandle:
     """
     Creates an EntryHandle for direct read access to the value.
@@ -267,6 +295,8 @@ EntryHandleMut.update_with_copy = update_with_copy_on_entry_handle
 EntryValueUninit.assume_init_and_update = assume_init_and_update
 EntryValueUninit.update_with_copy = update_with_copy_on_entry_value
 EntryValueUninit.value_mut = value_mut
+
+PortFactoryBlackboard.list_keys = list_keys
 
 Reader.entry = entry_handle
 
