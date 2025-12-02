@@ -11,8 +11,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_BB_UTILITY_STD_CHRONO_SUPPORT_HPP
-#define IOX2_BB_UTILITY_STD_CHRONO_SUPPORT_HPP
+#ifndef IOX2_BB_STD_CHRONO_SUPPORT_HPP
+#define IOX2_BB_STD_CHRONO_SUPPORT_HPP
 
 #include "iox2/bb/duration.hpp"
 #include "iox2/bb/into.hpp"
@@ -26,7 +26,9 @@ namespace bb {
 /// @attention Since negative durations are not allowed, the duration will be clamped to 0
 template <>
 struct From<std::chrono::nanoseconds, Duration> {
-    static constexpr Duration from(const std::chrono::nanoseconds& value) noexcept;
+    static constexpr Duration from(const std::chrono::nanoseconds& value) noexcept {
+        return Duration::from_nanos(value.count());
+    }
 };
 
 /// @brief Construct a Duration object from std::chrono::microseconds
@@ -34,7 +36,9 @@ struct From<std::chrono::nanoseconds, Duration> {
 /// @attention Since negative durations are not allowed, the duration will be clamped to 0
 template <>
 struct From<std::chrono::microseconds, Duration> {
-    static constexpr Duration from(const std::chrono::microseconds& value) noexcept;
+    static constexpr Duration from(const std::chrono::microseconds& value) noexcept {
+        return Duration::from_micros(value.count());
+    }
 };
 
 /// @brief Construct a Duration object from std::chrono::milliseconds
@@ -42,7 +46,9 @@ struct From<std::chrono::microseconds, Duration> {
 /// @attention Since negative durations are not allowed, the duration will be clamped to 0
 template <>
 struct From<std::chrono::milliseconds, Duration> {
-    static constexpr Duration from(const std::chrono::milliseconds& value) noexcept;
+    static constexpr Duration from(const std::chrono::milliseconds& value) noexcept {
+        return Duration::from_millis(value.count());
+    }
 };
 
 /// @brief Construct a Duration object from std::chrono::seconds
@@ -50,11 +56,13 @@ struct From<std::chrono::milliseconds, Duration> {
 /// @attention Since negative durations are not allowed, the duration will be clamped to 0
 template <>
 struct From<std::chrono::seconds, Duration> {
-    static constexpr Duration from(const std::chrono::seconds& value) noexcept;
+    static constexpr Duration from(const std::chrono::seconds& value) noexcept {
+        return Duration::from_secs(value.count());
+    }
 };
+
 } // namespace bb
 } // namespace iox2
 
-#include "iox2/legacy/detail/std_chrono_support.inl"
 
-#endif // IOX2_BB_UTILITY_STD_CHRONO_SUPPORT_HPP
+#endif // IOX2_BB_STD_CHRONO_SUPPORT_HPP
