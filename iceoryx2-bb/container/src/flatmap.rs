@@ -213,8 +213,8 @@ impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
         &self,
         mut callback: F,
     ) {
-        for (_, value) in self.map.iter_impl() {
-            if callback(&value.id) == CallbackProgression::Stop {
+        for (_, kv) in self.map.iter_impl() {
+            if callback(&kv.id) == CallbackProgression::Stop {
                 break;
             }
         }
@@ -403,6 +403,11 @@ impl<K: Eq, V: Clone> FlatMap<K, V> {
     /// Returns the number of stored key-value pairs.
     pub fn len(&self) -> usize {
         self.len_impl()
+    }
+
+    /// Iterates over all keys of the map and calls the provided callback.
+    pub fn list_keys<F: FnMut(&K) -> CallbackProgression>(&self, callback: F) {
+        unsafe { self.list_keys_impl(callback) };
     }
 }
 
@@ -644,7 +649,7 @@ impl<K: Eq, V: Clone> RelocatableFlatMap<K, V> {
         self.map.len()
     }
 
-    // TODO: list for other implementations, documentation, tests
+    /// Iterates over all keys of the map and calls the provided callback.
     pub fn list_keys<F: FnMut(&K) -> CallbackProgression>(&self, callback: F) {
         unsafe { self.list_keys_impl(callback) };
     }
@@ -874,5 +879,10 @@ impl<K: Eq, V: Clone, const CAPACITY: usize> FixedSizeFlatMap<K, V, CAPACITY> {
     /// Returns the number of stored key-value pairs.
     pub fn len(&self) -> usize {
         self.map.len()
+    }
+
+    /// Iterates over all keys of the map and calls the provided callback.
+    pub fn list_keys<F: FnMut(&K) -> CallbackProgression>(&self, callback: F) {
+        unsafe { self.map.list_keys_impl(callback) };
     }
 }

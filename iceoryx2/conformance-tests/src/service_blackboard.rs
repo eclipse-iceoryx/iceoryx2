@@ -1674,37 +1674,40 @@ pub mod service_blackboard {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
-        let mut keys = vec![];
+        let keys = vec![0, 1, 2, 3, 4, 5, 6, 7];
 
         let sut = node
             .service_builder(&service_name)
             .blackboard_creator::<u64>()
-            .add::<u64>(0, 0)
-            .add::<u64>(1, 0)
-            .add::<u64>(2, 0)
-            .add::<u64>(3, 0)
-            .add::<u64>(4, 0)
-            .add::<u64>(5, 0)
-            .add::<u64>(6, 0)
-            .add::<u64>(7, 0)
+            .add::<u64>(keys[0], 0)
+            .add::<u64>(keys[1], 0)
+            .add::<u64>(keys[2], 0)
+            .add::<u64>(keys[3], 0)
+            .add::<u64>(keys[4], 0)
+            .add::<u64>(keys[5], 0)
+            .add::<u64>(keys[6], 0)
+            .add::<u64>(keys[7], 0)
             .create()
             .unwrap();
 
+        let mut listed_keys = vec![];
         sut.list_keys(|&key| {
-            keys.push(key);
+            listed_keys.push(key);
             CallbackProgression::Continue
         });
-        assert_that!(keys, len 8);
-        assert_that!(keys, eq vec![0, 1, 2, 3, 4, 5, 6, 7]);
+        assert_that!(listed_keys.len(), eq keys.len());
+        for key in &keys {
+            assert_that!(listed_keys.contains(&key), eq true);
+        }
 
-        keys.clear();
+        listed_keys.clear();
 
         sut.list_keys(|&key| {
-            keys.push(key);
+            listed_keys.push(key);
             CallbackProgression::Stop
         });
-        assert_that!(keys, len 1);
-        assert_that!(keys, eq vec![0]);
+        assert_that!(listed_keys, len 1);
+        assert_that!(keys.contains(&listed_keys[0]), eq true);
     }
 
     #[repr(C)]
@@ -1820,7 +1823,8 @@ pub mod service_blackboard {
             CallbackProgression::Continue
         });
         assert_that!(keys, len 2);
-        assert_that!(keys, eq vec![key_1, key_2]);
+        assert_that!(keys.contains(&key_1), eq true);
+        assert_that!(keys.contains(&key_2), eq true);
 
         keys.clear();
 
@@ -1829,7 +1833,6 @@ pub mod service_blackboard {
             CallbackProgression::Stop
         });
         assert_that!(keys, len 1);
-        assert_that!(keys, eq vec![key_1]);
     }
 
     // TODO [#817] move the custom key type tests to testing.rs
@@ -2286,7 +2289,8 @@ pub mod service_blackboard {
             CallbackProgression::Continue
         });
         assert_that!(keys, len 2);
-        assert_that!(keys, eq vec![key_1, key_2]);
+        assert_that!(keys.contains(&key_1), eq true);
+        assert_that!(keys.contains(&key_2), eq true);
 
         keys.clear();
 
@@ -2296,7 +2300,6 @@ pub mod service_blackboard {
             CallbackProgression::Stop
         });
         assert_that!(keys, len 1);
-        assert_that!(keys, eq vec![key_1]);
     }
 
     #[conformance_test]

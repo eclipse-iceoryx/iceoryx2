@@ -12,6 +12,7 @@
 
 use iceoryx2_bb_container::flatmap::*;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
+use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
@@ -227,6 +228,47 @@ mod flat_map {
     fn panic_is_called_in_debug_mode_if_map_is_not_initialized() {
         let mut sut = unsafe { RelocatableFlatMap::<u8, u8>::new_uninit(CAPACITY) };
         unsafe { sut.remove(&1) };
+    }
+
+    #[test]
+    fn list_keys_works_correctly() {
+        const CAPA: usize = 10;
+        let mut keys = vec![];
+        let mut map = FixedSizeFlatMap::<u32, u32, CAPA>::new();
+        for i in 0..CAPA as u32 {
+            keys.push(i);
+            assert_that!(map.insert(i, i), is_ok);
+        }
+
+        let mut listed_keys = vec![];
+        map.list_keys(|&key| {
+            listed_keys.push(key);
+            CallbackProgression::Continue
+        });
+        assert_that!(listed_keys, len CAPA);
+        for k in &keys {
+            assert_that!(listed_keys.contains(&k), eq true);
+        }
+
+        listed_keys.clear();
+        map.list_keys(|&key| {
+            listed_keys.push(key);
+            CallbackProgression::Stop
+        });
+        assert_that!(listed_keys, len 1);
+        assert_that!(keys.contains(&listed_keys[0]), eq true);
+    }
+
+    #[test]
+    fn list_keys_works_correctly_on_empty_map() {
+        let map = FixedSizeFlatMap::<u32, u32, CAPACITY>::new();
+
+        let mut listed_keys = vec![];
+        map.list_keys(|&key| {
+            listed_keys.push(key);
+            CallbackProgression::Continue
+        });
+        assert_that!(listed_keys, len 0);
     }
 
     // BEGIN tests for passing custom compare function
