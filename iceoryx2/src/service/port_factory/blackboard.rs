@@ -40,9 +40,11 @@
 use super::nodes;
 use super::reader::PortFactoryReader;
 use super::writer::PortFactoryWriter;
+use crate::constants::MAX_BLACKBOARD_KEY_SIZE;
 use crate::node::NodeListFailure;
 use crate::service::attribute::AttributeSet;
-use crate::service::builder::blackboard::BlackboardResources;
+use crate::service::builder::blackboard::{BlackboardResources, KeyMemory};
+use crate::service::builder::CustomKeyMarker;
 use crate::service::service_id::ServiceId;
 use crate::service::service_name::ServiceName;
 use crate::service::{self, dynamic_config, static_config, ServiceState};
@@ -168,5 +170,52 @@ impl<
     /// ```
     pub fn reader_builder(&self) -> PortFactoryReader<'_, Service, KeyType> {
         PortFactoryReader::new(self)
+    }
+
+    /// Iterates over all keys of the blackboard and calls the provided callback.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// type KeyType = u64;
+    /// let blackboard = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    ///     .blackboard_creator::<KeyType>()
+    ///     .add::<i32>(0, 0)
+    ///     .add::<i32>(1, 0)
+    ///     .create()?;
+    ///
+    /// blackboard.list_keys(|&key| {
+    ///     println!("Key = {key}");
+    ///     CallbackProgression::Continue
+    /// });
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn list_keys<F: FnMut(&KeyType) -> CallbackProgression>(&self, mut callback: F) {
+        self.service.additional_resource.mgmt.get().map.list_keys(
+            |key: &KeyMemory<MAX_BLACKBOARD_KEY_SIZE>| {
+                callback(unsafe { &*(key.data.as_ptr() as *const KeyType) })
+            },
+        );
+    }
+}
+
+impl<Service: service::Service> PortFactory<Service, CustomKeyMarker> {
+    #[doc(hidden)]
+    pub fn __internal_list_keys<F: FnMut(*const u8) -> CallbackProgression>(
+        &self,
+        mut callback: F,
+    ) {
+        self.service
+            .additional_resource
+            .mgmt
+            .get()
+            .map
+            .list_keys(|key: &KeyMemory<MAX_BLACKBOARD_KEY_SIZE>| callback(key.data.as_ptr()));
     }
 }
