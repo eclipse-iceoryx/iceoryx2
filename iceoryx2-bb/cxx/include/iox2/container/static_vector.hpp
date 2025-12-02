@@ -160,6 +160,15 @@ class StaticVector {
     auto operator=(StaticVector const&) -> StaticVector& = default;
     auto operator=(StaticVector&&) -> StaticVector& = default;
 
+    template <uint64_t N>
+    static constexpr auto from_value(const T& value) -> StaticVector {
+        static_assert(N <= Capacity, "Trying to initialize a StaticVector beyond its capacity!");
+
+        auto vec = StaticVector {};
+        vec.m_storage.insert_at(0, N, value);
+        return vec;
+    }
+
     /// Construct a new vector with `count` occurrences of a default constructed value.
     /// @return Nullopt if `count` exceeds the vector capacity.
     ///         Otherwise a vector containing the desired elements.
