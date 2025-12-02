@@ -1669,6 +1669,44 @@ pub mod service_blackboard {
         assert_that!(entry_handle.is_up_to_date(&value), eq true);
     }
 
+    #[conformance_test]
+    pub fn list_keys_works<S: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+        let mut keys = vec![];
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add::<u64>(0, 0)
+            .add::<u64>(1, 0)
+            .add::<u64>(2, 0)
+            .add::<u64>(3, 0)
+            .add::<u64>(4, 0)
+            .add::<u64>(5, 0)
+            .add::<u64>(6, 0)
+            .add::<u64>(7, 0)
+            .create()
+            .unwrap();
+
+        sut.list_keys(|&key| {
+            keys.push(key);
+            CallbackProgression::Continue
+        });
+        assert_that!(keys, len 8);
+        assert_that!(keys, eq vec![0, 1, 2, 3, 4, 5, 6, 7]);
+
+        keys.clear();
+
+        sut.list_keys(|&key| {
+            keys.push(key);
+            CallbackProgression::Stop
+        });
+        assert_that!(keys, len 1);
+        assert_that!(keys, eq vec![0]);
+    }
+
     #[repr(C)]
     #[derive(ZeroCopySend, Debug, Hash, PartialEq, Eq, Clone, Copy)]
     struct Foo {
@@ -1749,6 +1787,49 @@ pub mod service_blackboard {
 
         assert_that!(sut, is_err);
         assert_that!(sut.err().unwrap(), eq BlackboardCreateError::ServiceInCorruptedState);
+    }
+
+    #[conformance_test]
+    pub fn list_keys_with_key_struct_works<Sut: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let mut keys = vec![];
+
+        let key_1 = Foo {
+            a: 9,
+            b: 99,
+            c: StaticString::try_from("NalalalaWolf").unwrap(),
+        };
+        let key_2 = Foo {
+            a: 9,
+            b: 999,
+            c: StaticString::try_from("NalalalaWolf").unwrap(),
+        };
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<Foo>()
+            .add::<i32>(key_1, -3)
+            .add::<u32>(key_2, 3)
+            .create()
+            .unwrap();
+
+        sut.list_keys(|&key| {
+            keys.push(key);
+            CallbackProgression::Continue
+        });
+        assert_that!(keys, len 2);
+        assert_that!(keys, eq vec![key_1, key_2]);
+
+        keys.clear();
+
+        sut.list_keys(|&key| {
+            keys.push(key);
+            CallbackProgression::Stop
+        });
+        assert_that!(keys, len 1);
+        assert_that!(keys, eq vec![key_1]);
     }
 
     // TODO [#817] move the custom key type tests to testing.rs
@@ -2149,6 +2230,73 @@ pub mod service_blackboard {
         };
 
         assert_that!(counter.load(Ordering::Relaxed), eq 2);
+    }
+
+    #[conformance_test]
+    pub fn list_keys_works_when_custom_key_type_is_used<S: Service>() {
+        type KeyType = Foo;
+        let key_1 = Foo {
+            a: 1,
+            b: 1,
+            c: StaticString::new(),
+        };
+        let key_ptr_1: *const KeyType = &key_1;
+        let key_2 = Foo {
+            a: 2,
+            b: 2,
+            c: StaticString::new(),
+        };
+        let key_ptr_2: *const KeyType = &key_2;
+        type ValueType = u64;
+        let default_value = ValueType::default();
+        let value_ptr: *const ValueType = &default_value;
+
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+        let service = unsafe {
+            node.service_builder(&service_name)
+                .blackboard_creator::<CustomKeyMarker>()
+                .__internal_set_key_type_details(&TypeDetail::new::<KeyType>(
+                    TypeVariant::FixedSize,
+                ))
+                .__internal_set_key_eq_cmp_func(Box::new(move |lhs: *const u8, rhs: *const u8| {
+                    KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::key_eq_comparison(lhs, rhs, &cmp_for_foo)
+                }))
+                .__internal_add(
+                    key_ptr_1 as *const u8,
+                    value_ptr as *mut u8,
+                    TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
+                    Box::new(|| {}),
+                )
+                .__internal_add(
+                    key_ptr_2 as *const u8,
+                    value_ptr as *mut u8,
+                    TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
+                    Box::new(|| {}),
+                )
+                .create()
+                .unwrap()
+        };
+
+        let mut keys = vec![];
+        service.__internal_list_keys(|key_ptr: *const u8| {
+            let key = unsafe { *(key_ptr as *const Foo) };
+            keys.push(key);
+            CallbackProgression::Continue
+        });
+        assert_that!(keys, len 2);
+        assert_that!(keys, eq vec![key_1, key_2]);
+
+        keys.clear();
+
+        service.__internal_list_keys(|key_ptr: *const u8| {
+            let key = unsafe { *(key_ptr as *const Foo) };
+            keys.push(key);
+            CallbackProgression::Stop
+        });
+        assert_that!(keys, len 1);
+        assert_that!(keys, eq vec![key_1]);
     }
 
     #[conformance_test]

@@ -37,6 +37,7 @@ use core::fmt::Debug;
 use core::mem::MaybeUninit;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::relocatable_ptr::GenericRelocatablePointer;
+use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::generic_pointer::GenericPointer;
 use iceoryx2_bb_elementary_traits::owning_pointer::GenericOwningPointer;
 pub use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
@@ -206,6 +207,17 @@ impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
 
     pub(crate) fn len_impl(&self) -> usize {
         self.map.len_impl()
+    }
+
+    pub(crate) unsafe fn list_keys_impl<F: FnMut(&K) -> CallbackProgression>(
+        &self,
+        mut callback: F,
+    ) {
+        for (_, value) in self.map.iter_impl() {
+            if callback(&value.id) == CallbackProgression::Stop {
+                break;
+            }
+        }
     }
 }
 
@@ -630,6 +642,11 @@ impl<K: Eq, V: Clone> RelocatableFlatMap<K, V> {
     /// Returns the number of stored key-value pairs.
     pub fn len(&self) -> usize {
         self.map.len()
+    }
+
+    // TODO: list for other implementations, documentation
+    pub fn list_keys<F: FnMut(&K) -> CallbackProgression>(&self, callback: F) {
+        unsafe { self.list_keys_impl(callback) };
     }
 }
 

@@ -1612,6 +1612,40 @@ TYPED_TEST(ServiceBlackboardTest, entry_handle_is_up_to_date_works_correctly) {
     ASSERT_TRUE(entry_handle.is_up_to_date(value));
 }
 
+TYPED_TEST(ServiceBlackboardTest, list_keys_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    std::vector<uint64_t> keys { 0, 1, 2, 3, 4 };
+    auto service = node.service_builder(service_name)
+                       .template blackboard_creator<uint64_t>()
+                       .template add<uint64_t>(keys[0], 0)
+                       .template add<uint64_t>(keys[1], 0)
+                       .template add<uint64_t>(keys[2], 0)
+                       .template add<uint64_t>(keys[3], 0)
+                       .template add<uint64_t>(keys[4], 0)
+                       .create()
+                       .expect("");
+
+    std::vector<uint64_t> listed_keys;
+    service.list_keys([&listed_keys](uint64_t key) -> auto {
+        listed_keys.push_back(key);
+        return CallbackProgression::Continue;
+    });
+    ASSERT_EQ(listed_keys.size(), 5);
+    ASSERT_EQ(listed_keys, keys);
+
+    listed_keys.clear();
+
+    service.list_keys([&listed_keys](uint64_t key) -> auto {
+        listed_keys.push_back(key);
+        return CallbackProgression::Stop;
+    });
+    ASSERT_EQ(listed_keys.size(), 1);
+    ASSERT_EQ(listed_keys[0], keys[0]);
+}
+
 constexpr uint64_t const STRING_CAPACITY = 25;
 struct Foo {
     Foo() = default;
@@ -1686,6 +1720,38 @@ TYPED_TEST(ServiceBlackboardTest, adding_key_struct_twice_fails) {
                        .create();
     ASSERT_TRUE(service.has_error());
     ASSERT_THAT(service.error(), Eq(BlackboardCreateError::ServiceInCorruptedState));
+}
+
+TYPED_TEST(ServiceBlackboardTest, list_keys_with_key_struct_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    std::vector<Foo> keys { Foo(2, -3, 0, container::StaticString<STRING_CAPACITY>::from_utf8("hatschu").value()),
+                            Foo(2, -3, 0, container::StaticString<STRING_CAPACITY>::from_utf8("hatschuu").value()) };
+    auto service = node.service_builder(service_name)
+                       .template blackboard_creator<Foo>()
+                       .template add<int32_t>(keys[0], -3)
+                       .template add<uint32_t>(keys[1], 3)
+                       .create()
+                       .expect("");
+
+    std::vector<Foo> listed_keys;
+    service.list_keys([&listed_keys](Foo key) -> auto {
+        listed_keys.push_back(key);
+        return CallbackProgression::Continue;
+    });
+    ASSERT_EQ(listed_keys.size(), 2);
+    ASSERT_EQ(listed_keys, keys);
+
+    listed_keys.clear();
+
+    service.list_keys([&listed_keys](Foo key) -> auto {
+        listed_keys.push_back(key);
+        return CallbackProgression::Stop;
+    });
+    ASSERT_EQ(listed_keys.size(), 1);
+    ASSERT_EQ(listed_keys[0], keys[0]);
 }
 
 TYPED_TEST(ServiceBlackboardTest, new_value_can_be_written_using_value_mut) {
