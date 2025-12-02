@@ -26,7 +26,7 @@ namespace bb {
 /// @attention Since negative durations are not allowed, the duration will be clamped to 0
 template <>
 struct From<std::chrono::nanoseconds, Duration> {
-    static Duration from(const std::chrono::nanoseconds& value) noexcept;
+    static constexpr Duration from(const std::chrono::nanoseconds& value) noexcept;
 };
 
 /// @brief Construct a Duration object from std::chrono::microseconds
@@ -34,7 +34,7 @@ struct From<std::chrono::nanoseconds, Duration> {
 /// @attention Since negative durations are not allowed, the duration will be clamped to 0
 template <>
 struct From<std::chrono::microseconds, Duration> {
-    static Duration from(const std::chrono::microseconds& value) noexcept;
+    static constexpr Duration from(const std::chrono::microseconds& value) noexcept;
 };
 
 /// @brief Construct a Duration object from std::chrono::milliseconds
@@ -42,7 +42,7 @@ struct From<std::chrono::microseconds, Duration> {
 /// @attention Since negative durations are not allowed, the duration will be clamped to 0
 template <>
 struct From<std::chrono::milliseconds, Duration> {
-    static Duration from(const std::chrono::milliseconds& value) noexcept;
+    static constexpr Duration from(const std::chrono::milliseconds& value) noexcept;
 };
 
 /// @brief Construct a Duration object from std::chrono::seconds
@@ -50,7 +50,7 @@ struct From<std::chrono::milliseconds, Duration> {
 /// @attention Since negative durations are not allowed, the duration will be clamped to 0
 template <>
 struct From<std::chrono::seconds, Duration> {
-    static Duration from(const std::chrono::seconds& value) noexcept;
+    static constexpr Duration from(const std::chrono::seconds& value) noexcept;
 };
 } // namespace bb
 } // namespace iox2
