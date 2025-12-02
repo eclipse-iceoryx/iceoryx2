@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include "iox2/container/static_vector.hpp"
 #include "iox2/iceoryx2.hpp"
 
 #include <cstdint>
@@ -17,15 +18,15 @@
 #include <utility>
 
 struct ComplexData {
-    iox2::legacy::string<4> name;           // NOLINT
-    iox2::legacy::vector<uint64_t, 4> data; // NOLINT
+    iox2::legacy::string<4> name;                    // NOLINT
+    iox2::container::StaticVector<uint64_t, 4> data; // NOLINT
 };
 
 struct ComplexDataType {
     uint64_t plain_old_data;
-    iox2::legacy::string<8> text;                                  // NOLINT
-    iox2::legacy::vector<uint64_t, 4> vec_of_data;                 // NOLINT
-    iox2::legacy::vector<ComplexData, 404857> vec_of_complex_data; // NOLINT
+    iox2::legacy::string<8> text;                                           // NOLINT
+    iox2::container::StaticVector<uint64_t, 4> vec_of_data;                 // NOLINT
+    iox2::container::StaticVector<ComplexData, 404857> vec_of_complex_data; // NOLINT
 };
 
 constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_secs(1);
@@ -54,9 +55,9 @@ auto main() -> int {
         auto& payload = sample.payload_mut();
         payload.plain_old_data = counter;
         payload.text = iox2::legacy::string<8>("hello"); // NOLINT
-        payload.vec_of_data.push_back(counter);
-        payload.vec_of_complex_data.push_back(
-            ComplexData { iox2::legacy::string<4>("bla"), iox2::legacy::vector<uint64_t, 4>(2, counter) });
+        payload.vec_of_data.try_push_back(counter);
+        payload.vec_of_complex_data.try_push_back(ComplexData {
+            iox2::legacy::string<4>("bla"), iox2::container::StaticVector<uint64_t, 4>::from_value<2>(counter) });
 
         auto initialized_sample = assume_init(std::move(sample));
         send(std::move(initialized_sample)).expect("send successful");
