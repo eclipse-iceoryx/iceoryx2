@@ -198,7 +198,8 @@ int main(void) {
         printf("Write new value %d for key 0...\n", counter);
 
         iox2_entry_value_uninit_h entry_value_uninit = NULL;
-        iox2_entry_handle_mut_loan_uninit(entry_handle_mut_key_1, NULL, &entry_value_uninit, sizeof(double), alignof(double));
+        iox2_entry_handle_mut_loan_uninit(
+            entry_handle_mut_key_1, NULL, &entry_value_uninit, sizeof(double), alignof(double));
         double* payload = NULL;
         iox2_entry_value_uninit_value_mut(&entry_value_uninit, (void**) &payload);
         *payload = INITIAL_VALUE * (double) counter;
