@@ -41,7 +41,7 @@ class Service {
         -> iox2::legacy::expected<iox2::legacy::optional<ServiceDetails<S>>, ServiceDetailsError>;
 
     /// Returns a list of all services created under a given [`config::Config`].
-    static auto list(ConfigView config, const iox2::legacy::function<CallbackProgression(ServiceDetails<S>)>& callback)
+    static auto list(ConfigView config, const iox2::bb::function<CallbackProgression(ServiceDetails<S>)>& callback)
         -> iox2::legacy::expected<void, ServiceListError>;
 };
 } // namespace iox2

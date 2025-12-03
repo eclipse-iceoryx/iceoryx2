@@ -42,13 +42,13 @@ class DynamicConfigEvent {
     /// callback with the corresponding [`NotifierDetailsView`].
     /// The callback shall return [`CallbackProgression::Continue`] when the iteration shall
     /// continue otherwise [`CallbackProgression::Stop`].
-    void list_notifiers(const iox2::legacy::function<CallbackProgression(NotifierDetailsView)>& callback) const;
+    void list_notifiers(const iox2::bb::function<CallbackProgression(NotifierDetailsView)>& callback) const;
 
     /// Iterates over all [`Listener`]s and calls the
     /// callback with the corresponding [`ListenerDetailsView`].
     /// The callback shall return [`CallbackProgression::Continue`] when the iteration shall
     /// continue otherwise [`CallbackProgression::Stop`].
-    void list_listeners(const iox2::legacy::function<CallbackProgression(ListenerDetailsView)>& callback) const;
+    void list_listeners(const iox2::bb::function<CallbackProgression(ListenerDetailsView)>& callback) const;
 
   private:
     template <ServiceType>

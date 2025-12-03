@@ -42,13 +42,13 @@ class DynamicConfigBlackboard {
     /// corresponding [`ReaderDetailsView`].
     /// The callback shall return [`CallbackProgression::Continue`] when the iteration shall
     /// continue otherwise [`CallbackProgression::Stop`].
-    void list_readers(const iox2::legacy::function<CallbackProgression(ReaderDetailsView)>& callback) const;
+    void list_readers(const iox2::bb::function<CallbackProgression(ReaderDetailsView)>& callback) const;
 
     /// Iterates over all [`Writer`]s and calls the callback with the
     /// corresponding [`WriterDetailsView`].
     /// The callback shall return [`CallbackProgression::Continue`] when the iteration shall
     /// continue otherwise [`CallbackProgression::Stop`].
-    void list_writers(const iox2::legacy::function<CallbackProgression(WriterDetailsView)>& callback) const;
+    void list_writers(const iox2::bb::function<CallbackProgression(WriterDetailsView)>& callback) const;
 
   private:
     template <ServiceType, typename>

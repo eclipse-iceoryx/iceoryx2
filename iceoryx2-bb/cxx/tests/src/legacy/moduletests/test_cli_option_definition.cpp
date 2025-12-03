@@ -52,7 +52,7 @@ class OptionDefinition_test : public Test {
 
     iox2::legacy::optional<OutBuffer> outputBuffer;
     uint64_t numberOfErrorCallbackCalls = 0U;
-    iox2::legacy::function<void()> errorCallback = [this] { ++numberOfErrorCallbackCalls; };
+    iox2::bb::function<void()> errorCallback = [this] { ++numberOfErrorCallbackCalls; };
     static Argument_t defaultValue;
 };
 Argument_t OptionDefinition_test::defaultValue = "DEFAULT VALUE";

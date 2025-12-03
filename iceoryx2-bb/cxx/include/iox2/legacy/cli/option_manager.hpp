@@ -14,16 +14,16 @@
 #ifndef IOX2_BB_CLI_OPTION_MANAGER_HPP
 #define IOX2_BB_CLI_OPTION_MANAGER_HPP
 
+#include "iox2/bb/function.hpp"
 #include "iox2/legacy/cli/command_line_parser.hpp"
 #include "iox2/legacy/cli/option_definition.hpp"
-#include "iox2/bb/function.hpp"
 #include "iox2/legacy/std_string_support.hpp"
 #include "iox2/legacy/vector.hpp"
 
 namespace iox2 {
 namespace legacy {
 namespace cli {
-using CmdAssignments_t = vector<function<void(Arguments&)>, MAX_NUMBER_OF_ARGUMENTS>;
+using CmdAssignments_t = vector<bb::function<void(Arguments&)>, MAX_NUMBER_OF_ARGUMENTS>;
 
 /// @brief Manages command line options which were defined via the IOX2_CLI_ macros in a
 ///        user defined struct.
@@ -35,7 +35,7 @@ class OptionManager {
     /// @param[in] programDescription the description of the application
     /// @param[in] onFailureCallback callback which is called when a syntax error occurs, a required option is missing
     /// or the wrong type as argument value is provided
-    OptionManager(const OptionDescription_t& programDescription, const function<void()>& onFailureCallback);
+    OptionManager(const OptionDescription_t& programDescription, const bb::function<void()>& onFailureCallback);
 
     /// @brief Defines a new option
     /// @param[in] referenceToMember an uninitialized piece of memory where later the content is stored when

@@ -18,7 +18,7 @@ namespace iox2 {
 namespace legacy {
 namespace cli {
 OptionDefinition::OptionDefinition(const OptionDescription_t& programDescription,
-                                   const function<void()>& onFailureCallback) noexcept
+                                   const bb::function<void()>& onFailureCallback) noexcept
     : m_programDescription { programDescription }
     , m_onFailureCallback { onFailureCallback } {
     constexpr bool IS_SWITCH = true;

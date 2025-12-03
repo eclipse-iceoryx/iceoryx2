@@ -49,7 +49,7 @@ class AttributeSetView {
 
     /// Returns all values to a specific key
     void iter_key_values(const Attribute::Key& key,
-                         const iox2::legacy::function<CallbackProgression(const Attribute::Value&)>& callback) const;
+                         const iox2::bb::function<CallbackProgression(const Attribute::Value&)>& callback) const;
 
     /// Creates a copy of the [`AttributeSetView`] that owns the attributes.
     auto to_owned() const -> AttributeSet;
@@ -103,7 +103,7 @@ class AttributeSet {
 
     /// Returns all values to a specific key
     void iter_key_values(const Attribute::Key& key,
-                         const iox2::legacy::function<CallbackProgression(const Attribute::Value&)>& callback) const;
+                         const iox2::bb::function<CallbackProgression(const Attribute::Value&)>& callback) const;
 
   private:
     friend class AttributeSetView;

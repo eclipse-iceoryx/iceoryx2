@@ -23,7 +23,8 @@
 
 
 namespace iox2 {
-namespace legacy {
+namespace bb {
+namespace detail {
 template <typename ReturnType, typename... Args>
 using signature = ReturnType(Args...);
 
@@ -48,7 +49,7 @@ class storable_function<Capacity, signature<ReturnType, Args...>> final {
     /// @brief construct from functor (including lambdas)
     template <typename Functor,
               typename = typename std::enable_if<std::is_class<Functor>::value
-                                                     && is_invocable_r<ReturnType, Functor, Args...>::value,
+                                                     && legacy::is_invocable_r<ReturnType, Functor, Args...>::value,
                                                  void>::type>
     // AXIVION Next Construct AutosarC++19_03-A12.1.4: implicit conversion of functors is intentional,
     // the storable function should implicitly behave like any generic constructor, adding
@@ -150,14 +151,14 @@ class storable_function<Capacity, signature<ReturnType, Args...>> final {
 
     // AXIVION Next Construct AutosarC++19_03-A18.1.1 : safe access is guaranteed since the c-array is wrapped inside the storable_function
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays, hicpp-avoid-c-arrays)
-    byte m_storage[Capacity];                              // storage for the callable
+    legacy::byte m_storage[Capacity];                      // storage for the callable
     void* m_callable { nullptr };                          // pointer to stored type-erased callable
     ReturnType (*m_invoker)(void*, Args&&...) { nullptr }; // indirection to invoke the stored callable,
                                                            // nullptr if no callable is stored
 
     template <typename Functor,
               typename = typename std::enable_if<std::is_class<Functor>::value
-                                                     && is_invocable_r<ReturnType, Functor, Args...>::value,
+                                                     && legacy::is_invocable_r<ReturnType, Functor, Args...>::value,
                                                  void>::type>
     void storeFunctor(const Functor& functor) noexcept;
 
@@ -350,7 +351,7 @@ storable_function<Capacity, signature<ReturnType, Args...>>::safeAlign(void* sta
     // AXIVION DISABLE STYLE AutosarC++19_03-M5.2.9 : Conversion required for low level pointer alignment
     // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast, performance-no-int-to-ptr)
     const uint64_t alignment { alignof(T) };
-    const uint64_t alignedPosition { align(reinterpret_cast<uint64_t>(startAddress), alignment) };
+    const uint64_t alignedPosition { legacy::align(reinterpret_cast<uint64_t>(startAddress), alignment) };
     return reinterpret_cast<void*>(alignedPosition);
     // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast, performance-no-int-to-ptr)
     // AXIVION ENABLE STYLE AutosarC++19_03-M5.2.9
@@ -490,7 +491,7 @@ storable_function<Capacity, signature<ReturnType, Args...>>::required_storage_si
 template <uint64_t Capacity, typename ReturnType, typename... Args>
 template <typename T>
 inline constexpr bool storable_function<Capacity, signature<ReturnType, Args...>>::is_storable() noexcept {
-    return (required_storage_size<T>() <= Capacity) && is_invocable_r<ReturnType, T, Args...>::value;
+    return (required_storage_size<T>() <= Capacity) && legacy::is_invocable_r<ReturnType, T, Args...>::value;
 }
 
 template <uint64_t Capacity, typename ReturnType, typename... Args>
@@ -519,7 +520,8 @@ storable_function<Capacity, signature<ReturnType, Args...>>::operations::destroy
     }
 }
 
-} // namespace legacy
+} // namespace detail
+} // namespace bb
 } // namespace iox2
 
 #endif // IOX2_BB_STORABLE_FUNCTION_HPP
