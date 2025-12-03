@@ -42,6 +42,17 @@ class storable_function;
 /// @tparam Args        The arguments of the stored callable.
 template <uint64_t Capacity, typename ReturnType, typename... Args>
 class storable_function<Capacity, Signature<ReturnType, Args...>> final {
+  private:
+    struct Operations;
+    Operations m_operations; // operations depending on type-erased callable (copy, move, destroy)
+
+    // AXIVION Next Construct AutosarC++19_03-A18.1.1 : safe access is guaranteed since the c-array is wrapped inside the storable_function
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays, hicpp-avoid-c-arrays)
+    legacy::byte m_storage[Capacity];                      // storage for the callable
+    void* m_callable { nullptr };                          // pointer to stored type-erased callable
+    ReturnType (*m_invoker)(void*, Args&&...) { nullptr }; // indirection to invoke the stored callable,
+                                                           // nullptr if no callable is stored
+
   public:
     using SignatureT = Signature<ReturnType, Args...>;
 
@@ -146,16 +157,6 @@ class storable_function<Capacity, Signature<ReturnType, Args...>> final {
 
         void destroy(storable_function& func) const noexcept;
     };
-
-  private:
-    Operations m_operations; // operations depending on type-erased callable (copy, move, destroy)
-
-    // AXIVION Next Construct AutosarC++19_03-A18.1.1 : safe access is guaranteed since the c-array is wrapped inside the storable_function
-    // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays, hicpp-avoid-c-arrays)
-    legacy::byte m_storage[Capacity];                      // storage for the callable
-    void* m_callable { nullptr };                          // pointer to stored type-erased callable
-    ReturnType (*m_invoker)(void*, Args&&...) { nullptr }; // indirection to invoke the stored callable,
-                                                           // nullptr if no callable is stored
 
     template <typename Functor,
               typename = std::enable_if_t<std::is_class<Functor>::value
