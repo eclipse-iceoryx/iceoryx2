@@ -14,8 +14,8 @@
 #ifndef IOX2_BB_FUNCTIONAL_STORABLE_FUNCTION_INL
 #define IOX2_BB_FUNCTIONAL_STORABLE_FUNCTION_INL
 
+#include "iox2/bb/detail/storable_function.hpp"
 #include "iox2/legacy/assertions.hpp"
-#include "iox2/legacy/detail/storable_function.hpp"
 #include "iox2/legacy/memory.hpp"
 
 namespace iox2 {

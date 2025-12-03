@@ -14,7 +14,7 @@
 #define IOX2_RESPONSE_MUT_UNINIT_HPP
 
 #include "iox/slice.hpp"
-#include "iox2/legacy/function.hpp"
+#include "iox2/bb/function.hpp"
 #include "iox2/payload_info.hpp"
 #include "iox2/response_mut.hpp"
 #include "iox2/service_type.hpp"

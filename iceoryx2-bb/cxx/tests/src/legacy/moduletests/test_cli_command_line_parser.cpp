@@ -13,7 +13,7 @@
 
 #include "iox2/legacy/cli/command_line_parser.hpp"
 #include "iox2/legacy/detail/hoofs_error_reporting.hpp"
-#include "iox2/legacy/function.hpp"
+#include "iox2/bb/function.hpp"
 #include "iox2/legacy/optional.hpp"
 #include "iox2/legacy/std_string_support.hpp"
 #include "test_cli_command_line_common.hpp"

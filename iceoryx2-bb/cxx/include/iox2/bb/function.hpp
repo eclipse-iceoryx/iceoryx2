@@ -14,7 +14,7 @@
 #ifndef IOX2_BB_FUNCTIONAL_FUNCTION_HPP
 #define IOX2_BB_FUNCTIONAL_FUNCTION_HPP
 
-#include "iox2/legacy/detail/storable_function.hpp"
+#include "iox2/bb/detail/storable_function.hpp"
 
 namespace iox2 {
 namespace legacy {

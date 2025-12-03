@@ -15,7 +15,7 @@
 
 #include "iox2/attribute.hpp"
 #include "iox2/internal/iceoryx2.hpp"
-#include "iox2/legacy/function.hpp"
+#include "iox2/bb/function.hpp"
 
 #include <iostream>
 

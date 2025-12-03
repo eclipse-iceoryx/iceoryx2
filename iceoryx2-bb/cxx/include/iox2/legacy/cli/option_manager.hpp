@@ -16,7 +16,7 @@
 
 #include "iox2/legacy/cli/command_line_parser.hpp"
 #include "iox2/legacy/cli/option_definition.hpp"
-#include "iox2/legacy/function.hpp"
+#include "iox2/bb/function.hpp"
 #include "iox2/legacy/std_string_support.hpp"
 #include "iox2/legacy/vector.hpp"
 

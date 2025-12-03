@@ -19,7 +19,7 @@
 #include "iox2/internal/callback_context.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/legacy/expected.hpp"
-#include "iox2/legacy/function.hpp"
+#include "iox2/bb/function.hpp"
 #include "iox2/node_failure_enums.hpp"
 #include "iox2/node_state.hpp"
 #include "iox2/port_factory_client.hpp"
