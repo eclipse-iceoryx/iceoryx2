@@ -16,7 +16,7 @@
 
 #include "iox2/legacy/cli/arguments.hpp"
 #include "iox2/legacy/cli/types.hpp"
-#include "iox2/legacy/function.hpp"
+#include "iox2/bb/function.hpp"
 #include "iox2/legacy/vector.hpp"
 #include <cstdint>
 

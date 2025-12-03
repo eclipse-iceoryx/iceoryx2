@@ -15,7 +15,7 @@
 
 #include "iox2/client_details.hpp"
 #include "iox2/internal/iceoryx2.hpp"
-#include "iox2/legacy/function.hpp"
+#include "iox2/bb/function.hpp"
 #include "iox2/server_details.hpp"
 #include "iox2/service_type.hpp"
 

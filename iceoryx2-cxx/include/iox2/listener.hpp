@@ -19,7 +19,7 @@
 #include "iox2/internal/callback_context.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/legacy/expected.hpp"
-#include "iox2/legacy/function.hpp"
+#include "iox2/bb/function.hpp"
 #include "iox2/legacy/optional.hpp"
 #include "iox2/listener_error.hpp"
 #include "iox2/service_type.hpp"

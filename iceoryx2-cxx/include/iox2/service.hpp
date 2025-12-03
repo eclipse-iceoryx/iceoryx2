@@ -16,7 +16,7 @@
 #include "iox2/callback_progression.hpp"
 #include "iox2/config.hpp"
 #include "iox2/legacy/expected.hpp"
-#include "iox2/legacy/function.hpp"
+#include "iox2/bb/function.hpp"
 #include "iox2/legacy/optional.hpp"
 #include "iox2/messaging_pattern.hpp"
 #include "iox2/service_details.hpp"

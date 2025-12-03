@@ -14,7 +14,7 @@
 #define IOX2_NODE_STATE_HPP
 
 #include "iox2/legacy/expected.hpp"
-#include "iox2/legacy/function.hpp"
+#include "iox2/bb/function.hpp"
 #include "iox2/legacy/optional.hpp"
 #include "iox2/legacy/variant.hpp"
 #include "node_details.hpp"

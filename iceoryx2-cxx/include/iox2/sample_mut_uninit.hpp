@@ -14,8 +14,8 @@
 #define IOX2_SAMPLE_MUT_UNINIT_HPP
 
 #include "iox/slice.hpp"
+#include "iox2/bb/function.hpp"
 #include "iox2/header_publish_subscribe.hpp"
-#include "iox2/legacy/function.hpp"
 #include "iox2/sample_mut.hpp"
 #include "iox2/service_type.hpp"
 

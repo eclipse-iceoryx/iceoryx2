@@ -19,7 +19,7 @@
 #include "iox2/legacy/buffer_info.hpp"
 #include "iox2/legacy/detail/string_internal.hpp"
 #include "iox2/legacy/detail/string_type_traits.hpp"
-#include "iox2/legacy/function.hpp"
+#include "iox2/bb/function.hpp"
 #include "iox2/legacy/log/logstream.hpp"
 #include "iox2/legacy/optional.hpp"
 #include "iox2/legacy/type_traits.hpp"
