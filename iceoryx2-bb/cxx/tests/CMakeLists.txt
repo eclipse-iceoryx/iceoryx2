@@ -35,6 +35,7 @@ target_sources(iceoryx2-bb-cxx-tests
     PRIVATE
     ${PROJECT_SOURCE_DIR}/src/main.cpp
     ${PROJECT_SOURCE_DIR}/src/duration_tests.cpp
+    ${PROJECT_SOURCE_DIR}/src/function_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/into_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/optional_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/path_and_file_verifier_tests.cpp
@@ -91,7 +92,6 @@ target_sources(iceoryx2-bb-cxx-tests
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_design_functional_interface_value_or.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_design_polymorphic_handler.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_design_static_lifetime_guard.cpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_functional_function.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_functional_function_ref.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_memory_memory.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_platform_atomic.cpp
