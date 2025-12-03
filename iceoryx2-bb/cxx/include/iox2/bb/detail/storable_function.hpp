@@ -17,6 +17,7 @@
 #include "iox2/legacy/assertions.hpp"
 #include "iox2/legacy/memory.hpp"
 #include "iox2/legacy/type_traits.hpp"
+#include "iox2/legacy/uninitialized_array.hpp"
 
 #include <utility>
 
@@ -46,12 +47,10 @@ class storable_function<Capacity, Signature<ReturnType, Args...>> final {
     struct Operations;
     Operations m_operations; // operations depending on type-erased callable (copy, move, destroy)
 
-    // AXIVION Next Construct AutosarC++19_03-A18.1.1 : safe access is guaranteed since the c-array is wrapped inside the storable_function
-    // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays, hicpp-avoid-c-arrays)
-    legacy::byte m_storage[Capacity];                      // storage for the callable
-    void* m_callable { nullptr };                          // pointer to stored type-erased callable
-    ReturnType (*m_invoker)(void*, Args&&...) { nullptr }; // indirection to invoke the stored callable,
-                                                           // nullptr if no callable is stored
+    legacy::UninitializedArray<legacy::byte, Capacity> m_storage; // storage for the callable
+    void* m_callable { nullptr };                                 // pointer to stored type-erased callable
+    ReturnType (*m_invoker)(void*, Args&&...) { nullptr };        // indirection to invoke the stored callable,
+                                                                  // nullptr if no callable is stored
 
   public:
     using SignatureT = Signature<ReturnType, Args...>;
@@ -367,7 +366,7 @@ template <typename Functor, typename>
 inline void
 storable_function<Capacity, Signature<ReturnType, Args...>>::store_functor(const Functor& functor) noexcept {
     using StoredType = std::remove_reference_t<Functor>;
-    m_callable = safe_align<StoredType>(&m_storage[0]);
+    m_callable = safe_align<StoredType>(m_storage.begin());
 
     // erase the functor type and store as reference to the call in storage
     // AXIVION Next Construct AutosarC++19_03-A18.5.10: False positive! 'safeAlign' takes care of proper alignment and size
@@ -384,7 +383,7 @@ template <uint64_t Capacity, typename ReturnType, typename... Args>
 template <typename CallableType>
 inline void storable_function<Capacity, Signature<ReturnType, Args...>>::copy(const storable_function& src,
                                                                               storable_function& dest) noexcept {
-    dest.m_callable = safe_align<CallableType>(&dest.m_storage[0]);
+    dest.m_callable = safe_align<CallableType>(dest.m_storage.begin());
 
     // AXIVION Next Construct AutosarC++19_03-M5.2.8: type erasure - conversion to compatible type
     const auto obj = static_cast<CallableType*>(src.m_callable);
@@ -402,7 +401,7 @@ template <uint64_t Capacity, typename ReturnType, typename... Args>
 template <typename CallableType>
 inline void storable_function<Capacity, Signature<ReturnType, Args...>>::move(storable_function& src,
                                                                               storable_function& dest) noexcept {
-    dest.m_callable = safe_align<CallableType>(&dest.m_storage[0]);
+    dest.m_callable = safe_align<CallableType>(dest.m_storage.begin());
 
     // AXIVION Next Construct AutosarC++19_03-M5.2.8: type erasure - conversion to compatible type
     const auto obj = static_cast<CallableType*>(src.m_callable);
