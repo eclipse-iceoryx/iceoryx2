@@ -13,9 +13,9 @@
 #ifndef IOX2_DYNAMIC_CONFIG_REQUEST_RESPONSE_HPP
 #define IOX2_DYNAMIC_CONFIG_REQUEST_RESPONSE_HPP
 
+#include "iox2/bb/function.hpp"
 #include "iox2/client_details.hpp"
 #include "iox2/internal/iceoryx2.hpp"
-#include "iox2/bb/function.hpp"
 #include "iox2/server_details.hpp"
 #include "iox2/service_type.hpp"
 

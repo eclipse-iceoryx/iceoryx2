@@ -14,12 +14,12 @@
 #define IOX2_PORTFACTORY_REQUEST_RESPONSE_HPP
 
 #include "iox2/attribute_set.hpp"
+#include "iox2/bb/function.hpp"
 #include "iox2/callback_progression.hpp"
 #include "iox2/dynamic_config_request_response.hpp"
 #include "iox2/internal/callback_context.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/legacy/expected.hpp"
-#include "iox2/bb/function.hpp"
 #include "iox2/node_failure_enums.hpp"
 #include "iox2/node_state.hpp"
 #include "iox2/port_factory_client.hpp"

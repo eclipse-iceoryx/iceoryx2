@@ -13,8 +13,8 @@
 #ifndef IOX2_REQUEST_MUT_UNINIT_HPP
 #define IOX2_REQUEST_MUT_UNINIT_HPP
 
-#include "iox2/header_request_response.hpp"
 #include "iox2/bb/function.hpp"
+#include "iox2/header_request_response.hpp"
 #include "iox2/request_mut.hpp"
 #include "iox2/service_type.hpp"
 

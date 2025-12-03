@@ -173,8 +173,9 @@ class WaitSet {
     ///
     /// When no signal was received and all events were handled, it will return
     /// [`WaitSetRunResult::AllEventsHandled`].
-    auto wait_and_process_once_with_timeout(
-        const iox2::bb::Function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call, iox2::bb::Duration timeout)
+    auto
+    wait_and_process_once_with_timeout(const iox2::bb::Function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call,
+                                       iox2::bb::Duration timeout)
         -> iox2::legacy::expected<WaitSetRunResult, WaitSetRunError>;
 
     /// Returns the capacity of the [`WaitSet`]

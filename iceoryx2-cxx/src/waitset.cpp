@@ -319,8 +319,7 @@ auto WaitSet<S>::wait_and_process(const iox2::bb::Function<CallbackProgression(W
 }
 
 template <ServiceType S>
-auto WaitSet<S>::wait_and_process_once(
-    const iox2::bb::Function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call)
+auto WaitSet<S>::wait_and_process_once(const iox2::bb::Function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call)
     -> iox2::legacy::expected<WaitSetRunResult, WaitSetRunError> {
     iox2_waitset_run_result_e run_result = iox2_waitset_run_result_e_STOP_REQUEST;
     auto ctx = internal::ctx(fn_call);
@@ -335,8 +334,8 @@ auto WaitSet<S>::wait_and_process_once(
 
 template <ServiceType S>
 auto WaitSet<S>::wait_and_process_once_with_timeout(
-    const iox2::bb::Function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call,
-    const iox2::bb::Duration timeout) -> iox2::legacy::expected<WaitSetRunResult, WaitSetRunError> {
+    const iox2::bb::Function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call, const iox2::bb::Duration timeout)
+    -> iox2::legacy::expected<WaitSetRunResult, WaitSetRunError> {
     iox2_waitset_run_result_e run_result = iox2_waitset_run_result_e_STOP_REQUEST;
     auto ctx = internal::ctx(fn_call);
     auto result = iox2_waitset_wait_and_process_once_with_timeout(

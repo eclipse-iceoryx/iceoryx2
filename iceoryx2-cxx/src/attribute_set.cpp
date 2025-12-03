@@ -57,8 +57,7 @@ auto AttributeSetView::key_value(const Attribute::Key& key, const uint64_t idx)
 }
 
 void AttributeSetView::iter_key_values(
-    const Attribute::Key& key,
-    const iox2::bb::Function<CallbackProgression(const Attribute::Value&)>& callback) const {
+    const Attribute::Key& key, const iox2::bb::Function<CallbackProgression(const Attribute::Value&)>& callback) const {
     auto ctx = internal::ctx(callback);
     iox2_attribute_set_iter_key_values(m_handle, key.c_str(), get_key_values_callback, static_cast<void*>(&ctx));
 }
@@ -132,8 +131,7 @@ auto AttributeSet::key_value(const Attribute::Key& key, const uint64_t idx)
 }
 
 void AttributeSet::iter_key_values(
-    const Attribute::Key& key,
-    const iox2::bb::Function<CallbackProgression(const Attribute::Value&)>& callback) const {
+    const Attribute::Key& key, const iox2::bb::Function<CallbackProgression(const Attribute::Value&)>& callback) const {
     m_view.iter_key_values(key, callback);
 }
 /////////////////////////////
