@@ -93,7 +93,7 @@ NodeState<T>::NodeState(iox2_node_state_e node_state, const NodeId& node_id) {
 }
 
 template <ServiceType T>
-auto NodeState<T>::alive(const iox2::bb::function<void(AliveNodeView<T>&)>& callback) -> NodeState& {
+auto NodeState<T>::alive(const iox2::bb::Function<void(AliveNodeView<T>&)>& callback) -> NodeState& {
     if (m_state.index() == ALIVE_STATE) {
         callback(*m_state.template get_at_index<ALIVE_STATE>());
     }
@@ -102,7 +102,7 @@ auto NodeState<T>::alive(const iox2::bb::function<void(AliveNodeView<T>&)>& call
 }
 
 template <ServiceType T>
-auto NodeState<T>::dead(const iox2::bb::function<void(DeadNodeView<T>&)>& callback) -> NodeState& {
+auto NodeState<T>::dead(const iox2::bb::Function<void(DeadNodeView<T>&)>& callback) -> NodeState& {
     if (m_state.index() == DEAD_STATE) {
         callback(*m_state.template get_at_index<DEAD_STATE>());
     }
@@ -111,7 +111,7 @@ auto NodeState<T>::dead(const iox2::bb::function<void(DeadNodeView<T>&)>& callba
 }
 
 template <ServiceType T>
-auto NodeState<T>::inaccessible(const iox2::bb::function<void(NodeId&)>& callback) -> NodeState& {
+auto NodeState<T>::inaccessible(const iox2::bb::Function<void(NodeId&)>& callback) -> NodeState& {
     if (m_state.index() == INACCESSIBLE_STATE) {
         callback(*m_state.template get_at_index<INACCESSIBLE_STATE>());
     }
@@ -120,7 +120,7 @@ auto NodeState<T>::inaccessible(const iox2::bb::function<void(NodeId&)>& callbac
 }
 
 template <ServiceType T>
-auto NodeState<T>::undefined(const iox2::bb::function<void(NodeId&)>& callback) -> NodeState& {
+auto NodeState<T>::undefined(const iox2::bb::Function<void(NodeId&)>& callback) -> NodeState& {
     if (m_state.index() == UNDEFINED_STATE) {
         callback(*m_state.template get_at_index<UNDEFINED_STATE>());
     }

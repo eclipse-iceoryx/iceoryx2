@@ -44,13 +44,13 @@ class DynamicConfigPublishSubscribe {
     /// callback with the corresponding [`PublisherDetailsView`].
     /// The callback shall return [`CallbackProgression::Continue`] when the iteration shall
     /// continue otherwise [`CallbackProgression::Stop`].
-    void list_publishers(const iox2::bb::function<CallbackProgression(PublisherDetailsView)>& callback) const;
+    void list_publishers(const iox2::bb::Function<CallbackProgression(PublisherDetailsView)>& callback) const;
 
     /// Iterates over all [`Subscribers`]s and calls the
     /// callback with the corresponding [`SubscriberDetailsView`].
     /// The callback shall return [`CallbackProgression::Continue`] when the iteration shall
     /// continue otherwise [`CallbackProgression::Stop`].
-    void list_subscribers(const iox2::bb::function<CallbackProgression(SubscriberDetailsView)>& callback) const;
+    void list_subscribers(const iox2::bb::Function<CallbackProgression(SubscriberDetailsView)>& callback) const;
 
   private:
     template <ServiceType, typename, typename>

@@ -68,7 +68,7 @@ class PortFactoryRequestResponse {
     /// and calls for every [`Node`] the provided callback. If an error occurs
     /// while acquiring the [`Node`]s corresponding [`NodeState`] the error is
     /// forwarded to the callback as input argument.
-    auto nodes(const iox2::bb::function<CallbackProgression(NodeState<Service>)>& callback) const
+    auto nodes(const iox2::bb::Function<CallbackProgression(NodeState<Service>)>& callback) const
         -> iox2::legacy::expected<void, NodeListFailure>;
 
     /// Returns a [`PortFactoryClient`] to create a new
@@ -197,7 +197,7 @@ template <ServiceType Service,
           typename ResponseUserHeader>
 inline auto
 PortFactoryRequestResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::nodes(
-    const iox2::bb::function<CallbackProgression(NodeState<Service>)>& callback) const
+    const iox2::bb::Function<CallbackProgression(NodeState<Service>)>& callback) const
     -> iox2::legacy::expected<void, NodeListFailure> {
     auto ctx = internal::ctx(callback);
 

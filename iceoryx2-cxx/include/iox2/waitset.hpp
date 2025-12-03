@@ -135,7 +135,7 @@ class WaitSet {
     /// If an interrupt- (`SIGINT`) or a termination-signal (`SIGTERM`) was received, it will exit
     /// the loop and inform the user with [`WaitSetRunResult::Interrupt`] or
     /// [`WaitSetRunResult::TerminationRequest`].
-    auto wait_and_process(const iox2::bb::function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call)
+    auto wait_and_process(const iox2::bb::Function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call)
         -> iox2::legacy::expected<WaitSetRunResult, WaitSetRunError>;
 
     /// Waits until an event arrives on the [`WaitSet`], then
@@ -154,7 +154,7 @@ class WaitSet {
     ///
     /// When no signal was received and all events were handled, it will return
     /// [`WaitSetRunResult::AllEventsHandled`].
-    auto wait_and_process_once(const iox2::bb::function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call)
+    auto wait_and_process_once(const iox2::bb::Function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call)
         -> iox2::legacy::expected<WaitSetRunResult, WaitSetRunError>;
 
     /// Waits until an event arrives on the [`WaitSet`] or the provided timeout has passed, then
@@ -174,7 +174,7 @@ class WaitSet {
     /// When no signal was received and all events were handled, it will return
     /// [`WaitSetRunResult::AllEventsHandled`].
     auto wait_and_process_once_with_timeout(
-        const iox2::bb::function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call, iox2::bb::Duration timeout)
+        const iox2::bb::Function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call, iox2::bb::Duration timeout)
         -> iox2::legacy::expected<WaitSetRunResult, WaitSetRunError>;
 
     /// Returns the capacity of the [`WaitSet`]

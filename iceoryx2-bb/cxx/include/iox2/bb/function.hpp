@@ -24,7 +24,7 @@ constexpr uint64_t DEFAULT_FUNCTION_CAPACITY { 128U };
 ///
 ///        Allows storing a callable with a given signature if its size does not exceed a limit.
 ///        This limit can be adjusted by changing the Bytes parameter.
-///        The iox2::bb::function objects own everything needed to invoke the underlying callable and can be safely
+///        The iox2::bb::Function objects own everything needed to invoke the underlying callable and can be safely
 ///        stored. They also support copy and move semantics in natural way by copying or moving the underlying
 ///        callable.
 ///
@@ -39,7 +39,7 @@ constexpr uint64_t DEFAULT_FUNCTION_CAPACITY { 128U };
 ///
 
 template <typename Signature, uint64_t Capacity = DEFAULT_FUNCTION_CAPACITY>
-using function = detail::storable_function<Capacity, Signature>;
+using Function = detail::storable_function<Capacity, Signature>;
 
 } // namespace bb
 } // namespace iox2

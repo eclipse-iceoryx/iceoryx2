@@ -18,7 +18,6 @@
 #include "iox2/legacy/memory.hpp"
 #include "iox2/legacy/type_traits.hpp"
 
-#include <iostream>
 #include <utility>
 
 
@@ -26,7 +25,7 @@ namespace iox2 {
 namespace bb {
 namespace detail {
 template <typename ReturnType, typename... Args>
-using signature = ReturnType(Args...);
+using Signature = ReturnType(Args...);
 
 template <uint64_t Capacity, typename T>
 class storable_function;
@@ -42,15 +41,15 @@ class storable_function;
 /// @tparam ReturnType  The return type of the stored callable.
 /// @tparam Args        The arguments of the stored callable.
 template <uint64_t Capacity, typename ReturnType, typename... Args>
-class storable_function<Capacity, signature<ReturnType, Args...>> final {
+class storable_function<Capacity, Signature<ReturnType, Args...>> final {
   public:
-    using signature_t = signature<ReturnType, Args...>;
+    using SignatureT = Signature<ReturnType, Args...>;
 
     /// @brief construct from functor (including lambdas)
     template <typename Functor,
-              typename = typename std::enable_if<std::is_class<Functor>::value
-                                                     && legacy::is_invocable_r<ReturnType, Functor, Args...>::value,
-                                                 void>::type>
+              typename = std::enable_if_t<std::is_class<Functor>::value
+                                              && legacy::is_invocable_r<ReturnType, Functor, Args...>::value,
+                                          void>>
     // AXIVION Next Construct AutosarC++19_03-A12.1.4: implicit conversion of functors is intentional,
     // the storable function should implicitly behave like any generic constructor, adding
     // explicit would require a static_cast. Furthermore, the storable_functor stores a copy
@@ -67,21 +66,21 @@ class storable_function<Capacity, signature<ReturnType, Args...>> final {
 
     /// @brief construct from object reference and member function
     /// only a pointer to the object is stored for the call
-    template <typename T, typename = typename std::enable_if<std::is_class<T>::value, void>::type>
+    template <typename T, typename = std::enable_if_t<std::is_class<T>::value, void>>
     storable_function(T& object, ReturnType (T::*method)(Args...)) noexcept;
 
     /// @brief construct from object reference and const member function
     /// only a pointer to the object is stored for the call
-    template <typename T, typename = typename std::enable_if<std::is_class<T>::value, void>::type>
+    template <typename T, typename = std::enable_if_t<std::is_class<T>::value, void>>
     storable_function(const T& object, ReturnType (T::*method)(Args...) const) noexcept;
 
     storable_function(const storable_function& other) noexcept;
 
     storable_function(storable_function&& other) noexcept;
 
-    storable_function& operator=(const storable_function& rhs) noexcept;
+    auto operator=(const storable_function& rhs) noexcept -> storable_function&;
 
-    storable_function& operator=(storable_function&& rhs) noexcept;
+    auto operator=(storable_function&& rhs) noexcept -> storable_function&;
 
     ~storable_function() noexcept;
 
@@ -101,53 +100,55 @@ class storable_function<Capacity, signature<ReturnType, Args...>> final {
     ///          Not specifying move or using a default implementation is fine.
     ///          This is also the case for std::function (for the gcc implementation at least).
     ///
-    ReturnType operator()(Args... args) const noexcept;
+    auto operator()(Args... args) const noexcept -> ReturnType;
 
     /// @brief swap this with another storable function
     /// @param f the function to swap this with
-    void swap(storable_function& f) noexcept;
+    void swap(storable_function& other) noexcept;
 
     /// @brief size in bytes required to store a CallableType in a storable_function
     /// @return number of bytes
     /// @note this is not smallest possible due to alignment, it may work with a smaller size but
     ///       is not guaranteed (but it is guaranteed to work with the number of bytes returned)
     template <typename CallableType>
-    static constexpr uint64_t required_storage_size() noexcept;
+    static constexpr auto required_storage_size() noexcept -> uint64_t;
 
     /// @brief checks whether CallableType is storable
     /// @return true if CallableType can be stored, false if it is not guaranteed that it can be stored
     /// @note it might be storable for some alignments of CallableType even if it returns false,
     ///       in this case it is advised to increase the Capacity.
     template <typename CallableType>
-    static constexpr bool is_storable() noexcept;
+    static constexpr auto is_storable() noexcept -> bool;
 
   private:
     // Required to perform the correct operations with the underlying erased type
     // This means storable_function cannot be used where pointers become invalid, e.g. across process boundaries
     // Therefore we cannot store a storable_function in shared memory (the same holds for std::function).
     // This is inherent to the type erasure technique we (have to) use.
-    struct operations final {
+    struct Operations final {
+        // NOLINTBEGIN(misc-non-private-member-variables-in-classes): this is an internal helper class
         // function pointers defining copy, move and destroy semantics
-        void (*copyFunction)(const storable_function& src, storable_function& dest) { nullptr };
-        void (*moveFunction)(storable_function& src, storable_function& dest) { nullptr };
-        void (*destroyFunction)(storable_function& f) { nullptr };
+        void (*copy_function)(const storable_function& src, storable_function& dest) { nullptr };
+        void (*move_function)(storable_function& src, storable_function& dest) { nullptr };
+        void (*destroy_function)(storable_function& func) { nullptr };
+        // NOLINTEND(misc-non-private-member-variables-in-classes)
 
-        operations() noexcept = default;
-        operations(const operations& other) noexcept = default;
-        operations& operator=(const operations& other) noexcept = default;
-        operations(operations&& other) noexcept = default;
-        operations& operator=(operations&& other) noexcept = default;
-        ~operations() = default;
+        Operations() noexcept = default;
+        Operations(const Operations& other) noexcept = default;
+        auto operator=(const Operations& other) noexcept -> Operations& = default;
+        Operations(Operations&& other) noexcept = default;
+        auto operator=(Operations&& other) noexcept -> Operations& = default;
+        ~Operations() = default;
 
         void copy(const storable_function& src, storable_function& dest) const noexcept;
 
         void move(storable_function& src, storable_function& dest) const noexcept;
 
-        void destroy(storable_function& f) const noexcept;
+        void destroy(storable_function& func) const noexcept;
     };
 
   private:
-    operations m_operations; // operations depending on type-erased callable (copy, move, destroy)
+    Operations m_operations; // operations depending on type-erased callable (copy, move, destroy)
 
     // AXIVION Next Construct AutosarC++19_03-A18.1.1 : safe access is guaranteed since the c-array is wrapped inside the storable_function
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays, hicpp-avoid-c-arrays)
@@ -157,10 +158,10 @@ class storable_function<Capacity, signature<ReturnType, Args...>> final {
                                                            // nullptr if no callable is stored
 
     template <typename Functor,
-              typename = typename std::enable_if<std::is_class<Functor>::value
-                                                     && legacy::is_invocable_r<ReturnType, Functor, Args...>::value,
-                                                 void>::type>
-    void storeFunctor(const Functor& functor) noexcept;
+              typename = std::enable_if_t<std::is_class<Functor>::value
+                                              && legacy::is_invocable_r<ReturnType, Functor, Args...>::value,
+                                          void>>
+    void store_functor(const Functor& functor) noexcept;
 
     // we need these templates to preserve the actual CallableType for the underlying call
     template <typename CallableType>
@@ -170,36 +171,36 @@ class storable_function<Capacity, signature<ReturnType, Args...>> final {
     static void move(storable_function& src, storable_function& dest) noexcept;
 
     template <typename CallableType>
-    static void destroy(storable_function& f) noexcept;
+    static void destroy(storable_function& func) noexcept;
 
     template <typename CallableType>
-    static ReturnType invoke(void* callable, Args&&... args) noexcept;
+    static auto invoke(void* callable, Args&&... args) noexcept -> ReturnType;
 
-    static void copyFreeFunction(const storable_function& src, storable_function& dest) noexcept;
+    static void copy_free_function(const storable_function& src, storable_function& dest) noexcept;
 
-    static void moveFreeFunction(storable_function& src, storable_function& dest) noexcept;
+    static void move_free_function(storable_function& src, storable_function& dest) noexcept;
 
     // AXIVION Next Construct AutosarC++19_03-M7.1.2: callable cannot be const void* since
     // m_invoker is initialized with this function and has to work with functors as well
     // (functors may change due to invocation)
-    static ReturnType invokeFreeFunction(void* callable, Args&&... args) noexcept;
+    static auto invoke_free_function(void* callable, Args&&... args) noexcept -> ReturnType;
 
     template <typename T>
-    static constexpr void* safeAlign(void* startAddress) noexcept;
+    static constexpr auto safe_align(void* start_address) noexcept -> void*;
 };
 
 /// @brief swap two storable functions
 /// @param f the first function to swap with g
 /// @param g the second function to swap with f
 template <uint64_t Capacity, typename T>
-void swap(storable_function<Capacity, T>& f, storable_function<Capacity, T>& g) noexcept;
+void swap(storable_function<Capacity, T>& left, storable_function<Capacity, T>& right) noexcept;
 
 // AXIVION DISABLE STYLE AutosarC++19_03-A12.6.1: members are initialized before read access
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init, hicpp-member-init)
 template <uint64_t Capacity, typename ReturnType, typename... Args>
 template <typename Functor, typename>
-inline storable_function<Capacity, signature<ReturnType, Args...>>::storable_function(const Functor& functor) noexcept {
-    storeFunctor(functor);
+inline storable_function<Capacity, Signature<ReturnType, Args...>>::storable_function(const Functor& functor) noexcept {
+    store_functor(functor);
 }
 
 // AXIVION Next Construct AutosarC++19_03-A12.1.5: constructor delegation is not feasible here due
@@ -208,18 +209,18 @@ inline storable_function<Capacity, signature<ReturnType, Args...>>::storable_fun
 // as its original function pointer type after reconversion (type erasure)
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init, hicpp-member-init) members are default initialized
 template <uint64_t Capacity, typename ReturnType, typename... Args>
-inline storable_function<Capacity, signature<ReturnType, Args...>>::storable_function(
+inline storable_function<Capacity, Signature<ReturnType, Args...>>::storable_function(
     ReturnType (*function)(Args...)) noexcept
     : // AXIVION Next Construct AutosarC++19_03-A5.2.4: reinterpret_cast is required for type erasure,
     // we use type erasure in combination with compile time template arguments to restore
     // the correct type whenever the callable is used
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     m_callable(reinterpret_cast<void*>(function))
-    , m_invoker(&invokeFreeFunction) {
+    , m_invoker(&invoke_free_function) {
     IOX2_ENFORCE(function != nullptr, "parameter must not be a 'nullptr'");
 
-    m_operations.copyFunction = &copyFreeFunction;
-    m_operations.moveFunction = &moveFreeFunction;
+    m_operations.copy_function = &copy_free_function;
+    m_operations.move_function = &move_free_function;
     // destroy is not needed for free functions
 }
 
@@ -230,28 +231,28 @@ inline storable_function<Capacity, signature<ReturnType, Args...>>::storable_fun
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init, hicpp-member-init) members are default initialized
 template <uint64_t Capacity, typename ReturnType, typename... Args>
 template <typename T, typename>
-inline storable_function<Capacity, signature<ReturnType, Args...>>::storable_function(
+inline storable_function<Capacity, Signature<ReturnType, Args...>>::storable_function(
     T& object, ReturnType (T::*method)(Args...)) noexcept {
-    T* const p { &object };
-    const auto functor = [p, method](Args... args) noexcept -> ReturnType {
-        return (*p.*method)(std::forward<Args>(args)...);
+    T* const ptr { &object };
+    const auto functor = [ptr, method](Args... args) noexcept -> ReturnType {
+        return (*ptr.*method)(std::forward<Args>(args)...);
     };
 
-    storeFunctor(functor);
+    store_functor(functor);
 }
 
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init, hicpp-member-init)
 template <uint64_t Capacity, typename ReturnType, typename... Args>
 template <typename T, typename>
-inline storable_function<Capacity, signature<ReturnType, Args...>>::storable_function(const T& object,
+inline storable_function<Capacity, Signature<ReturnType, Args...>>::storable_function(const T& object,
                                                                                       ReturnType (T::*method)(Args...)
                                                                                           const) noexcept {
-    const T* const p { &object };
-    const auto functor = [p, method](Args... args) noexcept -> ReturnType {
-        return (*p.*method)(std::forward<Args>(args)...);
+    const T* const ptr { &object };
+    const auto functor = [ptr, method](Args... args) noexcept -> ReturnType {
+        return (*ptr.*method)(std::forward<Args>(args)...);
     };
 
-    storeFunctor(functor);
+    store_functor(functor);
 }
 
 // AXIVION ENABLE STYLE FaultDetection-NullPointerDereference
@@ -260,7 +261,7 @@ inline storable_function<Capacity, signature<ReturnType, Args...>>::storable_fun
 
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init, hicpp-member-init) m_storage is default initialized
 template <uint64_t Capacity, typename ReturnType, typename... Args>
-inline storable_function<Capacity, signature<ReturnType, Args...>>::storable_function(
+inline storable_function<Capacity, Signature<ReturnType, Args...>>::storable_function(
     const storable_function& other) noexcept
     : m_operations(other.m_operations)
     , m_invoker(other.m_invoker) {
@@ -271,7 +272,7 @@ inline storable_function<Capacity, signature<ReturnType, Args...>>::storable_fun
 // (required) and will perform a move with its type erased move function
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init, hicpp-member-init) m_storage is default initialized
 template <uint64_t Capacity, typename ReturnType, typename... Args>
-inline storable_function<Capacity, signature<ReturnType, Args...>>::storable_function(
+inline storable_function<Capacity, Signature<ReturnType, Args...>>::storable_function(
     storable_function&& other) noexcept
     : m_operations(other.m_operations)
     , m_invoker(other.m_invoker) {
@@ -280,8 +281,9 @@ inline storable_function<Capacity, signature<ReturnType, Args...>>::storable_fun
 // AXIVION ENABLE STYLE AutosarC++19_03-A12.6.1
 
 template <uint64_t Capacity, typename ReturnType, typename... Args>
-inline storable_function<Capacity, signature<ReturnType, Args...>>&
-storable_function<Capacity, signature<ReturnType, Args...>>::operator=(const storable_function& rhs) noexcept {
+inline auto
+storable_function<Capacity, Signature<ReturnType, Args...>>::operator=(const storable_function& rhs) noexcept
+    -> storable_function<Capacity, Signature<ReturnType, Args...>>& {
     if (&rhs != this) {
         // this operations is needed for destroy, then changed to source (rhs) operations
         m_operations.destroy(*this);
@@ -294,8 +296,8 @@ storable_function<Capacity, signature<ReturnType, Args...>>::operator=(const sto
 }
 
 template <uint64_t Capacity, typename ReturnType, typename... Args>
-inline storable_function<Capacity, signature<ReturnType, Args...>>&
-storable_function<Capacity, signature<ReturnType, Args...>>::operator=(storable_function&& rhs) noexcept {
+inline auto storable_function<Capacity, Signature<ReturnType, Args...>>::operator=(storable_function&& rhs) noexcept
+    -> storable_function<Capacity, Signature<ReturnType, Args...>>& {
     if (&rhs != this) {
         // this operations is needed for destroy, then changed to source (rhs) operations
         m_operations.destroy(*this);
@@ -308,7 +310,7 @@ storable_function<Capacity, signature<ReturnType, Args...>>::operator=(storable_
 }
 
 template <uint64_t Capacity, typename ReturnType, typename... Args>
-inline storable_function<Capacity, signature<ReturnType, Args...>>::~storable_function() noexcept {
+inline storable_function<Capacity, Signature<ReturnType, Args...>>::~storable_function() noexcept {
     m_operations.destroy(*this);
 }
 
@@ -316,7 +318,8 @@ inline storable_function<Capacity, signature<ReturnType, Args...>>::~storable_fu
 // but the invoked function can be recursive in general (entirely controllable by caller)
 // AXIVION Next Construct AutosarC++19_03-A2.10.1: false positive, args does not hide anything
 template <uint64_t Capacity, typename ReturnType, typename... Args>
-inline ReturnType storable_function<Capacity, signature<ReturnType, Args...>>::operator()(Args... args) const noexcept {
+inline auto storable_function<Capacity, Signature<ReturnType, Args...>>::operator()(Args... args) const noexcept
+    -> ReturnType {
 #if (defined(__GNUC__) && __GNUC__ >= 11 && __GNUC__ <= 12 && !defined(__clang__))
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
@@ -331,28 +334,28 @@ inline ReturnType storable_function<Capacity, signature<ReturnType, Args...>>::o
 }
 
 template <uint64_t Capacity, typename ReturnType, typename... Args>
-inline void storable_function<Capacity, signature<ReturnType, Args...>>::swap(storable_function& f) noexcept {
-    storable_function tmp { std::move(f) };
-    f = std::move(*this);
+inline void storable_function<Capacity, Signature<ReturnType, Args...>>::swap(storable_function& other) noexcept {
+    storable_function tmp { std::move(other) };
+    other = std::move(*this);
     *this = std::move(tmp);
 }
 
 template <uint64_t Capacity, typename T>
-inline void swap(storable_function<Capacity, T>& f, storable_function<Capacity, T>& g) noexcept {
-    f.swap(g);
+inline void swap(storable_function<Capacity, T>& left, storable_function<Capacity, T>& right) noexcept {
+    left.swap(right);
 }
 
 template <uint64_t Capacity, typename ReturnType, typename... Args>
 template <typename T>
-inline constexpr void*
-storable_function<Capacity, signature<ReturnType, Args...>>::safeAlign(void* startAddress) noexcept {
+constexpr auto storable_function<Capacity, Signature<ReturnType, Args...>>::safe_align(void* start_address) noexcept
+    -> void* {
     static_assert(is_storable<T>(), "type does not fit into storage");
     // AXIVION DISABLE STYLE AutosarC++19_03-A5.2.4 : Cast required for low level pointer alignment
     // AXIVION DISABLE STYLE AutosarC++19_03-M5.2.9 : Conversion required for low level pointer alignment
     // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast, performance-no-int-to-ptr)
     const uint64_t alignment { alignof(T) };
-    const uint64_t alignedPosition { legacy::align(reinterpret_cast<uint64_t>(startAddress), alignment) };
-    return reinterpret_cast<void*>(alignedPosition);
+    const uint64_t aligned_position { legacy::align(reinterpret_cast<uint64_t>(start_address), alignment) };
+    return reinterpret_cast<void*>(aligned_position);
     // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast, performance-no-int-to-ptr)
     // AXIVION ENABLE STYLE AutosarC++19_03-M5.2.9
     // AXIVION ENABLE STYLE AutosarC++19_03-A5.2.4
@@ -360,26 +363,27 @@ storable_function<Capacity, signature<ReturnType, Args...>>::safeAlign(void* sta
 
 template <uint64_t Capacity, typename ReturnType, typename... Args>
 template <typename Functor, typename>
-inline void storable_function<Capacity, signature<ReturnType, Args...>>::storeFunctor(const Functor& functor) noexcept {
-    using StoredType = typename std::remove_reference<Functor>::type;
-    m_callable = safeAlign<StoredType>(&m_storage[0]);
+inline void
+storable_function<Capacity, Signature<ReturnType, Args...>>::store_functor(const Functor& functor) noexcept {
+    using StoredType = std::remove_reference_t<Functor>;
+    m_callable = safe_align<StoredType>(&m_storage[0]);
 
     // erase the functor type and store as reference to the call in storage
     // AXIVION Next Construct AutosarC++19_03-A18.5.10: False positive! 'safeAlign' takes care of proper alignment and size
     new (m_callable) StoredType(functor);
 
     m_invoker = &invoke<StoredType>;
-    m_operations.copyFunction = &copy<StoredType>;
-    m_operations.moveFunction = &move<StoredType>;
-    m_operations.destroyFunction = &destroy<StoredType>;
+    m_operations.copy_function = &copy<StoredType>;
+    m_operations.move_function = &move<StoredType>;
+    m_operations.destroy_function = &destroy<StoredType>;
 }
 
 // AXIVION Next Construct AutosarC++19_03-A8.4.8: output parameter required by design and for efficiency
 template <uint64_t Capacity, typename ReturnType, typename... Args>
 template <typename CallableType>
-inline void storable_function<Capacity, signature<ReturnType, Args...>>::copy(const storable_function& src,
+inline void storable_function<Capacity, Signature<ReturnType, Args...>>::copy(const storable_function& src,
                                                                               storable_function& dest) noexcept {
-    dest.m_callable = safeAlign<CallableType>(&dest.m_storage[0]);
+    dest.m_callable = safe_align<CallableType>(&dest.m_storage[0]);
 
     // AXIVION Next Construct AutosarC++19_03-M5.2.8: type erasure - conversion to compatible type
     const auto obj = static_cast<CallableType*>(src.m_callable);
@@ -395,9 +399,9 @@ inline void storable_function<Capacity, signature<ReturnType, Args...>>::copy(co
 // efficiency
 template <uint64_t Capacity, typename ReturnType, typename... Args>
 template <typename CallableType>
-inline void storable_function<Capacity, signature<ReturnType, Args...>>::move(storable_function& src,
+inline void storable_function<Capacity, Signature<ReturnType, Args...>>::move(storable_function& src,
                                                                               storable_function& dest) noexcept {
-    dest.m_callable = safeAlign<CallableType>(&dest.m_storage[0]);
+    dest.m_callable = safe_align<CallableType>(&dest.m_storage[0]);
 
     // AXIVION Next Construct AutosarC++19_03-M5.2.8: type erasure - conversion to compatible type
     const auto obj = static_cast<CallableType*>(src.m_callable);
@@ -415,10 +419,10 @@ inline void storable_function<Capacity, signature<ReturnType, Args...>>::move(st
 // AXIVION Next Construct AutosarC++19_03-M0.1.8: False positive! The function calls the destructor of a member of the parameter
 template <uint64_t Capacity, typename ReturnType, typename... Args>
 template <typename CallableType>
-inline void storable_function<Capacity, signature<ReturnType, Args...>>::destroy(storable_function& f) noexcept {
-    if (f.m_callable != nullptr) {
+inline void storable_function<Capacity, Signature<ReturnType, Args...>>::destroy(storable_function& func) noexcept {
+    if (func.m_callable != nullptr) {
         // AXIVION Next Construct AutosarC++19_03-M5.2.8: type erasure - conversion to compatible type
-        const auto ptr = static_cast<CallableType*>(f.m_callable);
+        const auto ptr = static_cast<CallableType*>(func.m_callable);
         // AXIVION Next Construct AutosarC++19_03-A5.3.2: ptr is guaranteed not to be nullptr
         ptr->~CallableType();
     }
@@ -427,8 +431,8 @@ inline void storable_function<Capacity, signature<ReturnType, Args...>>::destroy
 // AXIVION Next Construct AutosarC++19_03-A8.4.8: Out parameter is required for the intended functionality of the internal helper function
 template <uint64_t Capacity, typename ReturnType, typename... Args>
 inline void
-storable_function<Capacity, signature<ReturnType, Args...>>::copyFreeFunction(const storable_function& src,
-                                                                              storable_function& dest) noexcept {
+storable_function<Capacity, Signature<ReturnType, Args...>>::copy_free_function(const storable_function& src,
+                                                                                storable_function& dest) noexcept {
     dest.m_invoker = src.m_invoker;
     dest.m_callable = src.m_callable;
 }
@@ -437,8 +441,8 @@ storable_function<Capacity, signature<ReturnType, Args...>>::copyFreeFunction(co
 // efficiency
 template <uint64_t Capacity, typename ReturnType, typename... Args>
 inline void
-storable_function<Capacity, signature<ReturnType, Args...>>::moveFreeFunction(storable_function& src,
-                                                                              storable_function& dest) noexcept {
+storable_function<Capacity, Signature<ReturnType, Args...>>::move_free_function(storable_function& src,
+                                                                                storable_function& dest) noexcept {
     dest.m_invoker = src.m_invoker;
     dest.m_callable = src.m_callable;
     src.m_invoker = nullptr;
@@ -449,8 +453,8 @@ storable_function<Capacity, signature<ReturnType, Args...>>::moveFreeFunction(st
 // m_invoker is initialized with this function and has to work with functors as well
 template <uint64_t Capacity, typename ReturnType, typename... Args>
 template <typename CallableType>
-inline ReturnType storable_function<Capacity, signature<ReturnType, Args...>>::invoke(void* callable,
-                                                                                      Args&&... args) noexcept {
+inline auto storable_function<Capacity, Signature<ReturnType, Args...>>::invoke(void* callable, Args&&... args) noexcept
+    -> ReturnType {
     // AXIVION DISABLE STYLE AutosarC++19_03-A18.9.2: we use idiomatic perfect forwarding
     // AXIVION Next Construct AutosarC++19_03-M5.2.8: type erasure - conversion to compatible type
     // AXIVION Next Construct AutosarC++19_03-A5.3.2: callable is guaranteed not to be nullptr
@@ -465,9 +469,9 @@ inline ReturnType storable_function<Capacity, signature<ReturnType, Args...>>::i
 // m_invoker is initialized with this function and has to work with functors as well
 // (functors may change due to invocation)
 template <uint64_t Capacity, typename ReturnType, typename... Args>
-inline ReturnType
-storable_function<Capacity, signature<ReturnType, Args...>>::invokeFreeFunction(void* callable,
-                                                                                Args&&... args) noexcept {
+inline auto storable_function<Capacity, Signature<ReturnType, Args...>>::invoke_free_function(void* callable,
+                                                                                              Args&&... args) noexcept
+    -> ReturnType {
     // AXIVION Next Construct AutosarC++19_03-A18.9.2: we use idiomatic perfect forwarding
     // AXIVION Next Construct AutosarC++19_03-A5.3.2: callable is guaranteed not to be nullptr
     // when invokeFreeFunction is called (it is private and only used for type erasure)
@@ -481,8 +485,8 @@ storable_function<Capacity, signature<ReturnType, Args...>>::invokeFreeFunction(
 
 template <uint64_t Capacity, typename ReturnType, typename... Args>
 template <typename T>
-inline constexpr uint64_t
-storable_function<Capacity, signature<ReturnType, Args...>>::required_storage_size() noexcept {
+constexpr auto storable_function<Capacity, Signature<ReturnType, Args...>>::required_storage_size() noexcept
+    -> uint64_t {
     const uint64_t size { sizeof(T) };
     const uint64_t alignment { alignof(T) };
     return (size + alignment) - 1;
@@ -490,33 +494,33 @@ storable_function<Capacity, signature<ReturnType, Args...>>::required_storage_si
 
 template <uint64_t Capacity, typename ReturnType, typename... Args>
 template <typename T>
-inline constexpr bool storable_function<Capacity, signature<ReturnType, Args...>>::is_storable() noexcept {
+constexpr auto storable_function<Capacity, Signature<ReturnType, Args...>>::is_storable() noexcept -> bool {
     return (required_storage_size<T>() <= Capacity) && legacy::is_invocable_r<ReturnType, T, Args...>::value;
 }
 
 template <uint64_t Capacity, typename ReturnType, typename... Args>
 inline void
-storable_function<Capacity, signature<ReturnType, Args...>>::operations::copy(const storable_function& src,
+storable_function<Capacity, Signature<ReturnType, Args...>>::Operations::copy(const storable_function& src,
                                                                               storable_function& dest) const noexcept {
-    if (copyFunction != nullptr) {
-        copyFunction(src, dest);
+    if (copy_function != nullptr) {
+        copy_function(src, dest);
     }
 }
 
 template <uint64_t Capacity, typename ReturnType, typename... Args>
 inline void
-storable_function<Capacity, signature<ReturnType, Args...>>::operations::move(storable_function& src,
+storable_function<Capacity, Signature<ReturnType, Args...>>::Operations::move(storable_function& src,
                                                                               storable_function& dest) const noexcept {
-    if (moveFunction != nullptr) {
-        moveFunction(src, dest);
+    if (move_function != nullptr) {
+        move_function(src, dest);
     }
 }
 
 template <uint64_t Capacity, typename ReturnType, typename... Args>
-inline void
-storable_function<Capacity, signature<ReturnType, Args...>>::operations::destroy(storable_function& f) const noexcept {
-    if (destroyFunction != nullptr) {
-        destroyFunction(f);
+inline void storable_function<Capacity, Signature<ReturnType, Args...>>::Operations::destroy(
+    storable_function& func) const noexcept {
+    if (destroy_function != nullptr) {
+        destroy_function(func);
     }
 }
 

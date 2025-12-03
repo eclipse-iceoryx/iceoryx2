@@ -48,7 +48,7 @@ class Listener {
     /// currently available [`EventId`]s in buffer.
     /// For every received [`EventId`] the provided callback is called with the [`EventId`] as
     /// input argument.
-    auto try_wait_all(const iox2::bb::function<void(EventId)>& callback)
+    auto try_wait_all(const iox2::bb::Function<void(EventId)>& callback)
         -> iox2::legacy::expected<void, ListenerWaitError>;
 
     /// Blocking wait for new [`EventId`]s until the provided timeout has passed. Collects either
@@ -57,7 +57,7 @@ class Listener {
     /// currently available [`EventId`]s in buffer.
     /// For every received [`EventId`] the provided callback is called with the [`EventId`] as
     /// input argument.
-    auto timed_wait_all(const iox2::bb::function<void(EventId)>& callback, const iox2::bb::Duration& timeout)
+    auto timed_wait_all(const iox2::bb::Function<void(EventId)>& callback, const iox2::bb::Duration& timeout)
         -> iox2::legacy::expected<void, ListenerWaitError>;
 
     /// Blocking wait for new [`EventId`]s. Collects either
@@ -66,7 +66,7 @@ class Listener {
     /// currently available [`EventId`]s in buffer.
     /// For every received [`EventId`] the provided callback is called with the [`EventId`] as
     /// input argument.
-    auto blocking_wait_all(const iox2::bb::function<void(EventId)>& callback)
+    auto blocking_wait_all(const iox2::bb::Function<void(EventId)>& callback)
         -> iox2::legacy::expected<void, ListenerWaitError>;
 
     /// Non-blocking wait for a new [`EventId`]. If no [`EventId`] was notified it returns [`None`].
@@ -178,12 +178,12 @@ inline auto Listener<S>::deadline() const -> iox2::legacy::optional<iox2::bb::Du
 }
 
 inline void wait_callback(const iox2_event_id_t* event_id, iox2_callback_context context) {
-    auto* callback = internal::ctx_cast<iox2::bb::function<void(EventId)>>(context);
+    auto* callback = internal::ctx_cast<iox2::bb::Function<void(EventId)>>(context);
     callback->value()(EventId(*event_id));
 }
 
 template <ServiceType S>
-inline auto Listener<S>::try_wait_all(const iox2::bb::function<void(EventId)>& callback)
+inline auto Listener<S>::try_wait_all(const iox2::bb::Function<void(EventId)>& callback)
     -> iox2::legacy::expected<void, ListenerWaitError> {
     auto ctx = internal::ctx(callback);
 
@@ -196,7 +196,7 @@ inline auto Listener<S>::try_wait_all(const iox2::bb::function<void(EventId)>& c
 }
 
 template <ServiceType S>
-inline auto Listener<S>::timed_wait_all(const iox2::bb::function<void(EventId)>& callback,
+inline auto Listener<S>::timed_wait_all(const iox2::bb::Function<void(EventId)>& callback,
                                         const iox2::bb::Duration& timeout)
     -> iox2::legacy::expected<void, ListenerWaitError> {
     auto ctx = internal::ctx(callback);
@@ -211,7 +211,7 @@ inline auto Listener<S>::timed_wait_all(const iox2::bb::function<void(EventId)>&
 }
 
 template <ServiceType S>
-inline auto Listener<S>::blocking_wait_all(const iox2::bb::function<void(EventId)>& callback)
+inline auto Listener<S>::blocking_wait_all(const iox2::bb::Function<void(EventId)>& callback)
     -> iox2::legacy::expected<void, ListenerWaitError> {
     auto ctx = internal::ctx(callback);
 
