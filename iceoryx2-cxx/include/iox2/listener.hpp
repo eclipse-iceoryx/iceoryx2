@@ -14,12 +14,12 @@
 #define IOX2_LISTENER_HPP
 
 #include "iox2/bb/duration.hpp"
+#include "iox2/bb/function.hpp"
 #include "iox2/event_id.hpp"
 #include "iox2/file_descriptor.hpp"
 #include "iox2/internal/callback_context.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/legacy/expected.hpp"
-#include "iox2/bb/function.hpp"
 #include "iox2/legacy/optional.hpp"
 #include "iox2/listener_error.hpp"
 #include "iox2/service_type.hpp"

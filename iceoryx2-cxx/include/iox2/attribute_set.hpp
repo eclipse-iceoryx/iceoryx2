@@ -14,8 +14,8 @@
 #define IOX2_ATTRIBUTE_SET_HPP
 
 #include "iox2/attribute.hpp"
-#include "iox2/internal/iceoryx2.hpp"
 #include "iox2/bb/function.hpp"
+#include "iox2/internal/iceoryx2.hpp"
 
 #include <iostream>
 
