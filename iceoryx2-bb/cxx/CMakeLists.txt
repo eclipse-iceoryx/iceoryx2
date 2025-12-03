@@ -30,7 +30,9 @@ add_library(iceoryx2-bb-cxx)
 add_library(iceoryx2-bb-cxx::iceoryx2-bb-cxx ALIAS iceoryx2-bb-cxx)
 
 target_sources(iceoryx2-bb-cxx PUBLIC
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/duration.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/into.hpp>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/std_chrono_support.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/config.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/optional.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/static_string.hpp>
@@ -48,7 +50,6 @@ target_sources(iceoryx2-bb-cxx
     src/cli/option_manager.cpp
     src/console_logger.cpp
     src/default_error_handler.cpp
-    src/duration.cpp
     src/file_name.cpp
     src/file_path.cpp
     src/hoofs_error_reporting.cpp

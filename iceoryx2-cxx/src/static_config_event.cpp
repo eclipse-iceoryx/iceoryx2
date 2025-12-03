@@ -57,13 +57,13 @@ auto StaticConfigEvent::notifier_dead_event() const -> iox2::legacy::optional<Ev
     return { EventId(m_value.notifier_dead_event) };
 }
 
-auto StaticConfigEvent::deadline() const -> iox2::legacy::optional<iox2::legacy::units::Duration> {
+auto StaticConfigEvent::deadline() const -> iox2::legacy::optional<iox2::bb::Duration> {
     if (!m_value.has_deadline) {
         return iox2::legacy::nullopt;
     }
 
-    return { iox2::legacy::units::Duration::fromSeconds(m_value.deadline_seconds)
-             + iox2::legacy::units::Duration::fromNanoseconds(m_value.deadline_nanoseconds) };
+    return { iox2::bb::Duration::from_secs(m_value.deadline_seconds)
+             + iox2::bb::Duration::from_nanos(m_value.deadline_nanoseconds) };
 }
 
 } // namespace iox2

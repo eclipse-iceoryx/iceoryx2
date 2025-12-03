@@ -21,9 +21,9 @@
 
 namespace {
 using namespace iox2;
-using namespace iox2::legacy::units;
+using namespace iox2::bb;
 
-constexpr Duration TIMEOUT = Duration::fromMilliseconds(100);
+constexpr Duration TIMEOUT = Duration::from_millis(100);
 
 auto generate_name() -> ServiceName {
     static std::atomic<uint64_t> COUNTER { 0 };
@@ -78,7 +78,7 @@ TYPED_TEST(WaitSetTest, attaching_different_elements_works) {
     std::vector<WaitSetGuard<TestFixture::TYPE>> guards;
 
     for (uint64_t idx = 0; idx < NUMBER_OF_INTERVALS; ++idx) {
-        guards.emplace_back(sut.attach_interval(Duration::fromSeconds(idx + 1)).expect(""));
+        guards.emplace_back(sut.attach_interval(Duration::from_secs(idx + 1)).expect(""));
         ASSERT_THAT(sut.len(), Eq(idx + 1));
         ASSERT_THAT(sut.is_empty(), Eq(false));
     }
@@ -93,7 +93,7 @@ TYPED_TEST(WaitSetTest, attaching_different_elements_works) {
 
     for (uint64_t idx = 0; idx < NUMBER_OF_DEADLINES; ++idx) {
         auto listener = this->create_listener();
-        guards.emplace_back(sut.attach_deadline(listener, Duration::fromSeconds(idx + 1)).expect(""));
+        guards.emplace_back(sut.attach_deadline(listener, Duration::from_secs(idx + 1)).expect(""));
         listeners.emplace_back(std::move(listener));
         ASSERT_THAT(sut.len(), Eq(NUMBER_OF_INTERVALS + NUMBER_OF_NOTIFICATIONS + idx + 1));
         ASSERT_THAT(sut.is_empty(), Eq(false));
@@ -110,8 +110,8 @@ TYPED_TEST(WaitSetTest, attaching_same_deadline_twice_fails) {
     auto sut = this->create_sut();
     auto listener = this->create_listener();
 
-    auto result_1 = sut.attach_deadline(listener, Duration::fromSeconds(1));
-    auto result_2 = sut.attach_deadline(listener, Duration::fromSeconds(1));
+    auto result_1 = sut.attach_deadline(listener, Duration::from_secs(1));
+    auto result_2 = sut.attach_deadline(listener, Duration::from_secs(1));
 
     ASSERT_THAT(result_1.has_error(), Eq(false));
     ASSERT_THAT(result_2.has_error(), Eq(true));
@@ -164,7 +164,7 @@ TYPED_TEST(WaitSetTest, interval_attachment_blocks_for_at_least_timeout) {
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
 
     ASSERT_THAT(callback_called, Eq(true));
-    ASSERT_THAT(elapsed, Ge(static_cast<decltype(elapsed)>(TIMEOUT.toMilliseconds())));
+    ASSERT_THAT(elapsed, Ge(static_cast<decltype(elapsed)>(TIMEOUT.as_millis())));
 }
 
 TYPED_TEST(WaitSetTest, deadline_attachment_blocks_for_at_least_timeout) {
@@ -186,7 +186,7 @@ TYPED_TEST(WaitSetTest, deadline_attachment_blocks_for_at_least_timeout) {
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
 
     ASSERT_THAT(callback_called, Eq(true));
-    ASSERT_THAT(elapsed, Ge(static_cast<decltype(elapsed)>(TIMEOUT.toMilliseconds())));
+    ASSERT_THAT(elapsed, Ge(static_cast<decltype(elapsed)>(TIMEOUT.as_millis())));
 }
 
 TYPED_TEST(WaitSetTest, does_not_block_longer_than_provided_timeout) {
@@ -207,7 +207,7 @@ TYPED_TEST(WaitSetTest, does_not_block_longer_than_provided_timeout) {
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
 
     ASSERT_THAT(callback_called, Eq(false));
-    ASSERT_THAT(elapsed, Ge(static_cast<decltype(elapsed)>(TIMEOUT.toMilliseconds())));
+    ASSERT_THAT(elapsed, Ge(static_cast<decltype(elapsed)>(TIMEOUT.as_millis())));
 }
 
 TYPED_TEST(WaitSetTest, blocks_until_interval_when_user_timeout_is_larger) {
@@ -226,7 +226,7 @@ TYPED_TEST(WaitSetTest, blocks_until_interval_when_user_timeout_is_larger) {
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
 
     ASSERT_THAT(callback_called, Eq(true));
-    ASSERT_THAT(elapsed, Ge(static_cast<decltype(elapsed)>(TIMEOUT.toMilliseconds())));
+    ASSERT_THAT(elapsed, Ge(static_cast<decltype(elapsed)>(TIMEOUT.as_millis())));
 }
 
 
@@ -234,11 +234,11 @@ TYPED_TEST(WaitSetTest, deadline_attachment_wakes_up_when_notified) {
     auto sut = this->create_sut();
     auto listener = this->create_listener();
 
-    auto guard = sut.attach_deadline(listener, Duration::fromHours(1)).expect("");
+    auto guard = sut.attach_deadline(listener, Duration::from_hours(1)).expect("");
 
     auto callback_called = false;
     std::thread notifier_thread([&]() -> auto {
-        std::this_thread::sleep_for(std::chrono::milliseconds(TIMEOUT.toMilliseconds()));
+        std::this_thread::sleep_for(std::chrono::milliseconds(TIMEOUT.as_millis()));
         auto notifier = this->create_notifier();
         notifier.notify().expect("");
     });
@@ -261,7 +261,7 @@ TYPED_TEST(WaitSetTest, notification_attachment_wakes_up_when_notified) {
 
     auto callback_called = false;
     std::thread notifier_thread([&]() -> auto {
-        std::this_thread::sleep_for(std::chrono::milliseconds(TIMEOUT.toMilliseconds()));
+        std::this_thread::sleep_for(std::chrono::milliseconds(TIMEOUT.as_millis()));
         auto notifier = this->create_notifier();
         notifier.notify().expect("");
     });
@@ -288,7 +288,7 @@ TYPED_TEST(WaitSetTest, triggering_everything_works) {
     listeners.reserve(NUMBER_OF_NOTIFICATIONS + NUMBER_OF_DEADLINES);
 
     for (uint64_t idx = 0; idx < NUMBER_OF_INTERVALS; ++idx) {
-        guards.emplace_back(sut.attach_interval(Duration::fromNanoseconds(1)).expect(""));
+        guards.emplace_back(sut.attach_interval(Duration::from_nanos(1)).expect(""));
     }
 
     for (uint64_t idx = 0; idx < NUMBER_OF_NOTIFICATIONS; ++idx) {
@@ -299,14 +299,14 @@ TYPED_TEST(WaitSetTest, triggering_everything_works) {
 
     for (uint64_t idx = 0; idx < NUMBER_OF_DEADLINES; ++idx) {
         auto listener = this->create_listener();
-        guards.emplace_back(sut.attach_deadline(listener, Duration::fromHours(1)).expect(""));
+        guards.emplace_back(sut.attach_deadline(listener, Duration::from_hours(1)).expect(""));
         listeners.emplace_back(std::move(listener));
     }
 
     auto notifier = this->create_notifier();
     notifier.notify().expect("");
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(TIMEOUT.toMilliseconds()));
+    std::this_thread::sleep_for(std::chrono::milliseconds(TIMEOUT.as_millis()));
     std::vector<bool> was_triggered(guards.size(), false);
 
     auto result = sut.wait_and_process_once([&](auto attachment_id) -> CallbackProgression {

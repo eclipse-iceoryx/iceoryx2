@@ -68,10 +68,8 @@ auto Node<T>::id() const -> NodeId {
 }
 
 template <ServiceType T>
-auto Node<T>::wait(iox2::legacy::units::Duration cycle_time) const -> iox2::legacy::expected<void, NodeWaitFailure> {
-    auto time = cycle_time.timespec();
-
-    auto result = iox2_node_wait(&m_handle, static_cast<uint64_t>(time.tv_sec), static_cast<uint32_t>(time.tv_nsec));
+auto Node<T>::wait(iox2::bb::Duration cycle_time) const -> iox2::legacy::expected<void, NodeWaitFailure> {
+    auto result = iox2_node_wait(&m_handle, cycle_time.as_secs(), cycle_time.subsec_nanos());
     if (result == IOX2_OK) {
         return iox2::legacy::ok();
     }

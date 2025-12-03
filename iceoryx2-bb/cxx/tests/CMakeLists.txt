@@ -34,11 +34,13 @@ target_sources(iceoryx2-bb-cxx-tests
     ${PROJECT_SOURCE_DIR}/src/testing/test_utils.cpp
     PRIVATE
     ${PROJECT_SOURCE_DIR}/src/main.cpp
+    ${PROJECT_SOURCE_DIR}/src/duration_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/into_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/optional_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/raw_byte_storage_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/static_string_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/static_vector_tests.cpp
+    ${PROJECT_SOURCE_DIR}/src/std_chrono_support_tests.cpp
     PRIVATE
     ${PROJECT_SOURCE_DIR}/src/legacy/testing/include/iox2/legacy/testing/error_reporting/testing_error_handler.hpp
     ${PROJECT_SOURCE_DIR}/src/legacy/testing/include/iox2/legacy/testing/error_reporting/testing_support.hpp
@@ -100,10 +102,8 @@ target_sources(iceoryx2-bb-cxx-tests
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_reporting_logstream.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_reporting_logstream_arithmetic.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_reporting_logstream_hex_oct_bin.cpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_time_unit_duration.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_utility_convert.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_utility_deprecation_marker.cpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_utility_std_chrono_support.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_utility_std_string_support.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_vocabulary_expected.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_vocabulary_optional.cpp

@@ -14,10 +14,10 @@
 #define IOX2_STATIC_CONFIG_EVENT_HPP
 
 #include "iox2/attribute_set.hpp"
+#include "iox2/bb/duration.hpp"
 #include "iox2/event_id.hpp"
 #include "iox2/iceoryx2.h"
 #include "iox2/internal/iceoryx2.hpp"
-#include "iox2/legacy/duration.hpp"
 #include "iox2/legacy/optional.hpp"
 
 namespace iox2 {
@@ -53,7 +53,7 @@ class StaticConfigEvent {
     /// as an error and all [`Listener`]s that are attached
     /// to a [`WaitSet`] are woken up and notified about the missed
     /// deadline.
-    auto deadline() const -> iox2::legacy::optional<iox2::legacy::units::Duration>;
+    auto deadline() const -> iox2::legacy::optional<iox2::bb::Duration>;
 
   private:
     template <ServiceType>

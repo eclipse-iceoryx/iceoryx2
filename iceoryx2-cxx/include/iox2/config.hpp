@@ -13,9 +13,9 @@
 #ifndef IOX2_CONFIG_HPP
 #define IOX2_CONFIG_HPP
 
+#include "iox2/bb/duration.hpp"
 #include "iox2/config_creation_error.hpp"
 #include "iox2/internal/iceoryx2.hpp"
-#include "iox2/legacy/duration.hpp"
 #include "iox2/legacy/file_name.hpp"
 #include "iox2/legacy/path.hpp"
 #include "iox2/unable_to_deliver_strategy.hpp"
@@ -87,9 +87,9 @@ class Service {
     void set_dynamic_config_storage_suffix(const iox2::legacy::FileName& value) &&;
     /// Defines the time of how long another process will wait until the service creation is
     /// finalized
-    auto creation_timeout() && -> iox2::legacy::units::Duration;
+    auto creation_timeout() && -> iox2::bb::Duration;
     /// Set the creation timeout
-    void set_creation_timeout(const iox2::legacy::units::Duration& value) &&;
+    void set_creation_timeout(const iox2::bb::Duration& value) &&;
     /// The suffix of a one-to-one connection
     auto connection_suffix() && -> const char*;
     /// Set the suffix of a one-to-one connection
@@ -227,9 +227,9 @@ class Event {
     /// Defines the maximum allowed time between two consecutive notifications. If a notifiation
     /// is not sent after the defined time, every [`Listener`]
     /// that is attached to a [`WaitSet`] will be notified.
-    auto deadline() && -> iox2::legacy::optional<iox2::legacy::units::Duration>;
+    auto deadline() && -> iox2::legacy::optional<iox2::bb::Duration>;
     /// Sets the deadline of the event service.
-    void set_deadline(iox2::legacy::optional<iox2::legacy::units::Duration> value) &&;
+    void set_deadline(iox2::legacy::optional<iox2::bb::Duration> value) &&;
 
   private:
     friend class Defaults;

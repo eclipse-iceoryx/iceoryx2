@@ -15,7 +15,7 @@
 
 #include "iox/layout.hpp"
 #include "iox/slice.hpp"
-#include "iox2/legacy/duration.hpp"
+#include "iox2/bb/duration.hpp"
 #include "iox2/legacy/string.hpp"
 #include "iox2/legacy/vector.hpp"
 

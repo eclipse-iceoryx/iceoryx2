@@ -241,15 +241,11 @@ auto WaitSet<S>::is_empty() const -> bool {
 }
 
 template <ServiceType S>
-auto WaitSet<S>::attach_interval(const iox2::legacy::units::Duration deadline)
+auto WaitSet<S>::attach_interval(const iox2::bb::Duration deadline)
     -> iox2::legacy::expected<WaitSetGuard<S>, WaitSetAttachmentError> {
     iox2_waitset_guard_h guard_handle {};
-    auto duration = deadline.timespec();
-    auto result = iox2_waitset_attach_interval(&m_handle,
-                                               static_cast<uint64_t>(duration.tv_sec),
-                                               static_cast<uint32_t>(duration.tv_nsec),
-                                               nullptr,
-                                               &guard_handle);
+    auto result =
+        iox2_waitset_attach_interval(&m_handle, deadline.as_secs(), deadline.subsec_nanos(), nullptr, &guard_handle);
 
     if (result == IOX2_OK) {
         return iox2::legacy::ok(WaitSetGuard<S>(guard_handle));
@@ -259,14 +255,13 @@ auto WaitSet<S>::attach_interval(const iox2::legacy::units::Duration deadline)
 }
 
 template <ServiceType S>
-auto WaitSet<S>::attach_deadline(const FileDescriptorBased& attachment, const iox2::legacy::units::Duration deadline)
+auto WaitSet<S>::attach_deadline(const FileDescriptorBased& attachment, const iox2::bb::Duration deadline)
     -> iox2::legacy::expected<WaitSetGuard<S>, WaitSetAttachmentError> {
     iox2_waitset_guard_h guard_handle {};
-    auto duration = deadline.timespec();
     auto result = iox2_waitset_attach_deadline(&m_handle,
                                                attachment.file_descriptor().m_handle,
-                                               static_cast<uint64_t>(duration.tv_sec),
-                                               static_cast<uint32_t>(duration.tv_nsec),
+                                               deadline.as_secs(),
+                                               deadline.subsec_nanos(),
                                                nullptr,
                                                &guard_handle);
 
@@ -278,7 +273,7 @@ auto WaitSet<S>::attach_deadline(const FileDescriptorBased& attachment, const io
 }
 
 template <ServiceType S>
-auto WaitSet<S>::attach_deadline(const Listener<S>& listener, const iox2::legacy::units::Duration deadline)
+auto WaitSet<S>::attach_deadline(const Listener<S>& listener, const iox2::bb::Duration deadline)
     -> iox2::legacy::expected<WaitSetGuard<S>, WaitSetAttachmentError> {
     return attach_deadline(FileDescriptorView(iox2_listener_get_file_descriptor(&listener.m_handle)), deadline);
 }
@@ -341,14 +336,11 @@ auto WaitSet<S>::wait_and_process_once(
 template <ServiceType S>
 auto WaitSet<S>::wait_and_process_once_with_timeout(
     const iox2::legacy::function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call,
-    const iox2::legacy::units::Duration timeout) -> iox2::legacy::expected<WaitSetRunResult, WaitSetRunError> {
+    const iox2::bb::Duration timeout) -> iox2::legacy::expected<WaitSetRunResult, WaitSetRunError> {
     iox2_waitset_run_result_e run_result = iox2_waitset_run_result_e_STOP_REQUEST;
     auto ctx = internal::ctx(fn_call);
-    auto duration = timeout.timespec();
-    auto timeout_secs = static_cast<uint64_t>(duration.tv_sec);
-    auto timeout_nsecs = static_cast<uint32_t>(duration.tv_nsec);
     auto result = iox2_waitset_wait_and_process_once_with_timeout(
-        &m_handle, run_callback<S>, static_cast<void*>(&ctx), timeout_secs, timeout_nsecs, &run_result);
+        &m_handle, run_callback<S>, static_cast<void*>(&ctx), timeout.as_secs(), timeout.subsec_nanos(), &run_result);
 
     if (result == IOX2_OK) {
         return iox2::legacy::ok(iox2::bb::into<WaitSetRunResult>(static_cast<int>(run_result)));

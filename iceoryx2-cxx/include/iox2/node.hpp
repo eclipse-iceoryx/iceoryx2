@@ -14,10 +14,10 @@
 #define IOX2_NODE_HPP
 
 #include "iox/builder_addendum.hpp"
+#include "iox2/bb/duration.hpp"
 #include "iox2/callback_progression.hpp"
 #include "iox2/config.hpp"
 #include "iox2/internal/iceoryx2.hpp"
-#include "iox2/legacy/duration.hpp"
 #include "iox2/legacy/expected.hpp"
 #include "iox2/legacy/function.hpp"
 #include "iox2/node_id.hpp"
@@ -57,7 +57,7 @@ class Node {
     auto service_builder(const ServiceName& name) const -> ServiceBuilder<T>;
 
     /// Waits for a given `cycle_time`.
-    auto wait(iox2::legacy::units::Duration cycle_time) const -> iox2::legacy::expected<void, NodeWaitFailure>;
+    auto wait(iox2::bb::Duration cycle_time) const -> iox2::legacy::expected<void, NodeWaitFailure>;
 
     /// Lists all [`Node`]s under a provided config. The provided callback is
     /// called for every [`Node`] and gets the [`NodeState`] as input argument.
