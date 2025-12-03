@@ -300,12 +300,12 @@ auto WaitSet<S>::attach_notification(const Listener<S>& listener)
 
 template <ServiceType S>
 auto run_callback(iox2_waitset_attachment_id_h attachment_id, void* context) -> iox2_callback_progression_e {
-    auto* fn_call = internal::ctx_cast<iox2::legacy::function<CallbackProgression(WaitSetAttachmentId<S>)>>(context);
+    auto* fn_call = internal::ctx_cast<iox2::bb::function<CallbackProgression(WaitSetAttachmentId<S>)>>(context);
     return iox2::bb::into<iox2_callback_progression_e>(fn_call->value()(WaitSetAttachmentId<S>(attachment_id)));
 }
 
 template <ServiceType S>
-auto WaitSet<S>::wait_and_process(const iox2::legacy::function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call)
+auto WaitSet<S>::wait_and_process(const iox2::bb::function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call)
     -> iox2::legacy::expected<WaitSetRunResult, WaitSetRunError> {
     iox2_waitset_run_result_e run_result = iox2_waitset_run_result_e_STOP_REQUEST;
     auto ctx = internal::ctx(fn_call);
@@ -320,7 +320,7 @@ auto WaitSet<S>::wait_and_process(const iox2::legacy::function<CallbackProgressi
 
 template <ServiceType S>
 auto WaitSet<S>::wait_and_process_once(
-    const iox2::legacy::function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call)
+    const iox2::bb::function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call)
     -> iox2::legacy::expected<WaitSetRunResult, WaitSetRunError> {
     iox2_waitset_run_result_e run_result = iox2_waitset_run_result_e_STOP_REQUEST;
     auto ctx = internal::ctx(fn_call);
@@ -335,7 +335,7 @@ auto WaitSet<S>::wait_and_process_once(
 
 template <ServiceType S>
 auto WaitSet<S>::wait_and_process_once_with_timeout(
-    const iox2::legacy::function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call,
+    const iox2::bb::function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call,
     const iox2::bb::Duration timeout) -> iox2::legacy::expected<WaitSetRunResult, WaitSetRunError> {
     iox2_waitset_run_result_e run_result = iox2_waitset_run_result_e_STOP_REQUEST;
     auto ctx = internal::ctx(fn_call);

@@ -11,8 +11,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/legacy/attributes.hpp"
 #include "iox2/bb/function.hpp"
+#include "iox2/legacy/attributes.hpp"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -21,6 +21,7 @@
 #include <iostream>
 
 using namespace ::testing;
+using namespace iox2::bb;
 using namespace iox2::legacy;
 
 namespace {

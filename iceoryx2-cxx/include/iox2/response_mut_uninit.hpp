@@ -83,7 +83,7 @@ class ResponseMutUninit {
     /// Writes the provided payload into the [`ResponseMutUninit`] and returns an initialized
     /// [`ResponseMut`] that is ready to be sent.
     template <typename T = ResponsePayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, T>>
-    auto write_from_fn(const iox2::legacy::function<typename T::ValueType(uint64_t)>& initializer)
+    auto write_from_fn(const iox2::bb::function<typename T::ValueType(uint64_t)>& initializer)
         -> ResponseMut<Service, T, ResponseUserHeader>;
 
   private:
@@ -165,7 +165,7 @@ ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>::write_from_slic
 template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
 template <typename T, typename>
 inline auto ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>::write_from_fn(
-    const iox2::legacy::function<typename T::ValueType(uint64_t)>& initializer)
+    const iox2::bb::function<typename T::ValueType(uint64_t)>& initializer)
     -> ResponseMut<Service, T, ResponseUserHeader> {
     auto slice = payload_mut();
     for (uint64_t i = 0; i < slice.number_of_elements(); ++i) {

@@ -53,7 +53,7 @@ class CommandLineParser_test : public Test {
 
     optional<OutBuffer> outputBuffer;
     uint64_t numberOfErrorCallbackCalls = 0U;
-    iox2::legacy::function<void()> errorCallback = [this] { ++numberOfErrorCallbackCalls; };
+    iox2::bb::function<void()> errorCallback = [this] { ++numberOfErrorCallbackCalls; };
     static Argument_t defaultValue;
 };
 Argument_t CommandLineParser_test::defaultValue = "DEFAULT VALUE";
