@@ -35,7 +35,7 @@ class OptionDefinition {
     ///            defined std::abort() is called
     explicit OptionDefinition(
         const OptionDescription_t& programDescription,
-        const bb::function<void()>& onFailureCallback = [] { std::abort(); }) noexcept;
+        const bb::Function<void()>& onFailureCallback = [] { std::abort(); }) noexcept;
 
     /// @brief Adds a command line switch argument
     ///        Calls the onFailureCallback when the option was already added or the shortOption and longOption are
@@ -83,7 +83,7 @@ class OptionDefinition {
   private:
     OptionDescription_t m_programDescription;
     vector<OptionWithDetails, MAX_NUMBER_OF_ARGUMENTS> m_availableOptions;
-    bb::function<void()> m_onFailureCallback;
+    bb::Function<void()> m_onFailureCallback;
 };
 
 std::ostream& operator<<(std::ostream& stream, const OptionWithDetails& option) noexcept;

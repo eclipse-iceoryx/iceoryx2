@@ -61,7 +61,7 @@ class PortFactoryEvent {
     /// and calls for every [`Node`] the provided callback. If an error occurs
     /// while acquiring the [`Node`]s corresponding [`NodeState`] the error is
     /// forwarded to the callback as input argument.
-    auto nodes(const iox2::bb::function<CallbackProgression(NodeState<S>)>& callback) const
+    auto nodes(const iox2::bb::Function<CallbackProgression(NodeState<S>)>& callback) const
         -> iox2::legacy::expected<void, NodeListFailure>;
 
     /// Returns a [`PortFactoryListener`] to create a new [`Listener`] port

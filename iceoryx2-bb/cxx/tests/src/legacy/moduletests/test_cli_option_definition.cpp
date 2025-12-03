@@ -11,9 +11,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include "iox2/bb/function.hpp"
 #include "iox2/legacy/cli/option_definition.hpp"
 #include "iox2/legacy/detail/hoofs_error_reporting.hpp"
-#include "iox2/bb/function.hpp"
 #include "iox2/legacy/optional.hpp"
 #include "test_cli_command_line_common.hpp"
 
@@ -52,7 +52,7 @@ class OptionDefinition_test : public Test {
 
     iox2::legacy::optional<OutBuffer> outputBuffer;
     uint64_t numberOfErrorCallbackCalls = 0U;
-    iox2::bb::function<void()> errorCallback = [this] { ++numberOfErrorCallbackCalls; };
+    iox2::bb::Function<void()> errorCallback = [this] { ++numberOfErrorCallbackCalls; };
     static Argument_t defaultValue;
 };
 Argument_t OptionDefinition_test::defaultValue = "DEFAULT VALUE";

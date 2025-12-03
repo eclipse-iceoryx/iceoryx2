@@ -45,13 +45,13 @@ class DynamicConfigRequestResponse {
     /// callback with the corresponding [`ServerDetailsView`].
     /// The callback shall return [`CallbackProgression::Continue`] when the iteration shall
     /// continue otherwise [`CallbackProgression::Stop`].
-    void list_servers(const iox2::bb::function<CallbackProgression(ServerDetailsView)>& callback) const;
+    void list_servers(const iox2::bb::Function<CallbackProgression(ServerDetailsView)>& callback) const;
 
     /// Iterates over all [`Client`]s and calls the
     /// callback with the corresponding [`ClientDetailsView`].
     /// The callback shall return [`CallbackProgression::Continue`] when the iteration shall
     /// continue otherwise [`CallbackProgression::Stop`].
-    void list_clients(const iox2::bb::function<CallbackProgression(ClientDetailsView)>& callback) const;
+    void list_clients(const iox2::bb::Function<CallbackProgression(ClientDetailsView)>& callback) const;
 
   private:
     template <ServiceType, typename, typename, typename, typename>

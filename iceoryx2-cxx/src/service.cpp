@@ -66,14 +66,14 @@ auto Service<S>::details(const ServiceName& service_name,
 
 template <ServiceType S>
 auto list_callback(const iox2_static_config_t* const static_config, void* ctx) -> iox2_callback_progression_e {
-    auto callback = static_cast<iox2::bb::function<CallbackProgression(ServiceDetails<S>)>*>(ctx);
+    auto callback = static_cast<iox2::bb::Function<CallbackProgression(ServiceDetails<S>)>*>(ctx);
     auto result = (*callback)(ServiceDetails<S> { StaticConfig(*static_config) });
     return iox2::bb::into<iox2_callback_progression_e>(result);
 }
 
 template <ServiceType S>
 auto Service<S>::list(const ConfigView config,
-                      const iox2::bb::function<CallbackProgression(ServiceDetails<S>)>& callback)
+                      const iox2::bb::Function<CallbackProgression(ServiceDetails<S>)>& callback)
     -> iox2::legacy::expected<void, ServiceListError> {
     auto mutable_callback = callback;
     auto result =

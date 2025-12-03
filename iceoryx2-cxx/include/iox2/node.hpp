@@ -63,7 +63,7 @@ class Node {
     /// called for every [`Node`] and gets the [`NodeState`] as input argument.
     /// The callback can return [`CallbackProgression::Stop`] if the iteration
     /// shall stop or [`CallbackProgression::Continue`];
-    static auto list(ConfigView config, const iox2::bb::function<CallbackProgression(NodeState<T>)>& callback)
+    static auto list(ConfigView config, const iox2::bb::Function<CallbackProgression(NodeState<T>)>& callback)
         -> iox2::legacy::expected<void, NodeListFailure>;
 
     /// Returns the [`SignalHandlingMode`] with which the [`Node`] was created.
