@@ -16,3 +16,79 @@
 #
 # For more details, please check https://github.com/bazelbuild/bazel/issues/18958
 ###############################################################################
+module(
+    name = "iceoryx2",
+    version = "0.7.0",
+)
+
+bazel_dep(name = "bazel_features", version = "1.30.0")
+bazel_dep(name = "bazel_skylib", version = "1.7.1")
+
+bazel_dep(name = "googletest", version = "1.14.0.bcr.1", dev_dependency = True)
+
+bazel_dep(name = "platforms", version = "0.0.11")
+bazel_dep(name = "rules_cc", version = "0.1.1")
+bazel_dep(name = "rules_rust", version = "0.58.0")
+
+extra_deps = use_extension("//bazel:iceoryx2_deps.bzl", "iceoryx2_extra_deps")
+use_repo(extra_deps, "bindgen", "cbindgen")
+
+rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
+rust.toolchain(
+    edition = "2021",
+    versions = ["1.83.0"],
+)
+use_repo(rust, "rust_toolchains")
+
+register_toolchains("@rust_toolchains//:all")
+
+crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
+crate.from_cargo(
+    name = "crate_index",
+    cargo_lockfile = "//:Cargo.lock",
+    lockfile = "//:Cargo.Bazel.lock",
+    manifests = [
+        "//:Cargo.toml",
+        "//:benchmarks/event/Cargo.toml",
+        "//:benchmarks/publish-subscribe/Cargo.toml",
+        "//:benchmarks/queue/Cargo.toml",
+        "//:benchmarks/request-response/Cargo.toml",
+        "//:component-tests/rust/Cargo.toml",
+        "//:examples/Cargo.toml",
+        "//:iceoryx2-tunnel/end-to-end-tests/Cargo.toml",
+        "//:iceoryx2-tunnel/backend/Cargo.toml",
+        "//:iceoryx2-tunnel/zenoh/Cargo.toml",
+        "//:iceoryx2-tunnel/tunnel/Cargo.toml",
+        "//:iceoryx2-tunnel/conformance-tests/Cargo.toml",
+        "//:iceoryx2-services/discovery/Cargo.toml",
+        "//:iceoryx2/Cargo.toml",
+        "//:iceoryx2/conformance-tests/Cargo.toml",
+        "//:iceoryx2-bb/conformance-test-macros/Cargo.toml",
+        "//:iceoryx2-bb/container/Cargo.toml",
+        "//:iceoryx2-bb/derive-macros/Cargo.toml",
+        "//:iceoryx2-bb/elementary/Cargo.toml",
+        "//:iceoryx2-bb/elementary-traits/Cargo.toml",
+        "//:iceoryx2-bb/linux/Cargo.toml",
+        "//:iceoryx2-bb/lock-free/Cargo.toml",
+        "//:iceoryx2-bb/log/Cargo.toml",
+        "//:iceoryx2-bb/memory/Cargo.toml",
+        "//:iceoryx2-bb/posix/Cargo.toml",
+        "//:iceoryx2-bb/system-types/Cargo.toml",
+        "//:iceoryx2-bb/testing/Cargo.toml",
+        "//:iceoryx2-bb/threadsafe/Cargo.toml",
+        "//:iceoryx2-bb/trait-tests/Cargo.toml",
+        "//:iceoryx2-cal/Cargo.toml",
+        "//:iceoryx2-cal/conformance-tests/Cargo.toml",
+        "//:iceoryx2-cli/Cargo.toml",
+        "//:iceoryx2-ffi/ffi-macros/Cargo.toml",
+        "//:iceoryx2-ffi/c/Cargo.toml",
+        "//:iceoryx2-ffi/python/Cargo.toml",
+        "//:iceoryx2-pal/concurrency-sync/Cargo.toml",
+        "//:iceoryx2-pal/configuration/Cargo.toml",
+        "//:iceoryx2-pal/os-api/Cargo.toml",
+        "//:iceoryx2-pal/posix/Cargo.toml",
+        "//:iceoryx2-pal/testing/Cargo.toml",
+        "//:iceoryx2-userland/record-and-replay/Cargo.toml",
+    ],
+)
+use_repo(crate, "crate_index")

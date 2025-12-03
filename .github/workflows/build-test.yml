@@ -664,6 +664,7 @@ jobs:
       matrix:
         os: [ubuntu-24.04]
         toolchain: [stable]
+        bazel-mode: ["--enable_bzlmod", "--noenable_bzlmod"]
     timeout-minutes: 60
     runs-on: ${{ matrix.os }}
     steps:
@@ -687,12 +688,12 @@ jobs:
       - name: Run bazel build
         env:
           USE_BAZEL_VERSION: "7.4.1"
-        run: bazel build //...
+        run: bazel build //... ${{ matrix.bazel-mode }}
 
       - name: Run bazel test
         env:
           USE_BAZEL_VERSION: "7.4.1"
-        run: bazel test //...
+        run: bazel test //... ${{ matrix.bazel-mode }}
 
   x86_64_nostd:
     needs: [preflight-check, static-code-analysis]
