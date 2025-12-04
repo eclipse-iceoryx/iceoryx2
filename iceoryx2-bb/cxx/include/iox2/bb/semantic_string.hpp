@@ -42,19 +42,19 @@ using DoesContainInvalidContent = bool (*)(const legacy::string<Capacity>& value
 ///        has to also define the maximum capacity, a callable which defines
 ///        invalid characters as well as a callable which defines invalid content.
 /// @code
-/// bool user_name_does_contain_invalid_characters(const string<platform::MAX_USER_NAME_LENGTH>& value) noexcept;
-/// bool user_name_does_contain_invalid_content(const string<platform::MAX_USER_NAME_LENGTH>& value) noexcept;
+/// bool file_name_does_contain_invalid_characters(const string<platform::IOX2_MAX_FILENAME_LENGTH>& value) noexcept;
+/// bool file_name_does_contain_invalid_content(const string<platform::IOX2_MAX_FILENAME_LENGTH>& value) noexcept;
 ///
 /// // define custom semantic string FileName
 /// class FileName : public SemanticString<FileName,
 ///                                        platform::IOX2_MAX_FILENAME_LENGTH,
-///                                        user_name_does_contain_invalid_content,
-///                                        user_name_does_contain_invalid_characters>
+///                                        details::file_name_does_contain_invalid_content,
+///                                        details::file_name_does_contain_invalid_characters>
 /// {
 ///     using Parent = SemanticString<FileName,
 ///                                  platform::IOX2_MAX_FILENAME_LENGTH,
-///                                  details::user_name_does_contain_invalid_content,
-///                                  details::user_name_does_contain_invalid_characters>;
+///                                  details::file_name_does_contain_invalid_content,
+///                                  details::file_name_does_contain_invalid_characters>;
 ///     using Parent::Parent;
 /// };
 /// @endcode
