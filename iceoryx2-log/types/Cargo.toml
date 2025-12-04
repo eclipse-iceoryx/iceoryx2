@@ -1,0 +1,15 @@
+[package]
+name = "iceoryx2-log-types"
+description = "iceoryx2: logger types and traits"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[features]
+
+[dependencies]
