@@ -46,6 +46,7 @@ use core::alloc::Layout;
 use core::fmt::Debug;
 use core::hash::Hash;
 use core::marker::PhantomData;
+use core::ops::Deref;
 use core::sync::atomic::Ordering;
 use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -61,6 +62,37 @@ extern crate alloc;
 use alloc::sync::Arc;
 
 use super::port_identifiers::UniqueReaderId;
+
+/// A wrapper for the value returned by [`EntryHandle::get()`].
+pub struct BlackboardValue<ValueType: Copy> {
+    value: ValueType,
+    generation_counter: u64,
+}
+
+impl<ValueType: Copy> Deref for BlackboardValue<ValueType> {
+    type Target = ValueType;
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl<ValueType: Copy + core::fmt::Display> core::fmt::Display for BlackboardValue<ValueType> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{}", self.value)
+    }
+}
+
+impl<ValueType: Copy + Debug> Debug for BlackboardValue<ValueType> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(
+            f,
+            "BlackboardValue<{}> {{ value: {:?}, generation_counter: {} }}",
+            core::any::type_name::<ValueType>(),
+            self.value,
+            self.generation_counter
+        )
+    }
+}
 
 #[derive(Debug)]
 struct ReaderSharedState<
@@ -332,7 +364,40 @@ impl<
         }
     }
 
-    /// Returns a copy of the value.
+    /// Returns a copy of the value wrapped in a [`BlackboardValue`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #     .blackboard_creator::<u64>()
+    /// #     .add::<i32>(1, -1)
+    /// #     .create()?;
+    /// #
+    /// # let reader = service.reader_builder().create()?;
+    /// # let entry_handle = reader.entry::<i32>(&1)?;
+    /// let value = *entry_handle.get();
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn get(&self) -> BlackboardValue<ValueType> {
+        unsafe {
+            let generation_counter = (*self.atomic).__internal_get_write_cell();
+            BlackboardValue {
+                value: (*self.atomic).load(),
+                // The generation_counter may be outdated as the blackboard value could have been
+                // updated between reading the counter and setting it here. This is not a problem,
+                // as is_up_to_date() returns a false positive but never a false negative, so no
+                // updates are lost.
+                generation_counter,
+            }
+        }
+    }
+
+    /// Checks if the passed `value` is up-to-date.
     ///
     /// # Example
     ///
@@ -348,11 +413,12 @@ impl<
     /// # let reader = service.reader_builder().create()?;
     /// # let entry_handle = reader.entry::<i32>(&1)?;
     /// let value = entry_handle.get();
+    /// let is_latest = entry_handle.is_up_to_date(&value);
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get(&self) -> ValueType {
-        unsafe { (*self.atomic).load() }
+    pub fn is_up_to_date(&self, value: &BlackboardValue<ValueType>) -> bool {
+        unsafe { (*self.atomic).__internal_get_write_cell() == value.generation_counter }
     }
 
     /// Returns an ID corresponding to the entry which can be used in an event based communication
@@ -433,12 +499,28 @@ unsafe impl<Service: service::Service> Send for __InternalEntryHandle<Service> {
 unsafe impl<Service: service::Service> Sync for __InternalEntryHandle<Service> {}
 
 impl<Service: service::Service> __InternalEntryHandle<Service> {
-    /// Stores a copy of the value in `value_ptr`.
+    /// Stores a copy of the value in `value_ptr`. If a `generation_counter_ptr` is passed, a
+    /// copy of the value's generation counter is stored in it which can be used to check for
+    /// value updates.
     ///
     /// # Safety
     ///
     ///   * see Safety section of core::ptr::copy_nonoverlapping
-    pub unsafe fn get(&self, value_ptr: *mut u8, value_size: usize, value_alignment: usize) {
+    pub unsafe fn get(
+        &self,
+        value_ptr: *mut u8,
+        value_size: usize,
+        value_alignment: usize,
+        generation_counter_ptr: *mut u64,
+    ) {
+        if !generation_counter_ptr.is_null() {
+            let generation_counter = (*self.atomic_mgmt_ptr).__internal_get_write_cell();
+            core::ptr::copy_nonoverlapping(&generation_counter, generation_counter_ptr, 1);
+        }
+        // The generation_counter may be outdated as the blackboard value could have been
+        // updated between reading the counter and writing the value to the value_ptr. This
+        // is not a problem, as is_up_to_date() returns a false positive but never a false
+        // negative, so no updates are lost.
         (*self.atomic_mgmt_ptr).load(value_ptr, value_size, value_alignment, self.data_ptr);
     }
 
@@ -446,5 +528,11 @@ impl<Service: service::Service> __InternalEntryHandle<Service> {
     /// setup.
     pub fn entry_id(&self) -> EventId {
         self.entry_id
+    }
+
+    /// Checks if the blackboard value that corresponds to the `generation_counter` is
+    /// up-to-date.
+    pub fn is_up_to_date(&self, generation_counter: u64) -> bool {
+        unsafe { (*self.atomic_mgmt_ptr).__internal_get_write_cell() == generation_counter }
     }
 }

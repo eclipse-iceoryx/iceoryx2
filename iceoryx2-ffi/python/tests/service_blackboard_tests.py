@@ -601,8 +601,7 @@ def test_loan_and_write_entry_value_works(
     entry_handle = reader.entry(key, ctypes.c_uint32)
 
     entry_value_uninit = entry_handle_mut.loan_uninit()
-    entry_value = entry_value_uninit.write(ctypes.c_uint32(333))
-    entry_handle_mut = entry_value.update()
+    entry_handle_mut = entry_value_uninit.update_with_copy(ctypes.c_uint32(333))
     assert entry_handle.get().decode_as(ctypes.c_uint32).value == 333
 
 
@@ -629,8 +628,7 @@ def test_entry_handle_mut_can_be_reused_after_entry_value_was_updated(
     entry_handle = reader.entry(key, ctypes.c_uint32)
 
     entry_value_uninit = entry_handle_mut.loan_uninit()
-    entry_value = entry_value_uninit.write(ctypes.c_uint32(333))
-    entry_handle_mut = entry_value.update()
+    entry_handle_mut = entry_value_uninit.update_with_copy(ctypes.c_uint32(333))
     assert entry_handle.get().decode_as(ctypes.c_uint32).value == 333
 
     entry_handle_mut.update_with_copy(ctypes.c_uint32(999))
@@ -662,8 +660,7 @@ def test_entry_value_can_still_be_used_after_writer_was_dropped(
 
     writer.delete()
 
-    entry_value = entry_value_uninit.write(ctypes.c_uint32(333))
-    entry_handle_mut = entry_value.update()
+    entry_handle_mut = entry_value_uninit.update_with_copy(ctypes.c_uint32(333))
 
     assert entry_handle.get().decode_as(ctypes.c_uint32).value == 333
 
@@ -694,36 +691,6 @@ def test_entry_handle_mut_can_be_reused_after_entry_value_uninit_was_discarded(
     entry_handle_mut = entry_value_uninit.discard()
 
     entry_handle_mut.update_with_copy(ctypes.c_uint32(333))
-    assert entry_handle.get().decode_as(ctypes.c_uint32).value == 333
-
-
-@pytest.mark.parametrize("service_type", service_types)
-def test_entry_handle_mut_can_be_reused_after_entry_value_was_discarded(
-    service_type: iox2.ServiceType,
-) -> None:
-    config = iox2.testing.generate_isolated_config()
-    service_name = iox2.testing.generate_service_name()
-    key = ctypes.c_uint64(0)
-    value = ctypes.c_uint32(0)
-
-    node = iox2.NodeBuilder.new().config(config).create(service_type)
-    service = (
-        node.service_builder(service_name)
-        .blackboard_creator(ctypes.c_uint64)
-        .add(key, value)
-        .create()
-    )
-
-    writer = service.writer_builder().create()
-    entry_handle_mut = writer.entry(key, ctypes.c_uint32)
-    reader = service.reader_builder().create()
-    entry_handle = reader.entry(key, ctypes.c_uint32)
-
-    entry_value_uninit = entry_handle_mut.loan_uninit()
-    entry_value = entry_value_uninit.write(ctypes.c_uint32(999))
-    entry_handle_mut = entry_value.discard()
-    entry_handle_mut.update_with_copy(ctypes.c_uint32(333))
-
     assert entry_handle.get().decode_as(ctypes.c_uint32).value == 333
 
 
@@ -767,6 +734,92 @@ def test_handle_can_still_be_used_after_every_previous_service_state_owner_was_d
     service.delete()
 
     assert entry_handle.get().decode_as(ctypes.c_uint32).value == 0
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_entry_handle_is_up_to_date_works_correctly(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    service_name = iox2.testing.generate_service_name()
+    key = ctypes.c_uint64(0)
+    value = ctypes.c_uint16(0)
+
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service = (
+        node.service_builder(service_name)
+        .blackboard_creator(ctypes.c_uint64)
+        .add(key, value)
+        .create()
+    )
+
+    reader = service.reader_builder().create()
+    entry_handle = reader.entry(key, ctypes.c_uint16)
+    writer = service.writer_builder().create()
+    entry_handle_mut = writer.entry(key, ctypes.c_uint16)
+
+    read_value = entry_handle.get()
+    assert read_value.decode_as(ctypes.c_uint16).value == 0
+    assert entry_handle.is_up_to_date(read_value)
+
+    entry_handle_mut.update_with_copy(ctypes.c_uint16(1))
+    assert not entry_handle.is_up_to_date(read_value)
+    read_value = entry_handle.get()
+    assert read_value.decode_as(ctypes.c_uint16).value == 1
+    assert entry_handle.is_up_to_date(read_value)
+
+    entry_handle_mut.update_with_copy(ctypes.c_uint16(4))
+    read_value = entry_handle.get()
+    assert read_value.decode_as(ctypes.c_uint16).value == 4
+    assert entry_handle.is_up_to_date(read_value)
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_list_keys_works(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    service_name = iox2.testing.generate_service_name()
+    keys = [
+        ctypes.c_uint64(0),
+        ctypes.c_uint64(1),
+        ctypes.c_uint64(2),
+        ctypes.c_uint64(3),
+        ctypes.c_uint64(4),
+        ctypes.c_uint64(5),
+        ctypes.c_uint64(6),
+        ctypes.c_uint64(7),
+    ]
+    value = ctypes.c_uint16(0)
+
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service = (
+        node.service_builder(service_name)
+        .blackboard_creator(ctypes.c_uint64)
+        .add(keys[0], value)
+        .add(keys[1], value)
+        .add(keys[2], value)
+        .add(keys[3], value)
+        .add(keys[4], value)
+        .add(keys[5], value)
+        .add(keys[6], value)
+        .add(keys[7], value)
+        .create()
+    )
+
+    listed_keys = service.list_keys()
+    assert len(listed_keys) == len(keys)
+
+    found_key = False
+    for _i, key in enumerate(keys):
+        key_value = key.value
+        for _j, listed_key in enumerate(listed_keys):
+            listed_key_value = listed_key.decode_as(ctypes.c_uint64).value
+            if listed_key_value == key_value:
+                found_key = True
+                break
+        assert found_key
+        found_key = False
 
 
 class Foo(ctypes.Structure):
@@ -843,3 +896,84 @@ def test_adding_key_struct_twice_fails(
             .add(key, value_1)
             .create()
         )
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_list_keys_with_key_struct_works(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    service_name = iox2.testing.generate_service_name()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+
+    keys = [Foo(a=9, b=99, c=9.9), Foo(a=9, b=999, c=9.9)]
+    value = ctypes.c_uint32(3)
+
+    service = (
+        node.service_builder(service_name)
+        .blackboard_creator(Foo)
+        .add(keys[0], value)
+        .add(keys[1], value)
+        .create()
+    )
+
+    listed_keys = service.list_keys()
+    assert len(listed_keys) == len(keys)
+
+    found_key = False
+    for _i, key in enumerate(keys):
+        for _j, listed_key in enumerate(listed_keys):
+            listed_key_value = listed_key.decode_as(Foo)
+            if listed_key_value == key:
+                found_key = True
+                break
+        assert found_key
+        found_key = False
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_new_value_can_be_written_using_value_mut(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    service_name = iox2.testing.generate_service_name()
+    key = ctypes.c_uint64(0)
+    value = ctypes.c_uint16(0)
+
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service = (
+        node.service_builder(service_name)
+        .blackboard_creator(ctypes.c_uint64)
+        .add(key, value)
+        .create()
+    )
+
+    reader = service.reader_builder().create()
+    entry_handle = reader.entry(key, ctypes.c_uint16)
+    writer = service.writer_builder().create()
+    entry_handle_mut = writer.entry(key, ctypes.c_uint16)
+    entry_value_uninit = entry_handle_mut.loan_uninit()
+
+    new_value_1 = ctypes.c_uint16(1234)
+    ctypes.memmove(
+        entry_value_uninit.value_mut(),
+        ctypes.byref(new_value_1),
+        ctypes.sizeof(ctypes.c_uint16),
+    )
+    entry_handle_mut = entry_value_uninit.assume_init_and_update()
+    assert entry_handle.get().decode_as(ctypes.c_uint16).value == new_value_1.value
+
+    entry_value_uninit = entry_handle_mut.loan_uninit()
+    new_value_2 = ctypes.c_uint16(4321)
+    ctypes.memmove(
+        entry_value_uninit.value_mut(),
+        ctypes.byref(new_value_2),
+        ctypes.sizeof(ctypes.c_uint16),
+    )
+    # before calling assume_init_and_update(), the old value is read
+    assert entry_handle.get().decode_as(ctypes.c_uint16).value == new_value_1.value
+    entry_handle_mut = entry_value_uninit.discard()
+
+    new_value_3 = ctypes.c_uint16(4567)
+    entry_handle_mut.update_with_copy(new_value_3)
+    assert entry_handle.get().decode_as(ctypes.c_uint16).value == new_value_3.value

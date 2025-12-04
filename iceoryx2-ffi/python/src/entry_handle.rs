@@ -54,22 +54,49 @@ impl EntryHandle {
         });
     }
 
-    pub fn __get(&self) -> usize {
+    // Stores a copy of the blackboard value into `value_ptr` and returns a tuple containing the
+    // pointer as usize and the value's generation counter.
+    pub fn __get(&self) -> (usize, u64) {
         let value_size = self.value_type_details.0.size();
         let value_alignment = self.value_type_details.0.alignment();
         let value_buffer = (self.value_ptr.lock()).value_buffer;
+        let mut generation_counter: u64 = 0;
+        let generation_counter_ptr: *mut u64 = &mut generation_counter;
         match &*self.value.lock() {
             EntryHandleType::Ipc(v) => {
-                unsafe { v.get(value_buffer, value_size, value_alignment) };
-                value_buffer as usize
+                unsafe {
+                    v.get(
+                        value_buffer,
+                        value_size,
+                        value_alignment,
+                        generation_counter_ptr,
+                    )
+                };
+                (value_buffer as usize, generation_counter)
             }
             EntryHandleType::Local(v) => {
-                unsafe { v.get(value_buffer, value_size, value_alignment) };
-                value_buffer as usize
+                unsafe {
+                    v.get(
+                        value_buffer,
+                        value_size,
+                        value_alignment,
+                        generation_counter_ptr,
+                    )
+                };
+                (value_buffer as usize, generation_counter)
             }
         }
     }
 
+    pub fn __is_up_to_date(&self, generation_counter: u64) -> bool {
+        match &*self.value.lock() {
+            EntryHandleType::Ipc(v) => v.is_up_to_date(generation_counter),
+            EntryHandleType::Local(v) => v.is_up_to_date(generation_counter),
+        }
+    }
+
+    /// Returns an ID corresponding to the entry which can be used in an event based communication
+    /// setup.
     #[getter]
     pub fn entry_id(&self) -> EventId {
         match &*self.value.lock() {

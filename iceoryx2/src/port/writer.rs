@@ -26,15 +26,15 @@
 //! let writer = service.writer_builder().create()?;
 //!
 //! // create a handle for direct write access to a value
-//! let entry_handle_mut = writer.entry::<i32>(&1)?;
+//! let mut entry_handle_mut = writer.entry::<i32>(&1)?;
 //!
 //! // update the value with a copy
 //! entry_handle_mut.update_with_copy(8);
 //!
 //! // loan an uninitialized entry value and write to it without copying
-//! let entry_value_uninit = entry_handle_mut.loan_uninit();
-//! let entry_value = entry_value_uninit.write(-8);
-//! let entry_handle_mut = entry_value.update();
+//! let mut entry_value_uninit = entry_handle_mut.loan_uninit();
+//! entry_value_uninit.value_mut().write(-8);
+//! entry_handle_mut = unsafe { entry_value_uninit.assume_init_and_update() };
 //!
 //! # Ok(())
 //! # }
@@ -51,6 +51,7 @@ use core::alloc::Layout;
 use core::fmt::Debug;
 use core::hash::Hash;
 use core::marker::PhantomData;
+use core::mem::MaybeUninit;
 use core::sync::atomic::Ordering;
 use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -390,10 +391,9 @@ impl<
     /// #     .create()?;
     ///
     /// # let writer = service.writer_builder().create()?;
-    /// # let entry_handle_mut = writer.entry::<i32>(&1)?;
+    /// # let mut entry_handle_mut = writer.entry::<i32>(&1)?;
     /// let entry_value_uninit = entry_handle_mut.loan_uninit();
-    /// let entry_value = entry_value_uninit.write(-8);
-    /// entry_value.update();
+    /// entry_handle_mut = entry_value_uninit.update_with_copy(-8); // alternatively `entry_value_uninit.value_mut()` can be used to access the `MaybeUninit<ValueType>`
     ///
     /// # Ok(())
     /// # }
@@ -452,7 +452,7 @@ impl<
     }
 
     /// Consumes the [`EntryValueUninit`], writes value to the entry value and returns the
-    /// initialized [`EntryValue`].
+    /// original [`EntryHandleMut`].
     ///
     /// # Example
     ///
@@ -466,16 +466,20 @@ impl<
     /// #     .create()?;
     ///
     /// # let writer = service.writer_builder().create()?;
-    /// # let entry_handle_mut = writer.entry::<i32>(&1)?;
+    /// # let mut entry_handle_mut = writer.entry::<i32>(&1)?;
     /// let entry_value_uninit = entry_handle_mut.loan_uninit();
-    /// let entry_value = entry_value_uninit.write(-8);
-    /// # entry_value.update();
+    /// entry_handle_mut = entry_value_uninit.update_with_copy(-8);
     /// # Ok(())
     /// # }
     /// ```
-    pub fn write(self, value: ValueType) -> EntryValue<Service, KeyType, ValueType> {
+    pub fn update_with_copy(self, value: ValueType) -> EntryHandleMut<Service, KeyType, ValueType> {
         unsafe { self.ptr.write(value) };
-        EntryValue::new(self)
+        unsafe {
+            self.entry_handle_mut
+                .producer
+                .__internal_update_write_cell()
+        };
+        self.entry_handle_mut
     }
 
     /// Discard the [`EntryValueUninit`] and returns the original [`EntryHandleMut`].
@@ -501,48 +505,45 @@ impl<
     pub fn discard(self) -> EntryHandleMut<Service, KeyType, ValueType> {
         self.entry_handle_mut
     }
-}
 
-/// Wrapper around an initialized entry value that can be used for a zero-copy update.
-pub struct EntryValue<
-    Service: service::Service,
-    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
-    ValueType: Copy + 'static,
-> {
-    entry_handle_mut: EntryHandleMut<Service, KeyType, ValueType>,
-}
-
-// Safe since the EntryHandleMut implements Send + Sync and all methods of EntryValueUninit are
-// consuming.
-unsafe impl<
-        Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
-        ValueType: Copy + 'static,
-    > Send for EntryValue<Service, KeyType, ValueType>
-{
-}
-unsafe impl<
-        Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
-        ValueType: Copy + 'static,
-    > Sync for EntryValue<Service, KeyType, ValueType>
-{
-}
-
-impl<
-        Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
-        ValueType: Copy + 'static,
-    > EntryValue<Service, KeyType, ValueType>
-{
-    fn new(entry_value_uninit: EntryValueUninit<Service, KeyType, ValueType>) -> Self {
-        Self {
-            entry_handle_mut: entry_value_uninit.entry_handle_mut,
+    /// Returns a mutable reference to the value of the blackboard entry as `&mut MaybeUninit<ValueType>`.
+    ///
+    /// # Safety
+    ///
+    /// * after writing, assume_init_and_update() must be called to make the value accessible
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #     .blackboard_creator::<u64>()
+    /// #     .add::<i32>(1, -1)
+    /// #     .create()?;
+    ///
+    /// # let writer = service.writer_builder().create()?;
+    /// # let mut entry_handle_mut = writer.entry::<i32>(&1)?;
+    /// let mut entry_value_uninit = entry_handle_mut.loan_uninit();
+    /// entry_value_uninit.value_mut().write(-8);
+    /// entry_handle_mut = unsafe { entry_value_uninit.assume_init_and_update() };
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn value_mut(&mut self) -> &mut MaybeUninit<ValueType> {
+        unsafe {
+            &mut *core::mem::transmute::<*mut ValueType, *mut MaybeUninit<ValueType>>(self.ptr)
         }
     }
 
-    /// Makes new value readable for [`Reader`](crate::port::reader::Reader)s, consumes the
-    /// [`EntryValue`] and returns the original [`EntryHandleMut`].
+    /// Consumes the [`EntryValueUninit`], makes the new value accessible and returns the
+    /// original [`EntryHandleMut`].
+    ///
+    /// # Safety
+    ///
+    /// * the caller must ensure that the value was initialized; calling this method when the
+    ///   value was not fully initialized causes undefined behavior on the reader side
     ///
     /// # Example
     ///
@@ -556,44 +557,17 @@ impl<
     /// #     .create()?;
     ///
     /// # let writer = service.writer_builder().create()?;
-    /// # let entry_handle_mut = writer.entry::<i32>(&1)?;
-    /// let entry_value_uninitialized = entry_handle_mut.loan_uninit();
-    /// let entry_value = entry_value_uninitialized.write(-8);
-    /// let entry_handle_mut = entry_value.update();
+    /// # let mut entry_handle_mut = writer.entry::<i32>(&1)?;
+    /// let mut entry_value_uninit = entry_handle_mut.loan_uninit();
+    /// entry_value_uninit.value_mut().write(-8);
+    /// entry_handle_mut = unsafe { entry_value_uninit.assume_init_and_update() };
     /// # Ok(())
     /// # }
     /// ```
-    pub fn update(self) -> EntryHandleMut<Service, KeyType, ValueType> {
-        unsafe {
-            self.entry_handle_mut
-                .producer
-                .__internal_update_write_cell()
-        };
+    pub unsafe fn assume_init_and_update(self) -> EntryHandleMut<Service, KeyType, ValueType> {
         self.entry_handle_mut
-    }
-
-    /// Discards the [`EntryValue`] and returns the original [`EntryHandleMut`].
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use iceoryx2::prelude::*;
-    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
-    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
-    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
-    /// #     .blackboard_creator::<u64>()
-    /// #     .add::<i32>(1, -1)
-    /// #     .create()?;
-    ///
-    /// # let writer = service.writer_builder().create()?;
-    /// # let entry_handle_mut = writer.entry::<i32>(&1)?;
-    /// let entry_value_uninit = entry_handle_mut.loan_uninit();
-    /// let entry_value = entry_value_uninit.write(-8);
-    /// let entry_handle_mut = entry_value.discard();
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn discard(self) -> EntryHandleMut<Service, KeyType, ValueType> {
+            .producer
+            .__internal_update_write_cell();
         self.entry_handle_mut
     }
 }

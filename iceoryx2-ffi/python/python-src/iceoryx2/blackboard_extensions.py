@@ -116,6 +116,34 @@ def add(
     )
 
 
+class BlackboardKey:
+    """A wrapper class for the keys returned by `PortFactoryBlackboard.list_keys()`."""
+
+    def __init__(self, data: bytes):
+        """Initializes `BlackboardKey` from bytes."""
+        self.data = data
+
+    def decode_as(self, ct_type):
+        """Interpret the raw bytes as a ctypes type."""
+        return ct_type.from_buffer_copy(self.data)
+
+
+def list_keys(self: PortFactoryBlackboard):
+    """
+    Returns a list containing copies of the blackboard keys as bytes.
+
+    The keys are wrapped in a `BlackboardKey`. Use decode_as() to
+    reinterpret the raw bytes as a ctypes type.
+    """
+    keys = self.__list_keys()
+    key_size = self.__key_type_details
+    key_list = []
+    for key in keys:
+        raw_bytes = ctypes.string_at(key, ctypes.sizeof(key_size))
+        key_list.append(BlackboardKey(raw_bytes))
+    return key_list
+
+
 def entry_handle(self: Reader, key: Type[K], value: Type[V]) -> EntryHandle:
     """
     Creates an EntryHandle for direct read access to the value.
@@ -144,29 +172,37 @@ def entry_handle(self: Reader, key: Type[K], value: Type[V]) -> EntryHandle:
     return entry_handle
 
 
-class RawValue:
+class BlackboardValue:
     """A wrapper class for the value returned by `EntryHandle.get()`."""
 
-    def __init__(self, data: bytes):
-        """Initializes `RawValue` from bytes."""
+    def __init__(self, data: bytes, generation_counter: ctypes.c_uint64):
+        """Initializes `BlackboardValue` from bytes."""
         self.data = data
         self.size = len(data)
+        self._generation_counter = generation_counter
 
     def decode_as(self, ct_type):
         """Interpret the raw bytes as a ctypes type."""
         return ct_type.from_buffer_copy(self.data)
 
 
-def get(self: EntryHandle) -> RawValue:
+def get(self: EntryHandle) -> BlackboardValue:
     """
-    Returns a copy of the value as bytes.
+    Returns a copy of the value as bytes wrapped in a `BlackboardValue`.
 
     Use decode_as() to reinterpret the raw bytes as a ctypes type.
     """
-    value_ptr = self.__get()
+    result = self.__get()
+    value_ptr = result[0]
+    generation_counter = result[1]
     value_size = ctypes.sizeof(self.__value_type)
     raw_bytes = ctypes.string_at(value_ptr, value_size)
-    return RawValue(raw_bytes)
+    return BlackboardValue(raw_bytes, generation_counter)
+
+
+def is_up_to_date(self: EntryHandle, value: BlackboardValue) -> bool:
+    """Checks if `value` is up-to-date."""
+    return self.__is_up_to_date(value._generation_counter)
 
 
 def entry_handle_mut(self: Writer, key: Type[K], value: Type[V]) -> EntryHandleMut:
@@ -197,7 +233,7 @@ def entry_handle_mut(self: Writer, key: Type[K], value: Type[V]) -> EntryHandleM
     return entry_handle_mut
 
 
-def update_with_copy(self: EntryHandleMut, value: Type[V]):
+def update_with_copy_on_entry_handle(self: EntryHandleMut, value: Type[V]):
     """Updates the value by copying the passed value into it."""
     assert self.__value_type is not None
     type_size = ctypes.sizeof(value)
@@ -210,12 +246,14 @@ def update_with_copy(self: EntryHandleMut, value: Type[V]):
     self.__update_data_ptr()
 
 
-def write(self: EntryValueUninit, value: Type[V]) -> EntryValue:
+def update_with_copy_on_entry_value(
+    self: EntryValueUninit, value: Type[V]
+) -> EntryHandleMut:
     """
-    Writes to the entry value.
+    Updates the entry value.
 
     Consumes the EntryValueUninit, writes values to the entry
-    value and returns the initialized EntryValue.
+    value and returns the original EntryHandleMut.
     """
     assert self.__value_type is not None
     type_size = ctypes.sizeof(value)
@@ -224,14 +262,41 @@ def write(self: EntryValueUninit, value: Type[V]) -> EntryValue:
 
     write_cell = self.__get_write_cell()
     ctypes.memmove(write_cell, ctypes.byref(value), type_size)
-    return self.__assume_init()
+    return self.__update_write_cell()
+
+
+def value_mut(self: EntryValueUninit) -> Any:
+    """
+    Returns a `ctypes.POINTER` to the value of the blackboard entry.
+
+    It can be used to update the value without copy. After writing,
+    assume_init_and_update() must be called.
+    """
+    assert self.__value_type is not None
+
+    return ctypes.cast(self.__get_write_cell(), ctypes.POINTER(self.__value_type))
+
+
+def assume_init_and_update(self: EntryValueUninit) -> EntryHandleMut:
+    """
+    Makes the new value accessible.
+
+    Consumes the EntryValueUninit, makes the new value accessible
+    and returns the original EntryHandleMut.
+    """
+    return self.__update_write_cell()
 
 
 EntryHandle.get = get
+EntryHandle.is_up_to_date = is_up_to_date
 
-EntryHandleMut.update_with_copy = update_with_copy
+EntryHandleMut.update_with_copy = update_with_copy_on_entry_handle
 
-EntryValueUninit.write = write
+EntryValueUninit.assume_init_and_update = assume_init_and_update
+EntryValueUninit.update_with_copy = update_with_copy_on_entry_value
+EntryValueUninit.value_mut = value_mut
+
+PortFactoryBlackboard.list_keys = list_keys
 
 Reader.entry = entry_handle
 

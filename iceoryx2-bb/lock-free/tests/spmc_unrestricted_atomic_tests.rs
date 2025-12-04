@@ -172,6 +172,28 @@ fn spmc_unrestricted_atomic_get_ptr_write_and_update_works_concurrently() {
 }
 
 #[test]
+fn spmc_unrestricted_atomic_get_write_cell_works() {
+    let _test_lock = TEST_LOCK.lock().unwrap();
+    let sut = UnrestrictedAtomic::<u32>::new(0);
+    let producer = sut.acquire_producer().unwrap();
+    let initial_write_cell = sut.__internal_get_write_cell();
+
+    producer.store(1);
+    assert_that!(sut.__internal_get_write_cell(), eq initial_write_cell + 1);
+
+    unsafe {
+        let entry = producer.__internal_get_ptr_to_write_cell();
+        *entry = 2;
+
+        // write_cell not changed before update
+        assert_that!(sut.__internal_get_write_cell(), eq initial_write_cell + 1);
+
+        producer.__internal_update_write_cell();
+        assert_that!(sut.__internal_get_write_cell(), eq initial_write_cell + 2);
+    }
+}
+
+#[test]
 fn spmc_unrestricted_atomic_mgmt_release_producer_allows_new_acquire() {
     let _test_lock = TEST_LOCK.lock().unwrap();
     let sut = UnrestrictedAtomicMgmt::new();
@@ -279,8 +301,8 @@ fn spmc_unrestricted_atomic_internal_ptr_calculation_works_with_integers() {
 }
 
 fn internal_get_data_cell_calculation_works<ValueType: Copy + Default>() {
-    const INITIAL_READ_CELL: u32 = 0;
-    const INITIAL_WRITE_CELL: u32 = 1;
+    const INITIAL_READ_CELL: u64 = 0;
+    const INITIAL_WRITE_CELL: u64 = 1;
 
     let value_size = size_of::<ValueType>();
     let value_alignment = align_of::<ValueType>();
@@ -375,4 +397,44 @@ fn spmc_unrestricted_atomic_internal_size_and_alignment_calculation_with_integer
     mgmt_calculates_correct_size_and_alignment_of_unrestricted_atomic::<i128>();
     mgmt_calculates_correct_size_and_alignment_of_unrestricted_atomic::<f32>();
     mgmt_calculates_correct_size_and_alignment_of_unrestricted_atomic::<f64>();
+}
+
+#[test]
+fn spmc_unrestricted_atomic_mgmt_get_write_cell_works() {
+    let _test_lock = TEST_LOCK.lock().unwrap();
+
+    const INITIAL_VALUE: u64 = 0;
+    const NEW_VALUE: u64 = 3;
+
+    let value_ptr: *const u64 = &NEW_VALUE;
+    let value_size = core::mem::size_of::<u64>();
+    let value_alignment = core::mem::align_of::<u64>();
+
+    let atomic = UnrestrictedAtomic::<u64>::new(INITIAL_VALUE);
+    let data_ptr = atomic.__internal_get_data_ptr();
+    let mgmt = atomic.__internal_get_mgmt();
+    let initial_write_cell = mgmt.__internal_get_write_cell();
+
+    unsafe {
+        assert_that!(mgmt.__internal_acquire_producer(), is_ok);
+        let write_cell_ptr =
+            mgmt.__internal_get_ptr_to_write_cell(value_size, value_alignment, data_ptr);
+        core::ptr::copy_nonoverlapping(value_ptr as *const u8, write_cell_ptr, value_size);
+        mgmt.__internal_update_write_cell();
+
+        assert_that!(mgmt.__internal_get_write_cell(), eq initial_write_cell + 1);
+
+        let write_cell_ptr =
+            mgmt.__internal_get_ptr_to_write_cell(value_size, value_alignment, data_ptr);
+        core::ptr::copy_nonoverlapping(value_ptr as *const u8, write_cell_ptr, value_size);
+        // write_cell not changed before update
+        assert_that!(mgmt.__internal_get_write_cell(), eq initial_write_cell + 1);
+
+        mgmt.__internal_update_write_cell();
+
+        // write_cell changed after update
+        assert_that!(mgmt.__internal_get_write_cell(), eq initial_write_cell + 2);
+
+        mgmt.__internal_release_producer();
+    }
 }
