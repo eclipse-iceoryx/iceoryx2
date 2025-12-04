@@ -1,0 +1,33 @@
+[package]
+name = "iceoryx2-log-loggers"
+description = "iceoryx2: swappable logger implementations"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[features]
+default = []
+std = []
+
+# Enables logging to buffer
+logger_buffer = ["std"]
+# Enables logging to file
+logger_file = ["std"]
+# Enables logging to console
+logger_console = ["std"]
+# Enables https://crates.io/crates/log as default logger
+logger_log = ["std", "dep:log"]
+# Enables https://crates.io/crates/tracing as default logger
+logger_tracing = ["std", "dep:tracing"]
+
+[dependencies]
+iceoryx2-log-types = { workspace = true }
+iceoryx2-pal-concurrency-sync = { workspace = true }
+
+log = { workspace = true, optional = true }
+tracing = { workspace = true, optional = true }
