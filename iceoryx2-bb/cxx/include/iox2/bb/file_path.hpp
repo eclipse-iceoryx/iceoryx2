@@ -66,7 +66,7 @@ file_path_does_contain_invalid_characters(const legacy::string<platform::IOX2_MA
                                           || c == detail::ASCII_UNDERSCORE };
 
         const bool is_path_separator { [&]() -> bool {
-            // NOLINTNEXTLINE(readability-use-anyofallof)
+            // NOLINTNEXTLINE(readability-use-anyofallof) not yet supported in all compilers
             for (const auto separator : platform::IOX2_PATH_SEPARATORS) {
                 if (c == separator) {
                     return true;
