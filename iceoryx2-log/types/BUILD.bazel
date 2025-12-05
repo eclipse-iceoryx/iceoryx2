@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Contributors to the Eclipse Foundation
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
 # information regarding copyright ownership.
@@ -12,20 +12,14 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("@rules_rust//rust:defs.bzl", "rust_binary")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test_suite")
 
 filegroup(
     name = "all_srcs",
     srcs = glob(["**"]),
 )
 
-rust_binary(
-    name = "benchmark-event",
+rust_library(
+    name = "iceoryx2-log-types",
     srcs = glob(["src/**/*.rs"]),
-    deps = [
-        "//iceoryx2:iceoryx2",
-        "//iceoryx2-log/log:iceoryx2-log",
-        "//iceoryx2-bb/posix:iceoryx2-bb-posix",
-        "@crate_index//:clap",
-    ],
 )
