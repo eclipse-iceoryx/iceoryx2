@@ -46,6 +46,7 @@ tunnel_zenoh = ["iceoryx2-tunnel-zenoh"]
 iceoryx2-services-discovery = { workspace = true }
 iceoryx2 = { workspace = true, features = ["std"] }
 iceoryx2-log = { workspace = true }
+iceoryx2-loggers = { workspace = true, features = ["logger_console"] }
 iceoryx2-pal-posix = { workspace = true }
 iceoryx2-bb-posix = { workspace = true, features = ["std"] }
 iceoryx2-bb-system-types = { workspace = true }
