@@ -24,7 +24,7 @@ use iceoryx2::{
     prelude::*,
 };
 use iceoryx2_log::cout;
-use iceoryx2_log_loggers::console::Logger;
+use iceoryx2_loggers::console::Logger;
 
 static LOGGER: Logger = Logger::new();
 const CYCLE_TIME: Duration = Duration::from_secs(1);

@@ -16,7 +16,7 @@ use alloc::boxed::Box;
 use iceoryx2::prelude::*;
 use iceoryx2_log::cerr;
 use iceoryx2_log::cout;
-use iceoryx2_log_loggers::console::Logger;
+use iceoryx2_loggers::console::Logger;
 use iceoryx2_services_discovery::*;
 use service_discovery::Discovery;
 

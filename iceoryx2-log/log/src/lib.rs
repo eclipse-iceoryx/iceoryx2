@@ -131,8 +131,8 @@
 //! ```
 //! use iceoryx2_log::{set_logger, info};
 //!
-//! static LOGGER: iceoryx2_log_loggers::buffer::Logger =
-//!     iceoryx2_log_loggers::buffer::Logger::new();
+//! static LOGGER: iceoryx2_loggers::buffer::Logger =
+//!     iceoryx2_loggers::buffer::Logger::new();
 //!
 //! assert!(set_logger(&LOGGER));
 //! info!("hello world");

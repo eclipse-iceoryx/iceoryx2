@@ -22,7 +22,7 @@ use iceoryx2::{
     sample::Sample,
 };
 use iceoryx2_log::cout;
-use iceoryx2_log_loggers::console::Logger;
+use iceoryx2_loggers::console::Logger;
 
 static LOGGER: Logger = Logger::new();
 const HISTORY_SIZE: usize = 20;
