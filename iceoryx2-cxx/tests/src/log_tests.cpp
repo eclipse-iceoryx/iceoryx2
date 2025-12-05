@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include "iox2/container/static_vector.hpp"
 #include "iox2/legacy/string.hpp"
-#include "iox2/legacy/vector.hpp"
 #include "iox2/log.hpp"
 #include "iox2/log_level.hpp"
 
@@ -28,6 +28,7 @@ class Entry {
     iox2::legacy::string<STRING_CAPACITY> m_message;
 
   public:
+    Entry() = delete;
     Entry(LogLevel log_level, const char* origin, const char* message)
         : m_log_level { log_level }
         , m_origin { iox2::legacy::TruncateToCapacity, origin }
@@ -51,18 +52,18 @@ class TestLogger : public Log {
 
     void log(LogLevel log_level, const char* origin, const char* message) override {
         if (m_log_buffer.size() < TEST_LOGGER_CAPACITY) {
-            m_log_buffer.emplace_back(log_level, origin, message);
+            m_log_buffer.try_emplace_back(log_level, origin, message);
         }
     }
 
-    auto get_log_buffer() -> iox2::legacy::vector<Entry, TEST_LOGGER_CAPACITY> {
+    auto get_log_buffer() -> iox2::container::StaticVector<Entry, TEST_LOGGER_CAPACITY> {
         auto buffer = m_log_buffer;
         m_log_buffer.clear();
         return buffer;
     }
 
   private:
-    iox2::legacy::vector<Entry, TEST_LOGGER_CAPACITY> m_log_buffer;
+    iox2::container::StaticVector<Entry, TEST_LOGGER_CAPACITY> m_log_buffer;
 };
 
 TEST(Log, custom_logger_works) {
@@ -80,13 +81,13 @@ TEST(Log, custom_logger_works) {
 
     ASSERT_THAT(log_buffer.size(), Eq(6));
 
-    ASSERT_TRUE(log_buffer[0].is_equal(LogLevel::Trace, "hello", "world"));
-    ASSERT_TRUE(log_buffer[1].is_equal(LogLevel::Debug, "goodbye", "hypnotoad"));
-    ASSERT_TRUE(log_buffer[2].is_equal(LogLevel::Info, "Who is looking for freedom?", "The Hoff!"));
-    ASSERT_TRUE(log_buffer[3].is_equal(LogLevel::Warn, "Blümchen", "Bassface"));
-    ASSERT_TRUE(
-        log_buffer[4].is_equal(LogLevel::Error, "Blümchen should record a single with", "The almighty Hypnotoad"));
-    ASSERT_TRUE(log_buffer[5].is_equal(LogLevel::Fatal, "It is the end", "my beloved toad."));
+    ASSERT_TRUE(log_buffer.unchecked_access()[0].is_equal(LogLevel::Trace, "hello", "world"));
+    ASSERT_TRUE(log_buffer.unchecked_access()[1].is_equal(LogLevel::Debug, "goodbye", "hypnotoad"));
+    ASSERT_TRUE(log_buffer.unchecked_access()[2].is_equal(LogLevel::Info, "Who is looking for freedom?", "The Hoff!"));
+    ASSERT_TRUE(log_buffer.unchecked_access()[3].is_equal(LogLevel::Warn, "Blümchen", "Bassface"));
+    ASSERT_TRUE(log_buffer.unchecked_access()[4].is_equal(
+        LogLevel::Error, "Blümchen should record a single with", "The almighty Hypnotoad"));
+    ASSERT_TRUE(log_buffer.unchecked_access()[5].is_equal(LogLevel::Fatal, "It is the end", "my beloved toad."));
 }
 
 TEST(Log, can_set_and_get_log_level) {

@@ -13,6 +13,7 @@
 #include <iostream>
 #include <map>
 
+#include "iox2/container/static_vector.hpp"
 #include "iox2/iceoryx2.hpp"
 #include "iox2/legacy/cli_definition.hpp"
 
@@ -52,17 +53,17 @@ auto main(int argc, char** argv) -> int {
     // create the waitset and attach the listeners to it
     auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().expect("");
     // NOLINTNEXTLINE(misc-const-correctness) false positive
-    iox2::legacy::vector<WaitSetGuard<ServiceType::Ipc>, 2> guards;
+    iox2::container::StaticVector<WaitSetGuard<ServiceType::Ipc>, 2> guards;
 
-    guards.emplace_back(waitset.attach_notification(listener_1).expect(""));
-    guards.emplace_back(waitset.attach_notification(listener_2).expect(""));
+    guards.try_emplace_back(waitset.attach_notification(listener_1).expect(""));
+    guards.try_emplace_back(waitset.attach_notification(listener_2).expect(""));
 
     // NOLINTNEXTLINE(misc-const-correctness) false positive
     std::map<WaitSetAttachmentId<ServiceType::Ipc>, ServiceNameListenerPair> listeners;
 
-    listeners.emplace(WaitSetAttachmentId<ServiceType::Ipc>::from_guard(guards[0]),
+    listeners.emplace(WaitSetAttachmentId<ServiceType::Ipc>::from_guard(guards.unchecked_access()[0]),
                       ServiceNameListenerPair { service_name_1, std::move(listener_1) });
-    listeners.emplace(WaitSetAttachmentId<ServiceType::Ipc>::from_guard(guards[1]),
+    listeners.emplace(WaitSetAttachmentId<ServiceType::Ipc>::from_guard(guards.unchecked_access()[1]),
                       ServiceNameListenerPair { service_name_2, std::move(listener_2) });
 
     // the callback that is called when a listener has received an event

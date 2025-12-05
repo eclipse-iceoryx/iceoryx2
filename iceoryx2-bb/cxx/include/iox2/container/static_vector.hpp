@@ -160,11 +160,20 @@ class StaticVector {
     auto operator=(StaticVector const&) -> StaticVector& = default;
     auto operator=(StaticVector&&) -> StaticVector& = default;
 
+    template <uint64_t N>
+    static constexpr auto from_value(const T& value) -> StaticVector {
+        static_assert(N <= Capacity, "Trying to initialize a StaticVector beyond its capacity!");
+
+        auto vec = StaticVector {};
+        vec.m_storage.insert_at(0, N, value);
+        return vec;
+    }
+
     /// Construct a new vector with `count` occurrences of a default constructed value.
     /// @return Nullopt if `count` exceeds the vector capacity.
     ///         Otherwise a vector containing the desired elements.
-    static constexpr auto from_value(SizeType count)
-        -> std::enable_if_t<std::is_default_constructible<T>::value, Optional<StaticVector>> {
+    template <typename U = T, std::enable_if_t<std::is_default_constructible<U>::value, bool> = true>
+    static constexpr auto from_value(SizeType count) -> Optional<StaticVector> {
         if (count <= Capacity) {
             return from_value(count, T {});
         } else {
@@ -233,9 +242,8 @@ class StaticVector {
     /// Attempts to construct a new element from the constructor arguments `args` at the back of the vector.
     /// @return true on success.
     ///         false if the operation would exceed the vector's capacity.
-    template <typename... Args>
-    constexpr auto try_emplace_back(Args&&... args)
-        -> std::enable_if_t<std::is_constructible<T, Args...>::value, bool> {
+    template <typename... Args, std::enable_if_t<std::is_constructible<T, Args...>::value, bool> = true>
+    constexpr auto try_emplace_back(Args&&... args) -> bool {
         if (m_storage.size() < Capacity) {
             m_storage.emplace_back(std::forward<Args>(args)...);
             return true;
@@ -248,9 +256,8 @@ class StaticVector {
     /// @return true on success.
     ///         false if `index` is greater than the current size of the vector or
     ///         if the operation would exceed the vector's capacity.
-    template <typename... Args>
-    constexpr auto try_emplace_at(SizeType index, Args&&... args)
-        -> std::enable_if_t<std::is_constructible<T, Args...>::value, bool> {
+    template <typename... Args, std::enable_if_t<std::is_constructible<T, Args...>::value, bool> = true>
+    constexpr auto try_emplace_at(SizeType index, Args&&... args) -> bool {
         if ((m_storage.size() < Capacity) && (index <= m_storage.size())) {
             m_storage.emplace_at(index, std::forward<Args>(args)...);
             return true;

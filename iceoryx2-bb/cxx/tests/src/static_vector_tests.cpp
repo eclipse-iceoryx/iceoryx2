@@ -318,6 +318,60 @@ TEST_F(StaticVectorFixture, from_value_with_object_constructs_empty_vector_for_z
     // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
 }
 
+TEST_F(StaticVectorFixture, from_value_with_static_count_constructs_count_copies_of_element) {
+    int32_t const tracking_id = 142;
+    Observable const obj { tracking_id };
+    auto const sut = iox2::container::StaticVector<Observable, 4>::from_value<4>(obj);
+    ASSERT_EQ(sut.size(), 4);
+    EXPECT_EQ(sut.unchecked_access()[0].id, tracking_id);
+    EXPECT_EQ(sut.unchecked_access()[1].id, tracking_id);
+    EXPECT_EQ(sut.unchecked_access()[2].id, tracking_id);
+    EXPECT_EQ(sut.unchecked_access()[3].id, tracking_id);
+    ASSERT_EQ(Observable::s_counter.was_initialized, 1);
+    ASSERT_EQ(Observable::s_counter.was_copy_constructed, 4);
+    // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+    // there may be additional moves on compilers that fail to perform rvo
+    expected_count().was_move_constructed = Observable::s_counter.was_move_constructed;
+    expected_count().was_initialized = 1;
+    expected_count().was_copy_constructed = 4;
+    expected_count().was_destructed = 5 + Observable::s_counter.was_move_constructed;
+    // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+}
+
+TEST_F(StaticVectorFixture, from_value_with_static_count_constructs_one_copy_of_element) {
+    int32_t const tracking_id = 147;
+    Observable const obj { tracking_id };
+    auto const sut = iox2::container::StaticVector<Observable, 4>::from_value<1>(obj);
+    ASSERT_EQ(sut.size(), 1);
+    EXPECT_EQ(sut.unchecked_access()[0].id, tracking_id);
+    ASSERT_EQ(Observable::s_counter.was_initialized, 1);
+    ASSERT_EQ(Observable::s_counter.was_copy_constructed, 1);
+    // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+    // there may be additional moves on compilers that fail to perform rvo
+    expected_count().was_move_constructed = Observable::s_counter.was_move_constructed;
+    expected_count().was_initialized = 1;
+    expected_count().was_copy_constructed = 1;
+    expected_count().was_destructed = 2 + Observable::s_counter.was_move_constructed;
+    // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+}
+
+TEST_F(StaticVectorFixture, from_value_with_static_count_constructs_empty_vector_for_zero_elements) {
+    int32_t const tracking_id = 159;
+    Observable const obj { tracking_id };
+    auto const sut = iox2::container::StaticVector<Observable, 4>::from_value<0>(obj);
+    ASSERT_EQ(sut.size(), 0);
+    ASSERT_EQ(Observable::s_counter.was_initialized, 1);
+    ASSERT_EQ(Observable::s_counter.was_copy_constructed, 0);
+    // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+    // there may be additional moves on compilers that fail to perform rvo
+    expected_count().was_move_constructed = Observable::s_counter.was_move_constructed;
+    expected_count().was_initialized = 1;
+    expected_count().was_copy_constructed = 0;
+    expected_count().was_destructed = 1 + Observable::s_counter.was_move_constructed;
+    // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+}
+
+
 TEST_F(StaticVectorFixture, from_value_with_object_fails_if_exceeding_capacity) {
     int32_t const tracking_id = 99;
     Observable const obj { tracking_id };

@@ -288,20 +288,25 @@ fn thread_set_affinity_to_one_core_from_thread_works() {
     let barrier = Arc::new(Barrier::new(2));
     let mut thread = {
         let barrier = barrier.clone();
-        ThreadBuilder::new()
-            .spawn(move || {
-                barrier.wait();
-                let handle = ThreadHandle::from_self();
-                let mut affinity = Vec::new();
-                match handle.get_affinity() {
-                    Ok(value) => affinity = value,
-                    Err(error) => println!("Expected value but got error: {error:?}"),
-                }
-                barrier.wait();
-                assert_that!(affinity, len 1);
-                assert_that!(affinity[0], eq 0);
-            })
-            .unwrap()
+        let spawn_result = ThreadBuilder::new().spawn(move || {
+            barrier.wait();
+            let handle = ThreadHandle::from_self();
+            let mut affinity = Vec::new();
+            match handle.get_affinity() {
+                Ok(value) => affinity = value,
+                Err(error) => println!("Expected value but got error: {error:?}"),
+            }
+            barrier.wait();
+            assert_that!(affinity, len 1);
+            assert_that!(affinity[0], eq 0);
+        });
+
+        if let Err(error) = spawn_result {
+            println!("Expected value but got error: {error:?}");
+            assert!(false);
+        }
+
+        spawn_result.unwrap()
     };
 
     thread.set_affinity(&[0]).unwrap();
@@ -402,15 +407,20 @@ fn thread_destructor_does_block_on_busy_thread() {
     let barrier = Arc::new(Barrier::new(2));
     let thread = {
         let barrier = barrier.clone();
-        ThreadBuilder::new()
-            .spawn(move || {
-                barrier.wait();
-                let start = Instant::now();
-                while start.elapsed() < SLEEP_DURATION {
-                    std::thread::sleep(SLEEP_DURATION - start.elapsed());
-                }
-            })
-            .unwrap()
+        let spawn_result = ThreadBuilder::new().spawn(move || {
+            barrier.wait();
+            let start = Instant::now();
+            while start.elapsed() < SLEEP_DURATION {
+                std::thread::sleep(SLEEP_DURATION - start.elapsed());
+            }
+        });
+
+        if let Err(error) = spawn_result {
+            println!("Expected value but got error: {error:?}");
+            assert!(false);
+        }
+
+        spawn_result.unwrap()
     };
 
     barrier.wait();
