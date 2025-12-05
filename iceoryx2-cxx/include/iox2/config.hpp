@@ -14,10 +14,10 @@
 #define IOX2_CONFIG_HPP
 
 #include "iox2/bb/duration.hpp"
+#include "iox2/bb/file_name.hpp"
+#include "iox2/bb/path.hpp"
 #include "iox2/config_creation_error.hpp"
 #include "iox2/internal/iceoryx2.hpp"
-#include "iox2/legacy/file_name.hpp"
-#include "iox2/legacy/path.hpp"
 #include "iox2/unable_to_deliver_strategy.hpp"
 
 namespace iox2 {
@@ -33,19 +33,19 @@ class Node {
     /// The directory in which all node files are stored
     auto directory() && -> const char*;
     /// Set the directory in which all node files are stored
-    void set_directory(const iox2::legacy::Path& value) &&;
+    void set_directory(const iox2::bb::Path& value) &&;
     /// The suffix of the monitor token
     auto monitor_suffix() && -> const char*;
     /// Set the suffix of the monitor token
-    void set_monitor_suffix(const iox2::legacy::FileName& value) &&;
+    void set_monitor_suffix(const iox2::bb::FileName& value) &&;
     /// The suffix of the files where the node configuration is stored.
     auto static_config_suffix() && -> const char*;
     /// Set the suffix of the files where the node configuration is stored.
-    void set_static_config_suffix(const iox2::legacy::FileName& value) &&;
+    void set_static_config_suffix(const iox2::bb::FileName& value) &&;
     /// The suffix of the service tags.
     auto service_tag_suffix() && -> const char*;
     /// Set the suffix of the service tags.
-    void set_service_tag_suffix(const iox2::legacy::FileName& value) &&;
+    void set_service_tag_suffix(const iox2::bb::FileName& value) &&;
     /// When true, the [`NodeBuilder`](NodeBuilder) checks for dead nodes and
     /// cleans up all their stale resources whenever a new [`Node`](Node) is
     /// created.
@@ -72,19 +72,19 @@ class Service {
     /// The directory in which all service files are stored
     auto directory() && -> const char*;
     /// Set the directory in which all service files are stored
-    void set_directory(const iox2::legacy::Path& value) &&;
+    void set_directory(const iox2::bb::Path& value) &&;
     /// The suffix of the ports data segment
     auto data_segment_suffix() && -> const char*;
     /// Set the suffix of the ports data segment
-    void set_data_segment_suffix(const iox2::legacy::FileName& value) &&;
+    void set_data_segment_suffix(const iox2::bb::FileName& value) &&;
     /// The suffix of the static config file
     auto static_config_storage_suffix() && -> const char*;
     /// Set the suffix of the static config file
-    void set_static_config_storage_suffix(const iox2::legacy::FileName& value) &&;
+    void set_static_config_storage_suffix(const iox2::bb::FileName& value) &&;
     /// The suffix of the dynamic config file
     auto dynamic_config_storage_suffix() && -> const char*;
     /// Set the suffix of the dynamic config file
-    void set_dynamic_config_storage_suffix(const iox2::legacy::FileName& value) &&;
+    void set_dynamic_config_storage_suffix(const iox2::bb::FileName& value) &&;
     /// Defines the time of how long another process will wait until the service creation is
     /// finalized
     auto creation_timeout() && -> iox2::bb::Duration;
@@ -93,11 +93,11 @@ class Service {
     /// The suffix of a one-to-one connection
     auto connection_suffix() && -> const char*;
     /// Set the suffix of a one-to-one connection
-    void set_connection_suffix(const iox2::legacy::FileName& value) &&;
+    void set_connection_suffix(const iox2::bb::FileName& value) &&;
     /// The suffix of a one-to-one connection
     auto event_connection_suffix() && -> const char*;
     /// Set the suffix of a one-to-one connection
-    void set_event_connection_suffix(const iox2::legacy::FileName& value) &&;
+    void set_event_connection_suffix(const iox2::bb::FileName& value) &&;
 
   private:
     friend class Global;
@@ -112,11 +112,11 @@ class Global {
     /// Prefix used for all files created during runtime
     auto prefix() && -> const char*;
     /// Set the prefix used for all files created during runtime
-    void set_prefix(const iox2::legacy::FileName& value) &&;
+    void set_prefix(const iox2::bb::FileName& value) &&;
     /// The path under which all other directories or files will be created
     auto root_path() && -> const char*;
     /// Defines the path under which all other directories or files will be created
-    void set_root_path(const iox2::legacy::Path& value) &&;
+    void set_root_path(const iox2::bb::Path& value) &&;
 
     /// Returns the service part of the global configuration
     auto service() -> Service;
@@ -437,7 +437,7 @@ class Config {
 
     /// Loads a configuration from a file. On success it returns a [`Config`] object otherwise a
     /// [`ConfigCreationError`] describing the failure.
-    static auto from_file(const iox2::legacy::FilePath& file) -> iox2::legacy::expected<Config, ConfigCreationError>;
+    static auto from_file(const iox2::bb::FilePath& file) -> iox2::legacy::expected<Config, ConfigCreationError>;
 
     /// Returns the [`config::Global`] part of the config
     auto global() -> config::Global;

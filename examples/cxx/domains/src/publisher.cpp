@@ -44,7 +44,7 @@ auto main(int argc, char** argv) -> int {
 
     // The domain name becomes the prefix for all resources.
     // Therefore, different domain names never share the same resources.
-    config.global().set_prefix(iox2::legacy::FileName::create(args.domain()).expect("valid domain name"));
+    config.global().set_prefix(iox2::bb::FileName::create(args.domain()).expect("valid domain name"));
 
     auto node = NodeBuilder()
                     // use the custom config when creating the custom node

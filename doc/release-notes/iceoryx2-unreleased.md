@@ -215,3 +215,21 @@ CMake package.
 
 6. Removed the `cdr` serializer from `iceoryx2-cal`, it is recommended to
    switch to the `postcard` serializer in its place
+
+7. Merged `iox2/semantic_string.hpp` with imported `iox2/bb/semantic_string.hpp`
+   from `iceoryx_hoofs`
+
+   With this merge, the `SemanticStringError` moved from the `iox2` namespace
+   into the `iox2::bb` namespace.
+
+   ```cpp
+   // old
+   #include "iox2/semantic_string.hpp"
+   // ...
+   auto foo() -> expected<void, iox2::SemanticStringError>
+
+   // new
+   #include "iox2/bb/semantic_string.hpp"
+   // ...
+   auto foo() -> expected<void, iox2::bb::SemanticStringError>
+   ```

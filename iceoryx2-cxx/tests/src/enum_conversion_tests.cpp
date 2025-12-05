@@ -274,7 +274,7 @@ TEST(EnumConversionTest, waitset_run_into_c_str) {
 }
 
 TEST(EnumConversionTest, semantic_string_into_c_str) {
-    using Sut = iox2::SemanticStringError;
+    using Sut = iox2::bb::SemanticStringError;
     ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::InvalidContent)), 1U);
     ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::ExceedsMaximumLength)), 1U);
 }

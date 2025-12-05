@@ -37,7 +37,9 @@ target_sources(iceoryx2-bb-cxx-tests
     ${PROJECT_SOURCE_DIR}/src/duration_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/into_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/optional_tests.cpp
+    ${PROJECT_SOURCE_DIR}/src/path_and_file_verifier_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/raw_byte_storage_tests.cpp
+    ${PROJECT_SOURCE_DIR}/src/semantic_string_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/static_string_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/static_vector_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/std_chrono_support_tests.cpp
@@ -94,7 +96,6 @@ target_sources(iceoryx2-bb-cxx-tests
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_memory_memory.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_memory_static_storage.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_platform_atomic.cpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_posix_path_and_file_verifier.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_posix_posix_call.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_primitives_type_traits.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_reporting_console_logger.cpp
@@ -107,7 +108,6 @@ target_sources(iceoryx2-bb-cxx-tests
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_utility_std_string_support.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_vocabulary_expected.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_vocabulary_optional.cpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_vocabulary_semantic_string.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_vocabulary_string.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_vocabulary_string_comparison.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_vocabulary_string_concatenate_append_and_insert.cpp

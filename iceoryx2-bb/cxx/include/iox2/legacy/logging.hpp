@@ -24,13 +24,14 @@ namespace legacy {
 namespace log {
 namespace internal {
 /// @brief Convenience function for the IOX2_LOG_INTERNAL macro
-inline bool isLogLevelActive(LogLevel logLevel) noexcept {
+inline auto is_log_level_active(LogLevel log_level) noexcept -> bool {
     // AXIVION Next Construct FaultDetection-DeadBranches this is a configurable compile time option to be able to
     // optimize the logger call away during compilation and intended
     // AXIVION Next Construct AutosarC++19_03-M0.1.2 see justification for FaultDetection-DeadBranches
     // AXIVION Next Construct AutosarC++19_03-M0.1.9 see justification for FaultDetection-DeadBranches
     // AXIVION Next Construct AutosarC++19_03-M5.14.1 getLogLevel is a static method without side effects
-    return ((logLevel) <= MINIMAL_LOG_LEVEL) && (IGNORE_ACTIVE_LOG_LEVEL || ((logLevel) <= log::Logger::getLogLevel()));
+    return ((log_level) <= MINIMAL_LOG_LEVEL)
+           && (IGNORE_ACTIVE_LOG_LEVEL || ((log_level) <= log::Logger::getLogLevel()));
 }
 } // namespace internal
 } // namespace log
@@ -43,11 +44,11 @@ inline bool isLogLevelActive(LogLevel logLevel) noexcept {
 // NOLINTBEGIN(cppcoreguidelines-macro-usage)
 // NOLINTBEGIN(bugprone-macro-parentheses) 'msg_stream' cannot be wrapped in parentheses due to the '<<' operator
 #define IOX2_LOG_INTERNAL(file, line, function, level, msg_stream)                                                     \
-    if (iox2::legacy::log::internal::isLogLevelActive(level)) {                                                        \
+    if (iox2::legacy::log::internal::is_log_level_active(level)) {                                                     \
         iox2::legacy::log::LogStream(file, line, function, level).self() << msg_stream;                                \
     }                                                                                                                  \
-    [] { }() // the empty lambda forces a semicolon on the caller side
-             // NOLINTEND(bugprone-macro-parentheses)
+    []() -> void { }() // the empty lambda forces a semicolon on the caller side
+                       // NOLINTEND(bugprone-macro-parentheses)
 
 /// @brief Macro for logging
 /// @param[in] level is the log level to be used for the log message

@@ -16,6 +16,7 @@
 #include "iox2/allocation_strategy.hpp"
 #include "iox2/attribute_error.hpp"
 #include "iox2/bb/into.hpp"
+#include "iox2/bb/semantic_string.hpp"
 #include "iox2/callback_progression.hpp"
 #include "iox2/client_error.hpp"
 #include "iox2/config_creation_error.hpp"
@@ -33,7 +34,6 @@
 #include "iox2/port_error.hpp"
 #include "iox2/publisher_error.hpp"
 #include "iox2/reader_error.hpp"
-#include "iox2/semantic_string.hpp"
 #include "iox2/server_error.hpp"
 #include "iox2/service_builder_blackboard_error.hpp"
 #include "iox2/service_builder_event_error.hpp"
@@ -51,13 +51,13 @@
 namespace iox2 {
 namespace bb {
 template <>
-constexpr auto from<int, iox2::SemanticStringError>(const int value) noexcept -> iox2::SemanticStringError {
+constexpr auto from<int, iox2::bb::SemanticStringError>(const int value) noexcept -> iox2::bb::SemanticStringError {
     const auto error = static_cast<iox2_semantic_string_error_e>(value);
     switch (error) {
     case iox2_semantic_string_error_e_INVALID_CONTENT:
-        return iox2::SemanticStringError::InvalidContent;
+        return iox2::bb::SemanticStringError::InvalidContent;
     case iox2_semantic_string_error_e_EXCEEDS_MAXIMUM_LENGTH:
-        return iox2::SemanticStringError::ExceedsMaximumLength;
+        return iox2::bb::SemanticStringError::ExceedsMaximumLength;
     }
 
     IOX2_UNREACHABLE();
@@ -65,12 +65,12 @@ constexpr auto from<int, iox2::SemanticStringError>(const int value) noexcept ->
 
 template <>
 constexpr auto
-from<iox2::SemanticStringError, iox2_semantic_string_error_e>(const iox2::SemanticStringError value) noexcept
+from<iox2::bb::SemanticStringError, iox2_semantic_string_error_e>(const iox2::bb::SemanticStringError value) noexcept
     -> iox2_semantic_string_error_e {
     switch (value) {
-    case iox2::SemanticStringError::InvalidContent:
+    case iox2::bb::SemanticStringError::InvalidContent:
         return iox2_semantic_string_error_e_INVALID_CONTENT;
-    case iox2::SemanticStringError::ExceedsMaximumLength:
+    case iox2::bb::SemanticStringError::ExceedsMaximumLength:
         return iox2_semantic_string_error_e_EXCEEDS_MAXIMUM_LENGTH;
     }
 
@@ -78,8 +78,8 @@ from<iox2::SemanticStringError, iox2_semantic_string_error_e>(const iox2::Semant
 }
 
 template <>
-inline auto from<iox2::SemanticStringError, const char*>(const iox2::SemanticStringError value) noexcept -> const
-    char* {
+inline auto from<iox2::bb::SemanticStringError, const char*>(const iox2::bb::SemanticStringError value) noexcept
+    -> const char* {
     return iox2_semantic_string_error_string(iox2::bb::into<iox2_semantic_string_error_e>(value));
 }
 
@@ -1962,7 +1962,7 @@ constexpr auto from<int, iox2::ConfigCreationError>(const int value) noexcept ->
     case iox2_config_creation_error_e_UNABLE_TO_OPEN_CONFIG_FILE:
         return iox2::ConfigCreationError::UnableToOpenConfigFile;
     case iox2_config_creation_error_e_INVALID_FILE_PATH:
-        // unreachable since this error case is excluded by using the strong type iox2::legacy::FilePath
+        // unreachable since this error case is excluded by using the strong type iox2::bb::FilePath
         IOX2_UNREACHABLE();
     }
 

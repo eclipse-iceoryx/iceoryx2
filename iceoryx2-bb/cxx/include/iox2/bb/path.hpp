@@ -11,16 +11,20 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_BB_POSIX_VOCABULARY_PATH_HPP
-#define IOX2_BB_POSIX_VOCABULARY_PATH_HPP
+#ifndef IOX2_BB_PATH_HPP
+#define IOX2_BB_PATH_HPP
 
-#include "iox2/legacy/file_path.hpp"
-#include "iox2/legacy/semantic_string.hpp"
+#include "iox2/bb/file_path.hpp"
+#include "iox2/bb/semantic_string.hpp"
+#include "iox2/legacy/attributes.hpp"
 
 namespace iox2 {
-namespace legacy {
+namespace bb {
 namespace detail {
-bool path_does_contain_invalid_content(const string<platform::IOX2_MAX_PATH_LENGTH>& value) noexcept;
+inline auto path_does_contain_invalid_content(
+    const legacy::string<platform::IOX2_MAX_PATH_LENGTH>& value IOX2_MAYBE_UNUSED) noexcept -> bool {
+    return false;
+}
 } // namespace detail
 
 /// @brief Represents a path to a file or a directory.
@@ -34,7 +38,7 @@ class Path : public SemanticString<Path,
                                   detail::file_path_does_contain_invalid_characters>;
     using Parent::Parent;
 };
-} // namespace legacy
+} // namespace bb
 } // namespace iox2
 
-#endif
+#endif // IOX2_BB_PATH_HPP
