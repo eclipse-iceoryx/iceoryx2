@@ -25,7 +25,7 @@ rust_library(
     deps = [
         "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
         "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
-        "//iceoryx2-bb/log:iceoryx2-bb-log",
+        "//iceoryx2-log/log:iceoryx2-log",
         "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
     ],
 )

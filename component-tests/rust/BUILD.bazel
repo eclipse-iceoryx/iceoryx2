@@ -27,7 +27,7 @@ rust_binary(
         "//iceoryx2-bb/container:iceoryx2-bb-container",
         "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
         "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
-        "//iceoryx2-bb/log:iceoryx2-bb-log",
+        "//iceoryx2-log/log:iceoryx2-log",
         "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
         "//iceoryx2-services/discovery:iceoryx2-services-discovery",
     ],

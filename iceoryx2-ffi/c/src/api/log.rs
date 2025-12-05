@@ -157,7 +157,7 @@ pub extern "C" fn iox2_use_console_logger() -> bool {
     use iceoryx2_log::set_logger;
     use iceoryx2_loggers::console::Logger;
 
-    let logger = Box::leak(Box::new(console::Logger::new()));
+    let logger = Box::leak(Box::new(Logger::new()));
     set_logger(&*logger)
 }
 
@@ -172,8 +172,12 @@ pub unsafe extern "C" fn iox2_use_file_logger(log_file: *const c_char) -> bool {
     use iceoryx2_log::set_logger;
     use iceoryx2_loggers::file::Logger;
 
-    let logger = Box::leak(Box::new(console::Logger::new()));
-    set_logger(&*logger)
+    if let Ok(log_file_str) = CStr::from_ptr(log_file).to_str() {
+        let logger = Box::leak(Box::new(Logger::new(log_file_str)));
+        return set_logger(&*logger);
+    }
+
+    false
 }
 
 /// Sets the log level from environment variable or defaults it if variable does not exist

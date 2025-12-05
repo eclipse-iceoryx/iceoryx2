@@ -42,7 +42,7 @@ rust_library(
         "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
         "//iceoryx2-bb/linux:iceoryx2-bb-linux",
         "//iceoryx2-bb/lock-free:iceoryx2-bb-lock-free",
-        "//iceoryx2-bb/log:iceoryx2-bb-log",
+        "//iceoryx2-log/log:iceoryx2-log",
         "//iceoryx2-bb/memory:iceoryx2-bb-memory",
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
         "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
