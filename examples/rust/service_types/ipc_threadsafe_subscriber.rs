@@ -21,12 +21,16 @@ use iceoryx2::prelude::*;
 use iceoryx2_bb_posix::clock::nanosleep;
 use iceoryx2_bb_posix::thread::{ThreadBuilder, ThreadName};
 use iceoryx2_log::cout;
+use iceoryx2_log_loggers::console::Logger;
 
-const CYCLE_TIME: Duration = Duration::from_secs(1);
+static LOGGER: Logger = Logger::new();
 static KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
+const CYCLE_TIME: Duration = Duration::from_secs(1);
 
 fn main() -> Result<(), Box<dyn core::error::Error>> {
+    set_logger(&LOGGER);
     set_log_level_from_env_or(LogLevel::Info);
+
     let node = NodeBuilder::new()
         // There are the `local_threadsafe::Service` and `ipc_threadsafe::Service`
         // versions where all ports are threadsafe but with the cost of an additional mutex
