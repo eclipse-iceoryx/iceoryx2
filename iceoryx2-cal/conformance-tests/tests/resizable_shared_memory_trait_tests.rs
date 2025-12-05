@@ -41,3 +41,17 @@ mod process_local {
         super::ResizeableSharedMemory
     );
 }
+
+mod file {
+    use super::*;
+    use iceoryx2_cal::shared_memory::file::Memory;
+
+    type SharedMemory = Memory<super::DefaultAllocator>;
+    type ResizeableSharedMemory = DynamicMemory<super::DefaultAllocator, SharedMemory>;
+
+    instantiate_conformance_tests!(
+        iceoryx2_cal_conformance_tests::resizable_shared_memory_trait,
+        super::SharedMemory,
+        super::ResizeableSharedMemory
+    );
+}

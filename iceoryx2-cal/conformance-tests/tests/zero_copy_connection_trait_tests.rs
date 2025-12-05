@@ -23,3 +23,9 @@ instantiate_conformance_tests_with_module!(
     iceoryx2_cal_conformance_tests::zero_copy_connection_trait,
     iceoryx2_cal::zero_copy_connection::process_local::Connection
 );
+
+instantiate_conformance_tests_with_module!(
+    file,
+    iceoryx2_cal_conformance_tests::zero_copy_connection_trait,
+    iceoryx2_cal::zero_copy_connection::file::Connection
+);

@@ -24,3 +24,9 @@ instantiate_conformance_tests_with_module!(
     iceoryx2_cal_conformance_tests::shared_memory_trait,
     iceoryx2_cal::shared_memory::process_local::Memory<super::DefaultAllocator>
 );
+
+instantiate_conformance_tests_with_module!(
+    file,
+    iceoryx2_cal_conformance_tests::shared_memory_trait,
+    iceoryx2_cal::shared_memory::file::Memory<super::DefaultAllocator>
+);

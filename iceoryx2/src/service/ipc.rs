@@ -45,11 +45,14 @@ pub struct Service {}
 impl crate::service::Service for Service {
     type StaticStorage = static_storage::recommended::Ipc;
     type ConfigSerializer = serialize::recommended::Recommended;
-    type DynamicStorage = dynamic_storage::recommended::Ipc<DynamicConfig>;
+    type DynamicStorage = dynamic_storage::file::Storage<DynamicConfig>;
     type ServiceNameHasher = hash::recommended::Recommended;
-    type SharedMemory = shared_memory::recommended::Ipc<PoolAllocator>;
-    type ResizableSharedMemory = resizable_shared_memory::recommended::Ipc<PoolAllocator>;
-    type Connection = zero_copy_connection::recommended::Ipc;
+    type SharedMemory = shared_memory::file::Memory<PoolAllocator>;
+    type ResizableSharedMemory = resizable_shared_memory::dynamic::DynamicMemory<
+        PoolAllocator,
+        shared_memory::file::Memory<PoolAllocator>,
+    >;
+    type Connection = zero_copy_connection::file::Connection;
     type Event = event::recommended::Ipc;
     type Monitoring = monitoring::recommended::Ipc;
     type Reactor = reactor::recommended::Ipc;
