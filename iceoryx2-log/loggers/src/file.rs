@@ -10,23 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! # Example
-//!
-//! Using the file logger.
-//!
-//! ```no_run
-//! use iceoryx2_log::{info, set_logger, set_log_level, LogLevel, logger::file};
-//! use std::sync::LazyLock;
-//!
-//! const LOG_FILE: &str = "fuu.log";
-//! static FILE_LOGGER: LazyLock<file::Logger> = LazyLock::new(|| file::Logger::new(LOG_FILE));
-//! set_logger(&*FILE_LOGGER);
-//! set_log_level(LogLevel::Trace);
-//!
-//! // written into log file "fuu.log"
-//! info!("hello world");
-//! ```
-
 // TODO: [Reminder to my future self]
 // In the long-term the file logger may be required to be based on the same
 // iceoryx2_pal_posix platform. In this case, the logger needs to use the low-level calls directly
