@@ -17,7 +17,7 @@ use alloc::boxed::Box;
 
 use examples_common::TransmissionData;
 use iceoryx2::prelude::*;
-use iceoryx2_bb_log::cout;
+use iceoryx2_log::cout;
 
 const CYCLE_TIME: Duration = Duration::from_millis(100);
 

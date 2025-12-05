@@ -13,7 +13,7 @@
 use alloc::format;
 
 use iceoryx2_bb_container::{semantic_string::SemanticStringError, string::*};
-use iceoryx2_bb_log::fail;
+use iceoryx2_log::fail;
 
 use crate::constants::MAX_NODE_NAME_LENGTH;
 

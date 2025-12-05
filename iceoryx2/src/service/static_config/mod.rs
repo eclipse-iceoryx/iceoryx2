@@ -34,8 +34,8 @@ use alloc::format;
 
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_cal::hash::Hash;
+use iceoryx2_log::fatal_panic;
 
 use serde::{Deserialize, Serialize};
 

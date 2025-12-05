@@ -28,7 +28,7 @@
 //!
 //! ## Logging
 //! ```
-//! use iceoryx2_bb_log::{debug, error, info, trace, warn};
+//! use iceoryx2_log::{debug, error, info, trace, warn};
 //!
 //! #[derive(Debug)]
 //! struct MyDataType {
@@ -62,7 +62,7 @@
 //!
 //! ## Error Handling
 //! ```
-//! use iceoryx2_bb_log::fail;
+//! use iceoryx2_log::fail;
 //!
 //! #[derive(Debug)]
 //! struct MyDataType {
@@ -100,7 +100,7 @@
 //!
 //! ## Panic Handling
 //! ```
-//! use iceoryx2_bb_log::fatal_panic;
+//! use iceoryx2_log::fatal_panic;
 //!
 //! #[derive(Debug)]
 //! struct MyDataType {
@@ -129,10 +129,10 @@
 //! message in an internal buffer, and use it as the default logger.
 //!
 //! ```
-//! use iceoryx2_bb_log::{set_logger, info};
+//! use iceoryx2_log::{set_logger, info};
 //!
-//! static LOGGER: iceoryx2_bb_log::logger::buffer::Logger =
-//!     iceoryx2_bb_log::logger::buffer::Logger::new();
+//! static LOGGER: iceoryx2_log::logger::buffer::Logger =
+//!     iceoryx2_log::logger::buffer::Logger::new();
 //!
 //! assert!(set_logger(&LOGGER));
 //! info!("hello world");
@@ -142,6 +142,9 @@
 //!     println!("{:?} {} {}", entry.log_level, entry.origin, entry.message);
 //! }
 //! ```
+
+#[cfg(feature = "std")]
+pub use from_env::{set_log_level_from_env_or, set_log_level_from_env_or_default};
 
 // Re-export so library crates need only depend on this crate
 pub use iceoryx2_log_types::{Log, LogLevel};
@@ -202,6 +205,50 @@ fn get_logger() -> &'static dyn Log {
     #[allow(static_mut_refs)]
     unsafe {
         LOGGER.unwrap()
+    }
+}
+
+#[cfg(feature = "std")]
+mod from_env {
+    use super::{set_log_level, LogLevel, DEFAULT_LOG_LEVEL};
+    use std::env;
+
+    fn get_log_level_from_str_fuzzy(
+        log_level_string: &str,
+        log_level_fallback: LogLevel,
+    ) -> LogLevel {
+        match log_level_string.to_lowercase().as_str() {
+            "trace" => LogLevel::Trace,
+            "debug" => LogLevel::Debug,
+            "info" => LogLevel::Info,
+            "warn" => LogLevel::Warn,
+            "error" => LogLevel::Error,
+            "fatal" => LogLevel::Fatal,
+            _ => {
+                eprintln!(
+                    "Invalid value for 'IOX2_LOG_LEVEL' environment variable!\
+                    \nFound: {log_level_string:?}\
+                    \nAllowed is one of: fatal, error, warn, info, debug, trace\
+                    \nSetting log level as : {log_level_fallback:?}"
+                );
+                log_level_fallback
+            }
+        }
+    }
+
+    /// Sets the log level by reading environment variable "IOX2_LOG_LEVEL" or default it with LogLevel::INFO
+    pub fn set_log_level_from_env_or_default() {
+        set_log_level_from_env_or(DEFAULT_LOG_LEVEL);
+    }
+
+    /// Sets the log level by reading environment variable "IOX2_LOG_LEVEL", and if the environment variable
+    /// doesn't exit it sets it with a user-defined logging level
+    pub fn set_log_level_from_env_or(v: LogLevel) {
+        let log_level = env::var("IOX2_LOG_LEVEL")
+            .ok()
+            .map(|s| get_log_level_from_str_fuzzy(&s, v))
+            .unwrap_or(v);
+        set_log_level(log_level);
     }
 }
 

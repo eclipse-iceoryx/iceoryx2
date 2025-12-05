@@ -31,13 +31,13 @@ extern crate alloc;
 //     let logger = Box::leak(Box::new(console::Logger::new()));
 //     crate::set_logger(&*logger)
 // }
-// 
+//
 // /// Sets the [`file::Logger`] as default logger
 // #[cfg(feature = "logger_file")]
 // pub fn use_file_logger(log_file_name: &str) -> bool {
 //     // LazyLock is only available in 'std' but since static values are never dropped in Rust,
 //     // we can also use Box::leak
 //     let logger = Box::leak(Box::new(file::Logger::new(log_file_name)));
-// 
+//
 //     crate::set_logger(logger)
 // }

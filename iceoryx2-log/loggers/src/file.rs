@@ -15,7 +15,7 @@
 //! Using the file logger.
 //!
 //! ```no_run
-//! use iceoryx2_bb_log::{info, set_logger, set_log_level, LogLevel, logger::file};
+//! use iceoryx2_log::{info, set_logger, set_log_level, LogLevel, logger::file};
 //! use std::sync::LazyLock;
 //!
 //! const LOG_FILE: &str = "fuu.log";

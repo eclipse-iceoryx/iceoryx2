@@ -47,8 +47,8 @@ use alloc::vec::Vec;
 
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::enum_gen;
-use iceoryx2_bb_log::{fail, trace, warn};
 use iceoryx2_bb_system_types::file_path::FilePath;
+use iceoryx2_log::{fail, trace, warn};
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::posix::MemZeroedStruct;
 use iceoryx2_pal_posix::*;

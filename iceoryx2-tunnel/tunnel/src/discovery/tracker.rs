@@ -16,7 +16,7 @@ use iceoryx2::{
     config::Config,
     service::{static_config::StaticConfig, Service},
 };
-use iceoryx2_bb_log::{fail, fatal_panic};
+use iceoryx2_log::{fail, fatal_panic};
 use iceoryx2_services_discovery::service_discovery::Tracker;
 use iceoryx2_tunnel_backend::traits::Discovery;
 

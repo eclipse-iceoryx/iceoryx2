@@ -13,7 +13,7 @@
 use core::cell::RefCell;
 
 use iceoryx2::service::static_config::StaticConfig;
-use iceoryx2_bb_log::{error, fail, warn};
+use iceoryx2_log::{error, fail, warn};
 use zenoh::{
     handlers::FifoChannelHandler,
     query::{Querier, Reply},

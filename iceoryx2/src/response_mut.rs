@@ -48,10 +48,10 @@ use core::{
 };
 
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_log::fail;
 use iceoryx2_cal::{
     arc_sync_policy::ArcSyncPolicy, shm_allocator::PointerOffset, zero_copy_connection::ChannelId,
 };
+use iceoryx2_log::fail;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 use crate::{

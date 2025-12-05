@@ -14,7 +14,6 @@ use core::{fmt::Debug, time::Duration};
 
 use alloc::format;
 
-use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::{
     clock::{nanosleep, NanosleepError},
     file_descriptor::FileDescriptor,
@@ -23,6 +22,7 @@ use iceoryx2_bb_posix::{
         FileDescriptorSetWaitError, FileEvent,
     },
 };
+use iceoryx2_log::fail;
 
 use crate::reactor::{ReactorAttachError, ReactorWaitError};
 

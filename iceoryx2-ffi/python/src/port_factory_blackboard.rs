@@ -12,7 +12,7 @@
 
 use iceoryx2::prelude::{CallbackProgression, PortFactory};
 use iceoryx2::service::builder::CustomKeyMarker;
-use iceoryx2_bb_log::fatal_panic;
+use iceoryx2_log::fatal_panic;
 use pyo3::prelude::*;
 
 use crate::attribute_set::AttributeSet;

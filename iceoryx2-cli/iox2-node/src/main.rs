@@ -19,7 +19,7 @@ use clap::CommandFactory;
 use clap::Parser;
 use cli::Action;
 use cli::Cli;
-use iceoryx2_bb_log::{set_log_level_from_env_or, LogLevel};
+use iceoryx2_log::{set_log_level_from_env_or, LogLevel};
 
 #[cfg(not(debug_assertions))]
 use human_panic::setup_panic;

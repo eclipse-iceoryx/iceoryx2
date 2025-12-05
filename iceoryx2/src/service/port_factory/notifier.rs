@@ -31,7 +31,7 @@
 use core::fmt::Debug;
 
 use crate::port::{event_id::EventId, notifier::Notifier, notifier::NotifierCreateError};
-use iceoryx2_bb_log::fail;
+use iceoryx2_log::fail;
 
 use crate::service;
 

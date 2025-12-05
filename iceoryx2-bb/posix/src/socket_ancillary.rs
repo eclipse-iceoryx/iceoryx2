@@ -83,7 +83,7 @@ use crate::{
     file_descriptor::FileDescriptor, group::Gid, process::*,
     unix_datagram_socket::UnixDatagramReceiver, user::Uid,
 };
-use iceoryx2_bb_log::warn;
+use iceoryx2_log::warn;
 use iceoryx2_pal_posix::{posix::MemZeroedStruct, *};
 
 /// Defines the maximum amount of [`FileDescriptor`]s which can be sent with a single message.
