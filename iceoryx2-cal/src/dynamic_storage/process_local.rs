@@ -53,12 +53,12 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 use iceoryx2_bb_elementary_traits::allocator::BaseAllocator;
-use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
 use iceoryx2_bb_posix::mutex::*;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
+use iceoryx2_log::{fail, fatal_panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
 use lazy_static::lazy_static;

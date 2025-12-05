@@ -21,7 +21,7 @@ use alloc::vec::Vec;
 
 use iceoryx2_bb_elementary_traits::relocatable_container::*;
 use iceoryx2_bb_lock_free::spsc::safely_overflowing_index_queue::*;
-use iceoryx2_bb_log::fail;
+use iceoryx2_log::fail;
 
 use crate::dynamic_storage::{
     self, DynamicStorage, DynamicStorageBuilder, DynamicStorageCreateError, DynamicStorageOpenError,

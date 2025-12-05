@@ -65,13 +65,13 @@ use alloc::format;
 use alloc::sync::Arc;
 
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
-use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::file_descriptor::{FileDescriptor, FileDescriptorBased};
 use iceoryx2_bb_posix::file_descriptor_set::SynchronousMultiplexing;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::event::{ListenerBuilder, ListenerWaitError, NamedConceptMgmt, TriggerId};
 use iceoryx2_cal::named_concept::{NamedConceptBuilder, NamedConceptRemoveError};
+use iceoryx2_log::fail;
 
 use crate::config::Config;
 use crate::service::config_scheme::event_config;

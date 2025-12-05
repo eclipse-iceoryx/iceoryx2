@@ -16,7 +16,7 @@ use iceoryx2::node::{Node, NodeId};
 use iceoryx2::port::LoanError;
 use iceoryx2::prelude::AllocationStrategy;
 use iceoryx2::service::{static_config::StaticConfig, Service};
-use iceoryx2_bb_log::{fail, trace};
+use iceoryx2_log::{fail, trace};
 use iceoryx2_tunnel_backend::types::publish_subscribe::{
     Header, LoanFn, Payload, Publisher, Sample, SampleMut, Subscriber,
 };

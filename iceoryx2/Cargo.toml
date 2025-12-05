@@ -14,28 +14,10 @@ version = { workspace = true }
 [features]
 default = ["std"]
 std = [
-  "logger_buffer",
-  "logger_console",
-  "logger_file",
+  "iceoryx2-log/std",
   "iceoryx2-cal/std",
   "iceoryx2-bb-posix/std",
-  "iceoryx2-bb-log/std",
   "iceoryx2-pal-concurrency-sync/std",
-]
-
-# Enables logging to console
-logger_console = ["iceoryx2-bb-log/logger_console"]
-# Enables logging to buffer
-logger_buffer = ["iceoryx2-bb-log/logger_buffer"]
-# Enables logging to file
-logger_file = ["iceoryx2-bb-log/logger_file"]
-# Enables https://crates.io/crates/log as default logger
-logger_log = [
-  "iceoryx2-bb-log/logger_log"
-]
-# Enables https://crates.io/crates/tracing as default logger
-logger_tracing = [
-  "iceoryx2-bb-log/logger_tracing"
 ]
 
 # The permissions of all resources will be set to read, write, execute for everyone.
@@ -54,7 +36,7 @@ iceoryx2-bb-container = { workspace = true }
 iceoryx2-bb-derive-macros = { workspace = true }
 iceoryx2-bb-system-types = { workspace = true }
 iceoryx2-bb-lock-free = { workspace = true }
-iceoryx2-bb-log = { workspace = true }
+iceoryx2-log = { workspace = true }
 iceoryx2-bb-memory = { workspace = true }
 iceoryx2-bb-posix = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }

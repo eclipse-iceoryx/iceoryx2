@@ -15,7 +15,7 @@ use iceoryx2::service::{
     static_config::StaticConfig,
     Service,
 };
-use iceoryx2_bb_log::{fail, trace};
+use iceoryx2_log::{fail, trace};
 use iceoryx2_tunnel_backend::{
     traits::{PublishSubscribeRelay, RelayBuilder},
     types::publish_subscribe::{LoanFn, SampleMut},

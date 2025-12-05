@@ -25,7 +25,7 @@ use alloc::rc::Rc;
 use iceoryx2::prelude::{
     ipc, set_log_level_from_env_or, LogLevel, NodeBuilder, WaitSetAttachmentId, WaitSetBuilder,
 };
-use iceoryx2_bb_log::info;
+use iceoryx2_log::info;
 use iceoryx2_tunnel_end_to_end_tests::cli::*;
 use iceoryx2_tunnel_end_to_end_tests::config::*;
 use iceoryx2_tunnel_end_to_end_tests::payload::*;

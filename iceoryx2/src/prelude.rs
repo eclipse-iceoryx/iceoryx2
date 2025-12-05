@@ -29,15 +29,16 @@ pub use iceoryx2_bb_elementary::alignment::Alignment;
 pub use iceoryx2_bb_elementary::CallbackProgression;
 pub use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 pub use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-pub use iceoryx2_bb_log::set_log_level;
-#[cfg(feature = "std")]
-pub use iceoryx2_bb_log::set_log_level_from_env_or;
-#[cfg(feature = "std")]
-pub use iceoryx2_bb_log::set_log_level_from_env_or_default;
-pub use iceoryx2_bb_log::LogLevel;
-pub use iceoryx2_bb_log::{cerr, cout};
 pub use iceoryx2_bb_posix::file_descriptor::{FileDescriptor, FileDescriptorBased};
 pub use iceoryx2_bb_posix::file_descriptor_set::SynchronousMultiplexing;
 pub use iceoryx2_bb_posix::process::ProcessId;
 pub use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath, path::Path};
 pub use iceoryx2_cal::shm_allocator::AllocationStrategy;
+pub use iceoryx2_log::set_log_level;
+#[cfg(feature = "std")]
+pub use iceoryx2_log::set_log_level_from_env_or;
+#[cfg(feature = "std")]
+pub use iceoryx2_log::set_log_level_from_env_or_default;
+pub use iceoryx2_log::set_logger;
+pub use iceoryx2_log::LogLevel;
+pub use iceoryx2_log::{cerr, cout};

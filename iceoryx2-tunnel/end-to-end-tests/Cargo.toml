@@ -25,7 +25,7 @@ path = "common/src/lib.rs"
 
 [dependencies]
 iceoryx2 = { workspace = true, features = ["std"] }
-iceoryx2-bb-log = { workspace = true }
+iceoryx2-log = { workspace = true }
 iceoryx2-bb-container = { workspace = true }
 
 clap = { workspace = true }

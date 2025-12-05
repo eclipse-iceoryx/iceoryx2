@@ -17,7 +17,7 @@ use core::{
     hash::Hash,
     ops::{Deref, DerefMut},
 };
-use iceoryx2_bb_log::{fail, fatal_panic};
+use iceoryx2_log::{fail, fatal_panic};
 
 /// Runtime fixed-capacity string where the user can provide a stateful allocator.
 pub mod polymorphic_string;

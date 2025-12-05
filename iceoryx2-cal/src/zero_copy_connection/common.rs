@@ -27,9 +27,9 @@ pub mod details {
         index_queue::RelocatableIndexQueue,
         safely_overflowing_index_queue::RelocatableSafelyOverflowingIndexQueue,
     };
-    use iceoryx2_bb_log::{fail, fatal_panic};
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
     use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
+    use iceoryx2_log::{fail, fatal_panic};
     use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicU64, IoxAtomicU8, IoxAtomicUsize};
 
     pub use crate::zero_copy_connection::*;

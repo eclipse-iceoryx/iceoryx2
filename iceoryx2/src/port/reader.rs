@@ -54,9 +54,9 @@ use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::{
     UnrestrictedAtomic, UnrestrictedAtomicMgmt,
 };
-use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shared_memory::SharedMemory;
+use iceoryx2_log::{fail, fatal_panic};
 
 extern crate alloc;
 use alloc::sync::Arc;

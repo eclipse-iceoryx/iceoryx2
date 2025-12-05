@@ -68,7 +68,7 @@ use crate::string::*;
 use core::fmt::{Debug, Display};
 use core::hash::Hash;
 use core::ops::Deref;
-use iceoryx2_bb_log::fail;
+use iceoryx2_log::fail;
 
 /// Failures that can occur when a [`SemanticString`] is created or modified
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]

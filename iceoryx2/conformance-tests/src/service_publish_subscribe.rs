@@ -36,10 +36,10 @@ pub mod service_publish_subscribe {
     use iceoryx2_bb_derive_macros::ZeroCopySend;
     use iceoryx2_bb_elementary::alignment::Alignment;
     use iceoryx2_bb_elementary::CallbackProgression;
-    use iceoryx2_bb_log::{set_log_level, LogLevel};
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
+    use iceoryx2_log::{set_log_level, LogLevel};
     use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
 
     #[derive(Debug, ZeroCopySend)]

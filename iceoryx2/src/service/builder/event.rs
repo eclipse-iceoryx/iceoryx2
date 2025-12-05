@@ -18,9 +18,9 @@ pub use crate::port::event_id::EventId;
 
 use alloc::format;
 
-use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_posix::clock::Time;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
+use iceoryx2_log::{fail, fatal_panic};
 
 use crate::service::builder::OpenDynamicStorageFailure;
 use crate::service::dynamic_config::MessagingPatternSettings;

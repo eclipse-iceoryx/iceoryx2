@@ -47,7 +47,7 @@ use iceoryx2_bb_elementary_traits::{
 };
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU8, IoxAtomicUsize};
 
-use iceoryx2_bb_log::{fail, fatal_panic};
+use iceoryx2_log::{fail, fatal_panic};
 
 /// This BitSet variant's data is stored in the heap.
 pub type BitSet = details::BitSet<OwningPointer<details::BitsetElement>>;

@@ -15,7 +15,7 @@
 
 use alloc::vec::Vec;
 
-use iceoryx2_bb_log::fail;
+use iceoryx2_log::fail;
 
 use crate::serialize::Serialize;
 use cdr::{CdrBe, Infinite};

@@ -44,7 +44,7 @@
 //!                              Layout::from_size_align_unchecked(32, 4))};
 //! ```
 use core::sync::atomic::Ordering;
-use iceoryx2_bb_log::fail;
+use iceoryx2_log::fail;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 pub use core::alloc::Layout;

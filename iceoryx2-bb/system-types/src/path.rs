@@ -39,7 +39,7 @@ use iceoryx2_bb_container::semantic_string;
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_log::fail;
+use iceoryx2_log::fail;
 use iceoryx2_pal_configuration::{PATH_SEPARATOR, ROOT};
 
 use crate::file_name::FileName;

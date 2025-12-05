@@ -19,11 +19,11 @@ use alloc::format;
 use alloc::vec;
 use alloc::vec::Vec;
 
-use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_posix::{
     directory::*, file::*, system_configuration::SystemInfo, unix_datagram_socket::*,
 };
 use iceoryx2_bb_system_types::path::Path;
+use iceoryx2_log::{fail, fatal_panic};
 
 pub use crate::communication_channel::*;
 use crate::static_storage::file::{

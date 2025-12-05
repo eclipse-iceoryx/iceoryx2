@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_log::fatal_panic;
+use iceoryx2_log::fatal_panic;
 use pyo3::prelude::*;
 
 use crate::entry_value_uninit::{EntryValueUninit, EntryValueUninitType};

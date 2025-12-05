@@ -72,7 +72,7 @@ use iceoryx2_bb_elementary::math::unaligned_mem_size;
 use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
 use iceoryx2_bb_elementary_traits::pointer_trait::PointerTrait;
 pub use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
-use iceoryx2_bb_log::{fail, fatal_panic};
+use iceoryx2_log::{fail, fatal_panic};
 
 use crate::string::{as_escaped_string, internal, String};
 

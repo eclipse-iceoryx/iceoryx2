@@ -19,7 +19,7 @@ use iceoryx2::{
     prelude::EventId,
     service::{static_config::StaticConfig, Service},
 };
-use iceoryx2_bb_log::{fail, trace};
+use iceoryx2_log::{fail, trace};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {

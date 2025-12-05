@@ -14,7 +14,6 @@ use alloc::format;
 use alloc::vec;
 use alloc::vec::Vec;
 
-use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::{
     directory::{Directory, DirectoryOpenError, DirectoryReadError},
     file::{File, FileRemoveError},
@@ -26,6 +25,7 @@ use iceoryx2_bb_posix::{
     testing::__internal_process_guard_staged_death,
 };
 use iceoryx2_bb_system_types::{file_name::FileName, path::Path};
+use iceoryx2_log::fail;
 
 use crate::{
     monitoring::{MonitoringCreateCleanerError, MonitoringCreateMonitorError, State},

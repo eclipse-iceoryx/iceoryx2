@@ -28,8 +28,8 @@ use iceoryx2::service::builder::publish_subscribe::{
 use iceoryx2::service::port_factory::publish_subscribe::PortFactory;
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
 use iceoryx2_bb_elementary_traits::AsCStr;
-use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_ffi_macros::CStrRepr;
+use iceoryx2_log::fatal_panic;
 
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;

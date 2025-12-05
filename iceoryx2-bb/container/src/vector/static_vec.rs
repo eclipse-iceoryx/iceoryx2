@@ -36,7 +36,7 @@ use core::{
 use iceoryx2_bb_elementary_traits::{
     placement_default::PlacementDefault, zero_copy_send::ZeroCopySend,
 };
-use iceoryx2_bb_log::fail;
+use iceoryx2_log::fail;
 use serde::{de::Visitor, Deserialize, Serialize};
 
 pub use crate::vector::Vector;

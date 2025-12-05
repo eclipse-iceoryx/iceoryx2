@@ -18,8 +18,8 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
-use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::file::{File, FileReadLineState};
+use iceoryx2_log::fail;
 
 use anyhow::Result;
 

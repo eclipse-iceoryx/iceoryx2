@@ -17,7 +17,7 @@ path = "src/lib.rs"
 [dependencies]
 iceoryx2 = { workspace = true }
 iceoryx2-tunnel-backend = { workspace = true }
-iceoryx2-bb-log = { workspace = true }
+iceoryx2-log = { workspace = true }
 
 serde_json = { workspace = true }
 zenoh = { workspace = true }

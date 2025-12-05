@@ -55,8 +55,8 @@ use core::fmt::Display;
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_container::string::strnlen;
 use iceoryx2_bb_elementary::enum_gen;
-use iceoryx2_bb_log::fail;
 use iceoryx2_bb_system_types::{group_name::GroupName, user_name::UserName};
+use iceoryx2_log::fail;
 use iceoryx2_pal_posix::posix::{errno::Errno, MemZeroedStruct};
 use iceoryx2_pal_posix::*;
 

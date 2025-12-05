@@ -17,7 +17,7 @@
 //! ## Mapping Anonymous Memory (`malloc` equivalent)
 //!
 //! ```
-//! use iceoryx2_bb_log::set_log_level;
+//! use iceoryx2_log::set_log_level;
 //! use iceoryx2_bb_posix::memory_mapping::*;
 //!
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {
@@ -90,7 +90,7 @@ pub use iceoryx2_bb_container::semantic_string::SemanticString;
 pub use iceoryx2_bb_system_types::file_path::FilePath;
 
 use crate::{file_descriptor::FileDescriptor, system_configuration::SystemInfo};
-use iceoryx2_bb_log::{fail, fatal_panic, trace};
+use iceoryx2_log::{fail, fatal_panic, trace};
 use iceoryx2_pal_posix::posix::{self, Errno, MAP_FAILED};
 
 /// Error that can occur when a new [`MemoryMapping`] is created with [`MemoryMappingBuilder::create()`].

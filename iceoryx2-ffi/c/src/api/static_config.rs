@@ -16,7 +16,7 @@ use core::ffi::c_char;
 
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
 use iceoryx2::service::static_config::StaticConfig;
-use iceoryx2_bb_log::fatal_panic;
+use iceoryx2_log::fatal_panic;
 
 use crate::{
     iox2_messaging_pattern_e, iox2_static_config_blackboard_t, iox2_static_config_event_t,

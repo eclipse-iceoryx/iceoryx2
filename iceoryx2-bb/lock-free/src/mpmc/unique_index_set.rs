@@ -91,7 +91,7 @@ use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
 use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
 use iceoryx2_bb_elementary_traits::pointer_trait::PointerTrait;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
-use iceoryx2_bb_log::{fail, fatal_panic};
+use iceoryx2_log::{fail, fatal_panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64};
 
 enum_gen! { UniqueIndexCreationError

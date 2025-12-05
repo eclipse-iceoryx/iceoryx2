@@ -48,7 +48,7 @@ pub use iceoryx2_bb_posix::semaphore::*;
 use core::{fmt::Debug, marker::PhantomData, time::Duration};
 use iceoryx2_bb_container::queue::FixedSizeQueue;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_log::fatal_panic;
+use iceoryx2_log::fatal_panic;
 
 const INTER_PROCESS_SUPPORT: bool = true;
 

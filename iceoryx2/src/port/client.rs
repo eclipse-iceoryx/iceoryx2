@@ -81,7 +81,6 @@ use iceoryx2_bb_container::{queue::Queue, slotmap::SlotMap, vector::polymorphic_
 use iceoryx2_bb_elementary::{cyclic_tagger::CyclicTagger, CallbackProgression};
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
-use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
 use iceoryx2_cal::{
     arc_sync_policy::ArcSyncPolicy,
@@ -89,6 +88,7 @@ use iceoryx2_cal::{
     shm_allocator::{AllocationStrategy, PointerOffset},
     zero_copy_connection::ChannelId,
 };
+use iceoryx2_log::{fail, fatal_panic, warn};
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64, IoxAtomicUsize};
 
 use crate::{

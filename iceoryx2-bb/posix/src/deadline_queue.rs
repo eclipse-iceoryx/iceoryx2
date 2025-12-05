@@ -43,7 +43,7 @@ use alloc::vec::Vec;
 
 pub use iceoryx2_bb_elementary::CallbackProgression;
 
-use iceoryx2_bb_log::fail;
+use iceoryx2_log::fail;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 
 use crate::{

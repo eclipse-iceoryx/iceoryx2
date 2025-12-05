@@ -11,7 +11,7 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [dependencies]
-iceoryx2-bb-log = { workspace = true }
+iceoryx2-log = { workspace = true }
 iceoryx2 = { workspace = true }
 iceoryx2-bb-posix = { workspace = true }
 iceoryx2-bb-container = { workspace = true }

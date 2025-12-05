@@ -28,9 +28,9 @@ use anyhow::Result;
 use clap::Parser;
 use cli::Action;
 use cli::Cli;
-use iceoryx2_bb_log::error;
-use iceoryx2_bb_log::set_log_level_from_env_or;
-use iceoryx2_bb_log::LogLevel;
+use iceoryx2_log::error;
+use iceoryx2_log::set_log_level_from_env_or;
+use iceoryx2_log::LogLevel;
 
 fn main() -> Result<()> {
     #[cfg(not(debug_assertions))]

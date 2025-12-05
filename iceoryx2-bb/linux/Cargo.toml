@@ -21,7 +21,7 @@ libc_platform = ["iceoryx2-pal-os-api/libc_platform"]
 [dependencies]
 iceoryx2-bb-container = { workspace = true }
 iceoryx2-bb-posix = { workspace = true }
-iceoryx2-bb-log = { workspace = true }
+iceoryx2-log = { workspace = true }
 iceoryx2-bb-system-types = { workspace = true }
 iceoryx2-pal-os-api = { workspace = true }
 iceoryx2-pal-posix = { workspace = true }

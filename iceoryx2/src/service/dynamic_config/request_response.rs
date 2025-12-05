@@ -13,8 +13,8 @@
 use iceoryx2_bb_container::queue::RelocatableContainer;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::{Container, ContainerHandle, ReleaseMode};
-use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
+use iceoryx2_log::fatal_panic;
 
 use crate::{
     node::NodeId,

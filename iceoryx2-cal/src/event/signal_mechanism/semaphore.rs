@@ -10,7 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::{
     mutex::{Handle, IpcCapable},
     semaphore::{
@@ -18,6 +17,7 @@ use iceoryx2_bb_posix::{
         UnnamedSemaphoreBuilder, UnnamedSemaphoreHandle,
     },
 };
+use iceoryx2_log::fail;
 
 use crate::event::{ListenerCreateError, ListenerWaitError, NotifierNotifyError};
 

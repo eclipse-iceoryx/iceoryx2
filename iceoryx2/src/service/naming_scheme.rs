@@ -13,8 +13,8 @@
 use alloc::string::ToString;
 
 use iceoryx2_bb_container::semantic_string::SemanticString;
-use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_system_types::file_name::FileName;
+use iceoryx2_log::fatal_panic;
 
 use crate::port::port_identifiers::UniqueListenerId;
 
