@@ -14,8 +14,8 @@ use crate::{
     hash::{sha1::Sha1, Hash},
     named_concept::NamedConceptConfiguration,
 };
-use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_system_types::{file_name::*, file_path::FilePath, path::Path};
+use iceoryx2_log::fatal_panic;
 
 pub trait DynamicStorageConfiguration: NamedConceptConfiguration {
     fn type_name(&self) -> &str;

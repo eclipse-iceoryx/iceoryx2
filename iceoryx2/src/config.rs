@@ -85,7 +85,7 @@ use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 use serde::{Deserialize, Serialize};
 
-use iceoryx2_bb_log::{debug, fail, fatal_panic, info, trace, warn};
+use iceoryx2_log::{debug, fail, fatal_panic, info, trace, warn};
 
 use crate::port::unable_to_deliver_strategy::UnableToDeliverStrategy;
 

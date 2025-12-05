@@ -48,9 +48,9 @@ use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
 
-use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_bb_posix::mutex::*;
+use iceoryx2_log::{fail, fatal_panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
 use lazy_static::lazy_static;

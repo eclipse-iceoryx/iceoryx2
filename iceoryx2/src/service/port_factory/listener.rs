@@ -27,7 +27,7 @@
 //! ```
 use core::fmt::Debug;
 
-use iceoryx2_bb_log::fail;
+use iceoryx2_log::fail;
 
 use crate::port::{listener::Listener, listener::ListenerCreateError};
 use crate::service;

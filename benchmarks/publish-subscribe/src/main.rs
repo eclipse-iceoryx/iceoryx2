@@ -14,11 +14,13 @@ use core::mem::MaybeUninit;
 
 use clap::Parser;
 use iceoryx2::prelude::*;
-use iceoryx2_bb_log::set_log_level;
 use iceoryx2_bb_posix::barrier::*;
 use iceoryx2_bb_posix::clock::Time;
 use iceoryx2_bb_posix::thread::ThreadBuilder;
+use iceoryx2_log::set_log_level;
+use iceoryx2_loggers::console::Logger;
 
+static LOGGER: Logger = Logger::new();
 const ITERATIONS: u64 = 10000000;
 
 fn perform_benchmark<T: Service>(args: &Args) -> Result<(), Box<dyn core::error::Error>> {
@@ -203,10 +205,12 @@ struct Args {
 fn main() -> Result<(), Box<dyn core::error::Error>> {
     let args = Args::parse();
 
+    set_logger(&LOGGER);
+
     if args.debug_mode {
-        set_log_level(iceoryx2_bb_log::LogLevel::Trace);
+        set_log_level(iceoryx2_log::LogLevel::Trace);
     } else {
-        set_log_level(iceoryx2_bb_log::LogLevel::Error);
+        set_log_level(iceoryx2_log::LogLevel::Error);
     }
 
     let mut at_least_one_benchmark_did_run = false;

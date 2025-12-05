@@ -17,12 +17,12 @@ use alloc::vec::Vec;
 
 pub use crate::event::*;
 use crate::static_storage::file::NamedConceptConfiguration;
-use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::{
     file_descriptor::FileDescriptorBased, file_descriptor_set::SynchronousMultiplexing,
     unix_datagram_socket::*,
 };
 pub use iceoryx2_bb_system_types::file_name::FileName;
+use iceoryx2_log::fail;
 
 const MAX_BATCH_SIZE: usize = 512;
 

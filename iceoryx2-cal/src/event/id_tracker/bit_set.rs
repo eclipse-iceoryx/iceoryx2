@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2_bb_lock_free::mpmc::bit_set::RelocatableBitSet;
-use iceoryx2_bb_log::fail;
+use iceoryx2_log::fail;
 
 use super::IdTracker;
 use crate::event::{NotifierNotifyError, TriggerId};

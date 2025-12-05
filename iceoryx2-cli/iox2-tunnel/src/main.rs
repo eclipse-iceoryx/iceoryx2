@@ -23,7 +23,7 @@ mod supported_platform {
 
     #[cfg(not(debug_assertions))]
     use human_panic::setup_panic;
-    use iceoryx2_bb_log::fail;
+    use iceoryx2_log::fail;
     #[cfg(debug_assertions)]
     extern crate better_panic;
 
@@ -35,15 +35,18 @@ mod supported_platform {
 
     use iceoryx2::prelude::*;
 
-    use iceoryx2_bb_log::info;
-    use iceoryx2_bb_log::set_log_level_from_env_or;
-    use iceoryx2_bb_log::warn;
-    use iceoryx2_bb_log::LogLevel;
+    use iceoryx2_log::info;
+    use iceoryx2_log::set_log_level_from_env_or;
+    use iceoryx2_log::warn;
+    use iceoryx2_log::LogLevel;
+    use iceoryx2_loggers::console::Logger;
 
     use iceoryx2_tunnel::Tunnel;
 
     #[cfg(feature = "tunnel_zenoh")]
     use iceoryx2_tunnel_zenoh::ZenohBackend;
+
+    static LOGGER: Logger = Logger::new();
 
     pub fn main() -> anyhow::Result<()> {
         #[cfg(not(debug_assertions))]
@@ -59,6 +62,7 @@ mod supported_platform {
                 .install();
         }
 
+        set_logger(&LOGGER);
         set_log_level_from_env_or(LogLevel::Warn);
 
         let cli = match Cli::try_parse() {

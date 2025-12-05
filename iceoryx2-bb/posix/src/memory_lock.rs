@@ -17,7 +17,7 @@
 use crate::handle_errno;
 use crate::system_configuration::SystemInfo;
 use iceoryx2_bb_elementary::enum_gen;
-use iceoryx2_bb_log::fatal_panic;
+use iceoryx2_log::fatal_panic;
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::*;
 

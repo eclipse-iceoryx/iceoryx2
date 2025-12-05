@@ -10,7 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::LogLevel;
+use iceoryx2_log_types::Log;
+use iceoryx2_log_types::LogLevel;
 
 pub struct Logger {
     _priv: (),
@@ -22,20 +23,21 @@ impl Logger {
     }
 }
 
-impl crate::Log for Logger {
+impl Log for Logger {
     fn log(
         &self,
-        log_level: crate::LogLevel,
+        log_level: LogLevel,
         origin: core::fmt::Arguments,
         formatted_message: core::fmt::Arguments,
     ) {
+        let origin = format!("{}", origin);
         match log_level {
-            LogLevel::Trace => tracing::trace!(origin, "{}", formatted_message),
-            LogLevel::Debug => tracing::debug!(origin, "{}", formatted_message),
-            LogLevel::Info => tracing::info!(origin, "{}", formatted_message),
-            LogLevel::Warn => tracing::warn!(origin, "{}", formatted_message),
-            LogLevel::Error => tracing::error!(origin, "{}", formatted_message),
-            LogLevel::Fatal => tracing::error!(origin, "{}", formatted_message),
+            LogLevel::Trace => log::trace!(target: &origin, "{}", formatted_message),
+            LogLevel::Debug => log::debug!(target: &origin, "{}", formatted_message),
+            LogLevel::Info => log::info!(target: &origin, "{}", formatted_message),
+            LogLevel::Warn => log::warn!(target: &origin, "{}", formatted_message),
+            LogLevel::Error => log::error!(target: &origin, "{}", formatted_message),
+            LogLevel::Fatal => log::error!(target: &origin, "{}", formatted_message),
         }
     }
 }

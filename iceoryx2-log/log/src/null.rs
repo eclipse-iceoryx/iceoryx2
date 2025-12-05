@@ -10,29 +10,23 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::LogLevel;
+use crate::{Log, LogLevel};
 
-pub struct Logger;
+/// A logger that discards all log messages.
+///
+/// This is the default logger used before [`set_logger`](crate::set_logger) is called.
+/// It silently discards all log messages, ensuring that logging calls have no effect
+/// until a real logger is registered.
+pub(crate) struct Logger;
 
-impl Logger {
-    pub const fn new() -> Self {
-        Self {}
-    }
-}
-
-impl Default for Logger {
-    fn default() -> Self {
-        Logger::new()
-    }
-}
-
-impl crate::Log for Logger {
+impl Log for Logger {
+    #[inline(always)]
     fn log(
         &self,
         _log_level: LogLevel,
         _origin: core::fmt::Arguments,
         _formatted_message: core::fmt::Arguments,
     ) {
-        // Do nothing
+        // Intentionally empty - discard all log messages
     }
 }

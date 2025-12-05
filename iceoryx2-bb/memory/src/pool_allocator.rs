@@ -56,8 +56,8 @@ pub use core::alloc::Layout;
 use core::cell::UnsafeCell;
 use core::sync::atomic::Ordering;
 pub use iceoryx2_bb_elementary_traits::allocator::*;
-use iceoryx2_bb_log::fail;
-use iceoryx2_bb_log::fatal_panic;
+use iceoryx2_log::fail;
+use iceoryx2_log::fatal_panic;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
 #[derive(Debug)]

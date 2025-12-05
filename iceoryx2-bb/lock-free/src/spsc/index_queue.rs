@@ -49,7 +49,7 @@ use iceoryx2_bb_elementary_traits::{
     owning_pointer::OwningPointer, pointer_trait::PointerTrait,
     relocatable_container::RelocatableContainer,
 };
-use iceoryx2_bb_log::{fail, fatal_panic};
+use iceoryx2_log::{fail, fatal_panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 
