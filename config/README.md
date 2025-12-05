@@ -291,31 +291,13 @@ POSIX abstraction (`iceoryx2/iceoryx2-pal/posix/src`) for a
 specific operating system.
 
 To achieve this we can use the environment variable
-`IOX2_CUSTOM_PAL_POSIX_PATH` together with the
-feature flag `custom_pal_posix`.
+`IOX2_CUSTOM_PAL_POSIX_PATH`.
 
 The first step is to create a POSIX platform folder
 (can be outside of iceoryx2).
 For this example we use `/my/funky/platform/posix`
 The easiest is to copy an existing POSIX abstraction
 and adapt it to the specific needs.
-
-Inside of the `posix` folder is the
-`os.rs` located that is loading
-`posix` mod.
-To make the custom POSIX abstraction discoverable
-we need to adapt the path to the mod.rs:
-
-```rust
-#[cfg(target_os = "windows")]
-#[path = "/my/funky/platform/posix/mod.rs"]
-pub mod posix;
-```
-
-The `path` attribute needs to contain the absolute path to the mod.rs
-of the custom POSIX abstraction.
-Optionally a `#[cfg()]` attribute can be added for selecting
-the target operating system.
 
 Once this is done the build steps follow:
 
@@ -334,27 +316,26 @@ either the global one or the local one from the project:
 IOX2_CUSTOM_PAL_POSIX_PATH = "/my/funky/platform/posix"
 ```
 
-1. Build iceoryx2 with feature `custom_pal_posix`
-for custom POSIX platform abstraction.
+1. Build `iceoryx2` like normal:
 
 ```cli
 cargo build --features "custom_pal_posix"
 ```
 
-For CMake the feature can be enabled with:
+For CMake:
 
 ```cli
-cmake . -Bbuild -DIOX2_CUSTOM_PAL_POSIX=ON -DBUILD_CXX=on
+cmake . -Bbuild -DBUILD_CXX=on
 ```
 
-In Python:
+For Python:
 
 ```cli
-poetry --project iceoryx2-ffi/python run maturin develop --manifest-path iceoryx2-ffi/python/Cargo.toml --target-dir target/ff/python --features custom_pal_posix
+poetry --project iceoryx2-ffi/python run maturin develop --manifest-path iceoryx2-ffi/python/Cargo.toml --target-dir target/ff/python
 ```
 
-For Bazel the equivalent build command is:
+For Bazel:
 
 ```cli
-bazel build //... --action_env=IOX2_CUSTOM_PAL_POSIX_PATH=/home/dietrich/devel/tmp/posix/src/linux --//:custom_pal_posix="on"
+bazel build //... --action_env=IOX2_CUSTOM_PAL_POSIX_PATH=/home/dietrich/devel/tmp/posix/src/linux
 ```
