@@ -18,11 +18,15 @@ use alloc::boxed::Box;
 use examples_common::BlackboardKey;
 use iceoryx2::prelude::*;
 use iceoryx2_log::cout;
+use iceoryx2_log_loggers::console::Logger;
 
+static LOGGER: Logger = Logger::new();
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
 fn main() -> Result<(), Box<dyn core::error::Error>> {
+    set_logger(&LOGGER);
     set_log_level_from_env_or(LogLevel::Info);
+
     let node = NodeBuilder::new().create::<ipc::Service>()?;
 
     let key_0 = BlackboardKey { x: 0, y: -4, z: 4 };

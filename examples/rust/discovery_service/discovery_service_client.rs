@@ -17,12 +17,16 @@ use alloc::boxed::Box;
 
 use iceoryx2::{prelude::*, service::static_config::StaticConfig};
 use iceoryx2_log::cout;
+use iceoryx2_log_loggers::console::Logger;
 use iceoryx2_services_discovery::service_discovery::service_name;
 
+static LOGGER: Logger = Logger::new();
 const CYCLE_TIME: Duration = Duration::from_millis(10);
 
 fn main() -> Result<(), Box<dyn core::error::Error>> {
+    set_logger(&LOGGER);
     set_log_level_from_env_or(LogLevel::Info);
+
     let node = NodeBuilder::new().create::<ipc::Service>()?;
 
     let service = node

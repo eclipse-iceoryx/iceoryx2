@@ -19,11 +19,16 @@ use alloc::vec::Vec;
 
 use iceoryx2::{port::listener::Listener, prelude::*};
 use iceoryx2_log::cout;
+use iceoryx2_log_loggers::console::Logger;
 
 use clap::Parser;
 
+static LOGGER: Logger = Logger::new();
+
 fn main() -> Result<(), Box<dyn core::error::Error>> {
+    set_logger(&LOGGER);
     set_log_level_from_env_or(LogLevel::Info);
+
     let args = Args::parse();
 
     let node = NodeBuilder::new().create::<ipc::Service>()?;
