@@ -61,5 +61,6 @@ toml = { workspace = true }
 tiny-fn = { workspace = true }
 
 [dev-dependencies]
+iceoryx2-loggers = { workspace = true }
 iceoryx2-bb-testing = { workspace = true }
 iceoryx2-pal-testing = { workspace = true }

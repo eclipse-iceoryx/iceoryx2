@@ -19,7 +19,7 @@
 //! [`set_log_level()`] and read via [`get_log_level()`].
 //!
 //! The API includes convinience macros to combine error/panic handling
-//! directly with a logger selected from the [`iceoryx2_loggers`] crate.
+//! directly with a logger selected from the `iceoryx2_loggers` crate.
 //! The [`fail!`] macro can return when the function which was called return an
 //! error containing result.
 //! The [`fatal_panic!`] macro calls [`panic!`].
@@ -125,10 +125,10 @@
 //! ```
 //! ## Selecting a Logger on application startup
 //!
-//! A logger from the [`iceoryx2_loggers`] crate must be set at application
+//! A logger from the `iceoryx2_loggers` crate must be set at application
 //! startup. If not set, all logs are discarded.
 //!
-//! In this example we use the [`crate::logger::buffer::Logger`], that stores
+//! In this example we use the `iceoryx2_loggers::buffer::Logger`, that stores
 //! every log message in an internal buffer, and use it as the default logger.
 //!
 //! ```
