@@ -15,13 +15,13 @@
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 
-//! Simplistic logger. It has 6 [`LogLevel`]s which can be set via [`set_log_level()`] and read via
-//! [`get_log_level()`].
+//! The Logging API for iceoryx2. It has 6 [`LogLevel`]s which can be set via
+//! [`set_log_level()`] and read via [`get_log_level()`].
 //!
-//! The logger provides convinience macros to combine error/panic handling directly with the
-//! logger.
-//! The [`fail!`] macro can return when the function which was called return an error containing
-//! result.
+//! The API includes convinience macros to combine error/panic handling
+//! directly with a logger selected from the [`iceoryx2_loggers`] crate.
+//! The [`fail!`] macro can return when the function which was called return an
+//! error containing result.
 //! The [`fatal_panic!`] macro calls [`panic!`].
 //!
 //! # Example
@@ -123,10 +123,13 @@
 //!     }
 //! }
 //! ```
-//! ## Setting custom logger on application startup
+//! ## Selecting a Logger on application startup
 //!
-//! In this example we use the [`crate::logger::buffer::Logger`], that stores every log
-//! message in an internal buffer, and use it as the default logger.
+//! A logger from the [`iceoryx2_loggers`] crate must be set at application
+//! startup. If not set, all logs are discarded.
+//!
+//! In this example we use the [`crate::logger::buffer::Logger`], that stores
+//! every log message in an internal buffer, and use it as the default logger.
 //!
 //! ```
 //! use iceoryx2_log::{set_logger, info};
