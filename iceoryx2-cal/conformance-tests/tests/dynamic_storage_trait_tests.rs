@@ -13,6 +13,7 @@
 use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
 use iceoryx2_cal_conformance_tests::dynamic_storage_trait::TestData;
 
+use iceoryx2_cal::dynamic_storage::file::Storage as FileStorage;
 use iceoryx2_cal::dynamic_storage::posix_shared_memory::Storage as PosixStorage;
 use iceoryx2_cal::dynamic_storage::process_local::Storage as LocalStorage;
 
@@ -28,4 +29,11 @@ instantiate_conformance_tests_with_module!(
     iceoryx2_cal_conformance_tests::dynamic_storage_trait,
     super::LocalStorage<super::TestData>,
     super::LocalStorage<u64>
+);
+
+instantiate_conformance_tests_with_module!(
+    file,
+    iceoryx2_cal_conformance_tests::dynamic_storage_trait,
+    super::FileStorage<super::TestData>,
+    super::FileStorage<u64>
 );

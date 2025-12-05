@@ -76,6 +76,7 @@ impl<T> Debug for Initializer<'_, T> {
 
 #[doc(hidden)]
 pub mod dynamic_storage_configuration;
+pub mod file;
 pub mod posix_shared_memory;
 pub mod process_local;
 pub mod recommended;

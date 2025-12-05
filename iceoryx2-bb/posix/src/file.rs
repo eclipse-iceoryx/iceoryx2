@@ -41,6 +41,7 @@
 //! ```
 
 use core::fmt::Debug;
+use core::sync::atomic::Ordering;
 
 use alloc::string::String;
 use alloc::vec::Vec;
@@ -49,6 +50,7 @@ use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::{fail, trace, warn};
 use iceoryx2_bb_system_types::file_path::FilePath;
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::posix::MemZeroedStruct;
 use iceoryx2_pal_posix::*;
@@ -540,12 +542,12 @@ impl FileCreationBuilder {
 pub struct File {
     path: Option<FilePath>,
     file_descriptor: FileDescriptor,
-    has_ownership: bool,
+    has_ownership: IoxAtomicBool,
 }
 
 impl Drop for File {
     fn drop(&mut self) {
-        if self.has_ownership {
+        if self.has_ownership.load(Ordering::Relaxed) {
             match &self.path {
                 None => {
                     warn!(from self, "Files created from file descriptors cannot remove themselves.")
@@ -606,7 +608,7 @@ impl File {
             return Ok(File {
                 path: Some(config.file_path),
                 file_descriptor: v,
-                has_ownership: config.has_ownership,
+                has_ownership: IoxAtomicBool::new(config.has_ownership),
             });
         }
 
@@ -639,7 +641,7 @@ impl File {
             return Ok(File {
                 path: Some(config.file_path),
                 file_descriptor: v,
-                has_ownership: config.has_ownership,
+                has_ownership: IoxAtomicBool::new(config.has_ownership),
             });
         }
 
@@ -659,16 +661,22 @@ impl File {
         );
     }
 
+    /// Returns `true` if the [`File`] is owned by the construct and automatically
+    /// removed when it goes out-of-scope, otherwise it returns `false`.
+    pub fn has_ownership(&self) -> bool {
+        self.has_ownership.load(Ordering::Relaxed)
+    }
+
     /// Takes the ownership to the underlying file, meaning when [`File`] goes out of scope the
     /// file is removed from the file system.
-    pub fn acquire_ownership(&mut self) {
-        self.has_ownership = true;
+    pub fn acquire_ownership(&self) {
+        self.has_ownership.store(true, Ordering::Relaxed);
     }
 
     /// Releases the ownership to the underlying file, meaning when [`File`] goes out of scope, the
     /// file will not be removed from the file system.
-    pub fn release_ownership(&mut self) {
-        self.has_ownership = false;
+    pub fn release_ownership(&self) {
+        self.has_ownership.store(false, Ordering::Relaxed);
     }
 
     /// Takes ownership of a [`FileDescriptor`]. When [`File`] goes out of scope the file
@@ -678,7 +686,7 @@ impl File {
         Self {
             path: None,
             file_descriptor,
-            has_ownership: false,
+            has_ownership: IoxAtomicBool::new(false),
         }
     }
 
