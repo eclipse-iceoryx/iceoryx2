@@ -1378,15 +1378,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "iceoryx2-bb-log"
-version = "0.7.0"
-dependencies = [
- "iceoryx2-pal-concurrency-sync",
- "log",
- "tracing",
-]
-
-[[package]]
 name = "iceoryx2-bb-memory"
 version = "0.7.0"
 dependencies = [

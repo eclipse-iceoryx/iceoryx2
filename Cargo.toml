@@ -13,7 +13,6 @@ members = [
     "iceoryx2-bb/elementary",
     "iceoryx2-bb/elementary-traits",
     "iceoryx2-bb/linux",
-    "iceoryx2-bb/log",
     "iceoryx2-bb/memory",
     "iceoryx2-bb/posix",
     "iceoryx2-bb/system-types",
@@ -78,8 +77,8 @@ version = "0.7.0"
 
 [workspace.dependencies]
 iceoryx2-log = { version = "0.7.0", path = "iceoryx2-log/log/" }
-iceoryx2-loggers = { version = "0.7.0", path = "iceoryx2-log/loggers/", default-features = false }
 iceoryx2-log-types = { version = "0.7.0", path = "iceoryx2-log/types/" }
+iceoryx2-loggers = { version = "0.7.0", path = "iceoryx2-log/loggers/", default-features = false }
 iceoryx2-bb-threadsafe = { version = "0.7.0", path = "iceoryx2-bb/threadsafe/" }
 iceoryx2-bb-lock-free = { version = "0.7.0", path = "iceoryx2-bb/lock-free/" }
 iceoryx2-bb-conformance-test-macros = { version = "0.7.0", path = "iceoryx2-bb/conformance-test-macros"}
@@ -88,7 +87,6 @@ iceoryx2-bb-derive-macros = { version = "0.7.0", path = "iceoryx2-bb/derive-macr
 iceoryx2-bb-elementary = { version = "0.7.0", path = "iceoryx2-bb/elementary/" }
 iceoryx2-bb-elementary-traits = { version = "0.7.0", path = "iceoryx2-bb/elementary-traits/" }
 iceoryx2-bb-linux = { version = "0.7.0", path = "iceoryx2-bb/linux/" }
-iceoryx2-bb-log = { version = "0.7.0", path = "iceoryx2-bb/log/", default-features = false }
 iceoryx2-bb-memory = { version = "0.7.0", path = "iceoryx2-bb/memory/" }
 iceoryx2-bb-posix = { version = "0.7.0", path = "iceoryx2-bb/posix/" }
 iceoryx2-bb-system-types = { version = "0.7.0", path = "iceoryx2-bb/system-types/" }
