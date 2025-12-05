@@ -10,6 +10,8 @@
     NOTE: Add new entries sorted by issue number to minimize the possibility of
     conflicts when merging.
 -->
+* Separate log crate into front-end API and backend logger implementation crates
+  [#154](https://github.com/eclipse-iceoryx/iceoryx2/issues/154)
 * Enable Bazel `bzlmod` support for iceoryx2 builds
   [#355](https://github.com/eclipse-iceoryx/iceoryx2/issues/355)
 * Android proof of concept with `local` communication
@@ -132,6 +134,30 @@ CMake package.
 
 ### API Breaking Changes
 
+1. **Rust:** Require logger backend to be set at runtime
+
+   ```rust
+   // old - logger automatically set based on feature flags
+   use iceoryx2::prelude::*;
+
+   fn main() {
+       set_log_level_from_env_or(LogLevel::Info);
+       info!("Some log message");
+   }
+
+   // new - logger must be explicitly set at runtime
+   use iceoryx2::prelude::*;
+   use iceoryx2_loggers::console::Logger;
+
+   static LOGGER: Logger = Logger::new();
+
+   fn main() {
+       set_logger(&LOGGER);
+       set_log_level_from_env_or(LogLevel::Info);
+       info!("Some log message");
+   }
+   ```
+
 1. **Rust:** Replaced the `FixedSizeVec` with the `StaticVec`
 
    ```rust
@@ -146,7 +172,7 @@ CMake package.
    let my_vec = StaticVec::<MyType, VEC_CAPACITY>::new();
    ```
 
-2. **Rust:** Replaced `Vec` with the `PolymorphicVec`
+1. **Rust:** Replaced `Vec` with the `PolymorphicVec`
 
     ```rust
    // old
@@ -161,7 +187,7 @@ CMake package.
    let my_vec = PolymorphicVec::<MyType>::new(my_stateful_allocator, vec_capacity)?;
     ```
 
-3. **Rust:** Replaced the `FixedSizeByteString` with the `StaticString`
+1. **Rust:** Replaced the `FixedSizeByteString` with the `StaticString`
 
    ```rust
    // old
@@ -175,7 +201,7 @@ CMake package.
    let my_str = StaticString::<CAPACITY>::new();
    ```
 
-4. **C++:** Remove `operator*` and `operator->` from `ActiveRequest`,
+1. **C++:** Remove `operator*` and `operator->` from `ActiveRequest`,
    `PendingResponse`, `RequestMut`, `RequestMutUninit`, `Response`,
    `ResponseMut`, `Sample`, `SampleMut`, `SampleMutUninit` since these can
    easily lead to confusion and bugs when used in combination with `optional`
@@ -204,7 +230,7 @@ CMake package.
    std::cout << sample.payload() << std::endl;
    ```
 
-5. **Rust:** Changed the signature for Tunnel creation to take a concrete
+1. **Rust:** Changed the signature for Tunnel creation to take a concrete
    backend implementation
 
    ```rust
@@ -225,7 +251,7 @@ CMake package.
        Tunnel::<Service, Backend>::create(&tunnel_config, &iceoryx_config, &backend_config).unwrap();
    ```
 
-6. Removed the `cdr` serializer from `iceoryx2-cal`, it is recommended to
+1. Removed the `cdr` serializer from `iceoryx2-cal`, it is recommended to
    switch to the `postcard` serializer in its place
 
 7. Merged `iox2/semantic_string.hpp` with imported `iox2/bb/semantic_string.hpp`
