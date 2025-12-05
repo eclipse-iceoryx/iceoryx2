@@ -18,7 +18,7 @@ iceoryx2-bb-derive-macros = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-log = { workspace = true }
-iceoryx2-log-loggers = { workspace = true, features = ["logger_console"] }
+iceoryx2-loggers = { workspace = true, features = ["logger_console"] }
 iceoryx2-bb-system-types = { workspace = true }
 iceoryx2-bb-posix = { workspace = true }
 iceoryx2-cal = { workspace = true }

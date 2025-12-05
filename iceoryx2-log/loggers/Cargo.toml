@@ -1,5 +1,5 @@
 [package]
-name = "iceoryx2-log-loggers"
+name = "iceoryx2-loggers"
 description = "iceoryx2: swappable logger implementations"
 categories = { workspace = true }
 edition = { workspace = true }

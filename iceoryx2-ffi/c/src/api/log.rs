@@ -155,7 +155,7 @@ pub unsafe extern "C" fn iox2_log(
 #[no_mangle]
 pub extern "C" fn iox2_use_console_logger() -> bool {
     use iceoryx2_log::set_logger;
-    use iceoryx2_log_loggers::console::Logger;
+    use iceoryx2_loggers::console::Logger;
 
     let logger = Box::leak(Box::new(console::Logger::new()));
     set_logger(&*logger)
@@ -170,7 +170,7 @@ pub extern "C" fn iox2_use_console_logger() -> bool {
 #[no_mangle]
 pub unsafe extern "C" fn iox2_use_file_logger(log_file: *const c_char) -> bool {
     use iceoryx2_log::set_logger;
-    use iceoryx2_log_loggers::file::Logger;
+    use iceoryx2_loggers::file::Logger;
 
     let logger = Box::leak(Box::new(console::Logger::new()));
     set_logger(&*logger)

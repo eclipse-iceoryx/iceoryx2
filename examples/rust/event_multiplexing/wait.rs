@@ -19,7 +19,7 @@ use alloc::vec::Vec;
 
 use iceoryx2::{port::listener::Listener, prelude::*};
 use iceoryx2_log::cout;
-use iceoryx2_log_loggers::console::Logger;
+use iceoryx2_loggers::console::Logger;
 
 use clap::Parser;
 

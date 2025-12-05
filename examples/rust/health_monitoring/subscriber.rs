@@ -22,7 +22,7 @@ use iceoryx2::{
     prelude::*,
 };
 use iceoryx2_log::cout;
-use iceoryx2_log_loggers::console::Logger;
+use iceoryx2_loggers::console::Logger;
 
 static LOGGER: Logger = Logger::new();
 const REACTION_BUFFER_MS: u64 = 500;

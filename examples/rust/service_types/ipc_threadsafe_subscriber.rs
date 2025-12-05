@@ -21,7 +21,7 @@ use iceoryx2::prelude::*;
 use iceoryx2_bb_posix::clock::nanosleep;
 use iceoryx2_bb_posix::thread::{ThreadBuilder, ThreadName};
 use iceoryx2_log::cout;
-use iceoryx2_log_loggers::console::Logger;
+use iceoryx2_loggers::console::Logger;
 
 static LOGGER: Logger = Logger::new();
 static KEEP_RUNNING: AtomicBool = AtomicBool::new(true);

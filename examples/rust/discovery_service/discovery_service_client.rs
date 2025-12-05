@@ -17,7 +17,7 @@ use alloc::boxed::Box;
 
 use iceoryx2::{prelude::*, service::static_config::StaticConfig};
 use iceoryx2_log::cout;
-use iceoryx2_log_loggers::console::Logger;
+use iceoryx2_loggers::console::Logger;
 use iceoryx2_services_discovery::service_discovery::service_name;
 
 static LOGGER: Logger = Logger::new();
