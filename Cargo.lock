@@ -235,6 +235,7 @@ dependencies = [
  "iceoryx2",
  "iceoryx2-bb-posix",
  "iceoryx2-log",
+ "iceoryx2-loggers",
 ]
 
 [[package]]
@@ -246,6 +247,7 @@ dependencies = [
  "iceoryx2-bb-container",
  "iceoryx2-bb-posix",
  "iceoryx2-log",
+ "iceoryx2-loggers",
 ]
 
 [[package]]
@@ -266,6 +268,7 @@ dependencies = [
  "iceoryx2-bb-container",
  "iceoryx2-bb-posix",
  "iceoryx2-log",
+ "iceoryx2-loggers",
 ]
 
 [[package]]
