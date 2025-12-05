@@ -1286,6 +1286,7 @@ dependencies = [
  "iceoryx2-bb-testing",
  "iceoryx2-cal",
  "iceoryx2-log",
+ "iceoryx2-loggers",
  "iceoryx2-pal-concurrency-sync",
  "iceoryx2-pal-configuration",
  "iceoryx2-pal-posix",

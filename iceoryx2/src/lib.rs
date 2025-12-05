@@ -497,9 +497,9 @@
 //!  * `dev_permissions` - The permissions of all resources will be set to read, write, execute
 //!    for everyone. This shall not be used in production and is meant to be enabled in a docker
 //!    environment with inconsistent user configuration.
-//!  * `logger_console` - Include the [console logger](`iceoryx2_bb_log::logger::console::Logger`) and use it as the default log backend
-//!  * `logger_buffer` - Include the [buffer logger](`iceoryx2_bb_log::logger::buffer::Logger`), which can be set at runtime
-//!  * `logger_file` - Include the [file logger](`iceoryx2_bb_log::logger::file::Logger`), which can be set at runtime
+//!  * `logger_console` - Include the [console logger](`iceoryx2-loggers::console::Logger`) and use it as the default log backend
+//!  * `logger_buffer` - Include the [buffer logger](`iceoryx2-loggers::buffer::Logger`), which can be set at runtime
+//!  * `logger_file` - Include the [file logger](`iceoryx2-loggers::file::Logger`), which can be set at runtime
 //!  * `logger_log` - Uses the [log crate](https://crates.io/crates/log) as the default log backend
 //!  * `logger_tracing` - Uses the [tracing crate](https://crates.io/crates/tracing) as the default log
 //!    backend
