@@ -11,6 +11,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 pub use crate::dynamic_storage::*;
+use crate::named_concept::NamedConceptDoesExistError;
+use crate::named_concept::NamedConceptListError;
 pub use core::ops::Deref;
 
 use core::fmt::Debug;
@@ -30,6 +32,7 @@ use iceoryx2_bb_log::warn;
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_bb_posix::directory::*;
 use iceoryx2_bb_posix::file::File;
+use iceoryx2_bb_posix::file::FileAccessError;
 use iceoryx2_bb_posix::file::FileBuilder;
 use iceoryx2_bb_posix::file::FileCreationError;
 use iceoryx2_bb_posix::file::FileOpenError;
@@ -208,15 +211,29 @@ impl<T: Send + Sync + Debug> Builder<'_, T> {
                                     "{} since the adaptive wait call failed.", msg);
         };
 
-        let fd = FileDescriptor::non_owning_new(unsafe { file.file_descriptor().native_handle() })
-            .unwrap();
+        let raw_fd = unsafe { file.file_descriptor().native_handle() };
+        let fd = unsafe { FileDescriptor::non_owning_new_unchecked(raw_fd) };
 
-        let memory_mapping = MemoryMappingBuilder::from_file_descriptor(fd)
+        let file_size = match file.metadata() {
+            Ok(m) => m.size(),
+            Err(e) => {
+                fail!(from self, with DynamicStorageOpenError::InternalError,
+                    "{msg} since the file size could not be acquired ({e:?}).");
+            }
+        };
+
+        let memory_mapping = match MemoryMappingBuilder::from_file_descriptor(fd)
             .mapping_behavior(MappingBehavior::Shared)
             .initial_mapping_permission(MappingPermission::ReadWrite)
-            .size(file.metadata().unwrap().size() as usize)
+            .size(file_size as usize)
             .create()
-            .unwrap();
+        {
+            Ok(v) => v,
+            Err(e) => {
+                fail!(from self, with DynamicStorageOpenError::InternalError,
+                        "{msg} since the memory could not be mapped into the process ({e:?}).");
+            }
+        };
 
         let init_state = memory_mapping.base_address() as *const Data<T>;
 
@@ -286,17 +303,27 @@ impl<T: Send + Sync + Debug> Builder<'_, T> {
         };
 
         let file_size = core::mem::size_of::<Data<T>>() + self.supplementary_size;
-        file.truncate(file_size).unwrap();
 
-        let fd = FileDescriptor::non_owning_new(unsafe { file.file_descriptor().native_handle() })
-            .unwrap();
+        if let Err(e) = file.truncate(file_size) {
+            fail!(from self, with DynamicStorageCreateError::InternalError,
+                "{msg} since the file could not be resized to {file_size} ({e:?}).");
+        }
 
-        let memory_mapping = MemoryMappingBuilder::from_file_descriptor(fd)
+        let raw_fd = unsafe { file.file_descriptor().native_handle() };
+        let fd = unsafe { FileDescriptor::non_owning_new_unchecked(raw_fd) };
+
+        let memory_mapping = match MemoryMappingBuilder::from_file_descriptor(fd)
             .mapping_behavior(MappingBehavior::Shared)
             .initial_mapping_permission(MappingPermission::ReadWrite)
             .size(file_size)
             .create()
-            .unwrap();
+        {
+            Ok(m) => m,
+            Err(e) => {
+                fail!(from self, with DynamicStorageCreateError::InternalError,
+                        "{msg} since the file could not be mapped into the process space ({e:?}).");
+            }
+        };
 
         Ok(Storage {
             file,
@@ -458,18 +485,52 @@ impl<T: Send + Sync + Debug> NamedConceptMgmt for Storage<T> {
     fn does_exist_cfg(
         name: &FileName,
         cfg: &Self::Configuration,
-    ) -> Result<bool, crate::static_storage::file::NamedConceptDoesExistError> {
+    ) -> Result<bool, NamedConceptDoesExistError> {
+        let origin = "dynamic_storage::File::does_exist_cfg()";
+        let msg = "Unable to determine if a dynamic storage exists";
         let full_name = cfg.path_for(name);
-        Ok(File::does_exist(&full_name).unwrap())
+        match File::does_exist(&full_name) {
+            Ok(v) => Ok(v),
+            Err(FileAccessError::InsufficientPermissions) => {
+                fail!(from origin, with NamedConceptDoesExistError::InsufficientPermissions,
+                    "{msg} with the name {name} due to insufficient permissions.");
+            }
+            Err(e) => {
+                fail!(from origin, with NamedConceptDoesExistError::InternalError,
+                    "{msg} with the name {name} due to an internal error ({e:?}).");
+            }
+        }
     }
 
-    fn list_cfg(
-        cfg: &Self::Configuration,
-    ) -> Result<Vec<FileName>, crate::static_storage::file::NamedConceptListError> {
-        let directory = Directory::new(&cfg.path).unwrap();
+    fn list_cfg(cfg: &Self::Configuration) -> Result<Vec<FileName>, NamedConceptListError> {
+        let origin = "dynamic_storage::File::list_cfg()";
+        let msg = "Unable to list all dynamic storages";
+        let directory = match Directory::new(&cfg.path) {
+            Ok(d) => d,
+            Err(DirectoryOpenError::InsufficientPermissions) => {
+                fail!(from origin, with NamedConceptListError::InsufficientPermissions,
+                    "{msg} due to insufficient permissions.");
+            }
+            Err(e) => {
+                fail!(from origin, with NamedConceptListError::InternalError,
+                    "{msg} due to an internal error ({e:?}).");
+            }
+        };
 
         let mut result = vec![];
-        for entry in directory.contents().unwrap() {
+        let contents = match directory.contents() {
+            Ok(c) => c,
+            Err(DirectoryReadError::InsufficientPermissions) => {
+                fail!(from origin, with NamedConceptListError::InsufficientPermissions,
+                    "{msg} since the directory content of {} could not be listed due to insufficient permissions.", cfg.path);
+            }
+            Err(e) => {
+                fail!(from origin, with NamedConceptListError::InternalError,
+                    "{msg} since the directory content of {} could not be listed due to an internal error ({e:?}).", cfg.path);
+            }
+        };
+
+        for entry in contents {
             if let Some(entry_name) = cfg.extract_name_from_file(entry.name()) {
                 result.push(entry_name);
             }

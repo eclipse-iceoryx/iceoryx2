@@ -143,6 +143,20 @@ impl FileDescriptor {
         })
     }
 
+    /// Creates a FileDescriptor which does not hold the ownership of the file descriptor and will
+    /// not call [`posix::close`] on destruction.
+    ///
+    /// # Safety
+    ///
+    ///  * it must be a valid file descriptor for the lifetime of [`FileDescriptor`]
+    ///
+    pub unsafe fn non_owning_new_unchecked(value: i32) -> FileDescriptor {
+        FileDescriptor {
+            value,
+            is_owned: true,
+        }
+    }
+
     /// Creates a new FileDescriptor. If the value is smaller than zero or it does not contain a
     /// valid file descriptor value it returns [`None`].
     pub fn new(value: i32) -> Option<FileDescriptor> {
@@ -164,7 +178,7 @@ impl FileDescriptor {
     ///
     /// # Safety
     ///
-    ///  * it must be a valid file descriptor
+    ///  * it must be a valid file descriptor for the lifetime of [`FileDescriptor`]
     ///
     pub unsafe fn new_unchecked(value: i32) -> FileDescriptor {
         FileDescriptor {
