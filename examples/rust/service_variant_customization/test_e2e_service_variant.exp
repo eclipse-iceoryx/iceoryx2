@@ -22,19 +22,15 @@ source examples/cross-language-end-to-end-tests/common.exp
 
 set timeout 10
 
-spawn cargo run --example service_types_ipc_publisher
-set ipc_publisher $spawn_id
+spawn cargo run --example service_variant_customization_publisher
+set publisher $spawn_id
 
-spawn cargo run --example service_types_ipc_threadsafe_subscriber
-set ipc_threadsafe_subscriber $spawn_id
-
-spawn cargo run --example service_types_local_pubsub
-set local_pubsub $spawn_id
+spawn cargo run --example service_variant_customization_subscriber
+set subscriber $spawn_id
 
 #### Test Assertion
 
-expect_output_from $ipc_publisher "send: 0"
-expect_output_from $ipc_threadsafe_subscriber "*received: 3"
-expect_output_from $local_pubsub "*received: 1"
+expect_output_from $publisher "Send sample 1 ..."
+expect_output_from $subscriber "received: TransmissionData { x: 13, y: 39, funky: 10557.56 }"
 
 show_test_passed
