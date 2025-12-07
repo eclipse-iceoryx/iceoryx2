@@ -925,6 +925,7 @@ dependencies = [
  "iceoryx2-bb-log",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-system-types",
+ "iceoryx2-cal",
  "iceoryx2-services-discovery",
 ]
 

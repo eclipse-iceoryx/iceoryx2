@@ -1,0 +1,40 @@
+#!/usr/bin/expect
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache Software License 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+# which is available at https://opensource.org/licenses/MIT.
+#
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+#### Common Setup
+
+set REPO_ROOT [exec git rev-parse --show-toplevel]
+cd ${REPO_ROOT}
+
+source examples/cross-language-end-to-end-tests/common.exp
+
+#### Test Setup
+
+set timeout 10
+
+spawn cargo run --example service_types_ipc_publisher
+set ipc_publisher $spawn_id
+
+spawn cargo run --example service_types_ipc_threadsafe_subscriber
+set ipc_threadsafe_subscriber $spawn_id
+
+spawn cargo run --example service_types_local_pubsub
+set local_pubsub $spawn_id
+
+#### Test Assertion
+
+expect_output_from $ipc_publisher "send: 0"
+expect_output_from $ipc_threadsafe_subscriber "*received: 3"
+expect_output_from $local_pubsub "*received: 1"
+
+show_test_passed
