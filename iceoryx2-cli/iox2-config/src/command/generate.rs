@@ -15,13 +15,13 @@ use dialoguer::Confirm;
 use iceoryx2::config::Config;
 use iceoryx2_bb_posix::directory::Directory;
 use iceoryx2_bb_posix::file::Permission;
-use iceoryx2_bb_posix::system_configuration::*;
+use iceoryx2_bb_posix::system_configuration::GLOBAL_CONFIG_PATH;
 use iceoryx2_bb_posix::*;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 
 pub(crate) fn generate_global(force: bool) -> Result<()> {
-    let mut global_config_path = get_global_config_path();
+    let mut global_config_path = GLOBAL_CONFIG_PATH;
     global_config_path.add_path_entry(&iceoryx2::config::Config::relative_config_path())?;
     let filepath = FilePath::from_path_and_file(
         &global_config_path,
@@ -35,7 +35,7 @@ pub(crate) fn generate_global(force: bool) -> Result<()> {
 pub(crate) fn generate_local(force: bool) -> Result<()> {
     let user = iceoryx2_bb_posix::user::User::from_self().unwrap();
     let mut user_config_path = match user.details() {
-        Some(details) => details.config_dir().clone(),
+        Some(details) => *details.config_dir(),
         None => {
             return Err(anyhow::anyhow!(
                 "User config directory not available on this platform!"
