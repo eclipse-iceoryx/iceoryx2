@@ -31,6 +31,6 @@ set subscriber $spawn_id
 #### Test Assertion
 
 expect_output_from $publisher "Send sample 1 ..."
-expect_output_from $subscriber "received: TransmissionData { x: 13, y: 39, funky: 10557.56 }"
+expect_output_from $subscriber "received: TransmissionData { x: 2, y: 6, funky: 1624.24 }"
 
 show_test_passed
