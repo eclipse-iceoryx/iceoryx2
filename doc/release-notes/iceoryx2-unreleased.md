@@ -73,6 +73,8 @@
     [#1174](https://github.com/eclipse-iceoryx/iceoryx2/issues/1116)
 * Fix panic during cleanup
     [#1198](https://github.com/eclipse-iceoryx/iceoryx2/issues/1198)
+* Update urllib3 dependency to 2.6.0 (security issue in 2.5.0)
+    [#1228](https://github.com/eclipse-iceoryx/iceoryx2/issues/1228)
 
 ### Refactoring
 
