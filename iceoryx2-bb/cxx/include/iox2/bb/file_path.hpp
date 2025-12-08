@@ -16,6 +16,7 @@
 
 #include "iox2/bb/detail/path_and_file_verifier.hpp"
 #include "iox2/bb/semantic_string.hpp"
+#include "iox2/container/static_string.hpp"
 
 namespace iox2 {
 namespace bb {
@@ -85,7 +86,9 @@ file_path_does_contain_invalid_characters(const legacy::string<platform::IOX2_MA
 
 inline auto file_path_does_contain_invalid_content(const legacy::string<platform::IOX2_MAX_PATH_LENGTH>& value) noexcept
     -> bool {
-    return !is_valid_path_to_file(value);
+    auto tmp =
+        *container::StaticString<platform::IOX2_MAX_PATH_LENGTH>::from_utf8_null_terminated_unchecked(value.c_str());
+    return !is_valid_path_to_file(tmp);
 }
 } // namespace detail
 } // namespace bb
