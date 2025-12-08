@@ -24,6 +24,10 @@ instantiate_conformance_tests_with_module!(
     iceoryx2_cal::zero_copy_connection::process_local::Connection
 );
 
+// disabled on windows since windows 2022 (not windows 10 or 11)
+// has some weird file remove issue which cause unit test failures that are
+// non-reproducible on windows 10 or 11
+#[cfg(not(target_os = "windows"))]
 instantiate_conformance_tests_with_module!(
     file,
     iceoryx2_cal_conformance_tests::zero_copy_connection_trait,

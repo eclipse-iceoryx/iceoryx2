@@ -42,6 +42,10 @@ mod process_local {
     );
 }
 
+// disabled on windows since windows 2022 (not windows 10 or 11)
+// has some weird file remove issue which cause unit test failures that are
+// non-reproducible on windows 10 or 11
+#[cfg(not(target_os = "windows"))]
 mod file {
     use super::*;
     use iceoryx2_cal::shared_memory::file::Memory;
