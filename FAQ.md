@@ -9,6 +9,8 @@
     * [Async API](#async-api)
     * [Change Log Backend](#change-log-backend)
     * [Supported Log Levels](#supported-log-levels)
+    * [Subfolders Under /dev/shm](#subfolders-under-dev-shm)
+    * [Custom Aligned Payload](#custom-aligned-payload)
 * [Error Handling](#error-handling)
     * [Something Is Broken, How To Enable Debug Output](#something-is-broken-how-to-enable-debug-output)
     * [Encountered a SEGFAULT](#encountered-a-segfault)
@@ -17,7 +19,8 @@
     * [SIGBUS Error](#sigbus-error)
     * [`PublishSubscribeOpenError(UnableToOpenDynamicServiceInformation)`](#publishsubscribeopenerrorunabletoopendynamicserviceinformation)
     * [Remove Stale Resources](#remove-stale-resources)
-    * [Run Out-Of-Memory](#run-out-of-memory)
+    * [Running Out of Memory](#running-out-of-memory)
+    * [Running Out of File Descriptors](#running-out-of-file-descriptors)
     * [Internal Failure](#internal-failure)
         * [Maximum File-Descriptor Limit Exceeded](#maximum-file-descriptor-limit-exceeded)
     * [Losing Data](#losing-data)
@@ -177,6 +180,30 @@ details, see the [event example](examples/rust/event).
 iceoryx2 supports different log levels
 `trace`, `debug`, `info`, `warning`, `error`, `fatal`
 
+### Subfolders Under: dev shm
+
+By default, the `shm_open` syscall does not support subfolders. However, when
+creating files in an in-memory filesystem, we can achieve the same performance
+on Linux and customize the shared memory file location.
+
+See the
+[service variant customization example](examples/rust/service_variant_customization)
+for a detailed tutorial.
+
+### Custom Payload Alignment
+
+Some libraries (especially SIMD-related code) require stricter alignment than
+the type you’re using for communication provides. In those cases, you can
+increase the payload alignment with the builder parameter `payload_alignment()`.
+
+```rust
+let service = node
+    .service_builder(&"My/Funk/ServiceName".try_into()?)
+    .publish_subscribe::<TransmissionData>()
+    .payload_alignment(Alignment::new(1024).unwrap())
+    .open_or_create()?;
+```
+
 ## Error Handling
 
 ### Something Is Broken, How To Enable Debug Output
@@ -321,7 +348,7 @@ There are three different approaches to initiate stale resource cleanup:
    * POSIX: `/dev/shm/`, `/tmp/iceoryx2`
    * Windows: `c:\Temp\iceoryx2`
 
-### Run Out-Of-Memory
+### Running Out of Memory
 
 Since iceoryx2 is designed to operate in safety-critical systems, it must
 ensure that a publisher (or sender) never runs out of memory. To achieve this,
@@ -360,6 +387,39 @@ let publisher = service
 
 All these parameters can also be set globally by using the
 [iceoryx2 config file](config).
+
+### Running Out of File Descriptors
+
+When using many services in a single process or across the system, a process can
+hit the maximum number of open file descriptors. On Linux, you can increase this
+limit temporarily with:
+
+```sh
+ulimit -n 8192
+```
+
+Or permanently by modifying `/etc/security/limits.conf`:
+
+```text
+*      soft      nofile      4096
+*      hard      nofile      8192
+```
+
+### Running Out of Memory Mappings
+
+When using many services in a single process or across the system, a process can
+hit the maximum number of memory mappings. On Linux it is usually 65535 and you
+can increase as `root` temporarily it with:
+
+```sh
+echo 1048576 > /proc/sys/vm/max_map_count
+```
+
+Or permanently by modifying `/etc/sysctl.conf`:
+
+```text
+vm.max_map_count=1048576
+```
 
 ### Internal Failure
 
