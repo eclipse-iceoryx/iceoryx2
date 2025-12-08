@@ -82,7 +82,7 @@ auto Node<T>::service_builder(const ServiceName& name) const -> ServiceBuilder<T
 }
 
 template <ServiceType T>
-auto Node<T>::list(ConfigView config, const iox2::bb::Function<CallbackProgression(NodeState<T>)>& callback)
+auto Node<T>::list(ConfigView config, const iox2::bb::StaticFunction<CallbackProgression(NodeState<T>)>& callback)
     -> iox2::legacy::expected<void, NodeListFailure> {
     auto ctx = internal::ctx(callback);
 

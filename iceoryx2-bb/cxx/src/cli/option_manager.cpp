@@ -17,7 +17,7 @@ namespace iox2 {
 namespace legacy {
 namespace cli {
 OptionManager::OptionManager(const OptionDescription_t& programDescription,
-                             const bb::Function<void()>& onFailureCallback)
+                             const bb::StaticFunction<void()>& onFailureCallback)
     : m_optionSet { programDescription, onFailureCallback } {
 }
 

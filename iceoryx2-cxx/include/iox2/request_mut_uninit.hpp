@@ -13,7 +13,7 @@
 #ifndef IOX2_REQUEST_MUT_UNINIT_HPP
 #define IOX2_REQUEST_MUT_UNINIT_HPP
 
-#include "iox2/bb/function.hpp"
+#include "iox2/bb/static_function.hpp"
 #include "iox2/header_request_response.hpp"
 #include "iox2/request_mut.hpp"
 #include "iox2/service_type.hpp"
@@ -83,7 +83,7 @@ class RequestMutUninit {
     /// Copies the provided payload into the uninitialized request and returns
     /// an initialized [`RequestMut`].
     template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, T>>
-    auto write_from_fn(const iox2::bb::Function<typename T::ValueType(uint64_t)>& initializer)
+    auto write_from_fn(const iox2::bb::StaticFunction<typename T::ValueType(uint64_t)>& initializer)
         -> RequestMut<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>;
 
   private:
@@ -226,7 +226,7 @@ template <ServiceType Service,
 template <typename T, typename>
 inline auto
 RequestMutUninit<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::write_from_fn(
-    const iox2::bb::Function<typename T::ValueType(uint64_t)>& initializer)
+    const iox2::bb::StaticFunction<typename T::ValueType(uint64_t)>& initializer)
     -> RequestMut<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader> {
     auto slice = payload_mut();
     for (uint64_t i = 0; i < slice.number_of_elements(); ++i) {

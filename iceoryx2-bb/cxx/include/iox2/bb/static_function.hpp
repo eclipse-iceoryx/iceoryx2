@@ -14,7 +14,7 @@
 #ifndef IOX2_BB_FUNCTION_HPP
 #define IOX2_BB_FUNCTION_HPP
 
-#include "iox2/bb/detail/storable_function.hpp"
+#include "iox2/bb/detail/static_function.hpp"
 
 namespace iox2 {
 namespace bb {
@@ -30,7 +30,7 @@ constexpr uint64_t DEFAULT_FUNCTION_CAPACITY { 128U };
 ///
 ///        Similarly to std::function, they cannot be stored in Shared Memory to be invoked in a different process.
 ///
-///        For the API see storable_function.
+///        For the API see 'detail::StaticFunction'.
 ///
 /// @tparam Signature The signature of the callable to be stored, e.g. int (char, void*).
 /// @tparam Capacity The static storage capacity available to store a callable in bytes.
@@ -39,7 +39,7 @@ constexpr uint64_t DEFAULT_FUNCTION_CAPACITY { 128U };
 ///
 
 template <typename Signature, uint64_t Capacity = DEFAULT_FUNCTION_CAPACITY>
-using Function = detail::storable_function<Capacity, Signature>;
+using StaticFunction = detail::StaticFunction<Capacity, Signature>;
 
 } // namespace bb
 } // namespace iox2

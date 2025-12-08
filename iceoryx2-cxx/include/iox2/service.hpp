@@ -13,7 +13,7 @@
 #ifndef IOX2_SERVICE_HPP
 #define IOX2_SERVICE_HPP
 
-#include "iox2/bb/function.hpp"
+#include "iox2/bb/static_function.hpp"
 #include "iox2/callback_progression.hpp"
 #include "iox2/config.hpp"
 #include "iox2/legacy/expected.hpp"
@@ -41,7 +41,8 @@ class Service {
         -> iox2::legacy::expected<iox2::legacy::optional<ServiceDetails<S>>, ServiceDetailsError>;
 
     /// Returns a list of all services created under a given [`config::Config`].
-    static auto list(ConfigView config, const iox2::bb::Function<CallbackProgression(ServiceDetails<S>)>& callback)
+    static auto list(ConfigView config,
+                     const iox2::bb::StaticFunction<CallbackProgression(ServiceDetails<S>)>& callback)
         -> iox2::legacy::expected<void, ServiceListError>;
 };
 } // namespace iox2

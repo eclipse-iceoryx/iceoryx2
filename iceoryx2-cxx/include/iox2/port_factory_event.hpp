@@ -14,7 +14,7 @@
 #define IOX2_PORTFACTORY_EVENT_HPP
 
 #include "iox2/attribute_set.hpp"
-#include "iox2/bb/function.hpp"
+#include "iox2/bb/static_function.hpp"
 #include "iox2/callback_progression.hpp"
 #include "iox2/dynamic_config_event.hpp"
 #include "iox2/internal/iceoryx2.hpp"
@@ -61,7 +61,7 @@ class PortFactoryEvent {
     /// and calls for every [`Node`] the provided callback. If an error occurs
     /// while acquiring the [`Node`]s corresponding [`NodeState`] the error is
     /// forwarded to the callback as input argument.
-    auto nodes(const iox2::bb::Function<CallbackProgression(NodeState<S>)>& callback) const
+    auto nodes(const iox2::bb::StaticFunction<CallbackProgression(NodeState<S>)>& callback) const
         -> iox2::legacy::expected<void, NodeListFailure>;
 
     /// Returns a [`PortFactoryListener`] to create a new [`Listener`] port

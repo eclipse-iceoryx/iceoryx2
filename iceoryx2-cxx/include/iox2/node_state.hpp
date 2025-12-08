@@ -13,7 +13,7 @@
 #ifndef IOX2_NODE_STATE_HPP
 #define IOX2_NODE_STATE_HPP
 
-#include "iox2/bb/function.hpp"
+#include "iox2/bb/static_function.hpp"
 #include "iox2/legacy/expected.hpp"
 #include "iox2/legacy/optional.hpp"
 #include "iox2/legacy/variant.hpp"
@@ -86,19 +86,19 @@ class NodeState {
 
     /// If the [`Node`] is alive the provided callback is called with an [`AliveNodeView`]
     /// as argument.
-    auto alive(const iox2::bb::Function<void(AliveNodeView<T>&)>& callback) -> NodeState&;
+    auto alive(const iox2::bb::StaticFunction<void(AliveNodeView<T>&)>& callback) -> NodeState&;
 
     /// If the [`Node`] is dead the provided callback is called with a [`DeadNodeView`] as
     /// argument.
-    auto dead(const iox2::bb::Function<void(DeadNodeView<T>&)>& callback) -> NodeState&;
+    auto dead(const iox2::bb::StaticFunction<void(DeadNodeView<T>&)>& callback) -> NodeState&;
 
     /// If the [`Node`] is inaccessible due to a lack of permissions the provided callback is
     /// called with a [`NodeId`] as argument.
-    auto inaccessible(const iox2::bb::Function<void(NodeId&)>& callback) -> NodeState&;
+    auto inaccessible(const iox2::bb::StaticFunction<void(NodeId&)>& callback) -> NodeState&;
 
     /// If the [`Node`] is files are corrupted or some essential constructs are missing the
     /// provided callback is called with a [`NodeId`] as argument.
-    auto undefined(const iox2::bb::Function<void(NodeId&)>& callback) -> NodeState&;
+    auto undefined(const iox2::bb::StaticFunction<void(NodeId&)>& callback) -> NodeState&;
 
   private:
     template <ServiceType>

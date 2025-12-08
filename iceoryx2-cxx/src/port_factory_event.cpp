@@ -83,7 +83,7 @@ auto PortFactoryEvent<S>::dynamic_config() const -> DynamicConfigEvent {
 }
 
 template <ServiceType S>
-auto PortFactoryEvent<S>::nodes(const iox2::bb::Function<CallbackProgression(NodeState<S>)>& callback) const
+auto PortFactoryEvent<S>::nodes(const iox2::bb::StaticFunction<CallbackProgression(NodeState<S>)>& callback) const
     -> iox2::legacy::expected<void, NodeListFailure> {
     auto ctx = internal::ctx(callback);
 

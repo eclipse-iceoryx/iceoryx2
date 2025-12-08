@@ -15,7 +15,7 @@
 #ifndef IOX2_BB_VOCABULARY_STRING_HPP
 #define IOX2_BB_VOCABULARY_STRING_HPP
 
-#include "iox2/bb/function.hpp"
+#include "iox2/bb/static_function.hpp"
 #include "iox2/legacy/assertions.hpp"
 #include "iox2/legacy/buffer_info.hpp"
 #include "iox2/legacy/detail/string_internal.hpp"

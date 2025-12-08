@@ -11,7 +11,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/bb/function.hpp"
+#include "iox2/bb/static_function.hpp"
 #include "iox2/legacy/attributes.hpp"
 #include "iox2/legacy/uninitialized_array.hpp"
 
@@ -30,7 +30,7 @@ constexpr uint64_t BUFFER_SIZE = 128U;
 
 using Signature = int32_t(int32_t);
 template <typename T>
-using FixedSizeFunction = Function<T, BUFFER_SIZE>;
+using FixedSizeFunction = StaticFunction<T, BUFFER_SIZE>;
 using TestFunction = FixedSizeFunction<Signature>;
 
 
@@ -216,7 +216,8 @@ TEST_F(FunctionTest, ConstructionFromAnotherFunctionIsCallable) {
     constexpr int32_t INITIAL = 37;
     int32_t capture = INITIAL;
     auto lambda = [&](int32_t n) -> auto { return ++capture + n; };
-    const Function<Signature, BUFFER_SIZE / 2> func(lambda); // the other function type must be small enough to fit
+    const StaticFunction<Signature, BUFFER_SIZE / 2> func(
+        lambda); // the other function type must be small enough to fit
     const TestFunction sut(func);
 
     auto result = func(1);
@@ -401,20 +402,20 @@ TEST_F(FunctionTest, FunctorOfSizeSmallerThanStorageBytesCanBeStored) {
     constexpr auto REQUIRED_SIZE = TestFunction::required_storage_size<Functor>();
     EXPECT_LE(sizeof(Functor), REQUIRED_SIZE);
     Functor func(73); // NOLINT: magic number
-    const Function<Signature, REQUIRED_SIZE> sut(func);
+    const StaticFunction<Signature, REQUIRED_SIZE> sut(func);
 }
 
 TEST_F(FunctionTest, IsStorableIsConsistent) {
     ::testing::Test::RecordProperty("TEST_ID", "78fd4207-9ef4-459d-96f4-9cca98135b47");
     constexpr auto REQUIRED_SIZE = TestFunction::required_storage_size<Functor>();
-    constexpr auto RESULT = Function<Signature, REQUIRED_SIZE>::is_storable<Functor>();
+    constexpr auto RESULT = StaticFunction<Signature, REQUIRED_SIZE>::is_storable<Functor>();
     EXPECT_TRUE(RESULT);
 }
 
 TEST_F(FunctionTest, IsNotStorableDueToSize) {
     ::testing::Test::RecordProperty("TEST_ID", "4ecd7078-5b3d-4fd5-b5af-296401b652ce");
     constexpr auto REQUIRED_SIZE = TestFunction::required_storage_size<Functor>();
-    constexpr auto RESULT = Function<Signature, REQUIRED_SIZE - alignof(Functor)>::is_storable<Functor>();
+    constexpr auto RESULT = StaticFunction<Signature, REQUIRED_SIZE - alignof(Functor)>::is_storable<Functor>();
     EXPECT_FALSE(RESULT);
 }
 
@@ -423,14 +424,14 @@ TEST_F(FunctionTest, IsNotStorableDueToSignature) {
     auto non_storable = []() -> auto { };
     using NonStorable = decltype(non_storable);
     constexpr auto REQUIRED_SIZE = TestFunction::required_storage_size<NonStorable>();
-    constexpr auto RESULT = Function<Signature, REQUIRED_SIZE>::is_storable<NonStorable>();
+    constexpr auto RESULT = StaticFunction<Signature, REQUIRED_SIZE>::is_storable<NonStorable>();
     EXPECT_FALSE(RESULT);
 }
 
 
 TEST_F(FunctionTest, CallWithCopyConstructibleArgument) {
     ::testing::Test::RecordProperty("TEST_ID", "20018d76-6255-407a-b3d3-77b6b480067d");
-    Function<int32_t(const Arg&), 1024> sut(free_function_with_copyable_arg); // NOLINT: magic number
+    StaticFunction<int32_t(const Arg&), 1024> sut(free_function_with_copyable_arg); // NOLINT: magic number
     const std::function<int32_t(const Arg&)> func(free_function_with_copyable_arg);
     Arg::reset_counts();
 
@@ -449,7 +450,7 @@ TEST_F(FunctionTest, CallWithVoidSignatureWorks) {
     const int32_t initial = 73;
     int value = initial;
     auto lambda = [&]() -> auto { ++value; };
-    Function<void(void), 128> sut(lambda); // NOLINT: magic number
+    StaticFunction<void(void), 128> sut(lambda); // NOLINT: magic number
 
     sut();
 
@@ -462,7 +463,7 @@ TEST_F(FunctionTest, CallWithReferenceArgumentsWorks) {
     Arg arg(initial);
 
     auto lambda = [](Arg& arg) -> auto { ++arg.value; };
-    Function<void(Arg&), 128> sut(lambda); // NOLINT: magic number
+    StaticFunction<void(Arg&), 128> sut(lambda); // NOLINT: magic number
 
     sut(arg);
 
@@ -475,7 +476,7 @@ TEST_F(FunctionTest, CallWithConstReferenceArgumentsWorks) {
     const Arg arg(initial);
 
     auto lambda = [](const Arg& arg) -> auto { return arg.value + 1; };
-    Function<int32_t(const Arg&), 128> sut(lambda); // NOLINT: magic number
+    StaticFunction<int32_t(const Arg&), 128> sut(lambda); // NOLINT: magic number
 
     auto result = sut(arg);
 
@@ -490,7 +491,7 @@ TEST_F(FunctionTest, CallWithValueArgumentsWorks) {
     // NOLINTJUSTIFICATION value argument is tested here
     // NOLINTNEXTLINE(performance-unnecessary-value-param)
     auto lambda = [](const Arg arg) -> auto { return arg.value + 1; };
-    Function<int32_t(Arg&), 128> sut(lambda); // NOLINT: magic number
+    StaticFunction<int32_t(Arg&), 128> sut(lambda); // NOLINT: magic number
 
     auto result = sut(arg);
 
@@ -504,7 +505,7 @@ TEST_F(FunctionTest, CallWithRValueReferenceArgumentsWorks) {
 
     // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved) this is okay for this test
     auto lambda = [](Arg&& arg) -> auto { return arg.value + 1; };
-    Function<int32_t(Arg&&), 128> sut(lambda); // NOLINT: magic number
+    StaticFunction<int32_t(Arg&&), 128> sut(lambda); // NOLINT: magic number
 
     auto result = sut(std::move(arg));
 
@@ -525,7 +526,7 @@ TEST_F(FunctionTest, CallWithMixedArgumentsWorks) {
     auto lambda = [](Arg& arg1, const Arg& arg2, Arg&& arg3, Arg arg4) -> auto {
         return arg1.value + arg2.value + arg3.value + arg4.value;
     };
-    Function<int32_t(Arg&, const Arg&, Arg&&, Arg), 128> sut(lambda); // NOLINT: magic number
+    StaticFunction<int32_t(Arg&, const Arg&, Arg&&, Arg), 128> sut(lambda); // NOLINT: magic number
 
     auto result = sut(arg1, arg2, std::move(arg3), arg4);
 

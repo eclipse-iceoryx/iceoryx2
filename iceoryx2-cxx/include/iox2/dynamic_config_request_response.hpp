@@ -13,7 +13,7 @@
 #ifndef IOX2_DYNAMIC_CONFIG_REQUEST_RESPONSE_HPP
 #define IOX2_DYNAMIC_CONFIG_REQUEST_RESPONSE_HPP
 
-#include "iox2/bb/function.hpp"
+#include "iox2/bb/static_function.hpp"
 #include "iox2/client_details.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/server_details.hpp"
@@ -45,13 +45,13 @@ class DynamicConfigRequestResponse {
     /// callback with the corresponding [`ServerDetailsView`].
     /// The callback shall return [`CallbackProgression::Continue`] when the iteration shall
     /// continue otherwise [`CallbackProgression::Stop`].
-    void list_servers(const iox2::bb::Function<CallbackProgression(ServerDetailsView)>& callback) const;
+    void list_servers(const iox2::bb::StaticFunction<CallbackProgression(ServerDetailsView)>& callback) const;
 
     /// Iterates over all [`Client`]s and calls the
     /// callback with the corresponding [`ClientDetailsView`].
     /// The callback shall return [`CallbackProgression::Continue`] when the iteration shall
     /// continue otherwise [`CallbackProgression::Stop`].
-    void list_clients(const iox2::bb::Function<CallbackProgression(ClientDetailsView)>& callback) const;
+    void list_clients(const iox2::bb::StaticFunction<CallbackProgression(ClientDetailsView)>& callback) const;
 
   private:
     template <ServiceType, typename, typename, typename, typename>

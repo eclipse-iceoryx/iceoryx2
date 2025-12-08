@@ -35,12 +35,12 @@ target_sources(iceoryx2-bb-cxx-tests
     PRIVATE
     ${PROJECT_SOURCE_DIR}/src/main.cpp
     ${PROJECT_SOURCE_DIR}/src/duration_tests.cpp
-    ${PROJECT_SOURCE_DIR}/src/function_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/into_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/optional_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/path_and_file_verifier_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/raw_byte_storage_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/semantic_string_tests.cpp
+    ${PROJECT_SOURCE_DIR}/src/static_function_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/static_string_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/static_vector_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/std_chrono_support_tests.cpp
