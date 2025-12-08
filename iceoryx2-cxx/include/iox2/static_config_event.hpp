@@ -15,10 +15,10 @@
 
 #include "iox2/attribute_set.hpp"
 #include "iox2/bb/duration.hpp"
+#include "iox2/container/optional.hpp"
 #include "iox2/event_id.hpp"
 #include "iox2/iceoryx2.h"
 #include "iox2/internal/iceoryx2.hpp"
-#include "iox2/legacy/optional.hpp"
 
 namespace iox2 {
 /// The static configuration of an [`MessagingPattern::Event`]
@@ -40,20 +40,20 @@ class StaticConfigEvent {
     auto event_id_max_value() const -> size_t;
 
     /// Returns the emitted [`EventId`] when a new notifier is created.
-    auto notifier_created_event() const -> iox2::legacy::optional<EventId>;
+    auto notifier_created_event() const -> iox2::container::Optional<EventId>;
 
     /// Returns the emitted [`EventId`] when a notifier is dropped.
-    auto notifier_dropped_event() const -> iox2::legacy::optional<EventId>;
+    auto notifier_dropped_event() const -> iox2::container::Optional<EventId>;
 
     /// Returns the emitted [`EventId`] when a notifier is identified as dead.
-    auto notifier_dead_event() const -> iox2::legacy::optional<EventId>;
+    auto notifier_dead_event() const -> iox2::container::Optional<EventId>;
 
     /// Returns the deadline of the service. If no new notification is signaled from any
     /// [`Notifier`] after the given deadline, it is rated
     /// as an error and all [`Listener`]s that are attached
     /// to a [`WaitSet`] are woken up and notified about the missed
     /// deadline.
-    auto deadline() const -> iox2::legacy::optional<iox2::bb::Duration>;
+    auto deadline() const -> iox2::container::Optional<iox2::bb::Duration>;
 
   private:
     template <ServiceType>
