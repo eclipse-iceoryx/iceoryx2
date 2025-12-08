@@ -467,7 +467,7 @@ impl ProcessGuard {
         }
     }
 
-    pub(crate) fn staged_death(mut self) {
+    pub(crate) fn staged_death(self) {
         self.file.release_ownership();
         self.owner_lock_file.release_ownership();
     }
@@ -769,7 +769,7 @@ impl ProcessCleaner {
             }
         };
 
-        let mut owner_lock_file = match fail!(from origin, when ProcessMonitor::open_file(&owner_lock_path),
+        let owner_lock_file = match fail!(from origin, when ProcessMonitor::open_file(&owner_lock_path),
             with ProcessCleanerCreateError::UnableToOpenCleanerFile,
             "{} since the owner_lock file could not be opened.", msg)
         {
@@ -780,7 +780,7 @@ impl ProcessCleaner {
             }
         };
 
-        let mut file = match fail!(from origin, when ProcessMonitor::open_file(path),
+        let file = match fail!(from origin, when ProcessMonitor::open_file(path),
             with ProcessCleanerCreateError::UnableToOpenStateFile,
             "{} since the state file could not be opened.", msg)
         {
@@ -827,7 +827,7 @@ impl ProcessCleaner {
     /// Abandons the [`ProcessCleaner`] without removing the underlying resources. This is useful
     /// when another process tried to cleanup the stale resources of the dead process but is unable
     /// to due to insufficient permissions.
-    pub fn abandon(mut self) {
+    pub fn abandon(self) {
         self.file.release_ownership();
         self.owner_lock_file.release_ownership();
     }
