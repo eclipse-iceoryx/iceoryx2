@@ -1,7 +1,7 @@
 # Service Variant Customization
 
 iceoryx2 allows customizing its internal communication mechanisms through
-_service types_. This feature enables adapting iceoryx2 to different
+_service variants_. This feature enables adapting iceoryx2 to different
 environments and use cases without modifying your application logic -
 just change the service type.
 
@@ -15,66 +15,67 @@ For instance:
 * In **embedded systems**, you might need communication across hypervisor
   partitions or between heterogeneous cores (e.g., ARM A-core to R-core).
 
-In all these scenarios, service types allow you to plug in the appropriate
+In all these scenarios, service variants allow you to plug in the appropriate
 underlying communication mechanism.
 
 ## Customize Service Variant
 
-The service type is specified when creating a `Node`:
+The service variant is specified when creating a `Node`:
 
 ```rust
 let node = NodeBuilder::new()
-    .create::<ipc::Service>()?;
+    .create::<ipc::Service>()?; // we use the service variant 'ipc::Service'
 ```
 
-## Example: Publisher
+A service variant can be customized by defining a struct and implementing
+`iceoryx2::service::Service` and
+`iceoryx2::service::internal::ServiceInternal<YourServiceVariantName>`.
+`iceoryx2::service::Service` is a list of type definitions that define which
+operating system mechanisms are used for the iceoryx2 concepts used to define a
+service, a port’s data segment, or trigger mechanisms where one process can wake
+up another.
 
-This example demonstrates inter-thread communication using `local::Service`. A
-node is created per thread (`main` and a background thread), enabling
-communication between them without manual MPMC queue handling.
+In this example, we defined a `custom_service_variant.rs` file and customized
+all mechanisms that would normally use POSIX shared memory to use a file-based
+approach. This has the advantage that the `global.root-path` parameter is
+applied to every resource that is represented in the file system, but also the
+drawback that, when the location does not point to an in-memory file system
+like `tmpfs`, performance will degrade significantly. If it is an in-memory
+file system like `tmpfs`, performance should be identical.
 
-### Run It
+## Example: Publisher & Subscriber
+
+This is based on the publish-subscribe example, but uses the custom service
+variant.
+
+### Run: Publisher (Terminal 1)
 
 ```sh
-cargo run --example service_types_local_pubsub
+cargo run --example service_variant_customization_publisher
 ```
 
-Since all services are confined to the process:
-
-* No shared memory or external resources are created (check `/tmp/iceoryx2` or
-  `/dev/shm`).
-* Running `iox2 service list` will show **no discoverable services**.
-
-## Example: Subscriber
-
-These examples use inter-process communication and show how service types affect
-service visibility and thread safety.
-
-* The **IPC Publisher** (`ipc::Service`) works like the default pub-sub example.
-* The **IPC Threadsafe Subscriber** uses `ipc_threadsafe::Service`, making all
-  ports thread-safe.
-
-To demonstrate thread safety, this subscriber launches an additional thread that
-also listens for messages.
-
-### Run It
-
-#### Terminal 1 (Publisher)
+### Run: Subscriber (Terminal 2)
 
 ```sh
-cargo run --example service_types_ipc_publisher
+cargo run --example service_variant_customization_subscriber
 ```
 
-#### Terminal 2 (Threadsafe Subscriber)
+After starting, you will observe that:
+
+* there are no more iceoryx2 shared memory objects under `/dev/shm`.
+* all files, including the shared memory, are stored under `/tmp/iceoryx2`.
+
+When you start the default publish-subscribe example, you will again see the
+POSIX shared memory objects listed under `/dev/shm`.
+
+### Run: Publisher (Terminal 1)
 
 ```sh
-cargo run --example service_types_ipc_threadsafe_subscriber
+cargo run --example publish_subscribe_publisher
 ```
 
-After starting both:
+### Run: Subscriber (Terminal 2)
 
-* You’ll see shared memory resources in `/tmp/iceoryx2` or `/dev/shm`.
-* Running `iox2 service list` will list the discoverable services.
-
-Note: The local pubsub process will **not receive** messages from the IPC
-publisher, as it's confined to the process.
+```sh
+cargo run --example publish_subscribe_subscriber
+```
