@@ -7,9 +7,9 @@ just change the service type.
 
 For instance:
 
-* In **unit tests** running in parallel on a CI system, you may want to avoid
-  creating real inter-process resources like shared memory that could interfere
-  with other tests.
+* When running **unit tests** running in parallel on a CI system, you may want
+  to avoid creating real inter-process resources like shared memory that could
+  interfere with other tests.
 * If you're **sharing GPU memory** across processes, you may want iceoryx2 to
   handle zero-copy communication using custom memory mechanisms.
 * In **embedded systems**, you might need communication across hypervisor
@@ -27,10 +27,11 @@ let node = NodeBuilder::new()
     .create::<ipc::Service>()?; // we use the service variant 'ipc::Service'
 ```
 
-A service variant can be customized by defining a struct and implementing
+A service variant can be customized by defining a struct
+`YourServiceVariantName` and implementing
 `iceoryx2::service::Service` and
 `iceoryx2::service::internal::ServiceInternal<YourServiceVariantName>`.
-`iceoryx2::service::Service` is a list of type definitions that define which
+`iceoryx2::service::Service` is a list of type definitions that specify which
 operating system mechanisms are used for the iceoryx2 concepts used to define a
 service, a port’s data segment, or trigger mechanisms where one process can wake
 up another.
@@ -65,17 +66,5 @@ After starting, you will observe that:
 * there are no more iceoryx2 shared memory objects under `/dev/shm`.
 * all files, including the shared memory, are stored under `/tmp/iceoryx2`.
 
-When you start the default publish-subscribe example, you will again see the
-POSIX shared memory objects listed under `/dev/shm`.
-
-### Run: Publisher (Terminal 1)
-
-```sh
-cargo run --example publish_subscribe_publisher
-```
-
-### Run: Subscriber (Terminal 2)
-
-```sh
-cargo run --example publish_subscribe_subscriber
-```
+When you start the [publish-subscribe example](../publish_subscribe),
+you will again see the POSIX shared memory objects listed under `/dev/shm`.

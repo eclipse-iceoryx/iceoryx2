@@ -192,7 +192,7 @@ impl<T: Send + Sync + Debug> Builder<'_, T> {
                 Ok(v) => break v,
                 Err(FileOpenError::FileDoesNotExist) => {
                     fail!(from self, with DynamicStorageOpenError::DoesNotExist,
-                    "{} since a shared memory with that name does not exists.", msg);
+                    "{} since a file with that name does not exists.", msg);
                 }
                 Err(FileOpenError::InsufficientPermissions) => {
                     if elapsed_time >= self.timeout {
@@ -202,7 +202,7 @@ impl<T: Send + Sync + Debug> Builder<'_, T> {
                     }
                 }
                 Err(_) => {
-                    fail!(from self, with DynamicStorageOpenError::InternalError, "{} since the underlying shared memory could not be opened.", msg);
+                    fail!(from self, with DynamicStorageOpenError::InternalError, "{} since the underlying file could not be opened.", msg);
                 }
             };
 
@@ -278,7 +278,7 @@ impl<T: Send + Sync + Debug> Builder<'_, T> {
     }
 
     fn create_impl(&mut self) -> Result<Storage<T>, DynamicStorageCreateError> {
-        let msg = "Failed to create dynamic_storage::PosixSharedMemory";
+        let msg = "Failed to create dynamic_storage::file::DynamicStorage";
 
         let full_name = self.config.path_for(&self.storage_name);
         let mut file = match FileBuilder::new(&full_name)
@@ -290,7 +290,7 @@ impl<T: Send + Sync + Debug> Builder<'_, T> {
             Ok(v) => v,
             Err(FileCreationError::FileAlreadyExists) => {
                 fail!(from self, with DynamicStorageCreateError::AlreadyExists,
-                    "{} since a shared memory with the name already exists.", msg);
+                    "{} since a file with the name already exists.", msg);
             }
             Err(FileCreationError::InsufficientPermissions) => {
                 fail!(from self, with DynamicStorageCreateError::InsufficientPermissions,
@@ -298,7 +298,7 @@ impl<T: Send + Sync + Debug> Builder<'_, T> {
             }
             Err(_) => {
                 fail!(from self, with DynamicStorageCreateError::InternalError,
-                    "{} since the underlying shared memory could not be created.", msg);
+                    "{} since the underlying file could not be created.", msg);
             }
         };
 
@@ -338,7 +338,7 @@ impl<T: Send + Sync + Debug> Builder<'_, T> {
         mut storage: Storage<T>,
         initial_value: T,
     ) -> Result<Storage<T>, DynamicStorageCreateError> {
-        let msg = "Failed to init dynamic_storage::PosixSharedMemory";
+        let msg = "Failed to init dynamic_storage::file::DynamicStorage";
         let value = storage.memory_mapping.base_address_mut() as *mut Data<T>;
         let version_ptr = unsafe { core::ptr::addr_of_mut!((*value).version) };
         unsafe { version_ptr.write(IoxAtomicU64::new(0)) };
@@ -380,7 +380,7 @@ impl<T: Send + Sync + Debug> Builder<'_, T> {
         if let Err(e) = storage.file.set_permission(FINAL_PERMISSIONS) {
             storage.file.acquire_ownership();
             fail!(from origin, with DynamicStorageCreateError::InternalError,
-                "{} since the final permissions could not be applied to the underlying shared memory ({:?}).",
+                "{} since the final permissions could not be applied to the underlying file ({:?}).",
                 msg, e);
         }
 
@@ -448,7 +448,7 @@ impl<'builder, T: Send + Sync + Debug> DynamicStorageBuilder<'builder, T, Storag
     }
 }
 
-/// Implements [`DynamicStorage`] for POSIX shared memory. It is built by
+/// Implements [`DynamicStorage`] based on a [`File`]. It is built by
 /// [`Builder`].
 #[derive(Debug)]
 pub struct Storage<T: Debug + Send + Sync> {

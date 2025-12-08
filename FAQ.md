@@ -10,7 +10,7 @@
     * [Change Log Backend](#change-log-backend)
     * [Supported Log Levels](#supported-log-levels)
     * [Subfolders Under /dev/shm](#subfolders-under-dev-shm)
-    * [Custom Aligned Payload](#custom-aligned-payload)
+    * [Custom Payload Alignment](#custom-payload-alignment)
 * [Error Handling](#error-handling)
     * [Something Is Broken, How To Enable Debug Output](#something-is-broken-how-to-enable-debug-output)
     * [Encountered a SEGFAULT](#encountered-a-segfault)
@@ -409,7 +409,7 @@ Or permanently by modifying `/etc/security/limits.conf`:
 
 When using many services in a single process or across the system, a process can
 hit the maximum number of memory mappings. On Linux it is usually 65535 and you
-can increase as `root` temporarily it with:
+can temporarily increase it as `root` with:
 
 ```sh
 echo 1048576 > /proc/sys/vm/max_map_count
