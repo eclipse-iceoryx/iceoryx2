@@ -236,26 +236,6 @@ selects.config_setting_group(
     ],
 )
 
-string_flag(
-    name = "custom_pal_config",
-    build_setting_default = "off",
-    visibility = ["//visibility:public"],
-)
-
-config_setting(
-    name = "custom_pal_config_enabled",
-    flag_values = {
-        ":custom_pal_config": "on",
-    },
-)
-
-config_setting(
-    name = "custom_pal_config_disabled",
-    flag_values = {
-        ":custom_pal_config": "off",
-    },
-)
-
 #
 # Alias
 #

@@ -22,8 +22,4 @@ filegroup(
 rust_library(
     name = "iceoryx2-pal-configuration",
     srcs = ["src/lib.rs"],
-    crate_features = select({
-        "//:custom_pal_config_enabled": ["custom_pal_config"],
-        "//conditions:default": [""],
-    }),
 )

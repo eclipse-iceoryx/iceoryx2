@@ -12,7 +12,7 @@
 
 #![no_std]
 
-#[cfg(feature = "custom_pal_config")]
+#[cfg(configuration_override)]
 pub(crate) mod internal {
     #![allow(non_upper_case_globals)]
     #![allow(non_camel_case_types)]
@@ -22,13 +22,10 @@ pub(crate) mod internal {
     #![allow(unknown_lints)]
     #![allow(unnecessary_transmutes)]
     #![allow(clippy::all)]
-    include!(concat!(
-        env!("IOX2_CUSTOM_PAL_CONFIG_PATH"),
-        "/iceoryx2_pal_config.rs"
-    ));
+    include!(concat!(env!("IOX2_CUSTOM_PLATFORM_CONFIGURATION_PATH")));
 }
 
-#[cfg(not(feature = "custom_pal_config"))]
+#[cfg(not(configuration_override))]
 pub(crate) mod internal {
     #[cfg(all(not(target_os = "windows"), not(target_os = "nto")))]
     pub mod settings {

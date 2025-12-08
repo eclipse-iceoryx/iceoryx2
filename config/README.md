@@ -196,28 +196,32 @@ payload data segment
 * `defaults.blackboard.max-nodes` - [int]: The maximum amount of supported Nodes.
 Defines indirectly how many processes can open the service at the same time.
 
-## Custom Platform Abstraction Layer Configuration
+## Custom Platform Configuration
 
-The platform-specific settings in `iceoryx2-pal/configuration/src/lib.rs`
-contains a variety of attributes to configure iceoryx2 for a flexible deployment.
+> [!WARNING]
+> This feature is not available for Bazel builds.
+
+The platform configuration in `iceoryx2-pal/configuration/src/lib.rs`
+contains a variety of attributes for configuring `iceoryx2` for a
+flexible deployment.
 One example is the `ICEORYX2_ROOT_PATH` that contains the operational files for
 services and nodes. These settings are defined at compile-time and the baseline
 for the runtime configuration in TOML format as described above.
 
-The existing settings in iceoryx2 are already tailored to the most common
+The default settings are already tailored to the most common
 operating systems but it can happen that users may face a specific limitation
-(e.g. the `TEMP_DIRECTORY` is not writeable).
-To solve that the user has the possibility to define an own iceoryx2-pal
-configuration in a user-defined location.
+(e.g. the `TEMP_DIRECTORY` is not writeable) on their specific platform.
+To provide the flexibility to easily handle such cases, it is possible to
+define a custom platform configuration to be used in the build.
 
-The first step is to create a file with name `iceoryx2_pal_config.rs`
-in a custom location (e.g. `/my/funky/platform/iceoryx2_pal_config.rs`).
-The name must be set to `iceoryx2_pal_config.rs` to detect the file properly.
+The first step is to create a file with custom configurtion
+at any location (e.g. `/my/funky/platform/platform_configuration.rs`).
 
-Example content of `iceoryx2_pal_config.rs`
+An example configuration may look like this, however be sure to check the
+existing configurations at `iceoryx2-pal/configuration/src/lib.rs` as the
+available attributes may have changed:
 
 ```rust
-// Custom Platform Config
 pub mod settings {
     pub const GLOBAL_CONFIG_PATH: &[u8] = b"/etc";
     pub const USER_CONFIG_PATH: &[u8] = b".config";
@@ -238,53 +242,34 @@ pub mod settings {
 }
 ```
 
-To recompile iceoryx2 with the custom settings, the following steps needs to be done:
+To configure the build to use the custom settings, the following must be done:
 
-1. Set environment variable with absolute path to `iceoryx2_pal_config.rs`
-(no trailing slash)
+1. Set environment variable with absolute path to the configuration file:
 
-```cli
-export IOX2_CUSTOM_PAL_CONFIG_PATH=/my/funky/platform
-```
+    ```cli
+    export IOX2_CUSTOM_PLATFORM_CONFIGURATION_PATH=/my/funky/platform/platform_configuration.rs
+    ```
 
-To make it persistent, the `./cargo/config.toml` file can be used,
-either the global one or the local one from the project:
+    To make it persistent, the variable can be set in a `./cargo/config.toml`
+    file, either globally or locally within the project:
 
-```toml
-[env]
-IOX2_CUSTOM_PAL_CONFIG_PATH = "/my/funky/platform"
-```
+    ```toml
+    [env]
+    IOX2_CUSTOM_PLATFORM_CONFIGURATION_PATH = "/my/funky/platform/platform_configuration.rs"
+    ```
 
-1. Build iceoryx2 with feature `custom_pal_config`
-for custom platform abstraction layer
+1. Build `iceoryx2` like normal, the configuration will be automatically
+   substituted in at build time and a warning message will be emitted to
+   confirm that the build has successfully built with the custom configuration
 
-```cli
-cargo build --features "custom_pal_config"
-```
-
-Since iceoryx2 takes TOML-based config as startup parameter,
-it maybe necessary to regenerate the iceoryx2 config with the new values
-as described above.
-
-For CMake the feature can be enabled with:
-
-```cli
-cmake . -Bbuild -DIOX2_CUSTOM_PAL_CONFIG=ON -DBUILD_CXX=on
-```
-
-In Python:
-
-```cli
-poetry --project iceoryx2-ffi/python run maturin develop --manifest-path iceoryx2-ffi/python/Cargo.toml --target-dir target/ff/python --features custom_pal_config
-```
-
-For Bazel the equivalent build command is:
-
-```cli
-bazel build //... --action_env=IOX2_CUSTOM_PAL_CONFIG_PATH=/my/funky/platform --//:custom_pal_config="on"
-```
+   ```console
+   warning: iceoryx2-pal-configuration@0.7.0: Building with custom configuration: /my/funky/platform/platform_configuration.rs
+   ```
 
 ## Custom Platform Abstraction Layer
+
+> [!WARNING]
+> This feature is not available for Bazel builds.
 
 Similar to the platform configuration, users may want to use a completely
 different platform abstraction (from those in
@@ -309,7 +294,7 @@ The build steps are as follows:
     ```
 
     To make it persistent, the variable can be set in a `./cargo/config.toml`
-    file, either globally ore locally within the project:
+    file, either globally or locally within the project:
 
     ```toml
     [env]
@@ -317,4 +302,9 @@ The build steps are as follows:
     ```
 
 1. Build `iceoryx2` like normal, the platform will be automatically substituted
-   in at build time
+   in at build time and a warning message will be emitted to confirm that the
+   build has successfully built with the custom platform
+
+   ```console
+   warning: iceoryx2-pal-posix@0.7.0: Building with custom POSIX abstraction at: /my/funky/platform/posix/
+   ```
