@@ -27,9 +27,7 @@ pub(crate) fn zenoh(
     discovery_service: Option<String>,
     rate_ms: Option<u64>,
 ) -> anyhow::Result<()> {
-    let tunnel_config = iceoryx2_tunnel::Config {
-        discovery_service: discovery_service,
-    };
+    let tunnel_config = iceoryx2_tunnel::Config { discovery_service };
     let iceoryx_config = iceoryx2::config::Config::default();
     let zenoh_config = match zenoh_config {
         Some(path) => zenoh::Config::from_file(&path)
