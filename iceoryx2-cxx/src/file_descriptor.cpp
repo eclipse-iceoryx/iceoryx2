@@ -25,22 +25,22 @@ auto FileDescriptorView::unsafe_native_handle() const -> int32_t {
     return iox2_file_descriptor_native_handle(m_handle);
 }
 
-auto FileDescriptor::create_owning(int32_t file_descriptor) -> iox2::legacy::optional<FileDescriptor> {
+auto FileDescriptor::create_owning(int32_t file_descriptor) -> iox2::container::Optional<FileDescriptor> {
     iox2_file_descriptor_h handle = nullptr;
     if (iox2_file_descriptor_new(file_descriptor, true, nullptr, &handle)) {
         return { FileDescriptor(handle) };
     }
 
-    return iox2::legacy::nullopt;
+    return iox2::container::nullopt;
 }
 
-auto FileDescriptor::create_non_owning(int32_t file_descriptor) -> iox2::legacy::optional<FileDescriptor> {
+auto FileDescriptor::create_non_owning(int32_t file_descriptor) -> iox2::container::Optional<FileDescriptor> {
     iox2_file_descriptor_h handle = nullptr;
     if (iox2_file_descriptor_new(file_descriptor, false, nullptr, &handle)) {
         return { FileDescriptor(handle) };
     }
 
-    return iox2::legacy::nullopt;
+    return iox2::container::nullopt;
 }
 
 FileDescriptor::FileDescriptor(iox2_file_descriptor_h handle)
