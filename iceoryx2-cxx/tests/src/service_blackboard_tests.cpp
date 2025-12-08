@@ -568,10 +568,9 @@ TYPED_TEST(ServiceBlackboardTest, add_with_default_stores_default_value) {
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    static constexpr uint16_t VALUE = 27;
     struct TestDefault {
         // NOLINTNEXTLINE(misc-non-private-member-variables-in-classes), come on, its a test
-        uint16_t t { VALUE };
+        uint16_t t { 27 };
     };
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
@@ -583,7 +582,7 @@ TYPED_TEST(ServiceBlackboardTest, add_with_default_stores_default_value) {
                        .expect("");
     auto reader = service.reader_builder().create().expect("");
     auto entry_handle_0 = reader.template entry<TestDefault>(0).expect("");
-    ASSERT_THAT((*entry_handle_0.get()).t, Eq(VALUE));
+    ASSERT_THAT((*entry_handle_0.get()).t, Eq(27));
     auto entry_handle_1 = reader.template entry<uint16_t>(1).expect("");
     ASSERT_THAT(*entry_handle_1.get(), Eq(0));
 }
