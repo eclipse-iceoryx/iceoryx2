@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include "iox2/container/static_string.hpp"
 #include "iox2/container/static_vector.hpp"
-#include "iox2/legacy/string.hpp"
 #include "iox2/log.hpp"
 #include "iox2/log_level.hpp"
 
@@ -24,21 +24,23 @@ constexpr uint64_t STRING_CAPACITY = 64;
 class Entry {
   private:
     LogLevel m_log_level;
-    iox2::legacy::string<STRING_CAPACITY> m_origin;
-    iox2::legacy::string<STRING_CAPACITY> m_message;
+    iox2::container::StaticString<STRING_CAPACITY> m_origin;
+    iox2::container::StaticString<STRING_CAPACITY> m_message;
 
   public:
     Entry() = delete;
     Entry(LogLevel log_level, const char* origin, const char* message)
         : m_log_level { log_level }
-        , m_origin { iox2::legacy::TruncateToCapacity, origin }
-        , m_message { iox2::legacy::TruncateToCapacity, message } {
+        , m_origin { *iox2::container::StaticString<STRING_CAPACITY>::from_utf8_null_terminated_unchecked(origin) }
+        , m_message { *iox2::container::StaticString<STRING_CAPACITY>::from_utf8_null_terminated_unchecked(message) } {
     }
 
     auto is_equal(LogLevel log_level, const char* origin, const char* message) -> bool {
         return m_log_level == log_level
-               && m_origin == iox2::legacy::string<STRING_CAPACITY>(iox2::legacy::TruncateToCapacity, origin)
-               && m_message == iox2::legacy::string<STRING_CAPACITY>(iox2::legacy::TruncateToCapacity, message);
+               && m_origin
+                      == *iox2::container::StaticString<STRING_CAPACITY>::from_utf8_null_terminated_unchecked(origin)
+               && m_message
+                      == *iox2::container::StaticString<STRING_CAPACITY>::from_utf8_null_terminated_unchecked(message);
     }
 };
 
@@ -73,8 +75,8 @@ TEST(Log, custom_logger_works) {
     log(LogLevel::Trace, "hello", "world");
     log(LogLevel::Debug, "goodbye", "hypnotoad");
     log(LogLevel::Info, "Who is looking for freedom?", "The Hoff!");
-    log(LogLevel::Warn, "Blümchen", "Bassface");
-    log(LogLevel::Error, "Blümchen should record a single with", "The almighty Hypnotoad");
+    log(LogLevel::Warn, "Bluemchen", "Bassface");
+    log(LogLevel::Error, "Bluemchen should record a single with", "The almighty Hypnotoad");
     log(LogLevel::Fatal, "It is the end", "my beloved toad.");
 
     auto log_buffer = TestLogger::get_instance().get_log_buffer();
@@ -84,9 +86,9 @@ TEST(Log, custom_logger_works) {
     ASSERT_TRUE(log_buffer.unchecked_access()[0].is_equal(LogLevel::Trace, "hello", "world"));
     ASSERT_TRUE(log_buffer.unchecked_access()[1].is_equal(LogLevel::Debug, "goodbye", "hypnotoad"));
     ASSERT_TRUE(log_buffer.unchecked_access()[2].is_equal(LogLevel::Info, "Who is looking for freedom?", "The Hoff!"));
-    ASSERT_TRUE(log_buffer.unchecked_access()[3].is_equal(LogLevel::Warn, "Blümchen", "Bassface"));
+    ASSERT_TRUE(log_buffer.unchecked_access()[3].is_equal(LogLevel::Warn, "Bluemchen", "Bassface"));
     ASSERT_TRUE(log_buffer.unchecked_access()[4].is_equal(
-        LogLevel::Error, "Blümchen should record a single with", "The almighty Hypnotoad"));
+        LogLevel::Error, "Bluemchen should record a single with", "The almighty Hypnotoad"));
     ASSERT_TRUE(log_buffer.unchecked_access()[5].is_equal(LogLevel::Fatal, "It is the end", "my beloved toad."));
 }
 
