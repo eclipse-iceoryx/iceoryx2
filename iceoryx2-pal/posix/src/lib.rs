@@ -20,7 +20,7 @@ extern crate alloc;
 
 mod common;
 
-#[cfg(feature = "custom_pal_posix")]
+#[cfg(platform_override)]
 mod os {
     #![allow(non_upper_case_globals)]
     #![allow(non_camel_case_types)]
@@ -30,45 +30,45 @@ mod os {
     #![allow(unknown_lints)]
     #![allow(unnecessary_transmutes)]
     #![allow(clippy::all)]
-    include!(concat!(env!("IOX2_CUSTOM_PAL_POSIX_PATH"), "/os.rs"));
+    include!(concat!(env!("IOX2_CUSTOM_POSIX_PLATFORM_PATH"), "/os.rs"));
 }
 
-#[cfg(not(feature = "custom_pal_posix"))]
+#[cfg(not(platform_override))]
 #[cfg(all(target_os = "linux", feature = "libc_platform"))]
 #[path = "libc/os.rs"]
 mod os;
 
-#[cfg(not(feature = "custom_pal_posix"))]
+#[cfg(not(platform_override))]
 #[cfg(target_os = "android")]
 #[path = "android/os.rs"]
 mod os;
 
-#[cfg(not(feature = "custom_pal_posix"))]
+#[cfg(not(platform_override))]
 #[cfg(target_os = "freebsd")]
 #[path = "freebsd/os.rs"]
 mod os;
 
-#[cfg(not(feature = "custom_pal_posix"))]
+#[cfg(not(platform_override))]
 #[cfg(target_os = "macos")]
 #[path = "macos/os.rs"]
 mod os;
 
-#[cfg(not(feature = "custom_pal_posix"))]
+#[cfg(not(platform_override))]
 #[cfg(all(target_os = "linux", not(feature = "libc_platform")))]
 #[path = "linux/os.rs"]
 pub mod os;
 
-#[cfg(not(feature = "custom_pal_posix"))]
+#[cfg(not(platform_override))]
 #[cfg(target_os = "nto")]
 #[path = "qnx/os.rs"]
 mod os;
 
-#[cfg(not(feature = "custom_pal_posix"))]
+#[cfg(not(platform_override))]
 #[cfg(target_os = "windows")]
 #[path = "windows/os.rs"]
 mod os;
 
-#[cfg(not(feature = "custom_pal_posix"))]
+#[cfg(not(platform_override))]
 #[cfg(all(target_os = "none", not(feature = "libc_platform")))]
 #[path = "stub/os.rs"]
 mod os;

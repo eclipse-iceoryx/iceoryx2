@@ -11,7 +11,9 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #[cfg(feature = "libc_platform")]
-fn main() {}
+fn main() {
+    configure_platform_override();
+}
 
 #[cfg(not(feature = "libc_platform"))]
 fn main() {
@@ -27,6 +29,8 @@ fn main() {
 
     // needed for bazel but can be empty for cargo builds
     println!("cargo:rustc-env=BAZEL_BINDGEN_PATH_CORRECTION=");
+
+    configure_platform_override();
 
     // #[cfg(any(...))] does not work when cross-compiling
     // when cross compiling, 'target_os' is set to the environment the build script
@@ -62,6 +66,31 @@ fn main() {
     cc::Build::new()
         .file("src/c/socket_macros.c")
         .compile("libsocket_macros.a");
+}
+
+fn configure_platform_override() {
+    println!("cargo:rustc-check-cfg=cfg(platform_override)");
+
+    if let Ok(platform_path) = std::env::var("IOX2_CUSTOM_POSIX_PLATFORM_PATH") {
+        let module_path = std::path::Path::new(&platform_path).join("os.rs");
+        if !module_path.exists() {
+            panic!("The path '{platform_path}' does not contain an 'os.rs' file");
+        }
+
+        println!(
+            "cargo:warning=Building with custom POSIX abstraction at: {}",
+            platform_path
+        );
+
+        // expose platform_override as cfg option
+        println!("cargo:rustc-cfg=platform_override");
+        println!(
+            "cargo:rustc-env=IOX2_CUSTOM_POSIX_PLATFORM_PATH={}",
+            platform_path
+        );
+        println!("cargo:rerun-if-env-changed=IOX2_CUSTOM_POSIX_PLATFORM_PATH");
+        println!("cargo:rerun-if-changed={}", platform_path);
+    }
 }
 
 #[cfg(not(feature = "libc_platform"))]
