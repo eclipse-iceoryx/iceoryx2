@@ -548,6 +548,11 @@ pub struct File {
 impl Drop for File {
     fn drop(&mut self) {
         if self.has_ownership.load(Ordering::Relaxed) {
+            if let Err(e) = self.set_permission(Permission::ALL) {
+                warn!(from self,
+                    "Unable to adjust the files permission as preparation to remove the file ({e:?}).");
+            }
+
             match &self.path {
                 None => {
                     warn!(from self, "Files created from file descriptors cannot remove themselves.")
