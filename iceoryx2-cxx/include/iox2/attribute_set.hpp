@@ -15,6 +15,7 @@
 
 #include "iox2/attribute.hpp"
 #include "iox2/bb/static_function.hpp"
+#include "iox2/container/optional.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 
 #include <iostream>
@@ -45,7 +46,7 @@ class AttributeSetView {
     /// process when the system restarts.
     /// If the key does not exist or it does not have a value at the specified index, it returns
     /// [`None`].
-    auto key_value(const Attribute::Key& key, uint64_t idx) -> iox2::legacy::optional<Attribute::Value>;
+    auto key_value(const Attribute::Key& key, uint64_t idx) -> iox2::container::Optional<Attribute::Value>;
 
     /// Returns all values to a specific key
     void iter_key_values(const Attribute::Key& key,
@@ -99,7 +100,7 @@ class AttributeSet {
     /// process when the system restarts.
     /// If the key does not exist or it does not have a value at the specified index, it returns
     /// [`None`].
-    auto key_value(const Attribute::Key& key, uint64_t idx) -> iox2::legacy::optional<Attribute::Value>;
+    auto key_value(const Attribute::Key& key, uint64_t idx) -> iox2::container::Optional<Attribute::Value>;
 
     /// Returns all values to a specific key
     void iter_key_values(const Attribute::Key& key,
