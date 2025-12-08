@@ -15,6 +15,7 @@
 #ifndef IOX2_BB_DETAIL_PATH_AND_FILE_VERIFIER_HPP
 #define IOX2_BB_DETAIL_PATH_AND_FILE_VERIFIER_HPP
 
+#include "iox2/container/static_string.hpp"
 #include "iox2/legacy/string.hpp"
 
 #include <cstdint>
@@ -70,7 +71,7 @@ enum class RelativePathComponents : uint8_t {
 /// @param[in] relativePathComponents are relative path components are allowed for this path entry
 /// @return true if it is valid, otherwise false
 template <uint64_t StringCapacity>
-auto is_valid_path_entry(const legacy::string<StringCapacity>& name,
+auto is_valid_path_entry(const container::StaticString<StringCapacity>& name,
                          RelativePathComponents relative_path_components) noexcept -> bool;
 
 /// @brief checks if the given string is a valid filename. It must fulfill the
@@ -79,30 +80,30 @@ auto is_valid_path_entry(const legacy::string<StringCapacity>& name,
 /// @param[in] name the string to verify
 /// @return true if the string is a filename, otherwise false
 template <uint64_t StringCapacity>
-auto is_valid_file_name(const legacy::string<StringCapacity>& name) noexcept -> bool;
+auto is_valid_file_name(const container::StaticString<StringCapacity>& name) noexcept -> bool;
 
 /// @brief verifies if the given string is a valid path to a file
 /// @param[in] name the string to verify
 /// @return true if the string is a path to a file, otherwise false
 template <uint64_t StringCapacity>
-auto is_valid_path_to_file(const legacy::string<StringCapacity>& name) noexcept -> bool;
+auto is_valid_path_to_file(const container::StaticString<StringCapacity>& name) noexcept -> bool;
 
 /// @brief returns true if the provided name is a valid path, otherwise false
 /// @param[in] name the string to verify
 template <uint64_t StringCapacity>
-auto is_valid_path_to_directory(const legacy::string<StringCapacity>& name) noexcept -> bool;
+auto is_valid_path_to_directory(const container::StaticString<StringCapacity>& name) noexcept -> bool;
 
 /// @brief returns true if the provided name ends with a path separator, otherwise false
 /// @param[in] name the string which may contain a path separator at the end
 template <uint64_t StringCapacity>
-auto does_end_with_path_separator(const legacy::string<StringCapacity>& name) noexcept -> bool;
+auto does_end_with_path_separator(const container::StaticString<StringCapacity>& name) noexcept -> bool;
 
 
 template <uint64_t StringCapacity>
-inline auto is_valid_path_entry(const legacy::string<StringCapacity>& name,
+inline auto is_valid_path_entry(const container::StaticString<StringCapacity>& name,
                                 const RelativePathComponents relative_path_components) noexcept -> bool {
-    const legacy::string<StringCapacity> current_directory { "." };
-    const legacy::string<StringCapacity> parent_directory { ".." };
+    const auto current_directory = *container::StaticString<StringCapacity>::from_utf8(".");
+    const auto parent_directory = *container::StaticString<StringCapacity>::from_utf8("..");
 
     if ((name == current_directory) || (name == parent_directory)) {
         return relative_path_components == RelativePathComponents::Accept;
@@ -113,7 +114,7 @@ inline auto is_valid_path_entry(const legacy::string<StringCapacity>& name,
     for (uint64_t i { 0 }; i < name_size; ++i) {
         // AXIVION Next Construct AutosarC++19_03-A3.9.1: Not used as an integer but as actual character
         // NOLINTNEXTLINE(readability-identifier-length)
-        const char c { name[i] };
+        const char c { name.unchecked_access()[i] };
 
         // AXIVION DISABLE STYLE FaultDetection-UnusedAssignments : False positive, variable IS used
         // AXIVION DISABLE STYLE AutosarC++19_03-A0.1.1 : False positive, variable IS used
@@ -137,11 +138,11 @@ inline auto is_valid_path_entry(const legacy::string<StringCapacity>& name,
     }
 
     // dot at the end is invalid to be compatible with windows api
-    return !(name[name_size - 1] == '.');
+    return !(name.unchecked_access()[name_size - 1] == '.');
 }
 
 template <uint64_t StringCapacity>
-inline auto is_valid_file_name(const legacy::string<StringCapacity>& name) noexcept -> bool {
+inline auto is_valid_file_name(const container::StaticString<StringCapacity>& name) noexcept -> bool {
     if (name.empty()) {
         return false;
     }
@@ -151,12 +152,14 @@ inline auto is_valid_file_name(const legacy::string<StringCapacity>& name) noexc
 }
 
 template <uint64_t StringCapacity>
-inline auto is_valid_path_to_file(const legacy::string<StringCapacity>& name) noexcept -> bool {
+inline auto is_valid_path_to_file(const container::StaticString<StringCapacity>& name) noexcept -> bool {
     if (does_end_with_path_separator(name)) {
         return false;
     }
 
-    auto maybe_separator = name.find_last_of(legacy::string<platform::IOX2_NUMBER_OF_PATH_SEPARATORS>(
+    // TODO: implement find_last_of() and substr() for StaticString
+    auto tmp = legacy::string<StringCapacity>(legacy::TruncateToCapacity, name.unchecked_access().c_str(), name.size());
+    auto maybe_separator = tmp.find_last_of(legacy::string<platform::IOX2_NUMBER_OF_PATH_SEPARATORS>(
         legacy::TruncateToCapacity, &platform::IOX2_PATH_SEPARATORS[0], platform::IOX2_NUMBER_OF_PATH_SEPARATORS));
 
     if (!maybe_separator.has_value()) {
@@ -166,14 +169,16 @@ inline auto is_valid_path_to_file(const legacy::string<StringCapacity>& name) no
     const auto& position = maybe_separator.value();
 
     bool is_file_name_valid { false };
-    name.substr(position + 1).and_then([&is_file_name_valid](const auto& str) noexcept -> void {
-        is_file_name_valid = is_valid_file_name(str);
+    tmp.substr(position + 1).and_then([&is_file_name_valid](const auto& str) noexcept -> void {
+        auto tmp_str = *container::StaticString<StringCapacity>::from_utf8_null_terminated_unchecked(str.c_str());
+        is_file_name_valid = is_valid_file_name(tmp_str);
     });
 
     bool is_path_valid { false };
-    name.substr(0, position).and_then([&is_path_valid](const auto& str) noexcept -> void {
+    tmp.substr(0, position).and_then([&is_path_valid](const auto& str) noexcept -> void {
         const bool is_empty_path { str.empty() };
-        const bool is_path_to_directory_valid { is_valid_path_to_directory(str) };
+        auto tmp = *container::StaticString<StringCapacity>::from_utf8_null_terminated_unchecked(str.c_str());
+        const bool is_path_to_directory_valid { is_valid_path_to_directory(tmp) };
         is_path_valid = is_empty_path || is_path_to_directory_valid;
     });
 
@@ -182,7 +187,7 @@ inline auto is_valid_path_to_file(const legacy::string<StringCapacity>& name) no
 }
 
 template <uint64_t StringCapacity>
-inline auto is_valid_path_to_directory(const legacy::string<StringCapacity>& name) noexcept -> bool {
+inline auto is_valid_path_to_directory(const container::StaticString<StringCapacity>& name) noexcept -> bool {
     if (name.empty()) {
         return false;
     }
@@ -194,7 +199,8 @@ inline auto is_valid_path_to_directory(const legacy::string<StringCapacity>& nam
         legacy::TruncateToCapacity, &platform::IOX2_PATH_SEPARATORS[0], platform::IOX2_NUMBER_OF_PATH_SEPARATORS
     };
 
-    auto remaining = name;
+    // TODO: add find_first_of() to StaticString
+    legacy::string<StringCapacity> remaining(legacy::TruncateToCapacity, name.unchecked_access().c_str(), name.size());
     while (!remaining.empty()) {
         const auto separator_position = remaining.find_first_of(path_separators);
 
@@ -212,7 +218,9 @@ inline auto is_valid_path_to_directory(const legacy::string<StringCapacity>& nam
             if (position != 0) {
                 const auto guaranteed_substr = remaining.substr(0, position);
                 const auto& filename_to_verify = guaranteed_substr.value();
-                const bool is_valid_directory { (is_valid_file_name(filename_to_verify))
+                auto tmp = *container::StaticString<StringCapacity>::from_utf8_null_terminated_unchecked(
+                    filename_to_verify.c_str());
+                const bool is_valid_directory { (is_valid_file_name(tmp))
                                                 || ((filename_to_verify == current_directory)
                                                     || (filename_to_verify == parent_directory)) };
                 if (!is_valid_directory) {
@@ -225,7 +233,8 @@ inline auto is_valid_path_to_directory(const legacy::string<StringCapacity>& nam
             });
         } else // we reached the last entry, if its a valid file name the path is valid
         {
-            return is_valid_path_entry(remaining, RelativePathComponents::Accept);
+            auto tmp = *container::StaticString<StringCapacity>::from_utf8_null_terminated_unchecked(remaining.c_str());
+            return is_valid_path_entry(tmp, RelativePathComponents::Accept);
         }
     }
 
@@ -234,12 +243,12 @@ inline auto is_valid_path_to_directory(const legacy::string<StringCapacity>& nam
 
 // AXIVION Next Construct AutosarC++19_03-A5.2.5, AutosarC++19_03-M5.0.16, FaultDetection-OutOfBounds : IOX2_PATH_SEPARATORS is not a string but an array of chars without a null termination and all elements are valid characters
 template <uint64_t StringCapacity>
-inline auto does_end_with_path_separator(const legacy::string<StringCapacity>& name) noexcept -> bool {
+inline auto does_end_with_path_separator(const container::StaticString<StringCapacity>& name) noexcept -> bool {
     if (name.empty()) {
         return false;
     }
     // AXIVION Next Construct AutosarC++19_03-A3.9.1: Not used as an integer but as actual character
-    const char last_character { name[name.size() - 1U] };
+    const char last_character { name.unchecked_access()[name.size() - 1U] };
 
     // NOLINTNEXTLINE(readability-use-anyofallof)
     for (const auto separator : platform::IOX2_PATH_SEPARATORS) {
