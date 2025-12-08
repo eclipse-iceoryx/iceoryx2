@@ -21,6 +21,9 @@ crate-type = ["rlib", "cdylib", "staticlib"] # without "rlib" the doc examples a
 [features]
 default = ["std"]
 std = [
+  "logger_console",
+  "logger_buffer",
+  "logger_file",
   "iceoryx2/std",
   "iceoryx2-loggers/logger_console",
   "iceoryx2-loggers/logger_buffer",
