@@ -153,7 +153,7 @@ impl FileDescriptor {
     pub unsafe fn non_owning_new_unchecked(value: i32) -> FileDescriptor {
         FileDescriptor {
             value,
-            is_owned: true,
+            is_owned: false,
         }
     }
 
