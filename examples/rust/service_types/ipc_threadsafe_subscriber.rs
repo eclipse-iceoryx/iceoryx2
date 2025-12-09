@@ -21,14 +21,11 @@ use iceoryx2::prelude::*;
 use iceoryx2_bb_posix::clock::nanosleep;
 use iceoryx2_bb_posix::thread::{ThreadBuilder, ThreadName};
 use iceoryx2_log::cout;
-use iceoryx2_loggers::console::Logger;
 
-static LOGGER: Logger = Logger::new();
 static KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
 fn main() -> Result<(), Box<dyn core::error::Error>> {
-    set_logger(&LOGGER);
     set_log_level_from_env_or(LogLevel::Info);
 
     let node = NodeBuilder::new()

@@ -18,7 +18,6 @@ use alloc::boxed::Box;
 use iceoryx2::prelude::*;
 use iceoryx2_bb_container::{queue::FixedSizeQueue, string::*, vector::*};
 use iceoryx2_log::cout;
-use iceoryx2_loggers::console::Logger;
 
 // For both data types we derive from PlacementDefault to allow in memory initialization
 // without any copy. Avoids stack overflows when data type is larger than the available stack.
@@ -41,11 +40,9 @@ pub struct ComplexDataType {
     a_queue_of_things: FixedSizeQueue<StaticString<4>, 2>,
 }
 
-static LOGGER: Logger = Logger::new();
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
 fn main() -> Result<(), Box<dyn core::error::Error>> {
-    set_logger(&LOGGER);
     set_log_level_from_env_or(LogLevel::Info);
 
     let node = NodeBuilder::new().create::<ipc::Service>()?;

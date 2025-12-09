@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate iceoryx2_loggers;
+
 use clap::Parser;
 use iceoryx2_bb_lock_free::spsc::index_queue::FixedSizeIndexQueue;
 use iceoryx2_bb_lock_free::spsc::queue::Queue;

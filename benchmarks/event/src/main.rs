@@ -15,8 +15,6 @@ use iceoryx2::prelude::*;
 use iceoryx2_bb_posix::barrier::*;
 use iceoryx2_bb_posix::clock::Time;
 use iceoryx2_bb_posix::thread::ThreadBuilder;
-use iceoryx2_log::set_log_level;
-use iceoryx2_loggers::console::Logger;
 
 fn perform_benchmark<T: Service>(args: &Args) -> Result<(), Box<dyn core::error::Error>> {
     let service_name_a2b = ServiceName::new("a2b")?;
@@ -117,7 +115,6 @@ fn perform_benchmark<T: Service>(args: &Args) -> Result<(), Box<dyn core::error:
     Ok(())
 }
 
-static LOGGER: Logger = Logger::new();
 const ITERATIONS: usize = 1000000;
 const EVENT_ID_MAX_VALUE: usize = 128;
 
@@ -159,12 +156,10 @@ struct Args {
 fn main() -> Result<(), Box<dyn core::error::Error>> {
     let args = Args::parse();
 
-    set_logger(&LOGGER);
-
     if args.debug_mode {
-        set_log_level(iceoryx2_log::LogLevel::Trace);
+        set_log_level(LogLevel::Trace);
     } else {
-        set_log_level(iceoryx2_log::LogLevel::Error);
+        set_log_level(LogLevel::Error);
     }
 
     let mut at_least_one_benchmark_did_run = false;

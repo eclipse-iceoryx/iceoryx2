@@ -15,12 +15,8 @@ use alloc::boxed::Box;
 
 use iceoryx2::prelude::*;
 use iceoryx2_log::cout;
-use iceoryx2_loggers::console::Logger;
-
-static LOGGER: Logger = Logger::new();
 
 fn main() -> Result<(), Box<dyn core::error::Error>> {
-    set_logger(&LOGGER);
     set_log_level_from_env_or(LogLevel::Info);
 
     let node = NodeBuilder::new().create::<ipc::Service>()?;
