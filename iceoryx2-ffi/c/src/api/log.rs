@@ -150,36 +150,6 @@ pub unsafe extern "C" fn iox2_log(
     );
 }
 
-/// Sets the console logger as default logger. Returns true if the logger was set, otherwise false.
-#[cfg(feature = "logger_console")]
-#[no_mangle]
-pub extern "C" fn iox2_use_console_logger() -> bool {
-    use iceoryx2_log::set_logger;
-    use iceoryx2_loggers::console::Logger;
-
-    let logger = Box::leak(Box::new(Logger::new()));
-    set_logger(&*logger)
-}
-
-/// Sets the file logger as default logger. Returns true if the logger was set, otherwise false.
-///
-/// # Safety
-///
-///  * log_file must be a valid pointer to a string
-#[cfg(feature = "logger_file")]
-#[no_mangle]
-pub unsafe extern "C" fn iox2_use_file_logger(log_file: *const c_char) -> bool {
-    use iceoryx2_log::set_logger;
-    use iceoryx2_loggers::file::Logger;
-
-    if let Ok(log_file_str) = CStr::from_ptr(log_file).to_str() {
-        let logger = Box::leak(Box::new(Logger::new(log_file_str)));
-        return set_logger(&*logger);
-    }
-
-    false
-}
-
 /// Sets the log level from environment variable or defaults it if variable does not exist
 #[cfg(feature = "std")]
 #[no_mangle]

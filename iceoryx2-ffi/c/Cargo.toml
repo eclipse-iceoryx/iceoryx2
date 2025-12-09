@@ -21,21 +21,8 @@ crate-type = ["rlib", "cdylib", "staticlib"] # without "rlib" the doc examples a
 [features]
 default = ["std"]
 std = [
-  "logger_console",
-  "logger_buffer",
-  "logger_file",
   "iceoryx2/std",
-  "iceoryx2-loggers/logger_console",
-  "iceoryx2-loggers/logger_buffer",
-  "iceoryx2-loggers/logger_file",
 ]
-
-# Enables logging to console
-logger_console = ["iceoryx2-loggers/logger_console"]
-# Enables logging to buffer
-logger_buffer = ["iceoryx2-loggers/logger_buffer"]
-# Enables logging to file
-logger_file = ["iceoryx2-loggers/logger_file"]
 
 [build-dependencies]
 cbindgen = { workspace = true }

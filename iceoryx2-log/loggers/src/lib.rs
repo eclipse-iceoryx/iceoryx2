@@ -84,7 +84,7 @@ extern crate alloc;
 pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
     {
         static CONSOLE_LOGGER: console::Logger = console::Logger::new();
-        return &CONSOLE_LOGGER;
+        &CONSOLE_LOGGER
     }
 }
 
@@ -93,7 +93,7 @@ pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
 pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
     {
         static BUFFER_LOGGER: buffer::Logger = buffer::Logger::new();
-        return &BUFFER_LOGGER;
+        &BUFFER_LOGGER
     }
 }
 
@@ -104,7 +104,7 @@ pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
         static FILE_NAME: &str = "iceoryx2.log";
         static FILE_LOGGER: std::sync::LazyLock<file::Logger> =
             std::sync::LazyLock::new(|| file::Logger::new(FILE_NAME));
-        return &*FILE_LOGGER;
+        &*FILE_LOGGER
     }
 }
 
@@ -113,7 +113,7 @@ pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
 pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
     {
         static LOG_LOGGER: log::Logger = log::Logger::new();
-        return &LOG_LOGGER;
+        &LOG_LOGGER
     }
 }
 
@@ -122,7 +122,7 @@ pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
 pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
     {
         static TRACING_LOGGER: tracing::Logger = tracing::Logger::new();
-        return &TRACING_LOGGER;
+        &TRACING_LOGGER
     }
 }
 
@@ -131,6 +131,6 @@ pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
 pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
     {
         static NULL_LOGGER: null::Logger = null::Logger;
-        return &NULL_LOGGER;
+        &NULL_LOGGER
     }
 }
