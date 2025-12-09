@@ -164,17 +164,28 @@ Currently, iceoryx2 does not provide an async API but it is
 However, we offer an event-based API to implement push notifications. For more
 details, see the [event example](examples/rust/event).
 
-### Change Log Backend
+### Selecting Default Log Backend
 
-* **log**, add the feature flag `logger_log` to the dependency in `Cargo.toml`
-  ```toml
-  iceoryx2 = { version = "0.1.0", features = ["logger_log"]}
-  ```
-* **tracing**, add the feature flag `logger_tracing` to the dependency in
-  `Cargo.toml`
-  ```toml
-   iceoryx2 = { version = "0.1.0", features = ["logger_tracing"]}
-  ```
+The default log backend is selected via feature flags at compile time.
+The following loggers are available:
+
+1. **console** - outputs log messages to the console
+1. **buffer** - outputs log messages to a buffer
+1. **file** - outputs log messages to a file
+1. **log** - utilizes the `log` crate
+1. **tracing** - utilizes the `tracing` crate
+
+The feature can be set in a project's `Cargo.toml`:
+
+```toml
+iceoryx2 = { version = "0.1.0", features = ["logger_console"]}
+```
+
+Or specified when building the crate:
+
+```console
+cargo build --features logger_console
+```
 
 ### Supported Log Levels
 
