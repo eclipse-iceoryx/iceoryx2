@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate iceoryx2_loggers;
+
 mod zero_copy_connection_posix_shared_memory_tests {
     use core::time::Duration;
     use iceoryx2_bb_elementary::math::ToB64;

@@ -22,6 +22,7 @@ iceoryx2-cal = { workspace = true, features = ["std"] }
 iceoryx2-pal-concurrency-sync = { workspace = true }
 iceoryx2-pal-posix = { workspace = true }
 iceoryx2-pal-testing = { workspace = true }
+iceoryx2-loggers = { workspace = true }
 lazy_static = { workspace = true }
 serde = { workspace = true }
 

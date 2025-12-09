@@ -15,6 +15,8 @@
 //! # Example
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_system_types::file_name::FileName;
 //! use iceoryx2_bb_container::semantic_string::SemanticString;
 //! use iceoryx2_cal::dynamic_storage::posix_shared_memory::*;

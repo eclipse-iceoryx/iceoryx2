@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate iceoryx2_loggers;
+
 mod shm_allocator_pool_allocator {
     use core::{alloc::Layout, ptr::NonNull};
     use std::collections::HashSet;
