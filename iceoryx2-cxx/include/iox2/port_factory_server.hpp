@@ -117,18 +117,20 @@ inline auto PortFactoryServer<Service, RequestPayload, RequestUserHeader, Respon
     create() && -> iox2::legacy::expected<
         Server<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         ServerCreateError> {
-    m_unable_to_deliver_strategy.and_then([&](auto value) -> auto {
+    if (m_unable_to_deliver_strategy.has_value()) {
         iox2_port_factory_server_builder_unable_to_deliver_strategy(
-            &m_handle, static_cast<iox2_unable_to_deliver_strategy_e>(iox2::bb::into<int>(value)));
-    });
+            &m_handle,
+            static_cast<iox2_unable_to_deliver_strategy_e>(iox2::bb::into<int>(m_unable_to_deliver_strategy.value())));
+    }
     if (m_max_slice_len.has_value()) {
         iox2_port_factory_server_builder_set_initial_max_slice_len(&m_handle, m_max_slice_len.value());
     } else {
         iox2_port_factory_server_builder_set_initial_max_slice_len(&m_handle, 1);
     }
-    m_max_loaned_responses_per_request.and_then([&](auto value) -> auto {
-        iox2_port_factory_server_builder_set_max_loaned_responses_per_request(&m_handle, value);
-    });
+    if (m_max_loaned_responses_per_request.has_value()) {
+        iox2_port_factory_server_builder_set_max_loaned_responses_per_request(
+            &m_handle, m_max_loaned_responses_per_request.value());
+    }
     if (m_allocation_strategy.has_value()) {
         iox2_port_factory_server_builder_set_allocation_strategy(
             &m_handle, bb::into<iox2_allocation_strategy_e>(m_allocation_strategy.value()));
