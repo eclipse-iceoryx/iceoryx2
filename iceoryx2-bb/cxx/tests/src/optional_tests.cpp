@@ -1005,4 +1005,144 @@ TEST(Optional, const_operator_arrow_should_bypass_overloaded_operator_ampersand)
     ASSERT_EQ(iox2::container::testing::CustomAddressOperator::s_count_address_operator, 0);
 }
 
+TEST(Optional, operator_equal_with_two_empty_optionals_are_equal) {
+    const iox2::container::Optional<uint64_t> lhs { iox2::container::nullopt };
+    const iox2::container::Optional<uint64_t> rhs { iox2::container::nullopt };
+
+    ASSERT_TRUE(lhs == rhs);
+}
+
+TEST(Optional, operator_equal_with_two_optionals_with_the_same_value_are_equal) {
+    constexpr uint64_t EQUAL_VALUE { 42 };
+    const iox2::container::Optional<uint64_t> lhs { EQUAL_VALUE };
+    const iox2::container::Optional<uint64_t> rhs { EQUAL_VALUE };
+
+    ASSERT_TRUE(lhs == rhs);
+}
+
+TEST(Optional, operator_equal_with_two_optionals_with_different_values_are_not_equal) {
+    constexpr uint64_t LHS_VALUE { 37 };
+    constexpr uint64_t RHS_VALUE { 73 };
+    const iox2::container::Optional<uint64_t> lhs { LHS_VALUE };
+    const iox2::container::Optional<uint64_t> rhs { RHS_VALUE };
+
+    ASSERT_FALSE(lhs == rhs);
+}
+
+TEST(Optional, operator_equal_with_lhs_value_and_rhs_empty_are_not_equal) {
+    constexpr uint64_t LHS_VALUE { 123 };
+    const iox2::container::Optional<uint64_t> lhs { LHS_VALUE };
+    const iox2::container::Optional<uint64_t> rhs { iox2::container::nullopt };
+
+    ASSERT_FALSE(lhs == rhs);
+}
+
+TEST(Optional, operator_equal_with_lhs_empty_and_rhs_value_are_not_equal) {
+    constexpr uint64_t RHS_VALUE { 13 };
+    const iox2::container::Optional<uint64_t> lhs { iox2::container::nullopt };
+    const iox2::container::Optional<uint64_t> rhs { RHS_VALUE };
+
+    ASSERT_FALSE(lhs == rhs);
+}
+
+TEST(Optional, operator_not_equal_with_two_empty_optionals_are_equal) {
+    const iox2::container::Optional<uint64_t> lhs { iox2::container::nullopt };
+    const iox2::container::Optional<uint64_t> rhs { iox2::container::nullopt };
+
+    ASSERT_FALSE(lhs != rhs);
+}
+
+TEST(Optional, operator_not_equal_with_two_optionals_with_the_same_value_are_equal) {
+    constexpr uint64_t EQUAL_VALUE { 42 };
+    const iox2::container::Optional<uint64_t> lhs { EQUAL_VALUE };
+    const iox2::container::Optional<uint64_t> rhs { EQUAL_VALUE };
+
+    ASSERT_FALSE(lhs != rhs);
+}
+
+TEST(Optional, operator_not_equal_with_two_optionals_with_different_values_are_not_equal) {
+    constexpr uint64_t LHS_VALUE { 37 };
+    constexpr uint64_t RHS_VALUE { 73 };
+    const iox2::container::Optional<uint64_t> lhs { LHS_VALUE };
+    const iox2::container::Optional<uint64_t> rhs { RHS_VALUE };
+
+    ASSERT_TRUE(lhs != rhs);
+}
+
+TEST(Optional, operator_not_equal_with_lhs_value_and_rhs_empty_are_not_equal) {
+    constexpr uint64_t LHS_VALUE { 123 };
+    const iox2::container::Optional<uint64_t> lhs { LHS_VALUE };
+    const iox2::container::Optional<uint64_t> rhs { iox2::container::nullopt };
+
+    ASSERT_TRUE(lhs != rhs);
+}
+
+TEST(Optional, operator_not_equal_with_lhs_empty_and_rhs_value_are_not_equal) {
+    constexpr uint64_t RHS_VALUE { 13 };
+    const iox2::container::Optional<uint64_t> lhs { iox2::container::nullopt };
+    const iox2::container::Optional<uint64_t> rhs { RHS_VALUE };
+
+    ASSERT_TRUE(lhs != rhs);
+}
+
+TEST(Optional, operator_equal_with_lhs_value_and_rhs_nullopt_is_not_equal) {
+    constexpr uint64_t LHS_VALUE { 666 };
+    const iox2::container::Optional<uint64_t> lhs { LHS_VALUE };
+    const iox2::container::NulloptT rhs { iox2::container::nullopt };
+
+    ASSERT_FALSE(lhs == rhs);
+}
+
+TEST(Optional, operator_equal_with_lhs_empty_and_rhs_nullopt_is_equal) {
+    const iox2::container::Optional<uint64_t> lhs { iox2::container::nullopt };
+    const iox2::container::NulloptT rhs { iox2::container::nullopt };
+
+    ASSERT_TRUE(lhs == rhs);
+}
+
+TEST(Optional, operator_equal_with_lhs_nullopt_and_rhs_value_is_not_equal) {
+    constexpr uint64_t RHS_VALUE { 666 };
+    const iox2::container::NulloptT lhs { iox2::container::nullopt };
+    const iox2::container::Optional<uint64_t> rhs { RHS_VALUE };
+
+    ASSERT_FALSE(lhs == rhs);
+}
+
+TEST(Optional, operator_equal_with_lhs_nullopt_and_rhs_empty_is_equal) {
+    const iox2::container::NulloptT lhs { iox2::container::nullopt };
+    const iox2::container::Optional<uint64_t> rhs { iox2::container::nullopt };
+
+    ASSERT_TRUE(lhs == rhs);
+}
+
+TEST(Optional, operator_not_equal_with_lhs_value_and_rhs_nullopt_is_not_equal) {
+    constexpr uint64_t LHS_VALUE { 666 };
+    const iox2::container::Optional<uint64_t> lhs { LHS_VALUE };
+    const iox2::container::NulloptT rhs { iox2::container::nullopt };
+
+    ASSERT_TRUE(lhs != rhs);
+}
+
+TEST(Optional, operator_not_equal_with_lhs_empty_and_rhs_nullopt_is_equal) {
+    const iox2::container::Optional<uint64_t> lhs { iox2::container::nullopt };
+    const iox2::container::NulloptT rhs { iox2::container::nullopt };
+
+    ASSERT_FALSE(lhs != rhs);
+}
+
+TEST(Optional, operator_not_equal_with_lhs_nullopt_and_rhs_value_is_not_equal) {
+    constexpr uint64_t RHS_VALUE { 666 };
+    const iox2::container::NulloptT lhs { iox2::container::nullopt };
+    const iox2::container::Optional<uint64_t> rhs { RHS_VALUE };
+
+    ASSERT_TRUE(lhs != rhs);
+}
+
+TEST(Optional, operator_not_equal_with_lhs_nullopt_and_rhs_empty_is_equal) {
+    const iox2::container::NulloptT lhs { iox2::container::nullopt };
+    const iox2::container::Optional<uint64_t> rhs { iox2::container::nullopt };
+
+    ASSERT_FALSE(lhs != rhs);
+}
+
 } // namespace
