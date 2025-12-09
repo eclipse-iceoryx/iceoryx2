@@ -134,30 +134,6 @@ CMake package.
 
 ### API Breaking Changes
 
-1. **Rust:** Require logger backend to be set at runtime
-
-   ```rust
-   // old - logger automatically set based on feature flags
-   use iceoryx2::prelude::*;
-
-   fn main() {
-       set_log_level_from_env_or(LogLevel::Info);
-       info!("Some log message");
-   }
-
-   // new - logger must be explicitly set at runtime
-   use iceoryx2::prelude::*;
-   use iceoryx2_loggers::console::Logger;
-
-   static LOGGER: Logger = Logger::new();
-
-   fn main() {
-       set_logger(&LOGGER);
-       set_log_level_from_env_or(LogLevel::Info);
-       info!("Some log message");
-   }
-   ```
-
 1. **Rust:** Replaced the `FixedSizeVec` with the `StaticVec`
 
    ```rust
