@@ -1,0 +1,41 @@
+#!/usr/bin/expect
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache Software License 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+# which is available at https://opensource.org/licenses/MIT.
+#
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+#### Common Setup
+
+set REPO_ROOT [exec git rev-parse --show-toplevel]
+cd ${REPO_ROOT}
+
+source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
+
+#### Test Setup
+
+set timeout 10
+
+#### Test
+
+spawn cargo run --example publish_subscribe_subscriber
+set id_subscriber $spawn_id
+
+spawn cargo run --bin iox2-node list
+set id_iox2_node $spawn_id
+
+#### Test Assertion
+
+expect_output_from $id_iox2_node "num"
+expect_output_from $id_iox2_node "state"
+expect_output_from $id_iox2_node "id"
+expect_output_from $id_iox2_node "pid"
+expect_output_from $id_iox2_node "executable"
+
+show_test_passed

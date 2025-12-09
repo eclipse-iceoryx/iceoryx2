@@ -77,6 +77,12 @@ where
     }
 }
 
+#[derive(serde::Serialize)]
+pub enum DiscoveryEvent<T> {
+    Added(T),
+    Removed(T),
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize)]
 pub struct NodeIdString(String);
 

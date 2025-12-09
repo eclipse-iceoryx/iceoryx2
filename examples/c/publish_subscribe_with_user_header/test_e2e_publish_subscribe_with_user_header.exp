@@ -16,7 +16,7 @@
 set REPO_ROOT [exec git rev-parse --show-toplevel]
 cd ${REPO_ROOT}
 
-source examples/cross-language-end-to-end-tests/common.exp
+source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 
 #### Test Setup
 
