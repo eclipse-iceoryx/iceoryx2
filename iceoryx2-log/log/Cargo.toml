@@ -19,4 +19,4 @@ iceoryx2-log-types = { workspace = true }
 iceoryx2-pal-concurrency-sync = { workspace = true }
 
 [dev-dependencies]
-iceoryx2-loggers = { workspace = true, features = ["logger_buffer"] }
+iceoryx2-loggers = { workspace = true }

@@ -20,7 +20,8 @@ use std::io::IsTerminal;
 use iceoryx2_log_types::Log;
 use iceoryx2_log_types::LogLevel;
 
-pub enum ConsoleLogOrder {
+#[allow(dead_code)]
+enum ConsoleLogOrder {
     Time,
     Counter,
 }

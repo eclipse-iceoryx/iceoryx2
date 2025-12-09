@@ -123,28 +123,6 @@
 //!     }
 //! }
 //! ```
-//! ## Selecting a Logger on application startup
-//!
-//! A logger from the `iceoryx2_loggers` crate must be set at application
-//! startup. If not set, all logs are discarded.
-//!
-//! In this example we use the `iceoryx2_loggers::buffer::Logger`, that stores
-//! every log message in an internal buffer, and use it as the default logger.
-//!
-//! ```
-//! use iceoryx2_log::{set_logger, info};
-//!
-//! static LOGGER: iceoryx2_loggers::buffer::Logger =
-//!     iceoryx2_loggers::buffer::Logger::new();
-//!
-//! assert!(set_logger(&LOGGER));
-//! info!("hello world");
-//! let log_content = LOGGER.content();
-//!
-//! for entry in log_content {
-//!     println!("{:?} {} {}", entry.log_level, entry.origin, entry.message);
-//! }
-//! ```
 
 #[cfg(feature = "std")]
 pub use from_env::{set_log_level_from_env_or, set_log_level_from_env_or_default};
@@ -158,12 +136,10 @@ use iceoryx2_pal_concurrency_sync::{iox_atomic::IoxAtomicU8, once::Once};
 
 mod fail;
 mod log;
-mod null;
 
 const DEFAULT_LOG_LEVEL: LogLevel = LogLevel::Info;
 static LOG_LEVEL: IoxAtomicU8 = IoxAtomicU8::new(DEFAULT_LOG_LEVEL as u8);
 
-static NULL_LOGGER: null::Logger = null::Logger;
 static mut LOGGER: Option<&'static dyn Log> = None;
 static INIT: Once = Once::new();
 
@@ -178,17 +154,6 @@ pub fn get_log_level() -> u8 {
     LOG_LEVEL.load(Ordering::Relaxed)
 }
 
-/// Sets the [`Log`]ger. Can be only called once at the beginning of the program. If the
-/// [`Log`]ger is already set it returns false and does not update it.
-pub fn set_logger(logger: &'static dyn Log) -> bool {
-    let mut set_logger_success = false;
-    INIT.call_once(|| {
-        unsafe { LOGGER = Some(logger) };
-        set_logger_success = true;
-    });
-    set_logger_success
-}
-
 /// Get a reference to the current logger
 ///
 /// This initializes the logger to NULL_LOGGER if it hasn't been set yet.
@@ -196,7 +161,7 @@ fn get_logger() -> &'static dyn Log {
     INIT.call_once(|| unsafe {
         #[allow(static_mut_refs)]
         if LOGGER.is_none() {
-            LOGGER = Some(&NULL_LOGGER);
+            LOGGER = Some(__internal_default_logger());
         }
     });
 
@@ -209,6 +174,17 @@ fn get_logger() -> &'static dyn Log {
     unsafe {
         LOGGER.unwrap()
     }
+}
+
+/// Sets the [`Log`]ger. Can be only called once at the beginning of the program. If the
+/// [`Log`]ger is already set it returns false and does not update it.
+pub fn set_logger(logger: &'static dyn Log) -> bool {
+    let mut set_logger_success = false;
+    INIT.call_once(|| {
+        unsafe { LOGGER = Some(logger) };
+        set_logger_success = true;
+    });
+    set_logger_success
 }
 
 #[cfg(feature = "std")]
@@ -264,6 +240,10 @@ pub fn __internal_print_log_msg(
     if get_log_level() <= log_level as u8 {
         get_logger().log(log_level, origin, args)
     }
+}
+
+extern "Rust" {
+    fn __internal_default_logger() -> &'static dyn Log;
 }
 
 // TODO: Move this somewhere else ...

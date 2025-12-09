@@ -10,13 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::{Log, LogLevel};
+use iceoryx2_log_types::{Log, LogLevel};
 
 /// A logger that discards all log messages.
 ///
 /// This is the default logger used before [`set_logger`](crate::set_logger) is called.
 /// It silently discards all log messages, ensuring that logging calls have no effect
 /// until a real logger is registered.
+#[allow(dead_code)]
 pub(crate) struct Logger;
 
 impl Log for Logger {
