@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include "iox2/container/optional.hpp"
 #include "iox2/container/static_string.hpp"
 #include "iox2/entry_value.hpp"
 #include "iox2/node.hpp"
@@ -341,12 +342,12 @@ TYPED_TEST(ServiceBlackboardTest, open_works_when_service_owner_goes_out_of_scop
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto sut_creator = iox2::legacy::optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(
-        node.service_builder(service_name)
-            .template blackboard_creator<uint64_t>()
-            .template add_with_default<uint64_t>(0)
-            .create()
-            .expect(""));
+    auto sut_creator =
+        container::Optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(node.service_builder(service_name)
+                                                                               .template blackboard_creator<uint64_t>()
+                                                                               .template add_with_default<uint64_t>(0)
+                                                                               .create()
+                                                                               .expect(""));
 
     auto sut_opener_1 = node.service_builder(service_name).template blackboard_opener<uint64_t>().open();
     ASSERT_TRUE(sut_opener_1.has_value());
@@ -363,14 +364,14 @@ TYPED_TEST(ServiceBlackboardTest, open_fails_when_all_previous_owners_are_gone) 
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto sut_creator = iox2::legacy::optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(
-        node.service_builder(service_name)
-            .template blackboard_creator<uint64_t>()
-            .template add_with_default<uint64_t>(0)
-            .create()
-            .expect(""));
+    auto sut_creator =
+        container::Optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(node.service_builder(service_name)
+                                                                               .template blackboard_creator<uint64_t>()
+                                                                               .template add_with_default<uint64_t>(0)
+                                                                               .create()
+                                                                               .expect(""));
 
-    auto sut_opener_1 = iox2::legacy::optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(
+    auto sut_opener_1 = container::Optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(
         node.service_builder(service_name).template blackboard_opener<uint64_t>().open().expect(""));
 
     sut_creator.reset();
@@ -648,7 +649,7 @@ TYPED_TEST(ServiceBlackboardTest, entry_handle_mut_cannot_be_acquired_twice) {
                        .create()
                        .expect("");
     auto writer = service.writer_builder().create().expect("");
-    auto entry_handle_mut = iox2::legacy::optional<EntryHandleMut<SERVICE_TYPE, uint64_t, uint64_t>>(
+    auto entry_handle_mut = container::Optional<EntryHandleMut<SERVICE_TYPE, uint64_t, uint64_t>>(
         writer.template entry<uint64_t>(0).expect(""));
 
     auto sut_1 = writer.template entry<uint64_t>(0);
@@ -672,7 +673,7 @@ TYPED_TEST(ServiceBlackboardTest, entry_handle_mut_prevents_another_writer) {
                        .template add_with_default<uint64_t>(0)
                        .create()
                        .expect("");
-    auto writer = iox2::legacy::optional<Writer<SERVICE_TYPE, uint64_t>>(service.writer_builder().create().expect(""));
+    auto writer = container::Optional<Writer<SERVICE_TYPE, uint64_t>>(service.writer_builder().create().expect(""));
     auto entry_handle_mut = writer->template entry<uint64_t>(0).expect("");
 
     writer.reset();
@@ -688,13 +689,13 @@ TYPED_TEST(ServiceBlackboardTest, entry_value_can_still_be_used_after_every_prev
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto service = iox2::legacy::optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(
-        node.service_builder(service_name)
-            .template blackboard_creator<uint64_t>()
-            .template add_with_default<uint32_t>(0)
-            .create()
-            .expect(""));
-    auto writer = iox2::legacy::optional<Writer<SERVICE_TYPE, uint64_t>>(service->writer_builder().create().expect(""));
+    auto service =
+        container::Optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(node.service_builder(service_name)
+                                                                               .template blackboard_creator<uint64_t>()
+                                                                               .template add_with_default<uint32_t>(0)
+                                                                               .create()
+                                                                               .expect(""));
+    auto writer = container::Optional<Writer<SERVICE_TYPE, uint64_t>>(service->writer_builder().create().expect(""));
     auto entry_handle_mut = writer->template entry<uint32_t>(0).expect("");
     auto entry_value_uninit = loan_uninit(std::move(entry_handle_mut));
 
@@ -904,7 +905,7 @@ TYPED_TEST(ServiceBlackboardTest, creating_max_supported_amount_of_ports_work) {
     readers.reserve(MAX_READERS);
 
     // acquire all possible ports
-    auto writer = iox2::legacy::optional<Writer<SERVICE_TYPE, uint64_t>>(service.writer_builder().create().expect(""));
+    auto writer = container::Optional<Writer<SERVICE_TYPE, uint64_t>>(service.writer_builder().create().expect(""));
 
     for (uint64_t i = 0; i < MAX_READERS; ++i) {
         readers.push_back(service.reader_builder().create().expect(""));
@@ -969,12 +970,12 @@ TYPED_TEST(ServiceBlackboardTest, dropping_service_keeps_established_communicati
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto sut = iox2::legacy::optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(
-        node.service_builder(service_name)
-            .template blackboard_creator<uint64_t>()
-            .template add_with_default<uint32_t>(0)
-            .create()
-            .expect(""));
+    auto sut =
+        container::Optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(node.service_builder(service_name)
+                                                                               .template blackboard_creator<uint64_t>()
+                                                                               .template add_with_default<uint32_t>(0)
+                                                                               .create()
+                                                                               .expect(""));
 
     auto writer = sut->writer_builder().create().expect("");
     auto entry_handle_mut = writer.template entry<uint32_t>(0).expect("");
@@ -994,15 +995,15 @@ TYPED_TEST(ServiceBlackboardTest, ports_of_dropped_service_block_new_service_cre
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto service = iox2::legacy::optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(
-        node.service_builder(service_name)
-            .template blackboard_creator<uint64_t>()
-            .template add_with_default<uint8_t>(0)
-            .create()
-            .expect(""));
+    auto service =
+        container::Optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(node.service_builder(service_name)
+                                                                               .template blackboard_creator<uint64_t>()
+                                                                               .template add_with_default<uint8_t>(0)
+                                                                               .create()
+                                                                               .expect(""));
 
-    auto writer = iox2::legacy::optional<Writer<SERVICE_TYPE, uint64_t>>(service->writer_builder().create().expect(""));
-    auto reader = iox2::legacy::optional<Reader<SERVICE_TYPE, uint64_t>>(service->reader_builder().create().expect(""));
+    auto writer = container::Optional<Writer<SERVICE_TYPE, uint64_t>>(service->writer_builder().create().expect(""));
+    auto reader = container::Optional<Reader<SERVICE_TYPE, uint64_t>>(service->reader_builder().create().expect(""));
 
     service.reset();
 
@@ -1038,20 +1039,20 @@ TYPED_TEST(ServiceBlackboardTest, service_can_be_opened_when_there_is_a_writer) 
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto creator = iox2::legacy::optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(
-        node.service_builder(service_name)
-            .template blackboard_creator<uint64_t>()
-            .template add_with_default<uint64_t>(0)
-            .create()
-            .expect(""));
-    auto reader = iox2::legacy::optional<Reader<SERVICE_TYPE, uint64_t>>(creator->reader_builder().create().expect(""));
-    auto writer = iox2::legacy::optional<Writer<SERVICE_TYPE, uint64_t>>(creator->writer_builder().create().expect(""));
-    auto entry_handle_mut = iox2::legacy::optional<EntryHandleMut<SERVICE_TYPE, uint64_t, uint64_t>>(
+    auto creator =
+        container::Optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(node.service_builder(service_name)
+                                                                               .template blackboard_creator<uint64_t>()
+                                                                               .template add_with_default<uint64_t>(0)
+                                                                               .create()
+                                                                               .expect(""));
+    auto reader = container::Optional<Reader<SERVICE_TYPE, uint64_t>>(creator->reader_builder().create().expect(""));
+    auto writer = container::Optional<Writer<SERVICE_TYPE, uint64_t>>(creator->writer_builder().create().expect(""));
+    auto entry_handle_mut = container::Optional<EntryHandleMut<SERVICE_TYPE, uint64_t, uint64_t>>(
         writer->template entry<uint64_t>(0).expect(""));
 
     creator.reset();
 
-    auto opener1 = iox2::legacy::optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(
+    auto opener1 = container::Optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(
         node.service_builder(service_name).template blackboard_opener<uint64_t>().open().expect(""));
     opener1.reset();
 
@@ -1063,11 +1064,11 @@ TYPED_TEST(ServiceBlackboardTest, service_can_be_opened_when_there_is_a_writer) 
     ASSERT_THAT(failing_creator.error(), Eq(BlackboardCreateError::AlreadyExists));
     reader.reset();
 
-    auto opener2 = iox2::legacy::optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(
+    auto opener2 = container::Optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(
         node.service_builder(service_name).template blackboard_opener<uint64_t>().open().expect(""));
     auto opener_reader =
-        iox2::legacy::optional<Reader<SERVICE_TYPE, uint64_t>>(opener2->reader_builder().create().expect(""));
-    auto entry_handle = iox2::legacy::optional<EntryHandle<SERVICE_TYPE, uint64_t, uint64_t>>(
+        container::Optional<Reader<SERVICE_TYPE, uint64_t>>(opener2->reader_builder().create().expect(""));
+    auto entry_handle = container::Optional<EntryHandle<SERVICE_TYPE, uint64_t, uint64_t>>(
         opener_reader->template entry<uint64_t>(0).expect(""));
     entry_handle_mut->update_with_copy(VALUE);
     ASSERT_THAT(entry_handle->get(), Eq(VALUE));
@@ -1095,20 +1096,20 @@ TYPED_TEST(ServiceBlackboardTest, service_can_be_opened_when_there_is_a_reader) 
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto creator = iox2::legacy::optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(
-        node.service_builder(service_name)
-            .template blackboard_creator<uint64_t>()
-            .template add_with_default<uint64_t>(0)
-            .create()
-            .expect(""));
-    auto reader = iox2::legacy::optional<Reader<SERVICE_TYPE, uint64_t>>(creator->reader_builder().create().expect(""));
-    auto entry_handle = iox2::legacy::optional<EntryHandle<SERVICE_TYPE, uint64_t, uint64_t>>(
+    auto creator =
+        container::Optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(node.service_builder(service_name)
+                                                                               .template blackboard_creator<uint64_t>()
+                                                                               .template add_with_default<uint64_t>(0)
+                                                                               .create()
+                                                                               .expect(""));
+    auto reader = container::Optional<Reader<SERVICE_TYPE, uint64_t>>(creator->reader_builder().create().expect(""));
+    auto entry_handle = container::Optional<EntryHandle<SERVICE_TYPE, uint64_t, uint64_t>>(
         reader->template entry<uint64_t>(0).expect(""));
-    auto writer = iox2::legacy::optional<Writer<SERVICE_TYPE, uint64_t>>(creator->writer_builder().create().expect(""));
+    auto writer = container::Optional<Writer<SERVICE_TYPE, uint64_t>>(creator->writer_builder().create().expect(""));
 
     creator.reset();
 
-    auto opener1 = iox2::legacy::optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(
+    auto opener1 = container::Optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(
         node.service_builder(service_name).template blackboard_opener<uint64_t>().open().expect(""));
     opener1.reset();
 
@@ -1120,11 +1121,11 @@ TYPED_TEST(ServiceBlackboardTest, service_can_be_opened_when_there_is_a_reader) 
     ASSERT_THAT(failing_creator.error(), Eq(BlackboardCreateError::AlreadyExists));
     writer.reset();
 
-    auto opener2 = iox2::legacy::optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(
+    auto opener2 = container::Optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(
         node.service_builder(service_name).template blackboard_opener<uint64_t>().open().expect(""));
     auto opener_writer =
-        iox2::legacy::optional<Writer<SERVICE_TYPE, uint64_t>>(opener2->writer_builder().create().expect(""));
-    auto entry_handle_mut = iox2::legacy::optional<EntryHandleMut<SERVICE_TYPE, uint64_t, uint64_t>>(
+        container::Optional<Writer<SERVICE_TYPE, uint64_t>>(opener2->writer_builder().create().expect(""));
+    auto entry_handle_mut = container::Optional<EntryHandleMut<SERVICE_TYPE, uint64_t, uint64_t>>(
         opener_writer->template entry<uint64_t>(0).expect(""));
     entry_handle_mut->update_with_copy(VALUE);
     ASSERT_THAT(entry_handle->get(), Eq(VALUE));
@@ -1158,8 +1159,8 @@ TYPED_TEST(ServiceBlackboardTest, reader_can_still_read_value_when_writer_was_di
                        .create()
                        .expect("");
 
-    auto writer = iox2::legacy::optional<Writer<SERVICE_TYPE, uint64_t>>(service.writer_builder().create().expect(""));
-    auto entry_handle_mut = iox2::legacy::optional<EntryHandleMut<SERVICE_TYPE, uint64_t, uint8_t>>(
+    auto writer = container::Optional<Writer<SERVICE_TYPE, uint64_t>>(service.writer_builder().create().expect(""));
+    auto entry_handle_mut = container::Optional<EntryHandleMut<SERVICE_TYPE, uint64_t, uint8_t>>(
         writer->template entry<uint8_t>(0).expect(""));
     entry_handle_mut->update_with_copy(VALUE);
     entry_handle_mut.reset();
@@ -1188,8 +1189,7 @@ TYPED_TEST(ServiceBlackboardTest, reconnected_reader_sees_current_blackboard_sta
     auto entry_handle_mut_key_0 = writer.template entry<uint8_t>(0).expect("");
     entry_handle_mut_key_0.update_with_copy(5);
 
-    auto reader_1 =
-        iox2::legacy::optional<Reader<SERVICE_TYPE, uint64_t>>(service.reader_builder().create().expect(""));
+    auto reader_1 = container::Optional<Reader<SERVICE_TYPE, uint64_t>>(service.reader_builder().create().expect(""));
     ASSERT_THAT(reader_1->template entry<uint8_t>(0).expect("").get(), Eq(5));
     ASSERT_THAT(reader_1->template entry<int32_t>(6).expect("").get(), Eq(-9));
 
@@ -1215,7 +1215,7 @@ TYPED_TEST(ServiceBlackboardTest, entry_handle_mut_can_still_write_after_writer_
                        .template add_with_default<uint8_t>(0)
                        .create()
                        .expect("");
-    auto writer = iox2::legacy::optional<Writer<SERVICE_TYPE, uint64_t>>(service.writer_builder().create().expect(""));
+    auto writer = container::Optional<Writer<SERVICE_TYPE, uint64_t>>(service.writer_builder().create().expect(""));
     auto entry_handle_mut = writer->template entry<uint8_t>(0).expect("");
 
     writer.reset();
@@ -1236,7 +1236,7 @@ TYPED_TEST(ServiceBlackboardTest, entry_handle_can_still_read_after_reader_was_d
                        .template add_with_default<uint8_t>(0)
                        .create()
                        .expect("");
-    auto reader = iox2::legacy::optional<Reader<SERVICE_TYPE, uint64_t>>(service.reader_builder().create().expect(""));
+    auto reader = container::Optional<Reader<SERVICE_TYPE, uint64_t>>(service.reader_builder().create().expect(""));
     auto entry_handle = reader->template entry<uint8_t>(0).expect("");
 
     reader.reset();
@@ -1313,7 +1313,7 @@ TYPED_TEST(ServiceBlackboardTest, entry_value_can_still_be_used_after_writer_was
                        .create()
                        .expect("");
 
-    auto writer = iox2::legacy::optional<Writer<SERVICE_TYPE, uint64_t>>(service.writer_builder().create().expect(""));
+    auto writer = container::Optional<Writer<SERVICE_TYPE, uint64_t>>(service.writer_builder().create().expect(""));
     auto entry_handle_mut = writer->template entry<uint32_t>(0).expect("");
     auto entry_value_uninit = loan_uninit(std::move(entry_handle_mut));
 
@@ -1383,15 +1383,15 @@ TYPED_TEST(ServiceBlackboardTest, entry_handle_can_still_be_used_after_every_pre
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
 
-    auto service = iox2::legacy::optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(
-        node.service_builder(service_name)
-            .template blackboard_creator<uint64_t>()
-            .template add_with_default<uint32_t>(0)
-            .create()
-            .expect(""));
+    auto service =
+        container::Optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(node.service_builder(service_name)
+                                                                               .template blackboard_creator<uint64_t>()
+                                                                               .template add_with_default<uint32_t>(0)
+                                                                               .create()
+                                                                               .expect(""));
 
-    auto writer = iox2::legacy::optional<Writer<SERVICE_TYPE, uint64_t>>(service->writer_builder().create().expect(""));
-    auto entry_handle_mut = iox2::legacy::optional<EntryHandleMut<SERVICE_TYPE, uint64_t, uint32_t>>(
+    auto writer = container::Optional<Writer<SERVICE_TYPE, uint64_t>>(service->writer_builder().create().expect(""));
+    auto entry_handle_mut = container::Optional<EntryHandleMut<SERVICE_TYPE, uint64_t, uint32_t>>(
         writer->template entry<uint32_t>(0).expect(""));
 
     writer.reset();
@@ -1400,16 +1400,16 @@ TYPED_TEST(ServiceBlackboardTest, entry_handle_can_still_be_used_after_every_pre
     entry_handle_mut->update_with_copy(3);
     entry_handle_mut.reset();
 
-    auto new_service = iox2::legacy::optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(
-        node.service_builder(service_name)
-            .template blackboard_creator<uint64_t>()
-            .template add_with_default<uint32_t>(0)
-            .create()
-            .expect(""));
+    auto new_service =
+        container::Optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(node.service_builder(service_name)
+                                                                               .template blackboard_creator<uint64_t>()
+                                                                               .template add_with_default<uint32_t>(0)
+                                                                               .create()
+                                                                               .expect(""));
 
     auto reader =
-        iox2::legacy::optional<Reader<SERVICE_TYPE, uint64_t>>(new_service->reader_builder().create().expect(""));
-    auto entry_handle = iox2::legacy::optional<EntryHandle<SERVICE_TYPE, uint64_t, uint32_t>>(
+        container::Optional<Reader<SERVICE_TYPE, uint64_t>>(new_service->reader_builder().create().expect(""));
+    auto entry_handle = container::Optional<EntryHandle<SERVICE_TYPE, uint64_t, uint32_t>>(
         reader->template entry<uint32_t>(0).expect(""));
 
     reader.reset();
