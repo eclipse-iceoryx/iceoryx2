@@ -250,6 +250,32 @@ rights management for services.
 
 ### Something Is Broken, How To Enable Debug Output
 
+#### Selecting a `Logger`
+
+By default, the `null` logger is used, which discards all log messages.
+To enable log output, a default logger must be selected at compile time
+by enabling the correspond feature flag:
+
+```toml
+iceoryx2 = { version = "0.7.0", features = ["logger_console"] }
+```
+
+Alternatively, if using a custom `Logger` implementation, it must be set
+at runtime at the very beginning of the application:
+
+```rust
+use iceoryx2::prelude::*;
+
+static LOGGER: MyLogger = MyLogger::new();
+
+fn main() {
+    set_logger(&LOGGER);
+    // ...
+}
+```
+
+#### Setting the `LogLevel`
+
 iceoryx2 provides different APIs which can be used to set the log level
 directly in the code or read the configured log level by environment variable
 
@@ -278,6 +304,30 @@ set_log_level(LogLevel::Trace);
 **Note**: While working on iceoryx2, it gets its default logging level from
 `.cargo/config.toml`, but this can be over-ridden by using the APIs that reads
 environment variable `IOX2_LOG_LEVEL` or set the log level directly in the code.
+
+### Linking Error - undefined symbol `__internal_default_logger`
+
+The logger front-end retrieves the selected default logger by calling
+a function provided by the `iceoryx2-loggers` crate. If this crate is not
+linked against when building an application, a linking error of this form will
+be encountered:
+
+```console
+error: undefined symbol: __internal_default_logger
+```
+
+If using the `iceoryx2` crate as a dependency, this is handled automatically,
+however if using a lower-level crate (such as `iceoryx2-cal` or one from
+`iceoryx2-bb`) the following is required:
+
+1. Include `iceoryx2-loggers` as a dependency:
+    ```toml
+    iceoryx2-loggers = { version = "0.7.0" }
+    ```
+1. Ensure the crate is linked to even if not used:
+    ```rust
+    extern crate iceoryx2_loggers;
+    ```
 
 ### Encountered a SEGFAULT
 
