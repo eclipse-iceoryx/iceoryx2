@@ -32,7 +32,7 @@ TYPED_TEST(NodeTest, node_name_is_applied) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
     const auto* name_value = "First time we met, I saw the ocean, it was wet!";
-    auto node_name = NodeName::create(name_value).expect("");
+    auto node_name = NodeName::create(name_value).value();
 
     auto sut = NodeBuilder().name(node_name).create<SERVICE_TYPE>().expect("");
     ASSERT_THAT(sut.name().to_string(), Eq(node_name.to_string()));
@@ -41,8 +41,8 @@ TYPED_TEST(NodeTest, node_name_is_applied) {
 TYPED_TEST(NodeTest, created_nodes_can_be_listed) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    auto node_name_1 = NodeName::create("Nala does not like water.").expect("");
-    auto node_name_2 = NodeName::create("Nala does not like paprika.").expect("");
+    auto node_name_1 = NodeName::create("Nala does not like water.").value();
+    auto node_name_2 = NodeName::create("Nala does not like paprika.").value();
 
     {
         auto sut_1 = NodeBuilder().name(node_name_1).create<SERVICE_TYPE>().expect("");

@@ -81,8 +81,8 @@ TYPED_TEST(ServiceBlackboardTest, service_name_works) {
 TYPED_TEST(ServiceBlackboardTest, list_service_nodes_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto node_name_1 = NodeName::create("nala is hungry").expect("");
-    const auto node_name_2 = NodeName::create("maybe octo-wolf can help?").expect("");
+    const auto node_name_1 = NodeName::create("nala is hungry").value();
+    const auto node_name_2 = NodeName::create("maybe octo-wolf can help?").value();
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node_1 = NodeBuilder().name(node_name_1).create<SERVICE_TYPE>().expect("");

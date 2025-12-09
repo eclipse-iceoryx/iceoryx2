@@ -43,7 +43,7 @@ TEST(NodeName, creating_node_name_with_too_long_name_fails) {
 
 TEST(NodeName, as_view_works) {
     const auto* valid_name = "You're my heart, you my toad.";
-    auto sut = NodeName::create(valid_name).expect("");
+    auto sut = NodeName::create(valid_name).value();
     auto sut_view = sut.as_view();
 
     ASSERT_THAT(sut.to_string().c_str(), StrEq(sut_view.to_string().c_str()));
@@ -51,7 +51,7 @@ TEST(NodeName, as_view_works) {
 
 TEST(NodeName, to_owned_works) {
     const auto* valid_name = "Brother toady toad.";
-    auto sut = NodeName::create(valid_name).expect("");
+    auto sut = NodeName::create(valid_name).value();
     auto sut_view = sut.as_view();
     auto sut_owned = sut_view.to_owned();
 
@@ -60,8 +60,8 @@ TEST(NodeName, to_owned_works) {
 
 TEST(NodeName, copy_works) {
     const auto* valid_name = "A glass full of apple beans - what?";
-    const NodeName sut = NodeName::create(valid_name).expect("");
-    NodeName sut_assign = NodeName::create("blarb").expect("");
+    const NodeName sut = NodeName::create(valid_name).value();
+    NodeName sut_assign = NodeName::create("blarb").value();
     NodeName sut_copy { sut }; //NOLINT
     sut_assign = sut;
 
@@ -72,7 +72,7 @@ TEST(NodeName, copy_works) {
 
 TEST(NodeName, move_works) {
     const auto* valid_name = "Who is the Cyborg-Vampire?";
-    NodeName sut = NodeName::create(valid_name).expect("");
+    NodeName sut = NodeName::create(valid_name).value();
     NodeName sut_move { std::move(sut) };
 
     ASSERT_THAT(sut_move.to_string().c_str(), StrEq(valid_name));

@@ -622,8 +622,8 @@ TYPED_TEST(ServiceEventTest, service_id_is_unique_per_service) {
 TYPED_TEST(ServiceEventTest, list_service_nodes_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto node_name_1 = NodeName::create("Nala and The HypnoToad").expect("");
-    const auto node_name_2 = NodeName::create("Can they be friends?").expect("");
+    const auto node_name_1 = NodeName::create("Nala and The HypnoToad").value();
+    const auto node_name_2 = NodeName::create("Can they be friends?").value();
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node_1 = NodeBuilder().name(node_name_1).create<SERVICE_TYPE>().expect("");

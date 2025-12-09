@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/node_name.hpp"
+#include "iox2/container/expected.hpp"
 #include "iox2/legacy/assertions.hpp"
 
 #include <cstring>
@@ -25,7 +26,11 @@ auto NodeNameView::to_string() const -> iox2::legacy::string<IOX2_NODE_NAME_LENG
 auto NodeNameView::to_owned() const -> NodeName {
     size_t len = 0;
     const auto* chars = iox2_node_name_as_chars(m_ptr, &len);
-    return NodeName::create_impl(chars, len).expect("NodeNameView contains always valid NodeName");
+    auto node_name = NodeName::create_impl(chars, len);
+    if (!node_name.has_value()) {
+        IOX2_PANIC("NodeNameView contains always valid NodeName)");
+    }
+    return node_name.value();
 }
 
 NodeNameView::NodeNameView(iox2_node_name_ptr ptr)
@@ -79,23 +84,23 @@ void NodeName::drop() noexcept {
     }
 }
 
-auto NodeName::create(const char* value) -> iox2::legacy::expected<NodeName, bb::SemanticStringError> {
+auto NodeName::create(const char* value) -> iox2::container::Expected<NodeName, bb::SemanticStringError> {
     return NodeName::create_impl(value, strnlen(value, IOX2_NODE_NAME_LENGTH + 1));
 }
 
 auto NodeName::create_impl(const char* value, size_t value_len)
-    -> iox2::legacy::expected<NodeName, bb::SemanticStringError> {
+    -> iox2::container::Expected<NodeName, bb::SemanticStringError> {
     if (value_len > IOX2_NODE_NAME_LENGTH) {
-        return iox2::legacy::err(bb::SemanticStringError::ExceedsMaximumLength);
+        return container::err(bb::SemanticStringError::ExceedsMaximumLength);
     }
 
     iox2_node_name_h handle {};
     const auto ret_val = iox2_node_name_new(nullptr, value, value_len, &handle);
     if (ret_val == IOX2_OK) {
-        return iox2::legacy::ok(NodeName { handle });
+        return NodeName { handle };
     }
 
-    return iox2::legacy::err(iox2::bb::into<bb::SemanticStringError>(ret_val));
+    return container::err(iox2::bb::into<bb::SemanticStringError>(ret_val));
 }
 
 auto NodeName::to_string() const -> iox2::legacy::string<IOX2_NODE_NAME_LENGTH> {

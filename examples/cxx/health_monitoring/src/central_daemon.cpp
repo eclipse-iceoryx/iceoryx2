@@ -31,7 +31,7 @@ auto main() -> int {
     auto service_name_2 = ServiceName::create("service_2").expect("");
 
     auto node = NodeBuilder()
-                    .name(NodeName::create("central daemon").expect(""))
+                    .name(NodeName::create("central daemon").value())
                     .create<ServiceType::Ipc>()
                     .expect("successful node creation");
 
