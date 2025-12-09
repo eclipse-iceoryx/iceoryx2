@@ -140,10 +140,12 @@ inline ServiceBuilderBlackboardCreator<KeyType, S>::ServiceBuilderBlackboardCrea
 
 template <typename KeyType, ServiceType S>
 inline void ServiceBuilderBlackboardCreator<KeyType, S>::set_parameters() {
-    m_max_readers.and_then(
-        [&](auto value) -> auto { iox2_service_builder_blackboard_creator_set_max_readers(&m_handle, value); });
-    m_max_nodes.and_then(
-        [&](auto value) -> auto { iox2_service_builder_blackboard_creator_set_max_nodes(&m_handle, value); });
+    if (m_max_readers.has_value()) {
+        iox2_service_builder_blackboard_creator_set_max_readers(&m_handle, m_max_readers.value());
+    }
+    if (m_max_nodes.has_value()) {
+        iox2_service_builder_blackboard_creator_set_max_nodes(&m_handle, m_max_nodes.value());
+    }
 
     // key eq comparison function
     iox2_service_builder_blackboard_creator_set_key_eq_comparison_function(&m_handle,
@@ -228,10 +230,12 @@ inline ServiceBuilderBlackboardOpener<KeyType, S>::ServiceBuilderBlackboardOpene
 
 template <typename KeyType, ServiceType S>
 inline void ServiceBuilderBlackboardOpener<KeyType, S>::set_parameters() {
-    m_max_readers.and_then(
-        [&](auto value) -> auto { iox2_service_builder_blackboard_opener_set_max_readers(&m_handle, value); });
-    m_max_nodes.and_then(
-        [&](auto value) -> auto { iox2_service_builder_blackboard_opener_set_max_nodes(&m_handle, value); });
+    if (m_max_readers.has_value()) {
+        iox2_service_builder_blackboard_opener_set_max_readers(&m_handle, m_max_readers.value());
+    }
+    if (m_max_nodes.has_value()) {
+        iox2_service_builder_blackboard_opener_set_max_nodes(&m_handle, m_max_nodes.value());
+    }
 
     // key type details
     const auto type_name = internal::get_type_name<KeyType>();

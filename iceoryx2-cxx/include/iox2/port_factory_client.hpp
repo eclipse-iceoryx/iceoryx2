@@ -108,10 +108,11 @@ inline auto PortFactoryClient<Service, RequestPayload, RequestUserHeader, Respon
     create() && -> iox2::legacy::expected<
         Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         ClientCreateError> {
-    m_unable_to_deliver_strategy.and_then([&](auto value) -> auto {
+    if (m_unable_to_deliver_strategy.has_value()) {
         iox2_port_factory_client_builder_unable_to_deliver_strategy(
-            &m_handle, static_cast<iox2_unable_to_deliver_strategy_e>(iox2::bb::into<int>(value)));
-    });
+            &m_handle,
+            static_cast<iox2_unable_to_deliver_strategy_e>(bb::into<int>(m_unable_to_deliver_strategy.value())));
+    }
     if (m_max_slice_len.has_value()) {
         iox2_port_factory_client_builder_set_initial_max_slice_len(&m_handle, m_max_slice_len.value());
     } else {

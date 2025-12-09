@@ -13,6 +13,8 @@
 #ifndef IOX2_BUILDER_ADDENDUM_HPP
 #define IOX2_BUILDER_ADDENDUM_HPP
 
+#include "iox2/container/optional.hpp"
+
 // NOLINTBEGIN(cppcoreguidelines-macro-usage)
 // NOLINTBEGIN(bugprone-macro-parentheses)
 #define IOX2_BUILDER_SWITCH(name)                                                                                      \
@@ -45,17 +47,17 @@
 #define IOX2_BUILDER_OPTIONAL(type, name)                                                                              \
   public:                                                                                                              \
     auto name(type const& value)&& -> decltype(auto) {                                                                 \
-        m_##name = iox2::legacy::optional<type>(value);                                                                \
+        m_##name = iox2::container::Optional<type>(value);                                                             \
         return std::move(*this);                                                                                       \
     }                                                                                                                  \
                                                                                                                        \
     auto name(type&& value)&& -> decltype(auto) {                                                                      \
-        m_##name = iox2::legacy::optional<type>(std::move(value));                                                     \
+        m_##name = iox2::container::Optional<type>(std::move(value));                                                  \
         return std::move(*this);                                                                                       \
     }                                                                                                                  \
                                                                                                                        \
   private:                                                                                                             \
-    iox2::legacy::optional<type> m_##name
+    iox2::container::Optional<type> m_##name
 // NOLINTEND(bugprone-macro-parentheses)
 // NOLINTEND(cppcoreguidelines-macro-usage)
 
