@@ -26,35 +26,38 @@ void ServiceBuilderEvent<S>::set_parameters() {
         [&](auto value) -> auto { iox2_service_builder_event_set_max_listeners(&m_handle, value); });
 
     if (m_verify_notifier_created_event) {
-        m_notifier_created_event
-            .and_then([&](auto value) -> auto {
-                iox2_service_builder_event_set_notifier_created_event(&m_handle, value.as_value());
-            })
-            .or_else([&]() -> auto { iox2_service_builder_event_disable_notifier_created_event(&m_handle); });
+        if (m_notifier_created_event.has_value()) {
+            iox2_service_builder_event_set_notifier_created_event(&m_handle,
+                                                                  m_notifier_created_event.value().as_value());
+        } else {
+            iox2_service_builder_event_disable_notifier_created_event(&m_handle);
+        }
     }
 
     if (m_verify_notifier_dropped_event) {
-        m_notifier_dropped_event
-            .and_then([&](auto value) -> auto {
-                iox2_service_builder_event_set_notifier_dropped_event(&m_handle, value.as_value());
-            })
-            .or_else([&]() -> auto { iox2_service_builder_event_disable_notifier_dropped_event(&m_handle); });
+        if (m_notifier_dropped_event.has_value()) {
+            iox2_service_builder_event_set_notifier_dropped_event(&m_handle,
+                                                                  m_notifier_dropped_event.value().as_value());
+        } else {
+            iox2_service_builder_event_disable_notifier_dropped_event(&m_handle);
+        }
     }
 
     if (m_verify_notifier_dead_event) {
-        m_notifier_dead_event
-            .and_then([&](auto value) -> auto {
-                iox2_service_builder_event_set_notifier_dead_event(&m_handle, value.as_value());
-            })
-            .or_else([&]() -> auto { iox2_service_builder_event_disable_notifier_dead_event(&m_handle); });
+        if (m_notifier_dead_event.has_value()) {
+            iox2_service_builder_event_set_notifier_dead_event(&m_handle, m_notifier_dead_event.value().as_value());
+        } else {
+            iox2_service_builder_event_disable_notifier_dead_event(&m_handle);
+        }
     }
 
     if (m_verify_deadline) {
-        m_deadline
-            .and_then([&](auto duration) -> auto {
-                iox2_service_builder_event_set_deadline(&m_handle, duration.as_secs(), duration.subsec_nanos());
-            })
-            .or_else([&]() -> auto { iox2_service_builder_event_disable_deadline(&m_handle); });
+        if (m_deadline.has_value()) {
+            auto& deadline = m_deadline.value();
+            iox2_service_builder_event_set_deadline(&m_handle, deadline.as_secs(), deadline.subsec_nanos());
+        } else {
+            iox2_service_builder_event_disable_deadline(&m_handle);
+        }
     }
 
     m_max_nodes.and_then([&](auto value) -> auto { iox2_service_builder_event_set_max_nodes(&m_handle, value); });

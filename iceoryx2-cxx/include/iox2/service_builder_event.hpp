@@ -16,6 +16,7 @@
 #include "iox/builder_addendum.hpp"
 #include "iox2/attribute_specifier.hpp"
 #include "iox2/attribute_verifier.hpp"
+#include "iox2/container/optional.hpp"
 #include "iox2/event_id.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/legacy/expected.hpp"
@@ -136,10 +137,10 @@ class ServiceBuilderEvent {
 
     iox2_service_builder_event_h m_handle = nullptr;
 
-    iox2::legacy::optional<EventId> m_notifier_dead_event;
-    iox2::legacy::optional<EventId> m_notifier_created_event;
-    iox2::legacy::optional<EventId> m_notifier_dropped_event;
-    iox2::legacy::optional<iox2::bb::Duration> m_deadline;
+    container::Optional<EventId> m_notifier_dead_event;
+    container::Optional<EventId> m_notifier_created_event;
+    container::Optional<EventId> m_notifier_dropped_event;
+    container::Optional<bb::Duration> m_deadline;
     bool m_verify_notifier_dead_event = false;
     bool m_verify_notifier_created_event = false;
     bool m_verify_notifier_dropped_event = false;
