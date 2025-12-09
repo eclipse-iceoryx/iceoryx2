@@ -164,13 +164,13 @@ TYPED_TEST(ServiceEventTest, open_or_create_service_does_exist) {
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
 
     {
-        auto sut = iox2::legacy::optional<PortFactoryEvent<SERVICE_TYPE>>(
+        auto sut = iox2::container::Optional<PortFactoryEvent<SERVICE_TYPE>>(
             node.service_builder(service_name).event().open_or_create().expect(""));
 
         ASSERT_TRUE(Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::Event)
                         .expect(""));
 
-        auto sut_2 = iox2::legacy::optional<PortFactoryEvent<SERVICE_TYPE>>(
+        auto sut_2 = iox2::container::Optional<PortFactoryEvent<SERVICE_TYPE>>(
             node.service_builder(service_name).event().open_or_create().expect(""));
 
         ASSERT_TRUE(Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::Event)
@@ -345,10 +345,10 @@ TYPED_TEST(ServiceEventTest, service_can_be_opened_when_there_is_a_notifier) {
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto sut = iox2::legacy::optional<PortFactoryEvent<SERVICE_TYPE>>(
+    auto sut = iox2::container::Optional<PortFactoryEvent<SERVICE_TYPE>>(
         node.service_builder(service_name).event().create().expect(""));
-    auto listener = iox2::legacy::optional<Listener<SERVICE_TYPE>>(sut->listener_builder().create().expect(""));
-    auto notifier = iox2::legacy::optional<Notifier<SERVICE_TYPE>>(sut->notifier_builder().create().expect(""));
+    auto listener = iox2::container::Optional<Listener<SERVICE_TYPE>>(sut->listener_builder().create().expect(""));
+    auto notifier = iox2::container::Optional<Notifier<SERVICE_TYPE>>(sut->notifier_builder().create().expect(""));
 
     sut.reset();
     {
@@ -361,9 +361,9 @@ TYPED_TEST(ServiceEventTest, service_can_be_opened_when_there_is_a_notifier) {
     }
     listener.reset();
 
-    sut = iox2::legacy::optional<PortFactoryEvent<SERVICE_TYPE>>(
+    sut = iox2::container::Optional<PortFactoryEvent<SERVICE_TYPE>>(
         node.service_builder(service_name).event().open().expect(""));
-    listener = iox2::legacy::optional<Listener<SERVICE_TYPE>>(sut->listener_builder().create().expect(""));
+    listener = iox2::container::Optional<Listener<SERVICE_TYPE>>(sut->listener_builder().create().expect(""));
     notifier->notify_with_custom_event_id(event_id).expect("");
     auto notification = listener->try_wait_one().expect("");
     ASSERT_THAT(notification->as_value(), Eq(event_id.as_value()));
@@ -388,10 +388,10 @@ TYPED_TEST(ServiceEventTest, service_can_be_opened_when_there_is_a_listener) {
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto sut = iox2::legacy::optional<PortFactoryEvent<SERVICE_TYPE>>(
+    auto sut = iox2::container::Optional<PortFactoryEvent<SERVICE_TYPE>>(
         node.service_builder(service_name).event().create().expect(""));
-    auto listener = iox2::legacy::optional<Listener<SERVICE_TYPE>>(sut->listener_builder().create().expect(""));
-    auto notifier = iox2::legacy::optional<Notifier<SERVICE_TYPE>>(sut->notifier_builder().create().expect(""));
+    auto listener = iox2::container::Optional<Listener<SERVICE_TYPE>>(sut->listener_builder().create().expect(""));
+    auto notifier = iox2::container::Optional<Notifier<SERVICE_TYPE>>(sut->notifier_builder().create().expect(""));
 
     sut.reset();
     {
@@ -404,9 +404,9 @@ TYPED_TEST(ServiceEventTest, service_can_be_opened_when_there_is_a_listener) {
     }
     notifier.reset();
 
-    sut = iox2::legacy::optional<PortFactoryEvent<SERVICE_TYPE>>(
+    sut = iox2::container::Optional<PortFactoryEvent<SERVICE_TYPE>>(
         node.service_builder(service_name).event().open().expect(""));
-    notifier = iox2::legacy::optional<Notifier<SERVICE_TYPE>>(sut->notifier_builder().create().expect(""));
+    notifier = iox2::container::Optional<Notifier<SERVICE_TYPE>>(sut->notifier_builder().create().expect(""));
     notifier->notify_with_custom_event_id(event_id).expect("");
     auto notification = listener->try_wait_one().expect("");
     ASSERT_THAT(notification->as_value(), Eq(event_id.as_value()));
@@ -806,7 +806,7 @@ TYPED_TEST(ServiceEventTest, only_max_notifiers_can_be_created) {
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
     auto service = node.service_builder(service_name).event().max_notifiers(1).create().expect("");
-    auto notifier = iox2::legacy::optional<Notifier<SERVICE_TYPE>>(service.notifier_builder().create().expect(""));
+    auto notifier = iox2::container::Optional<Notifier<SERVICE_TYPE>>(service.notifier_builder().create().expect(""));
 
     auto failing_sut = service.notifier_builder().create();
     ASSERT_TRUE(failing_sut.has_error());
@@ -824,7 +824,7 @@ TYPED_TEST(ServiceEventTest, only_max_listeners_can_be_created) {
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
     auto service = node.service_builder(service_name).event().max_listeners(1).create().expect("");
-    auto listener = iox2::legacy::optional<Listener<SERVICE_TYPE>>(service.listener_builder().create().expect(""));
+    auto listener = iox2::container::Optional<Listener<SERVICE_TYPE>>(service.listener_builder().create().expect(""));
 
     auto failing_sut = service.listener_builder().create();
     ASSERT_TRUE(failing_sut.has_error());
