@@ -1051,8 +1051,8 @@ TYPED_TEST(ServiceRequestResponseTest, number_of_clients_servers_works) {
 TYPED_TEST(ServiceRequestResponseTest, create_with_attributes_sets_attributes) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    auto key = Attribute::Key("nice key");
-    auto value = Attribute::Value("with a shiny value");
+    auto key = *Attribute::Key::from_utf8("nice key");
+    auto value = *Attribute::Value::from_utf8("with a shiny value");
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
@@ -1082,9 +1082,9 @@ TYPED_TEST(ServiceRequestResponseTest, create_with_attributes_sets_attributes) {
 TYPED_TEST(ServiceRequestResponseTest, open_fails_when_attributes_are_incompatible) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    auto key = Attribute::Key("which song does hypnotoad sing?");
-    auto value = Attribute::Value("is it 'all my hypnoflies'?");
-    auto missing_key = Attribute::Key("no it's 'nala-la-la-la'!");
+    auto key = *Attribute::Key::from_utf8("which song does hypnotoad sing?");
+    auto value = *Attribute::Value::from_utf8("is it 'all my hypnoflies'?");
+    auto missing_key = *Attribute::Key::from_utf8("no it's 'nala-la-la-la'!");
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();

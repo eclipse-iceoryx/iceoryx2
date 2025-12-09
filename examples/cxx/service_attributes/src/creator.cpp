@@ -25,10 +25,19 @@ auto main() -> int {
     // define a set of properties that are static for the lifetime
     // of the service
     auto attribute_specifier = AttributeSpecifier();
-    attribute_specifier.define("dds_service_mapping", "my_funky_service_name").value();
-    attribute_specifier.define("tcp_serialization_format", "cdr").value();
-    attribute_specifier.define("someip_service_mapping", "1/2/3").value();
-    attribute_specifier.define("camera_resolution", "1920x1080").value();
+    attribute_specifier
+        .define(*Attribute::Key::from_utf8("dds_service_mapping"),
+                *Attribute::Value::from_utf8("my_funky_service_name"))
+        .value();
+    attribute_specifier
+        .define(*Attribute::Key::from_utf8("tcp_serialization_format"), *Attribute::Value::from_utf8("cdr"))
+        .value();
+    attribute_specifier
+        .define(*Attribute::Key::from_utf8("someip_service_mapping"), *Attribute::Value::from_utf8("1/2/3"))
+        .value();
+    attribute_specifier
+        .define(*Attribute::Key::from_utf8("camera_resolution"), *Attribute::Value::from_utf8("1920x1080"))
+        .value();
 
     auto service = node.service_builder(ServiceName::create("Service/With/Properties").value())
                        .publish_subscribe<uint64_t>()

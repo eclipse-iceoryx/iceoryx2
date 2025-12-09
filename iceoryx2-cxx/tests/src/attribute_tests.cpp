@@ -22,8 +22,8 @@ namespace {
 using namespace iox2;
 
 TEST(AttributeVerifier, require_is_listed_in_attributes) {
-    auto key = Attribute::Key("some_key");
-    auto value = Attribute::Value("oh my god, its a value");
+    auto key = *Attribute::Key::from_utf8("some_key");
+    auto value = *Attribute::Value::from_utf8("oh my god, its a value");
     auto attribute_verifier = AttributeVerifier();
     attribute_verifier.require(key, value).value();
 
@@ -35,8 +35,8 @@ TEST(AttributeVerifier, require_is_listed_in_attributes) {
 }
 
 TEST(AttributeVerifier, required_keys_are_listed_in_keys) {
-    auto key_1 = Attribute::Key("where is my key");
-    auto key_2 = Attribute::Key("Nala, find my keys!");
+    auto key_1 = *Attribute::Key::from_utf8("where is my key");
+    auto key_2 = *Attribute::Key::from_utf8("Nala, find my keys!");
     auto attribute_verifier = AttributeVerifier();
     attribute_verifier.require_key(key_1).value();
     attribute_verifier.require_key(key_2).value();
@@ -49,8 +49,8 @@ TEST(AttributeVerifier, required_keys_are_listed_in_keys) {
 }
 
 TEST(AttributeVerifier, verify_requirements_successful_for_compatible_setups) {
-    auto key = Attribute::Key("the secret to happiness");
-    auto value = Attribute::Value("is on the nose of an iceoryx");
+    auto key = *Attribute::Key::from_utf8("the secret to happiness");
+    auto value = *Attribute::Value::from_utf8("is on the nose of an iceoryx");
     auto attribute_verifier = AttributeVerifier();
     attribute_verifier.require(key, value).value();
 
@@ -62,9 +62,9 @@ TEST(AttributeVerifier, verify_requirements_successful_for_compatible_setups) {
 }
 
 TEST(AttributeVerifier, verify_requirements_returns_key_for_incompatible_setups) {
-    auto key = Attribute::Key("is there a fireoryx");
-    auto value = Attribute::Value("or a windoryx");
-    auto missing_key = Attribute::Key("or a earthoryx");
+    auto key = *Attribute::Key::from_utf8("is there a fireoryx");
+    auto value = *Attribute::Value::from_utf8("or a windoryx");
+    auto missing_key = *Attribute::Key::from_utf8("or a earthoryx");
     auto incompatible_attribute_verifier = AttributeVerifier();
     incompatible_attribute_verifier.require(key, value).value();
     auto attribute_verifier = AttributeVerifier();
@@ -80,10 +80,10 @@ TEST(AttributeVerifier, verify_requirements_returns_key_for_incompatible_setups)
 }
 
 TEST(AttributeSpecifier, all_defined_attributes_are_set) {
-    auto key_1 = Attribute::Key("our goal:");
-    auto value_1 = Attribute::Value("iceoryx runs on the uss enterprise");
-    auto key_2 = Attribute::Key("wouldn't it be cool if");
-    auto value_2 = Attribute::Value("scotty must debug some ancient iceoryx2 technology");
+    auto key_1 = *Attribute::Key::from_utf8("our goal:");
+    auto value_1 = *Attribute::Value::from_utf8("iceoryx runs on the uss enterprise");
+    auto key_2 = *Attribute::Key::from_utf8("wouldn't it be cool if");
+    auto value_2 = *Attribute::Value::from_utf8("scotty must debug some ancient iceoryx2 technology");
 
     auto attribute_specifier = AttributeSpecifier();
     attribute_specifier.define(key_1, value_1).value();
@@ -98,9 +98,9 @@ TEST(AttributeSpecifier, all_defined_attributes_are_set) {
 }
 
 TEST(AttributeSet, all_key_values_can_be_listed) {
-    auto key = Attribute::Key("shall zero-copy");
-    auto value_1 = Attribute::Value("be with you");
-    auto value_2 = Attribute::Value("or not be with you");
+    auto key = *Attribute::Key::from_utf8("shall zero-copy");
+    auto value_1 = *Attribute::Value::from_utf8("be with you");
+    auto value_2 = *Attribute::Value::from_utf8("or not be with you");
 
     auto attribute_specifier = AttributeSpecifier();
     attribute_specifier.define(key, value_1).value();
@@ -115,9 +115,9 @@ TEST(AttributeSet, all_key_values_can_be_listed) {
 }
 
 TEST(AttributeSet, all_key_values_can_be_acquired) {
-    auto key = Attribute::Key("santa clauses slide is actually run");
-    std::vector<Attribute::Value> values = { Attribute::Value("by one iceoryx"),
-                                             Attribute::Value("reindeers are retired") };
+    auto key = *Attribute::Key::from_utf8("santa clauses slide is actually run");
+    std::vector<Attribute::Value> values = { *Attribute::Value::from_utf8("by one iceoryx"),
+                                             *Attribute::Value::from_utf8("reindeers are retired") };
 
     auto attribute_specifier = AttributeSpecifier();
     attribute_specifier.define(key, values[0]).value();
@@ -134,10 +134,10 @@ TEST(AttributeSet, all_key_values_can_be_acquired) {
 }
 
 TEST(AttributeSet, get_key_value_len_works) {
-    auto empty_key = Attribute::Key("fuu");
-    auto key = Attribute::Key("whatever");
-    auto value_1 = Attribute::Value("you");
-    auto value_2 = Attribute::Value("want");
+    auto empty_key = *Attribute::Key::from_utf8("fuu");
+    auto key = *Attribute::Key::from_utf8("whatever");
+    auto value_1 = *Attribute::Value::from_utf8("you");
+    auto value_2 = *Attribute::Value::from_utf8("want");
 
     auto attribute_specifier = AttributeSpecifier();
     attribute_specifier.define(key, value_1).value();
@@ -150,9 +150,9 @@ TEST(AttributeSet, get_key_value_len_works) {
 
 //NOLINTBEGIN(readability-function-cognitive-complexity), false positive caused by ASSERT_THAT
 TEST(AttributeSet, get_key_value_at_works) {
-    auto key = Attribute::Key("schmu whatever");
-    auto value_1 = Attribute::Value("fuu you");
-    auto value_2 = Attribute::Value("blue want");
+    auto key = *Attribute::Key::from_utf8("schmu whatever");
+    auto value_1 = *Attribute::Value::from_utf8("fuu you");
+    auto value_2 = *Attribute::Value::from_utf8("blue want");
 
     auto attribute_specifier = AttributeSpecifier();
     attribute_specifier.define(key, value_1).value();
@@ -168,19 +168,19 @@ TEST(AttributeSet, get_key_value_at_works) {
     ASSERT_THAT(v_3.has_value(), Eq(false));
 
     if (v_1->size() == value_1.size()) {
-        ASSERT_THAT(v_1.value().c_str(), StrEq(value_1.c_str()));
-        ASSERT_THAT(v_2.value().c_str(), StrEq(value_2.c_str()));
+        ASSERT_THAT(v_1.value().unchecked_access().c_str(), StrEq(value_1.unchecked_access().c_str()));
+        ASSERT_THAT(v_2.value().unchecked_access().c_str(), StrEq(value_2.unchecked_access().c_str()));
     } else {
-        ASSERT_THAT(v_2.value().c_str(), StrEq(value_1.c_str()));
-        ASSERT_THAT(v_1.value().c_str(), StrEq(value_2.c_str()));
+        ASSERT_THAT(v_2.value().unchecked_access().c_str(), StrEq(value_1.unchecked_access().c_str()));
+        ASSERT_THAT(v_1.value().unchecked_access().c_str(), StrEq(value_2.unchecked_access().c_str()));
     }
 }
 //NOLINTEND(readability-function-cognitive-complexity)
 
 TEST(AttributeSet, to_owned_works) {
-    auto key = Attribute::Key("your mind becomes a galaxy");
-    auto value_1 = Attribute::Value("shiny and bright");
-    auto value_2 = Attribute::Value("with spice aroma");
+    auto key = *Attribute::Key::from_utf8("your mind becomes a galaxy");
+    auto value_1 = *Attribute::Value::from_utf8("shiny and bright");
+    auto value_2 = *Attribute::Value::from_utf8("with spice aroma");
 
     auto attribute_specifier = AttributeSpecifier();
     attribute_specifier.define(key, value_1).value();

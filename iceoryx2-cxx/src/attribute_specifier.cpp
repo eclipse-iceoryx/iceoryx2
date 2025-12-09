@@ -39,7 +39,8 @@ auto AttributeSpecifier::operator=(AttributeSpecifier&& rhs) noexcept -> Attribu
 
 auto AttributeSpecifier::define(const Attribute::Key& key, const Attribute::Value& value)
     -> bb::Expected<void, AttributeDefinitionError> {
-    auto result = iox2_attribute_specifier_define(&m_handle, key.c_str(), value.c_str());
+    auto result =
+        iox2_attribute_specifier_define(&m_handle, key.unchecked_access().c_str(), value.unchecked_access().c_str());
     if (result == IOX2_OK) {
         return {};
     }
