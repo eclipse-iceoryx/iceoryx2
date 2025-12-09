@@ -99,6 +99,17 @@ pub enum ComplianceCheckMode {
     Silent,
 }
 
+// TODO: make this a global variable, as soon as our MSRV support `Option::map()`
+//       with const evaluation like
+//
+//  pub const REQUIRED_SOCKET_DIRECTORY: Option<Path> =
+//   iceoryx2_pal_configuration::REQUIRED_SOCKET_DIRECTORY
+//      .map(|v| unsafe { Path::new_unchecked_const(v) });
+pub fn required_socket_directory() -> Option<Path> {
+    iceoryx2_pal_configuration::REQUIRED_SOCKET_DIRECTORY
+        .map(|v| unsafe { Path::new_unchecked_const(v) })
+}
+
 /// Checks if the current system satisfies all requirements to the POSIX subsystem.
 /// With [`ComplianceCheckMode::Verbose`] it prints the results to the console otherwise it is
 /// silent. It returns true when the system fulfills the requirements otherwise false.

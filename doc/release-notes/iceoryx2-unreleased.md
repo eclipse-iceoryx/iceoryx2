@@ -50,6 +50,8 @@
   [#1176](https://github.com/eclipse-iceoryx/iceoryx2/issues/1176)
 * Add shared memory variant based on files
   [#1223](https://github.com/eclipse-iceoryx/iceoryx2/issues/1223)
+* Add socket directory configuration in platform
+  [#1232](https://github.com/eclipse-iceoryx/iceoryx2/issues/1232)
 
 ### Bugfixes
 
