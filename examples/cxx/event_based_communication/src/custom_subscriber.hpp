@@ -94,7 +94,7 @@ class CustomSubscriber : public iox2::FileDescriptorBased {
         }
     }
 
-    auto receive() -> iox2::legacy::optional<iox2::Sample<iox2::ServiceType::Ipc, TransmissionData, void>> {
+    auto receive() -> iox2::container::Optional<iox2::Sample<iox2::ServiceType::Ipc, TransmissionData, void>> {
         auto sample = m_subscriber.receive().expect("");
         if (sample.has_value()) {
             m_notifier.notify_with_custom_event_id(iox2::EventId(iox2::bb::into<size_t>(PubSubEvent::ReceivedSample)))
