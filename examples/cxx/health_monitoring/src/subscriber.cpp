@@ -57,8 +57,8 @@ auto main() -> int {
     auto listener_2_guard = waitset.attach_deadline(listener_2, deadline_2).expect("");
 
     auto missed_deadline = [](const ServiceName& service_name, const iox2::bb::Duration& cycle_time) -> auto {
-        std::cout << service_name.to_string().c_str() << ": voilated contract and did not send a message after "
-                  << cycle_time << std::endl;
+        std::cout << service_name.to_string().unchecked_access().c_str()
+                  << ": voilated contract and did not send a message after " << cycle_time << std::endl;
     };
 
     auto on_event = [&](const WaitSetAttachmentId<ServiceType::Ipc>& attachment_id) -> auto {
@@ -102,17 +102,19 @@ void handle_incoming_events(Listener<ServiceType::Ipc>& listener,
     listener
         .try_wait_all([&](auto event_id) -> auto {
             if (event_id == iox2::bb::into<EventId>(PubSubEvent::ProcessDied)) {
-                std::cout << service_name.to_string().c_str() << ": process died!" << std::endl;
+                std::cout << service_name.to_string().unchecked_access().c_str() << ": process died!" << std::endl;
             } else if (event_id == iox2::bb::into<EventId>(PubSubEvent::PublisherConnected)) {
-                std::cout << service_name.to_string().c_str() << ": publisher connected!" << std::endl;
+                std::cout << service_name.to_string().unchecked_access().c_str() << ": publisher connected!"
+                          << std::endl;
             } else if (event_id == iox2::bb::into<EventId>(PubSubEvent::PublisherDisconnected)) {
-                std::cout << service_name.to_string().c_str() << ": publisher disconnected!" << std::endl;
+                std::cout << service_name.to_string().unchecked_access().c_str() << ": publisher disconnected!"
+                          << std::endl;
             } else if (event_id == iox2::bb::into<EventId>(PubSubEvent::SentSample)) {
                 const auto receive_result = subscriber.receive();
                 if (receive_result.has_value() && receive_result.value().has_value()) {
                     const auto& sample = receive_result.value().value();
-                    std::cout << service_name.to_string().c_str() << ": Received sample " << sample.payload() << " ..."
-                              << std::endl;
+                    std::cout << service_name.to_string().unchecked_access().c_str() << ": Received sample "
+                              << sample.payload() << " ..." << std::endl;
                 }
             }
         })
@@ -124,7 +126,7 @@ void find_and_cleanup_dead_nodes() {
         node_state.dead([](auto view) -> auto {
             std::cout << "detected dead node: ";
             if (view.details().has_value()) {
-                std::cout << view.details().value().name().to_string().c_str();
+                std::cout << view.details().value().name().to_string().unchecked_access().c_str();
             }
             std::cout << std::endl;
             view.remove_stale_resources().expect("");
