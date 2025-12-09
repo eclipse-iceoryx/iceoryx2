@@ -27,7 +27,7 @@ DynamicConfigPublishSubscribe::DynamicConfigPublishSubscribe(iox2_port_factory_p
 }
 
 void DynamicConfigPublishSubscribe::list_publishers(
-    const iox2::legacy::function<CallbackProgression(PublisherDetailsView)>& callback) const {
+    const iox2::bb::StaticFunction<CallbackProgression(PublisherDetailsView)>& callback) const {
     auto ctx = internal::ctx(callback);
     iox2_port_factory_pub_sub_dynamic_config_list_publishers(
         &m_handle,
@@ -36,7 +36,7 @@ void DynamicConfigPublishSubscribe::list_publishers(
 }
 
 void DynamicConfigPublishSubscribe::list_subscribers(
-    const iox2::legacy::function<CallbackProgression(SubscriberDetailsView)>& callback) const {
+    const iox2::bb::StaticFunction<CallbackProgression(SubscriberDetailsView)>& callback) const {
     auto ctx = internal::ctx(callback);
     iox2_port_factory_pub_sub_dynamic_config_list_subscribers(
         &m_handle,

@@ -14,9 +14,9 @@
 #ifndef IOX2_BB_CLI_OPTION_DEFINITION_HPP
 #define IOX2_BB_CLI_OPTION_DEFINITION_HPP
 
+#include "iox2/bb/static_function.hpp"
 #include "iox2/legacy/cli/arguments.hpp"
 #include "iox2/legacy/cli/types.hpp"
-#include "iox2/legacy/function.hpp"
 #include "iox2/legacy/vector.hpp"
 #include <cstdint>
 
@@ -35,7 +35,7 @@ class OptionDefinition {
     ///            defined std::abort() is called
     explicit OptionDefinition(
         const OptionDescription_t& programDescription,
-        const function<void()>& onFailureCallback = [] { std::abort(); }) noexcept;
+        const bb::StaticFunction<void()>& onFailureCallback = [] { std::abort(); }) noexcept;
 
     /// @brief Adds a command line switch argument
     ///        Calls the onFailureCallback when the option was already added or the shortOption and longOption are
@@ -83,7 +83,7 @@ class OptionDefinition {
   private:
     OptionDescription_t m_programDescription;
     vector<OptionWithDetails, MAX_NUMBER_OF_ARGUMENTS> m_availableOptions;
-    function<void()> m_onFailureCallback;
+    bb::StaticFunction<void()> m_onFailureCallback;
 };
 
 std::ostream& operator<<(std::ostream& stream, const OptionWithDetails& option) noexcept;

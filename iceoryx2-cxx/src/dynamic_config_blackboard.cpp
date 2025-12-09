@@ -26,14 +26,14 @@ DynamicConfigBlackboard::DynamicConfigBlackboard(iox2_port_factory_blackboard_h 
 }
 
 void DynamicConfigBlackboard::list_readers(
-    const iox2::legacy::function<CallbackProgression(ReaderDetailsView)>& callback) const {
+    const iox2::bb::StaticFunction<CallbackProgression(ReaderDetailsView)>& callback) const {
     auto ctx = internal::ctx(callback);
     iox2_port_factory_blackboard_dynamic_config_list_readers(
         &m_handle, internal::list_ports_callback<iox2_reader_details_ptr, ReaderDetailsView>, static_cast<void*>(&ctx));
 }
 
 void DynamicConfigBlackboard::list_writers(
-    const iox2::legacy::function<CallbackProgression(WriterDetailsView)>& callback) const {
+    const iox2::bb::StaticFunction<CallbackProgression(WriterDetailsView)>& callback) const {
     auto ctx = internal::ctx(callback);
     iox2_port_factory_blackboard_dynamic_config_list_writers(
         &m_handle, internal::list_ports_callback<iox2_writer_details_ptr, WriterDetailsView>, static_cast<void*>(&ctx));

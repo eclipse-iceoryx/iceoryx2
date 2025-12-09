@@ -27,14 +27,14 @@ DynamicConfigRequestResponse::DynamicConfigRequestResponse(iox2_port_factory_req
 }
 
 void DynamicConfigRequestResponse::list_servers(
-    const iox2::legacy::function<CallbackProgression(ServerDetailsView)>& callback) const {
+    const iox2::bb::StaticFunction<CallbackProgression(ServerDetailsView)>& callback) const {
     auto ctx = internal::ctx(callback);
     iox2_port_factory_request_response_dynamic_config_list_servers(
         &m_handle, internal::list_ports_callback<iox2_server_details_ptr, ServerDetailsView>, static_cast<void*>(&ctx));
 }
 
 void DynamicConfigRequestResponse::list_clients(
-    const iox2::legacy::function<CallbackProgression(ClientDetailsView)>& callback) const {
+    const iox2::bb::StaticFunction<CallbackProgression(ClientDetailsView)>& callback) const {
     auto ctx = internal::ctx(callback);
     iox2_port_factory_request_response_dynamic_config_list_clients(
         &m_handle, internal::list_ports_callback<iox2_client_details_ptr, ClientDetailsView>, static_cast<void*>(&ctx));

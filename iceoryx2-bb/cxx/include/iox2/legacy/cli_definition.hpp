@@ -109,7 +109,7 @@
         char** argv,                                                                                                   \
         const iox2::legacy::cli::OptionDescription_t& programDescription,                                              \
         const uint64_t argcOffset = 1U,                                                                                \
-        const ::iox2::legacy::function<void()>& onFailureCallback = [] { std::abort(); }) {                            \
+        const ::iox2::bb::StaticFunction<void()>& onFailureCallback = [] { std::abort(); }) {                          \
         ::iox2::legacy::cli::OptionManager optionManager(programDescription, onFailureCallback);                       \
         return Name(optionManager, argc, argv, argcOffset);                                                            \
     }                                                                                                                  \

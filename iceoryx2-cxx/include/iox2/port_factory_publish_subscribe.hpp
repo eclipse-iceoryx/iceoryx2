@@ -14,12 +14,12 @@
 #define IOX2_PORTFACTORY_PUBLISH_SUBSCRIBE_HPP
 
 #include "iox2/attribute_set.hpp"
+#include "iox2/bb/static_function.hpp"
 #include "iox2/callback_progression.hpp"
 #include "iox2/dynamic_config_publish_subscribe.hpp"
 #include "iox2/internal/callback_context.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/legacy/expected.hpp"
-#include "iox2/legacy/function.hpp"
 #include "iox2/node_failure_enums.hpp"
 #include "iox2/node_state.hpp"
 #include "iox2/port_factory_publisher.hpp"
@@ -64,7 +64,7 @@ class PortFactoryPublishSubscribe {
     /// and calls for every [`Node`] the provided callback. If an error occurs
     /// while acquiring the [`Node`]s corresponding [`NodeState`] the error is
     /// forwarded to the callback as input argument.
-    auto nodes(const iox2::legacy::function<CallbackProgression(NodeState<S>)>& callback) const
+    auto nodes(const iox2::bb::StaticFunction<CallbackProgression(NodeState<S>)>& callback) const
         -> iox2::legacy::expected<void, NodeListFailure>;
 
     /// Returns a [`PortFactorySubscriber`] to create a new [`Subscriber`] port.
@@ -155,7 +155,7 @@ inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::dynamic_config(
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::nodes(
-    const iox2::legacy::function<CallbackProgression(NodeState<S>)>& callback) const
+    const iox2::bb::StaticFunction<CallbackProgression(NodeState<S>)>& callback) const
     -> iox2::legacy::expected<void, NodeListFailure> {
     auto ctx = internal::ctx(callback);
 

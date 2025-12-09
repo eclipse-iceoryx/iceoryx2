@@ -14,12 +14,12 @@
 #define IOX2_PORTFACTORY_REQUEST_RESPONSE_HPP
 
 #include "iox2/attribute_set.hpp"
+#include "iox2/bb/static_function.hpp"
 #include "iox2/callback_progression.hpp"
 #include "iox2/dynamic_config_request_response.hpp"
 #include "iox2/internal/callback_context.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/legacy/expected.hpp"
-#include "iox2/legacy/function.hpp"
 #include "iox2/node_failure_enums.hpp"
 #include "iox2/node_state.hpp"
 #include "iox2/port_factory_client.hpp"
@@ -68,7 +68,7 @@ class PortFactoryRequestResponse {
     /// and calls for every [`Node`] the provided callback. If an error occurs
     /// while acquiring the [`Node`]s corresponding [`NodeState`] the error is
     /// forwarded to the callback as input argument.
-    auto nodes(const iox2::legacy::function<CallbackProgression(NodeState<Service>)>& callback) const
+    auto nodes(const iox2::bb::StaticFunction<CallbackProgression(NodeState<Service>)>& callback) const
         -> iox2::legacy::expected<void, NodeListFailure>;
 
     /// Returns a [`PortFactoryClient`] to create a new
@@ -197,7 +197,7 @@ template <ServiceType Service,
           typename ResponseUserHeader>
 inline auto
 PortFactoryRequestResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::nodes(
-    const iox2::legacy::function<CallbackProgression(NodeState<Service>)>& callback) const
+    const iox2::bb::StaticFunction<CallbackProgression(NodeState<Service>)>& callback) const
     -> iox2::legacy::expected<void, NodeListFailure> {
     auto ctx = internal::ctx(callback);
 

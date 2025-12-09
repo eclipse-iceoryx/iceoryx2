@@ -14,8 +14,8 @@
 #define IOX2_SAMPLE_MUT_UNINIT_HPP
 
 #include "iox/slice.hpp"
+#include "iox2/bb/static_function.hpp"
 #include "iox2/header_publish_subscribe.hpp"
-#include "iox2/legacy/function.hpp"
 #include "iox2/sample_mut.hpp"
 #include "iox2/service_type.hpp"
 
@@ -64,7 +64,7 @@ class SampleMutUninit {
 
     /// Writes the payload to the sample
     template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, T>>
-    auto write_from_fn(const iox2::legacy::function<typename T::ValueType(uint64_t)>& initializer)
+    auto write_from_fn(const iox2::bb::StaticFunction<typename T::ValueType(uint64_t)>& initializer)
         -> SampleMut<S, Payload, UserHeader>;
 
     /// mem copies the value to the sample
@@ -143,7 +143,7 @@ inline auto SampleMutUninit<S, Payload, UserHeader>::write_payload(T&& value) ->
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
 inline auto SampleMutUninit<S, Payload, UserHeader>::write_from_fn(
-    const iox2::legacy::function<typename T::ValueType(uint64_t)>& initializer) -> SampleMut<S, Payload, UserHeader> {
+    const iox2::bb::StaticFunction<typename T::ValueType(uint64_t)>& initializer) -> SampleMut<S, Payload, UserHeader> {
     auto slice = payload_mut();
     for (uint64_t i = 0; i < slice.number_of_elements(); ++i) {
         new (&slice[i]) typename T::ValueType(initializer(i));

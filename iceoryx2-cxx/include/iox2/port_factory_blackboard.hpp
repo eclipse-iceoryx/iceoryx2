@@ -60,7 +60,7 @@ class PortFactoryBlackboard {
     /// and calls for every [`Node`] the provided callback. If an error occurs
     /// while acquiring the [`Node`]s corresponding [`NodeState`] the error is
     /// forwarded to the callback as input argument.
-    auto nodes(const iox2::legacy::function<CallbackProgression(NodeState<S>)>& callback) const
+    auto nodes(const iox2::bb::StaticFunction<CallbackProgression(NodeState<S>)>& callback) const
         -> iox2::legacy::expected<void, NodeListFailure>;
 
     /// Returns a [`PortFactoryWriter`] to create a new [`Writer`] port
@@ -150,7 +150,7 @@ inline auto PortFactoryBlackboard<S, KeyType>::dynamic_config() const -> Dynamic
 
 template <ServiceType S, typename KeyType>
 inline auto PortFactoryBlackboard<S, KeyType>::nodes(
-    const iox2::legacy::function<CallbackProgression(NodeState<S>)>& callback) const
+    const iox2::bb::StaticFunction<CallbackProgression(NodeState<S>)>& callback) const
     -> iox2::legacy::expected<void, NodeListFailure> {
     auto ctx = internal::ctx(callback);
 

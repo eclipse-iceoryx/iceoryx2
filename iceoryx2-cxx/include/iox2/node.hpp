@@ -15,11 +15,11 @@
 
 #include "iox/builder_addendum.hpp"
 #include "iox2/bb/duration.hpp"
+#include "iox2/bb/static_function.hpp"
 #include "iox2/callback_progression.hpp"
 #include "iox2/config.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/legacy/expected.hpp"
-#include "iox2/legacy/function.hpp"
 #include "iox2/node_id.hpp"
 #include "iox2/node_name.hpp"
 #include "iox2/node_state.hpp"
@@ -63,7 +63,7 @@ class Node {
     /// called for every [`Node`] and gets the [`NodeState`] as input argument.
     /// The callback can return [`CallbackProgression::Stop`] if the iteration
     /// shall stop or [`CallbackProgression::Continue`];
-    static auto list(ConfigView config, const iox2::legacy::function<CallbackProgression(NodeState<T>)>& callback)
+    static auto list(ConfigView config, const iox2::bb::StaticFunction<CallbackProgression(NodeState<T>)>& callback)
         -> iox2::legacy::expected<void, NodeListFailure>;
 
     /// Returns the [`SignalHandlingMode`] with which the [`Node`] was created.

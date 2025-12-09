@@ -40,6 +40,7 @@ target_sources(iceoryx2-bb-cxx-tests
     ${PROJECT_SOURCE_DIR}/src/path_and_file_verifier_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/raw_byte_storage_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/semantic_string_tests.cpp
+    ${PROJECT_SOURCE_DIR}/src/static_function_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/static_string_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/static_vector_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/std_chrono_support_tests.cpp
@@ -91,10 +92,8 @@ target_sources(iceoryx2-bb-cxx-tests
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_design_functional_interface_value_or.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_design_polymorphic_handler.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_design_static_lifetime_guard.cpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_functional_function.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_functional_function_ref.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_memory_memory.cpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_memory_static_storage.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_platform_atomic.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_posix_posix_call.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_primitives_type_traits.cpp
