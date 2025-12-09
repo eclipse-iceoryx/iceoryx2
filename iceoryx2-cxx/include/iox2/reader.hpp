@@ -16,6 +16,7 @@
 #include "iox2/entry_handle.hpp"
 #include "iox2/entry_handle_error.hpp"
 #include "iox2/internal/service_builder_internal.hpp"
+#include "iox2/legacy/assertions.hpp"
 #include "iox2/legacy/expected.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/unique_port_id.hpp"
@@ -57,7 +58,15 @@ inline Reader<S, KeyType>::Reader(iox2_reader_h handle)
 template <ServiceType S, typename KeyType>
 inline void Reader<S, KeyType>::drop() {
     if (m_handle != nullptr) {
+// NOTE: false positive; m_handle is initialized in the class itself
+#if (defined(__GNUC__) && __GNUC__ == 13 && !defined(__clang__))
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
         iox2_reader_drop(m_handle);
+#if (defined(__GNUC__) && __GNUC__ == 13 && !defined(__clang__))
+#pragma GCC diagnostic pop
+#endif
         m_handle = nullptr;
     }
 }
