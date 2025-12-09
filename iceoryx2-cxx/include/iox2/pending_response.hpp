@@ -14,9 +14,9 @@
 #define IOX2_PENDING_RESPONSE_HPP
 
 #include "iox/slice.hpp"
+#include "iox2/container/optional.hpp"
 #include "iox2/header_request_response.hpp"
 #include "iox2/legacy/expected.hpp"
-#include "iox2/legacy/optional.hpp"
 #include "iox2/payload_info.hpp"
 #include "iox2/response.hpp"
 #include "iox2/service_type.hpp"
@@ -50,7 +50,7 @@ class PendingResponse {
     /// Receives a [`Response`] from one of the [`Server`]s that
     /// received the [`RequestMut`].
     auto receive()
-        -> iox2::legacy::expected<iox2::legacy::optional<Response<Service, ResponsePayload, ResponseUserHeader>>,
+        -> iox2::legacy::expected<iox2::container::Optional<Response<Service, ResponsePayload, ResponseUserHeader>>,
                                   ReceiveError>;
 
     /// Returns a reference to the iceoryx2 internal [`RequestHeader`] of
@@ -156,7 +156,7 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseUserHeader>
 inline auto PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::receive()
-    -> iox2::legacy::expected<iox2::legacy::optional<Response<Service, ResponsePayload, ResponseUserHeader>>,
+    -> iox2::legacy::expected<iox2::container::Optional<Response<Service, ResponsePayload, ResponseUserHeader>>,
                               ReceiveError> {
     iox2_response_h response_handle {};
     auto result = iox2_pending_response_receive(&m_handle, nullptr, &response_handle);
@@ -165,10 +165,10 @@ inline auto PendingResponse<Service, RequestPayload, RequestUserHeader, Response
         if (response_handle != nullptr) {
             Response<Service, ResponsePayload, ResponseUserHeader> response(response_handle);
             return iox2::legacy::ok(
-                iox2::legacy::optional<Response<Service, ResponsePayload, ResponseUserHeader>>(std::move(response)));
+                iox2::container::Optional<Response<Service, ResponsePayload, ResponseUserHeader>>(std::move(response)));
         }
-        return iox2::legacy::ok(
-            iox2::legacy::optional<Response<Service, ResponsePayload, ResponseUserHeader>>(iox2::legacy::nullopt));
+        return iox2::legacy::ok(iox2::container::Optional<Response<Service, ResponsePayload, ResponseUserHeader>>(
+            iox2::container::nullopt));
     }
     return iox2::legacy::err(iox2::bb::into<ReceiveError>(result));
 }
