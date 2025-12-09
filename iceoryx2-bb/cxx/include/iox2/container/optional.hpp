@@ -222,6 +222,17 @@ class Optional {
         : m_value(std::forward<U>(value)) {
     }
 
+    template <typename... Args>
+    constexpr auto emplace(Args&&... args) noexcept -> T& {
+        if (!m_value.is_empty()) {
+            m_value.reset();
+        }
+
+        m_value.set(std::forward<Args>(args)...);
+
+        return value();
+    }
+
     // destructor
 #if __cplusplus >= 202002L
     constexpr
