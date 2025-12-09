@@ -32,8 +32,10 @@ auto main() -> int {
 
     while (node.wait(iox2::bb::Duration::zero()).has_value()) {
         listener.timed_wait_one(CYCLE_TIME).and_then([](auto maybe_event_id) -> auto {
-            maybe_event_id.and_then(
-                [](auto event_id) -> auto { std::cout << "event was triggered with id: " << event_id << std::endl; });
+            if (maybe_event_id.has_value()) {
+                auto& event_id = maybe_event_id.value();
+                std::cout << "event was triggered with id: " << event_id << std::endl;
+            }
         });
     }
 

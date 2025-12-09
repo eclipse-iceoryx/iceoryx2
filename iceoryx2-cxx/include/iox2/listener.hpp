@@ -15,12 +15,12 @@
 
 #include "iox2/bb/duration.hpp"
 #include "iox2/bb/static_function.hpp"
+#include "iox2/container/optional.hpp"
 #include "iox2/event_id.hpp"
 #include "iox2/file_descriptor.hpp"
 #include "iox2/internal/callback_context.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/legacy/expected.hpp"
-#include "iox2/legacy/optional.hpp"
 #include "iox2/listener_error.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/unique_port_id.hpp"
@@ -72,23 +72,23 @@ class Listener {
     /// Non-blocking wait for a new [`EventId`]. If no [`EventId`] was notified it returns [`None`].
     /// On error it returns [`ListenerWaitError`] is returned which describes the error
     /// in detail.
-    auto try_wait_one() -> iox2::legacy::expected<iox2::legacy::optional<EventId>, ListenerWaitError>;
+    auto try_wait_one() -> iox2::legacy::expected<iox2::container::Optional<EventId>, ListenerWaitError>;
 
     /// Blocking wait for a new [`EventId`] until either an [`EventId`] was received or the timeout
     /// has passed. If no [`EventId`] was notified it returns [`None`].
     /// On error it returns [`ListenerWaitError`] is returned which describes the error
     /// in detail.
     auto timed_wait_one(const iox2::bb::Duration& timeout)
-        -> iox2::legacy::expected<iox2::legacy::optional<EventId>, ListenerWaitError>;
+        -> iox2::legacy::expected<iox2::container::Optional<EventId>, ListenerWaitError>;
 
     /// Blocking wait for a new [`EventId`].
     /// Sporadic wakeups can occur and if no [`EventId`] was notified it returns [`None`].
     /// On error it returns [`ListenerWaitError`] is returned which describes the error
     /// in detail.
-    auto blocking_wait_one() -> iox2::legacy::expected<iox2::legacy::optional<EventId>, ListenerWaitError>;
+    auto blocking_wait_one() -> iox2::legacy::expected<iox2::container::Optional<EventId>, ListenerWaitError>;
 
     /// Returns the deadline of the corresponding [`Service`].
-    auto deadline() const -> iox2::legacy::optional<iox2::bb::Duration>;
+    auto deadline() const -> iox2::container::Optional<iox2::bb::Duration>;
 
   private:
     template <ServiceType>
@@ -166,7 +166,7 @@ inline auto Listener<S>::id() const -> UniqueListenerId {
 }
 
 template <ServiceType S>
-inline auto Listener<S>::deadline() const -> iox2::legacy::optional<iox2::bb::Duration> {
+inline auto Listener<S>::deadline() const -> iox2::container::Optional<iox2::bb::Duration> {
     uint64_t seconds = 0;
     uint32_t nanoseconds = 0;
 
@@ -174,7 +174,7 @@ inline auto Listener<S>::deadline() const -> iox2::legacy::optional<iox2::bb::Du
         return { iox2::bb::Duration::from_secs(seconds) + iox2::bb::Duration::from_nanos(nanoseconds) };
     }
 
-    return iox2::legacy::nullopt;
+    return iox2::container::nullopt;
 }
 
 inline void wait_callback(const iox2_event_id_t* event_id, iox2_callback_context context) {
@@ -224,7 +224,8 @@ inline auto Listener<S>::blocking_wait_all(const iox2::bb::StaticFunction<void(E
 }
 
 template <ServiceType S>
-inline auto Listener<S>::try_wait_one() -> iox2::legacy::expected<iox2::legacy::optional<EventId>, ListenerWaitError> {
+inline auto Listener<S>::try_wait_one()
+    -> iox2::legacy::expected<iox2::container::Optional<EventId>, ListenerWaitError> {
     iox2_event_id_t event_id {};
     bool has_received_one { false };
 
@@ -232,10 +233,10 @@ inline auto Listener<S>::try_wait_one() -> iox2::legacy::expected<iox2::legacy::
 
     if (result == IOX2_OK) {
         if (has_received_one) {
-            return iox2::legacy::ok(iox2::legacy::optional<EventId>(EventId { event_id }));
+            return iox2::legacy::ok(iox2::container::Optional<EventId>(EventId { event_id }));
         }
 
-        return iox2::legacy::ok(iox2::legacy::optional<EventId>());
+        return iox2::legacy::ok(iox2::container::Optional<EventId>());
     }
 
     return iox2::legacy::err(iox2::bb::into<ListenerWaitError>(result));
@@ -243,7 +244,7 @@ inline auto Listener<S>::try_wait_one() -> iox2::legacy::expected<iox2::legacy::
 
 template <ServiceType S>
 inline auto Listener<S>::timed_wait_one(const iox2::bb::Duration& timeout)
-    -> iox2::legacy::expected<iox2::legacy::optional<EventId>, ListenerWaitError> {
+    -> iox2::legacy::expected<iox2::container::Optional<EventId>, ListenerWaitError> {
     iox2_event_id_t event_id {};
     bool has_received_one { false };
 
@@ -252,10 +253,10 @@ inline auto Listener<S>::timed_wait_one(const iox2::bb::Duration& timeout)
 
     if (result == IOX2_OK) {
         if (has_received_one) {
-            return iox2::legacy::ok(iox2::legacy::optional<EventId>(EventId { event_id }));
+            return iox2::legacy::ok(iox2::container::Optional<EventId>(EventId { event_id }));
         }
 
-        return iox2::legacy::ok(iox2::legacy::optional<EventId>());
+        return iox2::legacy::ok(iox2::container::Optional<EventId>());
     }
 
     return iox2::legacy::err(iox2::bb::into<ListenerWaitError>(result));
@@ -263,7 +264,7 @@ inline auto Listener<S>::timed_wait_one(const iox2::bb::Duration& timeout)
 
 template <ServiceType S>
 inline auto Listener<S>::blocking_wait_one()
-    -> iox2::legacy::expected<iox2::legacy::optional<EventId>, ListenerWaitError> {
+    -> iox2::legacy::expected<iox2::container::Optional<EventId>, ListenerWaitError> {
     iox2_event_id_t event_id {};
     bool has_received_one { false };
 
@@ -271,10 +272,10 @@ inline auto Listener<S>::blocking_wait_one()
 
     if (result == IOX2_OK) {
         if (has_received_one) {
-            return iox2::legacy::ok(iox2::legacy::optional<EventId>(EventId { event_id }));
+            return iox2::legacy::ok(iox2::container::Optional<EventId>(EventId { event_id }));
         }
 
-        return iox2::legacy::ok(iox2::legacy::optional<EventId>());
+        return iox2::legacy::ok(iox2::container::Optional<EventId>());
     }
 
     return iox2::legacy::err(iox2::bb::into<ListenerWaitError>(result));
