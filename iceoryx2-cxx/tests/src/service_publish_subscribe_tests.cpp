@@ -84,7 +84,8 @@ TYPED_TEST(ServicePublishSubscribeTest, service_name_works) {
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value();
 
-    ASSERT_THAT(sut.name().to_string().c_str(), StrEq(service_name.to_string().c_str()));
+    ASSERT_THAT(sut.name().to_string().unchecked_access().c_str(),
+                StrEq(service_name.to_string().unchecked_access().c_str()));
 }
 
 //NOLINTBEGIN(readability-function-cognitive-complexity), false positive caused by ASSERT_THAT
@@ -106,9 +107,11 @@ TYPED_TEST(ServicePublishSubscribeTest, list_service_nodes_works) {
     auto verify_node = [&](const AliveNodeView<SERVICE_TYPE>& node_view) -> auto {
         counter++;
         if (node_view.id() == node_1.id()) {
-            ASSERT_THAT(node_view.details()->name().to_string().c_str(), StrEq(node_1.name().to_string().c_str()));
+            ASSERT_THAT(node_view.details()->name().to_string().unchecked_access().c_str(),
+                        StrEq(node_1.name().to_string().unchecked_access().c_str()));
         } else {
-            ASSERT_THAT(node_view.details()->name().to_string().c_str(), StrEq(node_2.name().to_string().c_str()));
+            ASSERT_THAT(node_view.details()->name().to_string().unchecked_access().c_str(),
+                        StrEq(node_2.name().to_string().unchecked_access().c_str()));
         }
     };
 

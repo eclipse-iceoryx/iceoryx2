@@ -43,8 +43,8 @@ auto main(int argc, char** argv) -> int {
     while (node.wait(CYCLE_TIME).has_value()) {
         notifier.notify_with_custom_event_id(event_id).value();
 
-        std::cout << "[service: \"" << service_name.to_string().c_str() << "\"] Trigger event with id " << event_id
-                  << "..." << std::endl;
+        std::cout << "[service: \"" << service_name.to_string().unchecked_access().c_str()
+                  << "\"] Trigger event with id " << event_id << "..." << std::endl;
     }
 
     std::cout << "exit" << std::endl;

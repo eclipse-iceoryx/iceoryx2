@@ -16,7 +16,6 @@
 #include "iox2/bb/expected.hpp"
 #include "iox2/bb/semantic_string.hpp"
 #include "iox2/internal/iceoryx2.hpp"
-#include "iox2/legacy/string.hpp"
 
 namespace iox2 {
 class ServiceName;
@@ -30,8 +29,8 @@ class ServiceNameView {
     auto operator=(const ServiceNameView&) -> ServiceNameView& = default;
     ~ServiceNameView() = default;
 
-    /// Returns a [`iox2::legacy::string`] containing the [`ServiceName`].
-    auto to_string() const -> iox2::legacy::string<IOX2_SERVICE_NAME_LENGTH>;
+    /// Returns a [`iox2::container::StaticString`] containing the [`ServiceName`].
+    auto to_string() const -> iox2::container::StaticString<IOX2_SERVICE_NAME_LENGTH>;
 
     /// Creates a copy of the corresponding [`ServiceName`] and returns it.
     auto to_owned() const -> ServiceName;
@@ -70,8 +69,8 @@ class ServiceName {
     /// Creates a new [`ServiceName`]. The name is not allowed to be empty.
     static auto create(const char* value) -> iox2::bb::Expected<ServiceName, bb::SemanticStringError>;
 
-    /// Returns a [`iox2::legacy::string`] containing the [`ServiceName`].
-    auto to_string() const -> iox2::legacy::string<IOX2_SERVICE_NAME_LENGTH>;
+    /// Returns a [`iox2::container::StaticString`] containing the [`ServiceName`].
+    auto to_string() const -> iox2::container::StaticString<IOX2_SERVICE_NAME_LENGTH>;
 
   private:
     friend class ServiceNameView;

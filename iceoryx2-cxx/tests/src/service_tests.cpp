@@ -96,19 +96,19 @@ TYPED_TEST(ServiceTest, list_works) {
     auto verify = [&](auto details) -> CallbackProgression {
         switch (details.static_details.messaging_pattern()) {
         case MessagingPattern::PublishSubscribe:
-            EXPECT_THAT(details.static_details.name(), StrEq(service_name_1.to_string().c_str()));
+            EXPECT_THAT(details.static_details.name(), StrEq(service_name_1.to_string().unchecked_access().c_str()));
             EXPECT_THAT(details.static_details.id(), StrEq(sut_1.service_id().c_str()));
             break;
         case MessagingPattern::Event:
-            EXPECT_THAT(details.static_details.name(), StrEq(service_name_2.to_string().c_str()));
+            EXPECT_THAT(details.static_details.name(), StrEq(service_name_2.to_string().unchecked_access().c_str()));
             EXPECT_THAT(details.static_details.id(), StrEq(sut_2.service_id().c_str()));
             break;
         case MessagingPattern::RequestResponse:
-            EXPECT_THAT(details.static_details.name(), StrEq(service_name_3.to_string().c_str()));
+            EXPECT_THAT(details.static_details.name(), StrEq(service_name_3.to_string().unchecked_access().c_str()));
             EXPECT_THAT(details.static_details.id(), StrEq(sut_3.service_id().c_str()));
             break;
         case MessagingPattern::Blackboard:
-            EXPECT_THAT(details.static_details.name(), StrEq(service_name_4.to_string().c_str()));
+            EXPECT_THAT(details.static_details.name(), StrEq(service_name_4.to_string().unchecked_access().c_str()));
             EXPECT_THAT(details.static_details.id(), StrEq(sut_4.service_id().c_str()));
             break;
         }
@@ -161,7 +161,7 @@ TYPED_TEST(ServiceTest, list_works_with_attributes) {
     auto verify = [&](auto details) -> CallbackProgression {
         switch (details.static_details.messaging_pattern()) {
         case MessagingPattern::PublishSubscribe:
-            EXPECT_THAT(details.static_details.name(), StrEq(service_name_1.to_string().c_str()));
+            EXPECT_THAT(details.static_details.name(), StrEq(service_name_1.to_string().unchecked_access().c_str()));
             EXPECT_THAT(details.static_details.id(), StrEq(sut_1.service_id().c_str()));
 
             counter = 0;
@@ -181,11 +181,11 @@ TYPED_TEST(ServiceTest, list_works_with_attributes) {
             EXPECT_THAT(counter, Eq(1));
             break;
         case MessagingPattern::Event:
-            EXPECT_THAT(details.static_details.name(), StrEq(service_name_2.to_string().c_str()));
+            EXPECT_THAT(details.static_details.name(), StrEq(service_name_2.to_string().unchecked_access().c_str()));
             EXPECT_THAT(details.static_details.id(), StrEq(sut_2.service_id().c_str()));
             break;
         case MessagingPattern::RequestResponse:
-            EXPECT_THAT(details.static_details.name(), StrEq(service_name_3.to_string().c_str()));
+            EXPECT_THAT(details.static_details.name(), StrEq(service_name_3.to_string().unchecked_access().c_str()));
             EXPECT_THAT(details.static_details.id(), StrEq(sut_3.service_id().c_str()));
 
             counter = 0;
@@ -205,7 +205,7 @@ TYPED_TEST(ServiceTest, list_works_with_attributes) {
             EXPECT_THAT(counter, Eq(1));
             break;
         case MessagingPattern::Blackboard:
-            EXPECT_THAT(details.static_details.name(), StrEq(service_name_4.to_string().c_str()));
+            EXPECT_THAT(details.static_details.name(), StrEq(service_name_4.to_string().unchecked_access().c_str()));
             EXPECT_THAT(details.static_details.id(), StrEq(sut_4.service_id().c_str()));
 
             counter = 0;
@@ -264,8 +264,8 @@ TYPED_TEST(ServiceTest, details_works) {
     ASSERT_THAT(result.has_value(), Eq(true));
     ASSERT_THAT(result->has_value(), Eq(true));
 
-    ASSERT_THAT(result.value()->static_details.name(), StrEq(service_name_1.to_string().c_str()));
-    ASSERT_THAT(result.value()->static_details.name(), StrEq(service_name_1.to_string().c_str()));
+    ASSERT_THAT(result.value()->static_details.name(), StrEq(service_name_1.to_string().unchecked_access().c_str()));
+    ASSERT_THAT(result.value()->static_details.name(), StrEq(service_name_1.to_string().unchecked_access().c_str()));
 
     auto counter = 0;
     result.value()->static_details.attributes().iter_key_values(key_1, [&](auto& value) -> CallbackProgression {

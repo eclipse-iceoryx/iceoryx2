@@ -635,9 +635,11 @@ TYPED_TEST(ServiceEventTest, list_service_nodes_works) {
     auto verify_node = [&](const AliveNodeView<SERVICE_TYPE>& node_view) -> auto {
         counter++;
         if (node_view.id() == node_1.id()) {
-            ASSERT_THAT(node_view.details()->name().to_string().c_str(), StrEq(node_1.name().to_string().c_str()));
+            ASSERT_THAT(node_view.details()->name().to_string().unchecked_access().c_str(),
+                        StrEq(node_1.name().to_string().unchecked_access().c_str()));
         } else {
-            ASSERT_THAT(node_view.details()->name().to_string().c_str(), StrEq(node_2.name().to_string().c_str()));
+            ASSERT_THAT(node_view.details()->name().to_string().unchecked_access().c_str(),
+                        StrEq(node_2.name().to_string().unchecked_access().c_str()));
         }
     };
 
