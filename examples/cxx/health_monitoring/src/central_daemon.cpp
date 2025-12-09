@@ -104,8 +104,9 @@ void find_and_cleanup_dead_nodes() {
     Node<ServiceType::Ipc>::list(Config::global_config(), [](auto node_state) -> auto {
         node_state.dead([](auto view) -> auto {
             std::cout << "detected dead node: ";
-            view.details().and_then(
-                [](const auto& details) -> auto { std::cout << details.name().to_string().c_str(); });
+            if (view.details().has_value()) {
+                std::cout << view.details().value().name().to_string().c_str();
+            }
             std::cout << std::endl;
             view.remove_stale_resources().expect("");
         });
