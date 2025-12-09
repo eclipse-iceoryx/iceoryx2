@@ -20,6 +20,7 @@ iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-bb-log = { workspace = true }
 iceoryx2-bb-system-types = { workspace = true }
 iceoryx2-bb-posix = { workspace = true }
+iceoryx2-cal = { workspace = true }
 
 [dev-dependencies]
 clap = { workspace = true }
@@ -237,3 +238,13 @@ path = "rust/service_types/ipc_publisher.rs"
 [[example]]
 name = "service_types_local_pubsub"
 path = "rust/service_types/local_pubsub.rs"
+
+# service variant customization
+
+[[example]]
+name = "service_variant_customization_subscriber"
+path = "rust/service_variant_customization/subscriber.rs"
+
+[[example]]
+name = "service_variant_customization_publisher"
+path = "rust/service_variant_customization/publisher.rs"

@@ -10,6 +10,8 @@
     NOTE: Add new entries sorted by issue number to minimize the possibility of
     conflicts when merging.
 -->
+* Enable Bazel `bzlmod` support for iceoryx2 builds
+  [#355](https://github.com/eclipse-iceoryx/iceoryx2/issues/355)
 * Android proof of concept with `local` communication
   [#416](https://github.com/eclipse-iceoryx/iceoryx2/issues/416)
 * C, C++, and Python language bindings for blackboard
@@ -46,8 +48,8 @@
   [#1176](https://github.com/eclipse-iceoryx/iceoryx2/issues/1176)
 * Add option to provide custom `iceoryx2-pal-posix`
   [#1176](https://github.com/eclipse-iceoryx/iceoryx2/issues/1176)
-* Enable Bazel `bzlmod` support for iceoryx2 builds
-  [#355](https://github.com/eclipse-iceoryx/iceoryx2/issues/355)
+* Add shared memory variant based on files
+  [#1223](https://github.com/eclipse-iceoryx/iceoryx2/issues/1223)
 
 ### Bugfixes
 
