@@ -501,8 +501,8 @@ TYPED_TEST(ServiceEventTest, deadline_can_be_set) {
     ASSERT_THAT(service_open.static_config().deadline(), Eq(iox2::container::Optional<Duration>(DEADLINE)));
     ASSERT_THAT(listener_create.deadline(), Eq(iox2::legacy::optional<Duration>(DEADLINE)));
     ASSERT_THAT(listener_open.deadline(), Eq(iox2::legacy::optional<Duration>(DEADLINE)));
-    ASSERT_THAT(notifier_create.deadline(), Eq(iox2::legacy::optional<Duration>(DEADLINE)));
-    ASSERT_THAT(notifier_open.deadline(), Eq(iox2::legacy::optional<Duration>(DEADLINE)));
+    ASSERT_THAT(notifier_create.deadline(), Eq(iox2::container::Optional<Duration>(DEADLINE)));
+    ASSERT_THAT(notifier_open.deadline(), Eq(iox2::container::Optional<Duration>(DEADLINE)));
 }
 
 TYPED_TEST(ServiceEventTest, deadline_can_be_disabled) {
@@ -526,8 +526,8 @@ TYPED_TEST(ServiceEventTest, deadline_can_be_disabled) {
     ASSERT_THAT(service_open.static_config().deadline(), Eq(iox2::container::nullopt));
     ASSERT_THAT(listener_create.deadline(), Eq(iox2::legacy::nullopt));
     ASSERT_THAT(listener_open.deadline(), Eq(iox2::legacy::nullopt));
-    ASSERT_THAT(notifier_create.deadline(), Eq(iox2::legacy::nullopt));
-    ASSERT_THAT(notifier_open.deadline(), Eq(iox2::legacy::nullopt));
+    ASSERT_THAT(notifier_create.deadline(), Eq(iox2::container::nullopt));
+    ASSERT_THAT(notifier_open.deadline(), Eq(iox2::container::nullopt));
 }
 
 TYPED_TEST(ServiceEventTest, notifier_is_informed_when_deadline_was_missed) {

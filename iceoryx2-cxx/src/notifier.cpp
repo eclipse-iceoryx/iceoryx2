@@ -74,7 +74,7 @@ auto Notifier<S>::notify_with_custom_event_id(EventId event_id) const
 }
 
 template <ServiceType S>
-auto Notifier<S>::deadline() const -> iox2::legacy::optional<iox2::bb::Duration> {
+auto Notifier<S>::deadline() const -> iox2::container::Optional<iox2::bb::Duration> {
     uint64_t seconds = 0;
     uint32_t nanoseconds = 0;
 
@@ -82,7 +82,7 @@ auto Notifier<S>::deadline() const -> iox2::legacy::optional<iox2::bb::Duration>
         return { iox2::bb::Duration::from_secs(seconds) + iox2::bb::Duration::from_nanos(nanoseconds) };
     }
 
-    return iox2::legacy::nullopt;
+    return iox2::container::nullopt;
 }
 
 template <ServiceType S>
