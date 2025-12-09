@@ -39,6 +39,8 @@
 //! zero copy inter-process communication.
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_container::string::*;
 //! use iceoryx2_bb_container::vector::*;
 //!
@@ -72,6 +74,8 @@
 //! ensure that required memory is always available.
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_container::queue::*;
 //!
 //! const QUEUE_CAPACITY: usize = 123;

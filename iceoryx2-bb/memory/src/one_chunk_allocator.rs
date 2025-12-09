@@ -15,6 +15,7 @@
 //!
 //! # Example
 //! ```
+//! # extern crate iceoryx2_loggers;
 //! use iceoryx2_bb_memory::one_chunk_allocator::*;
 //!
 //! const MEMORY_SIZE: usize = 1024;

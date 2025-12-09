@@ -15,6 +15,8 @@
 //!
 //! # Examples
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_posix::directory::*;
 //! use iceoryx2_bb_system_types::path::Path;
 //! use iceoryx2_bb_container::semantic_string::SemanticString;
@@ -152,6 +154,8 @@ enum_gen! {
 /// # Example
 ///
 /// ```
+/// # extern crate iceoryx2_loggers;
+///
 /// use iceoryx2_bb_posix::directory::*;
 /// use iceoryx2_bb_system_types::path::Path;
 /// use iceoryx2_bb_container::semantic_string::SemanticString;

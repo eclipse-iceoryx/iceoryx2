@@ -19,6 +19,8 @@
 //! # Example
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_container::string::*;
 //!
 //! const STRING_CAPACITY: usize = 123;

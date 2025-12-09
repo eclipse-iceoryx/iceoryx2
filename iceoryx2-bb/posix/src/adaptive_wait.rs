@@ -20,6 +20,7 @@
 //!
 //! # Examples
 //! ```ignore
+//! # extern crate iceoryx2_loggers;
 //! use iceoryx2_bb_posix::adaptive_wait::*;
 //! use iceoryx2_bb_posix::clock::*;
 //!
@@ -130,6 +131,8 @@ impl AdaptiveWait {
     ///
     /// # Examples
     /// ```
+    /// extern crate iceoryx2_loggers;
+    ///
     /// use iceoryx2_bb_posix::adaptive_wait::*;
     ///
     /// let mut counter = 0;
@@ -157,6 +160,8 @@ impl AdaptiveWait {
     /// # Examples
     ///
     /// ```
+    /// # extern crate iceoryx2_loggers;
+    ///
     /// use iceoryx2_bb_posix::adaptive_wait::*;
     /// use core::time::Duration;
     ///

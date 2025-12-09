@@ -23,6 +23,8 @@
 //! # Example
 //!
 //! ```ignore
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_posix::udp_socket::*;
 //!
 //! let server = UdpServerBuilder::new().listen()

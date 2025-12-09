@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate iceoryx2_loggers;
+
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_elementary::math::ToB64;
 use iceoryx2_bb_posix::{shared_memory::*, unique_system_id::UniqueSystemId};

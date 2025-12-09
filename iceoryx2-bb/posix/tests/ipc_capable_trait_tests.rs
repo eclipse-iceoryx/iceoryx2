@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate iceoryx2_loggers;
+
 #[generic_tests::define]
 mod ipc_capable {
     use iceoryx2_bb_posix::barrier::*;

@@ -19,6 +19,8 @@
 //! ## Callbacks for signals
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_posix::signal::*;
 //!
 //! fn some_call_which_may_emits_sigabrt() {}
@@ -36,6 +38,8 @@
 //! ## Perform tasks until CTRL+c was pressed.
 //!
 //! ```no_run
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_posix::signal::*;
 //!
 //! fn some_task() {}
@@ -48,6 +52,8 @@
 //! ## Wait until CTRL+c was pressed.
 //!
 //! ```no_run
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_posix::signal::*;
 //!
 //! SignalHandler::wait_for_signal(NonFatalFetchableSignal::Terminate);
@@ -329,6 +335,8 @@ impl SignalHandler {
     /// signal guard goes out of scope the callback is unregistered.
     ///
     /// ```
+    /// # extern crate iceoryx2_loggers;
+    ///
     /// use iceoryx2_bb_posix::signal::*;
     ///
     /// fn custom_callback(signal: FetchableSignal) {
@@ -411,6 +419,8 @@ impl SignalHandler {
 
     /// Blocks until the provided signal was raised or an error occurred.
     /// ```no_run
+    /// # extern crate iceoryx2_loggers;
+    ///
     /// use iceoryx2_bb_posix::signal::*;
     ///
     /// SignalHandler::wait_for_signal(NonFatalFetchableSignal::Terminate);
@@ -445,6 +455,8 @@ impl SignalHandler {
     /// Blocks until the provided signal was raised or the timeout was reached. If the signal was
     /// raised it returns true otherwise false.
     /// ```ignore
+    /// # extern crate iceoryx2_loggers;
+    ///
     /// use iceoryx2_bb_posix::signal::*;
     /// use core::time::Duration;
     ///

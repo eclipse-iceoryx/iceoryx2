@@ -18,6 +18,8 @@
 //! # Example
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_container::vector::*;
 //!
 //! const CAPACITY: usize = 123;

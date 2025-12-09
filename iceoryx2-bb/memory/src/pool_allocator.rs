@@ -17,6 +17,8 @@
 //! # Example
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_memory::pool_allocator::*;
 //!
 //! const BUCKET_SIZE: usize = 128;

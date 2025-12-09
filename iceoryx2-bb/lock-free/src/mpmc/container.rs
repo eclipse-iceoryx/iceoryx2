@@ -25,6 +25,8 @@
 //! # Example
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_lock_free::mpmc::container::*;
 //!
 //! const CAPACITY: usize = 139;
@@ -138,6 +140,8 @@ impl<T: Copy + Debug> ContainerState<T> {
     /// **Note:** The index of a value never changes as long as it is stored inside the container.
     ///
     /// ```
+    /// # extern crate iceoryx2_loggers;
+    ///
     /// use iceoryx2_bb_lock_free::mpmc::container::*;
     ///
     /// let container = FixedSizeContainer::<u128, 128>::new();
@@ -496,6 +500,8 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     /// [`None`], otherwise [`Some`] containing the the index value to the underlying element.
     ///
     /// ```
+    /// # extern crate iceoryx2_loggers;
+    ///
     /// use iceoryx2_bb_lock_free::mpmc::container::*;
     ///
     /// const CAPACITY: usize = 139;
@@ -540,6 +546,8 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     /// If the state has changed it returns true, otherwise false.
     ///
     /// ```
+    /// # extern crate iceoryx2_loggers;
+    ///
     /// use iceoryx2_bb_lock_free::mpmc::container::*;
     ///
     /// let container = FixedSizeContainer::<u128, 128>::new();

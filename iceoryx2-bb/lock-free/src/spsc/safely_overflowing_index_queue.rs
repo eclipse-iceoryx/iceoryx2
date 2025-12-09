@@ -17,6 +17,8 @@
 //! # Example
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_lock_free::spsc::safely_overflowing_index_queue::*;
 //!
 //! const QUEUE_CAPACITY: usize = 128;
@@ -222,6 +224,8 @@ pub mod details {
         /// it returns [`None`] since it is a single producer single consumer
         /// [`SafelyOverflowingIndexQueue`].
         /// ```
+        /// # extern crate iceoryx2_loggers;
+        ///
         /// use iceoryx2_bb_lock_free::spsc::safely_overflowing_index_queue::*;
         ///
         /// const QUEUE_CAPACITY: usize = 128;
@@ -254,6 +258,8 @@ pub mod details {
         /// it returns [`None`] since it is a single producer single consumer
         /// [`SafelyOverflowingIndexQueue`].
         /// ```
+        /// # extern crate iceoryx2_loggers;
+        ///
         /// use iceoryx2_bb_lock_free::spsc::safely_overflowing_index_queue::*;
         ///
         /// const QUEUE_CAPACITY: usize = 128;

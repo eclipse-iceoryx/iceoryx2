@@ -20,6 +20,8 @@
 //! ## Handle Events
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_linux::epoll::*;
 //! use iceoryx2_bb_posix::socket_pair::StreamingSocket;
 //! use iceoryx2_bb_posix::file_descriptor::FileDescriptorBased;

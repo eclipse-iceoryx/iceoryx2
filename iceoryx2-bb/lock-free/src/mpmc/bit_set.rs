@@ -22,6 +22,8 @@
 //!  # Example
 //!
 //!  ```
+//!  # extern crate iceoryx2_loggers;
+//!
 //!  use iceoryx2_bb_lock_free::mpmc::bit_set::*;
 //!
 //!  let capacity = 123;
@@ -93,6 +95,8 @@ pub mod details {
         /// Create a new [`BitSet`] with data located in the heap.
         ///
         /// ```
+        /// # extern crate iceoryx2_loggers;
+        ///
         /// use iceoryx2_bb_lock_free::mpmc::bit_set::*;
         /// let bitset = BitSet::new(123);
         /// ```

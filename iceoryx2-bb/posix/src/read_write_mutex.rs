@@ -17,6 +17,8 @@
 //! # Example
 //!
 //! ```no_run
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_posix::read_write_mutex::*;
 //! use std::thread;
 //! use core::time::Duration;

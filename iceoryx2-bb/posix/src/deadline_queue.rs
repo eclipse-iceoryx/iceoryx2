@@ -13,6 +13,8 @@
 //! # Example
 //!
 //! ```no_run
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_posix::deadline_queue::*;
 //! use core::time::Duration;
 //!

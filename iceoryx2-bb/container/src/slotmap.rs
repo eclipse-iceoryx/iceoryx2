@@ -34,6 +34,8 @@
 //! # User Examples
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_container::slotmap::FixedSizeSlotMap;
 //!
 //! const CAPACITY: usize = 123;

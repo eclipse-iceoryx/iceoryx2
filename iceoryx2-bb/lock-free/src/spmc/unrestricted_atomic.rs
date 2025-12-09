@@ -16,6 +16,8 @@
 //! # Example
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::*;
 //! use core::sync::atomic::Ordering;
 //!

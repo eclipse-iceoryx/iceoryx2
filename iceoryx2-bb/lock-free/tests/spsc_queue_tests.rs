@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate iceoryx2_loggers;
+
 use iceoryx2_bb_lock_free::spsc::queue::*;
 use iceoryx2_bb_testing::assert_that;
 use std::sync::{Arc, Mutex};

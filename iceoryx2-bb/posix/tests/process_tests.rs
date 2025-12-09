@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate iceoryx2_loggers;
+
 use iceoryx2_bb_posix::process::*;
 use iceoryx2_bb_testing::{assert_that, test_requires};
 use iceoryx2_pal_posix::posix::{self, POSIX_SUPPORT_SCHEDULER};

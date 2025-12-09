@@ -19,6 +19,8 @@
 //! ## Working with groups
 //!
 //! ```rust,ignore
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_posix::group::*;
 //! use iceoryx2_bb_system_types::group_name::GroupName;
 //! use iceoryx2_bb_container::semantic_string::*;
@@ -38,6 +40,8 @@
 //! ## Use the trait
 //!
 //! ```rust,ignore
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_posix::group::*;
 //!
 //! println!("Members of group root");

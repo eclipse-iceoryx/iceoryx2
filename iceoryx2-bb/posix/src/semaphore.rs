@@ -241,6 +241,8 @@ pub trait SemaphoreInterface: internal::SemaphoreHandle + Debug {
 /// ## Create new named semaphore
 ///
 /// ```ignore
+/// # extern crate iceoryx2_loggers;
+///
 /// use iceoryx2_bb_posix::semaphore::*;
 /// use iceoryx2_bb_system_types::file_name::FileName;
 /// use iceoryx2_bb_container::semantic_string::*;
@@ -260,6 +262,8 @@ pub trait SemaphoreInterface: internal::SemaphoreHandle + Debug {
 /// ## Open existing semaphore
 ///
 /// ```no_run
+/// # extern crate iceoryx2_loggers;
+///
 /// use iceoryx2_bb_posix::semaphore::*;
 /// use iceoryx2_bb_system_types::file_name::FileName;
 /// use iceoryx2_bb_container::semantic_string::*;
@@ -346,6 +350,8 @@ impl NamedSemaphoreCreationBuilder {
 ///
 /// ## In process 1
 /// ```no_run
+/// # extern crate iceoryx2_loggers;
+///
 /// use iceoryx2_bb_posix::semaphore::*;
 /// use iceoryx2_bb_posix::clock::*;
 /// use core::time::Duration;
@@ -368,6 +374,8 @@ impl NamedSemaphoreCreationBuilder {
 ///
 /// ## In process 2
 /// ```no_run
+/// # extern crate iceoryx2_loggers;
+///
 /// use iceoryx2_bb_posix::semaphore::*;
 /// use iceoryx2_bb_system_types::file_name::FileName;
 /// use iceoryx2_bb_container::semantic_string::*;
@@ -553,6 +561,8 @@ impl SemaphoreInterface for NamedSemaphore {}
 /// # Example
 ///
 /// ```
+/// # extern crate iceoryx2_loggers;
+///
 /// use iceoryx2_bb_posix::semaphore::*;
 ///
 /// let semaphore_handle = UnnamedSemaphoreHandle::new();
@@ -700,6 +710,8 @@ impl Drop for UnnamedSemaphoreHandle {
 /// # Example
 ///
 /// ```no_run
+/// # extern crate iceoryx2_loggers;
+///
 /// use iceoryx2_bb_posix::semaphore::*;
 /// use std::thread;
 /// use iceoryx2_bb_posix::clock::*;

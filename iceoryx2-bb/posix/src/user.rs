@@ -17,6 +17,8 @@
 //! # Example
 //!
 //! ```ignore
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_posix::user::*;
 //!
 //! let myself = User::from_self().expect("failed to get user");

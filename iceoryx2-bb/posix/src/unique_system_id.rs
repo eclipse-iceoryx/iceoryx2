@@ -18,6 +18,8 @@
 //! # Example
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_posix::unique_system_id::*;
 //!
 //! struct MyThing {
@@ -144,44 +146,49 @@ impl UniqueSystemId {
 }
 
 #[cfg(test)]
-use iceoryx2_bb_testing::assert_that;
+mod tests {
+    extern crate iceoryx2_loggers;
 
-#[test]
-// ensures the unique_system_id is unique when a process creates the id simultaneously.
-fn test_unique_system_id_when_creating_simultaneously() {
-    let pid = Process::from_self().id().value() as _;
-    let now = Time::now_with_clock(ClockType::default()).unwrap();
+    use super::*;
+    use iceoryx2_bb_testing::assert_that;
 
-    let handle1 =
-        std::thread::spawn(move || -> UniqueSystemId { UniqueSystemId::create(pid, now) });
-    let handle2 =
-        std::thread::spawn(move || -> UniqueSystemId { UniqueSystemId::create(pid, now) });
+    #[test]
+    // ensures the unique_system_id is unique when a process creates the id simultaneously.
+    fn test_unique_system_id_when_creating_simultaneously() {
+        let pid = Process::from_self().id().value() as _;
+        let now = Time::now_with_clock(ClockType::default()).unwrap();
 
-    let id1 = handle1.join().unwrap();
-    let id2 = handle2.join().unwrap();
-    assert_that!(id1.pid(), eq id2.pid());
-    assert_that!(id1.creation_time(), eq id2.creation_time());
-    assert_that!(id1.value(), ne id2.value());
-}
+        let handle1 =
+            std::thread::spawn(move || -> UniqueSystemId { UniqueSystemId::create(pid, now) });
+        let handle2 =
+            std::thread::spawn(move || -> UniqueSystemId { UniqueSystemId::create(pid, now) });
 
-#[test]
-// ensures the unique_system_id is unique when 2 processes create their id simultaneously.
-fn test_unique_system_id_across_processes() {
-    let pid = Process::from_self().id().value() as _;
-    let now = Time::now_with_clock(ClockType::default()).unwrap();
+        let id1 = handle1.join().unwrap();
+        let id2 = handle2.join().unwrap();
+        assert_that!(id1.pid(), eq id2.pid());
+        assert_that!(id1.creation_time(), eq id2.creation_time());
+        assert_that!(id1.value(), ne id2.value());
+    }
 
-    let id1 = UniqueSystemId::create(pid, now);
-    // ideally, fork and exec the current process to reset the static counter inside UniqueSystemId::create
-    // is better, but to ease the test now, we can duplicate the logic inside the lambda instead.
-    static COUNTER: IoxAtomicU32 = IoxAtomicU32::new(0);
-    let id2 = UniqueSystemId {
-        pid: pid + 1,
-        seconds: now.seconds() as u32,
-        nanoseconds: now.nanoseconds(),
-        counter: COUNTER.fetch_add(1, Ordering::Relaxed),
-    };
+    #[test]
+    // ensures the unique_system_id is unique when 2 processes create their id simultaneously.
+    fn test_unique_system_id_across_processes() {
+        let pid = Process::from_self().id().value() as _;
+        let now = Time::now_with_clock(ClockType::default()).unwrap();
 
-    assert_that!(id1.pid(), ne id2.pid());
-    assert_that!(id1.creation_time(), eq id2.creation_time());
-    assert_that!(id1.value(), ne id2.value());
+        let id1 = UniqueSystemId::create(pid, now);
+        // ideally, fork and exec the current process to reset the static counter inside UniqueSystemId::create
+        // is better, but to ease the test now, we can duplicate the logic inside the lambda instead.
+        static COUNTER: IoxAtomicU32 = IoxAtomicU32::new(0);
+        let id2 = UniqueSystemId {
+            pid: pid + 1,
+            seconds: now.seconds() as u32,
+            nanoseconds: now.nanoseconds(),
+            counter: COUNTER.fetch_add(1, Ordering::Relaxed),
+        };
+
+        assert_that!(id1.pid(), ne id2.pid());
+        assert_that!(id1.creation_time(), eq id2.creation_time());
+        assert_that!(id1.value(), ne id2.value());
+    }
 }

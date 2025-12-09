@@ -17,6 +17,8 @@
 //! ## Mapping Anonymous Memory (`malloc` equivalent)
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_log::set_log_level;
 //! use iceoryx2_bb_posix::memory_mapping::*;
 //!
@@ -35,6 +37,8 @@
 //! ## Opening A File And Mapping It Into Memory
 //!
 //! ```no_run
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_posix::memory_mapping::*;
 //!
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {
@@ -51,6 +55,8 @@
 //! ## Mapping [`FileDescriptor`] Contents Into Memory
 //!
 //! ```no_run
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_posix::memory_mapping::*;
 //! use iceoryx2_bb_posix::file_descriptor::FileDescriptor;
 //!
@@ -68,6 +74,8 @@
 //! ## Update Permissions To Mapped Memory (`mprotect`)
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_posix::memory_mapping::*;
 //!
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {

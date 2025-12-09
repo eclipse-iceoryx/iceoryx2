@@ -16,6 +16,8 @@
 //! # Example
 //!
 //! ```no_run
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_posix::file::*;
 //! use iceoryx2_bb_posix::file_lock::*;
 //! use iceoryx2_bb_system_types::file_path::FilePath;

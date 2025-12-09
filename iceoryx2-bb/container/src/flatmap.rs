@@ -23,6 +23,8 @@
 //! # User Examples
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_container::flatmap::FixedSizeFlatMap;
 //!
 //! const CAPACITY: usize = 100;

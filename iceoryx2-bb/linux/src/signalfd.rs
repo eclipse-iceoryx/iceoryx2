@@ -19,6 +19,8 @@
 //! # Example
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_linux::signalfd::SignalFdBuilder;
 //! use iceoryx2_bb_posix::signal_set::FetchableSignalSet;
 //! use iceoryx2_bb_posix::signal::FetchableSignal;

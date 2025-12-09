@@ -19,6 +19,8 @@
 //! ## Application (That Shall Be Monitored)
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_posix::process_state::*;
 //!
 //! let process_state_path = FilePath::new(b"process_state_file").unwrap();
@@ -71,6 +73,8 @@
 //! ## Watchdog (Process That Monitors The State Of Other Processes)
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_posix::process_state::*;
 //!
 //! let process_state_path = FilePath::new(b"process_state_file").unwrap();
@@ -113,6 +117,8 @@
 //! ## Cleanup (Process That Removes Stale Resources)
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_posix::process_state::*;
 //!
 //! let process_state_path = FilePath::new(b"process_state_file").unwrap();
@@ -234,6 +240,8 @@ pub enum ProcessCleanerCreateError {
 /// is in scope. When it goes out of scope the process is no longer monitorable.
 ///
 /// ```
+/// # extern crate iceoryx2_loggers;
+///
 /// use iceoryx2_bb_posix::process_state::*;
 ///
 /// let process_state_path = FilePath::new(b"process_state_file").unwrap();
@@ -269,6 +277,8 @@ impl ProcessGuard {
     /// `path`s.
     ///
     /// ```
+    /// # extern crate iceoryx2_loggers;
+    ///
     /// use iceoryx2_bb_posix::process_state::*;
     ///
     /// let process_state_path = FilePath::new(b"process_state_file").unwrap();
@@ -479,6 +489,8 @@ impl ProcessGuard {
 /// # Example
 ///
 /// ```
+/// # extern crate iceoryx2_loggers;
+///
 /// use iceoryx2_bb_posix::process_state::*;
 ///
 /// let process_state_path = FilePath::new(b"process_state_file").unwrap();
@@ -544,6 +556,8 @@ impl ProcessMonitor {
     /// # Example
     ///
     /// ```
+    /// # extern crate iceoryx2_loggers;
+    ///
     /// use iceoryx2_bb_posix::process_state::*;
     ///
     /// let process_state_path = FilePath::new(b"process_state_file").unwrap();
@@ -581,6 +595,8 @@ impl ProcessMonitor {
     /// # Example
     ///
     /// ```
+    /// # extern crate iceoryx2_loggers;
+    ///
     /// use iceoryx2_bb_posix::process_state::*;
     ///
     /// let process_state_path = FilePath::new(b"process_state_file").unwrap();
@@ -739,6 +755,8 @@ impl ProcessMonitor {
 /// [`ProcessCleaner`] guard can be acquired by another process again.
 ///
 /// ```no_run
+/// # extern crate iceoryx2_loggers;
+///
 /// use iceoryx2_bb_posix::process_state::*;
 ///
 /// let process_state_path = FilePath::new(b"process_state_file").unwrap();

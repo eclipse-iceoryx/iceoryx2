@@ -17,6 +17,8 @@
 //! # Example
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_posix::socket_pair::*;
 //!
 //! let (socket_1, socket_2) = StreamingSocket::create_pair().unwrap();

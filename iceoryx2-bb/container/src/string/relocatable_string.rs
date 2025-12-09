@@ -18,6 +18,8 @@
 //! ## Create [`RelocatableString`] inside construct which provides memory
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_container::string::*;
 //! use iceoryx2_bb_elementary::math::align_to;
 //! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
@@ -48,6 +50,8 @@
 //! ## Create [`RelocatableString`] with allocator
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_container::string::*;
 //! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 //! use core::ptr::NonNull;
