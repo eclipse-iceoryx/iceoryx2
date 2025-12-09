@@ -14,6 +14,7 @@
 #define IOX2_PORTFACTORY_SERVER_HPP
 
 #include "iox/builder_addendum.hpp"
+#include "iox2/container/optional.hpp"
 #include "iox2/legacy/expected.hpp"
 #include "iox2/server.hpp"
 #include "iox2/server_error.hpp"
@@ -78,8 +79,8 @@ class PortFactoryServer {
     explicit PortFactoryServer(iox2_port_factory_server_builder_h handle);
 
     iox2_port_factory_server_builder_h m_handle = nullptr;
-    iox2::legacy::optional<uint64_t> m_max_slice_len;
-    iox2::legacy::optional<AllocationStrategy> m_allocation_strategy;
+    container::Optional<uint64_t> m_max_slice_len;
+    container::Optional<AllocationStrategy> m_allocation_strategy;
 };
 
 template <ServiceType Service,
@@ -120,17 +121,18 @@ inline auto PortFactoryServer<Service, RequestPayload, RequestUserHeader, Respon
         iox2_port_factory_server_builder_unable_to_deliver_strategy(
             &m_handle, static_cast<iox2_unable_to_deliver_strategy_e>(iox2::bb::into<int>(value)));
     });
-    m_max_slice_len
-        .and_then(
-            [&](auto value) -> auto { iox2_port_factory_server_builder_set_initial_max_slice_len(&m_handle, value); })
-        .or_else([&]() -> auto { iox2_port_factory_server_builder_set_initial_max_slice_len(&m_handle, 1); });
+    if (m_max_slice_len.has_value()) {
+        iox2_port_factory_server_builder_set_initial_max_slice_len(&m_handle, m_max_slice_len.value());
+    } else {
+        iox2_port_factory_server_builder_set_initial_max_slice_len(&m_handle, 1);
+    }
     m_max_loaned_responses_per_request.and_then([&](auto value) -> auto {
         iox2_port_factory_server_builder_set_max_loaned_responses_per_request(&m_handle, value);
     });
-    m_allocation_strategy.and_then([&](auto value) -> auto {
-        iox2_port_factory_server_builder_set_allocation_strategy(&m_handle,
-                                                                 iox2::bb::into<iox2_allocation_strategy_e>(value));
-    });
+    if (m_allocation_strategy.has_value()) {
+        iox2_port_factory_server_builder_set_allocation_strategy(
+            &m_handle, bb::into<iox2_allocation_strategy_e>(m_allocation_strategy.value()));
+    }
 
     iox2_server_h server_handle {};
     auto result = iox2_port_factory_server_builder_create(m_handle, nullptr, &server_handle);
