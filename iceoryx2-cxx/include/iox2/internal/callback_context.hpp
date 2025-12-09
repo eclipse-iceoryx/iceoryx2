@@ -13,8 +13,8 @@
 #ifndef IOX2_INTERNAL_CALLBACK_CONTEXT_HPP
 #define IOX2_INTERNAL_CALLBACK_CONTEXT_HPP
 
+#include "iox2/container/optional.hpp"
 #include "iox2/internal/iceoryx2.hpp"
-#include "iox2/legacy/optional.hpp"
 #include "iox2/node_details.hpp"
 #include "iox2/node_id.hpp"
 #include "iox2/node_name.hpp"
@@ -82,10 +82,10 @@ auto list_callback(iox2_node_state_e node_state,
                    iox2_callback_context context) -> iox2_callback_progression_e {
     auto node_details = [&]() -> auto {
         if (node_id_ptr == nullptr || config == nullptr) {
-            return iox2::legacy::optional<NodeDetails>();
+            return iox2::container::Optional<NodeDetails>();
         }
 
-        return iox2::legacy::optional<NodeDetails>(
+        return iox2::container::Optional<NodeDetails>(
             NodeDetails { iox2::bb::FileName::create(iox2::legacy::string<iox2::bb::FileName::capacity()>(
                                                          iox2::legacy::TruncateToCapacity, executable))
                               .expect("The executable file name is always valid."),
