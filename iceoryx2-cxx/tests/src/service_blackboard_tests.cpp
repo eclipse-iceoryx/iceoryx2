@@ -1458,8 +1458,8 @@ TYPED_TEST(ServiceBlackboardTest, listing_all_readers_stops_on_request) {
 TYPED_TEST(ServiceBlackboardTest, create_with_attributes_sets_attributes) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    auto key = Attribute::Key("want to make your machine run faster:");
-    auto value = Attribute::Value("sudo rm -rf /");
+    auto key = *Attribute::Key::from_utf8("want to make your machine run faster:");
+    auto value = *Attribute::Value::from_utf8("sudo rm -rf /");
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
@@ -1489,9 +1489,9 @@ TYPED_TEST(ServiceBlackboardTest, create_with_attributes_sets_attributes) {
 TYPED_TEST(ServiceBlackboardTest, open_fails_when_attributes_are_incompatible) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    auto key = Attribute::Key("whats hypnotoad doing these days?");
-    auto value = Attribute::Value("eating hypnoflies?");
-    auto missing_key = Attribute::Key("no he is singing a song!");
+    auto key = *Attribute::Key::from_utf8("whats hypnotoad doing these days?");
+    auto value = *Attribute::Value::from_utf8("eating hypnoflies?");
+    auto missing_key = *Attribute::Key::from_utf8("no he is singing a song!");
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");

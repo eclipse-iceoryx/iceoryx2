@@ -126,10 +126,10 @@ TYPED_TEST(ServiceTest, list_works) {
 TYPED_TEST(ServiceTest, list_works_with_attributes) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    auto key_1 = Attribute::Key("do elephants like strawberries?");
-    auto value_1 = Attribute::Value("do strawberries like elephants?");
-    auto key_2 = Attribute::Key("the berry of the straw");
-    auto value_2 = Attribute::Value("has left the field!");
+    auto key_1 = *Attribute::Key::from_utf8("do elephants like strawberries?");
+    auto value_1 = *Attribute::Value::from_utf8("do strawberries like elephants?");
+    auto key_2 = *Attribute::Key::from_utf8("the berry of the straw");
+    auto value_2 = *Attribute::Value::from_utf8("has left the field!");
 
 
     const auto service_name_1 = iox2_testing::generate_service_name();
@@ -167,7 +167,7 @@ TYPED_TEST(ServiceTest, list_works_with_attributes) {
 
             counter = 0;
             details.static_details.attributes().iter_key_values(key_1, [&](auto& value) -> CallbackProgression {
-                EXPECT_THAT(value.c_str(), StrEq(value_1.c_str()));
+                EXPECT_THAT(value.unchecked_access().c_str(), StrEq(value_1.unchecked_access().c_str()));
                 counter++;
                 return CallbackProgression::Continue;
             });
@@ -175,7 +175,7 @@ TYPED_TEST(ServiceTest, list_works_with_attributes) {
 
             counter = 0;
             details.static_details.attributes().iter_key_values(key_2, [&](auto& value) -> CallbackProgression {
-                EXPECT_THAT(value.c_str(), StrEq(value_2.c_str()));
+                EXPECT_THAT(value.unchecked_access().c_str(), StrEq(value_2.unchecked_access().c_str()));
                 counter++;
                 return CallbackProgression::Continue;
             });
@@ -191,7 +191,7 @@ TYPED_TEST(ServiceTest, list_works_with_attributes) {
 
             counter = 0;
             details.static_details.attributes().iter_key_values(key_1, [&](auto& value) -> CallbackProgression {
-                EXPECT_THAT(value.c_str(), StrEq(value_1.c_str()));
+                EXPECT_THAT(value.unchecked_access().c_str(), StrEq(value_1.unchecked_access().c_str()));
                 counter++;
                 return CallbackProgression::Continue;
             });
@@ -199,7 +199,7 @@ TYPED_TEST(ServiceTest, list_works_with_attributes) {
 
             counter = 0;
             details.static_details.attributes().iter_key_values(key_2, [&](auto& value) -> CallbackProgression {
-                EXPECT_THAT(value.c_str(), StrEq(value_2.c_str()));
+                EXPECT_THAT(value.unchecked_access().c_str(), StrEq(value_2.unchecked_access().c_str()));
                 counter++;
                 return CallbackProgression::Continue;
             });
@@ -211,7 +211,7 @@ TYPED_TEST(ServiceTest, list_works_with_attributes) {
 
             counter = 0;
             details.static_details.attributes().iter_key_values(key_1, [&](auto& value) -> CallbackProgression {
-                EXPECT_THAT(value.c_str(), StrEq(value_1.c_str()));
+                EXPECT_THAT(value.unchecked_access().c_str(), StrEq(value_1.unchecked_access().c_str()));
                 counter++;
                 return CallbackProgression::Continue;
             });
@@ -219,7 +219,7 @@ TYPED_TEST(ServiceTest, list_works_with_attributes) {
 
             counter = 0;
             details.static_details.attributes().iter_key_values(key_2, [&](auto& value) -> CallbackProgression {
-                EXPECT_THAT(value.c_str(), StrEq(value_2.c_str()));
+                EXPECT_THAT(value.unchecked_access().c_str(), StrEq(value_2.unchecked_access().c_str()));
                 counter++;
                 return CallbackProgression::Continue;
             });
@@ -240,10 +240,10 @@ TYPED_TEST(ServiceTest, list_works_with_attributes) {
 TYPED_TEST(ServiceTest, details_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    auto key_1 = Attribute::Key("gimme a strawberries?");
-    auto value_1 = Attribute::Value("i want a strawberry!");
-    auto key_2 = Attribute::Key("it makes me immortal");
-    auto value_2 = Attribute::Value("or at least sticky");
+    auto key_1 = *Attribute::Key::from_utf8("gimme a strawberries?");
+    auto value_1 = *Attribute::Value::from_utf8("i want a strawberry!");
+    auto key_2 = *Attribute::Key::from_utf8("it makes me immortal");
+    auto value_2 = *Attribute::Value::from_utf8("or at least sticky");
 
 
     const auto service_name_1 = iox2_testing::generate_service_name();
@@ -270,7 +270,7 @@ TYPED_TEST(ServiceTest, details_works) {
 
     auto counter = 0;
     result.value()->static_details.attributes().iter_key_values(key_1, [&](auto& value) -> CallbackProgression {
-        EXPECT_THAT(value.c_str(), StrEq(value_1.c_str()));
+        EXPECT_THAT(value.unchecked_access().c_str(), StrEq(value_1.unchecked_access().c_str()));
         counter++;
         return CallbackProgression::Continue;
     });
@@ -278,7 +278,7 @@ TYPED_TEST(ServiceTest, details_works) {
 
     counter = 0;
     result.value()->static_details.attributes().iter_key_values(key_2, [&](auto& value) -> CallbackProgression {
-        EXPECT_THAT(value.c_str(), StrEq(value_2.c_str()));
+        EXPECT_THAT(value.unchecked_access().c_str(), StrEq(value_2.unchecked_access().c_str()));
         counter++;
         return CallbackProgression::Continue;
     });

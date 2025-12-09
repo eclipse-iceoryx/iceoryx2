@@ -11,24 +11,27 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/attribute.hpp"
+#include "iox2/container/static_string.hpp"
+#include "iox2/legacy/string.hpp"
 
 namespace iox2 {
 auto AttributeView::key() const -> Attribute::Key {
-    Attribute::Key key;
+    // TODO: implement unsafe_raw_access() for StaticString
+    legacy::string<IOX2_ATTRIBUTE_KEY_LENGTH> key("");
     key.unsafe_raw_access([this](auto* buffer, const auto& info) -> auto {
         iox2_attribute_key(m_handle, buffer, info.total_size);
         return iox2_attribute_key_len(m_handle);
     });
-    return key;
+    return *container::StaticString<IOX2_ATTRIBUTE_KEY_LENGTH>::from_utf8_null_terminated_unchecked(key.c_str());
 }
 
 auto AttributeView::value() const -> Attribute::Value {
-    Attribute::Value value;
+    legacy::string<IOX2_ATTRIBUTE_VALUE_LENGTH> value("");
     value.unsafe_raw_access([this](auto* buffer, const auto& info) -> auto {
         iox2_attribute_value(m_handle, buffer, info.total_size);
         return iox2_attribute_value_len(m_handle);
     });
-    return value;
+    return *container::StaticString<IOX2_ATTRIBUTE_VALUE_LENGTH>::from_utf8_null_terminated_unchecked(value.c_str());
 }
 
 AttributeView::AttributeView(iox2_attribute_h_ref handle)
@@ -37,6 +40,7 @@ AttributeView::AttributeView(iox2_attribute_h_ref handle)
 } // namespace iox2
 
 auto operator<<(std::ostream& stream, const iox2::AttributeView& value) -> std::ostream& {
-    stream << "Attribute { key = \"" << value.key().c_str() << "\", value = \"" << value.value().c_str() << "\" }";
+    stream << "Attribute { key = \"" << value.key().unchecked_access().c_str() << "\", value = \""
+           << value.value().unchecked_access().c_str() << "\" }";
     return stream;
 }

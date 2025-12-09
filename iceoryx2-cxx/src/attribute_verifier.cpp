@@ -46,7 +46,8 @@ auto AttributeVerifier::operator=(AttributeVerifier&& rhs) noexcept -> Attribute
 
 auto AttributeVerifier::require(const Attribute::Key& key, const Attribute::Value& value)
     -> iox2::legacy::expected<void, AttributeDefinitionError> {
-    auto result = iox2_attribute_verifier_require(&m_handle, key.c_str(), value.c_str());
+    auto result =
+        iox2_attribute_verifier_require(&m_handle, key.unchecked_access().c_str(), value.unchecked_access().c_str());
     if (result == IOX2_OK) {
         return iox2::legacy::ok();
     }
@@ -56,7 +57,7 @@ auto AttributeVerifier::require(const Attribute::Key& key, const Attribute::Valu
 
 auto AttributeVerifier::require_key(const Attribute::Key& key)
     -> iox2::legacy::expected<void, AttributeDefinitionError> {
-    auto result = iox2_attribute_verifier_require_key(&m_handle, key.c_str());
+    auto result = iox2_attribute_verifier_require_key(&m_handle, key.unchecked_access().c_str());
     if (result == IOX2_OK) {
         return iox2::legacy::ok();
     }
@@ -75,7 +76,8 @@ auto AttributeVerifier::keys() const -> iox2::container::StaticVector<Attribute:
         // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays, modernize-avoid-c-arrays) used as an uninitialized buffer
         char buffer[Attribute::Key::capacity()];
         iox2_attribute_verifier_key(&m_handle, i, &buffer[0], Attribute::Key::capacity());
-        attributes.try_push_back(Attribute::Key(iox2::legacy::TruncateToCapacity, &buffer[0]));
+        // TODO: error handling
+        attributes.try_push_back(*Attribute::Key::from_utf8_null_terminated_unchecked(&buffer[0]));
     }
 
     return attributes;
@@ -90,7 +92,8 @@ auto AttributeVerifier::verify_requirements(const AttributeSetView& rhs) const
         return iox2::legacy::ok();
     }
 
-    return iox2::legacy::err(Attribute::Key(iox2::legacy::TruncateToCapacity, &buffer[0]));
+    // TODO: error handling
+    return iox2::legacy::err(*Attribute::Key::from_utf8_null_terminated_unchecked(&buffer[0]));
 }
 
 
