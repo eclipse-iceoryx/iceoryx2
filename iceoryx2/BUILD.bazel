@@ -28,6 +28,31 @@ rust_library(
         ],
         "//conditions:default": [],
     }) + select({
+        "//:cfg_feature_logger_log": [
+            "logger_log"
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "//:cfg_feature_logger_tracing": [
+            "logger_tracing"
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "//:cfg_feature_logger_buffer": [
+            "logger_buffer"
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "//:cfg_feature_logger_file": [
+            "logger_file"
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "//:cfg_feature_logger_console": [
+            "logger_console"
+        ],
+        "//conditions:default": [],
+    }) + select({
         "//:cfg_feature_std": [
             "std",
         ],
@@ -40,6 +65,7 @@ rust_library(
         "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
         "//iceoryx2-bb/lock-free:iceoryx2-bb-lock-free",
         "//iceoryx2-log/log:iceoryx2-log",
+        "//iceoryx2-log/loggers:iceoryx2-loggers",
         "//iceoryx2-bb/memory:iceoryx2-bb-memory",
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
         "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",

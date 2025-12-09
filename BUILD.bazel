@@ -128,7 +128,7 @@ selects.config_setting_group(
 
 string_flag(
     name = "feature_logger_file",
-    build_setting_default = "on",
+    build_setting_default = "auto",
     visibility = ["//visibility:public"],
 )
 config_setting(
@@ -154,7 +154,7 @@ selects.config_setting_group(
 
 string_flag(
     name = "feature_logger_console",
-    build_setting_default = "on",
+    build_setting_default = "auto",
     visibility = ["//visibility:public"],
 )
 config_setting(

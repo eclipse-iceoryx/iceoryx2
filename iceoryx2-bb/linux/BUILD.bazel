@@ -44,6 +44,7 @@ rust_test_suite(
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
         "//iceoryx2-pal/testing:iceoryx2-pal-testing",
         "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
+        "//iceoryx2-log/loggers:iceoryx2-loggers",
     ],
     tags = ["exclusive"],
 )

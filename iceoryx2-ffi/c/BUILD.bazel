@@ -44,15 +44,9 @@ rust_shared_library(
     crate_features = select({
         "//:cfg_feature_std": [
             "std",
-            "logger_buffer",
-            "logger_console",
-            "logger_file"
         ],
         "//conditions:default": [
             "std",
-            "logger_buffer",
-            "logger_console",
-            "logger_file"
         ],
     }),
     deps = [
@@ -82,15 +76,9 @@ rust_static_library(
     crate_features = select({
         "//:cfg_feature_std": [
             "std",
-            "logger_buffer",
-            "logger_console",
-            "logger_file"
         ],
         "//conditions:default": [
             "std",
-            "logger_buffer",
-            "logger_console",
-            "logger_file"
         ],
     }),
     deps = [
