@@ -41,6 +41,7 @@ target_sources(iceoryx2-bb-cxx PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/semantic_string.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/std_chrono_support.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/config.hpp>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/expected.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/optional.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/static_string.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/static_vector.hpp>
