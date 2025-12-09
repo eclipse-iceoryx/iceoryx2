@@ -29,10 +29,10 @@ constexpr uint64_t IOX2_MAX_PATH_LENGTH = 1023U;
 } // namespace platform
 
 namespace detail {
-auto file_path_does_contain_invalid_characters(const legacy::string<platform::IOX2_MAX_PATH_LENGTH>& value) noexcept
-    -> bool;
-auto file_path_does_contain_invalid_content(const legacy::string<platform::IOX2_MAX_PATH_LENGTH>& value) noexcept
-    -> bool;
+auto file_path_does_contain_invalid_characters(
+    const container::StaticString<platform::IOX2_MAX_PATH_LENGTH>& value) noexcept -> bool;
+auto file_path_does_contain_invalid_content(
+    const container::StaticString<platform::IOX2_MAX_PATH_LENGTH>& value) noexcept -> bool;
 } // namespace detail
 
 /// @brief Represents a path to a file. It is not allowed to end with a path separator
@@ -51,14 +51,14 @@ class FilePath : public SemanticString<FilePath,
 
 namespace detail {
 inline auto
-file_path_does_contain_invalid_characters(const legacy::string<platform::IOX2_MAX_PATH_LENGTH>& value) noexcept
+file_path_does_contain_invalid_characters(const container::StaticString<platform::IOX2_MAX_PATH_LENGTH>& value) noexcept
     -> bool {
     const auto value_size = value.size();
 
     for (uint64_t i { 0 }; i < value_size; ++i) {
         // AXIVION Next Construct AutosarC++19_03-A3.9.1: Not used as an integer but as actual character
         // NOLINTNEXTLINE(readability-identifier-length)
-        const char c { value.unchecked_at(i) };
+        const char c { value.unchecked_access()[i] };
 
         const bool is_small_letter { ASCII_A <= c && c <= ASCII_Z };
         const bool is_capital_letter { ASCII_CAPITAL_A <= c && c <= ASCII_CAPITAL_Z };
@@ -84,11 +84,10 @@ file_path_does_contain_invalid_characters(const legacy::string<platform::IOX2_MA
     return false;
 }
 
-inline auto file_path_does_contain_invalid_content(const legacy::string<platform::IOX2_MAX_PATH_LENGTH>& value) noexcept
+inline auto
+file_path_does_contain_invalid_content(const container::StaticString<platform::IOX2_MAX_PATH_LENGTH>& value) noexcept
     -> bool {
-    auto tmp =
-        *container::StaticString<platform::IOX2_MAX_PATH_LENGTH>::from_utf8_null_terminated_unchecked(value.c_str());
-    return !is_valid_path_to_file(tmp);
+    return !is_valid_path_to_file(value);
 }
 } // namespace detail
 } // namespace bb

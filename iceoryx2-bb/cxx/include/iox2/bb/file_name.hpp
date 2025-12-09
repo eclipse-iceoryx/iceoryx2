@@ -16,6 +16,7 @@
 
 #include "iox2/bb/detail/path_and_file_verifier.hpp"
 #include "iox2/bb/semantic_string.hpp"
+#include "iox2/container/static_string.hpp"
 
 namespace iox2 {
 namespace bb {
@@ -28,10 +29,10 @@ constexpr uint64_t IOX2_MAX_FILENAME_LENGTH = 255U;
 } // namespace platform
 
 namespace detail {
-auto file_name_does_contain_invalid_characters(const legacy::string<platform::IOX2_MAX_FILENAME_LENGTH>& value) noexcept
-    -> bool;
-auto file_name_does_contain_invalid_content(const legacy::string<platform::IOX2_MAX_FILENAME_LENGTH>& value) noexcept
-    -> bool;
+auto file_name_does_contain_invalid_characters(
+    const container::StaticString<platform::IOX2_MAX_FILENAME_LENGTH>& value) noexcept -> bool;
+auto file_name_does_contain_invalid_content(
+    const container::StaticString<platform::IOX2_MAX_FILENAME_LENGTH>& value) noexcept -> bool;
 } // namespace detail
 
 /// @brief Represents a single file name. It is not allowed to contain any path elements
@@ -48,15 +49,14 @@ class FileName : public SemanticString<FileName,
 };
 
 namespace detail {
-inline auto
-file_name_does_contain_invalid_characters(const legacy::string<platform::IOX2_MAX_FILENAME_LENGTH>& value) noexcept
-    -> bool {
+inline auto file_name_does_contain_invalid_characters(
+    const container::StaticString<platform::IOX2_MAX_FILENAME_LENGTH>& value) noexcept -> bool {
     const auto value_size = value.size();
 
     for (uint64_t i { 0 }; i < value_size; ++i) {
         // AXIVION Next Construct AutosarC++19_03-A3.9.1: Not used as an integer but as actual character
         // NOLINTNEXTLINE(readability-identifier-length)
-        const char c { value.unchecked_at(i) };
+        const char c { value.unchecked_access()[i] };
 
         const bool is_small_letter { ASCII_A <= c && c <= ASCII_Z };
         const bool is_capital_letter { ASCII_CAPITAL_A <= c && c <= ASCII_CAPITAL_Z };
@@ -72,10 +72,10 @@ file_name_does_contain_invalid_characters(const legacy::string<platform::IOX2_MA
     return false;
 }
 
-inline auto
-file_name_does_contain_invalid_content(const legacy::string<platform::IOX2_MAX_FILENAME_LENGTH>& value) noexcept
-    -> bool {
-    return (value.empty() || value == "." || value == "..");
+inline auto file_name_does_contain_invalid_content(
+    const container::StaticString<platform::IOX2_MAX_FILENAME_LENGTH>& value) noexcept -> bool {
+    return (value.empty() || value == *container::StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8(".")
+            || value == *container::StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8(".."));
 }
 } // namespace detail
 } // namespace bb

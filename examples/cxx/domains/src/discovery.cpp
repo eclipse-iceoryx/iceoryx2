@@ -38,7 +38,9 @@ auto main(int argc, char** argv) -> int {
 
     // The domain name becomes the prefix for all resources.
     // Therefore, different domain names never share the same resources.
-    config.global().set_prefix(iox2::bb::FileName::create(args.domain()).expect("valid domain name"));
+    // TODO: adapt Args
+    auto domain = *container::StaticString<32>::from_utf8_null_terminated_unchecked(args.domain().c_str());
+    config.global().set_prefix(iox2::bb::FileName::create(domain).expect("valid domain name"));
 
 
     std::cout << "Services running in domain \"" << args.domain() << "\":" << std::endl;
