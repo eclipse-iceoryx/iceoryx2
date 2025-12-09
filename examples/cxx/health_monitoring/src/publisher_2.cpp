@@ -22,7 +22,7 @@ auto main() -> int {
     set_log_level_from_env_or(LogLevel::Info);
     auto service_name = ServiceName::create("service_2").expect("");
     auto node = NodeBuilder()
-                    .name(NodeName::create("publisher 2").expect(""))
+                    .name(NodeName::create("publisher 2").value())
                     .create<ServiceType::Ipc>()
                     .expect("successful node creation");
 

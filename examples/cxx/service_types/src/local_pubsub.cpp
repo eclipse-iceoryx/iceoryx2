@@ -28,7 +28,7 @@ void background_thread_fn() {
     auto node = NodeBuilder()
                     // Optionally, a name can be provided to the node which helps identifying them
                     // later during debugging or introspection
-                    .name(NodeName::create("threadnode").expect("valid node name"))
+                    .name(NodeName::create("threadnode").value())
                     .create<ServiceType::Local>()
                     .expect("successful node creation");
 
@@ -62,7 +62,7 @@ auto main() -> int {
     auto node = NodeBuilder()
                     // Optionally, a name can be provided to the node which helps identifying them
                     // later during debugging or introspection
-                    .name(NodeName::create("mainnode").expect("valid node name"))
+                    .name(NodeName::create("mainnode").value())
                     .create<ServiceType::Local>()
                     .expect("successful node creation");
 

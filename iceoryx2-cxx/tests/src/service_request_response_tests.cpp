@@ -87,8 +87,8 @@ TYPED_TEST(ServiceRequestResponseTest, service_name_works) {
 TYPED_TEST(ServiceRequestResponseTest, list_service_nodes_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto node_name_1 = NodeName::create("is there any of the herring left?").expect("");
-    const auto node_name_2 = NodeName::create("nala and octo-wolf asked in unison").expect("");
+    const auto node_name_1 = NodeName::create("is there any of the herring left?").value();
+    const auto node_name_2 = NodeName::create("nala and octo-wolf asked in unison").value();
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node_1 = NodeBuilder().name(node_name_1).create<SERVICE_TYPE>().expect("");

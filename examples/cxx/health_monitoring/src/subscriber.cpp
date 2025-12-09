@@ -34,7 +34,7 @@ auto main() -> int {
     auto service_name_2 = ServiceName::create("service_2").expect("");
 
     auto node = NodeBuilder()
-                    .name(NodeName::create("subscruber").expect(""))
+                    .name(NodeName::create("subscruber").value())
                     .create<ServiceType::Ipc>()
                     .expect("successful node creation");
 
