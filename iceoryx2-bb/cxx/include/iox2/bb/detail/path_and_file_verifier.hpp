@@ -157,7 +157,7 @@ inline auto is_valid_path_to_file(const container::StaticString<StringCapacity>&
         return false;
     }
 
-    // TODO: implement find_last_of() and substr() for StaticString
+    // TODO: implement find_last_of() for StaticString
     auto tmp = legacy::string<StringCapacity>(legacy::TruncateToCapacity, name.unchecked_access().c_str(), name.size());
     auto maybe_separator = tmp.find_last_of(legacy::string<platform::IOX2_NUMBER_OF_PATH_SEPARATORS>(
         legacy::TruncateToCapacity, &platform::IOX2_PATH_SEPARATORS[0], platform::IOX2_NUMBER_OF_PATH_SEPARATORS));
@@ -169,18 +169,18 @@ inline auto is_valid_path_to_file(const container::StaticString<StringCapacity>&
     const auto& position = maybe_separator.value();
 
     bool is_file_name_valid { false };
-    tmp.substr(position + 1).and_then([&is_file_name_valid](const auto& str) noexcept -> void {
-        auto tmp_str = *container::StaticString<StringCapacity>::from_utf8_null_terminated_unchecked(str.c_str());
-        is_file_name_valid = is_valid_file_name(tmp_str);
-    });
+    auto sub_str = name.substr(position + 1, name.size());
+    if (sub_str.has_value()) {
+        is_file_name_valid = is_valid_file_name(*sub_str);
+    }
 
     bool is_path_valid { false };
-    tmp.substr(0, position).and_then([&is_path_valid](const auto& str) noexcept -> void {
-        const bool is_empty_path { str.empty() };
-        auto tmp_str = *container::StaticString<StringCapacity>::from_utf8_null_terminated_unchecked(str.c_str());
-        const bool is_path_to_directory_valid { is_valid_path_to_directory(tmp_str) };
+    sub_str = name.substr(0, position);
+    if (sub_str.has_value()) {
+        const bool is_empty_path { sub_str->empty() };
+        const bool is_path_to_directory_valid { is_valid_path_to_directory(*sub_str) };
         is_path_valid = is_empty_path || is_path_to_directory_valid;
-    });
+    }
 
     // AXIVION Next Construct AutosarC++19_03-M0.1.2, AutosarC++19_03-M0.1.9, FaultDetection-DeadBranches : False positive! Branching depends on input parameter
     return is_path_valid && is_file_name_valid;
@@ -192,17 +192,19 @@ inline auto is_valid_path_to_directory(const container::StaticString<StringCapac
         return false;
     }
 
-    const legacy::string<StringCapacity> current_directory { "." };
-    const legacy::string<StringCapacity> parent_directory { ".." };
+    auto const current_directory = *container::StaticString<StringCapacity>::from_utf8(".");
+    auto const parent_directory = *container::StaticString<StringCapacity>::from_utf8("..");
 
     const legacy::string<platform::IOX2_NUMBER_OF_PATH_SEPARATORS> path_separators {
         legacy::TruncateToCapacity, &platform::IOX2_PATH_SEPARATORS[0], platform::IOX2_NUMBER_OF_PATH_SEPARATORS
     };
 
-    // TODO: add find_first_of() to StaticString
-    legacy::string<StringCapacity> remaining(legacy::TruncateToCapacity, name.unchecked_access().c_str(), name.size());
+    auto remaining = name;
     while (!remaining.empty()) {
-        const auto separator_position = remaining.find_first_of(path_separators);
+        // TODO: add find_first_of() to StaticString
+        legacy::string<StringCapacity> tmp_remaining(
+            legacy::TruncateToCapacity, remaining.unchecked_access().c_str(), remaining.size());
+        const auto separator_position = tmp_remaining.find_first_of(path_separators);
 
         if (separator_position.has_value()) {
             const uint64_t position { separator_position.value() };
@@ -218,9 +220,7 @@ inline auto is_valid_path_to_directory(const container::StaticString<StringCapac
             if (position != 0) {
                 const auto guaranteed_substr = remaining.substr(0, position);
                 const auto& filename_to_verify = guaranteed_substr.value();
-                auto tmp = *container::StaticString<StringCapacity>::from_utf8_null_terminated_unchecked(
-                    filename_to_verify.c_str());
-                const bool is_valid_directory { (is_valid_file_name(tmp))
+                const bool is_valid_directory { (is_valid_file_name(filename_to_verify))
                                                 || ((filename_to_verify == current_directory)
                                                     || (filename_to_verify == parent_directory)) };
                 if (!is_valid_directory) {
@@ -228,13 +228,13 @@ inline auto is_valid_path_to_directory(const container::StaticString<StringCapac
                 }
             }
 
-            remaining.substr(position + 1).and_then([&remaining](const auto& str) noexcept -> void {
-                remaining = str;
-            });
+            auto sub_str = remaining.substr(position + 1, remaining.size());
+            if (sub_str.has_value()) {
+                remaining = *sub_str;
+            }
         } else // we reached the last entry, if its a valid file name the path is valid
         {
-            auto tmp = *container::StaticString<StringCapacity>::from_utf8_null_terminated_unchecked(remaining.c_str());
-            return is_valid_path_entry(tmp, RelativePathComponents::Accept);
+            return is_valid_path_entry(remaining, RelativePathComponents::Accept);
         }
     }
 
