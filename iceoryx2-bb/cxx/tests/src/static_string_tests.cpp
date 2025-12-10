@@ -1032,4 +1032,39 @@ TEST(StaticString, greater_or_equal_operator_works) {
     EXPECT_FALSE(sut5 >= sut1);
 }
 
+TEST(StaticString, substr_with_valid_pos_and_size_works) {
+    constexpr uint64_t const STRING_SIZE = 25;
+    auto const sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("AAABBBCCCDDD");
+
+    auto sub_str_1 = sut.substr(0, STRING_SIZE);
+    ASSERT_TRUE(sub_str_1.has_value());
+    EXPECT_EQ(*sub_str_1, sut);
+
+    auto sub_str_2 = sut.substr(0, sut.size());
+    ASSERT_TRUE(sub_str_2.has_value());
+    EXPECT_EQ(*sub_str_2, sut);
+
+    auto sub_str_3 = sut.substr(sut.size(), 0);
+    ASSERT_TRUE(sub_str_3.has_value());
+    EXPECT_TRUE(sub_str_3->empty());
+
+    auto sub_str_4 = sut.substr(sut.size() / 2, 3);
+    ASSERT_TRUE(sub_str_4.has_value());
+    EXPECT_STREQ(sub_str_4->unchecked_access().c_str(), "CCC");
+
+    auto sub_str_5 = sut.substr(sut.size() / 2, sut.size());
+    ASSERT_TRUE(sub_str_5.has_value());
+    EXPECT_STREQ(sub_str_5->unchecked_access().c_str(), "CCCDDD");
+}
+
+TEST(StaticString, substr_with_invalid_pos_fails) {
+    constexpr uint64_t const STRING_SIZE = 25;
+    auto const sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("AAABBBCCCDDD");
+
+    auto sub_str_1 = sut.substr(sut.size() + 1, 0);
+    ASSERT_FALSE(sub_str_1.has_value());
+
+    auto sub_str_2 = sut.substr(STRING_SIZE, 1);
+    ASSERT_FALSE(sub_str_2.has_value());
+}
 } // namespace

@@ -494,6 +494,24 @@ class StaticString {
         return ret;
     }
 
+    /// @brief Creates a substring containing the characters from pos until count; if pos+count is greater than
+    /// the size of the original string the returned substring only contains the characters from pos until size().
+    ///
+    /// @return an optional containing the substring
+    ///         nullopt if pos is greater than the size of the original string
+    auto substr(SizeType pos, SizeType count) const -> Optional<StaticString> {
+        if (pos > m_size) {
+            return nullopt;
+        }
+
+        auto const length = std::min(count, m_size - pos);
+        StaticString sub_str;
+        std::memcpy(sub_str.m_string, &m_string[pos], length);
+        sub_str.m_string[length] = '\0';
+        sub_str.m_size = length;
+        return sub_str;
+    }
+
   private:
     auto is_valid_next(char character) const noexcept -> bool {
         constexpr char const CODE_UNIT_UPPER_BOUND = 127;
@@ -519,7 +537,7 @@ struct IsStaticString : std::false_type { };
 template <uint64_t N>
 struct IsStaticString<StaticString<N>> : std::true_type { };
 
-// TODO: check for custom string?
+// TODO: check for custom string or rename to IsStaticStringOrCharArray?
 template <typename T, typename ReturnType>
 using IsStringOrCharArray =
     typename std::enable_if<IsStaticString<T>::value || legacy::is_char_array<T>::value, ReturnType>::type;
