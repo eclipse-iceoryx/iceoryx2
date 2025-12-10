@@ -964,4 +964,72 @@ TEST(StaticString, not_equal_operator_checks_for_string_inequality) {
     EXPECT_FALSE(sut5 != iox2::container::StaticString<STRING_SIZE>());
 }
 
+TEST(StaticString, less_operator_works) {
+    constexpr uint64_t const STRING_SIZE = 5;
+    auto const sut1 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABCD");
+    auto const sut2 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABCD");
+    EXPECT_FALSE(sut1 < sut2);
+    EXPECT_FALSE(sut2 < sut1);
+    auto const sut3 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABC");
+    EXPECT_FALSE(sut1 < sut3);
+    EXPECT_TRUE(sut3 < sut1);
+    auto const sut4 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABCDE");
+    EXPECT_TRUE(sut1 < sut4);
+    EXPECT_FALSE(sut4 < sut1);
+    auto const sut5 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("");
+    EXPECT_FALSE(sut1 < sut5);
+    EXPECT_TRUE(sut5 < sut1);
+}
+
+TEST(StaticString, less_or_equal_operator_works) {
+    constexpr uint64_t const STRING_SIZE = 5;
+    auto const sut1 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABCD");
+    auto const sut2 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABCD");
+    EXPECT_TRUE(sut1 <= sut2);
+    EXPECT_TRUE(sut2 <= sut1);
+    auto const sut3 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABC");
+    EXPECT_FALSE(sut1 <= sut3);
+    EXPECT_TRUE(sut3 <= sut1);
+    auto const sut4 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABCDE");
+    EXPECT_TRUE(sut1 <= sut4);
+    EXPECT_FALSE(sut4 <= sut1);
+    auto const sut5 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("");
+    EXPECT_FALSE(sut1 <= sut5);
+    EXPECT_TRUE(sut5 <= sut1);
+}
+
+TEST(StaticString, greater_operator_works) {
+    constexpr uint64_t const STRING_SIZE = 5;
+    auto const sut1 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABCD");
+    auto const sut2 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABCD");
+    EXPECT_FALSE(sut1 > sut2);
+    EXPECT_FALSE(sut2 > sut1);
+    auto const sut3 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABC");
+    EXPECT_TRUE(sut1 > sut3);
+    EXPECT_FALSE(sut3 > sut1);
+    auto const sut4 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABCDE");
+    EXPECT_FALSE(sut1 > sut4);
+    EXPECT_TRUE(sut4 > sut1);
+    auto const sut5 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("");
+    EXPECT_TRUE(sut1 > sut5);
+    EXPECT_FALSE(sut5 > sut1);
+}
+
+TEST(StaticString, greater_or_equal_operator_works) {
+    constexpr uint64_t const STRING_SIZE = 5;
+    auto const sut1 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABCD");
+    auto const sut2 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABCD");
+    EXPECT_TRUE(sut1 >= sut2);
+    EXPECT_TRUE(sut2 >= sut1);
+    auto const sut3 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABC");
+    EXPECT_TRUE(sut1 >= sut3);
+    EXPECT_FALSE(sut3 >= sut1);
+    auto const sut4 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABCDE");
+    EXPECT_FALSE(sut1 >= sut4);
+    EXPECT_TRUE(sut4 >= sut1);
+    auto const sut5 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("");
+    EXPECT_TRUE(sut1 >= sut5);
+    EXPECT_FALSE(sut5 >= sut1);
+}
+
 } // namespace

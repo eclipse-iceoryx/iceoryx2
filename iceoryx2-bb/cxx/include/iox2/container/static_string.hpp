@@ -14,6 +14,7 @@
 #define IOX2_INCLUDE_GUARD_CONTAINER_STATIC_STRING_HPP
 
 #include "iox2/bb/optional.hpp"
+#include "iox2/legacy/type_traits.hpp"
 
 #include <algorithm>
 #include <cstddef>
@@ -454,6 +455,22 @@ class StaticString {
         return !(lhs == rhs);
     }
 
+    friend auto operator<(StaticString const& lhs, StaticString const& rhs) -> bool {
+        return lhs.compare(rhs) < 0;
+    }
+
+    friend auto operator<=(StaticString const& lhs, StaticString const& rhs) -> bool {
+        return lhs.compare(rhs) <= 0;
+    }
+
+    friend auto operator>(StaticString const& lhs, StaticString const& rhs) -> bool {
+        return lhs.compare(rhs) > 0;
+    }
+
+    friend auto operator>=(StaticString const& lhs, StaticString const& rhs) -> bool {
+        return lhs.compare(rhs) >= 0;
+    }
+
     /// Obtains metrics about the internal memory layout of the vector.
     /// This function is intended for internal use only.
     constexpr auto static_memory_layout_metrics() noexcept {
@@ -482,6 +499,18 @@ class StaticString {
         constexpr char const CODE_UNIT_UPPER_BOUND = 127;
         return (character > 0) && (character <= CODE_UNIT_UPPER_BOUND);
     }
+
+    auto compare(StaticString const& other) const -> int64_t {
+        auto const other_size = other.size();
+        auto const res = memcmp(&m_string[0], &other.m_string[0], std::min(m_size, other_size));
+        if (res == 0) {
+            if (m_size < other_size) {
+                return -1;
+            }
+            return ((m_size > other_size) ? 1 : 0);
+        }
+        return res;
+    }
 };
 
 template <typename>
@@ -489,6 +518,11 @@ struct IsStaticString : std::false_type { };
 
 template <uint64_t N>
 struct IsStaticString<StaticString<N>> : std::true_type { };
+
+// TODO: check for custom string?
+template <typename T, typename ReturnType>
+using IsStringOrCharArray =
+    typename std::enable_if<IsStaticString<T>::value || legacy::is_char_array<T>::value, ReturnType>::type;
 
 } // namespace container
 } // namespace iox2

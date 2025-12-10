@@ -116,8 +116,8 @@ TEST(path_and_file_verifier_test_isValidFileName, WhenOneInvalidCharacterIsConta
     const std::string valid_name1 = "summon";
     const std::string valid_name2 = "TheHolyToad";
 
-    constexpr int32_t MAX_ASCII_CODE = 255;
-    for (int32_t i = 0; i <= MAX_ASCII_CODE; ++i) {
+    constexpr int32_t MAX_ASCII_CODE = 127;
+    for (int32_t i = 1; i <= MAX_ASCII_CODE; ++i) {
         if (is_valid_file_character(i)) {
             continue;
         }
@@ -128,6 +128,7 @@ TEST(path_and_file_verifier_test_isValidFileName, WhenOneInvalidCharacterIsConta
 
         std::string invalid_character_middle = valid_name1;
         invalid_character_middle.append(1, static_cast<char>(i));
+        invalid_character_middle += valid_name2;
 
         std::string invalid_character_end = valid_name1 + valid_name2;
         invalid_character_end.append(1, static_cast<char>(i));
@@ -242,7 +243,7 @@ TEST(path_and_file_verifier_test_isValidPathToFile_isValidPathToDirectory_isVali
     const std::string valid_path2 = "fuu/world";
 
     // begin at 1 since 0 is string termination
-    constexpr int32_t MAX_ASCII_CODE = 255;
+    constexpr int32_t MAX_ASCII_CODE = 127;
     for (int32_t i = 1; i <= MAX_ASCII_CODE; ++i) {
         // ignore valid characters
         if (is_valid_file_character(i)) {

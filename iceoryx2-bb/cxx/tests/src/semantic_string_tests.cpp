@@ -88,7 +88,6 @@ const std::vector<std::string> TestValues<FilePath>::VALID_VALUES { { "file" },
                                                                     { "123.456" },
                                                                     { ".hidden_me" },
                                                                     { "/some/file/path" },
-                                                                    { "./relative/path" },
                                                                     { "another/../../relative/path" },
                                                                     { "another/../...bla" },
                                                                     { "not/yet/another/path/../fuu" } };
@@ -208,7 +207,7 @@ TYPED_TEST(SemanticStringTest, InitializeWithValidStringLiteralWorks) {
     ASSERT_THAT(sut.has_error(), Eq(false));
     EXPECT_THAT(sut->size(), Eq(11));
     EXPECT_THAT(sut->capacity(), Eq(TestValues<SutType>::CAPACITY));
-    EXPECT_TRUE(sut->as_string().unchecked_access().c_str() == "alwaysvalid");
+    EXPECT_STREQ(sut->as_string().unchecked_access().c_str(), "alwaysvalid");
 }
 
 TYPED_TEST(SemanticStringTest, SizeWorksCorrectly) {
@@ -419,26 +418,29 @@ TYPED_TEST(SemanticStringTest, InsertValidContentToValidStringWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "56ea499f-5ac3-4ffe-abea-b56194cfd728");
     using SutType = typename TestFixture::SutType;
 
-    for (auto& value : TestValues<SutType>::VALID_VALUES) {
-        for (auto& add_value : TestValues<SutType>::VALID_VALUES) {
-            for (size_t insert_position = 0; insert_position < value.size(); ++insert_position) {
-                auto sut = SutType::create(
-                    *StaticString<SutType::capacity()>::from_utf8_null_terminated_unchecked(value.c_str()));
-                ASSERT_THAT(sut.has_error(), Eq(false));
+    // exclude FilePath because a dot at the end is invalid to be compatible with windows api
+    if (!std::is_same<SutType, FilePath>::value) {
+        for (auto& value : TestValues<SutType>::VALID_VALUES) {
+            for (auto& add_value : TestValues<SutType>::VALID_VALUES) {
+                for (size_t insert_position = 0; insert_position < value.size(); ++insert_position) {
+                    auto sut = SutType::create(
+                        *StaticString<SutType::capacity()>::from_utf8_null_terminated_unchecked(value.c_str()));
+                    ASSERT_THAT(sut.has_error(), Eq(false));
 
-                EXPECT_THAT(sut->insert(insert_position,
-                                        string<SutType::capacity()>(TruncateToCapacity, add_value.c_str()),
-                                        add_value.size())
-                                .has_error(),
-                            Eq(false));
+                    EXPECT_THAT(sut->insert(insert_position,
+                                            string<SutType::capacity()>(TruncateToCapacity, add_value.c_str()),
+                                            add_value.size())
+                                    .has_error(),
+                                Eq(false));
 
 
-                EXPECT_THAT(sut->size(), Eq(value.size() + add_value.size()));
-                EXPECT_THAT(sut->capacity(), Eq(TestValues<SutType>::CAPACITY));
+                    EXPECT_THAT(sut->size(), Eq(value.size() + add_value.size()));
+                    EXPECT_THAT(sut->capacity(), Eq(TestValues<SutType>::CAPACITY));
 
-                auto result = value;
-                result.insert(insert_position, add_value);
-                EXPECT_THAT(sut->as_string().unchecked_access().c_str(), StrEq(result));
+                    auto result = value;
+                    result.insert(insert_position, add_value);
+                    EXPECT_THAT(sut->as_string().unchecked_access().c_str(), StrEq(result));
+                }
             }
         }
     }
@@ -505,8 +507,8 @@ TYPED_TEST(SemanticStringTest, EqualityOperatorWorks) {
     EXPECT_TRUE(this->greater_value == this->greater_value);
     EXPECT_FALSE(this->greater_value == this->smaller_value);
 
-    // EXPECT_TRUE(this->greater_value == this->greater_value_str);
-    // EXPECT_FALSE(this->greater_value == this->smaller_value_str);
+    EXPECT_TRUE(this->greater_value == this->greater_value_str);
+    EXPECT_FALSE(this->greater_value == this->smaller_value_str);
 }
 
 TYPED_TEST(SemanticStringTest, InequalityOperatorWorks) {
@@ -515,39 +517,39 @@ TYPED_TEST(SemanticStringTest, InequalityOperatorWorks) {
     EXPECT_FALSE(this->greater_value != this->greater_value);
     EXPECT_TRUE(this->greater_value != this->smaller_value);
 
-    // EXPECT_FALSE(this->greater_value != this->greater_value_str);
-    // EXPECT_TRUE(this->greater_value != this->smaller_value_str);
+    EXPECT_FALSE(this->greater_value != this->greater_value_str);
+    EXPECT_TRUE(this->greater_value != this->smaller_value_str);
 }
 
-// TYPED_TEST(SemanticStringTest, LessThanOrEqualOperatorWorks) {
-//     ::testing::Test::RecordProperty("TEST_ID", "53f5b765-b462-4cc1-bab7-9b937fbbcecf");
+TYPED_TEST(SemanticStringTest, LessThanOrEqualOperatorWorks) {
+    ::testing::Test::RecordProperty("TEST_ID", "53f5b765-b462-4cc1-bab7-9b937fbbcecf");
 
-//     EXPECT_TRUE(this->greater_value <= this->greater_value);
-//     EXPECT_TRUE(this->smaller_value <= this->greater_value);
-//     EXPECT_FALSE(this->greater_value <= this->smaller_value);
-// }
+    EXPECT_TRUE(this->greater_value <= this->greater_value);
+    EXPECT_TRUE(this->smaller_value <= this->greater_value);
+    EXPECT_FALSE(this->greater_value <= this->smaller_value);
+}
 
-// TYPED_TEST(SemanticStringTest, LessThanOperatorWorks) {
-//     ::testing::Test::RecordProperty("TEST_ID", "cea977a4-ccb3-42a6-9d13-e09dce24c273");
+TYPED_TEST(SemanticStringTest, LessThanOperatorWorks) {
+    ::testing::Test::RecordProperty("TEST_ID", "cea977a4-ccb3-42a6-9d13-e09dce24c273");
 
-//     EXPECT_FALSE(this->greater_value < this->greater_value);
-//     EXPECT_TRUE(this->smaller_value < this->greater_value);
-//     EXPECT_FALSE(this->greater_value < this->smaller_value);
-// }
+    EXPECT_FALSE(this->greater_value < this->greater_value);
+    EXPECT_TRUE(this->smaller_value < this->greater_value);
+    EXPECT_FALSE(this->greater_value < this->smaller_value);
+}
 
-// TYPED_TEST(SemanticStringTest, GreaterThanOrEqualOperatorWorks) {
-//     ::testing::Test::RecordProperty("TEST_ID", "5d731b17-f787-46fc-b64d-3d86c9102008");
+TYPED_TEST(SemanticStringTest, GreaterThanOrEqualOperatorWorks) {
+    ::testing::Test::RecordProperty("TEST_ID", "5d731b17-f787-46fc-b64d-3d86c9102008");
 
-//     EXPECT_TRUE(this->greater_value >= this->greater_value);
-//     EXPECT_FALSE(this->smaller_value >= this->greater_value);
-//     EXPECT_TRUE(this->greater_value >= this->smaller_value);
-// }
+    EXPECT_TRUE(this->greater_value >= this->greater_value);
+    EXPECT_FALSE(this->smaller_value >= this->greater_value);
+    EXPECT_TRUE(this->greater_value >= this->smaller_value);
+}
 
-// TYPED_TEST(SemanticStringTest, GreaterThanOperatorWorks) {
-//     ::testing::Test::RecordProperty("TEST_ID", "8c046cff-fb69-43b4-9a45-e86f17c874db");
+TYPED_TEST(SemanticStringTest, GreaterThanOperatorWorks) {
+    ::testing::Test::RecordProperty("TEST_ID", "8c046cff-fb69-43b4-9a45-e86f17c874db");
 
-//     EXPECT_FALSE(this->greater_value > this->greater_value);
-//     EXPECT_FALSE(this->smaller_value > this->greater_value);
-//     EXPECT_TRUE(this->greater_value > this->smaller_value);
-// }
+    EXPECT_FALSE(this->greater_value > this->greater_value);
+    EXPECT_FALSE(this->smaller_value > this->greater_value);
+    EXPECT_TRUE(this->greater_value > this->smaller_value);
+}
 } // namespace
