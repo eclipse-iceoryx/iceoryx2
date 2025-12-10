@@ -195,16 +195,15 @@ inline auto is_valid_path_to_directory(const container::StaticString<StringCapac
     auto const current_directory = *container::StaticString<StringCapacity>::from_utf8(".");
     auto const parent_directory = *container::StaticString<StringCapacity>::from_utf8("..");
 
-    const legacy::string<platform::IOX2_NUMBER_OF_PATH_SEPARATORS> path_separators {
-        legacy::TruncateToCapacity, &platform::IOX2_PATH_SEPARATORS[0], platform::IOX2_NUMBER_OF_PATH_SEPARATORS
-    };
+
+    container::StaticString<platform::IOX2_NUMBER_OF_PATH_SEPARATORS> path_separators;
+    for (auto separator : platform::IOX2_PATH_SEPARATORS) {
+        path_separators.try_append(1, separator); // TODO: error handling
+    }
 
     auto remaining = name;
     while (!remaining.empty()) {
-        // TODO: add find_first_of() to StaticString
-        legacy::string<StringCapacity> tmp_remaining(
-            legacy::TruncateToCapacity, remaining.unchecked_access().c_str(), remaining.size());
-        const auto separator_position = tmp_remaining.find_first_of(path_separators);
+        const auto separator_position = remaining.find_first_of(path_separators);
 
         if (separator_position.has_value()) {
             const uint64_t position { separator_position.value() };
