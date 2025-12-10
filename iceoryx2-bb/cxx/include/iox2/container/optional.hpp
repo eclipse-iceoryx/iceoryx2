@@ -14,7 +14,6 @@
 #define IOX2_INCLUDE_GUARD_CONTAINER_OPTIONAL_HPP
 
 #include "iox2/container/config.hpp"
-#include "iox2/legacy/attributes.hpp"
 
 #include <cstdlib>
 #include <memory>
@@ -331,6 +330,20 @@ class Optional {
     constexpr auto reset() noexcept -> void {
         m_value.reset();
     }
+
+  private:
+    friend auto operator==(const Optional<T>& lhs, NulloptT /* unused */) noexcept -> bool {
+        return !lhs.has_value();
+    }
+    friend auto operator==(NulloptT /* unused */, const Optional<T>& rhs) noexcept -> bool {
+        return !rhs.has_value();
+    }
+    friend auto operator!=(const Optional<T>& lhs, NulloptT /* unused */) noexcept -> bool {
+        return lhs.has_value();
+    }
+    friend auto operator!=(NulloptT /* unused */, const Optional<T>& rhs) noexcept -> bool {
+        return rhs.has_value();
+    }
 };
 
 template <typename T>
@@ -353,26 +366,6 @@ auto operator!=(const Optional<T>& lhs, const Optional<T>& rhs) noexcept -> bool
     } else {
         return false;
     }
-}
-
-template <typename T>
-auto operator==(const Optional<T>& lhs, const NulloptT none IOX2_MAYBE_UNUSED) noexcept -> bool {
-    return !lhs.has_value();
-}
-
-template <typename T>
-auto operator==(const NulloptT none IOX2_MAYBE_UNUSED, const Optional<T>& rhs) noexcept -> bool {
-    return !rhs.has_value();
-}
-
-template <typename T>
-auto operator!=(const Optional<T>& lhs, const NulloptT none IOX2_MAYBE_UNUSED) noexcept -> bool {
-    return lhs.has_value();
-}
-
-template <typename T>
-auto operator!=(const NulloptT none IOX2_MAYBE_UNUSED, const Optional<T>& rhs) noexcept -> bool {
-    return rhs.has_value();
 }
 
 #if __cplusplus >= 201703L
