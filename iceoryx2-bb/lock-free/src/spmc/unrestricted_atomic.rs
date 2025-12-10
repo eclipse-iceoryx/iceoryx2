@@ -34,7 +34,7 @@
 use core::{cell::UnsafeCell, fmt::Debug, mem::MaybeUninit, sync::atomic::Ordering};
 
 use iceoryx2_bb_elementary::math::{align, max};
-use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU32};
+use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64};
 
 // ATTENTION: To ensure the functionality also in the case of an overflow with the 'write_cell'
 // value, the value of `NUMBER_OF_CELLS` must be a power of two
@@ -59,7 +59,7 @@ impl<T: Copy> Producer<'_, T> {
     //   * the memory position must not be modified after
     //     [`Producer::__internal_update_write_cell()`] has been called
     pub unsafe fn __internal_get_ptr_to_write_cell(&self) -> *mut T {
-        let write_cell = self.atomic.mgmt.write_cell.load(Ordering::Relaxed);
+        let write_cell = self.atomic.mgmt.__internal_get_write_cell();
         unsafe { (*self.atomic.data[write_cell as usize % NUMBER_OF_CELLS].get()).as_mut_ptr() }
     }
 
@@ -90,14 +90,14 @@ unsafe impl<T: Copy> Sync for Producer<'_, T> {}
 #[doc(hidden)]
 #[repr(C)]
 pub struct UnrestrictedAtomicMgmt {
-    write_cell: IoxAtomicU32,
+    write_cell: IoxAtomicU64,
     has_producer: IoxAtomicBool,
 }
 
 impl Default for UnrestrictedAtomicMgmt {
     fn default() -> Self {
         Self {
-            write_cell: IoxAtomicU32::new(1),
+            write_cell: IoxAtomicU64::new(1),
             has_producer: IoxAtomicBool::new(true),
         }
     }
@@ -144,7 +144,7 @@ impl UnrestrictedAtomicMgmt {
         value_alignment: usize,
         data_ptr: *mut u8,
     ) -> *mut u8 {
-        let write_cell = self.write_cell.load(Ordering::Relaxed);
+        let write_cell = self.__internal_get_write_cell();
         unsafe {
             let data_cell_ptr =
                 Self::__internal_get_data_cell(value_size, value_alignment, data_ptr, write_cell);
@@ -219,7 +219,7 @@ impl UnrestrictedAtomicMgmt {
         value_size: usize,
         value_alignment: usize,
         data_ptr: *const u8,
-        cell: u32,
+        cell: u64,
     ) -> usize {
         align(
             unsafe { data_ptr.add(value_size * (cell as usize % NUMBER_OF_CELLS)) } as usize,
@@ -256,6 +256,11 @@ impl UnrestrictedAtomicMgmt {
             value_alignment,
         )
     }
+
+    #[doc(hidden)]
+    pub fn __internal_get_write_cell(&self) -> u64 {
+        self.write_cell.load(Ordering::Relaxed)
+    }
 }
 
 /// An atomic implementation where the underlying type has to be copyable but is otherwise
@@ -272,7 +277,7 @@ impl<T: Copy + Debug> Debug for UnrestrictedAtomic<T> {
             f,
             "UnrestrictedAtomic<{}> {{ write_cell: {}, data: {:?}, has_producer: {} }}",
             core::any::type_name::<T>(),
-            self.mgmt.write_cell.load(Ordering::Relaxed),
+            self.mgmt.__internal_get_write_cell(),
             self.load(),
             self.mgmt.has_producer.load(Ordering::Relaxed)
         )
@@ -288,7 +293,7 @@ impl<T: Copy> UnrestrictedAtomic<T> {
         Self {
             mgmt: UnrestrictedAtomicMgmt {
                 has_producer: IoxAtomicBool::new(true),
-                write_cell: IoxAtomicU32::new(1),
+                write_cell: IoxAtomicU64::new(1),
             },
             data: [
                 UnsafeCell::new(MaybeUninit::new(value)),
@@ -344,6 +349,11 @@ impl<T: Copy> UnrestrictedAtomic<T> {
     #[doc(hidden)]
     pub fn __internal_get_data_ptr(&self) -> *mut u8 {
         self.data.as_ptr() as *mut u8
+    }
+
+    #[doc(hidden)]
+    pub fn __internal_get_write_cell(&self) -> u64 {
+        self.mgmt.__internal_get_write_cell()
     }
 }
 

@@ -38,8 +38,8 @@ auto main() -> int {
     auto entry_handle_key_1 = reader.template entry<double>(key_1).expect("successful entry handle creation");
 
     while (node.wait(CYCLE_TIME).has_value()) {
-        std::cout << "Read value " << entry_handle_key_0.get() << " for key 0..." << std::endl;
-        std::cout << "Read value " << entry_handle_key_1.get() << " for key 1...\n" << std::endl;
+        std::cout << "Read value " << *entry_handle_key_0.get() << " for key 0..." << std::endl;
+        std::cout << "Read value " << *entry_handle_key_1.get() << " for key 1...\n" << std::endl;
     }
 
     std::cout << "exit" << std::endl;

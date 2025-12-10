@@ -51,8 +51,7 @@ try:
 
         entry_value_uninit = entry_handle_mut_1.loan_uninit()
         value = INITIAL_VALUE_1.value * COUNTER
-        entry_value = entry_value_uninit.write(c_double(value))
-        entry_handle_mut_1 = entry_value.update()
+        entry_handle_mut_1 = entry_value_uninit.update_with_copy(c_double(value))
         print("Write new value for key 1:", value, "\n")
 
 except iox2.NodeWaitFailure:

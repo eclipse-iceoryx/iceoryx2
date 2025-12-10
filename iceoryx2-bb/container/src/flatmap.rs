@@ -37,6 +37,7 @@ use core::fmt::Debug;
 use core::mem::MaybeUninit;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::relocatable_ptr::GenericRelocatablePointer;
+use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::generic_pointer::GenericPointer;
 use iceoryx2_bb_elementary_traits::owning_pointer::GenericOwningPointer;
 pub use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
@@ -206,6 +207,17 @@ impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
 
     pub(crate) fn len_impl(&self) -> usize {
         self.map.len_impl()
+    }
+
+    pub(crate) unsafe fn list_keys_impl<F: FnMut(&K) -> CallbackProgression>(
+        &self,
+        mut callback: F,
+    ) {
+        for (_, kv) in self.map.iter_impl() {
+            if callback(&kv.id) == CallbackProgression::Stop {
+                break;
+            }
+        }
     }
 }
 
@@ -391,6 +403,11 @@ impl<K: Eq, V: Clone> FlatMap<K, V> {
     /// Returns the number of stored key-value pairs.
     pub fn len(&self) -> usize {
         self.len_impl()
+    }
+
+    /// Iterates over all keys of the map and calls the provided callback.
+    pub fn list_keys<F: FnMut(&K) -> CallbackProgression>(&self, callback: F) {
+        unsafe { self.list_keys_impl(callback) };
     }
 }
 
@@ -631,6 +648,11 @@ impl<K: Eq, V: Clone> RelocatableFlatMap<K, V> {
     pub fn len(&self) -> usize {
         self.map.len()
     }
+
+    /// Iterates over all keys of the map and calls the provided callback.
+    pub fn list_keys<F: FnMut(&K) -> CallbackProgression>(&self, callback: F) {
+        unsafe { self.list_keys_impl(callback) };
+    }
 }
 
 /// A compile-time fixed-size, shared-memory compatible [`FixedSizeFlatMap`].
@@ -857,5 +879,10 @@ impl<K: Eq, V: Clone, const CAPACITY: usize> FixedSizeFlatMap<K, V, CAPACITY> {
     /// Returns the number of stored key-value pairs.
     pub fn len(&self) -> usize {
         self.map.len()
+    }
+
+    /// Iterates over all keys of the map and calls the provided callback.
+    pub fn list_keys<F: FnMut(&K) -> CallbackProgression>(&self, callback: F) {
+        unsafe { self.map.list_keys_impl(callback) };
     }
 }

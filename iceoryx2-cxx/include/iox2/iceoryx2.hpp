@@ -39,7 +39,6 @@
 #include "iox2/entry_handle_error.hpp"
 #include "iox2/entry_handle_mut.hpp"
 #include "iox2/entry_handle_mut_error.hpp"
-#include "iox2/entry_value.hpp"
 #include "iox2/entry_value_uninit.hpp"
 #include "iox2/enum_translation.hpp"
 #include "iox2/event_id.hpp"

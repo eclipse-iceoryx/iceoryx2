@@ -122,7 +122,9 @@ CMake package.
     conflicts when merging.
 -->
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+* Add `list_keys()` to list all keys stored in the blackboard,
+  `EntryHandle::is_up_to_date()` to check for value updates
+  [#1189](https://github.com/eclipse-iceoryx/iceoryx2/issues/1189)
 
 ### API Breaking Changes
 
@@ -238,4 +240,16 @@ CMake package.
    #include "iox2/bb/semantic_string.hpp"
    // ...
    auto foo() -> expected<void, iox2::bb::SemanticStringError>
+
+8. **Rust:** The blackboard's `EntryValueUninit::write()` has been extended so
+   that it also updates the entry and was renamed to `update_with_copy()`;
+   `EntryValue` was removed.
+
+   ```rust
+   // old
+   let entry_value = entry_value_uninit.write(123);
+   let entry_handle_mut = entry_value.update();
+   
+   // new
+   let entry_handle_mut = entry_value_uninit.update_with_copy(123);
    ```
