@@ -1162,7 +1162,7 @@ TEST(StaticString, find_last_of_finds_included_character) {
     ASSERT_TRUE(pos.has_value());
     EXPECT_EQ(*pos, 1);
 
-    pos = sut.find_last_of(str, 5);
+    pos = sut.find_last_of(str, 5); // NOLINT
     ASSERT_TRUE(pos.has_value());
     EXPECT_EQ(*pos, 4);
 

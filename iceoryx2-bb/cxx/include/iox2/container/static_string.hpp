@@ -15,6 +15,7 @@
 
 #include "iox2/bb/optional.hpp"
 #include "iox2/legacy/type_traits.hpp"
+#include "iox2/container/detail/string_internal.hpp"
 
 #include <algorithm>
 #include <cstddef>
@@ -24,8 +25,23 @@
 #include <ostream>
 #include <type_traits>
 
+// TODO: copyright header
 namespace iox2 {
 namespace container {
+
+template <uint64_t>
+class StaticString;
+
+template <typename>
+struct IsStaticString : std::false_type { };
+
+template <uint64_t N>
+struct IsStaticString<StaticString<N>> : std::true_type { };
+
+// TODO: check for custom string or rename to IsStaticStringOrCharArray?
+template <typename T, typename ReturnType>
+using IsStringOrCharArray =
+    typename std::enable_if<IsStaticString<T>::value || legacy::is_char_array<T>::value, ReturnType>::type;
 
 /// A UTF-8 string with fixed static capacity and contiguous inplace storage.
 /// The string class uses Unicode (ISO/IEC 10646) terminology throughout its interface. In particular:
@@ -518,13 +534,14 @@ class StaticString {
     /// @return an Optional containing the position of the first character equal to one of the characters of the given
     ///         character sequence
     ///         nullopt if no character is found or if pos is greater than size()
-    auto find_first_of(StaticString const& str, SizeType pos = 0U) const -> Optional<SizeType> {
+    template <typename T>
+    auto find_first_of(T const& str, SizeType pos = 0U) const -> IsStringOrCharArray<T, Optional<SizeType>> {
         if (pos > m_size) {
             return nullopt;
         }
 
-        auto str_data = &str.m_string[0];
-        auto str_size = str.m_size;
+        auto str_data = detail::GetData<T>::call(str);
+        auto str_size = detail::GetSize<T>::call(str);
         for (auto position = pos; position < m_size; ++position) {
             auto found = memchr(str_data, m_string[position], str_size);
             if (found != nullptr) {
@@ -540,14 +557,15 @@ class StaticString {
     /// @return an Optional containing the position of the last character equal to one of the characters of the given
     ///         character sequence
     ///         nullopt if no character is found
-    auto find_last_of(StaticString const& str, SizeType pos = N) const -> Optional<SizeType> {
+    template <typename T>
+    auto find_last_of(T const& str, SizeType pos = N) const -> IsStringOrCharArray<T, Optional<SizeType>> {
         if (m_size == 0) {
             return nullopt;
         }
 
         auto position = std::min(pos, m_size - 1);
-        auto str_data = &str.m_string[0];
-        auto str_size = str.m_size;
+        auto str_data = detail::GetData<T>::call(str);
+        auto str_size = detail::GetSize<T>::call(str);
         for (; position > 0; --position) {
             auto found = memchr(str_data, m_string[position], str_size);
             if (found != nullptr) {
@@ -579,17 +597,6 @@ class StaticString {
         return res;
     }
 };
-
-template <typename>
-struct IsStaticString : std::false_type { };
-
-template <uint64_t N>
-struct IsStaticString<StaticString<N>> : std::true_type { };
-
-// TODO: check for custom string or rename to IsStaticStringOrCharArray?
-template <typename T, typename ReturnType>
-using IsStringOrCharArray =
-    typename std::enable_if<IsStaticString<T>::value || legacy::is_char_array<T>::value, ReturnType>::type;
 
 } // namespace container
 } // namespace iox2

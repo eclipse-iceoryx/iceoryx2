@@ -157,13 +157,7 @@ inline auto is_valid_path_to_file(const container::StaticString<StringCapacity>&
         return false;
     }
 
-    // TODO: implement find_last_of() for char array
-    container::StaticString<platform::IOX2_NUMBER_OF_PATH_SEPARATORS> path_separators;
-    for (auto separator : platform::IOX2_PATH_SEPARATORS) {
-        path_separators.try_append(1, separator); // TODO: error handling
-    }
-    auto maybe_separator = name.find_last_of(path_separators);
-
+    auto maybe_separator = name.find_last_of(platform::IOX2_PATH_SEPARATORS);
     if (!maybe_separator.has_value()) {
         return is_valid_file_name(name);
     }
@@ -197,15 +191,9 @@ inline auto is_valid_path_to_directory(const container::StaticString<StringCapac
     auto const current_directory = *container::StaticString<StringCapacity>::from_utf8(".");
     auto const parent_directory = *container::StaticString<StringCapacity>::from_utf8("..");
 
-
-    container::StaticString<platform::IOX2_NUMBER_OF_PATH_SEPARATORS> path_separators;
-    for (auto separator : platform::IOX2_PATH_SEPARATORS) {
-        path_separators.try_append(1, separator); // TODO: error handling
-    }
-
     auto remaining = name;
     while (!remaining.empty()) {
-        const auto separator_position = remaining.find_first_of(path_separators);
+        const auto separator_position = remaining.find_first_of(platform::IOX2_PATH_SEPARATORS);
 
         if (separator_position.has_value()) {
             const uint64_t position { separator_position.value() };
