@@ -11,6 +11,7 @@
     * [Supported Log Levels](#supported-log-levels)
     * [Subfolders Under /dev/shm](#subfolders-under-dev-shm)
     * [Custom Payload Alignment](#custom-payload-alignment)
+    * [Accessing Services From Multiple Users](#accessing-services-from-multiple-users)
 * [Error Handling](#error-handling)
     * [Something Is Broken, How To Enable Debug Output](#something-is-broken-how-to-enable-debug-output)
     * [Encountered a SEGFAULT](#encountered-a-segfault)
@@ -203,6 +204,36 @@ let service = node
     .payload_alignment(Alignment::new(1024).unwrap())
     .open_or_create()?;
 ```
+
+### Accessing Services From Multiple Users
+
+Currently, iceoryx2 does not yet implement access rights management for
+services and therefore only the user, under which the process runs, can access
+the underlying resources. Processes started under a different user will receive
+an insufficient permissions error when opening them.
+
+With the `dev_permissions` feature flag, iceoryx2 will make all resources
+always globally accessible. But this is a development feature and shall not be
+used in production! It is a short-term mitigation until iceoryx2 implements
+rights management for services.
+
+* **cargo**
+
+    ```sh
+    cargo build --features dev_permissions
+    ```
+
+* **Cargo.toml**
+
+    ```sh
+    iceoryx2 = { version = "X.Y.Z", features = ['dev_permissions'] }
+    ```
+
+* **CMake**
+
+    ```sh
+    cmake -S . -B target/ff/cc/build -DIOX2_FEATURE_DEV_PERMISSIONS=On
+    ```
 
 ## Error Handling
 
