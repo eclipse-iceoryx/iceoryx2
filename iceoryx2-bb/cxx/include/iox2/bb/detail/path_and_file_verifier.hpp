@@ -177,8 +177,8 @@ inline auto is_valid_path_to_file(const container::StaticString<StringCapacity>&
     bool is_path_valid { false };
     tmp.substr(0, position).and_then([&is_path_valid](const auto& str) noexcept -> void {
         const bool is_empty_path { str.empty() };
-        auto tmp = *container::StaticString<StringCapacity>::from_utf8_null_terminated_unchecked(str.c_str());
-        const bool is_path_to_directory_valid { is_valid_path_to_directory(tmp) };
+        auto tmp_str = *container::StaticString<StringCapacity>::from_utf8_null_terminated_unchecked(str.c_str());
+        const bool is_path_to_directory_valid { is_valid_path_to_directory(tmp_str) };
         is_path_valid = is_empty_path || is_path_to_directory_valid;
     });
 

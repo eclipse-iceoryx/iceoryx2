@@ -135,7 +135,7 @@ class SemanticString {
     /// @param [in] rhs the other string
     /// @return true if the contents are equal, otherwise false
     template <typename T>
-    auto operator==(const T& rhs) const noexcept -> legacy::IsStringOrCharArray<T, bool>;
+    auto operator==(const T& rhs) const noexcept -> container::IsStringOrCharArray<T, bool>;
 
     /// @brief checks if another SemanticString is not equal to this string
     /// @param [in] rhs the other SemanticString
@@ -146,7 +146,7 @@ class SemanticString {
     /// @param [in] rhs the other string
     /// @return true if the contents are not equal, otherwise false
     template <typename T>
-    auto operator!=(const T& rhs) const noexcept -> legacy::IsStringOrCharArray<T, bool>;
+    auto operator!=(const T& rhs) const noexcept -> container::IsStringOrCharArray<T, bool>;
 
     /// @brief checks if another SemanticString is less than or equal this string
     /// @param [in] rhs the other SemanticString
@@ -157,7 +157,7 @@ class SemanticString {
     /// @param [in] rhs the other string
     /// @return true if the contents are less than or equal rhs, otherwise false
     template <typename T>
-    auto operator<=(const T& rhs) const noexcept -> legacy::IsStringOrCharArray<T, bool>;
+    auto operator<=(const T& rhs) const noexcept -> container::IsStringOrCharArray<T, bool>;
 
     /// @brief checks if another SemanticString is less than this string
     /// @param [in] rhs the other SemanticString
@@ -168,7 +168,7 @@ class SemanticString {
     /// @param [in] rhs the other string
     /// @return true if the contents are less than rhs, otherwise false
     template <typename T>
-    auto operator<(const T& rhs) const noexcept -> legacy::IsStringOrCharArray<T, bool>;
+    auto operator<(const T& rhs) const noexcept -> container::IsStringOrCharArray<T, bool>;
 
     /// @brief checks if another SemanticString is greater than or equal this string
     /// @param [in] rhs the other SemanticString
@@ -179,7 +179,7 @@ class SemanticString {
     /// @param [in] rhs the other string
     /// @return true if the contents are greater than or equal rhs, otherwise false
     template <typename T>
-    auto operator>=(const T& rhs) const noexcept -> legacy::IsStringOrCharArray<T, bool>;
+    auto operator>=(const T& rhs) const noexcept -> container::IsStringOrCharArray<T, bool>;
 
     /// @brief checks if another SemanticString is greater than this string
     /// @param [in] rhs the other SemanticString
@@ -190,7 +190,7 @@ class SemanticString {
     /// @param [in] rhs the other string
     /// @return true if the contents are greater than rhs, otherwise false
     template <typename T>
-    auto operator>(const T& rhs) const noexcept -> legacy::IsStringOrCharArray<T, bool>;
+    auto operator>(const T& rhs) const noexcept -> container::IsStringOrCharArray<T, bool>;
 
   protected:
     template <uint64_t N>
@@ -360,7 +360,7 @@ template <typename Child,
           DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
 template <typename T>
 inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator==(
-    const T& rhs) const noexcept -> legacy::IsStringOrCharArray<T, bool> {
+    const T& rhs) const noexcept -> container::IsStringOrCharArray<T, bool> {
     return as_string() == rhs;
 }
 
@@ -379,7 +379,7 @@ template <typename Child,
           DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
 template <typename T>
 inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator!=(
-    const T& rhs) const noexcept -> legacy::IsStringOrCharArray<T, bool> {
+    const T& rhs) const noexcept -> container::IsStringOrCharArray<T, bool> {
     return as_string() != rhs;
 }
 
@@ -398,7 +398,7 @@ template <typename Child,
           DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
 template <typename T>
 inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator<=(
-    const T& rhs) const noexcept -> legacy::IsStringOrCharArray<T, bool> {
+    const T& rhs) const noexcept -> container::IsStringOrCharArray<T, bool> {
     return as_string() <= rhs;
 }
 
@@ -417,7 +417,7 @@ template <typename Child,
           DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
 template <typename T>
 inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator<(
-    const T& rhs) const noexcept -> legacy::IsStringOrCharArray<T, bool> {
+    const T& rhs) const noexcept -> container::IsStringOrCharArray<T, bool> {
     return as_string() < rhs;
 }
 
@@ -436,7 +436,7 @@ template <typename Child,
           DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
 template <typename T>
 inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator>=(
-    const T& rhs) const noexcept -> legacy::IsStringOrCharArray<T, bool> {
+    const T& rhs) const noexcept -> container::IsStringOrCharArray<T, bool> {
     return as_string() >= rhs;
 }
 
@@ -455,7 +455,7 @@ template <typename Child,
           DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
 template <typename T>
 inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator>(
-    const T& rhs) const noexcept -> legacy::IsStringOrCharArray<T, bool> {
+    const T& rhs) const noexcept -> container::IsStringOrCharArray<T, bool> {
     return as_string() > rhs;
 }
 
