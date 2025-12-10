@@ -494,8 +494,8 @@ class StaticString {
         return ret;
     }
 
-    /// @brief Creates a substring containing the characters from pos until count; if pos+count is greater than
-    /// the size of the original string the returned substring only contains the characters from pos until size().
+    /// Creates a substring containing the characters from pos until count; if pos+count is greater than the
+    /// size of the original string the returned substring only contains the characters from pos until size().
     ///
     /// @return an optional containing the substring
     ///         nullopt if pos is greater than the size of the original string
@@ -510,6 +510,28 @@ class StaticString {
         sub_str.m_string[length] = '\0';
         sub_str.m_size = length;
         return sub_str;
+    }
+
+    /// Finds the first occurence of a character equal to one of the characters of the given character sequence
+    /// and returns its position.
+    ///
+    /// @return an optional containing the position of the first character equal to one of the characters of the given
+    ///         character sequence
+    ///         nullopt if no character is found or if pos is greater than size()
+    auto find_first_of(StaticString const& str, const SizeType pos = 0U) const -> Optional<SizeType> {
+        if (pos > m_size) {
+            return nullopt;
+        }
+
+        auto str_data = &str.m_string[0];
+        auto str_size = str.m_size;
+        for (auto position = pos; position < m_size; ++position) {
+            auto found = memchr(str_data, m_string[position], str_size);
+            if (found != nullptr) {
+                return position;
+            }
+        }
+        return nullopt;
     }
 
   private:

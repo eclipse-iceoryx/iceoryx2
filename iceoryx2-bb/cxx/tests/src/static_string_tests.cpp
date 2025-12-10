@@ -1067,4 +1067,67 @@ TEST(StaticString, substr_with_invalid_pos_fails) {
     auto sub_str_2 = sut.substr(STRING_SIZE, 1);
     ASSERT_FALSE(sub_str_2.has_value());
 }
+
+TEST(StaticString, find_first_of_fails_for_empty_string_in_empty_string) {
+    constexpr uint64_t const STRING_SIZE = 25;
+    iox2::container::StaticString<STRING_SIZE> sut;
+    iox2::container::StaticString<STRING_SIZE> str;
+
+    ASSERT_FALSE(sut.find_first_of(str).has_value());
+    ASSERT_FALSE(sut.find_first_of(str, 0).has_value());
+}
+
+TEST(StaticString, find_first_of_fails_for_string_in_empty_string) {
+    constexpr uint64_t const STRING_SIZE = 25;
+    iox2::container::StaticString<STRING_SIZE> sut;
+    auto str = *iox2::container::StaticString<STRING_SIZE>::from_utf8("a");
+
+    ASSERT_FALSE(sut.find_first_of(str).has_value());
+    ASSERT_FALSE(sut.find_first_of(str, 0).has_value());
+}
+
+TEST(StaticString, find_first_of_finds_included_character) {
+    constexpr uint64_t const STRING_SIZE = 25;
+    auto sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("R2-D2");
+
+    auto str = *iox2::container::StaticString<STRING_SIZE>::from_utf8("2");
+    auto pos = sut.find_first_of(str);
+    ASSERT_TRUE(pos.has_value());
+    EXPECT_EQ(*pos, 1);
+
+    pos = sut.find_first_of(str, 1);
+    ASSERT_TRUE(pos.has_value());
+    EXPECT_EQ(*pos, 1);
+
+    pos = sut.find_first_of(str, 2);
+    ASSERT_TRUE(pos.has_value());
+    EXPECT_EQ(*pos, 4);
+
+    str = *iox2::container::StaticString<STRING_SIZE>::from_utf8("D3R");
+    pos = sut.find_first_of(str);
+    ASSERT_TRUE(pos.has_value());
+    EXPECT_EQ(*pos, 0);
+
+    pos = sut.find_first_of(str, 1);
+    ASSERT_TRUE(pos.has_value());
+    EXPECT_EQ(*pos, 3);
+}
+
+TEST(StaticString, find_first_of_fails_for_not_included_character) {
+    constexpr uint64_t const STRING_SIZE = 25;
+    auto sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("Kernfusionsbaby");
+    auto str = *iox2::container::StaticString<STRING_SIZE>::from_utf8("cdF");
+
+    ASSERT_FALSE(sut.find_first_of(str).has_value());
+    ASSERT_FALSE(sut.find_first_of(str, 0).has_value());
+    ASSERT_FALSE(sut.find_first_of(str, STRING_SIZE + 1).has_value());
+}
+
+TEST(StaticString, find_first_of_fails_for_included_character_when_pos_is_greater_than_size) {
+    constexpr uint64_t const STRING_SIZE = 25;
+    auto sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("Mueslimaedchen");
+    auto str = *iox2::container::StaticString<STRING_SIZE>::from_utf8("n");
+
+    ASSERT_FALSE(sut.find_first_of(str, sut.size()).has_value());
+}
 } // namespace
