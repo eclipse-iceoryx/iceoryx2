@@ -157,10 +157,12 @@ inline auto is_valid_path_to_file(const container::StaticString<StringCapacity>&
         return false;
     }
 
-    // TODO: implement find_last_of() for StaticString
-    auto tmp = legacy::string<StringCapacity>(legacy::TruncateToCapacity, name.unchecked_access().c_str(), name.size());
-    auto maybe_separator = tmp.find_last_of(legacy::string<platform::IOX2_NUMBER_OF_PATH_SEPARATORS>(
-        legacy::TruncateToCapacity, &platform::IOX2_PATH_SEPARATORS[0], platform::IOX2_NUMBER_OF_PATH_SEPARATORS));
+    // TODO: implement find_last_of() for char array
+    container::StaticString<platform::IOX2_NUMBER_OF_PATH_SEPARATORS> path_separators;
+    for (auto separator : platform::IOX2_PATH_SEPARATORS) {
+        path_separators.try_append(1, separator); // TODO: error handling
+    }
+    auto maybe_separator = name.find_last_of(path_separators);
 
     if (!maybe_separator.has_value()) {
         return is_valid_file_name(name);
