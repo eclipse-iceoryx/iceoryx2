@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include "iox2/container/optional.hpp"
 #include "iox2/legacy/uninitialized_array.hpp"
 #include "iox2/node.hpp"
 #include "iox2/service.hpp"
@@ -153,14 +154,14 @@ TYPED_TEST(ServicePublishSubscribeTest, open_or_create_service_does_exist) {
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
 
     {
-        auto sut = iox2::legacy::optional<PortFactoryPublishSubscribe<SERVICE_TYPE, uint64_t, void>>(
+        auto sut = container::Optional<PortFactoryPublishSubscribe<SERVICE_TYPE, uint64_t, void>>(
             node.service_builder(service_name).template publish_subscribe<uint64_t>().open_or_create().expect(""));
 
         ASSERT_TRUE(
             Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::PublishSubscribe)
                 .expect(""));
 
-        auto sut_2 = iox2::legacy::optional<PortFactoryPublishSubscribe<SERVICE_TYPE, uint64_t, void>>(
+        auto sut_2 = container::Optional<PortFactoryPublishSubscribe<SERVICE_TYPE, uint64_t, void>>(
             node.service_builder(service_name).template publish_subscribe<uint64_t>().open_or_create().expect(""));
 
         ASSERT_TRUE(
@@ -854,12 +855,12 @@ TYPED_TEST(ServicePublishSubscribeTest, service_can_be_opened_when_there_is_a_pu
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto sut = iox2::legacy::optional<PortFactoryPublishSubscribe<SERVICE_TYPE, uint64_t, void>>(
+    auto sut = container::Optional<PortFactoryPublishSubscribe<SERVICE_TYPE, uint64_t, void>>(
         node.service_builder(service_name).template publish_subscribe<uint64_t>().create().expect(""));
     auto subscriber =
-        iox2::legacy::optional<Subscriber<SERVICE_TYPE, uint64_t, void>>(sut->subscriber_builder().create().expect(""));
+        container::Optional<Subscriber<SERVICE_TYPE, uint64_t, void>>(sut->subscriber_builder().create().expect(""));
     auto publisher =
-        iox2::legacy::optional<Publisher<SERVICE_TYPE, uint64_t, void>>(sut->publisher_builder().create().expect(""));
+        container::Optional<Publisher<SERVICE_TYPE, uint64_t, void>>(sut->publisher_builder().create().expect(""));
 
     sut.reset();
     {
@@ -872,10 +873,10 @@ TYPED_TEST(ServicePublishSubscribeTest, service_can_be_opened_when_there_is_a_pu
     }
     subscriber.reset();
 
-    sut = iox2::legacy::optional<PortFactoryPublishSubscribe<SERVICE_TYPE, uint64_t, void>>(
+    sut = container::Optional<PortFactoryPublishSubscribe<SERVICE_TYPE, uint64_t, void>>(
         node.service_builder(service_name).template publish_subscribe<uint64_t>().open().expect(""));
     subscriber =
-        iox2::legacy::optional<Subscriber<SERVICE_TYPE, uint64_t, void>>(sut->subscriber_builder().create().expect(""));
+        container::Optional<Subscriber<SERVICE_TYPE, uint64_t, void>>(sut->subscriber_builder().create().expect(""));
     publisher->send_copy(payload).expect("");
     {
         auto sample = subscriber->receive().expect("");
@@ -902,12 +903,12 @@ TYPED_TEST(ServicePublishSubscribeTest, service_can_be_opened_when_there_is_a_su
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto sut = iox2::legacy::optional<PortFactoryPublishSubscribe<SERVICE_TYPE, uint64_t, void>>(
+    auto sut = container::Optional<PortFactoryPublishSubscribe<SERVICE_TYPE, uint64_t, void>>(
         node.service_builder(service_name).template publish_subscribe<uint64_t>().create().expect(""));
     auto subscriber =
-        iox2::legacy::optional<Subscriber<SERVICE_TYPE, uint64_t, void>>(sut->subscriber_builder().create().expect(""));
+        container::Optional<Subscriber<SERVICE_TYPE, uint64_t, void>>(sut->subscriber_builder().create().expect(""));
     auto publisher =
-        iox2::legacy::optional<Publisher<SERVICE_TYPE, uint64_t, void>>(sut->publisher_builder().create().expect(""));
+        container::Optional<Publisher<SERVICE_TYPE, uint64_t, void>>(sut->publisher_builder().create().expect(""));
 
     sut.reset();
     {
@@ -920,10 +921,10 @@ TYPED_TEST(ServicePublishSubscribeTest, service_can_be_opened_when_there_is_a_su
     }
     publisher.reset();
 
-    sut = iox2::legacy::optional<PortFactoryPublishSubscribe<SERVICE_TYPE, uint64_t, void>>(
+    sut = container::Optional<PortFactoryPublishSubscribe<SERVICE_TYPE, uint64_t, void>>(
         node.service_builder(service_name).template publish_subscribe<uint64_t>().open().expect(""));
     publisher =
-        iox2::legacy::optional<Publisher<SERVICE_TYPE, uint64_t, void>>(sut->publisher_builder().create().expect(""));
+        container::Optional<Publisher<SERVICE_TYPE, uint64_t, void>>(sut->publisher_builder().create().expect(""));
     publisher->send_copy(payload).expect("");
     {
         auto sample = subscriber->receive().expect("");
@@ -1642,8 +1643,8 @@ TYPED_TEST(ServicePublishSubscribeTest, only_max_publishers_can_be_created) {
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
     auto service =
         node.service_builder(service_name).template publish_subscribe<uint64_t>().max_publishers(1).create().expect("");
-    auto publisher = iox2::legacy::optional<Publisher<SERVICE_TYPE, uint64_t, void>>(
-        service.publisher_builder().create().expect(""));
+    auto publisher =
+        container::Optional<Publisher<SERVICE_TYPE, uint64_t, void>>(service.publisher_builder().create().expect(""));
 
     auto failing_sut = service.publisher_builder().create();
     ASSERT_TRUE(failing_sut.has_error());
@@ -1665,8 +1666,8 @@ TYPED_TEST(ServicePublishSubscribeTest, only_max_subscribers_can_be_created) {
                        .max_subscribers(1)
                        .create()
                        .expect("");
-    auto subscriber = iox2::legacy::optional<Subscriber<SERVICE_TYPE, uint64_t, void>>(
-        service.subscriber_builder().create().expect(""));
+    auto subscriber =
+        container::Optional<Subscriber<SERVICE_TYPE, uint64_t, void>>(service.subscriber_builder().create().expect(""));
 
     auto failing_sut = service.subscriber_builder().create();
     ASSERT_TRUE(failing_sut.has_error());

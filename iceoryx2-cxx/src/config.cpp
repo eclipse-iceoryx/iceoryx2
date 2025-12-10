@@ -210,16 +210,16 @@ void Event::set_event_id_max_value(size_t value) && {
     iox2_config_defaults_event_set_event_id_max_value(m_config, value);
 }
 
-auto Event::notifier_created_event() && -> iox2::legacy::optional<size_t> {
+auto Event::notifier_created_event() && -> iox2::container::Optional<size_t> {
     size_t value = 0;
     if (iox2_config_defaults_event_notifier_created_event(m_config, &value)) {
         return { value };
     }
 
-    return iox2::legacy::nullopt;
+    return iox2::container::nullopt;
 }
 
-void Event::set_notifier_created_event(iox2::legacy::optional<size_t> value) && {
+void Event::set_notifier_created_event(iox2::container::Optional<size_t> value) && {
     if (value.has_value()) {
         iox2_config_defaults_event_set_notifier_created_event(m_config, &*value);
     } else {
@@ -227,16 +227,16 @@ void Event::set_notifier_created_event(iox2::legacy::optional<size_t> value) && 
     }
 }
 
-auto Event::notifier_dropped_event() && -> iox2::legacy::optional<size_t> {
+auto Event::notifier_dropped_event() && -> iox2::container::Optional<size_t> {
     size_t value = 0;
     if (iox2_config_defaults_event_notifier_dropped_event(m_config, &value)) {
         return { value };
     }
 
-    return iox2::legacy::nullopt;
+    return iox2::container::nullopt;
 }
 
-void Event::set_notifier_dropped_event(iox2::legacy::optional<size_t> value) && {
+void Event::set_notifier_dropped_event(iox2::container::Optional<size_t> value) && {
     if (value.has_value()) {
         iox2_config_defaults_event_set_notifier_dropped_event(m_config, &*value);
     } else {
@@ -244,16 +244,16 @@ void Event::set_notifier_dropped_event(iox2::legacy::optional<size_t> value) && 
     }
 }
 
-auto Event::notifier_dead_event() && -> iox2::legacy::optional<size_t> {
+auto Event::notifier_dead_event() && -> iox2::container::Optional<size_t> {
     size_t value = 0;
     if (iox2_config_defaults_event_notifier_dead_event(m_config, &value)) {
         return { value };
     }
 
-    return iox2::legacy::nullopt;
+    return iox2::container::nullopt;
 }
 
-void Event::set_notifier_dead_event(iox2::legacy::optional<size_t> value) && {
+void Event::set_notifier_dead_event(iox2::container::Optional<size_t> value) && {
     if (value.has_value()) {
         iox2_config_defaults_event_set_notifier_dead_event(m_config, &*value);
     } else {
@@ -261,24 +261,25 @@ void Event::set_notifier_dead_event(iox2::legacy::optional<size_t> value) && {
     }
 }
 
-auto Event::deadline() && -> iox2::legacy::optional<iox2::bb::Duration> {
+auto Event::deadline() && -> iox2::container::Optional<iox2::bb::Duration> {
     uint64_t seconds = 0;
     uint32_t nanoseconds = 0;
     if (iox2_config_defaults_event_deadline(m_config, &seconds, &nanoseconds)) {
         return { iox2::bb::Duration::from_secs(seconds) + iox2::bb::Duration::from_nanos(nanoseconds) };
     }
 
-    return iox2::legacy::nullopt;
+    return iox2::container::nullopt;
 }
 
-void Event::set_deadline(iox2::legacy::optional<iox2::bb::Duration> value) && {
-    value
-        .and_then([&](auto duration) -> auto {
-            const auto secs = duration.as_secs();
-            const auto nsecs = duration.subsec_nanos();
-            iox2_config_defaults_event_set_deadline(m_config, &secs, &nsecs);
-        })
-        .or_else([&]() -> auto { iox2_config_defaults_event_set_deadline(m_config, nullptr, nullptr); });
+void Event::set_deadline(iox2::container::Optional<iox2::bb::Duration> deadline) && {
+    if (deadline.has_value()) {
+        auto duration = deadline.value();
+        const auto secs = duration.as_secs();
+        const auto nsecs = duration.subsec_nanos();
+        iox2_config_defaults_event_set_deadline(m_config, &secs, &nsecs);
+    } else {
+        iox2_config_defaults_event_set_deadline(m_config, nullptr, nullptr);
+    }
 }
 /////////////////////////
 // END: Event

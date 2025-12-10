@@ -12,13 +12,13 @@
 
 #include "iox2/log.hpp"
 #include "iox2/bb/into.hpp"
+#include "iox2/container/optional.hpp"
 #include "iox2/internal/iceoryx2.hpp"
-#include "iox2/legacy/optional.hpp"
 
 namespace iox2 {
 namespace {
 //NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables): it is in an anonymous namespace and therefore only accessible in this compilation unit
-iox2::legacy::optional<Log*> global_logger = iox2::legacy::nullopt;
+iox2::container::Optional<Log*> global_logger = iox2::container::nullopt;
 
 void internal_log_callback(iox2_log_level_e log_level, const char* origin, const char* message) {
     (*global_logger)->log(iox2::bb::into<LogLevel>(static_cast<int>(log_level)), origin, message);

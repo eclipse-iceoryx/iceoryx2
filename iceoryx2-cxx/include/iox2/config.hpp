@@ -17,6 +17,7 @@
 #include "iox2/bb/file_name.hpp"
 #include "iox2/bb/path.hpp"
 #include "iox2/config_creation_error.hpp"
+#include "iox2/container/optional.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/unable_to_deliver_strategy.hpp"
 
@@ -213,23 +214,23 @@ class Event {
     /// Set the largest event id supported by the event service
     void set_event_id_max_value(size_t value) &&;
     /// Defines the event id value that is emitted after a new notifier was created.
-    auto notifier_created_event() && -> iox2::legacy::optional<size_t>;
+    auto notifier_created_event() && -> iox2::container::Optional<size_t>;
     /// Sets the event id value that is emitted after a new notifier was created.
-    void set_notifier_created_event(iox2::legacy::optional<size_t> value) &&;
+    void set_notifier_created_event(iox2::container::Optional<size_t> value) &&;
     /// Defines the event id value that is emitted before a new notifier is dropped.
-    auto notifier_dropped_event() && -> iox2::legacy::optional<size_t>;
+    auto notifier_dropped_event() && -> iox2::container::Optional<size_t>;
     /// Sets the event id value that is emitted before a new notifier is dropped.
-    void set_notifier_dropped_event(iox2::legacy::optional<size_t> value) &&;
+    void set_notifier_dropped_event(iox2::container::Optional<size_t> value) &&;
     /// Defines the event id value that is emitted if a notifier was identified as dead.
-    auto notifier_dead_event() && -> iox2::legacy::optional<size_t>;
+    auto notifier_dead_event() && -> iox2::container::Optional<size_t>;
     /// Sets the event id value that is emitted if a notifier was identified as dead.
-    void set_notifier_dead_event(iox2::legacy::optional<size_t> value) &&;
+    void set_notifier_dead_event(iox2::container::Optional<size_t> value) &&;
     /// Defines the maximum allowed time between two consecutive notifications. If a notifiation
     /// is not sent after the defined time, every [`Listener`]
     /// that is attached to a [`WaitSet`] will be notified.
-    auto deadline() && -> iox2::legacy::optional<iox2::bb::Duration>;
+    auto deadline() && -> iox2::container::Optional<iox2::bb::Duration>;
     /// Sets the deadline of the event service.
-    void set_deadline(iox2::legacy::optional<iox2::bb::Duration> value) &&;
+    void set_deadline(iox2::container::Optional<iox2::bb::Duration> deadline) &&;
 
   private:
     friend class Defaults;

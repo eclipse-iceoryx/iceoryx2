@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include "iox2/container/optional.hpp"
 #include "iox2/node.hpp"
 #include "iox2/node_name.hpp"
 #include "iox2/service.hpp"
@@ -119,9 +120,9 @@ TYPED_TEST(ServiceEventTest, service_settings_are_applied) {
     ASSERT_THAT(static_config.max_listeners(), Eq(NUMBER_OF_LISTENERS));
     ASSERT_THAT(static_config.max_nodes(), Eq(NUMBER_OF_NODES));
     ASSERT_THAT(static_config.event_id_max_value(), Eq(MAX_EVENT_ID_VALUE));
-    ASSERT_THAT(static_config.notifier_created_event(), Eq(iox2::legacy::optional<EventId>(create_event_id)));
-    ASSERT_THAT(static_config.notifier_dropped_event(), Eq(iox2::legacy::optional<EventId>(dropped_event_id)));
-    ASSERT_THAT(static_config.notifier_dead_event(), Eq(iox2::legacy::optional<EventId>(dead_event_id)));
+    ASSERT_THAT(static_config.notifier_created_event(), Eq(iox2::container::Optional<EventId>(create_event_id)));
+    ASSERT_THAT(static_config.notifier_dropped_event(), Eq(iox2::container::Optional<EventId>(dropped_event_id)));
+    ASSERT_THAT(static_config.notifier_dead_event(), Eq(iox2::container::Optional<EventId>(dead_event_id)));
 }
 
 TYPED_TEST(ServiceEventTest, open_fails_with_incompatible_max_notifiers_requirements) {
@@ -163,13 +164,13 @@ TYPED_TEST(ServiceEventTest, open_or_create_service_does_exist) {
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
 
     {
-        auto sut = iox2::legacy::optional<PortFactoryEvent<SERVICE_TYPE>>(
+        auto sut = iox2::container::Optional<PortFactoryEvent<SERVICE_TYPE>>(
             node.service_builder(service_name).event().open_or_create().expect(""));
 
         ASSERT_TRUE(Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::Event)
                         .expect(""));
 
-        auto sut_2 = iox2::legacy::optional<PortFactoryEvent<SERVICE_TYPE>>(
+        auto sut_2 = iox2::container::Optional<PortFactoryEvent<SERVICE_TYPE>>(
             node.service_builder(service_name).event().open_or_create().expect(""));
 
         ASSERT_TRUE(Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::Event)
@@ -344,10 +345,10 @@ TYPED_TEST(ServiceEventTest, service_can_be_opened_when_there_is_a_notifier) {
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto sut = iox2::legacy::optional<PortFactoryEvent<SERVICE_TYPE>>(
+    auto sut = iox2::container::Optional<PortFactoryEvent<SERVICE_TYPE>>(
         node.service_builder(service_name).event().create().expect(""));
-    auto listener = iox2::legacy::optional<Listener<SERVICE_TYPE>>(sut->listener_builder().create().expect(""));
-    auto notifier = iox2::legacy::optional<Notifier<SERVICE_TYPE>>(sut->notifier_builder().create().expect(""));
+    auto listener = iox2::container::Optional<Listener<SERVICE_TYPE>>(sut->listener_builder().create().expect(""));
+    auto notifier = iox2::container::Optional<Notifier<SERVICE_TYPE>>(sut->notifier_builder().create().expect(""));
 
     sut.reset();
     {
@@ -360,9 +361,9 @@ TYPED_TEST(ServiceEventTest, service_can_be_opened_when_there_is_a_notifier) {
     }
     listener.reset();
 
-    sut = iox2::legacy::optional<PortFactoryEvent<SERVICE_TYPE>>(
+    sut = iox2::container::Optional<PortFactoryEvent<SERVICE_TYPE>>(
         node.service_builder(service_name).event().open().expect(""));
-    listener = iox2::legacy::optional<Listener<SERVICE_TYPE>>(sut->listener_builder().create().expect(""));
+    listener = iox2::container::Optional<Listener<SERVICE_TYPE>>(sut->listener_builder().create().expect(""));
     notifier->notify_with_custom_event_id(event_id).expect("");
     auto notification = listener->try_wait_one().expect("");
     ASSERT_THAT(notification->as_value(), Eq(event_id.as_value()));
@@ -387,10 +388,10 @@ TYPED_TEST(ServiceEventTest, service_can_be_opened_when_there_is_a_listener) {
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto sut = iox2::legacy::optional<PortFactoryEvent<SERVICE_TYPE>>(
+    auto sut = iox2::container::Optional<PortFactoryEvent<SERVICE_TYPE>>(
         node.service_builder(service_name).event().create().expect(""));
-    auto listener = iox2::legacy::optional<Listener<SERVICE_TYPE>>(sut->listener_builder().create().expect(""));
-    auto notifier = iox2::legacy::optional<Notifier<SERVICE_TYPE>>(sut->notifier_builder().create().expect(""));
+    auto listener = iox2::container::Optional<Listener<SERVICE_TYPE>>(sut->listener_builder().create().expect(""));
+    auto notifier = iox2::container::Optional<Notifier<SERVICE_TYPE>>(sut->notifier_builder().create().expect(""));
 
     sut.reset();
     {
@@ -403,9 +404,9 @@ TYPED_TEST(ServiceEventTest, service_can_be_opened_when_there_is_a_listener) {
     }
     notifier.reset();
 
-    sut = iox2::legacy::optional<PortFactoryEvent<SERVICE_TYPE>>(
+    sut = iox2::container::Optional<PortFactoryEvent<SERVICE_TYPE>>(
         node.service_builder(service_name).event().open().expect(""));
-    notifier = iox2::legacy::optional<Notifier<SERVICE_TYPE>>(sut->notifier_builder().create().expect(""));
+    notifier = iox2::container::Optional<Notifier<SERVICE_TYPE>>(sut->notifier_builder().create().expect(""));
     notifier->notify_with_custom_event_id(event_id).expect("");
     auto notification = listener->try_wait_one().expect("");
     ASSERT_THAT(notification->as_value(), Eq(event_id.as_value()));
@@ -485,7 +486,7 @@ TYPED_TEST(ServiceEventTest, deadline_can_be_set) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name = iox2_testing::generate_service_name();
     Config config;
-    config.defaults().event().set_deadline(iox2::legacy::nullopt);
+    config.defaults().event().set_deadline(iox2::container::nullopt);
     auto node = NodeBuilder().config(config).create<SERVICE_TYPE>().expect("");
 
     auto service_create = node.service_builder(service_name).event().deadline(DEADLINE).create().expect("");
@@ -496,12 +497,12 @@ TYPED_TEST(ServiceEventTest, deadline_can_be_set) {
     auto listener_open = service_open.listener_builder().create().expect("");
     auto notifier_open = service_open.notifier_builder().create().expect("");
 
-    ASSERT_THAT(service_create.static_config().deadline(), Eq(iox2::legacy::optional<Duration>(DEADLINE)));
-    ASSERT_THAT(service_open.static_config().deadline(), Eq(iox2::legacy::optional<Duration>(DEADLINE)));
-    ASSERT_THAT(listener_create.deadline(), Eq(iox2::legacy::optional<Duration>(DEADLINE)));
-    ASSERT_THAT(listener_open.deadline(), Eq(iox2::legacy::optional<Duration>(DEADLINE)));
-    ASSERT_THAT(notifier_create.deadline(), Eq(iox2::legacy::optional<Duration>(DEADLINE)));
-    ASSERT_THAT(notifier_open.deadline(), Eq(iox2::legacy::optional<Duration>(DEADLINE)));
+    ASSERT_THAT(service_create.static_config().deadline(), Eq(iox2::container::Optional<Duration>(DEADLINE)));
+    ASSERT_THAT(service_open.static_config().deadline(), Eq(iox2::container::Optional<Duration>(DEADLINE)));
+    ASSERT_THAT(listener_create.deadline(), Eq(iox2::container::Optional<Duration>(DEADLINE)));
+    ASSERT_THAT(listener_open.deadline(), Eq(iox2::container::Optional<Duration>(DEADLINE)));
+    ASSERT_THAT(notifier_create.deadline(), Eq(iox2::container::Optional<Duration>(DEADLINE)));
+    ASSERT_THAT(notifier_open.deadline(), Eq(iox2::container::Optional<Duration>(DEADLINE)));
 }
 
 TYPED_TEST(ServiceEventTest, deadline_can_be_disabled) {
@@ -510,7 +511,7 @@ TYPED_TEST(ServiceEventTest, deadline_can_be_disabled) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name = iox2_testing::generate_service_name();
     Config config;
-    config.defaults().event().set_deadline(iox2::legacy::optional<Duration>(DEADLINE));
+    config.defaults().event().set_deadline(iox2::container::Optional<Duration>(DEADLINE));
     auto node = NodeBuilder().config(config).create<SERVICE_TYPE>().expect("");
 
     auto service_create = node.service_builder(service_name).event().disable_deadline().create().expect("");
@@ -521,12 +522,12 @@ TYPED_TEST(ServiceEventTest, deadline_can_be_disabled) {
     auto listener_open = service_open.listener_builder().create().expect("");
     auto notifier_open = service_open.notifier_builder().create().expect("");
 
-    ASSERT_THAT(service_create.static_config().deadline(), Eq(iox2::legacy::nullopt));
-    ASSERT_THAT(service_open.static_config().deadline(), Eq(iox2::legacy::nullopt));
-    ASSERT_THAT(listener_create.deadline(), Eq(iox2::legacy::nullopt));
-    ASSERT_THAT(listener_open.deadline(), Eq(iox2::legacy::nullopt));
-    ASSERT_THAT(notifier_create.deadline(), Eq(iox2::legacy::nullopt));
-    ASSERT_THAT(notifier_open.deadline(), Eq(iox2::legacy::nullopt));
+    ASSERT_THAT(service_create.static_config().deadline(), Eq(iox2::container::nullopt));
+    ASSERT_THAT(service_open.static_config().deadline(), Eq(iox2::container::nullopt));
+    ASSERT_THAT(listener_create.deadline(), Eq(iox2::container::nullopt));
+    ASSERT_THAT(listener_open.deadline(), Eq(iox2::container::nullopt));
+    ASSERT_THAT(notifier_create.deadline(), Eq(iox2::container::nullopt));
+    ASSERT_THAT(notifier_open.deadline(), Eq(iox2::container::nullopt));
 }
 
 TYPED_TEST(ServiceEventTest, notifier_is_informed_when_deadline_was_missed) {
@@ -805,7 +806,7 @@ TYPED_TEST(ServiceEventTest, only_max_notifiers_can_be_created) {
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
     auto service = node.service_builder(service_name).event().max_notifiers(1).create().expect("");
-    auto notifier = iox2::legacy::optional<Notifier<SERVICE_TYPE>>(service.notifier_builder().create().expect(""));
+    auto notifier = iox2::container::Optional<Notifier<SERVICE_TYPE>>(service.notifier_builder().create().expect(""));
 
     auto failing_sut = service.notifier_builder().create();
     ASSERT_TRUE(failing_sut.has_error());
@@ -823,7 +824,7 @@ TYPED_TEST(ServiceEventTest, only_max_listeners_can_be_created) {
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
     auto service = node.service_builder(service_name).event().max_listeners(1).create().expect("");
-    auto listener = iox2::legacy::optional<Listener<SERVICE_TYPE>>(service.listener_builder().create().expect(""));
+    auto listener = iox2::container::Optional<Listener<SERVICE_TYPE>>(service.listener_builder().create().expect(""));
 
     auto failing_sut = service.listener_builder().create();
     ASSERT_TRUE(failing_sut.has_error());

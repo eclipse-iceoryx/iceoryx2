@@ -406,37 +406,50 @@ template <typename RequestPayload,
           typename ResponseUserHeader,
           ServiceType S>
 inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
+    // NOLINTNEXTLINE(readability-function-size) the size cannot easily be reduced due to the amount of builder parameter
     set_parameters() {
-    m_request_payload_alignment.and_then(
-        [&](auto value) -> auto { iox2_service_builder_request_response_request_payload_alignment(&m_handle, value); });
-    m_response_payload_alignment.and_then([&](auto value) -> auto {
-        iox2_service_builder_request_response_response_payload_alignment(&m_handle, value);
-    });
-    m_enable_safe_overflow_for_requests.and_then([&](auto value) -> auto {
-        iox2_service_builder_request_response_enable_safe_overflow_for_requests(&m_handle, value);
-    });
-    m_enable_safe_overflow_for_responses.and_then([&](auto value) -> auto {
-        iox2_service_builder_request_response_enable_safe_overflow_for_responses(&m_handle, value);
-    });
-    m_max_active_requests_per_client.and_then([&](auto value) -> auto {
-        iox2_service_builder_request_response_max_active_requests_per_client(&m_handle, value);
-    });
-    m_max_response_buffer_size.and_then(
-        [&](auto value) -> auto { iox2_service_builder_request_response_max_response_buffer_size(&m_handle, value); });
-    m_max_servers.and_then(
-        [&](auto value) -> auto { iox2_service_builder_request_response_max_servers(&m_handle, value); });
-    m_max_clients.and_then(
-        [&](auto value) -> auto { iox2_service_builder_request_response_max_clients(&m_handle, value); });
-    m_max_nodes.and_then(
-        [&](auto value) -> auto { iox2_service_builder_request_response_set_max_nodes(&m_handle, value); });
-    m_max_borrowed_responses_per_pending_response.and_then([&](auto value) -> auto {
-        iox2_service_builder_request_response_max_borrowed_responses_per_pending_response(&m_handle, value);
-    });
-    m_max_loaned_requests.and_then(
-        [&](auto value) -> auto { iox2_service_builder_request_response_max_loaned_requests(&m_handle, value); });
-    m_enable_fire_and_forget_requests.and_then([&](auto value) -> auto {
-        iox2_service_builder_request_response_enable_fire_and_forget_requests(&m_handle, value);
-    });
+    if (m_request_payload_alignment.has_value()) {
+        iox2_service_builder_request_response_request_payload_alignment(&m_handle, m_request_payload_alignment.value());
+    }
+    if (m_response_payload_alignment.has_value()) {
+        iox2_service_builder_request_response_response_payload_alignment(&m_handle,
+                                                                         m_response_payload_alignment.value());
+    }
+    if (m_enable_safe_overflow_for_requests.has_value()) {
+        iox2_service_builder_request_response_enable_safe_overflow_for_requests(
+            &m_handle, m_enable_safe_overflow_for_requests.value());
+    }
+    if (m_enable_safe_overflow_for_responses.has_value()) {
+        iox2_service_builder_request_response_enable_safe_overflow_for_responses(
+            &m_handle, m_enable_safe_overflow_for_responses.value());
+    }
+    if (m_max_active_requests_per_client.has_value()) {
+        iox2_service_builder_request_response_max_active_requests_per_client(&m_handle,
+                                                                             m_max_active_requests_per_client.value());
+    }
+    if (m_max_response_buffer_size.has_value()) {
+        iox2_service_builder_request_response_max_response_buffer_size(&m_handle, m_max_response_buffer_size.value());
+    }
+    if (m_max_servers.has_value()) {
+        iox2_service_builder_request_response_max_servers(&m_handle, m_max_servers.value());
+    }
+    if (m_max_clients.has_value()) {
+        iox2_service_builder_request_response_max_clients(&m_handle, m_max_clients.value());
+    }
+    if (m_max_nodes.has_value()) {
+        iox2_service_builder_request_response_set_max_nodes(&m_handle, m_max_nodes.value());
+    }
+    if (m_max_borrowed_responses_per_pending_response.has_value()) {
+        iox2_service_builder_request_response_max_borrowed_responses_per_pending_response(
+            &m_handle, m_max_borrowed_responses_per_pending_response.value());
+    }
+    if (m_max_loaned_requests.has_value()) {
+        iox2_service_builder_request_response_max_loaned_requests(&m_handle, m_max_loaned_requests.value());
+    }
+    if (m_enable_fire_and_forget_requests.has_value()) {
+        iox2_service_builder_request_response_enable_fire_and_forget_requests(
+            &m_handle, m_enable_fire_and_forget_requests.value());
+    }
 
     // request payload type details
     using RequestValueType = typename PayloadInfo<RequestPayload>::ValueType;

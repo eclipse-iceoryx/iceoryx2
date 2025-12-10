@@ -108,10 +108,12 @@ void handle_incoming_events(Listener<ServiceType::Ipc>& listener,
             } else if (event_id == iox2::bb::into<EventId>(PubSubEvent::PublisherDisconnected)) {
                 std::cout << service_name.to_string().c_str() << ": publisher disconnected!" << std::endl;
             } else if (event_id == iox2::bb::into<EventId>(PubSubEvent::SentSample)) {
-                subscriber.receive().expect("").and_then([&](auto& sample) -> auto {
+                const auto receive_result = subscriber.receive();
+                if (receive_result.has_value() && receive_result.value().has_value()) {
+                    const auto& sample = receive_result.value().value();
                     std::cout << service_name.to_string().c_str() << ": Received sample " << sample.payload() << " ..."
                               << std::endl;
-                });
+                }
             }
         })
         .expect("");
@@ -121,8 +123,9 @@ void find_and_cleanup_dead_nodes() {
     Node<ServiceType::Ipc>::list(Config::global_config(), [](auto node_state) -> auto {
         node_state.dead([](auto view) -> auto {
             std::cout << "detected dead node: ";
-            view.details().and_then(
-                [](const auto& details) -> auto { std::cout << details.name().to_string().c_str(); });
+            if (view.details().has_value()) {
+                std::cout << view.details().value().name().to_string().c_str();
+            }
             std::cout << std::endl;
             view.remove_stale_resources().expect("");
         });

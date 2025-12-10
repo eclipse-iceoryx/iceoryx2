@@ -19,7 +19,7 @@ constexpr uint64_t INACCESSIBLE_STATE = 2;
 constexpr uint64_t UNDEFINED_STATE = 3;
 
 template <ServiceType T>
-AliveNodeView<T>::AliveNodeView(NodeId node_id, const iox2::legacy::optional<NodeDetails>& details)
+AliveNodeView<T>::AliveNodeView(NodeId node_id, const iox2::container::Optional<NodeDetails>& details)
     : m_id { std::move(node_id) }
     , m_details { details } {
 }
@@ -30,7 +30,7 @@ auto AliveNodeView<T>::id() const -> const NodeId& {
 }
 
 template <ServiceType T>
-auto AliveNodeView<T>::details() const -> const iox2::legacy::optional<NodeDetails>& {
+auto AliveNodeView<T>::details() const -> const iox2::container::Optional<NodeDetails>& {
     return m_details;
 }
 
@@ -45,7 +45,7 @@ auto DeadNodeView<T>::id() const -> const NodeId& {
 }
 
 template <ServiceType T>
-auto DeadNodeView<T>::details() const -> iox2::legacy::optional<NodeDetails> {
+auto DeadNodeView<T>::details() const -> iox2::container::Optional<NodeDetails> {
     return m_view.details();
 }
 

@@ -41,7 +41,7 @@ template <ServiceType S>
 auto Service<S>::details(const ServiceName& service_name,
                          const ConfigView config,
                          const MessagingPattern messaging_pattern)
-    -> iox2::legacy::expected<iox2::legacy::optional<ServiceDetails<S>>, ServiceDetailsError> {
+    -> iox2::legacy::expected<iox2::container::Optional<ServiceDetails<S>>, ServiceDetailsError> {
     iox2_static_config_t raw_static_config;
     bool does_exist = false;
 
@@ -57,11 +57,11 @@ auto Service<S>::details(const ServiceName& service_name,
     }
 
     if (!does_exist) {
-        return iox2::legacy::ok(iox2::legacy::optional<ServiceDetails<S>>());
+        return iox2::legacy::ok(iox2::container::Optional<ServiceDetails<S>>());
     }
 
     return iox2::legacy::ok(
-        iox2::legacy::optional<ServiceDetails<S>>(ServiceDetails<S> { StaticConfig(raw_static_config) }));
+        iox2::container::Optional<ServiceDetails<S>>(ServiceDetails<S> { StaticConfig(raw_static_config) }));
 }
 
 template <ServiceType S>

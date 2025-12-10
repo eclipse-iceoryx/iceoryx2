@@ -52,6 +52,8 @@
   [#1223](https://github.com/eclipse-iceoryx/iceoryx2/issues/1223)
 * Add socket directory configuration in platform
   [#1232](https://github.com/eclipse-iceoryx/iceoryx2/issues/1232)
+* Replace legacy types in public API with iceoryx2 counterparts
+  [#1234](https://github.com/eclipse-iceoryx/iceoryx2/issues/1234)
 
 ### Bugfixes
 
@@ -253,3 +255,31 @@ CMake package.
    // new
    let entry_handle_mut = entry_value_uninit.update_with_copy(123);
    ```
+
+8. Replace `iox::optional` from `iceoryx_hoofs` with `iox2::container::Optional`
+
+  The new `Optional` in iceoryx2 has a reduced API compared to the one from
+  `iceroyx_hoofs`. The functional interface, which deviated from the STL was
+  removed.
+
+  ```cpp
+  // old
+  ret_val.and_then([](auto& val) { /* do something with val */ })
+         .or_else([]() { /* do something else */ });
+
+  // new
+  if (ret_val.has_value()) {
+    // do something with ret_val.value()
+  } else {
+    // do something else
+  }
+
+  // old
+  auto val = ret_val.expect("There should be a value");
+
+  // new
+  if (!ret_val.has_value()) {
+    // error handling or terminate
+  }
+  auto val = ret_val.value();
+  ```
