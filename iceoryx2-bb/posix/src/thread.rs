@@ -102,7 +102,6 @@ use iceoryx2_pal_posix::*;
 
 use crate::{
     config::MAX_THREAD_NAME_LENGTH,
-    handle_errno,
     scheduler::Scheduler,
     signal::Signal,
     system_configuration::{Limit, SystemInfo},

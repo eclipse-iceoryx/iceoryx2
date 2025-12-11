@@ -33,7 +33,6 @@ use crate::{
     adaptive_wait::*,
     clock::{AsTimespec, Time, TimeError},
     config::MAX_INITIAL_SEMAPHORE_VALUE,
-    handle_errno,
     system_configuration::*,
 };
 use core::time::Duration;
