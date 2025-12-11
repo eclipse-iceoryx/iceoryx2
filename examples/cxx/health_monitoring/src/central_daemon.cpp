@@ -39,7 +39,7 @@ auto main() -> int {
                                 // We use here open_or_create so that, in case of a crash of the central daemon, it can
                                 // be restarted.
                                 .open_or_create()
-                                .expect("successful service creation/opening");
+                                .value();
 
     auto service_event_1 = node.service_builder(service_name_1)
                                .event()
@@ -60,10 +60,7 @@ auto main() -> int {
                                .open_or_create()
                                .expect("successful service creation/opening");
 
-    auto service_pubsub_2 = node.service_builder(service_name_2)
-                                .publish_subscribe<uint64_t>()
-                                .open_or_create()
-                                .expect("successful service creation/opening");
+    auto service_pubsub_2 = node.service_builder(service_name_2).publish_subscribe<uint64_t>().open_or_create().value();
 
     auto service_event_2 = node.service_builder(service_name_2)
                                .event()

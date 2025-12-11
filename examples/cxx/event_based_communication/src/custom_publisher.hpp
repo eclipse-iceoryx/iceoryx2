@@ -41,7 +41,7 @@ class CustomPublisher : public iox2::FileDescriptorBased {
                                   .history_size(HISTORY_SIZE)
                                   .subscriber_max_buffer_size(HISTORY_SIZE)
                                   .open_or_create()
-                                  .expect("");
+                                  .value();
         auto event_service = node.service_builder(service_name).event().open_or_create().expect("");
 
         auto notifier = event_service.notifier_builder().create().expect("");
