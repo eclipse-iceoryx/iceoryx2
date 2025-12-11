@@ -44,14 +44,14 @@ auto main() -> int {
     auto listener_1 = service_1.event.listener_builder().create().expect("");
     auto listener_2 = service_2.event.listener_builder().create().expect("");
 
-    auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().expect("");
+    auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().value();
 
     // If the service has defined a deadline we will use it, otherwise
     // we expect that the listener receive a message sent event after at most CYCLE_TIME_X
     auto deadline_1 = listener_1.deadline().value_or(CYCLE_TIME_1);
     auto deadline_2 = listener_2.deadline().value_or(CYCLE_TIME_2);
-    auto listener_1_guard = waitset.attach_deadline(listener_1, deadline_1).expect("");
-    auto listener_2_guard = waitset.attach_deadline(listener_2, deadline_2).expect("");
+    auto listener_1_guard = waitset.attach_deadline(listener_1, deadline_1).value();
+    auto listener_2_guard = waitset.attach_deadline(listener_2, deadline_2).value();
 
     auto missed_deadline = [](const ServiceName& service_name, const iox2::bb::Duration& cycle_time) -> auto {
         std::cout << service_name.to_string().c_str() << ": voilated contract and did not send a message after "
@@ -85,7 +85,7 @@ auto main() -> int {
         return CallbackProgression::Continue;
     };
 
-    waitset.wait_and_process(on_event).expect("");
+    waitset.wait_and_process(on_event).value();
 
     std::cout << "exit" << std::endl;
 

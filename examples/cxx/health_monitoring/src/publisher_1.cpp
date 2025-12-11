@@ -36,7 +36,7 @@ auto main() -> int {
                         .expect("");
     uint64_t counter = 0;
 
-    auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().expect("");
+    auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().value();
 
     // we only want to notify the other side explicitly when we have sent a sample
     // so we can define it as default event id
@@ -50,7 +50,7 @@ auto main() -> int {
             counter += 1;
             return CallbackProgression::Continue;
         })
-        .expect("");
+        .value();
 
     std::cout << "exit" << std::endl;
 
