@@ -139,8 +139,8 @@ TYPED_TEST(ServiceTest, list_works_with_attributes) {
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
 
     auto attribute_specifier = AttributeSpecifier();
-    attribute_specifier.define(key_1, value_1).expect("");
-    attribute_specifier.define(key_2, value_2).expect("");
+    attribute_specifier.define(key_1, value_1).value();
+    attribute_specifier.define(key_2, value_2).value();
     auto sut_1 = node.service_builder(service_name_1)
                      .template publish_subscribe<uint64_t>()
                      .create_with_attributes(attribute_specifier)
@@ -251,8 +251,8 @@ TYPED_TEST(ServiceTest, details_works) {
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
 
     auto attribute_specifier = AttributeSpecifier();
-    attribute_specifier.define(key_1, value_1).expect("");
-    attribute_specifier.define(key_2, value_2).expect("");
+    attribute_specifier.define(key_1, value_1).value();
+    attribute_specifier.define(key_2, value_2).value();
     auto sut = node.service_builder(service_name_1)
                    .template publish_subscribe<uint64_t>()
                    .create_with_attributes(attribute_specifier)

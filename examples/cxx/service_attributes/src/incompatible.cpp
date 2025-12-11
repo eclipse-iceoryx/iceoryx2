@@ -20,7 +20,7 @@ auto main() -> int {
     auto node = NodeBuilder().create<ServiceType::Ipc>().value();
 
     auto attribute_verifier = AttributeVerifier();
-    attribute_verifier.require("camera_resolution", "3840x2160").expect("");
+    attribute_verifier.require("camera_resolution", "3840x2160").value();
     auto incompatible_service = node.service_builder(ServiceName::create("Service/With/Properties").value())
                                     .publish_subscribe<uint64_t>()
                                     .open_with_attributes(
@@ -33,7 +33,7 @@ auto main() -> int {
     }
 
     attribute_verifier = AttributeVerifier();
-    attribute_verifier.require_key("camera_type").expect("");
+    attribute_verifier.require_key("camera_type").value();
     incompatible_service = node.service_builder(ServiceName::create("My/Funk/ServiceName").value())
                                .publish_subscribe<uint64_t>()
                                .open_with_attributes(

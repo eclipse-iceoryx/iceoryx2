@@ -1012,7 +1012,7 @@ TYPED_TEST(ServicePublishSubscribeTest, create_with_attributes_sets_attributes) 
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto attribute_specifier = AttributeSpecifier();
-    attribute_specifier.define(key, value).expect("");
+    attribute_specifier.define(key, value).value();
     auto service_create = node.service_builder(service_name)
                               .template publish_subscribe<uint64_t>()
                               .create_with_attributes(attribute_specifier)
@@ -1042,14 +1042,14 @@ TYPED_TEST(ServicePublishSubscribeTest, open_fails_when_attributes_are_incompati
     const auto service_name = iox2_testing::generate_service_name();
 
     auto attribute_verifier = AttributeVerifier();
-    attribute_verifier.require(key, value).expect("");
+    attribute_verifier.require(key, value).value();
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service_create = node.service_builder(service_name)
                               .template publish_subscribe<uint64_t>()
                               .open_or_create_with_attributes(attribute_verifier)
                               .value();
 
-    attribute_verifier.require_key(missing_key).expect("");
+    attribute_verifier.require_key(missing_key).value();
     auto service_open_or_create = node.service_builder(service_name)
                                       .template publish_subscribe<uint64_t>()
                                       .open_or_create_with_attributes(attribute_verifier);

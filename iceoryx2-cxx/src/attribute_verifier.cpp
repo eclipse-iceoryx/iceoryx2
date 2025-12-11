@@ -45,23 +45,22 @@ auto AttributeVerifier::operator=(AttributeVerifier&& rhs) noexcept -> Attribute
 }
 
 auto AttributeVerifier::require(const Attribute::Key& key, const Attribute::Value& value)
-    -> iox2::legacy::expected<void, AttributeDefinitionError> {
+    -> container::Expected<void, AttributeDefinitionError> {
     auto result = iox2_attribute_verifier_require(&m_handle, key.c_str(), value.c_str());
     if (result == IOX2_OK) {
-        return iox2::legacy::ok();
+        return { container::in_place };
     }
 
-    return iox2::legacy::err(iox2::bb::into<AttributeDefinitionError>(result));
+    return container::err(bb::into<AttributeDefinitionError>(result));
 }
 
-auto AttributeVerifier::require_key(const Attribute::Key& key)
-    -> iox2::legacy::expected<void, AttributeDefinitionError> {
+auto AttributeVerifier::require_key(const Attribute::Key& key) -> container::Expected<void, AttributeDefinitionError> {
     auto result = iox2_attribute_verifier_require_key(&m_handle, key.c_str());
     if (result == IOX2_OK) {
-        return iox2::legacy::ok();
+        return { container::in_place };
     }
 
-    return iox2::legacy::err(iox2::bb::into<AttributeDefinitionError>(result));
+    return container::err(bb::into<AttributeDefinitionError>(result));
 }
 
 auto AttributeVerifier::attributes() const -> AttributeSetView {
@@ -82,15 +81,15 @@ auto AttributeVerifier::keys() const -> iox2::container::StaticVector<Attribute:
 }
 
 auto AttributeVerifier::verify_requirements(const AttributeSetView& rhs) const
-    -> iox2::legacy::expected<void, Attribute::Key> {
+    -> container::Expected<void, Attribute::Key> {
     // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays, modernize-avoid-c-arrays) used as an uninitialized buffer
     char buffer[Attribute::Key::capacity()];
     if (iox2_attribute_verifier_verify_requirements(&m_handle, rhs.m_handle, &buffer[0], Attribute::Key::capacity())
         == IOX2_OK) {
-        return iox2::legacy::ok();
+        return { container::in_place };
     }
 
-    return iox2::legacy::err(Attribute::Key(iox2::legacy::TruncateToCapacity, &buffer[0]));
+    return container::err(Attribute::Key(legacy::TruncateToCapacity, &buffer[0]));
 }
 
 

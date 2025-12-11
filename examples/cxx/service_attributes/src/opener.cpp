@@ -23,8 +23,8 @@ auto main() -> int {
     auto node = NodeBuilder().create<ServiceType::Ipc>().value();
 
     auto attribute_verifier = AttributeVerifier();
-    attribute_verifier.require("camera_resolution", "1920x1080").expect("");
-    attribute_verifier.require_key("dds_service_mapping").expect("");
+    attribute_verifier.require("camera_resolution", "1920x1080").value();
+    attribute_verifier.require_key("dds_service_mapping").value();
     auto service = node.service_builder(ServiceName::create("Service/With/Properties").value())
                        .publish_subscribe<uint64_t>()
                        .open_with_attributes(attribute_verifier)
