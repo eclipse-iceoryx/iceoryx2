@@ -51,9 +51,9 @@ struct UniquePortIdTest : public ::testing::Test {
         , publisher_2 { pubsub.publisher_builder().create().value() }
         , subscriber_1 { pubsub.subscriber_builder().create().value() }
         , subscriber_2 { pubsub.subscriber_builder().create().value() }
-        , reader_1 { blackboard.reader_builder().create().expect("") }
-        , reader_2 { blackboard.reader_builder().create().expect("") }
-        , writer_1 { blackboard.writer_builder().create().expect("") } {
+        , reader_1 { blackboard.reader_builder().create().value() }
+        , reader_2 { blackboard.reader_builder().create().value() }
+        , writer_1 { blackboard.writer_builder().create().value() } {
     }
 
     // NOLINTBEGIN(misc-non-private-member-variables-in-classes), come on, its a test

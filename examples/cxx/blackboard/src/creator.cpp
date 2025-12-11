@@ -39,7 +39,7 @@ auto main() -> int {
                        .value();
     std::cout << "Blackboard created." << std::endl;
 
-    auto writer = service.writer_builder().create().expect("successful writer creation");
+    auto writer = service.writer_builder().create().value();
     auto entry_handle_mut_key_0 = writer.template entry<int32_t>(key_0).value();
     auto entry_handle_mut_key_1 = writer.template entry<double>(key_1).value();
 
