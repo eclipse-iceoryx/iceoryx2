@@ -1460,7 +1460,7 @@ TYPED_TEST(ServiceBlackboardTest, create_with_attributes_sets_attributes) {
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto attribute_specifier = AttributeSpecifier();
-    attribute_specifier.define(key, value).expect("");
+    attribute_specifier.define(key, value).value();
     auto service_create = node.service_builder(service_name)
                               .template blackboard_creator<uint64_t>()
                               .template add_with_default<uint64_t>(0)
@@ -1492,7 +1492,7 @@ TYPED_TEST(ServiceBlackboardTest, open_fails_when_attributes_are_incompatible) {
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto attribute_specifier = AttributeSpecifier();
-    attribute_specifier.define(key, value).expect("");
+    attribute_specifier.define(key, value).value();
     auto service_create = node.service_builder(service_name)
                               .template blackboard_creator<uint64_t>()
                               .template add_with_default<uint64_t>(0)
@@ -1500,8 +1500,8 @@ TYPED_TEST(ServiceBlackboardTest, open_fails_when_attributes_are_incompatible) {
                               .value();
 
     auto attribute_verifier = AttributeVerifier();
-    attribute_verifier.require(key, value).expect("");
-    attribute_verifier.require_key(missing_key).expect("");
+    attribute_verifier.require(key, value).value();
+    attribute_verifier.require_key(missing_key).value();
     auto service_open = node.service_builder(service_name)
                             .template blackboard_opener<uint64_t>()
                             .open_with_attributes(attribute_verifier);
