@@ -80,7 +80,7 @@ auto main() -> int {
             const std::lock_guard<std::mutex> lock(cout_mtx);
             std::cout << "send: " << counter << std::endl;
         }
-        publisher.send_copy(counter).expect("send data");
+        publisher.send_copy(counter).value();
         counter += 1;
     }
 

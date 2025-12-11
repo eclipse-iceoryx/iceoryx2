@@ -49,7 +49,7 @@ auto main() -> int {
 
     while (node.wait(CYCLE_TIME).has_value()) {
         const uint64_t required_memory_size = (counter + 1) * (counter + 1); // NOLINT
-        auto sample = publisher.loan_slice_uninit(required_memory_size).expect("acquire sample");
+        auto sample = publisher.loan_slice_uninit(required_memory_size).value();
         auto initialized_sample = sample.write_from_fn(
             [&](auto byte_idx) { return static_cast<uint8_t>((byte_idx + counter) % MAX_VALUE); }); // NOLINT
 

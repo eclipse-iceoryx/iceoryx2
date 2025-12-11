@@ -40,7 +40,7 @@ auto main() -> int {
     uint64_t counter = 0;
     while (node.wait(CYCLE_TIME).has_value()) {
         std::cout << "send: " << counter << std::endl;
-        publisher.send_copy(counter).expect("sample was sent");
+        publisher.send_copy(counter).value();
         counter += 1;
     }
 

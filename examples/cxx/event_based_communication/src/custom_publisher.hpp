@@ -64,7 +64,7 @@ class CustomPublisher : public iox2::FileDescriptorBased {
             switch (iox2::bb::into<PubSubEvent>(event.value()->as_value())) {
             case PubSubEvent::SubscriberConnected: {
                 std::cout << "new subscriber connected - delivering history" << std::endl;
-                m_publisher.update_connections().expect("");
+                m_publisher.update_connections().value();
                 m_notifier.notify_with_custom_event_id(iox2::EventId(iox2::bb::into<size_t>(PubSubEvent::SentHistory)))
                     .expect("");
                 break;
@@ -86,7 +86,7 @@ class CustomPublisher : public iox2::FileDescriptorBased {
 
     void send(const uint64_t counter) {
         constexpr double SOME_NUMBER = 812.12;
-        auto sample = m_publisher.loan_uninit().expect("");
+        auto sample = m_publisher.loan_uninit().value();
         auto initialized_sample = sample.write_payload(TransmissionData {
             static_cast<int32_t>(counter), static_cast<int32_t>(counter), static_cast<double>(counter) * SOME_NUMBER });
         ::iox2::send(std::move(initialized_sample)).expect("");

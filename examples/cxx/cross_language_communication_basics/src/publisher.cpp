@@ -36,7 +36,7 @@ auto main() -> int {
     while (node.wait(CYCLE_TIME).has_value()) {
         counter += 1;
 
-        auto sample = publisher.loan_uninit().expect("acquire sample");
+        auto sample = publisher.loan_uninit().value();
         sample.user_header_mut().version = 123;                                      // NOLINT
         sample.user_header_mut().timestamp = static_cast<uint64_t>(80337 + counter); // NOLINT
 

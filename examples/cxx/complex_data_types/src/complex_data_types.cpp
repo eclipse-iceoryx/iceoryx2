@@ -49,7 +49,7 @@ auto main() -> int {
     uint64_t counter = 0;
     while (node.wait(CYCLE_TIME).has_value()) {
         counter += 1;
-        auto sample = publisher.loan_uninit().expect("acquire sample");
+        auto sample = publisher.loan_uninit().value();
         new (&sample.payload_mut()) ComplexDataType {};
 
         auto& payload = sample.payload_mut();

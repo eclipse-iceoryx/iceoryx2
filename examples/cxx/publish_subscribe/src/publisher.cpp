@@ -34,7 +34,7 @@ auto main() -> int {
     while (node.wait(CYCLE_TIME).has_value()) {
         counter += 1;
 
-        auto sample = publisher.loan_uninit().expect("acquire sample");
+        auto sample = publisher.loan_uninit().value();
 
         auto initialized_sample =
             sample.write_payload(TransmissionData { counter, counter * 3, counter * 812.12 }); // NOLINT
