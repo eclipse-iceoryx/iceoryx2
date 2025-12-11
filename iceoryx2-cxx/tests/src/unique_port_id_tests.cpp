@@ -42,7 +42,7 @@ struct UniquePortIdTest : public ::testing::Test {
                            .template blackboard_creator<uint64_t>()
                            .template add_with_default<uint64_t>(0)
                            .create()
-                           .expect("") }
+                           .value() }
         , listener_1 { event.listener_builder().create().expect("") }
         , listener_2 { event.listener_builder().create().expect("") }
         , notifier_1 { event.notifier_builder().create().expect("") }
