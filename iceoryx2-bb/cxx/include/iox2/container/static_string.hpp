@@ -13,9 +13,9 @@
 #ifndef IOX2_INCLUDE_GUARD_CONTAINER_STATIC_STRING_HPP
 #define IOX2_INCLUDE_GUARD_CONTAINER_STATIC_STRING_HPP
 
+#include "iox2/container/detail/string_internal.hpp"
 #include "iox2/container/optional.hpp"
 #include "iox2/legacy/type_traits.hpp"
-#include "iox2/container/detail/string_internal.hpp"
 
 #include <algorithm>
 #include <cstddef>
@@ -577,6 +577,39 @@ class StaticString {
             return 0U;
         }
         return nullopt;
+    }
+
+    /// Inserts a StaticString, obtained by str.substr(s_index, count), into the StaticString at position index. The
+    /// insertion fails if the capacity would be exceeded or the provided indices are larger than the respective
+    /// string lengths.
+    ///
+    /// @return true if the insertion was successful, otherwise false
+    template <typename T>
+    auto insert(SizeType index, T const& str, SizeType s_index, SizeType count = T::capacity())
+        -> typename std::enable_if<IsStaticString<T>::value, bool>::type {
+        auto sub_str = str.substr(s_index, count);
+        if (!sub_str.has_value()) {
+            return false;
+        }
+
+        auto const sub_str_size = sub_str->size();
+        auto const new_size = m_size + sub_str_size;
+        // check if the new size would exceed capacity or a size overflow occured
+        if (new_size > N || new_size < m_size) {
+            return false;
+        }
+
+        if (index > m_size) {
+            return false;
+        }
+        auto number_of_characters_to_move = m_size - index;
+        std::memmove(&m_string[index + sub_str_size], &m_string[index], number_of_characters_to_move);
+        std::memcpy(&m_string[index], sub_str->m_string, static_cast<size_t>(sub_str_size));
+
+        m_string[new_size] = '\0';
+        m_size = new_size;
+
+        return true;
     }
 
   private:

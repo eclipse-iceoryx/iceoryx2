@@ -17,7 +17,6 @@
 #include "iox2/container/static_string.hpp"
 #include "iox2/legacy/expected.hpp"
 #include "iox2/legacy/logging.hpp"
-#include "iox2/legacy/string.hpp"
 
 #include <cstdint>
 
@@ -306,7 +305,7 @@ template <typename Child,
 template <typename T>
 inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::append(
     const T& value) noexcept -> legacy::expected<void, SemanticStringError> {
-    return insert(size(), value, legacy::internal::GetSize<T>::call(value));
+    return insert(size(), value, container::detail::GetSize<T>::call(value));
 }
 
 template <typename Child,
@@ -316,32 +315,33 @@ template <typename Child,
 template <typename T>
 inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::insert(
     const uint64_t pos, const T& str, const uint64_t count) noexcept -> legacy::expected<void, SemanticStringError> {
-    // TODO: implement insert() for StaticString
-    legacy::string<Capacity> temp(legacy::TruncateToCapacity, m_data.unchecked_access().c_str(), m_data.size());
-    if (!temp.insert(pos, str, count)) {
+    auto temp = m_data;
+    if (!temp.insert(pos, str, 0, count)) {
         IOX2_LOG(Debug,
                  "Unable to insert the value \""
-                     << str << "\" to the semantic string since it would exceed the maximum valid length of "
-                     << Capacity << ".");
+                     << str.unchecked_access().c_str()
+                     << "\" to the semantic string since it would exceed the maximum valid length of " << Capacity
+                     << ".");
         return legacy::err(SemanticStringError::ExceedsMaximumLength);
     }
 
-    auto temp_str = *container::StaticString<Capacity>::from_utf8_null_terminated_unchecked(temp.c_str());
-    if (DoesContainInvalidCharacterCall(temp_str)) {
+    if (DoesContainInvalidCharacterCall(temp)) {
         IOX2_LOG(Debug,
                  "Unable to insert the value \""
-                     << str << "\" to the semantic string since it contains invalid characters as content.");
+                     << str.unchecked_access().c_str()
+                     << "\" to the semantic string since it contains invalid characters as content.");
         return legacy::err(SemanticStringError::InvalidContent);
     }
 
-    if (DoesContainInvalidContentCall(temp_str)) {
+    if (DoesContainInvalidContentCall(temp)) {
         IOX2_LOG(Debug,
                  "Unable to insert the value \""
-                     << str << "\" to the semantic string since it would lead to invalid content.");
+                     << str.unchecked_access().c_str()
+                     << "\" to the semantic string since it would lead to invalid content.");
         return legacy::err(SemanticStringError::InvalidContent);
     }
 
-    m_data = temp_str;
+    m_data = temp;
     return legacy::ok();
 }
 
