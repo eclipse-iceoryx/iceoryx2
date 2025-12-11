@@ -58,7 +58,7 @@ auto main() -> int {
                                // detects a dead node and cleaned up all of its stale resources succesfully.
                                .notifier_dead_event(iox2::bb::into<EventId>(PubSubEvent::ProcessDied))
                                .open_or_create()
-                               .expect("successful service creation/opening");
+                               .value();
 
     auto service_pubsub_2 = node.service_builder(service_name_2).publish_subscribe<uint64_t>().open_or_create().value();
 
@@ -69,7 +69,7 @@ auto main() -> int {
                                .notifier_dropped_event(iox2::bb::into<EventId>(PubSubEvent::PublisherDisconnected))
                                .notifier_dead_event(iox2::bb::into<EventId>(PubSubEvent::ProcessDied))
                                .open_or_create()
-                               .expect("successful service creation/opening");
+                               .value();
 
     auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().value();
     auto cycle_guard = waitset.attach_interval(CYCLE_TIME);

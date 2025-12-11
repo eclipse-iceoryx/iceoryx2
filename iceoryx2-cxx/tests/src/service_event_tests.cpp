@@ -19,6 +19,7 @@
 
 #include <chrono>
 #include <cstdlib>
+#include <gtest/gtest.h>
 
 namespace {
 using namespace iox2;
@@ -85,7 +86,7 @@ TYPED_TEST(ServiceEventTest, creating_existing_service_fails) {
     auto sut = node.service_builder(service_name).event().create().value();
 
     auto sut_2 = node.service_builder(service_name).event().create();
-    ASSERT_TRUE(sut_2.has_error());
+    ASSERT_FALSE(sut_2.has_value());
     ASSERT_THAT(sut_2.error(), Eq(EventCreateError::AlreadyExists));
 }
 
@@ -135,7 +136,7 @@ TYPED_TEST(ServiceEventTest, open_fails_with_incompatible_max_notifiers_requirem
     auto sut = node.service_builder(service_name).event().max_notifiers(NUMBER_OF_NOTIFIERS).create().value();
     auto sut_fail = node.service_builder(service_name).event().max_notifiers(NUMBER_OF_NOTIFIERS + 1).open();
 
-    ASSERT_TRUE(sut_fail.has_error());
+    ASSERT_FALSE(sut_fail.has_value());
     ASSERT_THAT(sut_fail.error(), Eq(EventOpenError::DoesNotSupportRequestedAmountOfNotifiers));
 }
 
@@ -149,7 +150,7 @@ TYPED_TEST(ServiceEventTest, open_fails_with_incompatible_max_listeners_requirem
     auto sut = node.service_builder(service_name).event().max_listeners(NUMBER_OF_LISTENERS).create().value();
     auto sut_fail = node.service_builder(service_name).event().max_listeners(NUMBER_OF_LISTENERS + 1).open();
 
-    ASSERT_TRUE(sut_fail.has_error());
+    ASSERT_FALSE(sut_fail.has_value());
     ASSERT_THAT(sut_fail.error(), Eq(EventOpenError::DoesNotSupportRequestedAmountOfListeners));
 }
 
@@ -195,7 +196,7 @@ TYPED_TEST(ServiceEventTest, opening_non_existing_service_fails) {
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = node.service_builder(service_name).event().open();
-    ASSERT_TRUE(sut.has_error());
+    ASSERT_FALSE(sut.has_value());
     ASSERT_THAT(sut.error(), Eq(EventOpenError::DoesNotExist));
 }
 
@@ -471,12 +472,12 @@ TYPED_TEST(ServiceEventTest, open_fails_when_attributes_are_incompatible) {
     auto service_open_or_create =
         node.service_builder(service_name).event().open_or_create_with_attributes(attribute_verifier);
 
-    ASSERT_THAT(service_open_or_create.has_error(), Eq(true));
+    ASSERT_THAT(service_open_or_create.has_value(), Eq(false));
     ASSERT_THAT(service_open_or_create.error(), Eq(EventOpenOrCreateError::OpenIncompatibleAttributes));
 
     auto service_open = node.service_builder(service_name).event().open_with_attributes(attribute_verifier);
 
-    ASSERT_THAT(service_open.has_error(), Eq(true));
+    ASSERT_THAT(service_open.has_value(), Eq(false));
     ASSERT_THAT(service_open.error(), Eq(EventOpenError::IncompatibleAttributes));
 }
 
@@ -809,12 +810,12 @@ TYPED_TEST(ServiceEventTest, only_max_notifiers_can_be_created) {
     auto notifier = iox2::container::Optional<Notifier<SERVICE_TYPE>>(service.notifier_builder().create().value());
 
     auto failing_sut = service.notifier_builder().create();
-    ASSERT_TRUE(failing_sut.has_error());
+    ASSERT_FALSE(failing_sut.has_value());
 
     notifier.reset();
 
     auto sut = service.notifier_builder().create();
-    ASSERT_FALSE(sut.has_error());
+    ASSERT_TRUE(sut.has_value());
 }
 
 TYPED_TEST(ServiceEventTest, only_max_listeners_can_be_created) {
@@ -827,11 +828,11 @@ TYPED_TEST(ServiceEventTest, only_max_listeners_can_be_created) {
     auto listener = iox2::container::Optional<Listener<SERVICE_TYPE>>(service.listener_builder().create().value());
 
     auto failing_sut = service.listener_builder().create();
-    ASSERT_TRUE(failing_sut.has_error());
+    ASSERT_FALSE(failing_sut.has_value());
 
     listener.reset();
 
     auto sut = service.listener_builder().create();
-    ASSERT_FALSE(sut.has_error());
+    ASSERT_TRUE(sut.has_value());
 }
 } // namespace

@@ -38,7 +38,7 @@ struct ServiceTuple {
 inline auto open_service(const iox2::Node<iox2::ServiceType::Ipc>& node, const iox2::ServiceName& service_name)
     -> ServiceTuple {
     auto service_pubsub = node.service_builder(service_name).publish_subscribe<uint64_t>().open().value();
-    auto service_event = node.service_builder(service_name).event().open().expect("");
+    auto service_event = node.service_builder(service_name).event().open().value();
 
     return { std::move(service_event), std::move(service_pubsub) };
 }
