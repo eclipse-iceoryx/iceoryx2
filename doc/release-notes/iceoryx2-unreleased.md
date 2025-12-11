@@ -107,6 +107,8 @@
     [#1133](https://github.com/eclipse-iceoryx/iceoryx2/issues/1133)
 * Support C++14 for the C++ Bindings
     [#1167](https://github.com/eclipse-iceoryx/iceoryx2/issues/1167)
+* Update workspace such that tunnel backends are only built when needed
+  [#1244](https://github.com/eclipse-iceoryx/iceoryx2/issues/1234)
 
 ### Workflow
 
