@@ -36,7 +36,7 @@
 //!                 // as soon as the guard goes out of scope the process state file is removed
 //!                 drop(cleaner);
 //!
-//!                 match ProcessGuard::new(&process_state_path) {
+//!                 match ProcessGuardBuilder::new().create(&process_state_path) {
 //!                     Ok(guard) => guard,
 //!                     Err(_) => {
 //!                         panic!("Perform here some error handling");
@@ -47,7 +47,7 @@
 //!                 // cool, someone else has instantiated it and is already cleaning up all resources
 //!                 // wait a bit and try again
 //!                 std::thread::sleep(core::time::Duration::from_millis(500));
-//!                 match ProcessGuard::new(&process_state_path) {
+//!                 match ProcessGuardBuilder::new().create(&process_state_path) {
 //!                     Ok(guard) => guard,
 //!                     Err(_) => {
 //!                         panic!("Perform here some error handling");
@@ -304,7 +304,7 @@ impl ProcessGuardBuilder {
     /// let process_state_path = FilePath::new(b"process_state_file").unwrap();
     ///
     /// // start monitoring from this point on
-    /// let guard = ProcessGuard::new(&process_state_path).expect("");
+    /// let guard = ProcessGuardBuilder::new().create(&process_state_path).expect("");
     /// ```
     pub fn create(self, path: &FilePath) -> Result<ProcessGuard, ProcessGuardCreateError> {
         let origin = "ProcessGuard::new()";
