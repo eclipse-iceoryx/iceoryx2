@@ -37,7 +37,7 @@ void background_thread_fn() {
                        .open_or_create()
                        .value();
 
-    auto subscriber = service.subscriber_builder().create().expect("successful subscriber creation");
+    auto subscriber = service.subscriber_builder().create().value();
     while (keep_running.load()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(CYCLE_TIME.as_millis()));
         auto sample = subscriber.receive().value();
@@ -71,7 +71,7 @@ auto main() -> int {
                        .open_or_create()
                        .value();
 
-    auto publisher = service.publisher_builder().create().expect("successful publisher creation");
+    auto publisher = service.publisher_builder().create().value();
     auto background_thread = std::thread(background_thread_fn);
 
     uint64_t counter = 0;

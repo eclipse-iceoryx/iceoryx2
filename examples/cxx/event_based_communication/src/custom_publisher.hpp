@@ -46,7 +46,7 @@ class CustomPublisher : public iox2::FileDescriptorBased {
 
         auto notifier = event_service.notifier_builder().create().expect("");
         auto listener = event_service.listener_builder().create().expect("");
-        auto publisher = pubsub_service.publisher_builder().create().expect("");
+        auto publisher = pubsub_service.publisher_builder().create().value();
 
         notifier.notify_with_custom_event_id(iox2::EventId(iox2::bb::into<size_t>(PubSubEvent::PublisherConnected)))
             .value();

@@ -35,7 +35,7 @@ auto main() -> int {
                        .open_or_create()
                        .value();
 
-    auto subscriber = service.subscriber_builder().create().expect("successful subscriber creation");
+    auto subscriber = service.subscriber_builder().create().value();
 
     std::cout << "Subscriber ready to receive data!" << std::endl;
 

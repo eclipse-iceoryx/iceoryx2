@@ -66,7 +66,7 @@ auto main() -> int {
                        .publish_subscribe<ComponentTestHeader>()
                        .open_or_create()
                        .value();
-    auto subscriber = service.subscriber_builder().create().expect("Unable to create subscriber");
+    auto subscriber = service.subscriber_builder().create().value();
 
     auto tests = component_tests();
     std::cout << "Waiting for clients to connect..." << std::endl;

@@ -50,7 +50,7 @@ class CustomSubscriber : public iox2::FileDescriptorBased {
 
         auto listener = event_service.listener_builder().create().expect("");
         auto notifier = event_service.notifier_builder().create().expect("");
-        auto subscriber = pubsub_service.subscriber_builder().create().expect("");
+        auto subscriber = pubsub_service.subscriber_builder().create().value();
 
         notifier.notify_with_custom_event_id(iox2::EventId(iox2::bb::into<size_t>(PubSubEvent::SubscriberConnected)))
             .value();

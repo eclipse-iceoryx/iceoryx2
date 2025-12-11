@@ -39,8 +39,8 @@ auto main() -> int {
     auto service_1 = open_service(node, service_name_1);
     auto service_2 = open_service(node, service_name_2);
 
-    auto subscriber_1 = service_1.pubsub.subscriber_builder().create().expect("");
-    auto subscriber_2 = service_2.pubsub.subscriber_builder().create().expect("");
+    auto subscriber_1 = service_1.pubsub.subscriber_builder().create().value();
+    auto subscriber_2 = service_2.pubsub.subscriber_builder().create().value();
     auto listener_1 = service_1.event.listener_builder().create().expect("");
     auto listener_2 = service_2.event.listener_builder().create().expect("");
 

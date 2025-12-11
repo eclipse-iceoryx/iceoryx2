@@ -47,10 +47,10 @@ struct UniquePortIdTest : public ::testing::Test {
         , listener_2 { event.listener_builder().create().expect("") }
         , notifier_1 { event.notifier_builder().create().expect("") }
         , notifier_2 { event.notifier_builder().create().expect("") }
-        , publisher_1 { pubsub.publisher_builder().create().expect("") }
-        , publisher_2 { pubsub.publisher_builder().create().expect("") }
-        , subscriber_1 { pubsub.subscriber_builder().create().expect("") }
-        , subscriber_2 { pubsub.subscriber_builder().create().expect("") }
+        , publisher_1 { pubsub.publisher_builder().create().value() }
+        , publisher_2 { pubsub.publisher_builder().create().value() }
+        , subscriber_1 { pubsub.subscriber_builder().create().value() }
+        , subscriber_2 { pubsub.subscriber_builder().create().value() }
         , reader_1 { blackboard.reader_builder().create().expect("") }
         , reader_2 { blackboard.reader_builder().create().expect("") }
         , writer_1 { blackboard.writer_builder().create().expect("") } {
