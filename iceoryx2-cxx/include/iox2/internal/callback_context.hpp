@@ -90,12 +90,10 @@ auto list_callback(iox2_node_state_e node_state,
         if (!str.has_value()) {
             return iox2::container::Optional<NodeDetails>();
         }
-        return iox2::container::Optional<NodeDetails>(NodeDetails {
-            iox2::bb::FileName::create(
-                *str)
-                .expect("The executable file name is always valid."),
-            NodeNameView { node_name }.to_owned(),
-            Config {} });
+        return iox2::container::Optional<NodeDetails>(
+            NodeDetails { iox2::bb::FileName::create(*str).expect("The executable file name is always valid."),
+                          NodeNameView { node_name }.to_owned(),
+                          Config {} });
     }();
 
     iox2_node_id_h node_id_handle = nullptr;

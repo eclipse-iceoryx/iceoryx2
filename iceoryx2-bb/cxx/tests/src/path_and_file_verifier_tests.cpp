@@ -445,6 +445,7 @@ TEST(path_and_file_verifier_test_doesEndWithPathSeparator, SingleCharacterString
 TEST(path_and_file_verifier_test_doesEndWithPathSeparator, MultiCharacterStringEndingWithPathSeparatorAsOneAtTheEnd) {
     ::testing::Test::RecordProperty("TEST_ID", "c702ec34-8f7f-4220-b50e-6b231ac4e736");
 
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
     for (const auto separator : platform::IOX2_PATH_SEPARATORS) {
         auto sut = *StaticString<FILE_PATH_LENGTH>::from_utf8("HypnotoadAteTheSpagettiMonster");
         ASSERT_TRUE(sut.try_append(1, separator));
