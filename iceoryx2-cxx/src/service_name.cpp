@@ -25,7 +25,9 @@ auto ServiceNameView::to_string() const -> iox2::legacy::string<IOX2_SERVICE_NAM
 auto ServiceNameView::to_owned() const -> ServiceName {
     size_t len = 0;
     const auto* chars = iox2_service_name_as_chars(m_ptr, &len);
-    return ServiceName::create_impl(chars, len).expect("ServiceNameView always contains valid ServiceName");
+    auto service_name_result = ServiceName::create_impl(chars, len);
+    IOX2_ASSERT(service_name_result.has_value(), "ServiceNameView shall contain valid ServiceName");
+    return service_name_result.value();
 }
 
 ServiceNameView::ServiceNameView(iox2_service_name_ptr ptr)
@@ -79,24 +81,24 @@ void ServiceName::drop() noexcept {
     }
 }
 
-auto ServiceName::create(const char* value) -> iox2::legacy::expected<ServiceName, bb::SemanticStringError> {
+auto ServiceName::create(const char* value) -> iox2::container::Expected<ServiceName, bb::SemanticStringError> {
     return ServiceName::create_impl(value, strnlen(value, IOX2_SERVICE_NAME_LENGTH + 1));
 }
 
 auto ServiceName::create_impl(const char* value, const size_t value_len)
-    -> iox2::legacy::expected<ServiceName, bb::SemanticStringError> {
+    -> container::Expected<ServiceName, bb::SemanticStringError> {
     iox2_service_name_h handle {};
     if (value_len > IOX2_SERVICE_NAME_LENGTH) {
-        return iox2::legacy::err(bb::SemanticStringError::ExceedsMaximumLength);
+        return container::err(bb::SemanticStringError::ExceedsMaximumLength);
     }
 
     const auto ret_val = iox2_service_name_new(nullptr, value, value_len, &handle);
 
     if (ret_val == IOX2_OK) {
-        return iox2::legacy::ok(ServiceName { handle });
+        return ServiceName { handle };
     }
 
-    return iox2::legacy::err(iox2::bb::into<bb::SemanticStringError>(ret_val));
+    return container::err(bb::into<bb::SemanticStringError>(ret_val));
 }
 
 auto ServiceName::to_string() const -> iox2::legacy::string<IOX2_SERVICE_NAME_LENGTH> {

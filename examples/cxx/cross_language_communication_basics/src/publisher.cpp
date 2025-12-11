@@ -24,7 +24,7 @@ auto main() -> int {
     set_log_level_from_env_or(LogLevel::Info);
     auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
 
-    auto service = node.service_builder(ServiceName::create("CrossLanguageBasics").expect("valid service name"))
+    auto service = node.service_builder(ServiceName::create("CrossLanguageBasics").value())
                        .publish_subscribe<TransmissionData>()
                        .user_header<CustomHeader>()
                        .open_or_create()

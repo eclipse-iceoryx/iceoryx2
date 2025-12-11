@@ -27,8 +27,7 @@ constexpr Duration TIMEOUT = Duration::from_millis(100);
 
 auto generate_name() -> ServiceName {
     static std::atomic<uint64_t> COUNTER { 0 };
-    return ServiceName::create((std::string("waitset_tests_") + std::to_string(COUNTER.fetch_add(1))).c_str())
-        .expect("");
+    return ServiceName::create((std::string("waitset_tests_") + std::to_string(COUNTER.fetch_add(1))).c_str()).value();
 }
 
 template <typename T>

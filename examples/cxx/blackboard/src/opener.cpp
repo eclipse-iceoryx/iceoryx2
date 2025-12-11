@@ -26,7 +26,7 @@ auto main() -> int {
     set_log_level_from_env_or(LogLevel::Info);
     auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
 
-    auto service = node.service_builder(ServiceName::create("My/Funk/ServiceName").expect("valid service name"))
+    auto service = node.service_builder(ServiceName::create("My/Funk/ServiceName").value())
                        .blackboard_opener<BlackboardKey>()
                        .open()
                        .expect("successful service opening");

@@ -30,7 +30,7 @@ auto main() -> int {
     attribute_specifier.define("someip_service_mapping", "1/2/3").expect("");
     attribute_specifier.define("camera_resolution", "1920x1080").expect("");
 
-    auto service = node.service_builder(ServiceName::create("Service/With/Properties").expect("valid service name"))
+    auto service = node.service_builder(ServiceName::create("Service/With/Properties").value())
                        .publish_subscribe<uint64_t>()
                        .create_with_attributes(attribute_specifier)
                        .expect("successful service creation/opening");

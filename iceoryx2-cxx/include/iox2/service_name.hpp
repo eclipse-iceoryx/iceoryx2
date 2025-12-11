@@ -14,8 +14,8 @@
 #define IOX2_SERVICE_NAME_HPP
 
 #include "iox2/bb/semantic_string.hpp"
+#include "iox2/container/expected.hpp"
 #include "iox2/internal/iceoryx2.hpp"
-#include "iox2/legacy/expected.hpp"
 #include "iox2/legacy/string.hpp"
 
 namespace iox2 {
@@ -68,7 +68,7 @@ class ServiceName {
     auto as_view() const -> ServiceNameView;
 
     /// Creates a new [`ServiceName`]. The name is not allowed to be empty.
-    static auto create(const char* value) -> iox2::legacy::expected<ServiceName, bb::SemanticStringError>;
+    static auto create(const char* value) -> iox2::container::Expected<ServiceName, bb::SemanticStringError>;
 
     /// Returns a [`iox2::legacy::string`] containing the [`ServiceName`].
     auto to_string() const -> iox2::legacy::string<IOX2_SERVICE_NAME_LENGTH>;
@@ -77,7 +77,7 @@ class ServiceName {
     friend class ServiceNameView;
     explicit ServiceName(iox2_service_name_h handle);
     static auto create_impl(const char* value, size_t value_len)
-        -> iox2::legacy::expected<ServiceName, bb::SemanticStringError>;
+        -> iox2::container::Expected<ServiceName, bb::SemanticStringError>;
     void drop() noexcept;
 
     iox2_service_name_h m_handle = nullptr;

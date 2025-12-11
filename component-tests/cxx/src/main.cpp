@@ -62,11 +62,10 @@ auto main() -> int {
     std::cout << "*** Component Tests C++ ***" << std::endl;
 
     auto node = iox2::NodeBuilder {}.create<iox2::ServiceType::Ipc>().expect("Unable to create node");
-    auto service =
-        node.service_builder(iox2::ServiceName::create("iox2-component-tests").expect("Invalid service name"))
-            .publish_subscribe<ComponentTestHeader>()
-            .open_or_create()
-            .expect("Unable to open service");
+    auto service = node.service_builder(iox2::ServiceName::create("iox2-component-tests").value())
+                       .publish_subscribe<ComponentTestHeader>()
+                       .open_or_create()
+                       .expect("Unable to open service");
     auto subscriber = service.subscriber_builder().create().expect("Unable to create subscriber");
 
     auto tests = component_tests();

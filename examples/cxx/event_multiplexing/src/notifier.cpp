@@ -32,7 +32,7 @@ auto main(int argc, char** argv) -> int {
     auto args = Args::parse(argc, argv, "Notifier of the event multiplexing example.");
 
     auto event_id = EventId(args.event_id());
-    auto service_name = ServiceName::create(args.service().c_str()).expect("valid service name");
+    auto service_name = ServiceName::create(args.service().c_str()).value();
 
     auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
 

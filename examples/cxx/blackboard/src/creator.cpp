@@ -31,7 +31,7 @@ auto main() -> int {
     auto key_0 = BlackboardKey { 0, -4, 4 };
     auto key_1 = BlackboardKey { 1, -4, 4 };
     const double initial_value = 1.1;
-    auto service = node.service_builder(ServiceName::create("My/Funk/ServiceName").expect("valid service name"))
+    auto service = node.service_builder(ServiceName::create("My/Funk/ServiceName").value())
                        .blackboard_creator<BlackboardKey>()
                        .template add<int32_t>(key_0, 3)
                        .template add<double>(key_1, initial_value)
