@@ -35,7 +35,7 @@ void background_thread_fn() {
     auto service = node.service_builder(ServiceName::create("Service-Variants-Example").value())
                        .publish_subscribe<uint64_t>()
                        .open_or_create()
-                       .expect("successful service creation/opening");
+                       .value();
 
     auto subscriber = service.subscriber_builder().create().expect("successful subscriber creation");
     while (keep_running.load()) {

@@ -36,7 +36,7 @@ auto main() -> int {
                        .template add<int32_t>(key_0, 3)
                        .template add<double>(key_1, initial_value)
                        .create()
-                       .expect("successful service creation");
+                       .value();
     std::cout << "Blackboard created." << std::endl;
 
     auto writer = service.writer_builder().create().expect("successful writer creation");

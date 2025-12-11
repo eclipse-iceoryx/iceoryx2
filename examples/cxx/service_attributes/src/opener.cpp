@@ -28,7 +28,7 @@ auto main() -> int {
     auto service = node.service_builder(ServiceName::create("Service/With/Properties").value())
                        .publish_subscribe<uint64_t>()
                        .open_with_attributes(attribute_verifier)
-                       .expect("successful service creation/opening");
+                       .value();
 
     auto subscriber = service.subscriber_builder().create().expect("successful subscriber creation");
 

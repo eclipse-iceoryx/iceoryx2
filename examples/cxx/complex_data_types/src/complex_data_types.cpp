@@ -41,7 +41,7 @@ auto main() -> int {
                        .max_publishers(16)  // NOLINT
                        .max_subscribers(16) // NOLINT
                        .open_or_create()
-                       .expect("successful service creation/opening");
+                       .value();
 
     auto publisher = service.publisher_builder().create().expect("successful publisher creation");
     auto subscriber = service.subscriber_builder().create().expect("successful subscriber creation");

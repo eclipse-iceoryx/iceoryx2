@@ -33,7 +33,7 @@ auto main() -> int {
     auto service = node.service_builder(ServiceName::create("Service/With/Properties").value())
                        .publish_subscribe<uint64_t>()
                        .create_with_attributes(attribute_specifier)
-                       .expect("successful service creation/opening");
+                       .value();
 
     auto publisher = service.publisher_builder().create().expect("successful publisher creation");
 

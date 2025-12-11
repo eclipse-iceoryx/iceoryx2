@@ -43,10 +43,8 @@ auto main(int argc, char** argv) -> int {
     // create node and services
     auto node = NodeBuilder().create<ServiceType::Ipc>().value();
 
-    auto service_1 =
-        node.service_builder(service_name_1).event().open_or_create().expect("successful service creation/opening");
-    auto service_2 =
-        node.service_builder(service_name_2).event().open_or_create().expect("successful service creation/opening");
+    auto service_1 = node.service_builder(service_name_1).event().open_or_create().value();
+    auto service_2 = node.service_builder(service_name_2).event().open_or_create().value();
     auto listener_1 = service_1.listener_builder().create().expect("successful listener creation");
     auto listener_2 = service_2.listener_builder().create().expect("successful listener creation");
 

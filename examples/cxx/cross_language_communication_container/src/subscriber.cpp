@@ -33,7 +33,7 @@ auto main() -> int {
                        .subscriber_max_buffer_size(5) // NOLINT
                        .enable_safe_overflow(false)
                        .open_or_create()
-                       .expect("successful service creation/opening");
+                       .value();
 
     auto subscriber = service.subscriber_builder().create().expect("successful subscriber creation");
 

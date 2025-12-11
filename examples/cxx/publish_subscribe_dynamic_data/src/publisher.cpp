@@ -27,7 +27,7 @@ auto main() -> int {
     auto service = node.service_builder(ServiceName::create("Service With Dynamic Data").value())
                        .publish_subscribe<iox::Slice<uint8_t>>()
                        .open_or_create()
-                       .expect("successful service creation/opening");
+                       .value();
 
     // Since the payload type is uint8_t, this number is the same as the number of bytes in the payload.
     // For other types, number of bytes used by the payload will be max_slice_len * sizeof(Payload::ValueType)

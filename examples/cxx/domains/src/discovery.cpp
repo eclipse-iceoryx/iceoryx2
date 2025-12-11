@@ -46,7 +46,7 @@ auto main(int argc, char** argv) -> int {
     Service<ServiceType::Ipc>::list(config.view(), [](auto service) -> auto {
         std::cout << service.static_details << std::endl;
         return CallbackProgression::Continue;
-    }).expect("discover all available services");
+    }).value();
 
     return 0;
 }
