@@ -81,14 +81,14 @@ Config::Config(iox2_config_h handle)
     : m_handle { handle } {
 }
 
-auto Config::from_file(const iox2::bb::FilePath& file) -> iox2::legacy::expected<Config, ConfigCreationError> {
+auto Config::from_file(const iox2::bb::FilePath& file) -> iox2::container::Expected<Config, ConfigCreationError> {
     iox2_config_h handle = nullptr;
     auto result = iox2_config_from_file(nullptr, &handle, file.as_string().c_str());
     if (result == IOX2_OK) {
-        return iox2::legacy::ok(Config(handle));
+        return Config(handle);
     }
 
-    return iox2::legacy::err(iox2::bb::into<ConfigCreationError>(result));
+    return iox2::container::err(iox2::bb::into<ConfigCreationError>(result));
 }
 
 auto Config::global() -> config::Global {
