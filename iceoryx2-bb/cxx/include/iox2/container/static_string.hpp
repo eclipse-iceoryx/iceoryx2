@@ -40,7 +40,7 @@ struct IsStaticString<StaticString<N>> : std::true_type { };
 
 template <typename T, typename ReturnType>
 using IsStaticStringOrCharArray =
-    typename std::enable_if<IsStaticString<T>::value || legacy::is_char_array<T>::value, ReturnType>::type;
+    typename std::enable_if_t<IsStaticString<T>::value || legacy::is_char_array<T>::value, ReturnType>;
 
 /// A UTF-8 string with fixed static capacity and contiguous inplace storage.
 /// The string class uses Unicode (ISO/IEC 10646) terminology throughout its interface. In particular:
@@ -616,7 +616,7 @@ class StaticString {
     /// @return true if the insertion was successful, otherwise false
     template <typename T>
     auto insert(SizeType index, T const& str, SizeType s_index, SizeType count = T::capacity()) ->
-        typename std::enable_if<IsStaticString<T>::value, bool>::type {
+        typename std::enable_if_t<IsStaticString<T>::value, bool> {
         auto sub_str = str.substr(s_index, count);
         if (!sub_str.has_value()) {
             return false;
