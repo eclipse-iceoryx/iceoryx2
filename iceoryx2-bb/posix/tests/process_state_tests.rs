@@ -294,7 +294,7 @@ pub fn process_state_monitor_detects_alive_state_from_existing_process() {
     create_test_directory();
     let path = generate_file_path();
 
-    let guard = ProcessGuard::new(&path).unwrap();
+    let guard = ProcessGuardBuilder::new().create(&path).unwrap();
     let monitor = ProcessMonitor::new(&path).unwrap();
 
     assert_that!(monitor.state().unwrap(), eq ProcessState::Alive);
@@ -313,7 +313,7 @@ pub fn process_state_owner_lock_cannot_be_acquired_from_living_process() {
     create_test_directory();
     let path = generate_file_path();
 
-    let _guard = ProcessGuard::new(&path).unwrap();
+    let _guard = ProcessGuardBuilder::new().create(&path).unwrap();
     let owner_lock = ProcessCleaner::new(&path);
     assert_that!(owner_lock, is_err);
     assert_that!(

@@ -23,31 +23,56 @@ use core::{cell::UnsafeCell, panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU32, IoxAtomicUsize};
 use iceoryx2_pal_concurrency_sync::mutex::Mutex;
 use iceoryx2_pal_concurrency_sync::WaitAction;
+use std::fmt::Debug;
 
 use super::win32_udp_port_to_uds_name::PortToUds;
 
 const MAX_SUPPORTED_FD_HANDLES: usize = 1024;
 
 #[doc(hidden)]
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FdHandleEntry {
     SharedMemory(ShmHandle),
     File(FileHandle),
-    DirectoryStream(u64),
+    DirectoryStream(DirectoryHandle),
     Socket(SocketHandle),
     UdsDatagramSocket(UdsDatagramSocketHandle),
     NextFreeFd(usize),
 }
 
 #[doc(hidden)]
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy)]
+pub struct DirectoryHandle {
+    pub id: u64,
+    pub path: [c_char; iceoryx2_pal_configuration::PATH_LENGTH],
+}
+
+impl DirectoryHandle {
+    pub fn from_id(id: u64) -> Self {
+        DirectoryHandle {
+            id,
+            path: [0; iceoryx2_pal_configuration::PATH_LENGTH],
+        }
+    }
+}
+
+impl PartialEq for DirectoryHandle {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
+
+impl Eq for DirectoryHandle {}
+
+#[doc(hidden)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct FileHandle {
     pub handle: HANDLE,
     pub lock_state: int,
 }
 
 #[doc(hidden)]
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ShmHandle {
     pub handle: FileHandle,
     pub state_handle: HANDLE,
@@ -59,6 +84,12 @@ pub struct UdsDatagramSocketHandle {
     pub fd: usize,
     pub address: Option<sockaddr_in>,
     pub recv_timeout: Option<timeval>,
+}
+
+impl Debug for UdsDatagramSocketHandle {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "UdsDatagramSocketHandle {{ fd: {} }}", self.fd)
+    }
 }
 
 impl PartialEq for UdsDatagramSocketHandle {
@@ -93,6 +124,12 @@ pub struct SocketHandle {
     pub fd: usize,
     pub recv_timeout: Option<timeval>,
     pub send_timeout: Option<timeval>,
+}
+
+impl Debug for SocketHandle {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "SocketHandle {{ fd: {} }}", self.fd)
+    }
 }
 
 impl PartialEq for SocketHandle {

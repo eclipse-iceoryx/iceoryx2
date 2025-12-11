@@ -15,11 +15,12 @@
 #![allow(unused_variables)]
 
 use crate::{
-    posix::MemZeroedStruct,
-    posix::{self},
+    internal::strlen,
     posix::{
+        self,
         types::*,
-        win32_handle_translator::{FdHandleEntry, HandleTranslator},
+        win32_handle_translator::{DirectoryHandle, FdHandleEntry, HandleTranslator},
+        MemZeroedStruct,
     },
     win32call,
 };
@@ -121,18 +122,25 @@ pub unsafe fn mkdir(pathname: *const c_char, mode: mode_t) -> int {
 pub unsafe fn opendir(dirname: *const c_char) -> *mut DIR {
     static COUNT: IoxAtomicU64 = IoxAtomicU64::new(1);
     let id = COUNT.fetch_add(1, Ordering::Relaxed);
+    let mut path: [c_char; 255] = [0; 255];
+    core::ptr::copy_nonoverlapping(dirname, path.as_mut_ptr(), strlen(dirname) as usize);
 
-    HandleTranslator::get_instance().add(FdHandleEntry::DirectoryStream(id));
+    HandleTranslator::get_instance()
+        .add(FdHandleEntry::DirectoryStream(DirectoryHandle { id, path }));
     id as *mut DIR
 }
 
 pub unsafe fn closedir(dirp: *mut DIR) -> int {
-    HandleTranslator::get_instance().remove_entry(FdHandleEntry::DirectoryStream(dirp as u64));
+    HandleTranslator::get_instance().remove_entry(FdHandleEntry::DirectoryStream(
+        DirectoryHandle::from_id(dirp as u64),
+    ));
     0
 }
 
 pub unsafe fn dirfd(dirp: *mut DIR) -> int {
-    HandleTranslator::get_instance().get_fd(FdHandleEntry::DirectoryStream(dirp as u64))
+    HandleTranslator::get_instance().get_fd(FdHandleEntry::DirectoryStream(
+        DirectoryHandle::from_id(dirp as u64),
+    ))
 }
 
 pub fn dirent_size() -> usize {

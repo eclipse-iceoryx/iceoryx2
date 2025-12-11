@@ -28,6 +28,7 @@ use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_fail;
 use iceoryx2_bb_testing::watchdog::Watchdog;
+use iceoryx2_log::set_log_level;
 use iceoryx2_pal_configuration::PATH_SEPARATOR;
 
 struct TestFixture {
@@ -144,6 +145,7 @@ fn directory_file_is_not_a_directory() {
 
 #[test]
 fn directory_create_from_path_works() {
+    set_log_level(iceoryx2_log::LogLevel::Trace);
     let mut test = TestFixture::new();
 
     create_test_directory();
