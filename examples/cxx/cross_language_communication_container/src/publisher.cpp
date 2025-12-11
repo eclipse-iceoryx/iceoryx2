@@ -42,7 +42,7 @@ auto main() -> int {
     while (node.wait(CYCLE_TIME).has_value()) {
         counter += 1;
 
-        auto sample = publisher.loan_uninit().expect("acquire sample");
+        auto sample = publisher.loan_uninit().value();
         sample.user_header_mut() =
             *container::StaticString<64>::from_utf8("Why are Kermit and Miss Piggy no longer together?"); // NOLINT
 

@@ -140,8 +140,8 @@ TYPED_TEST(UniquePortIdTest, unique_port_id_from_different_ports_is_not_equal) {
 }
 
 TYPED_TEST(UniquePortIdTest, unique_port_id_identifies_origin) {
-    auto sample_1 = this->publisher_1.loan().expect("");
-    auto sample_2 = this->publisher_2.loan().expect("");
+    auto sample_1 = this->publisher_1.loan().value();
+    auto sample_2 = this->publisher_2.loan().value();
 
     ASSERT_TRUE(this->publisher_1.id() == sample_1.header().publisher_id());
     ASSERT_TRUE(this->publisher_2.id() == sample_2.header().publisher_id());
