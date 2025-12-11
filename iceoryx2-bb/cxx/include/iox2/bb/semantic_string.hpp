@@ -226,6 +226,7 @@ SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvali
         return legacy::err(SemanticStringError::ExceedsMaximumLength);
     }
 
+    // TODO: error handling
     auto str = *container::StaticString<Capacity>::from_utf8_null_terminated_unchecked(value);
 
     if (DoesContainInvalidCharacterCall(str)) {

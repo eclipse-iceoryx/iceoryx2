@@ -56,8 +56,11 @@ auto AttributeSetView::key_value(const Attribute::Key& key, const uint64_t idx)
         return iox2::container::nullopt;
     }
 
-    // TODO: error handling
-    return *Attribute::Value::from_utf8_null_terminated_unchecked(&buffer[0]);
+    auto value = Attribute::Value::from_utf8_null_terminated_unchecked(&buffer[0]);
+    if (!value.has_value()) {
+        return iox2::legacy::nullopt;
+    }
+    return *value;
 }
 
 void AttributeSetView::iter_key_values(

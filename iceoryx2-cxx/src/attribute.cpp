@@ -18,14 +18,14 @@ auto AttributeView::key() const -> Attribute::Key {
     // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays, modernize-avoid-c-arrays) temporary storage, required by C API
     char buffer[IOX2_ATTRIBUTE_KEY_LENGTH];
     iox2_attribute_key(m_handle, &buffer[0], IOX2_ATTRIBUTE_KEY_LENGTH);
-    return *container::StaticString<IOX2_ATTRIBUTE_KEY_LENGTH>::from_utf8_null_terminated_unchecked(&buffer[0]);
+    return container::StaticString<IOX2_ATTRIBUTE_KEY_LENGTH>::from_utf8_unchecked(buffer);
 }
 
 auto AttributeView::value() const -> Attribute::Value {
     // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays, modernize-avoid-c-arrays) temporary storage, required by C API
     char buffer[IOX2_ATTRIBUTE_VALUE_LENGTH];
     iox2_attribute_value(m_handle, &buffer[0], IOX2_ATTRIBUTE_VALUE_LENGTH);
-    return *container::StaticString<IOX2_ATTRIBUTE_VALUE_LENGTH>::from_utf8_null_terminated_unchecked(&buffer[0]);
+    return container::StaticString<IOX2_ATTRIBUTE_VALUE_LENGTH>::from_utf8_unchecked(buffer);
 }
 
 AttributeView::AttributeView(iox2_attribute_h_ref handle)

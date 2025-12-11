@@ -74,8 +74,9 @@ inline auto file_name_does_contain_invalid_characters(
 
 inline auto file_name_does_contain_invalid_content(
     const container::StaticString<platform::IOX2_MAX_FILENAME_LENGTH>& value) noexcept -> bool {
-    return (value.empty() || value == *container::StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8(".")
-            || value == *container::StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8(".."));
+    return (value.empty()
+            || value == container::StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8_unchecked(".")
+            || value == container::StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8_unchecked(".."));
 }
 } // namespace detail
 } // namespace bb

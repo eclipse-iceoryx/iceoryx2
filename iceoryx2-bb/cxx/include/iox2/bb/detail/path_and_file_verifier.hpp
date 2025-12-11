@@ -101,8 +101,8 @@ auto does_end_with_path_separator(const container::StaticString<StringCapacity>&
 template <uint64_t StringCapacity>
 inline auto is_valid_path_entry(const container::StaticString<StringCapacity>& name,
                                 const RelativePathComponents relative_path_components) noexcept -> bool {
-    const auto current_directory = *container::StaticString<StringCapacity>::from_utf8(".");
-    const auto parent_directory = *container::StaticString<StringCapacity>::from_utf8("..");
+    const auto current_directory = container::StaticString<StringCapacity>::from_utf8_unchecked(".");
+    const auto parent_directory = container::StaticString<StringCapacity>::from_utf8_unchecked("..");
 
     if ((name == current_directory) || (name == parent_directory)) {
         return relative_path_components == RelativePathComponents::Accept;
@@ -187,8 +187,8 @@ inline auto is_valid_path_to_directory(const container::StaticString<StringCapac
         return false;
     }
 
-    auto const current_directory = *container::StaticString<StringCapacity>::from_utf8(".");
-    auto const parent_directory = *container::StaticString<StringCapacity>::from_utf8("..");
+    auto const current_directory = container::StaticString<StringCapacity>::from_utf8_unchecked(".");
+    auto const parent_directory = container::StaticString<StringCapacity>::from_utf8_unchecked("..");
 
     auto remaining = name;
     while (!remaining.empty()) {
