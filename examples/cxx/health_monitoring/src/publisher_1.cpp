@@ -33,7 +33,7 @@ auto main() -> int {
                         // so we can define it as default event id
                         .default_event_id(iox2::bb::into<EventId>(PubSubEvent::SentSample))
                         .create()
-                        .expect("");
+                        .value();
     uint64_t counter = 0;
 
     auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().value();

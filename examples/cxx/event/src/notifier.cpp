@@ -25,7 +25,7 @@ auto main() -> int {
     auto service = node.service_builder(ServiceName::create("MyEventName").value()).event().open_or_create().value();
     auto max_event_id = service.static_config().event_id_max_value();
 
-    auto notifier = service.notifier_builder().create().expect("successful notifier creation");
+    auto notifier = service.notifier_builder().create().value();
 
     uint64_t counter = 0;
     while (node.wait(CYCLE_TIME).has_value()) {

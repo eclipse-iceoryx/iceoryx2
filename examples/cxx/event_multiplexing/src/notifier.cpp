@@ -38,7 +38,7 @@ auto main(int argc, char** argv) -> int {
 
     auto service = node.service_builder(service_name).event().open_or_create().value();
 
-    auto notifier = service.notifier_builder().create().expect("successful notifier creation");
+    auto notifier = service.notifier_builder().create().value();
 
     while (node.wait(CYCLE_TIME).has_value()) {
         notifier.notify_with_custom_event_id(event_id).value();

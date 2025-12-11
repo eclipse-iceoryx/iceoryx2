@@ -44,11 +44,11 @@ struct WaitSetTest : public ::testing::Test {
     }
 
     auto create_listener() -> Listener<TYPE> {
-        return event.listener_builder().create().expect("");
+        return event.listener_builder().create().value();
     }
 
     auto create_notifier() -> Notifier<TYPE> {
-        return event.notifier_builder().create().expect("");
+        return event.notifier_builder().create().value();
     }
 
     // NOLINTBEGIN(misc-non-private-member-variables-in-classes), come on, its a test
