@@ -1292,4 +1292,32 @@ TEST(StaticString, insert_with_index_greater_size_fails) {
 
     ASSERT_FALSE(sut.insert(sut.size() + 1, str, 0));
 }
+
+TEST(StaticString, from_utf8_unchecked_construction_from_c_style_ascii_string) {
+    constexpr uint64_t const STRING_SIZE = 15;
+    auto const sut = iox2::container::StaticString<STRING_SIZE>::from_utf8_unchecked("hello world!");
+    ASSERT_EQ(sut.size(), 12);
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
+    EXPECT_STREQ(sut.unchecked_access().c_str(), "hello world!");
+}
+
+template <uint64_t, class = void>
+struct DetectInvalidFromUtf8UncheckedWithStringABC : std::false_type { };
+template <uint64_t M>
+struct DetectInvalidFromUtf8UncheckedWithStringABC<
+    M,
+    DetectT<decltype(iox2::container::StaticString<M>::from_utf8_unchecked("ABC"))>> : std::true_type { };
+
+TEST(StaticString, from_utf8_unchecked_works_up_to_capacity) {
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,hicpp-avoid-c-arrays,modernize-avoid-c-arrays) testing
+    char const test_string[] = { 'A', 'B', 'C', '\0' };
+    constexpr uint64_t const STRING_SIZE = 3;
+    auto const sut = iox2::container::StaticString<STRING_SIZE>::from_utf8_unchecked(test_string);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "ABC");
+    static_assert(DetectInvalidFromUtf8UncheckedWithStringABC<4>::value, "ABC fits into capacity 4");
+    static_assert(DetectInvalidFromUtf8UncheckedWithStringABC<3>::value, "ABC fits into capacity 3");
+    static_assert(!DetectInvalidFromUtf8UncheckedWithStringABC<2>::value, "ABC does not fit into capacity 2");
+    static_assert(!DetectInvalidFromUtf8UncheckedWithStringABC<1>::value, "ABC does not fit into capacity 1");
+    static_assert(!DetectInvalidFromUtf8UncheckedWithStringABC<0>::value, "ABC does not fit into capacity 0");
+}
 } // namespace

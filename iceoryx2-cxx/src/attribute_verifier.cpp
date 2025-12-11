@@ -76,8 +76,7 @@ auto AttributeVerifier::keys() const -> iox2::container::StaticVector<Attribute:
         // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays, modernize-avoid-c-arrays) used as an uninitialized buffer
         char buffer[Attribute::Key::capacity()];
         iox2_attribute_verifier_key(&m_handle, i, &buffer[0], Attribute::Key::capacity());
-        // TODO: error handling
-        attributes.try_push_back(*Attribute::Key::from_utf8_null_terminated_unchecked(&buffer[0]));
+        attributes.try_push_back(Attribute::Key::from_utf8_unchecked(buffer));
     }
 
     return attributes;
@@ -91,8 +90,7 @@ auto AttributeVerifier::verify_requirements(const AttributeSetView& rhs) const -
         return {};
     }
 
-    // TODO: error handling
-    return bb::err(*Attribute::Key::from_utf8_null_terminated_unchecked(&buffer[0]));
+    return bb::err(Attribute::Key::from_utf8_unchecked(buffer));
 }
 
 

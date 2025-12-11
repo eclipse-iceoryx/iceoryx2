@@ -20,7 +20,7 @@ namespace iox2 {
 auto NodeNameView::to_string() const -> iox2::container::StaticString<IOX2_NODE_NAME_LENGTH> {
     size_t len = 0;
     const auto* chars = iox2_node_name_as_chars(m_ptr, &len);
-    // TODO: error handling
+    // TODO: error handling + factory that takes size argument as chars is not null-terminated
     return *iox2::container::StaticString<IOX2_NODE_NAME_LENGTH>::from_utf8_null_terminated_unchecked(chars);
 }
 

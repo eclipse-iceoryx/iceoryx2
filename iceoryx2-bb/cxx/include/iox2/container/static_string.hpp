@@ -360,6 +360,22 @@ class StaticString {
         return ret;
     }
 
+    /// Constructs a StaticString from a C-string literal. Users must ensure that the input string represents a valid
+    /// UTF-8 encoding.
+    template <uint64_t M, std::enable_if_t<(N >= (M - 1)), bool> = true>
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,hicpp-avoid-c-arrays,modernize-avoid-c-arrays) statically bounds checked
+    static auto from_utf8_unchecked(char const (&utf8_str)[M]) noexcept -> StaticString {
+        StaticString ret;
+        for (uint64_t i = 0; i < M - 1; ++i) {
+            char const character = utf8_str[i];
+            if (character == '\0') {
+                break;
+            }
+            ret.push_back(character);
+        }
+        return ret;
+    }
+
     /// Attempt to append a single code unit to the back of the string.
     /// @return true on success.
     ///         false if the action would exceed the string's capacity or put the string content into a state that is
@@ -628,6 +644,12 @@ class StaticString {
             return ((m_size > other_size) ? 1 : 0);
         }
         return res;
+    }
+
+    constexpr void push_back(CodeUnitValueType character) noexcept {
+        m_string[m_size] = character;
+        ++m_size;
+        m_string[m_size] = '\0';
     }
 };
 
