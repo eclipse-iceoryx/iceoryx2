@@ -30,7 +30,7 @@ auto main() -> int {
                        .open_with_attributes(attribute_verifier)
                        .value();
 
-    auto subscriber = service.subscriber_builder().create().expect("successful subscriber creation");
+    auto subscriber = service.subscriber_builder().create().value();
 
     std::cout << "defined service attributes: " << service.attributes() << std::endl;
 

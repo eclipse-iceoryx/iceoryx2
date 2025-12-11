@@ -43,7 +43,7 @@ auto main() -> int {
                          // memory than available.
                          .allocation_strategy(AllocationStrategy::PowerOfTwo)
                          .create()
-                         .expect("successful publisher creation");
+                         .value();
 
     uint64_t counter = 0;
 

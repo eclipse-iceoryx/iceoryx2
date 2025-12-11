@@ -57,7 +57,7 @@ auto main(int argc, char** argv) -> int {
                        .open_or_create()
                        .value();
 
-    auto subscriber = service.subscriber_builder().create().expect("successful subscriber creation");
+    auto subscriber = service.subscriber_builder().create().value();
 
     std::cout << "subscribed to: [domain: \"" << args.domain() << "\", service: \"" << args.service() << "\"]"
               << std::endl;

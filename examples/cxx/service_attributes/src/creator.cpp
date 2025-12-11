@@ -35,7 +35,7 @@ auto main() -> int {
                        .create_with_attributes(attribute_specifier)
                        .value();
 
-    auto publisher = service.publisher_builder().create().expect("successful publisher creation");
+    auto publisher = service.publisher_builder().create().value();
 
     std::cout << "defined service attributes: " << service.attributes() << std::endl;
 

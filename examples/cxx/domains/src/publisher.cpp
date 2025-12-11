@@ -58,7 +58,7 @@ auto main(int argc, char** argv) -> int {
                        .open_or_create()
                        .value();
 
-    auto publisher = service.publisher_builder().create().expect("successful publisher creation");
+    auto publisher = service.publisher_builder().create().value();
 
     auto counter = 0;
     while (node.wait(CYCLE_TIME).has_value()) {

@@ -25,7 +25,7 @@ auto main() -> int {
 
     auto service = open_service(node, service_name);
 
-    auto publisher = service.pubsub.publisher_builder().create().expect("");
+    auto publisher = service.pubsub.publisher_builder().create().value();
     auto notifier = service.event
                         .notifier_builder()
                         // we only want to notify the other side explicitly when we have sent a sample

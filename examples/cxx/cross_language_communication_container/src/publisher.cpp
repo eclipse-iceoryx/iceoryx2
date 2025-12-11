@@ -36,7 +36,7 @@ auto main() -> int {
                        .open_or_create()
                        .value();
 
-    auto publisher = service.publisher_builder().create().expect("successful publisher creation");
+    auto publisher = service.publisher_builder().create().value();
 
     uint64_t counter = 0;
     while (node.wait(CYCLE_TIME).has_value()) {
