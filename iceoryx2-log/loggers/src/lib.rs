@@ -126,7 +126,13 @@ pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
     }
 }
 
-#[cfg(not(any(feature = "logger_console", feature = "logger_buffer")))]
+#[cfg(not(any(
+    feature = "logger_console",
+    feature = "logger_buffer",
+    feature = "logger_file",
+    feature = "logger_log",
+    feature = "logger_tracing"
+)))]
 #[no_mangle]
 pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
     {
