@@ -45,7 +45,7 @@ auto main() -> int {
 
     while (node.wait(CYCLE_TIME).has_value()) {
         while (true) {
-            auto active_request = server.receive().expect("receive successful");
+            auto active_request = server.receive().value();
             if (active_request.has_value()) {
                 std::cout << "received request with " << active_request->payload().number_of_bytes() << " bytes ..."
                           << std::endl;
