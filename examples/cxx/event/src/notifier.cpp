@@ -31,7 +31,7 @@ auto main() -> int {
     while (node.wait(CYCLE_TIME).has_value()) {
         counter += 1;
         const auto event_id = EventId(counter % max_event_id);
-        notifier.notify_with_custom_event_id(event_id).expect("notification");
+        notifier.notify_with_custom_event_id(event_id).value();
 
         std::cout << "Trigger event with id " << event_id << "..." << std::endl;
     }

@@ -31,7 +31,7 @@ class CustomPublisher : public iox2::FileDescriptorBased {
     ~CustomPublisher() override {
         m_notifier
             .notify_with_custom_event_id(iox2::EventId(iox2::bb::into<size_t>(PubSubEvent::PublisherDisconnected)))
-            .expect("");
+            .value();
     }
 
     static auto create(iox2::Node<iox2::ServiceType::Ipc>& node, const iox2::ServiceName& service_name)
@@ -49,7 +49,7 @@ class CustomPublisher : public iox2::FileDescriptorBased {
         auto publisher = pubsub_service.publisher_builder().create().expect("");
 
         notifier.notify_with_custom_event_id(iox2::EventId(iox2::bb::into<size_t>(PubSubEvent::PublisherConnected)))
-            .expect("");
+            .value();
 
         return CustomPublisher { std::move(publisher), std::move(listener), std::move(notifier) };
     }
@@ -66,7 +66,7 @@ class CustomPublisher : public iox2::FileDescriptorBased {
                 std::cout << "new subscriber connected - delivering history" << std::endl;
                 m_publisher.update_connections().value();
                 m_notifier.notify_with_custom_event_id(iox2::EventId(iox2::bb::into<size_t>(PubSubEvent::SentHistory)))
-                    .expect("");
+                    .value();
                 break;
             }
             case PubSubEvent::SubscriberDisconnected: {
@@ -91,8 +91,7 @@ class CustomPublisher : public iox2::FileDescriptorBased {
             static_cast<int32_t>(counter), static_cast<int32_t>(counter), static_cast<double>(counter) * SOME_NUMBER });
         ::iox2::send(std::move(initialized_sample)).value();
 
-        m_notifier.notify_with_custom_event_id(iox2::EventId(iox2::bb::into<size_t>(PubSubEvent::SentSample)))
-            .expect("");
+        m_notifier.notify_with_custom_event_id(iox2::EventId(iox2::bb::into<size_t>(PubSubEvent::SentSample))).value();
     }
 
     auto operator=(const CustomPublisher&) -> CustomPublisher& = delete;
