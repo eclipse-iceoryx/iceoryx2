@@ -16,6 +16,7 @@
 
 #include "test.hpp"
 #include <array>
+#include <gtest/gtest.h>
 
 namespace {
 using namespace iox2;
@@ -134,7 +135,7 @@ TYPED_TEST(ServiceRequestResponseTest, creating_existing_service_fails) {
     auto sut = node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().value();
     auto sut_2 = node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create();
 
-    ASSERT_TRUE(sut_2.has_error());
+    ASSERT_FALSE(sut_2.has_value());
     ASSERT_THAT(sut_2.error(), Eq(RequestResponseCreateError::AlreadyExists));
 }
 
@@ -191,7 +192,7 @@ TYPED_TEST(ServiceRequestResponseTest, opening_non_existing_service_fails) {
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = node.service_builder(service_name).template request_response<uint64_t, uint64_t>().open();
-    ASSERT_TRUE(sut.has_error());
+    ASSERT_FALSE(sut.has_value());
     ASSERT_THAT(sut.error(), Eq(RequestResponseOpenError::DoesNotExist));
 }
 
@@ -217,11 +218,11 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_wrong_paylo
         node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().value();
 
     auto sut1 = node.service_builder(service_name).template request_response<double, uint64_t>().open();
-    ASSERT_TRUE(sut1.has_error());
+    ASSERT_FALSE(sut1.has_value());
     ASSERT_THAT(sut1.error(), Eq(RequestResponseOpenError::IncompatibleRequestType));
 
     auto sut2 = node.service_builder(service_name).template request_response<uint64_t, double>().open();
-    ASSERT_TRUE(sut2.has_error());
+    ASSERT_FALSE(sut2.has_value());
     ASSERT_THAT(sut2.error(), Eq(RequestResponseOpenError::IncompatibleResponseType));
 }
 
@@ -243,7 +244,7 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_wrong_user_
                     .template request_user_header<double>()
                     .template response_user_header<uint64_t>()
                     .open();
-    ASSERT_TRUE(sut1.has_error());
+    ASSERT_FALSE(sut1.has_value());
     ASSERT_THAT(sut1.error(), Eq(RequestResponseOpenError::IncompatibleRequestType));
 
     auto sut2 = node.service_builder(service_name)
@@ -251,7 +252,7 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_wrong_user_
                     .template request_user_header<uint64_t>()
                     .template response_user_header<double>()
                     .open();
-    ASSERT_TRUE(sut2.has_error());
+    ASSERT_FALSE(sut2.has_value());
     ASSERT_THAT(sut2.error(), Eq(RequestResponseOpenError::IncompatibleResponseType));
 }
 
@@ -265,11 +266,11 @@ TYPED_TEST(ServiceRequestResponseTest, open_or_create_existing_service_with_wron
         node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().value();
 
     auto sut1 = node.service_builder(service_name).template request_response<double, uint64_t>().open_or_create();
-    ASSERT_TRUE(sut1.has_error());
+    ASSERT_FALSE(sut1.has_value());
     ASSERT_THAT(sut1.error(), Eq(RequestResponseOpenOrCreateError::OpenIncompatibleRequestType));
 
     auto sut2 = node.service_builder(service_name).template request_response<uint64_t, double>().open_or_create();
-    ASSERT_TRUE(sut2.has_error());
+    ASSERT_FALSE(sut2.has_value());
     ASSERT_THAT(sut2.error(), Eq(RequestResponseOpenOrCreateError::OpenIncompatibleResponseType));
 }
 
@@ -286,10 +287,10 @@ TYPED_TEST(ServiceRequestResponseTest, send_copy_and_receive_works) {
 
     const uint64_t request_payload = 123;
     auto pending_response = sut_client.send_copy(request_payload);
-    ASSERT_FALSE(pending_response.has_error());
+    ASSERT_TRUE(pending_response.has_value());
 
     auto has_requests = sut_server.has_requests();
-    ASSERT_FALSE(has_requests.has_error());
+    ASSERT_TRUE(has_requests.has_value());
     EXPECT_TRUE(has_requests.value());
     auto active_request = sut_server.receive().value();
     ASSERT_TRUE(active_request.has_value());
@@ -297,7 +298,7 @@ TYPED_TEST(ServiceRequestResponseTest, send_copy_and_receive_works) {
 
     const uint64_t response_payload = 234;
     auto sent_response = active_request->send_copy(response_payload);
-    ASSERT_FALSE(sent_response.has_error());
+    ASSERT_TRUE(sent_response.has_value());
     ASSERT_TRUE(pending_response->has_response());
 
     auto received_response = pending_response->receive().value();
@@ -584,7 +585,7 @@ TYPED_TEST(ServiceRequestResponseTest, send_slice_copy_and_receive_works) {
     }
     auto payload = iox::ImmutableSlice<DummyData>(elements.begin(), SLICE_MAX_LENGTH);
     auto pending_response = sut_client.send_slice_copy(payload);
-    ASSERT_FALSE(pending_response.has_error());
+    ASSERT_TRUE(pending_response.has_value());
     EXPECT_THAT(pending_response->payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
 
     auto active_request = sut_server.receive().value();
@@ -632,7 +633,7 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_uninit_write_payload_send_rece
     auto sut_server = service.server_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().value();
 
     auto request_uninit = sut_client.loan_slice_uninit(SLICE_MAX_LENGTH);
-    ASSERT_FALSE(request_uninit.has_error());
+    ASSERT_TRUE(request_uninit.has_value());
     EXPECT_THAT(request_uninit.value().payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
 
     iox2::legacy::UninitializedArray<DummyData, SLICE_MAX_LENGTH, iox2::legacy::ZeroedBuffer> elements;
@@ -698,7 +699,7 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_write_payload_send_receive_wor
     auto sut_server = service.server_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().value();
 
     auto request = sut_client.loan_slice(SLICE_MAX_LENGTH);
-    ASSERT_FALSE(request.has_error());
+    ASSERT_TRUE(request.has_value());
     EXPECT_THAT(request->payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
 
     auto pending_response = send(std::move(*request)).expect("");
@@ -886,7 +887,7 @@ TYPED_TEST(ServiceRequestResponseTest, open_fails_with_incompatible_client_requi
                             .max_clients(NUMBER_OF_CLIENTS + 1)
                             .open();
 
-    ASSERT_TRUE(service_fail.has_error());
+    ASSERT_FALSE(service_fail.has_value());
     ASSERT_THAT(service_fail.error(), Eq(RequestResponseOpenError::DoesNotSupportRequestedAmountOfClients));
 }
 
@@ -908,7 +909,7 @@ TYPED_TEST(ServiceRequestResponseTest, open_fails_with_incompatible_server_requi
                             .max_servers(NUMBER_OF_SERVERS + 1)
                             .open();
 
-    ASSERT_TRUE(service_fail.has_error());
+    ASSERT_FALSE(service_fail.has_value());
     ASSERT_THAT(service_fail.error(), Eq(RequestResponseOpenError::DoesNotSupportRequestedAmountOfServers));
 }
 
@@ -1096,14 +1097,14 @@ TYPED_TEST(ServiceRequestResponseTest, open_fails_when_attributes_are_incompatib
                                       .template request_response<uint64_t, uint64_t>()
                                       .open_or_create_with_attributes(attribute_verifier);
 
-    ASSERT_THAT(service_open_or_create.has_error(), Eq(true));
+    ASSERT_THAT(service_open_or_create.has_value(), Eq(false));
     ASSERT_THAT(service_open_or_create.error(), Eq(RequestResponseOpenOrCreateError::OpenIncompatibleAttributes));
 
     auto service_open = node.service_builder(service_name)
                             .template request_response<uint64_t, uint64_t>()
                             .open_with_attributes(attribute_verifier);
 
-    ASSERT_THAT(service_open.has_error(), Eq(true));
+    ASSERT_THAT(service_open.has_value(), Eq(false));
     ASSERT_THAT(service_open.error(), Eq(RequestResponseOpenError::IncompatibleAttributes));
 }
 
@@ -1208,17 +1209,17 @@ TYPED_TEST(ServiceRequestResponseTest, client_reallocates_memory_when_allocation
 
     {
         auto request = client.loan_slice(INITIAL_SIZE);
-        ASSERT_FALSE(request.has_error());
+        ASSERT_TRUE(request.has_value());
     }
 
     {
         auto request = client.loan_slice(INITIAL_SIZE * INITIAL_SIZE);
-        ASSERT_FALSE(request.has_error());
+        ASSERT_TRUE(request.has_value());
     }
 
     {
         auto request = client.loan_slice(INITIAL_SIZE * INITIAL_SIZE * INITIAL_SIZE);
-        ASSERT_FALSE(request.has_error());
+        ASSERT_TRUE(request.has_value());
     }
 }
 
@@ -1238,14 +1239,14 @@ TYPED_TEST(ServiceRequestResponseTest, client_does_not_reallocate_when_allocatio
                       .value();
 
     auto request_1 = client.loan_slice(INITIAL_SIZE);
-    ASSERT_FALSE(request_1.has_error());
+    ASSERT_TRUE(request_1.has_value());
 
     auto request_2 = client.loan_slice(INITIAL_SIZE * INITIAL_SIZE);
-    ASSERT_TRUE(request_2.has_error());
+    ASSERT_FALSE(request_2.has_value());
     ASSERT_THAT(request_2.error(), Eq(LoanError::ExceedsMaxLoanSize));
 
     auto request_3 = client.loan_slice(INITIAL_SIZE * INITIAL_SIZE * INITIAL_SIZE);
-    ASSERT_TRUE(request_3.has_error());
+    ASSERT_FALSE(request_3.has_value());
     ASSERT_THAT(request_3.error(), Eq(LoanError::ExceedsMaxLoanSize));
 }
 
@@ -1275,17 +1276,17 @@ TYPED_TEST(ServiceRequestResponseTest, server_reallocates_memory_when_allocation
 
     {
         auto response = active_request->loan_slice(INITIAL_SIZE);
-        ASSERT_FALSE(response.has_error());
+        ASSERT_TRUE(response.has_value());
     }
 
     {
         auto response = active_request->loan_slice(INITIAL_SIZE * INITIAL_SIZE);
-        ASSERT_FALSE(response.has_error());
+        ASSERT_TRUE(response.has_value());
     }
 
     {
         auto response = active_request->loan_slice(INITIAL_SIZE * INITIAL_SIZE * INITIAL_SIZE);
-        ASSERT_FALSE(response.has_error());
+        ASSERT_TRUE(response.has_value());
     }
 }
 
@@ -1310,14 +1311,14 @@ TYPED_TEST(ServiceRequestResponseTest, server_does_not_reallocate_when_allocatio
     ASSERT_TRUE(active_request.has_value());
 
     auto response_1 = active_request->loan_slice(INITIAL_SIZE);
-    ASSERT_FALSE(response_1.has_error());
+    ASSERT_TRUE(response_1.has_value());
 
     auto response_2 = active_request->loan_slice(INITIAL_SIZE * INITIAL_SIZE);
-    ASSERT_TRUE(response_2.has_error());
+    ASSERT_FALSE(response_2.has_value());
     ASSERT_THAT(response_2.error(), Eq(LoanError::ExceedsMaxLoanSize));
 
     auto response_3 = active_request->loan_slice(INITIAL_SIZE * INITIAL_SIZE * INITIAL_SIZE);
-    ASSERT_TRUE(response_3.has_error());
+    ASSERT_FALSE(response_3.has_value());
     ASSERT_THAT(response_3.error(), Eq(LoanError::ExceedsMaxLoanSize));
 }
 
@@ -1395,7 +1396,7 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_set_payload
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create = node.service_builder(service_name).template request_response<Payload, Payload>().create().value();
     auto sut_open = node.service_builder(service_name).template request_response<Payload, Payload>().open();
-    ASSERT_FALSE(sut_open.has_error());
+    ASSERT_TRUE(sut_open.has_value());
 }
 
 TYPED_TEST(ServiceRequestResponseTest,
@@ -1408,7 +1409,7 @@ TYPED_TEST(ServiceRequestResponseTest,
     auto sut_open = node.service_builder(service_name)
                         .template request_response<DifferentPayloadWithSameTypeName, DifferentPayloadWithSameTypeName>()
                         .open();
-    ASSERT_FALSE(sut_open.has_error());
+    ASSERT_TRUE(sut_open.has_value());
 }
 
 TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_without_payload_type_name_fails) {
@@ -1428,10 +1429,10 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_without_payload_
     };
 
     auto sut_open_req = node.service_builder(service_name_req).template request_response<Payload, uint64_t>().open();
-    ASSERT_TRUE(sut_open_req.has_error());
+    ASSERT_FALSE(sut_open_req.has_value());
     EXPECT_EQ(sut_open_req.error(), RequestResponseOpenError::IncompatibleRequestType);
     auto sut_open_res = node.service_builder(service_name_res).template request_response<uint64_t, Payload>().open();
-    ASSERT_TRUE(sut_open_res.has_error());
+    ASSERT_FALSE(sut_open_res.has_value());
     EXPECT_EQ(sut_open_res.error(), RequestResponseOpenError::IncompatibleResponseType);
 }
 
@@ -1444,10 +1445,10 @@ TYPED_TEST(ServiceRequestResponseTest,
     auto sut_create = node.service_builder(service_name).template request_response<Payload, Payload>().create().value();
 
     auto sut_open_req = node.service_builder(service_name).template request_response<other::Payload, Payload>().open();
-    ASSERT_TRUE(sut_open_req.has_error());
+    ASSERT_FALSE(sut_open_req.has_value());
     EXPECT_EQ(sut_open_req.error(), RequestResponseOpenError::IncompatibleRequestType);
     auto sut_open_res = node.service_builder(service_name).template request_response<Payload, other::Payload>().open();
-    ASSERT_TRUE(sut_open_res.has_error());
+    ASSERT_FALSE(sut_open_res.has_value());
     EXPECT_EQ(sut_open_res.error(), RequestResponseOpenError::IncompatibleResponseType);
 }
 
@@ -1461,12 +1462,12 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_same_payloa
     auto sut_open_req = node.service_builder(service_name)
                             .template request_response<PayloadWithSameTypeNameButDifferentSize, Payload>()
                             .open();
-    ASSERT_TRUE(sut_open_req.has_error());
+    ASSERT_FALSE(sut_open_req.has_value());
     EXPECT_EQ(sut_open_req.error(), RequestResponseOpenError::IncompatibleRequestType);
     auto sut_open_res = node.service_builder(service_name)
                             .template request_response<Payload, PayloadWithSameTypeNameButDifferentSize>()
                             .open();
-    ASSERT_TRUE(sut_open_res.has_error());
+    ASSERT_FALSE(sut_open_res.has_value());
     EXPECT_EQ(sut_open_res.error(), RequestResponseOpenError::IncompatibleResponseType);
 }
 
@@ -1481,12 +1482,12 @@ TYPED_TEST(ServiceRequestResponseTest,
     auto sut_open_req = node.service_builder(service_name)
                             .template request_response<PayloadWithSameTypeNameButDifferentAlignment, Payload>()
                             .open();
-    ASSERT_TRUE(sut_open_req.has_error());
+    ASSERT_FALSE(sut_open_req.has_value());
     EXPECT_EQ(sut_open_req.error(), RequestResponseOpenError::IncompatibleRequestType);
     auto sut_open_res = node.service_builder(service_name)
                             .template request_response<Payload, PayloadWithSameTypeNameButDifferentAlignment>()
                             .open();
-    ASSERT_TRUE(sut_open_res.has_error());
+    ASSERT_FALSE(sut_open_res.has_value());
     EXPECT_EQ(sut_open_res.error(), RequestResponseOpenError::IncompatibleResponseType);
 }
 
@@ -1506,7 +1507,7 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_set_user_he
                         .template request_user_header<CustomHeader>()
                         .template response_user_header<CustomHeader>()
                         .open();
-    ASSERT_FALSE(sut_open.has_error());
+    ASSERT_TRUE(sut_open.has_value());
 }
 
 TYPED_TEST(ServiceRequestResponseTest,
@@ -1526,7 +1527,7 @@ TYPED_TEST(ServiceRequestResponseTest,
                         .template request_user_header<DifferentCustomHeaderWithSameTypeName>()
                         .template response_user_header<DifferentCustomHeaderWithSameTypeName>()
                         .open();
-    ASSERT_FALSE(sut_open.has_error());
+    ASSERT_TRUE(sut_open.has_value());
 }
 
 TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_without_user_header_type_name_fails) {
@@ -1554,13 +1555,13 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_without_user_hea
                             .template request_response<uint8_t, uint8_t>()
                             .template request_user_header<CustomHeader>()
                             .open();
-    ASSERT_TRUE(sut_open_req.has_error());
+    ASSERT_FALSE(sut_open_req.has_value());
     EXPECT_EQ(sut_open_req.error(), RequestResponseOpenError::IncompatibleRequestType);
     auto sut_open_res = node.service_builder(service_name_res)
                             .template request_response<uint8_t, uint8_t>()
                             .template response_user_header<CustomHeader>()
                             .open();
-    ASSERT_TRUE(sut_open_res.has_error());
+    ASSERT_FALSE(sut_open_res.has_value());
     EXPECT_EQ(sut_open_res.error(), RequestResponseOpenError::IncompatibleResponseType);
 }
 
@@ -1582,7 +1583,7 @@ TYPED_TEST(ServiceRequestResponseTest,
                             .template request_user_header<other::CustomHeader>()
                             .template response_user_header<CustomHeader>()
                             .open();
-    ASSERT_TRUE(sut_open_req.has_error());
+    ASSERT_FALSE(sut_open_req.has_value());
     EXPECT_EQ(sut_open_req.error(), RequestResponseOpenError::IncompatibleRequestType);
 
     auto sut_open_res = node.service_builder(service_name)
@@ -1590,7 +1591,7 @@ TYPED_TEST(ServiceRequestResponseTest,
                             .template request_user_header<CustomHeader>()
                             .template response_user_header<other::CustomHeader>()
                             .open();
-    ASSERT_TRUE(sut_open_res.has_error());
+    ASSERT_FALSE(sut_open_res.has_value());
     EXPECT_EQ(sut_open_res.error(), RequestResponseOpenError::IncompatibleResponseType);
 }
 
@@ -1611,7 +1612,7 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_same_header
                             .template request_user_header<CustomHeaderWithSameTypeNameButDifferentSize>()
                             .template response_user_header<CustomHeader>()
                             .open();
-    ASSERT_TRUE(sut_open_req.has_error());
+    ASSERT_FALSE(sut_open_req.has_value());
     EXPECT_EQ(sut_open_req.error(), RequestResponseOpenError::IncompatibleRequestType);
 
     auto sut_open_res = node.service_builder(service_name)
@@ -1619,7 +1620,7 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_same_header
                             .template request_user_header<CustomHeader>()
                             .template response_user_header<CustomHeaderWithSameTypeNameButDifferentSize>()
                             .open();
-    ASSERT_TRUE(sut_open_res.has_error());
+    ASSERT_FALSE(sut_open_res.has_value());
     EXPECT_EQ(sut_open_res.error(), RequestResponseOpenError::IncompatibleResponseType);
 }
 
@@ -1640,7 +1641,7 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_same_header
                             .template request_user_header<CustomHeaderWithSameTypeNameButDifferentAlignment>()
                             .template response_user_header<CustomHeader>()
                             .open();
-    ASSERT_TRUE(sut_open_req.has_error());
+    ASSERT_FALSE(sut_open_req.has_value());
     EXPECT_EQ(sut_open_req.error(), RequestResponseOpenError::IncompatibleRequestType);
 
     auto sut_open_res = node.service_builder(service_name)
@@ -1648,7 +1649,7 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_same_header
                             .template request_user_header<CustomHeader>()
                             .template response_user_header<CustomHeaderWithSameTypeNameButDifferentAlignment>()
                             .open();
-    ASSERT_TRUE(sut_open_res.has_error());
+    ASSERT_FALSE(sut_open_res.has_value());
     EXPECT_EQ(sut_open_res.error(), RequestResponseOpenError::IncompatibleResponseType);
 }
 
@@ -2029,12 +2030,12 @@ TYPED_TEST(ServiceRequestResponseTest, only_max_clients_can_be_created) {
         service.client_builder().create().value());
 
     auto failing_sut = service.client_builder().create();
-    ASSERT_TRUE(failing_sut.has_error());
+    ASSERT_FALSE(failing_sut.has_value());
 
     client.reset();
 
     auto sut = service.client_builder().create();
-    ASSERT_FALSE(sut.has_error());
+    ASSERT_TRUE(sut.has_value());
 }
 
 TYPED_TEST(ServiceRequestResponseTest, only_max_servers_can_be_created) {
@@ -2052,12 +2053,12 @@ TYPED_TEST(ServiceRequestResponseTest, only_max_servers_can_be_created) {
         service.server_builder().create().value());
 
     auto failing_sut = service.server_builder().create();
-    ASSERT_TRUE(failing_sut.has_error());
+    ASSERT_FALSE(failing_sut.has_value());
 
     server.reset();
 
     auto sut = service.server_builder().create();
-    ASSERT_FALSE(sut.has_error());
+    ASSERT_TRUE(sut.has_value());
 }
 
 TYPED_TEST(ServiceRequestResponseTest, client_can_request_graceful_disconnect) {
