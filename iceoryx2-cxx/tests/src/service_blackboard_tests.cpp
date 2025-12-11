@@ -140,7 +140,7 @@ TYPED_TEST(ServiceBlackboardTest, creating_existing_service_fails) {
                      .template add_with_default<uint64_t>(0)
                      .create();
 
-    ASSERT_TRUE(sut_2.has_error());
+    ASSERT_FALSE(sut_2.has_value());
     ASSERT_THAT(sut_2.error(), Eq(BlackboardCreateError::AlreadyExists));
 }
 
@@ -155,7 +155,7 @@ TYPED_TEST(ServiceBlackboardTest, creating_fails_when_no_key_value_pairs_are_pro
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = node.service_builder(service_name).template blackboard_creator<uint64_t>().create();
 
-    ASSERT_TRUE(sut.has_error());
+    ASSERT_FALSE(sut.has_value());
     ASSERT_THAT(sut.error(), Eq(BlackboardCreateError::NoEntriesProvided));
 }
 
@@ -174,7 +174,7 @@ TYPED_TEST(ServiceBlackboardTest, create_fails_when_same_key_is_provided_twice) 
                    .template add<uint8_t>(0, 0)
                    .create();
 
-    ASSERT_TRUE(sut.has_error());
+    ASSERT_FALSE(sut.has_value());
     ASSERT_THAT(sut.error(), Eq(BlackboardCreateError::ServiceInCorruptedState));
 }
 
@@ -193,7 +193,7 @@ TYPED_TEST(ServiceBlackboardTest, create_with_mixed_add_methods_works) {
                    .template add_with_default<uint8_t>(1)
                    .create();
 
-    ASSERT_FALSE(sut.has_error());
+    ASSERT_TRUE(sut.has_value());
 }
 
 TYPED_TEST(ServiceBlackboardTest, create_fails_when_same_key_is_provided_twice_with_mixed_add_methods) {
@@ -211,7 +211,7 @@ TYPED_TEST(ServiceBlackboardTest, create_fails_when_same_key_is_provided_twice_w
                    .template add_with_default<uint8_t>(0)
                    .create();
 
-    ASSERT_TRUE(sut.has_error());
+    ASSERT_FALSE(sut.has_value());
     ASSERT_THAT(sut.error(), Eq(BlackboardCreateError::ServiceInCorruptedState));
 }
 
@@ -230,14 +230,14 @@ TYPED_TEST(ServiceBlackboardTest, recreating_service_works) {
                        .template blackboard_creator<uint64_t>()
                        .template add_with_default<uint64_t>(0)
                        .create();
-        ASSERT_FALSE(sut.has_error());
+        ASSERT_TRUE(sut.has_value());
     }
 
     auto sut = node.service_builder(service_name)
                    .template blackboard_creator<uint64_t>()
                    .template add_with_default<uint64_t>(0)
                    .create();
-    ASSERT_FALSE(sut.has_error());
+    ASSERT_TRUE(sut.has_value());
 }
 
 TYPED_TEST(ServiceBlackboardTest, opening_non_existing_service_fails) {
@@ -247,7 +247,7 @@ TYPED_TEST(ServiceBlackboardTest, opening_non_existing_service_fails) {
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = node.service_builder(service_name).template blackboard_opener<uint64_t>().open();
-    ASSERT_TRUE(sut.has_error());
+    ASSERT_FALSE(sut.has_value());
     ASSERT_THAT(sut.error(), Eq(BlackboardOpenError::DoesNotExist));
 }
 
@@ -278,7 +278,7 @@ TYPED_TEST(ServiceBlackboardTest, opening_existing_service_with_wrong_key_type_f
                           .create()
                           .value();
     auto sut = node.service_builder(service_name).template blackboard_opener<double>().open();
-    ASSERT_TRUE(sut.has_error());
+    ASSERT_FALSE(sut.has_value());
     ASSERT_THAT(sut.error(), Eq(BlackboardOpenError::IncompatibleKeys));
 }
 
@@ -299,13 +299,13 @@ TYPED_TEST(ServiceBlackboardTest, open_fails_when_service_does_not_satisfy_max_n
     auto service_fail =
         node.service_builder(service_name).template blackboard_opener<uint64_t>().max_nodes(NUMBER_OF_NODES + 1).open();
 
-    ASSERT_TRUE(service_fail.has_error());
+    ASSERT_FALSE(service_fail.has_value());
     ASSERT_THAT(service_fail.error(), Eq(BlackboardOpenError::DoesNotSupportRequestedAmountOfNodes));
 
     auto service_success =
         node.service_builder(service_name).template blackboard_opener<uint64_t>().max_nodes(NUMBER_OF_NODES - 1).open();
 
-    ASSERT_FALSE(service_success.has_error());
+    ASSERT_TRUE(service_success.has_value());
 }
 
 TYPED_TEST(ServiceBlackboardTest, open_fails_when_service_does_not_satisfy_max_readers_requirement) {
@@ -327,7 +327,7 @@ TYPED_TEST(ServiceBlackboardTest, open_fails_when_service_does_not_satisfy_max_r
                             .max_readers(NUMBER_OF_READERS + 1)
                             .open();
 
-    ASSERT_TRUE(service_fail.has_error());
+    ASSERT_FALSE(service_fail.has_value());
     ASSERT_THAT(service_fail.error(), Eq(BlackboardOpenError::DoesNotSupportRequestedAmountOfReaders));
 
     auto service_success = node.service_builder(service_name)
@@ -335,7 +335,7 @@ TYPED_TEST(ServiceBlackboardTest, open_fails_when_service_does_not_satisfy_max_r
                                .max_readers(NUMBER_OF_READERS - 1)
                                .open();
 
-    ASSERT_FALSE(service_success.has_error());
+    ASSERT_TRUE(service_success.has_value());
 }
 
 TYPED_TEST(ServiceBlackboardTest, open_works_when_service_owner_goes_out_of_scope) {
@@ -380,7 +380,7 @@ TYPED_TEST(ServiceBlackboardTest, open_fails_when_all_previous_owners_are_gone) 
     sut_opener_1.reset();
 
     auto sut_opener_2 = node.service_builder(service_name).template blackboard_opener<uint64_t>().open();
-    ASSERT_TRUE(sut_opener_2.has_error());
+    ASSERT_FALSE(sut_opener_2.has_value());
     ASSERT_THAT(sut_opener_2.error(), Eq(BlackboardOpenError::DoesNotExist));
 }
 
@@ -527,7 +527,7 @@ TYPED_TEST(ServiceBlackboardTest, entry_handle_can_be_acquired_for_existing_key_
                        .value();
     auto reader = service.reader_builder().create().value();
     auto entry_handle = reader.template entry<uint64_t>(0);
-    ASSERT_FALSE(entry_handle.has_error());
+    ASSERT_TRUE(entry_handle.has_value());
 }
 
 TYPED_TEST(ServiceBlackboardTest, entry_handle_cannot_be_acquired_for_non_existing_key) {
@@ -543,7 +543,7 @@ TYPED_TEST(ServiceBlackboardTest, entry_handle_cannot_be_acquired_for_non_existi
                        .value();
     auto reader = service.reader_builder().create().value();
     auto entry_handle = reader.template entry<uint64_t>(1);
-    ASSERT_TRUE(entry_handle.has_error());
+    ASSERT_FALSE(entry_handle.has_value());
     ASSERT_THAT(entry_handle.error(), Eq(EntryHandleError::EntryDoesNotExist));
 }
 
@@ -560,7 +560,7 @@ TYPED_TEST(ServiceBlackboardTest, entry_handle_cannot_be_acquired_for_wrong_valu
                        .value();
     auto reader = service.reader_builder().create().value();
     auto entry_handle = reader.template entry<uint16_t>(0);
-    ASSERT_TRUE(entry_handle.has_error());
+    ASSERT_FALSE(entry_handle.has_value());
     ASSERT_THAT(entry_handle.error(), Eq(EntryHandleError::EntryDoesNotExist));
 }
 
@@ -601,7 +601,7 @@ TYPED_TEST(ServiceBlackboardTest, entry_handle_mut_can_be_acquired_for_existing_
                        .value();
     auto writer = service.writer_builder().create().value();
     auto entry_handle = writer.template entry<uint64_t>(0);
-    ASSERT_FALSE(entry_handle.has_error());
+    ASSERT_TRUE(entry_handle.has_value());
 }
 
 TYPED_TEST(ServiceBlackboardTest, entry_handle_mut_cannot_be_acquired_for_non_existing_key) {
@@ -617,7 +617,7 @@ TYPED_TEST(ServiceBlackboardTest, entry_handle_mut_cannot_be_acquired_for_non_ex
                        .value();
     auto writer = service.writer_builder().create().value();
     auto entry_handle_mut = writer.template entry<uint64_t>(1);
-    ASSERT_TRUE(entry_handle_mut.has_error());
+    ASSERT_FALSE(entry_handle_mut.has_value());
     ASSERT_THAT(entry_handle_mut.error(), Eq(EntryHandleMutError::EntryDoesNotExist));
 }
 
@@ -634,7 +634,7 @@ TYPED_TEST(ServiceBlackboardTest, entry_handle_mut_cannot_be_acquired_for_wrong_
                        .value();
     auto writer = service.writer_builder().create().value();
     auto entry_handle_mut = writer.template entry<uint16_t>(0);
-    ASSERT_TRUE(entry_handle_mut.has_error());
+    ASSERT_FALSE(entry_handle_mut.has_value());
     ASSERT_THAT(entry_handle_mut.error(), Eq(EntryHandleMutError::EntryDoesNotExist));
 }
 
@@ -654,13 +654,13 @@ TYPED_TEST(ServiceBlackboardTest, entry_handle_mut_cannot_be_acquired_twice) {
         writer.template entry<uint64_t>(0).value());
 
     auto sut_1 = writer.template entry<uint64_t>(0);
-    ASSERT_TRUE(sut_1.has_error());
+    ASSERT_FALSE(sut_1.has_value());
     ASSERT_THAT(sut_1.error(), Eq(EntryHandleMutError::HandleAlreadyExists));
 
     entry_handle_mut.reset();
 
     auto sut_2 = writer.template entry<uint64_t>(0);
-    ASSERT_FALSE(sut_2.has_error());
+    ASSERT_TRUE(sut_2.has_value());
 }
 
 TYPED_TEST(ServiceBlackboardTest, entry_handle_mut_prevents_another_writer) {
@@ -680,7 +680,7 @@ TYPED_TEST(ServiceBlackboardTest, entry_handle_mut_prevents_another_writer) {
     writer.reset();
 
     auto sut = service.writer_builder().create();
-    ASSERT_TRUE(sut.has_error());
+    ASSERT_FALSE(sut.has_value());
     ASSERT_THAT(sut.error(), Eq(WriterCreateError::ExceedsMaxSupportedWriters));
 }
 
@@ -913,11 +913,11 @@ TYPED_TEST(ServiceBlackboardTest, creating_max_supported_amount_of_ports_work) {
 
     // create additional ports and fail
     auto failing_writer = service.writer_builder().create();
-    ASSERT_TRUE(failing_writer.has_error());
+    ASSERT_FALSE(failing_writer.has_value());
     ASSERT_THAT(failing_writer.error(), Eq(WriterCreateError::ExceedsMaxSupportedWriters));
 
     auto failing_reader = service.reader_builder().create();
-    ASSERT_TRUE(failing_reader.has_error());
+    ASSERT_FALSE(failing_reader.has_value());
     ASSERT_THAT(failing_reader.error(), Eq(ReaderCreateError::ExceedsMaxSupportedReaders));
 
     // remove one reader and the writer
@@ -926,10 +926,10 @@ TYPED_TEST(ServiceBlackboardTest, creating_max_supported_amount_of_ports_work) {
 
     // create additional ports shall work again
     auto new_writer = service.writer_builder().create();
-    ASSERT_FALSE(new_writer.has_error());
+    ASSERT_TRUE(new_writer.has_value());
 
     auto new_reader = service.reader_builder().create();
-    ASSERT_FALSE(new_reader.has_error());
+    ASSERT_TRUE(new_reader.has_value());
 }
 
 TYPED_TEST(ServiceBlackboardTest, set_max_nodes_to_zero_adjusts_it_to_one) {
@@ -1011,7 +1011,7 @@ TYPED_TEST(ServiceBlackboardTest, ports_of_dropped_service_block_new_service_cre
                     .template blackboard_creator<uint64_t>()
                     .template add_with_default<uint8_t>(0)
                     .create();
-    ASSERT_TRUE(sut1.has_error());
+    ASSERT_FALSE(sut1.has_value());
     ASSERT_THAT(sut1.error(), Eq(BlackboardCreateError::AlreadyExists));
 
     reader.reset();
@@ -1020,7 +1020,7 @@ TYPED_TEST(ServiceBlackboardTest, ports_of_dropped_service_block_new_service_cre
                     .template blackboard_creator<uint64_t>()
                     .template add_with_default<uint8_t>(0)
                     .create();
-    ASSERT_TRUE(sut2.has_error());
+    ASSERT_FALSE(sut2.has_value());
     ASSERT_THAT(sut2.error(), Eq(BlackboardCreateError::AlreadyExists));
 
     writer.reset();
@@ -1029,7 +1029,7 @@ TYPED_TEST(ServiceBlackboardTest, ports_of_dropped_service_block_new_service_cre
                     .template blackboard_creator<uint64_t>()
                     .template add_with_default<uint8_t>(0)
                     .create();
-    ASSERT_FALSE(sut3.has_error());
+    ASSERT_TRUE(sut3.has_value());
 }
 
 TYPED_TEST(ServiceBlackboardTest, service_can_be_opened_when_there_is_a_writer) {
@@ -1060,7 +1060,7 @@ TYPED_TEST(ServiceBlackboardTest, service_can_be_opened_when_there_is_a_writer) 
                                .template blackboard_creator<uint64_t>()
                                .template add_with_default<uint64_t>(0)
                                .create();
-    ASSERT_TRUE(failing_creator.has_error());
+    ASSERT_FALSE(failing_creator.has_value());
     ASSERT_THAT(failing_creator.error(), Eq(BlackboardCreateError::AlreadyExists));
     reader.reset();
 
@@ -1080,13 +1080,13 @@ TYPED_TEST(ServiceBlackboardTest, service_can_be_opened_when_there_is_a_writer) 
     writer.reset();
 
     auto failing_opener = node.service_builder(service_name).template blackboard_opener<uint64_t>().open();
-    ASSERT_TRUE(failing_opener.has_error());
+    ASSERT_FALSE(failing_opener.has_value());
     ASSERT_THAT(failing_opener.error(), Eq(BlackboardOpenError::DoesNotExist));
     auto new_creator = node.service_builder(service_name)
                            .template blackboard_creator<uint64_t>()
                            .template add_with_default<uint64_t>(0)
                            .create();
-    ASSERT_FALSE(new_creator.has_error());
+    ASSERT_TRUE(new_creator.has_value());
 }
 
 TYPED_TEST(ServiceBlackboardTest, service_can_be_opened_when_there_is_a_reader) {
@@ -1117,7 +1117,7 @@ TYPED_TEST(ServiceBlackboardTest, service_can_be_opened_when_there_is_a_reader) 
                                .template blackboard_creator<uint64_t>()
                                .template add_with_default<uint64_t>(0)
                                .create();
-    ASSERT_TRUE(failing_creator.has_error());
+    ASSERT_FALSE(failing_creator.has_value());
     ASSERT_THAT(failing_creator.error(), Eq(BlackboardCreateError::AlreadyExists));
     writer.reset();
 
@@ -1137,13 +1137,13 @@ TYPED_TEST(ServiceBlackboardTest, service_can_be_opened_when_there_is_a_reader) 
     reader.reset();
 
     auto failing_opener = node.service_builder(service_name).template blackboard_opener<uint64_t>().open();
-    ASSERT_TRUE(failing_opener.has_error());
+    ASSERT_FALSE(failing_opener.has_value());
     ASSERT_THAT(failing_opener.error(), Eq(BlackboardOpenError::DoesNotExist));
     auto new_creator = node.service_builder(service_name)
                            .template blackboard_creator<uint64_t>()
                            .template add_with_default<uint64_t>(0)
                            .create();
-    ASSERT_FALSE(new_creator.has_error());
+    ASSERT_TRUE(new_creator.has_value());
 }
 
 TYPED_TEST(ServiceBlackboardTest, reader_can_still_read_value_when_writer_was_disconnected) {
@@ -1506,7 +1506,7 @@ TYPED_TEST(ServiceBlackboardTest, open_fails_when_attributes_are_incompatible) {
                             .template blackboard_opener<uint64_t>()
                             .open_with_attributes(attribute_verifier);
 
-    ASSERT_THAT(service_open.has_error(), Eq(true));
+    ASSERT_THAT(service_open.has_value(), Eq(false));
     ASSERT_THAT(service_open.error(), Eq(BlackboardOpenError::IncompatibleAttributes));
 }
 
@@ -1718,7 +1718,7 @@ TYPED_TEST(ServiceBlackboardTest, adding_key_struct_twice_fails) {
                        .template add<int32_t>(key, -3)
                        .template add<uint32_t>(key, 3)
                        .create();
-    ASSERT_TRUE(service.has_error());
+    ASSERT_FALSE(service.has_value());
     ASSERT_THAT(service.error(), Eq(BlackboardCreateError::ServiceInCorruptedState));
 }
 
