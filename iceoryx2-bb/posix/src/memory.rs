@@ -64,7 +64,6 @@ pub enum MemoryError {
 
 /// Performs heap allocations. Basis for a heap allocator.
 pub mod heap {
-    use crate::handle_errno;
     use iceoryx2_log::fail;
 
     use super::*;

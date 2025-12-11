@@ -43,7 +43,6 @@
 //! ```
 use core::fmt::Display;
 
-use crate::handle_errno;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_system_types::file_path::*;
 use iceoryx2_log::fail;

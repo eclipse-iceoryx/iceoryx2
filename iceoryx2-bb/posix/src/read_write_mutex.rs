@@ -64,7 +64,6 @@ use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::posix::MemZeroedStruct;
 use iceoryx2_pal_posix::*;
 
-use crate::handle_errno;
 use crate::ipc_capable::internal::{Capability, HandleStorage, IpcConstructible};
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]

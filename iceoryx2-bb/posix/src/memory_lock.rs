@@ -14,7 +14,6 @@
 //! This may increase the runtime and reduce jitter in a realtime applications since the specific
 //! region inside the memory is not moved into the swap space.
 
-use crate::handle_errno;
 use crate::system_configuration::SystemInfo;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_log::fatal_panic;
