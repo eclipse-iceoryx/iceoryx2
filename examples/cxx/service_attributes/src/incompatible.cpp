@@ -28,7 +28,7 @@ auto main() -> int {
                                         // `camera_resolution` attribute is `1920x1080` and not
                                         // `3840x2160`
                                         attribute_verifier);
-    if (incompatible_service.has_error()) {
+    if (!incompatible_service.has_value()) {
         std::cout << "camera_resolution: 3840x2160 -> not available" << std::endl;
     }
 
@@ -40,7 +40,7 @@ auto main() -> int {
                                    // the opening of the service will fail since the key is not
                                    // defined.
                                    attribute_verifier);
-    if (incompatible_service.has_error()) {
+    if (!incompatible_service.has_value()) {
         std::cout << "camera_type -> not available" << std::endl;
     }
 

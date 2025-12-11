@@ -29,7 +29,7 @@ auto main() -> int {
     auto service = node.service_builder(ServiceName::create("Service-Variants-Example").value())
                        .publish_subscribe<uint64_t>()
                        .open_or_create()
-                       .expect("service created");
+                       .value();
 
     std::mutex cout_mtx;
     std::atomic<bool> keep_running { true };

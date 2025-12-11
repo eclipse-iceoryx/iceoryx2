@@ -56,7 +56,7 @@ auto main(int argc, char** argv) -> int {
     auto service = node.service_builder(ServiceName::create(args.service().c_str()).value())
                        .publish_subscribe<TransmissionData>()
                        .open_or_create()
-                       .expect("successful service creation/opening");
+                       .value();
 
     auto publisher = service.publisher_builder().create().expect("successful publisher creation");
 

@@ -26,7 +26,7 @@ auto main() -> int {
     auto service = node.service_builder(ServiceName::create("My/Funk/ServiceName").value())
                        .publish_subscribe<TransmissionData>()
                        .open_or_create()
-                       .expect("successful service creation/opening");
+                       .value();
 
     auto publisher = service.publisher_builder().create().expect("successful publisher creation");
 

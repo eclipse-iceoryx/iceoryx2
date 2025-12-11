@@ -30,7 +30,7 @@ auto main() -> int {
                        // beginning of every Sample
                        .user_header<CustomHeader>()
                        .open_or_create()
-                       .expect("successful service creation/opening");
+                       .value();
 
     auto publisher = service.publisher_builder().create().expect("successful publisher creation");
 

@@ -29,7 +29,7 @@ auto main() -> int {
     auto service = node.service_builder(ServiceName::create("My/Funk/ServiceName").value())
                        .blackboard_opener<BlackboardKey>()
                        .open()
-                       .expect("successful service opening");
+                       .value();
 
     auto key_0 = BlackboardKey { 0, -4, 4 };
     auto key_1 = BlackboardKey { 1, -4, 4 };

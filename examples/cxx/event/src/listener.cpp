@@ -21,10 +21,7 @@ auto main() -> int {
     set_log_level_from_env_or(LogLevel::Info);
     auto node = NodeBuilder().create<ServiceType::Ipc>().value();
 
-    auto service = node.service_builder(ServiceName::create("MyEventName").value())
-                       .event()
-                       .open_or_create()
-                       .expect("successful service creation/opening");
+    auto service = node.service_builder(ServiceName::create("MyEventName").value()).event().open_or_create().value();
 
     auto listener = service.listener_builder().create().expect("successful listener creation");
 

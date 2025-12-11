@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/service.hpp"
+#include "iox2/container/expected.hpp"
 #include "iox2/iceoryx2.h"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/service_details.hpp"
@@ -22,7 +23,7 @@ template <ServiceType S>
 auto Service<S>::does_exist(const ServiceName& service_name,
                             const ConfigView config,
                             const MessagingPattern messaging_pattern)
-    -> iox2::legacy::expected<bool, ServiceDetailsError> {
+    -> container::Expected<bool, ServiceDetailsError> {
     bool does_exist_result = false;
     auto result = iox2_service_does_exist(iox2::bb::into<iox2_service_type_e>(S),
                                           service_name.as_view().m_ptr,
@@ -31,17 +32,17 @@ auto Service<S>::does_exist(const ServiceName& service_name,
                                           &does_exist_result);
 
     if (result == IOX2_OK) {
-        return iox2::legacy::ok(does_exist_result);
+        return does_exist_result;
     }
 
-    return iox2::legacy::err(iox2::bb::into<ServiceDetailsError>(result));
+    return container::err(bb::into<ServiceDetailsError>(result));
 }
 
 template <ServiceType S>
 auto Service<S>::details(const ServiceName& service_name,
                          const ConfigView config,
                          const MessagingPattern messaging_pattern)
-    -> iox2::legacy::expected<iox2::container::Optional<ServiceDetails<S>>, ServiceDetailsError> {
+    -> container::Expected<container::Optional<ServiceDetails<S>>, ServiceDetailsError> {
     iox2_static_config_t raw_static_config;
     bool does_exist = false;
 
@@ -53,15 +54,14 @@ auto Service<S>::details(const ServiceName& service_name,
                                        &does_exist);
 
     if (result != IOX2_OK) {
-        return iox2::legacy::err(iox2::bb::into<ServiceDetailsError>(result));
+        return container::err(bb::into<ServiceDetailsError>(result));
     }
 
     if (!does_exist) {
-        return iox2::legacy::ok(iox2::container::Optional<ServiceDetails<S>>());
+        return container::Optional<ServiceDetails<S>>();
     }
 
-    return iox2::legacy::ok(
-        iox2::container::Optional<ServiceDetails<S>>(ServiceDetails<S> { StaticConfig(raw_static_config) }));
+    return container::Optional<ServiceDetails<S>>(ServiceDetails<S> { StaticConfig(raw_static_config) });
 }
 
 template <ServiceType S>
@@ -74,16 +74,16 @@ auto list_callback(const iox2_static_config_t* const static_config, void* ctx) -
 template <ServiceType S>
 auto Service<S>::list(const ConfigView config,
                       const iox2::bb::StaticFunction<CallbackProgression(ServiceDetails<S>)>& callback)
-    -> iox2::legacy::expected<void, ServiceListError> {
+    -> container::Expected<void, ServiceListError> {
     auto mutable_callback = callback;
     auto result =
         iox2_service_list(iox2::bb::into<iox2_service_type_e>(S), config.m_ptr, list_callback<S>, &mutable_callback);
 
     if (result == IOX2_OK) {
-        return iox2::legacy::ok();
+        return { container::in_place };
     }
 
-    return iox2::legacy::err(iox2::bb::into<ServiceListError>(result));
+    return container::err(bb::into<ServiceListError>(result));
 }
 
 template class Service<ServiceType::Ipc>;

@@ -25,7 +25,7 @@ auto main() -> int {
     auto service = node.service_builder(ServiceName::create("Service With Dynamic Data").value())
                        .publish_subscribe<iox::Slice<uint8_t>>()
                        .open_or_create()
-                       .expect("successful service creation/opening");
+                       .value();
 
     auto subscriber = service.subscriber_builder().create().expect("successful subscriber creation");
 

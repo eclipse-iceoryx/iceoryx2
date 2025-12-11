@@ -23,7 +23,7 @@ auto main() -> int {
     auto service = node.service_builder(ServiceName::create("My/Funk/ServiceName").value())
                        .request_response<uint64_t, TransmissionData>()
                        .open_or_create()
-                       .expect("successful service creation/opening");
+                       .value();
 
     auto server = service.server_builder().create().expect("successful server creation");
 
