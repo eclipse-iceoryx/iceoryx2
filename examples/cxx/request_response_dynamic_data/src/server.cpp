@@ -37,7 +37,7 @@ auto main() -> int {
                       // requires more memory than available.
                       .allocation_strategy(AllocationStrategy::PowerOfTwo)
                       .create()
-                      .expect("successful server creation");
+                      .value();
 
     std::cout << "Server ready to receive requests!" << std::endl;
 

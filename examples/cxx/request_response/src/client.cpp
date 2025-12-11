@@ -26,7 +26,7 @@ auto main() -> int {
                        .open_or_create()
                        .value();
 
-    auto client = service.client_builder().create().expect("successful client creation");
+    auto client = service.client_builder().create().value();
 
     auto request_counter = 0U;
     auto response_counter = 0U;

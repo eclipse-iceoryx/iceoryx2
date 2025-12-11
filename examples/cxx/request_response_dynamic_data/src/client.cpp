@@ -37,7 +37,7 @@ auto main() -> int {
                       // memory than available.
                       .allocation_strategy(AllocationStrategy::PowerOfTwo)
                       .create()
-                      .expect("successful client creation");
+                      .value();
 
     auto counter = 1U;
 
