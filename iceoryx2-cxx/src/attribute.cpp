@@ -12,26 +12,20 @@
 
 #include "iox2/attribute.hpp"
 #include "iox2/container/static_string.hpp"
-#include "iox2/legacy/string.hpp"
 
 namespace iox2 {
 auto AttributeView::key() const -> Attribute::Key {
-    // TODO: implement unsafe_raw_access() for StaticString
-    legacy::string<IOX2_ATTRIBUTE_KEY_LENGTH> key("");
-    key.unsafe_raw_access([this](auto* buffer, const auto& info) -> auto {
-        iox2_attribute_key(m_handle, buffer, info.total_size);
-        return iox2_attribute_key_len(m_handle);
-    });
-    return *container::StaticString<IOX2_ATTRIBUTE_KEY_LENGTH>::from_utf8_null_terminated_unchecked(key.c_str());
+    // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays, modernize-avoid-c-arrays) temporary storage, required by C API
+    char buffer[IOX2_ATTRIBUTE_KEY_LENGTH];
+    iox2_attribute_key(m_handle, &buffer[0], IOX2_ATTRIBUTE_KEY_LENGTH);
+    return *container::StaticString<IOX2_ATTRIBUTE_KEY_LENGTH>::from_utf8_null_terminated_unchecked(&buffer[0]);
 }
 
 auto AttributeView::value() const -> Attribute::Value {
-    legacy::string<IOX2_ATTRIBUTE_VALUE_LENGTH> value("");
-    value.unsafe_raw_access([this](auto* buffer, const auto& info) -> auto {
-        iox2_attribute_value(m_handle, buffer, info.total_size);
-        return iox2_attribute_value_len(m_handle);
-    });
-    return *container::StaticString<IOX2_ATTRIBUTE_VALUE_LENGTH>::from_utf8_null_terminated_unchecked(value.c_str());
+    // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays, modernize-avoid-c-arrays) temporary storage, required by C API
+    char buffer[IOX2_ATTRIBUTE_VALUE_LENGTH];
+    iox2_attribute_value(m_handle, &buffer[0], IOX2_ATTRIBUTE_VALUE_LENGTH);
+    return *container::StaticString<IOX2_ATTRIBUTE_VALUE_LENGTH>::from_utf8_null_terminated_unchecked(&buffer[0]);
 }
 
 AttributeView::AttributeView(iox2_attribute_h_ref handle)

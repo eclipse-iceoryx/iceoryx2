@@ -1284,6 +1284,7 @@ TEST(StaticString, insert_with_count_zero_does_not_change_the_string) {
     ASSERT_TRUE(sut.insert(sut.size(), str, 0, 0));
     EXPECT_STREQ(sut.unchecked_access().c_str(), "Hypnotoad");
 }
+
 TEST(StaticString, insert_with_index_greater_size_fails) {
     constexpr uint64_t const STRING_SIZE = 25;
     auto sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("Hypnotoad");

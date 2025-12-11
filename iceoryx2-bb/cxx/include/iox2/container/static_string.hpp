@@ -25,7 +25,6 @@
 #include <ostream>
 #include <type_traits>
 
-// TODO: copyright header
 namespace iox2 {
 namespace container {
 
@@ -585,8 +584,8 @@ class StaticString {
     ///
     /// @return true if the insertion was successful, otherwise false
     template <typename T>
-    auto insert(SizeType index, T const& str, SizeType s_index, SizeType count = T::capacity())
-        -> typename std::enable_if<IsStaticString<T>::value, bool>::type {
+    auto insert(SizeType index, T const& str, SizeType s_index, SizeType count = T::capacity()) ->
+        typename std::enable_if<IsStaticString<T>::value, bool>::type {
         auto sub_str = str.substr(s_index, count);
         if (!sub_str.has_value()) {
             return false;
