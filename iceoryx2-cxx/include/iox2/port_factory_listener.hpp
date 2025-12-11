@@ -13,8 +13,8 @@
 #ifndef IOX2_PORTFACTORY_LISTENER_HPP
 #define IOX2_PORTFACTORY_LISTENER_HPP
 
+#include "iox2/container/expected.hpp"
 #include "iox2/internal/iceoryx2.hpp"
-#include "iox2/legacy/expected.hpp"
 #include "iox2/listener.hpp"
 #include "iox2/service_type.hpp"
 
@@ -32,7 +32,7 @@ class PortFactoryListener {
     auto operator=(const PortFactoryListener&) -> PortFactoryListener& = delete;
 
     /// Creates the [`Listener`] port or returns a [`ListenerCreateError`] on failure.
-    auto create() && -> iox2::legacy::expected<Listener<S>, ListenerCreateError>;
+    auto create() && -> container::Expected<Listener<S>, ListenerCreateError>;
 
   private:
     template <ServiceType>
@@ -49,15 +49,15 @@ inline PortFactoryListener<S>::PortFactoryListener(iox2_port_factory_listener_bu
 }
 
 template <ServiceType S>
-inline auto PortFactoryListener<S>::create() && -> iox2::legacy::expected<Listener<S>, ListenerCreateError> {
+inline auto PortFactoryListener<S>::create() && -> container::Expected<Listener<S>, ListenerCreateError> {
     iox2_listener_h listener_handle { nullptr };
     auto result = iox2_port_factory_listener_builder_create(m_handle, nullptr, &listener_handle);
 
     if (result == IOX2_OK) {
-        return iox2::legacy::ok(Listener<S> { listener_handle });
+        return Listener<S> { listener_handle };
     }
 
-    return iox2::legacy::err(iox2::bb::into<ListenerCreateError>(result));
+    return container::err(bb::into<ListenerCreateError>(result));
 }
 } // namespace iox2
 

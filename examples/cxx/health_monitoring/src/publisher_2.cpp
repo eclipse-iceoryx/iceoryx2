@@ -32,7 +32,7 @@ auto main() -> int {
                         // so we can define it as default event id
                         .default_event_id(iox2::bb::into<EventId>(PubSubEvent::SentSample))
                         .create()
-                        .expect("");
+                        .value();
     auto counter = 1000000U; // NOLINT, magic number is fine in an example
 
     auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().value();

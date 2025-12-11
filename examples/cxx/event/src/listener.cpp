@@ -23,7 +23,7 @@ auto main() -> int {
 
     auto service = node.service_builder(ServiceName::create("MyEventName").value()).event().open_or_create().value();
 
-    auto listener = service.listener_builder().create().expect("successful listener creation");
+    auto listener = service.listener_builder().create().value();
 
     std::cout << "Listener ready to receive events!" << std::endl;
 

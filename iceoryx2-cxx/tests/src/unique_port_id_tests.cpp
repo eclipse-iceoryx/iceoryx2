@@ -43,10 +43,10 @@ struct UniquePortIdTest : public ::testing::Test {
                            .template add_with_default<uint64_t>(0)
                            .create()
                            .value() }
-        , listener_1 { event.listener_builder().create().expect("") }
-        , listener_2 { event.listener_builder().create().expect("") }
-        , notifier_1 { event.notifier_builder().create().expect("") }
-        , notifier_2 { event.notifier_builder().create().expect("") }
+        , listener_1 { event.listener_builder().create().value() }
+        , listener_2 { event.listener_builder().create().value() }
+        , notifier_1 { event.notifier_builder().create().value() }
+        , notifier_2 { event.notifier_builder().create().value() }
         , publisher_1 { pubsub.publisher_builder().create().value() }
         , publisher_2 { pubsub.publisher_builder().create().value() }
         , subscriber_1 { pubsub.subscriber_builder().create().value() }

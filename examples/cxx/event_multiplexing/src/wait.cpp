@@ -45,8 +45,8 @@ auto main(int argc, char** argv) -> int {
 
     auto service_1 = node.service_builder(service_name_1).event().open_or_create().value();
     auto service_2 = node.service_builder(service_name_2).event().open_or_create().value();
-    auto listener_1 = service_1.listener_builder().create().expect("successful listener creation");
-    auto listener_2 = service_2.listener_builder().create().expect("successful listener creation");
+    auto listener_1 = service_1.listener_builder().create().value();
+    auto listener_2 = service_2.listener_builder().create().value();
 
     // create the waitset and attach the listeners to it
     auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().value();
