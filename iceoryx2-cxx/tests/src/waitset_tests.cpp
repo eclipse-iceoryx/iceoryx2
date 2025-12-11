@@ -36,7 +36,7 @@ struct WaitSetTest : public ::testing::Test {
 
     WaitSetTest()
         : node { NodeBuilder().create<TYPE>().value() }
-        , event { node.service_builder(generate_name()).event().create().expect("") } {
+        , event { node.service_builder(generate_name()).event().create().value() } {
     }
 
     auto create_sut() -> WaitSet<TYPE> {

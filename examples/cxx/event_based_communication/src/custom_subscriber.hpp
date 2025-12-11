@@ -46,7 +46,7 @@ class CustomSubscriber : public iox2::FileDescriptorBased {
                                   .subscriber_max_buffer_size(HISTORY_SIZE)
                                   .open_or_create()
                                   .value();
-        auto event_service = node.service_builder(service_name).event().open_or_create().expect("");
+        auto event_service = node.service_builder(service_name).event().open_or_create().value();
 
         auto listener = event_service.listener_builder().create().expect("");
         auto notifier = event_service.notifier_builder().create().expect("");

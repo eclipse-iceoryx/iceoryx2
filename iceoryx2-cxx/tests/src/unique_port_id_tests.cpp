@@ -36,7 +36,7 @@ struct UniquePortIdTest : public ::testing::Test {
     UniquePortIdTest()
         : node { NodeBuilder().create<TYPE>().value() }
         , service_name { iox2_testing::generate_service_name() }
-        , event { node.service_builder(service_name).event().create().expect("") }
+        , event { node.service_builder(service_name).event().create().value() }
         , pubsub { node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value() }
         , blackboard { node.service_builder(service_name)
                            .template blackboard_creator<uint64_t>()
