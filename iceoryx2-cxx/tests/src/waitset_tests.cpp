@@ -239,7 +239,7 @@ TYPED_TEST(WaitSetTest, deadline_attachment_wakes_up_when_notified) {
     std::thread notifier_thread([&]() -> auto {
         std::this_thread::sleep_for(std::chrono::milliseconds(TIMEOUT.as_millis()));
         auto notifier = this->create_notifier();
-        notifier.notify().expect("");
+        notifier.notify().value();
     });
     auto result = sut.wait_and_process([&](auto attachment_id) -> CallbackProgression {
         callback_called = true;
@@ -262,7 +262,7 @@ TYPED_TEST(WaitSetTest, notification_attachment_wakes_up_when_notified) {
     std::thread notifier_thread([&]() -> auto {
         std::this_thread::sleep_for(std::chrono::milliseconds(TIMEOUT.as_millis()));
         auto notifier = this->create_notifier();
-        notifier.notify().expect("");
+        notifier.notify().value();
     });
     auto result = sut.wait_and_process([&](auto attachment_id) -> CallbackProgression {
         callback_called = true;
@@ -303,7 +303,7 @@ TYPED_TEST(WaitSetTest, triggering_everything_works) {
     }
 
     auto notifier = this->create_notifier();
-    notifier.notify().expect("");
+    notifier.notify().value();
 
     std::this_thread::sleep_for(std::chrono::milliseconds(TIMEOUT.as_millis()));
     std::vector<bool> was_triggered(guards.size(), false);

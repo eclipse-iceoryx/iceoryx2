@@ -32,7 +32,7 @@ class CustomSubscriber : public iox2::FileDescriptorBased {
     ~CustomSubscriber() override {
         m_notifier
             .notify_with_custom_event_id(iox2::EventId(iox2::bb::into<size_t>(PubSubEvent::SubscriberDisconnected)))
-            .expect("");
+            .value();
     }
 
     auto operator=(const CustomSubscriber&) -> CustomSubscriber& = delete;
@@ -53,7 +53,7 @@ class CustomSubscriber : public iox2::FileDescriptorBased {
         auto subscriber = pubsub_service.subscriber_builder().create().expect("");
 
         notifier.notify_with_custom_event_id(iox2::EventId(iox2::bb::into<size_t>(PubSubEvent::SubscriberConnected)))
-            .expect("");
+            .value();
 
         return CustomSubscriber { std::move(subscriber), std::move(notifier), std::move(listener) };
     }
@@ -98,7 +98,7 @@ class CustomSubscriber : public iox2::FileDescriptorBased {
         auto sample = m_subscriber.receive().value();
         if (sample.has_value()) {
             m_notifier.notify_with_custom_event_id(iox2::EventId(iox2::bb::into<size_t>(PubSubEvent::ReceivedSample)))
-                .expect("");
+                .value();
         }
 
         return sample;

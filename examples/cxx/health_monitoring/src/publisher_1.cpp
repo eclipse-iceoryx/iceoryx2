@@ -46,7 +46,7 @@ auto main() -> int {
         .wait_and_process([&](auto) -> auto {
             std::cout << service_name.to_string().c_str() << ": Send sample " << counter << " ..." << std::endl;
             publisher.send_copy(counter).value();
-            notifier.notify().expect("");
+            notifier.notify().value();
             counter += 1;
             return CallbackProgression::Continue;
         })
