@@ -18,12 +18,12 @@ use windows_sys::Win32::{
 };
 
 use crate::posix::{c_string_length, types::*};
+use core::fmt::Debug;
 use core::sync::atomic::Ordering;
 use core::{cell::UnsafeCell, panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU32, IoxAtomicUsize};
 use iceoryx2_pal_concurrency_sync::mutex::Mutex;
 use iceoryx2_pal_concurrency_sync::WaitAction;
-use std::fmt::Debug;
 
 use super::win32_udp_port_to_uds_name::PortToUds;
 
@@ -44,15 +44,11 @@ pub enum FdHandleEntry {
 #[derive(Debug, Clone, Copy)]
 pub struct DirectoryHandle {
     pub id: u64,
-    pub path: [c_char; iceoryx2_pal_configuration::PATH_LENGTH],
 }
 
 impl DirectoryHandle {
     pub fn from_id(id: u64) -> Self {
-        DirectoryHandle {
-            id,
-            path: [0; iceoryx2_pal_configuration::PATH_LENGTH],
-        }
+        DirectoryHandle { id }
     }
 }
 
@@ -87,7 +83,7 @@ pub struct UdsDatagramSocketHandle {
 }
 
 impl Debug for UdsDatagramSocketHandle {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "UdsDatagramSocketHandle {{ fd: {} }}", self.fd)
     }
 }
@@ -127,7 +123,7 @@ pub struct SocketHandle {
 }
 
 impl Debug for SocketHandle {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "SocketHandle {{ fd: {} }}", self.fd)
     }
 }

@@ -15,7 +15,6 @@
 #![allow(unused_variables)]
 
 use crate::{
-    internal::strlen,
     posix::{
         self,
         types::*,
@@ -122,11 +121,8 @@ pub unsafe fn mkdir(pathname: *const c_char, mode: mode_t) -> int {
 pub unsafe fn opendir(dirname: *const c_char) -> *mut DIR {
     static COUNT: IoxAtomicU64 = IoxAtomicU64::new(1);
     let id = COUNT.fetch_add(1, Ordering::Relaxed);
-    let mut path: [c_char; 255] = [0; 255];
-    core::ptr::copy_nonoverlapping(dirname, path.as_mut_ptr(), strlen(dirname) as usize);
 
-    HandleTranslator::get_instance()
-        .add(FdHandleEntry::DirectoryStream(DirectoryHandle { id, path }));
+    HandleTranslator::get_instance().add(FdHandleEntry::DirectoryStream(DirectoryHandle { id }));
     id as *mut DIR
 }
 
