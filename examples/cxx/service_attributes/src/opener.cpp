@@ -35,10 +35,10 @@ auto main() -> int {
     std::cout << "defined service attributes: " << service.attributes() << std::endl;
 
     while (node.wait(CYCLE_TIME).has_value()) {
-        auto sample = subscriber.receive().expect("receive succeeds");
+        auto sample = subscriber.receive().value();
         while (sample.has_value()) {
             std::cout << "received: " << sample->payload() << std::endl;
-            sample = subscriber.receive().expect("receive succeeds");
+            sample = subscriber.receive().value();
         }
     }
 

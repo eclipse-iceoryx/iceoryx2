@@ -148,13 +148,13 @@ TYPED_TEST(UniquePortIdTest, unique_port_id_identifies_origin) {
 
     send(std::move(sample_1)).expect("");
 
-    auto recv_sample_1 = this->subscriber_1.receive().expect("").value();
+    auto recv_sample_1 = this->subscriber_1.receive().value().value();
     ASSERT_TRUE(this->publisher_1.id() == recv_sample_1.header().publisher_id());
     ASSERT_TRUE(this->publisher_1.id() == recv_sample_1.origin());
 
     send(std::move(sample_2)).expect("");
 
-    auto recv_sample_2 = this->subscriber_1.receive().expect("").value();
+    auto recv_sample_2 = this->subscriber_1.receive().value().value();
     ASSERT_TRUE(this->publisher_2.id() == recv_sample_2.header().publisher_id());
     ASSERT_TRUE(this->publisher_2.id() == recv_sample_2.origin());
 }

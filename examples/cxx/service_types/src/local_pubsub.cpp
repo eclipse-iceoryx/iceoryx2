@@ -40,13 +40,13 @@ void background_thread_fn() {
     auto subscriber = service.subscriber_builder().create().expect("successful subscriber creation");
     while (keep_running.load()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(CYCLE_TIME.as_millis()));
-        auto sample = subscriber.receive().expect("sample received");
+        auto sample = subscriber.receive().value();
         while (sample.has_value()) {
             {
                 const std::lock_guard<std::mutex> cout_guard(cout_mtx);
                 std::cout << "[thread] received: " << sample->payload() << std::endl;
             }
-            sample = subscriber.receive().expect("sample received");
+            sample = subscriber.receive().value();
         }
     }
 }

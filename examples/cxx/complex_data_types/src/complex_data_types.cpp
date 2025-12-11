@@ -64,10 +64,10 @@ auto main() -> int {
 
         std::cout << counter << " :: send" << std::endl;
 
-        auto recv_sample = subscriber.receive().expect("receive succeeds");
+        auto recv_sample = subscriber.receive().value();
         while (recv_sample.has_value()) {
             std::cout << "received: " << recv_sample->payload().text.c_str() << std::endl;
-            recv_sample = subscriber.receive().expect("receive succeeds");
+            recv_sample = subscriber.receive().value();
         }
     }
 

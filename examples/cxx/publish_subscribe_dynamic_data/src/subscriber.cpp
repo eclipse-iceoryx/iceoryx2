@@ -32,12 +32,12 @@ auto main() -> int {
     std::cout << "Subscriber ready to receive data!" << std::endl;
 
     while (node.wait(CYCLE_TIME).has_value()) {
-        auto sample = subscriber.receive().expect("receive succeeds");
+        auto sample = subscriber.receive().value();
         while (sample.has_value()) {
             auto payload = sample->payload();
             std::cout << "received " << std::dec << static_cast<int>(payload.number_of_bytes()) << " bytes"
                       << std::endl;
-            sample = subscriber.receive().expect("receive succeeds");
+            sample = subscriber.receive().value();
         }
     }
 
