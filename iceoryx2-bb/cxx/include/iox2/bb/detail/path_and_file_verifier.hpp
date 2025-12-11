@@ -16,7 +16,6 @@
 #define IOX2_BB_DETAIL_PATH_AND_FILE_VERIFIER_HPP
 
 #include "iox2/container/static_string.hpp"
-#include "iox2/legacy/string.hpp"
 
 #include <cstdint>
 

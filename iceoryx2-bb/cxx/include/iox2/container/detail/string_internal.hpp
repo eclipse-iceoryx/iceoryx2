@@ -15,8 +15,8 @@
 
 #include <cstdint>
 #include <cstring>
+#include <type_traits>
 
-// TODO: copyright header
 namespace iox2 {
 namespace container {
 template <uint64_t>
@@ -29,8 +29,10 @@ template <uint64_t N>
 using CharArray = char[N];
 
 /// Generic empty implementation of the struct to get the size of a string
-template <typename T>
-struct GetSize : std::false_type { };
+template <typename>
+struct GetSize {
+    static_assert(false, "GetSize is not implemented for the specified type!");
+};
 
 /// Struct to get size of iox2::container::StaticString
 template <uint64_t N>
@@ -53,7 +55,9 @@ struct GetSize<char[N]> {
 
 /// Generic empty implementation of the struct to get the data of a string
 template <typename T>
-struct GetData : std::false_type { };
+struct GetData {
+    static_assert(false, "GetData is not implemented for the specified type!");
+};
 
 /// Struct to get a pointer to the char array of the iox2::container::string
 template <uint64_t N>

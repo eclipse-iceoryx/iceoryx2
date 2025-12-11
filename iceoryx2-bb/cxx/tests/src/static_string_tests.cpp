@@ -1185,4 +1185,110 @@ TEST(StaticString, find_last_of_fails_for_not_included_character) {
     ASSERT_FALSE(sut.find_last_of(str, 0).has_value());
     ASSERT_FALSE(sut.find_last_of(str, STRING_SIZE + 1).has_value());
 }
+
+TEST(StaticString, insert_at_the_beginning_succeeds) {
+    constexpr uint64_t const STRING_SIZE = 25;
+    auto sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("toad");
+    auto str_1 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("Hypno");
+    auto str_2 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("Hyper");
+    auto str_3 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("Megaaaa");
+
+    ASSERT_TRUE(sut.insert(0, str_1, 0));
+    EXPECT_STREQ(sut.unchecked_access().c_str(), "Hypnotoad");
+    ASSERT_TRUE(sut.insert(0, str_2, 0, str_2.size()));
+    EXPECT_STREQ(sut.unchecked_access().c_str(), "HyperHypnotoad");
+    ASSERT_TRUE(sut.insert(0, str_3, 0, 4));
+    EXPECT_STREQ(sut.unchecked_access().c_str(), "MegaHyperHypnotoad");
+}
+
+TEST(StaticString, insert_in_the_middle_succeeds) {
+    constexpr uint64_t const STRING_SIZE = 25;
+    auto sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("Megatoad");
+    auto str_1 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("Hyper");
+    auto str_2 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("Hyp");
+    auto str_3 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("nooooo");
+
+    ASSERT_TRUE(sut.insert(4, str_1, 0));
+    EXPECT_STREQ(sut.unchecked_access().c_str(), "MegaHypertoad");
+    ASSERT_TRUE(sut.insert(9, str_2, 0, str_2.size()));
+    EXPECT_STREQ(sut.unchecked_access().c_str(), "MegaHyperHyptoad");
+    ASSERT_TRUE(sut.insert(12, str_3, 0, 2));
+    EXPECT_STREQ(sut.unchecked_access().c_str(), "MegaHyperHypnotoad");
+}
+
+TEST(StaticString, insert_at_the_end_succeeds) {
+    constexpr uint64_t const STRING_SIZE = 25;
+    auto sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("Mega");
+    auto str_1 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("Hyper");
+    auto str_2 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("Hypno");
+    auto str_3 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("toad!!!");
+
+    ASSERT_TRUE(sut.insert(sut.size(), str_1, 0));
+    EXPECT_STREQ(sut.unchecked_access().c_str(), "MegaHyper");
+    ASSERT_TRUE(sut.insert(sut.size(), str_2, 0, str_2.size()));
+    EXPECT_STREQ(sut.unchecked_access().c_str(), "MegaHyperHypno");
+    ASSERT_TRUE(sut.insert(sut.size(), str_3, 0, 4));
+    EXPECT_STREQ(sut.unchecked_access().c_str(), "MegaHyperHypnotoad");
+}
+
+TEST(StaticString, insert_string_into_empty_string) {
+    constexpr uint64_t const STRING_SIZE = 25;
+    iox2::container::StaticString<STRING_SIZE> sut_1;
+    iox2::container::StaticString<STRING_SIZE> sut_2;
+    auto str = *iox2::container::StaticString<STRING_SIZE>::from_utf8("AtomHeartMother");
+
+    ASSERT_TRUE(sut_1.insert(0, str, 0));
+    EXPECT_STREQ(sut_1.unchecked_access().c_str(), "AtomHeartMother");
+    ASSERT_TRUE(sut_2.insert(0, str, 0, STRING_SIZE));
+    EXPECT_STREQ(sut_2.unchecked_access().c_str(), "AtomHeartMother");
+}
+
+TEST(StaticString, insert_empty_string_does_not_change_the_string) {
+    constexpr uint64_t const STRING_SIZE = 25;
+    auto sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("Kernfusionsbaby");
+    iox2::container::StaticString<STRING_SIZE> str;
+
+    ASSERT_TRUE(sut.insert(0, str, 0));
+    EXPECT_STREQ(sut.unchecked_access().c_str(), "Kernfusionsbaby");
+    ASSERT_TRUE(sut.insert(0, str, 0, STRING_SIZE));
+    EXPECT_STREQ(sut.unchecked_access().c_str(), "Kernfusionsbaby");
+}
+
+TEST(StaticString, insert_large_string) {
+    constexpr uint64_t const STRING_SIZE = 12;
+    auto sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("Ferdinand");
+    auto str = *iox2::container::StaticString<STRING_SIZE * 2>::from_utf8("Spitzschnueffler");
+
+    ASSERT_FALSE(sut.insert(0, str, 0));
+    ASSERT_TRUE(sut.insert(0, str, 0, 1));
+    EXPECT_STREQ(sut.unchecked_access().c_str(), "SFerdinand");
+
+    ASSERT_FALSE(sut.insert(6, str, 0));
+    ASSERT_TRUE(sut.insert(6, str, 1, 1));
+    EXPECT_STREQ(sut.unchecked_access().c_str(), "SFerdipnand");
+
+    ASSERT_FALSE(sut.insert(sut.size(), str, 0));
+    ASSERT_TRUE(sut.insert(sut.size(), str, 2, 1));
+    EXPECT_STREQ(sut.unchecked_access().c_str(), "SFerdipnandi");
+}
+
+TEST(StaticString, insert_with_count_zero_does_not_change_the_string) {
+    constexpr uint64_t const STRING_SIZE = 25;
+    auto sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("Hypnotoad");
+    auto str = *iox2::container::StaticString<STRING_SIZE>::from_utf8("O");
+
+    ASSERT_TRUE(sut.insert(0, str, 0, 0));
+    EXPECT_STREQ(sut.unchecked_access().c_str(), "Hypnotoad");
+    ASSERT_TRUE(sut.insert(4, str, 0, 0));
+    EXPECT_STREQ(sut.unchecked_access().c_str(), "Hypnotoad");
+    ASSERT_TRUE(sut.insert(sut.size(), str, 0, 0));
+    EXPECT_STREQ(sut.unchecked_access().c_str(), "Hypnotoad");
+}
+TEST(StaticString, insert_with_index_greater_size_fails) {
+    constexpr uint64_t const STRING_SIZE = 25;
+    auto sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("Hypnotoad");
+    auto str = *iox2::container::StaticString<STRING_SIZE>::from_utf8("O");
+
+    ASSERT_FALSE(sut.insert(sut.size() + 1, str, 0));
+}
 } // namespace
