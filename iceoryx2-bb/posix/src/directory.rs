@@ -15,6 +15,8 @@
 //!
 //! # Examples
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_posix::directory::*;
 //! use iceoryx2_bb_system_types::path::Path;
 //! use iceoryx2_bb_container::semantic_string::SemanticString;
@@ -42,8 +44,8 @@ use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_container::string::strnlen;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary::scope_guard::ScopeGuardBuilder;
-use iceoryx2_bb_log::{error, fail, fatal_panic, trace};
 use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath, path::Path};
+use iceoryx2_log::{error, fail, fatal_panic, trace};
 use iceoryx2_pal_configuration::PATH_SEPARATOR;
 use iceoryx2_pal_posix::posix::MemZeroedStruct;
 use iceoryx2_pal_posix::*;
@@ -152,6 +154,8 @@ enum_gen! {
 /// # Example
 ///
 /// ```
+/// # extern crate iceoryx2_loggers;
+///
 /// use iceoryx2_bb_posix::directory::*;
 /// use iceoryx2_bb_system_types::path::Path;
 /// use iceoryx2_bb_container::semantic_string::SemanticString;

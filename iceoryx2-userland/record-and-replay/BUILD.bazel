@@ -27,7 +27,7 @@ rust_library(
         "//iceoryx2-cal:iceoryx2-cal",
         "//iceoryx2-bb/container:iceoryx2-bb-container",
         "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
-        "//iceoryx2-bb/log:iceoryx2-bb-log",
+        "//iceoryx2-log/log:iceoryx2-log",
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
         "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
         "@crate_index//:anyhow",
@@ -41,7 +41,7 @@ rust_test_suite(
     deps = [
         ":iceoryx2-userland-record-and-replay",
         "//iceoryx2:iceoryx2",
-        "//iceoryx2-bb/log:iceoryx2-bb-log",
+        "//iceoryx2-log/log:iceoryx2-log",
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
         "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
         "//iceoryx2-pal/testing:iceoryx2-pal-testing",

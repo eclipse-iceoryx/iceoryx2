@@ -24,6 +24,8 @@
 //! ## Use the [`FixedSizeQueue`](crate::queue::FixedSizeQueue)
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_container::queue::FixedSizeQueue;
 //!
 //! const QUEUE_CAPACITY: usize = 1;
@@ -40,6 +42,8 @@
 //! ## Use the [`Queue`](crate::queue::Queue)
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_container::queue::Queue;
 //!
 //! let queue_capacity = 1234;
@@ -55,6 +59,8 @@
 //! ## Create [`RelocatableQueue`](crate::queue::RelocatableQueue) inside constructs which provides memory
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_container::queue::RelocatableQueue;
 //! use iceoryx2_bb_elementary::math::align_to;
 //! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
@@ -86,6 +92,8 @@
 //! ## Create [`RelocatableQueue`](crate::queue::RelocatableQueue) with allocator
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_container::queue::RelocatableQueue;
 //! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 //! use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
@@ -113,7 +121,7 @@ use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_elementary_traits::pointer_trait::PointerTrait;
 pub use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_log::{fail, fatal_panic};
+use iceoryx2_log::{fail, fatal_panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
 /// Queue with run-time fixed size capacity. In contrast to its counterpart the

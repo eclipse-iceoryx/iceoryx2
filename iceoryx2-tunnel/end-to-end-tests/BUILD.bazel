@@ -24,7 +24,7 @@ rust_library(
     srcs = glob(["common/src/*.rs"]),
     deps = [
         "//iceoryx2:iceoryx2",
-        "//iceoryx2-bb/log:iceoryx2-bb-log",
+        "//iceoryx2-log/log:iceoryx2-log",
         "//iceoryx2-bb/container:iceoryx2-bb-container",
         "@crate_index//:clap",
     ],
@@ -37,7 +37,7 @@ rust_binary(
     ],
     deps = [
         "//iceoryx2:iceoryx2",
-        "//iceoryx2-bb/log:iceoryx2-bb-log",
+        "//iceoryx2-log/log:iceoryx2-log",
         ":iceoryx2-tunnel-end-to-end-tests",
         "@crate_index//:clap",
     ],
@@ -50,7 +50,7 @@ rust_binary(
     ],
     deps = [
         "//iceoryx2:iceoryx2",
-        "//iceoryx2-bb/log:iceoryx2-bb-log",
+        "//iceoryx2-log/log:iceoryx2-log",
         ":iceoryx2-tunnel-end-to-end-tests",
         "@crate_index//:clap",
     ],

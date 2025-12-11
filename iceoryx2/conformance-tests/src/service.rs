@@ -35,11 +35,11 @@ pub mod service {
     use iceoryx2::service::{ServiceDetailsError, ServiceListError};
     use iceoryx2::testing::*;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
-    use iceoryx2_bb_log::{set_log_level, LogLevel};
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
+    use iceoryx2_log::{set_log_level, LogLevel};
     use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 
     fn generate_name() -> ServiceName {

@@ -12,7 +12,8 @@
 
 use std::sync::Mutex;
 
-use crate::LogLevel;
+use iceoryx2_log_types::Log;
+use iceoryx2_log_types::LogLevel;
 
 #[derive(Debug, Clone)]
 pub struct Entry {
@@ -84,7 +85,7 @@ impl Logger {
     }
 }
 
-impl crate::Log for Logger {
+impl Log for Logger {
     fn log(
         &self,
         log_level: LogLevel,

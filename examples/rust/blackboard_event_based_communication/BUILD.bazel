@@ -20,7 +20,8 @@ rust_binary(
     deps = [
         "//iceoryx2:iceoryx2",
         "//iceoryx2-bb/container:iceoryx2-bb-container",
-        "//iceoryx2-bb/log:iceoryx2-bb-log",
+        "//iceoryx2-log/log:iceoryx2-log",
+        "//iceoryx2-log/loggers:iceoryx2-loggers",
     ],
 )
 
@@ -32,6 +33,7 @@ rust_binary(
     deps = [
         "//iceoryx2:iceoryx2",
         "//iceoryx2-bb/container:iceoryx2-bb-container",
-        "//iceoryx2-bb/log:iceoryx2-bb-log",
+        "//iceoryx2-log/log:iceoryx2-log",
+        "//iceoryx2-log/loggers:iceoryx2-loggers",
     ],
 )

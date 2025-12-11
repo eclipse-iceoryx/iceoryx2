@@ -60,8 +60,8 @@ use core::sync::atomic::Ordering;
 use core::{fmt::Debug, marker::PhantomData};
 
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_log::fail;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
+use iceoryx2_log::fail;
 
 use crate::port::client::ClientSharedState;
 use crate::port::details::chunk::Chunk;

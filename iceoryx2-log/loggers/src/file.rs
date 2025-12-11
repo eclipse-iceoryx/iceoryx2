@@ -10,23 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! # Example
-//!
-//! Using the file logger.
-//!
-//! ```no_run
-//! use iceoryx2_bb_log::{info, set_logger, set_log_level, LogLevel, logger::file};
-//! use std::sync::LazyLock;
-//!
-//! const LOG_FILE: &str = "fuu.log";
-//! static FILE_LOGGER: LazyLock<file::Logger> = LazyLock::new(|| file::Logger::new(LOG_FILE));
-//! set_logger(&*FILE_LOGGER);
-//! set_log_level(LogLevel::Trace);
-//!
-//! // written into log file "fuu.log"
-//! info!("hello world");
-//! ```
-
 // TODO: [Reminder to my future self]
 // In the long-term the file logger may be required to be based on the same
 // iceoryx2_pal_posix platform. In this case, the logger needs to use the low-level calls directly
@@ -44,7 +27,8 @@ use std::{
 
 use std::sync::mpsc::channel;
 
-use crate::{get_log_level, LogLevel};
+use iceoryx2_log_types::Log;
+use iceoryx2_log_types::LogLevel;
 
 enum Message {
     Entry(Entry),
@@ -120,17 +104,13 @@ impl Drop for Logger {
     }
 }
 
-impl crate::Log for Logger {
+impl Log for Logger {
     fn log(
         &self,
         log_level: LogLevel,
         origin: core::fmt::Arguments,
         formatted_message: core::fmt::Arguments,
     ) {
-        if get_log_level() > log_level as u8 {
-            return;
-        }
-
         self.sender
             .send({
                 Message::Entry(Entry {

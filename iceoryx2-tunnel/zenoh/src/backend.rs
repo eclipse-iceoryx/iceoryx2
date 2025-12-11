@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2::service::Service;
-use iceoryx2_bb_log::{fail, trace};
+use iceoryx2_log::{fail, trace};
 use iceoryx2_tunnel_backend::traits::Backend;
 use zenoh::{Config, Session, Wait};
 

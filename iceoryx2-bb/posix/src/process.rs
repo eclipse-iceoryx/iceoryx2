@@ -25,6 +25,8 @@
 //! # Examples
 //!
 //! ```no_run
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_posix::process::*;
 //! use iceoryx2_bb_posix::scheduler::*;
 //!
@@ -43,8 +45,8 @@ use core::fmt::Display;
 
 use crate::handle_errno;
 use iceoryx2_bb_elementary::enum_gen;
-use iceoryx2_bb_log::fail;
 use iceoryx2_bb_system_types::file_path::*;
+use iceoryx2_log::fail;
 use iceoryx2_pal_posix::posix::{errno::Errno, MemZeroedStruct};
 use iceoryx2_pal_posix::*;
 

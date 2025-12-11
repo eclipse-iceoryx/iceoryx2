@@ -14,9 +14,9 @@ use alloc::collections::BTreeSet;
 use alloc::vec;
 use alloc::vec::Vec;
 
-use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_posix::mutex::*;
 use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath, path::Path};
+use iceoryx2_log::{fail, fatal_panic};
 
 use lazy_static::lazy_static;
 

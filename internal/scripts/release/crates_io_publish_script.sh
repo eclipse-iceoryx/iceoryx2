@@ -31,10 +31,12 @@ CRATES_TO_PUBLISH=(
     iceoryx2-pal-concurrency-sync
     iceoryx2-pal-posix
     iceoryx2-pal-os-api
+    iceoryx2-log-types
+    iceoryx2-loggers
+    iceoryx2-log
     iceoryx2-bb-conformance-test-macros
     iceoryx2-bb-elementary-traits
     iceoryx2-bb-testing
-    iceoryx2-bb-log
     iceoryx2-bb-elementary
     iceoryx2-bb-derive-macros
     iceoryx2-bb-container

@@ -15,6 +15,8 @@
 //! # Example
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_system_types::file_name::FileName;
 //! use iceoryx2_bb_container::semantic_string::SemanticString;
 //! use iceoryx2_cal::dynamic_storage::posix_shared_memory::*;
@@ -54,13 +56,13 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 use iceoryx2_bb_elementary::package_version::PackageVersion;
-use iceoryx2_bb_log::fail;
-use iceoryx2_bb_log::warn;
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_bb_posix::directory::*;
 use iceoryx2_bb_posix::file_descriptor::FileDescriptorManagement;
 use iceoryx2_bb_posix::shared_memory::*;
 use iceoryx2_bb_system_types::path::Path;
+use iceoryx2_log::fail;
+use iceoryx2_log::warn;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 
 use crate::static_storage::file::NamedConceptConfiguration;

@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate iceoryx2_loggers;
+
 use core::sync::atomic::{AtomicBool, Ordering};
 use std::{
     alloc::{alloc, dealloc, Layout},

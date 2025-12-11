@@ -1,5 +1,5 @@
 {
-  "checksum": "dab0148fdf28a0bf43b535c4adc769047f2b3a8315ceb0cf7c7f34017eeae25a",
+  "checksum": "56de7bc82b6873cff48a1a131f3d6061e84eb672d9fe3f67f28d19b2438151fb",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -7689,9 +7689,7 @@
         "crate_features": {
           "common": [
             "default",
-            "logger_buffer",
             "logger_console",
-            "logger_file",
             "std"
           ],
           "selects": {}
@@ -8031,50 +8029,6 @@
           ],
           "selects": {}
         },
-        "version": "0.7.0"
-      },
-      "license": "MIT OR Apache-2.0",
-      "license_ids": [
-        "Apache-2.0",
-        "MIT"
-      ],
-      "license_file": null
-    },
-    "iceoryx2-bb-log 0.7.0": {
-      "name": "iceoryx2-bb-log",
-      "version": "0.7.0",
-      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
-      "repository": null,
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "iceoryx2_bb_log",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "allow_empty": true,
-              "include": [
-                "**/*.rs"
-              ]
-            }
-          }
-        }
-      ],
-      "library_target_name": "iceoryx2_bb_log",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "crate_features": {
-          "common": [
-            "default",
-            "logger_buffer",
-            "logger_console",
-            "logger_file",
-            "std"
-          ],
-          "selects": {}
-        },
-        "edition": "2021",
         "version": "0.7.0"
       },
       "license": "MIT OR Apache-2.0",
@@ -8804,6 +8758,123 @@
       ],
       "license_file": null
     },
+    "iceoryx2-log 0.7.0": {
+      "name": "iceoryx2-log",
+      "version": "0.7.0",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_log",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_log",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "0.7.0"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-log-types 0.7.0": {
+      "name": "iceoryx2-log-types",
+      "version": "0.7.0",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_log_types",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_log_types",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "edition": "2021",
+        "version": "0.7.0"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-loggers 0.7.0": {
+      "name": "iceoryx2-loggers",
+      "version": "0.7.0",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_loggers",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_loggers",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "logger_console",
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "0.7.0"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
     "iceoryx2-pal-concurrency-sync 0.7.0": {
       "name": "iceoryx2-pal-concurrency-sync",
       "version": "0.7.0",
@@ -8871,6 +8942,18 @@
               ]
             }
           }
+        },
+        {
+          "BuildScript": {
+            "crate_name": "build_script_build",
+            "crate_root": "build.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
         }
       ],
       "library_target_name": "iceoryx2_pal_configuration",
@@ -8878,8 +8961,25 @@
         "compile_data_glob": [
           "**"
         ],
+        "deps": {
+          "common": [
+            {
+              "id": "iceoryx2-pal-configuration 0.7.0",
+              "target": "build_script_build"
+            }
+          ],
+          "selects": {}
+        },
         "edition": "2021",
         "version": "0.7.0"
+      },
+      "build_script_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "data_glob": [
+          "**"
+        ]
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -30967,7 +31067,6 @@
     "iceoryx2-bb-elementary-traits 0.7.0": "iceoryx2-bb/elementary-traits",
     "iceoryx2-bb-linux 0.7.0": "iceoryx2-bb/linux",
     "iceoryx2-bb-lock-free 0.7.0": "iceoryx2-bb/lock-free",
-    "iceoryx2-bb-log 0.7.0": "iceoryx2-bb/log",
     "iceoryx2-bb-memory 0.7.0": "iceoryx2-bb/memory",
     "iceoryx2-bb-posix 0.7.0": "iceoryx2-bb/posix",
     "iceoryx2-bb-system-types 0.7.0": "iceoryx2-bb/system-types",
@@ -30981,6 +31080,9 @@
     "iceoryx2-ffi-c 0.7.0": "iceoryx2-ffi/c",
     "iceoryx2-ffi-macros 0.7.0": "iceoryx2-ffi/ffi-macros",
     "iceoryx2-ffi-python 0.7.0": "iceoryx2-ffi/python",
+    "iceoryx2-log 0.7.0": "iceoryx2-log/log",
+    "iceoryx2-log-types 0.7.0": "iceoryx2-log/types",
+    "iceoryx2-loggers 0.7.0": "iceoryx2-log/loggers",
     "iceoryx2-pal-concurrency-sync 0.7.0": "iceoryx2-pal/concurrency-sync",
     "iceoryx2-pal-configuration 0.7.0": "iceoryx2-pal/configuration",
     "iceoryx2-pal-os-api 0.7.0": "iceoryx2-pal/os-api",

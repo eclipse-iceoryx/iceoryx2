@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate iceoryx2_loggers;
+
 use core::mem::MaybeUninit;
 use iceoryx2_bb_container::vector::{static_vec::*, VectorModificationError};
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;

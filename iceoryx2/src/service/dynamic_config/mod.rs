@@ -37,8 +37,8 @@ use iceoryx2_bb_lock_free::mpmc::{
     container::{Container, ContainerAddFailure, ContainerHandle},
     unique_index_set::{ReleaseMode, ReleaseState},
 };
-use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
+use iceoryx2_log::{fail, fatal_panic};
 
 use crate::{node::NodeId, port::port_identifiers::UniquePortId};
 

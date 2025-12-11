@@ -16,10 +16,11 @@ use alloc::string::String;
 
 use clap::Parser;
 use iceoryx2::prelude::*;
-use iceoryx2_bb_log::cout;
+use iceoryx2_log::cout;
 
 fn main() -> Result<(), Box<dyn core::error::Error>> {
     set_log_level_from_env_or(LogLevel::Info);
+
     let args = parse_args();
 
     // create a new config based on the global config

@@ -17,6 +17,8 @@
 //! # Example
 //!
 //! ```no_run
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_posix::read_write_mutex::*;
 //! use std::thread;
 //! use core::time::Duration;
@@ -57,7 +59,7 @@ use core::{
 use alloc::format;
 
 use iceoryx2_bb_elementary::{enum_gen, scope_guard::ScopeGuardBuilder};
-use iceoryx2_bb_log::{fail, fatal_panic, warn};
+use iceoryx2_log::{fail, fatal_panic, warn};
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::posix::MemZeroedStruct;
 use iceoryx2_pal_posix::*;

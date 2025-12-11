@@ -32,8 +32,8 @@ use crate::node::NodeId;
 use crate::port::port_identifiers::{UniquePortId, UniqueReaderId, UniqueWriterId};
 use iceoryx2_bb_container::queue::RelocatableContainer;
 use iceoryx2_bb_lock_free::mpmc::{container::*, unique_index_set::ReleaseMode};
-use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
+use iceoryx2_log::fatal_panic;
 
 use super::PortCleanupAction;
 

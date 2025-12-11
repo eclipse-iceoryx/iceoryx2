@@ -17,12 +17,13 @@ use alloc::boxed::Box;
 
 use examples_common::{open_service, PubSubEvent};
 use iceoryx2::prelude::*;
-use iceoryx2_bb_log::cout;
+use iceoryx2_log::cout;
 
 const CYCLE_TIME: Duration = Duration::from_millis(1500);
 
 fn main() -> Result<(), Box<dyn core::error::Error>> {
     set_log_level_from_env_or(LogLevel::Info);
+
     let service_name = ServiceName::new("service_2")?;
     let node = NodeBuilder::new()
         .name(&"publisher 2".try_into()?)

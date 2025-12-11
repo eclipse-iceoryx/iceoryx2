@@ -23,6 +23,8 @@
 //! ## Create non-existing shared memory.
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_posix::shared_memory::*;
 //! use iceoryx2_bb_system_types::file_name::FileName;
 //! use iceoryx2_bb_container::semantic_string::*;
@@ -49,6 +51,8 @@
 //! ## Open existing shared memory.
 //!
 //! ```no_run
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_posix::shared_memory::*;
 //! use iceoryx2_bb_system_types::file_name::FileName;
 //! use iceoryx2_bb_container::semantic_string::*;
@@ -71,10 +75,10 @@ use alloc::vec::Vec;
 
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_elementary::enum_gen;
-use iceoryx2_bb_log::{error, fail, fatal_panic, trace};
 use iceoryx2_bb_system_types::file_name::*;
 use iceoryx2_bb_system_types::file_path::*;
 use iceoryx2_bb_system_types::path::*;
+use iceoryx2_log::{error, fail, fatal_panic, trace};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use iceoryx2_pal_configuration::PATH_SEPARATOR;
 use iceoryx2_pal_posix::posix::errno::Errno;

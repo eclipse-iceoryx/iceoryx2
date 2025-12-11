@@ -13,5 +13,6 @@ version = { workspace = true }
 [dependencies]
 iceoryx2-bb-lock-free = { workspace = true }
 iceoryx2-bb-posix = { workspace = true }
+iceoryx2-loggers = { workspace = true }
 
 clap = { workspace = true }

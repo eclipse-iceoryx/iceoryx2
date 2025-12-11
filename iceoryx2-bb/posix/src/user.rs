@@ -17,6 +17,8 @@
 //! # Example
 //!
 //! ```ignore
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_posix::user::*;
 //!
 //! let myself = User::from_self().expect("failed to get user");
@@ -39,7 +41,7 @@ use crate::group::Gid;
 use crate::handle_errno;
 use crate::{config::PASSWD_BUFFER_SIZE, system_configuration::*};
 use iceoryx2_bb_container::semantic_string::*;
-use iceoryx2_bb_log::{fail, warn};
+use iceoryx2_log::{fail, warn};
 
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_system_types::file_path::FilePath;

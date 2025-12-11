@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate iceoryx2_loggers;
+
 mod pointer_offset {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::shm_allocator::{PointerOffset, SegmentId};

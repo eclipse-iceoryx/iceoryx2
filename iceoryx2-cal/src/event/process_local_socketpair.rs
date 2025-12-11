@@ -19,7 +19,6 @@ use alloc::vec::Vec;
 pub use iceoryx2_bb_container::semantic_string::SemanticString;
 pub use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath, path::Path};
 
-use iceoryx2_bb_log::{debug, fail, fatal_panic};
 use iceoryx2_bb_posix::{
     file_descriptor::FileDescriptorBased,
     file_descriptor_set::SynchronousMultiplexing,
@@ -29,6 +28,7 @@ use iceoryx2_bb_posix::{
         StreamingSocketPairReceiveError, StreamingSocketPairSendError,
     },
 };
+use iceoryx2_log::{debug, fail, fatal_panic};
 
 use lazy_static::lazy_static;
 

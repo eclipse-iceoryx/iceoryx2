@@ -16,6 +16,8 @@
 //! # Example
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_lock_free::spsc::index_queue::*;
 //!
 //! const QUEUE_CAPACITY: usize = 128;
@@ -49,7 +51,7 @@ use iceoryx2_bb_elementary_traits::{
     owning_pointer::OwningPointer, pointer_trait::PointerTrait,
     relocatable_container::RelocatableContainer,
 };
-use iceoryx2_bb_log::{fail, fatal_panic};
+use iceoryx2_log::{fail, fatal_panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 
@@ -206,6 +208,8 @@ pub mod details {
         /// restrictions but when another thread has already acquired the [`Producer`] it returns
         /// [`None`] since it is a single producer single consumer [`IndexQueue`].
         /// ```
+        /// # extern crate iceoryx2_loggers;
+        ///
         /// use iceoryx2_bb_lock_free::spsc::index_queue::*;
         ///
         /// const QUEUE_CAPACITY: usize = 128;
@@ -237,6 +241,8 @@ pub mod details {
         /// restrictions but when another thread has already acquired the [`Consumer`] it returns
         /// [`None`] since it is a single producer single consumer [`IndexQueue`].
         /// ```
+        /// # extern crate iceoryx2_loggers;
+        ///
         /// use iceoryx2_bb_lock_free::spsc::index_queue::*;
         ///
         /// const QUEUE_CAPACITY: usize = 128;

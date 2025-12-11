@@ -12,7 +12,6 @@
 
 use core::alloc::Layout;
 
-use iceoryx2_bb_log::fail;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::{
     event::NamedConceptBuilder,
@@ -26,6 +25,7 @@ use iceoryx2_cal::{
         SegmentId, ShmAllocationError,
     },
 };
+use iceoryx2_log::fail;
 
 use crate::{
     config,

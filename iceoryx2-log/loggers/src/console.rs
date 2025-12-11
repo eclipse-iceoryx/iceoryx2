@@ -17,9 +17,11 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 use core::sync::atomic::Ordering;
 use std::io::IsTerminal;
 
-use crate::LogLevel;
+use iceoryx2_log_types::Log;
+use iceoryx2_log_types::LogLevel;
 
-pub enum ConsoleLogOrder {
+#[allow(dead_code)]
+enum ConsoleLogOrder {
     Time,
     Counter,
 }
@@ -43,7 +45,7 @@ impl Logger {
         }
     }
 
-    fn log_level_string(log_level: crate::LogLevel) -> &'static str {
+    fn log_level_string(log_level: LogLevel) -> &'static str {
         if std::io::stderr().is_terminal() {
             match log_level {
                 LogLevel::Trace => "\x1b[0;90m[T]",
@@ -65,7 +67,7 @@ impl Logger {
         }
     }
 
-    fn message_color(log_level: crate::LogLevel) -> &'static str {
+    fn message_color(log_level: LogLevel) -> &'static str {
         if std::io::stderr().is_terminal() {
             match log_level {
                 LogLevel::Trace => "\x1b[1;90m",
@@ -80,7 +82,7 @@ impl Logger {
         }
     }
 
-    fn counter_color(_log_level: crate::LogLevel) -> &'static str {
+    fn counter_color(_log_level: LogLevel) -> &'static str {
         if std::io::stderr().is_terminal() {
             "\x1b[0;90m"
         } else {
@@ -88,7 +90,7 @@ impl Logger {
         }
     }
 
-    fn origin_color(log_level: crate::LogLevel) -> &'static str {
+    fn origin_color(log_level: LogLevel) -> &'static str {
         if std::io::stderr().is_terminal() {
             match log_level {
                 LogLevel::Trace => "\x1b[0;90m",
@@ -117,21 +119,21 @@ impl Logger {
         }
     }
 
-    fn print_message(log_level: crate::LogLevel, formatted_message: &str) {
+    fn print_message(log_level: LogLevel, formatted_message: &str) {
         Self::print("", Self::message_color(log_level), formatted_message);
     }
 
-    fn print_origin(log_level: crate::LogLevel, origin: &str) {
+    fn print_origin(log_level: LogLevel, origin: &str) {
         eprint!("{} ", Logger::log_level_string(log_level));
         Self::print("", Logger::origin_color(log_level), origin);
         eprint!("| ");
     }
 }
 
-impl crate::Log for Logger {
+impl Log for Logger {
     fn log(
         &self,
-        log_level: crate::LogLevel,
+        log_level: LogLevel,
         origin: core::fmt::Arguments,
         formatted_message: core::fmt::Arguments,
     ) {

@@ -15,7 +15,7 @@
 /// Logs a trace message.
 ///
 /// ```
-/// use iceoryx2_bb_log::trace;
+/// use iceoryx2_log::trace;
 ///
 /// #[derive(Debug)]
 /// struct MyDataType {}
@@ -56,7 +56,7 @@ macro_rules! trace {
 /// Logs a debug message.
 ///
 /// ```
-/// use iceoryx2_bb_log::debug;
+/// use iceoryx2_log::debug;
 ///
 /// #[derive(Debug)]
 /// struct MyDataType {}
@@ -97,7 +97,7 @@ macro_rules! debug {
 /// Logs a info message.
 ///
 /// ```
-/// use iceoryx2_bb_log::info;
+/// use iceoryx2_log::info;
 ///
 /// #[derive(Debug)]
 /// struct MyDataType {}
@@ -138,7 +138,7 @@ macro_rules! info {
 /// Logs a warn message.
 ///
 /// ```
-/// use iceoryx2_bb_log::warn;
+/// use iceoryx2_log::warn;
 ///
 /// #[derive(Debug)]
 /// struct MyDataType {}
@@ -179,7 +179,7 @@ macro_rules! warn {
 /// Logs an error message.
 ///
 /// ```
-/// use iceoryx2_bb_log::error;
+/// use iceoryx2_log::error;
 ///
 /// #[derive(Debug)]
 /// struct MyDataType {}
@@ -220,7 +220,7 @@ macro_rules! error {
 /// Logs a fatal error message and calls panic.
 ///
 /// ```
-/// use iceoryx2_bb_log::fatal_panic;
+/// use iceoryx2_log::fatal_panic;
 ///
 /// #[derive(Debug)]
 /// struct MyDataType {}

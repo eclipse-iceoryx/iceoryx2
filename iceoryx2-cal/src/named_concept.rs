@@ -16,12 +16,12 @@ use alloc::format;
 use alloc::vec::Vec;
 
 use iceoryx2_bb_container::semantic_string::SemanticString;
-use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_posix::config::TEMP_DIRECTORY;
 use iceoryx2_bb_posix::directory::{Directory, DirectoryRemoveError};
 pub use iceoryx2_bb_system_types::file_name::FileName;
 pub use iceoryx2_bb_system_types::file_path::FilePath;
 pub use iceoryx2_bb_system_types::path::Path;
+use iceoryx2_log::{fail, fatal_panic};
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum NamedConceptDoesExistError {

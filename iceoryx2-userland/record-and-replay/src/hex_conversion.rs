@@ -15,7 +15,7 @@ use core::fmt::Write;
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use iceoryx2_bb_log::debug;
+use iceoryx2_log::debug;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// Failures that can occur when calling [`hex_string_to_bytes()`].

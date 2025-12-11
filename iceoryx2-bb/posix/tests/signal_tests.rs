@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate iceoryx2_loggers;
+
 use core::sync::atomic::AtomicUsize;
 use core::sync::atomic::{AtomicI32, Ordering};
 use core::time::Duration;

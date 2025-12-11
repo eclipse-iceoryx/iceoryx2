@@ -18,6 +18,7 @@
 //! ## Use [`FileDescriptorManagement`] to extend a type
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
 //! use iceoryx2_bb_posix::file_descriptor::*;
 //!
 //! // required for FileDescriptorManagement
@@ -42,6 +43,8 @@
 //! ## Work with [`FileDescriptorManagement`]
 //!
 //! ```no_run
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_system_types::file_path::FilePath;
 //! use iceoryx2_bb_container::semantic_string::SemanticString;
 //! use iceoryx2_bb_posix::file_descriptor::*;
@@ -76,7 +79,7 @@ use crate::metadata::Metadata;
 use crate::ownership::*;
 use crate::permission::{Permission, PermissionExt};
 use crate::user::Uid;
-use iceoryx2_bb_log::{error, fail, fatal_panic};
+use iceoryx2_log::{error, fail, fatal_panic};
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::*;
 
@@ -87,6 +90,8 @@ use iceoryx2_pal_posix::*;
 /// # Example
 ///
 /// ```ignore
+/// # extern crate iceoryx2_loggers;
+///
 /// use iceoryx2_bb_posix::file_descriptor::*;
 ///
 /// let valid_fd = FileDescriptor::new(2);

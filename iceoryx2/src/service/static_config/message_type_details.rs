@@ -16,7 +16,7 @@ use iceoryx2_bb_container::string::*;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_log::fatal_panic;
+use iceoryx2_log::fatal_panic;
 use serde::{Deserialize, Serialize};
 
 use crate::constants::MAX_TYPE_NAME_LENGTH;

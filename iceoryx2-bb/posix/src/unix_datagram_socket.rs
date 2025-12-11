@@ -18,6 +18,8 @@
 //! ## Transfer data
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_posix::unix_datagram_socket::*;
 //! use iceoryx2_bb_posix::permission::*;
 //! use iceoryx2_bb_system_types::file_path::FilePath;
@@ -45,6 +47,8 @@
 //! ## Transfer [`SocketCred`]s
 //!
 //! ```ignore
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_posix::unix_datagram_socket::*;
 //! use iceoryx2_bb_posix::socket_ancillary::*;
 //! use iceoryx2_bb_system_types::file_path::FilePath;
@@ -76,6 +80,8 @@
 //! ## Transfer [`FileDescriptor`]s
 //!
 //! ```no_run
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_posix::unix_datagram_socket::*;
 //! use iceoryx2_bb_posix::socket_ancillary::*;
 //! use iceoryx2_bb_posix::file::*;
@@ -126,8 +132,8 @@ use alloc::format;
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary::scope_guard::ScopeGuardBuilder;
-use iceoryx2_bb_log::{fail, fatal_panic, trace};
 use iceoryx2_bb_system_types::file_path::FilePath;
+use iceoryx2_log::{fail, fatal_panic, trace};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use iceoryx2_pal_posix::posix::{errno::Errno, MemZeroedStruct};
 

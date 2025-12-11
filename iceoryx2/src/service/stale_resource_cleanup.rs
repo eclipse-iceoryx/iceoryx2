@@ -13,12 +13,12 @@
 use alloc::format;
 use alloc::vec::Vec;
 
-use iceoryx2_bb_log::fail;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::event::NamedConceptMgmt;
 use iceoryx2_cal::named_concept::NamedConceptListError;
 use iceoryx2_cal::named_concept::NamedConceptRemoveError;
 use iceoryx2_cal::zero_copy_connection::{ZeroCopyConnection, ZeroCopyPortRemoveError};
+use iceoryx2_log::fail;
 
 use crate::config;
 use crate::service;

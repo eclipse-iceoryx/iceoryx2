@@ -16,7 +16,7 @@
 /// error with [`From`].
 ///
 /// ```
-/// use iceoryx2_bb_log::fail;
+/// use iceoryx2_log::fail;
 ///
 /// #[derive(Debug)]
 /// struct MyDataType {

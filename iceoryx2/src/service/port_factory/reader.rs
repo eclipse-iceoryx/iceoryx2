@@ -35,7 +35,7 @@ use core::hash::Hash;
 use alloc::format;
 
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_log::fail;
+use iceoryx2_log::fail;
 
 use super::blackboard::PortFactory;
 use crate::port::reader::{Reader, ReaderCreateError};

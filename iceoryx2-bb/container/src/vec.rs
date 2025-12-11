@@ -27,7 +27,7 @@ use iceoryx2_bb_elementary_traits::{
 
 use iceoryx2_bb_elementary::{math::unaligned_mem_size, relocatable_ptr::RelocatablePointer};
 
-use iceoryx2_bb_log::{fail, fatal_panic};
+use iceoryx2_log::{fail, fatal_panic};
 
 pub(crate) type Vec<T> = MetaVec<T, GenericOwningPointer>;
 

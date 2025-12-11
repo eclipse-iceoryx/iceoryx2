@@ -19,11 +19,11 @@ use iceoryx2_bb_container::slotmap::SlotMap;
 use iceoryx2_bb_container::slotmap::SlotMapKey;
 use iceoryx2_bb_container::vector::polymorphic_vec::*;
 use iceoryx2_bb_elementary::cyclic_tagger::*;
-use iceoryx2_bb_log::fatal_panic;
-use iceoryx2_bb_log::{error, fail, warn};
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::zero_copy_connection::*;
+use iceoryx2_log::fatal_panic;
+use iceoryx2_log::{error, fail, warn};
 
 use crate::port::update_connections::ConnectionFailure;
 use crate::port::{DegradationAction, DegradationCallback, ReceiveError};

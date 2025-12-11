@@ -19,6 +19,8 @@
 //! # Example
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_container::string::*;
 //!
 //! const STRING_CAPACITY: usize = 123;
@@ -44,7 +46,7 @@ use core::{
 use iceoryx2_bb_derive_macros::{PlacementDefault, ZeroCopySend};
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_log::fail;
+use iceoryx2_log::fail;
 use serde::{de::Visitor, Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::string::{

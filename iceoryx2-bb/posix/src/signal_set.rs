@@ -13,7 +13,7 @@
 use alloc::vec::Vec;
 
 use enum_iterator::all;
-use iceoryx2_bb_log::fatal_panic;
+use iceoryx2_log::fatal_panic;
 use iceoryx2_pal_posix::posix::{self, Errno, MemZeroedStruct};
 
 use crate::signal::{FetchableSignal, Signal};

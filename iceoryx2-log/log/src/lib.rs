@@ -15,20 +15,20 @@
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 
-//! Simplistic logger. It has 6 [`LogLevel`]s which can be set via [`set_log_level()`] and read via
-//! [`get_log_level()`].
+//! The Logging API for iceoryx2. It has 6 [`LogLevel`]s which can be set via
+//! [`set_log_level()`] and read via [`get_log_level()`].
 //!
-//! The logger provides convinience macros to combine error/panic handling directly with the
-//! logger.
-//! The [`fail!`] macro can return when the function which was called return an error containing
-//! result.
+//! The API includes convinience macros to combine error/panic handling
+//! directly with a logger selected from the `iceoryx2_loggers` crate.
+//! The [`fail!`] macro can return when the function which was called return an
+//! error containing result.
 //! The [`fatal_panic!`] macro calls [`panic!`].
 //!
 //! # Example
 //!
 //! ## Logging
 //! ```
-//! use iceoryx2_bb_log::{debug, error, info, trace, warn};
+//! use iceoryx2_log::{debug, error, info, trace, warn};
 //!
 //! #[derive(Debug)]
 //! struct MyDataType {
@@ -62,7 +62,7 @@
 //!
 //! ## Error Handling
 //! ```
-//! use iceoryx2_bb_log::fail;
+//! use iceoryx2_log::fail;
 //!
 //! #[derive(Debug)]
 //! struct MyDataType {
@@ -100,7 +100,7 @@
 //!
 //! ## Panic Handling
 //! ```
-//! use iceoryx2_bb_log::fatal_panic;
+//! use iceoryx2_log::fatal_panic;
 //!
 //! #[derive(Debug)]
 //! struct MyDataType {
@@ -123,100 +123,25 @@
 //!     }
 //! }
 //! ```
-//! ## Setting custom logger on application startup
-//!
-//! In this example we use the [`crate::logger::buffer::Logger`], that stores every log
-//! message in an internal buffer, and use it as the default logger.
-//!
-//! ```
-//! use iceoryx2_bb_log::{set_logger, info};
-//!
-//! static LOGGER: iceoryx2_bb_log::logger::buffer::Logger =
-//!     iceoryx2_bb_log::logger::buffer::Logger::new();
-//!
-//! assert!(set_logger(&LOGGER));
-//! info!("hello world");
-//! let log_content = LOGGER.content();
-//!
-//! for entry in log_content {
-//!     println!("{:?} {} {}", entry.log_level, entry.origin, entry.message);
-//! }
-//! ```
-
-#[cfg(all(feature = "logger_buffer", not(feature = "std")))]
-compile_error!("The 'logger_buffer' feature requires the 'std' feature to be enabled");
-
-#[cfg(all(feature = "logger_file", not(feature = "std")))]
-compile_error!("The 'logger_file' feature requires the 'std' feature to be enabled");
-
-#[cfg(all(feature = "logger_console", not(feature = "std")))]
-compile_error!("The 'logger_console' feature requires the 'std' feature to be enabled");
-
-#[cfg(all(feature = "logger_log", not(feature = "std")))]
-compile_error!("The 'logger_log' feature requires the 'std' feature to be enabled");
-
-#[cfg(all(feature = "logger_tracing", not(feature = "std")))]
-compile_error!("The 'logger_tracing' feature requires the 'std' feature to be enabled");
-
-extern crate alloc;
-
-#[macro_use]
-pub mod log;
-#[macro_use]
-pub mod fail;
-pub mod logger;
 
 #[cfg(feature = "std")]
 pub use from_env::{set_log_level_from_env_or, set_log_level_from_env_or_default};
 
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU8;
-use iceoryx2_pal_concurrency_sync::once::Once;
+// Re-export so library crates need only depend on this crate
+pub use iceoryx2_log_types::{Log, LogLevel};
 
-use core::{fmt::Arguments, sync::atomic::Ordering};
+use core::sync::atomic::Ordering;
 
-#[cfg(feature = "logger_tracing")]
-static DEFAULT_LOGGER: logger::tracing::Logger = logger::tracing::Logger::new();
+use iceoryx2_pal_concurrency_sync::{iox_atomic::IoxAtomicU8, once::Once};
 
-#[cfg(feature = "logger_log")]
-static DEFAULT_LOGGER: logger::log::Logger = logger::log::Logger::new();
-
-#[cfg(all(
-    not(any(feature = "logger_log", feature = "logger_tracing")),
-    feature = "logger_console"
-))]
-static DEFAULT_LOGGER: logger::console::Logger = logger::console::Logger::new();
-
-#[cfg(not(any(
-    feature = "logger_tracing",
-    feature = "logger_log",
-    feature = "logger_file",
-    feature = "logger_buffer",
-    feature = "logger_console"
-)))]
-static DEFAULT_LOGGER: logger::null::Logger = logger::null::Logger::new();
+mod fail;
+mod log;
 
 const DEFAULT_LOG_LEVEL: LogLevel = LogLevel::Info;
+static LOG_LEVEL: IoxAtomicU8 = IoxAtomicU8::new(DEFAULT_LOG_LEVEL as u8);
 
 static mut LOGGER: Option<&'static dyn Log> = None;
-static LOG_LEVEL: IoxAtomicU8 = IoxAtomicU8::new(DEFAULT_LOG_LEVEL as u8);
 static INIT: Once = Once::new();
-
-pub trait Log: Send + Sync {
-    /// logs a message
-    fn log(&self, log_level: LogLevel, origin: Arguments, formatted_message: Arguments);
-}
-
-/// Describes the log level.
-#[repr(u8)]
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash)]
-pub enum LogLevel {
-    Trace = 0,
-    Debug = 1,
-    Info = 2,
-    Warn = 3,
-    Error = 4,
-    Fatal = 5,
-}
 
 /// Sets the current log level. This is ignored for external frameworks like `log` or `tracing`.
 /// Here you have to use the log-level settings of that framework.
@@ -229,38 +154,37 @@ pub fn get_log_level() -> u8 {
     LOG_LEVEL.load(Ordering::Relaxed)
 }
 
+/// Get a reference to the current logger
+///
+/// This initializes the logger to NULL_LOGGER if it hasn't been set yet.
+fn get_logger() -> &'static dyn Log {
+    INIT.call_once(|| unsafe {
+        #[allow(static_mut_refs)]
+        if LOGGER.is_none() {
+            LOGGER = Some(__internal_default_logger());
+        }
+    });
+
+    // # Safety
+    // 1. The logger is always an immutable threadsafe object with only interior mutability.
+    // 2. Once::call_once ensures LOGGER can only be mutated during initialization
+    //    and the lifetime is 'static.
+    // 3. After INIT.call_once returns, LOGGER is guaranteed to be Some(_)
+    #[allow(static_mut_refs)]
+    unsafe {
+        LOGGER.unwrap()
+    }
+}
+
 /// Sets the [`Log`]ger. Can be only called once at the beginning of the program. If the
 /// [`Log`]ger is already set it returns false and does not update it.
-pub fn set_logger<T: Log + 'static>(value: &'static T) -> bool {
+pub fn set_logger(logger: &'static dyn Log) -> bool {
     let mut set_logger_success = false;
     INIT.call_once(|| {
-        unsafe { LOGGER = Some(value) };
+        unsafe { LOGGER = Some(logger) };
         set_logger_success = true;
     });
     set_logger_success
-}
-
-/// Returns a reference to the [`Log`]ger.
-pub fn get_logger() -> &'static dyn Log {
-    INIT.call_once(|| {
-        unsafe { LOGGER = Some(&DEFAULT_LOGGER) };
-    });
-
-    // # From The Compiler
-    //
-    // shared references to mutable statics are dangerous; it's undefined behavior
-    //   1. if the static is mutated or
-    //   2. if a mutable reference is created for it while the shared reference lives
-    //
-    // # Safety
-    //
-    // 1. The logger is always an immutable threadsafe object with only interior mutability.
-    // 2. [`std::sync::Once`] is used to ensure it can only mutated on initialization and the
-    //    lifetime is `'static`.
-    #[allow(static_mut_refs)]
-    unsafe {
-        *LOGGER.as_ref().unwrap()
-    }
 }
 
 #[cfg(feature = "std")]
@@ -308,12 +232,21 @@ mod from_env {
 }
 
 #[doc(hidden)]
-pub fn __internal_print_log_msg(log_level: LogLevel, origin: Arguments, args: Arguments) {
+pub fn __internal_print_log_msg(
+    log_level: LogLevel,
+    origin: core::fmt::Arguments,
+    args: core::fmt::Arguments,
+) {
     if get_log_level() <= log_level as u8 {
         get_logger().log(log_level, origin, args)
     }
 }
 
+extern "Rust" {
+    fn __internal_default_logger() -> &'static dyn Log;
+}
+
+// TODO: Move this somewhere else ...
 // TODO(#1127): Add proper printing abstraction that can be implemented for no_std platforms
 #[cfg(feature = "std")]
 #[macro_export]

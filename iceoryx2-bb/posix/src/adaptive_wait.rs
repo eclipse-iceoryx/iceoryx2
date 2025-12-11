@@ -20,6 +20,7 @@
 //!
 //! # Examples
 //! ```ignore
+//! # extern crate iceoryx2_loggers;
 //! use iceoryx2_bb_posix::adaptive_wait::*;
 //! use iceoryx2_bb_posix::clock::*;
 //!
@@ -43,7 +44,7 @@ use crate::config::{
 };
 use crate::scheduler::yield_now;
 use iceoryx2_bb_elementary::enum_gen;
-use iceoryx2_bb_log::fail;
+use iceoryx2_log::fail;
 
 /// The AdaptiveWaitBuilder is required to produce an [`AdaptiveWait`] object.
 /// The default value for clock is defined in [`ClockType::default()`].
@@ -130,6 +131,8 @@ impl AdaptiveWait {
     ///
     /// # Examples
     /// ```
+    /// extern crate iceoryx2_loggers;
+    ///
     /// use iceoryx2_bb_posix::adaptive_wait::*;
     ///
     /// let mut counter = 0;
@@ -157,6 +160,8 @@ impl AdaptiveWait {
     /// # Examples
     ///
     /// ```
+    /// # extern crate iceoryx2_loggers;
+    ///
     /// use iceoryx2_bb_posix::adaptive_wait::*;
     /// use core::time::Duration;
     ///
