@@ -18,6 +18,7 @@
 #include "test.hpp"
 #include <array>
 #include <cstdint>
+#include <gtest/gtest.h>
 
 namespace {
 using namespace iox2;
@@ -139,7 +140,7 @@ TYPED_TEST(ServicePublishSubscribeTest, creating_existing_service_fails) {
     auto sut = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value();
     auto sut_2 = node.service_builder(service_name).template publish_subscribe<uint64_t>().create();
 
-    ASSERT_TRUE(sut_2.has_error());
+    ASSERT_FALSE(sut_2.has_value());
     ASSERT_THAT(sut_2.error(), Eq(PublishSubscribeCreateError::AlreadyExists));
 }
 
@@ -190,7 +191,7 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_non_existing_service_fails) {
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = node.service_builder(service_name).template publish_subscribe<uint64_t>().open();
-    ASSERT_TRUE(sut.has_error());
+    ASSERT_FALSE(sut.has_value());
     ASSERT_THAT(sut.error(), Eq(PublishSubscribeOpenError::DoesNotExist));
 }
 
@@ -213,7 +214,7 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_with_wrong_payl
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value();
     auto sut = node.service_builder(service_name).template publish_subscribe<double>().open();
-    ASSERT_TRUE(sut.has_error());
+    ASSERT_FALSE(sut.has_value());
     ASSERT_THAT(sut.error(), Eq(PublishSubscribeOpenError::IncompatibleTypes));
 }
 
@@ -225,7 +226,7 @@ TYPED_TEST(ServicePublishSubscribeTest, open_or_create_existing_service_with_wro
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value();
     auto sut = node.service_builder(service_name).template publish_subscribe<double>().open_or_create();
-    ASSERT_TRUE(sut.has_error());
+    ASSERT_FALSE(sut.has_value());
     ASSERT_THAT(sut.error(), Eq(PublishSubscribeOpenOrCreateError::OpenIncompatibleTypes));
 }
 
@@ -652,7 +653,7 @@ TYPED_TEST(ServicePublishSubscribeTest, open_fails_with_incompatible_publisher_r
                             .max_publishers(NUMBER_OF_PUBLISHERS + 1)
                             .open();
 
-    ASSERT_TRUE(service_fail.has_error());
+    ASSERT_FALSE(service_fail.has_value());
     ASSERT_THAT(service_fail.error(), Eq(PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfPublishers));
 }
 
@@ -674,7 +675,7 @@ TYPED_TEST(ServicePublishSubscribeTest, open_fails_with_incompatible_subscriber_
                             .max_subscribers(NUMBER_OF_SUBSCRIBERS + 1)
                             .open();
 
-    ASSERT_TRUE(service_fail.has_error());
+    ASSERT_FALSE(service_fail.has_value());
     ASSERT_THAT(service_fail.error(), Eq(PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfSubscribers));
 }
 
@@ -1054,14 +1055,14 @@ TYPED_TEST(ServicePublishSubscribeTest, open_fails_when_attributes_are_incompati
                                       .template publish_subscribe<uint64_t>()
                                       .open_or_create_with_attributes(attribute_verifier);
 
-    ASSERT_THAT(service_open_or_create.has_error(), Eq(true));
+    ASSERT_THAT(service_open_or_create.has_value(), Eq(false));
     ASSERT_THAT(service_open_or_create.error(), Eq(PublishSubscribeOpenOrCreateError::OpenIncompatibleAttributes));
 
     auto service_open = node.service_builder(service_name)
                             .template publish_subscribe<uint64_t>()
                             .open_with_attributes(attribute_verifier);
 
-    ASSERT_THAT(service_open.has_error(), Eq(true));
+    ASSERT_THAT(service_open.has_value(), Eq(false));
     ASSERT_THAT(service_open.error(), Eq(PublishSubscribeOpenError::IncompatibleAttributes));
 }
 
@@ -1139,7 +1140,7 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_with_set_payloa
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create = node.service_builder(service_name).template publish_subscribe<Payload>().create().value();
     auto sut_open = node.service_builder(service_name).template publish_subscribe<Payload>().open();
-    ASSERT_FALSE(sut_open.has_error());
+    ASSERT_TRUE(sut_open.has_value());
 }
 
 TYPED_TEST(ServicePublishSubscribeTest,
@@ -1151,7 +1152,7 @@ TYPED_TEST(ServicePublishSubscribeTest,
     auto sut_create = node.service_builder(service_name).template publish_subscribe<Payload>().create().value();
     auto sut_open =
         node.service_builder(service_name).template publish_subscribe<DifferentPayloadWithSameTypeName>().open();
-    ASSERT_FALSE(sut_open.has_error());
+    ASSERT_TRUE(sut_open.has_value());
 }
 
 TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_without_payload_type_name_fails) {
@@ -1166,7 +1167,7 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_without_payload
         double y;
     };
     auto sut_open = node.service_builder(service_name).template publish_subscribe<Payload>().open();
-    ASSERT_TRUE(sut_open.has_error());
+    ASSERT_FALSE(sut_open.has_value());
     EXPECT_EQ(sut_open.error(), PublishSubscribeOpenError::IncompatibleTypes);
 }
 
@@ -1179,7 +1180,7 @@ TYPED_TEST(ServicePublishSubscribeTest,
     auto sut_create = node.service_builder(service_name).template publish_subscribe<Payload>().create().value();
 
     auto sut_open = node.service_builder(service_name).template publish_subscribe<other::Payload>().open();
-    ASSERT_TRUE(sut_open.has_error());
+    ASSERT_FALSE(sut_open.has_value());
     EXPECT_EQ(sut_open.error(), PublishSubscribeOpenError::IncompatibleTypes);
 }
 
@@ -1192,7 +1193,7 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_with_same_paylo
 
     auto sut_open =
         node.service_builder(service_name).template publish_subscribe<PayloadWithSameTypeNameButDifferentSize>().open();
-    ASSERT_TRUE(sut_open.has_error());
+    ASSERT_FALSE(sut_open.has_value());
     EXPECT_EQ(sut_open.error(), PublishSubscribeOpenError::IncompatibleTypes);
 }
 
@@ -1207,7 +1208,7 @@ TYPED_TEST(ServicePublishSubscribeTest,
     auto sut_open = node.service_builder(service_name)
                         .template publish_subscribe<PayloadWithSameTypeNameButDifferentAlignment>()
                         .open();
-    ASSERT_TRUE(sut_open.has_error());
+    ASSERT_FALSE(sut_open.has_value());
     EXPECT_EQ(sut_open.error(), PublishSubscribeOpenError::IncompatibleTypes);
 }
 
@@ -1225,7 +1226,7 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_with_set_user_h
                         .template publish_subscribe<uint8_t>()
                         .template user_header<CustomHeader>()
                         .open();
-    ASSERT_FALSE(sut_open.has_error());
+    ASSERT_TRUE(sut_open.has_value());
 }
 
 TYPED_TEST(ServicePublishSubscribeTest,
@@ -1243,7 +1244,7 @@ TYPED_TEST(ServicePublishSubscribeTest,
                         .template publish_subscribe<uint8_t>()
                         .template user_header<DifferentCustomHeaderWithSameTypeName>()
                         .open();
-    ASSERT_FALSE(sut_open.has_error());
+    ASSERT_TRUE(sut_open.has_value());
 }
 
 TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_without_user_header_type_name_fails) {
@@ -1265,7 +1266,7 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_without_user_he
                         .template publish_subscribe<uint8_t>()
                         .template user_header<CustomHeader>()
                         .open();
-    ASSERT_TRUE(sut_open.has_error());
+    ASSERT_FALSE(sut_open.has_value());
     EXPECT_EQ(sut_open.error(), PublishSubscribeOpenError::IncompatibleTypes);
 }
 
@@ -1285,7 +1286,7 @@ TYPED_TEST(ServicePublishSubscribeTest,
                         .template publish_subscribe<uint8_t>()
                         .template user_header<other::CustomHeader>()
                         .open();
-    ASSERT_TRUE(sut_open.has_error());
+    ASSERT_FALSE(sut_open.has_value());
     EXPECT_EQ(sut_open.error(), PublishSubscribeOpenError::IncompatibleTypes);
 }
 
@@ -1304,7 +1305,7 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_with_same_heade
                         .template publish_subscribe<uint8_t>()
                         .template user_header<CustomHeaderWithSameTypeNameButDifferentSize>()
                         .open();
-    ASSERT_TRUE(sut_open.has_error());
+    ASSERT_FALSE(sut_open.has_value());
     EXPECT_EQ(sut_open.error(), PublishSubscribeOpenError::IncompatibleTypes);
 }
 
@@ -1323,7 +1324,7 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_with_same_heade
                         .template publish_subscribe<uint8_t>()
                         .template user_header<CustomHeaderWithSameTypeNameButDifferentAlignment>()
                         .open();
-    ASSERT_TRUE(sut_open.has_error());
+    ASSERT_FALSE(sut_open.has_value());
     EXPECT_EQ(sut_open.error(), PublishSubscribeOpenError::IncompatibleTypes);
 }
 
@@ -1644,12 +1645,12 @@ TYPED_TEST(ServicePublishSubscribeTest, only_max_publishers_can_be_created) {
         container::Optional<Publisher<SERVICE_TYPE, uint64_t, void>>(service.publisher_builder().create().value());
 
     auto failing_sut = service.publisher_builder().create();
-    ASSERT_TRUE(failing_sut.has_error());
+    ASSERT_FALSE(failing_sut.has_value());
 
     publisher.reset();
 
     auto sut = service.publisher_builder().create();
-    ASSERT_FALSE(sut.has_error());
+    ASSERT_TRUE(sut.has_value());
 }
 
 TYPED_TEST(ServicePublishSubscribeTest, only_max_subscribers_can_be_created) {
@@ -1664,11 +1665,11 @@ TYPED_TEST(ServicePublishSubscribeTest, only_max_subscribers_can_be_created) {
         container::Optional<Subscriber<SERVICE_TYPE, uint64_t, void>>(service.subscriber_builder().create().value());
 
     auto failing_sut = service.subscriber_builder().create();
-    ASSERT_TRUE(failing_sut.has_error());
+    ASSERT_FALSE(failing_sut.has_value());
 
     subscriber.reset();
 
     auto sut = service.subscriber_builder().create();
-    ASSERT_FALSE(sut.has_error());
+    ASSERT_TRUE(sut.has_value());
 }
 } // namespace

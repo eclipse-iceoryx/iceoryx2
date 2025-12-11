@@ -65,7 +65,7 @@ auto main() -> int {
     auto service = node.service_builder(iox2::ServiceName::create("iox2-component-tests").value())
                        .publish_subscribe<ComponentTestHeader>()
                        .open_or_create()
-                       .expect("Unable to open service");
+                       .value();
     auto subscriber = service.subscriber_builder().create().expect("Unable to create subscriber");
 
     auto tests = component_tests();
