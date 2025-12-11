@@ -43,7 +43,7 @@ auto main() -> int {
 
     while (true) {
         auto required_memory_size = std::min(1000000U, counter * counter); // NOLINT
-        auto request = client.loan_slice_uninit(required_memory_size).expect("loan successful");
+        auto request = client.loan_slice_uninit(required_memory_size).value();
         auto initialized_request = request.write_from_fn(
             [&](auto byte_idx) { return static_cast<uint8_t>((byte_idx + counter) % MAX_VALUE); }); // NOLINT
         auto pending_response = send(std::move(initialized_request)).expect("send successful");
