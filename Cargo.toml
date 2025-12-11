@@ -36,7 +36,6 @@ members = [
     "iceoryx2-tunnel/backend",
     "iceoryx2-tunnel/conformance-tests",
     "iceoryx2-tunnel/tunnel",
-    "iceoryx2-tunnel/zenoh",
     "iceoryx2-tunnel/end-to-end-tests",
 
     "iceoryx2-userland/record-and-replay",
@@ -52,6 +51,7 @@ members = [
 
     "component-tests/rust",
 ]
+exclude = ["iceoryx2-tunnel/zenoh"]
 
 [workspace.package]
 categories = ["network-programming"]
@@ -104,7 +104,6 @@ iceoryx2-tunnel-end-to-end-tests = { version = "0.7.0", path = "iceoryx2-tunnel/
 iceoryx2-tunnel = { version = "0.7.0", path = "iceoryx2-tunnel/tunnel" }
 iceoryx2-tunnel-backend = { version = "0.7.0", path = "iceoryx2-tunnel/backend" }
 iceoryx2-tunnel-conformance-tests = { version = "0.7.0", path = "iceoryx2-tunnel/conformance-tests" }
-iceoryx2-tunnel-zenoh = { version = "0.7.0", path = "iceoryx2-tunnel/zenoh" }
 iceoryx2-userland-record-and-replay = { version = "0.7.0", path = "iceoryx2-userland/record-and-replay" }
 
 anyhow = { version = "1.0.86" }
@@ -154,7 +153,6 @@ windows-sys = { version = "0.48.0", features = [
     "Win32_System_SystemServices",
     "Win32_System_ProcessStatus",
 ] }
-zenoh = { version = "1.3.4", features = ["default", "unstable"] }
 
 [profile.release]
 strip = true

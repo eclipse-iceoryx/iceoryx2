@@ -1,28 +1,34 @@
 [package]
 name = "iceoryx2-tunnel-zenoh"
 description = "iceoryx2: zenoh backend for the tunnel"
-categories = { workspace = true }
-edition = { workspace = true }
-homepage = { workspace = true }
-keywords = { workspace = true }
-license = { workspace = true }
-repository = { workspace = true }
-rust-version = { workspace = true }
-version = { workspace = true }
+categories = ["network-programming"]
+edition = "2021"
+homepage = "https://iceoryx.io"
+keywords = [
+    "zero-copy",
+    "communication",
+    "ipc",
+    "publish-subscribe",
+    "request-response",
+]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/eclipse-iceoryx/iceoryx2"
+rust-version = "1.83"
+version = "0.7.0"
 
 [lib]
 name = "iceoryx2_tunnel_zenoh"
 path = "src/lib.rs"
 
 [dependencies]
-iceoryx2 = { workspace = true }
-iceoryx2-tunnel-backend = { workspace = true }
-iceoryx2-bb-log = { workspace = true }
+iceoryx2 = { path = "../../iceoryx2" }
+iceoryx2-tunnel-backend = { path = "../backend" }
+iceoryx2-bb-log = { path = "../../iceoryx2-bb/log" }
 
-serde_json = { workspace = true }
-zenoh = { workspace = true }
+serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
+zenoh = { version = "1.3.4", features = ["default", "unstable"] }
 
 [dev-dependencies]
-iceoryx2-bb-posix = { workspace = true }
-iceoryx2-bb-testing = { workspace = true }
-iceoryx2-tunnel-conformance-tests = { workspace = true }
+iceoryx2-bb-posix = { path = "../../iceoryx2-bb/posix" }
+iceoryx2-bb-testing = { path = "../../iceoryx2-bb/testing" }
+iceoryx2-tunnel-conformance-tests = { path = "../conformance-tests" }

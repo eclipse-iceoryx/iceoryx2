@@ -39,8 +39,11 @@ name = "iceoryx2_cli"
 path = "lib/src/lib.rs"
 
 [features]
-default = ["tunnel_zenoh"]
-tunnel_zenoh = ["iceoryx2-tunnel-zenoh"]
+default = []
+tunnel_zenoh = [
+  "iceoryx2-tunnel-zenoh",
+  "zenoh"
+]
 
 [dependencies]
 iceoryx2-services-discovery = { workspace = true }
@@ -72,8 +75,8 @@ dialoguer = { workspace = true }
 iceoryx2-tunnel = { workspace = true }
 # Zenoh does not build on FreeBSD
 [target.'cfg(not(target_os = "freebsd"))'.dependencies]
-iceoryx2-tunnel-zenoh = { workspace = true, optional = true }
-zenoh = { workspace = true }
+iceoryx2-tunnel-zenoh = { path = '../iceoryx2-tunnel/zenoh', optional = true }
+zenoh = { version = "1.3.4", features = ["default", "unstable"], optional = true }
 
 [dev-dependencies]
 iceoryx2-bb-testing = { workspace = true }
