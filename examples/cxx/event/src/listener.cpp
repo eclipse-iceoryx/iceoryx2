@@ -28,12 +28,14 @@ auto main() -> int {
     std::cout << "Listener ready to receive events!" << std::endl;
 
     while (node.wait(iox2::bb::Duration::zero()).has_value()) {
-        listener.timed_wait_one(CYCLE_TIME).and_then([](auto maybe_event_id) -> auto {
+        auto timed_wait_result = listener.timed_wait_one(CYCLE_TIME);
+        if (timed_wait_result.has_value()) {
+            auto& maybe_event_id = timed_wait_result.value();
             if (maybe_event_id.has_value()) {
                 auto& event_id = maybe_event_id.value();
                 std::cout << "event was triggered with id: " << event_id << std::endl;
             }
-        });
+        }
     }
 
     std::cout << "exit" << std::endl;

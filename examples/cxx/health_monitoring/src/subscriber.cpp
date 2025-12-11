@@ -113,7 +113,7 @@ void handle_incoming_events(Listener<ServiceType::Ipc>& listener,
                 }
             }
         })
-        .expect("");
+        .value();
 }
 
 void find_and_cleanup_dead_nodes() {
