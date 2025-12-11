@@ -40,15 +40,15 @@ auto main() -> int {
                 auto response = TransmissionData { 5 + counter, 6 * counter, 7.77 }; // NOLINT
                 std::cout << "send response: " << response << std::endl;
                 // send first response by using the slower, non-zero-copy API
-                active_request->send_copy(response).expect("send successful");
+                active_request->send_copy(response).value();
 
                 // use zero copy API, send out some responses to demonstrate the streaming API
                 for (auto iter = 0; iter < static_cast<int32_t>(active_request->payload()) % 2; iter++) {
-                    auto response = active_request->loan_uninit().expect("loan successful");
+                    auto response = active_request->loan_uninit().value();
                     auto initialized_response = response.write_payload(
                         TransmissionData { counter * (iter + 1), counter + iter, counter * 0.1234 }); // NOLINT
                     std::cout << "send response: " << initialized_response.payload() << std::endl;
-                    send(std::move(initialized_response)).expect("send successful");
+                    send(std::move(initialized_response)).value();
                 }
             } else {
                 break;

@@ -321,7 +321,7 @@ TYPED_TEST(ServiceRequestResponseTest, loan_uninit_write_payload_send_receive_wo
     auto request_uninit = sut_client.loan_uninit().value();
     request_uninit.payload_mut() = request_payload;
     EXPECT_THAT(request_uninit.payload(), Eq(request_payload));
-    auto pending_response = send(assume_init(std::move(request_uninit))).expect("");
+    auto pending_response = send(assume_init(std::move(request_uninit))).value();
 
     auto active_request = sut_server.receive().value();
     ASSERT_TRUE(active_request.has_value());
@@ -331,7 +331,7 @@ TYPED_TEST(ServiceRequestResponseTest, loan_uninit_write_payload_send_receive_wo
     auto response_uninit = active_request->loan_uninit().value();
     response_uninit.payload_mut() = response_payload;
     EXPECT_THAT(response_uninit.payload(), Eq(response_payload));
-    send(assume_init(std::move(response_uninit))).expect("");
+    send(assume_init(std::move(response_uninit))).value();
 
     auto received_response = pending_response.receive().value();
     ASSERT_TRUE(received_response.has_value());
@@ -365,7 +365,7 @@ TYPED_TEST(ServiceRequestResponseTest, loan_send_receive_works) {
 
     auto response = active_request->loan().value();
     response.payload_mut().p = 0;
-    send(std::move(response)).expect("");
+    send(std::move(response)).value();
 
     auto received_response = pending_response.receive().value();
     ASSERT_TRUE(received_response.has_value());
@@ -601,7 +601,7 @@ TYPED_TEST(ServiceRequestResponseTest, send_slice_copy_and_receive_works) {
     EXPECT_THAT(received_request.payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
     EXPECT_THAT(iterations, Eq(SLICE_MAX_LENGTH));
 
-    received_request.send_slice_copy(payload).expect("");
+    received_request.send_slice_copy(payload).value();
 
     auto received_response = pending_response->receive().value();
     ASSERT_TRUE(received_response.has_value());
@@ -667,7 +667,7 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_uninit_write_payload_send_rece
     }
     EXPECT_THAT(response.payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
     EXPECT_THAT(iterations, Eq(SLICE_MAX_LENGTH));
-    send(std::move(response)).expect("");
+    send(std::move(response)).value();
 
     auto received_response = pending_response.receive().value();
     ASSERT_TRUE(received_response.has_value());
@@ -702,7 +702,7 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_write_payload_send_receive_wor
     ASSERT_TRUE(request.has_value());
     EXPECT_THAT(request->payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
 
-    auto pending_response = send(std::move(*request)).expect("");
+    auto pending_response = send(std::move(*request)).value();
 
     auto active_request = sut_server.receive().value();
     ASSERT_TRUE(active_request.has_value());
@@ -717,7 +717,7 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_write_payload_send_receive_wor
     EXPECT_THAT(iterations, Eq(SLICE_MAX_LENGTH));
 
     auto response = received_request.loan_slice(SLICE_MAX_LENGTH).value();
-    send(std::move(response)).expect("");
+    send(std::move(response)).value();
 
     auto received_response = pending_response.receive().value();
     ASSERT_TRUE(received_response.has_value());
@@ -747,7 +747,7 @@ TYPED_TEST(ServiceRequestResponseTest, write_payload_works) {
     uint64_t request_payload = 3;
     auto request = request_uninit.write_payload(std::move(request_payload));
     EXPECT_THAT(request.payload(), Eq(request_payload));
-    auto pending_response = send(std::move(request)).expect("");
+    auto pending_response = send(std::move(request)).value();
 
     auto active_request = sut_server.receive().value();
     ASSERT_TRUE(active_request.has_value());
@@ -757,7 +757,7 @@ TYPED_TEST(ServiceRequestResponseTest, write_payload_works) {
     auto response_uninit = active_request->loan_uninit().value();
     auto response = response_uninit.write_payload(std::move(response_payload));
     EXPECT_THAT(response.payload(), Eq(response_payload));
-    send(std::move(response)).expect("");
+    send(std::move(response)).value();
 
     auto received_response = pending_response.receive().value();
     ASSERT_TRUE(received_response.has_value());
@@ -785,7 +785,7 @@ TYPED_TEST(ServiceRequestResponseTest, write_from_fn_works) {
 
     auto request = request_uninit.write_from_fn(
         [](auto index) -> auto { return DummyData { DummyData::DEFAULT_VALUE_A + index, index % 2 == 0 }; });
-    auto pending_response = send(std::move(request)).expect("");
+    auto pending_response = send(std::move(request)).value();
 
     auto active_request = sut_server.receive().value();
     ASSERT_TRUE(active_request.has_value());
@@ -802,7 +802,7 @@ TYPED_TEST(ServiceRequestResponseTest, write_from_fn_works) {
     auto response_uninit = received_request.loan_slice_uninit(SLICE_MAX_LENGTH).value();
     auto response = response_uninit.write_from_fn(
         [](auto index) -> auto { return DummyData { DummyData::DEFAULT_VALUE_Z + index, index % 2 == 0 }; });
-    send(std::move(response)).expect("");
+    send(std::move(response)).value();
 
     auto received_response = pending_response.receive().value();
     ASSERT_TRUE(received_response.has_value());
@@ -935,7 +935,7 @@ TYPED_TEST(ServiceRequestResponseTest, send_receive_with_user_header_works) {
     auto request_uninit = sut_client.loan_uninit().value();
     request_uninit.user_header_mut() = request_user_header;
     EXPECT_THAT(request_uninit.user_header(), Eq(request_user_header));
-    auto pending_response = send(assume_init(std::move(request_uninit))).expect("");
+    auto pending_response = send(assume_init(std::move(request_uninit))).value();
     EXPECT_THAT(pending_response.user_header(), Eq(request_user_header));
 
     auto active_request = sut_server.receive().value();
@@ -945,7 +945,7 @@ TYPED_TEST(ServiceRequestResponseTest, send_receive_with_user_header_works) {
     auto response = active_request->loan().value();
     response.payload_mut() = 2;
     response.user_header_mut() = response_user_header;
-    send(std::move(response)).expect("");
+    send(std::move(response)).value();
 
     auto received_response = pending_response.receive().value();
     ASSERT_TRUE(received_response.has_value());
@@ -1122,7 +1122,7 @@ TYPED_TEST(ServiceRequestResponseTest, origin_is_set_correctly) {
     auto request_uninit = sut_client.loan_uninit().value();
     EXPECT_TRUE(request_uninit.header().client_port_id() == sut_client.id());
 
-    auto pending_response = send(assume_init(std::move(request_uninit))).expect("");
+    auto pending_response = send(assume_init(std::move(request_uninit))).value();
     EXPECT_TRUE(pending_response.header().client_port_id() == sut_client.id());
 
     auto active_request = sut_server.receive().value();
@@ -1131,7 +1131,7 @@ TYPED_TEST(ServiceRequestResponseTest, origin_is_set_correctly) {
 
     auto response_uninit = active_request->loan_uninit().value();
     EXPECT_TRUE(response_uninit.header().server_port_id() == sut_server.id());
-    send(assume_init(std::move(response_uninit))).expect("");
+    send(assume_init(std::move(response_uninit))).value();
 
     auto response = pending_response.receive().value();
     ASSERT_TRUE(response.has_value());
