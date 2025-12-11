@@ -14,7 +14,6 @@
 #define IOX2_ATTRIBUTE_HPP
 
 #include "iox2/internal/iceoryx2.hpp"
-#include "iox2/legacy/string.hpp"
 
 namespace iox2 {
 /// Represents a single service attribute (key-value) pair that can be defined when the service

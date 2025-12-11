@@ -26,7 +26,6 @@
 #include <ostream>
 #include <type_traits>
 
-// TODO: copyright header
 namespace iox2 {
 namespace container {
 
