@@ -33,7 +33,7 @@ auto main() -> int {
 
     auto key_0 = BlackboardKey { 0, -4, 4 };
     auto key_1 = BlackboardKey { 1, -4, 4 };
-    auto reader = service.reader_builder().create().expect("successful reader creation");
+    auto reader = service.reader_builder().create().value();
     auto entry_handle_key_0 = reader.template entry<int32_t>(key_0).value();
     auto entry_handle_key_1 = reader.template entry<double>(key_1).value();
 
