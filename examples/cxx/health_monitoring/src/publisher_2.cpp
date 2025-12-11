@@ -20,7 +20,7 @@ constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_millis(1500);
 auto main() -> int {
     using namespace iox2;
     set_log_level_from_env_or(LogLevel::Info);
-    auto service_name = ServiceName::create("service_2").expect("");
+    auto service_name = ServiceName::create("service_2").value();
     auto node = NodeBuilder()
                     .name(NodeName::create("publisher 2").value())
                     .create<ServiceType::Ipc>()

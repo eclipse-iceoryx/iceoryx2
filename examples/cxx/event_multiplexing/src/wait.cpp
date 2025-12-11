@@ -37,8 +37,8 @@ auto main(int argc, char** argv) -> int {
     set_log_level_from_env_or(LogLevel::Info);
     auto args = Args::parse(argc, argv, "Notifier of the event multiplexing example.");
 
-    auto service_name_1 = ServiceName::create(args.service1().c_str()).expect("valid service name");
-    auto service_name_2 = ServiceName::create(args.service2().c_str()).expect("valid service name");
+    auto service_name_1 = ServiceName::create(args.service1().c_str()).value();
+    auto service_name_2 = ServiceName::create(args.service2().c_str()).value();
 
     // create node and services
     auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");

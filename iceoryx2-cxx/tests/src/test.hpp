@@ -41,7 +41,7 @@ inline auto generate_service_name() -> ServiceName {
     return ServiceName::create((std::string("test_") + std::to_string(COUNTER.fetch_add(1)) + "_" + std::to_string(now)
                                 + "_" + std::to_string(random_number))
                                    .c_str())
-        .expect("");
+        .value();
 }
 } // namespace iox2_testing
 

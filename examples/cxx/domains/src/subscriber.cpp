@@ -52,7 +52,7 @@ auto main(int argc, char** argv) -> int {
                     .create<ServiceType::Ipc>()
                     .expect("successful node creation");
 
-    auto service = node.service_builder(ServiceName::create(args.service().c_str()).expect("valid service name"))
+    auto service = node.service_builder(ServiceName::create(args.service().c_str()).value())
                        .publish_subscribe<TransmissionData>()
                        .open_or_create()
                        .expect("successful service creation/opening");

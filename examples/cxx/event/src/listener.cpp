@@ -21,7 +21,7 @@ auto main() -> int {
     set_log_level_from_env_or(LogLevel::Info);
     auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
 
-    auto service = node.service_builder(ServiceName::create("MyEventName").expect("valid service name"))
+    auto service = node.service_builder(ServiceName::create("MyEventName").value())
                        .event()
                        .open_or_create()
                        .expect("successful service creation/opening");

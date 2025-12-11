@@ -30,8 +30,8 @@ void handle_incoming_events(Listener<ServiceType::Ipc>& listener,
 
 auto main() -> int {
     set_log_level_from_env_or(LogLevel::Info);
-    auto service_name_1 = ServiceName::create("service_1").expect("");
-    auto service_name_2 = ServiceName::create("service_2").expect("");
+    auto service_name_1 = ServiceName::create("service_1").value();
+    auto service_name_2 = ServiceName::create("service_2").value();
 
     auto node = NodeBuilder()
                     .name(NodeName::create("subscruber").value())

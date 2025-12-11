@@ -24,7 +24,7 @@ auto main() -> int {
     set_log_level_from_env_or(LogLevel::Info);
     auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
 
-    auto service = node.service_builder(ServiceName::create("CrossLanguageContainer").expect("valid service name"))
+    auto service = node.service_builder(ServiceName::create("CrossLanguageContainer").value())
                        .publish_subscribe<iox2::container::StaticVector<uint64_t, 32>>() // NOLINT
                        .user_header<iox2::container::StaticString<64>>()                 // NOLINT
                        // add some QoS, disable safe overflow and the subscriber shall get the

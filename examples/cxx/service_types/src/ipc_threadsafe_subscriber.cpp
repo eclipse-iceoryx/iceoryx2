@@ -26,7 +26,7 @@ auto main() -> int {
                     .create<ServiceType::Ipc>()
                     .expect("successful node creation");
 
-    auto service = node.service_builder(ServiceName::create("Service-Variants-Example").expect("valid service name"))
+    auto service = node.service_builder(ServiceName::create("Service-Variants-Example").value())
                        .publish_subscribe<uint64_t>()
                        .open_or_create()
                        .expect("service created");

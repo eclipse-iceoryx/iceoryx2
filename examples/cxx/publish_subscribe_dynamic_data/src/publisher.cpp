@@ -24,7 +24,7 @@ auto main() -> int {
     set_log_level_from_env_or(LogLevel::Info);
     auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
 
-    auto service = node.service_builder(ServiceName::create("Service With Dynamic Data").expect("valid service name"))
+    auto service = node.service_builder(ServiceName::create("Service With Dynamic Data").value())
                        .publish_subscribe<iox::Slice<uint8_t>>()
                        .open_or_create()
                        .expect("successful service creation/opening");
