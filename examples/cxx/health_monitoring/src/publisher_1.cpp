@@ -22,10 +22,7 @@ auto main() -> int {
     using namespace iox2;
     set_log_level_from_env_or(LogLevel::Info);
     auto service_name = ServiceName::create("service_1").value();
-    auto node = NodeBuilder()
-                    .name(NodeName::create("publisher 1").value())
-                    .create<ServiceType::Ipc>()
-                    .expect("successful node creation");
+    auto node = NodeBuilder().name(NodeName::create("publisher 1").value()).create<ServiceType::Ipc>().value();
 
     auto service = open_service(node, service_name);
 

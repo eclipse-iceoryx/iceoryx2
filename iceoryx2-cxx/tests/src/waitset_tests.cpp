@@ -35,7 +35,7 @@ struct WaitSetTest : public ::testing::Test {
     static constexpr ServiceType TYPE = T::TYPE;
 
     WaitSetTest()
-        : node { NodeBuilder().create<TYPE>().expect("") }
+        : node { NodeBuilder().create<TYPE>().value() }
         , event { node.service_builder(generate_name()).event().create().expect("") } {
     }
 

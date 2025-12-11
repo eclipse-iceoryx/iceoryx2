@@ -18,7 +18,7 @@ constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_millis(100);
 auto main() -> int {
     using namespace iox2;
     set_log_level_from_env_or(LogLevel::Info);
-    auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
+    auto node = NodeBuilder().create<ServiceType::Ipc>().value();
 
     auto service = node.service_builder(ServiceName::create("My/Funk/ServiceName").value())
                        .request_response<uint64_t, TransmissionData>()

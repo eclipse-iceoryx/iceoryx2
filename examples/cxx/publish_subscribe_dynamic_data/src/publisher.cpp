@@ -22,7 +22,7 @@ constexpr uint8_t MAX_VALUE = 255;
 auto main() -> int {
     using namespace iox2;
     set_log_level_from_env_or(LogLevel::Info);
-    auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
+    auto node = NodeBuilder().create<ServiceType::Ipc>().value();
 
     auto service = node.service_builder(ServiceName::create("Service With Dynamic Data").value())
                        .publish_subscribe<iox::Slice<uint8_t>>()
