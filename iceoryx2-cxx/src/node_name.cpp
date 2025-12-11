@@ -12,6 +12,7 @@
 
 #include "iox2/node_name.hpp"
 #include "iox2/bb/expected.hpp"
+#include "iox2/internal/iceoryx2.hpp"
 #include "iox2/legacy/assertions.hpp"
 
 #include <cstring>
@@ -20,8 +21,8 @@ namespace iox2 {
 auto NodeNameView::to_string() const -> iox2::container::StaticString<IOX2_NODE_NAME_LENGTH> {
     size_t len = 0;
     const auto* chars = iox2_node_name_as_chars(m_ptr, &len);
-    // TODO: error handling + factory that takes size argument as chars is not null-terminated
-    return *iox2::container::StaticString<IOX2_NODE_NAME_LENGTH>::from_utf8_null_terminated_unchecked(chars);
+    return iox2::container::StaticString<IOX2_NODE_NAME_LENGTH>::from_utf8_null_terminated_unchecked_truncated(
+        chars, IOX2_NODE_NAME_LENGTH);
 }
 
 auto NodeNameView::to_owned() const -> NodeName {

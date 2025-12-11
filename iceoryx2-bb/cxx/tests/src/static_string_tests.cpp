@@ -1320,4 +1320,50 @@ TEST(StaticString, from_utf8_unchecked_works_up_to_capacity) {
     static_assert(!DetectInvalidFromUtf8UncheckedWithStringABC<1>::value, "ABC does not fit into capacity 1");
     static_assert(!DetectInvalidFromUtf8UncheckedWithStringABC<0>::value, "ABC does not fit into capacity 0");
 }
+
+TEST(StaticString, from_utf8_null_terminated_unchecked_truncated_construction_from_null_terminated_c_style_string) {
+    char const* test_string = "Hello World";
+    constexpr uint64_t const STRING_SIZE = 15;
+
+    auto sut = iox2::container::StaticString<STRING_SIZE>::from_utf8_null_terminated_unchecked_truncated(test_string,
+                                                                                                         STRING_SIZE);
+    ASSERT_EQ(sut.size(), 11);
+    EXPECT_STREQ(sut.unchecked_access().c_str(), test_string);
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
+
+    sut = iox2::container::StaticString<STRING_SIZE>::from_utf8_null_terminated_unchecked_truncated(test_string,
+                                                                                                    11); // NOLINT
+    ASSERT_EQ(sut.size(), 11);
+    EXPECT_STREQ(sut.unchecked_access().c_str(), test_string);
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
+
+    sut = iox2::container::StaticString<STRING_SIZE>::from_utf8_null_terminated_unchecked_truncated(test_string,
+                                                                                                    5); // NOLINT
+    ASSERT_EQ(sut.size(), 5);
+    EXPECT_STREQ(sut.unchecked_access().c_str(), "Hello");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
+}
+
+TEST(StaticString,
+     from_utf8_null_terminated_unchecked_truncated_construction_from_large_null_terminated_c_style_string) {
+    char const* test_string = "Hello World";
+    constexpr uint64_t const STRING_SIZE = 5;
+
+    auto sut = iox2::container::StaticString<STRING_SIZE>::from_utf8_null_terminated_unchecked_truncated(test_string,
+                                                                                                         STRING_SIZE);
+    ASSERT_EQ(sut.size(), STRING_SIZE);
+    EXPECT_STREQ(sut.unchecked_access().c_str(), "Hello");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
+
+    sut = iox2::container::StaticString<STRING_SIZE>::from_utf8_null_terminated_unchecked_truncated(test_string,
+                                                                                                    11); // NOLINT
+    ASSERT_EQ(sut.size(), STRING_SIZE);
+    EXPECT_STREQ(sut.unchecked_access().c_str(), "Hello");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
+
+    sut = iox2::container::StaticString<STRING_SIZE>::from_utf8_null_terminated_unchecked_truncated(test_string, 2);
+    ASSERT_EQ(sut.size(), 2);
+    EXPECT_STREQ(sut.unchecked_access().c_str(), "He");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
+}
 } // namespace

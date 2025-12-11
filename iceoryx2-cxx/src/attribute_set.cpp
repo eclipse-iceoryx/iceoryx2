@@ -12,6 +12,7 @@
 
 #include "iox2/attribute_set.hpp"
 #include "iox2/internal/callback_context.hpp"
+#include "iox2/internal/iceoryx2.hpp"
 #include "iox2/legacy/uninitialized_array.hpp"
 
 namespace iox2 {
@@ -19,8 +20,8 @@ namespace {
 auto get_key_values_callback(const char* value, iox2_callback_context context) -> iox2_callback_progression_e {
     auto* callback =
         internal::ctx_cast<iox2::bb::StaticFunction<CallbackProgression(const Attribute::Value&)>>(context);
-    // TODO: error handling
-    auto typed_value = *Attribute::Value::from_utf8_null_terminated_unchecked(value);
+    auto typed_value =
+        Attribute::Value::from_utf8_null_terminated_unchecked_truncated(value, IOX2_ATTRIBUTE_VALUE_LENGTH);
     return iox2::bb::into<iox2_callback_progression_e>(callback->value()(typed_value));
 }
 } // namespace

@@ -85,13 +85,15 @@ auto list_callback(iox2_node_state_e node_state,
             return bb::Optional<NodeDetails>();
         }
 
-        return bb::Optional<NodeDetails>(NodeDetails {
-            iox2::bb::FileName::create(
-                *iox2::container::StaticString<iox2::bb::FileName::capacity()>::from_utf8_null_terminated_unchecked(
-                    executable))
-                .expect("The executable file name is always valid."),
-            NodeNameView { node_name }.to_owned(),
-            Config {} });
+        auto str = iox2::container::StaticString<iox2::bb::FileName::capacity()>::from_utf8_null_terminated_unchecked(
+            executable);
+        if (!str.has_value()) {
+            return bb::Optional<NodeDetails>();
+        }
+        return bb::Optional<NodeDetails>(
+            NodeDetails { iox2::bb::FileName::create(*str).expect("The executable file name is always valid."),
+                          NodeNameView { node_name }.to_owned(),
+                          Config {} });
     }();
 
     iox2_node_id_h node_id_handle = nullptr;

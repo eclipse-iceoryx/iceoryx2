@@ -38,9 +38,8 @@ struct IsStaticString : std::false_type { };
 template <uint64_t N>
 struct IsStaticString<StaticString<N>> : std::true_type { };
 
-// TODO: check for custom string or rename to IsStaticStringOrCharArray?
 template <typename T, typename ReturnType>
-using IsStringOrCharArray =
+using IsStaticStringOrCharArray =
     typename std::enable_if<IsStaticString<T>::value || legacy::is_char_array<T>::value, ReturnType>::type;
 
 /// A UTF-8 string with fixed static capacity and contiguous inplace storage.
@@ -376,6 +375,21 @@ class StaticString {
         return ret;
     }
 
+    /// Constructs a StaticString from the first `count` characters of a null terminated C-style string.
+    /// This unchecked function allows for uncontrolled memory access. Users of this must ensure that the input string
+    /// is properly null terminated and represents a valid UTF-8 encoding.
+    static auto from_utf8_null_terminated_unchecked_truncated(char const* utf8_str, SizeType count) -> StaticString {
+        StaticString ret;
+        auto index = std::min(count, N);
+        while (*utf8_str != '\0' && index > 0) {
+            ret.push_back(*utf8_str);
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic), unchecked access into c-style string
+            ++utf8_str;
+            --index;
+        }
+        return ret;
+    }
+
     /// Attempt to append a single code unit to the back of the string.
     /// @return true on success.
     ///         false if the action would exceed the string's capacity or put the string content into a state that is
@@ -551,7 +565,7 @@ class StaticString {
     ///         character sequence
     ///         NULLOPT if no character is found or if pos is greater than size()
     template <typename T>
-    auto find_first_of(T const& str, SizeType pos = 0U) const -> IsStringOrCharArray<T, bb::Optional<SizeType>> {
+    auto find_first_of(T const& str, SizeType pos = 0U) const -> IsStaticStringOrCharArray<T, bb::Optional<SizeType>> {
         if (pos > m_size) {
             return bb::NULLOPT;
         }
@@ -574,7 +588,7 @@ class StaticString {
     ///         character sequence
     ///         NULLOPT if no character is found
     template <typename T>
-    auto find_last_of(T const& str, SizeType pos = N) const -> IsStringOrCharArray<T, bb::Optional<SizeType>> {
+    auto find_last_of(T const& str, SizeType pos = N) const -> IsStaticStringOrCharArray<T, bb::Optional<SizeType>> {
         if (m_size == 0) {
             return bb::NULLOPT;
         }
