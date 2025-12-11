@@ -25,7 +25,7 @@ auto main() -> int {
                        .open_or_create()
                        .value();
 
-    auto server = service.server_builder().create().expect("successful server creation");
+    auto server = service.server_builder().create().value();
 
     std::cout << "Server ready to receive requests!" << std::endl;
 
