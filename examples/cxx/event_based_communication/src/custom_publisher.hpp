@@ -89,7 +89,7 @@ class CustomPublisher : public iox2::FileDescriptorBased {
         auto sample = m_publisher.loan_uninit().value();
         auto initialized_sample = sample.write_payload(TransmissionData {
             static_cast<int32_t>(counter), static_cast<int32_t>(counter), static_cast<double>(counter) * SOME_NUMBER });
-        ::iox2::send(std::move(initialized_sample)).expect("");
+        ::iox2::send(std::move(initialized_sample)).value();
 
         m_notifier.notify_with_custom_event_id(iox2::EventId(iox2::bb::into<size_t>(PubSubEvent::SentSample)))
             .expect("");

@@ -53,7 +53,7 @@ auto main() -> int {
         auto initialized_sample = sample.write_from_fn(
             [&](auto byte_idx) { return static_cast<uint8_t>((byte_idx + counter) % MAX_VALUE); }); // NOLINT
 
-        send(std::move(initialized_sample)).expect("send successful");
+        send(std::move(initialized_sample)).value();
 
         std::cout << "Send sample " << counter << " with " << required_memory_size << " bytes..." << std::endl;
 

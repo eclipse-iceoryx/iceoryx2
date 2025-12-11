@@ -42,7 +42,7 @@ auto main() -> int {
     while (node.wait(CYCLE_TIME).has_value()) {
         auto sample = publisher.loan().value();
         sample.payload_mut() = 0;
-        send(std::move(sample)).expect("send successful");
+        send(std::move(sample)).value();
     }
 
     std::cout << "exit" << std::endl;

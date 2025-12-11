@@ -44,7 +44,7 @@ auto main() -> int {
 
         auto initialized_sample = sample.write_payload(counter);
 
-        send(std::move(initialized_sample)).expect("send successful");
+        send(std::move(initialized_sample)).value();
 
         std::cout << "Send sample " << counter << "..." << std::endl;
     }
