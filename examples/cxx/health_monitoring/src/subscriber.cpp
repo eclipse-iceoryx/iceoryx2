@@ -127,7 +127,7 @@ void find_and_cleanup_dead_nodes() {
                 std::cout << view.details().value().name().to_string().c_str();
             }
             std::cout << std::endl;
-            view.remove_stale_resources().expect("");
+            IOX2_DISCARD_RESULT(view.remove_stale_resources().value());
         });
         return CallbackProgression::Continue;
     }).expect("");
