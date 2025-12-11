@@ -50,7 +50,7 @@ auto main() -> int {
         payload.some_matrix.unchecked_access()[2].unchecked_access()[5] = counter * 1.2123; //NOLINT
 
         auto initialized_sample = assume_init(std::move(sample));
-        send(std::move(initialized_sample)).expect("send successful");
+        send(std::move(initialized_sample)).value();
 
         std::cout << "Send sample " << counter << "..." << std::endl;
     }

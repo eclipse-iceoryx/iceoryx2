@@ -60,7 +60,7 @@ auto main() -> int {
             iox2::legacy::string<4>("bla"), iox2::container::StaticVector<uint64_t, 4>::from_value<2>(counter) });
 
         auto initialized_sample = assume_init(std::move(sample));
-        send(std::move(initialized_sample)).expect("send successful");
+        send(std::move(initialized_sample)).value();
 
         std::cout << counter << " :: send" << std::endl;
 

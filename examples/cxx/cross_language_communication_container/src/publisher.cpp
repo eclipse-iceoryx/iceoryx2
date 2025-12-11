@@ -49,7 +49,7 @@ auto main() -> int {
         auto initialized_sample =
             sample.write_payload(*container::StaticVector<uint64_t, 32>::from_value(2, counter)); // NOLINT
 
-        send(std::move(initialized_sample)).expect("send successful");
+        send(std::move(initialized_sample)).value();
 
         std::cout << "Send sample " << counter << "..." << std::endl;
     }

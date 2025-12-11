@@ -69,7 +69,7 @@ auto main(int argc, char** argv) -> int {
         auto initialized_sample =
             sample.write_payload(TransmissionData { counter, counter * 3, counter * 812.12 }); // NOLINT
 
-        send(std::move(initialized_sample)).expect("send successful");
+        send(std::move(initialized_sample)).value();
 
         std::cout << "[domain: \"" << args.domain() << "\", service: \"" << args.service() << "] Send sample "
                   << counter << "..." << std::endl;
