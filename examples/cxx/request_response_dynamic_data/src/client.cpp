@@ -46,7 +46,7 @@ auto main() -> int {
         auto request = client.loan_slice_uninit(required_memory_size).value();
         auto initialized_request = request.write_from_fn(
             [&](auto byte_idx) { return static_cast<uint8_t>((byte_idx + counter) % MAX_VALUE); }); // NOLINT
-        auto pending_response = send(std::move(initialized_request)).expect("send successful");
+        auto pending_response = send(std::move(initialized_request)).value();
         std::cout << "send request " << counter << " with " << required_memory_size << " bytes ..." << std::endl;
 
         if (!node.wait(CYCLE_TIME).has_value()) {
@@ -55,7 +55,7 @@ auto main() -> int {
 
         // acquire all responses to our request from our buffer that were sent by the servers
         while (true) {
-            auto response = pending_response.receive().expect("receive successful");
+            auto response = pending_response.receive().value();
             if (response.has_value()) {
                 std::cout << "received response with " << response->payload().number_of_bytes() << " bytes"
                           << std::endl;

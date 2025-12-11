@@ -38,7 +38,7 @@ auto main() -> int {
     while (node.wait(CYCLE_TIME).has_value()) {
         // acquire all responses to our request from our buffer that were sent by the servers
         while (true) {
-            auto response = pending_response.receive().expect("receive successful");
+            auto response = pending_response.receive().value();
             if (response.has_value()) {
                 std::cout << "received response " << response_counter << ": " << response->payload() << std::endl;
                 response_counter += 1;
@@ -52,7 +52,7 @@ auto main() -> int {
         auto request = client.loan_uninit().value();
         auto initialized_request = request.write_payload(request_counter);
 
-        pending_response = send(std::move(initialized_request)).expect("send successful");
+        pending_response = send(std::move(initialized_request)).value();
 
         std::cout << "send request " << request_counter << " ..." << std::endl;
     }
