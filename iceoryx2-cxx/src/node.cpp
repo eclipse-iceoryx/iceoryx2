@@ -12,6 +12,7 @@
 
 #include "iox2/node.hpp"
 #include "iox2/bb/into.hpp"
+#include "iox2/container/expected.hpp"
 #include "iox2/internal/callback_context.hpp"
 
 namespace iox2 {
@@ -68,12 +69,12 @@ auto Node<T>::id() const -> NodeId {
 }
 
 template <ServiceType T>
-auto Node<T>::wait(iox2::bb::Duration cycle_time) const -> iox2::legacy::expected<void, NodeWaitFailure> {
+auto Node<T>::wait(iox2::bb::Duration cycle_time) const -> iox2::container::Expected<void, NodeWaitFailure> {
     auto result = iox2_node_wait(&m_handle, cycle_time.as_secs(), cycle_time.subsec_nanos());
     if (result == IOX2_OK) {
-        return iox2::legacy::ok();
+        return { container::in_place };
     }
-    return iox2::legacy::err(iox2::bb::into<NodeWaitFailure>(result));
+    return iox2::container::err(iox2::bb::into<NodeWaitFailure>(result));
 }
 
 template <ServiceType T>
@@ -83,17 +84,17 @@ auto Node<T>::service_builder(const ServiceName& name) const -> ServiceBuilder<T
 
 template <ServiceType T>
 auto Node<T>::list(ConfigView config, const iox2::bb::StaticFunction<CallbackProgression(NodeState<T>)>& callback)
-    -> iox2::legacy::expected<void, NodeListFailure> {
+    -> container::Expected<void, NodeListFailure> {
     auto ctx = internal::ctx(callback);
 
     const auto ret_val = iox2_node_list(
         iox2::bb::into<iox2_service_type_e>(T), config.m_ptr, internal::list_callback<T>, static_cast<void*>(&ctx));
 
     if (ret_val == IOX2_OK) {
-        return iox2::legacy::ok();
+        return { container::in_place };
     }
 
-    return iox2::legacy::err(iox2::bb::into<NodeListFailure>(ret_val));
+    return container::err(bb::into<NodeListFailure>(ret_val));
 }
 
 template <ServiceType T>
@@ -109,7 +110,7 @@ NodeBuilder::NodeBuilder()
 }
 
 template <ServiceType T>
-auto NodeBuilder::create() const&& -> iox2::legacy::expected<Node<T>, NodeCreationFailure> {
+auto NodeBuilder::create() const&& -> container::Expected<Node<T>, NodeCreationFailure> {
     if (m_name.has_value()) {
         const auto* name_ptr = iox2_cast_node_name_ptr(m_name->m_handle);
         iox2_node_builder_set_name(&m_handle, name_ptr);
@@ -121,7 +122,7 @@ auto NodeBuilder::create() const&& -> iox2::legacy::expected<Node<T>, NodeCreati
 
     if (m_signal_handling_mode.has_value()) {
         iox2_node_builder_set_signal_handling_mode(
-            &m_handle, iox2::bb::into<iox2_signal_handling_mode_e>(m_signal_handling_mode.value()));
+            &m_handle, bb::into<iox2_signal_handling_mode_e>(m_signal_handling_mode.value()));
     }
 
     iox2_node_h node_handle {};
@@ -129,16 +130,16 @@ auto NodeBuilder::create() const&& -> iox2::legacy::expected<Node<T>, NodeCreati
         iox2_node_builder_create(m_handle, nullptr, iox2::bb::into<iox2_service_type_e>(T), &node_handle);
 
     if (ret_val == IOX2_OK) {
-        return iox2::legacy::ok(Node<T> { node_handle });
+        return Node<T> { node_handle };
     }
 
-    return iox2::legacy::err(iox2::bb::into<NodeCreationFailure>(ret_val));
+    return container::err(iox2::bb::into<NodeCreationFailure>(ret_val));
 }
 
 template class Node<ServiceType::Ipc>;
 template class Node<ServiceType::Local>;
 
-template auto NodeBuilder::create() const&& -> iox2::legacy::expected<Node<ServiceType::Ipc>, NodeCreationFailure>;
-template auto NodeBuilder::create() const&& -> iox2::legacy::expected<Node<ServiceType::Local>, NodeCreationFailure>;
+template auto NodeBuilder::create() const&& -> iox2::container::Expected<Node<ServiceType::Ipc>, NodeCreationFailure>;
+template auto NodeBuilder::create() const&& -> iox2::container::Expected<Node<ServiceType::Local>, NodeCreationFailure>;
 
 } // namespace iox2

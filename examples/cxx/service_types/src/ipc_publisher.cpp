@@ -28,7 +28,7 @@ auto main() -> int {
                     //
                     // All services which are created via this `Node` use the same service variant.
                     .create<ServiceType::Ipc>()
-                    .expect("successful node creation");
+                    .value();
 
     auto service = node.service_builder(ServiceName::create("Service-Variants-Example").value())
                        .publish_subscribe<uint64_t>()

@@ -34,7 +34,7 @@ auto main(int argc, char** argv) -> int {
     auto event_id = EventId(args.event_id());
     auto service_name = ServiceName::create(args.service().c_str()).value();
 
-    auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
+    auto node = NodeBuilder().create<ServiceType::Ipc>().value();
 
     auto service =
         node.service_builder(service_name).event().open_or_create().expect("successful service creation/opening");

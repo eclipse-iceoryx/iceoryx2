@@ -51,7 +51,7 @@ auto main(int argc, char** argv) -> int {
                     // every service constructed by the node will use this config
                     .config(config)
                     .create<ServiceType::Ipc>()
-                    .expect("successful node creation");
+                    .value();
 
     auto service = node.service_builder(ServiceName::create(args.service().c_str()).value())
                        .publish_subscribe<TransmissionData>()

@@ -29,7 +29,7 @@ template <typename T>
 struct ServiceEventTest : public ::testing::Test {
     ServiceEventTest()
         : service_name { iox2_testing::generate_service_name() }
-        , node { NodeBuilder().create<T::TYPE>().expect("") }
+        , node { NodeBuilder().create<T::TYPE>().value() }
         , service { node.service_builder(service_name).event().create().expect("") }
         , notifier { service.notifier_builder().create().expect("") }
         , listener { service.listener_builder().create().expect("") }
@@ -63,7 +63,7 @@ TYPED_TEST(ServiceEventTest, created_service_does_exist) {
     ASSERT_FALSE(
         Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::Event).expect(""));
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
 
     {
         auto sut = node.service_builder(service_name).event().create().expect("");
@@ -81,7 +81,7 @@ TYPED_TEST(ServiceEventTest, creating_existing_service_fails) {
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = node.service_builder(service_name).event().create().expect("");
 
     auto sut_2 = node.service_builder(service_name).event().create();
@@ -101,7 +101,7 @@ TYPED_TEST(ServiceEventTest, service_settings_are_applied) {
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = node.service_builder(service_name)
                    .event()
                    .max_notifiers(NUMBER_OF_NOTIFIERS)
@@ -131,7 +131,7 @@ TYPED_TEST(ServiceEventTest, open_fails_with_incompatible_max_notifiers_requirem
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = node.service_builder(service_name).event().max_notifiers(NUMBER_OF_NOTIFIERS).create().expect("");
     auto sut_fail = node.service_builder(service_name).event().max_notifiers(NUMBER_OF_NOTIFIERS + 1).open();
 
@@ -145,7 +145,7 @@ TYPED_TEST(ServiceEventTest, open_fails_with_incompatible_max_listeners_requirem
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = node.service_builder(service_name).event().max_listeners(NUMBER_OF_LISTENERS).create().expect("");
     auto sut_fail = node.service_builder(service_name).event().max_listeners(NUMBER_OF_LISTENERS + 1).open();
 
@@ -161,7 +161,7 @@ TYPED_TEST(ServiceEventTest, open_or_create_service_does_exist) {
     ASSERT_FALSE(
         Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::Event).expect(""));
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
 
     {
         auto sut = iox2::container::Optional<PortFactoryEvent<SERVICE_TYPE>>(
@@ -193,7 +193,7 @@ TYPED_TEST(ServiceEventTest, opening_non_existing_service_fails) {
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = node.service_builder(service_name).event().open();
     ASSERT_TRUE(sut.has_error());
     ASSERT_THAT(sut.error(), Eq(EventOpenError::DoesNotExist));
@@ -204,7 +204,7 @@ TYPED_TEST(ServiceEventTest, opening_existing_service_works) {
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create = node.service_builder(service_name).event().create();
     auto sut = node.service_builder(service_name).event().open();
     ASSERT_TRUE(sut.has_value());
@@ -215,7 +215,7 @@ TYPED_TEST(ServiceEventTest, service_name_is_set) {
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = node.service_builder(service_name).event().create().expect("");
 
     auto sut_service_name = sut.name();
@@ -229,7 +229,7 @@ TYPED_TEST(ServiceEventTest, notifier_emits_create_and_drop_events) {
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
                        .event()
                        .notifier_created_event(create_event_id)
@@ -344,7 +344,7 @@ TYPED_TEST(ServiceEventTest, service_can_be_opened_when_there_is_a_notifier) {
     const auto event_id = EventId(54);
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = iox2::container::Optional<PortFactoryEvent<SERVICE_TYPE>>(
         node.service_builder(service_name).event().create().expect(""));
     auto listener = iox2::container::Optional<Listener<SERVICE_TYPE>>(sut->listener_builder().create().expect(""));
@@ -387,7 +387,7 @@ TYPED_TEST(ServiceEventTest, service_can_be_opened_when_there_is_a_listener) {
     const auto event_id = EventId(24);
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = iox2::container::Optional<PortFactoryEvent<SERVICE_TYPE>>(
         node.service_builder(service_name).event().create().expect(""));
     auto listener = iox2::container::Optional<Listener<SERVICE_TYPE>>(sut->listener_builder().create().expect(""));
@@ -432,7 +432,7 @@ TYPED_TEST(ServiceEventTest, create_with_attributes_sets_attributes) {
     auto value = Attribute::Value("sudo rm -rf /");
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto attribute_specifier = AttributeSpecifier();
     attribute_specifier.define(key, value).expect("");
     auto service_create =
@@ -461,7 +461,7 @@ TYPED_TEST(ServiceEventTest, open_fails_when_attributes_are_incompatible) {
     auto missing_key = Attribute::Key("no he is singing a song!");
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto attribute_verifier = AttributeVerifier();
     attribute_verifier.require(key, value).expect("");
     auto service_create =
@@ -487,7 +487,7 @@ TYPED_TEST(ServiceEventTest, deadline_can_be_set) {
     const auto service_name = iox2_testing::generate_service_name();
     Config config;
     config.defaults().event().set_deadline(iox2::container::nullopt);
-    auto node = NodeBuilder().config(config).create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().config(config).create<SERVICE_TYPE>().value();
 
     auto service_create = node.service_builder(service_name).event().deadline(DEADLINE).create().expect("");
     auto listener_create = service_create.listener_builder().create().expect("");
@@ -512,7 +512,7 @@ TYPED_TEST(ServiceEventTest, deadline_can_be_disabled) {
     const auto service_name = iox2_testing::generate_service_name();
     Config config;
     config.defaults().event().set_deadline(iox2::container::Optional<Duration>(DEADLINE));
-    auto node = NodeBuilder().config(config).create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().config(config).create<SERVICE_TYPE>().value();
 
     auto service_create = node.service_builder(service_name).event().disable_deadline().create().expect("");
     auto listener_create = service_create.listener_builder().create().expect("");
@@ -535,7 +535,7 @@ TYPED_TEST(ServiceEventTest, notifier_is_informed_when_deadline_was_missed) {
     constexpr uint64_t TIMEOUT = 10;
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name = iox2_testing::generate_service_name();
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
 
     auto service_create = node.service_builder(service_name).event().deadline(DEADLINE).create().expect("");
     auto listener = service_create.listener_builder().create().expect("");
@@ -562,7 +562,7 @@ TYPED_TEST(ServiceEventTest, when_deadline_is_not_missed_notification_works) {
     constexpr uint64_t TIMEOUT = 10;
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name = iox2_testing::generate_service_name();
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
 
     auto service_create = node.service_builder(service_name).event().deadline(DEADLINE).create().expect("");
     auto listener = service_create.listener_builder().create().expect("");
@@ -585,7 +585,7 @@ TYPED_TEST(ServiceEventTest, when_deadline_is_not_missed_notification_works) {
 TYPED_TEST(ServiceEventTest, number_of_listener_notifier_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name = iox2_testing::generate_service_name();
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
 
     auto service = node.service_builder(service_name).event().create().expect("");
 
@@ -608,7 +608,7 @@ TYPED_TEST(ServiceEventTest, service_id_is_unique_per_service) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name_1 = iox2_testing::generate_service_name();
     const auto service_name_2 = iox2_testing::generate_service_name();
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
 
     auto service_1_create = node.service_builder(service_name_1).event().create().expect("");
     auto service_1_open = node.service_builder(service_name_1).event().open().expect("");
@@ -626,8 +626,8 @@ TYPED_TEST(ServiceEventTest, list_service_nodes_works) {
     const auto node_name_2 = NodeName::create("Can they be friends?").value();
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node_1 = NodeBuilder().name(node_name_1).create<SERVICE_TYPE>().expect("");
-    auto node_2 = NodeBuilder().name(node_name_2).create<SERVICE_TYPE>().expect("");
+    auto node_1 = NodeBuilder().name(node_name_1).create<SERVICE_TYPE>().value();
+    auto node_2 = NodeBuilder().name(node_name_2).create<SERVICE_TYPE>().value();
 
     auto sut_1 = node_1.service_builder(service_name).event().create().expect("");
     auto sut_2 = node_2.service_builder(service_name).event().open().expect("");
@@ -662,7 +662,7 @@ TYPED_TEST(ServiceEventTest, listing_all_notifiers_works) {
     constexpr uint64_t NUMBER_OF_NOTIFIERS = 16;
 
     const auto service_name = iox2_testing::generate_service_name();
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = node.service_builder(service_name).event().max_notifiers(NUMBER_OF_NOTIFIERS).create().expect("");
 
     std::vector<iox2::Notifier<SERVICE_TYPE>> notifiers;
@@ -690,7 +690,7 @@ TYPED_TEST(ServiceEventTest, listing_all_notifiers_stops_on_request) {
     constexpr uint64_t NUMBER_OF_NOTIFIERS = 13;
 
     const auto service_name = iox2_testing::generate_service_name();
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = node.service_builder(service_name).event().max_notifiers(NUMBER_OF_NOTIFIERS).create().expect("");
 
     std::vector<iox2::Notifier<SERVICE_TYPE>> notifiers;
@@ -712,7 +712,7 @@ TYPED_TEST(ServiceEventTest, notifier_details_are_correct) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
     const auto service_name = iox2_testing::generate_service_name();
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = node.service_builder(service_name).event().create().expect("");
 
     iox2::Notifier<SERVICE_TYPE> notifier = sut.notifier_builder().create().expect("");
@@ -733,7 +733,7 @@ TYPED_TEST(ServiceEventTest, listing_all_listeners_works) {
     constexpr uint64_t NUMBER_OF_LISTENERS = 17;
 
     const auto service_name = iox2_testing::generate_service_name();
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = node.service_builder(service_name).event().max_listeners(NUMBER_OF_LISTENERS).create().expect("");
 
     std::vector<iox2::Listener<SERVICE_TYPE>> listeners;
@@ -761,7 +761,7 @@ TYPED_TEST(ServiceEventTest, listing_all_listeners_stops_on_request) {
     constexpr uint64_t NUMBER_OF_LISTENERS = 13;
 
     const auto service_name = iox2_testing::generate_service_name();
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = node.service_builder(service_name).event().max_listeners(NUMBER_OF_LISTENERS).create().expect("");
 
     std::vector<iox2::Listener<SERVICE_TYPE>> listeners;
@@ -783,7 +783,7 @@ TYPED_TEST(ServiceEventTest, listener_details_are_correct) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
     const auto service_name = iox2_testing::generate_service_name();
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = node.service_builder(service_name).event().create().expect("");
 
     iox2::Listener<SERVICE_TYPE> listener = sut.listener_builder().create().expect("");
@@ -804,7 +804,7 @@ TYPED_TEST(ServiceEventTest, only_max_notifiers_can_be_created) {
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name).event().max_notifiers(1).create().expect("");
     auto notifier = iox2::container::Optional<Notifier<SERVICE_TYPE>>(service.notifier_builder().create().expect(""));
 
@@ -822,7 +822,7 @@ TYPED_TEST(ServiceEventTest, only_max_listeners_can_be_created) {
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name).event().max_listeners(1).create().expect("");
     auto listener = iox2::container::Optional<Listener<SERVICE_TYPE>>(service.listener_builder().create().expect(""));
 

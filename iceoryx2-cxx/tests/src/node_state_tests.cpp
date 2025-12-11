@@ -30,7 +30,7 @@ TYPED_TEST(NodeStateTest, alive_node_works) {
 
     const auto* valid_name = "Which companies middleware could be best described as a dead horse!";
     auto node_name = NodeName::create(valid_name).value();
-    auto node = NodeBuilder().name(node_name).create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().name(node_name).create<SERVICE_TYPE>().value();
     auto node_id = node.id();
 
     bool alive_node_found = false;
@@ -50,7 +50,7 @@ TYPED_TEST(NodeStateTest, alive_node_works) {
         }
 
         return CallbackProgression::Continue;
-    }).expect("");
+    }).value();
 
     ASSERT_TRUE(alive_node_found);
 }

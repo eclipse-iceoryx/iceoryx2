@@ -30,7 +30,7 @@ void background_thread_fn() {
                     // later during debugging or introspection
                     .name(NodeName::create("threadnode").value())
                     .create<ServiceType::Local>()
-                    .expect("successful node creation");
+                    .value();
 
     auto service = node.service_builder(ServiceName::create("Service-Variants-Example").value())
                        .publish_subscribe<uint64_t>()
@@ -64,7 +64,7 @@ auto main() -> int {
                     // later during debugging or introspection
                     .name(NodeName::create("mainnode").value())
                     .create<ServiceType::Local>()
-                    .expect("successful node creation");
+                    .value();
 
     auto service = node.service_builder(ServiceName::create("Service-Variants-Example").value())
                        .publish_subscribe<uint64_t>()

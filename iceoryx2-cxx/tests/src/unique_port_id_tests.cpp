@@ -34,7 +34,7 @@ struct UniquePortIdTest : public ::testing::Test {
     static constexpr ServiceType TYPE = T::TYPE;
 
     UniquePortIdTest()
-        : node { NodeBuilder().create<TYPE>().expect("") }
+        : node { NodeBuilder().create<TYPE>().value() }
         , service_name { iox2_testing::generate_service_name() }
         , event { node.service_builder(service_name).event().create().expect("") }
         , pubsub { node.service_builder(service_name).template publish_subscribe<uint64_t>().create().expect("") }

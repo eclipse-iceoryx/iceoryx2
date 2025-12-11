@@ -24,7 +24,7 @@ auto main() -> int {
                     // In contrast to Rust, all service variants in C++ have threadsafe ports
                     // but at the cost of an additional mutex lock/unlock call.
                     .create<ServiceType::Ipc>()
-                    .expect("successful node creation");
+                    .value();
 
     auto service = node.service_builder(ServiceName::create("Service-Variants-Example").value())
                        .publish_subscribe<uint64_t>()

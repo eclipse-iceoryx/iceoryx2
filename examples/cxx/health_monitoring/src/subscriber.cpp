@@ -33,10 +33,7 @@ auto main() -> int {
     auto service_name_1 = ServiceName::create("service_1").value();
     auto service_name_2 = ServiceName::create("service_2").value();
 
-    auto node = NodeBuilder()
-                    .name(NodeName::create("subscruber").value())
-                    .create<ServiceType::Ipc>()
-                    .expect("successful node creation");
+    auto node = NodeBuilder().name(NodeName::create("subscruber").value()).create<ServiceType::Ipc>().value();
 
     // open a pubsub and an event service with the same name
     auto service_1 = open_service(node, service_name_1);
@@ -130,6 +127,6 @@ void find_and_cleanup_dead_nodes() {
             IOX2_DISCARD_RESULT(view.remove_stale_resources().value());
         });
         return CallbackProgression::Continue;
-    }).expect("");
+    }).value();
 }
 } // namespace

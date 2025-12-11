@@ -61,7 +61,7 @@ struct ComponentTestHeader {
 auto main() -> int {
     std::cout << "*** Component Tests C++ ***" << std::endl;
 
-    auto node = iox2::NodeBuilder {}.create<iox2::ServiceType::Ipc>().expect("Unable to create node");
+    auto node = iox2::NodeBuilder {}.create<iox2::ServiceType::Ipc>().value();
     auto service = node.service_builder(iox2::ServiceName::create("iox2-component-tests").value())
                        .publish_subscribe<ComponentTestHeader>()
                        .open_or_create()
