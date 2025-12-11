@@ -78,7 +78,7 @@ auto main() -> int {
         }
     }
     while (node.wait(iox2::bb::Duration::from_millis(receive_interval_ms)).has_value()) {
-        auto sample = subscriber.receive().expect("Failure in receive");
+        auto sample = subscriber.receive().value();
         if (sample) {
             auto it_test = std::find_if(begin(tests), end(tests), [&sample](Test const& test) -> auto {
                 return test.test_name == sample->payload().test_name;

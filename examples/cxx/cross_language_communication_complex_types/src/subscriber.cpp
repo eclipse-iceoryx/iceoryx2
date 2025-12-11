@@ -32,12 +32,12 @@ auto main() -> int {
     std::cout << "Subscriber ready to receive data!" << std::endl;
 
     while (node.wait(CYCLE_TIME).has_value()) {
-        auto sample = subscriber.receive().expect("receive succeeds");
+        auto sample = subscriber.receive().value();
         while (sample.has_value()) {
             std::cout << "received: "
                       << sample->payload().some_matrix.unchecked_access()[2].unchecked_access()[5] // NOLINT
                       << std::endl;
-            sample = subscriber.receive().expect("receive succeeds");
+            sample = subscriber.receive().value();
         }
     }
 
