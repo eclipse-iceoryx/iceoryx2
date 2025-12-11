@@ -24,11 +24,11 @@ auto main() -> int {
     auto node = NodeBuilder().create<ServiceType::Ipc>().value();
     auto publisher = CustomPublisher::create(node, ServiceName::create("My/Funk/ServiceName").value());
 
-    auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().expect("");
+    auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().value();
     // Whenever our publisher receives an event we get notified.
-    auto publisher_guard = waitset.attach_notification(publisher).expect("");
+    auto publisher_guard = waitset.attach_notification(publisher).value();
     // Attach an interval so that we wake up and can publish a new message
-    auto cyclic_trigger_guard = waitset.attach_interval(CYCLE_TIME).expect("");
+    auto cyclic_trigger_guard = waitset.attach_interval(CYCLE_TIME).value();
 
     uint64_t counter = 0;
 
@@ -48,7 +48,7 @@ auto main() -> int {
 
     // Start the event loop. It will run until `CallbackProgression::Stop` is returned by the
     // event callback or an interrupt/termination signal was received.
-    waitset.wait_and_process(on_event).expect("");
+    waitset.wait_and_process(on_event).value();
 
     std::cout << "exit" << std::endl;
 

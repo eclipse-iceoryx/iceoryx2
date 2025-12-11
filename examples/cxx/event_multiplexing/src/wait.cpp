@@ -49,12 +49,12 @@ auto main(int argc, char** argv) -> int {
     auto listener_2 = service_2.listener_builder().create().expect("successful listener creation");
 
     // create the waitset and attach the listeners to it
-    auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().expect("");
+    auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().value();
     // NOLINTNEXTLINE(misc-const-correctness) false positive
     iox2::container::StaticVector<WaitSetGuard<ServiceType::Ipc>, 2> guards;
 
-    guards.try_emplace_back(waitset.attach_notification(listener_1).expect(""));
-    guards.try_emplace_back(waitset.attach_notification(listener_2).expect(""));
+    guards.try_emplace_back(waitset.attach_notification(listener_1).value());
+    guards.try_emplace_back(waitset.attach_notification(listener_2).value());
 
     // NOLINTNEXTLINE(misc-const-correctness) false positive
     std::map<WaitSetAttachmentId<ServiceType::Ipc>, ServiceNameListenerPair> listeners;
@@ -89,7 +89,7 @@ auto main(int argc, char** argv) -> int {
     // loops until the user has pressed CTRL+c, the application has received a SIGTERM or SIGINT
     // signal or the user has called explicitly `waitset.stop()` in the `on_event` callback. We
     // didn't add this to the example so feel free to play around with it.
-    waitset.wait_and_process(on_event).expect("");
+    waitset.wait_and_process(on_event).value();
 
     std::cout << "exit" << std::endl;
 

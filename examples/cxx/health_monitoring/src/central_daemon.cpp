@@ -74,7 +74,7 @@ auto main() -> int {
                                .open_or_create()
                                .expect("successful service creation/opening");
 
-    auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().expect("");
+    auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().value();
     auto cycle_guard = waitset.attach_interval(CYCLE_TIME);
 
     std::cout << "Central daemon up and running." << std::endl;
@@ -89,7 +89,7 @@ auto main() -> int {
             find_and_cleanup_dead_nodes();
             return CallbackProgression::Continue;
         })
-        .expect("");
+        .value();
 
     std::cout << "exit" << std::endl;
 

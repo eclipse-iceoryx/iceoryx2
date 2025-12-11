@@ -40,7 +40,7 @@ struct WaitSetTest : public ::testing::Test {
     }
 
     auto create_sut() -> WaitSet<TYPE> {
-        return WaitSetBuilder().create<TYPE>().expect("");
+        return WaitSetBuilder().create<TYPE>().value();
     }
 
     auto create_listener() -> Listener<TYPE> {
@@ -77,14 +77,14 @@ TYPED_TEST(WaitSetTest, attaching_different_elements_works) {
     std::vector<WaitSetGuard<TestFixture::TYPE>> guards;
 
     for (uint64_t idx = 0; idx < NUMBER_OF_INTERVALS; ++idx) {
-        guards.emplace_back(sut.attach_interval(Duration::from_secs(idx + 1)).expect(""));
+        guards.emplace_back(sut.attach_interval(Duration::from_secs(idx + 1)).value());
         ASSERT_THAT(sut.len(), Eq(idx + 1));
         ASSERT_THAT(sut.is_empty(), Eq(false));
     }
 
     for (uint64_t idx = 0; idx < NUMBER_OF_NOTIFICATIONS; ++idx) {
         auto listener = this->create_listener();
-        guards.emplace_back(sut.attach_notification(listener).expect(""));
+        guards.emplace_back(sut.attach_notification(listener).value());
         listeners.emplace_back(std::move(listener));
         ASSERT_THAT(sut.len(), Eq(NUMBER_OF_INTERVALS + idx + 1));
         ASSERT_THAT(sut.is_empty(), Eq(false));
@@ -92,7 +92,7 @@ TYPED_TEST(WaitSetTest, attaching_different_elements_works) {
 
     for (uint64_t idx = 0; idx < NUMBER_OF_DEADLINES; ++idx) {
         auto listener = this->create_listener();
-        guards.emplace_back(sut.attach_deadline(listener, Duration::from_secs(idx + 1)).expect(""));
+        guards.emplace_back(sut.attach_deadline(listener, Duration::from_secs(idx + 1)).value());
         listeners.emplace_back(std::move(listener));
         ASSERT_THAT(sut.len(), Eq(NUMBER_OF_INTERVALS + NUMBER_OF_NOTIFICATIONS + idx + 1));
         ASSERT_THAT(sut.is_empty(), Eq(false));
@@ -112,8 +112,8 @@ TYPED_TEST(WaitSetTest, attaching_same_deadline_twice_fails) {
     auto result_1 = sut.attach_deadline(listener, Duration::from_secs(1));
     auto result_2 = sut.attach_deadline(listener, Duration::from_secs(1));
 
-    ASSERT_THAT(result_1.has_error(), Eq(false));
-    ASSERT_THAT(result_2.has_error(), Eq(true));
+    ASSERT_THAT(result_1.has_value(), Eq(true));
+    ASSERT_THAT(result_2.has_value(), Eq(false));
     ASSERT_THAT(result_2.error(), Eq(WaitSetAttachmentError::AlreadyAttached));
 }
 
@@ -124,8 +124,8 @@ TYPED_TEST(WaitSetTest, attaching_same_notification_twice_fails) {
     auto result_1 = sut.attach_notification(listener);
     auto result_2 = sut.attach_notification(listener);
 
-    ASSERT_THAT(result_1.has_error(), Eq(false));
-    ASSERT_THAT(result_2.has_error(), Eq(true));
+    ASSERT_THAT(result_1.has_value(), Eq(true));
+    ASSERT_THAT(result_2.has_value(), Eq(false));
     ASSERT_THAT(result_2.error(), Eq(WaitSetAttachmentError::AlreadyAttached));
 }
 
@@ -133,7 +133,7 @@ TYPED_TEST(WaitSetTest, empty_waitset_returns_error_on_run) {
     auto sut = this->create_sut();
     auto result = sut.wait_and_process([](auto) -> auto { return CallbackProgression::Continue; });
 
-    ASSERT_THAT(result.has_error(), Eq(true));
+    ASSERT_THAT(result.has_value(), Eq(false));
     ASSERT_THAT(result.error(), Eq(WaitSetRunError::NoAttachments));
 }
 
@@ -141,7 +141,7 @@ TYPED_TEST(WaitSetTest, empty_waitset_returns_error_on_run_once) {
     auto sut = this->create_sut();
     auto result = sut.wait_and_process_once([](auto) -> auto { return CallbackProgression::Continue; });
 
-    ASSERT_THAT(result.has_error(), Eq(true));
+    ASSERT_THAT(result.has_value(), Eq(false));
     ASSERT_THAT(result.error(), Eq(WaitSetRunError::NoAttachments));
 }
 
@@ -149,7 +149,7 @@ TYPED_TEST(WaitSetTest, interval_attachment_blocks_for_at_least_timeout) {
     auto sut = this->create_sut();
 
     auto begin = std::chrono::steady_clock::now();
-    auto guard = sut.attach_interval(TIMEOUT).expect("");
+    auto guard = sut.attach_interval(TIMEOUT).value();
 
     auto callback_called = false;
     auto result = sut.wait_and_process([&](auto attachment_id) -> CallbackProgression {
@@ -171,7 +171,7 @@ TYPED_TEST(WaitSetTest, deadline_attachment_blocks_for_at_least_timeout) {
     auto listener = this->create_listener();
 
     auto begin = std::chrono::steady_clock::now();
-    auto guard = sut.attach_deadline(listener, TIMEOUT).expect("");
+    auto guard = sut.attach_deadline(listener, TIMEOUT).value();
 
     auto callback_called = false;
     auto result = sut.wait_and_process([&](auto attachment_id) -> CallbackProgression {
@@ -192,7 +192,7 @@ TYPED_TEST(WaitSetTest, does_not_block_longer_than_provided_timeout) {
     auto sut = this->create_sut();
 
     auto begin = std::chrono::steady_clock::now();
-    auto guard = sut.attach_interval(Duration::max()).expect("");
+    auto guard = sut.attach_interval(Duration::max()).value();
 
     auto callback_called = false;
     auto result = sut.wait_and_process_once_with_timeout(
@@ -213,7 +213,7 @@ TYPED_TEST(WaitSetTest, blocks_until_interval_when_user_timeout_is_larger) {
     auto sut = this->create_sut();
 
     auto begin = std::chrono::steady_clock::now();
-    auto guard = sut.attach_interval(TIMEOUT).expect("");
+    auto guard = sut.attach_interval(TIMEOUT).value();
 
     auto callback_called = false;
     auto result = sut.wait_and_process_once([&](auto) -> CallbackProgression {
@@ -233,7 +233,7 @@ TYPED_TEST(WaitSetTest, deadline_attachment_wakes_up_when_notified) {
     auto sut = this->create_sut();
     auto listener = this->create_listener();
 
-    auto guard = sut.attach_deadline(listener, Duration::from_hours(1)).expect("");
+    auto guard = sut.attach_deadline(listener, Duration::from_hours(1)).value();
 
     auto callback_called = false;
     std::thread notifier_thread([&]() -> auto {
@@ -256,7 +256,7 @@ TYPED_TEST(WaitSetTest, notification_attachment_wakes_up_when_notified) {
     auto sut = this->create_sut();
     auto listener = this->create_listener();
 
-    auto guard = sut.attach_notification(listener).expect("");
+    auto guard = sut.attach_notification(listener).value();
 
     auto callback_called = false;
     std::thread notifier_thread([&]() -> auto {
@@ -287,18 +287,18 @@ TYPED_TEST(WaitSetTest, triggering_everything_works) {
     listeners.reserve(NUMBER_OF_NOTIFICATIONS + NUMBER_OF_DEADLINES);
 
     for (uint64_t idx = 0; idx < NUMBER_OF_INTERVALS; ++idx) {
-        guards.emplace_back(sut.attach_interval(Duration::from_nanos(1)).expect(""));
+        guards.emplace_back(sut.attach_interval(Duration::from_nanos(1)).value());
     }
 
     for (uint64_t idx = 0; idx < NUMBER_OF_NOTIFICATIONS; ++idx) {
         auto listener = this->create_listener();
-        guards.emplace_back(sut.attach_notification(listener).expect(""));
+        guards.emplace_back(sut.attach_notification(listener).value());
         listeners.emplace_back(std::move(listener));
     }
 
     for (uint64_t idx = 0; idx < NUMBER_OF_DEADLINES; ++idx) {
         auto listener = this->create_listener();
-        guards.emplace_back(sut.attach_deadline(listener, Duration::from_hours(1)).expect(""));
+        guards.emplace_back(sut.attach_deadline(listener, Duration::from_hours(1)).value());
         listeners.emplace_back(std::move(listener));
     }
 
@@ -319,7 +319,7 @@ TYPED_TEST(WaitSetTest, triggering_everything_works) {
         return CallbackProgression::Continue;
     });
 
-    ASSERT_THAT(result.has_error(), Eq(false));
+    ASSERT_THAT(result.has_value(), Eq(true));
 
     for (auto triggered : was_triggered) {
         ASSERT_THAT(triggered, Eq(true));
@@ -329,11 +329,11 @@ TYPED_TEST(WaitSetTest, triggering_everything_works) {
 TYPED_TEST(WaitSetTest, signal_handling_mode_can_be_set) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    auto sut_1 = WaitSetBuilder().signal_handling_mode(SignalHandlingMode::Disabled).create<SERVICE_TYPE>().expect("");
+    auto sut_1 = WaitSetBuilder().signal_handling_mode(SignalHandlingMode::Disabled).create<SERVICE_TYPE>().value();
     auto sut_2 = WaitSetBuilder()
                      .signal_handling_mode(SignalHandlingMode::HandleTerminationRequests)
                      .create<SERVICE_TYPE>()
-                     .expect("");
+                     .value();
 
     ASSERT_THAT(sut_1.signal_handling_mode(), Eq(SignalHandlingMode::Disabled));
     ASSERT_THAT(sut_2.signal_handling_mode(), Eq(SignalHandlingMode::HandleTerminationRequests));
