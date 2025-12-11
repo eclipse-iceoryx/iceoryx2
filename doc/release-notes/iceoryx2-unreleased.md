@@ -73,6 +73,8 @@
     [#1095](https://github.com/eclipse-iceoryx/iceoryx2/issues/1095)
 * Fix QNX cross compilation
     [#1116](https://github.com/eclipse-iceoryx/iceoryx2/issues/1116)
+* Fix large server connection and data segment size
+    [#1130](https://github.com/eclipse-iceoryx/iceoryx2/issues/1130)
 * `ScopeGuard` check if `on_drop` is set before calling it
     [#1171](https://github.com/eclipse-iceoryx/iceoryx2/issues/1171)
 * Fix C binding linker error on QNX
