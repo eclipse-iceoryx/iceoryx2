@@ -138,6 +138,34 @@ CMake package.
 
 ### API Breaking Changes
 
+1. **Rust:** Split logger frontend and backend, requiring the crate
+   `iceoryx2_loggers` to be linked to all binaries so that the logger
+   backend can be used by the frontend.
+
+   ```rust
+   // old
+   use iceoryx2_bb_log::*;
+
+   set_log_level(LogLevel::Info);
+   info!("some log message")
+
+   // new
+   extern crate iceoryx2_loggers;
+
+   use iceoryx2_log::*;
+
+   set_log_level(LogLevel::Info);
+   info!("some log message")
+   ```
+
+   Binary crates must also include `iceoryx2_loggers` as a dependency and the
+   default logger must be specified via feature flag (maximum one). If no
+   feature flag is enabled, the logs are discarded.
+
+    ```toml
+    iceoryx2-loggers = { version = "0.7.0", features = ["logger_console"] }
+    ```
+
 1. **Rust:** Replaced the `FixedSizeVec` with the `StaticVec`
 
    ```rust
@@ -234,7 +262,7 @@ CMake package.
 1. Removed the `cdr` serializer from `iceoryx2-cal`, it is recommended to
    switch to the `postcard` serializer in its place
 
-7. Merged `iox2/semantic_string.hpp` with imported `iox2/bb/semantic_string.hpp`
+1. Merged `iox2/semantic_string.hpp` with imported `iox2/bb/semantic_string.hpp`
    from `iceoryx_hoofs`
 
    With this merge, the `SemanticStringError` moved from the `iox2` namespace
@@ -251,7 +279,7 @@ CMake package.
    // ...
    auto foo() -> expected<void, iox2::bb::SemanticStringError>
 
-8. **Rust:** The blackboard's `EntryValueUninit::write()` has been extended so
+1. **Rust:** The blackboard's `EntryValueUninit::write()` has been extended so
    that it also updates the entry and was renamed to `update_with_copy()`;
    `EntryValue` was removed.
 
@@ -264,7 +292,8 @@ CMake package.
    let entry_handle_mut = entry_value_uninit.update_with_copy(123);
    ```
 
-8. Replace `iox::optional` from `iceoryx_hoofs` with `iox2::container::Optional`
+1. **C++:** Replace `iox::optional` from `iceoryx_hoofs` with
+   `iox2::container::Optional`
 
   The new `Optional` in iceoryx2 has a reduced API compared to the one from
   `iceroyx_hoofs`. The functional interface, which deviated from the STL was
