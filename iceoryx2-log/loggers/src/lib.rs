@@ -32,54 +32,98 @@
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 
-#[cfg(all(feature = "logger_buffer", feature = "logger_file"))]
-compile_error!("Features 'logger_buffer' and 'logger_file' are mutually exclusive");
+// Validate platform selection
+#[cfg(not(any(feature = "std", feature = "posix")))]
+compile_error!("Must enable exactly one platform feature: 'std' or 'posix'");
 
-#[cfg(all(feature = "logger_buffer", feature = "logger_console"))]
-compile_error!("Features 'logger_buffer' and 'logger_console' are mutually exclusive");
+#[cfg(all(feature = "std", feature = "posix"))]
+compile_error!("Cannot enable both 'std' and 'posix' features simultaneously");
 
-#[cfg(all(feature = "logger_buffer", feature = "logger_log"))]
-compile_error!("Features 'logger_buffer' and 'logger_log' are mutually exclusive");
+// Validate logger selection
+#[cfg(all(feature = "buffer", feature = "file"))]
+compile_error!("Cannot enable both 'buffer' and 'file' features simultaneously");
 
-#[cfg(all(feature = "logger_buffer", feature = "logger_tracing"))]
-compile_error!("Features 'logger_buffer' and 'logger_tracing' are mutually exclusive");
+#[cfg(all(feature = "buffer", feature = "console"))]
+compile_error!("Cannot enable both 'buffer' and 'console' features simultaneously");
 
-#[cfg(all(feature = "logger_file", feature = "logger_console"))]
-compile_error!("Features 'logger_file' and 'logger_console' are mutually exclusive");
+#[cfg(all(feature = "buffer", feature = "log"))]
+compile_error!("Cannot enable both 'buffer' and 'log' features simultaneously");
 
-#[cfg(all(feature = "logger_file", feature = "logger_log"))]
-compile_error!("Features 'logger_file' and 'logger_log' are mutually exclusive");
+#[cfg(all(feature = "buffer", feature = "tracing"))]
+compile_error!("Cannot enable both 'buffer' and 'tracing' features simultaneously");
 
-#[cfg(all(feature = "logger_file", feature = "logger_tracing"))]
-compile_error!("Features 'logger_file' and 'logger_tracing' are mutually exclusive");
+#[cfg(all(feature = "file", feature = "console"))]
+compile_error!("Cannot enable both 'file' and 'console' features simultaneously");
 
-#[cfg(all(feature = "logger_console", feature = "logger_log"))]
-compile_error!("Features 'logger_console' and 'logger_log' are mutually exclusive");
+#[cfg(all(feature = "file", feature = "log"))]
+compile_error!("Cannot enable both 'file' and 'log' features simultaneously");
 
-#[cfg(all(feature = "logger_console", feature = "logger_tracing"))]
-compile_error!("Features 'logger_console' and 'logger_tracing' are mutually exclusive");
+#[cfg(all(feature = "file", feature = "tracing"))]
+compile_error!("Cannot enable both 'file' and 'tracing' features simultaneously");
 
-#[cfg(all(feature = "logger_log", feature = "logger_tracing"))]
-compile_error!("Features 'logger_log' and 'logger_tracing' are mutually exclusive");
+#[cfg(all(feature = "console", feature = "log"))]
+compile_error!("Cannot enable both 'console' and 'log' features simultaneously");
+
+#[cfg(all(feature = "console", feature = "tracing"))]
+compile_error!("Cannot enable both 'console' and 'tracing' features simultaneously");
+
+#[cfg(all(feature = "log", feature = "tracing"))]
+compile_error!("Cannot enable both 'log' and 'tracing' features simultaneously");
+
+// Ensure logger is selected along with platform
+#[cfg(all(
+    any(feature = "std", feature = "posix"),
+    not(any(
+        feature = "buffer",
+        feature = "file",
+        feature = "console",
+        feature = "log",
+        feature = "tracing"
+    ))
+))]
+compile_error!(
+    "Must enable at least one logger feature: 'buffer', 'file', 'console', 'log', or 'tracing'"
+);
+
+// Prevent invalid combinations
+#[cfg(all(feature = "posix", feature = "buffer"))]
+compile_error!("Invalid combination: 'posix' does not support 'buffer' logger");
+
+#[cfg(all(feature = "posix", feature = "file"))]
+compile_error!("Invalid combination: 'posix' does not support 'file' logger");
+
+#[cfg(all(feature = "posix", feature = "log"))]
+compile_error!("Invalid combination: 'posix' does not support 'log' (requires std)");
+
+#[cfg(all(feature = "posix", feature = "tracing"))]
+compile_error!("Invalid combination: 'posix' does not support 'tracing' (requires std)");
 
 use iceoryx2_log_types::Log;
 
-#[cfg(feature = "logger_buffer")]
+#[cfg(feature = "buffer")]
 mod buffer;
-#[cfg(feature = "logger_console")]
+#[cfg(feature = "console")]
 mod console;
-#[cfg(feature = "logger_file")]
+#[cfg(feature = "file")]
 mod file;
-#[cfg(feature = "logger_log")]
+#[cfg(feature = "log")]
 mod log;
-#[cfg(feature = "logger_tracing")]
+#[cfg(feature = "tracing")]
 mod tracing;
 
 mod null;
 
 extern crate alloc;
 
-#[cfg(feature = "logger_console")]
+pub extern "Rust" fn __internal_stdout() -> writer::Stdout {
+    writer::stdout()
+}
+
+pub extern "Rust" fn __internal_stderr() -> writer::Stderr {
+    writer::stderr()
+}
+
+#[cfg(feature = "console")]
 #[no_mangle]
 pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
     {
@@ -88,7 +132,7 @@ pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
     }
 }
 
-#[cfg(feature = "logger_buffer")]
+#[cfg(feature = "buffer")]
 #[no_mangle]
 pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
     {
@@ -97,7 +141,7 @@ pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
     }
 }
 
-#[cfg(feature = "logger_file")]
+#[cfg(feature = "file")]
 #[no_mangle]
 pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
     {
@@ -108,7 +152,7 @@ pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
     }
 }
 
-#[cfg(feature = "logger_log")]
+#[cfg(feature = "log")]
 #[no_mangle]
 pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
     {
@@ -117,7 +161,7 @@ pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
     }
 }
 
-#[cfg(feature = "logger_tracing")]
+#[cfg(feature = "tracing")]
 #[no_mangle]
 pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
     {
@@ -127,11 +171,11 @@ pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
 }
 
 #[cfg(not(any(
-    feature = "logger_console",
-    feature = "logger_buffer",
-    feature = "logger_file",
-    feature = "logger_log",
-    feature = "logger_tracing"
+    feature = "console",
+    feature = "buffer",
+    feature = "file",
+    feature = "log",
+    feature = "tracing"
 )))]
 #[no_mangle]
 pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
