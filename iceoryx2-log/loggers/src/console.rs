@@ -16,6 +16,8 @@ use core::fmt::Write;
 #[cfg(feature = "std")]
 use std::io::IsTerminal;
 
+use alloc::string::ToString;
+
 use iceoryx2_log_types::Log;
 use iceoryx2_log_types::LogLevel;
 use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
@@ -58,7 +60,14 @@ fn duration_since_epoch() -> core::time::Duration {
     }
     #[cfg(feature = "posix")]
     {
-        0
+        use core::time::Duration;
+        use iceoryx2_bb_posix::clock::*;
+
+        if let Ok(time) = Time::now_with_clock(ClockType::Monotonic) {
+            return time.as_duration();
+        }
+
+        Duration::from_secs(0)
     }
 }
 

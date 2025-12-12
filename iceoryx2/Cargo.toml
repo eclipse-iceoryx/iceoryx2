@@ -20,6 +20,10 @@ std = [
   "iceoryx2-bb-concurrency/std",
   "iceoryx2-bb-posix/std",
 ]
+nostd_posix = [
+  "iceoryx2-loggers/posix",
+  "iceoryx2-loggers/console"
+]
 
 # Enables logging to console
 logger_console = ["iceoryx2-loggers/std_console"]

@@ -47,6 +47,7 @@ pub mod socket_pair;
 pub mod udp_socket;
 #[macro_use]
 pub mod handle_errno;
+pub mod console;
 pub mod deadline_queue;
 pub mod directory;
 pub mod file;

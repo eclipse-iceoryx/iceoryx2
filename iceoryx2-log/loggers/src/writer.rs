@@ -49,13 +49,15 @@ impl Write for Stderr {
 #[cfg(feature = "posix")]
 impl Write for Stdout {
     fn write_str(&mut self, s: &str) -> fmt::Result {
-        Ok(())
+        use iceoryx2_bb_posix::console::*;
+        write(Stream::StandardOutput, s)
     }
 }
 
 #[cfg(feature = "posix")]
 impl Write for Stderr {
     fn write_str(&mut self, s: &str) -> fmt::Result {
-        Ok(())
+        use iceoryx2_bb_posix::console::*;
+        write(Stream::StandardError, s)
     }
 }
