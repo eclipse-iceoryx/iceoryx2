@@ -56,8 +56,6 @@
   [#1223](https://github.com/eclipse-iceoryx/iceoryx2/issues/1223)
 * Add socket directory configuration in platform
   [#1232](https://github.com/eclipse-iceoryx/iceoryx2/issues/1232)
-* Replace legacy types in public API with iceoryx2 counterparts
-  [#1234](https://github.com/eclipse-iceoryx/iceoryx2/issues/1234)
 
 ### Bugfixes
 
@@ -113,6 +111,8 @@
     [#1133](https://github.com/eclipse-iceoryx/iceoryx2/issues/1133)
 * Support C++14 for the C++ Bindings
     [#1167](https://github.com/eclipse-iceoryx/iceoryx2/issues/1167)
+* Replace legacy types in public API with iceoryx2 counterparts
+  [#1234](https://github.com/eclipse-iceoryx/iceoryx2/issues/1234)
 
 ### Workflow
 
@@ -295,28 +295,56 @@ CMake package.
 1. **C++:** Replace `iox::optional` from `iceoryx_hoofs` with
    `iox2::container::Optional`
 
-  The new `Optional` in iceoryx2 has a reduced API compared to the one from
-  `iceroyx_hoofs`. The functional interface, which deviated from the STL was
-  removed.
+   The new `Optional` in iceoryx2 has a reduced API compared to the one from
+   `iceroyx_hoofs`. The functional interface, which deviated from the STL was
+   removed.
 
-  ```cpp
-  // old
-  ret_val.and_then([](auto& val) { /* do something with val */ })
-         .or_else([]() { /* do something else */ });
+   ```cpp
+   // old
+   ret_val.and_then([](auto& val) { /* do something with val */ })
+          .or_else([]() { /* do something else */ });
 
-  // new
-  if (ret_val.has_value()) {
-    // do something with ret_val.value()
-  } else {
-    // do something else
-  }
+   // new
+   if (ret_val.has_value()) {
+     // do something with ret_val.value()
+   } else {
+     // do something else
+   }
 
-  // old
-  auto val = ret_val.expect("There should be a value");
+   // old
+   auto val = ret_val.expect("There should be a value");
 
-  // new
-  if (!ret_val.has_value()) {
-    // error handling or terminate
-  }
-  auto val = ret_val.value();
-  ```
+   // new
+   if (!ret_val.has_value()) {
+     // error handling or terminate
+   }
+   auto val = ret_val.value();
+   ```
+
+9. Replace `iox::expected` from `iceoryx_hoofs` with `iox2::container::Expected`
+
+   The new `Expected` in iceoryx2 has a reduced API compared to the one from
+   `iceroyx_hoofs`. The functional interface, which deviated from the STL was
+   removed.
+
+   ```cpp
+   // old
+   ret_val.and_then([](auto& val) { /* do something with val */ })
+          .or_else([]() { /* do something else */ });
+
+   // new
+   if (ret_val.has_value()) {
+     // do something with ret_val.value()
+   } else {
+     // do something with ret_val.error()
+   }
+
+   // old
+   auto val = ret_val.expect("There should be a value");
+
+   // new
+   if (!ret_val.has_value()) {
+     // error handling based on ret_val.error() or terminate
+   }
+   auto val = ret_val.value();
+   ```
