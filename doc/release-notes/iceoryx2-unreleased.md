@@ -27,6 +27,8 @@
   [#865](https://github.com/eclipse-iceoryx/iceoryx2/issues/865)
 * Add a C++ string container type with fixed compile-time capacity
   [#938](https://github.com/eclipse-iceoryx/iceoryx2/issues/938)
+* Add new C++ `Expected` vocabulary data type
+  [#940](https://github.com/eclipse-iceoryx/iceoryx2/issues/940)
 * Add a C++ vector container type with fixed compile-time capacity
   [#951](https://github.com/eclipse-iceoryx/iceoryx2/issues/951)
 * Use `epoll` instead of `select` for the `WaitSet` on Linux
