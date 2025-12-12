@@ -1310,7 +1310,6 @@ dependencies = [
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-pal-concurrency-sync",
  "iceoryx2-pal-testing",
- "paste",
 ]
 
 [[package]]

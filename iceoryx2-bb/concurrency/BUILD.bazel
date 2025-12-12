@@ -26,9 +26,6 @@ rust_library(
         "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
         "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
     ],
-    proc_macro_deps = [
-        "@crate_index//:paste",
-    ],
 )
 
 rust_test_suite(
