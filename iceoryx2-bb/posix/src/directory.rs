@@ -264,7 +264,6 @@ impl Directory {
     ) -> Result<(), DirectoryCreateError> {
         let origin = "Directory::create()";
         let msg = format!("Unable to create directory \"{path}\"");
-        println!("create 1");
 
         if unsafe { posix::mkdir(path.as_c_str(), permission.as_mode()) } == -1 {
             handle_errno!(DirectoryCreateError, from origin,
@@ -279,8 +278,6 @@ impl Directory {
                 v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
             );
         }
-
-        println!("create 2");
 
         // Reapply the permissions since the `umask` call can influence the
         // permission creation. It would be possible to adjust the umask(0)
@@ -298,12 +295,9 @@ impl Directory {
             }
         };
 
-        println!("create 3");
-
         match dir.set_permission(permission) {
             Ok(()) => Ok(()),
             Err(e) => {
-                println!("error: {e:?}");
                 let _ = Directory::remove(path);
                 fail!(from origin, with DirectoryCreateError::UnableToApplyPermissions,
                     "{msg} since the permissions could not be applied due to {e:?}.");

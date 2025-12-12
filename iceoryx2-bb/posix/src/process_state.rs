@@ -245,7 +245,7 @@ pub enum ProcessCleanerCreateError {
 /// let process_state_path = FilePath::new(b"process_state_file").unwrap();
 ///
 /// // start monitoring from this point on
-/// let guard = ProcessGuard::new(&process_state_path).expect("");
+/// let guard = ProcessGuardBuilder::new().create(&process_state_path).expect("");
 ///
 /// // normal application code
 ///
@@ -489,6 +489,7 @@ impl ProcessGuardBuilder {
 /// is in scope. When it goes out of scope the process is no longer monitorable.
 ///
 /// ```
+/// # extern crate iceoryx2_loggers;
 /// use iceoryx2_bb_posix::process_state::*;
 ///
 /// let process_state_path = FilePath::new(b"process_state_file").unwrap();
