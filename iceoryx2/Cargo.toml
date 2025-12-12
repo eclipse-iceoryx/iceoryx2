@@ -21,18 +21,18 @@ std = [
 ]
 
 # Enables logging to console
-logger_console = ["iceoryx2-loggers/logger_console"]
+logger_console = ["iceoryx2-loggers/std_console"]
 # Enables logging to buffer
-logger_buffer = ["iceoryx2-loggers/logger_buffer"]
+logger_buffer = ["iceoryx2-loggers/std_buffer"]
 # Enables logging to file
-logger_file = ["iceoryx2-loggers/logger_file"]
+logger_file = ["iceoryx2-loggers/std_file"]
 # Enables https://crates.io/crates/log as default logger
 logger_log = [
-  "iceoryx2-loggers/logger_log"
+  "iceoryx2-loggers/std_log"
 ]
 # Enables https://crates.io/crates/tracing as default logger
 logger_tracing = [
-  "iceoryx2-loggers/logger_tracing"
+  "iceoryx2-loggers/std_tracing"
 ]
 
 # The permissions of all resources will be set to read, write, execute for everyone.
