@@ -12,12 +12,16 @@
 
 //! The default [`Logger`] implementation.
 
+use core::fmt::Write;
+#[cfg(feature = "std")]
 use std::io::IsTerminal;
 
 use iceoryx2_log_types::Log;
 use iceoryx2_log_types::LogLevel;
 use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
 use iceoryx2_pal_concurrency_sync::atomic::Ordering;
+
+use crate::writer;
 
 #[allow(dead_code)]
 enum ConsoleLogOrder {
@@ -36,6 +40,28 @@ impl Default for Logger {
     }
 }
 
+fn is_terminal() -> bool {
+    #[cfg(feature = "std")]
+    {
+        std::io::stderr().is_terminal()
+    }
+    #[cfg(feature = "posix")]
+    false
+}
+
+fn duration_since_epoch() -> core::time::Duration {
+    #[cfg(feature = "std")]
+    {
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+    }
+    #[cfg(feature = "posix")]
+    {
+        0
+    }
+}
+
 impl Logger {
     pub const fn new() -> Self {
         Self {
@@ -45,7 +71,7 @@ impl Logger {
     }
 
     fn log_level_string(log_level: LogLevel) -> &'static str {
-        if std::io::stderr().is_terminal() {
+        if is_terminal() {
             match log_level {
                 LogLevel::Trace => "\x1b[0;90m[T]",
                 LogLevel::Debug => "\x1b[0;93m[D]",
@@ -67,7 +93,7 @@ impl Logger {
     }
 
     fn message_color(log_level: LogLevel) -> &'static str {
-        if std::io::stderr().is_terminal() {
+        if is_terminal() {
             match log_level {
                 LogLevel::Trace => "\x1b[1;90m",
                 LogLevel::Debug => "\x1b[1;90m",
@@ -82,7 +108,7 @@ impl Logger {
     }
 
     fn counter_color(_log_level: LogLevel) -> &'static str {
-        if std::io::stderr().is_terminal() {
+        if is_terminal() {
             "\x1b[0;90m"
         } else {
             ""
@@ -90,7 +116,7 @@ impl Logger {
     }
 
     fn origin_color(log_level: LogLevel) -> &'static str {
-        if std::io::stderr().is_terminal() {
+        if is_terminal() {
             match log_level {
                 LogLevel::Trace => "\x1b[0;90m",
                 LogLevel::Debug => "\x1b[0;90m",
@@ -105,16 +131,16 @@ impl Logger {
     }
 
     fn print(separator: &str, color: &str, output: &str) {
-        if std::io::stderr().is_terminal() {
-            std::eprint!("{color}");
+        if is_terminal() {
+            let _ = core::write!(writer::stderr(), "{color}");
         }
 
-        std::eprint!("{separator}{output}");
+        let _ = core::write!(writer::stderr(), "{separator}{output}");
 
-        if std::io::stderr().is_terminal() {
-            std::eprintln!("\x1b[0m");
+        if is_terminal() {
+            let _ = core::writeln!(writer::stderr(), "\x1b[0m");
         } else {
-            std::eprintln!(" ");
+            let _ = core::writeln!(writer::stderr(), " ");
         }
     }
 
@@ -123,9 +149,9 @@ impl Logger {
     }
 
     fn print_origin(log_level: LogLevel, origin: &str) {
-        eprint!("{} ", Logger::log_level_string(log_level));
+        let _ = core::write!(writer::stderr(), "{} ", Logger::log_level_string(log_level));
         Self::print("", Logger::origin_color(log_level), origin);
-        eprint!("| ");
+        let _ = core::write!(writer::stderr(), "| ");
     }
 }
 
@@ -143,13 +169,12 @@ impl Log for Logger {
 
         match self.ordering_mode {
             ConsoleLogOrder::Time => {
-                let time = std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap();
+                let time = duration_since_epoch();
 
                 match origin_str.is_empty() {
                     false => {
-                        std::eprint!(
+                        let _ = core::write!(
+                            writer::stderr(),
                             "{}{}.{:0>9} ",
                             Logger::counter_color(log_level),
                             time.as_secs(),
@@ -157,26 +182,37 @@ impl Log for Logger {
                         );
                         Self::print_origin(log_level, &origin_str);
                     }
-                    true => std::eprintln!(
-                        "{}{}.{:0>9} {} ",
-                        Logger::counter_color(log_level),
-                        time.as_secs(),
-                        time.subsec_nanos(),
-                        Logger::log_level_string(log_level),
-                    ),
+                    true => {
+                        let _ = core::writeln!(
+                            writer::stderr(),
+                            "{}{}.{:0>9} {} ",
+                            Logger::counter_color(log_level),
+                            time.as_secs(),
+                            time.subsec_nanos(),
+                            Logger::log_level_string(log_level),
+                        );
+                    }
                 }
             }
             ConsoleLogOrder::Counter => match origin.to_string().is_empty() {
                 false => {
-                    std::eprint!("{}{} ", Logger::counter_color(log_level), counter);
+                    let _ = core::write!(
+                        writer::stderr(),
+                        "{}{} ",
+                        Logger::counter_color(log_level),
+                        counter
+                    );
                     Self::print_origin(log_level, &origin_str);
                 }
-                true => std::eprint!(
-                    "{}{} {} ",
-                    Logger::counter_color(log_level),
-                    counter,
-                    Logger::log_level_string(log_level),
-                ),
+                true => {
+                    let _ = core::write!(
+                        writer::stderr(),
+                        "{}{} {} ",
+                        Logger::counter_color(log_level),
+                        counter,
+                        Logger::log_level_string(log_level),
+                    );
+                }
             },
         }
 

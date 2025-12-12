@@ -112,6 +112,7 @@ mod log;
 mod tracing;
 
 mod null;
+mod writer;
 
 extern crate alloc;
 
