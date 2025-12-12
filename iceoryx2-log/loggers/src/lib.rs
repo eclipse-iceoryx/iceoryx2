@@ -98,6 +98,8 @@ compile_error!("Invalid combination: 'posix' does not support 'log' (requires st
 #[cfg(all(feature = "posix", feature = "tracing"))]
 compile_error!("Invalid combination: 'posix' does not support 'tracing' (requires std)");
 
+use core::fmt::Write;
+
 use iceoryx2_log_types::Log;
 
 #[cfg(feature = "buffer")]
@@ -116,11 +118,13 @@ mod writer;
 
 extern crate alloc;
 
-pub extern "Rust" fn __internal_stdout() -> writer::Stdout {
+#[no_mangle]
+pub extern "Rust" fn __internal_stdout() -> &'static mut dyn Write {
     writer::stdout()
 }
 
-pub extern "Rust" fn __internal_stderr() -> writer::Stderr {
+#[no_mangle]
+pub extern "Rust" fn __internal_stderr() -> &'static mut dyn Write {
     writer::stderr()
 }
 
