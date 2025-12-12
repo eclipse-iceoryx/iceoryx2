@@ -14,6 +14,7 @@
 
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 
+use alloc::string::ToString;
 use core::fmt::Write;
 use core::sync::atomic::Ordering;
 
@@ -60,7 +61,14 @@ fn duration_since_epoch() -> core::time::Duration {
     }
     #[cfg(feature = "posix")]
     {
-        0
+        use core::time::Duration;
+        use iceoryx2_bb_posix::clock::*;
+
+        if let Ok(time) = Time::now_with_clock(ClockType::Monotonic) {
+            return time.as_duration();
+        }
+
+        Duration::from_secs(0)
     }
 }
 

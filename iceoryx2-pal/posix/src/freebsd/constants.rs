@@ -22,6 +22,9 @@ pub const USER_NAME_LENGTH: usize = 31;
 pub const GROUP_NAME_LENGTH: usize = 31;
 pub const NAME_MAX: usize = crate::internal::NAME_MAX as _;
 
+pub const STDOUT_FILENO: u32 = crate::internal::STDOUT_FILENO as _;
+pub const STDERR_FILENO: u32 = crate::internal::STDERR_FILENO as _;
+
 pub const O_RDONLY: int = crate::internal::O_RDONLY as _;
 pub const O_WRONLY: int = crate::internal::O_WRONLY as _;
 pub const O_RDWR: int = crate::internal::O_RDWR as _;

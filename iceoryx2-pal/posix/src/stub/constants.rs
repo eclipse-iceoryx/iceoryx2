@@ -26,6 +26,9 @@ pub const MAX_NUMBER_OF_THREADS: usize = 1024;
 pub const FD_SETSIZE: usize = 1024;
 pub const NULL_TERMINATOR: c_char = 0;
 
+pub const STDOUT_FILENO: u32 = 1;
+pub const STDERR_FILENO: u32 = 2;
+
 pub const O_RDONLY: int = 1;
 pub const O_WRONLY: int = 2;
 pub const O_RDWR: int = 4;
