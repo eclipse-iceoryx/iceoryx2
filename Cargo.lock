@@ -1297,7 +1297,6 @@ dependencies = [
  "iceoryx2-bb-testing",
  "iceoryx2-pal-concurrency-sync",
  "iceoryx2-pal-testing",
- "paste",
 ]
 
 [[package]]
