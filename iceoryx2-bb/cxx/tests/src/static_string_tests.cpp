@@ -1070,8 +1070,8 @@ TEST(StaticString, substr_with_invalid_pos_fails) {
 
 TEST(StaticString, find_first_of_fails_for_empty_string_in_empty_string) {
     constexpr uint64_t const STRING_SIZE = 25;
-    iox2::container::StaticString<STRING_SIZE> sut;
-    iox2::container::StaticString<STRING_SIZE> str;
+    const iox2::container::StaticString<STRING_SIZE> sut;
+    const iox2::container::StaticString<STRING_SIZE> str;
 
     ASSERT_FALSE(sut.find_first_of(str).has_value());
     ASSERT_FALSE(sut.find_first_of(str, 0).has_value());
@@ -1079,7 +1079,7 @@ TEST(StaticString, find_first_of_fails_for_empty_string_in_empty_string) {
 
 TEST(StaticString, find_first_of_fails_for_string_in_empty_string) {
     constexpr uint64_t const STRING_SIZE = 25;
-    iox2::container::StaticString<STRING_SIZE> sut;
+    const iox2::container::StaticString<STRING_SIZE> sut;
     auto str = *iox2::container::StaticString<STRING_SIZE>::from_utf8("a");
 
     ASSERT_FALSE(sut.find_first_of(str).has_value());
@@ -1133,8 +1133,8 @@ TEST(StaticString, find_first_of_fails_for_included_character_when_pos_is_greate
 
 TEST(StaticString, find_last_of_fails_for_empty_string_in_empty_string) {
     constexpr uint64_t const STRING_SIZE = 25;
-    iox2::container::StaticString<STRING_SIZE> sut;
-    iox2::container::StaticString<STRING_SIZE> str;
+    const iox2::container::StaticString<STRING_SIZE> sut;
+    const iox2::container::StaticString<STRING_SIZE> str;
 
     ASSERT_FALSE(sut.find_last_of(str).has_value());
     ASSERT_FALSE(sut.find_last_of(str, 0).has_value());
@@ -1142,7 +1142,7 @@ TEST(StaticString, find_last_of_fails_for_empty_string_in_empty_string) {
 
 TEST(StaticString, find_last_of_fails_for_string_in_empty_string) {
     constexpr uint64_t const STRING_SIZE = 25;
-    iox2::container::StaticString<STRING_SIZE> sut;
+    const iox2::container::StaticString<STRING_SIZE> sut;
     auto str = *iox2::container::StaticString<STRING_SIZE>::from_utf8("a");
 
     ASSERT_FALSE(sut.find_last_of(str).has_value());
@@ -1246,7 +1246,7 @@ TEST(StaticString, insert_string_into_empty_string) {
 TEST(StaticString, insert_empty_string_does_not_change_the_string) {
     constexpr uint64_t const STRING_SIZE = 25;
     auto sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("Kernfusionsbaby");
-    iox2::container::StaticString<STRING_SIZE> str;
+    const iox2::container::StaticString<STRING_SIZE> str;
 
     ASSERT_TRUE(sut.insert(0, str, 0));
     EXPECT_STREQ(sut.unchecked_access().c_str(), "Kernfusionsbaby");
