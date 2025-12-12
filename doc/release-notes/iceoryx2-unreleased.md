@@ -81,6 +81,8 @@
     [#1171](https://github.com/eclipse-iceoryx/iceoryx2/issues/1171)
 * Fix C binding linker error on QNX
     [#1174](https://github.com/eclipse-iceoryx/iceoryx2/issues/1116)
+* Fix that `dev_permissions` are not applied to all resources
+    [#1188](https://github.com/eclipse-iceoryx/iceoryx2/issues/1188)
 * Fix panic during cleanup
     [#1198](https://github.com/eclipse-iceoryx/iceoryx2/issues/1198)
 * Update urllib3 dependency to 2.6.0 (security issue in 2.5.0)

@@ -61,6 +61,10 @@ impl Permission {
     pub fn bits(&self) -> ModeType {
         self.0
     }
+
+    pub const fn const_bitor(self, other: Permission) -> Self {
+        Self(self.0 | other.0)
+    }
 }
 
 impl BitOrAssign for Permission {

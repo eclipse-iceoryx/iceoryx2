@@ -62,7 +62,20 @@ use iceoryx2_bb_posix::{
 use iceoryx2_log::{fail, trace, warn};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
+#[cfg(not(feature = "dev_permissions"))]
 const FINAL_PERMISSIONS: Permission = Permission::OWNER_READ;
+
+#[cfg(not(feature = "dev_permissions"))]
+const DIR_PERMISSIONS: Permission = Permission::OWNER_ALL
+    .const_bitor(Permission::GROUP_READ)
+    .const_bitor(Permission::GROUP_EXEC);
+
+#[cfg(feature = "dev_permissions")]
+const FINAL_PERMISSIONS: Permission = Permission::OWNER_READ
+    .const_bitor(Permission::GROUP_READ)
+    .const_bitor(Permission::OTHERS_READ);
+#[cfg(feature = "dev_permissions")]
+const DIR_PERMISSIONS: Permission = Permission::ALL;
 
 /// The custom configuration of the [`Storage`].
 #[derive(Clone, Debug)]
@@ -387,14 +400,12 @@ impl crate::static_storage::StaticStorageBuilder<Storage> for Builder {
     }
 
     fn create_locked(self) -> Result<Locked, StaticStorageCreateError> {
-        let directory_permission = Permission::OWNER_ALL | Permission::GROUP_ALL;
-
         let msg = format!("Unable to create target directory \"{}\"", self.config.path);
         if !fail!(from self, when Directory::does_exist(&self.config.path),
             with StaticStorageCreateError::Creation,
                "{} since the system is unable to determine if the directory even exists.", msg)
         {
-            match Directory::create(&self.config.path, directory_permission) {
+            match Directory::create(&self.config.path, DIR_PERMISSIONS) {
                 Ok(_) | Err(DirectoryCreateError::DirectoryAlreadyExists) => (),
                 Err(e) => {
                     fail!(from self, with StaticStorageCreateError::Creation,

@@ -31,6 +31,12 @@ use crate::static_storage::file::{
     NamedConceptRemoveError,
 };
 
+#[cfg(not(feature = "dev_permissions"))]
+const SOCKET_PERMISSIONS: Permission = Permission::OWNER_ALL;
+
+#[cfg(feature = "dev_permissions")]
+const SOCKET_PERMISSIONS: Permission = Permission::ALL;
+
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Configuration {
     suffix: FileName,
@@ -219,6 +225,7 @@ impl<T: Copy + Debug> CommunicationChannelCreator<T, Channel<T>> for Creator<T> 
         let full_name = self.config.path_for(&self.channel_name);
         let receiver = UnixDatagramReceiverBuilder::new(&full_name)
             .creation_mode(CreationMode::CreateExclusive)
+            .permission(SOCKET_PERMISSIONS)
             .create();
 
         let receiver = match receiver {

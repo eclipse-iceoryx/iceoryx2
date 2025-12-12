@@ -26,7 +26,7 @@
 //! let process_state_path = FilePath::new(b"process_state_file").unwrap();
 //!
 //! // monitoring is enabled as soon as the guard object is created
-//! let guard = match ProcessGuard::new(&process_state_path) {
+//! let guard = match ProcessGuardBuilder::new().create(&process_state_path) {
 //!     Ok(guard) => guard,
 //!     Err(ProcessGuardCreateError::AlreadyExists) => {
 //!         // process is dead and we have to cleanup all resources
@@ -36,7 +36,7 @@
 //!                 // as soon as the guard goes out of scope the process state file is removed
 //!                 drop(cleaner);
 //!
-//!                 match ProcessGuard::new(&process_state_path) {
+//!                 match ProcessGuardBuilder::new().create(&process_state_path) {
 //!                     Ok(guard) => guard,
 //!                     Err(_) => {
 //!                         panic!("Perform here some error handling");
@@ -47,7 +47,7 @@
 //!                 // cool, someone else has instantiated it and is already cleaning up all resources
 //!                 // wait a bit and try again
 //!                 std::thread::sleep(core::time::Duration::from_millis(500));
-//!                 match ProcessGuard::new(&process_state_path) {
+//!                 match ProcessGuardBuilder::new().create(&process_state_path) {
 //!                     Ok(guard) => guard,
 //!                     Err(_) => {
 //!                         panic!("Perform here some error handling");
@@ -236,9 +236,7 @@ pub enum ProcessCleanerCreateError {
     UnknownError,
 }
 
-/// A guard for a process that makes the process monitorable by a [`ProcessMonitor`] as long as it
-/// is in scope. When it goes out of scope the process is no longer monitorable.
-///
+/// The builder of the [`ProcessGuard`]
 /// ```
 /// # extern crate iceoryx2_loggers;
 ///
@@ -247,7 +245,7 @@ pub enum ProcessCleanerCreateError {
 /// let process_state_path = FilePath::new(b"process_state_file").unwrap();
 ///
 /// // start monitoring from this point on
-/// let guard = ProcessGuard::new(&process_state_path).expect("");
+/// let guard = ProcessGuardBuilder::new().create(&process_state_path).expect("");
 ///
 /// // normal application code
 ///
@@ -255,22 +253,44 @@ pub enum ProcessCleanerCreateError {
 /// drop(guard);
 /// ```
 #[derive(Debug)]
-pub struct ProcessGuard {
-    file: File,
-    owner_lock_file: File,
+pub struct ProcessGuardBuilder {
+    directory_permissions: Permission,
+    guard_permissions: Permission,
 }
 
-const INIT_PERMISSION: Permission = Permission::OWNER_WRITE;
-const FINAL_PERMISSION: Permission = Permission::OWNER_ALL;
-const OWNER_LOCK_SUFFIX: &[u8] = b"_owner_lock";
-
-fn generate_owner_lock_path(path: &FilePath) -> Result<FilePath, SemanticStringError> {
-    let mut owner_lock_path = *path;
-    owner_lock_path.push_bytes(OWNER_LOCK_SUFFIX)?;
-    Ok(owner_lock_path)
+impl Default for ProcessGuardBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
-impl ProcessGuard {
+impl ProcessGuardBuilder {
+    /// Creates a new instance
+    pub fn new() -> Self {
+        Self {
+            directory_permissions: Permission::OWNER_ALL
+                | Permission::GROUP_READ
+                | Permission::GROUP_EXEC
+                | Permission::OTHERS_READ
+                | Permission::OTHERS_EXEC,
+            guard_permissions: Permission::OWNER_ALL,
+        }
+    }
+
+    /// Defines the [`Directory`] [`Permission`]s of the [`Directory`] that
+    /// will be created when the [`Directory`] from the provided [`FilePath`]
+    /// does not exist.
+    pub fn directory_permissions(mut self, value: Permission) -> Self {
+        self.directory_permissions = value;
+        self
+    }
+
+    /// Defines the [`Permission`]s of the [`ProcessGuard`].
+    pub fn guard_permissions(mut self, value: Permission) -> Self {
+        self.guard_permissions = value;
+        self
+    }
+
     /// Creates a new [`ProcessGuard`]. As soon as it is created successfully another process can
     /// monitor the state of the process. One cannot create multiple [`ProcessGuard`]s that use the
     /// same `path`. But one can create multiple [`ProcessGuard`]s that are using different
@@ -284,9 +304,9 @@ impl ProcessGuard {
     /// let process_state_path = FilePath::new(b"process_state_file").unwrap();
     ///
     /// // start monitoring from this point on
-    /// let guard = ProcessGuard::new(&process_state_path).expect("");
+    /// let guard = ProcessGuardBuilder::new().create(&process_state_path).expect("");
     /// ```
-    pub fn new(path: &FilePath) -> Result<Self, ProcessGuardCreateError> {
+    pub fn create(self, path: &FilePath) -> Result<ProcessGuard, ProcessGuardCreateError> {
         let origin = "ProcessGuard::new()";
         let msg = format!("Unable to create new ProcessGuard with the file \"{path}\"");
 
@@ -298,10 +318,10 @@ impl ProcessGuard {
             }
         };
 
-        fail!(from origin, when Self::create_directory(path),
+        fail!(from origin, when Self::create_directory(path, self.directory_permissions),
             "{} since the directory \"{}\" of the process guard could not be created", msg, path);
 
-        let owner_lock_file = fail!(from origin, when Self::create_file(&owner_lock_path, FINAL_PERMISSION),
+        let owner_lock_file = fail!(from origin, when Self::create_file(&owner_lock_path, self.guard_permissions),
                                     "{} since the owner_lock file \"{}\" could not be created.", msg, owner_lock_path);
         let mut file = fail!(from origin, when Self::create_file(path, INIT_PERMISSION),
                                 "{} since the state file \"{}\" could not be created.", msg, path);
@@ -324,10 +344,10 @@ impl ProcessGuard {
             },
         };
 
-        match file.set_permission(FINAL_PERMISSION) {
+        match file.set_permission(self.guard_permissions) {
             Ok(_) => {
                 trace!(from "ProcessGuard::new()", "create process state \"{}\" for monitoring", path);
-                Ok(Self {
+                Ok(ProcessGuard {
                     file,
                     owner_lock_file,
                 })
@@ -339,19 +359,16 @@ impl ProcessGuard {
         }
     }
 
-    fn create_directory(path: &FilePath) -> Result<(), ProcessGuardCreateError> {
+    fn create_directory(
+        path: &FilePath,
+        permissions: Permission,
+    ) -> Result<(), ProcessGuardCreateError> {
         let origin = "ProcessGuard::create_directory()";
         let msg = format!(
             "Unable to create directory \"{}\" for new ProcessGuard state with the file \"{}\"",
             path.path(),
             path
         );
-
-        let default_directory_permissions = Permission::OWNER_ALL
-            | Permission::GROUP_READ
-            | Permission::GROUP_EXEC
-            | Permission::OTHERS_READ
-            | Permission::OTHERS_EXEC;
 
         let dir_path = path.path();
 
@@ -361,7 +378,7 @@ impl ProcessGuard {
 
         match Directory::does_exist(&dir_path) {
             Ok(true) => Ok(()),
-            Ok(false) => match Directory::create(&dir_path, default_directory_permissions) {
+            Ok(false) => match Directory::create(&dir_path, permissions) {
                 Ok(_) | Err(DirectoryCreateError::DirectoryAlreadyExists) => Ok(()),
                 Err(DirectoryCreateError::InsufficientPermissions) => {
                     fail!(from origin, with ProcessGuardCreateError::InsufficientPermissions,
@@ -466,7 +483,42 @@ impl ProcessGuard {
             v => (UnknownError(v as i32), "{} due to an unknown failure (errno code: {}).", msg, v)
         );
     }
+}
 
+/// A guard for a process that makes the process monitorable by a [`ProcessMonitor`] as long as it
+/// is in scope. When it goes out of scope the process is no longer monitorable.
+///
+/// ```
+/// # extern crate iceoryx2_loggers;
+/// use iceoryx2_bb_posix::process_state::*;
+///
+/// let process_state_path = FilePath::new(b"process_state_file").unwrap();
+///
+/// // start monitoring from this point on
+/// let guard = ProcessGuardBuilder::new()
+///     .create(&process_state_path).expect("");
+///
+/// // normal application code
+///
+/// // stop monitoring
+/// drop(guard);
+/// ```
+#[derive(Debug)]
+pub struct ProcessGuard {
+    file: File,
+    owner_lock_file: File,
+}
+
+const INIT_PERMISSION: Permission = Permission::OWNER_WRITE;
+const OWNER_LOCK_SUFFIX: &[u8] = b"_owner_lock";
+
+fn generate_owner_lock_path(path: &FilePath) -> Result<FilePath, SemanticStringError> {
+    let mut owner_lock_path = *path;
+    owner_lock_path.push_bytes(OWNER_LOCK_SUFFIX)?;
+    Ok(owner_lock_path)
+}
+
+impl ProcessGuard {
     /// Returns the [`FilePath`] under which the underlying file is stored.
     pub fn path(&self) -> &FilePath {
         match self.file.path() {
@@ -818,7 +870,7 @@ impl ProcessCleaner {
                 "{} since the corresponding process is still alive.", msg);
         }
 
-        match ProcessGuard::lock_state_file(&owner_lock_file) {
+        match ProcessGuardBuilder::lock_state_file(&owner_lock_file) {
             Ok(()) => {
                 file.acquire_ownership();
                 owner_lock_file.acquire_ownership();

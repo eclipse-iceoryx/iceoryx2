@@ -14,6 +14,8 @@ use alloc::format;
 use alloc::vec;
 use alloc::vec::Vec;
 
+use iceoryx2_bb_posix::file::Permission;
+use iceoryx2_bb_posix::process_state::ProcessGuardBuilder;
 use iceoryx2_bb_posix::{
     directory::{Directory, DirectoryOpenError, DirectoryReadError},
     file::{File, FileRemoveError},
@@ -39,6 +41,22 @@ use super::{
     testing::__InternalMonitoringTokenTestable, Monitoring, MonitoringBuilder, MonitoringCleaner,
     MonitoringCreateTokenError, MonitoringMonitor, MonitoringStateError, MonitoringToken,
 };
+
+#[cfg(not(feature = "dev_permissions"))]
+const GUARD_PERMISSIONS: Permission = Permission::OWNER_ALL;
+
+#[cfg(not(feature = "dev_permissions"))]
+const DIR_PERMISSIONS: Permission = Permission::OWNER_ALL
+    .const_bitor(Permission::GROUP_READ)
+    .const_bitor(Permission::GROUP_EXEC)
+    .const_bitor(Permission::OTHERS_READ)
+    .const_bitor(Permission::OTHERS_EXEC);
+
+#[cfg(feature = "dev_permissions")]
+const GUARD_PERMISSIONS: Permission = Permission::ALL;
+
+#[cfg(feature = "dev_permissions")]
+const DIR_PERMISSIONS: Permission = Permission::ALL;
 
 #[derive(Debug)]
 pub struct FileLockMonitoring {}
@@ -227,7 +245,11 @@ impl MonitoringBuilder<FileLockMonitoring> for Builder {
     {
         let msg = "Unable to create FileLockMonitoring token";
         let process_state_path = self.config.path_for(&self.name);
-        match ProcessGuard::new(&process_state_path) {
+        match ProcessGuardBuilder::new()
+            .guard_permissions(GUARD_PERMISSIONS)
+            .directory_permissions(DIR_PERMISSIONS)
+            .create(&process_state_path)
+        {
             Ok(guard) => Ok(Token {
                 guard,
                 name: self.name,

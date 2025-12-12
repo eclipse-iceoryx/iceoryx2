@@ -46,7 +46,7 @@ pub fn process_state_guard_can_be_created() {
     create_test_directory();
     let path = generate_file_path();
 
-    let guard = ProcessGuard::new(&path).unwrap();
+    let guard = ProcessGuardBuilder::new().create(&path).unwrap();
 
     assert_that!(*guard.path(), eq path);
     assert_that!(File::does_exist(&path).unwrap(), eq true);
@@ -57,7 +57,7 @@ pub fn process_state_guard_removes_file_when_dropped() {
     create_test_directory();
     let path = generate_file_path();
 
-    let guard = ProcessGuard::new(&path).unwrap();
+    let guard = ProcessGuardBuilder::new().create(&path).unwrap();
     assert_that!(File::does_exist(&path).unwrap(), eq true);
     drop(guard);
     assert_that!(File::does_exist(&path).unwrap(), eq false);
@@ -73,7 +73,7 @@ pub fn process_state_guard_cannot_use_already_existing_file() {
         .create()
         .unwrap();
 
-    let guard = ProcessGuard::new(&path);
+    let guard = ProcessGuardBuilder::new().create(&path);
     assert_that!(guard.is_err(), eq true);
     assert_that!(guard.err().unwrap(), eq ProcessGuardCreateError::AlreadyExists);
 
@@ -84,10 +84,10 @@ pub fn process_state_guard_cannot_use_already_existing_file() {
 pub fn process_state_monitor_detects_dead_state() {
     create_test_directory();
     let path = generate_file_path();
-    let mut cleaner_path = path.clone();
+    let mut cleaner_path = path;
     cleaner_path.push_bytes(b"_owner_lock").unwrap();
 
-    let guard = ProcessGuard::new(&path).unwrap();
+    let guard = ProcessGuardBuilder::new().create(&path).unwrap();
     __internal_process_guard_staged_death(guard);
 
     let monitor = ProcessMonitor::new(&path).unwrap();
@@ -109,7 +109,7 @@ pub fn process_state_monitor_detects_non_existing_state() {
 pub fn process_state_monitor_transitions_work_starting_from_non_existing_process() {
     create_test_directory();
     let path = generate_file_path();
-    let mut cleaner_path = path.clone();
+    let mut cleaner_path = path;
     cleaner_path.push_bytes(b"_owner_lock").unwrap();
 
     let monitor = ProcessMonitor::new(&path).unwrap();
@@ -135,7 +135,7 @@ pub fn process_state_monitor_transitions_work_starting_from_non_existing_process
 pub fn process_state_monitor_transitions_work_starting_from_existing_process() {
     create_test_directory();
     let path = generate_file_path();
-    let mut owner_lock_path = path.clone();
+    let mut owner_lock_path = path;
     owner_lock_path.push_bytes(b"_owner_lock").unwrap();
 
     let file = FileBuilder::new(&path)
@@ -184,7 +184,7 @@ pub fn process_state_monitor_detects_initialized_state() {
 pub fn process_state_owner_lock_cannot_be_created_when_process_does_not_exist() {
     create_test_directory();
     let path = generate_file_path();
-    let mut owner_lock_path = path.clone();
+    let mut owner_lock_path = path;
     owner_lock_path.push_bytes(b"_owner_lock").unwrap();
 
     let owner_lock = ProcessCleaner::new(&path);
@@ -227,7 +227,7 @@ pub fn process_state_owner_lock_cannot_be_created_when_process_does_not_exist() 
 pub fn process_state_cleaner_removes_state_files_on_drop() {
     create_test_directory();
     let path = generate_file_path();
-    let mut owner_lock_path = path.clone();
+    let mut owner_lock_path = path;
     owner_lock_path.push_bytes(b"_owner_lock").unwrap();
 
     let _file = FileBuilder::new(&path)
@@ -255,7 +255,7 @@ pub fn process_state_cleaner_removes_state_files_on_drop() {
 pub fn process_state_cleaner_keeps_state_files_when_abandoned() {
     create_test_directory();
     let path = generate_file_path();
-    let mut owner_lock_path = path.clone();
+    let mut owner_lock_path = path;
     owner_lock_path.push_bytes(b"_owner_lock").unwrap();
 
     let _file = FileBuilder::new(&path)
@@ -294,7 +294,7 @@ pub fn process_state_monitor_detects_alive_state_from_existing_process() {
     create_test_directory();
     let path = generate_file_path();
 
-    let guard = ProcessGuard::new(&path).unwrap();
+    let guard = ProcessGuardBuilder::new().create(&path).unwrap();
     let monitor = ProcessMonitor::new(&path).unwrap();
 
     assert_that!(monitor.state().unwrap(), eq ProcessState::Alive);
@@ -313,7 +313,7 @@ pub fn process_state_owner_lock_cannot_be_acquired_from_living_process() {
     create_test_directory();
     let path = generate_file_path();
 
-    let _guard = ProcessGuard::new(&path).unwrap();
+    let _guard = ProcessGuardBuilder::new().create(&path).unwrap();
     let owner_lock = ProcessCleaner::new(&path);
     assert_that!(owner_lock, is_err);
     assert_that!(

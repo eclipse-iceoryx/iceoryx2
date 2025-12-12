@@ -18,6 +18,7 @@ use iceoryx2_bb_container::semantic_string::SemanticStringError;
 
 pub use crate::event::*;
 use crate::static_storage::file::NamedConceptConfiguration;
+use iceoryx2_bb_posix::permission::Permission;
 use iceoryx2_bb_posix::{
     config::required_socket_directory, file_descriptor::FileDescriptorBased,
     file_descriptor_set::SynchronousMultiplexing, unix_datagram_socket::*,
@@ -27,6 +28,12 @@ use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_log::fail;
 
 const MAX_BATCH_SIZE: usize = 512;
+
+#[cfg(not(feature = "dev_permissions"))]
+const SOCKET_PERMISSIONS: Permission = Permission::OWNER_ALL;
+
+#[cfg(feature = "dev_permissions")]
+const SOCKET_PERMISSIONS: Permission = Permission::ALL;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Configuration {
@@ -393,6 +400,7 @@ impl crate::event::ListenerBuilder<EventImpl> for ListenerBuilder {
 
         match UnixDatagramReceiverBuilder::new(&full_name)
             .creation_mode(CreationMode::CreateExclusive)
+            .permission(SOCKET_PERMISSIONS)
             .create()
         {
             Ok(r) => Ok(Listener {
