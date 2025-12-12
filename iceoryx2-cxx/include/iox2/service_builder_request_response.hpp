@@ -17,9 +17,9 @@
 #include "iox/layout.hpp"
 #include "iox2/attribute_specifier.hpp"
 #include "iox2/attribute_verifier.hpp"
+#include "iox2/container/expected.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/internal/service_builder_internal.hpp"
-#include "iox2/legacy/expected.hpp"
 #include "iox2/payload_info.hpp"
 #include "iox2/port_factory_request_response.hpp"
 #include "iox2/service_builder_request_response_error.hpp"
@@ -159,7 +159,7 @@ class ServiceBuilderRequestResponse {
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
     /// created.
-    auto open_or_create() && -> iox2::legacy::expected<
+    auto open_or_create() && -> container::Expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseOpenOrCreateError>;
 
@@ -169,28 +169,28 @@ class ServiceBuilderRequestResponse {
     /// If the [`Service`] already exists all attribute requirements must be satisfied,
     /// and service payload type must be the same, otherwise the open process will fail.
     /// If the [`Service`] does not exist the required attributes will be defined in the [`Service`].
-    auto open_or_create_with_attributes(const AttributeVerifier& required_attributes) && -> iox2::legacy::expected<
+    auto open_or_create_with_attributes(const AttributeVerifier& required_attributes) && -> container::Expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseOpenOrCreateError>;
 
     /// Opens an existing [`Service`].
-    auto open() && -> iox2::legacy::expected<
+    auto open() && -> container::Expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseOpenError>;
 
     /// Opens an existing [`Service`] with attribute requirements. If the defined attribute
     /// requirements are not satisfied the open process will fail.
-    auto open_with_attributes(const AttributeVerifier& required_attributes) && -> iox2::legacy::expected<
+    auto open_with_attributes(const AttributeVerifier& required_attributes) && -> container::Expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseOpenError>;
 
     /// Creates a new [`Service`].
-    auto create() && -> iox2::legacy::expected<
+    auto create() && -> container::Expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseCreateError>;
 
     /// Creates a new [`Service`] with a set of attributes.
-    auto create_with_attributes(const AttributeSpecifier& attributes) && -> iox2::legacy::expected<
+    auto create_with_attributes(const AttributeSpecifier& attributes) && -> container::Expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseCreateError>;
 
@@ -255,7 +255,7 @@ template <typename RequestPayload,
           typename ResponseUserHeader,
           ServiceType S>
 inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
-    open_or_create() && -> iox2::legacy::expected<
+    open_or_create() && -> container::Expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseOpenOrCreateError> {
     set_parameters();
@@ -264,12 +264,11 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
     auto result = iox2_service_builder_request_response_open_or_create(m_handle, nullptr, &port_factory_handle);
 
     if (result == IOX2_OK) {
-        return iox2::legacy::ok(
-            PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(
-                port_factory_handle));
+        return PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(
+            port_factory_handle);
     }
 
-    return iox2::legacy::err(iox2::bb::into<RequestResponseOpenOrCreateError>(result));
+    return container::err(bb::into<RequestResponseOpenOrCreateError>(result));
 }
 
 template <typename RequestPayload,
@@ -278,7 +277,7 @@ template <typename RequestPayload,
           typename ResponseUserHeader,
           ServiceType S>
 inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
-    open_or_create_with_attributes(const AttributeVerifier& required_attributes) && -> iox2::legacy::expected<
+    open_or_create_with_attributes(const AttributeVerifier& required_attributes) && -> container::Expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseOpenOrCreateError> {
     set_parameters();
@@ -288,12 +287,11 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
         m_handle, &required_attributes.m_handle, nullptr, &port_factory_handle);
 
     if (result == IOX2_OK) {
-        return iox2::legacy::ok(
-            PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(
-                port_factory_handle));
+        return PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(
+            port_factory_handle);
     }
 
-    return iox2::legacy::err(iox2::bb::into<RequestResponseOpenOrCreateError>(result));
+    return container::err(bb::into<RequestResponseOpenOrCreateError>(result));
 }
 
 template <typename RequestPayload,
@@ -302,7 +300,7 @@ template <typename RequestPayload,
           typename ResponseUserHeader,
           ServiceType S>
 inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
-    open() && -> iox2::legacy::expected<
+    open() && -> container::Expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseOpenError> {
     set_parameters();
@@ -311,12 +309,11 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
     auto result = iox2_service_builder_request_response_open(m_handle, nullptr, &port_factory_handle);
 
     if (result == IOX2_OK) {
-        return iox2::legacy::ok(
-            PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(
-                port_factory_handle));
+        return PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(
+            port_factory_handle);
     }
 
-    return iox2::legacy::err(iox2::bb::into<RequestResponseOpenError>(result));
+    return container::err(bb::into<RequestResponseOpenError>(result));
 }
 
 template <typename RequestPayload,
@@ -325,7 +322,7 @@ template <typename RequestPayload,
           typename ResponseUserHeader,
           ServiceType S>
 inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
-    open_with_attributes(const AttributeVerifier& required_attributes) && -> iox2::legacy::expected<
+    open_with_attributes(const AttributeVerifier& required_attributes) && -> container::Expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseOpenError> {
     set_parameters();
@@ -335,12 +332,11 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
         m_handle, &required_attributes.m_handle, nullptr, &port_factory_handle);
 
     if (result == IOX2_OK) {
-        return iox2::legacy::ok(
-            PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(
-                port_factory_handle));
+        return PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(
+            port_factory_handle);
     }
 
-    return iox2::legacy::err(iox2::bb::into<RequestResponseOpenError>(result));
+    return container::err(bb::into<RequestResponseOpenError>(result));
 }
 
 template <typename RequestPayload,
@@ -349,7 +345,7 @@ template <typename RequestPayload,
           typename ResponseUserHeader,
           ServiceType S>
 inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
-    create() && -> iox2::legacy::expected<
+    create() && -> container::Expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseCreateError> {
     set_parameters();
@@ -358,12 +354,11 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
     auto result = iox2_service_builder_request_response_create(m_handle, nullptr, &port_factory_handle);
 
     if (result == IOX2_OK) {
-        return iox2::legacy::ok(
-            PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(
-                port_factory_handle));
+        return PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(
+            port_factory_handle);
     }
 
-    return iox2::legacy::err(iox2::bb::into<RequestResponseCreateError>(result));
+    return container::err(bb::into<RequestResponseCreateError>(result));
 }
 
 template <typename RequestPayload,
@@ -372,7 +367,7 @@ template <typename RequestPayload,
           typename ResponseUserHeader,
           ServiceType S>
 inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
-    create_with_attributes(const AttributeSpecifier& attributes) && -> iox2::legacy::expected<
+    create_with_attributes(const AttributeSpecifier& attributes) && -> container::Expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseCreateError> {
     set_parameters();
@@ -382,12 +377,11 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
         m_handle, &attributes.m_handle, nullptr, &port_factory_handle);
 
     if (result == IOX2_OK) {
-        return iox2::legacy::ok(
-            PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(
-                port_factory_handle));
+        return PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(
+            port_factory_handle);
     }
 
-    return iox2::legacy::err(iox2::bb::into<RequestResponseCreateError>(result));
+    return container::err(bb::into<RequestResponseCreateError>(result));
 }
 
 template <typename RequestPayload,

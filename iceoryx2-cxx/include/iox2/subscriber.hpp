@@ -14,10 +14,10 @@
 #define IOX2_SUBSCRIBER_HPP
 
 #include "iox2/connection_failure.hpp"
+#include "iox2/container/expected.hpp"
 #include "iox2/container/optional.hpp"
 #include "iox2/iceoryx2.h"
 #include "iox2/internal/iceoryx2.hpp"
-#include "iox2/legacy/expected.hpp"
 #include "iox2/sample.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/subscriber_error.hpp"
@@ -43,12 +43,11 @@ class Subscriber {
 
     /// Receives a [`Sample`] from [`Publisher`]. If no sample could be
     /// received [`None`] is returned. If a failure occurs [`ReceiveError`] is returned.
-    auto receive() const
-        -> iox2::legacy::expected<iox2::container::Optional<Sample<S, Payload, UserHeader>>, ReceiveError>;
+    auto receive() const -> container::Expected<container::Optional<Sample<S, Payload, UserHeader>>, ReceiveError>;
 
     /// Returns true when the [`Subscriber`] has [`Sample`]s that can be
     /// acquired via [`Subscriber::receive()`], otherwise false.
-    auto has_samples() const -> iox2::legacy::expected<bool, ConnectionFailure>;
+    auto has_samples() const -> container::Expected<bool, ConnectionFailure>;
 
   private:
     template <ServiceType, typename, typename>
@@ -94,15 +93,15 @@ inline void Subscriber<S, Payload, UserHeader>::drop() {
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
-inline auto Subscriber<S, Payload, UserHeader>::has_samples() const -> iox2::legacy::expected<bool, ConnectionFailure> {
+inline auto Subscriber<S, Payload, UserHeader>::has_samples() const -> container::Expected<bool, ConnectionFailure> {
     bool has_samples_result = false;
     auto result = iox2_subscriber_has_samples(&m_handle, &has_samples_result);
 
     if (result == IOX2_OK) {
-        return iox2::legacy::ok(has_samples_result);
+        return has_samples_result;
     }
 
-    return iox2::legacy::err(iox2::bb::into<ConnectionFailure>(result));
+    return container::err(bb::into<ConnectionFailure>(result));
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
@@ -120,18 +119,18 @@ inline auto Subscriber<S, Payload, UserHeader>::buffer_size() const -> uint64_t 
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Subscriber<S, Payload, UserHeader>::receive() const
-    -> iox2::legacy::expected<iox2::container::Optional<Sample<S, Payload, UserHeader>>, ReceiveError> {
+    -> container::Expected<container::Optional<Sample<S, Payload, UserHeader>>, ReceiveError> {
     Sample<S, Payload, UserHeader> sample;
     auto result = iox2_subscriber_receive(&m_handle, &sample.m_sample, &sample.m_handle);
 
     if (result == IOX2_OK) {
         if (sample.m_handle != nullptr) {
-            return iox2::legacy::ok(iox2::container::Optional<Sample<S, Payload, UserHeader>>(std::move(sample)));
+            return container::Optional<Sample<S, Payload, UserHeader>>(std::move(sample));
         }
-        return iox2::legacy::ok(iox2::container::Optional<Sample<S, Payload, UserHeader>>(iox2::container::nullopt));
+        return container::Optional<Sample<S, Payload, UserHeader>>(iox2::container::nullopt);
     }
 
-    return iox2::legacy::err(iox2::bb::into<ReceiveError>(result));
+    return container::err(bb::into<ReceiveError>(result));
 }
 } // namespace iox2
 

@@ -20,21 +20,18 @@ constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_secs(1);
 auto main() -> int {
     using namespace iox2;
     set_log_level_from_env_or(LogLevel::Info);
-    auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
+    auto node = NodeBuilder().create<ServiceType::Ipc>().value();
 
-    auto service = node.service_builder(ServiceName::create("MyEventName").expect("valid service name"))
-                       .event()
-                       .open_or_create()
-                       .expect("successful service creation/opening");
+    auto service = node.service_builder(ServiceName::create("MyEventName").value()).event().open_or_create().value();
     auto max_event_id = service.static_config().event_id_max_value();
 
-    auto notifier = service.notifier_builder().create().expect("successful notifier creation");
+    auto notifier = service.notifier_builder().create().value();
 
     uint64_t counter = 0;
     while (node.wait(CYCLE_TIME).has_value()) {
         counter += 1;
         const auto event_id = EventId(counter % max_event_id);
-        notifier.notify_with_custom_event_id(event_id).expect("notification");
+        notifier.notify_with_custom_event_id(event_id).value();
 
         std::cout << "Trigger event with id " << event_id << "..." << std::endl;
     }

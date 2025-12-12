@@ -28,25 +28,25 @@ void background_thread_fn() {
     auto node = NodeBuilder()
                     // Optionally, a name can be provided to the node which helps identifying them
                     // later during debugging or introspection
-                    .name(NodeName::create("threadnode").expect("valid node name"))
+                    .name(NodeName::create("threadnode").value())
                     .create<ServiceType::Local>()
-                    .expect("successful node creation");
+                    .value();
 
-    auto service = node.service_builder(ServiceName::create("Service-Variants-Example").expect("valid service name"))
+    auto service = node.service_builder(ServiceName::create("Service-Variants-Example").value())
                        .publish_subscribe<uint64_t>()
                        .open_or_create()
-                       .expect("successful service creation/opening");
+                       .value();
 
-    auto subscriber = service.subscriber_builder().create().expect("successful subscriber creation");
+    auto subscriber = service.subscriber_builder().create().value();
     while (keep_running.load()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(CYCLE_TIME.as_millis()));
-        auto sample = subscriber.receive().expect("sample received");
+        auto sample = subscriber.receive().value();
         while (sample.has_value()) {
             {
                 const std::lock_guard<std::mutex> cout_guard(cout_mtx);
                 std::cout << "[thread] received: " << sample->payload() << std::endl;
             }
-            sample = subscriber.receive().expect("sample received");
+            sample = subscriber.receive().value();
         }
     }
 }
@@ -62,16 +62,16 @@ auto main() -> int {
     auto node = NodeBuilder()
                     // Optionally, a name can be provided to the node which helps identifying them
                     // later during debugging or introspection
-                    .name(NodeName::create("mainnode").expect("valid node name"))
+                    .name(NodeName::create("mainnode").value())
                     .create<ServiceType::Local>()
-                    .expect("successful node creation");
+                    .value();
 
-    auto service = node.service_builder(ServiceName::create("Service-Variants-Example").expect("valid service name"))
+    auto service = node.service_builder(ServiceName::create("Service-Variants-Example").value())
                        .publish_subscribe<uint64_t>()
                        .open_or_create()
-                       .expect("successful service creation/opening");
+                       .value();
 
-    auto publisher = service.publisher_builder().create().expect("successful publisher creation");
+    auto publisher = service.publisher_builder().create().value();
     auto background_thread = std::thread(background_thread_fn);
 
     uint64_t counter = 0;
@@ -80,7 +80,7 @@ auto main() -> int {
             const std::lock_guard<std::mutex> lock(cout_mtx);
             std::cout << "send: " << counter << std::endl;
         }
-        publisher.send_copy(counter).expect("send data");
+        publisher.send_copy(counter).value();
         counter += 1;
     }
 

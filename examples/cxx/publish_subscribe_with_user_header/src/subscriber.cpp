@@ -21,23 +21,23 @@ constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_secs(1);
 auto main() -> int {
     using namespace iox2;
     set_log_level_from_env_or(LogLevel::Info);
-    auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
+    auto node = NodeBuilder().create<ServiceType::Ipc>().value();
 
-    auto service = node.service_builder(ServiceName::create("My/Funk/ServiceName").expect("valid service name"))
+    auto service = node.service_builder(ServiceName::create("My/Funk/ServiceName").value())
                        .publish_subscribe<uint64_t>()
                        .user_header<CustomHeader>()
                        .open_or_create()
-                       .expect("successful service creation/opening");
+                       .value();
 
-    auto subscriber = service.subscriber_builder().create().expect("successful subscriber creation");
+    auto subscriber = service.subscriber_builder().create().value();
 
     std::cout << "Subscriber ready to receive data!" << std::endl;
 
     while (node.wait(CYCLE_TIME).has_value()) {
-        auto sample = subscriber.receive().expect("receive succeeds");
+        auto sample = subscriber.receive().value();
         while (sample.has_value()) {
             std::cout << "received: " << sample->payload() << ", user_header: " << sample->user_header() << std::endl;
-            sample = subscriber.receive().expect("receive succeeds");
+            sample = subscriber.receive().value();
         }
     }
 

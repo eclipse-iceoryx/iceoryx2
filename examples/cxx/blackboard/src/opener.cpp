@@ -24,18 +24,18 @@ constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_secs(1);
 auto main() -> int {
     using namespace iox2;
     set_log_level_from_env_or(LogLevel::Info);
-    auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
+    auto node = NodeBuilder().create<ServiceType::Ipc>().value();
 
-    auto service = node.service_builder(ServiceName::create("My/Funk/ServiceName").expect("valid service name"))
+    auto service = node.service_builder(ServiceName::create("My/Funk/ServiceName").value())
                        .blackboard_opener<BlackboardKey>()
                        .open()
-                       .expect("successful service opening");
+                       .value();
 
     auto key_0 = BlackboardKey { 0, -4, 4 };
     auto key_1 = BlackboardKey { 1, -4, 4 };
-    auto reader = service.reader_builder().create().expect("successful reader creation");
-    auto entry_handle_key_0 = reader.template entry<int32_t>(key_0).expect("successful entry handle creation");
-    auto entry_handle_key_1 = reader.template entry<double>(key_1).expect("successful entry handle creation");
+    auto reader = service.reader_builder().create().value();
+    auto entry_handle_key_0 = reader.template entry<int32_t>(key_0).value();
+    auto entry_handle_key_1 = reader.template entry<double>(key_1).value();
 
     while (node.wait(CYCLE_TIME).has_value()) {
         std::cout << "Read value " << *entry_handle_key_0.get() << " for key 0..." << std::endl;

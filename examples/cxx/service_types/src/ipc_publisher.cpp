@@ -28,19 +28,19 @@ auto main() -> int {
                     //
                     // All services which are created via this `Node` use the same service variant.
                     .create<ServiceType::Ipc>()
-                    .expect("successful node creation");
+                    .value();
 
-    auto service = node.service_builder(ServiceName::create("Service-Variants-Example").expect("valid service name"))
+    auto service = node.service_builder(ServiceName::create("Service-Variants-Example").value())
                        .publish_subscribe<uint64_t>()
                        .open_or_create()
-                       .expect("successful service creation/opening");
+                       .value();
 
-    auto publisher = service.publisher_builder().create().expect("successful publisher creation");
+    auto publisher = service.publisher_builder().create().value();
 
     uint64_t counter = 0;
     while (node.wait(CYCLE_TIME).has_value()) {
         std::cout << "send: " << counter << std::endl;
-        publisher.send_copy(counter).expect("sample was sent");
+        publisher.send_copy(counter).value();
         counter += 1;
     }
 

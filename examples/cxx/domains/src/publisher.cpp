@@ -51,25 +51,25 @@ auto main(int argc, char** argv) -> int {
                     // every service constructed by the node will use this config
                     .config(config)
                     .create<ServiceType::Ipc>()
-                    .expect("successful node creation");
+                    .value();
 
-    auto service = node.service_builder(ServiceName::create(args.service().c_str()).expect("valid service name"))
+    auto service = node.service_builder(ServiceName::create(args.service().c_str()).value())
                        .publish_subscribe<TransmissionData>()
                        .open_or_create()
-                       .expect("successful service creation/opening");
+                       .value();
 
-    auto publisher = service.publisher_builder().create().expect("successful publisher creation");
+    auto publisher = service.publisher_builder().create().value();
 
     auto counter = 0;
     while (node.wait(CYCLE_TIME).has_value()) {
         counter += 1;
 
-        auto sample = publisher.loan_uninit().expect("acquire sample");
+        auto sample = publisher.loan_uninit().value();
 
         auto initialized_sample =
             sample.write_payload(TransmissionData { counter, counter * 3, counter * 812.12 }); // NOLINT
 
-        send(std::move(initialized_sample)).expect("send successful");
+        send(std::move(initialized_sample)).value();
 
         std::cout << "[domain: \"" << args.domain() << "\", service: \"" << args.service() << "] Send sample "
                   << counter << "..." << std::endl;

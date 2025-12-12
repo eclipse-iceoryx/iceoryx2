@@ -32,7 +32,7 @@ class CustomSubscriber : public iox2::FileDescriptorBased {
     ~CustomSubscriber() override {
         m_notifier
             .notify_with_custom_event_id(iox2::EventId(iox2::bb::into<size_t>(PubSubEvent::SubscriberDisconnected)))
-            .expect("");
+            .value();
     }
 
     auto operator=(const CustomSubscriber&) -> CustomSubscriber& = delete;
@@ -45,15 +45,15 @@ class CustomSubscriber : public iox2::FileDescriptorBased {
                                   .history_size(HISTORY_SIZE)
                                   .subscriber_max_buffer_size(HISTORY_SIZE)
                                   .open_or_create()
-                                  .expect("");
-        auto event_service = node.service_builder(service_name).event().open_or_create().expect("");
+                                  .value();
+        auto event_service = node.service_builder(service_name).event().open_or_create().value();
 
-        auto listener = event_service.listener_builder().create().expect("");
-        auto notifier = event_service.notifier_builder().create().expect("");
-        auto subscriber = pubsub_service.subscriber_builder().create().expect("");
+        auto listener = event_service.listener_builder().create().value();
+        auto notifier = event_service.notifier_builder().create().value();
+        auto subscriber = pubsub_service.subscriber_builder().create().value();
 
         notifier.notify_with_custom_event_id(iox2::EventId(iox2::bb::into<size_t>(PubSubEvent::SubscriberConnected)))
-            .expect("");
+            .value();
 
         return CustomSubscriber { std::move(subscriber), std::move(notifier), std::move(listener) };
     }
@@ -95,10 +95,10 @@ class CustomSubscriber : public iox2::FileDescriptorBased {
     }
 
     auto receive() -> iox2::container::Optional<iox2::Sample<iox2::ServiceType::Ipc, TransmissionData, void>> {
-        auto sample = m_subscriber.receive().expect("");
+        auto sample = m_subscriber.receive().value();
         if (sample.has_value()) {
             m_notifier.notify_with_custom_event_id(iox2::EventId(iox2::bb::into<size_t>(PubSubEvent::ReceivedSample)))
-                .expect("");
+                .value();
         }
 
         return sample;

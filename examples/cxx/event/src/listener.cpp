@@ -19,24 +19,23 @@ constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_secs(1);
 auto main() -> int {
     using namespace iox2;
     set_log_level_from_env_or(LogLevel::Info);
-    auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
+    auto node = NodeBuilder().create<ServiceType::Ipc>().value();
 
-    auto service = node.service_builder(ServiceName::create("MyEventName").expect("valid service name"))
-                       .event()
-                       .open_or_create()
-                       .expect("successful service creation/opening");
+    auto service = node.service_builder(ServiceName::create("MyEventName").value()).event().open_or_create().value();
 
-    auto listener = service.listener_builder().create().expect("successful listener creation");
+    auto listener = service.listener_builder().create().value();
 
     std::cout << "Listener ready to receive events!" << std::endl;
 
     while (node.wait(iox2::bb::Duration::zero()).has_value()) {
-        listener.timed_wait_one(CYCLE_TIME).and_then([](auto maybe_event_id) -> auto {
+        auto timed_wait_result = listener.timed_wait_one(CYCLE_TIME);
+        if (timed_wait_result.has_value()) {
+            auto& maybe_event_id = timed_wait_result.value();
             if (maybe_event_id.has_value()) {
                 auto& event_id = maybe_event_id.value();
                 std::cout << "event was triggered with id: " << event_id << std::endl;
             }
-        });
+        }
     }
 
     std::cout << "exit" << std::endl;

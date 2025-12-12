@@ -32,17 +32,16 @@ auto main(int argc, char** argv) -> int {
     auto args = Args::parse(argc, argv, "Notifier of the event multiplexing example.");
 
     auto event_id = EventId(args.event_id());
-    auto service_name = ServiceName::create(args.service().c_str()).expect("valid service name");
+    auto service_name = ServiceName::create(args.service().c_str()).value();
 
-    auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
+    auto node = NodeBuilder().create<ServiceType::Ipc>().value();
 
-    auto service =
-        node.service_builder(service_name).event().open_or_create().expect("successful service creation/opening");
+    auto service = node.service_builder(service_name).event().open_or_create().value();
 
-    auto notifier = service.notifier_builder().create().expect("successful notifier creation");
+    auto notifier = service.notifier_builder().create().value();
 
     while (node.wait(CYCLE_TIME).has_value()) {
-        notifier.notify_with_custom_event_id(event_id).expect("notification");
+        notifier.notify_with_custom_event_id(event_id).value();
 
         std::cout << "[service: \"" << service_name.to_string().c_str() << "\"] Trigger event with id " << event_id
                   << "..." << std::endl;

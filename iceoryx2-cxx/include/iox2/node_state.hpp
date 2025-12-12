@@ -14,8 +14,8 @@
 #define IOX2_NODE_STATE_HPP
 
 #include "iox2/bb/static_function.hpp"
+#include "iox2/container/expected.hpp"
 #include "iox2/container/optional.hpp"
-#include "iox2/legacy/expected.hpp"
 #include "iox2/legacy/variant.hpp"
 #include "node_details.hpp"
 #include "node_failure_enums.hpp"
@@ -68,7 +68,7 @@ class DeadNodeView {
 
     /// Removes all stale resources of the dead [`Node`]. On error it returns a [`NodeCleanupFailure`].
     /// It returns true if the stale resources could be removed, otherwise false.
-    auto remove_stale_resources() -> iox2::legacy::expected<bool, NodeCleanupFailure>;
+    auto remove_stale_resources() -> iox2::container::Expected<bool, NodeCleanupFailure>;
 
   private:
     AliveNodeView<T> m_view;

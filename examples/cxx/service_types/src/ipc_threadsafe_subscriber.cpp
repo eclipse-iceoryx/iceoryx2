@@ -24,23 +24,23 @@ auto main() -> int {
                     // In contrast to Rust, all service variants in C++ have threadsafe ports
                     // but at the cost of an additional mutex lock/unlock call.
                     .create<ServiceType::Ipc>()
-                    .expect("successful node creation");
+                    .value();
 
-    auto service = node.service_builder(ServiceName::create("Service-Variants-Example").expect("valid service name"))
+    auto service = node.service_builder(ServiceName::create("Service-Variants-Example").value())
                        .publish_subscribe<uint64_t>()
                        .open_or_create()
-                       .expect("service created");
+                       .value();
 
     std::mutex cout_mtx;
     std::atomic<bool> keep_running { true };
-    auto subscriber = service.subscriber_builder().create().expect("subscriber created");
+    auto subscriber = service.subscriber_builder().create().value();
 
     // All ports (like Subscriber, Publisher, Client, Server, ...) are threadsafe
     // so they can be shared between threads.
     auto background_thread = std::thread([&]() -> auto {
         while (keep_running.load()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(CYCLE_TIME.as_millis()));
-            auto sample = subscriber.receive().expect("sample received");
+            auto sample = subscriber.receive().value();
             if (sample.has_value()) {
                 const std::lock_guard<std::mutex> cout_guard(cout_mtx);
                 std::cout << "[thread] received: " << sample->payload() << std::endl;
@@ -49,7 +49,7 @@ auto main() -> int {
     });
 
     while (node.wait(CYCLE_TIME).has_value()) {
-        auto sample = subscriber.receive().expect("sample received");
+        auto sample = subscriber.receive().value();
         if (sample.has_value()) {
             const std::lock_guard<std::mutex> cout_guard(cout_mtx);
             std::cout << "[main] received: " << sample->payload() << std::endl;

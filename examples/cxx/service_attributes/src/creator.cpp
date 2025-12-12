@@ -21,28 +21,28 @@ constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_secs(1);
 auto main() -> int {
     using namespace iox2;
     set_log_level_from_env_or(LogLevel::Info);
-    auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
+    auto node = NodeBuilder().create<ServiceType::Ipc>().value();
     // define a set of properties that are static for the lifetime
     // of the service
     auto attribute_specifier = AttributeSpecifier();
-    attribute_specifier.define("dds_service_mapping", "my_funky_service_name").expect("");
-    attribute_specifier.define("tcp_serialization_format", "cdr").expect("");
-    attribute_specifier.define("someip_service_mapping", "1/2/3").expect("");
-    attribute_specifier.define("camera_resolution", "1920x1080").expect("");
+    attribute_specifier.define("dds_service_mapping", "my_funky_service_name").value();
+    attribute_specifier.define("tcp_serialization_format", "cdr").value();
+    attribute_specifier.define("someip_service_mapping", "1/2/3").value();
+    attribute_specifier.define("camera_resolution", "1920x1080").value();
 
-    auto service = node.service_builder(ServiceName::create("Service/With/Properties").expect("valid service name"))
+    auto service = node.service_builder(ServiceName::create("Service/With/Properties").value())
                        .publish_subscribe<uint64_t>()
                        .create_with_attributes(attribute_specifier)
-                       .expect("successful service creation/opening");
+                       .value();
 
-    auto publisher = service.publisher_builder().create().expect("successful publisher creation");
+    auto publisher = service.publisher_builder().create().value();
 
     std::cout << "defined service attributes: " << service.attributes() << std::endl;
 
     while (node.wait(CYCLE_TIME).has_value()) {
-        auto sample = publisher.loan().expect("acquire sample");
+        auto sample = publisher.loan().value();
         sample.payload_mut() = 0;
-        send(std::move(sample)).expect("send successful");
+        send(std::move(sample)).value();
     }
 
     std::cout << "exit" << std::endl;

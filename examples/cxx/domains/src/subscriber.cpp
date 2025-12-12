@@ -50,22 +50,22 @@ auto main(int argc, char** argv) -> int {
                     // every service constructed by the node will use this config
                     .config(config)
                     .create<ServiceType::Ipc>()
-                    .expect("successful node creation");
+                    .value();
 
-    auto service = node.service_builder(ServiceName::create(args.service().c_str()).expect("valid service name"))
+    auto service = node.service_builder(ServiceName::create(args.service().c_str()).value())
                        .publish_subscribe<TransmissionData>()
                        .open_or_create()
-                       .expect("successful service creation/opening");
+                       .value();
 
-    auto subscriber = service.subscriber_builder().create().expect("successful subscriber creation");
+    auto subscriber = service.subscriber_builder().create().value();
 
     std::cout << "subscribed to: [domain: \"" << args.domain() << "\", service: \"" << args.service() << "\"]"
               << std::endl;
     while (node.wait(CYCLE_TIME).has_value()) {
-        auto sample = subscriber.receive().expect("receive succeeds");
+        auto sample = subscriber.receive().value();
         while (sample.has_value()) {
             std::cout << "received: " << sample->payload() << std::endl;
-            sample = subscriber.receive().expect("receive succeeds");
+            sample = subscriber.receive().value();
         }
     }
 

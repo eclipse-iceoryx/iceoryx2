@@ -20,25 +20,22 @@ constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_millis(1500);
 auto main() -> int {
     using namespace iox2;
     set_log_level_from_env_or(LogLevel::Info);
-    auto service_name = ServiceName::create("service_2").expect("");
-    auto node = NodeBuilder()
-                    .name(NodeName::create("publisher 2").expect(""))
-                    .create<ServiceType::Ipc>()
-                    .expect("successful node creation");
+    auto service_name = ServiceName::create("service_2").value();
+    auto node = NodeBuilder().name(NodeName::create("publisher 2").value()).create<ServiceType::Ipc>().value();
 
     auto service = open_service(node, service_name);
 
-    auto publisher = service.pubsub.publisher_builder().create().expect("");
+    auto publisher = service.pubsub.publisher_builder().create().value();
     auto notifier = service.event
                         .notifier_builder()
                         // we only want to notify the other side explicitly when we have sent a sample
                         // so we can define it as default event id
                         .default_event_id(iox2::bb::into<EventId>(PubSubEvent::SentSample))
                         .create()
-                        .expect("");
+                        .value();
     auto counter = 1000000U; // NOLINT, magic number is fine in an example
 
-    auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().expect("");
+    auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().value();
 
     // we only want to notify the other side explicitly when we have sent a sample
     // so we can define it as default event id
@@ -47,12 +44,12 @@ auto main() -> int {
     waitset
         .wait_and_process([&](auto) -> auto {
             std::cout << service_name.to_string().c_str() << ": Send sample " << counter << " ..." << std::endl;
-            publisher.send_copy(counter).expect("");
-            notifier.notify().expect("");
+            publisher.send_copy(counter).value();
+            notifier.notify().value();
             counter += 1;
             return CallbackProgression::Continue;
         })
-        .expect("");
+        .value();
 
     std::cout << "exit" << std::endl;
 

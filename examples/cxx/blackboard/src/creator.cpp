@@ -26,22 +26,22 @@ constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_secs(1);
 auto main() -> int {
     using namespace iox2;
     set_log_level_from_env_or(LogLevel::Info);
-    auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
+    auto node = NodeBuilder().create<ServiceType::Ipc>().value();
 
     auto key_0 = BlackboardKey { 0, -4, 4 };
     auto key_1 = BlackboardKey { 1, -4, 4 };
     const double initial_value = 1.1;
-    auto service = node.service_builder(ServiceName::create("My/Funk/ServiceName").expect("valid service name"))
+    auto service = node.service_builder(ServiceName::create("My/Funk/ServiceName").value())
                        .blackboard_creator<BlackboardKey>()
                        .template add<int32_t>(key_0, 3)
                        .template add<double>(key_1, initial_value)
                        .create()
-                       .expect("successful service creation");
+                       .value();
     std::cout << "Blackboard created." << std::endl;
 
-    auto writer = service.writer_builder().create().expect("successful writer creation");
-    auto entry_handle_mut_key_0 = writer.template entry<int32_t>(key_0).expect("successful entry handle creation");
-    auto entry_handle_mut_key_1 = writer.template entry<double>(key_1).expect("successful entry handle creation");
+    auto writer = service.writer_builder().create().value();
+    auto entry_handle_mut_key_0 = writer.template entry<int32_t>(key_0).value();
+    auto entry_handle_mut_key_1 = writer.template entry<double>(key_1).value();
 
     auto counter = 0;
     while (node.wait(CYCLE_TIME).has_value()) {

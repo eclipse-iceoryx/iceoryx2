@@ -16,6 +16,7 @@
 
 #include "test.hpp"
 #include <array>
+#include <gtest/gtest.h>
 
 namespace {
 using namespace iox2;
@@ -52,24 +53,23 @@ TYPED_TEST(ServiceRequestResponseTest, created_service_does_exist) {
 
     ASSERT_FALSE(
         Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::RequestResponse)
-            .expect(""));
+            .value());
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
 
     {
-        auto sut =
-            node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().expect("");
+        auto sut = node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().value();
 
         ASSERT_TRUE(
             Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::RequestResponse)
-                .expect(""));
+                .value());
     }
 
     ASSERT_FALSE(
-        Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::Event).expect(""));
+        Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::Event).value());
     ASSERT_FALSE(
         Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::PublishSubscribe)
-            .expect(""));
+            .value());
 }
 
 TYPED_TEST(ServiceRequestResponseTest, service_name_works) {
@@ -77,8 +77,8 @@ TYPED_TEST(ServiceRequestResponseTest, service_name_works) {
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto sut = node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto sut = node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().value();
 
     ASSERT_THAT(sut.name().to_string().c_str(), StrEq(service_name.to_string().c_str()));
 }
@@ -87,16 +87,15 @@ TYPED_TEST(ServiceRequestResponseTest, service_name_works) {
 TYPED_TEST(ServiceRequestResponseTest, list_service_nodes_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto node_name_1 = NodeName::create("is there any of the herring left?").expect("");
-    const auto node_name_2 = NodeName::create("nala and octo-wolf asked in unison").expect("");
+    const auto node_name_1 = NodeName::create("is there any of the herring left?").value();
+    const auto node_name_2 = NodeName::create("nala and octo-wolf asked in unison").value();
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node_1 = NodeBuilder().name(node_name_1).create<SERVICE_TYPE>().expect("");
-    auto node_2 = NodeBuilder().name(node_name_2).create<SERVICE_TYPE>().expect("");
+    auto node_1 = NodeBuilder().name(node_name_1).create<SERVICE_TYPE>().value();
+    auto node_2 = NodeBuilder().name(node_name_2).create<SERVICE_TYPE>().value();
 
-    auto sut_1 =
-        node_1.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().expect("");
-    auto sut_2 = node_2.service_builder(service_name).template request_response<uint64_t, uint64_t>().open().expect("");
+    auto sut_1 = node_1.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().value();
+    auto sut_2 = node_2.service_builder(service_name).template request_response<uint64_t, uint64_t>().open().value();
 
     auto counter = 0;
     auto verify_node = [&](const AliveNodeView<SERVICE_TYPE>& node_view) -> auto {
@@ -130,13 +129,13 @@ TYPED_TEST(ServiceRequestResponseTest, creating_existing_service_fails) {
 
     ASSERT_FALSE(
         Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::RequestResponse)
-            .expect(""));
+            .value());
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto sut = node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto sut = node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().value();
     auto sut_2 = node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create();
 
-    ASSERT_TRUE(sut_2.has_error());
+    ASSERT_FALSE(sut_2.has_value());
     ASSERT_THAT(sut_2.error(), Eq(RequestResponseCreateError::AlreadyExists));
 }
 
@@ -147,43 +146,43 @@ TYPED_TEST(ServiceRequestResponseTest, open_or_create_service_does_exist) {
 
     ASSERT_FALSE(
         Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::RequestResponse)
-            .expect(""));
+            .value());
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
 
     {
         auto sut = container::Optional<PortFactoryRequestResponse<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(
             node.service_builder(service_name)
                 .template request_response<uint64_t, uint64_t>()
                 .open_or_create()
-                .expect(""));
+                .value());
 
         ASSERT_TRUE(
             Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::RequestResponse)
-                .expect(""));
+                .value());
 
         auto sut_2 = container::Optional<PortFactoryRequestResponse<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(
             node.service_builder(service_name)
                 .template request_response<uint64_t, uint64_t>()
                 .open_or_create()
-                .expect(""));
+                .value());
 
         ASSERT_TRUE(
             Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::RequestResponse)
-                .expect(""));
+                .value());
 
         sut.reset();
 
         ASSERT_TRUE(
             Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::RequestResponse)
-                .expect(""));
+                .value());
 
         sut_2.reset();
     }
 
     ASSERT_FALSE(
         Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::RequestResponse)
-            .expect(""));
+            .value());
 }
 
 TYPED_TEST(ServiceRequestResponseTest, opening_non_existing_service_fails) {
@@ -191,9 +190,9 @@ TYPED_TEST(ServiceRequestResponseTest, opening_non_existing_service_fails) {
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = node.service_builder(service_name).template request_response<uint64_t, uint64_t>().open();
-    ASSERT_TRUE(sut.has_error());
+    ASSERT_FALSE(sut.has_value());
     ASSERT_THAT(sut.error(), Eq(RequestResponseOpenError::DoesNotExist));
 }
 
@@ -202,9 +201,9 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_works) {
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create =
-        node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().expect("");
+        node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().value();
     auto sut = node.service_builder(service_name).template request_response<uint64_t, uint64_t>().open();
     ASSERT_TRUE(sut.has_value());
 }
@@ -214,16 +213,16 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_wrong_paylo
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create =
-        node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().expect("");
+        node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().value();
 
     auto sut1 = node.service_builder(service_name).template request_response<double, uint64_t>().open();
-    ASSERT_TRUE(sut1.has_error());
+    ASSERT_FALSE(sut1.has_value());
     ASSERT_THAT(sut1.error(), Eq(RequestResponseOpenError::IncompatibleRequestType));
 
     auto sut2 = node.service_builder(service_name).template request_response<uint64_t, double>().open();
-    ASSERT_TRUE(sut2.has_error());
+    ASSERT_FALSE(sut2.has_value());
     ASSERT_THAT(sut2.error(), Eq(RequestResponseOpenError::IncompatibleResponseType));
 }
 
@@ -232,20 +231,20 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_wrong_user_
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create = node.service_builder(service_name)
                           .template request_response<uint64_t, uint64_t>()
                           .template request_user_header<uint64_t>()
                           .template response_user_header<uint64_t>()
                           .create()
-                          .expect("");
+                          .value();
 
     auto sut1 = node.service_builder(service_name)
                     .template request_response<uint64_t, uint64_t>()
                     .template request_user_header<double>()
                     .template response_user_header<uint64_t>()
                     .open();
-    ASSERT_TRUE(sut1.has_error());
+    ASSERT_FALSE(sut1.has_value());
     ASSERT_THAT(sut1.error(), Eq(RequestResponseOpenError::IncompatibleRequestType));
 
     auto sut2 = node.service_builder(service_name)
@@ -253,7 +252,7 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_wrong_user_
                     .template request_user_header<uint64_t>()
                     .template response_user_header<double>()
                     .open();
-    ASSERT_TRUE(sut2.has_error());
+    ASSERT_FALSE(sut2.has_value());
     ASSERT_THAT(sut2.error(), Eq(RequestResponseOpenError::IncompatibleResponseType));
 }
 
@@ -262,16 +261,16 @@ TYPED_TEST(ServiceRequestResponseTest, open_or_create_existing_service_with_wron
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create =
-        node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().expect("");
+        node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().value();
 
     auto sut1 = node.service_builder(service_name).template request_response<double, uint64_t>().open_or_create();
-    ASSERT_TRUE(sut1.has_error());
+    ASSERT_FALSE(sut1.has_value());
     ASSERT_THAT(sut1.error(), Eq(RequestResponseOpenOrCreateError::OpenIncompatibleRequestType));
 
     auto sut2 = node.service_builder(service_name).template request_response<uint64_t, double>().open_or_create();
-    ASSERT_TRUE(sut2.has_error());
+    ASSERT_FALSE(sut2.has_value());
     ASSERT_THAT(sut2.error(), Eq(RequestResponseOpenOrCreateError::OpenIncompatibleResponseType));
 }
 
@@ -280,30 +279,29 @@ TYPED_TEST(ServiceRequestResponseTest, send_copy_and_receive_works) {
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto service =
-        node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().value();
 
-    auto sut_client = service.client_builder().create().expect("");
-    auto sut_server = service.server_builder().create().expect("");
+    auto sut_client = service.client_builder().create().value();
+    auto sut_server = service.server_builder().create().value();
 
     const uint64_t request_payload = 123;
     auto pending_response = sut_client.send_copy(request_payload);
-    ASSERT_FALSE(pending_response.has_error());
+    ASSERT_TRUE(pending_response.has_value());
 
     auto has_requests = sut_server.has_requests();
-    ASSERT_FALSE(has_requests.has_error());
+    ASSERT_TRUE(has_requests.has_value());
     EXPECT_TRUE(has_requests.value());
-    auto active_request = sut_server.receive().expect("");
+    auto active_request = sut_server.receive().value();
     ASSERT_TRUE(active_request.has_value());
     EXPECT_THAT(active_request->payload(), Eq(request_payload));
 
     const uint64_t response_payload = 234;
     auto sent_response = active_request->send_copy(response_payload);
-    ASSERT_FALSE(sent_response.has_error());
+    ASSERT_TRUE(sent_response.has_value());
     ASSERT_TRUE(pending_response->has_response());
 
-    auto received_response = pending_response->receive().expect("");
+    auto received_response = pending_response->receive().value();
     ASSERT_TRUE(received_response.has_value());
     EXPECT_THAT(received_response->payload(), Eq(response_payload));
 }
@@ -313,30 +311,29 @@ TYPED_TEST(ServiceRequestResponseTest, loan_uninit_write_payload_send_receive_wo
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto service =
-        node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().value();
 
-    auto sut_client = service.client_builder().create().expect("");
-    auto sut_server = service.server_builder().create().expect("");
+    auto sut_client = service.client_builder().create().value();
+    auto sut_server = service.server_builder().create().value();
 
     const uint64_t request_payload = 345;
-    auto request_uninit = sut_client.loan_uninit().expect("");
+    auto request_uninit = sut_client.loan_uninit().value();
     request_uninit.payload_mut() = request_payload;
     EXPECT_THAT(request_uninit.payload(), Eq(request_payload));
-    auto pending_response = send(assume_init(std::move(request_uninit))).expect("");
+    auto pending_response = send(assume_init(std::move(request_uninit))).value();
 
-    auto active_request = sut_server.receive().expect("");
+    auto active_request = sut_server.receive().value();
     ASSERT_TRUE(active_request.has_value());
     EXPECT_THAT(active_request->payload(), Eq(request_payload));
 
     const uint64_t response_payload = 456;
-    auto response_uninit = active_request->loan_uninit().expect("");
+    auto response_uninit = active_request->loan_uninit().value();
     response_uninit.payload_mut() = response_payload;
     EXPECT_THAT(response_uninit.payload(), Eq(response_payload));
-    send(assume_init(std::move(response_uninit))).expect("");
+    send(assume_init(std::move(response_uninit))).value();
 
-    auto received_response = pending_response.receive().expect("");
+    auto received_response = pending_response.receive().value();
     ASSERT_TRUE(received_response.has_value());
     EXPECT_THAT(received_response->payload(), Eq(response_payload));
 }
@@ -350,27 +347,27 @@ TYPED_TEST(ServiceRequestResponseTest, loan_send_receive_works) {
         uint64_t p { 3 };
     };
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto service = node.service_builder(service_name).template request_response<Payload, Payload>().create().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name).template request_response<Payload, Payload>().create().value();
 
-    auto sut_client = service.client_builder().create().expect("");
-    auto sut_server = service.server_builder().create().expect("");
+    auto sut_client = service.client_builder().create().value();
+    auto sut_server = service.server_builder().create().value();
 
-    auto request = sut_client.loan().expect("");
+    auto request = sut_client.loan().value();
     EXPECT_THAT(request.payload().p, Eq(3));
 
-    auto pending_response = send(std::move(request)).expect("");
+    auto pending_response = send(std::move(request)).value();
     EXPECT_THAT(pending_response.payload().p, Eq(3));
 
-    auto active_request = sut_server.receive().expect("");
+    auto active_request = sut_server.receive().value();
     ASSERT_TRUE(active_request.has_value());
     EXPECT_THAT(active_request.value().payload().p, Eq(3));
 
-    auto response = active_request->loan().expect("");
+    auto response = active_request->loan().value();
     response.payload_mut().p = 0;
-    send(std::move(response)).expect("");
+    send(std::move(response)).value();
 
-    auto received_response = pending_response.receive().expect("");
+    auto received_response = pending_response.receive().value();
     ASSERT_TRUE(received_response.has_value());
     EXPECT_THAT(received_response.value().payload().p, Eq(0));
 }
@@ -383,17 +380,17 @@ TYPED_TEST(ServiceRequestResponseTest, loan_request_default_constructs_request_h
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
                        .template request_response<uint64_t, uint64_t>()
                        .template request_user_header<UserHeader>()
                        .create()
-                       .expect("");
+                       .value();
 
-    auto client = service.client_builder().create().expect("");
-    auto server = service.server_builder().create().expect("");
+    auto client = service.client_builder().create().value();
+    auto server = service.server_builder().create().value();
 
-    auto sut = client.loan().expect("");
+    auto sut = client.loan().value();
     ASSERT_THAT(sut.user_header(), Eq(UserHeader()));
 }
 
@@ -405,17 +402,17 @@ TYPED_TEST(ServiceRequestResponseTest, loan_uninit_request_default_constructs_re
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
                        .template request_response<uint64_t, uint64_t>()
                        .template request_user_header<UserHeader>()
                        .create()
-                       .expect("");
+                       .value();
 
-    auto client = service.client_builder().create().expect("");
-    auto server = service.server_builder().create().expect("");
+    auto client = service.client_builder().create().value();
+    auto server = service.server_builder().create().value();
 
-    auto sut = client.loan_uninit().expect("");
+    auto sut = client.loan_uninit().value();
     ASSERT_THAT(sut.user_header(), Eq(UserHeader()));
 }
 
@@ -427,17 +424,17 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_request_default_constructs_req
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
                        .template request_response<iox::Slice<uint64_t>, uint64_t>()
                        .template request_user_header<UserHeader>()
                        .create()
-                       .expect("");
+                       .value();
 
-    auto client = service.client_builder().create().expect("");
-    auto server = service.server_builder().create().expect("");
+    auto client = service.client_builder().create().value();
+    auto server = service.server_builder().create().value();
 
-    auto sut = client.loan_slice(1).expect("");
+    auto sut = client.loan_slice(1).value();
     ASSERT_THAT(sut.user_header(), Eq(UserHeader()));
 }
 
@@ -449,17 +446,17 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_uninit_request_default_constru
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
                        .template request_response<iox::Slice<uint64_t>, uint64_t>()
                        .template request_user_header<UserHeader>()
                        .create()
-                       .expect("");
+                       .value();
 
-    auto client = service.client_builder().create().expect("");
-    auto server = service.server_builder().create().expect("");
+    auto client = service.client_builder().create().value();
+    auto server = service.server_builder().create().value();
 
-    auto sut = client.loan_slice_uninit(1).expect("");
+    auto sut = client.loan_slice_uninit(1).value();
     ASSERT_THAT(sut.user_header(), Eq(UserHeader()));
 }
 
@@ -471,19 +468,19 @@ TYPED_TEST(ServiceRequestResponseTest, loan_response_default_constructs_response
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
                        .template request_response<uint64_t, uint64_t>()
                        .template response_user_header<UserHeader>()
                        .create()
-                       .expect("");
+                       .value();
 
-    auto client = service.client_builder().create().expect("");
-    auto server = service.server_builder().create().expect("");
+    auto client = service.client_builder().create().value();
+    auto server = service.server_builder().create().value();
 
     auto pending_response = client.send_copy(0);
-    auto active_request = server.receive().expect("").value();
-    auto sut = active_request.loan().expect("");
+    auto active_request = server.receive().value().value();
+    auto sut = active_request.loan().value();
     ASSERT_THAT(sut.user_header(), Eq(UserHeader()));
 }
 
@@ -495,19 +492,19 @@ TYPED_TEST(ServiceRequestResponseTest, loan_uninit_response_default_constructs_r
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
                        .template request_response<uint64_t, uint64_t>()
                        .template response_user_header<UserHeader>()
                        .create()
-                       .expect("");
+                       .value();
 
-    auto client = service.client_builder().create().expect("");
-    auto server = service.server_builder().create().expect("");
+    auto client = service.client_builder().create().value();
+    auto server = service.server_builder().create().value();
 
     auto pending_response = client.send_copy(0);
-    auto active_request = server.receive().expect("").value();
-    auto sut = active_request.loan_uninit().expect("");
+    auto active_request = server.receive().value().value();
+    auto sut = active_request.loan_uninit().value();
     ASSERT_THAT(sut.user_header(), Eq(UserHeader()));
 }
 
@@ -519,19 +516,19 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_response_default_constructs_re
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
                        .template request_response<uint64_t, iox::Slice<uint64_t>>()
                        .template response_user_header<UserHeader>()
                        .create()
-                       .expect("");
+                       .value();
 
-    auto client = service.client_builder().create().expect("");
-    auto server = service.server_builder().create().expect("");
+    auto client = service.client_builder().create().value();
+    auto server = service.server_builder().create().value();
 
     auto pending_response = client.send_copy(0);
-    auto active_request = server.receive().expect("").value();
-    auto sut = active_request.loan_slice(1).expect("");
+    auto active_request = server.receive().value().value();
+    auto sut = active_request.loan_slice(1).value();
     ASSERT_THAT(sut.user_header(), Eq(UserHeader()));
 }
 
@@ -543,19 +540,19 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_uninit_response_default_constr
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
                        .template request_response<uint64_t, iox::Slice<uint64_t>>()
                        .template response_user_header<UserHeader>()
                        .create()
-                       .expect("");
+                       .value();
 
-    auto client = service.client_builder().create().expect("");
-    auto server = service.server_builder().create().expect("");
+    auto client = service.client_builder().create().value();
+    auto server = service.server_builder().create().value();
 
     auto pending_response = client.send_copy(0);
-    auto active_request = server.receive().expect("").value();
-    auto sut = active_request.loan_slice_uninit(1).expect("");
+    auto active_request = server.receive().value().value();
+    auto sut = active_request.loan_slice_uninit(1).value();
     ASSERT_THAT(sut.user_header(), Eq(UserHeader()));
 }
 
@@ -573,14 +570,14 @@ TYPED_TEST(ServiceRequestResponseTest, send_slice_copy_and_receive_works) {
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
                        .template request_response<iox::Slice<DummyData>, iox::Slice<DummyData>>()
                        .create()
-                       .expect("");
+                       .value();
 
-    auto sut_client = service.client_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().expect("");
-    auto sut_server = service.server_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().expect("");
+    auto sut_client = service.client_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().value();
+    auto sut_server = service.server_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().value();
 
     iox2::legacy::UninitializedArray<DummyData, SLICE_MAX_LENGTH, iox2::legacy::ZeroedBuffer> elements;
     for (auto& item : elements) {
@@ -588,10 +585,10 @@ TYPED_TEST(ServiceRequestResponseTest, send_slice_copy_and_receive_works) {
     }
     auto payload = iox::ImmutableSlice<DummyData>(elements.begin(), SLICE_MAX_LENGTH);
     auto pending_response = sut_client.send_slice_copy(payload);
-    ASSERT_FALSE(pending_response.has_error());
+    ASSERT_TRUE(pending_response.has_value());
     EXPECT_THAT(pending_response->payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
 
-    auto active_request = sut_server.receive().expect("");
+    auto active_request = sut_server.receive().value();
     ASSERT_TRUE(active_request.has_value());
     auto received_request = std::move(active_request.value());
 
@@ -604,9 +601,9 @@ TYPED_TEST(ServiceRequestResponseTest, send_slice_copy_and_receive_works) {
     EXPECT_THAT(received_request.payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
     EXPECT_THAT(iterations, Eq(SLICE_MAX_LENGTH));
 
-    received_request.send_slice_copy(payload).expect("");
+    received_request.send_slice_copy(payload).value();
 
-    auto received_response = pending_response->receive().expect("");
+    auto received_response = pending_response->receive().value();
     ASSERT_TRUE(received_response.has_value());
     iterations = 0;
     for (const auto& item : received_response->payload()) {
@@ -626,17 +623,17 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_uninit_write_payload_send_rece
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
                        .template request_response<iox::Slice<DummyData>, iox::Slice<DummyData>>()
                        .create()
-                       .expect("");
+                       .value();
 
-    auto sut_client = service.client_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().expect("");
-    auto sut_server = service.server_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().expect("");
+    auto sut_client = service.client_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().value();
+    auto sut_server = service.server_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().value();
 
     auto request_uninit = sut_client.loan_slice_uninit(SLICE_MAX_LENGTH);
-    ASSERT_FALSE(request_uninit.has_error());
+    ASSERT_TRUE(request_uninit.has_value());
     EXPECT_THAT(request_uninit.value().payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
 
     iox2::legacy::UninitializedArray<DummyData, SLICE_MAX_LENGTH, iox2::legacy::ZeroedBuffer> elements;
@@ -646,9 +643,9 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_uninit_write_payload_send_rece
     auto payload = iox::ImmutableSlice<DummyData>(elements.begin(), SLICE_MAX_LENGTH);
     auto request = request_uninit->write_from_slice(payload);
     EXPECT_THAT(request.payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
-    auto pending_response = send(std::move(request)).expect("");
+    auto pending_response = send(std::move(request)).value();
 
-    auto active_request = sut_server.receive().expect("");
+    auto active_request = sut_server.receive().value();
     ASSERT_TRUE(active_request.has_value());
     auto received_request = std::move(active_request.value());
     auto iterations = 0;
@@ -660,7 +657,7 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_uninit_write_payload_send_rece
     EXPECT_THAT(received_request.payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
     EXPECT_THAT(iterations, Eq(SLICE_MAX_LENGTH));
 
-    auto response_uninit = received_request.loan_slice_uninit(SLICE_MAX_LENGTH).expect("");
+    auto response_uninit = received_request.loan_slice_uninit(SLICE_MAX_LENGTH).value();
     auto response = response_uninit.write_from_slice(payload);
     iterations = 0;
     for (const auto& item : response.payload()) {
@@ -670,9 +667,9 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_uninit_write_payload_send_rece
     }
     EXPECT_THAT(response.payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
     EXPECT_THAT(iterations, Eq(SLICE_MAX_LENGTH));
-    send(std::move(response)).expect("");
+    send(std::move(response)).value();
 
-    auto received_response = pending_response.receive().expect("");
+    auto received_response = pending_response.receive().value();
     ASSERT_TRUE(received_response.has_value());
     iterations = 0;
     for (const auto& item : received_response->payload()) {
@@ -692,22 +689,22 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_write_payload_send_receive_wor
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
                        .template request_response<iox::Slice<DummyData>, iox::Slice<DummyData>>()
                        .create()
-                       .expect("");
+                       .value();
 
-    auto sut_client = service.client_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().expect("");
-    auto sut_server = service.server_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().expect("");
+    auto sut_client = service.client_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().value();
+    auto sut_server = service.server_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().value();
 
     auto request = sut_client.loan_slice(SLICE_MAX_LENGTH);
-    ASSERT_FALSE(request.has_error());
+    ASSERT_TRUE(request.has_value());
     EXPECT_THAT(request->payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
 
-    auto pending_response = send(std::move(*request)).expect("");
+    auto pending_response = send(std::move(*request)).value();
 
-    auto active_request = sut_server.receive().expect("");
+    auto active_request = sut_server.receive().value();
     ASSERT_TRUE(active_request.has_value());
     auto received_request = std::move(active_request.value());
     auto iterations = 0;
@@ -719,10 +716,10 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_write_payload_send_receive_wor
     EXPECT_THAT(received_request.payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
     EXPECT_THAT(iterations, Eq(SLICE_MAX_LENGTH));
 
-    auto response = received_request.loan_slice(SLICE_MAX_LENGTH).expect("");
-    send(std::move(response)).expect("");
+    auto response = received_request.loan_slice(SLICE_MAX_LENGTH).value();
+    send(std::move(response)).value();
 
-    auto received_response = pending_response.receive().expect("");
+    auto received_response = pending_response.receive().value();
     ASSERT_TRUE(received_response.has_value());
     iterations = 0;
     for (const auto& item : received_response->payload()) {
@@ -740,30 +737,29 @@ TYPED_TEST(ServiceRequestResponseTest, write_payload_works) {
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto service =
-        node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().value();
 
-    auto sut_client = service.client_builder().create().expect("");
-    auto sut_server = service.server_builder().create().expect("");
+    auto sut_client = service.client_builder().create().value();
+    auto sut_server = service.server_builder().create().value();
 
-    auto request_uninit = sut_client.loan_uninit().expect("");
+    auto request_uninit = sut_client.loan_uninit().value();
     uint64_t request_payload = 3;
     auto request = request_uninit.write_payload(std::move(request_payload));
     EXPECT_THAT(request.payload(), Eq(request_payload));
-    auto pending_response = send(std::move(request)).expect("");
+    auto pending_response = send(std::move(request)).value();
 
-    auto active_request = sut_server.receive().expect("");
+    auto active_request = sut_server.receive().value();
     ASSERT_TRUE(active_request.has_value());
     EXPECT_THAT(active_request->payload(), Eq(request_payload));
 
     uint64_t response_payload = 4;
-    auto response_uninit = active_request->loan_uninit().expect("");
+    auto response_uninit = active_request->loan_uninit().value();
     auto response = response_uninit.write_payload(std::move(response_payload));
     EXPECT_THAT(response.payload(), Eq(response_payload));
-    send(std::move(response)).expect("");
+    send(std::move(response)).value();
 
-    auto received_response = pending_response.receive().expect("");
+    auto received_response = pending_response.receive().value();
     ASSERT_TRUE(received_response.has_value());
     EXPECT_THAT(received_response->payload(), Eq(response_payload));
 }
@@ -775,23 +771,23 @@ TYPED_TEST(ServiceRequestResponseTest, write_from_fn_works) {
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
                        .template request_response<iox::Slice<DummyData>, iox::Slice<DummyData>>()
                        .create()
-                       .expect("");
+                       .value();
 
-    auto sut_client = service.client_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().expect("");
-    auto sut_server = service.server_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().expect("");
+    auto sut_client = service.client_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().value();
+    auto sut_server = service.server_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().value();
 
-    auto request_uninit = sut_client.loan_slice_uninit(SLICE_MAX_LENGTH).expect("");
+    auto request_uninit = sut_client.loan_slice_uninit(SLICE_MAX_LENGTH).value();
     EXPECT_THAT(request_uninit.payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
 
     auto request = request_uninit.write_from_fn(
         [](auto index) -> auto { return DummyData { DummyData::DEFAULT_VALUE_A + index, index % 2 == 0 }; });
-    auto pending_response = send(std::move(request)).expect("");
+    auto pending_response = send(std::move(request)).value();
 
-    auto active_request = sut_server.receive().expect("");
+    auto active_request = sut_server.receive().value();
     ASSERT_TRUE(active_request.has_value());
     auto received_request = std::move(active_request.value());
     uint64_t iterations = 0;
@@ -803,12 +799,12 @@ TYPED_TEST(ServiceRequestResponseTest, write_from_fn_works) {
     EXPECT_THAT(received_request.payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
     EXPECT_THAT(iterations, Eq(SLICE_MAX_LENGTH));
 
-    auto response_uninit = received_request.loan_slice_uninit(SLICE_MAX_LENGTH).expect("");
+    auto response_uninit = received_request.loan_slice_uninit(SLICE_MAX_LENGTH).value();
     auto response = response_uninit.write_from_fn(
         [](auto index) -> auto { return DummyData { DummyData::DEFAULT_VALUE_Z + index, index % 2 == 0 }; });
-    send(std::move(response)).expect("");
+    send(std::move(response)).value();
 
-    auto received_response = pending_response.receive().expect("");
+    auto received_response = pending_response.receive().value();
     ASSERT_TRUE(received_response.has_value());
     iterations = 0;
     for (const auto& item : received_response->payload()) {
@@ -835,7 +831,7 @@ TYPED_TEST(ServiceRequestResponseTest, setting_service_properties_works) {
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
                        .template request_response<uint64_t, uint64_t>()
                        .max_nodes(NUMBER_OF_NODES)
@@ -851,7 +847,7 @@ TYPED_TEST(ServiceRequestResponseTest, setting_service_properties_works) {
                        .max_loaned_requests(MAX_LOANED_REQUESTS)
                        .enable_fire_and_forget_requests(false)
                        .create()
-                       .expect("");
+                       .value();
 
     auto static_config = service.static_config();
 
@@ -879,19 +875,19 @@ TYPED_TEST(ServiceRequestResponseTest, open_fails_with_incompatible_client_requi
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
                        .template request_response<uint64_t, uint64_t>()
                        .max_clients(NUMBER_OF_CLIENTS)
                        .create()
-                       .expect("");
+                       .value();
 
     auto service_fail = node.service_builder(service_name)
                             .template request_response<uint64_t, uint64_t>()
                             .max_clients(NUMBER_OF_CLIENTS + 1)
                             .open();
 
-    ASSERT_TRUE(service_fail.has_error());
+    ASSERT_FALSE(service_fail.has_value());
     ASSERT_THAT(service_fail.error(), Eq(RequestResponseOpenError::DoesNotSupportRequestedAmountOfClients));
 }
 
@@ -901,19 +897,19 @@ TYPED_TEST(ServiceRequestResponseTest, open_fails_with_incompatible_server_requi
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
                        .template request_response<uint64_t, uint64_t>()
                        .max_servers(NUMBER_OF_SERVERS)
                        .create()
-                       .expect("");
+                       .value();
 
     auto service_fail = node.service_builder(service_name)
                             .template request_response<uint64_t, uint64_t>()
                             .max_servers(NUMBER_OF_SERVERS + 1)
                             .open();
 
-    ASSERT_TRUE(service_fail.has_error());
+    ASSERT_FALSE(service_fail.has_value());
     ASSERT_THAT(service_fail.error(), Eq(RequestResponseOpenError::DoesNotSupportRequestedAmountOfServers));
 }
 
@@ -922,40 +918,40 @@ TYPED_TEST(ServiceRequestResponseTest, send_receive_with_user_header_works) {
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
                        .template request_response<uint64_t, uint64_t>()
                        .template request_user_header<uint64_t>()
                        .template response_user_header<uint64_t>()
                        .create()
-                       .expect("");
+                       .value();
 
-    auto sut_client = service.client_builder().create().expect("");
-    auto sut_server = service.server_builder().create().expect("");
+    auto sut_client = service.client_builder().create().value();
+    auto sut_server = service.server_builder().create().value();
 
     const uint64_t request_user_header = 4;
     const uint64_t response_user_header = 1;
 
-    auto request_uninit = sut_client.loan_uninit().expect("");
+    auto request_uninit = sut_client.loan_uninit().value();
     request_uninit.user_header_mut() = request_user_header;
     EXPECT_THAT(request_uninit.user_header(), Eq(request_user_header));
-    auto pending_response = send(assume_init(std::move(request_uninit))).expect("");
+    auto pending_response = send(assume_init(std::move(request_uninit))).value();
     EXPECT_THAT(pending_response.user_header(), Eq(request_user_header));
 
-    auto active_request = sut_server.receive().expect("");
+    auto active_request = sut_server.receive().value();
     ASSERT_TRUE(active_request.has_value());
     EXPECT_THAT(active_request->user_header(), Eq(request_user_header));
 
-    auto response = active_request->loan().expect("");
+    auto response = active_request->loan().value();
     response.payload_mut() = 2;
     response.user_header_mut() = response_user_header;
-    send(std::move(response)).expect("");
+    send(std::move(response)).value();
 
-    auto received_response = pending_response.receive().expect("");
+    auto received_response = pending_response.receive().value();
     ASSERT_TRUE(received_response.has_value());
     EXPECT_THAT(received_response->user_header(), Eq(response_user_header));
 
-    auto response_uninit = active_request->loan_uninit().expect("");
+    auto response_uninit = active_request->loan_uninit().value();
     response_uninit.user_header_mut() = response_user_header;
     EXPECT_THAT(response_uninit.user_header(), Eq(response_user_header));
 }
@@ -965,16 +961,15 @@ TYPED_TEST(ServiceRequestResponseTest, number_of_server_connections_is_set_corre
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto service =
-        node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().value();
 
-    auto server1 = service.server_builder().create().expect("");
-    auto server2 = service.server_builder().create().expect("");
-    auto client = service.client_builder().create().expect("");
+    auto server1 = service.server_builder().create().value();
+    auto server2 = service.server_builder().create().value();
+    auto client = service.client_builder().create().value();
 
     const uint64_t payload = 123;
-    auto pending_response = client.send_copy(payload).expect("");
+    auto pending_response = client.send_copy(payload).value();
     EXPECT_THAT(pending_response.number_of_server_connections(), Eq(2));
 }
 
@@ -984,13 +979,11 @@ TYPED_TEST(ServiceRequestResponseTest, server_applies_initial_max_slice_length) 
     const auto service_name = iox2_testing::generate_service_name();
     constexpr uint64_t INITIAL_MAX_SLICE_LEN = 1990;
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto service = node.service_builder(service_name)
-                       .template request_response<uint64_t, iox::Slice<uint64_t>>()
-                       .create()
-                       .expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service =
+        node.service_builder(service_name).template request_response<uint64_t, iox::Slice<uint64_t>>().create().value();
 
-    auto sut_server = service.server_builder().initial_max_slice_len(INITIAL_MAX_SLICE_LEN).create().expect("");
+    auto sut_server = service.server_builder().initial_max_slice_len(INITIAL_MAX_SLICE_LEN).create().value();
 
     ASSERT_THAT(sut_server.initial_max_slice_len(), Eq(INITIAL_MAX_SLICE_LEN));
 }
@@ -1000,14 +993,13 @@ TYPED_TEST(ServiceRequestResponseTest, client_applies_unable_to_deliver_strategy
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto service =
-        node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().value();
 
     auto sut_client_1 =
-        service.client_builder().unable_to_deliver_strategy(UnableToDeliverStrategy::Block).create().expect("");
+        service.client_builder().unable_to_deliver_strategy(UnableToDeliverStrategy::Block).create().value();
     auto sut_client_2 =
-        service.client_builder().unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample).create().expect("");
+        service.client_builder().unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample).create().value();
 
     ASSERT_THAT(sut_client_1.unable_to_deliver_strategy(), Eq(UnableToDeliverStrategy::Block));
     ASSERT_THAT(sut_client_2.unable_to_deliver_strategy(), Eq(UnableToDeliverStrategy::DiscardSample));
@@ -1019,13 +1011,11 @@ TYPED_TEST(ServiceRequestResponseTest, client_applies_initial_max_slice_length) 
     const auto service_name = iox2_testing::generate_service_name();
     constexpr uint64_t INITIAL_MAX_SLICE_LEN = 2008;
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto service = node.service_builder(service_name)
-                       .template request_response<iox::Slice<uint64_t>, uint64_t>()
-                       .create()
-                       .expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service =
+        node.service_builder(service_name).template request_response<iox::Slice<uint64_t>, uint64_t>().create().value();
 
-    auto sut_client = service.client_builder().initial_max_slice_len(INITIAL_MAX_SLICE_LEN).create().expect("");
+    auto sut_client = service.client_builder().initial_max_slice_len(INITIAL_MAX_SLICE_LEN).create().value();
 
     ASSERT_THAT(sut_client.initial_max_slice_len(), Eq(INITIAL_MAX_SLICE_LEN));
 }
@@ -1035,19 +1025,18 @@ TYPED_TEST(ServiceRequestResponseTest, number_of_clients_servers_works) {
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto service =
-        node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().value();
 
     ASSERT_THAT(service.dynamic_config().number_of_clients(), Eq(0));
     ASSERT_THAT(service.dynamic_config().number_of_servers(), Eq(0));
 
     {
-        auto sut_client = service.client_builder().create().expect("");
+        auto sut_client = service.client_builder().create().value();
         ASSERT_THAT(service.dynamic_config().number_of_clients(), Eq(1));
         ASSERT_THAT(service.dynamic_config().number_of_servers(), Eq(0));
 
-        auto sut_server = service.server_builder().create().expect("");
+        auto sut_server = service.server_builder().create().value();
         ASSERT_THAT(service.dynamic_config().number_of_clients(), Eq(1));
         ASSERT_THAT(service.dynamic_config().number_of_servers(), Eq(1));
     }
@@ -1063,16 +1052,16 @@ TYPED_TEST(ServiceRequestResponseTest, create_with_attributes_sets_attributes) {
     auto value = Attribute::Value("with a shiny value");
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto attribute_specifier = AttributeSpecifier();
-    attribute_specifier.define(key, value).expect("");
+    attribute_specifier.define(key, value).value();
     auto service_create = node.service_builder(service_name)
                               .template request_response<uint64_t, uint64_t>()
                               .create_with_attributes(attribute_specifier)
-                              .expect("");
+                              .value();
 
     auto service_open =
-        node.service_builder(service_name).template request_response<uint64_t, uint64_t>().open().expect("");
+        node.service_builder(service_name).template request_response<uint64_t, uint64_t>().open().value();
 
 
     auto attributes_create = service_create.attributes();
@@ -1095,27 +1084,27 @@ TYPED_TEST(ServiceRequestResponseTest, open_fails_when_attributes_are_incompatib
     auto missing_key = Attribute::Key("no it's 'nala-la-la-la'!");
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto attribute_verifier = AttributeVerifier();
-    attribute_verifier.require(key, value).expect("");
+    attribute_verifier.require(key, value).value();
     auto service_create = node.service_builder(service_name)
                               .template request_response<uint64_t, uint64_t>()
                               .open_or_create_with_attributes(attribute_verifier)
-                              .expect("");
+                              .value();
 
-    attribute_verifier.require_key(missing_key).expect("");
+    attribute_verifier.require_key(missing_key).value();
     auto service_open_or_create = node.service_builder(service_name)
                                       .template request_response<uint64_t, uint64_t>()
                                       .open_or_create_with_attributes(attribute_verifier);
 
-    ASSERT_THAT(service_open_or_create.has_error(), Eq(true));
+    ASSERT_THAT(service_open_or_create.has_value(), Eq(false));
     ASSERT_THAT(service_open_or_create.error(), Eq(RequestResponseOpenOrCreateError::OpenIncompatibleAttributes));
 
     auto service_open = node.service_builder(service_name)
                             .template request_response<uint64_t, uint64_t>()
                             .open_with_attributes(attribute_verifier);
 
-    ASSERT_THAT(service_open.has_error(), Eq(true));
+    ASSERT_THAT(service_open.has_value(), Eq(false));
     ASSERT_THAT(service_open.error(), Eq(RequestResponseOpenError::IncompatibleAttributes));
 }
 
@@ -1124,28 +1113,27 @@ TYPED_TEST(ServiceRequestResponseTest, origin_is_set_correctly) {
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto service =
-        node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().value();
 
-    auto sut_client = service.client_builder().create().expect("");
-    auto sut_server = service.server_builder().create().expect("");
+    auto sut_client = service.client_builder().create().value();
+    auto sut_server = service.server_builder().create().value();
 
-    auto request_uninit = sut_client.loan_uninit().expect("");
+    auto request_uninit = sut_client.loan_uninit().value();
     EXPECT_TRUE(request_uninit.header().client_port_id() == sut_client.id());
 
-    auto pending_response = send(assume_init(std::move(request_uninit))).expect("");
+    auto pending_response = send(assume_init(std::move(request_uninit))).value();
     EXPECT_TRUE(pending_response.header().client_port_id() == sut_client.id());
 
-    auto active_request = sut_server.receive().expect("");
+    auto active_request = sut_server.receive().value();
     EXPECT_TRUE(active_request->origin() == sut_client.id());
     EXPECT_TRUE(active_request->header().client_port_id() == sut_client.id());
 
-    auto response_uninit = active_request->loan_uninit().expect("");
+    auto response_uninit = active_request->loan_uninit().value();
     EXPECT_TRUE(response_uninit.header().server_port_id() == sut_server.id());
-    send(assume_init(std::move(response_uninit))).expect("");
+    send(assume_init(std::move(response_uninit))).value();
 
-    auto response = pending_response.receive().expect("");
+    auto response = pending_response.receive().value();
     ASSERT_TRUE(response.has_value());
     EXPECT_TRUE(response->origin() == sut_server.id());
     EXPECT_TRUE(response->header().server_port_id() == sut_server.id());
@@ -1156,17 +1144,16 @@ TYPED_TEST(ServiceRequestResponseTest, is_connected_works_for_active_request) {
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto service =
-        node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().value();
 
-    auto sut_client = service.client_builder().create().expect("");
-    auto sut_server = service.server_builder().create().expect("");
+    auto sut_client = service.client_builder().create().value();
+    auto sut_server = service.server_builder().create().value();
 
     auto pending_response = iox2::legacy::make_optional<PendingResponse<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(
-        sut_client.send_copy(3).expect(""));
+        sut_client.send_copy(3).value());
 
-    auto active_request = sut_server.receive().expect("");
+    auto active_request = sut_server.receive().value();
     EXPECT_TRUE(active_request->is_connected());
 
     pending_response.reset();
@@ -1178,22 +1165,21 @@ TYPED_TEST(ServiceRequestResponseTest, is_connected_works_for_pending_response) 
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto service =
-        node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().value();
 
-    auto client = service.client_builder().create().expect("");
-    auto server1 = service.server_builder().create().expect("");
-    auto server2 = service.server_builder().create().expect("");
+    auto client = service.client_builder().create().value();
+    auto server1 = service.server_builder().create().value();
+    auto server2 = service.server_builder().create().value();
 
-    auto pending_response = client.send_copy(3).expect("");
+    auto pending_response = client.send_copy(3).value();
     EXPECT_TRUE(pending_response.is_connected());
 
-    auto tmp = server1.receive().expect("");
+    auto tmp = server1.receive().value();
     ASSERT_TRUE(tmp.has_value());
     auto active_request_1 = iox2::legacy::make_optional<ActiveRequest<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(
         std::move(tmp.value()));
-    tmp = server2.receive().expect("");
+    tmp = server2.receive().value();
     ASSERT_TRUE(tmp.has_value());
     auto active_request_2 = iox2::legacy::make_optional<ActiveRequest<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(
         std::move(tmp.value()));
@@ -1211,31 +1197,29 @@ TYPED_TEST(ServiceRequestResponseTest, client_reallocates_memory_when_allocation
     constexpr uint64_t INITIAL_SIZE = 128;
 
     const auto service_name = iox2_testing::generate_service_name();
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto service = node.service_builder(service_name)
-                       .template request_response<iox::Slice<uint64_t>, uint64_t>()
-                       .create()
-                       .expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service =
+        node.service_builder(service_name).template request_response<iox::Slice<uint64_t>, uint64_t>().create().value();
 
     auto client = service.client_builder()
                       .initial_max_slice_len(INITIAL_SIZE)
                       .allocation_strategy(AllocationStrategy::BestFit)
                       .create()
-                      .expect("");
+                      .value();
 
     {
         auto request = client.loan_slice(INITIAL_SIZE);
-        ASSERT_FALSE(request.has_error());
+        ASSERT_TRUE(request.has_value());
     }
 
     {
         auto request = client.loan_slice(INITIAL_SIZE * INITIAL_SIZE);
-        ASSERT_FALSE(request.has_error());
+        ASSERT_TRUE(request.has_value());
     }
 
     {
         auto request = client.loan_slice(INITIAL_SIZE * INITIAL_SIZE * INITIAL_SIZE);
-        ASSERT_FALSE(request.has_error());
+        ASSERT_TRUE(request.has_value());
     }
 }
 
@@ -1244,27 +1228,25 @@ TYPED_TEST(ServiceRequestResponseTest, client_does_not_reallocate_when_allocatio
     constexpr uint64_t INITIAL_SIZE = 128;
 
     const auto service_name = iox2_testing::generate_service_name();
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto service = node.service_builder(service_name)
-                       .template request_response<iox::Slice<uint64_t>, uint64_t>()
-                       .create()
-                       .expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service =
+        node.service_builder(service_name).template request_response<iox::Slice<uint64_t>, uint64_t>().create().value();
 
     auto client = service.client_builder()
                       .initial_max_slice_len(INITIAL_SIZE)
                       .allocation_strategy(AllocationStrategy::Static)
                       .create()
-                      .expect("");
+                      .value();
 
     auto request_1 = client.loan_slice(INITIAL_SIZE);
-    ASSERT_FALSE(request_1.has_error());
+    ASSERT_TRUE(request_1.has_value());
 
     auto request_2 = client.loan_slice(INITIAL_SIZE * INITIAL_SIZE);
-    ASSERT_TRUE(request_2.has_error());
+    ASSERT_FALSE(request_2.has_value());
     ASSERT_THAT(request_2.error(), Eq(LoanError::ExceedsMaxLoanSize));
 
     auto request_3 = client.loan_slice(INITIAL_SIZE * INITIAL_SIZE * INITIAL_SIZE);
-    ASSERT_TRUE(request_3.has_error());
+    ASSERT_FALSE(request_3.has_value());
     ASSERT_THAT(request_3.error(), Eq(LoanError::ExceedsMaxLoanSize));
 }
 
@@ -1273,38 +1255,38 @@ TYPED_TEST(ServiceRequestResponseTest, server_reallocates_memory_when_allocation
     constexpr uint64_t INITIAL_SIZE = 128;
 
     const auto service_name = iox2_testing::generate_service_name();
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
                        .template request_response<uint64_t, iox::Slice<uint64_t>>()
                        .max_clients(1)
                        .max_servers(1)
                        .create()
-                       .expect("");
+                       .value();
 
-    auto client = service.client_builder().create().expect("");
+    auto client = service.client_builder().create().value();
     auto server = service.server_builder()
                       .initial_max_slice_len(INITIAL_SIZE)
                       .allocation_strategy(AllocationStrategy::BestFit)
                       .create()
-                      .expect("");
+                      .value();
 
-    auto pending_response = client.send_copy(0).expect("");
-    auto active_request = server.receive().expect("");
+    auto pending_response = client.send_copy(0).value();
+    auto active_request = server.receive().value();
     ASSERT_TRUE(active_request.has_value());
 
     {
         auto response = active_request->loan_slice(INITIAL_SIZE);
-        ASSERT_FALSE(response.has_error());
+        ASSERT_TRUE(response.has_value());
     }
 
     {
         auto response = active_request->loan_slice(INITIAL_SIZE * INITIAL_SIZE);
-        ASSERT_FALSE(response.has_error());
+        ASSERT_TRUE(response.has_value());
     }
 
     {
         auto response = active_request->loan_slice(INITIAL_SIZE * INITIAL_SIZE * INITIAL_SIZE);
-        ASSERT_FALSE(response.has_error());
+        ASSERT_TRUE(response.has_value());
     }
 }
 
@@ -1313,32 +1295,30 @@ TYPED_TEST(ServiceRequestResponseTest, server_does_not_reallocate_when_allocatio
     constexpr uint64_t INITIAL_SIZE = 128;
 
     const auto service_name = iox2_testing::generate_service_name();
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto service = node.service_builder(service_name)
-                       .template request_response<uint64_t, iox::Slice<uint64_t>>()
-                       .create()
-                       .expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service =
+        node.service_builder(service_name).template request_response<uint64_t, iox::Slice<uint64_t>>().create().value();
 
-    auto client = service.client_builder().create().expect("");
+    auto client = service.client_builder().create().value();
     auto server = service.server_builder()
                       .initial_max_slice_len(INITIAL_SIZE)
                       .allocation_strategy(AllocationStrategy::Static)
                       .create()
-                      .expect("");
+                      .value();
 
-    auto pending_response = client.send_copy(0).expect("");
-    auto active_request = server.receive().expect("");
+    auto pending_response = client.send_copy(0).value();
+    auto active_request = server.receive().value();
     ASSERT_TRUE(active_request.has_value());
 
     auto response_1 = active_request->loan_slice(INITIAL_SIZE);
-    ASSERT_FALSE(response_1.has_error());
+    ASSERT_TRUE(response_1.has_value());
 
     auto response_2 = active_request->loan_slice(INITIAL_SIZE * INITIAL_SIZE);
-    ASSERT_TRUE(response_2.has_error());
+    ASSERT_FALSE(response_2.has_value());
     ASSERT_THAT(response_2.error(), Eq(LoanError::ExceedsMaxLoanSize));
 
     auto response_3 = active_request->loan_slice(INITIAL_SIZE * INITIAL_SIZE * INITIAL_SIZE);
-    ASSERT_TRUE(response_3.has_error());
+    ASSERT_FALSE(response_3.has_value());
     ASSERT_THAT(response_3.error(), Eq(LoanError::ExceedsMaxLoanSize));
 }
 
@@ -1413,11 +1393,10 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_set_payload
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto sut_create =
-        node.service_builder(service_name).template request_response<Payload, Payload>().create().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto sut_create = node.service_builder(service_name).template request_response<Payload, Payload>().create().value();
     auto sut_open = node.service_builder(service_name).template request_response<Payload, Payload>().open();
-    ASSERT_FALSE(sut_open.has_error());
+    ASSERT_TRUE(sut_open.has_value());
 }
 
 TYPED_TEST(ServiceRequestResponseTest,
@@ -1425,13 +1404,12 @@ TYPED_TEST(ServiceRequestResponseTest,
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto sut_create =
-        node.service_builder(service_name).template request_response<Payload, Payload>().create().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto sut_create = node.service_builder(service_name).template request_response<Payload, Payload>().create().value();
     auto sut_open = node.service_builder(service_name)
                         .template request_response<DifferentPayloadWithSameTypeName, DifferentPayloadWithSameTypeName>()
                         .open();
-    ASSERT_FALSE(sut_open.has_error());
+    ASSERT_TRUE(sut_open.has_value());
 }
 
 TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_without_payload_type_name_fails) {
@@ -1439,11 +1417,11 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_without_payload_
     const auto service_name_req = iox2_testing::generate_service_name();
     const auto service_name_res = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create_req =
-        node.service_builder(service_name_req).template request_response<Payload, uint64_t>().create().expect("");
+        node.service_builder(service_name_req).template request_response<Payload, uint64_t>().create().value();
     auto sut_create_res =
-        node.service_builder(service_name_res).template request_response<uint64_t, Payload>().create().expect("");
+        node.service_builder(service_name_res).template request_response<uint64_t, Payload>().create().value();
 
     struct Payload {
         int32_t x;
@@ -1451,10 +1429,10 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_without_payload_
     };
 
     auto sut_open_req = node.service_builder(service_name_req).template request_response<Payload, uint64_t>().open();
-    ASSERT_TRUE(sut_open_req.has_error());
+    ASSERT_FALSE(sut_open_req.has_value());
     EXPECT_EQ(sut_open_req.error(), RequestResponseOpenError::IncompatibleRequestType);
     auto sut_open_res = node.service_builder(service_name_res).template request_response<uint64_t, Payload>().open();
-    ASSERT_TRUE(sut_open_res.has_error());
+    ASSERT_FALSE(sut_open_res.has_value());
     EXPECT_EQ(sut_open_res.error(), RequestResponseOpenError::IncompatibleResponseType);
 }
 
@@ -1463,15 +1441,14 @@ TYPED_TEST(ServiceRequestResponseTest,
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto sut_create =
-        node.service_builder(service_name).template request_response<Payload, Payload>().create().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto sut_create = node.service_builder(service_name).template request_response<Payload, Payload>().create().value();
 
     auto sut_open_req = node.service_builder(service_name).template request_response<other::Payload, Payload>().open();
-    ASSERT_TRUE(sut_open_req.has_error());
+    ASSERT_FALSE(sut_open_req.has_value());
     EXPECT_EQ(sut_open_req.error(), RequestResponseOpenError::IncompatibleRequestType);
     auto sut_open_res = node.service_builder(service_name).template request_response<Payload, other::Payload>().open();
-    ASSERT_TRUE(sut_open_res.has_error());
+    ASSERT_FALSE(sut_open_res.has_value());
     EXPECT_EQ(sut_open_res.error(), RequestResponseOpenError::IncompatibleResponseType);
 }
 
@@ -1479,19 +1456,18 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_same_payloa
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto sut_create =
-        node.service_builder(service_name).template request_response<Payload, Payload>().create().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto sut_create = node.service_builder(service_name).template request_response<Payload, Payload>().create().value();
 
     auto sut_open_req = node.service_builder(service_name)
                             .template request_response<PayloadWithSameTypeNameButDifferentSize, Payload>()
                             .open();
-    ASSERT_TRUE(sut_open_req.has_error());
+    ASSERT_FALSE(sut_open_req.has_value());
     EXPECT_EQ(sut_open_req.error(), RequestResponseOpenError::IncompatibleRequestType);
     auto sut_open_res = node.service_builder(service_name)
                             .template request_response<Payload, PayloadWithSameTypeNameButDifferentSize>()
                             .open();
-    ASSERT_TRUE(sut_open_res.has_error());
+    ASSERT_FALSE(sut_open_res.has_value());
     EXPECT_EQ(sut_open_res.error(), RequestResponseOpenError::IncompatibleResponseType);
 }
 
@@ -1500,19 +1476,18 @@ TYPED_TEST(ServiceRequestResponseTest,
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto sut_create =
-        node.service_builder(service_name).template request_response<Payload, Payload>().create().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto sut_create = node.service_builder(service_name).template request_response<Payload, Payload>().create().value();
 
     auto sut_open_req = node.service_builder(service_name)
                             .template request_response<PayloadWithSameTypeNameButDifferentAlignment, Payload>()
                             .open();
-    ASSERT_TRUE(sut_open_req.has_error());
+    ASSERT_FALSE(sut_open_req.has_value());
     EXPECT_EQ(sut_open_req.error(), RequestResponseOpenError::IncompatibleRequestType);
     auto sut_open_res = node.service_builder(service_name)
                             .template request_response<Payload, PayloadWithSameTypeNameButDifferentAlignment>()
                             .open();
-    ASSERT_TRUE(sut_open_res.has_error());
+    ASSERT_FALSE(sut_open_res.has_value());
     EXPECT_EQ(sut_open_res.error(), RequestResponseOpenError::IncompatibleResponseType);
 }
 
@@ -1520,19 +1495,19 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_set_user_he
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create = node.service_builder(service_name)
                           .template request_response<uint8_t, uint8_t>()
                           .template request_user_header<CustomHeader>()
                           .template response_user_header<CustomHeader>()
                           .create()
-                          .expect("");
+                          .value();
     auto sut_open = node.service_builder(service_name)
                         .template request_response<uint8_t, uint8_t>()
                         .template request_user_header<CustomHeader>()
                         .template response_user_header<CustomHeader>()
                         .open();
-    ASSERT_FALSE(sut_open.has_error());
+    ASSERT_TRUE(sut_open.has_value());
 }
 
 TYPED_TEST(ServiceRequestResponseTest,
@@ -1540,19 +1515,19 @@ TYPED_TEST(ServiceRequestResponseTest,
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create = node.service_builder(service_name)
                           .template request_response<uint8_t, uint8_t>()
                           .template request_user_header<CustomHeader>()
                           .template response_user_header<CustomHeader>()
                           .create()
-                          .expect("");
+                          .value();
     auto sut_open = node.service_builder(service_name)
                         .template request_response<uint8_t, uint8_t>()
                         .template request_user_header<DifferentCustomHeaderWithSameTypeName>()
                         .template response_user_header<DifferentCustomHeaderWithSameTypeName>()
                         .open();
-    ASSERT_FALSE(sut_open.has_error());
+    ASSERT_TRUE(sut_open.has_value());
 }
 
 TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_without_user_header_type_name_fails) {
@@ -1560,17 +1535,17 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_without_user_hea
     const auto service_name_req = iox2_testing::generate_service_name();
     const auto service_name_res = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create_req = node.service_builder(service_name_req)
                               .template request_response<uint8_t, uint8_t>()
                               .template request_user_header<CustomHeader>()
                               .create()
-                              .expect("");
+                              .value();
     auto sut_create_res = node.service_builder(service_name_res)
                               .template request_response<uint8_t, uint8_t>()
                               .template response_user_header<CustomHeader>()
                               .create()
-                              .expect("");
+                              .value();
 
     struct CustomHeader {
         uint64_t a;
@@ -1580,13 +1555,13 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_without_user_hea
                             .template request_response<uint8_t, uint8_t>()
                             .template request_user_header<CustomHeader>()
                             .open();
-    ASSERT_TRUE(sut_open_req.has_error());
+    ASSERT_FALSE(sut_open_req.has_value());
     EXPECT_EQ(sut_open_req.error(), RequestResponseOpenError::IncompatibleRequestType);
     auto sut_open_res = node.service_builder(service_name_res)
                             .template request_response<uint8_t, uint8_t>()
                             .template response_user_header<CustomHeader>()
                             .open();
-    ASSERT_TRUE(sut_open_res.has_error());
+    ASSERT_FALSE(sut_open_res.has_value());
     EXPECT_EQ(sut_open_res.error(), RequestResponseOpenError::IncompatibleResponseType);
 }
 
@@ -1595,20 +1570,20 @@ TYPED_TEST(ServiceRequestResponseTest,
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create = node.service_builder(service_name)
                           .template request_response<uint8_t, uint8_t>()
                           .template request_user_header<CustomHeader>()
                           .template response_user_header<CustomHeader>()
                           .create()
-                          .expect("");
+                          .value();
 
     auto sut_open_req = node.service_builder(service_name)
                             .template request_response<uint8_t, uint8_t>()
                             .template request_user_header<other::CustomHeader>()
                             .template response_user_header<CustomHeader>()
                             .open();
-    ASSERT_TRUE(sut_open_req.has_error());
+    ASSERT_FALSE(sut_open_req.has_value());
     EXPECT_EQ(sut_open_req.error(), RequestResponseOpenError::IncompatibleRequestType);
 
     auto sut_open_res = node.service_builder(service_name)
@@ -1616,7 +1591,7 @@ TYPED_TEST(ServiceRequestResponseTest,
                             .template request_user_header<CustomHeader>()
                             .template response_user_header<other::CustomHeader>()
                             .open();
-    ASSERT_TRUE(sut_open_res.has_error());
+    ASSERT_FALSE(sut_open_res.has_value());
     EXPECT_EQ(sut_open_res.error(), RequestResponseOpenError::IncompatibleResponseType);
 }
 
@@ -1624,20 +1599,20 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_same_header
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create = node.service_builder(service_name)
                           .template request_response<uint8_t, uint8_t>()
                           .template request_user_header<CustomHeader>()
                           .template response_user_header<CustomHeader>()
                           .create()
-                          .expect("");
+                          .value();
 
     auto sut_open_req = node.service_builder(service_name)
                             .template request_response<uint8_t, uint8_t>()
                             .template request_user_header<CustomHeaderWithSameTypeNameButDifferentSize>()
                             .template response_user_header<CustomHeader>()
                             .open();
-    ASSERT_TRUE(sut_open_req.has_error());
+    ASSERT_FALSE(sut_open_req.has_value());
     EXPECT_EQ(sut_open_req.error(), RequestResponseOpenError::IncompatibleRequestType);
 
     auto sut_open_res = node.service_builder(service_name)
@@ -1645,7 +1620,7 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_same_header
                             .template request_user_header<CustomHeader>()
                             .template response_user_header<CustomHeaderWithSameTypeNameButDifferentSize>()
                             .open();
-    ASSERT_TRUE(sut_open_res.has_error());
+    ASSERT_FALSE(sut_open_res.has_value());
     EXPECT_EQ(sut_open_res.error(), RequestResponseOpenError::IncompatibleResponseType);
 }
 
@@ -1653,20 +1628,20 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_same_header
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create = node.service_builder(service_name)
                           .template request_response<uint8_t, uint8_t>()
                           .template request_user_header<CustomHeader>()
                           .template response_user_header<CustomHeader>()
                           .create()
-                          .expect("");
+                          .value();
 
     auto sut_open_req = node.service_builder(service_name)
                             .template request_response<uint8_t, uint8_t>()
                             .template request_user_header<CustomHeaderWithSameTypeNameButDifferentAlignment>()
                             .template response_user_header<CustomHeader>()
                             .open();
-    ASSERT_TRUE(sut_open_req.has_error());
+    ASSERT_FALSE(sut_open_req.has_value());
     EXPECT_EQ(sut_open_req.error(), RequestResponseOpenError::IncompatibleRequestType);
 
     auto sut_open_res = node.service_builder(service_name)
@@ -1674,7 +1649,7 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_same_header
                             .template request_user_header<CustomHeader>()
                             .template response_user_header<CustomHeaderWithSameTypeNameButDifferentAlignment>()
                             .open();
-    ASSERT_TRUE(sut_open_res.has_error());
+    ASSERT_FALSE(sut_open_res.has_value());
     EXPECT_EQ(sut_open_res.error(), RequestResponseOpenError::IncompatibleResponseType);
 }
 
@@ -1682,72 +1657,70 @@ TYPED_TEST(ServiceRequestResponseTest,
            payload_type_name_is_set_to_rust_equivalent_for_fixed_size_integers_floats_and_slices) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name = iox2_testing::generate_service_name();
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     {
         auto service =
-            node.service_builder(service_name).template request_response<uint8_t, uint8_t>().create().expect("");
+            node.service_builder(service_name).template request_response<uint8_t, uint8_t>().create().value();
         auto static_config = service.static_config();
         ASSERT_THAT(static_config.request_message_type_details().payload().type_name(), StrEq("u8"));
         ASSERT_THAT(static_config.response_message_type_details().payload().type_name(), StrEq("u8"));
     }
     {
         auto service =
-            node.service_builder(service_name).template request_response<uint16_t, uint16_t>().create().expect("");
+            node.service_builder(service_name).template request_response<uint16_t, uint16_t>().create().value();
         auto static_config = service.static_config();
         ASSERT_THAT(static_config.request_message_type_details().payload().type_name(), StrEq("u16"));
         ASSERT_THAT(static_config.response_message_type_details().payload().type_name(), StrEq("u16"));
     }
     {
         auto service =
-            node.service_builder(service_name).template request_response<uint32_t, uint32_t>().create().expect("");
+            node.service_builder(service_name).template request_response<uint32_t, uint32_t>().create().value();
         auto static_config = service.static_config();
         ASSERT_THAT(static_config.request_message_type_details().payload().type_name(), StrEq("u32"));
         ASSERT_THAT(static_config.response_message_type_details().payload().type_name(), StrEq("u32"));
     }
     {
         auto service =
-            node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().expect("");
+            node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().value();
         auto static_config = service.static_config();
         ASSERT_THAT(static_config.request_message_type_details().payload().type_name(), StrEq("u64"));
         ASSERT_THAT(static_config.response_message_type_details().payload().type_name(), StrEq("u64"));
     }
     {
-        auto service =
-            node.service_builder(service_name).template request_response<int8_t, int8_t>().create().expect("");
+        auto service = node.service_builder(service_name).template request_response<int8_t, int8_t>().create().value();
         auto static_config = service.static_config();
         ASSERT_THAT(static_config.request_message_type_details().payload().type_name(), StrEq("i8"));
         ASSERT_THAT(static_config.response_message_type_details().payload().type_name(), StrEq("i8"));
     }
     {
         auto service =
-            node.service_builder(service_name).template request_response<int16_t, int16_t>().create().expect("");
+            node.service_builder(service_name).template request_response<int16_t, int16_t>().create().value();
         auto static_config = service.static_config();
         ASSERT_THAT(static_config.request_message_type_details().payload().type_name(), StrEq("i16"));
         ASSERT_THAT(static_config.response_message_type_details().payload().type_name(), StrEq("i16"));
     }
     {
         auto service =
-            node.service_builder(service_name).template request_response<int32_t, int32_t>().create().expect("");
+            node.service_builder(service_name).template request_response<int32_t, int32_t>().create().value();
         auto static_config = service.static_config();
         ASSERT_THAT(static_config.request_message_type_details().payload().type_name(), StrEq("i32"));
         ASSERT_THAT(static_config.response_message_type_details().payload().type_name(), StrEq("i32"));
     }
     {
         auto service =
-            node.service_builder(service_name).template request_response<int64_t, int64_t>().create().expect("");
+            node.service_builder(service_name).template request_response<int64_t, int64_t>().create().value();
         auto static_config = service.static_config();
         ASSERT_THAT(static_config.request_message_type_details().payload().type_name(), StrEq("i64"));
         ASSERT_THAT(static_config.response_message_type_details().payload().type_name(), StrEq("i64"));
     }
     {
-        auto service = node.service_builder(service_name).template request_response<float, float>().create().expect("");
+        auto service = node.service_builder(service_name).template request_response<float, float>().create().value();
         auto static_config = service.static_config();
         ASSERT_THAT(static_config.request_message_type_details().payload().type_name(), StrEq("f32"));
         ASSERT_THAT(static_config.response_message_type_details().payload().type_name(), StrEq("f32"));
     }
     {
-        auto service =
-            node.service_builder(service_name).template request_response<double, double>().create().expect("");
+        auto service = node.service_builder(service_name).template request_response<double, double>().create().value();
         auto static_config = service.static_config();
         ASSERT_THAT(static_config.request_message_type_details().payload().type_name(), StrEq("f64"));
         ASSERT_THAT(static_config.response_message_type_details().payload().type_name(), StrEq("f64"));
@@ -1756,7 +1729,7 @@ TYPED_TEST(ServiceRequestResponseTest,
         auto service = node.service_builder(service_name)
                            .template request_response<iox::Slice<uint8_t>, iox::Slice<uint8_t>>()
                            .create()
-                           .expect("");
+                           .value();
         auto static_config = service.static_config();
         ASSERT_THAT(static_config.request_message_type_details().payload().type_name(), StrEq("u8"));
         ASSERT_THAT(static_config.response_message_type_details().payload().type_name(), StrEq("u8"));
@@ -1765,7 +1738,7 @@ TYPED_TEST(ServiceRequestResponseTest,
         auto service = node.service_builder(service_name)
                            .template request_response<iox::Slice<uint16_t>, iox::Slice<uint16_t>>()
                            .create()
-                           .expect("");
+                           .value();
         auto static_config = service.static_config();
         ASSERT_THAT(static_config.request_message_type_details().payload().type_name(), StrEq("u16"));
         ASSERT_THAT(static_config.response_message_type_details().payload().type_name(), StrEq("u16"));
@@ -1774,7 +1747,7 @@ TYPED_TEST(ServiceRequestResponseTest,
         auto service = node.service_builder(service_name)
                            .template request_response<iox::Slice<uint32_t>, iox::Slice<uint32_t>>()
                            .create()
-                           .expect("");
+                           .value();
         auto static_config = service.static_config();
         ASSERT_THAT(static_config.request_message_type_details().payload().type_name(), StrEq("u32"));
         ASSERT_THAT(static_config.response_message_type_details().payload().type_name(), StrEq("u32"));
@@ -1783,7 +1756,7 @@ TYPED_TEST(ServiceRequestResponseTest,
         auto service = node.service_builder(service_name)
                            .template request_response<iox::Slice<uint64_t>, iox::Slice<uint64_t>>()
                            .create()
-                           .expect("");
+                           .value();
         auto static_config = service.static_config();
         ASSERT_THAT(static_config.request_message_type_details().payload().type_name(), StrEq("u64"));
         ASSERT_THAT(static_config.response_message_type_details().payload().type_name(), StrEq("u64"));
@@ -1792,7 +1765,7 @@ TYPED_TEST(ServiceRequestResponseTest,
         auto service = node.service_builder(service_name)
                            .template request_response<iox::Slice<int8_t>, iox::Slice<int8_t>>()
                            .create()
-                           .expect("");
+                           .value();
         auto static_config = service.static_config();
         ASSERT_THAT(static_config.request_message_type_details().payload().type_name(), StrEq("i8"));
         ASSERT_THAT(static_config.response_message_type_details().payload().type_name(), StrEq("i8"));
@@ -1801,7 +1774,7 @@ TYPED_TEST(ServiceRequestResponseTest,
         auto service = node.service_builder(service_name)
                            .template request_response<iox::Slice<int16_t>, iox::Slice<int16_t>>()
                            .create()
-                           .expect("");
+                           .value();
         auto static_config = service.static_config();
         ASSERT_THAT(static_config.request_message_type_details().payload().type_name(), StrEq("i16"));
         ASSERT_THAT(static_config.response_message_type_details().payload().type_name(), StrEq("i16"));
@@ -1810,7 +1783,7 @@ TYPED_TEST(ServiceRequestResponseTest,
         auto service = node.service_builder(service_name)
                            .template request_response<iox::Slice<int32_t>, iox::Slice<int32_t>>()
                            .create()
-                           .expect("");
+                           .value();
         auto static_config = service.static_config();
         ASSERT_THAT(static_config.request_message_type_details().payload().type_name(), StrEq("i32"));
         ASSERT_THAT(static_config.response_message_type_details().payload().type_name(), StrEq("i32"));
@@ -1819,7 +1792,7 @@ TYPED_TEST(ServiceRequestResponseTest,
         auto service = node.service_builder(service_name)
                            .template request_response<iox::Slice<int64_t>, iox::Slice<int64_t>>()
                            .create()
-                           .expect("");
+                           .value();
         auto static_config = service.static_config();
         ASSERT_THAT(static_config.request_message_type_details().payload().type_name(), StrEq("i64"));
         ASSERT_THAT(static_config.response_message_type_details().payload().type_name(), StrEq("i64"));
@@ -1828,7 +1801,7 @@ TYPED_TEST(ServiceRequestResponseTest,
         auto service = node.service_builder(service_name)
                            .template request_response<iox::Slice<float>, iox::Slice<float>>()
                            .create()
-                           .expect("");
+                           .value();
         auto static_config = service.static_config();
         ASSERT_THAT(static_config.request_message_type_details().payload().type_name(), StrEq("f32"));
         ASSERT_THAT(static_config.response_message_type_details().payload().type_name(), StrEq("f32"));
@@ -1837,7 +1810,7 @@ TYPED_TEST(ServiceRequestResponseTest,
         auto service = node.service_builder(service_name)
                            .template request_response<iox::Slice<double>, iox::Slice<double>>()
                            .create()
-                           .expect("");
+                           .value();
         auto static_config = service.static_config();
         ASSERT_THAT(static_config.request_message_type_details().payload().type_name(), StrEq("f64"));
         ASSERT_THAT(static_config.response_message_type_details().payload().type_name(), StrEq("f64"));
@@ -1847,11 +1820,11 @@ TYPED_TEST(ServiceRequestResponseTest,
 TYPED_TEST(ServiceRequestResponseTest, payload_type_name_is_set_to_inner_type_name_if_provided) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name = iox2_testing::generate_service_name();
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
                        .template request_response<iox::Slice<Payload>, iox::Slice<Payload>>()
                        .create()
-                       .expect("");
+                       .value();
 
     auto static_config = service.static_config();
     ASSERT_THAT(static_config.request_message_type_details().payload().type_name(), StrEq("Payload"));
@@ -1863,14 +1836,14 @@ TYPED_TEST(ServiceRequestResponseTest, service_id_is_unique_per_service) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name_1 = iox2_testing::generate_service_name();
     const auto service_name_2 = iox2_testing::generate_service_name();
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
 
     auto service_1_create =
-        node.service_builder(service_name_1).template request_response<uint64_t, uint64_t>().create().expect("");
+        node.service_builder(service_name_1).template request_response<uint64_t, uint64_t>().create().value();
     auto service_1_open =
-        node.service_builder(service_name_1).template request_response<uint64_t, uint64_t>().open().expect("");
+        node.service_builder(service_name_1).template request_response<uint64_t, uint64_t>().open().value();
     auto service_2 =
-        node.service_builder(service_name_2).template request_response<uint64_t, uint64_t>().create().expect("");
+        node.service_builder(service_name_2).template request_response<uint64_t, uint64_t>().create().value();
 
     ASSERT_THAT(service_1_create.service_id().c_str(), StrEq(service_1_open.service_id().c_str()));
     ASSERT_THAT(service_1_create.service_id().c_str(), Not(StrEq(service_2.service_id().c_str())));
@@ -1881,17 +1854,17 @@ TYPED_TEST(ServiceRequestResponseTest, listing_all_clients_works) {
     constexpr uint64_t NUMBER_OF_CLIENTS = 16;
 
     const auto service_name = iox2_testing::generate_service_name();
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = node.service_builder(service_name)
                    .template request_response<uint64_t, uint64_t>()
                    .max_clients(NUMBER_OF_CLIENTS)
                    .create()
-                   .expect("");
+                   .value();
 
     std::vector<iox2::Client<SERVICE_TYPE, uint64_t, void, uint64_t, void>> clients;
     clients.reserve(NUMBER_OF_CLIENTS);
     for (uint64_t idx = 0; idx < NUMBER_OF_CLIENTS; ++idx) {
-        clients.push_back(sut.client_builder().create().expect(""));
+        clients.push_back(sut.client_builder().create().value());
     }
 
     std::vector<UniqueClientId> client_ids;
@@ -1913,17 +1886,17 @@ TYPED_TEST(ServiceRequestResponseTest, listing_all_clients_stops_on_request) {
     constexpr uint64_t NUMBER_OF_CLIENTS = 13;
 
     const auto service_name = iox2_testing::generate_service_name();
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = node.service_builder(service_name)
                    .template request_response<uint64_t, uint64_t>()
                    .max_clients(NUMBER_OF_CLIENTS)
                    .create()
-                   .expect("");
+                   .value();
 
     std::vector<iox2::Client<SERVICE_TYPE, uint64_t, void, uint64_t, void>> clients;
     clients.reserve(NUMBER_OF_CLIENTS);
     for (uint64_t idx = 0; idx < NUMBER_OF_CLIENTS; ++idx) {
-        clients.push_back(sut.client_builder().create().expect(""));
+        clients.push_back(sut.client_builder().create().value());
     }
 
     auto counter = 0;
@@ -1940,14 +1913,12 @@ TYPED_TEST(ServiceRequestResponseTest, client_details_are_correct) {
     constexpr uint64_t MAX_SLICE_LEN = 9;
 
     const auto service_name = iox2_testing::generate_service_name();
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto sut = node.service_builder(service_name)
-                   .template request_response<iox::Slice<uint64_t>, uint64_t>()
-                   .create()
-                   .expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto sut =
+        node.service_builder(service_name).template request_response<iox::Slice<uint64_t>, uint64_t>().create().value();
 
     iox2::Client<SERVICE_TYPE, iox::Slice<uint64_t>, void, uint64_t, void> client =
-        sut.client_builder().initial_max_slice_len(MAX_SLICE_LEN).create().expect("");
+        sut.client_builder().initial_max_slice_len(MAX_SLICE_LEN).create().value();
 
     auto counter = 0;
     sut.dynamic_config().list_clients([&](auto client_details_view) -> auto {
@@ -1966,17 +1937,17 @@ TYPED_TEST(ServiceRequestResponseTest, listing_all_servers_works) {
     constexpr uint64_t NUMBER_OF_SERVERS = 16;
 
     const auto service_name = iox2_testing::generate_service_name();
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = node.service_builder(service_name)
                    .template request_response<uint64_t, uint64_t>()
                    .max_servers(NUMBER_OF_SERVERS)
                    .create()
-                   .expect("");
+                   .value();
 
     std::vector<iox2::Server<SERVICE_TYPE, uint64_t, void, uint64_t, void>> servers;
     servers.reserve(NUMBER_OF_SERVERS);
     for (uint64_t idx = 0; idx < NUMBER_OF_SERVERS; ++idx) {
-        servers.push_back(sut.server_builder().create().expect(""));
+        servers.push_back(sut.server_builder().create().value());
     }
 
     std::vector<UniqueServerId> server_ids;
@@ -1998,17 +1969,17 @@ TYPED_TEST(ServiceRequestResponseTest, listing_all_servers_stops_on_request) {
     constexpr uint64_t NUMBER_OF_SERVERS = 13;
 
     const auto service_name = iox2_testing::generate_service_name();
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = node.service_builder(service_name)
                    .template request_response<uint64_t, uint64_t>()
                    .max_servers(NUMBER_OF_SERVERS)
                    .create()
-                   .expect("");
+                   .value();
 
     std::vector<iox2::Server<SERVICE_TYPE, uint64_t, void, uint64_t, void>> servers;
     servers.reserve(NUMBER_OF_SERVERS);
     for (uint64_t idx = 0; idx < NUMBER_OF_SERVERS; ++idx) {
-        servers.push_back(sut.server_builder().create().expect(""));
+        servers.push_back(sut.server_builder().create().value());
     }
 
     auto counter = 0;
@@ -2025,14 +1996,12 @@ TYPED_TEST(ServiceRequestResponseTest, server_details_are_correct) {
     constexpr uint64_t MAX_SLICE_LEN = 9;
 
     const auto service_name = iox2_testing::generate_service_name();
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto sut = node.service_builder(service_name)
-                   .template request_response<uint64_t, iox::Slice<uint64_t>>()
-                   .create()
-                   .expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto sut =
+        node.service_builder(service_name).template request_response<uint64_t, iox::Slice<uint64_t>>().create().value();
 
     iox2::Server<SERVICE_TYPE, uint64_t, void, iox::Slice<uint64_t>, void> server =
-        sut.server_builder().initial_max_slice_len(MAX_SLICE_LEN).create().expect("");
+        sut.server_builder().initial_max_slice_len(MAX_SLICE_LEN).create().value();
 
     auto counter = 0;
     sut.dynamic_config().list_servers([&](auto server_details_view) -> auto {
@@ -2051,22 +2020,22 @@ TYPED_TEST(ServiceRequestResponseTest, only_max_clients_can_be_created) {
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
                        .template request_response<uint64_t, uint64_t>()
                        .max_clients(1)
                        .create()
-                       .expect("");
+                       .value();
     auto client = container::Optional<Client<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(
-        service.client_builder().create().expect(""));
+        service.client_builder().create().value());
 
     auto failing_sut = service.client_builder().create();
-    ASSERT_TRUE(failing_sut.has_error());
+    ASSERT_FALSE(failing_sut.has_value());
 
     client.reset();
 
     auto sut = service.client_builder().create();
-    ASSERT_FALSE(sut.has_error());
+    ASSERT_TRUE(sut.has_value());
 }
 
 TYPED_TEST(ServiceRequestResponseTest, only_max_servers_can_be_created) {
@@ -2074,22 +2043,22 @@ TYPED_TEST(ServiceRequestResponseTest, only_max_servers_can_be_created) {
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
                        .template request_response<uint64_t, uint64_t>()
                        .max_servers(1)
                        .create()
-                       .expect("");
+                       .value();
     auto server = container::Optional<Server<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(
-        service.server_builder().create().expect(""));
+        service.server_builder().create().value());
 
     auto failing_sut = service.server_builder().create();
-    ASSERT_TRUE(failing_sut.has_error());
+    ASSERT_FALSE(failing_sut.has_value());
 
     server.reset();
 
     auto sut = service.server_builder().create();
-    ASSERT_FALSE(sut.has_error());
+    ASSERT_TRUE(sut.has_value());
 }
 
 TYPED_TEST(ServiceRequestResponseTest, client_can_request_graceful_disconnect) {
@@ -2097,17 +2066,16 @@ TYPED_TEST(ServiceRequestResponseTest, client_can_request_graceful_disconnect) {
 
     const auto service_name = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto service =
-        node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().value();
 
-    auto sut_client = service.client_builder().create().expect("");
-    auto sut_server = service.server_builder().create().expect("");
+    auto sut_client = service.client_builder().create().value();
+    auto sut_server = service.server_builder().create().value();
 
     auto pending_response =
         iox2::legacy::make_optional<iox2::PendingResponse<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(
-            sut_client.send_copy(0).expect(""));
-    auto active_request = sut_server.receive().expect("").value();
+            sut_client.send_copy(0).value());
+    auto active_request = sut_server.receive().value().value();
 
     ASSERT_TRUE(pending_response->is_connected());
     ASSERT_TRUE(active_request.is_connected());
