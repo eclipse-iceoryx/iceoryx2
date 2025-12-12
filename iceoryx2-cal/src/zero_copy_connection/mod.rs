@@ -21,12 +21,13 @@ use core::fmt::Debug;
 use core::time::Duration;
 
 pub use crate::shared_memory::PointerOffset;
-use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
-use iceoryx2_bb_derive_macros::ZeroCopySend;
-use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 pub use iceoryx2_bb_system_types::file_name::*;
 pub use iceoryx2_bb_system_types::path::Path;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
+
+use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
+use iceoryx2_bb_concurrency::atomic::AtomicU64;
+use iceoryx2_bb_derive_macros::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ZeroCopyPortRemoveError {
@@ -172,7 +173,7 @@ pub trait ZeroCopyPortDetails {
     fn max_borrowed_samples(&self) -> usize;
     fn max_supported_shared_memory_segments(&self) -> u8;
     fn is_connected(&self) -> bool;
-    fn channel_state(&self, channel_id: ChannelId) -> &IoxAtomicU64;
+    fn channel_state(&self, channel_id: ChannelId) -> &AtomicU64;
 }
 
 pub trait ZeroCopySender: Debug + ZeroCopyPortDetails + NamedConcept + Send {

@@ -17,7 +17,7 @@
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU32;
+use iceoryx2_pal_concurrency_sync::atomic::AtomicU32;
 use iceoryx2_pal_concurrency_sync::semaphore::Semaphore;
 use iceoryx2_pal_concurrency_sync::{WaitAction, WaitResult};
 use windows_sys::Win32::System::Threading::WaitOnAddress;
@@ -40,7 +40,7 @@ pub unsafe fn sem_post(sem: *mut sem_t) -> int {
 
     (*sem).semaphore.post(
         |atomic| {
-            WakeByAddressSingle((atomic as *const IoxAtomicU32).cast());
+            WakeByAddressSingle((atomic as *const AtomicU32).cast());
         },
         1,
     );
@@ -52,7 +52,7 @@ pub unsafe fn sem_post(sem: *mut sem_t) -> int {
 pub unsafe fn sem_wait(sem: *mut sem_t) -> int {
     (*sem).semaphore.wait(|atomic, value| -> WaitAction {
         WaitOnAddress(
-            (atomic as *const IoxAtomicU32).cast(),
+            (atomic as *const AtomicU32).cast(),
             (value as *const u32).cast(),
             4,
             INFINITE,
@@ -86,7 +86,7 @@ pub unsafe fn sem_timedwait(sem: *mut sem_t, abs_timeout: *const timespec) -> in
     #[allow(clippy::blocks_in_conditions)]
     match (*sem).semaphore.wait(|atomic, value| -> WaitAction {
         WaitOnAddress(
-            (atomic as *const IoxAtomicU32).cast(),
+            (atomic as *const AtomicU32).cast(),
             (value as *const u32).cast(),
             4,
             milli_seconds as _,

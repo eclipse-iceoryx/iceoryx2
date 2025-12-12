@@ -66,6 +66,7 @@ crate.from_cargo(
         "//:iceoryx2-log/types/Cargo.toml",
         "//:iceoryx2/Cargo.toml",
         "//:iceoryx2/conformance-tests/Cargo.toml",
+        "//:iceoryx2-bb/concurrency/Cargo.toml",
         "//:iceoryx2-bb/conformance-test-macros/Cargo.toml",
         "//:iceoryx2-bb/container/Cargo.toml",
         "//:iceoryx2-bb/derive-macros/Cargo.toml",

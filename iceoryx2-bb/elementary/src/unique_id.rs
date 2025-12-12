@@ -63,7 +63,7 @@
 //! }
 //! ```
 
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
+use iceoryx2_bb_concurrency::atomic::AtomicU64;
 
 use core::{marker::PhantomData, sync::atomic::Ordering};
 
@@ -75,7 +75,7 @@ pub struct UniqueId {
 
 impl Default for UniqueId {
     fn default() -> Self {
-        static COUNTER: IoxAtomicU64 = IoxAtomicU64::new(0);
+        static COUNTER: AtomicU64 = AtomicU64::new(0);
 
         UniqueId {
             value: COUNTER.fetch_add(1, Ordering::Relaxed),
@@ -105,7 +105,7 @@ pub struct TypedUniqueId<T> {
 
 impl<T> Default for TypedUniqueId<T> {
     fn default() -> Self {
-        static COUNTER: IoxAtomicU64 = IoxAtomicU64::new(0);
+        static COUNTER: AtomicU64 = AtomicU64::new(0);
 
         Self {
             value: COUNTER.fetch_add(1, Ordering::Relaxed),

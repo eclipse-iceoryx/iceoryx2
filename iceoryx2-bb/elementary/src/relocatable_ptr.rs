@@ -65,9 +65,11 @@
 //! ```
 
 use core::{fmt::Debug, marker::PhantomData, ptr::NonNull};
-use iceoryx2_bb_elementary_traits::generic_pointer::GenericPointer;
+
 pub use iceoryx2_bb_elementary_traits::pointer_trait::PointerTrait;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicIsize;
+
+use iceoryx2_bb_concurrency::atomic::AtomicIsize;
+use iceoryx2_bb_elementary_traits::generic_pointer::GenericPointer;
 
 #[derive(Debug)]
 pub struct GenericRelocatablePointer;
@@ -88,7 +90,7 @@ pub struct GenericRelocatablePointer;
 #[repr(C)]
 #[derive(Debug)]
 pub struct RelocatablePointer<T> {
-    distance: IoxAtomicIsize,
+    distance: AtomicIsize,
     _phantom: PhantomData<T>,
 }
 
@@ -97,7 +99,7 @@ impl<T> RelocatablePointer<T> {
     /// destination starting from the memory location of this [`RelocatablePointer`].
     pub fn new(distance: isize) -> Self {
         Self {
-            distance: IoxAtomicIsize::new(distance),
+            distance: AtomicIsize::new(distance),
             _phantom: PhantomData,
         }
     }

@@ -19,8 +19,8 @@ use core::unimplemented;
 
 use crate::common::mem_zeroed_struct::MemZeroedStruct;
 use crate::posix::*;
+use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
 use iceoryx2_pal_concurrency_sync::barrier::Barrier;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 use iceoryx2_pal_concurrency_sync::mutex::Mutex;
 use iceoryx2_pal_concurrency_sync::rwlock::*;
 use iceoryx2_pal_concurrency_sync::semaphore::Semaphore;
@@ -106,7 +106,7 @@ pub struct pthread_mutex_t {
     pub(crate) mtx: Mutex,
     pub(crate) track_thread_id: bool,
     pub(crate) mtype: int,
-    pub(crate) current_owner: IoxAtomicU64,
+    pub(crate) current_owner: AtomicU64,
     pub(crate) inconsistent_state: bool,
     pub(crate) unrecoverable_state: bool,
 }

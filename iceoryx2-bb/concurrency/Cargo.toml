@@ -1,0 +1,23 @@
+[package]
+name = "iceoryx2-bb-concurrency"
+description = "iceoryx2: concurrency primitives"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[features]
+default = []
+std = []
+
+[dependencies]
+iceoryx2-bb-elementary-traits = { workspace = true }
+iceoryx2-pal-concurrency-sync = { workspace = true }
+
+[dev-dependencies]
+iceoryx2-bb-testing = { workspace = true }
+iceoryx2-pal-testing = { workspace = true }

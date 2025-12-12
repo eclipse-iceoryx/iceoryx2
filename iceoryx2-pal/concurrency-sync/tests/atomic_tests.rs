@@ -18,7 +18,7 @@ static COUNTER: AtomicU32 = AtomicU32::new(0);
 mod ice_atomic {
     use super::*;
 
-    use iceoryx2_pal_concurrency_sync::iox_atomic::{internal::AtomicInteger, IoxAtomic};
+    use iceoryx2_pal_concurrency_sync::atomic::{internal::AtomicInteger, Atomic};
     use iceoryx2_pal_testing::assert_that;
 
     use core::{
@@ -94,7 +94,7 @@ mod ice_atomic {
     #[test]
     fn new_works<T: Req>() {
         let n = T::generate_value();
-        let sut = IoxAtomic::<T>::new(n);
+        let sut = Atomic::<T>::new(n);
 
         assert_that!(sut.load(Ordering::Relaxed), eq n);
     }
@@ -104,7 +104,7 @@ mod ice_atomic {
         let n1 = T::generate_value();
         let n2 = T::generate_value();
 
-        let sut = IoxAtomic::<T>::new(n1);
+        let sut = Atomic::<T>::new(n1);
         let old_value = unsafe { *sut.as_ptr() };
         unsafe { *sut.as_ptr() = n2 };
 
@@ -117,7 +117,7 @@ mod ice_atomic {
     fn compare_exchange_success_works<T: Req>() {
         let n_old = T::generate_value();
         let n_new = T::generate_value();
-        let sut = IoxAtomic::<T>::new(n_old);
+        let sut = Atomic::<T>::new(n_old);
 
         let result = sut.compare_exchange(n_old, n_new, Ordering::Relaxed, Ordering::Relaxed);
 
@@ -129,7 +129,7 @@ mod ice_atomic {
     fn compare_exchange_weak_success_works<T: Req>() {
         let n_old = T::generate_value();
         let n_new = T::generate_value();
-        let sut = IoxAtomic::<T>::new(n_old);
+        let sut = Atomic::<T>::new(n_old);
 
         let result = sut.compare_exchange_weak(n_old, n_new, Ordering::Relaxed, Ordering::Relaxed);
 
@@ -142,7 +142,7 @@ mod ice_atomic {
         let n_outdated = T::generate_value();
         let n_old = T::generate_value();
         let n_new = T::generate_value();
-        let sut = IoxAtomic::<T>::new(n_old);
+        let sut = Atomic::<T>::new(n_old);
 
         let result = sut.compare_exchange(n_outdated, n_new, Ordering::Relaxed, Ordering::Relaxed);
 
@@ -155,7 +155,7 @@ mod ice_atomic {
         let n_outdated = T::generate_value();
         let n_old = T::generate_value();
         let n_new = T::generate_value();
-        let sut = IoxAtomic::<T>::new(n_old);
+        let sut = Atomic::<T>::new(n_old);
 
         let result =
             sut.compare_exchange_weak(n_outdated, n_new, Ordering::Relaxed, Ordering::Relaxed);
@@ -167,7 +167,7 @@ mod ice_atomic {
     #[test]
     fn fetch_add_works<T: Req>() {
         let n = T::generate_value();
-        let sut = IoxAtomic::<T>::new(n);
+        let sut = Atomic::<T>::new(n);
 
         let result = sut.fetch_add(n, Ordering::Relaxed);
 
@@ -180,7 +180,7 @@ mod ice_atomic {
         let n1 = T::generate_value();
         let n2 = T::generate_value();
 
-        let sut = IoxAtomic::<T>::new(n1);
+        let sut = Atomic::<T>::new(n1);
 
         let result = sut.fetch_and(n2, Ordering::Relaxed);
 
@@ -195,8 +195,8 @@ mod ice_atomic {
         let n1 = T::generate_value();
         let n2 = T::generate_value();
 
-        let sut_1 = IoxAtomic::<T>::new(n1);
-        let sut_2 = IoxAtomic::<T>::new(n2);
+        let sut_1 = Atomic::<T>::new(n1);
+        let sut_2 = Atomic::<T>::new(n2);
 
         let result_1 = sut_1.fetch_max(n2, Ordering::Relaxed);
         let result_2 = sut_2.fetch_max(n1, Ordering::Relaxed);
@@ -212,8 +212,8 @@ mod ice_atomic {
         let n1 = T::generate_value();
         let n2 = T::generate_value();
 
-        let sut_1 = IoxAtomic::<T>::new(n1);
-        let sut_2 = IoxAtomic::<T>::new(n2);
+        let sut_1 = Atomic::<T>::new(n1);
+        let sut_2 = Atomic::<T>::new(n2);
 
         let result_1 = sut_1.fetch_min(n2, Ordering::Relaxed);
         let result_2 = sut_2.fetch_min(n1, Ordering::Relaxed);
@@ -229,7 +229,7 @@ mod ice_atomic {
         let n1 = T::generate_value();
         let n2 = T::generate_value();
 
-        let sut = IoxAtomic::<T>::new(n1);
+        let sut = Atomic::<T>::new(n1);
 
         let result = sut.fetch_nand(n2, Ordering::Relaxed);
 
@@ -243,7 +243,7 @@ mod ice_atomic {
         let n1 = T::generate_value();
         let n2 = T::generate_value();
 
-        let sut = IoxAtomic::<T>::new(n1);
+        let sut = Atomic::<T>::new(n1);
 
         let result = sut.fetch_or(n2, Ordering::Relaxed);
 
@@ -258,7 +258,7 @@ mod ice_atomic {
         let n1 = T::generate_value();
         let n2 = T::generate_value();
 
-        let sut = IoxAtomic::<T>::new(n1);
+        let sut = Atomic::<T>::new(n1);
 
         let result = sut.fetch_sub(n2, Ordering::Relaxed);
 
@@ -280,7 +280,7 @@ mod ice_atomic {
     fn fetch_update_success_works<T: Req>() {
         let n1 = T::generate_value();
 
-        let sut = IoxAtomic::<T>::new(n1);
+        let sut = Atomic::<T>::new(n1);
 
         let result = sut.fetch_update(Ordering::Relaxed, Ordering::Relaxed, ok_fetch_update::<T>);
 
@@ -295,7 +295,7 @@ mod ice_atomic {
     fn fetch_update_failure_works<T: Req>() {
         let n1 = T::generate_value();
 
-        let sut = IoxAtomic::<T>::new(n1);
+        let sut = Atomic::<T>::new(n1);
 
         let result = sut.fetch_update(Ordering::Relaxed, Ordering::Relaxed, err_fetch_update::<T>);
 
@@ -309,7 +309,7 @@ mod ice_atomic {
         let n1 = T::generate_value();
         let n2 = T::generate_value();
 
-        let sut = IoxAtomic::<T>::new(n1);
+        let sut = Atomic::<T>::new(n1);
 
         let result = sut.fetch_xor(n2, Ordering::Relaxed);
 
@@ -322,16 +322,16 @@ mod ice_atomic {
     #[test]
     fn into_inner_works<T: Req>() {
         let n = T::generate_value();
-        let sut = IoxAtomic::<T>::new(n);
+        let sut = Atomic::<T>::new(n);
 
-        assert_that!(IoxAtomic::<T>::into_inner(sut), eq n);
+        assert_that!(Atomic::<T>::into_inner(sut), eq n);
     }
 
     #[test]
     fn load_store_works<T: Req>() {
         let n1 = T::generate_value();
         let n2 = T::generate_value();
-        let sut = IoxAtomic::<T>::new(n1);
+        let sut = Atomic::<T>::new(n1);
 
         sut.store(n2, Ordering::Relaxed);
 
@@ -342,7 +342,7 @@ mod ice_atomic {
     fn swap_works<T: Req>() {
         let n1 = T::generate_value();
         let n2 = T::generate_value();
-        let sut = IoxAtomic::<T>::new(n1);
+        let sut = Atomic::<T>::new(n1);
 
         let result = sut.swap(n2, Ordering::Relaxed);
 
@@ -353,7 +353,7 @@ mod ice_atomic {
     #[test]
     fn compatibility_new_works<T: Req>() {
         let n = T::generate_compatibility_value();
-        let sut = IoxAtomic::<T>::new(n);
+        let sut = Atomic::<T>::new(n);
         let compat = AtomicU32::new(n.to_u32());
 
         assert_that!(compat.load(Ordering::Relaxed), eq sut.load(Ordering::Relaxed).to_u32());
@@ -364,7 +364,7 @@ mod ice_atomic {
         let n1 = T::generate_compatibility_value();
         let n2 = T::generate_compatibility_value();
 
-        let sut = IoxAtomic::<T>::new(n1);
+        let sut = Atomic::<T>::new(n1);
         let compat = AtomicU32::new(n1.to_u32());
 
         assert_that!(unsafe {*compat.as_ptr()}, eq unsafe{*sut.as_ptr()}.to_u32() );
@@ -381,7 +381,7 @@ mod ice_atomic {
         let n1 = T::generate_compatibility_value();
         let n2 = T::generate_compatibility_value();
 
-        let sut = IoxAtomic::<T>::new(n1);
+        let sut = Atomic::<T>::new(n1);
         let compat = AtomicU32::new(n1.to_u32());
 
         let result_sut = sut.compare_exchange(n1, n2, Ordering::Relaxed, Ordering::Relaxed);
@@ -404,7 +404,7 @@ mod ice_atomic {
         let n1 = T::generate_compatibility_value();
         let n2 = T::generate_compatibility_value();
 
-        let sut = IoxAtomic::<T>::new(n1);
+        let sut = Atomic::<T>::new(n1);
         let compat = AtomicU32::new(n1.to_u32());
 
         let result_sut = sut.compare_exchange_weak(n1, n2, Ordering::Relaxed, Ordering::Relaxed);
@@ -427,7 +427,7 @@ mod ice_atomic {
         let n1 = T::generate_compatibility_value();
         let n2 = T::generate_compatibility_value();
 
-        let sut = IoxAtomic::<T>::new(n1);
+        let sut = Atomic::<T>::new(n1);
         let compat = AtomicU32::new(n1.to_u32());
 
         let result_sut = sut.compare_exchange(n2, n1, Ordering::Relaxed, Ordering::Relaxed);
@@ -450,7 +450,7 @@ mod ice_atomic {
         let n1 = T::generate_compatibility_value();
         let n2 = T::generate_compatibility_value();
 
-        let sut = IoxAtomic::<T>::new(n1);
+        let sut = Atomic::<T>::new(n1);
         let compat = AtomicU32::new(n1.to_u32());
 
         let result_sut = sut.compare_exchange_weak(n2, n1, Ordering::Relaxed, Ordering::Relaxed);
@@ -473,7 +473,7 @@ mod ice_atomic {
         let n1 = T::generate_compatibility_value();
         let n2 = T::generate_compatibility_value();
 
-        let sut = IoxAtomic::<T>::new(n1);
+        let sut = Atomic::<T>::new(n1);
         let compat = AtomicU32::new(n1.to_u32());
 
         assert_that!(sut.fetch_add(n2, Ordering::Relaxed).to_u32(), eq compat.fetch_add(n2.to_u32(), Ordering::Relaxed));
@@ -485,7 +485,7 @@ mod ice_atomic {
         let n1 = T::generate_compatibility_value();
         let n2 = T::generate_compatibility_value();
 
-        let sut = IoxAtomic::<T>::new(n1);
+        let sut = Atomic::<T>::new(n1);
         let compat = AtomicU32::new(n1.to_u32());
 
         assert_that!(sut.fetch_and(n2, Ordering::Relaxed).to_u32(), eq compat.fetch_and(n2.to_u32(), Ordering::Relaxed));
@@ -497,7 +497,7 @@ mod ice_atomic {
         let n1 = T::generate_compatibility_value();
         let n2 = T::generate_compatibility_value();
 
-        let sut = IoxAtomic::<T>::new(n1);
+        let sut = Atomic::<T>::new(n1);
         let compat = AtomicU32::new(n1.to_u32());
 
         assert_that!(sut.fetch_max(n2, Ordering::Relaxed).to_u32(), eq compat.fetch_max(n2.to_u32(), Ordering::Relaxed));
@@ -509,7 +509,7 @@ mod ice_atomic {
         let n1 = T::generate_compatibility_value();
         let n2 = T::generate_compatibility_value();
 
-        let sut = IoxAtomic::<T>::new(n1);
+        let sut = Atomic::<T>::new(n1);
         let compat = AtomicU32::new(n1.to_u32());
 
         assert_that!(sut.fetch_min(n2, Ordering::Relaxed).to_u32(), eq compat.fetch_min(n2.to_u32(), Ordering::Relaxed));
@@ -521,7 +521,7 @@ mod ice_atomic {
         let n1 = T::generate_compatibility_value();
         let n2 = T::generate_compatibility_value();
 
-        let sut = IoxAtomic::<T>::new(n1);
+        let sut = Atomic::<T>::new(n1);
         let compat = AtomicU32::new(n1.to_u32());
 
         assert_that!(sut.fetch_nand(n2, Ordering::Relaxed).to_u32(), eq compat.fetch_nand(n2.to_u32(), Ordering::Relaxed));
@@ -533,7 +533,7 @@ mod ice_atomic {
         let n1 = T::generate_compatibility_value();
         let n2 = T::generate_compatibility_value();
 
-        let sut = IoxAtomic::<T>::new(n1);
+        let sut = Atomic::<T>::new(n1);
         let compat = AtomicU32::new(n1.to_u32());
 
         assert_that!(sut.fetch_or(n2, Ordering::Relaxed).to_u32(), eq compat.fetch_or(n2.to_u32(), Ordering::Relaxed));
@@ -545,7 +545,7 @@ mod ice_atomic {
         let n1 = T::generate_compatibility_value();
         let n2 = T::generate_compatibility_value();
 
-        let sut = IoxAtomic::<T>::new(n1);
+        let sut = Atomic::<T>::new(n1);
         let compat = AtomicU32::new(n1.to_u32());
 
         assert_that!(sut.fetch_sub(n2, Ordering::Relaxed).to_u32(), eq compat.fetch_sub(n2.to_u32(), Ordering::Relaxed));
@@ -556,7 +556,7 @@ mod ice_atomic {
     fn compatibility_fetch_update_success_works<T: Req>() {
         let n1 = T::generate_compatibility_value();
 
-        let sut = IoxAtomic::<T>::new(n1);
+        let sut = Atomic::<T>::new(n1);
         let compat = AtomicU32::new(n1.to_u32());
 
         let result_sut =
@@ -575,7 +575,7 @@ mod ice_atomic {
     fn compatibility_fetch_update_failure_works<T: Req>() {
         let n1 = T::generate_compatibility_value();
 
-        let sut = IoxAtomic::<T>::new(n1);
+        let sut = Atomic::<T>::new(n1);
         let compat = AtomicU32::new(n1.to_u32());
 
         let result_sut =
@@ -598,7 +598,7 @@ mod ice_atomic {
         let n1 = T::generate_compatibility_value();
         let n2 = T::generate_compatibility_value();
 
-        let sut = IoxAtomic::<T>::new(n1);
+        let sut = Atomic::<T>::new(n1);
         let compat = AtomicU32::new(n1.to_u32());
 
         assert_that!(sut.fetch_xor(n2, Ordering::Relaxed).to_u32(), eq compat.fetch_xor(n2.to_u32(), Ordering::Relaxed));
@@ -610,7 +610,7 @@ mod ice_atomic {
         let n1 = T::generate_compatibility_value();
         let n2 = T::generate_compatibility_value();
 
-        let sut = IoxAtomic::<T>::new(n1);
+        let sut = Atomic::<T>::new(n1);
         let compat = AtomicU32::new(n1.to_u32());
 
         assert_that!(sut.swap(n2, Ordering::Relaxed).to_u32(), eq compat.swap(n2.to_u32(), Ordering::Relaxed));
