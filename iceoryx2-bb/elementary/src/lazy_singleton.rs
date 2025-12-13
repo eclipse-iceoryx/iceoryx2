@@ -55,7 +55,18 @@ impl<T> Default for LazySingleton<T> {
 
 impl<T> LazySingleton<T> {
     /// Creates a new [`LazySingleton`] where the underlying value is not yet initialized.
+    #[cfg(not(all(test, loom, feature = "std")))]
     pub const fn new() -> Self {
+        Self {
+            data: UnsafeCell::new(None),
+            is_initialized: IoxAtomicBool::new(false),
+            is_finalized: IoxAtomicBool::new(false),
+        }
+    }
+
+    /// Creates a new [`LazySingleton`] where the underlying value is not yet initialized.
+    #[cfg(all(test, loom, feature = "std"))]
+    pub fn new() -> Self {
         Self {
             data: UnsafeCell::new(None),
             is_initialized: IoxAtomicBool::new(false),

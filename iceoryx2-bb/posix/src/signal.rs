@@ -276,7 +276,13 @@ impl Drop for SignalGuard {
     }
 }
 
+#[cfg(not(all(test, loom, feature = "std")))]
 static LAST_SIGNAL: IoxAtomicUsize = IoxAtomicUsize::new(posix::MAX_SIGNAL_VALUE);
+
+#[cfg(all(test, loom, feature = "std"))]
+static LAST_SIGNAL: std::sync::LazyLock<IoxAtomicUsize> = std::sync::LazyLock::new(|| {
+    unimplemented!("loom does not provide const-initialization for atomic variables.")
+});
 
 /// Manages POSIX signal handling. It provides an interface to register custom callbacks for
 /// signals, to perform a blocking wait until a certain signal arrived (for instance like CTRL+c) and
