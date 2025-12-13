@@ -27,6 +27,21 @@
 #include <type_traits>
 
 namespace iox2 {
+namespace bb {
+template <uint64_t Capacity>
+using DoesContainInvalidCharacter = bool (*)(const typename container::StaticString<Capacity>& value);
+
+template <uint64_t Capacity>
+using DoesContainInvalidContent = bool (*)(const typename container::StaticString<Capacity>& value);
+
+template <typename, uint64_t Capacity, DoesContainInvalidContent<Capacity>, DoesContainInvalidCharacter<Capacity>>
+class SemanticString;
+
+namespace detail {
+template <uint64_t>
+class PathAndFileVerifier;
+} // namespace detail
+} // namespace bb
 namespace container {
 
 template <uint64_t>
@@ -39,7 +54,7 @@ template <uint64_t N>
 struct IsStaticString<StaticString<N>> : std::true_type { };
 
 template <typename T, typename ReturnType>
-using IsStaticStringOrCharArray =
+using RequireStaticStringOrCharArray =
     typename std::enable_if_t<IsStaticString<T>::value || legacy::is_char_array<T>::value, ReturnType>;
 
 /// A UTF-8 string with fixed static capacity and contiguous inplace storage.
@@ -162,12 +177,51 @@ class StaticString {
     /// a valid UTF-8 encoded string. This includes not setting any of the string characters to NUL (U+0000).
     class UncheckedAccessorCodeUnits {
         friend class StaticString;
+        template <typename,
+                  uint64_t Capacity,
+                  bb::DoesContainInvalidContent<Capacity>,
+                  bb::DoesContainInvalidCharacter<Capacity>>
+        friend class bb::SemanticString;
 
       private:
         StaticString* m_parent;
 
         constexpr explicit UncheckedAccessorCodeUnits(StaticString& parent)
             : m_parent(&parent) {
+        }
+
+        /// Inserts a StaticString, obtained by str.substr(s_index, count), into the StaticString at position index. The
+        /// insertion fails if the capacity would be exceeded or the provided indices are larger than the respective
+        /// string lengths.
+        ///
+        /// @return true if the insertion was successful, otherwise false
+        template <typename T>
+        auto insert(SizeType index, T const& str, SizeType s_index, SizeType count = T::capacity()) ->
+            typename std::enable_if_t<IsStaticString<T>::value, bool> {
+            auto sub_str = str.code_units().substr(s_index, count);
+            if (!sub_str.has_value()) {
+                return false;
+            }
+
+            auto const sub_str_size = sub_str->size();
+            auto const new_size = m_parent->m_size + sub_str_size;
+            // check if the new size would exceed capacity or a size overflow occured
+            if (new_size > N || new_size < m_parent->m_size) {
+                return false;
+            }
+
+            if (index > m_parent->m_size) {
+                return false;
+            }
+            auto number_of_characters_to_move = m_parent->m_size - index;
+            std::memmove(
+                &m_parent->m_string[index + sub_str_size], &m_parent->m_string[index], number_of_characters_to_move);
+            std::memcpy(&m_parent->m_string[index], sub_str->m_string, static_cast<size_t>(sub_str_size));
+
+            m_parent->m_string[new_size] = '\0';
+            m_parent->m_size = new_size;
+
+            return true;
         }
 
       public:
@@ -231,12 +285,87 @@ class StaticString {
     /// This class provides the interface for accessing individual code units of the string.
     class ConstAccessorCodeUnits {
         friend class StaticString;
+        template <uint64_t Capacity>
+        friend class StaticString<Capacity>::UncheckedAccessorCodeUnits;
+        template <uint64_t>
+        friend class bb::detail::PathAndFileVerifier;
 
       private:
         StaticString const* m_parent;
 
         constexpr explicit ConstAccessorCodeUnits(StaticString const& parent)
             : m_parent(&parent) {
+        }
+
+        /// Creates a substring containing the characters from pos until count; if pos+count is greater than the
+        /// size of the original string the returned substring only contains the characters from pos until size().
+        ///
+        /// @return an Optional containing the substring
+        ///         NULLOPT if pos is greater than the size of the original string
+        auto substr(SizeType pos, SizeType count) const -> bb::Optional<StaticString> {
+            if (pos > m_parent->m_size) {
+                return bb::NULLOPT;
+            }
+
+            auto const length = std::min(count, m_parent->m_size - pos);
+            StaticString sub_str;
+            std::memcpy(sub_str.m_string, &m_parent->m_string[pos], length);
+            sub_str.m_string[length] = '\0';
+            sub_str.m_size = length;
+            return sub_str;
+        }
+
+        /// Finds the first occurence of a character equal to one of the characters of the given character sequence
+        /// and returns its position.
+        ///
+        /// @return an Optional containing the position of the first character equal to one of the characters of the
+        ///         given character sequence
+        ///         NULLOPT if no character is found or if pos is greater than size()
+        template <typename T>
+        auto find_first_of(T const& str, SizeType pos = 0U) const
+            -> RequireStaticStringOrCharArray<T, bb::Optional<SizeType>> {
+            if (pos > m_parent->m_size) {
+                return bb::NULLOPT;
+            }
+
+            auto str_data = detail::GetData<T>::call(str);
+            auto str_size = detail::GetSize<T>::call(str);
+            for (auto position = pos; position < m_parent->m_size; ++position) {
+                auto found = memchr(str_data, m_parent->m_string[position], str_size);
+                if (found != nullptr) {
+                    return position;
+                }
+            }
+            return bb::NULLOPT;
+        }
+
+        /// Finds the last occurence of a character equal to one of the characters of the given character sequence
+        /// and returns its position.
+        ///
+        /// @return an Optional containing the position of the last character equal to one of the characters of the
+        ///         given character sequence
+        ///         NULLOPT if no character is found
+        template <typename T>
+        auto find_last_of(T const& str, SizeType pos = N) const
+            -> RequireStaticStringOrCharArray<T, bb::Optional<SizeType>> {
+            if (m_parent->m_size == 0) {
+                return bb::NULLOPT;
+            }
+
+            auto position = std::min(pos, m_parent->m_size - 1);
+            auto str_data = detail::GetData<T>::call(str);
+            auto str_size = detail::GetSize<T>::call(str);
+            for (; position > 0; --position) {
+                auto found = memchr(str_data, m_parent->m_string[position], str_size);
+                if (found != nullptr) {
+                    return position;
+                }
+            }
+            auto found = memchr(str_data, m_parent->m_string[0], str_size);
+            if (found != nullptr) {
+                return 0U;
+            }
+            return bb::NULLOPT;
         }
 
       public:
@@ -343,8 +472,8 @@ class StaticString {
     }
 
     /// Constructs a StaticString from a null terminated C-style string.
-    /// This unchecked function allows for uncontrolled memory access. Users of this must ensure that the input string
-    /// is properly null terminated.
+    /// This unchecked function allows for uncontrolled memory access. Users of this must ensure that the input
+    /// string is properly null terminated.
     /// @return Nullopt if the input string does not represent a valid UTF-8 encoding.
     ///         Otherwise a StaticString that contains a copy of the input string.
     static auto from_utf8_null_terminated_unchecked(char const* utf8_str) -> bb::Optional<StaticString> {
@@ -359,8 +488,8 @@ class StaticString {
         return ret;
     }
 
-    /// Constructs a StaticString from a C-string literal. Users must ensure that the input string represents a valid
-    /// UTF-8 encoding.
+    /// Constructs a StaticString from a C-string literal. Users must ensure that the input string represents a
+    /// valid UTF-8 encoding.
     template <uint64_t M, std::enable_if_t<(N >= (M - 1)), bool> = true>
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,hicpp-avoid-c-arrays,modernize-avoid-c-arrays) statically bounds checked
     static auto from_utf8_unchecked(char const (&utf8_str)[M]) noexcept -> StaticString {
@@ -375,9 +504,11 @@ class StaticString {
         return ret;
     }
 
-    /// Constructs a StaticString from the first `count` characters of a null terminated C-style string.
-    /// This unchecked function allows for uncontrolled memory access. Users of this must ensure that the input string
-    /// is properly null terminated and represents a valid UTF-8 encoding.
+    /// Constructs a StaticString from up to `count` characters of a C-style string. If the capacity of the
+    /// StaticString would be exceeded, the input string is truncated.
+    /// This unchecked function allows for uncontrolled memory access. User of this must ensure that the input
+    /// string is null-terminated if count exceeds the string length and the truncated string represents a valid
+    /// UTF-8 encoding.
     static auto from_utf8_null_terminated_unchecked_truncated(char const* utf8_str, SizeType count) -> StaticString {
         StaticString ret;
         auto index = std::min(count, N);
@@ -392,8 +523,8 @@ class StaticString {
 
     /// Attempt to append a single code unit to the back of the string.
     /// @return true on success.
-    ///         false if the action would exceed the string's capacity or put the string content into a state that is
-    ///         not a valid UTF-8 encoded string.
+    ///         false if the action would exceed the string's capacity or put the string content into a state that
+    ///         is not a valid UTF-8 encoded string.
     constexpr auto try_push_back(CodeUnitValueType character) noexcept -> bool {
         if ((m_size < N) && (is_valid_next(character))) {
             m_string[m_size] = character;
@@ -409,8 +540,8 @@ class StaticString {
 
     /// Attempt to pop a single code unit from the back of the string.
     /// @return true on success.
-    ///         false if the string is already empty or if the action would put the string content into a state that is
-    ///         not a valid UTF-8 encoded string.
+    ///         false if the string is already empty or if the action would put the string content into a state that
+    ///         is not a valid UTF-8 encoded string.
     constexpr auto try_pop_back() noexcept -> bool {
         if (m_size > 0) {
             m_string[m_size - 1] = '\0';
@@ -423,8 +554,8 @@ class StaticString {
 
     /// Attempt to append `count` instances of `character` to the back of the string.
     /// @return true on success.
-    ///         false if the action would exceed the string's capacity or put the string content into a state that is
-    ///         not a valid UTF-8 encoded string.
+    ///         false if the action would exceed the string's capacity or put the string content into a state that
+    ///         is not a valid UTF-8 encoded string.
     constexpr auto try_append(SizeType count, CodeUnitValueType character) noexcept -> bool {
         if ((m_size + count <= N) && (is_valid_next(character))) {
             std::fill(&(m_string[m_size]), &(m_string[m_size + count]), character);
@@ -439,8 +570,8 @@ class StaticString {
     }
 
     /// Appends a null terminated C-style string.
-    /// This unchecked function allows for uncontrolled memory access. Users of this must ensure that the input string
-    /// is properly null terminated.
+    /// This unchecked function allows for uncontrolled memory access. Users of this must ensure that the input
+    /// string is properly null terminated.
     /// @return true on success.
     ///         false if the input string does not represent a valid UTF-8 encoding.
     constexpr auto try_append_utf8_null_terminated_unchecked(char const* utf8_str) -> bool {
@@ -538,108 +669,6 @@ class StaticString {
         ret.offset_size = offsetof(Self, m_size);
         ret.size_is_unsigned = std::is_unsigned<decltype(m_size)>::value;
         return ret;
-    }
-
-    /// Creates a substring containing the characters from pos until count; if pos+count is greater than the
-    /// size of the original string the returned substring only contains the characters from pos until size().
-    ///
-    /// @return an Optional containing the substring
-    ///         NULLOPT if pos is greater than the size of the original string
-    auto substr(SizeType pos, SizeType count) const -> bb::Optional<StaticString> {
-        if (pos > m_size) {
-            return bb::NULLOPT;
-        }
-
-        auto const length = std::min(count, m_size - pos);
-        StaticString sub_str;
-        std::memcpy(sub_str.m_string, &m_string[pos], length);
-        sub_str.m_string[length] = '\0';
-        sub_str.m_size = length;
-        return sub_str;
-    }
-
-    /// Finds the first occurence of a character equal to one of the characters of the given character sequence
-    /// and returns its position.
-    ///
-    /// @return an Optional containing the position of the first character equal to one of the characters of the given
-    ///         character sequence
-    ///         NULLOPT if no character is found or if pos is greater than size()
-    template <typename T>
-    auto find_first_of(T const& str, SizeType pos = 0U) const -> IsStaticStringOrCharArray<T, bb::Optional<SizeType>> {
-        if (pos > m_size) {
-            return bb::NULLOPT;
-        }
-
-        auto str_data = detail::GetData<T>::call(str);
-        auto str_size = detail::GetSize<T>::call(str);
-        for (auto position = pos; position < m_size; ++position) {
-            auto found = memchr(str_data, m_string[position], str_size);
-            if (found != nullptr) {
-                return position;
-            }
-        }
-        return bb::NULLOPT;
-    }
-
-    /// Finds the last occurence of a character equal to one of the characters of the given character sequence
-    /// and returns its position.
-    ///
-    /// @return an Optional containing the position of the last character equal to one of the characters of the given
-    ///         character sequence
-    ///         NULLOPT if no character is found
-    template <typename T>
-    auto find_last_of(T const& str, SizeType pos = N) const -> IsStaticStringOrCharArray<T, bb::Optional<SizeType>> {
-        if (m_size == 0) {
-            return bb::NULLOPT;
-        }
-
-        auto position = std::min(pos, m_size - 1);
-        auto str_data = detail::GetData<T>::call(str);
-        auto str_size = detail::GetSize<T>::call(str);
-        for (; position > 0; --position) {
-            auto found = memchr(str_data, m_string[position], str_size);
-            if (found != nullptr) {
-                return position;
-            }
-        }
-        auto found = memchr(str_data, m_string[0], str_size);
-        if (found != nullptr) {
-            return 0U;
-        }
-        return bb::NULLOPT;
-    }
-
-    /// Inserts a StaticString, obtained by str.substr(s_index, count), into the StaticString at position index. The
-    /// insertion fails if the capacity would be exceeded or the provided indices are larger than the respective
-    /// string lengths.
-    ///
-    /// @return true if the insertion was successful, otherwise false
-    template <typename T>
-    auto insert(SizeType index, T const& str, SizeType s_index, SizeType count = T::capacity()) ->
-        typename std::enable_if_t<IsStaticString<T>::value, bool> {
-        auto sub_str = str.substr(s_index, count);
-        if (!sub_str.has_value()) {
-            return false;
-        }
-
-        auto const sub_str_size = sub_str->size();
-        auto const new_size = m_size + sub_str_size;
-        // check if the new size would exceed capacity or a size overflow occured
-        if (new_size > N || new_size < m_size) {
-            return false;
-        }
-
-        if (index > m_size) {
-            return false;
-        }
-        auto number_of_characters_to_move = m_size - index;
-        std::memmove(&m_string[index + sub_str_size], &m_string[index], number_of_characters_to_move);
-        std::memcpy(&m_string[index], sub_str->m_string, static_cast<size_t>(sub_str_size));
-
-        m_string[new_size] = '\0';
-        m_size = new_size;
-
-        return true;
     }
 
   private:
