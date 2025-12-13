@@ -318,6 +318,60 @@ TEST_F(StaticVectorFixture, from_value_with_object_constructs_empty_vector_for_z
     // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
 }
 
+TEST_F(StaticVectorFixture, from_value_with_static_count_constructs_count_copies_of_element) {
+    int32_t const tracking_id = 142;
+    Observable const obj { tracking_id };
+    auto const sut = iox2::container::StaticVector<Observable, 4>::from_value<4>(obj);
+    ASSERT_EQ(sut.size(), 4);
+    EXPECT_EQ(sut.unchecked_access()[0].id, tracking_id);
+    EXPECT_EQ(sut.unchecked_access()[1].id, tracking_id);
+    EXPECT_EQ(sut.unchecked_access()[2].id, tracking_id);
+    EXPECT_EQ(sut.unchecked_access()[3].id, tracking_id);
+    ASSERT_EQ(Observable::s_counter.was_initialized, 1);
+    ASSERT_EQ(Observable::s_counter.was_copy_constructed, 4);
+    // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+    // there may be additional moves on compilers that fail to perform rvo
+    expected_count().was_move_constructed = Observable::s_counter.was_move_constructed;
+    expected_count().was_initialized = 1;
+    expected_count().was_copy_constructed = 4;
+    expected_count().was_destructed = 5 + Observable::s_counter.was_move_constructed;
+    // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+}
+
+TEST_F(StaticVectorFixture, from_value_with_static_count_constructs_one_copy_of_element) {
+    int32_t const tracking_id = 147;
+    Observable const obj { tracking_id };
+    auto const sut = iox2::container::StaticVector<Observable, 4>::from_value<1>(obj);
+    ASSERT_EQ(sut.size(), 1);
+    EXPECT_EQ(sut.unchecked_access()[0].id, tracking_id);
+    ASSERT_EQ(Observable::s_counter.was_initialized, 1);
+    ASSERT_EQ(Observable::s_counter.was_copy_constructed, 1);
+    // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+    // there may be additional moves on compilers that fail to perform rvo
+    expected_count().was_move_constructed = Observable::s_counter.was_move_constructed;
+    expected_count().was_initialized = 1;
+    expected_count().was_copy_constructed = 1;
+    expected_count().was_destructed = 2 + Observable::s_counter.was_move_constructed;
+    // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+}
+
+TEST_F(StaticVectorFixture, from_value_with_static_count_constructs_empty_vector_for_zero_elements) {
+    int32_t const tracking_id = 159;
+    Observable const obj { tracking_id };
+    auto const sut = iox2::container::StaticVector<Observable, 4>::from_value<0>(obj);
+    ASSERT_EQ(sut.size(), 0);
+    ASSERT_EQ(Observable::s_counter.was_initialized, 1);
+    ASSERT_EQ(Observable::s_counter.was_copy_constructed, 0);
+    // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+    // there may be additional moves on compilers that fail to perform rvo
+    expected_count().was_move_constructed = Observable::s_counter.was_move_constructed;
+    expected_count().was_initialized = 1;
+    expected_count().was_copy_constructed = 0;
+    expected_count().was_destructed = 1 + Observable::s_counter.was_move_constructed;
+    // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+}
+
+
 TEST_F(StaticVectorFixture, from_value_with_object_fails_if_exceeding_capacity) {
     int32_t const tracking_id = 99;
     Observable const obj { tracking_id };
@@ -1260,24 +1314,27 @@ TEST(StaticVector, ostream_insertion_converts_contents_to_string) {
     ASSERT_TRUE(sstr);
     EXPECT_EQ(sstr.str(), "StaticVector::<5> { m_size: 0, m_data: [  ] }");
 }
+} // namespace
 
-class Printable {
+// NOTE: the class needs to be outside to the anonymous namespace, else MSVC is not able to find the ostream operator
+class StaticVectorePrintable {
     static int32_t s_print_count;
 
   public:
     static void reset_print_count() {
         s_print_count = 0;
     }
-    friend auto operator<<(std::ostream& ostr, Printable const& /*unused*/) -> std::ostream& {
+    friend auto operator<<(std::ostream& ostr, StaticVectorePrintable const& /*unused*/) -> std::ostream& {
         return ostr << ++s_print_count;
     }
 };
-int32_t Printable::s_print_count = 0;
+int32_t StaticVectorePrintable::s_print_count = 0;
 
+namespace {
 TEST(StaticVector, ostream_insertion_calls_ostream_inserter_for_values) {
     constexpr size_t const VECTOR_CAPACITY = 5;
-    iox2::container::StaticVector<Printable, VECTOR_CAPACITY> sut;
-    Printable::reset_print_count();
+    iox2::container::StaticVector<StaticVectorePrintable, VECTOR_CAPACITY> sut;
+    StaticVectorePrintable::reset_print_count();
     std::ostringstream sstr;
     sstr << sut;
     ASSERT_TRUE(sstr);

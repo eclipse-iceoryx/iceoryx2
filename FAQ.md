@@ -1,29 +1,33 @@
 # Frequently Asked Questions
 
 * [Tips and Tricks](#tips-and-tricks)
-  * [How To Define Custom Data Types](#how-to-define-custom-data-types)
-  * [Send Dynamic Data](#send-dynamic-data)
-  * [Inter-Thread Communication](#inter-thread-communication)
-  * [Interop Between 32-bit and 64-bit Processes](#interop-between-32-bit-and-64-bit-processes)
-  * [Docker](#docker)
-  * [Async API](#async-api)
-  * [Change Log Backend](#change-log-backend)
-  * [Supported Log Levels](#supported-log-levels)
+    * [How To Define Custom Data Types](#how-to-define-custom-data-types)
+    * [Send Dynamic Data](#send-dynamic-data)
+    * [Inter-Thread Communication](#inter-thread-communication)
+    * [Interop Between 32-bit and 64-bit Processes](#interop-between-32-bit-and-64-bit-processes)
+    * [Docker](#docker)
+    * [Async API](#async-api)
+    * [Change Log Backend](#change-log-backend)
+    * [Supported Log Levels](#supported-log-levels)
+    * [Subfolders Under /dev/shm](#subfolders-under-dev-shm)
+    * [Custom Payload Alignment](#custom-payload-alignment)
+    * [Accessing Services From Multiple Users](#accessing-services-from-multiple-users)
 * [Error Handling](#error-handling)
-  * [Something Is Broken, How To Enable Debug Output](#something-is-broken-how-to-enable-debug-output)
-  * [Encountered a SEGFAULT](#encountered-a-segfault)
-  * [Stack Overflow](#stack-overflow)
-  * [100% CPU Load When Using The WaitSet](#100-cpu-load-when-using-the-waitset)
-  * [SIGBUS Error](#sigbus-error)
-  * [`PublishSubscribeOpenError(UnableToOpenDynamicServiceInformation)`](#publishsubscribeopenerrorunabletoopendynamicserviceinformation)
-  * [Remove Stale Resources](#remove-stale-resources)
-  * [Run Out-Of-Memory](#run-out-of-memory)
-  * [Internal Failure](#internal-failure)
-    * [Maximum File-Descriptor Limit Exceeded](#maximum-file-descriptor-limit-exceeded)
-  * [Losing Data](#losing-data)
-  * [Losing Dynamic Data](#losing-dynamic-data)
-  * [`iceoryx2-ffi-c` does not contain this feature: libc_platform](#iceoryx2-ffi-c-does-not-contain-this-feature-libc_platform)
-  * [Service In Corrupted state](#service-in-corrupted-state)
+    * [Something Is Broken, How To Enable Debug Output](#something-is-broken-how-to-enable-debug-output)
+    * [Encountered a SEGFAULT](#encountered-a-segfault)
+    * [Stack Overflow](#stack-overflow)
+    * [100% CPU Load When Using The WaitSet](#100-cpu-load-when-using-the-waitset)
+    * [SIGBUS Error](#sigbus-error)
+    * [`PublishSubscribeOpenError(UnableToOpenDynamicServiceInformation)`](#publishsubscribeopenerrorunabletoopendynamicserviceinformation)
+    * [Remove Stale Resources](#remove-stale-resources)
+    * [Running Out of Memory](#running-out-of-memory)
+    * [Running Out of File Descriptors](#running-out-of-file-descriptors)
+    * [Internal Failure](#internal-failure)
+        * [Maximum File-Descriptor Limit Exceeded](#maximum-file-descriptor-limit-exceeded)
+    * [Losing Data](#losing-data)
+    * [Losing Dynamic Data](#losing-dynamic-data)
+    * [`iceoryx2-ffi-c` does not contain this feature: libc_platform](#iceoryx2-ffi-c-does-not-contain-this-feature-libc_platform)
+    * [Service In Corrupted state](#service-in-corrupted-state)
 
 ## Tips And Tricks
 
@@ -61,8 +65,8 @@
 
 1. Ensure to only use data types suitable for shared memory communication like
    pod-types (plain old data, e.g. `uint64_t`, `int32_t`, ...) or explicitly
-   shared-memory compatible containers like some of the constructs in the
-   `iceoryx-hoofs`.
+   shared-memory compatible containers like some of the constructs in
+   `iceoryx2-bb-cxx`.
 2. **Do not use pointers, or data types that are not self-contained or use
    pointers for their internal management!**
 3. The type must be trivially destructible
@@ -160,26 +164,117 @@ Currently, iceoryx2 does not provide an async API but it is
 However, we offer an event-based API to implement push notifications. For more
 details, see the [event example](examples/rust/event).
 
-### Change Log Backend
+### Selecting Default Log Backend
 
-* **log**, add the feature flag `logger_log` to the dependency in `Cargo.toml`
-  ```toml
-  iceoryx2 = { version = "0.1.0", features = ["logger_log"]}
-  ```
-* **tracing**, add the feature flag `logger_tracing` to the dependency in
-  `Cargo.toml`
-  ```toml
-   iceoryx2 = { version = "0.1.0", features = ["logger_tracing"]}
-  ```
+The default log backend is selected via feature flags at compile time.
+The following loggers are available:
+
+1. **console** - outputs log messages to the console
+1. **buffer** - outputs log messages to a buffer
+1. **file** - outputs log messages to a file
+1. **log** - utilizes the `log` crate
+1. **tracing** - utilizes the `tracing` crate
+
+The feature can be set in a project's `Cargo.toml`:
+
+```toml
+iceoryx2 = { version = "0.1.0", features = ["logger_console"]}
+```
+
+Or specified when building the crate:
+
+```console
+cargo build --features logger_console
+```
 
 ### Supported Log Levels
 
 iceoryx2 supports different log levels
 `trace`, `debug`, `info`, `warning`, `error`, `fatal`
 
+### Subfolders Under: dev shm
+
+By default, the `shm_open` syscall does not support subfolders. However, when
+creating files in an in-memory filesystem, we can achieve the same performance
+on Linux and customize the shared memory file location.
+
+See the
+[service variant customization example](examples/rust/service_variant_customization)
+for a detailed tutorial.
+
+### Custom Payload Alignment
+
+Some libraries (especially SIMD-related code) require stricter alignment than
+the type you’re using for communication provides. In those cases, you can
+increase the payload alignment with the builder parameter `payload_alignment()`.
+
+```rust
+let service = node
+    .service_builder(&"My/Funk/ServiceName".try_into()?)
+    .publish_subscribe::<TransmissionData>()
+    .payload_alignment(Alignment::new(1024).unwrap())
+    .open_or_create()?;
+```
+
+### Accessing Services From Multiple Users
+
+Currently, iceoryx2 does not yet implement access rights management for
+services and therefore only the user, under which the process runs, can access
+the underlying resources. Processes started under a different user will receive
+an insufficient permissions error when opening them.
+
+With the `dev_permissions` feature flag, iceoryx2 will make all resources
+always globally accessible. But this is a development feature and shall not be
+used in production! It is a short-term mitigation until iceoryx2 implements
+rights management for services.
+
+* **cargo**
+
+    ```sh
+    cargo build --features dev_permissions
+    ```
+
+* **Cargo.toml**
+
+    ```sh
+    iceoryx2 = { version = "X.Y.Z", features = ['dev_permissions'] }
+    ```
+
+* **CMake**
+
+    ```sh
+    cmake -S . -B target/ff/cc/build -DIOX2_FEATURE_DEV_PERMISSIONS=On
+    ```
+
 ## Error Handling
 
 ### Something Is Broken, How To Enable Debug Output
+
+#### Selecting a `Logger`
+
+By default, the `null` logger is used, which discards all log messages.
+To enable log output, a default logger must be selected at compile time
+by enabling the correspond feature flag:
+
+```toml
+iceoryx2 = { version = "0.7.0", features = ["logger_console"] }
+```
+
+Alternatively, if using a custom `Logger` implementation, it must be set
+at runtime at the very beginning of the application:
+
+```rust
+use iceoryx2::prelude::*;
+
+static LOGGER: MyLogger = MyLogger::new();
+
+fn main() {
+    set_logger(&LOGGER);
+    // ...
+}
+```
+
+#### Setting the `LogLevel`
 
 iceoryx2 provides different APIs which can be used to set the log level
 directly in the code or read the configured log level by environment variable
@@ -209,6 +304,30 @@ set_log_level(LogLevel::Trace);
 **Note**: While working on iceoryx2, it gets its default logging level from
 `.cargo/config.toml`, but this can be over-ridden by using the APIs that reads
 environment variable `IOX2_LOG_LEVEL` or set the log level directly in the code.
+
+### Linking Error - undefined symbol `__internal_default_logger`
+
+The logger front-end retrieves the selected default logger by calling
+a function provided by the `iceoryx2-loggers` crate. If this crate is not
+linked against when building an application, a linking error of this form will
+be encountered:
+
+```console
+error: undefined symbol: __internal_default_logger
+```
+
+If using the `iceoryx2` crate as a dependency, this is handled automatically,
+however if using a lower-level crate (such as `iceoryx2-cal` or one from
+`iceoryx2-bb`) the following is required:
+
+1. Include `iceoryx2-loggers` as a dependency:
+    ```toml
+    iceoryx2-loggers = { version = "0.7.0" }
+    ```
+1. Ensure the crate is linked to even if not used:
+    ```rust
+    extern crate iceoryx2_loggers;
+    ```
 
 ### Encountered a SEGFAULT
 
@@ -321,7 +440,7 @@ There are three different approaches to initiate stale resource cleanup:
    * POSIX: `/dev/shm/`, `/tmp/iceoryx2`
    * Windows: `c:\Temp\iceoryx2`
 
-### Run Out-Of-Memory
+### Running Out of Memory
 
 Since iceoryx2 is designed to operate in safety-critical systems, it must
 ensure that a publisher (or sender) never runs out of memory. To achieve this,
@@ -360,6 +479,39 @@ let publisher = service
 
 All these parameters can also be set globally by using the
 [iceoryx2 config file](config).
+
+### Running Out of File Descriptors
+
+When using many services in a single process or across the system, a process can
+hit the maximum number of open file descriptors. On Linux, you can increase this
+limit temporarily with:
+
+```sh
+ulimit -n 8192
+```
+
+Or permanently by modifying `/etc/security/limits.conf`:
+
+```text
+*      soft      nofile      4096
+*      hard      nofile      8192
+```
+
+### Running Out of Memory Mappings
+
+When using many services in a single process or across the system, a process can
+hit the maximum number of memory mappings. On Linux it is usually 65535 and you
+can temporarily increase it as `root` with:
+
+```sh
+echo 1048576 > /proc/sys/vm/max_map_count
+```
+
+Or permanently by modifying `/etc/sysctl.conf`:
+
+```text
+vm.max_map_count=1048576
+```
 
 ### Internal Failure
 

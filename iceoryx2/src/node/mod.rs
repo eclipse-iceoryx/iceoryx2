@@ -163,7 +163,6 @@ use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
-use iceoryx2_bb_log::{debug, fail, fatal_panic, trace, warn};
 use iceoryx2_bb_posix::clock::{nanosleep, NanosleepError, Time};
 use iceoryx2_bb_posix::mutex::Handle;
 use iceoryx2_bb_posix::mutex::Mutex;
@@ -178,6 +177,7 @@ use iceoryx2_cal::named_concept::{NamedConceptPathHintRemoveError, NamedConceptR
 use iceoryx2_cal::{
     monitoring::*, named_concept::NamedConceptListError, serialize::*, static_storage::*,
 };
+use iceoryx2_log::{debug, fail, fatal_panic, trace, warn};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
 use crate::node::node_name::NodeName;

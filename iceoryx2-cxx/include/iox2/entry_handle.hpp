@@ -15,8 +15,36 @@
 
 #include "iox2/event_id.hpp"
 #include "iox2/service_type.hpp"
+#include <cstdint>
 
 namespace iox2 {
+/// A wrapper for the value returned by [`EntryHandle::get()`].
+template <typename ValueType>
+class BlackboardValue {
+  public:
+    auto operator*() -> ValueType&;
+
+  private:
+    template <ServiceType, typename, typename>
+    friend class EntryHandle;
+
+    BlackboardValue(ValueType& value, uint64_t generation_counter);
+
+    ValueType m_value;
+    uint64_t m_generation_counter;
+};
+
+template <typename ValueType>
+inline BlackboardValue<ValueType>::BlackboardValue(ValueType& value, uint64_t generation_counter)
+    : m_value { value }
+    , m_generation_counter { generation_counter } {
+}
+
+template <typename ValueType>
+inline auto BlackboardValue<ValueType>::operator*() -> ValueType& {
+    return m_value;
+}
+
 /// A handle for direct read access to a specific blackboard value.
 template <ServiceType S, typename KeyType, typename ValueType>
 class EntryHandle {
@@ -28,8 +56,11 @@ class EntryHandle {
     EntryHandle(const EntryHandle&) = delete;
     auto operator=(const EntryHandle&) -> EntryHandle& = delete;
 
-    /// Returns a copy of the value.
-    auto get() const -> ValueType;
+    /// Returns a copy of the value wrapped in a [`BlackboardValue`].
+    auto get() const -> BlackboardValue<ValueType>;
+
+    /// Checks if the passed `value` is up-to-date.
+    auto is_up_to_date(BlackboardValue<ValueType>& value) const -> bool;
 
     /// Returns an ID corresponding to the entry which can be used in an event based communication
     /// setup.
@@ -89,12 +120,18 @@ inline auto EntryHandle<S, KeyType, ValueType>::entry_id() const -> EventId {
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>
-inline auto EntryHandle<S, KeyType, ValueType>::get() const -> ValueType {
+inline auto EntryHandle<S, KeyType, ValueType>::get() const -> BlackboardValue<ValueType> {
     ValueType value;
+    uint64_t counter { 0 };
 
-    iox2_entry_handle_get(&m_handle, &value, sizeof(ValueType), alignof(ValueType));
+    iox2_entry_handle_get(&m_handle, &value, sizeof(ValueType), alignof(ValueType), &counter);
 
-    return value;
+    return BlackboardValue<ValueType>(value, counter);
+}
+
+template <ServiceType S, typename KeyType, typename ValueType>
+inline auto EntryHandle<S, KeyType, ValueType>::is_up_to_date(BlackboardValue<ValueType>& value) const -> bool {
+    return iox2_entry_handle_is_up_to_date(&m_handle, value.m_generation_counter);
 }
 } // namespace iox2
 

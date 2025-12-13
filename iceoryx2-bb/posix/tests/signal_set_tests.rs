@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate iceoryx2_loggers;
+
 use enum_iterator::all;
 use iceoryx2_bb_posix::{
     signal::{FetchableSignal, Signal},

@@ -11,9 +11,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "blackboard_complex_key.hpp"
-#include "iox/duration.hpp"
+#include "iox2/bb/duration.hpp"
 #include "iox2/entry_handle_mut.hpp"
-#include "iox2/entry_value.hpp"
 #include "iox2/log.hpp"
 #include "iox2/node.hpp"
 #include "iox2/service_name.hpp"
@@ -22,7 +21,7 @@
 #include <iostream>
 #include <utility>
 
-constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1);
+constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_secs(1);
 
 auto main() -> int {
     using namespace iox2;
@@ -53,8 +52,7 @@ auto main() -> int {
 
         auto entry_value_uninit = loan_uninit(std::move(entry_handle_mut_key_1));
         auto value = initial_value * counter;
-        auto entry_value = write(std::move(entry_value_uninit), value);
-        entry_handle_mut_key_1 = update(std::move(entry_value));
+        entry_handle_mut_key_1 = update_with_copy(std::move(entry_value_uninit), value);
         std::cout << "Write new value for key 1: " << value << "...\n" << std::endl;
     }
 

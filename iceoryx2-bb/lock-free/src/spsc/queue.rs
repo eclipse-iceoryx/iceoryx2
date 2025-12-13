@@ -16,6 +16,8 @@
 //! # Example
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_lock_free::spsc::queue::*;
 //!
 //! const QUEUE_CAPACITY: usize = 128;
@@ -108,6 +110,8 @@ impl<T: Copy, const CAPACITY: usize> Queue<T, CAPACITY> {
     /// Returns a [`Producer`] to add data to the queue. If a producer was already
     /// acquired it returns [`None`].
     /// ```
+    /// # extern crate iceoryx2_loggers;
+    ///
     /// use iceoryx2_bb_lock_free::spsc::queue::*;
     ///
     /// const QUEUE_CAPACITY: usize = 128;
@@ -135,6 +139,8 @@ impl<T: Copy, const CAPACITY: usize> Queue<T, CAPACITY> {
     /// Returns a [`Consumer`] to acquire data from the queue. If a consumer was already
     /// acquired it returns [`None`].
     /// ```
+    /// # extern crate iceoryx2_loggers;
+    ///
     /// use iceoryx2_bb_lock_free::spsc::queue::*;
     ///
     /// const QUEUE_CAPACITY: usize = 128;

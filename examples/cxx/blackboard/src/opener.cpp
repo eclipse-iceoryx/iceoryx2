@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "blackboard_complex_key.hpp"
-#include "iox/duration.hpp"
+#include "iox2/bb/duration.hpp"
 #include "iox2/log.hpp"
 #include "iox2/node.hpp"
 #include "iox2/service_name.hpp"
@@ -19,7 +19,7 @@
 
 #include <iostream>
 
-constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1);
+constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_secs(1);
 
 auto main() -> int {
     using namespace iox2;
@@ -38,8 +38,8 @@ auto main() -> int {
     auto entry_handle_key_1 = reader.template entry<double>(key_1).expect("successful entry handle creation");
 
     while (node.wait(CYCLE_TIME).has_value()) {
-        std::cout << "Read value " << entry_handle_key_0.get() << " for key 0..." << std::endl;
-        std::cout << "Read value " << entry_handle_key_1.get() << " for key 1...\n" << std::endl;
+        std::cout << "Read value " << *entry_handle_key_0.get() << " for key 0..." << std::endl;
+        std::cout << "Read value " << *entry_handle_key_1.get() << " for key 1...\n" << std::endl;
     }
 
     std::cout << "exit" << std::endl;

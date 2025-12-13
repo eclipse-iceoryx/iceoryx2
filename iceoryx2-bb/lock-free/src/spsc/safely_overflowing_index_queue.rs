@@ -17,6 +17,8 @@
 //! # Example
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_lock_free::spsc::safely_overflowing_index_queue::*;
 //!
 //! const QUEUE_CAPACITY: usize = 128;
@@ -50,7 +52,7 @@ use iceoryx2_bb_elementary_traits::{
     owning_pointer::OwningPointer, pointer_trait::PointerTrait,
     relocatable_container::RelocatableContainer,
 };
-use iceoryx2_bb_log::{fail, fatal_panic};
+use iceoryx2_log::{fail, fatal_panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 
@@ -222,6 +224,8 @@ pub mod details {
         /// it returns [`None`] since it is a single producer single consumer
         /// [`SafelyOverflowingIndexQueue`].
         /// ```
+        /// # extern crate iceoryx2_loggers;
+        ///
         /// use iceoryx2_bb_lock_free::spsc::safely_overflowing_index_queue::*;
         ///
         /// const QUEUE_CAPACITY: usize = 128;
@@ -254,6 +258,8 @@ pub mod details {
         /// it returns [`None`] since it is a single producer single consumer
         /// [`SafelyOverflowingIndexQueue`].
         /// ```
+        /// # extern crate iceoryx2_loggers;
+        ///
         /// use iceoryx2_bb_lock_free::spsc::safely_overflowing_index_queue::*;
         ///
         /// const QUEUE_CAPACITY: usize = 128;

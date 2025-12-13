@@ -1,26 +1,23 @@
 // Copyright (c) 2022 by Apex.AI Inc. All rights reserved.
+// Copyright (c) 2025 Contributors to the Eclipse Foundation
+//
+// See the NOTICE file(s) distributed with this work for additional
+// information regarding copyright ownership.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Apache Software License 2.0 which is available at
 // https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
 // which is available at https://opensource.org/licenses/MIT.
 //
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox/cli/command_line_parser.hpp"
-#include "iox/algorithm.hpp"
-#include "iox/detail/hoofs_error_reporting.hpp"
-#include "iox/std_string_support.hpp"
+#include "iox2/legacy/cli/command_line_parser.hpp"
+#include "iox2/legacy/std_string_support.hpp"
 
 #include <algorithm>
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace cli {
 Arguments parseCommandLineArguments(const OptionDefinition& optionSet,
                                     int argc,
@@ -154,7 +151,7 @@ Arguments
 CommandLineParser::parse(const OptionDefinition& optionSet, int argc, char** argv, const uint64_t argcOffset) noexcept {
     m_optionSet = &optionSet;
 
-    m_argc = static_cast<uint64_t>(algorithm::maxVal(0, argc));
+    m_argc = static_cast<uint64_t>(std::max(0, argc));
     m_argv = argv;
     m_argcOffset = argcOffset;
     // reset options otherwise multiple parse calls work on already parsed options
@@ -168,7 +165,7 @@ CommandLineParser::parse(const OptionDefinition& optionSet, int argc, char** arg
     // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     m_optionValue.m_binaryName = m_argv[0];
 
-    for (uint64_t i = algorithm::maxVal(argcOffset, static_cast<uint64_t>(1U)); i < m_argc; ++i) {
+    for (uint64_t i = std::max(argcOffset, static_cast<uint64_t>(1U)); i < m_argc; ++i) {
         const auto skipCommandLineArgument = [&] { ++i; };
 
         if (!hasLexicallyValidOption(m_argv[i])) {
@@ -329,4 +326,5 @@ void CommandLineParser::printHelpAndExit() const noexcept {
 }
 
 } // namespace cli
-} // namespace iox
+} // namespace legacy
+} // namespace iox2

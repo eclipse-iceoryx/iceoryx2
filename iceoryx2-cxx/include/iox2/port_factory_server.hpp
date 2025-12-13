@@ -14,7 +14,8 @@
 #define IOX2_PORTFACTORY_SERVER_HPP
 
 #include "iox/builder_addendum.hpp"
-#include "iox/expected.hpp"
+#include "iox2/container/optional.hpp"
+#include "iox2/legacy/expected.hpp"
 #include "iox2/server.hpp"
 #include "iox2/server_error.hpp"
 #include "iox2/service_type.hpp"
@@ -37,7 +38,7 @@ class PortFactoryServer {
 #ifdef DOXYGEN_MACRO_FIX
     auto unable_to_deliver_strategy(const UnableToDeliverStrategy value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(UnableToDeliverStrategy, unable_to_deliver_strategy);
+    IOX2_BUILDER_OPTIONAL(UnableToDeliverStrategy, unable_to_deliver_strategy);
 #endif
 
     /// Defines the maximum number of [`ResponseMut`] that the [`Server`] can
@@ -45,7 +46,7 @@ class PortFactoryServer {
 #ifdef DOXYGEN_MACRO_FIX
     auto max_loaned_responses_per_request(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, max_loaned_responses_per_request);
+    IOX2_BUILDER_OPTIONAL(uint64_t, max_loaned_responses_per_request);
 #endif
 
   public:
@@ -67,7 +68,7 @@ class PortFactoryServer {
     auto allocation_strategy(AllocationStrategy value) && -> PortFactoryServer&&;
 
     /// Creates a new [`Server`] or returns a [`ServerCreateError`] on failure.
-    auto create() && -> iox::expected<
+    auto create() && -> iox2::legacy::expected<
         Server<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         ServerCreateError>;
 
@@ -78,8 +79,8 @@ class PortFactoryServer {
     explicit PortFactoryServer(iox2_port_factory_server_builder_h handle);
 
     iox2_port_factory_server_builder_h m_handle = nullptr;
-    iox::optional<uint64_t> m_max_slice_len;
-    iox::optional<AllocationStrategy> m_allocation_strategy;
+    container::Optional<uint64_t> m_max_slice_len;
+    container::Optional<AllocationStrategy> m_allocation_strategy;
 };
 
 template <ServiceType Service,
@@ -112,35 +113,38 @@ template <ServiceType Service,
           typename RequestUserHeader,
           typename ResponsePayload,
           typename ResponseUserHeader>
-inline auto
-PortFactoryServer<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::create() && -> iox::
-    expected<Server<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
-             ServerCreateError> {
-    m_unable_to_deliver_strategy.and_then([&](auto value) -> auto {
+inline auto PortFactoryServer<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
+    create() && -> iox2::legacy::expected<
+        Server<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
+        ServerCreateError> {
+    if (m_unable_to_deliver_strategy.has_value()) {
         iox2_port_factory_server_builder_unable_to_deliver_strategy(
-            &m_handle, static_cast<iox2_unable_to_deliver_strategy_e>(iox::into<int>(value)));
-    });
-    m_max_slice_len
-        .and_then(
-            [&](auto value) -> auto { iox2_port_factory_server_builder_set_initial_max_slice_len(&m_handle, value); })
-        .or_else([&]() -> auto { iox2_port_factory_server_builder_set_initial_max_slice_len(&m_handle, 1); });
-    m_max_loaned_responses_per_request.and_then([&](auto value) -> auto {
-        iox2_port_factory_server_builder_set_max_loaned_responses_per_request(&m_handle, value);
-    });
-    m_allocation_strategy.and_then([&](auto value) -> auto {
-        iox2_port_factory_server_builder_set_allocation_strategy(&m_handle,
-                                                                 iox::into<iox2_allocation_strategy_e>(value));
-    });
+            &m_handle,
+            static_cast<iox2_unable_to_deliver_strategy_e>(iox2::bb::into<int>(m_unable_to_deliver_strategy.value())));
+    }
+    if (m_max_slice_len.has_value()) {
+        iox2_port_factory_server_builder_set_initial_max_slice_len(&m_handle, m_max_slice_len.value());
+    } else {
+        iox2_port_factory_server_builder_set_initial_max_slice_len(&m_handle, 1);
+    }
+    if (m_max_loaned_responses_per_request.has_value()) {
+        iox2_port_factory_server_builder_set_max_loaned_responses_per_request(
+            &m_handle, m_max_loaned_responses_per_request.value());
+    }
+    if (m_allocation_strategy.has_value()) {
+        iox2_port_factory_server_builder_set_allocation_strategy(
+            &m_handle, bb::into<iox2_allocation_strategy_e>(m_allocation_strategy.value()));
+    }
 
     iox2_server_h server_handle {};
     auto result = iox2_port_factory_server_builder_create(m_handle, nullptr, &server_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(
+        return iox2::legacy::ok(
             Server<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(server_handle));
     }
 
-    return iox::err(iox::into<ServerCreateError>(result));
+    return iox2::legacy::err(iox2::bb::into<ServerCreateError>(result));
 }
 
 template <ServiceType Service,

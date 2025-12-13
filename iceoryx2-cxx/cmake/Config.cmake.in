@@ -14,7 +14,6 @@
 
 include(CMakeFindDependencyMacro)
 
-find_dependency(iceoryx_hoofs)
 find_dependency(iceoryx2-bb-cxx)
 find_dependency(iceoryx2-c)
 

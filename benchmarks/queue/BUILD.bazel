@@ -25,6 +25,7 @@ rust_binary(
     deps = [
         "//iceoryx2-bb/lock-free:iceoryx2-bb-lock-free",
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
+        "//iceoryx2-log/loggers:iceoryx2-loggers",
         "@crate_index//:clap",
     ],
 )

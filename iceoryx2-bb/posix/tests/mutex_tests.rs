@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate iceoryx2_loggers;
+
 use iceoryx2_bb_posix::clock::*;
 use iceoryx2_bb_posix::mutex::*;
 use iceoryx2_bb_posix::system_configuration::Feature;
@@ -432,7 +434,7 @@ fn mutex_can_be_recovered_when_thread_died() {
 #[test]
 #[cfg(not(any(target_os = "macos", target_os = "nto")))]
 fn mutex_in_unrecoverable_state_if_state_of_leaked_mutex_is_not_repaired() {
-    iceoryx2_bb_log::set_log_level(iceoryx2_bb_log::LogLevel::Trace);
+    iceoryx2_log::set_log_level(iceoryx2_log::LogLevel::Trace);
     let _watchdog = Watchdog::new();
     let handle = MutexHandle::<i32>::new();
     let sut = MutexBuilder::new()

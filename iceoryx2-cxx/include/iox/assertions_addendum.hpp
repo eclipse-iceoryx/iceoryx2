@@ -10,13 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_ASSERTIONS_ADDENDUM_HPP
-#define IOX_ASSERTIONS_ADDENDUM_HPP
+#ifndef IOX2_ASSERTIONS_ADDENDUM_HPP
+#define IOX2_ASSERTIONS_ADDENDUM_HPP
 
-#include "iox/assertions.hpp"
+#include "iox2/legacy/assertions.hpp"
 
 // NOLINTBEGIN(cppcoreguidelines-macro-usage)
-#define IOX_TODO() iox::er::forwardPanic(IOX_CURRENT_SOURCE_LOCATION, "Not yet implemented!")
+#define IOX2_TODO() iox2::legacy::er::forwardPanic(IOX2_CURRENT_SOURCE_LOCATION, "Not yet implemented!")
 // NOLINTEND(cppcoreguidelines-macro-usage)
 
 #endif

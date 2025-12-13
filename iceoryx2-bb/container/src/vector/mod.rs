@@ -21,7 +21,7 @@ pub mod relocatable_vec;
 /// Compile-time fixed-capacity shared-memory compatible vector
 pub mod static_vec;
 
-use iceoryx2_bb_log::fail;
+use iceoryx2_log::fail;
 pub use polymorphic_vec::*;
 pub use relocatable_vec::*;
 pub use static_vec::*;

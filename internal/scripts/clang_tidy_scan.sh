@@ -114,7 +114,7 @@ ADDED_FILES=""
 FILE_LIST=""
 if [[ $FILES_MODE == true || $DIFF_TO_MAIN_MODE == true ]]; then
     if [[ $DIFF_TO_MAIN_MODE == true ]]; then
-        FILES_TO_SCAN=$(git diff --name-only --diff-filter=AM ${MAIN_ORIGIN}/main HEAD)
+        FILES_TO_SCAN=$(git diff --name-only --diff-filter=ACMRT ${MAIN_ORIGIN}/main HEAD)
     fi
 
     SEPARATOR=''
@@ -161,11 +161,8 @@ echo -e "${COLOR_YELLOW}Building iceoryx-ffi and C/C++ bindings as preparation f
 export CXX=clang++
 export CC=clang
 
-rm -rf target/ff/iceoryx
-${WORKSPACE}/internal/scripts/ci_build_and_install_iceoryx_hoofs.sh
 cargo build --package iceoryx2-ffi-c
 cmake -S . -B target/clang-tidy-scan \
-    -DCMAKE_PREFIX_PATH="$(pwd)/target/ff/iceoryx/install" \
     -DRUST_BUILD_ARTIFACT_PATH="$(pwd)/target/debug" \
     -DCMAKE_BUILD_TYPE=Debug \
     -DBUILD_CXX=ON \
@@ -219,7 +216,7 @@ function scan() {
 
         if test -f "$FILE"; then
             # TODO: remove this if statement before finishing #301
-            if [[ "$FILE" == iceoryx2-bb/cxx/include/iox/* || "$FILE" == iceoryx2-bb/cxx/src/* || "$FILE" == iceoryx2-bb/cxx/tests/src/import/* ]]; then
+            if [[ "$FILE" == iceoryx2-bb/cxx/include/iox2/legacy/* || "$FILE" == iceoryx2-bb/cxx/src/* || "$FILE" == iceoryx2-bb/cxx/tests/src/legacy/* ]]; then
                 continue
             fi
 

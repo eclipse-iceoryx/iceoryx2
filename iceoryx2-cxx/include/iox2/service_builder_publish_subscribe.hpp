@@ -14,12 +14,12 @@
 #define IOX2_SERVICE_BUILDER_PUBLISH_SUBSCRIBE_HPP
 
 #include "iox/builder_addendum.hpp"
-#include "iox/expected.hpp"
 #include "iox/layout.hpp"
 #include "iox2/attribute_specifier.hpp"
 #include "iox2/attribute_verifier.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/internal/service_builder_internal.hpp"
+#include "iox2/legacy/expected.hpp"
 #include "iox2/payload_info.hpp"
 #include "iox2/port_factory_publish_subscribe.hpp"
 #include "iox2/service_builder_publish_subscribe_error.hpp"
@@ -37,7 +37,7 @@ class ServiceBuilderPublishSubscribe {
 #ifdef DOXYGEN_MACRO_FIX
     auto payload_alignment(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, payload_alignment);
+    IOX2_BUILDER_OPTIONAL(uint64_t, payload_alignment);
 #endif
 
     /// If the [`Service`] is created, defines the overflow behavior of the service. If an existing
@@ -45,7 +45,7 @@ class ServiceBuilderPublishSubscribe {
 #ifdef DOXYGEN_MACRO_FIX
     auto enable_safe_overflow(const bool value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(bool, enable_safe_overflow);
+    IOX2_BUILDER_OPTIONAL(bool, enable_safe_overflow);
 #endif
 
     /// If the [`Service`] is created it defines how many [`Sample`]s a
@@ -54,7 +54,7 @@ class ServiceBuilderPublishSubscribe {
 #ifdef DOXYGEN_MACRO_FIX
     auto subscriber_max_borrowed_samples(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, subscriber_max_borrowed_samples);
+    IOX2_BUILDER_OPTIONAL(uint64_t, subscriber_max_borrowed_samples);
 #endif
 
     /// If the [`Service`] is created it defines the maximum history size a
@@ -63,7 +63,7 @@ class ServiceBuilderPublishSubscribe {
 #ifdef DOXYGEN_MACRO_FIX
     auto history_size(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, history_size);
+    IOX2_BUILDER_OPTIONAL(uint64_t, history_size);
 #endif
 
     /// If the [`Service`] is created it defines how many [`Sample`] a `Subscriber` can store in
@@ -71,7 +71,7 @@ class ServiceBuilderPublishSubscribe {
 #ifdef DOXYGEN_MACRO_FIX
     auto subscriber_max_buffer_size(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, subscriber_max_buffer_size);
+    IOX2_BUILDER_OPTIONAL(uint64_t, subscriber_max_buffer_size);
 #endif
 
     /// If the [`Service`] is created it defines how many [`Subscriber`] shall be supported at
@@ -80,7 +80,7 @@ class ServiceBuilderPublishSubscribe {
 #ifdef DOXYGEN_MACRO_FIX
     auto max_subscribers(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, max_subscribers);
+    IOX2_BUILDER_OPTIONAL(uint64_t, max_subscribers);
 #endif
 
     /// If the [`Service`] is created it defines how many [`Publisher`] shall be supported at
@@ -89,7 +89,7 @@ class ServiceBuilderPublishSubscribe {
 #ifdef DOXYGEN_MACRO_FIX
     auto max_publishers(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, max_publishers);
+    IOX2_BUILDER_OPTIONAL(uint64_t, max_publishers);
 #endif
 
     /// If the [`Service`] is created it defines how many [`Node`]s shall be able to open it in
@@ -98,7 +98,7 @@ class ServiceBuilderPublishSubscribe {
 #ifdef DOXYGEN_MACRO_FIX
     auto max_nodes(const uint64_t value) -> decltype(auto);
 #else
-    IOX_BUILDER_OPTIONAL(uint64_t, max_nodes);
+    IOX2_BUILDER_OPTIONAL(uint64_t, max_nodes);
 #endif
 
   public:
@@ -108,31 +108,32 @@ class ServiceBuilderPublishSubscribe {
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
     /// created.
-    auto open_or_create() && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
-                                              PublishSubscribeOpenOrCreateError>;
+    auto open_or_create() && -> iox2::legacy::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
+                                                       PublishSubscribeOpenOrCreateError>;
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
     /// created. It defines a set of attributes. If the [`Service`] already exists all attribute
     /// requirements must be satisfied otherwise the open process will fail. If the [`Service`]
     /// does not exist the required attributes will be defined in the [`Service`].
-    auto open_or_create_with_attributes(const AttributeVerifier& required_attributes) && -> iox::
+    auto open_or_create_with_attributes(const AttributeVerifier& required_attributes) && -> iox2::legacy::
         expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeOpenOrCreateError>;
 
     /// Opens an existing [`Service`].
-    auto open() && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeOpenError>;
+    auto
+    open() && -> iox2::legacy::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeOpenError>;
 
     /// Opens an existing [`Service`] with attribute requirements. If the defined attribute
     /// requirements are not satisfied the open process will fail.
-    auto open_with_attributes(const AttributeVerifier& required_attributes) && -> iox::
+    auto open_with_attributes(const AttributeVerifier& required_attributes) && -> iox2::legacy::
         expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeOpenError>;
 
     /// Creates a new [`Service`].
-    auto create() && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeCreateError>;
+    auto create() && -> iox2::legacy::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
+                                               PublishSubscribeCreateError>;
 
     /// Creates a new [`Service`] with a set of attributes.
-    auto create_with_attributes(
-        const AttributeSpecifier& attributes) && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
-                                                                  PublishSubscribeCreateError>;
+    auto create_with_attributes(const AttributeSpecifier& attributes) && -> iox2::legacy::
+        expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeCreateError>;
 
   private:
     template <ServiceType>
@@ -153,22 +154,31 @@ inline ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::ServiceBuilderPub
 
 template <typename Payload, typename UserHeader, ServiceType S>
 inline void ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_parameters() {
-    m_enable_safe_overflow.and_then(
-        [&](auto value) -> auto { iox2_service_builder_pub_sub_set_enable_safe_overflow(&m_handle, value); });
-    m_subscriber_max_borrowed_samples.and_then([&](auto value) -> auto {
-        iox2_service_builder_pub_sub_set_subscriber_max_borrowed_samples(&m_handle, value);
-    });
-    m_history_size.and_then(
-        [&](auto value) -> auto { iox2_service_builder_pub_sub_set_history_size(&m_handle, value); });
-    m_subscriber_max_buffer_size.and_then(
-        [&](auto value) -> auto { iox2_service_builder_pub_sub_set_subscriber_max_buffer_size(&m_handle, value); });
-    m_max_subscribers.and_then(
-        [&](auto value) -> auto { iox2_service_builder_pub_sub_set_max_subscribers(&m_handle, value); });
-    m_max_publishers.and_then(
-        [&](auto value) -> auto { iox2_service_builder_pub_sub_set_max_publishers(&m_handle, value); });
-    m_payload_alignment.and_then(
-        [&](auto value) -> auto { iox2_service_builder_pub_sub_set_payload_alignment(&m_handle, value); });
-    m_max_nodes.and_then([&](auto value) -> auto { iox2_service_builder_pub_sub_set_max_nodes(&m_handle, value); });
+    if (m_enable_safe_overflow.has_value()) {
+        iox2_service_builder_pub_sub_set_enable_safe_overflow(&m_handle, m_enable_safe_overflow.value());
+    }
+    if (m_subscriber_max_borrowed_samples.has_value()) {
+        iox2_service_builder_pub_sub_set_subscriber_max_borrowed_samples(&m_handle,
+                                                                         m_subscriber_max_borrowed_samples.value());
+    }
+    if (m_history_size.has_value()) {
+        iox2_service_builder_pub_sub_set_history_size(&m_handle, m_history_size.value());
+    }
+    if (m_subscriber_max_buffer_size.has_value()) {
+        iox2_service_builder_pub_sub_set_subscriber_max_buffer_size(&m_handle, m_subscriber_max_buffer_size.value());
+    }
+    if (m_max_subscribers.has_value()) {
+        iox2_service_builder_pub_sub_set_max_subscribers(&m_handle, m_max_subscribers.value());
+    }
+    if (m_max_publishers.has_value()) {
+        iox2_service_builder_pub_sub_set_max_publishers(&m_handle, m_max_publishers.value());
+    }
+    if (m_payload_alignment.has_value()) {
+        iox2_service_builder_pub_sub_set_payload_alignment(&m_handle, m_payload_alignment.value());
+    }
+    if (m_max_nodes.has_value()) {
+        iox2_service_builder_pub_sub_set_max_nodes(&m_handle, m_max_nodes.value());
+    }
 
     using ValueType = typename PayloadInfo<Payload>::ValueType;
     auto type_variant = iox::IsSlice<Payload>::VALUE ? iox2_type_variant_e_DYNAMIC : iox2_type_variant_e_FIXED_SIZE;
@@ -187,7 +197,7 @@ inline void ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_paramete
                                                               payload_type_align);
 
     if (payload_result != IOX2_OK) {
-        IOX_PANIC("This should never happen! Implementation failure while setting the Payload-Type.");
+        IOX2_PANIC("This should never happen! Implementation failure while setting the Payload-Type.");
     }
 
     // user header type details
@@ -205,7 +215,7 @@ inline void ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_paramete
                                                                   user_header_type_align);
 
     if (user_header_result != IOX2_OK) {
-        IOX_PANIC("This should never happen! Implementation failure while setting the User-Header-Type.");
+        IOX2_PANIC("This should never happen! Implementation failure while setting the User-Header-Type.");
     }
 }
 
@@ -219,7 +229,7 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>
-inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::open_or_create() && -> iox::
+inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::open_or_create() && -> iox2::legacy::
     expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeOpenOrCreateError> {
     set_parameters();
 
@@ -227,14 +237,14 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::open_or_crea
     auto result = iox2_service_builder_pub_sub_open_or_create(m_handle, nullptr, &port_factory_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(PortFactoryPublishSubscribe<S, Payload, UserHeader>(port_factory_handle));
+        return iox2::legacy::ok(PortFactoryPublishSubscribe<S, Payload, UserHeader>(port_factory_handle));
     }
 
-    return iox::err(iox::into<PublishSubscribeOpenOrCreateError>(result));
+    return iox2::legacy::err(iox2::bb::into<PublishSubscribeOpenOrCreateError>(result));
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>
-inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::open() && -> iox::
+inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::open() && -> iox2::legacy::
     expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeOpenError> {
     set_parameters();
 
@@ -242,14 +252,14 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::open() && ->
     auto result = iox2_service_builder_pub_sub_open(m_handle, nullptr, &port_factory_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(PortFactoryPublishSubscribe<S, Payload, UserHeader>(port_factory_handle));
+        return iox2::legacy::ok(PortFactoryPublishSubscribe<S, Payload, UserHeader>(port_factory_handle));
     }
 
-    return iox::err(iox::into<PublishSubscribeOpenError>(result));
+    return iox2::legacy::err(iox2::bb::into<PublishSubscribeOpenError>(result));
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>
-inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::create() && -> iox::
+inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::create() && -> iox2::legacy::
     expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeCreateError> {
     set_parameters();
 
@@ -257,17 +267,17 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::create() && 
     auto result = iox2_service_builder_pub_sub_create(m_handle, nullptr, &port_factory_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(PortFactoryPublishSubscribe<S, Payload, UserHeader>(port_factory_handle));
+        return iox2::legacy::ok(PortFactoryPublishSubscribe<S, Payload, UserHeader>(port_factory_handle));
     }
 
-    return iox::err(iox::into<PublishSubscribeCreateError>(result));
+    return iox2::legacy::err(iox2::bb::into<PublishSubscribeCreateError>(result));
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>
 inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::open_or_create_with_attributes(
     const AttributeVerifier&
-        required_attributes) && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
-                                                 PublishSubscribeOpenOrCreateError> {
+        required_attributes) && -> iox2::legacy::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
+                                                          PublishSubscribeOpenOrCreateError> {
     set_parameters();
 
     iox2_port_factory_pub_sub_h port_factory_handle {};
@@ -275,17 +285,17 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::open_or_crea
         m_handle, &required_attributes.m_handle, nullptr, &port_factory_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(PortFactoryPublishSubscribe<S, Payload, UserHeader>(port_factory_handle));
+        return iox2::legacy::ok(PortFactoryPublishSubscribe<S, Payload, UserHeader>(port_factory_handle));
     }
 
-    return iox::err(iox::into<PublishSubscribeOpenOrCreateError>(result));
+    return iox2::legacy::err(iox2::bb::into<PublishSubscribeOpenOrCreateError>(result));
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>
 inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::open_with_attributes(
     const AttributeVerifier&
-        required_attributes) && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
-                                                 PublishSubscribeOpenError> {
+        required_attributes) && -> iox2::legacy::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
+                                                          PublishSubscribeOpenError> {
     set_parameters();
 
     iox2_port_factory_pub_sub_h port_factory_handle {};
@@ -293,16 +303,17 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::open_with_at
         m_handle, &required_attributes.m_handle, nullptr, &port_factory_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(PortFactoryPublishSubscribe<S, Payload, UserHeader>(port_factory_handle));
+        return iox2::legacy::ok(PortFactoryPublishSubscribe<S, Payload, UserHeader>(port_factory_handle));
     }
 
-    return iox::err(iox::into<PublishSubscribeOpenError>(result));
+    return iox2::legacy::err(iox2::bb::into<PublishSubscribeOpenError>(result));
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>
 inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::create_with_attributes(
-    const AttributeSpecifier& attributes) && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
-                                                              PublishSubscribeCreateError> {
+    const AttributeSpecifier&
+        attributes) && -> iox2::legacy::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
+                                                 PublishSubscribeCreateError> {
     set_parameters();
 
     iox2_port_factory_pub_sub_h port_factory_handle {};
@@ -310,10 +321,10 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::create_with_
         m_handle, &attributes.m_handle, nullptr, &port_factory_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(PortFactoryPublishSubscribe<S, Payload, UserHeader>(port_factory_handle));
+        return iox2::legacy::ok(PortFactoryPublishSubscribe<S, Payload, UserHeader>(port_factory_handle));
     }
 
-    return iox::err(iox::into<PublishSubscribeCreateError>(result));
+    return iox2::legacy::err(iox2::bb::into<PublishSubscribeCreateError>(result));
 }
 } // namespace iox2
 

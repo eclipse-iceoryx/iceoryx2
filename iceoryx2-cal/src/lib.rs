@@ -17,6 +17,10 @@
 
 extern crate alloc;
 
+// Required for MVSC
+#[cfg(test)]
+extern crate iceoryx2_loggers;
+
 pub mod arc_sync_policy;
 pub mod communication_channel;
 pub mod dynamic_storage;

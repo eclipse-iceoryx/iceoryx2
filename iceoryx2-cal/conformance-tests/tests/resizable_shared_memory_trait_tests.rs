@@ -41,3 +41,21 @@ mod process_local {
         super::ResizeableSharedMemory
     );
 }
+
+// disabled on windows since windows 2022 (not windows 10 or 11)
+// has some weird file remove issue which cause unit test failures that are
+// non-reproducible on windows 10 or 11
+#[cfg(not(target_os = "windows"))]
+mod file {
+    use super::*;
+    use iceoryx2_cal::shared_memory::file::Memory;
+
+    type SharedMemory = Memory<super::DefaultAllocator>;
+    type ResizeableSharedMemory = DynamicMemory<super::DefaultAllocator, SharedMemory>;
+
+    instantiate_conformance_tests!(
+        iceoryx2_cal_conformance_tests::resizable_shared_memory_trait,
+        super::SharedMemory,
+        super::ResizeableSharedMemory
+    );
+}

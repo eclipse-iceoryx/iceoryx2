@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate iceoryx2_loggers;
+
 #[cfg(target_os = "linux")]
 pub mod tests {
     use std::sync::{atomic::Ordering, Barrier};

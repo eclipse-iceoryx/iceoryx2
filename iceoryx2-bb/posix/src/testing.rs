@@ -13,9 +13,9 @@
 use alloc::string::ToString;
 
 use iceoryx2_bb_container::semantic_string::SemanticString;
-use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
+use iceoryx2_log::fatal_panic;
 
 use crate::config::TEST_DIRECTORY;
 use crate::directory::{Directory, DirectoryCreateError};

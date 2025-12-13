@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate iceoryx2_loggers;
+
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_posix::config::*;
 use iceoryx2_bb_posix::file::*;
@@ -417,7 +419,7 @@ fn file_acquire_ownership_works() -> Result<(), FileError> {
     create_test_directory();
     let file_name = generate_file_name();
 
-    let mut file = FileBuilder::new(&file_name)
+    let file = FileBuilder::new(&file_name)
         .creation_mode(CreationMode::OpenOrCreate)
         .create()
         .unwrap();
@@ -436,7 +438,7 @@ fn file_release_ownership_works() -> Result<(), FileError> {
     create_test_directory();
     let file_name = generate_file_name();
 
-    let mut file = FileBuilder::new(&file_name)
+    let file = FileBuilder::new(&file_name)
         .has_ownership(true)
         .creation_mode(CreationMode::OpenOrCreate)
         .create()

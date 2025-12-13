@@ -459,12 +459,12 @@ pub mod dynamic_storage_trait {
                 barrier_2.wait();
                 loop {
                 let sut2 = Sut::Builder::new(&tstorage_name).config(&config_2).open();
-                if sut2.is_err() {
+                if let Ok(res) = sut2 {
+                    assert_that!(res.get().value.load(Ordering::Relaxed), eq 789);
+                    break;
+                } else {
                     let err = sut2.err().unwrap();
                     assert_that!(err == DynamicStorageOpenError::DoesNotExist || err == DynamicStorageOpenError::InitializationNotYetFinalized, eq true);
-                } else {
-                    assert_that!(sut2.unwrap().get().value.load(Ordering::Relaxed), eq 789);
-                    break;
                 }
             }});
         });

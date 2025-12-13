@@ -12,7 +12,7 @@
 
 #![no_std]
 
-#[cfg(feature = "custom_pal_config")]
+#[cfg(configuration_override)]
 pub(crate) mod internal {
     #![allow(non_upper_case_globals)]
     #![allow(non_camel_case_types)]
@@ -22,13 +22,10 @@ pub(crate) mod internal {
     #![allow(unknown_lints)]
     #![allow(unnecessary_transmutes)]
     #![allow(clippy::all)]
-    include!(concat!(
-        env!("IOX2_CUSTOM_PAL_CONFIG_PATH"),
-        "/iceoryx2_pal_config.rs"
-    ));
+    include!(concat!(env!("IOX2_CUSTOM_PLATFORM_CONFIGURATION_PATH")));
 }
 
-#[cfg(not(feature = "custom_pal_config"))]
+#[cfg(not(configuration_override))]
 pub(crate) mod internal {
     #[cfg(all(not(target_os = "windows"), not(target_os = "nto")))]
     pub mod settings {
@@ -39,6 +36,7 @@ pub(crate) mod internal {
         pub const SHARED_MEMORY_DIRECTORY: &[u8] = b"/dev/shm/";
         pub const PATH_SEPARATOR: u8 = b'/';
         pub const ROOT: &[u8] = b"/";
+        pub const REQUIRED_SOCKET_DIRECTORY: Option<&[u8]> = None;
         pub const ICEORYX2_ROOT_PATH: &[u8] = b"/tmp/iceoryx2/";
         pub const FILENAME_LENGTH: usize = 255;
         // it is actually 4096 but to be more compatible with windows and also safe some stack the number
@@ -59,6 +57,7 @@ pub(crate) mod internal {
         pub const SHARED_MEMORY_DIRECTORY: &[u8] = b"/dev/shmem/";
         pub const PATH_SEPARATOR: u8 = b'/';
         pub const ROOT: &[u8] = b"/";
+        pub const REQUIRED_SOCKET_DIRECTORY: Option<&[u8]> = None;
         pub const ICEORYX2_ROOT_PATH: &[u8] = b"/data/iceoryx2/";
         pub const FILENAME_LENGTH: usize = 255;
         pub const PATH_LENGTH: usize = 255;
@@ -74,6 +73,7 @@ pub(crate) mod internal {
         pub const SHARED_MEMORY_DIRECTORY: &[u8] = b"C:\\Temp\\iceoryx2\\shm\\";
         pub const PATH_SEPARATOR: u8 = b'\\';
         pub const ROOT: &[u8] = b"C:\\";
+        pub const REQUIRED_SOCKET_DIRECTORY: Option<&[u8]> = None;
         pub const ICEORYX2_ROOT_PATH: &[u8] = b"C:\\Temp\\iceoryx2\\";
         pub const FILENAME_LENGTH: usize = 255;
         pub const PATH_LENGTH: usize = 255;

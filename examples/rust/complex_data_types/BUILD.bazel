@@ -22,7 +22,8 @@ rust_binary(
         "//iceoryx2-bb/container:iceoryx2-bb-container",
         "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
         "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
-        "//iceoryx2-bb/log:iceoryx2-bb-log",
+        "//iceoryx2-log/log:iceoryx2-log",
+        "//iceoryx2-log/loggers:iceoryx2-loggers",
     ],
     proc_macro_deps = [
         "//iceoryx2-bb/derive-macros:iceoryx2-bb-derive-macros",

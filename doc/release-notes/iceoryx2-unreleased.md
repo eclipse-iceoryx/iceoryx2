@@ -10,6 +10,10 @@
     NOTE: Add new entries sorted by issue number to minimize the possibility of
     conflicts when merging.
 -->
+* Separate log crate into front-end API and backend logger implementation crates
+  [#154](https://github.com/eclipse-iceoryx/iceoryx2/issues/154)
+* Enable Bazel `bzlmod` support for iceoryx2 builds
+  [#355](https://github.com/eclipse-iceoryx/iceoryx2/issues/355)
 * Android proof of concept with `local` communication
   [#416](https://github.com/eclipse-iceoryx/iceoryx2/issues/416)
 * C, C++, and Python language bindings for blackboard
@@ -23,6 +27,8 @@
   [#865](https://github.com/eclipse-iceoryx/iceoryx2/issues/865)
 * Add a C++ string container type with fixed compile-time capacity
   [#938](https://github.com/eclipse-iceoryx/iceoryx2/issues/938)
+* Add new C++ `Expected` vocabulary data type
+  [#940](https://github.com/eclipse-iceoryx/iceoryx2/issues/940)
 * Add a C++ vector container type with fixed compile-time capacity
   [#951](https://github.com/eclipse-iceoryx/iceoryx2/issues/951)
 * Use `epoll` instead of `select` for the `WaitSet` on Linux
@@ -44,6 +50,14 @@
   [#1144](https://github.com/eclipse-iceoryx/iceoryx2/issues/1144)
 * Add option to provide custom `iceoryx2-pal-configuration`
   [#1176](https://github.com/eclipse-iceoryx/iceoryx2/issues/1176)
+* Add option to provide custom `iceoryx2-pal-posix`
+  [#1176](https://github.com/eclipse-iceoryx/iceoryx2/issues/1176)
+* Add shared memory variant based on files
+  [#1223](https://github.com/eclipse-iceoryx/iceoryx2/issues/1223)
+* Add socket directory configuration in platform
+  [#1232](https://github.com/eclipse-iceoryx/iceoryx2/issues/1232)
+* Replace legacy types in public API with iceoryx2 counterparts
+  [#1234](https://github.com/eclipse-iceoryx/iceoryx2/issues/1234)
 
 ### Bugfixes
 
@@ -63,12 +77,18 @@
     [#1095](https://github.com/eclipse-iceoryx/iceoryx2/issues/1095)
 * Fix QNX cross compilation
     [#1116](https://github.com/eclipse-iceoryx/iceoryx2/issues/1116)
+* Fix large server connection and data segment size
+    [#1130](https://github.com/eclipse-iceoryx/iceoryx2/issues/1130)
 * `ScopeGuard` check if `on_drop` is set before calling it
     [#1171](https://github.com/eclipse-iceoryx/iceoryx2/issues/1171)
 * Fix C binding linker error on QNX
     [#1174](https://github.com/eclipse-iceoryx/iceoryx2/issues/1116)
+* Fix that `dev_permissions` are not applied to all resources
+    [#1188](https://github.com/eclipse-iceoryx/iceoryx2/issues/1188)
 * Fix panic during cleanup
     [#1198](https://github.com/eclipse-iceoryx/iceoryx2/issues/1198)
+* Update urllib3 dependency to 2.6.0 (security issue in 2.5.0)
+    [#1228](https://github.com/eclipse-iceoryx/iceoryx2/issues/1228)
 
 ### Refactoring
 
@@ -77,6 +97,8 @@
     conflicts when merging.
 -->
 
+* Integrate the iceoryx_hoofs subset directly into the iceoryx2 repository
+    [#301](https://github.com/eclipse-iceoryx/iceoryx2/issues/301)
 * Decoupled tunnel implementation from tunelling mechanism
     [#845](https://github.com/eclipse-iceoryx/iceoryx2/issues/845)
 * Factored out platform-specific build logic from common logic
@@ -94,12 +116,14 @@
 
 ### Workflow
 
-<!--
-    NOTE: Add new entries sorted by issue number to minimize the possibility of
-    conflicts when merging.
--->
+1. **iceoryx_hoofs** dependency
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+The `iceoryx_hoofs` dependency was removed by importing the relevant files to
+the iceoryx2 repository. This simplifies the build process makes it trivial to
+add iceoryx2 specific features to the base lib.
+
+The files from the `iceoryx_hoofs` subset are available via the `iceoryx2-bb-cxx`
+CMake package.
 
 ### New API features
 
@@ -108,9 +132,39 @@
     conflicts when merging.
 -->
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+* Add `list_keys()` to list all keys stored in the blackboard,
+  `EntryHandle::is_up_to_date()` to check for value updates
+  [#1189](https://github.com/eclipse-iceoryx/iceoryx2/issues/1189)
 
 ### API Breaking Changes
+
+1. **Rust:** Split logger frontend and backend, requiring the crate
+   `iceoryx2_loggers` to be linked to all binaries so that the logger
+   backend can be used by the frontend.
+
+   ```rust
+   // old
+   use iceoryx2_bb_log::*;
+
+   set_log_level(LogLevel::Info);
+   info!("some log message")
+
+   // new
+   extern crate iceoryx2_loggers;
+
+   use iceoryx2_log::*;
+
+   set_log_level(LogLevel::Info);
+   info!("some log message")
+   ```
+
+   Binary crates must also include `iceoryx2_loggers` as a dependency and the
+   default logger must be specified via feature flag (maximum one). If no
+   feature flag is enabled, the logs are discarded.
+
+    ```toml
+    iceoryx2-loggers = { version = "0.7.0", features = ["logger_console"] }
+    ```
 
 1. **Rust:** Replaced the `FixedSizeVec` with the `StaticVec`
 
@@ -126,7 +180,7 @@
    let my_vec = StaticVec::<MyType, VEC_CAPACITY>::new();
    ```
 
-2. **Rust:** Replaced `Vec` with the `PolymorphicVec`
+1. **Rust:** Replaced `Vec` with the `PolymorphicVec`
 
     ```rust
    // old
@@ -141,7 +195,7 @@
    let my_vec = PolymorphicVec::<MyType>::new(my_stateful_allocator, vec_capacity)?;
     ```
 
-3. **Rust:** Replaced the `FixedSizeByteString` with the `StaticString`
+1. **Rust:** Replaced the `FixedSizeByteString` with the `StaticString`
 
    ```rust
    // old
@@ -155,7 +209,7 @@
    let my_str = StaticString::<CAPACITY>::new();
    ```
 
-4. **C++:** Remove `operator*` and `operator->` from `ActiveRequest`,
+1. **C++:** Remove `operator*` and `operator->` from `ActiveRequest`,
    `PendingResponse`, `RequestMut`, `RequestMutUninit`, `Response`,
    `ResponseMut`, `Sample`, `SampleMut`, `SampleMutUninit` since these can
    easily lead to confusion and bugs when used in combination with `optional`
@@ -184,7 +238,7 @@
    std::cout << sample.payload() << std::endl;
    ```
 
-5. **Rust:** Changed the signature for Tunnel creation to take a concrete
+1. **Rust:** Changed the signature for Tunnel creation to take a concrete
    backend implementation
 
    ```rust
@@ -205,5 +259,64 @@
        Tunnel::<Service, Backend>::create(&tunnel_config, &iceoryx_config, &backend_config).unwrap();
    ```
 
-6. Removed the `cdr` serializer from `iceoryx2-cal`, it is recommended to
+1. Removed the `cdr` serializer from `iceoryx2-cal`, it is recommended to
    switch to the `postcard` serializer in its place
+
+1. Merged `iox2/semantic_string.hpp` with imported `iox2/bb/semantic_string.hpp`
+   from `iceoryx_hoofs`
+
+   With this merge, the `SemanticStringError` moved from the `iox2` namespace
+   into the `iox2::bb` namespace.
+
+   ```cpp
+   // old
+   #include "iox2/semantic_string.hpp"
+   // ...
+   auto foo() -> expected<void, iox2::SemanticStringError>
+
+   // new
+   #include "iox2/bb/semantic_string.hpp"
+   // ...
+   auto foo() -> expected<void, iox2::bb::SemanticStringError>
+
+1. **Rust:** The blackboard's `EntryValueUninit::write()` has been extended so
+   that it also updates the entry and was renamed to `update_with_copy()`;
+   `EntryValue` was removed.
+
+   ```rust
+   // old
+   let entry_value = entry_value_uninit.write(123);
+   let entry_handle_mut = entry_value.update();
+   
+   // new
+   let entry_handle_mut = entry_value_uninit.update_with_copy(123);
+   ```
+
+1. **C++:** Replace `iox::optional` from `iceoryx_hoofs` with
+   `iox2::container::Optional`
+
+  The new `Optional` in iceoryx2 has a reduced API compared to the one from
+  `iceroyx_hoofs`. The functional interface, which deviated from the STL was
+  removed.
+
+  ```cpp
+  // old
+  ret_val.and_then([](auto& val) { /* do something with val */ })
+         .or_else([]() { /* do something else */ });
+
+  // new
+  if (ret_val.has_value()) {
+    // do something with ret_val.value()
+  } else {
+    // do something else
+  }
+
+  // old
+  auto val = ret_val.expect("There should be a value");
+
+  // new
+  if (!ret_val.has_value()) {
+    // error handling or terminate
+  }
+  auto val = ret_val.value();
+  ```

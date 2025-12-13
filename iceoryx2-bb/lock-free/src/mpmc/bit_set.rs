@@ -22,6 +22,8 @@
 //!  # Example
 //!
 //!  ```
+//!  # extern crate iceoryx2_loggers;
+//!
 //!  use iceoryx2_bb_lock_free::mpmc::bit_set::*;
 //!
 //!  let capacity = 123;
@@ -47,7 +49,7 @@ use iceoryx2_bb_elementary_traits::{
 };
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU8, IoxAtomicUsize};
 
-use iceoryx2_bb_log::{fail, fatal_panic};
+use iceoryx2_log::{fail, fatal_panic};
 
 /// This BitSet variant's data is stored in the heap.
 pub type BitSet = details::BitSet<OwningPointer<details::BitsetElement>>;
@@ -93,6 +95,8 @@ pub mod details {
         /// Create a new [`BitSet`] with data located in the heap.
         ///
         /// ```
+        /// # extern crate iceoryx2_loggers;
+        ///
         /// use iceoryx2_bb_lock_free::mpmc::bit_set::*;
         /// let bitset = BitSet::new(123);
         /// ```

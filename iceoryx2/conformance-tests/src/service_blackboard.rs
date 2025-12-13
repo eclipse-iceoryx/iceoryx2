@@ -603,10 +603,10 @@ pub mod service_blackboard {
         let entry_handle_mut = writer.entry::<u16>(&0).unwrap();
 
         entry_handle_mut.update_with_copy(1234);
-        assert_that!(entry_handle.get(), eq 1234);
+        assert_that!(*entry_handle.get(), eq 1234);
 
         entry_handle_mut.update_with_copy(4567);
-        assert_that!(entry_handle.get(), eq 4567);
+        assert_that!(*entry_handle.get(), eq 4567);
     }
 
     #[conformance_test]
@@ -628,10 +628,10 @@ pub mod service_blackboard {
         let entry_handle = reader.entry::<i32>(&9).unwrap();
 
         entry_handle_mut.update_with_copy(50);
-        assert_that!(entry_handle.get(), eq 50);
+        assert_that!(*entry_handle.get(), eq 50);
 
         entry_handle_mut.update_with_copy(-12);
-        assert_that!(entry_handle.get(), eq - 12);
+        assert_that!(*entry_handle.get(), eq - 12);
     }
 
     #[conformance_test]
@@ -664,7 +664,7 @@ pub mod service_blackboard {
 
             for reader in &readers {
                 let entry_handle = reader.entry::<u64>(&0).unwrap();
-                assert_that!(entry_handle.get(), eq counter);
+                assert_that!(*entry_handle.get(), eq counter);
             }
         }
     }
@@ -705,7 +705,7 @@ pub mod service_blackboard {
         for (i, entry_handle_mut) in entry_handle_muts.iter().enumerate().take(MAX_HANDLES) {
             entry_handle_mut.update_with_copy(7);
             for entry_handle in entry_handles.iter().take(i + 1) {
-                assert_that!(entry_handle.get(), eq 7);
+                assert_that!(*entry_handle.get(), eq 7);
             }
             for (j, entry_handle) in entry_handles
                 .iter()
@@ -713,7 +713,7 @@ pub mod service_blackboard {
                 .take(MAX_HANDLES)
                 .skip(i + 1)
             {
-                assert_that!(entry_handle.get(), eq j as u64);
+                assert_that!(*entry_handle.get(), eq j as u64);
             }
         }
     }
@@ -768,11 +768,11 @@ pub mod service_blackboard {
         writer.entry::<u64>(&0).unwrap().update_with_copy(2008);
 
         let reader = sut.reader_builder().create().unwrap();
-        assert_that!(reader.entry::<u64>(&0).unwrap().get(), eq 2008);
-        assert_that!(reader.entry::<i8>(&1).unwrap().get(), eq 11);
-        assert_that!(reader.entry::<StaticString<4>>(&23).unwrap().get(), eq "Wolf");
-        assert_that!(reader.entry::<bool>(&100).unwrap().get(), eq true);
-        assert_that!(reader.entry::<Groovy>(&13).unwrap().get(), eq Groovy{a: false, b: 888, c: 906});
+        assert_that!(*reader.entry::<u64>(&0).unwrap().get(), eq 2008);
+        assert_that!(*reader.entry::<i8>(&1).unwrap().get(), eq 11);
+        assert_that!(*reader.entry::<StaticString<4>>(&23).unwrap().get(), eq "Wolf");
+        assert_that!(*reader.entry::<bool>(&100).unwrap().get(), eq true);
+        assert_that!(*reader.entry::<Groovy>(&13).unwrap().get(), eq Groovy{a: false, b: 888, c: 906});
     }
 
     #[conformance_test]
@@ -1014,7 +1014,7 @@ pub mod service_blackboard {
         const PAYLOAD: u32 = 981293;
 
         entry_handle_mut.update_with_copy(PAYLOAD);
-        assert_that!(entry_handle.get(), eq PAYLOAD);
+        assert_that!(*entry_handle.get(), eq PAYLOAD);
     }
 
     #[conformance_test]
@@ -1098,7 +1098,7 @@ pub mod service_blackboard {
         let reader = sut.reader_builder().create().unwrap();
         let entry_handle = reader.entry::<u64>(&0).unwrap();
         entry_handle_mut.update_with_copy(payload);
-        assert_that!(entry_handle.get(), eq payload);
+        assert_that!(*entry_handle.get(), eq payload);
 
         drop(entry_handle);
         drop(reader);
@@ -1158,7 +1158,7 @@ pub mod service_blackboard {
         let writer = sut.writer_builder().create().unwrap();
         let entry_handle_mut = writer.entry::<u64>(&0).unwrap();
         entry_handle_mut.update_with_copy(payload);
-        assert_that!(entry_handle.get(), eq payload);
+        assert_that!(*entry_handle.get(), eq payload);
 
         drop(entry_handle_mut);
         drop(writer);
@@ -1246,7 +1246,7 @@ pub mod service_blackboard {
 
         let reader = sut.reader_builder().create().unwrap();
         let entry_handle = reader.entry::<u8>(&0).unwrap();
-        assert_that!(entry_handle.get(), eq 5);
+        assert_that!(*entry_handle.get(), eq 5);
     }
 
     #[conformance_test]
@@ -1268,8 +1268,8 @@ pub mod service_blackboard {
         entry_handle_mut.update_with_copy(5);
 
         let reader = sut.reader_builder().create().unwrap();
-        assert_that!(reader.entry::<u8>(&0).unwrap().get(), eq 5);
-        assert_that!(reader.entry::<i32>(&6).unwrap().get(), eq - 9);
+        assert_that!(*reader.entry::<u8>(&0).unwrap().get(), eq 5);
+        assert_that!(*reader.entry::<i32>(&6).unwrap().get(), eq - 9);
 
         drop(reader);
 
@@ -1277,8 +1277,8 @@ pub mod service_blackboard {
         entry_handle_mut.update_with_copy(-567);
 
         let reader = sut.reader_builder().create().unwrap();
-        assert_that!(reader.entry::<u8>(&0).unwrap().get(), eq 5);
-        assert_that!(reader.entry::<i32>(&6).unwrap().get(), eq - 567);
+        assert_that!(*reader.entry::<u8>(&0).unwrap().get(), eq 5);
+        assert_that!(*reader.entry::<i32>(&6).unwrap().get(), eq - 567);
     }
 
     #[conformance_test]
@@ -1301,7 +1301,7 @@ pub mod service_blackboard {
         entry_handle_mut.update_with_copy(1);
 
         let reader = sut.reader_builder().create().unwrap();
-        assert_that!(reader.entry::<u8>(&0).unwrap().get(), eq 1);
+        assert_that!(*reader.entry::<u8>(&0).unwrap().get(), eq 1);
     }
 
     #[conformance_test]
@@ -1321,12 +1321,12 @@ pub mod service_blackboard {
         let entry_handle = reader.entry::<u8>(&0).unwrap();
 
         drop(reader);
-        assert_that!(entry_handle.get(), eq 0);
+        assert_that!(*entry_handle.get(), eq 0);
 
         let writer = sut.writer_builder().create().unwrap();
         let entry_handle_mut = writer.entry::<u8>(&0).unwrap();
         entry_handle_mut.update_with_copy(1);
-        assert_that!(entry_handle.get(), eq 1);
+        assert_that!(*entry_handle.get(), eq 1);
     }
 
     #[conformance_test]
@@ -1348,10 +1348,9 @@ pub mod service_blackboard {
         let entry_handle = reader.entry::<u32>(&0).unwrap();
 
         let entry_value_uninit = entry_handle_mut.loan_uninit();
-        let entry_value = entry_value_uninit.write(333);
-        let _entry_handle_mut = entry_value.update();
+        let _entry_handle_mut = entry_value_uninit.update_with_copy(333);
 
-        assert_that!(entry_handle.get(), eq 333);
+        assert_that!(*entry_handle.get(), eq 333);
     }
 
     #[conformance_test]
@@ -1373,12 +1372,11 @@ pub mod service_blackboard {
         let entry_handle = reader.entry::<u32>(&0).unwrap();
 
         let entry_value_uninit = entry_handle_mut.loan_uninit();
-        let entry_value = entry_value_uninit.write(333);
-        let entry_handle_mut = entry_value.update();
-        assert_that!(entry_handle.get(), eq 333);
+        let entry_handle_mut = entry_value_uninit.update_with_copy(333);
+        assert_that!(*entry_handle.get(), eq 333);
 
         entry_handle_mut.update_with_copy(999);
-        assert_that!(entry_handle.get(), eq 999);
+        assert_that!(*entry_handle.get(), eq 999);
     }
 
     #[conformance_test]
@@ -1402,9 +1400,8 @@ pub mod service_blackboard {
 
         drop(writer);
 
-        let entry_value = entry_value_uninit.write(333);
-        let _entry_handle_mut = entry_value.update();
-        assert_that!(entry_handle.get(), eq 333);
+        let _entry_handle_mut = entry_value_uninit.update_with_copy(333);
+        assert_that!(*entry_handle.get(), eq 333);
     }
 
     #[conformance_test]
@@ -1429,33 +1426,7 @@ pub mod service_blackboard {
         let entry_handle_mut = entry_value_uninit.discard();
         entry_handle_mut.update_with_copy(333);
 
-        assert_that!(entry_handle.get(), eq 333);
-    }
-
-    #[conformance_test]
-    pub fn entry_handle_mut_can_be_reused_after_entry_value_was_discarded<Sut: Service>() {
-        let service_name = generate_name();
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-
-        let sut = node
-            .service_builder(&service_name)
-            .blackboard_creator::<usize>()
-            .add::<u32>(0, 0)
-            .create()
-            .unwrap();
-
-        let writer = sut.writer_builder().create().unwrap();
-        let entry_handle_mut = writer.entry::<u32>(&0).unwrap();
-        let reader = sut.reader_builder().create().unwrap();
-        let entry_handle = reader.entry::<u32>(&0).unwrap();
-
-        let entry_value_uninit = entry_handle_mut.loan_uninit();
-        let entry_value = entry_value_uninit.write(999);
-        let entry_handle_mut = entry_value.discard();
-        entry_handle_mut.update_with_copy(333);
-
-        assert_that!(entry_handle.get(), eq 333);
+        assert_that!(*entry_handle.get(), eq 333);
     }
 
     #[conformance_test]
@@ -1495,7 +1466,7 @@ pub mod service_blackboard {
         drop(reader);
         drop(sut);
 
-        assert_that!(entry_handle.get(), eq 0);
+        assert_that!(*entry_handle.get(), eq 0);
     }
 
     #[conformance_test]
@@ -1608,8 +1579,8 @@ pub mod service_blackboard {
                     let reader = sut.reader_builder().create().unwrap();
                     barrier.wait();
                     let read_value = reader.entry::<u64>(&0).unwrap().get();
-                    assert_that!(read_value, ge 0);
-                    assert_that!(read_value, le counter.load(Ordering::Relaxed));
+                    assert_that!(*read_value, ge 0);
+                    assert_that!(*read_value, le counter.load(Ordering::Relaxed));
                 }));
             }
             for t in threads {
@@ -1661,8 +1632,82 @@ pub mod service_blackboard {
 
         let reader = sut.reader_builder().create().unwrap();
         for i in 0..number_of_entry_handle_muts {
-            assert_that!(reader.entry::<u64>(&i).unwrap().get(), eq i);
+            assert_that!(*reader.entry::<u64>(&i).unwrap().get(), eq i);
         }
+    }
+
+    #[conformance_test]
+    pub fn entry_handle_is_up_to_date_works_correctly<Sut: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add::<u16>(0, 0)
+            .create()
+            .unwrap();
+
+        let reader = sut.reader_builder().create().unwrap();
+        let entry_handle = reader.entry::<u16>(&0).unwrap();
+        let writer = sut.writer_builder().create().unwrap();
+        let entry_handle_mut = writer.entry::<u16>(&0).unwrap();
+
+        let value = entry_handle.get();
+        assert_that!(*value, eq 0);
+        assert_that!(entry_handle.is_up_to_date(&value), eq true);
+
+        entry_handle_mut.update_with_copy(1234);
+        assert_that!(entry_handle.is_up_to_date(&value), eq false);
+        let value = entry_handle.get();
+        assert_that!(*value, eq 1234);
+
+        entry_handle_mut.update_with_copy(4567);
+        let value = entry_handle.get();
+        assert_that!(*value, eq 4567);
+        assert_that!(entry_handle.is_up_to_date(&value), eq true);
+    }
+
+    #[conformance_test]
+    pub fn list_keys_works<S: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+        let keys = vec![0, 1, 2, 3, 4, 5, 6, 7];
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add::<u64>(keys[0], 0)
+            .add::<u64>(keys[1], 0)
+            .add::<u64>(keys[2], 0)
+            .add::<u64>(keys[3], 0)
+            .add::<u64>(keys[4], 0)
+            .add::<u64>(keys[5], 0)
+            .add::<u64>(keys[6], 0)
+            .add::<u64>(keys[7], 0)
+            .create()
+            .unwrap();
+
+        let mut listed_keys = vec![];
+        sut.list_keys(|&key| {
+            listed_keys.push(key);
+            CallbackProgression::Continue
+        });
+        assert_that!(listed_keys.len(), eq keys.len());
+        for key in &keys {
+            assert_that!(listed_keys.contains(key), eq true);
+        }
+
+        listed_keys.clear();
+
+        sut.list_keys(|&key| {
+            listed_keys.push(key);
+            CallbackProgression::Stop
+        });
+        assert_that!(listed_keys, len 1);
+        assert_that!(keys.contains(&listed_keys[0]), eq true);
     }
 
     #[repr(C)]
@@ -1712,16 +1757,16 @@ pub mod service_blackboard {
         let entry_handle_1 = reader.entry::<i32>(&key_1).unwrap();
         let entry_handle_2 = reader.entry::<u32>(&key_2).unwrap();
 
-        assert_that!(entry_handle_1.get(), eq - 3);
-        assert_that!(entry_handle_2.get(), eq 3);
+        assert_that!(*entry_handle_1.get(), eq - 3);
+        assert_that!(*entry_handle_2.get(), eq 3);
 
         entry_handle_mut_1.update_with_copy(50);
-        assert_that!(entry_handle_1.get(), eq 50);
-        assert_that!(entry_handle_2.get(), eq 3);
+        assert_that!(*entry_handle_1.get(), eq 50);
+        assert_that!(*entry_handle_2.get(), eq 3);
 
         entry_handle_mut_2.update_with_copy(12);
-        assert_that!(entry_handle_1.get(), eq 50);
-        assert_that!(entry_handle_2.get(), eq 12);
+        assert_that!(*entry_handle_1.get(), eq 50);
+        assert_that!(*entry_handle_2.get(), eq 12);
     }
 
     #[conformance_test]
@@ -1745,6 +1790,49 @@ pub mod service_blackboard {
 
         assert_that!(sut, is_err);
         assert_that!(sut.err().unwrap(), eq BlackboardCreateError::ServiceInCorruptedState);
+    }
+
+    #[conformance_test]
+    pub fn list_keys_with_key_struct_works<Sut: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let mut keys = vec![];
+
+        let key_1 = Foo {
+            a: 9,
+            b: 99,
+            c: StaticString::try_from("NalalalaWolf").unwrap(),
+        };
+        let key_2 = Foo {
+            a: 9,
+            b: 999,
+            c: StaticString::try_from("NalalalaWolf").unwrap(),
+        };
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<Foo>()
+            .add::<i32>(key_1, -3)
+            .add::<u32>(key_2, 3)
+            .create()
+            .unwrap();
+
+        sut.list_keys(|&key| {
+            keys.push(key);
+            CallbackProgression::Continue
+        });
+        assert_that!(keys, len 2);
+        assert_that!(keys.contains(&key_1), eq true);
+        assert_that!(keys.contains(&key_2), eq true);
+
+        keys.clear();
+
+        sut.list_keys(|&key| {
+            keys.push(key);
+            CallbackProgression::Stop
+        });
+        assert_that!(keys, len 1);
     }
 
     // TODO [#817] move the custom key type tests to testing.rs
@@ -1813,6 +1901,7 @@ pub mod service_blackboard {
                 read_value_ptr as *mut u8,
                 size_of::<ValueType>(),
                 align_of::<ValueType>(),
+                core::ptr::null_mut::<u64>(),
             );
         }
         assert_that!(read_value, eq default_value);
@@ -1824,6 +1913,7 @@ pub mod service_blackboard {
                 read_value_ptr as *mut u8,
                 size_of::<ValueType>(),
                 align_of::<ValueType>(),
+                core::ptr::null_mut::<u64>(),
             );
         }
         assert_that!(read_value, eq 8);
@@ -1900,6 +1990,7 @@ pub mod service_blackboard {
                 read_value_ptr as *mut u8,
                 size_of::<ValueType>(),
                 align_of::<ValueType>(),
+                core::ptr::null_mut::<u64>(),
             );
         }
         assert_that!(read_value, eq default_value);
@@ -1913,6 +2004,7 @@ pub mod service_blackboard {
                 read_value_ptr as *mut u8,
                 size_of::<ValueType>(),
                 align_of::<ValueType>(),
+                core::ptr::null_mut::<u64>(),
             );
         }
         assert_that!(read_value, eq 5);
@@ -1993,9 +2085,95 @@ pub mod service_blackboard {
                 read_value_ptr as *mut u8,
                 size_of::<ValueType>(),
                 align_of::<ValueType>(),
+                core::ptr::null_mut::<u64>(),
             );
         }
         assert_that!(read_value, eq write_value);
+    }
+
+    #[conformance_test]
+    pub fn entry_handle_is_up_to_date_works_correctly_with_custom_key_type<Sut: Service>() {
+        type KeyType = Foo;
+        let key = Foo {
+            a: 0,
+            b: 0,
+            c: StaticString::new(),
+        };
+        let key_ptr: *const KeyType = &key;
+        type ValueType = u64;
+        let default_value = ValueType::default();
+        let value_ptr: *const ValueType = &default_value;
+
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let service = unsafe {
+            node.service_builder(&service_name)
+                .blackboard_creator::<CustomKeyMarker>()
+                .__internal_set_key_type_details(&TypeDetail::new::<KeyType>(
+                    TypeVariant::FixedSize,
+                ))
+                .__internal_set_key_eq_cmp_func(Box::new(move |lhs: *const u8, rhs: *const u8| {
+                    KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::key_eq_comparison(lhs, rhs, &cmp_for_foo)
+                }))
+                .__internal_add(
+                    key_ptr as *const u8,
+                    value_ptr as *mut u8,
+                    TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
+                    Box::new(|| {}),
+                )
+                .create()
+                .unwrap()
+        };
+        let writer = service.writer_builder().create().unwrap();
+        let reader = service.reader_builder().create().unwrap();
+
+        let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
+
+        let entry_handle = unsafe {
+            reader
+                .__internal_entry(key_ptr as *const u8, &type_details)
+                .unwrap()
+        };
+        let mut read_value: ValueType = 9;
+        let read_value_ptr: *mut ValueType = &mut read_value;
+        let mut generation_counter: u64 = 0;
+        let generation_counter_ptr: *mut u64 = &mut generation_counter;
+        unsafe {
+            entry_handle.get(
+                read_value_ptr as *mut u8,
+                size_of::<ValueType>(),
+                align_of::<ValueType>(),
+                generation_counter_ptr,
+            );
+        }
+        assert_that!(read_value, eq default_value);
+        assert_that!(entry_handle.is_up_to_date(generation_counter), eq true);
+
+        let entry_handle_mut = unsafe {
+            writer
+                .__internal_entry(key_ptr as *const u8, &type_details)
+                .unwrap()
+        };
+        let entry_value_uninit =
+            entry_handle_mut.loan_uninit(type_details.size(), type_details.alignment());
+        let write_ptr = entry_value_uninit.write_cell();
+        unsafe {
+            *(write_ptr as *mut ValueType) = 8;
+        }
+        let _entry_handle_mut = entry_value_uninit.update();
+
+        assert_that!(entry_handle.is_up_to_date(generation_counter), eq false);
+        unsafe {
+            entry_handle.get(
+                read_value_ptr as *mut u8,
+                size_of::<ValueType>(),
+                align_of::<ValueType>(),
+                generation_counter_ptr,
+            );
+        }
+        assert_that!(read_value, eq 8);
+        assert_that!(entry_handle.is_up_to_date(generation_counter), eq true);
     }
 
     #[conformance_test]
@@ -2058,6 +2236,73 @@ pub mod service_blackboard {
     }
 
     #[conformance_test]
+    pub fn list_keys_works_when_custom_key_type_is_used<S: Service>() {
+        type KeyType = Foo;
+        let key_1 = Foo {
+            a: 1,
+            b: 1,
+            c: StaticString::new(),
+        };
+        let key_ptr_1: *const KeyType = &key_1;
+        let key_2 = Foo {
+            a: 2,
+            b: 2,
+            c: StaticString::new(),
+        };
+        let key_ptr_2: *const KeyType = &key_2;
+        type ValueType = u64;
+        let default_value = ValueType::default();
+        let value_ptr: *const ValueType = &default_value;
+
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+        let service = unsafe {
+            node.service_builder(&service_name)
+                .blackboard_creator::<CustomKeyMarker>()
+                .__internal_set_key_type_details(&TypeDetail::new::<KeyType>(
+                    TypeVariant::FixedSize,
+                ))
+                .__internal_set_key_eq_cmp_func(Box::new(move |lhs: *const u8, rhs: *const u8| {
+                    KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::key_eq_comparison(lhs, rhs, &cmp_for_foo)
+                }))
+                .__internal_add(
+                    key_ptr_1 as *const u8,
+                    value_ptr as *mut u8,
+                    TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
+                    Box::new(|| {}),
+                )
+                .__internal_add(
+                    key_ptr_2 as *const u8,
+                    value_ptr as *mut u8,
+                    TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
+                    Box::new(|| {}),
+                )
+                .create()
+                .unwrap()
+        };
+
+        let mut keys = vec![];
+        service.__internal_list_keys(|key_ptr: *const u8| {
+            let key = unsafe { *(key_ptr as *const Foo) };
+            keys.push(key);
+            CallbackProgression::Continue
+        });
+        assert_that!(keys, len 2);
+        assert_that!(keys.contains(&key_1), eq true);
+        assert_that!(keys.contains(&key_2), eq true);
+
+        keys.clear();
+
+        service.__internal_list_keys(|key_ptr: *const u8| {
+            let key = unsafe { *(key_ptr as *const Foo) };
+            keys.push(key);
+            CallbackProgression::Stop
+        });
+        assert_that!(keys, len 1);
+    }
+
+    #[conformance_test]
     pub fn key_memory_creation_fails_when_value_is_too_large<Sut: Service>() {
         let key: u16 = 256;
 
@@ -2116,5 +2361,43 @@ pub mod service_blackboard {
             .blackboard_creator::<u128>()
             .add::<u8>(0, 0)
             .create();
+    }
+
+    #[conformance_test]
+    pub fn new_value_can_be_written_using_value_mut<Sut: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add::<u16>(0, 0)
+            .create()
+            .unwrap();
+
+        let reader = sut.reader_builder().create().unwrap();
+        let entry_handle = reader.entry::<u16>(&0).unwrap();
+        let writer = sut.writer_builder().create().unwrap();
+        let mut entry_handle_mut = writer.entry::<u16>(&0).unwrap();
+        let mut entry_value_uninit = entry_handle_mut.loan_uninit();
+
+        entry_value_uninit.value_mut().write(1234);
+        entry_handle_mut = unsafe { entry_value_uninit.assume_init_and_update() };
+        assert_that!(*entry_handle.get(), eq 1234);
+
+        let mut entry_value_uninit = entry_handle_mut.loan_uninit();
+        unsafe { *entry_value_uninit.value_mut().as_mut_ptr() = 4321 };
+        entry_handle_mut = unsafe { entry_value_uninit.assume_init_and_update() };
+        assert_that!(*entry_handle.get(), eq 4321);
+
+        let mut entry_value_uninit = entry_handle_mut.loan_uninit();
+        entry_value_uninit.value_mut().write(4567);
+        // before calling assume_init_and_update(), the old value is read
+        assert_that!(*entry_handle.get(), eq 4321);
+        entry_handle_mut = entry_value_uninit.discard();
+
+        entry_handle_mut.update_with_copy(4567);
+        assert_that!(*entry_handle.get(), eq 4567);
     }
 }

@@ -10,15 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate bindgen;
-
 pub fn configure_cargo() {
     // for Android a libc base platform abstraction is used;
     // to simplify the build process, the 'libc_platform' feature flag is set here
     // instead of requiring the user to set it
     println!("cargo::rustc-cfg=feature=\"libc_platform\"");
-}
-
-pub fn configure_builder(builder: bindgen::Builder) -> bindgen::Builder {
-    builder
 }

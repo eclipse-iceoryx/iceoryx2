@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate iceoryx2_loggers;
+
 mod dynamic_storage_posix_shared_memory {
     use core::time::Duration;
     use iceoryx2_bb_posix::creation_mode::CreationMode;

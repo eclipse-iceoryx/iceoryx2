@@ -13,7 +13,7 @@
 use iceoryx2::prelude::EventId;
 use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2::service::Service;
-use iceoryx2_bb_log::{fail, trace};
+use iceoryx2_log::{fail, trace};
 use iceoryx2_tunnel_backend::traits::{EventRelay, RelayBuilder};
 use zenoh::handlers::{FifoChannel, FifoChannelHandler};
 use zenoh::pubsub::{Publisher, Subscriber};

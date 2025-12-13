@@ -13,8 +13,8 @@
 use crate::{config, node::NodeId};
 use core::fmt::Debug;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_cal::named_concept::{NamedConceptConfiguration, NamedConceptMgmt};
+use iceoryx2_log::fatal_panic;
 
 pub(crate) fn dynamic_config_storage_config<Service: crate::service::Service>(
     global_config: &config::Config,

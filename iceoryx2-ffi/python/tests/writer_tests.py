@@ -183,8 +183,7 @@ def test_entry_value_can_still_be_used_after_every_previous_service_state_owner_
     writer.delete()
     service.delete()
 
-    entry_value = entry_value_uninit.write(c_uint32(333))
-    entry_value.update()
+    entry_handle_mut = entry_value_uninit.update_with_copy(c_uint32(333))
 
 
 @pytest.mark.parametrize("service_type", service_types)

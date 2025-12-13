@@ -18,7 +18,7 @@ cc_binary(
         "src/discovery.cpp",
     ],
     deps = [
-        "@iceoryx//:iceoryx_hoofs",
+        "//:iceoryx2-bb-cxx",
         "//:iceoryx2-cxx-shared",
     ],
 )

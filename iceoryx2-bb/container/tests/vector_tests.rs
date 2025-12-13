@@ -12,6 +12,9 @@
 
 #[generic_tests::define]
 mod vector {
+
+    extern crate iceoryx2_loggers;
+
     use std::cell::UnsafeCell;
 
     use iceoryx2_bb_container::vector::*;

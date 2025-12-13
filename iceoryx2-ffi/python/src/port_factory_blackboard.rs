@@ -12,7 +12,7 @@
 
 use iceoryx2::prelude::{CallbackProgression, PortFactory};
 use iceoryx2::service::builder::CustomKeyMarker;
-use iceoryx2_bb_log::fatal_panic;
+use iceoryx2_log::fatal_panic;
 use pyo3::prelude::*;
 
 use crate::attribute_set::AttributeSet;
@@ -67,6 +67,11 @@ impl PortFactoryBlackboard {
 
 #[pymethods]
 impl PortFactoryBlackboard {
+    #[getter]
+    pub fn __key_type_details(&self) -> Option<Py<PyAny>> {
+        self.key_type_storage.clone().value
+    }
+
     #[getter]
     /// Returns the `ServiceName` of the service.
     pub fn name(&self) -> ServiceName {
@@ -195,5 +200,27 @@ impl PortFactoryBlackboard {
                 v.take();
             }
         }
+    }
+
+    pub fn __list_keys(&self) -> Vec<usize> {
+        let mut keys = Vec::new();
+        match &*self.value.lock() {
+            PortFactoryBlackboardType::Ipc(Some(v)) => {
+                v.__internal_list_keys(|key| {
+                    keys.push(key as usize);
+                    CallbackProgression::Continue
+                });
+            }
+            PortFactoryBlackboardType::Local(Some(v)) => {
+                v.__internal_list_keys(|key| {
+                    keys.push(key as usize);
+                    CallbackProgression::Continue
+                });
+            }
+            _ => {
+                fatal_panic!(from "PortFactoryBlackboard::list_keys()", "Accessing a deleted PortFactoryBlackboard.")
+            }
+        }
+        keys
     }
 }

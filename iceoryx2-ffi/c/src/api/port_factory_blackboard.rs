@@ -22,14 +22,17 @@ use crate::api::{
     PortFactoryReaderBuilderUnion, PortFactoryWriterBuilderUnion,
 };
 use crate::{iox2_node_list_impl, IOX2_OK};
-use core::ffi::{c_char, c_int};
+use core::ffi::{c_char, c_int, c_void};
 use core::mem::ManuallyDrop;
 use iceoryx2::service::dynamic_config::blackboard::{ReaderDetails, WriterDetails};
 use iceoryx2::service::port_factory::blackboard::PortFactory;
-use iceoryx2_bb_elementary::static_assert::*;
+use iceoryx2_bb_elementary::{static_assert::*, CallbackProgression};
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 // BEGIN types definition
+
+pub type iox2_port_factory_blackboard_list_keys_callback =
+    extern "C" fn(*const c_void, iox2_callback_context) -> iox2_callback_progression_e;
 
 pub(super) union PortFactoryBlackboardUnion {
     ipc: ManuallyDrop<PortFactory<crate::IpcService, KeyFfi>>,
@@ -557,6 +560,47 @@ pub unsafe extern "C" fn iox2_port_factory_blackboard_drop(
         }
     }
     (port_factory.deleter)(port_factory);
+}
+
+fn list_keys_callback(
+    callback: iox2_port_factory_blackboard_list_keys_callback,
+    callback_ctx: iox2_callback_context,
+    key_ptr: *const c_void,
+) -> CallbackProgression {
+    callback(key_ptr, callback_ctx).into()
+}
+
+/// Iterates over all keys of the blackboard and calls the provided
+/// callback with a void pointer to the key as argument.
+///
+/// # Safety
+///
+/// * The `handle` must be valid and obtained by [`iox2_service_builder_blackboard_open`](crate::iox2_service_builder_blackboard_open) or
+///   [`iox2_service_builder_blackboard_create`](crate::iox2_service_builder_blackboard_create)!
+/// * `callback` - A valid callback with [`iox2_port_factory_blackboard_list_keys_callback`} signature
+/// * `callback_ctx` - An optional callback context [`iox2_callback_context`} to e.g. store information across callback iterations
+#[no_mangle]
+pub unsafe extern "C" fn iox2_port_factory_blackboard_list_keys(
+    handle: iox2_port_factory_blackboard_h_ref,
+    callback: iox2_port_factory_blackboard_list_keys_callback,
+    callback_ctx: iox2_callback_context,
+) {
+    let list_callback =
+        |key_ptr: *const u8| list_keys_callback(callback, callback_ctx, key_ptr as *const c_void);
+
+    let port_factory = &*handle.as_type();
+    match port_factory.service_type {
+        iox2_service_type_e::IPC => port_factory
+            .value
+            .as_ref()
+            .ipc
+            .__internal_list_keys(list_callback),
+        iox2_service_type_e::LOCAL => port_factory
+            .value
+            .as_ref()
+            .local
+            .__internal_list_keys(list_callback),
+    }
 }
 
 // END C API

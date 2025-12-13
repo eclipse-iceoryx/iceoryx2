@@ -72,14 +72,9 @@ if [[ ${BUILD_END_TO_END_TESTS} == true ]]; then
         NUM_JOBS=$(sysctl -n hw.ncpu)
     fi
 
-    # Clean build for iceoryx_hoofs
-    rm -rf ${WORKSPACE}/target/ff/iceoryx
-    ${WORKSPACE}/internal/scripts/ci_build_and_install_iceoryx_hoofs.sh
-
     # Build the C and C++ bindings
     cargo build --package iceoryx2-ffi-c
     cmake -S . -B target/ff/cc/build \
-        -DCMAKE_PREFIX_PATH="$(pwd)/target/ff/iceoryx/install" \
         -DRUST_BUILD_ARTIFACT_PATH="$(pwd)/target/debug" \
         -DCMAKE_BUILD_TYPE=Debug \
         -DBUILD_CXX=ON \

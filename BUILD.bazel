@@ -128,7 +128,7 @@ selects.config_setting_group(
 
 string_flag(
     name = "feature_logger_file",
-    build_setting_default = "on",
+    build_setting_default = "auto",
     visibility = ["//visibility:public"],
 )
 config_setting(
@@ -154,7 +154,7 @@ selects.config_setting_group(
 
 string_flag(
     name = "feature_logger_console",
-    build_setting_default = "on",
+    build_setting_default = "auto",
     visibility = ["//visibility:public"],
 )
 config_setting(
@@ -236,46 +236,6 @@ selects.config_setting_group(
     ],
 )
 
-string_flag(
-    name = "custom_pal",
-    build_setting_default = "off",
-    visibility = ["//visibility:public"],
-)
-
-config_setting(
-    name = "custom_pal_enabled",
-    flag_values = {
-        ":custom_pal": "on",
-    },
-)
-
-config_setting(
-    name = "custom_pal_disabled",
-    flag_values = {
-        ":custom_pal": "off",
-    },
-)
-
-string_flag(
-    name = "custom_pal_config",
-    build_setting_default = "off",
-    visibility = ["//visibility:public"],
-)
-
-config_setting(
-    name = "custom_pal_config_enabled",
-    flag_values = {
-        ":custom_pal_config": "on",
-    },
-)
-
-config_setting(
-    name = "custom_pal_config_disabled",
-    flag_values = {
-        ":custom_pal_config": "off",
-    },
-)
-
 #
 # Alias
 #
@@ -295,6 +255,12 @@ alias(
 alias(
     name = "iceoryx2-c-static",
     actual = "//iceoryx2-c:iceoryx2-c-static",
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "iceoryx2-bb-cxx",
+    actual = "//iceoryx2-bb/cxx:iceoryx2-bb-cxx",
     visibility = ["//visibility:public"],
 )
 
@@ -331,6 +297,9 @@ filegroup(
         "//benchmarks/queue:all_srcs",
         "//benchmarks/request-response:all_srcs",
         "//component-tests/rust:all_srcs",
+        "//iceoryx2-log/log:all_srcs",
+        "//iceoryx2-log/loggers:all_srcs",
+        "//iceoryx2-log/types:all_srcs",
         "//iceoryx2:all_srcs",
         "//iceoryx2-bb/conformance-test-macros:all_srcs",
         "//iceoryx2-bb/container:all_srcs",
@@ -339,7 +308,6 @@ filegroup(
         "//iceoryx2-bb/elementary-traits:all_srcs",
         "//iceoryx2-bb/linux:all_srcs",
         "//iceoryx2-bb/lock-free:all_srcs",
-        "//iceoryx2-bb/log:all_srcs",
         "//iceoryx2-bb/memory:all_srcs",
         "//iceoryx2-bb/posix:all_srcs",
         "//iceoryx2-bb/system-types:all_srcs",

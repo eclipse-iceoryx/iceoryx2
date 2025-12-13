@@ -17,8 +17,8 @@ use core::time::Duration;
 
 use alloc::{format, string::ToString};
 
-use iceoryx2_bb_log::cout;
 use iceoryx2_bb_system_types::{file_name::FileName, path::Path, user_name::UserName};
+use iceoryx2_log::cout;
 
 use crate::{scheduler::Scheduler, system_configuration::*};
 
@@ -97,6 +97,17 @@ pub const MAX_REQUIRED_LIMITS: [(Limit, u64); 2] = [
 pub enum ComplianceCheckMode {
     Verbose,
     Silent,
+}
+
+// TODO: make this a global variable, as soon as our MSRV support `Option::map()`
+//       with const evaluation like
+//
+//  pub const REQUIRED_SOCKET_DIRECTORY: Option<Path> =
+//   iceoryx2_pal_configuration::REQUIRED_SOCKET_DIRECTORY
+//      .map(|v| unsafe { Path::new_unchecked_const(v) });
+pub fn required_socket_directory() -> Option<Path> {
+    iceoryx2_pal_configuration::REQUIRED_SOCKET_DIRECTORY
+        .map(|v| unsafe { Path::new_unchecked_const(v) })
 }
 
 /// Checks if the current system satisfies all requirements to the POSIX subsystem.

@@ -15,8 +15,8 @@
 use core::{alloc::Layout, ptr::NonNull};
 
 use iceoryx2_bb_elementary_traits::allocator::{AllocationGrowError, AllocationShrinkError};
-use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::memory::heap;
+use iceoryx2_log::fail;
 
 pub use iceoryx2_bb_elementary_traits::allocator::{AllocationError, Allocator, BaseAllocator};
 

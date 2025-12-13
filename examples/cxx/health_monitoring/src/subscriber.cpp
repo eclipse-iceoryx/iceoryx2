@@ -17,9 +17,9 @@
 
 using namespace iox2;
 
-constexpr iox::units::Duration REACTION_BUFFER = iox::units::Duration::fromMilliseconds(100);
-constexpr iox::units::Duration CYCLE_TIME_1 = iox::units::Duration::fromMilliseconds(1000) + REACTION_BUFFER;
-constexpr iox::units::Duration CYCLE_TIME_2 = iox::units::Duration::fromMilliseconds(1500) + REACTION_BUFFER;
+constexpr iox2::bb::Duration REACTION_BUFFER = iox2::bb::Duration::from_millis(100);
+constexpr iox2::bb::Duration CYCLE_TIME_1 = iox2::bb::Duration::from_millis(1000) + REACTION_BUFFER;
+constexpr iox2::bb::Duration CYCLE_TIME_2 = iox2::bb::Duration::from_millis(1500) + REACTION_BUFFER;
 
 namespace {
 void find_and_cleanup_dead_nodes();
@@ -56,7 +56,7 @@ auto main() -> int {
     auto listener_1_guard = waitset.attach_deadline(listener_1, deadline_1).expect("");
     auto listener_2_guard = waitset.attach_deadline(listener_2, deadline_2).expect("");
 
-    auto missed_deadline = [](const ServiceName& service_name, const iox::units::Duration& cycle_time) -> auto {
+    auto missed_deadline = [](const ServiceName& service_name, const iox2::bb::Duration& cycle_time) -> auto {
         std::cout << service_name.to_string().c_str() << ": voilated contract and did not send a message after "
                   << cycle_time << std::endl;
     };
@@ -101,17 +101,19 @@ void handle_incoming_events(Listener<ServiceType::Ipc>& listener,
                             const ServiceName& service_name) {
     listener
         .try_wait_all([&](auto event_id) -> auto {
-            if (event_id == iox::into<EventId>(PubSubEvent::ProcessDied)) {
+            if (event_id == iox2::bb::into<EventId>(PubSubEvent::ProcessDied)) {
                 std::cout << service_name.to_string().c_str() << ": process died!" << std::endl;
-            } else if (event_id == iox::into<EventId>(PubSubEvent::PublisherConnected)) {
+            } else if (event_id == iox2::bb::into<EventId>(PubSubEvent::PublisherConnected)) {
                 std::cout << service_name.to_string().c_str() << ": publisher connected!" << std::endl;
-            } else if (event_id == iox::into<EventId>(PubSubEvent::PublisherDisconnected)) {
+            } else if (event_id == iox2::bb::into<EventId>(PubSubEvent::PublisherDisconnected)) {
                 std::cout << service_name.to_string().c_str() << ": publisher disconnected!" << std::endl;
-            } else if (event_id == iox::into<EventId>(PubSubEvent::SentSample)) {
-                subscriber.receive().expect("").and_then([&](auto& sample) -> auto {
+            } else if (event_id == iox2::bb::into<EventId>(PubSubEvent::SentSample)) {
+                const auto receive_result = subscriber.receive();
+                if (receive_result.has_value() && receive_result.value().has_value()) {
+                    const auto& sample = receive_result.value().value();
                     std::cout << service_name.to_string().c_str() << ": Received sample " << sample.payload() << " ..."
                               << std::endl;
-                });
+                }
             }
         })
         .expect("");
@@ -121,8 +123,9 @@ void find_and_cleanup_dead_nodes() {
     Node<ServiceType::Ipc>::list(Config::global_config(), [](auto node_state) -> auto {
         node_state.dead([](auto view) -> auto {
             std::cout << "detected dead node: ";
-            view.details().and_then(
-                [](const auto& details) -> auto { std::cout << details.name().to_string().c_str(); });
+            if (view.details().has_value()) {
+                std::cout << view.details().value().name().to_string().c_str();
+            }
             std::cout << std::endl;
             view.remove_stale_resources().expect("");
         });

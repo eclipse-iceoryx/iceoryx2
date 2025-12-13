@@ -16,9 +16,9 @@ pub mod details {
 
     use alloc::vec::Vec;
 
-    use iceoryx2_bb_log::{debug, fail};
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
     use iceoryx2_bb_system_types::{file_name::FileName, path::Path};
+    use iceoryx2_log::{debug, fail};
     use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
 
     use crate::{

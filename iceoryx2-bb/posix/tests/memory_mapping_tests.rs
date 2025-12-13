@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate iceoryx2_loggers;
+
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_posix::{
     config::TEST_DIRECTORY,
@@ -17,12 +19,14 @@ use iceoryx2_bb_posix::{
     file_descriptor::FileDescriptorBased,
     memory_mapping::*,
     system_configuration::SystemInfo,
+    testing::create_test_directory,
     unique_system_id::UniqueSystemId,
 };
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_testing::assert_that;
 
 fn generate_file_name() -> FilePath {
+    create_test_directory();
     let mut file = FileName::new(b"mmap_tests").unwrap();
     file.push_bytes(
         UniqueSystemId::new()

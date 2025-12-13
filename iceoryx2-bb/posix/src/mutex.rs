@@ -15,6 +15,8 @@
 //! # Example
 //!
 //! ```ignore
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_posix::mutex::*;
 //! use core::time::Duration;
 //! use iceoryx2_bb_posix::clock::ClockType;
@@ -53,13 +55,12 @@ use core::marker::PhantomData;
 use core::ops::{Deref, DerefMut};
 use core::time::Duration;
 use iceoryx2_bb_elementary::scope_guard::*;
-use iceoryx2_bb_log::{fail, fatal_panic, warn};
+use iceoryx2_log::{fail, fatal_panic, warn};
 use iceoryx2_pal_posix::posix::MemZeroedStruct;
 use iceoryx2_pal_posix::*;
 
 use crate::adaptive_wait::*;
 use crate::clock::{AsTimespec, ClockType, NanosleepError, Time, TimeError};
-use crate::handle_errno;
 use iceoryx2_pal_posix::posix::errno::Errno;
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
@@ -165,6 +166,8 @@ impl From<MutexCreationError> for MutexError {
 /// # Example
 ///
 /// ```
+/// extern crate iceoryx2_loggers;
+///
 /// use iceoryx2_bb_posix::mutex::*;
 ///
 /// let handle = MutexHandle::<i32>::new();
@@ -474,6 +477,8 @@ impl<T: Sized + Debug> MutexHandle<T> {
 /// For a detailed builder example, see [`MutexBuilder`].
 ///
 /// ```
+/// extern crate iceoryx2_loggers;
+///
 /// use iceoryx2_bb_posix::mutex::*;
 /// use core::time::Duration;
 ///

@@ -20,6 +20,8 @@
 //! ## Handle Events
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_linux::epoll::*;
 //! use iceoryx2_bb_posix::socket_pair::StreamingSocket;
 //! use iceoryx2_bb_posix::file_descriptor::FileDescriptorBased;
@@ -58,7 +60,6 @@ use core::sync::atomic::Ordering;
 use core::time::Duration;
 
 use iceoryx2_bb_container::semantic_string::SemanticString;
-use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_bb_posix::{
     file::{AccessMode, FileBuilder, FileOpenError, FileReadError},
     file_descriptor::{FileDescriptor, FileDescriptorBased},
@@ -66,6 +67,7 @@ use iceoryx2_bb_posix::{
     signal_set::FetchableSignalSet,
 };
 use iceoryx2_bb_system_types::file_path::FilePath;
+use iceoryx2_log::{fail, warn};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 use iceoryx2_pal_os_api::linux;
 use iceoryx2_pal_posix::posix::{self};

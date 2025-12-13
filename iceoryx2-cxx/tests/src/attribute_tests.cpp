@@ -44,8 +44,8 @@ TEST(AttributeVerifier, required_keys_are_listed_in_keys) {
     auto keys = attribute_verifier.keys();
 
     ASSERT_THAT(keys.size(), Eq(2));
-    ASSERT_THAT(keys[0], Eq(key_1));
-    ASSERT_THAT(keys[1], Eq(key_2));
+    ASSERT_THAT(keys.unchecked_access()[0], Eq(key_1));
+    ASSERT_THAT(keys.unchecked_access()[1], Eq(key_2));
 }
 
 TEST(AttributeVerifier, verify_requirements_successful_for_compatible_setups) {

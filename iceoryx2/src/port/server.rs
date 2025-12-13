@@ -85,10 +85,10 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 use iceoryx2_bb_elementary::{cyclic_tagger::CyclicTagger, CallbackProgression};
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
-use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
+use iceoryx2_log::{fail, warn};
 
 use crate::port::update_connections::UpdateConnections;
 use crate::prelude::UnableToDeliverStrategy;
@@ -301,7 +301,6 @@ impl<
             unsafe { service.static_config.messaging_pattern.request_response() }
                 .required_amount_of_chunks_per_server_data_segment(
                     server_factory.max_loaned_responses_per_request,
-                    number_of_requests_per_client,
                 );
 
         let client_list = &service.dynamic_storage.get().request_response().clients;
@@ -396,7 +395,7 @@ impl<
             receiver_max_borrowed_samples: static_config
                 .max_borrowed_responses_per_pending_response,
             sender_max_borrowed_samples: server_factory.max_loaned_responses_per_request
-                * number_of_requests_per_client
+                * static_config.max_active_requests_per_client
                 * static_config.max_clients,
             enable_safe_overflow: static_config.enable_safe_overflow_for_responses,
             number_of_samples: number_of_responses,

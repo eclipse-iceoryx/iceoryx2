@@ -20,10 +20,6 @@ set(${PROJECT_NAME}_DIR ${PROJECT_SOURCE_DIR}/cmake
     FORCE
 )
 
-if(ICEORYX_WITH_FETCH_CONTENT)
-    return()
-endif()
-
 #
 ########## set variables for export ##########
 #

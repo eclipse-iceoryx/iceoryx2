@@ -97,6 +97,9 @@ maybe(
         "//:iceoryx2-tunnel/tunnel/Cargo.toml",
         "//:iceoryx2-tunnel/conformance-tests/Cargo.toml",
         "//:iceoryx2-services/discovery/Cargo.toml",
+        "//:iceoryx2-log/log/Cargo.toml",
+        "//:iceoryx2-log/loggers/Cargo.toml",
+        "//:iceoryx2-log/types/Cargo.toml",
         "//:iceoryx2/Cargo.toml",
         "//:iceoryx2/conformance-tests/Cargo.toml",
         "//:iceoryx2-bb/conformance-test-macros/Cargo.toml",
@@ -106,7 +109,6 @@ maybe(
         "//:iceoryx2-bb/elementary-traits/Cargo.toml",
         "//:iceoryx2-bb/linux/Cargo.toml",
         "//:iceoryx2-bb/lock-free/Cargo.toml",
-        "//:iceoryx2-bb/log/Cargo.toml",
         "//:iceoryx2-bb/memory/Cargo.toml",
         "//:iceoryx2-bb/posix/Cargo.toml",
         "//:iceoryx2-bb/system-types/Cargo.toml",
@@ -148,25 +150,3 @@ maybe(
 load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
 
 bazel_skylib_workspace()
-
-
-# Load iceoryx rules
-ICEORYX_VERSION = "2.95.8"
-
-maybe(
-    name = "iceoryx",
-    repo_rule = http_archive,
-    sha256 = "00b1bf874e17b3e986f11cd134e2be339f3d12643b58b4544692cc4e820439ff",
-    strip_prefix = "iceoryx-{}".format(ICEORYX_VERSION),
-    url = "https://github.com/eclipse-iceoryx/iceoryx/archive/v{}.tar.gz".format(ICEORYX_VERSION),
-)
-
-# Load iceoryx dependencies
-load("@iceoryx//bazel:load_repositories.bzl", "load_repositories")
-
-load_repositories()
-
-# Setup iceoryx dependencies
-load("@iceoryx//bazel:setup_repositories.bzl", "setup_repositories")
-
-setup_repositories()

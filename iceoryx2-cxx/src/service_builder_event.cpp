@@ -19,49 +19,56 @@ ServiceBuilderEvent<S>::ServiceBuilderEvent(iox2_service_builder_h handle)
 }
 
 template <ServiceType S>
+// NOLINTNEXTLINE(readability-function-size) the size cannot easily be reduced due to the amount of builder parameter
 void ServiceBuilderEvent<S>::set_parameters() {
-    m_max_notifiers.and_then(
-        [&](auto value) -> auto { iox2_service_builder_event_set_max_notifiers(&m_handle, value); });
-    m_max_listeners.and_then(
-        [&](auto value) -> auto { iox2_service_builder_event_set_max_listeners(&m_handle, value); });
+    if (m_max_notifiers.has_value()) {
+        iox2_service_builder_event_set_max_notifiers(&m_handle, m_max_notifiers.value());
+    }
+    if (m_max_listeners.has_value()) {
+        iox2_service_builder_event_set_max_listeners(&m_handle, m_max_listeners.value());
+    }
 
     if (m_verify_notifier_created_event) {
-        m_notifier_created_event
-            .and_then([&](auto value) -> auto {
-                iox2_service_builder_event_set_notifier_created_event(&m_handle, value.as_value());
-            })
-            .or_else([&]() -> auto { iox2_service_builder_event_disable_notifier_created_event(&m_handle); });
+        if (m_notifier_created_event.has_value()) {
+            iox2_service_builder_event_set_notifier_created_event(&m_handle,
+                                                                  m_notifier_created_event.value().as_value());
+        } else {
+            iox2_service_builder_event_disable_notifier_created_event(&m_handle);
+        }
     }
 
     if (m_verify_notifier_dropped_event) {
-        m_notifier_dropped_event
-            .and_then([&](auto value) -> auto {
-                iox2_service_builder_event_set_notifier_dropped_event(&m_handle, value.as_value());
-            })
-            .or_else([&]() -> auto { iox2_service_builder_event_disable_notifier_dropped_event(&m_handle); });
+        if (m_notifier_dropped_event.has_value()) {
+            iox2_service_builder_event_set_notifier_dropped_event(&m_handle,
+                                                                  m_notifier_dropped_event.value().as_value());
+        } else {
+            iox2_service_builder_event_disable_notifier_dropped_event(&m_handle);
+        }
     }
 
     if (m_verify_notifier_dead_event) {
-        m_notifier_dead_event
-            .and_then([&](auto value) -> auto {
-                iox2_service_builder_event_set_notifier_dead_event(&m_handle, value.as_value());
-            })
-            .or_else([&]() -> auto { iox2_service_builder_event_disable_notifier_dead_event(&m_handle); });
+        if (m_notifier_dead_event.has_value()) {
+            iox2_service_builder_event_set_notifier_dead_event(&m_handle, m_notifier_dead_event.value().as_value());
+        } else {
+            iox2_service_builder_event_disable_notifier_dead_event(&m_handle);
+        }
     }
 
     if (m_verify_deadline) {
-        m_deadline
-            .and_then([&](auto value) -> auto {
-                auto duration = value.timespec();
-                iox2_service_builder_event_set_deadline(
-                    &m_handle, static_cast<uint64_t>(duration.tv_sec), static_cast<uint32_t>(duration.tv_nsec));
-            })
-            .or_else([&]() -> auto { iox2_service_builder_event_disable_deadline(&m_handle); });
+        if (m_deadline.has_value()) {
+            auto& deadline = m_deadline.value();
+            iox2_service_builder_event_set_deadline(&m_handle, deadline.as_secs(), deadline.subsec_nanos());
+        } else {
+            iox2_service_builder_event_disable_deadline(&m_handle);
+        }
     }
 
-    m_max_nodes.and_then([&](auto value) -> auto { iox2_service_builder_event_set_max_nodes(&m_handle, value); });
-    m_event_id_max_value.and_then(
-        [&](auto value) -> auto { iox2_service_builder_event_set_event_id_max_value(&m_handle, value); });
+    if (m_max_nodes.has_value()) {
+        iox2_service_builder_event_set_max_nodes(&m_handle, m_max_nodes.value());
+    }
+    if (m_event_id_max_value.has_value()) {
+        iox2_service_builder_event_set_event_id_max_value(&m_handle, m_event_id_max_value.value());
+    }
 }
 
 template <ServiceType S>
@@ -87,7 +94,7 @@ auto ServiceBuilderEvent<S>::notifier_dead_event(EventId event_id) && -> Service
 
 
 template <ServiceType S>
-auto ServiceBuilderEvent<S>::deadline(iox::units::Duration deadline) && -> ServiceBuilderEvent&& {
+auto ServiceBuilderEvent<S>::deadline(iox2::bb::Duration deadline) && -> ServiceBuilderEvent&& {
     m_deadline.emplace(deadline);
     m_verify_deadline = true;
     return std::move(*this);
@@ -122,49 +129,51 @@ auto ServiceBuilderEvent<S>::disable_deadline() && -> ServiceBuilderEvent&& {
 }
 
 template <ServiceType S>
-auto ServiceBuilderEvent<S>::open_or_create() && -> iox::expected<PortFactoryEvent<S>, EventOpenOrCreateError> {
+auto ServiceBuilderEvent<S>::open_or_create() && -> iox2::legacy::expected<PortFactoryEvent<S>,
+                                                                           EventOpenOrCreateError> {
     set_parameters();
     iox2_port_factory_event_h event_handle {};
     auto result = iox2_service_builder_event_open_or_create(m_handle, nullptr, &event_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(PortFactoryEvent<S>(event_handle));
+        return iox2::legacy::ok(PortFactoryEvent<S>(event_handle));
     }
 
-    return iox::err(iox::into<EventOpenOrCreateError>(result));
+    return iox2::legacy::err(iox2::bb::into<EventOpenOrCreateError>(result));
 }
 
 template <ServiceType S>
-auto ServiceBuilderEvent<S>::open() && -> iox::expected<PortFactoryEvent<S>, EventOpenError> {
+auto ServiceBuilderEvent<S>::open() && -> iox2::legacy::expected<PortFactoryEvent<S>, EventOpenError> {
     set_parameters();
 
     iox2_port_factory_event_h event_handle {};
     auto result = iox2_service_builder_event_open(m_handle, nullptr, &event_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(PortFactoryEvent<S>(event_handle));
+        return iox2::legacy::ok(PortFactoryEvent<S>(event_handle));
     }
 
-    return iox::err(iox::into<EventOpenError>(result));
+    return iox2::legacy::err(iox2::bb::into<EventOpenError>(result));
 }
 
 template <ServiceType S>
-auto ServiceBuilderEvent<S>::create() && -> iox::expected<PortFactoryEvent<S>, EventCreateError> {
+auto ServiceBuilderEvent<S>::create() && -> iox2::legacy::expected<PortFactoryEvent<S>, EventCreateError> {
     set_parameters();
 
     iox2_port_factory_event_h event_handle {};
     auto result = iox2_service_builder_event_create(m_handle, nullptr, &event_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(PortFactoryEvent<S>(event_handle));
+        return iox2::legacy::ok(PortFactoryEvent<S>(event_handle));
     }
 
-    return iox::err(iox::into<EventCreateError>(result));
+    return iox2::legacy::err(iox2::bb::into<EventCreateError>(result));
 }
 
 template <ServiceType S>
 auto ServiceBuilderEvent<S>::open_or_create_with_attributes(
-    const AttributeVerifier& required_attributes) && -> iox::expected<PortFactoryEvent<S>, EventOpenOrCreateError> {
+    const AttributeVerifier&
+        required_attributes) && -> iox2::legacy::expected<PortFactoryEvent<S>, EventOpenOrCreateError> {
     set_parameters();
 
     iox2_port_factory_event_h event_handle {};
@@ -172,15 +181,15 @@ auto ServiceBuilderEvent<S>::open_or_create_with_attributes(
         m_handle, &required_attributes.m_handle, nullptr, &event_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(PortFactoryEvent<S>(event_handle));
+        return iox2::legacy::ok(PortFactoryEvent<S>(event_handle));
     }
 
-    return iox::err(iox::into<EventOpenOrCreateError>(result));
+    return iox2::legacy::err(iox2::bb::into<EventOpenOrCreateError>(result));
 }
 
 template <ServiceType S>
 auto ServiceBuilderEvent<S>::open_with_attributes(
-    const AttributeVerifier& required_attributes) && -> iox::expected<PortFactoryEvent<S>, EventOpenError> {
+    const AttributeVerifier& required_attributes) && -> iox2::legacy::expected<PortFactoryEvent<S>, EventOpenError> {
     set_parameters();
 
     iox2_port_factory_event_h event_handle {};
@@ -188,15 +197,15 @@ auto ServiceBuilderEvent<S>::open_with_attributes(
         m_handle, &required_attributes.m_handle, nullptr, &event_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(PortFactoryEvent<S>(event_handle));
+        return iox2::legacy::ok(PortFactoryEvent<S>(event_handle));
     }
 
-    return iox::err(iox::into<EventOpenError>(result));
+    return iox2::legacy::err(iox2::bb::into<EventOpenError>(result));
 }
 
 template <ServiceType S>
 auto ServiceBuilderEvent<S>::create_with_attributes(
-    const AttributeSpecifier& attributes) && -> iox::expected<PortFactoryEvent<S>, EventCreateError> {
+    const AttributeSpecifier& attributes) && -> iox2::legacy::expected<PortFactoryEvent<S>, EventCreateError> {
     set_parameters();
 
     iox2_port_factory_event_h event_handle {};
@@ -204,10 +213,10 @@ auto ServiceBuilderEvent<S>::create_with_attributes(
         iox2_service_builder_event_create_with_attributes(m_handle, &attributes.m_handle, nullptr, &event_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(PortFactoryEvent<S>(event_handle));
+        return iox2::legacy::ok(PortFactoryEvent<S>(event_handle));
     }
 
-    return iox::err(iox::into<EventCreateError>(result));
+    return iox2::legacy::err(iox2::bb::into<EventCreateError>(result));
 }
 
 template class ServiceBuilderEvent<ServiceType::Ipc>;

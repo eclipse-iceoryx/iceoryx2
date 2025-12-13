@@ -107,28 +107,26 @@ iox2_common_build_and_test_no_doc_tests_release_template: &IOX2_COMMON_BUILD_AND
 
 iox2_ffi_common_debug_template: &IOX2_FFI_COMMON_DEBUG
   ffi_script:
-    - ./internal/scripts/ci_build_and_install_iceoryx_hoofs.sh
-    - cmake -S . -B target/ff/cc/build -DCMAKE_BUILD_TYPE=Debug -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON -DCMAKE_INSTALL_PREFIX=target/ff/cc/install -DCMAKE_INSTALL_PREFIX="$( pwd )/target/ff/iceoryx/install" -DRUST_BUILD_ARTIFACT_PATH="$( pwd )/target/debug"
+    - cmake -S . -B target/ff/cc/build -DCMAKE_BUILD_TYPE=Debug -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON -DCMAKE_INSTALL_PREFIX=target/ff/cc/install -DRUST_BUILD_ARTIFACT_PATH="$( pwd )/target/debug"
     - cmake --build target/ff/cc/build
     - cmake --install target/ff/cc/build
     - target/ff/cc/build/tests/iceoryx2-c-tests
     - rm -rf target/ff/cc/build
-    - cmake -S examples/c -B target/ff/out-of-tree-c -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$( pwd )/target/ff/cc/install;$( pwd )/target/ff/iceoryx/install"
+    - cmake -S examples/c -B target/ff/out-of-tree-c -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$( pwd )/target/ff/cc/install"
     - cmake --build target/ff/out-of-tree-c
-    - cmake -S examples/cxx -B target/ff/out-of-tree-cxx -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$( pwd )/target/ff/cc/install;$( pwd )/target/ff/iceoryx/install"
+    - cmake -S examples/cxx -B target/ff/out-of-tree-cxx -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$( pwd )/target/ff/cc/install"
     - cmake --build target/ff/out-of-tree-cxx
 
 iox2_ffi_common_release_template: &IOX2_FFI_COMMON_RELEASE
   ffi_script:
-    - ./internal/scripts/ci_build_and_install_iceoryx_hoofs.sh
-    - cmake -S . -B target/ff/cc/build -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON -DCMAKE_INSTALL_PREFIX=target/ff/cc/install -DCMAKE_INSTALL_PREFIX="$( pwd )/target/ff/iceoryx/install" -DRUST_BUILD_ARTIFACT_PATH="$( pwd )/target/release"
+    - cmake -S . -B target/ff/cc/build -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON -DCMAKE_INSTALL_PREFIX=target/ff/cc/install -DRUST_BUILD_ARTIFACT_PATH="$( pwd )/target/release"
     - cmake --build target/ff/cc/build
     - cmake --install target/ff/cc/build
     - target/ff/cc/build/tests/iceoryx2-c-tests
     - rm -rf target/ff/cc/build
-    - cmake -S examples/c -B target/ff/out-of-tree-c -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$( pwd )/target/ff/cc/install;$( pwd )/target/ff/iceoryx/install"
+    - cmake -S examples/c -B target/ff/out-of-tree-c -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$( pwd )/target/ff/cc/install"
     - cmake --build target/ff/out-of-tree-c
-    - cmake -S examples/cxx -B target/ff/out-of-tree-cxx -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$( pwd )/target/ff/cc/install;$( pwd )/target/ff/iceoryx/install"
+    - cmake -S examples/cxx -B target/ff/out-of-tree-cxx -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$( pwd )/target/ff/cc/install"
     - cmake --build target/ff/out-of-tree-cxx
 
 iox2_freebsd_setup_template: &IOX2_FREEBSD_SETUP

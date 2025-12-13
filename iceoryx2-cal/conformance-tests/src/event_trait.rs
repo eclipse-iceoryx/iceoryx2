@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate iceoryx2_loggers;
+
 use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 
 #[allow(clippy::module_inception)]

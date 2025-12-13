@@ -55,6 +55,7 @@
 //! ```
 
 pub mod common;
+pub mod file;
 pub mod posix;
 pub mod process_local;
 pub mod recommended;

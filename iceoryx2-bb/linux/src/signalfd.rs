@@ -19,6 +19,8 @@
 //! # Example
 //!
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_linux::signalfd::SignalFdBuilder;
 //! use iceoryx2_bb_posix::signal_set::FetchableSignalSet;
 //! use iceoryx2_bb_posix::signal::FetchableSignal;
@@ -41,7 +43,6 @@
 
 use core::fmt::Debug;
 
-use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_posix::{
     file_descriptor::{FileDescriptor, FileDescriptorBased},
     file_descriptor_set::SynchronousMultiplexing,
@@ -50,6 +51,7 @@ use iceoryx2_bb_posix::{
     signal_set::FetchableSignalSet,
     user::Uid,
 };
+use iceoryx2_log::{fail, fatal_panic};
 use iceoryx2_pal_os_api::linux;
 use iceoryx2_pal_posix::posix::{self};
 

@@ -57,7 +57,7 @@ configure_package_config_file(
 
 # target directories
 install(
-    TARGETS iceoryx2-bb-containers-cxx
+    TARGETS iceoryx2-bb-cxx
     EXPORT ${TARGETS_EXPORT_NAME}
     RUNTIME DESTINATION ${DESTINATION_BINDIR} COMPONENT bin
     LIBRARY DESTINATION ${DESTINATION_LIBDIR} COMPONENT lib

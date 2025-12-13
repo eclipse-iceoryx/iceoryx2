@@ -103,7 +103,7 @@ use iceoryx2_bb_container::vector::*;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_log::fail;
+use iceoryx2_log::fail;
 use serde::{Deserialize, Serialize};
 
 use crate::constants::MAX_ATTRIBUTES;

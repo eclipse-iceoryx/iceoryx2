@@ -15,6 +15,8 @@
 //!
 //! # Examples
 //! ```
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_posix::directory::*;
 //! use iceoryx2_bb_system_types::path::Path;
 //! use iceoryx2_bb_container::semantic_string::SemanticString;
@@ -42,8 +44,8 @@ use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_container::string::strnlen;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary::scope_guard::ScopeGuardBuilder;
-use iceoryx2_bb_log::{error, fail, fatal_panic, trace};
 use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath, path::Path};
+use iceoryx2_log::{error, fail, fatal_panic, trace};
 use iceoryx2_pal_configuration::PATH_SEPARATOR;
 use iceoryx2_pal_posix::posix::MemZeroedStruct;
 use iceoryx2_pal_posix::*;
@@ -99,6 +101,7 @@ enum_gen! { DirectoryCreateError
     PartsOfThePathAreNotADirectory,
     NoSpaceLeft,
     ReadOnlyFilesystem,
+    UnableToApplyPermissions,
     UnknownError(i32)
   mapping:
     DirectoryOpenError
@@ -152,6 +155,8 @@ enum_gen! {
 /// # Example
 ///
 /// ```
+/// # extern crate iceoryx2_loggers;
+///
 /// use iceoryx2_bb_posix::directory::*;
 /// use iceoryx2_bb_system_types::path::Path;
 /// use iceoryx2_bb_container::semantic_string::SemanticString;
@@ -257,10 +262,11 @@ impl Directory {
         path: &Path,
         permission: Permission,
     ) -> Result<(), DirectoryCreateError> {
+        let origin = "Directory::create()";
         let msg = format!("Unable to create directory \"{path}\"");
 
         if unsafe { posix::mkdir(path.as_c_str(), permission.as_mode()) } == -1 {
-            handle_errno!(DirectoryCreateError, from "Directory::create",
+            handle_errno!(DirectoryCreateError, from origin,
                 Errno::EACCES => (InsufficientPermissions, "{} due to insufficient permissions.", msg),
                 Errno::EEXIST => (DirectoryAlreadyExists, "{} since the directory already exists.", msg),
                 Errno::ELOOP => (LoopInSymbolicLinks, "{} due to a loop in the symbolic links.", msg),
@@ -273,7 +279,30 @@ impl Directory {
             );
         }
 
-        Ok(())
+        // Reapply the permissions since the `umask` call can influence the
+        // permission creation. It would be possible to adjust the umask(0)
+        // and restore it afterwards but this applies the umask to the whole
+        // process and could influence a thread which calls umask as well.
+        //
+        // So since umask is out, we have to reapply the permissions again,
+        // after the directory was created.
+        let mut dir = match Directory::new(path) {
+            Ok(dir) => dir,
+            Err(e) => {
+                let _ = Directory::remove(path);
+                fail!(from origin, with DirectoryCreateError::UnableToApplyPermissions,
+                    "{msg} since it could not be opened after creation to apply the permissions due to {e:?}.");
+            }
+        };
+
+        match dir.set_permission(permission) {
+            Ok(()) => Ok(()),
+            Err(e) => {
+                let _ = Directory::remove(path);
+                fail!(from origin, with DirectoryCreateError::UnableToApplyPermissions,
+                    "{msg} since the permissions could not be applied due to {e:?}.");
+            }
+        }
     }
 
     /// Creates a new directory at the provided path.
@@ -320,7 +349,7 @@ impl Directory {
 
         match Directory::new(path) {
             Ok(d) => {
-                trace!(from d, "created");
+                trace!(from d, "created with permissions \"{permission}\"");
                 Ok(d)
             }
             Err(e) => {

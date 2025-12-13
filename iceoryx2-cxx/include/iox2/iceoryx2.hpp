@@ -13,11 +13,10 @@
 #ifndef IOX2_ICEORYX2_HPP
 #define IOX2_ICEORYX2_HPP
 
-#include "iox/duration.hpp"
 #include "iox/layout.hpp"
 #include "iox/slice.hpp"
-#include "iox/string.hpp"
-#include "iox/vector.hpp"
+#include "iox2/bb/duration.hpp"
+#include "iox2/legacy/string.hpp"
 
 #include "iox2/active_request.hpp"
 #include "iox2/allocation_strategy.hpp"
@@ -40,7 +39,6 @@
 #include "iox2/entry_handle_error.hpp"
 #include "iox2/entry_handle_mut.hpp"
 #include "iox2/entry_handle_mut_error.hpp"
-#include "iox2/entry_value.hpp"
 #include "iox2/entry_value_uninit.hpp"
 #include "iox2/enum_translation.hpp"
 #include "iox2/event_id.hpp"
@@ -93,7 +91,6 @@
 #include "iox2/sample.hpp"
 #include "iox2/sample_mut.hpp"
 #include "iox2/sample_mut_uninit.hpp"
-#include "iox2/semantic_string.hpp"
 #include "iox2/server.hpp"
 #include "iox2/server_details.hpp"
 #include "iox2/server_error.hpp"

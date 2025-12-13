@@ -334,7 +334,8 @@ pub unsafe fn fchmod(fd: int, mode: mode_t) -> int {
     let handle = match HandleTranslator::get_instance().get(fd) {
         Some(FdHandleEntry::SharedMemory(handle)) => handle.state_handle,
         Some(FdHandleEntry::File(handle)) => handle.handle,
-        _ => {
+        Some(FdHandleEntry::DirectoryStream(handle)) => return 0,
+        e => {
             Errno::set(Errno::EBADF);
             return -1;
         }

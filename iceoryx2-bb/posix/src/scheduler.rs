@@ -12,7 +12,7 @@
 
 //! Provides a POSIX [`Scheduler`] abstraction.
 
-use iceoryx2_bb_log::{fail, fatal_panic, warn};
+use iceoryx2_log::{fail, fatal_panic, warn};
 use iceoryx2_pal_posix::*;
 
 use crate::config::DEFAULT_SCHEDULER;

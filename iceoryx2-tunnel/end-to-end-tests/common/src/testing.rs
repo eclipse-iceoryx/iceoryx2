@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_log::{error, info};
+use iceoryx2_log::{error, info};
 
 #[allow(dead_code)]
 pub fn pass_test() {

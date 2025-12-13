@@ -14,17 +14,26 @@ use core::mem::MaybeUninit;
 
 use alloc::format;
 use alloc::vec::Vec;
+use iceoryx2_bb_container::semantic_string::SemanticStringError;
 
 pub use crate::event::*;
 use crate::static_storage::file::NamedConceptConfiguration;
-use iceoryx2_bb_log::fail;
+use iceoryx2_bb_posix::permission::Permission;
 use iceoryx2_bb_posix::{
-    file_descriptor::FileDescriptorBased, file_descriptor_set::SynchronousMultiplexing,
-    unix_datagram_socket::*,
+    config::required_socket_directory, file_descriptor::FileDescriptorBased,
+    file_descriptor_set::SynchronousMultiplexing, unix_datagram_socket::*,
 };
 pub use iceoryx2_bb_system_types::file_name::FileName;
+use iceoryx2_bb_system_types::file_path::FilePath;
+use iceoryx2_log::fail;
 
 const MAX_BATCH_SIZE: usize = 512;
+
+#[cfg(not(feature = "dev_permissions"))]
+const SOCKET_PERMISSIONS: Permission = Permission::OWNER_ALL;
+
+#[cfg(feature = "dev_permissions")]
+const SOCKET_PERMISSIONS: Permission = Permission::ALL;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Configuration {
@@ -69,6 +78,23 @@ impl NamedConceptConfiguration for Configuration {
 
     fn get_path_hint(&self) -> &Path {
         &self.path
+    }
+}
+
+impl Configuration {
+    fn socket_path(&self, name: &FileName, msg: &str) -> Result<FilePath, SemanticStringError> {
+        if let Some(dir) = required_socket_directory() {
+            let file_name = self.path_for(name).file_name();
+            match FilePath::from_path_and_file(&dir, &file_name) {
+                Ok(v) => Ok(v),
+                Err(e) => {
+                    fail!(from self, with e,
+                        "{msg} since the required socket dir \"{dir}\" and \"{file_name}\" are resulting in a path length that exceeds the system supported max path length ({e:?}).");
+                }
+            }
+        } else {
+            Ok(self.path_for(name))
+        }
     }
 }
 
@@ -197,7 +223,11 @@ impl crate::event::NotifierBuilder<EventImpl> for NotifierBuilder {
     fn open(self) -> Result<Notifier, NotifierCreateError> {
         let msg = "Failed to open event::unix_datagram_socket::Notifier";
 
-        let full_name = self.config.path_for(&self.name);
+        let full_name = self
+            .config
+            .socket_path(&self.name, msg)
+            .map_err(|_| NotifierCreateError::InternalFailure)?;
+
         match UnixDatagramSenderBuilder::new(&full_name).create() {
             Ok(sender) => Ok(Notifier {
                 sender,
@@ -362,9 +392,15 @@ impl crate::event::ListenerBuilder<EventImpl> for ListenerBuilder {
 
     fn create(self) -> Result<Listener, ListenerCreateError> {
         let msg = "Failed to create event::unix_datagram_socket::Listener";
-        let full_name = self.config.path_for(&self.name);
+
+        let full_name = self
+            .config
+            .socket_path(&self.name, msg)
+            .map_err(|_| ListenerCreateError::InternalFailure)?;
+
         match UnixDatagramReceiverBuilder::new(&full_name)
             .creation_mode(CreationMode::CreateExclusive)
+            .permission(SOCKET_PERMISSIONS)
             .create()
         {
             Ok(r) => Ok(Listener {

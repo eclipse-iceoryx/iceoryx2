@@ -17,6 +17,8 @@
 //! # Example
 //!
 //! ```ignore
+//! # extern crate iceoryx2_loggers;
+//!
 //! use iceoryx2_bb_posix::file_descriptor_set::*;
 //! use iceoryx2_bb_posix::unix_datagram_socket::*;
 //! use core::time::Duration;
@@ -53,7 +55,7 @@ use crate::{
     clock::AsTimeval,
     file_descriptor::{FileDescriptor, FileDescriptorBased},
 };
-use iceoryx2_bb_log::fail;
+use iceoryx2_log::fail;
 use iceoryx2_pal_posix::posix::{errno::Errno, MemZeroedStruct};
 use iceoryx2_pal_posix::*;
 

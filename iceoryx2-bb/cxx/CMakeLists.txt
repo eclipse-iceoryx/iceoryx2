@@ -26,11 +26,22 @@ include(cmake/GdbPrettyPrinter.cmake)
 
 include(Iceoryx2PlatformSettings)
 
-add_library(iceoryx2-bb-containers-cxx INTERFACE)
-add_library(iceoryx2-bb-cxx::iceoryx2-bb-containers-cxx ALIAS iceoryx2-bb-containers-cxx)
+add_library(iceoryx2-bb-cxx)
+add_library(iceoryx2-bb-cxx::iceoryx2-bb-cxx ALIAS iceoryx2-bb-cxx)
 
-target_sources(iceoryx2-bb-containers-cxx INTERFACE
+target_sources(iceoryx2-bb-cxx PUBLIC
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/detail/path_and_file_verifier.hpp>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/detail/static_function.hpp>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/duration.hpp>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/file_name.hpp>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/file_path.hpp>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/static_function.hpp>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/into.hpp>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/path.hpp>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/semantic_string.hpp>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/std_chrono_support.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/config.hpp>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/expected.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/optional.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/static_string.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/static_vector.hpp>
@@ -38,16 +49,34 @@ target_sources(iceoryx2-bb-containers-cxx INTERFACE
     $<BUILD_INTERFACE:$<$<CXX_COMPILER_ID:MSVC>:${PROJECT_SOURCE_DIR}/iceoryx2-bb-containers-cxx.natvis>>
 )
 
-target_include_directories(iceoryx2-bb-containers-cxx
-    INTERFACE
+target_sources(iceoryx2-bb-cxx
+    PRIVATE
+    src/cli/arguments.cpp
+    src/cli/command_line_parser.cpp
+    src/cli/option.cpp
+    src/cli/option_definition.cpp
+    src/cli/option_manager.cpp
+    src/console_logger.cpp
+    src/default_error_handler.cpp
+    src/hoofs_error_reporting.cpp
+    src/logger.cpp
+    src/memory.cpp
+    src/type_traits.cpp
+)
+
+target_include_directories(iceoryx2-bb-cxx
+    PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include/${PREFIX}>
 )
 
-target_compile_features(iceoryx2-bb-containers-cxx INTERFACE ${ICEORYX2_CXX_STD})
+target_compile_features(iceoryx2-bb-cxx PRIVATE ${ICEORYX2_CXX_STD})
 
-target_gdb_pretty_printer(iceoryx2-bb-containers-cxx
-    INTERFACE
+# NOTE: position independent code is required due to the usage of thread-local-storage
+set_target_properties(iceoryx2-bb-cxx PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+target_gdb_pretty_printer(iceoryx2-bb-cxx
+    PUBLIC
     ${PROJECT_SOURCE_DIR}/iceoryx2-bb-containers-cxx-pretty-printer.py
 )
 

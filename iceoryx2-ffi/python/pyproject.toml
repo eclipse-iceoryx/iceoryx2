@@ -3,7 +3,7 @@ name = "iceoryx2"
 version = "0.7.0"
 description = "Lock-Free Zero-Copy Inter-process Communication"
 readme = "README.md"
-requires-python = ">=3.11,<4.0"
+requires-python = ">=3.10,<4.0"
 license = "Apache-2.0 OR MIT"
 keywords = ["ipc", "inter-process communication", "zero-copy", "shared memory", "publish-subscribe", "request-response", "event"]
 authors = [
@@ -55,7 +55,7 @@ target-dir = "../../target/ff/python"
 packages = [{include = "iceoryx2", from = "python-src"}]
 
 [tool.poetry.dependencies]
-python = ">=3.11,<4.0"
+python = ">=3.10,<4.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.4.1"

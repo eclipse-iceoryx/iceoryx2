@@ -17,7 +17,7 @@ use core::{
     hash::Hash,
     ops::{Deref, DerefMut},
 };
-use iceoryx2_bb_log::{fail, fatal_panic};
+use iceoryx2_log::{fail, fatal_panic};
 
 /// Runtime fixed-capacity string where the user can provide a stateful allocator.
 pub mod polymorphic_string;
@@ -177,6 +177,8 @@ pub trait String:
     /// If the string has no more capacity left it fails otherwise it succeeds.
     ///
     /// ```
+    /// # extern crate iceoryx2_loggers;
+    ///
     /// use iceoryx2_bb_container::string::*;
     ///
     /// const STRING_CAPACITY: usize = 123;
@@ -193,6 +195,8 @@ pub trait String:
     /// If the string has no more capacity left it fails otherwise it succeeds.
     ///
     /// ```
+    /// # extern crate iceoryx2_loggers;
+    ///
     /// use iceoryx2_bb_container::string::*;
     ///
     /// const STRING_CAPACITY: usize = 123;
@@ -259,6 +263,8 @@ pub trait String:
     /// Removes the last character from the string and returns it. If the string is empty it
     /// returns none.
     /// ```
+    /// # extern crate iceoryx2_loggers;
+    ///
     /// use iceoryx2_bb_container::string::*;
     ///
     /// const STRING_CAPACITY: usize = 123;

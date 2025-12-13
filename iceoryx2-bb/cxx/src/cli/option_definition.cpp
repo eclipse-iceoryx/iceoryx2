@@ -1,25 +1,24 @@
 // Copyright (c) 2022 by Apex.AI Inc. All rights reserved.
+// Copyright (c) 2025 Contributors to the Eclipse Foundation
+//
+// See the NOTICE file(s) distributed with this work for additional
+// information regarding copyright ownership.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Apache Software License 2.0 which is available at
 // https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
 // which is available at https://opensource.org/licenses/MIT.
 //
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox/cli/option_definition.hpp"
-#include "iox/std_string_support.hpp"
+#include "iox2/legacy/cli/option_definition.hpp"
+#include "iox2/legacy/std_string_support.hpp"
 
-namespace iox {
+namespace iox2 {
+namespace legacy {
 namespace cli {
 OptionDefinition::OptionDefinition(const OptionDescription_t& programDescription,
-                                   const function<void()>& onFailureCallback) noexcept
+                                   const bb::StaticFunction<void()>& onFailureCallback) noexcept
     : m_programDescription { programDescription }
     , m_onFailureCallback { onFailureCallback } {
     constexpr bool IS_SWITCH = true;
@@ -122,4 +121,5 @@ std::ostream& operator<<(std::ostream& stream, const OptionWithDetails& option) 
     return stream;
 }
 } // namespace cli
-} // namespace iox
+} // namespace legacy
+} // namespace iox2

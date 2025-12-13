@@ -78,7 +78,7 @@ pub mod reader {
         let reader = sut.reader_builder().create().unwrap();
         let entry_handle = reader.entry::<ValueType>(&0);
         assert_that!(entry_handle, is_ok);
-        assert_that!(entry_handle.unwrap().get(), eq 0);
+        assert_that!(*entry_handle.unwrap().get(), eq 0);
     }
 
     #[conformance_test]
@@ -182,6 +182,7 @@ pub mod reader {
                 read_value_ptr as *mut u8,
                 size_of::<ValueType>(),
                 align_of::<ValueType>(),
+                core::ptr::null_mut::<u64>(),
             );
         }
         assert_that!(read_value, eq default_value);
