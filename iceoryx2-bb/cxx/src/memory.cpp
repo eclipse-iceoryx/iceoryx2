@@ -16,6 +16,11 @@
 
 #include <cstdlib>
 
+#include <expected>
+auto foo(uint64_t val) -> std::expected<uint64_t, bool> { // NOLINT
+    return val;
+}
+
 namespace iox2 {
 namespace legacy {
 void* alignedAlloc(const size_t alignment, const size_t size) noexcept {

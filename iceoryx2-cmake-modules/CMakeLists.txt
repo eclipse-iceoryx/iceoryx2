@@ -38,6 +38,23 @@ set(${PROJECT_NAME}_DIR ${PROJECT_SOURCE_DIR}/cmake
 )
 
 #
+########## define C++ version ##########
+#
+
+if (IOX2_INTERNAL_MODULE_PLATFORM_ID MATCHES win)
+    set(IOX2_CXX_STD_VERSION_DEFAULT 17)
+elseif (IOX2_INTERNAL_MODULE_PLATFORM_ID MATCHES mac)
+    set(IOX2_CXX_STD_VERSION_DEFAULT 17)
+else()
+    set(IOX2_CXX_STD_VERSION_DEFAULT 14)
+endif()
+
+include(modules/Iceoryx2OptionAndParamMacros.cmake)
+include(cmake/options.cmake)
+
+configure_file(cmake/Iceoryx2CxxStdVersion.cmake.in modules/Iceoryx2CxxStdVersion.cmake)
+
+#
 ########## set variables for export ##########
 #
 
