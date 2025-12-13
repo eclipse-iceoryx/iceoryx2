@@ -964,4 +964,145 @@ TEST(StaticString, not_equal_operator_checks_for_string_inequality) {
     EXPECT_FALSE(sut5 != iox2::container::StaticString<STRING_SIZE>());
 }
 
+TEST(StaticString, less_operator_works) {
+    constexpr uint64_t const STRING_SIZE = 5;
+    auto const sut1 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABCD");
+    auto const sut2 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABCD");
+    EXPECT_FALSE(sut1 < sut2);
+    EXPECT_FALSE(sut2 < sut1);
+    auto const sut3 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABC");
+    EXPECT_FALSE(sut1 < sut3);
+    EXPECT_TRUE(sut3 < sut1);
+    auto const sut4 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABCDE");
+    EXPECT_TRUE(sut1 < sut4);
+    EXPECT_FALSE(sut4 < sut1);
+    auto const sut5 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("");
+    EXPECT_FALSE(sut1 < sut5);
+    EXPECT_TRUE(sut5 < sut1);
+}
+
+TEST(StaticString, less_or_equal_operator_works) {
+    constexpr uint64_t const STRING_SIZE = 5;
+    auto const sut1 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABCD");
+    auto const sut2 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABCD");
+    EXPECT_TRUE(sut1 <= sut2);
+    EXPECT_TRUE(sut2 <= sut1);
+    auto const sut3 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABC");
+    EXPECT_FALSE(sut1 <= sut3);
+    EXPECT_TRUE(sut3 <= sut1);
+    auto const sut4 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABCDE");
+    EXPECT_TRUE(sut1 <= sut4);
+    EXPECT_FALSE(sut4 <= sut1);
+    auto const sut5 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("");
+    EXPECT_FALSE(sut1 <= sut5);
+    EXPECT_TRUE(sut5 <= sut1);
+}
+
+TEST(StaticString, greater_operator_works) {
+    constexpr uint64_t const STRING_SIZE = 5;
+    auto const sut1 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABCD");
+    auto const sut2 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABCD");
+    EXPECT_FALSE(sut1 > sut2);
+    EXPECT_FALSE(sut2 > sut1);
+    auto const sut3 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABC");
+    EXPECT_TRUE(sut1 > sut3);
+    EXPECT_FALSE(sut3 > sut1);
+    auto const sut4 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABCDE");
+    EXPECT_FALSE(sut1 > sut4);
+    EXPECT_TRUE(sut4 > sut1);
+    auto const sut5 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("");
+    EXPECT_TRUE(sut1 > sut5);
+    EXPECT_FALSE(sut5 > sut1);
+}
+
+TEST(StaticString, greater_or_equal_operator_works) {
+    constexpr uint64_t const STRING_SIZE = 5;
+    auto const sut1 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABCD");
+    auto const sut2 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABCD");
+    EXPECT_TRUE(sut1 >= sut2);
+    EXPECT_TRUE(sut2 >= sut1);
+    auto const sut3 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABC");
+    EXPECT_TRUE(sut1 >= sut3);
+    EXPECT_FALSE(sut3 >= sut1);
+    auto const sut4 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABCDE");
+    EXPECT_FALSE(sut1 >= sut4);
+    EXPECT_TRUE(sut4 >= sut1);
+    auto const sut5 = *iox2::container::StaticString<STRING_SIZE>::from_utf8("");
+    EXPECT_TRUE(sut1 >= sut5);
+    EXPECT_FALSE(sut5 >= sut1);
+}
+
+TEST(StaticString, from_utf8_unchecked_construction_from_c_style_ascii_string) {
+    constexpr uint64_t const STRING_SIZE = 15;
+    auto const sut = iox2::container::StaticString<STRING_SIZE>::from_utf8_unchecked("hello world!");
+    ASSERT_EQ(sut.size(), 12);
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
+    EXPECT_STREQ(sut.unchecked_access().c_str(), "hello world!");
+}
+
+template <uint64_t, class = void>
+struct DetectInvalidFromUtf8UncheckedWithStringABC : std::false_type { };
+template <uint64_t M>
+struct DetectInvalidFromUtf8UncheckedWithStringABC<
+    M,
+    DetectT<decltype(iox2::container::StaticString<M>::from_utf8_unchecked("ABC"))>> : std::true_type { };
+
+TEST(StaticString, from_utf8_unchecked_works_up_to_capacity) {
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,hicpp-avoid-c-arrays,modernize-avoid-c-arrays) testing
+    char const test_string[] = { 'A', 'B', 'C', '\0' };
+    constexpr uint64_t const STRING_SIZE = 3;
+    auto const sut = iox2::container::StaticString<STRING_SIZE>::from_utf8_unchecked(test_string);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "ABC");
+    static_assert(DetectInvalidFromUtf8UncheckedWithStringABC<4>::value, "ABC fits into capacity 4");
+    static_assert(DetectInvalidFromUtf8UncheckedWithStringABC<3>::value, "ABC fits into capacity 3");
+    static_assert(!DetectInvalidFromUtf8UncheckedWithStringABC<2>::value, "ABC does not fit into capacity 2");
+    static_assert(!DetectInvalidFromUtf8UncheckedWithStringABC<1>::value, "ABC does not fit into capacity 1");
+    static_assert(!DetectInvalidFromUtf8UncheckedWithStringABC<0>::value, "ABC does not fit into capacity 0");
+}
+
+TEST(StaticString, from_utf8_null_terminated_unchecked_truncated_construction_from_null_terminated_c_style_string) {
+    char const* test_string = "Hello World";
+    constexpr uint64_t const STRING_SIZE = 15;
+
+    auto sut = iox2::container::StaticString<STRING_SIZE>::from_utf8_null_terminated_unchecked_truncated(test_string,
+                                                                                                         STRING_SIZE);
+    ASSERT_EQ(sut.size(), 11);
+    EXPECT_STREQ(sut.unchecked_access().c_str(), test_string);
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
+
+    sut = iox2::container::StaticString<STRING_SIZE>::from_utf8_null_terminated_unchecked_truncated(test_string,
+                                                                                                    11); // NOLINT
+    ASSERT_EQ(sut.size(), 11);
+    EXPECT_STREQ(sut.unchecked_access().c_str(), test_string);
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
+
+    sut = iox2::container::StaticString<STRING_SIZE>::from_utf8_null_terminated_unchecked_truncated(test_string,
+                                                                                                    5); // NOLINT
+    ASSERT_EQ(sut.size(), 5);
+    EXPECT_STREQ(sut.unchecked_access().c_str(), "Hello");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
+}
+
+TEST(StaticString,
+     from_utf8_null_terminated_unchecked_truncated_construction_from_large_null_terminated_c_style_string) {
+    char const* test_string = "Hello World";
+    constexpr uint64_t const STRING_SIZE = 5;
+
+    auto sut = iox2::container::StaticString<STRING_SIZE>::from_utf8_null_terminated_unchecked_truncated(test_string,
+                                                                                                         STRING_SIZE);
+    ASSERT_EQ(sut.size(), STRING_SIZE);
+    EXPECT_STREQ(sut.unchecked_access().c_str(), "Hello");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
+
+    sut = iox2::container::StaticString<STRING_SIZE>::from_utf8_null_terminated_unchecked_truncated(test_string,
+                                                                                                    11); // NOLINT
+    ASSERT_EQ(sut.size(), STRING_SIZE);
+    EXPECT_STREQ(sut.unchecked_access().c_str(), "Hello");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
+
+    sut = iox2::container::StaticString<STRING_SIZE>::from_utf8_null_terminated_unchecked_truncated(test_string, 2);
+    ASSERT_EQ(sut.size(), 2);
+    EXPECT_STREQ(sut.unchecked_access().c_str(), "He");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
+}
 } // namespace

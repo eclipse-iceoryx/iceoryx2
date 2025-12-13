@@ -22,7 +22,7 @@ namespace iox2 {
 namespace bb {
 namespace detail {
 inline auto path_does_contain_invalid_content(
-    const legacy::string<platform::IOX2_MAX_PATH_LENGTH>& value IOX2_MAYBE_UNUSED) noexcept -> bool {
+    const container::StaticString<platform::IOX2_MAX_PATH_LENGTH>& value IOX2_MAYBE_UNUSED) noexcept -> bool {
     return false;
 }
 } // namespace detail

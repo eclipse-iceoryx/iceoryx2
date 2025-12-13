@@ -11,24 +11,21 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/attribute.hpp"
+#include "iox2/container/static_string.hpp"
 
 namespace iox2 {
 auto AttributeView::key() const -> Attribute::Key {
-    Attribute::Key key;
-    key.unsafe_raw_access([this](auto* buffer, const auto& info) -> auto {
-        iox2_attribute_key(m_handle, buffer, info.total_size);
-        return iox2_attribute_key_len(m_handle);
-    });
-    return key;
+    // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays, modernize-avoid-c-arrays) temporary storage, required by C API
+    char buffer[IOX2_ATTRIBUTE_KEY_LENGTH];
+    iox2_attribute_key(m_handle, &buffer[0], IOX2_ATTRIBUTE_KEY_LENGTH);
+    return container::StaticString<IOX2_ATTRIBUTE_KEY_LENGTH>::from_utf8_unchecked(buffer);
 }
 
 auto AttributeView::value() const -> Attribute::Value {
-    Attribute::Value value;
-    value.unsafe_raw_access([this](auto* buffer, const auto& info) -> auto {
-        iox2_attribute_value(m_handle, buffer, info.total_size);
-        return iox2_attribute_value_len(m_handle);
-    });
-    return value;
+    // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays, modernize-avoid-c-arrays) temporary storage, required by C API
+    char buffer[IOX2_ATTRIBUTE_VALUE_LENGTH];
+    iox2_attribute_value(m_handle, &buffer[0], IOX2_ATTRIBUTE_VALUE_LENGTH);
+    return container::StaticString<IOX2_ATTRIBUTE_VALUE_LENGTH>::from_utf8_unchecked(buffer);
 }
 
 AttributeView::AttributeView(iox2_attribute_h_ref handle)
@@ -37,6 +34,7 @@ AttributeView::AttributeView(iox2_attribute_h_ref handle)
 } // namespace iox2
 
 auto operator<<(std::ostream& stream, const iox2::AttributeView& value) -> std::ostream& {
-    stream << "Attribute { key = \"" << value.key().c_str() << "\", value = \"" << value.value().c_str() << "\" }";
+    stream << "Attribute { key = \"" << value.key().unchecked_access().c_str() << "\", value = \""
+           << value.value().unchecked_access().c_str() << "\" }";
     return stream;
 }

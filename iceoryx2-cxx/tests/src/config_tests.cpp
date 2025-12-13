@@ -23,7 +23,7 @@ TEST(Config, global_prefix) {
     auto config = Config();
 
     config.global().set_prefix(test_value);
-    ASSERT_THAT(config.global().prefix(), StrEq(test_value.as_string().c_str()));
+    ASSERT_THAT(config.global().prefix(), StrEq(test_value.as_string().unchecked_access().c_str()));
 }
 
 TEST(Config, global_root_path) {
@@ -31,7 +31,7 @@ TEST(Config, global_root_path) {
     auto config = Config();
 
     config.global().set_root_path(test_value);
-    ASSERT_THAT(config.global().root_path(), StrEq(test_value.as_string().c_str()));
+    ASSERT_THAT(config.global().root_path(), StrEq(test_value.as_string().unchecked_access().c_str()));
 }
 
 TEST(Config, defaults_event_max_listeners) {
@@ -187,7 +187,7 @@ TEST(Config, global_service_directory) {
     auto config = Config();
 
     config.global().service().set_directory(test_value);
-    ASSERT_THAT(config.global().service().directory(), StrEq(test_value.as_string().c_str()));
+    ASSERT_THAT(config.global().service().directory(), StrEq(test_value.as_string().unchecked_access().c_str()));
 }
 
 TEST(Config, global_service_data_segment_suffix) {
@@ -195,7 +195,8 @@ TEST(Config, global_service_data_segment_suffix) {
     auto config = Config();
 
     config.global().service().set_data_segment_suffix(test_value);
-    ASSERT_THAT(config.global().service().data_segment_suffix(), StrEq(test_value.as_string().c_str()));
+    ASSERT_THAT(config.global().service().data_segment_suffix(),
+                StrEq(test_value.as_string().unchecked_access().c_str()));
 }
 
 TEST(Config, global_service_static_config_storage_suffix) {
@@ -203,7 +204,8 @@ TEST(Config, global_service_static_config_storage_suffix) {
     auto config = Config();
 
     config.global().service().set_static_config_storage_suffix(test_value);
-    ASSERT_THAT(config.global().service().static_config_storage_suffix(), StrEq(test_value.as_string().c_str()));
+    ASSERT_THAT(config.global().service().static_config_storage_suffix(),
+                StrEq(test_value.as_string().unchecked_access().c_str()));
 }
 
 TEST(Config, global_service_dynamic_config_storage_suffix) {
@@ -211,7 +213,8 @@ TEST(Config, global_service_dynamic_config_storage_suffix) {
     auto config = Config();
 
     config.global().service().set_dynamic_config_storage_suffix(test_value);
-    ASSERT_THAT(config.global().service().dynamic_config_storage_suffix(), StrEq(test_value.as_string().c_str()));
+    ASSERT_THAT(config.global().service().dynamic_config_storage_suffix(),
+                StrEq(test_value.as_string().unchecked_access().c_str()));
 }
 
 TEST(Config, global_service_creation_timeout) {
@@ -227,7 +230,8 @@ TEST(Config, global_service_connection_suffix) {
     auto config = Config();
 
     config.global().service().set_connection_suffix(test_value);
-    ASSERT_THAT(config.global().service().connection_suffix(), StrEq(test_value.as_string().c_str()));
+    ASSERT_THAT(config.global().service().connection_suffix(),
+                StrEq(test_value.as_string().unchecked_access().c_str()));
 }
 
 TEST(Config, global_service_event_connection_suffix) {
@@ -235,7 +239,8 @@ TEST(Config, global_service_event_connection_suffix) {
     auto config = Config();
 
     config.global().service().set_event_connection_suffix(test_value);
-    ASSERT_THAT(config.global().service().event_connection_suffix(), StrEq(test_value.as_string().c_str()));
+    ASSERT_THAT(config.global().service().event_connection_suffix(),
+                StrEq(test_value.as_string().unchecked_access().c_str()));
 }
 
 TEST(Config, global_node_directory) {
@@ -243,7 +248,7 @@ TEST(Config, global_node_directory) {
     auto config = Config();
 
     config.global().node().set_directory(test_value);
-    ASSERT_THAT(config.global().node().directory(), StrEq(test_value.as_string().c_str()));
+    ASSERT_THAT(config.global().node().directory(), StrEq(test_value.as_string().unchecked_access().c_str()));
 }
 
 TEST(Config, global_node_monitor_suffix) {
@@ -251,7 +256,7 @@ TEST(Config, global_node_monitor_suffix) {
     auto config = Config();
 
     config.global().node().set_monitor_suffix(test_value);
-    ASSERT_THAT(config.global().node().monitor_suffix(), StrEq(test_value.as_string().c_str()));
+    ASSERT_THAT(config.global().node().monitor_suffix(), StrEq(test_value.as_string().unchecked_access().c_str()));
 }
 
 TEST(Config, global_node_static_config_suffix) {
@@ -259,7 +264,8 @@ TEST(Config, global_node_static_config_suffix) {
     auto config = Config();
 
     config.global().node().set_static_config_suffix(test_value);
-    ASSERT_THAT(config.global().node().static_config_suffix(), StrEq(test_value.as_string().c_str()));
+    ASSERT_THAT(config.global().node().static_config_suffix(),
+                StrEq(test_value.as_string().unchecked_access().c_str()));
 }
 
 TEST(Config, global_node_service_tag_suffix) {
@@ -267,7 +273,7 @@ TEST(Config, global_node_service_tag_suffix) {
     auto config = Config();
 
     config.global().node().set_service_tag_suffix(test_value);
-    ASSERT_THAT(config.global().node().service_tag_suffix(), StrEq(test_value.as_string().c_str()));
+    ASSERT_THAT(config.global().node().service_tag_suffix(), StrEq(test_value.as_string().unchecked_access().c_str()));
 }
 
 TEST(Config, global_node_cleanup_dead_nodes_on_creation) {
