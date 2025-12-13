@@ -53,38 +53,55 @@ TEST(path_and_file_verifier_test_isValidFileName, CorrectInternalAsciiAliases) {
 
 TEST(path_and_file_verifier_test_isValidFileName, EmptyNameIsInvalid) {
     ::testing::Test::RecordProperty("TEST_ID", "b2b7aa63-c67e-4915-a906-e3b4779ab772");
-    EXPECT_FALSE(is_valid_file_name(StaticString<FILE_PATH_LENGTH>()));
+    EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_file_name(StaticString<FILE_PATH_LENGTH>()));
 }
 
 TEST(path_and_file_verifier_test_isValidFileName, RelativePathComponentsAreInvalid) {
     ::testing::Test::RecordProperty("TEST_ID", "b33b4534-f134-499f-ac72-65a3fecaef12");
-    EXPECT_FALSE(is_valid_file_name(*StaticString<FILE_PATH_LENGTH>::from_utf8(".")));
-    EXPECT_FALSE(is_valid_file_name(*StaticString<FILE_PATH_LENGTH>::from_utf8("..")));
+    EXPECT_FALSE(
+        PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_file_name(*StaticString<FILE_PATH_LENGTH>::from_utf8(".")));
+    EXPECT_FALSE(
+        PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_file_name(*StaticString<FILE_PATH_LENGTH>::from_utf8("..")));
 }
 
 // this restriction ensures that we are compatible with the windows
 // api which does not support dots and spaces at the end
 TEST(path_and_file_verifier_test_isValidFileName, DotsAndSpacesAreNotValidAtTheEnd) {
     ::testing::Test::RecordProperty("TEST_ID", "436b8146-6386-4b03-9fd0-939d2c91eed3");
-    EXPECT_FALSE(is_valid_file_name(*StaticString<FILE_PATH_LENGTH>::from_utf8("dot.")));
-    EXPECT_FALSE(is_valid_file_name(*StaticString<FILE_PATH_LENGTH>::from_utf8("dotdot..")));
-    EXPECT_FALSE(is_valid_file_name(*StaticString<FILE_PATH_LENGTH>::from_utf8("dotdotdot...")));
-    EXPECT_FALSE(is_valid_file_name(*StaticString<FILE_PATH_LENGTH>::from_utf8(" ")));
-    EXPECT_FALSE(is_valid_file_name(*StaticString<FILE_PATH_LENGTH>::from_utf8(" .")));
-    EXPECT_FALSE(is_valid_file_name(*StaticString<FILE_PATH_LENGTH>::from_utf8(" . ")));
-    EXPECT_FALSE(is_valid_file_name(*StaticString<FILE_PATH_LENGTH>::from_utf8(". .")));
-    EXPECT_FALSE(is_valid_file_name(*StaticString<FILE_PATH_LENGTH>::from_utf8("space ")));
-    EXPECT_FALSE(is_valid_file_name(*StaticString<FILE_PATH_LENGTH>::from_utf8("more space  ")));
+    EXPECT_FALSE(
+        PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_file_name(*StaticString<FILE_PATH_LENGTH>::from_utf8("dot.")));
+    EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_file_name(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("dotdot..")));
+    EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_file_name(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("dotdotdot...")));
+    EXPECT_FALSE(
+        PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_file_name(*StaticString<FILE_PATH_LENGTH>::from_utf8(" ")));
+    EXPECT_FALSE(
+        PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_file_name(*StaticString<FILE_PATH_LENGTH>::from_utf8(" .")));
+    EXPECT_FALSE(
+        PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_file_name(*StaticString<FILE_PATH_LENGTH>::from_utf8(" . ")));
+    EXPECT_FALSE(
+        PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_file_name(*StaticString<FILE_PATH_LENGTH>::from_utf8(". .")));
+    EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_file_name(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("space ")));
+    EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_file_name(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("more space  ")));
 }
 
 TEST(path_and_file_verifier_test_isValidFileName, FileNameWithValidSymbolsAndDotsAreValid) {
     ::testing::Test::RecordProperty("TEST_ID", "1455491c-1fc3-4843-a72b-2f51f8f2fadc");
-    EXPECT_TRUE(is_valid_file_name(*StaticString<FILE_PATH_LENGTH>::from_utf8("..bla")));
-    EXPECT_TRUE(is_valid_file_name(*StaticString<FILE_PATH_LENGTH>::from_utf8(".blubb")));
-    EXPECT_TRUE(is_valid_file_name(*StaticString<FILE_PATH_LENGTH>::from_utf8("scna..bla")));
-    EXPECT_TRUE(is_valid_file_name(*StaticString<FILE_PATH_LENGTH>::from_utf8("scna.blubb")));
-    EXPECT_TRUE(is_valid_file_name(*StaticString<FILE_PATH_LENGTH>::from_utf8(".bla.b.a.sla.a")));
-    EXPECT_TRUE(is_valid_file_name(*StaticString<FILE_PATH_LENGTH>::from_utf8("...fuu...man...schmu")));
+    EXPECT_TRUE(
+        PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_file_name(*StaticString<FILE_PATH_LENGTH>::from_utf8("..bla")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_file_name(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8(".blubb")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_file_name(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("scna..bla")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_file_name(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("scna.blubb")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_file_name(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8(".bla.b.a.sla.a")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_file_name(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("...fuu...man...schmu")));
 }
 
 TEST(path_and_file_verifier_test_isValidFileName, ValidLetterCombinationsAreValid) {
@@ -105,8 +122,8 @@ TEST(path_and_file_verifier_test_isValidFileName, ValidLetterCombinationsAreVali
             auto& s = combinations[index];
             s.append(1, static_cast<char>(i));
 
-            EXPECT_TRUE(
-                is_valid_file_name(*StaticString<FILE_PATH_LENGTH>::from_utf8_null_terminated_unchecked(s.c_str())));
+            EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_file_name(
+                *StaticString<FILE_PATH_LENGTH>::from_utf8_null_terminated_unchecked(s.c_str())));
         }
     }
 }
@@ -140,99 +157,142 @@ TEST(path_and_file_verifier_test_isValidFileName, WhenOneInvalidCharacterIsConta
         const auto invalid_character_end_test =
             *StaticString<FILE_PATH_LENGTH>::from_utf8_null_terminated_unchecked(invalid_character_end.c_str());
 
-        EXPECT_FALSE(is_valid_file_name(invalid_character_front_test));
-        EXPECT_FALSE(is_valid_file_name(invalid_character_middle_test));
-        EXPECT_FALSE(is_valid_file_name(invalid_character_end_test));
+        EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_file_name(invalid_character_front_test));
+        EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_file_name(invalid_character_middle_test));
+        EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_file_name(invalid_character_end_test));
     }
 }
 
 TEST(path_and_file_verifier_test_isValidPathToFile, StringWithEndingSlashIsNotAFilePath) {
     ::testing::Test::RecordProperty("TEST_ID", "e0eecf9b-6f2f-4da2-8a18-466504348c50");
-    EXPECT_FALSE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("//")));
-    EXPECT_FALSE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("/")));
-    EXPECT_FALSE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("../")));
-    EXPECT_FALSE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("////")));
-    EXPECT_FALSE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("/fu/bla/far/")));
-    EXPECT_FALSE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("/schnappa/di/puppa//")));
+    EXPECT_FALSE(
+        PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("//")));
+    EXPECT_FALSE(
+        PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("/")));
+    EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("../")));
+    EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("////")));
+    EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/fu/bla/far/")));
+    EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/schnappa/di/puppa//")));
 }
 
 TEST(path_and_file_verifier_test_isValidPathToFile, MultipleSlashsAreValidFilePath) {
     ::testing::Test::RecordProperty("TEST_ID", "d7621d88-d128-4239-8acc-b18f47c92b62");
-    EXPECT_TRUE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("//beginning/double/slash")));
-    EXPECT_TRUE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("/middle//double/slash")));
-    EXPECT_TRUE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("middle//double/slash")));
-    EXPECT_TRUE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("/multi////slash")));
-    EXPECT_TRUE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("////multi/slash")));
-    EXPECT_TRUE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("//multi///slash////hypno")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("//beginning/double/slash")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/middle//double/slash")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("middle//double/slash")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/multi////slash")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("////multi/slash")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("//multi///slash////hypno")));
 }
 
 TEST(path_and_file_verifier_test_isValidPathToFile, RelativePathComponentsAreValid) {
     ::testing::Test::RecordProperty("TEST_ID", "ec7d682f-ac7b-4173-a3f6-55969696ee92");
-    EXPECT_TRUE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("../some.file")));
-    EXPECT_TRUE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("./another_file")));
-    EXPECT_TRUE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("./dir/../../fuu-bar")));
-    EXPECT_TRUE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("./././gimme-blubb")));
-    EXPECT_TRUE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("./../.././gimme-blubb")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("../some.file")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("./another_file")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("./dir/../../fuu-bar")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("./././gimme-blubb")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("./../.././gimme-blubb")));
 }
 
 TEST(path_and_file_verifier_test_isValidPathToFile, RelativePathBeginningFromRootIsValid) {
     ::testing::Test::RecordProperty("TEST_ID", "30c24356-1777-42a0-906b-73890fd19830");
-    EXPECT_TRUE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("/./././gimme-blubb")));
-    EXPECT_TRUE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("/../../../gimme-blubb")));
-    EXPECT_TRUE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("/../some/dir/gimme-blubb")));
-    EXPECT_TRUE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("/./blubb/dir/gimme-blubb")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/./././gimme-blubb")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/../../../gimme-blubb")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/../some/dir/gimme-blubb")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/./blubb/dir/gimme-blubb")));
 }
 
 TEST(path_and_file_verifier_test_isValidPathToFile, SingleFileIsValidPath) {
     ::testing::Test::RecordProperty("TEST_ID", "264d792f-34cb-4bc0-886c-ac9de05bb1f9");
-    EXPECT_TRUE(is_valid_path_to_file(
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
         *StaticString<FILE_PATH_LENGTH>::from_utf8("gimme-blubb"))); // NOLINT: false positive out-of-bounds
-    EXPECT_TRUE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("a")));
-    EXPECT_TRUE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("fuu:blubb")));
-    EXPECT_TRUE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("/blarbi")));
-    EXPECT_TRUE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("/x")));
-    EXPECT_TRUE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("/fuu:-012")));
+    EXPECT_TRUE(
+        PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("a")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("fuu:blubb")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/blarbi")));
+    EXPECT_TRUE(
+        PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("/x")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/fuu:-012")));
 }
 
 TEST(path_and_file_verifier_test_isValidPathToFile, ValidPathsWithNoRelativeComponentAreValid) {
     ::testing::Test::RecordProperty("TEST_ID", "5556ef38-b028-4155-86c7-dda9530e8611");
-    EXPECT_TRUE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("/fuu/bla/blubb/balaa")));
-    EXPECT_TRUE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("/a/b/c/d/1/2/4")));
-    EXPECT_TRUE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("asd/fuu/asdaaas/1")));
-    EXPECT_TRUE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("123/456")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/fuu/bla/blubb/balaa")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/a/b/c/d/1/2/4")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("asd/fuu/asdaaas/1")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("123/456")));
 }
 
 TEST(path_and_file_verifier_test_isValidPathToFile, EndingWithRelativePathComponentIsInvalid) {
     ::testing::Test::RecordProperty("TEST_ID", "c3a5c3e6-840d-4ed5-8064-fede7404391d");
-    EXPECT_FALSE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("/..")));
-    EXPECT_FALSE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("/.")));
-    EXPECT_FALSE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("./..")));
-    EXPECT_FALSE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("../.")));
-    EXPECT_FALSE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("some/path/to/..")));
-    EXPECT_FALSE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("/another/path/to/.")));
-    EXPECT_FALSE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("../bla/fuu/../blubb/.")));
-    EXPECT_FALSE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("./blubb/fuu/../bla/..")));
+    EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/..")));
+    EXPECT_FALSE(
+        PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("/.")));
+    EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("./..")));
+    EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("../.")));
+    EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("some/path/to/..")));
+    EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/another/path/to/.")));
+    EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("../bla/fuu/../blubb/.")));
+    EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("./blubb/fuu/../bla/..")));
 }
 
 TEST(path_and_file_verifier_test_isValidPathToFile, FilePathsWithEndingDotsAreInvalid) {
     ::testing::Test::RecordProperty("TEST_ID", "2b0dd948-49a0-4eb6-9c78-bad6e6933833");
-    EXPECT_FALSE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("a.")));
-    EXPECT_FALSE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("/asda.")));
-    EXPECT_FALSE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("/bla/../fuu/asda..")));
-    EXPECT_FALSE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("/bla/./.././xa..")));
+    EXPECT_FALSE(
+        PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("a.")));
+    EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/asda.")));
+    EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/bla/../fuu/asda..")));
+    EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/bla/./.././xa..")));
 }
 
 TEST(path_and_file_verifier_test_isValidPathToFile, PathWhichContainsAllValidCharactersIsValid) {
     ::testing::Test::RecordProperty("TEST_ID", "2667afd7-f60c-4d1a-8eff-bf272c68b47a");
-    EXPECT_TRUE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8(
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8(
         "/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/0123456789/-.:_")));
-    EXPECT_TRUE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8(
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8(
         "/abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-.:_")));
 }
 
 TEST(path_and_file_verifier_test_isValidPathToFile, EmptyFilePathIsInvalid) {
     ::testing::Test::RecordProperty("TEST_ID", "a045581c-3a66-4d0e-b2e2-6ed5a97d4f89");
-    EXPECT_FALSE(is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("")));
+    EXPECT_FALSE(
+        PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(*StaticString<FILE_PATH_LENGTH>::from_utf8("")));
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
@@ -284,139 +344,208 @@ TEST(path_and_file_verifier_test_isValidPathToFile_isValidPathToDirectory_isVali
         const auto invalid_character_end_test =
             *StaticString<FILE_PATH_LENGTH>::from_utf8_null_terminated_unchecked(invalid_character_end.c_str());
 
-        EXPECT_FALSE(is_valid_path_to_file(invalid_character_front_test));
-        EXPECT_FALSE(is_valid_path_to_file(invalid_character_middle_test));
-        EXPECT_FALSE(is_valid_path_to_file(invalid_character_end_test));
+        EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(invalid_character_front_test));
+        EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(invalid_character_middle_test));
+        EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_file(invalid_character_end_test));
 
-        EXPECT_FALSE(is_valid_path_to_directory(invalid_character_front_test));
-        EXPECT_FALSE(is_valid_path_to_directory(invalid_character_middle_test));
-        EXPECT_FALSE(is_valid_path_to_directory(invalid_character_end_test));
+        EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(invalid_character_front_test));
+        EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(invalid_character_middle_test));
+        EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(invalid_character_end_test));
 
-        EXPECT_FALSE(is_valid_path_entry(invalid_character_front_test, RelativePathComponents::Accept));
-        EXPECT_FALSE(is_valid_path_entry(invalid_character_middle_test, RelativePathComponents::Accept));
-        EXPECT_FALSE(is_valid_path_entry(invalid_character_end_test, RelativePathComponents::Accept));
+        EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_entry(invalid_character_front_test,
+                                                                                RelativePathComponents::Accept));
+        EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_entry(invalid_character_middle_test,
+                                                                                RelativePathComponents::Accept));
+        EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_entry(invalid_character_end_test,
+                                                                                RelativePathComponents::Accept));
 
-        EXPECT_FALSE(is_valid_path_entry(invalid_character_front_test, RelativePathComponents::Reject));
-        EXPECT_FALSE(is_valid_path_entry(invalid_character_middle_test, RelativePathComponents::Reject));
-        EXPECT_FALSE(is_valid_path_entry(invalid_character_end_test, RelativePathComponents::Reject));
+        EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_entry(invalid_character_front_test,
+                                                                                RelativePathComponents::Reject));
+        EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_entry(invalid_character_middle_test,
+                                                                                RelativePathComponents::Reject));
+        EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_entry(invalid_character_end_test,
+                                                                                RelativePathComponents::Reject));
     }
 }
 
 TEST(path_and_file_verifier_test_isValidPathToDirectory, MultipleSlashsAreValidPath) {
     ::testing::Test::RecordProperty("TEST_ID", "14c6f67f-486a-4b08-a91a-6ef30af84cce");
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("//beginning/double/slash")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("//beginning/double/slash//")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("/middle//double/slash")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("middle//double/slash")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("middle//double/slash//")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("/multi////slash")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("/multi////slash////")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("////multi/slash")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("//multi///slash////hypno")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("//multi///slash////hypno////")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("//beginning/double/slash")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("//beginning/double/slash//")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/middle//double/slash")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("middle//double/slash")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("middle//double/slash//")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/multi////slash")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/multi////slash////")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("////multi/slash")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("//multi///slash////hypno")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("//multi///slash////hypno////")));
 }
 
 TEST(path_and_file_verifier_test_isValidPathToDirectory, RelativePathComponentsAreValid) {
     ::testing::Test::RecordProperty("TEST_ID", "97c215ca-7f67-4ec1-9b17-d98b219a804d");
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("../some.file")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("../some.dir/")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("./another_file")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("./another_dir/")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("./dir/../../fuu-bar")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("./dir/../../fuu-bar/dir/")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("./././gimme-blubb")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("./././gimme-blubb/dir/")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("./../.././gimme-blubb")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("./../.././gimme-blubb/dir/")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("all/glory/to/the/hypnotoad")));
-    EXPECT_TRUE(
-        is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("./all/glory/to/the/hypnotoad/")));
-    EXPECT_TRUE(
-        is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("../all/glory/to/the/hypnotoad/")));
-    EXPECT_TRUE(
-        is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("../all/glory/to/the/hypnotoad/../")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("../some.file")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("../some.dir/")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("./another_file")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("./another_dir/")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("./dir/../../fuu-bar")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("./dir/../../fuu-bar/dir/")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("./././gimme-blubb")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("./././gimme-blubb/dir/")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("./../.././gimme-blubb")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("./../.././gimme-blubb/dir/")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("all/glory/to/the/hypnotoad")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("./all/glory/to/the/hypnotoad/")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("../all/glory/to/the/hypnotoad/")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("../all/glory/to/the/hypnotoad/../")));
 }
 
 TEST(path_and_file_verifier_test_isValidPathToDirectory, RelativePathBeginningFromRootIsValid) {
     ::testing::Test::RecordProperty("TEST_ID", "6d2b2656-19ad-4ea0-9ade-77419af849ba");
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("/./././gimme-blubb")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("/./././gimme-blubb/dir/")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("/../../../gimme-blubb")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("/../../../gimme-blubb/dir/")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("/../some/dir/gimme-blubb")));
-    EXPECT_TRUE(
-        is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("/../some/dir/gimme-blubb/./dir/")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("/./blubb/dir/gimme-blubb")));
-    EXPECT_TRUE(
-        is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("/./blubb/dir/gimme-blubb/../dir/")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/./././gimme-blubb")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/./././gimme-blubb/dir/")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/../../../gimme-blubb")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/../../../gimme-blubb/dir/")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/../some/dir/gimme-blubb")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/../some/dir/gimme-blubb/./dir/")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/./blubb/dir/gimme-blubb")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/./blubb/dir/gimme-blubb/../dir/")));
 }
 
 TEST(path_and_file_verifier_test_isValidPathToDirectory, SingleEntryIsValidPath) {
     ::testing::Test::RecordProperty("TEST_ID", "6983ab77-d658-408d-97aa-bd1d218560fb");
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("gimme-blubb")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("gimme-blubb/")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("a")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("a/")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("fuu:blubb")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("fuu:blubb/")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("/blarbi")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("/blarbi/")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("/x")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("/x/")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("/fuu:-012")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("/fuu:-012/")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("./hypnotoad")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("./hypnotoad/")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("gimme-blubb")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("gimme-blubb/")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("a")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("a/")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("fuu:blubb")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("fuu:blubb/")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/blarbi")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/blarbi/")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/x")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/x/")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/fuu:-012")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/fuu:-012/")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("./hypnotoad")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("./hypnotoad/")));
 }
 
 TEST(path_and_file_verifier_test_isValidPathToDirectory, ValidPathsWithNoRelativeComponentAreValid) {
     ::testing::Test::RecordProperty("TEST_ID", "bf7a0a75-c59e-46a8-96f1-1f848e1c3e43");
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("/fuu/bla/blubb/balaa")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("/fuu/bla/blubb/")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("/a/b/c/d/1/2/4")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("/a/b/c/d/1/2/")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("asd/fuu/asdaaas/1")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("asd/fuu/asdaaas/")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("123/456")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("123/456/")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/fuu/bla/blubb/balaa")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/fuu/bla/blubb/")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/a/b/c/d/1/2/4")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/a/b/c/d/1/2/")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("asd/fuu/asdaaas/1")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("asd/fuu/asdaaas/")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("123/456")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("123/456/")));
 }
 
 TEST(path_and_file_verifier_test_isValidPathToDirectory, EndingWithRelativePathComponentIsValid) {
     ::testing::Test::RecordProperty("TEST_ID", "506f9823-39cc-4cbc-b064-84d45b2311e8");
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("/..")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("/.")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("./..")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("../.")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("some/path/to/..")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("/another/path/to/.")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("../bla/fuu/../blubb/.")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("./blubb/fuu/../bla/..")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/..")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/.")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("./..")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("../.")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("some/path/to/..")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/another/path/to/.")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("../bla/fuu/../blubb/.")));
+    EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("./blubb/fuu/../bla/..")));
 }
 
 TEST(path_and_file_verifier_test_isValidPathToDirectory, PathsWithEndingDotsAreInvalid) {
     ::testing::Test::RecordProperty("TEST_ID", "f79660e6-12b5-4ad0-bc26-766da34898b8");
-    EXPECT_FALSE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("a.")));
-    EXPECT_FALSE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("/asda.")));
-    EXPECT_FALSE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("/bla/../fuu/asda..")));
-    EXPECT_FALSE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8("/bla/./.././xa..")));
+    EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("a.")));
+    EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/asda.")));
+    EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/bla/../fuu/asda..")));
+    EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(
+        *StaticString<FILE_PATH_LENGTH>::from_utf8("/bla/./.././xa..")));
 }
 
 TEST(path_and_file_verifier_test_isValidPathToDirectory, PathWhichContainsAllValidCharactersIsValid) {
     ::testing::Test::RecordProperty("TEST_ID", "8052b601-c9ad-4cb8-9a87-c301f213d8c4");
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8(
-        "/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/0123456789/-.:_")));
-    EXPECT_TRUE(is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8(
-        "/abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-.:_")));
+    EXPECT_TRUE(
+        PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8(
+            "/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/0123456789/-.:_")));
+    EXPECT_TRUE(
+        PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(*StaticString<FILE_PATH_LENGTH>::from_utf8(
+            "/abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-.:_")));
 }
 
 TEST(path_and_file_verifier_test_isValidPathToDirectory, EmptyPathIsInvalid) {
     ::testing::Test::RecordProperty("TEST_ID", "9724b52e-2e5a-425f-853d-a0b43e553f8b");
-    EXPECT_FALSE(is_valid_path_to_directory(StaticString<FILE_PATH_LENGTH>()));
+    EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::is_valid_path_to_directory(StaticString<FILE_PATH_LENGTH>()));
 }
 
 TEST(path_and_file_verifier_test_doesEndWithPathSeparator, EmptyPathDoesNotEndWithPathSeparator) {
     ::testing::Test::RecordProperty("TEST_ID", "fe0be1e0-fdd5-4d56-841c-83826c40c3d2");
-    EXPECT_FALSE(does_end_with_path_separator(StaticString<FILE_PATH_LENGTH>()));
+    EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::does_end_with_path_separator(StaticString<FILE_PATH_LENGTH>()));
 }
 
 TEST(path_and_file_verifier_test_doesEndWithPathSeparator,
@@ -424,11 +553,11 @@ TEST(path_and_file_verifier_test_doesEndWithPathSeparator,
     ::testing::Test::RecordProperty("TEST_ID", "a6d10202-aea0-4b1c-b9d9-704545102a2e");
 
     auto sut = *StaticString<FILE_PATH_LENGTH>::from_utf8("isThereOnlyOneHypnotoad");
-    EXPECT_FALSE(does_end_with_path_separator(sut));
+    EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::does_end_with_path_separator(sut));
 
     ASSERT_TRUE(sut.try_append(1, platform::IOX2_PATH_SEPARATORS[0]));
     ASSERT_TRUE(sut.try_append_utf8_null_terminated_unchecked("thereIsOnlyOne"));
-    EXPECT_FALSE(does_end_with_path_separator(sut));
+    EXPECT_FALSE(PathAndFileVerifier<FILE_PATH_LENGTH>::does_end_with_path_separator(sut));
 }
 
 TEST(path_and_file_verifier_test_doesEndWithPathSeparator, SingleCharacterStringOnlyWithPathSeparatorAsOneAtTheEnd) {
@@ -438,7 +567,7 @@ TEST(path_and_file_verifier_test_doesEndWithPathSeparator, SingleCharacterString
     for (const auto separator : platform::IOX2_PATH_SEPARATORS) {
         auto sut = *StaticString<FILE_PATH_LENGTH>::from_utf8(" ");
         sut.unchecked_access()[0] = separator;
-        EXPECT_TRUE(does_end_with_path_separator(sut));
+        EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::does_end_with_path_separator(sut));
     }
 }
 
@@ -449,116 +578,122 @@ TEST(path_and_file_verifier_test_doesEndWithPathSeparator, MultiCharacterStringE
     for (const auto separator : platform::IOX2_PATH_SEPARATORS) {
         auto sut = *StaticString<FILE_PATH_LENGTH>::from_utf8("HypnotoadAteTheSpagettiMonster");
         ASSERT_TRUE(sut.try_append(1, separator));
-        EXPECT_TRUE(does_end_with_path_separator(sut));
+        EXPECT_TRUE(PathAndFileVerifier<FILE_PATH_LENGTH>::does_end_with_path_separator(sut));
     }
 }
 
 TEST(path_and_file_verifier_test_isValidPathEntry, EmptyPathEntryIsValid) {
     ::testing::Test::RecordProperty("TEST_ID", "1280b360-f26c-4ddf-8305-e01a99d58178");
-    EXPECT_TRUE(
-        is_valid_path_entry(StaticString<platform::IOX2_MAX_FILENAME_LENGTH>(), RelativePathComponents::Accept));
+    EXPECT_TRUE(PathAndFileVerifier<platform::IOX2_MAX_FILENAME_LENGTH>::is_valid_path_entry(
+        StaticString<platform::IOX2_MAX_FILENAME_LENGTH>(), RelativePathComponents::Accept));
 }
 
 TEST(path_and_file_verifier_test_isValidPathEntry, PathEntryWithOnlyValidCharactersIsValid) {
     ::testing::Test::RecordProperty("TEST_ID", "166fb334-05c6-4b8c-a117-223d6cadb29b");
-    EXPECT_TRUE(is_valid_path_entry(*StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("a"),
-                                    RelativePathComponents::Accept));
-    EXPECT_TRUE(is_valid_path_entry(*StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("agc"),
-                                    RelativePathComponents::Accept));
-    EXPECT_TRUE(is_valid_path_entry(*StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("a.213jkgc"),
-                                    RelativePathComponents::Accept));
+    EXPECT_TRUE(PathAndFileVerifier<platform::IOX2_MAX_FILENAME_LENGTH>::is_valid_path_entry(
+        *StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("a"), RelativePathComponents::Accept));
+    EXPECT_TRUE(PathAndFileVerifier<platform::IOX2_MAX_FILENAME_LENGTH>::is_valid_path_entry(
+        *StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("agc"), RelativePathComponents::Accept));
+    EXPECT_TRUE(PathAndFileVerifier<platform::IOX2_MAX_FILENAME_LENGTH>::is_valid_path_entry(
+        *StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("a.213jkgc"), RelativePathComponents::Accept));
 }
 
 TEST(path_and_file_verifier_test_isValidPathEntry, RelativePathEntriesAreValid) {
     ::testing::Test::RecordProperty("TEST_ID", "d3432692-7cee-416a-a3f3-c246a02ad1a2");
-    EXPECT_TRUE(is_valid_path_entry(*StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("."),
-                                    RelativePathComponents::Accept));
-    EXPECT_TRUE(is_valid_path_entry(*StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8(".."),
-                                    RelativePathComponents::Accept));
+    EXPECT_TRUE(PathAndFileVerifier<platform::IOX2_MAX_FILENAME_LENGTH>::is_valid_path_entry(
+        *StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("."), RelativePathComponents::Accept));
+    EXPECT_TRUE(PathAndFileVerifier<platform::IOX2_MAX_FILENAME_LENGTH>::is_valid_path_entry(
+        *StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8(".."), RelativePathComponents::Accept));
 }
 
 TEST(path_and_file_verifier_test_isValidPathEntry, EntriesWithEndingDotAreInvalid) {
     ::testing::Test::RecordProperty("TEST_ID", "f937de46-19fc-48da-bce6-51292cd9d75e");
-    EXPECT_FALSE(is_valid_path_entry(*StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("abc."),
-                                     RelativePathComponents::Accept));
-    EXPECT_FALSE(is_valid_path_entry(*StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("19283912asdb.."),
-                                     RelativePathComponents::Accept));
-    EXPECT_FALSE(is_valid_path_entry(*StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("..19283912asdb.."),
-                                     RelativePathComponents::Accept));
-    EXPECT_FALSE(is_valid_path_entry(*StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("..192839.12a.sdb.."),
-                                     RelativePathComponents::Accept));
+    EXPECT_FALSE(PathAndFileVerifier<platform::IOX2_MAX_FILENAME_LENGTH>::is_valid_path_entry(
+        *StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("abc."), RelativePathComponents::Accept));
+    EXPECT_FALSE(PathAndFileVerifier<platform::IOX2_MAX_FILENAME_LENGTH>::is_valid_path_entry(
+        *StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("19283912asdb.."),
+        RelativePathComponents::Accept));
+    EXPECT_FALSE(PathAndFileVerifier<platform::IOX2_MAX_FILENAME_LENGTH>::is_valid_path_entry(
+        *StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("..19283912asdb.."),
+        RelativePathComponents::Accept));
+    EXPECT_FALSE(PathAndFileVerifier<platform::IOX2_MAX_FILENAME_LENGTH>::is_valid_path_entry(
+        *StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("..192839.12a.sdb.."),
+        RelativePathComponents::Accept));
 }
 
 TEST(path_and_file_verifier_test_isValidPathEntry, EntriesWithDotsNotAtTheEndAreValid) {
     ::testing::Test::RecordProperty("TEST_ID", "569aa328-2c47-418d-96e2-ddf73925e52f");
-    EXPECT_TRUE(is_valid_path_entry(*StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8(".abc"),
-                                    RelativePathComponents::Accept));
-    EXPECT_TRUE(is_valid_path_entry(*StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8(".19283912asdb"),
-                                    RelativePathComponents::Accept));
-    EXPECT_TRUE(is_valid_path_entry(*StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("..19283912asdb"),
-                                    RelativePathComponents::Accept));
-    EXPECT_TRUE(is_valid_path_entry(*StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("..192839.12a.sdb"),
-                                    RelativePathComponents::Accept));
+    EXPECT_TRUE(PathAndFileVerifier<platform::IOX2_MAX_FILENAME_LENGTH>::is_valid_path_entry(
+        *StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8(".abc"), RelativePathComponents::Accept));
+    EXPECT_TRUE(PathAndFileVerifier<platform::IOX2_MAX_FILENAME_LENGTH>::is_valid_path_entry(
+        *StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8(".19283912asdb"), RelativePathComponents::Accept));
+    EXPECT_TRUE(PathAndFileVerifier<platform::IOX2_MAX_FILENAME_LENGTH>::is_valid_path_entry(
+        *StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("..19283912asdb"),
+        RelativePathComponents::Accept));
+    EXPECT_TRUE(PathAndFileVerifier<platform::IOX2_MAX_FILENAME_LENGTH>::is_valid_path_entry(
+        *StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("..192839.12a.sdb"),
+        RelativePathComponents::Accept));
 }
 
 TEST(path_and_file_verifier_test_isValidPathEntry, StringContainingAllValidCharactersIsValid) {
     ::testing::Test::RecordProperty("TEST_ID", "b2c19516-e8fb-4fb8-a366-2b7b5fd9a84b");
-    EXPECT_TRUE(is_valid_path_entry(*StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8(
-                                        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-.:_"),
-                                    RelativePathComponents::Accept));
+    EXPECT_TRUE(PathAndFileVerifier<platform::IOX2_MAX_FILENAME_LENGTH>::is_valid_path_entry(
+        *StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8(
+            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-.:_"),
+        RelativePathComponents::Accept));
 }
 
 TEST(path_and_file_verifier_test_isValidPathEntry, StringWithSlashIsInvalid) {
     ::testing::Test::RecordProperty("TEST_ID", "b1119db1-f897-48a5-af92-9a92eb3f9832");
-    EXPECT_FALSE(is_valid_path_entry(*StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("/fuuuu/"),
-                                     RelativePathComponents::Accept));
-    EXPECT_FALSE(is_valid_path_entry(*StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("fuu/uu"),
-                                     RelativePathComponents::Accept));
-    EXPECT_FALSE(is_valid_path_entry(*StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("/fuuuu"),
-                                     RelativePathComponents::Accept));
-    EXPECT_FALSE(is_valid_path_entry(*StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("uuuubbuu/"),
-                                     RelativePathComponents::Accept));
+    EXPECT_FALSE(PathAndFileVerifier<platform::IOX2_MAX_FILENAME_LENGTH>::is_valid_path_entry(
+        *StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("/fuuuu/"), RelativePathComponents::Accept));
+    EXPECT_FALSE(PathAndFileVerifier<platform::IOX2_MAX_FILENAME_LENGTH>::is_valid_path_entry(
+        *StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("fuu/uu"), RelativePathComponents::Accept));
+    EXPECT_FALSE(PathAndFileVerifier<platform::IOX2_MAX_FILENAME_LENGTH>::is_valid_path_entry(
+        *StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("/fuuuu"), RelativePathComponents::Accept));
+    EXPECT_FALSE(PathAndFileVerifier<platform::IOX2_MAX_FILENAME_LENGTH>::is_valid_path_entry(
+        *StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("uuuubbuu/"), RelativePathComponents::Accept));
 }
 
 TEST(path_and_file_verifier_test_isValidPathEntry,
      StringWithRelativeComponentsIsInvalidWhenItContainsRelativeComponents) {
     ::testing::Test::RecordProperty("TEST_ID", "6c73e08e-3b42-446e-b8d4-a4ed7685f28e");
-    EXPECT_FALSE(is_valid_path_entry(*StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("../to/be"),
-                                     RelativePathComponents::Reject));
-    EXPECT_FALSE(is_valid_path_entry(*StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("../../or/not"),
-                                     RelativePathComponents::Reject));
-    EXPECT_FALSE(is_valid_path_entry(*StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("to/../be"),
-                                     RelativePathComponents::Reject));
-    EXPECT_FALSE(
-        is_valid_path_entry(*StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("that/../../is/the/question"),
-                            RelativePathComponents::Reject));
-    EXPECT_FALSE(
-        is_valid_path_entry(*StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("whether/tis/nobler/.."),
-                            RelativePathComponents::Reject));
-    EXPECT_FALSE(is_valid_path_entry(
+    EXPECT_FALSE(PathAndFileVerifier<platform::IOX2_MAX_FILENAME_LENGTH>::is_valid_path_entry(
+        *StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("../to/be"), RelativePathComponents::Reject));
+    EXPECT_FALSE(PathAndFileVerifier<platform::IOX2_MAX_FILENAME_LENGTH>::is_valid_path_entry(
+        *StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("../../or/not"), RelativePathComponents::Reject));
+    EXPECT_FALSE(PathAndFileVerifier<platform::IOX2_MAX_FILENAME_LENGTH>::is_valid_path_entry(
+        *StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("to/../be"), RelativePathComponents::Reject));
+    EXPECT_FALSE(PathAndFileVerifier<platform::IOX2_MAX_FILENAME_LENGTH>::is_valid_path_entry(
+        *StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("that/../../is/the/question"),
+        RelativePathComponents::Reject));
+    EXPECT_FALSE(PathAndFileVerifier<platform::IOX2_MAX_FILENAME_LENGTH>::is_valid_path_entry(
+        *StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("whether/tis/nobler/.."),
+        RelativePathComponents::Reject));
+    EXPECT_FALSE(PathAndFileVerifier<platform::IOX2_MAX_FILENAME_LENGTH>::is_valid_path_entry(
         *StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("in/the/mind/to/suffer//../.."),
         RelativePathComponents::Reject));
-    EXPECT_FALSE(is_valid_path_entry(
+    EXPECT_FALSE(PathAndFileVerifier<platform::IOX2_MAX_FILENAME_LENGTH>::is_valid_path_entry(
         *StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("../the/slings/and/arrows/../.."),
         RelativePathComponents::Reject));
-    EXPECT_FALSE(is_valid_path_entry(
+    EXPECT_FALSE(PathAndFileVerifier<platform::IOX2_MAX_FILENAME_LENGTH>::is_valid_path_entry(
         *StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("../of/../outrageous/fortune/../.."),
         RelativePathComponents::Reject));
-    EXPECT_FALSE(
-        is_valid_path_entry(*StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("./or/to/take/../arms/../.."),
-                            RelativePathComponents::Reject));
-    EXPECT_FALSE(is_valid_path_entry(
+    EXPECT_FALSE(PathAndFileVerifier<platform::IOX2_MAX_FILENAME_LENGTH>::is_valid_path_entry(
+        *StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("./or/to/take/../arms/../.."),
+        RelativePathComponents::Reject));
+    EXPECT_FALSE(PathAndFileVerifier<platform::IOX2_MAX_FILENAME_LENGTH>::is_valid_path_entry(
         *StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("./agains/a/see/./of/troubles/../.."),
         RelativePathComponents::Reject));
-    EXPECT_FALSE(
-        is_valid_path_entry(*StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("./and/by/../opposing/./."),
-                            RelativePathComponents::Reject));
-    EXPECT_FALSE(is_valid_path_entry(*StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("./end/them"),
-                                     RelativePathComponents::Reject));
-    EXPECT_FALSE(is_valid_path_entry(*StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("to/./die"),
-                                     RelativePathComponents::Reject));
-    EXPECT_FALSE(is_valid_path_entry(*StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("to/./sleep/."),
-                                     RelativePathComponents::Reject));
+    EXPECT_FALSE(PathAndFileVerifier<platform::IOX2_MAX_FILENAME_LENGTH>::is_valid_path_entry(
+        *StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("./and/by/../opposing/./."),
+        RelativePathComponents::Reject));
+    EXPECT_FALSE(PathAndFileVerifier<platform::IOX2_MAX_FILENAME_LENGTH>::is_valid_path_entry(
+        *StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("./end/them"), RelativePathComponents::Reject));
+    EXPECT_FALSE(PathAndFileVerifier<platform::IOX2_MAX_FILENAME_LENGTH>::is_valid_path_entry(
+        *StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("to/./die"), RelativePathComponents::Reject));
+    EXPECT_FALSE(PathAndFileVerifier<platform::IOX2_MAX_FILENAME_LENGTH>::is_valid_path_entry(
+        *StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8("to/./sleep/."), RelativePathComponents::Reject));
 }
 
 } // namespace

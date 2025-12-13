@@ -29,10 +29,10 @@ enum class SemanticStringError : uint8_t {
 };
 
 template <uint64_t Capacity>
-using DoesContainInvalidCharacter = bool (*)(const container::StaticString<Capacity>& value);
+using DoesContainInvalidCharacter = bool (*)(const typename container::StaticString<Capacity>& value);
 
 template <uint64_t Capacity>
-using DoesContainInvalidContent = bool (*)(const container::StaticString<Capacity>& value);
+using DoesContainInvalidContent = bool (*)(const typename container::StaticString<Capacity>& value);
 
 /// @brief The SemanticString is a string which has an inner syntax and restrictions
 ///         to valid content. Examples are for instance
@@ -134,7 +134,7 @@ class SemanticString {
     /// @param [in] rhs the other string
     /// @return true if the contents are equal, otherwise false
     template <typename T>
-    auto operator==(const T& rhs) const noexcept -> container::IsStaticStringOrCharArray<T, bool>;
+    auto operator==(const T& rhs) const noexcept -> container::RequireStaticStringOrCharArray<T, bool>;
 
     /// @brief checks if another SemanticString is not equal to this string
     /// @param [in] rhs the other SemanticString
@@ -145,7 +145,7 @@ class SemanticString {
     /// @param [in] rhs the other string
     /// @return true if the contents are not equal, otherwise false
     template <typename T>
-    auto operator!=(const T& rhs) const noexcept -> container::IsStaticStringOrCharArray<T, bool>;
+    auto operator!=(const T& rhs) const noexcept -> container::RequireStaticStringOrCharArray<T, bool>;
 
     /// @brief checks if another SemanticString is less than or equal this string
     /// @param [in] rhs the other SemanticString
@@ -156,7 +156,7 @@ class SemanticString {
     /// @param [in] rhs the other string
     /// @return true if the contents are less than or equal rhs, otherwise false
     template <typename T>
-    auto operator<=(const T& rhs) const noexcept -> container::IsStaticStringOrCharArray<T, bool>;
+    auto operator<=(const T& rhs) const noexcept -> container::RequireStaticStringOrCharArray<T, bool>;
 
     /// @brief checks if another SemanticString is less than this string
     /// @param [in] rhs the other SemanticString
@@ -167,7 +167,7 @@ class SemanticString {
     /// @param [in] rhs the other string
     /// @return true if the contents are less than rhs, otherwise false
     template <typename T>
-    auto operator<(const T& rhs) const noexcept -> container::IsStaticStringOrCharArray<T, bool>;
+    auto operator<(const T& rhs) const noexcept -> container::RequireStaticStringOrCharArray<T, bool>;
 
     /// @brief checks if another SemanticString is greater than or equal this string
     /// @param [in] rhs the other SemanticString
@@ -178,7 +178,7 @@ class SemanticString {
     /// @param [in] rhs the other string
     /// @return true if the contents are greater than or equal rhs, otherwise false
     template <typename T>
-    auto operator>=(const T& rhs) const noexcept -> container::IsStaticStringOrCharArray<T, bool>;
+    auto operator>=(const T& rhs) const noexcept -> container::RequireStaticStringOrCharArray<T, bool>;
 
     /// @brief checks if another SemanticString is greater than this string
     /// @param [in] rhs the other SemanticString
@@ -189,7 +189,7 @@ class SemanticString {
     /// @param [in] rhs the other string
     /// @return true if the contents are greater than rhs, otherwise false
     template <typename T>
-    auto operator>(const T& rhs) const noexcept -> container::IsStaticStringOrCharArray<T, bool>;
+    auto operator>(const T& rhs) const noexcept -> container::RequireStaticStringOrCharArray<T, bool>;
 
   protected:
     template <uint64_t N>
@@ -316,7 +316,7 @@ template <typename T>
 inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::insert(
     const uint64_t pos, const T& str, const uint64_t count) noexcept -> legacy::expected<void, SemanticStringError> {
     auto temp = m_data;
-    if (!temp.insert(pos, str, 0, count)) {
+    if (!temp.unchecked_code_units().insert(pos, str, 0, count)) {
         IOX2_LOG(Debug,
                  "Unable to insert the value \""
                      << str.unchecked_access().c_str()
@@ -360,7 +360,7 @@ template <typename Child,
           DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
 template <typename T>
 inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator==(
-    const T& rhs) const noexcept -> container::IsStaticStringOrCharArray<T, bool> {
+    const T& rhs) const noexcept -> container::RequireStaticStringOrCharArray<T, bool> {
     return as_string() == rhs;
 }
 
@@ -379,7 +379,7 @@ template <typename Child,
           DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
 template <typename T>
 inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator!=(
-    const T& rhs) const noexcept -> container::IsStaticStringOrCharArray<T, bool> {
+    const T& rhs) const noexcept -> container::RequireStaticStringOrCharArray<T, bool> {
     return as_string() != rhs;
 }
 
@@ -398,7 +398,7 @@ template <typename Child,
           DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
 template <typename T>
 inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator<=(
-    const T& rhs) const noexcept -> container::IsStaticStringOrCharArray<T, bool> {
+    const T& rhs) const noexcept -> container::RequireStaticStringOrCharArray<T, bool> {
     return as_string() <= rhs;
 }
 
@@ -417,7 +417,7 @@ template <typename Child,
           DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
 template <typename T>
 inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator<(
-    const T& rhs) const noexcept -> container::IsStaticStringOrCharArray<T, bool> {
+    const T& rhs) const noexcept -> container::RequireStaticStringOrCharArray<T, bool> {
     return as_string() < rhs;
 }
 
@@ -436,7 +436,7 @@ template <typename Child,
           DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
 template <typename T>
 inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator>=(
-    const T& rhs) const noexcept -> container::IsStaticStringOrCharArray<T, bool> {
+    const T& rhs) const noexcept -> container::RequireStaticStringOrCharArray<T, bool> {
     return as_string() >= rhs;
 }
 
@@ -455,7 +455,7 @@ template <typename Child,
           DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
 template <typename T>
 inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::operator>(
-    const T& rhs) const noexcept -> container::IsStaticStringOrCharArray<T, bool> {
+    const T& rhs) const noexcept -> container::RequireStaticStringOrCharArray<T, bool> {
     return as_string() > rhs;
 }
 
