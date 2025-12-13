@@ -22,6 +22,9 @@ pub const NULL_TERMINATOR: c_char = 0;
 pub const USER_NAME_LENGTH: usize = 255;
 pub const GROUP_NAME_LENGTH: usize = 31;
 
+pub const STDOUT_FILENO: u32 = 1;
+pub const STDERR_FILENO: u32 = 2;
+
 pub const O_RDONLY: int = 1;
 pub const O_WRONLY: int = 2;
 pub const O_RDWR: int = 4;
