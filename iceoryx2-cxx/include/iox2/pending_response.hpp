@@ -49,8 +49,7 @@ class PendingResponse {
 
     /// Receives a [`Response`] from one of the [`Server`]s that
     /// received the [`RequestMut`].
-    auto receive() -> bb::Expected<bb::Optional<Response<Service, ResponsePayload, ResponseUserHeader>>,
-                                          ReceiveError>;
+    auto receive() -> bb::Expected<bb::Optional<Response<Service, ResponsePayload, ResponseUserHeader>>, ReceiveError>;
 
     /// Returns a reference to the iceoryx2 internal [`RequestHeader`] of
     /// the corresponding [`RequestMut`]
@@ -102,9 +101,8 @@ class PendingResponse {
               typename ResponseUserHeaderT>
     friend auto
     send(RequestMut<S, RequestPayloadT, RequestUserHeaderT, ResponsePayloadT, ResponseUserHeaderT>&& request)
-        -> bb::Expected<
-            PendingResponse<S, RequestPayloadT, RequestUserHeaderT, ResponsePayloadT, ResponseUserHeaderT>,
-            RequestSendError>;
+        -> bb::Expected<PendingResponse<S, RequestPayloadT, RequestUserHeaderT, ResponsePayloadT, ResponseUserHeaderT>,
+                        RequestSendError>;
 
     explicit PendingResponse(iox2_pending_response_h handle) noexcept;
 

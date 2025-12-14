@@ -346,8 +346,8 @@ TYPED_TEST(ServiceEventTest, service_can_be_opened_when_there_is_a_notifier) {
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
-    auto sut = bb::Optional<PortFactoryEvent<SERVICE_TYPE>>(
-        node.service_builder(service_name).event().create().value());
+    auto sut =
+        bb::Optional<PortFactoryEvent<SERVICE_TYPE>>(node.service_builder(service_name).event().create().value());
     auto listener = bb::Optional<Listener<SERVICE_TYPE>>(sut->listener_builder().create().value());
     auto notifier = bb::Optional<Notifier<SERVICE_TYPE>>(sut->notifier_builder().create().value());
 
@@ -362,8 +362,7 @@ TYPED_TEST(ServiceEventTest, service_can_be_opened_when_there_is_a_notifier) {
     }
     listener.reset();
 
-    sut = bb::Optional<PortFactoryEvent<SERVICE_TYPE>>(
-        node.service_builder(service_name).event().open().value());
+    sut = bb::Optional<PortFactoryEvent<SERVICE_TYPE>>(node.service_builder(service_name).event().open().value());
     listener = bb::Optional<Listener<SERVICE_TYPE>>(sut->listener_builder().create().value());
     notifier->notify_with_custom_event_id(event_id).value();
     auto notification = listener->try_wait_one().value();
@@ -389,8 +388,8 @@ TYPED_TEST(ServiceEventTest, service_can_be_opened_when_there_is_a_listener) {
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
-    auto sut = bb::Optional<PortFactoryEvent<SERVICE_TYPE>>(
-        node.service_builder(service_name).event().create().value());
+    auto sut =
+        bb::Optional<PortFactoryEvent<SERVICE_TYPE>>(node.service_builder(service_name).event().create().value());
     auto listener = bb::Optional<Listener<SERVICE_TYPE>>(sut->listener_builder().create().value());
     auto notifier = bb::Optional<Notifier<SERVICE_TYPE>>(sut->notifier_builder().create().value());
 
@@ -405,8 +404,7 @@ TYPED_TEST(ServiceEventTest, service_can_be_opened_when_there_is_a_listener) {
     }
     notifier.reset();
 
-    sut = bb::Optional<PortFactoryEvent<SERVICE_TYPE>>(
-        node.service_builder(service_name).event().open().value());
+    sut = bb::Optional<PortFactoryEvent<SERVICE_TYPE>>(node.service_builder(service_name).event().open().value());
     notifier = bb::Optional<Notifier<SERVICE_TYPE>>(sut->notifier_builder().create().value());
     notifier->notify_with_custom_event_id(event_id).value();
     auto notification = listener->try_wait_one().value();

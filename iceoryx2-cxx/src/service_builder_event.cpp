@@ -171,8 +171,7 @@ auto ServiceBuilderEvent<S>::create() && -> bb::Expected<PortFactoryEvent<S>, Ev
 
 template <ServiceType S>
 auto ServiceBuilderEvent<S>::open_or_create_with_attributes(
-    const AttributeVerifier&
-        required_attributes) && -> bb::Expected<PortFactoryEvent<S>, EventOpenOrCreateError> {
+    const AttributeVerifier& required_attributes) && -> bb::Expected<PortFactoryEvent<S>, EventOpenOrCreateError> {
     set_parameters();
 
     iox2_port_factory_event_h event_handle {};

@@ -13,9 +13,9 @@
 #ifndef IOX2_NODE_STATE_HPP
 #define IOX2_NODE_STATE_HPP
 
-#include "iox2/bb/static_function.hpp"
 #include "iox2/bb/expected.hpp"
 #include "iox2/bb/optional.hpp"
+#include "iox2/bb/static_function.hpp"
 #include "iox2/legacy/variant.hpp"
 #include "node_details.hpp"
 #include "node_failure_enums.hpp"

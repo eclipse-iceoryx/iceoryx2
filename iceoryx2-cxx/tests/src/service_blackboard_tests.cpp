@@ -346,10 +346,10 @@ TYPED_TEST(ServiceBlackboardTest, open_works_when_service_owner_goes_out_of_scop
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_creator =
         bb::Optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(node.service_builder(service_name)
-                                                                               .template blackboard_creator<uint64_t>()
-                                                                               .template add_with_default<uint64_t>(0)
-                                                                               .create()
-                                                                               .value());
+                                                                        .template blackboard_creator<uint64_t>()
+                                                                        .template add_with_default<uint64_t>(0)
+                                                                        .create()
+                                                                        .value());
 
     auto sut_opener_1 = node.service_builder(service_name).template blackboard_opener<uint64_t>().open();
     ASSERT_TRUE(sut_opener_1.has_value());
@@ -368,10 +368,10 @@ TYPED_TEST(ServiceBlackboardTest, open_fails_when_all_previous_owners_are_gone) 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_creator =
         bb::Optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(node.service_builder(service_name)
-                                                                               .template blackboard_creator<uint64_t>()
-                                                                               .template add_with_default<uint64_t>(0)
-                                                                               .create()
-                                                                               .value());
+                                                                        .template blackboard_creator<uint64_t>()
+                                                                        .template add_with_default<uint64_t>(0)
+                                                                        .create()
+                                                                        .value());
 
     auto sut_opener_1 = bb::Optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(
         node.service_builder(service_name).template blackboard_opener<uint64_t>().open().value());
@@ -650,8 +650,8 @@ TYPED_TEST(ServiceBlackboardTest, entry_handle_mut_cannot_be_acquired_twice) {
                        .create()
                        .value();
     auto writer = service.writer_builder().create().value();
-    auto entry_handle_mut = bb::Optional<EntryHandleMut<SERVICE_TYPE, uint64_t, uint64_t>>(
-        writer.template entry<uint64_t>(0).value());
+    auto entry_handle_mut =
+        bb::Optional<EntryHandleMut<SERVICE_TYPE, uint64_t, uint64_t>>(writer.template entry<uint64_t>(0).value());
 
     auto sut_1 = writer.template entry<uint64_t>(0);
     ASSERT_FALSE(sut_1.has_value());
@@ -692,10 +692,10 @@ TYPED_TEST(ServiceBlackboardTest, entry_value_can_still_be_used_after_every_prev
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service =
         bb::Optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(node.service_builder(service_name)
-                                                                               .template blackboard_creator<uint64_t>()
-                                                                               .template add_with_default<uint32_t>(0)
-                                                                               .create()
-                                                                               .value());
+                                                                        .template blackboard_creator<uint64_t>()
+                                                                        .template add_with_default<uint32_t>(0)
+                                                                        .create()
+                                                                        .value());
     auto writer = bb::Optional<Writer<SERVICE_TYPE, uint64_t>>(service->writer_builder().create().value());
     auto entry_handle_mut = writer->template entry<uint32_t>(0).value();
     auto entry_value_uninit = loan_uninit(std::move(entry_handle_mut));
@@ -970,8 +970,7 @@ TYPED_TEST(ServiceBlackboardTest, dropping_service_keeps_established_communicati
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
-    auto sut =
-        bb::Optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(node.service_builder(service_name)
+    auto sut = bb::Optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(node.service_builder(service_name)
                                                                                .template blackboard_creator<uint64_t>()
                                                                                .template add_with_default<uint32_t>(0)
                                                                                .create()
@@ -997,10 +996,10 @@ TYPED_TEST(ServiceBlackboardTest, ports_of_dropped_service_block_new_service_cre
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service =
         bb::Optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(node.service_builder(service_name)
-                                                                               .template blackboard_creator<uint64_t>()
-                                                                               .template add_with_default<uint8_t>(0)
-                                                                               .create()
-                                                                               .value());
+                                                                        .template blackboard_creator<uint64_t>()
+                                                                        .template add_with_default<uint8_t>(0)
+                                                                        .create()
+                                                                        .value());
 
     auto writer = bb::Optional<Writer<SERVICE_TYPE, uint64_t>>(service->writer_builder().create().value());
     auto reader = bb::Optional<Reader<SERVICE_TYPE, uint64_t>>(service->reader_builder().create().value());
@@ -1041,14 +1040,14 @@ TYPED_TEST(ServiceBlackboardTest, service_can_be_opened_when_there_is_a_writer) 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto creator =
         bb::Optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(node.service_builder(service_name)
-                                                                               .template blackboard_creator<uint64_t>()
-                                                                               .template add_with_default<uint64_t>(0)
-                                                                               .create()
-                                                                               .value());
+                                                                        .template blackboard_creator<uint64_t>()
+                                                                        .template add_with_default<uint64_t>(0)
+                                                                        .create()
+                                                                        .value());
     auto reader = bb::Optional<Reader<SERVICE_TYPE, uint64_t>>(creator->reader_builder().create().value());
     auto writer = bb::Optional<Writer<SERVICE_TYPE, uint64_t>>(creator->writer_builder().create().value());
-    auto entry_handle_mut = bb::Optional<EntryHandleMut<SERVICE_TYPE, uint64_t, uint64_t>>(
-        writer->template entry<uint64_t>(0).value());
+    auto entry_handle_mut =
+        bb::Optional<EntryHandleMut<SERVICE_TYPE, uint64_t, uint64_t>>(writer->template entry<uint64_t>(0).value());
 
     creator.reset();
 
@@ -1066,10 +1065,9 @@ TYPED_TEST(ServiceBlackboardTest, service_can_be_opened_when_there_is_a_writer) 
 
     auto opener2 = bb::Optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(
         node.service_builder(service_name).template blackboard_opener<uint64_t>().open().value());
-    auto opener_reader =
-        bb::Optional<Reader<SERVICE_TYPE, uint64_t>>(opener2->reader_builder().create().value());
-    auto entry_handle = bb::Optional<EntryHandle<SERVICE_TYPE, uint64_t, uint64_t>>(
-        opener_reader->template entry<uint64_t>(0).value());
+    auto opener_reader = bb::Optional<Reader<SERVICE_TYPE, uint64_t>>(opener2->reader_builder().create().value());
+    auto entry_handle =
+        bb::Optional<EntryHandle<SERVICE_TYPE, uint64_t, uint64_t>>(opener_reader->template entry<uint64_t>(0).value());
     entry_handle_mut->update_with_copy(VALUE);
     ASSERT_THAT(*entry_handle->get(), Eq(VALUE));
 
@@ -1098,10 +1096,10 @@ TYPED_TEST(ServiceBlackboardTest, service_can_be_opened_when_there_is_a_reader) 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto creator =
         bb::Optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(node.service_builder(service_name)
-                                                                               .template blackboard_creator<uint64_t>()
-                                                                               .template add_with_default<uint64_t>(0)
-                                                                               .create()
-                                                                               .value());
+                                                                        .template blackboard_creator<uint64_t>()
+                                                                        .template add_with_default<uint64_t>(0)
+                                                                        .create()
+                                                                        .value());
     auto reader = bb::Optional<Reader<SERVICE_TYPE, uint64_t>>(creator->reader_builder().create().value());
     auto entry_handle =
         bb::Optional<EntryHandle<SERVICE_TYPE, uint64_t, uint64_t>>(reader->template entry<uint64_t>(0).value());
@@ -1123,8 +1121,7 @@ TYPED_TEST(ServiceBlackboardTest, service_can_be_opened_when_there_is_a_reader) 
 
     auto opener2 = bb::Optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(
         node.service_builder(service_name).template blackboard_opener<uint64_t>().open().value());
-    auto opener_writer =
-        bb::Optional<Writer<SERVICE_TYPE, uint64_t>>(opener2->writer_builder().create().value());
+    auto opener_writer = bb::Optional<Writer<SERVICE_TYPE, uint64_t>>(opener2->writer_builder().create().value());
     auto entry_handle_mut = bb::Optional<EntryHandleMut<SERVICE_TYPE, uint64_t, uint64_t>>(
         opener_writer->template entry<uint64_t>(0).value());
     entry_handle_mut->update_with_copy(VALUE);
@@ -1160,8 +1157,8 @@ TYPED_TEST(ServiceBlackboardTest, reader_can_still_read_value_when_writer_was_di
                        .value();
 
     auto writer = bb::Optional<Writer<SERVICE_TYPE, uint64_t>>(service.writer_builder().create().value());
-    auto entry_handle_mut = bb::Optional<EntryHandleMut<SERVICE_TYPE, uint64_t, uint8_t>>(
-        writer->template entry<uint8_t>(0).value());
+    auto entry_handle_mut =
+        bb::Optional<EntryHandleMut<SERVICE_TYPE, uint64_t, uint8_t>>(writer->template entry<uint8_t>(0).value());
     entry_handle_mut->update_with_copy(VALUE);
     entry_handle_mut.reset();
     writer.reset();
@@ -1357,14 +1354,14 @@ TYPED_TEST(ServiceBlackboardTest, entry_handle_can_still_be_used_after_every_pre
 
     auto service =
         bb::Optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(node.service_builder(service_name)
-                                                                               .template blackboard_creator<uint64_t>()
-                                                                               .template add_with_default<uint32_t>(0)
-                                                                               .create()
-                                                                               .value());
+                                                                        .template blackboard_creator<uint64_t>()
+                                                                        .template add_with_default<uint32_t>(0)
+                                                                        .create()
+                                                                        .value());
 
     auto writer = bb::Optional<Writer<SERVICE_TYPE, uint64_t>>(service->writer_builder().create().value());
-    auto entry_handle_mut = bb::Optional<EntryHandleMut<SERVICE_TYPE, uint64_t, uint32_t>>(
-        writer->template entry<uint32_t>(0).value());
+    auto entry_handle_mut =
+        bb::Optional<EntryHandleMut<SERVICE_TYPE, uint64_t, uint32_t>>(writer->template entry<uint32_t>(0).value());
 
     writer.reset();
     service.reset();
@@ -1374,10 +1371,10 @@ TYPED_TEST(ServiceBlackboardTest, entry_handle_can_still_be_used_after_every_pre
 
     auto new_service =
         bb::Optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(node.service_builder(service_name)
-                                                                               .template blackboard_creator<uint64_t>()
-                                                                               .template add_with_default<uint32_t>(0)
-                                                                               .create()
-                                                                               .value());
+                                                                        .template blackboard_creator<uint64_t>()
+                                                                        .template add_with_default<uint32_t>(0)
+                                                                        .create()
+                                                                        .value());
 
     auto reader = bb::Optional<Reader<SERVICE_TYPE, uint64_t>>(new_service->reader_builder().create().value());
     auto entry_handle =

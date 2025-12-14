@@ -15,10 +15,10 @@
 
 #include "iox/builder_addendum.hpp"
 #include "iox2/bb/duration.hpp"
+#include "iox2/bb/expected.hpp"
 #include "iox2/bb/static_function.hpp"
 #include "iox2/callback_progression.hpp"
 #include "iox2/config.hpp"
-#include "iox2/bb/expected.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/node_id.hpp"
 #include "iox2/node_name.hpp"

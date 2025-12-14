@@ -13,11 +13,11 @@
 #ifndef IOX2_SERVICE_HPP
 #define IOX2_SERVICE_HPP
 
+#include "iox2/bb/expected.hpp"
+#include "iox2/bb/optional.hpp"
 #include "iox2/bb/static_function.hpp"
 #include "iox2/callback_progression.hpp"
 #include "iox2/config.hpp"
-#include "iox2/bb/expected.hpp"
-#include "iox2/bb/optional.hpp"
 #include "iox2/messaging_pattern.hpp"
 #include "iox2/service_details.hpp"
 #include "iox2/service_error_enums.hpp"

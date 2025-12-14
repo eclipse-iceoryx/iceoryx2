@@ -47,12 +47,12 @@
 #define IOX2_BUILDER_OPTIONAL(type, name)                                                                              \
   public:                                                                                                              \
     auto name(type const& value)&& -> decltype(auto) {                                                                 \
-        m_##name = iox2::bb::Optional<type>(value);                                                             \
+        m_##name = iox2::bb::Optional<type>(value);                                                                    \
         return std::move(*this);                                                                                       \
     }                                                                                                                  \
                                                                                                                        \
     auto name(type&& value)&& -> decltype(auto) {                                                                      \
-        m_##name = iox2::bb::Optional<type>(std::move(value));                                                  \
+        m_##name = iox2::bb::Optional<type>(std::move(value));                                                         \
         return std::move(*this);                                                                                       \
     }                                                                                                                  \
                                                                                                                        \

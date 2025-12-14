@@ -14,9 +14,9 @@
 #define IOX2_PORTFACTORY_EVENT_HPP
 
 #include "iox2/attribute_set.hpp"
+#include "iox2/bb/expected.hpp"
 #include "iox2/bb/static_function.hpp"
 #include "iox2/callback_progression.hpp"
-#include "iox2/bb/expected.hpp"
 #include "iox2/dynamic_config_event.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/node_failure_enums.hpp"

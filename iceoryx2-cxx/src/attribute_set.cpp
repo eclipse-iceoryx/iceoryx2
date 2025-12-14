@@ -44,8 +44,7 @@ auto AttributeSetView::number_of_key_values(const Attribute::Key& key) const -> 
     return iox2_attribute_set_number_of_key_values(m_handle, key.c_str());
 }
 
-auto AttributeSetView::key_value(const Attribute::Key& key, const uint64_t idx)
-    -> bb::Optional<Attribute::Value> {
+auto AttributeSetView::key_value(const Attribute::Key& key, const uint64_t idx) -> bb::Optional<Attribute::Value> {
     iox2::legacy::UninitializedArray<char, Attribute::Value::capacity()> buffer;
     bool has_value = false;
     iox2_attribute_set_key_value(m_handle, key.c_str(), idx, &buffer[0], Attribute::Value::capacity(), &has_value);
@@ -127,8 +126,7 @@ auto AttributeSet::number_of_key_values(const Attribute::Key& key) const -> uint
     return m_view.number_of_key_values(key);
 }
 
-auto AttributeSet::key_value(const Attribute::Key& key, const uint64_t idx)
-    -> bb::Optional<Attribute::Value> {
+auto AttributeSet::key_value(const Attribute::Key& key, const uint64_t idx) -> bb::Optional<Attribute::Value> {
     return m_view.key_value(key, idx);
 }
 

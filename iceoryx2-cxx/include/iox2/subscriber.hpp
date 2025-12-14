@@ -13,9 +13,9 @@
 #ifndef IOX2_SUBSCRIBER_HPP
 #define IOX2_SUBSCRIBER_HPP
 
+#include "iox2/bb/expected.hpp"
 #include "iox2/bb/optional.hpp"
 #include "iox2/connection_failure.hpp"
-#include "iox2/bb/expected.hpp"
 #include "iox2/iceoryx2.h"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/sample.hpp"

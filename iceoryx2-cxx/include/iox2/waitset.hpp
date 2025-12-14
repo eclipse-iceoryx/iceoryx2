@@ -15,8 +15,8 @@
 
 #include "iox/builder_addendum.hpp"
 #include "iox2/bb/duration.hpp"
-#include "iox2/callback_progression.hpp"
 #include "iox2/bb/expected.hpp"
+#include "iox2/callback_progression.hpp"
 #include "iox2/file_descriptor.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/listener.hpp"
@@ -195,8 +195,7 @@ class WaitSet {
     ///
     /// * The [`Listener`] must life at least as long as the returned [`WaitSetGuard`].
     /// * The [`WaitSetGuard`] must life at least as long as the [`WaitsSet`].
-    auto attach_notification(const Listener<S>& listener)
-        -> bb::Expected<WaitSetGuard<S>, WaitSetAttachmentError>;
+    auto attach_notification(const Listener<S>& listener) -> bb::Expected<WaitSetGuard<S>, WaitSetAttachmentError>;
 
     /// Attaches a [`FileDescriptorBased`] object as notification to the [`WaitSet`]. Whenever an event is received on
     /// the object the [`WaitSet`] informs the user in [`WaitSet::wait_and_process()`] to handle the event. The object

@@ -109,8 +109,7 @@ class ServiceBuilderEvent {
     /// requirements must be satisfied otherwise the open process will fail. If the [`Service`]
     /// does not exist the required attributes will be defined in the [`Service`].
     auto open_or_create_with_attributes(
-        const AttributeVerifier&
-            required_attributes) && -> bb::Expected<PortFactoryEvent<S>, EventOpenOrCreateError>;
+        const AttributeVerifier& required_attributes) && -> bb::Expected<PortFactoryEvent<S>, EventOpenOrCreateError>;
 
     /// Opens an existing [`Service`].
     auto open() && -> bb::Expected<PortFactoryEvent<S>, EventOpenError>;

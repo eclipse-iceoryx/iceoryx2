@@ -88,9 +88,8 @@ class RequestMut {
               typename ResponseUserHeaderT>
     friend auto
     send(RequestMut<S, RequestPayloadT, RequestUserHeaderT, ResponsePayloadT, ResponseUserHeaderT>&& request)
-        -> bb::Expected<
-            PendingResponse<S, RequestPayloadT, RequestUserHeaderT, ResponsePayloadT, ResponseUserHeaderT>,
-            RequestSendError>;
+        -> bb::Expected<PendingResponse<S, RequestPayloadT, RequestUserHeaderT, ResponsePayloadT, ResponseUserHeaderT>,
+                        RequestSendError>;
 
     explicit RequestMut() = default;
     void drop();
@@ -241,9 +240,8 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseUserHeader>
 inline auto send(RequestMut<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>&& request)
-    -> bb::Expected<
-        PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
-        RequestSendError> {
+    -> bb::Expected<PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
+                    RequestSendError> {
     iox2_pending_response_h pending_response_handle {};
     auto result = iox2_request_mut_send(request.m_handle, nullptr, &pending_response_handle);
     request.m_handle = nullptr;

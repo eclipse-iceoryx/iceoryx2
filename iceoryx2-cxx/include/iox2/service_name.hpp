@@ -13,8 +13,8 @@
 #ifndef IOX2_SERVICE_NAME_HPP
 #define IOX2_SERVICE_NAME_HPP
 
-#include "iox2/bb/semantic_string.hpp"
 #include "iox2/bb/expected.hpp"
+#include "iox2/bb/semantic_string.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/legacy/string.hpp"
 

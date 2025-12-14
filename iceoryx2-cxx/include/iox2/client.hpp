@@ -78,22 +78,21 @@ class Client {
     template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto loan_slice_uninit(uint64_t number_of_elements)
         -> bb::Expected<RequestMutUninit<Service, T, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
-                               LoanError>;
+                        LoanError>;
 
     /// Acquires the payload for the request and initializes the underlying memory
     /// with default. This can be very expensive when the payload is large, therefore
     /// prefer [`Client::loan_uninit()`] when possible.
     template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
-    auto loan() -> bb::Expected<RequestMut<Service, T, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
-                                       LoanError>;
+    auto loan()
+        -> bb::Expected<RequestMut<Service, T, RequestUserHeader, ResponsePayload, ResponseUserHeader>, LoanError>;
 
     /// Acquires the payload for the request and initializes the underlying memory
     /// with default. This can be very expensive when the payload is large, therefore
     /// prefer [`Client::loan_uninit()`] when possible.
     template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto loan_slice(uint64_t number_of_elements)
-        -> bb::Expected<RequestMut<Service, T, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
-                               LoanError>;
+        -> bb::Expected<RequestMut<Service, T, RequestUserHeader, ResponsePayload, ResponseUserHeader>, LoanError>;
 
   private:
     template <ServiceType, typename, typename, typename, typename>
@@ -183,9 +182,8 @@ template <ServiceType Service,
           typename ResponseUserHeader>
 template <typename T, typename>
 inline auto Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::loan_uninit()
-    -> bb::Expected<
-        RequestMutUninit<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
-        LoanError> {
+    -> bb::Expected<RequestMutUninit<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
+                    LoanError> {
     constexpr uint64_t NUMBER_OF_ELEMENTS = 1;
     RequestMutUninit<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader> request;
     auto result = iox2_client_loan_slice_uninit(
@@ -205,8 +203,7 @@ template <ServiceType Service,
 template <typename T, typename>
 inline auto Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::loan_slice_uninit(
     uint64_t number_of_elements)
-    -> bb::Expected<RequestMutUninit<Service, T, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
-                           LoanError> {
+    -> bb::Expected<RequestMutUninit<Service, T, RequestUserHeader, ResponsePayload, ResponseUserHeader>, LoanError> {
     RequestMutUninit<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader> request;
     auto result = iox2_client_loan_slice_uninit(
         &m_handle, &request.m_request.m_request, &request.m_request.m_handle, number_of_elements);
@@ -225,9 +222,8 @@ template <ServiceType Service,
 template <typename T, typename>
 inline auto Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::send_copy(
     const RequestPayload& payload) const
-    -> bb::Expected<
-        PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
-        RequestSendError> {
+    -> bb::Expected<PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
+                    RequestSendError> {
     static_assert(std::is_trivially_copyable<RequestPayload>::value,
                   "The client supports only trivially copyable request payload types.");
 
@@ -251,9 +247,8 @@ template <ServiceType Service,
 template <typename T, typename>
 inline auto Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::send_slice_copy(
     iox::ImmutableSlice<ValueType>& payload) const
-    -> bb::Expected<
-        PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
-        RequestSendError> {
+    -> bb::Expected<PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
+                    RequestSendError> {
     static_assert(std::is_trivially_copyable<ValueType>::value,
                   "The client supports only trivially copyable request payload types.");
 

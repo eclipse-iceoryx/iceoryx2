@@ -100,9 +100,8 @@ inline auto PortFactoryPublisher<S, Payload, UserHeader>::allocation_strategy(
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
-inline auto
-PortFactoryPublisher<S, Payload, UserHeader>::create() && -> bb::Expected<Publisher<S, Payload, UserHeader>,
-                                                                                 PublisherCreateError> {
+inline auto PortFactoryPublisher<S, Payload, UserHeader>::create() && -> bb::Expected<Publisher<S, Payload, UserHeader>,
+                                                                                      PublisherCreateError> {
     if (m_unable_to_deliver_strategy.has_value()) {
         iox2_port_factory_publisher_builder_unable_to_deliver_strategy(
             &m_handle,

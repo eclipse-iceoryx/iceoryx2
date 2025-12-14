@@ -68,9 +68,9 @@ class PortFactoryServer {
     auto allocation_strategy(AllocationStrategy value) && -> PortFactoryServer&&;
 
     /// Creates a new [`Server`] or returns a [`ServerCreateError`] on failure.
-    auto create() && -> bb::Expected<
-        Server<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
-        ServerCreateError>;
+    auto
+    create() && -> bb::Expected<Server<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
+                                ServerCreateError>;
 
   private:
     template <ServiceType, typename, typename, typename, typename>
@@ -114,9 +114,8 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseUserHeader>
 inline auto PortFactoryServer<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
-    create() && -> bb::Expected<
-        Server<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
-        ServerCreateError> {
+    create() && -> bb::Expected<Server<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
+                                ServerCreateError> {
     if (m_unable_to_deliver_strategy.has_value()) {
         iox2_port_factory_server_builder_unable_to_deliver_strategy(
             &m_handle,

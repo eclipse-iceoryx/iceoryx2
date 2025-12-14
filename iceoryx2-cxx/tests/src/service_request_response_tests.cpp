@@ -2026,8 +2026,8 @@ TYPED_TEST(ServiceRequestResponseTest, only_max_clients_can_be_created) {
                        .max_clients(1)
                        .create()
                        .value();
-    auto client = bb::Optional<Client<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(
-        service.client_builder().create().value());
+    auto client =
+        bb::Optional<Client<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(service.client_builder().create().value());
 
     auto failing_sut = service.client_builder().create();
     ASSERT_FALSE(failing_sut.has_value());
@@ -2049,8 +2049,8 @@ TYPED_TEST(ServiceRequestResponseTest, only_max_servers_can_be_created) {
                        .max_servers(1)
                        .create()
                        .value();
-    auto server = bb::Optional<Server<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(
-        service.server_builder().create().value());
+    auto server =
+        bb::Optional<Server<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(service.server_builder().create().value());
 
     auto failing_sut = service.server_builder().create();
     ASSERT_FALSE(failing_sut.has_value());

@@ -63,7 +63,7 @@ inline PortFactorySubscriber<S, Payload, UserHeader>::PortFactorySubscriber(
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto
 PortFactorySubscriber<S, Payload, UserHeader>::create() && -> bb::Expected<Subscriber<S, Payload, UserHeader>,
-                                                                                  SubscriberCreateError> {
+                                                                           SubscriberCreateError> {
     if (m_buffer_size.has_value()) {
         iox2_port_factory_subscriber_builder_set_buffer_size(&m_handle, m_buffer_size.value());
     }

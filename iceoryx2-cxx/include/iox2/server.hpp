@@ -105,10 +105,9 @@ template <ServiceType Service,
           typename RequestHeader,
           typename ResponsePayload,
           typename ResponseHeader>
-inline auto Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::receive()
-    -> bb::Expected<
-        bb::Optional<ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>>,
-        ReceiveError> {
+inline auto Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::receive() -> bb::Expected<
+    bb::Optional<ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>>,
+    ReceiveError> {
     iox2_active_request_h active_request_handle {};
     auto result = iox2_server_receive(&m_handle, nullptr, &active_request_handle);
 
@@ -116,12 +115,10 @@ inline auto Server<Service, RequestPayload, RequestHeader, ResponsePayload, Resp
         if (active_request_handle != nullptr) {
             ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader> active_request(
                 active_request_handle);
-            return bb::Optional<
-                ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>>(
+            return bb::Optional<ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>>(
                 std::move(active_request));
         }
-        return bb::Optional<
-            ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>>(
+        return bb::Optional<ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>>(
             bb::nullopt);
     }
     return bb::err(bb::into<ReceiveError>(result));
