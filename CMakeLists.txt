@@ -66,37 +66,79 @@ message(STATUS "[i] iceoryx2 dev setup Rust feature flags (only used when 'RUST_
 
 add_rust_feature(
     NAME IOX2_FEATURE_STD
-    DESCRIPTION "Build iceoryx2 with std library."
+    DESCRIPTION "Build iceoryx2 with std library"
     DEFAULT_VALUE ON
-    RUST_FEATURE "std"
+    RUST_FEATURE "iceoryx2-ffi-c/std"
 )
 
 add_rust_feature(
     NAME IOX2_FEATURE_DEV_PERMISSIONS
-    DESCRIPTION "The permissions of all resources will be set to read, write, execute for everyone."
+    DESCRIPTION "The permissions of all resources will be set to read, write, execute for everyone"
     DEFAULT_VALUE OFF
     RUST_FEATURE "iceoryx2/dev_permissions"
 )
 
 add_rust_feature(
     NAME IOX2_FEATURE_LIBC_PLATFORM
-    DESCRIPTION "A platform abstraction based on the libc crate, eliminating the need for bindgen. Only available on Linux."
+    DESCRIPTION "A platform abstraction based on the libc crate, eliminating the need for bindgen. Only available on Linux"
     DEFAULT_VALUE OFF
     RUST_FEATURE "iceoryx2/libc_platform"
+)
+
+add_rust_feature(
+    NAME IOX2_FEATURE_LOGGER_STD
+    DESCRIPTION "Use the std module in the logger backend"
+    DEFAULT_VALUE ON
+    RUST_FEATURE "iceoryx2-loggers/std"
+)
+
+add_rust_feature(
+    NAME IOX2_FEATURE_LOGGER_POSIX
+    DESCRIPTION "Use the POSIX abstraction in the logger backend"
+    DEFAULT_VALUE OFF
+    RUST_FEATURE "iceoryx2-loggers/posix"
+)
+
+add_rust_feature(
+    NAME IOX2_FEATURE_LOGGER_BARE_METAL
+    DESCRIPTION "Use bare metal abstractions in the logger backend"
+    DEFAULT_VALUE OFF
+    RUST_FEATURE "iceoryx2-loggers/bare_metal"
+)
+
+add_rust_feature(
+    NAME IOX2_FEATURE_LOGGER_BUFFER
+    DESCRIPTION "Sets the buffer logger as the default logger backend"
+    DEFAULT_VALUE OFF
+    RUST_FEATURE "iceoryx2-loggers/buffer"
+)
+
+add_rust_feature(
+    NAME IOX2_FEATURE_LOGGER_CONSOLE
+    DESCRIPTION "Sets the console logger as the default logger backend"
+    DEFAULT_VALUE ON
+    RUST_FEATURE "iceoryx2-loggers/console"
+)
+
+add_rust_feature(
+    NAME IOX2_FEATURE_LOGGER_FILE
+    DESCRIPTION "Sets the file logger as the default logger backend"
+    DEFAULT_VALUE OFF
+    RUST_FEATURE "iceoryx2-loggers/file"
 )
 
 add_rust_feature(
     NAME IOX2_FEATURE_LOGGER_LOG
     DESCRIPTION "Enables https://crates.io/crates/log as default logger"
     DEFAULT_VALUE OFF
-    RUST_FEATURE "iceoryx2/logger_log"
+    RUST_FEATURE "iceoryx2-loggers/log"
 )
 
 add_rust_feature(
     NAME IOX2_FEATURE_LOGGER_TRACING
     DESCRIPTION "Enables https://crates.io/crates/tracing as default logger"
     DEFAULT_VALUE OFF
-    RUST_FEATURE "iceoryx2/logger_tracing"
+    RUST_FEATURE "iceoryx2-loggers/tracing"
 )
 
 # END Options, Params and Feature Flags
@@ -154,7 +196,7 @@ else()
     # run cargo
     add_custom_target(
         iceoryx2-ffi-c-build-step ALL
-        COMMAND cargo build ${RUST_BUILD_TYPE_FLAG} ${RUST_FEATURE_FLAGS} --package iceoryx2-ffi-c --target-dir=${RUST_TARGET_DIR} ${RUST_TARGET_TRIPLET_FLAG}
+        COMMAND cargo build ${RUST_BUILD_TYPE_FLAG} --no-default-features ${RUST_FEATURE_FLAGS} --package iceoryx2-ffi-c --target-dir=${RUST_TARGET_DIR} ${RUST_TARGET_TRIPLET_FLAG}
         BYPRODUCTS
             ${ICEORYX2_C_INCLUDE_DIR}/iox2/iceoryx2.h
             ${ICEORYX2_C_STATIC_LIB_LINK_FILE}
