@@ -22,6 +22,9 @@
   [#832](https://github.com/eclipse-iceoryx/iceoryx2/issues/832)
 * Add traits to facilitate implementation of custom tunnelling mechanisms
   [#845](https://github.com/eclipse-iceoryx/iceoryx2/issues/845)
+* Add logger backend that uses the POSIX APIs instead of `std` to log to the
+  console
+  [#853](https://github.com/eclipse-iceoryx/iceoryx2/issues/853)
 * Add support for `no_std` builds that can be enabled by disabling the new
   `std` feature when building `iceoryx2`
   [#865](https://github.com/eclipse-iceoryx/iceoryx2/issues/865)
@@ -169,11 +172,12 @@
    ```
 
    Binary crates must also include `iceoryx2_loggers` as a dependency and the
-   default logger must be specified via feature flag (maximum one). If no
-   feature flag is enabled, the logs are discarded.
+   default logger must be specified via feature flags. If no
+   feature flag is enabled, the logs are discarded. Details are documented
+   in the `iceoryx2-loggers` crate.
 
     ```toml
-    iceoryx2-loggers = { version = "0.7.0", features = ["logger_console"] }
+    iceoryx2-loggers = { version = "0.7.0", features = ["std", "console"] }
     ```
 
 1. **Rust:** Replaced the `FixedSizeVec` with the `StaticVec`
