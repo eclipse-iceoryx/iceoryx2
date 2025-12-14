@@ -1,6 +1,6 @@
 [package]
-name = "bare-metal-common"
-description = "common components for running iceoryx2 in a bare metal deployment"
+name = "bare-metal-nostd-common"
+description = "common components for nostd examples that run on bare metal"
 version = "0.1.0"
 edition = "2021"
 

@@ -17,6 +17,8 @@ fn main() {
 
 #[cfg(not(feature = "libc_platform"))]
 fn main() {
+    configure_platform_override();
+
     // needed for bazel but can be empty for cargo builds
     println!("cargo:rustc-env=BAZEL_BINDGEN_PATH_CORRECTION=");
 
@@ -27,8 +29,6 @@ fn main() {
     if target_os.as_str() == "none" {
         return;
     }
-
-    configure_platform_override();
 
     // the check for 'android' in the next line refers to native compilation
     // and prevents to pull in bindgen

@@ -34,9 +34,9 @@ when emulating them on QEMU. Builds without this feature enabled provide the
 template for implementing output functionality using platform-specific
 capabilities.
 
-To build and run with `semihosting` enabled, specify the feature when in the
-command:
+To build and run with `semihosting` enabled, specify the feature when running
+the example:
 
 ```console
-cargo run --features semihosting
+cargo run --example bare_metal_nostd_publish_subscribe --features semihosting
 ```
