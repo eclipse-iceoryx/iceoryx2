@@ -25,8 +25,7 @@ struct InPlaceT { };
 // NOLINTNEXTLINE(readability-identifier-naming), for consistency with C++23 code using std::expected
 constexpr InPlaceT in_place {};
 struct UnexpectT { };
-// NOLINTNEXTLINE(readability-identifier-naming), for consistency with C++23 code using std::expected
-constexpr UnexpectT unexpect {};
+constexpr UnexpectT UNEXPECT {};
 
 
 template <typename E>

@@ -27,7 +27,7 @@ using InPlaceT = bb::detail::InPlaceT;
 using UnexpectT = bb::detail::UnexpectT;
 
 constexpr InPlaceT in_place = bb::detail::in_place;
-constexpr UnexpectT unexpect = bb::detail::unexpect;
+constexpr UnexpectT UNEXPECT = bb::detail::UNEXPECT;
 
 } // namespace bb
 } // namespace iox2
