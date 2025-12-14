@@ -14,27 +14,13 @@ version = { workspace = true }
 [features]
 default = ["std"]
 std = [
-  "logger_console",
   "iceoryx2-log/std",
+  "iceoryx2-loggers/std",
+  "iceoryx2-loggers/console",
   "iceoryx2-cal/std",
   "iceoryx2-bb-concurrency/std",
   "iceoryx2-bb-posix/std",
 ]
-nostd_posix = [
-  "iceoryx2-loggers/posix",
-  "iceoryx2-loggers/console"
-]
-
-# Enables logging to console
-logger_console = ["iceoryx2-loggers/std_console"]
-# Enables logging to buffer
-logger_buffer = ["iceoryx2-loggers/std_buffer"]
-# Enables logging to file
-logger_file = ["iceoryx2-loggers/std_file"]
-# Enables https://crates.io/crates/log as default logger
-logger_log = ["iceoryx2-loggers/std_log"]
-# Enables https://crates.io/crates/tracing as default logger
-logger_tracing = ["iceoryx2-loggers/std_tracing"]
 
 # The permissions of all resources will be set to read, write, execute for everyone.
 # This shall not be used in production and is meant to be enabled in a docker environment

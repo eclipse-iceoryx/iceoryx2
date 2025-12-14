@@ -14,14 +14,7 @@ version = { workspace = true }
 workspace = true
 
 [features]
-default = []
-
-std_buffer = ["std", "buffer"]
-std_file = ["std", "file"]
-std_console = ["std", "console"]
-std_log = ["std", "log"]
-std_tracing = ["std", "tracing"]
-posix_console = ["posix", "console"]
+default = ["std"]
 
 # Use the std module
 std = []
@@ -33,10 +26,10 @@ bare_metal = []
 
 # Enables logging to buffer
 buffer = []
-# Enables logging to file
-file = []
 # Enables logging to console
 console = []
+# Enables logging to file
+file = []
 # Enables https://crates.io/crates/log as default logger
 log = ["dep:log"]
 # Enables https://crates.io/crates/tracing as default logger

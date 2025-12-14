@@ -721,10 +721,10 @@ jobs:
           uname -a
 
       - name: Build iceoryx2 (no_std)
-        run: cargo build --package iceoryx2 --no-default-features
+        run: cargo build --package iceoryx2 --no-default-features --features iceoryx2-loggers/bare_metal
 
       - name: Build bare-metal examples (no_std)
-        run: cd examples/bare-metal/rust && cargo build && cd -
+        run: cd examples/nostd/bare-metal/rust && cargo build && cd -
 
   x64_cxx_binding_vocabulary_types_variations:
     needs: [preflight-check, static-code-analysis, cargo-nextest]

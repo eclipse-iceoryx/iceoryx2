@@ -254,10 +254,10 @@ rights management for services.
 
 By default, the `null` logger is used, which discards all log messages.
 To enable log output, a default logger must be selected at compile time
-by enabling the correspond feature flag:
+by enabling the correspond feature flags on the `iceoryx2-loggers` crate:
 
 ```toml
-iceoryx2 = { version = "0.7.0", features = ["logger_console"] }
+iceoryx2-loggers = { version = "0.7.0", features = ["std", "console"] }
 ```
 
 Alternatively, if using a custom `Logger` implementation, it must be set
@@ -320,9 +320,10 @@ If using the `iceoryx2` crate as a dependency, this is handled automatically,
 however if using a lower-level crate (such as `iceoryx2-cal` or one from
 `iceoryx2-bb`) the following is required:
 
-1. Include `iceoryx2-loggers` as a dependency:
+1. Include `iceoryx2-loggers` as a dependency with the corresponding feature
+   for your platform:
     ```toml
-    iceoryx2-loggers = { version = "0.7.0" }
+    iceoryx2-loggers = { version = "0.7.0", features = ["std", "console"] }
     ```
 1. Ensure the crate is linked to even if not used:
     ```rust

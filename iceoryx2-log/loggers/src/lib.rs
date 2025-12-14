@@ -26,6 +26,24 @@
 //! while allowing flexible backend selection at runtime.
 //!
 //! See `iceoryx2_log` for usage examples and the complete logging API.
+//!
+//! # Feature Flags
+//!
+//! Exactly one of these three features must be selected according to your
+//! platform:
+//!
+//!  * `std` - Build for platforms that have `std` support
+//!  * `posix` - Build for platforms that have a POSIX abastraction, but no `std` support
+//!  * `bare_metal` - Build for bare metal platforms
+//!
+//! Optionally, the default logger can also be configured. If none are
+//! configured, the null logger is used and all logs are discarded:
+//!
+//!  * `buffer` - output log messages to a buffer
+//!  * `console` - output log messages to the console
+//!  * `file` - output log messages to the file
+//!  * `log` - utilize the `log` crate to output log messages
+//!  * `tracing` - utilize the `tracing` crate to output log messages
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![warn(clippy::alloc_instead_of_core)]

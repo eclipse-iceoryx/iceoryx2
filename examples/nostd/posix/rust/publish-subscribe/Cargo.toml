@@ -18,4 +18,5 @@ path = "src/subscriber.rs"
 posix-nostd-common = { workspace = true }
 
 iceoryx2 = { workspace = true }
+iceoryx2-loggers = { workspace = true }
 iceoryx2-bb-posix = { workspace  = true }
