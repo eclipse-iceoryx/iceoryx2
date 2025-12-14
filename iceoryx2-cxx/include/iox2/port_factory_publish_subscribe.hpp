@@ -14,9 +14,9 @@
 #define IOX2_PORTFACTORY_PUBLISH_SUBSCRIBE_HPP
 
 #include "iox2/attribute_set.hpp"
+#include "iox2/bb/expected.hpp"
 #include "iox2/bb/static_function.hpp"
 #include "iox2/callback_progression.hpp"
-#include "iox2/container/expected.hpp"
 #include "iox2/dynamic_config_publish_subscribe.hpp"
 #include "iox2/internal/callback_context.hpp"
 #include "iox2/internal/iceoryx2.hpp"
@@ -65,7 +65,7 @@ class PortFactoryPublishSubscribe {
     /// while acquiring the [`Node`]s corresponding [`NodeState`] the error is
     /// forwarded to the callback as input argument.
     auto nodes(const iox2::bb::StaticFunction<CallbackProgression(NodeState<S>)>& callback) const
-        -> container::Expected<void, NodeListFailure>;
+        -> bb::Expected<void, NodeListFailure>;
 
     /// Returns a [`PortFactorySubscriber`] to create a new [`Subscriber`] port.
     auto subscriber_builder() const -> PortFactorySubscriber<S, Payload, UserHeader>;
@@ -156,17 +156,17 @@ inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::dynamic_config(
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::nodes(
     const iox2::bb::StaticFunction<CallbackProgression(NodeState<S>)>& callback) const
-    -> container::Expected<void, NodeListFailure> {
+    -> bb::Expected<void, NodeListFailure> {
     auto ctx = internal::ctx(callback);
 
     const auto ret_val =
         iox2_port_factory_pub_sub_nodes(&m_handle, internal::list_callback<S>, static_cast<void*>(&ctx));
 
     if (ret_val == IOX2_OK) {
-        return { container::in_place };
+        return {};
     }
 
-    return container::err(bb::into<NodeListFailure>(ret_val));
+    return bb::err(bb::into<NodeListFailure>(ret_val));
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>

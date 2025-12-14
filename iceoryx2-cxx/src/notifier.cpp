@@ -48,7 +48,7 @@ auto Notifier<S>::id() const -> UniqueNotifierId {
 }
 
 template <ServiceType S>
-auto Notifier<S>::notify() const -> container::Expected<size_t, NotifierNotifyError> {
+auto Notifier<S>::notify() const -> bb::Expected<size_t, NotifierNotifyError> {
     size_t number_of_notified_listeners = 0;
     auto result = iox2_notifier_notify(&m_handle, &number_of_notified_listeners);
 
@@ -56,12 +56,12 @@ auto Notifier<S>::notify() const -> container::Expected<size_t, NotifierNotifyEr
         return number_of_notified_listeners;
     }
 
-    return container::err(bb::into<NotifierNotifyError>(result));
+    return bb::err(bb::into<NotifierNotifyError>(result));
 }
 
 template <ServiceType S>
 auto Notifier<S>::notify_with_custom_event_id(EventId event_id) const
-    -> container::Expected<size_t, NotifierNotifyError> {
+    -> bb::Expected<size_t, NotifierNotifyError> {
     size_t number_of_notified_listeners = 0;
     auto result =
         iox2_notifier_notify_with_custom_event_id(&m_handle, &event_id.m_value, &number_of_notified_listeners);
@@ -70,7 +70,7 @@ auto Notifier<S>::notify_with_custom_event_id(EventId event_id) const
         return number_of_notified_listeners;
     }
 
-    return container::err(bb::into<NotifierNotifyError>(result));
+    return bb::err(bb::into<NotifierNotifyError>(result));
 }
 
 template <ServiceType S>

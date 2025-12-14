@@ -15,7 +15,7 @@
 
 #include "iox2/bb/optional.hpp"
 #include "iox2/connection_failure.hpp"
-#include "iox2/container/expected.hpp"
+#include "iox2/bb/expected.hpp"
 #include "iox2/iceoryx2.h"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/sample.hpp"
@@ -43,11 +43,11 @@ class Subscriber {
 
     /// Receives a [`Sample`] from [`Publisher`]. If no sample could be
     /// received [`None`] is returned. If a failure occurs [`ReceiveError`] is returned.
-    auto receive() const -> container::Expected<bb::Optional<Sample<S, Payload, UserHeader>>, ReceiveError>;
+    auto receive() const -> bb::Expected<bb::Optional<Sample<S, Payload, UserHeader>>, ReceiveError>;
 
     /// Returns true when the [`Subscriber`] has [`Sample`]s that can be
     /// acquired via [`Subscriber::receive()`], otherwise false.
-    auto has_samples() const -> container::Expected<bool, ConnectionFailure>;
+    auto has_samples() const -> bb::Expected<bool, ConnectionFailure>;
 
   private:
     template <ServiceType, typename, typename>
@@ -93,7 +93,7 @@ inline void Subscriber<S, Payload, UserHeader>::drop() {
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
-inline auto Subscriber<S, Payload, UserHeader>::has_samples() const -> container::Expected<bool, ConnectionFailure> {
+inline auto Subscriber<S, Payload, UserHeader>::has_samples() const -> bb::Expected<bool, ConnectionFailure> {
     bool has_samples_result = false;
     auto result = iox2_subscriber_has_samples(&m_handle, &has_samples_result);
 
@@ -101,7 +101,7 @@ inline auto Subscriber<S, Payload, UserHeader>::has_samples() const -> container
         return has_samples_result;
     }
 
-    return container::err(bb::into<ConnectionFailure>(result));
+    return bb::err(bb::into<ConnectionFailure>(result));
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
@@ -119,7 +119,7 @@ inline auto Subscriber<S, Payload, UserHeader>::buffer_size() const -> uint64_t 
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Subscriber<S, Payload, UserHeader>::receive() const
-    -> container::Expected<bb::Optional<Sample<S, Payload, UserHeader>>, ReceiveError> {
+    -> bb::Expected<bb::Optional<Sample<S, Payload, UserHeader>>, ReceiveError> {
     Sample<S, Payload, UserHeader> sample;
     auto result = iox2_subscriber_receive(&m_handle, &sample.m_sample, &sample.m_handle);
 
@@ -130,7 +130,7 @@ inline auto Subscriber<S, Payload, UserHeader>::receive() const
         return bb::Optional<Sample<S, Payload, UserHeader>>(bb::nullopt);
     }
 
-    return container::err(bb::into<ReceiveError>(result));
+    return bb::err(bb::into<ReceiveError>(result));
 }
 } // namespace iox2
 

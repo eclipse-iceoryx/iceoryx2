@@ -14,7 +14,7 @@
 #define IOX2_PORTFACTORY_SUBSCRIBER_HPP
 
 #include "iox/builder_addendum.hpp"
-#include "iox2/container/expected.hpp"
+#include "iox2/bb/expected.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/subscriber.hpp"
@@ -43,7 +43,7 @@ class PortFactorySubscriber {
     ~PortFactorySubscriber() = default;
 
     /// Creates a new [`Subscriber`] or returns a [`SubscriberCreateError`] on failure.
-    auto create() && -> container::Expected<Subscriber<S, Payload, UserHeader>, SubscriberCreateError>;
+    auto create() && -> bb::Expected<Subscriber<S, Payload, UserHeader>, SubscriberCreateError>;
 
   private:
     template <ServiceType, typename, typename>
@@ -62,7 +62,7 @@ inline PortFactorySubscriber<S, Payload, UserHeader>::PortFactorySubscriber(
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto
-PortFactorySubscriber<S, Payload, UserHeader>::create() && -> container::Expected<Subscriber<S, Payload, UserHeader>,
+PortFactorySubscriber<S, Payload, UserHeader>::create() && -> bb::Expected<Subscriber<S, Payload, UserHeader>,
                                                                                   SubscriberCreateError> {
     if (m_buffer_size.has_value()) {
         iox2_port_factory_subscriber_builder_set_buffer_size(&m_handle, m_buffer_size.value());
@@ -75,7 +75,7 @@ PortFactorySubscriber<S, Payload, UserHeader>::create() && -> container::Expecte
         return Subscriber<S, Payload, UserHeader>(sub_handle);
     }
 
-    return container::err(bb::into<SubscriberCreateError>(result));
+    return bb::err(bb::into<SubscriberCreateError>(result));
 }
 } // namespace iox2
 

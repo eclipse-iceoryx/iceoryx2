@@ -19,7 +19,7 @@ PortFactoryNotifier<S>::PortFactoryNotifier(iox2_port_factory_notifier_builder_h
 }
 
 template <ServiceType S>
-auto PortFactoryNotifier<S>::create() && -> container::Expected<Notifier<S>, NotifierCreateError> {
+auto PortFactoryNotifier<S>::create() && -> bb::Expected<Notifier<S>, NotifierCreateError> {
     if (m_default_event_id.has_value()) {
         iox2_port_factory_notifier_builder_set_default_event_id(&m_handle, &m_default_event_id.value().m_value);
     }
@@ -31,7 +31,7 @@ auto PortFactoryNotifier<S>::create() && -> container::Expected<Notifier<S>, Not
         return Notifier<S> { notifier_handle };
     }
 
-    return container::err(bb::into<NotifierCreateError>(result));
+    return bb::err(bb::into<NotifierCreateError>(result));
 }
 
 template class PortFactoryNotifier<ServiceType::Ipc>;

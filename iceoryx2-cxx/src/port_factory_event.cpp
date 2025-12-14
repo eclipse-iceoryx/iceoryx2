@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/port_factory_event.hpp"
-#include "iox2/container/expected.hpp"
+#include "iox2/bb/expected.hpp"
 #include "iox2/iceoryx2.h"
 #include "iox2/internal/callback_context.hpp"
 #include "iox2/legacy/uninitialized_array.hpp"
@@ -85,16 +85,16 @@ auto PortFactoryEvent<S>::dynamic_config() const -> DynamicConfigEvent {
 
 template <ServiceType S>
 auto PortFactoryEvent<S>::nodes(const iox2::bb::StaticFunction<CallbackProgression(NodeState<S>)>& callback) const
-    -> container::Expected<void, NodeListFailure> {
+    -> bb::Expected<void, NodeListFailure> {
     auto ctx = internal::ctx(callback);
 
     const auto ret_val = iox2_port_factory_event_nodes(&m_handle, internal::list_callback<S>, static_cast<void*>(&ctx));
 
     if (ret_val == IOX2_OK) {
-        return { container::in_place };
+        return {};
     }
 
-    return container::err(bb::into<NodeListFailure>(ret_val));
+    return bb::err(bb::into<NodeListFailure>(ret_val));
 }
 
 template <ServiceType S>

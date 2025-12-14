@@ -13,7 +13,7 @@
 #ifndef IOX2_WRITER_HPP
 #define IOX2_WRITER_HPP
 
-#include "iox2/container/expected.hpp"
+#include "iox2/bb/expected.hpp"
 #include "iox2/entry_handle_mut.hpp"
 #include "iox2/entry_handle_mut_error.hpp"
 #include "iox2/internal/service_builder_internal.hpp"
@@ -38,7 +38,7 @@ class Writer {
     /// Creates an [`EntryHandleMut`] for direct write access to the value. There can be only one
     /// [`EntryHandleMut`] per value.
     template <typename ValueType>
-    auto entry(const KeyType& key) -> container::Expected<EntryHandleMut<S, KeyType, ValueType>, EntryHandleMutError>;
+    auto entry(const KeyType& key) -> bb::Expected<EntryHandleMut<S, KeyType, ValueType>, EntryHandleMutError>;
 
   private:
     template <ServiceType, typename>
@@ -95,7 +95,7 @@ inline auto Writer<S, KeyType>::id() const -> UniqueWriterId {
 template <ServiceType S, typename KeyType>
 template <typename ValueType>
 inline auto Writer<S, KeyType>::entry(const KeyType& key)
-    -> container::Expected<EntryHandleMut<S, KeyType, ValueType>, EntryHandleMutError> {
+    -> bb::Expected<EntryHandleMut<S, KeyType, ValueType>, EntryHandleMutError> {
     iox2_entry_handle_mut_h entry_handle {};
     const auto type_name = internal::get_type_name<ValueType>();
 
@@ -112,7 +112,7 @@ inline auto Writer<S, KeyType>::entry(const KeyType& key)
         return EntryHandleMut<S, KeyType, ValueType>(entry_handle);
     }
 
-    return container::err(bb::into<EntryHandleMutError>(result));
+    return bb::err(bb::into<EntryHandleMutError>(result));
 }
 } // namespace iox2
 

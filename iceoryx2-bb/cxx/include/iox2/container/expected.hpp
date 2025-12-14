@@ -74,16 +74,6 @@ template <typename E>
 Unexpected(E) -> Unexpected<E>;
 #endif
 
-template <typename E>
-constexpr auto err(const E& error) -> Unexpected<E> {
-    return Unexpected<E>(error);
-}
-
-template <typename E, std::enable_if_t<!std::is_lvalue_reference<E>::value, bool> = true>
-constexpr auto err(E&& error) -> Unexpected<E> {
-    return Unexpected<E>(std::forward<E>(error));
-}
-
 template <typename T, typename E>
 class Expected {
   private:

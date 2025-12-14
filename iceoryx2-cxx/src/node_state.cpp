@@ -50,9 +50,9 @@ auto DeadNodeView<T>::details() const -> bb::Optional<NodeDetails> {
 }
 
 template <ServiceType T>
-auto DeadNodeView<T>::remove_stale_resources() -> iox2::container::Expected<bool, NodeCleanupFailure> {
+auto DeadNodeView<T>::remove_stale_resources() -> iox2::bb::Expected<bool, NodeCleanupFailure> {
     if (!m_view.details().has_value()) {
-        return iox2::container::err(NodeCleanupFailure::InsufficientPermissions);
+        return iox2::bb::err(NodeCleanupFailure::InsufficientPermissions);
     }
 
     bool has_success = false;
@@ -65,7 +65,7 @@ auto DeadNodeView<T>::remove_stale_resources() -> iox2::container::Expected<bool
         return has_success;
     }
 
-    return iox2::container::err(iox2::bb::into<NodeCleanupFailure>(result));
+    return iox2::bb::err(iox2::bb::into<NodeCleanupFailure>(result));
 }
 
 template <ServiceType T>

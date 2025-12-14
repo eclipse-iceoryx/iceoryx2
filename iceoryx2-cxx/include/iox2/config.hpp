@@ -14,11 +14,11 @@
 #define IOX2_CONFIG_HPP
 
 #include "iox2/bb/duration.hpp"
+#include "iox2/bb/expected.hpp"
 #include "iox2/bb/file_name.hpp"
+#include "iox2/bb/optional.hpp"
 #include "iox2/bb/path.hpp"
 #include "iox2/config_creation_error.hpp"
-#include "iox2/container/expected.hpp"
-#include "iox2/bb/optional.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/unable_to_deliver_strategy.hpp"
 
@@ -439,7 +439,7 @@ class Config {
 
     /// Loads a configuration from a file. On success it returns a [`Config`] object otherwise a
     /// [`ConfigCreationError`] describing the failure.
-    static auto from_file(const iox2::bb::FilePath& file) -> iox2::container::Expected<Config, ConfigCreationError>;
+    static auto from_file(const iox2::bb::FilePath& file) -> iox2::bb::Expected<Config, ConfigCreationError>;
 
     /// Returns the [`config::Global`] part of the config
     auto global() -> config::Global;

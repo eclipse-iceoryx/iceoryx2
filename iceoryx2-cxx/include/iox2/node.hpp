@@ -18,7 +18,7 @@
 #include "iox2/bb/static_function.hpp"
 #include "iox2/callback_progression.hpp"
 #include "iox2/config.hpp"
-#include "iox2/container/expected.hpp"
+#include "iox2/bb/expected.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/node_id.hpp"
 #include "iox2/node_name.hpp"
@@ -57,14 +57,14 @@ class Node {
     auto service_builder(const ServiceName& name) const -> ServiceBuilder<T>;
 
     /// Waits for a given `cycle_time`.
-    auto wait(iox2::bb::Duration cycle_time) const -> container::Expected<void, NodeWaitFailure>;
+    auto wait(iox2::bb::Duration cycle_time) const -> bb::Expected<void, NodeWaitFailure>;
 
     /// Lists all [`Node`]s under a provided config. The provided callback is
     /// called for every [`Node`] and gets the [`NodeState`] as input argument.
     /// The callback can return [`CallbackProgression::Stop`] if the iteration
     /// shall stop or [`CallbackProgression::Continue`];
     static auto list(ConfigView config, const iox2::bb::StaticFunction<CallbackProgression(NodeState<T>)>& callback)
-        -> container::Expected<void, NodeListFailure>;
+        -> bb::Expected<void, NodeListFailure>;
 
     /// Returns the [`SignalHandlingMode`] with which the [`Node`] was created.
     auto signal_handling_mode() const -> SignalHandlingMode;
@@ -117,7 +117,7 @@ class NodeBuilder {
 
     /// Creates a new [`Node`] for a specified [`ServiceType`].
     template <ServiceType T>
-    auto create() const&& -> container::Expected<Node<T>, NodeCreationFailure>;
+    auto create() const&& -> bb::Expected<Node<T>, NodeCreationFailure>;
 
   private:
     iox2_node_builder_h m_handle = nullptr;

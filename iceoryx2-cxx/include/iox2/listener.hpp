@@ -14,9 +14,9 @@
 #define IOX2_LISTENER_HPP
 
 #include "iox2/bb/duration.hpp"
-#include "iox2/bb/static_function.hpp"
-#include "iox2/container/expected.hpp"
+#include "iox2/bb/expected.hpp"
 #include "iox2/bb/optional.hpp"
+#include "iox2/bb/static_function.hpp"
 #include "iox2/event_id.hpp"
 #include "iox2/file_descriptor.hpp"
 #include "iox2/internal/callback_context.hpp"
@@ -48,8 +48,7 @@ class Listener {
     /// currently available [`EventId`]s in buffer.
     /// For every received [`EventId`] the provided callback is called with the [`EventId`] as
     /// input argument.
-    auto try_wait_all(const iox2::bb::StaticFunction<void(EventId)>& callback)
-        -> container::Expected<void, ListenerWaitError>;
+    auto try_wait_all(const iox2::bb::StaticFunction<void(EventId)>& callback) -> bb::Expected<void, ListenerWaitError>;
 
     /// Blocking wait for new [`EventId`]s until the provided timeout has passed. Collects either
     /// all [`EventId`]s that were received
@@ -58,7 +57,7 @@ class Listener {
     /// For every received [`EventId`] the provided callback is called with the [`EventId`] as
     /// input argument.
     auto timed_wait_all(const iox2::bb::StaticFunction<void(EventId)>& callback, const iox2::bb::Duration& timeout)
-        -> container::Expected<void, ListenerWaitError>;
+        -> bb::Expected<void, ListenerWaitError>;
 
     /// Blocking wait for new [`EventId`]s. Collects either
     /// all [`EventId`]s that were received
@@ -67,25 +66,24 @@ class Listener {
     /// For every received [`EventId`] the provided callback is called with the [`EventId`] as
     /// input argument.
     auto blocking_wait_all(const iox2::bb::StaticFunction<void(EventId)>& callback)
-        -> container::Expected<void, ListenerWaitError>;
+        -> bb::Expected<void, ListenerWaitError>;
 
     /// Non-blocking wait for a new [`EventId`]. If no [`EventId`] was notified it returns [`None`].
     /// On error it returns [`ListenerWaitError`] is returned which describes the error
     /// in detail.
-    auto try_wait_one() -> container::Expected<bb::Optional<EventId>, ListenerWaitError>;
+    auto try_wait_one() -> bb::Expected<bb::Optional<EventId>, ListenerWaitError>;
 
     /// Blocking wait for a new [`EventId`] until either an [`EventId`] was received or the timeout
     /// has passed. If no [`EventId`] was notified it returns [`None`].
     /// On error it returns [`ListenerWaitError`] is returned which describes the error
     /// in detail.
-    auto timed_wait_one(const iox2::bb::Duration& timeout)
-        -> container::Expected<bb::Optional<EventId>, ListenerWaitError>;
+    auto timed_wait_one(const iox2::bb::Duration& timeout) -> bb::Expected<bb::Optional<EventId>, ListenerWaitError>;
 
     /// Blocking wait for a new [`EventId`].
     /// Sporadic wakeups can occur and if no [`EventId`] was notified it returns [`None`].
     /// On error it returns [`ListenerWaitError`] is returned which describes the error
     /// in detail.
-    auto blocking_wait_one() -> container::Expected<bb::Optional<EventId>, ListenerWaitError>;
+    auto blocking_wait_one() -> bb::Expected<bb::Optional<EventId>, ListenerWaitError>;
 
     /// Returns the deadline of the corresponding [`Service`].
     auto deadline() const -> bb::Optional<iox2::bb::Duration>;
@@ -184,47 +182,46 @@ inline void wait_callback(const iox2_event_id_t* event_id, iox2_callback_context
 
 template <ServiceType S>
 inline auto Listener<S>::try_wait_all(const iox2::bb::StaticFunction<void(EventId)>& callback)
-    -> container::Expected<void, ListenerWaitError> {
+    -> bb::Expected<void, ListenerWaitError> {
     auto ctx = internal::ctx(callback);
 
     auto result = iox2_listener_try_wait_all(&m_handle, wait_callback, static_cast<void*>(&ctx));
     if (result == IOX2_OK) {
-        return { container::in_place };
+        return {};
     }
 
-    return container::err(bb::into<ListenerWaitError>(result));
+    return bb::err(bb::into<ListenerWaitError>(result));
 }
 
 template <ServiceType S>
 inline auto Listener<S>::timed_wait_all(const iox2::bb::StaticFunction<void(EventId)>& callback,
-                                        const iox2::bb::Duration& timeout)
-    -> container::Expected<void, ListenerWaitError> {
+                                        const iox2::bb::Duration& timeout) -> bb::Expected<void, ListenerWaitError> {
     auto ctx = internal::ctx(callback);
 
     auto result = iox2_listener_timed_wait_all(
         &m_handle, wait_callback, static_cast<void*>(&ctx), timeout.as_secs(), timeout.subsec_nanos());
     if (result == IOX2_OK) {
-        return { container::in_place };
+        return {};
     }
 
-    return container::err(bb::into<ListenerWaitError>(result));
+    return bb::err(bb::into<ListenerWaitError>(result));
 }
 
 template <ServiceType S>
 inline auto Listener<S>::blocking_wait_all(const iox2::bb::StaticFunction<void(EventId)>& callback)
-    -> container::Expected<void, ListenerWaitError> {
+    -> bb::Expected<void, ListenerWaitError> {
     auto ctx = internal::ctx(callback);
 
     auto result = iox2_listener_blocking_wait_all(&m_handle, wait_callback, static_cast<void*>(&ctx));
     if (result == IOX2_OK) {
-        return { container::in_place };
+        return {};
     }
 
-    return container::err(bb::into<ListenerWaitError>(result));
+    return bb::err(bb::into<ListenerWaitError>(result));
 }
 
 template <ServiceType S>
-inline auto Listener<S>::try_wait_one() -> container::Expected<bb::Optional<EventId>, ListenerWaitError> {
+inline auto Listener<S>::try_wait_one() -> bb::Expected<bb::Optional<EventId>, ListenerWaitError> {
     iox2_event_id_t event_id {};
     bool has_received_one { false };
 
@@ -238,12 +235,12 @@ inline auto Listener<S>::try_wait_one() -> container::Expected<bb::Optional<Even
         return bb::Optional<EventId>();
     }
 
-    return container::err(bb::into<ListenerWaitError>(result));
+    return bb::err(bb::into<ListenerWaitError>(result));
 }
 
 template <ServiceType S>
 inline auto Listener<S>::timed_wait_one(const iox2::bb::Duration& timeout)
-    -> container::Expected<bb::Optional<EventId>, ListenerWaitError> {
+    -> bb::Expected<bb::Optional<EventId>, ListenerWaitError> {
     iox2_event_id_t event_id {};
     bool has_received_one { false };
 
@@ -258,12 +255,11 @@ inline auto Listener<S>::timed_wait_one(const iox2::bb::Duration& timeout)
         return bb::Optional<EventId>();
     }
 
-    return container::err(bb::into<ListenerWaitError>(result));
+    return bb::err(bb::into<ListenerWaitError>(result));
 }
 
 template <ServiceType S>
-inline auto Listener<S>::blocking_wait_one()
-    -> container::Expected<bb::Optional<EventId>, ListenerWaitError> {
+inline auto Listener<S>::blocking_wait_one() -> bb::Expected<bb::Optional<EventId>, ListenerWaitError> {
     iox2_event_id_t event_id {};
     bool has_received_one { false };
 
@@ -277,7 +273,7 @@ inline auto Listener<S>::blocking_wait_one()
         return bb::Optional<EventId>();
     }
 
-    return container::err(bb::into<ListenerWaitError>(result));
+    return bb::err(bb::into<ListenerWaitError>(result));
 }
 } // namespace iox2
 

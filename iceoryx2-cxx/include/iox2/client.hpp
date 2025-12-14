@@ -14,7 +14,7 @@
 #define IOX2_CLIENT_HPP
 
 #include "iox/slice.hpp"
-#include "iox2/container/expected.hpp"
+#include "iox2/bb/expected.hpp"
 #include "iox2/internal/helper.hpp"
 #include "iox2/payload_info.hpp"
 #include "iox2/request_mut_uninit.hpp"
@@ -54,7 +54,7 @@ class Client {
     /// returns a [`PendingResponse`] that can be used to receive a stream of
     /// [`Response`]s from the [`Server`].
     template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
-    auto send_copy(const RequestPayload& payload) const -> container::Expected<
+    auto send_copy(const RequestPayload& payload) const -> bb::Expected<
         PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestSendError>;
 
@@ -62,14 +62,14 @@ class Client {
     /// returns a [`PendingResponse`] that can be used to receive a stream of
     /// [`Response`]s from the [`Server`].
     template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
-    auto send_slice_copy(iox::ImmutableSlice<ValueType>& payload) const -> container::Expected<
+    auto send_slice_copy(iox::ImmutableSlice<ValueType>& payload) const -> bb::Expected<
         PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestSendError>;
 
     /// Acquires an [`RequestMutUninit`] to store payload. This API shall be used
     /// by default to avoid unnecessary copies.
     template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
-    auto loan_uninit() -> container::Expected<
+    auto loan_uninit() -> bb::Expected<
         RequestMutUninit<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         LoanError>;
 
@@ -77,14 +77,14 @@ class Client {
     /// by default to avoid unnecessary copies.
     template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto loan_slice_uninit(uint64_t number_of_elements)
-        -> container::Expected<RequestMutUninit<Service, T, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
+        -> bb::Expected<RequestMutUninit<Service, T, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
                                LoanError>;
 
     /// Acquires the payload for the request and initializes the underlying memory
     /// with default. This can be very expensive when the payload is large, therefore
     /// prefer [`Client::loan_uninit()`] when possible.
     template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
-    auto loan() -> container::Expected<RequestMut<Service, T, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
+    auto loan() -> bb::Expected<RequestMut<Service, T, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
                                        LoanError>;
 
     /// Acquires the payload for the request and initializes the underlying memory
@@ -92,7 +92,7 @@ class Client {
     /// prefer [`Client::loan_uninit()`] when possible.
     template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto loan_slice(uint64_t number_of_elements)
-        -> container::Expected<RequestMut<Service, T, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
+        -> bb::Expected<RequestMut<Service, T, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
                                LoanError>;
 
   private:
@@ -183,7 +183,7 @@ template <ServiceType Service,
           typename ResponseUserHeader>
 template <typename T, typename>
 inline auto Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::loan_uninit()
-    -> container::Expected<
+    -> bb::Expected<
         RequestMutUninit<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         LoanError> {
     constexpr uint64_t NUMBER_OF_ELEMENTS = 1;
@@ -194,7 +194,7 @@ inline auto Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, 
     if (result == IOX2_OK) {
         return request;
     }
-    return container::err(bb::into<LoanError>(result));
+    return bb::err(bb::into<LoanError>(result));
 }
 
 template <ServiceType Service,
@@ -205,7 +205,7 @@ template <ServiceType Service,
 template <typename T, typename>
 inline auto Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::loan_slice_uninit(
     uint64_t number_of_elements)
-    -> container::Expected<RequestMutUninit<Service, T, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
+    -> bb::Expected<RequestMutUninit<Service, T, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
                            LoanError> {
     RequestMutUninit<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader> request;
     auto result = iox2_client_loan_slice_uninit(
@@ -214,7 +214,7 @@ inline auto Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, 
     if (result == IOX2_OK) {
         return request;
     }
-    return container::err(bb::into<LoanError>(result));
+    return bb::err(bb::into<LoanError>(result));
 }
 
 template <ServiceType Service,
@@ -225,7 +225,7 @@ template <ServiceType Service,
 template <typename T, typename>
 inline auto Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::send_copy(
     const RequestPayload& payload) const
-    -> container::Expected<
+    -> bb::Expected<
         PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestSendError> {
     static_assert(std::is_trivially_copyable<RequestPayload>::value,
@@ -240,7 +240,7 @@ inline auto Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, 
             pending_response_handle);
     }
 
-    return container::err(bb::into<RequestSendError>(result));
+    return bb::err(bb::into<RequestSendError>(result));
 }
 
 template <ServiceType Service,
@@ -251,7 +251,7 @@ template <ServiceType Service,
 template <typename T, typename>
 inline auto Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::send_slice_copy(
     iox::ImmutableSlice<ValueType>& payload) const
-    -> container::Expected<
+    -> bb::Expected<
         PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestSendError> {
     static_assert(std::is_trivially_copyable<ValueType>::value,
@@ -270,7 +270,7 @@ inline auto Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, 
             pending_response_handle);
     }
 
-    return container::err(bb::into<RequestSendError>(result));
+    return bb::err(bb::into<RequestSendError>(result));
 }
 
 template <ServiceType Service,
@@ -280,10 +280,10 @@ template <ServiceType Service,
           typename ResponseUserHeader>
 template <typename T, typename>
 inline auto Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::loan()
-    -> container::Expected<RequestMut<Service, T, RequestUserHeader, ResponsePayload, ResponseUserHeader>, LoanError> {
+    -> bb::Expected<RequestMut<Service, T, RequestUserHeader, ResponsePayload, ResponseUserHeader>, LoanError> {
     auto request = loan_uninit();
     if (!request.has_value()) {
-        return container::err(request.error());
+        return bb::err(request.error());
     }
 
     new (&request->payload_mut()) RequestPayload();
@@ -298,10 +298,10 @@ template <ServiceType Service,
 template <typename T, typename>
 inline auto Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::loan_slice(
     uint64_t number_of_elements)
-    -> container::Expected<RequestMut<Service, T, RequestUserHeader, ResponsePayload, ResponseUserHeader>, LoanError> {
+    -> bb::Expected<RequestMut<Service, T, RequestUserHeader, ResponsePayload, ResponseUserHeader>, LoanError> {
     auto request_uninit = loan_slice_uninit(number_of_elements);
     if (!request_uninit.has_value()) {
-        return container::err(request_uninit.error());
+        return bb::err(request_uninit.error());
     }
 
     auto request_init = std::move(request_uninit.value());

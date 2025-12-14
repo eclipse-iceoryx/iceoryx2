@@ -14,9 +14,9 @@
 #define IOX2_PORTFACTORY_REQUEST_RESPONSE_HPP
 
 #include "iox2/attribute_set.hpp"
+#include "iox2/bb/expected.hpp"
 #include "iox2/bb/static_function.hpp"
 #include "iox2/callback_progression.hpp"
-#include "iox2/container/expected.hpp"
 #include "iox2/dynamic_config_request_response.hpp"
 #include "iox2/internal/callback_context.hpp"
 #include "iox2/internal/iceoryx2.hpp"
@@ -69,7 +69,7 @@ class PortFactoryRequestResponse {
     /// while acquiring the [`Node`]s corresponding [`NodeState`] the error is
     /// forwarded to the callback as input argument.
     auto nodes(const iox2::bb::StaticFunction<CallbackProgression(NodeState<Service>)>& callback) const
-        -> container::Expected<void, NodeListFailure>;
+        -> bb::Expected<void, NodeListFailure>;
 
     /// Returns a [`PortFactoryClient`] to create a new
     /// [`crate::port::client::Client`] port.
@@ -198,17 +198,17 @@ template <ServiceType Service,
 inline auto
 PortFactoryRequestResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::nodes(
     const iox2::bb::StaticFunction<CallbackProgression(NodeState<Service>)>& callback) const
-    -> container::Expected<void, NodeListFailure> {
+    -> bb::Expected<void, NodeListFailure> {
     auto ctx = internal::ctx(callback);
 
     const auto ret_val =
         iox2_port_factory_request_response_nodes(&m_handle, internal::list_callback<Service>, static_cast<void*>(&ctx));
 
     if (ret_val == IOX2_OK) {
-        return { container::in_place };
+        return {};
     }
 
-    return container::err(bb::into<NodeListFailure>(ret_val));
+    return bb::err(bb::into<NodeListFailure>(ret_val));
 }
 
 template <ServiceType Service,

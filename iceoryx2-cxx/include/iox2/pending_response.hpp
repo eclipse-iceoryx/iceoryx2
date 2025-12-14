@@ -14,7 +14,7 @@
 #define IOX2_PENDING_RESPONSE_HPP
 
 #include "iox/slice.hpp"
-#include "iox2/container/expected.hpp"
+#include "iox2/bb/expected.hpp"
 #include "iox2/bb/optional.hpp"
 #include "iox2/header_request_response.hpp"
 #include "iox2/payload_info.hpp"
@@ -49,7 +49,7 @@ class PendingResponse {
 
     /// Receives a [`Response`] from one of the [`Server`]s that
     /// received the [`RequestMut`].
-    auto receive() -> container::Expected<bb::Optional<Response<Service, ResponsePayload, ResponseUserHeader>>,
+    auto receive() -> bb::Expected<bb::Optional<Response<Service, ResponsePayload, ResponseUserHeader>>,
                                           ReceiveError>;
 
     /// Returns a reference to the iceoryx2 internal [`RequestHeader`] of
@@ -102,7 +102,7 @@ class PendingResponse {
               typename ResponseUserHeaderT>
     friend auto
     send(RequestMut<S, RequestPayloadT, RequestUserHeaderT, ResponsePayloadT, ResponseUserHeaderT>&& request)
-        -> container::Expected<
+        -> bb::Expected<
             PendingResponse<S, RequestPayloadT, RequestUserHeaderT, ResponsePayloadT, ResponseUserHeaderT>,
             RequestSendError>;
 
@@ -155,7 +155,7 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseUserHeader>
 inline auto PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::receive()
-    -> container::Expected<bb::Optional<Response<Service, ResponsePayload, ResponseUserHeader>>, ReceiveError> {
+    -> bb::Expected<bb::Optional<Response<Service, ResponsePayload, ResponseUserHeader>>, ReceiveError> {
     iox2_response_h response_handle {};
     auto result = iox2_pending_response_receive(&m_handle, nullptr, &response_handle);
 
@@ -166,7 +166,7 @@ inline auto PendingResponse<Service, RequestPayload, RequestUserHeader, Response
         }
         return bb::Optional<Response<Service, ResponsePayload, ResponseUserHeader>>(bb::nullopt);
     }
-    return container::err(bb::into<ReceiveError>(result));
+    return bb::err(bb::into<ReceiveError>(result));
 }
 
 template <ServiceType Service,

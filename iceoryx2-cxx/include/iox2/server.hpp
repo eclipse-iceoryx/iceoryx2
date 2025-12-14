@@ -15,7 +15,7 @@
 
 #include "iox/slice.hpp"
 #include "iox2/active_request.hpp"
-#include "iox2/container/expected.hpp"
+#include "iox2/bb/expected.hpp"
 #include "iox2/bb/optional.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/unique_port_id.hpp"
@@ -40,7 +40,7 @@ class Server {
     /// Receives a [`RequestMut`] that was sent by a [`Client`] and returns an
     /// [`ActiveRequest`] which can be used to respond.
     /// If no [`RequestMut`]s were received it returns [`None`].
-    auto receive() -> container::Expected<
+    auto receive() -> bb::Expected<
         bb::Optional<ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>>,
         ReceiveError>;
 
@@ -52,7 +52,7 @@ class Server {
     auto id() const -> UniqueServerId;
 
     /// Returns true if the [`Server`] has [`RequestMut`]s in its buffer.
-    auto has_requests() const -> container::Expected<bool, ConnectionFailure>;
+    auto has_requests() const -> bb::Expected<bool, ConnectionFailure>;
 
   private:
     template <ServiceType, typename, typename, typename, typename>
@@ -106,7 +106,7 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseHeader>
 inline auto Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::receive()
-    -> container::Expected<
+    -> bb::Expected<
         bb::Optional<ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>>,
         ReceiveError> {
     iox2_active_request_h active_request_handle {};
@@ -124,7 +124,7 @@ inline auto Server<Service, RequestPayload, RequestHeader, ResponsePayload, Resp
             ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>>(
             bb::nullopt);
     }
-    return container::err(bb::into<ReceiveError>(result));
+    return bb::err(bb::into<ReceiveError>(result));
 }
 
 template <ServiceType Service,
@@ -157,7 +157,7 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseHeader>
 inline auto Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::has_requests() const
-    -> container::Expected<bool, ConnectionFailure> {
+    -> bb::Expected<bool, ConnectionFailure> {
     bool has_requests_result = false;
     auto result = iox2_server_has_requests(&m_handle, &has_requests_result);
 
@@ -165,7 +165,7 @@ inline auto Server<Service, RequestPayload, RequestHeader, ResponsePayload, Resp
         return has_requests_result;
     }
 
-    return container::err(bb::into<ConnectionFailure>(result));
+    return bb::err(bb::into<ConnectionFailure>(result));
 }
 
 template <ServiceType Service,

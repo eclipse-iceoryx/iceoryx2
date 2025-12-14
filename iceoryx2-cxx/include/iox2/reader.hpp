@@ -13,7 +13,7 @@
 #ifndef IOX2_READER_HPP
 #define IOX2_READER_HPP
 
-#include "iox2/container/expected.hpp"
+#include "iox2/bb/expected.hpp"
 #include "iox2/entry_handle.hpp"
 #include "iox2/entry_handle_error.hpp"
 #include "iox2/internal/service_builder_internal.hpp"
@@ -38,7 +38,7 @@ class Reader {
 
     /// Creates an [`EntryHandle`] for direct read access to the value.
     template <typename ValueType>
-    auto entry(const KeyType& key) -> container::Expected<EntryHandle<S, KeyType, ValueType>, EntryHandleError>;
+    auto entry(const KeyType& key) -> bb::Expected<EntryHandle<S, KeyType, ValueType>, EntryHandleError>;
 
   private:
     template <ServiceType, typename>
@@ -103,7 +103,7 @@ inline auto Reader<S, KeyType>::id() const -> UniqueReaderId {
 template <ServiceType S, typename KeyType>
 template <typename ValueType>
 inline auto Reader<S, KeyType>::entry(const KeyType& key)
-    -> container::Expected<EntryHandle<S, KeyType, ValueType>, EntryHandleError> {
+    -> bb::Expected<EntryHandle<S, KeyType, ValueType>, EntryHandleError> {
     iox2_entry_handle_h entry_handle {};
     const auto type_name = internal::get_type_name<ValueType>();
 
@@ -120,7 +120,7 @@ inline auto Reader<S, KeyType>::entry(const KeyType& key)
         return EntryHandle<S, KeyType, ValueType>(entry_handle);
     }
 
-    return container::err(bb::into<EntryHandleError>(result));
+    return bb::err(bb::into<EntryHandleError>(result));
 }
 } // namespace iox2
 

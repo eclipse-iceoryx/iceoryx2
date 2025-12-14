@@ -14,7 +14,7 @@
 #define IOX2_RESPONSE_MUT_HPP
 
 #include "iox/slice.hpp"
-#include "iox2/container/expected.hpp"
+#include "iox2/bb/expected.hpp"
 #include "iox2/header_request_response.hpp"
 #include "iox2/payload_info.hpp"
 #include "iox2/port_error.hpp"
@@ -81,8 +81,7 @@ class ResponseMut {
     /// Sends a [`ResponseMut`] to the corresponding [`PendingResponse`] of the
     /// [`Client`].
     template <ServiceType S, typename ResponsePayloadT, typename ResponseUserHeaderT>
-    friend auto send(ResponseMut<S, ResponsePayloadT, ResponseUserHeaderT>&& response)
-        -> container::Expected<void, SendError>;
+    friend auto send(ResponseMut<S, ResponsePayloadT, ResponseUserHeaderT>&& response) -> bb::Expected<void, SendError>;
 
     explicit ResponseMut() = default;
     void drop();
@@ -183,14 +182,14 @@ inline auto ResponseMut<Service, ResponsePayload, ResponseUserHeader>::payload_m
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
 inline auto send(ResponseMut<Service, ResponsePayload, ResponseUserHeader>&& response)
-    -> container::Expected<void, SendError> {
+    -> bb::Expected<void, SendError> {
     auto result = iox2_response_mut_send(response.m_handle);
     response.m_handle = nullptr;
 
     if (result == IOX2_OK) {
-        return { container::in_place };
+        return {};
     }
-    return container::err(bb::into<SendError>(result));
+    return bb::err(bb::into<SendError>(result));
 }
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
