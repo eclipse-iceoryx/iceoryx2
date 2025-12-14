@@ -200,3 +200,7 @@ pub unsafe fn sigemptyset(set: *mut sigset_t) -> int {
 pub unsafe fn sigpending(set: *mut sigset_t) -> int {
     unimplemented!("Windows does not support the sigset_t.");
 }
+
+pub unsafe fn abort() {
+    unimplemented!("abort")
+}

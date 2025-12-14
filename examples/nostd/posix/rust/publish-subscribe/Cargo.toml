@@ -1,0 +1,21 @@
+[package]
+name = "publish-subscribe-nostd-posix"
+description = "a nostd publish-subscribe example that uses the posix abstraction"
+license = { workspace = true }
+edition = { workspace = true }
+version = { workspace = true }
+rust-version = { workspace = true }
+
+[[example]]
+name = "posix_nostd_publisher"
+path = "src/publisher.rs"
+
+[[example]]
+name = "posix_nostd_subscriber"
+path = "src/subscriber.rs"
+
+[dependencies]
+posix-nostd-common = { workspace = true }
+
+iceoryx2 = { workspace = true }
+iceoryx2-bb-posix = { workspace  = true }

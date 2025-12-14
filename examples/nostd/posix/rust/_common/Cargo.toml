@@ -1,0 +1,12 @@
+[package]
+name = "posix-nostd-common"
+description = "common components for nostd examples that use the posix abstraction"
+license = { workspace = true }
+edition = { workspace = true }
+version = { workspace = true }
+rust-version = { workspace = true }
+
+[dependencies]
+iceoryx2 = { workspace = true }
+iceoryx2-bb-elementary-traits = { workspace = true }
+iceoryx2-bb-memory = { workspace = true }
