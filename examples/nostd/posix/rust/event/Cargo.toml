@@ -1,0 +1,21 @@
+[package]
+name = "posix-nostd-event"
+description = "a nostd event example that uses the posix abstraction"
+license = { workspace = true }
+edition = { workspace = true }
+version = { workspace = true }
+rust-version = { workspace = true }
+
+[[example]]
+name = "posix_nostd_notifier"
+path = "src/notifier.rs"
+
+[[example]]
+name = "posix_nostd_listener"
+path = "src/listener.rs"
+
+[dependencies]
+posix-nostd-common = { workspace = true }
+
+iceoryx2 = { workspace = true }
+iceoryx2-bb-posix = { workspace  = true }
