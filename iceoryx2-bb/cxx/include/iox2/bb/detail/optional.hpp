@@ -38,8 +38,7 @@ struct NulloptT {
     constexpr explicit NulloptT(detail::NulloptTConstructorTag /* unused */) noexcept {
     }
 };
-// NOLINTNEXTLINE(readability-identifier-naming), for consistency with C++17 code using std::optional
-constexpr NulloptT nullopt = NulloptT(detail::NulloptTConstructorTag {});
+constexpr NulloptT NULLOPT = NulloptT(detail::NulloptTConstructorTag {});
 
 namespace detail {
 /// Internal union implementation for Optional.

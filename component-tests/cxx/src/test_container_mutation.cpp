@@ -83,7 +83,7 @@ auto prepare_response(ContainerMutationTestRequest const& request)
     response.vector_remove_element = request.vector_remove_element;
     if (!(response.vector_remove_element.try_erase_at(5) && response.vector_remove_element.try_erase_at(2)
           && response.vector_remove_element.try_pop_back())) {
-        return iox2::bb::nullopt;
+        return iox2::bb::NULLOPT;
     }
     response.string_append = request.string_append;
     response.string_append.try_append_utf8_null_terminated_unchecked(" my baby, hello my honey, hello my ragtime gal");
@@ -91,7 +91,7 @@ auto prepare_response(ContainerMutationTestRequest const& request)
     if (!(response.vector_strings_change_middle.element_at(2)->get().unchecked_code_units().try_erase_at(13, 16)
           && response.vector_strings_change_middle.element_at(2)->get().try_append_utf8_null_terminated_unchecked(
               "ter"))) {
-        return iox2::bb::nullopt;
+        return iox2::bb::NULLOPT;
     }
     // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
     return response;

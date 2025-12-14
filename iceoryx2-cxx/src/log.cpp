@@ -18,7 +18,7 @@
 namespace iox2 {
 namespace {
 //NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables): it is in an anonymous namespace and therefore only accessible in this compilation unit
-bb::Optional<Log*> global_logger = bb::nullopt;
+bb::Optional<Log*> global_logger = bb::NULLOPT;
 
 void internal_log_callback(iox2_log_level_e log_level, const char* origin, const char* message) {
     (*global_logger)->log(iox2::bb::into<LogLevel>(static_cast<int>(log_level)), origin, message);

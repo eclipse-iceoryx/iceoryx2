@@ -31,7 +31,7 @@ auto FileDescriptor::create_owning(int32_t file_descriptor) -> bb::Optional<File
         return { FileDescriptor(handle) };
     }
 
-    return bb::nullopt;
+    return bb::NULLOPT;
 }
 
 auto FileDescriptor::create_non_owning(int32_t file_descriptor) -> bb::Optional<FileDescriptor> {
@@ -40,7 +40,7 @@ auto FileDescriptor::create_non_owning(int32_t file_descriptor) -> bb::Optional<
         return { FileDescriptor(handle) };
     }
 
-    return bb::nullopt;
+    return bb::NULLOPT;
 }
 
 FileDescriptor::FileDescriptor(iox2_file_descriptor_h handle)

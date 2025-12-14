@@ -49,8 +49,8 @@ TEST(Config, defaults_event_notifier_created_event) {
     config.defaults().event().set_notifier_created_event(test_value);
     ASSERT_THAT(config.defaults().event().notifier_created_event(), Eq(test_value));
 
-    config.defaults().event().set_notifier_created_event(bb::nullopt);
-    ASSERT_THAT(config.defaults().event().notifier_created_event(), Eq(bb::nullopt));
+    config.defaults().event().set_notifier_created_event(bb::NULLOPT);
+    ASSERT_THAT(config.defaults().event().notifier_created_event(), Eq(bb::NULLOPT));
 }
 
 TEST(Config, defaults_event_notifier_dropped_event) {
@@ -60,8 +60,8 @@ TEST(Config, defaults_event_notifier_dropped_event) {
     config.defaults().event().set_notifier_dropped_event(test_value);
     ASSERT_THAT(config.defaults().event().notifier_dropped_event(), Eq(test_value));
 
-    config.defaults().event().set_notifier_dropped_event(bb::nullopt);
-    ASSERT_THAT(config.defaults().event().notifier_dropped_event(), Eq(bb::nullopt));
+    config.defaults().event().set_notifier_dropped_event(bb::NULLOPT);
+    ASSERT_THAT(config.defaults().event().notifier_dropped_event(), Eq(bb::NULLOPT));
 }
 
 TEST(Config, defaults_event_notifier_dead_event) {
@@ -71,8 +71,8 @@ TEST(Config, defaults_event_notifier_dead_event) {
     config.defaults().event().set_notifier_dead_event(test_value);
     ASSERT_THAT(config.defaults().event().notifier_dead_event(), Eq(test_value));
 
-    config.defaults().event().set_notifier_dead_event(bb::nullopt);
-    ASSERT_THAT(config.defaults().event().notifier_dead_event(), Eq(bb::nullopt));
+    config.defaults().event().set_notifier_dead_event(bb::NULLOPT);
+    ASSERT_THAT(config.defaults().event().notifier_dead_event(), Eq(bb::NULLOPT));
 }
 
 TEST(Config, defaults_event_max_notifiers) {

@@ -50,7 +50,7 @@ auto AttributeSetView::key_value(const Attribute::Key& key, const uint64_t idx) 
     iox2_attribute_set_key_value(m_handle, key.c_str(), idx, &buffer[0], Attribute::Value::capacity(), &has_value);
 
     if (!has_value) {
-        return bb::nullopt;
+        return bb::NULLOPT;
     }
 
     return Attribute::Value(iox2::legacy::TruncateToCapacity, &buffer[0]);

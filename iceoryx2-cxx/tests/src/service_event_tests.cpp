@@ -485,7 +485,7 @@ TYPED_TEST(ServiceEventTest, deadline_can_be_set) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name = iox2_testing::generate_service_name();
     Config config;
-    config.defaults().event().set_deadline(bb::nullopt);
+    config.defaults().event().set_deadline(bb::NULLOPT);
     auto node = NodeBuilder().config(config).create<SERVICE_TYPE>().value();
 
     auto service_create = node.service_builder(service_name).event().deadline(DEADLINE).create().value();
@@ -521,12 +521,12 @@ TYPED_TEST(ServiceEventTest, deadline_can_be_disabled) {
     auto listener_open = service_open.listener_builder().create().value();
     auto notifier_open = service_open.notifier_builder().create().value();
 
-    ASSERT_THAT(service_create.static_config().deadline(), Eq(bb::nullopt));
-    ASSERT_THAT(service_open.static_config().deadline(), Eq(bb::nullopt));
-    ASSERT_THAT(listener_create.deadline(), Eq(bb::nullopt));
-    ASSERT_THAT(listener_open.deadline(), Eq(bb::nullopt));
-    ASSERT_THAT(notifier_create.deadline(), Eq(bb::nullopt));
-    ASSERT_THAT(notifier_open.deadline(), Eq(bb::nullopt));
+    ASSERT_THAT(service_create.static_config().deadline(), Eq(bb::NULLOPT));
+    ASSERT_THAT(service_open.static_config().deadline(), Eq(bb::NULLOPT));
+    ASSERT_THAT(listener_create.deadline(), Eq(bb::NULLOPT));
+    ASSERT_THAT(listener_open.deadline(), Eq(bb::NULLOPT));
+    ASSERT_THAT(notifier_create.deadline(), Eq(bb::NULLOPT));
+    ASSERT_THAT(notifier_open.deadline(), Eq(bb::NULLOPT));
 }
 
 TYPED_TEST(ServiceEventTest, notifier_is_informed_when_deadline_was_missed) {

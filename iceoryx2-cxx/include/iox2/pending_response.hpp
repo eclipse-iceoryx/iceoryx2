@@ -162,7 +162,7 @@ inline auto PendingResponse<Service, RequestPayload, RequestUserHeader, Response
             Response<Service, ResponsePayload, ResponseUserHeader> response(response_handle);
             return bb::Optional<Response<Service, ResponsePayload, ResponseUserHeader>>(std::move(response));
         }
-        return bb::Optional<Response<Service, ResponsePayload, ResponseUserHeader>>(bb::nullopt);
+        return bb::Optional<Response<Service, ResponsePayload, ResponseUserHeader>>(bb::NULLOPT);
     }
     return bb::err(bb::into<ReceiveError>(result));
 }

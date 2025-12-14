@@ -40,13 +40,13 @@ TEST_F(OptionalFixture, default_constructor_does_not_initialize_an_object_of_con
 }
 
 TEST(Optional, nullopt_constructor_initializes_empty_optional) {
-    Optional<int32_t> const sut(nullopt);
+    Optional<int32_t> const sut(NULLOPT);
     ASSERT_FALSE(sut.has_value());
 }
 
 TEST_F(OptionalFixture, nullopt_constructor_does_not_initialize_an_object_of_contained_type) {
     Observable::s_counter.was_initialized = 0;
-    Optional<Observable> const sut(nullopt);
+    Optional<Observable> const sut(NULLOPT);
     ASSERT_FALSE(sut.has_value());
     ASSERT_EQ(Observable::s_counter.was_initialized, 0);
     ASSERT_EQ(Observable::s_counter.total_instances, 0);
@@ -84,7 +84,7 @@ TEST_F(OptionalFixture, value_constructor_copy_constructs_for_lvalue) {
 TEST_F(OptionalFixture, destructor_does_nothing_on_empty_optiona) {
     Observable::s_counter.was_destructed = 0;
     {
-        Optional<Observable> const sut(nullopt);
+        Optional<Observable> const sut(NULLOPT);
         ASSERT_TRUE(!sut.has_value());
     }
     EXPECT_EQ(Observable::s_counter.was_destructed, 0);
@@ -529,7 +529,7 @@ TEST(Optional, move_assignment_returns_reference_to_this) {
 TEST(Optional, assignment_from_nullopt_to_empty_leaves_optional_empty) {
     Optional<int32_t> sut;
     ASSERT_TRUE(!sut.has_value());
-    sut = nullopt;
+    sut = NULLOPT;
     ASSERT_TRUE(!sut.has_value());
 }
 
@@ -550,7 +550,7 @@ TEST_F(OptionalFixture, assignment_from_nullopt_to_empty_does_not_construct_an_o
         Observable::s_counter.was_destructed = 0;
         Optional<Observable> sut;
         ASSERT_TRUE(!sut.has_value());
-        sut = nullopt;
+        sut = NULLOPT;
         ASSERT_TRUE(!sut.has_value());
         ASSERT_EQ(Observable::s_counter.was_initialized, 0);
         ASSERT_EQ(Observable::s_counter.was_copy_constructed, 0);
@@ -565,7 +565,7 @@ TEST(Optional, assignment_from_nullopt_to_full_empties_optional) {
     int32_t const overwritten_value = -99;
     Optional<int32_t> sut { overwritten_value };
     ASSERT_TRUE(sut.has_value());
-    sut = nullopt;
+    sut = NULLOPT;
     ASSERT_TRUE(!sut.has_value());
 }
 
@@ -587,7 +587,7 @@ TEST_F(OptionalFixture, assignment_from_nullopt_to_full_destructs_contained_obje
         Observable::s_counter.was_move_assigned = 0;
         Observable::s_counter.was_destructed = 0;
         ASSERT_TRUE(sut.has_value());
-        sut = nullopt;
+        sut = NULLOPT;
         ASSERT_TRUE(!sut.has_value());
         ASSERT_EQ(Observable::s_counter.was_initialized, 0);
         ASSERT_EQ(Observable::s_counter.was_copy_constructed, 0);
@@ -602,7 +602,7 @@ TEST_F(OptionalFixture, assignment_from_nullopt_to_full_destructs_contained_obje
 
 TEST(Optional, assignment_from_nullopt_returns_reference_to_this) {
     Optional<Observable> sut { Observable {} };
-    ASSERT_EQ(&(sut = nullopt), &sut);
+    ASSERT_EQ(&(sut = NULLOPT), &sut);
 }
 
 TEST(Optional, emplace_in_empty_optional_works) {
@@ -1073,8 +1073,8 @@ TEST(Optional, const_operator_arrow_should_bypass_overloaded_operator_ampersand)
 }
 
 TEST(Optional, operator_equal_with_two_empty_optionals_are_equal) {
-    const Optional<uint64_t> lhs { nullopt };
-    const Optional<uint64_t> rhs { nullopt };
+    const Optional<uint64_t> lhs { NULLOPT };
+    const Optional<uint64_t> rhs { NULLOPT };
 
     ASSERT_TRUE(lhs == rhs);
 }
@@ -1099,22 +1099,22 @@ TEST(Optional, operator_equal_with_two_optionals_with_different_values_are_not_e
 TEST(Optional, operator_equal_with_lhs_value_and_rhs_empty_are_not_equal) {
     constexpr uint64_t LHS_VALUE { 123 };
     const Optional<uint64_t> lhs { LHS_VALUE };
-    const Optional<uint64_t> rhs { nullopt };
+    const Optional<uint64_t> rhs { NULLOPT };
 
     ASSERT_FALSE(lhs == rhs);
 }
 
 TEST(Optional, operator_equal_with_lhs_empty_and_rhs_value_are_not_equal) {
     constexpr uint64_t RHS_VALUE { 13 };
-    const Optional<uint64_t> lhs { nullopt };
+    const Optional<uint64_t> lhs { NULLOPT };
     const Optional<uint64_t> rhs { RHS_VALUE };
 
     ASSERT_FALSE(lhs == rhs);
 }
 
 TEST(Optional, operator_not_equal_with_two_empty_optionals_are_equal) {
-    const Optional<uint64_t> lhs { nullopt };
-    const Optional<uint64_t> rhs { nullopt };
+    const Optional<uint64_t> lhs { NULLOPT };
+    const Optional<uint64_t> rhs { NULLOPT };
 
     ASSERT_FALSE(lhs != rhs);
 }
@@ -1139,14 +1139,14 @@ TEST(Optional, operator_not_equal_with_two_optionals_with_different_values_are_n
 TEST(Optional, operator_not_equal_with_lhs_value_and_rhs_empty_are_not_equal) {
     constexpr uint64_t LHS_VALUE { 123 };
     const Optional<uint64_t> lhs { LHS_VALUE };
-    const Optional<uint64_t> rhs { nullopt };
+    const Optional<uint64_t> rhs { NULLOPT };
 
     ASSERT_TRUE(lhs != rhs);
 }
 
 TEST(Optional, operator_not_equal_with_lhs_empty_and_rhs_value_are_not_equal) {
     constexpr uint64_t RHS_VALUE { 13 };
-    const Optional<uint64_t> lhs { nullopt };
+    const Optional<uint64_t> lhs { NULLOPT };
     const Optional<uint64_t> rhs { RHS_VALUE };
 
     ASSERT_TRUE(lhs != rhs);
@@ -1155,29 +1155,29 @@ TEST(Optional, operator_not_equal_with_lhs_empty_and_rhs_value_are_not_equal) {
 TEST(Optional, operator_equal_with_lhs_value_and_rhs_nullopt_is_not_equal) {
     constexpr uint64_t LHS_VALUE { 666 };
     const Optional<uint64_t> lhs { LHS_VALUE };
-    const NulloptT rhs { nullopt };
+    const NulloptT rhs { NULLOPT };
 
     ASSERT_FALSE(lhs == rhs);
 }
 
 TEST(Optional, operator_equal_with_lhs_empty_and_rhs_nullopt_is_equal) {
-    const Optional<uint64_t> lhs { nullopt };
-    const NulloptT rhs { nullopt };
+    const Optional<uint64_t> lhs { NULLOPT };
+    const NulloptT rhs { NULLOPT };
 
     ASSERT_TRUE(lhs == rhs);
 }
 
 TEST(Optional, operator_equal_with_lhs_nullopt_and_rhs_value_is_not_equal) {
     constexpr uint64_t RHS_VALUE { 666 };
-    const NulloptT lhs { nullopt };
+    const NulloptT lhs { NULLOPT };
     const Optional<uint64_t> rhs { RHS_VALUE };
 
     ASSERT_FALSE(lhs == rhs);
 }
 
 TEST(Optional, operator_equal_with_lhs_nullopt_and_rhs_empty_is_equal) {
-    const NulloptT lhs { nullopt };
-    const Optional<uint64_t> rhs { nullopt };
+    const NulloptT lhs { NULLOPT };
+    const Optional<uint64_t> rhs { NULLOPT };
 
     ASSERT_TRUE(lhs == rhs);
 }
@@ -1185,29 +1185,29 @@ TEST(Optional, operator_equal_with_lhs_nullopt_and_rhs_empty_is_equal) {
 TEST(Optional, operator_not_equal_with_lhs_value_and_rhs_nullopt_is_not_equal) {
     constexpr uint64_t LHS_VALUE { 666 };
     const Optional<uint64_t> lhs { LHS_VALUE };
-    const NulloptT rhs { nullopt };
+    const NulloptT rhs { NULLOPT };
 
     ASSERT_TRUE(lhs != rhs);
 }
 
 TEST(Optional, operator_not_equal_with_lhs_empty_and_rhs_nullopt_is_equal) {
-    const Optional<uint64_t> lhs { nullopt };
-    const NulloptT rhs { nullopt };
+    const Optional<uint64_t> lhs { NULLOPT };
+    const NulloptT rhs { NULLOPT };
 
     ASSERT_FALSE(lhs != rhs);
 }
 
 TEST(Optional, operator_not_equal_with_lhs_nullopt_and_rhs_value_is_not_equal) {
     constexpr uint64_t RHS_VALUE { 666 };
-    const NulloptT lhs { nullopt };
+    const NulloptT lhs { NULLOPT };
     const Optional<uint64_t> rhs { RHS_VALUE };
 
     ASSERT_TRUE(lhs != rhs);
 }
 
 TEST(Optional, operator_not_equal_with_lhs_nullopt_and_rhs_empty_is_equal) {
-    const NulloptT lhs { nullopt };
-    const Optional<uint64_t> rhs { nullopt };
+    const NulloptT lhs { NULLOPT };
+    const Optional<uint64_t> rhs { NULLOPT };
 
     ASSERT_FALSE(lhs != rhs);
 }

@@ -127,7 +127,7 @@ inline auto Subscriber<S, Payload, UserHeader>::receive() const
         if (sample.m_handle != nullptr) {
             return bb::Optional<Sample<S, Payload, UserHeader>>(std::move(sample));
         }
-        return bb::Optional<Sample<S, Payload, UserHeader>>(bb::nullopt);
+        return bb::Optional<Sample<S, Payload, UserHeader>>(bb::NULLOPT);
     }
 
     return bb::err(bb::into<ReceiveError>(result));

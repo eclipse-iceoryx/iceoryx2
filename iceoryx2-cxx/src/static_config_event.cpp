@@ -35,7 +35,7 @@ auto StaticConfigEvent::event_id_max_value() const -> size_t {
 
 auto StaticConfigEvent::notifier_created_event() const -> bb::Optional<EventId> {
     if (!m_value.has_notifier_created_event) {
-        return bb::nullopt;
+        return bb::NULLOPT;
     }
 
     return { EventId(m_value.notifier_created_event) };
@@ -43,7 +43,7 @@ auto StaticConfigEvent::notifier_created_event() const -> bb::Optional<EventId> 
 
 auto StaticConfigEvent::notifier_dropped_event() const -> bb::Optional<EventId> {
     if (!m_value.has_notifier_dropped_event) {
-        return bb::nullopt;
+        return bb::NULLOPT;
     }
 
     return { EventId(m_value.notifier_dropped_event) };
@@ -51,7 +51,7 @@ auto StaticConfigEvent::notifier_dropped_event() const -> bb::Optional<EventId> 
 
 auto StaticConfigEvent::notifier_dead_event() const -> bb::Optional<EventId> {
     if (!m_value.has_notifier_dead_event) {
-        return bb::nullopt;
+        return bb::NULLOPT;
     }
 
     return { EventId(m_value.notifier_dead_event) };
@@ -59,7 +59,7 @@ auto StaticConfigEvent::notifier_dead_event() const -> bb::Optional<EventId> {
 
 auto StaticConfigEvent::deadline() const -> bb::Optional<iox2::bb::Duration> {
     if (!m_value.has_deadline) {
-        return bb::nullopt;
+        return bb::NULLOPT;
     }
 
     return { iox2::bb::Duration::from_secs(m_value.deadline_seconds)

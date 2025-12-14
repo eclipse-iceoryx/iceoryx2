@@ -81,7 +81,7 @@ auto Notifier<S>::deadline() const -> bb::Optional<iox2::bb::Duration> {
         return { iox2::bb::Duration::from_secs(seconds) + iox2::bb::Duration::from_nanos(nanoseconds) };
     }
 
-    return bb::nullopt;
+    return bb::NULLOPT;
 }
 
 template <ServiceType S>

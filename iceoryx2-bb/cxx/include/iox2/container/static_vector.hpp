@@ -177,7 +177,7 @@ class StaticVector {
         if (count <= Capacity) {
             return from_value(count, T {});
         } else {
-            return bb::nullopt;
+            return bb::NULLOPT;
         }
     }
 
@@ -189,7 +189,7 @@ class StaticVector {
             ret = StaticVector {};
             ret->m_storage.insert_at(0, count, value);
         } else {
-            ret = bb::nullopt;
+            ret = bb::NULLOPT;
         }
         return ret;
     }
@@ -209,7 +209,7 @@ class StaticVector {
         bb::Optional<StaticVector> ret = StaticVector {};
         for (auto it = it_begin; it != it_end; ++it) {
             if (!ret->try_push_back(*it)) {
-                ret = bb::nullopt;
+                ret = bb::NULLOPT;
                 break;
             }
         }
@@ -233,7 +233,7 @@ class StaticVector {
     ///         Otherwise a vector containing copies of the list elements.
     static constexpr auto from_initializer_list(std::initializer_list<T> init_list) -> bb::Optional<StaticVector> {
         if (init_list.size() > Capacity) {
-            return bb::nullopt;
+            return bb::NULLOPT;
         } else {
             return from_range_unchecked(begin(init_list), end(init_list));
         }
@@ -410,7 +410,7 @@ class StaticVector {
         if (index < m_storage.size()) {
             return *m_storage.pointer_from_index(index);
         } else {
-            return bb::nullopt;
+            return bb::NULLOPT;
         }
     }
 
@@ -421,7 +421,7 @@ class StaticVector {
         if (index < m_storage.size()) {
             return *m_storage.pointer_from_index(index);
         } else {
-            return bb::nullopt;
+            return bb::NULLOPT;
         }
     }
 
@@ -432,7 +432,7 @@ class StaticVector {
         if (!empty()) {
             return *m_storage.pointer_from_index(0);
         } else {
-            return bb::nullopt;
+            return bb::NULLOPT;
         }
     }
 
@@ -443,7 +443,7 @@ class StaticVector {
         if (!empty()) {
             return *m_storage.pointer_from_index(0);
         } else {
-            return bb::nullopt;
+            return bb::NULLOPT;
         }
     }
 
@@ -454,7 +454,7 @@ class StaticVector {
         if (!empty()) {
             return *m_storage.pointer_from_index(size() - 1);
         } else {
-            return bb::nullopt;
+            return bb::NULLOPT;
         }
     }
 
@@ -465,7 +465,7 @@ class StaticVector {
         if (!empty()) {
             return *m_storage.pointer_from_index(size() - 1);
         } else {
-            return bb::nullopt;
+            return bb::NULLOPT;
         }
     }
 

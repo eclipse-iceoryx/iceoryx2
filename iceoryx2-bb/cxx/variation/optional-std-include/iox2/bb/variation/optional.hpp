@@ -25,7 +25,7 @@ template <typename T>
 using Optional = std::optional<T>;
 using NulloptT = std::nullopt_t;
 
-constexpr NulloptT nullopt = std::nullopt;
+constexpr NulloptT NULLOPT = std::nullopt;
 
 } // namespace bb
 } // namespace iox2

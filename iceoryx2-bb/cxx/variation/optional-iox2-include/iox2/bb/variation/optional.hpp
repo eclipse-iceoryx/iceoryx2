@@ -22,7 +22,7 @@ template <typename T>
 using Optional = detail::Optional<T>;
 using NulloptT = detail::NulloptT;
 
-constexpr NulloptT nullopt = detail::nullopt;
+constexpr NulloptT NULLOPT = detail::NULLOPT;
 
 } // namespace bb
 } // namespace iox2

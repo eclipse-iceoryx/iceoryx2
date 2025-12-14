@@ -66,11 +66,11 @@ class FileDescriptorView : public FileDescriptorBased {
 class FileDescriptor {
   public:
     /// Creates a new [`FileDescriptor`] object that owns it. If the provided value is an
-    /// invalid [`FileDescriptor`] it returns [`bb::nullopt`].
+    /// invalid [`FileDescriptor`] it returns [`bb::NULLOPT`].
     static auto create_owning(int32_t file_descriptor) -> bb::Optional<FileDescriptor>;
 
     /// Creates a new [`FileDescriptor`] object that does not own it. If the provided value is an
-    /// invalid [`FileDescriptor`] it returns [`bb::nullopt`].
+    /// invalid [`FileDescriptor`] it returns [`bb::NULLOPT`].
     static auto create_non_owning(int32_t file_descriptor) -> bb::Optional<FileDescriptor>;
 
     FileDescriptor(const FileDescriptor&) = delete;

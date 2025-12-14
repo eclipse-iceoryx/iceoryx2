@@ -119,7 +119,7 @@ inline auto Server<Service, RequestPayload, RequestHeader, ResponsePayload, Resp
                 std::move(active_request));
         }
         return bb::Optional<ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>>(
-            bb::nullopt);
+            bb::NULLOPT);
     }
     return bb::err(bb::into<ReceiveError>(result));
 }

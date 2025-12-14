@@ -172,7 +172,7 @@ inline auto Listener<S>::deadline() const -> bb::Optional<iox2::bb::Duration> {
         return { iox2::bb::Duration::from_secs(seconds) + iox2::bb::Duration::from_nanos(nanoseconds) };
     }
 
-    return bb::nullopt;
+    return bb::NULLOPT;
 }
 
 inline void wait_callback(const iox2_event_id_t* event_id, iox2_callback_context context) {

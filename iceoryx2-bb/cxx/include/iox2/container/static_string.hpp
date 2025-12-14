@@ -163,32 +163,32 @@ class StaticString {
         auto operator=(UncheckedAccessorCodeUnits&&) -> UncheckedAccessorCodeUnits& = delete;
 
         /// Retrieve a reference to the single code unit at `index`.
-        /// @return A reference to the code unit or `nullopt` if the index is out of bounds.
+        /// @return A reference to the code unit or `NULLOPT` if the index is out of bounds.
         auto element_at(SizeType index) noexcept -> OptionalCodeUnitReference {
             if (index < m_parent->m_size) {
                 return m_parent->m_string[index];
             } else {
-                return bb::nullopt;
+                return bb::NULLOPT;
             }
         }
 
         /// Retrieve a reference to the first code unit at the beginning of the string.
-        /// @return A reference to the front code unit or `nullopt` if the string is empty.
+        /// @return A reference to the front code unit or `NULLOPT` if the string is empty.
         auto front_element() noexcept -> OptionalCodeUnitReference {
             if (!m_parent->empty()) {
                 return m_parent->m_string[0];
             } else {
-                return bb::nullopt;
+                return bb::NULLOPT;
             }
         }
 
         /// Retrieve a reference to the last code unit at the end of the string.
-        /// @return A reference to the back code unit or `nullopt` if the string is empty.
+        /// @return A reference to the back code unit or `NULLOPT` if the string is empty.
         auto back_element() noexcept -> OptionalCodeUnitReference {
             if (!m_parent->empty()) {
                 return m_parent->m_string[m_parent->size() - 1];
             } else {
-                return bb::nullopt;
+                return bb::NULLOPT;
             }
         }
 
@@ -232,32 +232,32 @@ class StaticString {
         auto operator=(ConstAccessorCodeUnits&&) -> ConstAccessorCodeUnits& = delete;
 
         /// Retrieve the single code unit at `index`.
-        /// @return A reference to the code unit or `nullopt` if the index is out of bounds.
+        /// @return A reference to the code unit or `NULLOPT` if the index is out of bounds.
         auto element_at(SizeType index) const noexcept -> OptionalConstCodeUnitReference {
             if (index < m_parent->m_size) {
                 return m_parent->m_string[index];
             } else {
-                return bb::nullopt;
+                return bb::NULLOPT;
             }
         }
 
         /// Retrieve the first code unit at the beginning of the string.
-        /// @return A reference to the front code unit or `nullopt` if the string is empty.
+        /// @return A reference to the front code unit or `NULLOPT` if the string is empty.
         auto front_element() const noexcept -> OptionalConstCodeUnitReference {
             if (!m_parent->empty()) {
                 return m_parent->m_string[0];
             } else {
-                return bb::nullopt;
+                return bb::NULLOPT;
             }
         }
 
         /// Retrieve the last code unit at the end of the string.
-        /// @return A reference to the back code unit or `nullopt` if the string is empty.
+        /// @return A reference to the back code unit or `NULLOPT` if the string is empty.
         auto back_element() const noexcept -> OptionalConstCodeUnitReference {
             if (!m_parent->empty()) {
                 return m_parent->m_string[m_parent->size() - 1];
             } else {
-                return bb::nullopt;
+                return bb::NULLOPT;
             }
         }
     };
@@ -314,13 +314,13 @@ class StaticString {
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,hicpp-avoid-c-arrays,modernize-avoid-c-arrays) statically bounds checked
     static auto from_utf8(char const (&utf8_str)[M]) noexcept -> bb::Optional<StaticString> {
         if (utf8_str[M - 1] != '\0') {
-            return bb::nullopt;
+            return bb::NULLOPT;
         }
         StaticString ret;
         for (uint64_t i = 0; i < M - 1; ++i) {
             char const character = utf8_str[i];
             if (!ret.try_push_back(character)) {
-                return bb::nullopt;
+                return bb::NULLOPT;
             }
         }
         return ret;
@@ -335,7 +335,7 @@ class StaticString {
         StaticString ret;
         while (*utf8_str != '\0') {
             if (!ret.try_push_back(*utf8_str)) {
-                return bb::nullopt;
+                return bb::NULLOPT;
             }
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic), unchecked access into c-style string
             ++utf8_str;

@@ -51,24 +51,24 @@ auto create_server(iox2::Node<iox2::ServiceType::Ipc> const& node,
     auto exp_service_name = iox2::ServiceName::create(service_name);
     if (!exp_service_name) {
         std::cout << "Error creating service name\n";
-        return iox2::bb::nullopt;
+        return iox2::bb::NULLOPT;
     }
     auto exp_req_resp =
         node.service_builder(exp_service_name.value()).request_response<RequestType, ResponseType>().open_or_create();
     if (!exp_req_resp) {
         std::cout << "Error creating request response for test\n";
-        return iox2::bb::nullopt;
+        return iox2::bb::NULLOPT;
     }
     auto req_resp = std::move(exp_req_resp.value());
     auto exp_server = req_resp.server_builder().create();
     if (!exp_server) {
         std::cout << "Unable to create request response server\n";
-        return iox2::bb::nullopt;
+        return iox2::bb::NULLOPT;
     }
     auto server = std::move(exp_server.value());
     while (req_resp.dynamic_config().number_of_clients() == 0) {
         if (!node.wait(refresh_interval)) {
-            return iox2::bb::nullopt;
+            return iox2::bb::NULLOPT;
         }
     }
     return RequestResponseServer<RequestType, ResponseType> { std::move(req_resp), std::move(server) };

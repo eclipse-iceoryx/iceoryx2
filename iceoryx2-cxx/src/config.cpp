@@ -216,7 +216,7 @@ auto Event::notifier_created_event() && -> bb::Optional<size_t> {
         return { value };
     }
 
-    return bb::nullopt;
+    return bb::NULLOPT;
 }
 
 void Event::set_notifier_created_event(bb::Optional<size_t> value) && {
@@ -233,7 +233,7 @@ auto Event::notifier_dropped_event() && -> bb::Optional<size_t> {
         return { value };
     }
 
-    return bb::nullopt;
+    return bb::NULLOPT;
 }
 
 void Event::set_notifier_dropped_event(bb::Optional<size_t> value) && {
@@ -250,7 +250,7 @@ auto Event::notifier_dead_event() && -> bb::Optional<size_t> {
         return { value };
     }
 
-    return bb::nullopt;
+    return bb::NULLOPT;
 }
 
 void Event::set_notifier_dead_event(bb::Optional<size_t> value) && {
@@ -268,7 +268,7 @@ auto Event::deadline() && -> bb::Optional<iox2::bb::Duration> {
         return { iox2::bb::Duration::from_secs(seconds) + iox2::bb::Duration::from_nanos(nanoseconds) };
     }
 
-    return bb::nullopt;
+    return bb::NULLOPT;
 }
 
 void Event::set_deadline(bb::Optional<iox2::bb::Duration> deadline) && {
