@@ -16,6 +16,15 @@ if(NOT ICEORYX2_BB_CXX_OPTIONS_AND_PARAMS_LISTED)
     message(STATUS "[i] iceoryx2-bb-cxx options:")
 
     add_option(
+        NAME IOX2_BB_CXX_CONFIG_USE_STD_EXPECTED
+        DESCRIPTION "Use the STL 'expected' instead of the iceoryx2 implementation"
+        DEFAULT_VALUE OFF
+    )
+
+    # TODO make this configurable
+    set(IOX2_BB_CXX_CONFIG_USE_CUSTOM_EXPECTED OFF)
+
+    add_option(
         NAME IOX2_BB_CXX_CONFIG_USE_STD_OPTIONAL
         DESCRIPTION "Use the STL 'optional' instead of the iceoryx2 implementation"
         DEFAULT_VALUE OFF

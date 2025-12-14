@@ -101,23 +101,6 @@ TEST(Expected, error_of_const_rvalue_unexpected_has_correct_error) {
 
 // BEGIN Expected ctors
 
-TEST(ExpectedFixture, expected_can_be_constructed_with_err_free_function_from_lvalue) {
-    Observable::s_counter.was_initialized = 0;
-    auto observable = Observable {};
-
-    const Expected<Value, Observable> sut = err(observable);
-
-    EXPECT_EQ(Observable::s_counter.was_initialized, 1);
-}
-
-TEST(ExpectedFixture, expected_can_be_constructed_with_err_free_function_from_rvalue) {
-    Observable::s_counter.was_initialized = 0;
-
-    const Expected<Value, Observable> sut = err(Observable {});
-
-    EXPECT_EQ(Observable::s_counter.was_initialized, 1);
-}
-
 TEST(ExpectedFixture, expected_can_be_constructed_with_value) {
     Observable::s_counter.was_initialized = 0;
 

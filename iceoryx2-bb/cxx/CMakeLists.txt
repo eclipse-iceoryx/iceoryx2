@@ -26,8 +26,17 @@ include(cmake/GdbPrettyPrinter.cmake)
 
 include(Iceoryx2PlatformSettings)
 
+if(IOX2_BB_CXX_CONFIG_USE_STD_EXPECTED AND IOX2_BB_CXX_CONFIG_USE_CUSTOM_EXPECTED)
+    message(FATAL_ERROR "Expected cannot be overriden to use both custom and std variants at the same time.")
+endif()
 if(IOX2_BB_CXX_CONFIG_USE_STD_OPTIONAL AND IOX2_BB_CXX_CONFIG_USE_CUSTOM_OPTIONAL)
     message(FATAL_ERROR "Optional cannot be overriden to use both custom and std variants at the same time.")
+endif()
+
+if(IOX2_BB_CXX_CONFIG_USE_STD_EXPECTED)
+    set(IOX2_VARIATION_EXPECTED_INCLUDE "expected-std-include")
+else()
+    set(IOX2_VARIATION_EXPECTED_INCLUDE "expected-iox2-include")
 endif()
 
 if(IOX2_BB_CXX_CONFIG_USE_STD_OPTIONAL)
@@ -42,6 +51,7 @@ add_library(iceoryx2-bb-cxx::iceoryx2-bb-cxx ALIAS iceoryx2-bb-cxx)
 target_sources(iceoryx2-bb-cxx PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/detail/path_and_file_verifier.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/detail/static_function.hpp>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/expected.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/duration.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/file_name.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/file_path.hpp>
@@ -56,6 +66,7 @@ target_sources(iceoryx2-bb-cxx PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/static_string.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/static_vector.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/detail/raw_byte_storage.hpp>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/variation/${IOX2_VARIATION_EXPECTED_INCLUDE}/iox2/bb/variation/expected.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/variation/${IOX2_VARIATION_OPTIONAL_INCLUDE}/iox2/bb/variation/optional.hpp>
     $<BUILD_INTERFACE:$<$<CXX_COMPILER_ID:MSVC>:${PROJECT_SOURCE_DIR}/iceoryx2-bb-containers-cxx.natvis>>
 )
@@ -78,6 +89,7 @@ target_sources(iceoryx2-bb-cxx
 target_include_directories(iceoryx2-bb-cxx
     PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/variation/${IOX2_VARIATION_EXPECTED_INCLUDE}>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/variation/${IOX2_VARIATION_OPTIONAL_INCLUDE}>
     $<INSTALL_INTERFACE:include/${PREFIX}>
 )
