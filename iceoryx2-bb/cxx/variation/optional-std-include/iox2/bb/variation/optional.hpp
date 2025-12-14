@@ -10,16 +10,26 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_INCLUDE_GUARD_CONTAINER_CONFIG_HPP
-#define IOX2_INCLUDE_GUARD_CONTAINER_CONFIG_HPP
+#ifndef IOX2_INCLUDE_GUARD_VARIATION_OPTIONAL_HPP
+#define IOX2_INCLUDE_GUARD_VARIATION_OPTIONAL_HPP
 
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define IOX2_CONTAINER_CONFIG_USE_STD_OPTIONAL 0
+// required for clang-tidy
+#if __cplusplus >= 201703L
 
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define IOX2_CONTAINER_CONFIG_USE_STD_EXPECTED 1
+#include <optional>
 
-// custom headers go here
+namespace iox2 {
+namespace bb {
 
+template <typename T>
+using Optional = std::optional<T>;
+using NulloptT = std::nullopt_t;
+
+constexpr NulloptT nullopt = std::nullopt;
+
+} // namespace bb
+} // namespace iox2
 
 #endif
+
+#endif // IOX2_INCLUDE_GUARD_VARIATION_OPTIONAL_HPP

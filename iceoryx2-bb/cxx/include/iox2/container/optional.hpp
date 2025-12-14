@@ -13,36 +13,13 @@
 #ifndef IOX2_INCLUDE_GUARD_CONTAINER_OPTIONAL_HPP
 #define IOX2_INCLUDE_GUARD_CONTAINER_OPTIONAL_HPP
 
-#include "iox2/container/config.hpp"
-
 #include <cstdlib>
 #include <memory>
 #include <type_traits>
 #include <utility>
 
-#if IOX2_CONTAINER_CONFIG_USE_STD_OPTIONAL && IOX2_CONTAINER_CONFIG_USE_CUSTOM_OPTIONAL
-#error Optional cannot be overriden to use both custom and std variants at the same time.
-#endif
-
-#if IOX2_CONTAINER_CONFIG_USE_STD_OPTIONAL
-#include <optional>
-#endif
-
 namespace iox2 {
 namespace container {
-
-#if IOX2_CONTAINER_CONFIG_USE_STD_OPTIONAL
-
-template <typename T>
-using Optional = std::optional<T>;
-using NulloptT = std::nullopt_t;
-
-#elif defined(IOX2_CONTAINER_CONFIG_USE_CUSTOM_OPTIONAL)
-
-template <typename T>
-using Optional = IOX2_CONTAINER_CONFIG_USE_CUSTOM_OPTIONAL<T>;
-
-#else
 
 /// A drop-in replacement for C++17 `std::optional`.
 template <class T>
@@ -371,8 +348,6 @@ auto operator!=(const Optional<T>& lhs, const Optional<T>& rhs) noexcept -> bool
 #if __cplusplus >= 201703L
 template <class T>
 Optional(T) -> Optional<T>;
-#endif
-
 #endif
 
 } // namespace container
