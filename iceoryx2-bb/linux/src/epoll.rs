@@ -560,7 +560,7 @@ impl Epoll {
     ) -> Result<usize, EpollWaitError> {
         // the smallest time period epoll can wait is 1ms, to introduce some waiting for
         // smaller time periods we always round the timeout up to the next millisecond
-        let timeout_in_ms = (timeout.as_nanos() as f64 / 1_000_000.0f64).ceil() as i32;
+        let timeout_in_ms = timeout.as_nanos().div_ceil(1_000_000) as i32; // ceil(timeout.as_nanos())
         self.wait_impl(timeout_in_ms, event_call)
     }
 

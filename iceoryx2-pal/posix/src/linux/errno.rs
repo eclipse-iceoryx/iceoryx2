@@ -12,9 +12,12 @@
 
 #![allow(clippy::missing_safety_doc)]
 
+use core::{ffi::CStr, fmt::Display};
+
+use alloc::string::ToString;
+
 use crate::posix::types::*;
 use crate::ErrnoEnumGenerator;
-use core::{ffi::CStr, fmt::Display};
 
 ErrnoEnumGenerator!(
   assign
