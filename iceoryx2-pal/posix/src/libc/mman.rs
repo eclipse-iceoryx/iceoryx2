@@ -15,6 +15,9 @@
 
 use crate::posix::{closedir, opendir, readdir, types::*};
 
+use alloc::vec;
+use alloc::vec::Vec;
+
 pub unsafe fn mlock(addr: *const void, len: size_t) -> int {
     libc::mlock(addr, len)
 }

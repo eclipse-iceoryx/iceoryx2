@@ -14,7 +14,10 @@
 
 use crate::posix::types::*;
 use crate::ErrnoEnumGenerator;
+
 use core::{ffi::CStr, fmt::Display};
+
+use alloc::string::ToString;
 
 ErrnoEnumGenerator!(
   assign
