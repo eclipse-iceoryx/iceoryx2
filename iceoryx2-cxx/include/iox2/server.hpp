@@ -16,7 +16,7 @@
 #include "iox/slice.hpp"
 #include "iox2/active_request.hpp"
 #include "iox2/container/expected.hpp"
-#include "iox2/container/optional.hpp"
+#include "iox2/bb/optional.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/unique_port_id.hpp"
 
@@ -41,7 +41,7 @@ class Server {
     /// [`ActiveRequest`] which can be used to respond.
     /// If no [`RequestMut`]s were received it returns [`None`].
     auto receive() -> container::Expected<
-        container::Optional<ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>>,
+        bb::Optional<ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>>,
         ReceiveError>;
 
     /// Returns the maximum initial slice length configured for this [`Server`].
@@ -107,7 +107,7 @@ template <ServiceType Service,
           typename ResponseHeader>
 inline auto Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::receive()
     -> container::Expected<
-        container::Optional<ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>>,
+        bb::Optional<ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>>,
         ReceiveError> {
     iox2_active_request_h active_request_handle {};
     auto result = iox2_server_receive(&m_handle, nullptr, &active_request_handle);
@@ -116,13 +116,13 @@ inline auto Server<Service, RequestPayload, RequestHeader, ResponsePayload, Resp
         if (active_request_handle != nullptr) {
             ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader> active_request(
                 active_request_handle);
-            return container::Optional<
+            return bb::Optional<
                 ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>>(
                 std::move(active_request));
         }
-        return container::Optional<
+        return bb::Optional<
             ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>>(
-            iox2::container::nullopt);
+            bb::nullopt);
     }
     return container::err(bb::into<ReceiveError>(result));
 }

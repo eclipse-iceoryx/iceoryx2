@@ -15,7 +15,7 @@
 
 #include "iox2/bb/static_function.hpp"
 #include "iox2/container/expected.hpp"
-#include "iox2/container/optional.hpp"
+#include "iox2/bb/optional.hpp"
 #include "iox2/legacy/variant.hpp"
 #include "node_details.hpp"
 #include "node_failure_enums.hpp"
@@ -33,18 +33,18 @@ class AliveNodeView {
     auto operator=(AliveNodeView&&) -> AliveNodeView& = default;
     ~AliveNodeView() = default;
 
-    AliveNodeView(NodeId node_id, const iox2::container::Optional<NodeDetails>& details);
+    AliveNodeView(NodeId node_id, const bb::Optional<NodeDetails>& details);
 
     /// Returns the [`NodeId`].
     auto id() const -> const NodeId&;
 
     /// Returns optional [`NodeDetails`] that contains further information about the [`Node`].
     /// Can only be acquired when the process has the access right to read it.
-    auto details() const -> const iox2::container::Optional<NodeDetails>&;
+    auto details() const -> const bb::Optional<NodeDetails>&;
 
   private:
     NodeId m_id;
-    iox2::container::Optional<NodeDetails> m_details;
+    bb::Optional<NodeDetails> m_details;
 };
 
 /// Contains all details of a [`Node`] that is dead.
@@ -64,7 +64,7 @@ class DeadNodeView {
 
     /// Returns a optional [`NodeDetails`] that contains further information about the [`Node`].
     /// Can only be acquired when the process has the access right to read it.
-    auto details() const -> iox2::container::Optional<NodeDetails>;
+    auto details() const -> bb::Optional<NodeDetails>;
 
     /// Removes all stale resources of the dead [`Node`]. On error it returns a [`NodeCleanupFailure`].
     /// It returns true if the stale resources could be removed, otherwise false.

@@ -13,9 +13,9 @@
 #ifndef IOX2_SUBSCRIBER_HPP
 #define IOX2_SUBSCRIBER_HPP
 
+#include "iox2/bb/optional.hpp"
 #include "iox2/connection_failure.hpp"
 #include "iox2/container/expected.hpp"
-#include "iox2/container/optional.hpp"
 #include "iox2/iceoryx2.h"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/sample.hpp"
@@ -43,7 +43,7 @@ class Subscriber {
 
     /// Receives a [`Sample`] from [`Publisher`]. If no sample could be
     /// received [`None`] is returned. If a failure occurs [`ReceiveError`] is returned.
-    auto receive() const -> container::Expected<container::Optional<Sample<S, Payload, UserHeader>>, ReceiveError>;
+    auto receive() const -> container::Expected<bb::Optional<Sample<S, Payload, UserHeader>>, ReceiveError>;
 
     /// Returns true when the [`Subscriber`] has [`Sample`]s that can be
     /// acquired via [`Subscriber::receive()`], otherwise false.
@@ -119,15 +119,15 @@ inline auto Subscriber<S, Payload, UserHeader>::buffer_size() const -> uint64_t 
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Subscriber<S, Payload, UserHeader>::receive() const
-    -> container::Expected<container::Optional<Sample<S, Payload, UserHeader>>, ReceiveError> {
+    -> container::Expected<bb::Optional<Sample<S, Payload, UserHeader>>, ReceiveError> {
     Sample<S, Payload, UserHeader> sample;
     auto result = iox2_subscriber_receive(&m_handle, &sample.m_sample, &sample.m_handle);
 
     if (result == IOX2_OK) {
         if (sample.m_handle != nullptr) {
-            return container::Optional<Sample<S, Payload, UserHeader>>(std::move(sample));
+            return bb::Optional<Sample<S, Payload, UserHeader>>(std::move(sample));
         }
-        return container::Optional<Sample<S, Payload, UserHeader>>(iox2::container::nullopt);
+        return bb::Optional<Sample<S, Payload, UserHeader>>(bb::nullopt);
     }
 
     return container::err(bb::into<ReceiveError>(result));

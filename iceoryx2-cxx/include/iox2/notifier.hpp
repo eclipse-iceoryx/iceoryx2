@@ -15,7 +15,7 @@
 
 #include "iox2/bb/duration.hpp"
 #include "iox2/container/expected.hpp"
-#include "iox2/container/optional.hpp"
+#include "iox2/bb/optional.hpp"
 #include "iox2/event_id.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/notifier_error.hpp"
@@ -49,7 +49,7 @@ class Notifier {
     auto notify_with_custom_event_id(EventId event_id) const -> container::Expected<size_t, NotifierNotifyError>;
 
     /// Returns the deadline of the corresponding [`Service`].
-    auto deadline() const -> iox2::container::Optional<iox2::bb::Duration>;
+    auto deadline() const -> bb::Optional<iox2::bb::Duration>;
 
   private:
     template <ServiceType>

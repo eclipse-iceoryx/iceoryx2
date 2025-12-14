@@ -13,7 +13,7 @@
 #ifndef IOX2_INCLUDE_GUARD_CONTAINER_STATIC_VECTOR_HPP
 #define IOX2_INCLUDE_GUARD_CONTAINER_STATIC_VECTOR_HPP
 
-#include "iox2/container/optional.hpp"
+#include "iox2/bb/optional.hpp"
 
 #include "iox2/container/detail/raw_byte_storage.hpp"
 
@@ -45,8 +45,8 @@ class StaticVector {
     using ConstPointer = T const*;
     using Iterator = Pointer;
     using ConstIterator = ConstPointer;
-    using OptionalReference = Optional<std::reference_wrapper<T>>;
-    using OptionalConstReference = Optional<std::reference_wrapper<T const>>;
+    using OptionalReference = bb::Optional<std::reference_wrapper<T>>;
+    using OptionalConstReference = bb::Optional<std::reference_wrapper<T const>>;
 
     /// Unchecked element access.
     /// Users of this class must ensure that all memory accesses stay within bounds of the accessed vector's memory.
@@ -173,23 +173,23 @@ class StaticVector {
     /// @return Nullopt if `count` exceeds the vector capacity.
     ///         Otherwise a vector containing the desired elements.
     template <typename U = T, std::enable_if_t<std::is_default_constructible<U>::value, bool> = true>
-    static constexpr auto from_value(SizeType count) -> Optional<StaticVector> {
+    static constexpr auto from_value(SizeType count) -> bb::Optional<StaticVector> {
         if (count <= Capacity) {
             return from_value(count, T {});
         } else {
-            return nullopt;
+            return bb::nullopt;
         }
     }
 
     /// Construct a new vector with `count` copies of `value`.
-    static constexpr auto from_value(SizeType count, T const& value) -> Optional<StaticVector> {
+    static constexpr auto from_value(SizeType count, T const& value) -> bb::Optional<StaticVector> {
         // we define ret here to encourage return-value-optimization
-        Optional<StaticVector> ret;
+        bb::Optional<StaticVector> ret;
         if (count <= Capacity) {
             ret = StaticVector {};
             ret->m_storage.insert_at(0, count, value);
         } else {
-            ret = nullopt;
+            ret = bb::nullopt;
         }
         return ret;
     }
@@ -204,12 +204,12 @@ class StaticVector {
                   std::is_constructible<T, decltype(*std::declval<Iter>())>::value
                       && std::is_convertible<decltype(std::declval<Iter>() == std::declval<Sentinel>()), bool>::value,
                   bool> = true>
-    static constexpr auto from_range_unchecked(Iter it_begin, Sentinel it_end) -> Optional<StaticVector> {
+    static constexpr auto from_range_unchecked(Iter it_begin, Sentinel it_end) -> bb::Optional<StaticVector> {
         // we define ret here to encourage return-value-optimization
-        Optional<StaticVector> ret = StaticVector {};
+        bb::Optional<StaticVector> ret = StaticVector {};
         for (auto it = it_begin; it != it_end; ++it) {
             if (!ret->try_push_back(*it)) {
-                ret = nullopt;
+                ret = bb::nullopt;
                 break;
             }
         }
@@ -221,7 +221,7 @@ class StaticVector {
     /// @return Nullopt if the range size exceeds the vector capacity.
     ///         Otherwise a vector containing copies of the range elements.
     template <typename Range>
-    static constexpr auto from_range_unchecked(Range const& rng) -> Optional<StaticVector> {
+    static constexpr auto from_range_unchecked(Range const& rng) -> bb::Optional<StaticVector> {
         using std::begin;
         using std::end;
         return from_range_unchecked(begin(rng), end(rng));
@@ -231,9 +231,9 @@ class StaticVector {
     /// Constructs a vector from the elements of the initializer list `init_list`.
     /// @return Nullopt if the initializer list size exceeds the vector capacity.
     ///         Otherwise a vector containing copies of the list elements.
-    static constexpr auto from_initializer_list(std::initializer_list<T> init_list) -> Optional<StaticVector> {
+    static constexpr auto from_initializer_list(std::initializer_list<T> init_list) -> bb::Optional<StaticVector> {
         if (init_list.size() > Capacity) {
-            return nullopt;
+            return bb::nullopt;
         } else {
             return from_range_unchecked(begin(init_list), end(init_list));
         }
@@ -410,7 +410,7 @@ class StaticVector {
         if (index < m_storage.size()) {
             return *m_storage.pointer_from_index(index);
         } else {
-            return nullopt;
+            return bb::nullopt;
         }
     }
 
@@ -421,7 +421,7 @@ class StaticVector {
         if (index < m_storage.size()) {
             return *m_storage.pointer_from_index(index);
         } else {
-            return nullopt;
+            return bb::nullopt;
         }
     }
 
@@ -432,7 +432,7 @@ class StaticVector {
         if (!empty()) {
             return *m_storage.pointer_from_index(0);
         } else {
-            return nullopt;
+            return bb::nullopt;
         }
     }
 
@@ -443,7 +443,7 @@ class StaticVector {
         if (!empty()) {
             return *m_storage.pointer_from_index(0);
         } else {
-            return nullopt;
+            return bb::nullopt;
         }
     }
 
@@ -454,7 +454,7 @@ class StaticVector {
         if (!empty()) {
             return *m_storage.pointer_from_index(size() - 1);
         } else {
-            return nullopt;
+            return bb::nullopt;
         }
     }
 
@@ -465,7 +465,7 @@ class StaticVector {
         if (!empty()) {
             return *m_storage.pointer_from_index(size() - 1);
         } else {
-            return nullopt;
+            return bb::nullopt;
         }
     }
 

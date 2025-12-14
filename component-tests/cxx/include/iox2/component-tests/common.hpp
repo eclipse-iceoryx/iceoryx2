@@ -13,6 +13,7 @@
 #ifndef IOX2_INCLUDE_GUARD_COMPONENT_TESTS_COMMON_HPP
 #define IOX2_INCLUDE_GUARD_COMPONENT_TESTS_COMMON_HPP
 
+#include <iox2/bb/optional.hpp>
 #include <iox2/iceoryx2.hpp>
 
 #include <memory>
@@ -46,28 +47,28 @@ template <typename RequestType, typename ResponseType>
 auto create_server(iox2::Node<iox2::ServiceType::Ipc> const& node,
                    char const* service_name,
                    iox2::bb::Duration const& refresh_interval)
-    -> iox2::container::Optional<RequestResponseServer<RequestType, ResponseType>> {
+    -> iox2::bb::Optional<RequestResponseServer<RequestType, ResponseType>> {
     auto exp_service_name = iox2::ServiceName::create(service_name);
     if (!exp_service_name) {
         std::cout << "Error creating service name\n";
-        return iox2::container::nullopt;
+        return iox2::bb::nullopt;
     }
     auto exp_req_resp =
         node.service_builder(exp_service_name.value()).request_response<RequestType, ResponseType>().open_or_create();
     if (!exp_req_resp) {
         std::cout << "Error creating request response for test\n";
-        return iox2::container::nullopt;
+        return iox2::bb::nullopt;
     }
     auto req_resp = std::move(exp_req_resp.value());
     auto exp_server = req_resp.server_builder().create();
     if (!exp_server) {
         std::cout << "Unable to create request response server\n";
-        return iox2::container::nullopt;
+        return iox2::bb::nullopt;
     }
     auto server = std::move(exp_server.value());
     while (req_resp.dynamic_config().number_of_clients() == 0) {
         if (!node.wait(refresh_interval)) {
-            return iox2::container::nullopt;
+            return iox2::bb::nullopt;
         }
     }
     return RequestResponseServer<RequestType, ResponseType> { std::move(req_resp), std::move(server) };

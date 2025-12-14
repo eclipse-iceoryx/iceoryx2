@@ -16,7 +16,7 @@
 #include "iox/builder_addendum.hpp"
 #include "iox2/allocation_strategy.hpp"
 #include "iox2/container/expected.hpp"
-#include "iox2/container/optional.hpp"
+#include "iox2/bb/optional.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/publisher.hpp"
 #include "iox2/service_type.hpp"
@@ -74,8 +74,8 @@ class PortFactoryPublisher {
     explicit PortFactoryPublisher(iox2_port_factory_publisher_builder_h handle);
 
     iox2_port_factory_publisher_builder_h m_handle = nullptr;
-    container::Optional<uint64_t> m_max_slice_len;
-    container::Optional<AllocationStrategy> m_allocation_strategy;
+    bb::Optional<uint64_t> m_max_slice_len;
+    bb::Optional<AllocationStrategy> m_allocation_strategy;
 };
 
 template <ServiceType S, typename Payload, typename UserHeader>

@@ -12,6 +12,7 @@
 
 #include "iox2/component-tests/common.hpp"
 
+#include <iox2/bb/optional.hpp>
 #include <iox2/container/static_vector.hpp>
 
 #include <iostream>
@@ -74,7 +75,7 @@ auto check_request(ContainerMutationTestRequest const& req) -> bool {
 // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
 
 auto prepare_response(ContainerMutationTestRequest const& request)
-    -> iox2::container::Optional<ContainerMutationTestResponse> {
+    -> iox2::bb::Optional<ContainerMutationTestResponse> {
     // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
     ContainerMutationTestResponse response;
     response.vector_add_element = request.vector_add_element;
@@ -82,7 +83,7 @@ auto prepare_response(ContainerMutationTestRequest const& request)
     response.vector_remove_element = request.vector_remove_element;
     if (!(response.vector_remove_element.try_erase_at(5) && response.vector_remove_element.try_erase_at(2)
           && response.vector_remove_element.try_pop_back())) {
-        return iox2::container::nullopt;
+        return iox2::bb::nullopt;
     }
     response.string_append = request.string_append;
     response.string_append.try_append_utf8_null_terminated_unchecked(" my baby, hello my honey, hello my ragtime gal");
@@ -90,7 +91,7 @@ auto prepare_response(ContainerMutationTestRequest const& request)
     if (!(response.vector_strings_change_middle.element_at(2)->get().unchecked_code_units().try_erase_at(13, 16)
           && response.vector_strings_change_middle.element_at(2)->get().try_append_utf8_null_terminated_unchecked(
               "ter"))) {
-        return iox2::container::nullopt;
+        return iox2::bb::nullopt;
     }
     // NOLINTEND(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
     return response;

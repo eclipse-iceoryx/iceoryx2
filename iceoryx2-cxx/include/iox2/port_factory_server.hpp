@@ -15,7 +15,7 @@
 
 #include "iox/builder_addendum.hpp"
 #include "iox2/container/expected.hpp"
-#include "iox2/container/optional.hpp"
+#include "iox2/bb/optional.hpp"
 #include "iox2/server.hpp"
 #include "iox2/server_error.hpp"
 #include "iox2/service_type.hpp"
@@ -79,8 +79,8 @@ class PortFactoryServer {
     explicit PortFactoryServer(iox2_port_factory_server_builder_h handle);
 
     iox2_port_factory_server_builder_h m_handle = nullptr;
-    container::Optional<uint64_t> m_max_slice_len;
-    container::Optional<AllocationStrategy> m_allocation_strategy;
+    bb::Optional<uint64_t> m_max_slice_len;
+    bb::Optional<AllocationStrategy> m_allocation_strategy;
 };
 
 template <ServiceType Service,
