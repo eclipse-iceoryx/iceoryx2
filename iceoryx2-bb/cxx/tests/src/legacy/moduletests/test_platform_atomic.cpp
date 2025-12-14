@@ -218,17 +218,17 @@ TYPED_TEST(Atomic_test, StoreAndLoadWorks) {
     SutPtr sut_ptr;
     SutStruct sut_struct;
 
-    sut_int.store(EXPECTED_INT, std::memory_order::memory_order_relaxed);
-    sut_volatile.store(EXPECTED_INT, std::memory_order::memory_order_relaxed);
-    sut_fp.store(EXPECTED_FP, std::memory_order::memory_order_relaxed);
-    sut_ptr.store(expected_ptr, std::memory_order::memory_order_relaxed);
-    sut_struct.store(EXPECTED_STRUCT, std::memory_order::memory_order_relaxed);
+    sut_int.store(EXPECTED_INT, std::memory_order_relaxed);
+    sut_volatile.store(EXPECTED_INT, std::memory_order_relaxed);
+    sut_fp.store(EXPECTED_FP, std::memory_order_relaxed);
+    sut_ptr.store(expected_ptr, std::memory_order_relaxed);
+    sut_struct.store(EXPECTED_STRUCT, std::memory_order_relaxed);
 
-    EXPECT_THAT(sut_int.load(std::memory_order::memory_order_relaxed), Eq(EXPECTED_INT));
-    EXPECT_THAT(sut_volatile.load(std::memory_order::memory_order_relaxed), Eq(EXPECTED_INT));
-    EXPECT_THAT(sut_fp.load(std::memory_order::memory_order_relaxed), Eq(EXPECTED_FP));
-    EXPECT_THAT(sut_ptr.load(std::memory_order::memory_order_relaxed), Eq(expected_ptr));
-    EXPECT_THAT(sut_struct.load(std::memory_order::memory_order_relaxed), Eq(EXPECTED_STRUCT));
+    EXPECT_THAT(sut_int.load(std::memory_order_relaxed), Eq(EXPECTED_INT));
+    EXPECT_THAT(sut_volatile.load(std::memory_order_relaxed), Eq(EXPECTED_INT));
+    EXPECT_THAT(sut_fp.load(std::memory_order_relaxed), Eq(EXPECTED_FP));
+    EXPECT_THAT(sut_ptr.load(std::memory_order_relaxed), Eq(expected_ptr));
+    EXPECT_THAT(sut_struct.load(std::memory_order_relaxed), Eq(EXPECTED_STRUCT));
 }
 
 TYPED_TEST(Atomic_test, ExchangeWorks) {
@@ -257,13 +257,11 @@ TYPED_TEST(Atomic_test, ExchangeWorks) {
     SutPtr sut_ptr(expected_initial_ptr);
     SutStruct sut_struct { EXPECTED_INITIAL_STRUCT };
 
-    EXPECT_THAT(sut_int.exchange(EXPECTED_NEW_INT, std::memory_order::memory_order_relaxed), Eq(EXPECTED_INITIAL_INT));
-    EXPECT_THAT(sut_volatile.exchange(EXPECTED_NEW_INT, std::memory_order::memory_order_relaxed),
-                Eq(EXPECTED_INITIAL_INT));
-    EXPECT_THAT(sut_fp.exchange(EXPECTED_NEW_FP, std::memory_order::memory_order_relaxed), Eq(EXPECTED_INITIAL_FP));
-    EXPECT_THAT(sut_ptr.exchange(expected_new_ptr, std::memory_order::memory_order_relaxed), Eq(expected_initial_ptr));
-    EXPECT_THAT(sut_struct.exchange(EXPECTED_NEW_STRUCT, std::memory_order::memory_order_relaxed),
-                Eq(EXPECTED_INITIAL_STRUCT));
+    EXPECT_THAT(sut_int.exchange(EXPECTED_NEW_INT, std::memory_order_relaxed), Eq(EXPECTED_INITIAL_INT));
+    EXPECT_THAT(sut_volatile.exchange(EXPECTED_NEW_INT, std::memory_order_relaxed), Eq(EXPECTED_INITIAL_INT));
+    EXPECT_THAT(sut_fp.exchange(EXPECTED_NEW_FP, std::memory_order_relaxed), Eq(EXPECTED_INITIAL_FP));
+    EXPECT_THAT(sut_ptr.exchange(expected_new_ptr, std::memory_order_relaxed), Eq(expected_initial_ptr));
+    EXPECT_THAT(sut_struct.exchange(EXPECTED_NEW_STRUCT, std::memory_order_relaxed), Eq(EXPECTED_INITIAL_STRUCT));
 
     EXPECT_THAT(sut_int.load(), Eq(EXPECTED_NEW_INT));
     EXPECT_THAT(sut_volatile.load(), Eq(EXPECTED_NEW_INT));
@@ -299,68 +297,53 @@ TYPED_TEST(Atomic_test, CompareExchangeWeakWorks) {
     SutStruct sut_struct { EXPECTED_INITIAL_STRUCT };
 
     uint64_t expected_int { EXPECTED_INITIAL_INT };
-    EXPECT_THAT(sut_int.compare_exchange_weak(expected_int, EXPECTED_NEW_INT, std::memory_order::memory_order_relaxed),
-                Eq(true));
+    EXPECT_THAT(sut_int.compare_exchange_weak(expected_int, EXPECTED_NEW_INT, std::memory_order_relaxed), Eq(true));
     EXPECT_THAT(expected_int, Eq(EXPECTED_INITIAL_INT));
     EXPECT_THAT(sut_int.load(), Eq(EXPECTED_NEW_INT));
-    EXPECT_THAT(sut_int.compare_exchange_weak(expected_int,
-                                              EXPECTED_INITIAL_INT,
-                                              std::memory_order::memory_order_release,
-                                              std::memory_order::memory_order_acquire),
+    EXPECT_THAT(sut_int.compare_exchange_weak(
+                    expected_int, EXPECTED_INITIAL_INT, std::memory_order_release, std::memory_order_acquire),
                 Eq(false));
     EXPECT_THAT(expected_int, Eq(EXPECTED_NEW_INT));
     EXPECT_THAT(sut_int.load(), Eq(EXPECTED_NEW_INT));
 
     uint64_t expected_volatile { EXPECTED_INITIAL_INT };
-    EXPECT_THAT(sut_volatile.compare_exchange_weak(
-                    expected_volatile, EXPECTED_NEW_INT, std::memory_order::memory_order_relaxed),
+    EXPECT_THAT(sut_volatile.compare_exchange_weak(expected_volatile, EXPECTED_NEW_INT, std::memory_order_relaxed),
                 Eq(true));
     EXPECT_THAT(expected_volatile, Eq(EXPECTED_INITIAL_INT));
     EXPECT_THAT(sut_volatile.load(), Eq(EXPECTED_NEW_INT));
-    EXPECT_THAT(sut_volatile.compare_exchange_weak(expected_volatile,
-                                                   EXPECTED_INITIAL_INT,
-                                                   std::memory_order::memory_order_release,
-                                                   std::memory_order::memory_order_acquire),
+    EXPECT_THAT(sut_volatile.compare_exchange_weak(
+                    expected_volatile, EXPECTED_INITIAL_INT, std::memory_order_release, std::memory_order_acquire),
                 Eq(false));
     EXPECT_THAT(expected_volatile, Eq(EXPECTED_NEW_INT));
     EXPECT_THAT(sut_volatile.load(), Eq(EXPECTED_NEW_INT));
 
     double expected_fp { EXPECTED_INITIAL_FP };
-    EXPECT_THAT(sut_fp.compare_exchange_weak(expected_fp, EXPECTED_NEW_FP, std::memory_order::memory_order_relaxed),
-                Eq(true));
+    EXPECT_THAT(sut_fp.compare_exchange_weak(expected_fp, EXPECTED_NEW_FP, std::memory_order_relaxed), Eq(true));
     EXPECT_THAT(expected_fp, Eq(EXPECTED_INITIAL_FP));
     EXPECT_THAT(sut_fp.load(), Eq(EXPECTED_NEW_FP));
-    EXPECT_THAT(sut_fp.compare_exchange_weak(expected_fp,
-                                             EXPECTED_INITIAL_FP,
-                                             std::memory_order::memory_order_release,
-                                             std::memory_order::memory_order_acquire),
+    EXPECT_THAT(sut_fp.compare_exchange_weak(
+                    expected_fp, EXPECTED_INITIAL_FP, std::memory_order_release, std::memory_order_acquire),
                 Eq(false));
     EXPECT_THAT(expected_fp, Eq(EXPECTED_NEW_FP));
     EXPECT_THAT(sut_fp.load(), Eq(EXPECTED_NEW_FP));
 
     uint64_t* expected_ptr { expected_initial_ptr };
-    EXPECT_THAT(sut_ptr.compare_exchange_weak(expected_ptr, expected_new_ptr, std::memory_order::memory_order_relaxed),
-                Eq(true));
+    EXPECT_THAT(sut_ptr.compare_exchange_weak(expected_ptr, expected_new_ptr, std::memory_order_relaxed), Eq(true));
     EXPECT_THAT(expected_ptr, Eq(expected_initial_ptr));
     EXPECT_THAT(sut_ptr.load(), Eq(expected_new_ptr));
-    EXPECT_THAT(sut_ptr.compare_exchange_weak(expected_ptr,
-                                              expected_initial_ptr,
-                                              std::memory_order::memory_order_release,
-                                              std::memory_order::memory_order_acquire),
+    EXPECT_THAT(sut_ptr.compare_exchange_weak(
+                    expected_ptr, expected_initial_ptr, std::memory_order_release, std::memory_order_acquire),
                 Eq(false));
     EXPECT_THAT(expected_ptr, Eq(expected_new_ptr));
     EXPECT_THAT(sut_ptr.load(), Eq(expected_new_ptr));
 
     DummyStruct expected_struct { EXPECTED_INITIAL_STRUCT };
-    EXPECT_THAT(
-        sut_struct.compare_exchange_weak(expected_struct, EXPECTED_NEW_STRUCT, std::memory_order::memory_order_relaxed),
-        Eq(true));
+    EXPECT_THAT(sut_struct.compare_exchange_weak(expected_struct, EXPECTED_NEW_STRUCT, std::memory_order_relaxed),
+                Eq(true));
     EXPECT_THAT(expected_struct, Eq(EXPECTED_INITIAL_STRUCT));
     EXPECT_THAT(sut_struct.load(), Eq(EXPECTED_NEW_STRUCT));
-    EXPECT_THAT(sut_struct.compare_exchange_weak(expected_struct,
-                                                 EXPECTED_INITIAL_STRUCT,
-                                                 std::memory_order::memory_order_release,
-                                                 std::memory_order::memory_order_acquire),
+    EXPECT_THAT(sut_struct.compare_exchange_weak(
+                    expected_struct, EXPECTED_INITIAL_STRUCT, std::memory_order_release, std::memory_order_acquire),
                 Eq(false));
     EXPECT_THAT(expected_struct, Eq(EXPECTED_NEW_STRUCT));
     EXPECT_THAT(sut_struct.load(), Eq(EXPECTED_NEW_STRUCT));
@@ -393,70 +376,53 @@ TYPED_TEST(Atomic_test, CompareExchangeStrongWorks) {
     SutStruct sut_struct { EXPECTED_INITIAL_STRUCT };
 
     uint64_t expected_int { EXPECTED_INITIAL_INT };
-    EXPECT_THAT(
-        sut_int.compare_exchange_strong(expected_int, EXPECTED_NEW_INT, std::memory_order::memory_order_relaxed),
-        Eq(true));
+    EXPECT_THAT(sut_int.compare_exchange_strong(expected_int, EXPECTED_NEW_INT, std::memory_order_relaxed), Eq(true));
     EXPECT_THAT(expected_int, Eq(EXPECTED_INITIAL_INT));
     EXPECT_THAT(sut_int.load(), Eq(EXPECTED_NEW_INT));
-    EXPECT_THAT(sut_int.compare_exchange_strong(expected_int,
-                                                EXPECTED_INITIAL_INT,
-                                                std::memory_order::memory_order_release,
-                                                std::memory_order::memory_order_acquire),
+    EXPECT_THAT(sut_int.compare_exchange_strong(
+                    expected_int, EXPECTED_INITIAL_INT, std::memory_order_release, std::memory_order_acquire),
                 Eq(false));
     EXPECT_THAT(expected_int, Eq(EXPECTED_NEW_INT));
     EXPECT_THAT(sut_int.load(), Eq(EXPECTED_NEW_INT));
 
     uint64_t expected_volatile { EXPECTED_INITIAL_INT };
-    EXPECT_THAT(sut_volatile.compare_exchange_strong(
-                    expected_volatile, EXPECTED_NEW_INT, std::memory_order::memory_order_relaxed),
+    EXPECT_THAT(sut_volatile.compare_exchange_strong(expected_volatile, EXPECTED_NEW_INT, std::memory_order_relaxed),
                 Eq(true));
     EXPECT_THAT(expected_volatile, Eq(EXPECTED_INITIAL_INT));
     EXPECT_THAT(sut_volatile.load(), Eq(EXPECTED_NEW_INT));
-    EXPECT_THAT(sut_volatile.compare_exchange_strong(expected_volatile,
-                                                     EXPECTED_INITIAL_INT,
-                                                     std::memory_order::memory_order_release,
-                                                     std::memory_order::memory_order_acquire),
+    EXPECT_THAT(sut_volatile.compare_exchange_strong(
+                    expected_volatile, EXPECTED_INITIAL_INT, std::memory_order_release, std::memory_order_acquire),
                 Eq(false));
     EXPECT_THAT(expected_volatile, Eq(EXPECTED_NEW_INT));
     EXPECT_THAT(sut_volatile.load(), Eq(EXPECTED_NEW_INT));
 
     double expected_fp { EXPECTED_INITIAL_FP };
-    EXPECT_THAT(sut_fp.compare_exchange_strong(expected_fp, EXPECTED_NEW_FP, std::memory_order::memory_order_relaxed),
-                Eq(true));
+    EXPECT_THAT(sut_fp.compare_exchange_strong(expected_fp, EXPECTED_NEW_FP, std::memory_order_relaxed), Eq(true));
     EXPECT_THAT(expected_fp, Eq(EXPECTED_INITIAL_FP));
     EXPECT_THAT(sut_fp.load(), Eq(EXPECTED_NEW_FP));
-    EXPECT_THAT(sut_fp.compare_exchange_strong(expected_fp,
-                                               EXPECTED_INITIAL_FP,
-                                               std::memory_order::memory_order_release,
-                                               std::memory_order::memory_order_acquire),
+    EXPECT_THAT(sut_fp.compare_exchange_strong(
+                    expected_fp, EXPECTED_INITIAL_FP, std::memory_order_release, std::memory_order_acquire),
                 Eq(false));
     EXPECT_THAT(expected_fp, Eq(EXPECTED_NEW_FP));
     EXPECT_THAT(sut_fp.load(), Eq(EXPECTED_NEW_FP));
 
     uint64_t* expected_ptr { expected_initial_ptr };
-    EXPECT_THAT(
-        sut_ptr.compare_exchange_strong(expected_ptr, expected_new_ptr, std::memory_order::memory_order_relaxed),
-        Eq(true));
+    EXPECT_THAT(sut_ptr.compare_exchange_strong(expected_ptr, expected_new_ptr, std::memory_order_relaxed), Eq(true));
     EXPECT_THAT(expected_ptr, Eq(expected_initial_ptr));
     EXPECT_THAT(sut_ptr.load(), Eq(expected_new_ptr));
-    EXPECT_THAT(sut_ptr.compare_exchange_strong(expected_ptr,
-                                                expected_initial_ptr,
-                                                std::memory_order::memory_order_release,
-                                                std::memory_order::memory_order_acquire),
+    EXPECT_THAT(sut_ptr.compare_exchange_strong(
+                    expected_ptr, expected_initial_ptr, std::memory_order_release, std::memory_order_acquire),
                 Eq(false));
     EXPECT_THAT(expected_ptr, Eq(expected_new_ptr));
     EXPECT_THAT(sut_ptr.load(), Eq(expected_new_ptr));
 
     DummyStruct expected_struct { EXPECTED_INITIAL_STRUCT };
-    EXPECT_THAT(sut_struct.compare_exchange_strong(
-                    expected_struct, EXPECTED_NEW_STRUCT, std::memory_order::memory_order_relaxed),
+    EXPECT_THAT(sut_struct.compare_exchange_strong(expected_struct, EXPECTED_NEW_STRUCT, std::memory_order_relaxed),
                 Eq(true));
     EXPECT_THAT(expected_struct, Eq(EXPECTED_INITIAL_STRUCT));
     EXPECT_THAT(sut_struct.load(), Eq(EXPECTED_NEW_STRUCT));
-    EXPECT_THAT(sut_struct.compare_exchange_strong(expected_struct,
-                                                   EXPECTED_INITIAL_STRUCT,
-                                                   std::memory_order::memory_order_release,
-                                                   std::memory_order::memory_order_acquire),
+    EXPECT_THAT(sut_struct.compare_exchange_strong(
+                    expected_struct, EXPECTED_INITIAL_STRUCT, std::memory_order_release, std::memory_order_acquire),
                 Eq(false));
     EXPECT_THAT(expected_struct, Eq(EXPECTED_NEW_STRUCT));
     EXPECT_THAT(sut_struct.load(), Eq(EXPECTED_NEW_STRUCT));
@@ -482,9 +448,9 @@ TYPED_TEST(Atomic_test, FetchAddWorks) {
     volatile SutInt sut_volatile { EXPECTED_INITIAL_INT };
     SutPtr sut_ptr(expected_initial_ptr);
 
-    EXPECT_THAT(sut_int.fetch_add(DELTA_INT, std::memory_order::memory_order_relaxed), Eq(EXPECTED_INITIAL_INT));
-    EXPECT_THAT(sut_volatile.fetch_add(DELTA_INT, std::memory_order::memory_order_relaxed), Eq(EXPECTED_INITIAL_INT));
-    EXPECT_THAT(sut_ptr.fetch_add(DELTA_PTR, std::memory_order::memory_order_relaxed), Eq(expected_initial_ptr));
+    EXPECT_THAT(sut_int.fetch_add(DELTA_INT, std::memory_order_relaxed), Eq(EXPECTED_INITIAL_INT));
+    EXPECT_THAT(sut_volatile.fetch_add(DELTA_INT, std::memory_order_relaxed), Eq(EXPECTED_INITIAL_INT));
+    EXPECT_THAT(sut_ptr.fetch_add(DELTA_PTR, std::memory_order_relaxed), Eq(expected_initial_ptr));
 
     EXPECT_THAT(sut_int.load(), Eq(EXPECTED_NEW_INT));
     EXPECT_THAT(sut_volatile.load(), Eq(EXPECTED_NEW_INT));
@@ -511,9 +477,9 @@ TYPED_TEST(Atomic_test, FetchSubWorks) {
     volatile SutInt sut_volatile { EXPECTED_INITIAL_INT };
     SutPtr sut_ptr(expected_initial_ptr);
 
-    EXPECT_THAT(sut_int.fetch_sub(DELTA_INT, std::memory_order::memory_order_relaxed), Eq(EXPECTED_INITIAL_INT));
-    EXPECT_THAT(sut_volatile.fetch_sub(DELTA_INT, std::memory_order::memory_order_relaxed), Eq(EXPECTED_INITIAL_INT));
-    EXPECT_THAT(sut_ptr.fetch_sub(DELTA_PTR, std::memory_order::memory_order_relaxed), Eq(expected_initial_ptr));
+    EXPECT_THAT(sut_int.fetch_sub(DELTA_INT, std::memory_order_relaxed), Eq(EXPECTED_INITIAL_INT));
+    EXPECT_THAT(sut_volatile.fetch_sub(DELTA_INT, std::memory_order_relaxed), Eq(EXPECTED_INITIAL_INT));
+    EXPECT_THAT(sut_ptr.fetch_sub(DELTA_PTR, std::memory_order_relaxed), Eq(expected_initial_ptr));
 
     EXPECT_THAT(sut_int.load(), Eq(EXPECTED_NEW_INT));
     EXPECT_THAT(sut_volatile.load(), Eq(EXPECTED_NEW_INT));
@@ -665,14 +631,14 @@ TYPED_TEST(Atomic_test, BitwiseAndWorks) {
     volatile SutInt sut_volatile;
 
     sut_int = EXPECTED_INITIAL_INT;
-    EXPECT_THAT(sut_int.fetch_and(MASK, std::memory_order::memory_order_relaxed), Eq(EXPECTED_INITIAL_INT));
+    EXPECT_THAT(sut_int.fetch_and(MASK, std::memory_order_relaxed), Eq(EXPECTED_INITIAL_INT));
     EXPECT_THAT(sut_int.load(), Eq(EXPECTED_NEW_INT));
     sut_int = EXPECTED_INITIAL_INT;
     EXPECT_THAT(sut_int &= MASK, Eq(EXPECTED_NEW_INT));
     EXPECT_THAT(sut_int.load(), Eq(EXPECTED_NEW_INT));
 
     sut_volatile = EXPECTED_INITIAL_INT;
-    EXPECT_THAT(sut_volatile.fetch_and(MASK, std::memory_order::memory_order_relaxed), Eq(EXPECTED_INITIAL_INT));
+    EXPECT_THAT(sut_volatile.fetch_and(MASK, std::memory_order_relaxed), Eq(EXPECTED_INITIAL_INT));
     EXPECT_THAT(sut_volatile.load(), Eq(EXPECTED_NEW_INT));
     sut_volatile = EXPECTED_INITIAL_INT;
     EXPECT_THAT(sut_volatile &= MASK, Eq(EXPECTED_NEW_INT));
@@ -692,14 +658,14 @@ TYPED_TEST(Atomic_test, BitwiseOrWorks) {
     volatile SutInt sut_volatile;
 
     sut_int = EXPECTED_INITIAL_INT;
-    EXPECT_THAT(sut_int.fetch_or(MASK, std::memory_order::memory_order_relaxed), Eq(EXPECTED_INITIAL_INT));
+    EXPECT_THAT(sut_int.fetch_or(MASK, std::memory_order_relaxed), Eq(EXPECTED_INITIAL_INT));
     EXPECT_THAT(sut_int.load(), Eq(EXPECTED_NEW_INT));
     sut_int = EXPECTED_INITIAL_INT;
     EXPECT_THAT(sut_int |= MASK, Eq(EXPECTED_NEW_INT));
     EXPECT_THAT(sut_int.load(), Eq(EXPECTED_NEW_INT));
 
     sut_volatile = EXPECTED_INITIAL_INT;
-    EXPECT_THAT(sut_volatile.fetch_or(MASK, std::memory_order::memory_order_relaxed), Eq(EXPECTED_INITIAL_INT));
+    EXPECT_THAT(sut_volatile.fetch_or(MASK, std::memory_order_relaxed), Eq(EXPECTED_INITIAL_INT));
     EXPECT_THAT(sut_volatile.load(), Eq(EXPECTED_NEW_INT));
     sut_volatile = EXPECTED_INITIAL_INT;
     EXPECT_THAT(sut_volatile |= MASK, Eq(EXPECTED_NEW_INT));
@@ -719,14 +685,14 @@ TYPED_TEST(Atomic_test, BitwiseXorWorks) {
     volatile SutInt sut_volatile;
 
     sut_int = EXPECTED_INITIAL_INT;
-    EXPECT_THAT(sut_int.fetch_xor(MASK, std::memory_order::memory_order_relaxed), Eq(EXPECTED_INITIAL_INT));
+    EXPECT_THAT(sut_int.fetch_xor(MASK, std::memory_order_relaxed), Eq(EXPECTED_INITIAL_INT));
     EXPECT_THAT(sut_int.load(), Eq(EXPECTED_NEW_INT));
     sut_int = EXPECTED_INITIAL_INT;
     EXPECT_THAT(sut_int ^= MASK, Eq(EXPECTED_NEW_INT));
     EXPECT_THAT(sut_int.load(), Eq(EXPECTED_NEW_INT));
 
     sut_volatile = EXPECTED_INITIAL_INT;
-    EXPECT_THAT(sut_volatile.fetch_xor(MASK, std::memory_order::memory_order_relaxed), Eq(EXPECTED_INITIAL_INT));
+    EXPECT_THAT(sut_volatile.fetch_xor(MASK, std::memory_order_relaxed), Eq(EXPECTED_INITIAL_INT));
     EXPECT_THAT(sut_volatile.load(), Eq(EXPECTED_NEW_INT));
     sut_volatile = EXPECTED_INITIAL_INT;
     EXPECT_THAT(sut_volatile ^= MASK, Eq(EXPECTED_NEW_INT));
