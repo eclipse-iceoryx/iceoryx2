@@ -51,6 +51,7 @@ add_library(iceoryx2-bb-cxx::iceoryx2-bb-cxx ALIAS iceoryx2-bb-cxx)
 target_sources(iceoryx2-bb-cxx PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/detail/path_and_file_verifier.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/detail/static_function.hpp>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/detail/optional.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/expected.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/duration.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/file_name.hpp>
@@ -62,13 +63,12 @@ target_sources(iceoryx2-bb-cxx PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/static_function.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/std_chrono_support.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/expected.hpp>
-    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/optional.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/static_string.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/static_vector.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/detail/raw_byte_storage.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/variation/${IOX2_VARIATION_EXPECTED_INCLUDE}/iox2/bb/variation/expected.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/variation/${IOX2_VARIATION_OPTIONAL_INCLUDE}/iox2/bb/variation/optional.hpp>
-    $<BUILD_INTERFACE:$<$<CXX_COMPILER_ID:MSVC>:${PROJECT_SOURCE_DIR}/iceoryx2-bb-containers-cxx.natvis>>
+    $<BUILD_INTERFACE:$<$<CXX_COMPILER_ID:MSVC>:${PROJECT_SOURCE_DIR}/iceoryx2-bb-cxx.natvis>>
 )
 
 target_sources(iceoryx2-bb-cxx
@@ -101,7 +101,7 @@ set_target_properties(iceoryx2-bb-cxx PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 target_gdb_pretty_printer(iceoryx2-bb-cxx
     PUBLIC
-    ${PROJECT_SOURCE_DIR}/iceoryx2-bb-containers-cxx-pretty-printer.py
+    ${PROJECT_SOURCE_DIR}/iceoryx2-bb-cxx-pretty-printer.py
 )
 
 # include install setup

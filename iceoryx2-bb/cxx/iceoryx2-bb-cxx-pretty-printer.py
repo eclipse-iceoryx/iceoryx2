@@ -14,7 +14,7 @@ import gdb
 import re
 
 class OptionalPrinter:
-    "Print an iox2::container::Optional"
+    "Print an iox2::bb::detail::Optional"
 
     def __init__(self, val, *, contained_type):
         self.val = val
@@ -27,11 +27,11 @@ class OptionalPrinter:
         else:
             return f"{{ value = {self.val['m_value']['m_u_value']} }}"
 
-def iox2_bb_containers_cxx(val):
-    iox2_bb_containers_cxx.rx_optional = re.compile("^iox2::container::Optional<(.*)>$")
-    if (match := iox2_bb_containers_cxx.rx_optional.match(str(val.type))) is not None:
+def iox2_bb_cxx(val):
+    iox2_bb_cxx.rx_optional = re.compile("^iox2::bb::detail::Optional<(.*)>$")
+    if (match := iox2_bb_cxx.rx_optional.match(str(val.type))) is not None:
         return OptionalPrinter(val, contained_type=match[1])
     else:
         return None
 
-gdb.pretty_printers.append(iox2_bb_containers_cxx)
+gdb.pretty_printers.append(iox2_bb_cxx)

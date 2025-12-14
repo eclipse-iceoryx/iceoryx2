@@ -13,16 +13,16 @@
 #ifndef IOX2_INCLUDE_GUARD_VARIATION_OPTIONAL_HPP
 #define IOX2_INCLUDE_GUARD_VARIATION_OPTIONAL_HPP
 
-#include "iox2/container/optional.hpp"
+#include "iox2/bb/detail/optional.hpp"
 
 namespace iox2 {
 namespace bb {
 
 template <typename T>
-using Optional = container::Optional<T>;
-using NulloptT = container::NulloptT;
+using Optional = detail::Optional<T>;
+using NulloptT = detail::NulloptT;
 
-constexpr NulloptT nullopt = container::nullopt;
+constexpr NulloptT nullopt = detail::nullopt;
 
 } // namespace bb
 } // namespace iox2

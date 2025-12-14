@@ -112,7 +112,7 @@
 * Support C++14 for the C++ Bindings
     [#1167](https://github.com/eclipse-iceoryx/iceoryx2/issues/1167)
 * Replace legacy types in public API with iceoryx2 counterparts
-  [#1234](https://github.com/eclipse-iceoryx/iceoryx2/issues/1234)
+    [#1234](https://github.com/eclipse-iceoryx/iceoryx2/issues/1234)
 
 ### Workflow
 
@@ -287,13 +287,13 @@ CMake package.
    // old
    let entry_value = entry_value_uninit.write(123);
    let entry_handle_mut = entry_value.update();
-   
+
    // new
    let entry_handle_mut = entry_value_uninit.update_with_copy(123);
    ```
 
 1. **C++:** Replace `iox::optional` from `iceoryx_hoofs` with
-   `iox2::container::Optional`
+   `iox2::bb::Optional`
 
    The new `Optional` in iceoryx2 has a reduced API compared to the one from
    `iceroyx_hoofs`. The functional interface, which deviated from the STL was
