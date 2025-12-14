@@ -18,7 +18,8 @@
 #include <type_traits>
 
 namespace iox2 {
-namespace container {
+namespace bb {
+namespace detail {
 
 struct InPlaceT { };
 // NOLINTNEXTLINE(readability-identifier-naming), for consistency with C++23 code using std::expected
@@ -227,7 +228,8 @@ class Expected {
     // END error method
 };
 
-} // namespace container
+} // namespace detail
+} // namespace bb
 } // namespace iox2
 
 #endif // IOX2_INCLUDE_GUARD_CONTAINER_EXPECTED_HPP

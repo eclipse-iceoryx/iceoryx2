@@ -321,7 +321,7 @@ CMake package.
    auto val = ret_val.value();
    ```
 
-9. Replace `iox::expected` from `iceoryx_hoofs` with `iox2::container::Expected`
+9. Replace `iox::expected` from `iceoryx_hoofs` with `iox2::bb::Expected`
 
    The new `Expected` in iceoryx2 has a reduced API compared to the one from
    `iceroyx_hoofs`. The functional interface, which deviated from the STL was
