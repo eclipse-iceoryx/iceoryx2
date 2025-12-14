@@ -33,11 +33,17 @@
 #![warn(clippy::std_instead_of_core)]
 
 // Validate platform selection
-#[cfg(not(any(feature = "std", feature = "posix")))]
-compile_error!("Must enable exactly one platform feature: 'std' or 'posix'");
+#[cfg(not(any(feature = "std", feature = "posix", feature = "bare_metal")))]
+compile_error!("Must enable exactly one platform feature: 'std', 'posix' or 'bare_metal'");
 
 #[cfg(all(feature = "std", feature = "posix"))]
 compile_error!("Cannot enable both 'std' and 'posix' features simultaneously");
+
+#[cfg(all(feature = "std", feature = "bare_metal"))]
+compile_error!("Cannot enable both 'std' and 'bare_metal' features simultaneously");
+
+#[cfg(all(feature = "posix", feature = "bare_metal"))]
+compile_error!("Cannot enable both 'posix' and 'bare_metal' features simultaneously");
 
 // Validate logger selection
 #[cfg(all(feature = "buffer", feature = "file"))]
@@ -70,22 +76,7 @@ compile_error!("Cannot enable both 'console' and 'tracing' features simultaneous
 #[cfg(all(feature = "log", feature = "tracing"))]
 compile_error!("Cannot enable both 'log' and 'tracing' features simultaneously");
 
-// Ensure logger is selected along with platform
-#[cfg(all(
-    any(feature = "std", feature = "posix"),
-    not(any(
-        feature = "buffer",
-        feature = "file",
-        feature = "console",
-        feature = "log",
-        feature = "tracing"
-    ))
-))]
-compile_error!(
-    "Must enable at least one logger feature: 'buffer', 'file', 'console', 'log', or 'tracing'"
-);
-
-// Prevent invalid combinations
+// Prevent invalid platform-logger combinations
 #[cfg(all(feature = "posix", feature = "buffer"))]
 compile_error!("Invalid combination: 'posix' does not support 'buffer' logger");
 
@@ -97,6 +88,21 @@ compile_error!("Invalid combination: 'posix' does not support 'log' (requires st
 
 #[cfg(all(feature = "posix", feature = "tracing"))]
 compile_error!("Invalid combination: 'posix' does not support 'tracing' (requires std)");
+
+#[cfg(all(feature = "bare_metal", feature = "console"))]
+compile_error!("Invalid combination: 'bare_metal' does not support 'buffer' logger");
+
+#[cfg(all(feature = "bare_metal", feature = "buffer"))]
+compile_error!("Invalid combination: 'bare_metal' does not support 'buffer' logger");
+
+#[cfg(all(feature = "bare_metal", feature = "file"))]
+compile_error!("Invalid combination: 'bare_metal' does not support 'file' logger");
+
+#[cfg(all(feature = "bare_metal", feature = "log"))]
+compile_error!("Invalid combination: 'bare_metal' does not support 'log' (requires std)");
+
+#[cfg(all(feature = "bare_metal", feature = "tracing"))]
+compile_error!("Invalid combination: 'bare_metal' does not support 'tracing' (requires std)");
 
 use core::fmt::Write;
 

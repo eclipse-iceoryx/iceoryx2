@@ -61,3 +61,17 @@ impl Write for Stderr {
         write(Stream::StandardError, s)
     }
 }
+
+#[cfg(feature = "bare_metal")]
+impl Write for Stdout {
+    fn write_str(&mut self, _s: &str) -> fmt::Result {
+        Ok(())
+    }
+}
+
+#[cfg(feature = "bare_metal")]
+impl Write for Stderr {
+    fn write_str(&mut self, _s: &str) -> fmt::Result {
+        Ok(())
+    }
+}

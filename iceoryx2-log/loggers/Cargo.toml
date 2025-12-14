@@ -27,6 +27,9 @@ posix_console = ["posix", "console"]
 std = []
 # Use POSIX APIs
 posix = ["iceoryx2-bb-posix"]
+# Stub out logging for Bare Metal
+# TODO: Add and use abstraction for character output
+bare_metal = []
 
 # Enables logging to buffer
 buffer = []
