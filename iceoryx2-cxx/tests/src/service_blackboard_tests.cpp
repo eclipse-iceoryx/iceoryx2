@@ -853,7 +853,7 @@ TYPED_TEST(ServiceBlackboardTest, write_and_read_different_value_types_works) {
             , m_c { c } {
         }
 
-        auto operator==(const Groovy& rhs) -> bool {
+        auto operator==(const Groovy& rhs) const -> bool {
             return m_a == rhs.m_a && m_b == rhs.m_b && m_c == rhs.m_c;
         }
 
@@ -883,7 +883,7 @@ TYPED_TEST(ServiceBlackboardTest, write_and_read_different_value_types_works) {
     ASSERT_THAT(*reader.template entry<uint64_t>(0).value().get(), Eq(2008));
     ASSERT_THAT(*reader.template entry<int8_t>(1).value().get(), Eq(11));
     ASSERT_THAT(*reader.template entry<bool>(100).value().get(), Eq(true));
-    ASSERT_TRUE(*reader.template entry<Groovy>(13).value().get() == Groovy(false, 888, 906));
+    ASSERT_THAT(*reader.template entry<Groovy>(13).value().get(), Eq(Groovy(false, 888, 906)));
 }
 // NOLINTEND(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers, readability-identifier-length)
 
