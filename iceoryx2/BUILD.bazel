@@ -28,31 +28,6 @@ rust_library(
         ],
         "//conditions:default": [],
     }) + select({
-        "//:cfg_feature_logger_log": [
-            "logger_log"
-        ],
-        "//conditions:default": [],
-    }) + select({
-        "//:cfg_feature_logger_tracing": [
-            "logger_tracing"
-        ],
-        "//conditions:default": [],
-    }) + select({
-        "//:cfg_feature_logger_buffer": [
-            "logger_buffer"
-        ],
-        "//conditions:default": [],
-    }) + select({
-        "//:cfg_feature_logger_file": [
-            "logger_file"
-        ],
-        "//conditions:default": [],
-    }) + select({
-        "//:cfg_feature_logger_console": [
-            "logger_console"
-        ],
-        "//conditions:default": [],
-    }) + select({
         "//:cfg_feature_std": [
             "std",
         ],
