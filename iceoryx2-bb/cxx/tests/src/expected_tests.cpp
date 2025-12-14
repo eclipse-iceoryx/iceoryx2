@@ -101,6 +101,18 @@ TEST(Expected, error_of_const_rvalue_unexpected_has_correct_error) {
 
 // BEGIN Expected ctors
 
+TEST(ExpectedFixture, expected_can_be_constructed_with_default_value) {
+    Observable::s_counter.was_initialized = 0;
+
+    const Expected<Observable, Error> sut1 {};
+
+    EXPECT_EQ(Observable::s_counter.was_initialized, 1);
+    EXPECT_TRUE(sut1.has_value());
+
+    const Expected<void, Error> sut2 {};
+    EXPECT_TRUE(sut2.has_value());
+}
+
 TEST(ExpectedFixture, expected_can_be_constructed_with_value) {
     Observable::s_counter.was_initialized = 0;
 

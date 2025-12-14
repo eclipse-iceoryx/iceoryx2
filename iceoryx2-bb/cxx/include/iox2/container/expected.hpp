@@ -91,7 +91,9 @@ class Expected {
 
   public:
     // BEGIN ctors
-    constexpr Expected() = delete;
+    constexpr Expected()
+        : m_value(iox2::legacy::in_place) {
+    }
 
     template <typename U,
               typename V = std::remove_cv_t<T>,
