@@ -198,7 +198,7 @@ class StaticString {
         template <typename T>
         auto insert(SizeType index, T const& str, SizeType s_index, SizeType count = T::capacity()) ->
             typename std::enable_if_t<IsStaticString<T>::value, bool> {
-            auto sub_str = str.code_units().substr(s_index, count);
+            auto sub_str = str.code_unit_based_substr(s_index, count);
             if (!sub_str.has_value()) {
                 return false;
             }
@@ -285,8 +285,6 @@ class StaticString {
     /// This class provides the interface for accessing individual code units of the string.
     class ConstAccessorCodeUnits {
         friend class StaticString;
-        template <uint64_t Capacity>
-        friend class StaticString<Capacity>::UncheckedAccessorCodeUnits;
         template <uint64_t>
         friend class bb::detail::PathAndFileVerifier;
 
@@ -303,16 +301,7 @@ class StaticString {
         /// @return an Optional containing the substring
         ///         NULLOPT if pos is greater than the size of the original string
         auto substr(SizeType pos, SizeType count) const -> bb::Optional<StaticString> {
-            if (pos > m_parent->m_size) {
-                return bb::NULLOPT;
-            }
-
-            auto const length = std::min(static_cast<uint64_t>(count), m_parent->m_size - pos);
-            StaticString sub_str;
-            std::memcpy(sub_str.m_string, &m_parent->m_string[pos], length);
-            sub_str.m_string[length] = '\0';
-            sub_str.m_size = length;
-            return sub_str;
+            return m_parent->code_unit_based_substr(pos, count);
         }
 
         /// Finds the first occurence of a character equal to one of the characters of the given character sequence
@@ -693,6 +682,19 @@ class StaticString {
         m_string[m_size] = character;
         ++m_size;
         m_string[m_size] = '\0';
+    }
+
+    auto code_unit_based_substr(SizeType pos, SizeType count) const -> bb::Optional<StaticString> {
+        if (pos > m_size) {
+            return bb::NULLOPT;
+        }
+
+        auto const length = std::min(static_cast<uint64_t>(count), m_size - pos);
+        StaticString sub_str;
+        std::memcpy(sub_str.m_string, &m_string[pos], length);
+        sub_str.m_string[length] = '\0';
+        sub_str.m_size = length;
+        return sub_str;
     }
 };
 
