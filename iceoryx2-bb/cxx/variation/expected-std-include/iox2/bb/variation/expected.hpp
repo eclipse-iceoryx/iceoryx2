@@ -29,7 +29,7 @@ using Unexpected = std::unexpected<E>;
 using InPlaceT = std::in_place_t;
 using UnexpectT = std::unexpect_t;
 
-constexpr InPlaceT in_place = std::in_place;
+constexpr InPlaceT IN_PLACE = std::in_place;
 constexpr UnexpectT UNEXPECT = std::unexpect;
 
 } // namespace bb

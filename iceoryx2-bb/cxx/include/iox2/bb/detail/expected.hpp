@@ -22,8 +22,7 @@ namespace bb {
 namespace detail {
 
 struct InPlaceT { };
-// NOLINTNEXTLINE(readability-identifier-naming), for consistency with C++23 code using std::expected
-constexpr InPlaceT in_place {};
+constexpr InPlaceT IN_PLACE {};
 struct UnexpectT { };
 constexpr UnexpectT UNEXPECT {};
 

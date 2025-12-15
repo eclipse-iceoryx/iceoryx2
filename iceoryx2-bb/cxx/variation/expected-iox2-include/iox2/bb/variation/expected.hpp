@@ -26,7 +26,7 @@ using Unexpected = bb::detail::Unexpected<E>;
 using InPlaceT = bb::detail::InPlaceT;
 using UnexpectT = bb::detail::UnexpectT;
 
-constexpr InPlaceT in_place = bb::detail::in_place;
+constexpr InPlaceT IN_PLACE = bb::detail::IN_PLACE;
 constexpr UnexpectT UNEXPECT = bb::detail::UNEXPECT;
 
 } // namespace bb
