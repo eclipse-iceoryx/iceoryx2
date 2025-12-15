@@ -15,17 +15,7 @@
 
 #include "iox2/container/static_vector.hpp"
 #include "iox2/iceoryx2.hpp"
-#include "iox2/legacy/cli_definition.hpp"
-
-// NOLINTBEGIN
-struct Args {
-    IOX2_CLI_DEFINITION(Args);
-    IOX2_CLI_OPTIONAL(iox2::legacy::string<64>, service1, { "fuu" }, 's', "service1", "The name of service 1.");
-    IOX2_CLI_OPTIONAL(iox2::legacy::string<64>, service2, { "bar" }, 't', "service2", "The name of service 2.");
-    IOX2_CLI_OPTIONAL(
-        uint64_t, event_id, 0, 'e', "event-id", "The event id that shall be used to trigger the service.");
-};
-// NOLINTEND
+#include "parse_args.hpp"
 
 struct ServiceNameListenerPair {
     iox2::ServiceName service_name;
@@ -35,10 +25,28 @@ struct ServiceNameListenerPair {
 auto main(int argc, char** argv) -> int {
     using namespace iox2;
     set_log_level_from_env_or(LogLevel::Info);
-    auto args = Args::parse(argc, argv, "Notifier of the event multiplexing example.");
 
-    auto service_name_1 = ServiceName::create(args.service1().c_str()).value();
-    auto service_name_2 = ServiceName::create(args.service2().c_str()).value();
+    check_for_help_from_args(argc, argv, []() -> auto {
+        std::cout << "Notifier of the event multiplexing example." << std::endl;
+        std::cout << std::endl;
+        std::cout << "Use '-s' or '--service1' to specify the name of the service 1." << std::endl;
+        std::cout << "Use '-t' or '--service2' to specify the name of the service 2." << std::endl;
+    });
+
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers) fine for the example
+    const CliOption<256> option_service_1 {
+        "-s", "--service1", "fuu", "Invalid parameter! The service must be passed after '-s' or '--service2'"
+    };
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers) fine for the example
+    const CliOption<256> option_service_2 {
+        "-t", "--service2", "bar", "Invalid parameter! The service must be passed after '-t' or '--service2'"
+    };
+
+    auto service_name_arg_1 = parse_from_args(argc, argv, option_service_1);
+    auto service_name_arg_2 = parse_from_args(argc, argv, option_service_2);
+
+    auto service_name_1 = ServiceName::create(service_name_arg_1.c_str()).value();
+    auto service_name_2 = ServiceName::create(service_name_arg_2.c_str()).value();
 
     // create node and services
     auto node = NodeBuilder().create<ServiceType::Ipc>().value();

@@ -10,29 +10,53 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include <iostream>
 
 #include "iox2/iceoryx2.hpp"
-#include "iox2/legacy/cli_definition.hpp"
+#include "iox2/legacy/std_string_support.hpp"
+#include "parse_args.hpp"
 
-// NOLINTBEGIN
-struct Args {
-    IOX2_CLI_DEFINITION(Args);
-    IOX2_CLI_OPTIONAL(iox2::legacy::string<64>, service, { "fuu" }, 's', "service", "The name of the service.");
-    IOX2_CLI_OPTIONAL(
-        uint64_t, event_id, 0, 'e', "event-id", "The event id that shall be used to trigger the service.");
-};
-// NOLINTEND
+#include <iostream>
+#include <sstream>
 
 constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_secs(1);
 
 auto main(int argc, char** argv) -> int {
     using namespace iox2;
     set_log_level_from_env_or(LogLevel::Info);
-    auto args = Args::parse(argc, argv, "Notifier of the event multiplexing example.");
 
-    auto event_id = EventId(args.event_id());
-    auto service_name = ServiceName::create(args.service().c_str()).value();
+    check_for_help_from_args(argc, argv, []() -> auto {
+        std::cout << "Notifier of the event multiplexing example." << std::endl;
+        std::cout << std::endl;
+        std::cout << "Use '-e' or '--event-id' to specify event ID that shall be used to trigger the service."
+                  << std::endl;
+        std::cout << "Use '-s' or '--service' to specify the name of the service." << std::endl;
+    });
+
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers) fine for the example
+    const CliOption<256> option_service {
+        "-s", "--service", "fuu", "Invalid parameter! The service must be passed after '-s' or '--service'"
+    };
+
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers) fine for the example
+    const CliOption<32> option_event_id {
+        "-e", "--event-id", "0", "Invalid parameter! The event-id must be passed after '-e' or '--event-id'"
+    };
+
+    auto service_name_arg = parse_from_args(argc, argv, option_service);
+    auto event_id_string = parse_from_args(argc, argv, option_event_id);
+
+    std::istringstream iss(std::string(event_id_string.c_str()));
+    uint64_t event_id_int { 0 };
+    if (iss >> event_id_int) {
+        // std::cout << "Converted number: " << num << std::endl;
+    } else {
+        std::cout << "Could not parse event ID: " << event_id_string << std::endl;
+        exit(1);
+    }
+
+    auto event_id = EventId(event_id_int);
+
+    auto service_name = ServiceName::create(service_name_arg.c_str()).value();
 
     auto node = NodeBuilder().create<ServiceType::Ipc>().value();
 
