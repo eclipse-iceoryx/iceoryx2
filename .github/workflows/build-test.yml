@@ -726,6 +726,120 @@ jobs:
       - name: Build bare-metal examples (no_std)
         run: cd examples/bare-metal/rust && cargo build && cd -
 
+  x64_cxx_binding_vocabulary_types_variations:
+    needs: [preflight-check, static-code-analysis, cargo-nextest]
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Prepare Linux
+        run: |
+          internal/scripts/ci_prepare_ubuntu.sh
+          uname -a
+
+      - name: Build iceoryx2-ffi-c
+        run: cargo build --package iceoryx2-ffi-c
+
+      - name: Build build and test iceoryx2 C++ bindings with C++23
+        run: |
+          cmake -S . \
+                -B target/ff/cc/build \
+                -DBUILD_EXAMPLES=ON \
+                -DBUILD_TESTING=ON \
+                -DRUST_BUILD_ARTIFACT_PATH=$(pwd)/target/debug \
+                -DIOX2_CXX_STD_VERSION=23 \
+                -DIOX2_BB_CXX_CONFIG_USE_STD_EXPECTED=OFF \
+                -DIOX2_BB_CXX_CONFIG_USE_STD_OPTIONAL=OFF
+          cmake --build target/ff/cc/build
+          cmake --install target/ff/cc/build --prefix target/ff/cc/install
+
+          target/ff/cc/build/tests/iceoryx2-bb-cxx-tests
+          target/ff/cc/build/tests/iceoryx2-cxx-tests
+
+          cmake -S examples/cxx \
+                -B target/ff/cc/out-of-tree \
+                -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ff/cc/install
+          cmake --build target/ff/cc/out-of-tree
+
+          rm -rf target/ff/cc
+
+      - name: Build and test iceoryx2 C++ bindings with std::expected
+        run: |
+          cmake -S . \
+                -B target/ff/cc/build \
+                -DBUILD_EXAMPLES=ON \
+                -DBUILD_TESTING=ON \
+                -DRUST_BUILD_ARTIFACT_PATH=$(pwd)/target/debug \
+                -DIOX2_CXX_STD_VERSION=23 \
+                -DIOX2_BB_CXX_CONFIG_USE_STD_EXPECTED=ON \
+                -DIOX2_BB_CXX_CONFIG_USE_STD_OPTIONAL=OFF
+          cmake --build target/ff/cc/build
+          cmake --install target/ff/cc/build --prefix target/ff/cc/install
+
+          target/ff/cc/build/tests/iceoryx2-bb-cxx-tests
+          target/ff/cc/build/tests/iceoryx2-cxx-tests
+
+          cmake -S examples/cxx \
+                -B target/ff/cc/out-of-tree \
+                -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ff/cc/install
+          cmake --build target/ff/cc/out-of-tree
+
+          rm -rf target/ff/cc
+
+      - name: Build and test iceoryx2 C++ bindings with std::optional
+        run: |
+          cmake -S . \
+                -B target/ff/cc/build \
+                -DBUILD_EXAMPLES=ON \
+                -DBUILD_TESTING=ON \
+                -DRUST_BUILD_ARTIFACT_PATH=$(pwd)/target/debug \
+                -DIOX2_CXX_STD_VERSION=17 \
+                -DIOX2_BB_CXX_CONFIG_USE_STD_EXPECTED=OFF \
+                -DIOX2_BB_CXX_CONFIG_USE_STD_OPTIONAL=ON
+          cmake --build target/ff/cc/build
+          cmake --install target/ff/cc/build --prefix target/ff/cc/install
+
+          target/ff/cc/build/tests/iceoryx2-bb-cxx-tests
+          target/ff/cc/build/tests/iceoryx2-cxx-tests
+
+          cmake -S examples/cxx \
+                -B target/ff/cc/out-of-tree \
+                -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ff/cc/install
+          cmake --build target/ff/cc/out-of-tree
+
+          rm -rf target/ff/cc
+
+      - name: Build and test iceoryx2 C++ bindings with std::expected
+        run: |
+          cmake -S . \
+                -B target/ff/cc/build \
+                -DBUILD_EXAMPLES=ON \
+                -DBUILD_TESTING=ON \
+                -DRUST_BUILD_ARTIFACT_PATH=$(pwd)/target/debug \
+                -DIOX2_CXX_STD_VERSION=23 \
+                -DIOX2_BB_CXX_CONFIG_USE_STD_EXPECTED=ON \
+                -DIOX2_BB_CXX_CONFIG_USE_STD_OPTIONAL=ON
+          cmake --build target/ff/cc/build
+          cmake --install target/ff/cc/build --prefix target/ff/cc/install
+
+          target/ff/cc/build/tests/iceoryx2-bb-cxx-tests
+          target/ff/cc/build/tests/iceoryx2-cxx-tests
+
+          cmake -S examples/cxx \
+                -B target/ff/cc/out-of-tree \
+                -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ff/cc/install
+          cmake --build target/ff/cc/out-of-tree
+
+          rm -rf target/ff/cc
+
   cargo-publish-dry-run:
     needs: [preflight-check, static-code-analysis]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
@@ -839,6 +953,7 @@ jobs:
         x86_64,
         x86_64_bazel,
         x86_32,
+        x64_cxx_binding_vocabulary_types_variations,
         python-bindings,
         end-to-end-tests,
       ]
