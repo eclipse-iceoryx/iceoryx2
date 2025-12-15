@@ -14,7 +14,7 @@
 #define IOX2_INCLUDE_GUARD_VARIATION_EXPECTED_HPP
 
 // required for clang-tidy
-#if __cplusplus >= 202302L
+#if __cplusplus > 202002L
 
 #include <expected>
 
