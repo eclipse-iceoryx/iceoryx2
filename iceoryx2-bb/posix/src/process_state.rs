@@ -519,13 +519,14 @@ fn generate_owner_lock_path(path: &FilePath) -> Result<FilePath, SemanticStringE
 }
 
 impl ProcessGuard {
-    /// Removes by force an existing [`ProcessGuard`]. This useful when stale resources of a dead process
-    /// need to be cleaned up.
+    /// Removes by force an existing [`ProcessGuard`]. This is useful when stale resources of
+    /// a dead process need to be cleaned up.
     ///
     /// # Safety
     ///
-    ///  - User must ensure that no [`Process`](crate::process::Process) currently has an instance of
-    ///    [`ProcessGuard`], [`ProcessCleaner`] and [`ProcessMonitor`] that will be removed.
+    ///  - Users must ensure that no [`Process`](crate::process::Process) currently has
+    ///    an instance of [`ProcessGuard`], [`ProcessCleaner`] and [`ProcessMonitor`] that
+    ///    will be removed.
     pub unsafe fn remove(file: &FilePath) -> Result<bool, FileRemoveError> {
         let msg = "Unable to remove process guard resources";
         let origin = "ProcessGuard::remove()";
