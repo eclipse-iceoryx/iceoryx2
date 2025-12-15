@@ -49,16 +49,42 @@ impl Write for Stderr {
 #[cfg(feature = "posix")]
 impl Write for Stdout {
     fn write_str(&mut self, s: &str) -> fmt::Result {
-        use iceoryx2_bb_posix::console::*;
-        write(Stream::StandardOutput, s)
+        use iceoryx2_pal_posix::*;
+
+        let result = unsafe {
+            posix::write(
+                posix::STDOUT_FILENO as _,
+                s.as_ptr() as *const posix::void,
+                s.len() as posix::size_t,
+            )
+        };
+
+        if result < 0 {
+            Err(core::fmt::Error)
+        } else {
+            Ok(())
+        }
     }
 }
 
 #[cfg(feature = "posix")]
 impl Write for Stderr {
     fn write_str(&mut self, s: &str) -> fmt::Result {
-        use iceoryx2_bb_posix::console::*;
-        write(Stream::StandardError, s)
+        use iceoryx2_pal_posix::*;
+
+        let result = unsafe {
+            posix::write(
+                posix::STDERR_FILENO as _,
+                s.as_ptr() as *const posix::void,
+                s.len() as posix::size_t,
+            )
+        };
+
+        if result < 0 {
+            Err(core::fmt::Error)
+        } else {
+            Ok(())
+        }
     }
 }
 

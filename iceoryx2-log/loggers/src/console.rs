@@ -61,12 +61,19 @@ fn duration_since_epoch() -> core::time::Duration {
     #[cfg(feature = "posix")]
     {
         use core::time::Duration;
-        use iceoryx2_bb_posix::clock::*;
+        use iceoryx2_pal_posix::*;
 
-        if let Ok(time) = Time::now_with_clock(ClockType::Monotonic) {
-            return time.as_duration();
+        let mut current_time = posix::timespec {
+            tv_sec: 0,
+            tv_nsec: 0,
+        };
+
+        let result =
+            unsafe { posix::clock_gettime(posix::CLOCK_MONOTONIC as _, &mut current_time) };
+        if result == 0 {
+            return Duration::from_secs(current_time.tv_sec as u64)
+                + Duration::from_nanos(current_time.tv_nsec as u64);
         }
-
         Duration::from_secs(0)
     }
 }

@@ -1648,7 +1648,6 @@ name = "iceoryx2-log"
 version = "0.7.0"
 dependencies = [
  "iceoryx2-log-types",
- "iceoryx2-loggers",
  "iceoryx2-pal-concurrency-sync",
 ]
 
@@ -1660,9 +1659,9 @@ version = "0.7.0"
 name = "iceoryx2-loggers"
 version = "0.7.0"
 dependencies = [
- "iceoryx2-bb-posix",
  "iceoryx2-log-types",
  "iceoryx2-pal-concurrency-sync",
+ "iceoryx2-pal-posix",
  "log",
  "tracing",
 ]
