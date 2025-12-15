@@ -307,7 +307,7 @@ class StaticString {
                 return bb::NULLOPT;
             }
 
-            auto const length = std::min(count, m_parent->m_size - pos);
+            auto const length = std::min(static_cast<uint64_t>(count), m_parent->m_size - pos);
             StaticString sub_str;
             std::memcpy(sub_str.m_string, &m_parent->m_string[pos], length);
             sub_str.m_string[length] = '\0';
@@ -331,7 +331,7 @@ class StaticString {
             auto str_data = detail::GetData<T>::call(str);
             auto str_size = detail::GetSize<T>::call(str);
             for (auto position = pos; position < m_parent->m_size; ++position) {
-                auto found = memchr(str_data, m_parent->m_string[position], str_size);
+                auto found = memchr(str_data, m_parent->m_string[position], static_cast<size_t>(str_size));
                 if (found != nullptr) {
                     return position;
                 }
@@ -352,7 +352,7 @@ class StaticString {
                 return bb::NULLOPT;
             }
 
-            auto position = std::min(pos, m_parent->m_size - 1);
+            auto position = std::min(static_cast<uint64_t>(pos), m_parent->m_size - 1);
             auto str_data = detail::GetData<T>::call(str);
             auto str_size = detail::GetSize<T>::call(str);
             for (; position > 0; --position) {
@@ -361,7 +361,7 @@ class StaticString {
                     return position;
                 }
             }
-            auto found = memchr(str_data, m_parent->m_string[0], str_size);
+            auto found = memchr(str_data, m_parent->m_string[0], static_cast<size_t>(str_size));
             if (found != nullptr) {
                 return 0U;
             }
@@ -511,7 +511,7 @@ class StaticString {
     /// UTF-8 encoding.
     static auto from_utf8_null_terminated_unchecked_truncated(char const* utf8_str, SizeType count) -> StaticString {
         StaticString ret;
-        auto index = std::min(count, N);
+        auto index = std::min(static_cast<uint64_t>(count), N);
         while (*utf8_str != '\0' && index > 0) {
             ret.push_back(*utf8_str);
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic), unchecked access into c-style string
@@ -679,7 +679,7 @@ class StaticString {
 
     auto compare(StaticString const& other) const -> int64_t {
         auto const other_size = other.size();
-        auto const res = memcmp(&m_string[0], &other.m_string[0], std::min(m_size, other_size));
+        auto const res = memcmp(&m_string[0], &other.m_string[0], std::min(m_size, static_cast<uint64_t>(other_size)));
         if (res == 0) {
             if (m_size < other_size) {
                 return -1;
