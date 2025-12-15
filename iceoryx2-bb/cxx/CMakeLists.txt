@@ -73,11 +73,6 @@ target_sources(iceoryx2-bb-cxx PUBLIC
 
 target_sources(iceoryx2-bb-cxx
     PRIVATE
-    src/cli/arguments.cpp
-    src/cli/command_line_parser.cpp
-    src/cli/option.cpp
-    src/cli/option_definition.cpp
-    src/cli/option_manager.cpp
     src/console_logger.cpp
     src/default_error_handler.cpp
     src/hoofs_error_reporting.cpp
