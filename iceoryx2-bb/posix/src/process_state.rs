@@ -526,7 +526,7 @@ impl ProcessGuard {
     ///
     ///  - User must ensure that no [`Process`](crate::process::Process) currently has an instance of
     ///    [`ProcessGuard`], [`ProcessCleaner`] and [`ProcessMonitor`] that will be removed.
-    pub unsafe fn remove(file: &FilePath) -> Result<(), FileRemoveError> {
+    pub unsafe fn remove(file: &FilePath) -> Result<bool, FileRemoveError> {
         let msg = "Unable to remove process guard resources";
         let origin = "ProcessGuard::remove()";
         let owner_lock_path = match generate_owner_lock_path(file) {
@@ -539,17 +539,23 @@ impl ProcessGuard {
             }
         };
 
-        if let Err(e) = File::remove(file) {
-            fail!(from origin, with e,
+        let mut result = match File::remove(file) {
+            Ok(v) => v,
+            Err(e) => {
+                fail!(from origin, with e,
                 "{msg} since the underlying file \"{file}\" could not be removed.");
-        }
+            }
+        };
 
-        if let Err(e) = File::remove(&owner_lock_path) {
-            fail!(from origin, with e,
+        result &= match File::remove(&owner_lock_path) {
+            Ok(v) => v,
+            Err(e) => {
+                fail!(from origin, with e,
                 "{msg} since the underlying owner lock file \"{owner_lock_path}\" could not be removed.");
-        }
+            }
+        };
 
-        Ok(())
+        Ok(result)
     }
 
     /// Returns the [`FilePath`] under which the underlying file is stored.

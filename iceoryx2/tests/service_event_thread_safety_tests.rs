@@ -79,7 +79,6 @@ fn notifying_events_concurrently_works() {
         // ensure all events are read
         while let Ok(Some(event)) = listener.try_wait_one() {
             received_events[event.as_value()] += 1;
-            total_received_events += 1;
         }
 
         for n in received_events {
