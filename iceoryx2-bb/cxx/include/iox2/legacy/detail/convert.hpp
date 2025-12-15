@@ -43,7 +43,7 @@ namespace legacy {
 ///     if ( iox2::legacy::convert::from_string("-123", a) ) {} // will fail since -123 is not unsigned
 /// @endcode
 /// @todo iox-#260 Refactor 'convert' so that one can use 'into' to directly to convert numbers to strings:
-/// 'ClassExpectingAnIoxString(iox2::bb::into<iox2::legacy::string<100>>(42)'
+/// 'ClassExpectingAString(iox2::bb::into<iox2::bb::StaticString<100>>(42)'
 class convert {
   public:
     enum class NumberType : uint8_t {
@@ -78,21 +78,14 @@ class convert {
     static typename std::enable_if<std::is_convertible<Source, std::string>::value, std::string>::type
     toString(const Source& t) noexcept;
 
-    /// @brief  convert the input based on the 'TargetType', allowing only 'iox2::legacy::string' and numeric types as
-    /// valid destination types
+    /// @brief  convert the input based on the 'TargetType', allowing only numeric types as valid destination
+    /// types
     /// @note   for the 'TargetType' equal to 'std::string,' please include 'iox/std_string_support.hpp'
     /// @tparam TargetType the desired target type for converting text
     /// @param v the input string in c type
     /// @return an iox2::legacy::optional<TargetType> where, if the return value is iox2::legacy::nullopt, it indicates
     /// a failed conversion process
-    template <typename TargetType, typename std::enable_if_t<is_iox_string<TargetType>::value, int> = 0>
-    static iox2::legacy::optional<TargetType> from_string(const char* v) noexcept;
-
-    /// @brief  for non iox2::legacy::string TargetTypes
-    /// @note   for the 'TargetType' equal to 'std::string,' please include 'iox/std_string_support.hpp'
-    /// @tparam TargetType the desired target type for converting text
-    /// @param v the input string in c type
-    template <typename TargetType, typename std::enable_if_t<!is_iox_string<TargetType>::value, int> = 0>
+    template <typename TargetType>
     static iox2::legacy::optional<TargetType> from_string(const char* v) noexcept;
 
   private:
