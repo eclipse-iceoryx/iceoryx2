@@ -126,7 +126,7 @@ impl NamedConceptMgmt for FileLockMonitoring {
         let process_state_path = cfg.path_for(name);
         let msg = format!("Unable to remove FileLockMonitoring \"{process_state_path}\"");
         let origin = "FileLockMonitoring::remove_cfg()";
-        match File::remove(&process_state_path) {
+        match ProcessGuard::remove(&process_state_path) {
             Ok(v) => Ok(v),
             Err(FileRemoveError::InsufficientPermissions) => {
                 fail!(from origin, with NamedConceptRemoveError::InsufficientPermissions,
