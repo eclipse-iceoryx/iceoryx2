@@ -236,6 +236,54 @@ selects.config_setting_group(
     ],
 )
 
+use_std_expected = string_flag(
+    name = "use_std_expected",
+    build_setting_default = "off",
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "cfg_use_std_expected",
+    flag_values = {
+        "//:use_std_expected": "on",
+    },
+)
+
+string_flag(
+    name = "use_std_optional",
+    build_setting_default = "off",
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "cfg_use_std_optional",
+    flag_values = {
+        "//:use_std_optional": "on",
+    },
+)
+
+# string_flag(
+#     name = "config_use_std_optional",
+#     build_setting_default = "off",
+#     visibility = ["//visibility:public"],
+# )
+#
+# config_setting(
+#     name = "use_std_optional_enabled",
+#     flag_values = {
+#         "//:config_use_std_optional": "on",
+#     },
+# )
+#
+# # NOTE: while this seems superfluous, it is the pattern for cases where *_auto is on by default;
+# #       therefore this target is introduced to keep all feature flags consistent
+# selects.config_setting_group(
+#     name = "cfg_config_use_std_optional",
+#     match_any = [
+#         ":use_std_optional_enabled",
+#     ],
+# )
+
 #
 # Alias
 #
