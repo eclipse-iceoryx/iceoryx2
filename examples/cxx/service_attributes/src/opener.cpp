@@ -20,25 +20,25 @@ constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_secs(1);
 auto main() -> int {
     using namespace iox2;
     set_log_level_from_env_or(LogLevel::Info);
-    auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
+    auto node = NodeBuilder().create<ServiceType::Ipc>().value();
 
     auto attribute_verifier = AttributeVerifier();
-    attribute_verifier.require("camera_resolution", "1920x1080").expect("");
-    attribute_verifier.require_key("dds_service_mapping").expect("");
-    auto service = node.service_builder(ServiceName::create("Service/With/Properties").expect("valid service name"))
+    attribute_verifier.require("camera_resolution", "1920x1080").value();
+    attribute_verifier.require_key("dds_service_mapping").value();
+    auto service = node.service_builder(ServiceName::create("Service/With/Properties").value())
                        .publish_subscribe<uint64_t>()
                        .open_with_attributes(attribute_verifier)
-                       .expect("successful service creation/opening");
+                       .value();
 
-    auto subscriber = service.subscriber_builder().create().expect("successful subscriber creation");
+    auto subscriber = service.subscriber_builder().create().value();
 
     std::cout << "defined service attributes: " << service.attributes() << std::endl;
 
     while (node.wait(CYCLE_TIME).has_value()) {
-        auto sample = subscriber.receive().expect("receive succeeds");
+        auto sample = subscriber.receive().value();
         while (sample.has_value()) {
             std::cout << "received: " << sample->payload() << std::endl;
-            sample = subscriber.receive().expect("receive succeeds");
+            sample = subscriber.receive().value();
         }
     }
 

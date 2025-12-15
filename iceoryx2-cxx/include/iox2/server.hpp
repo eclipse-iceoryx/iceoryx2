@@ -15,8 +15,8 @@
 
 #include "iox/slice.hpp"
 #include "iox2/active_request.hpp"
+#include "iox2/container/expected.hpp"
 #include "iox2/container/optional.hpp"
-#include "iox2/legacy/expected.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/unique_port_id.hpp"
 
@@ -40,7 +40,7 @@ class Server {
     /// Receives a [`RequestMut`] that was sent by a [`Client`] and returns an
     /// [`ActiveRequest`] which can be used to respond.
     /// If no [`RequestMut`]s were received it returns [`None`].
-    auto receive() -> iox2::legacy::expected<
+    auto receive() -> container::Expected<
         container::Optional<ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>>,
         ReceiveError>;
 
@@ -52,7 +52,7 @@ class Server {
     auto id() const -> UniqueServerId;
 
     /// Returns true if the [`Server`] has [`RequestMut`]s in its buffer.
-    auto has_requests() const -> iox2::legacy::expected<bool, ConnectionFailure>;
+    auto has_requests() const -> container::Expected<bool, ConnectionFailure>;
 
   private:
     template <ServiceType, typename, typename, typename, typename>
@@ -106,7 +106,7 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseHeader>
 inline auto Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::receive()
-    -> iox2::legacy::expected<
+    -> container::Expected<
         container::Optional<ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>>,
         ReceiveError> {
     iox2_active_request_h active_request_handle {};
@@ -116,16 +116,15 @@ inline auto Server<Service, RequestPayload, RequestHeader, ResponsePayload, Resp
         if (active_request_handle != nullptr) {
             ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader> active_request(
                 active_request_handle);
-            return iox2::legacy::ok(
-                container::Optional<
-                    ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>>(
-                    std::move(active_request)));
+            return container::Optional<
+                ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>>(
+                std::move(active_request));
         }
-        return iox2::legacy::ok(
-            container::Optional<ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>>(
-                iox2::container::nullopt));
+        return container::Optional<
+            ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>>(
+            iox2::container::nullopt);
     }
-    return iox2::legacy::err(iox2::bb::into<ReceiveError>(result));
+    return container::err(bb::into<ReceiveError>(result));
 }
 
 template <ServiceType Service,
@@ -158,15 +157,15 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseHeader>
 inline auto Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::has_requests() const
-    -> iox2::legacy::expected<bool, ConnectionFailure> {
+    -> container::Expected<bool, ConnectionFailure> {
     bool has_requests_result = false;
     auto result = iox2_server_has_requests(&m_handle, &has_requests_result);
 
     if (result == IOX2_OK) {
-        return iox2::legacy::ok(has_requests_result);
+        return has_requests_result;
     }
 
-    return iox2::legacy::err(iox2::bb::into<ConnectionFailure>(result));
+    return container::err(bb::into<ConnectionFailure>(result));
 }
 
 template <ServiceType Service,

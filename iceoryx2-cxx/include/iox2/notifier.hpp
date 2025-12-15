@@ -14,10 +14,10 @@
 #define IOX2_NOTIFIER_HPP
 
 #include "iox2/bb/duration.hpp"
+#include "iox2/container/expected.hpp"
 #include "iox2/container/optional.hpp"
 #include "iox2/event_id.hpp"
 #include "iox2/internal/iceoryx2.hpp"
-#include "iox2/legacy/expected.hpp"
 #include "iox2/notifier_error.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/unique_port_id.hpp"
@@ -41,12 +41,12 @@ class Notifier {
     /// event id provided on creation.
     /// Returns on success the number of [`Listener`]s that were notified otherwise it returns
     /// [`NotifierNotifyError`].
-    auto notify() const -> iox2::legacy::expected<size_t, NotifierNotifyError>;
+    auto notify() const -> container::Expected<size_t, NotifierNotifyError>;
 
     /// Notifies all [`Listener`] connected to the service with a custom [`EventId`].
     /// Returns on success the number of [`Listener`]s that were notified otherwise it returns
     /// [`NotifierNotifyError`].
-    auto notify_with_custom_event_id(EventId event_id) const -> iox2::legacy::expected<size_t, NotifierNotifyError>;
+    auto notify_with_custom_event_id(EventId event_id) const -> container::Expected<size_t, NotifierNotifyError>;
 
     /// Returns the deadline of the corresponding [`Service`].
     auto deadline() const -> iox2::container::Optional<iox2::bb::Duration>;

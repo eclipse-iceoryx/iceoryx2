@@ -34,26 +34,26 @@ struct UniquePortIdTest : public ::testing::Test {
     static constexpr ServiceType TYPE = T::TYPE;
 
     UniquePortIdTest()
-        : node { NodeBuilder().create<TYPE>().expect("") }
+        : node { NodeBuilder().create<TYPE>().value() }
         , service_name { iox2_testing::generate_service_name() }
-        , event { node.service_builder(service_name).event().create().expect("") }
-        , pubsub { node.service_builder(service_name).template publish_subscribe<uint64_t>().create().expect("") }
+        , event { node.service_builder(service_name).event().create().value() }
+        , pubsub { node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value() }
         , blackboard { node.service_builder(service_name)
                            .template blackboard_creator<uint64_t>()
                            .template add_with_default<uint64_t>(0)
                            .create()
-                           .expect("") }
-        , listener_1 { event.listener_builder().create().expect("") }
-        , listener_2 { event.listener_builder().create().expect("") }
-        , notifier_1 { event.notifier_builder().create().expect("") }
-        , notifier_2 { event.notifier_builder().create().expect("") }
-        , publisher_1 { pubsub.publisher_builder().create().expect("") }
-        , publisher_2 { pubsub.publisher_builder().create().expect("") }
-        , subscriber_1 { pubsub.subscriber_builder().create().expect("") }
-        , subscriber_2 { pubsub.subscriber_builder().create().expect("") }
-        , reader_1 { blackboard.reader_builder().create().expect("") }
-        , reader_2 { blackboard.reader_builder().create().expect("") }
-        , writer_1 { blackboard.writer_builder().create().expect("") } {
+                           .value() }
+        , listener_1 { event.listener_builder().create().value() }
+        , listener_2 { event.listener_builder().create().value() }
+        , notifier_1 { event.notifier_builder().create().value() }
+        , notifier_2 { event.notifier_builder().create().value() }
+        , publisher_1 { pubsub.publisher_builder().create().value() }
+        , publisher_2 { pubsub.publisher_builder().create().value() }
+        , subscriber_1 { pubsub.subscriber_builder().create().value() }
+        , subscriber_2 { pubsub.subscriber_builder().create().value() }
+        , reader_1 { blackboard.reader_builder().create().value() }
+        , reader_2 { blackboard.reader_builder().create().value() }
+        , writer_1 { blackboard.writer_builder().create().value() } {
     }
 
     // NOLINTBEGIN(misc-non-private-member-variables-in-classes), come on, its a test
@@ -140,21 +140,21 @@ TYPED_TEST(UniquePortIdTest, unique_port_id_from_different_ports_is_not_equal) {
 }
 
 TYPED_TEST(UniquePortIdTest, unique_port_id_identifies_origin) {
-    auto sample_1 = this->publisher_1.loan().expect("");
-    auto sample_2 = this->publisher_2.loan().expect("");
+    auto sample_1 = this->publisher_1.loan().value();
+    auto sample_2 = this->publisher_2.loan().value();
 
     ASSERT_TRUE(this->publisher_1.id() == sample_1.header().publisher_id());
     ASSERT_TRUE(this->publisher_2.id() == sample_2.header().publisher_id());
 
-    send(std::move(sample_1)).expect("");
+    send(std::move(sample_1)).value();
 
-    auto recv_sample_1 = this->subscriber_1.receive().expect("").value();
+    auto recv_sample_1 = this->subscriber_1.receive().value().value();
     ASSERT_TRUE(this->publisher_1.id() == recv_sample_1.header().publisher_id());
     ASSERT_TRUE(this->publisher_1.id() == recv_sample_1.origin());
 
-    send(std::move(sample_2)).expect("");
+    send(std::move(sample_2)).value();
 
-    auto recv_sample_2 = this->subscriber_1.receive().expect("").value();
+    auto recv_sample_2 = this->subscriber_1.receive().value().value();
     ASSERT_TRUE(this->publisher_2.id() == recv_sample_2.header().publisher_id());
     ASSERT_TRUE(this->publisher_2.id() == recv_sample_2.origin());
 }

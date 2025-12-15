@@ -18,12 +18,12 @@ constexpr uint8_t MAX_VALUE = 255;
 auto main() -> int {
     using namespace iox2;
     set_log_level_from_env_or(LogLevel::Info);
-    auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
+    auto node = NodeBuilder().create<ServiceType::Ipc>().value();
 
-    auto service = node.service_builder(ServiceName::create("My/Funk/ServiceName").expect("valid service name"))
+    auto service = node.service_builder(ServiceName::create("My/Funk/ServiceName").value())
                        .request_response<iox::Slice<uint8_t>, iox::Slice<uint8_t>>()
                        .open_or_create()
-                       .expect("successful service creation/opening");
+                       .value();
 
     constexpr uint64_t INITIAL_SIZE_HINT = 16;
     auto server = service
@@ -37,7 +37,7 @@ auto main() -> int {
                       // requires more memory than available.
                       .allocation_strategy(AllocationStrategy::PowerOfTwo)
                       .create()
-                      .expect("successful server creation");
+                      .value();
 
     std::cout << "Server ready to receive requests!" << std::endl;
 
@@ -45,18 +45,18 @@ auto main() -> int {
 
     while (node.wait(CYCLE_TIME).has_value()) {
         while (true) {
-            auto active_request = server.receive().expect("receive successful");
+            auto active_request = server.receive().value();
             if (active_request.has_value()) {
                 std::cout << "received request with " << active_request->payload().number_of_bytes() << " bytes ..."
                           << std::endl;
 
                 uint64_t required_memory_size = std::min(1000000U, counter * counter); // NOLINT
-                auto response = active_request->loan_slice_uninit(required_memory_size).expect("loan successful");
+                auto response = active_request->loan_slice_uninit(required_memory_size).value();
                 auto initialized_response = response.write_from_fn(
                     [&](auto byte_idx) { return static_cast<uint8_t>((byte_idx + counter) % MAX_VALUE); }); // NOLINT
                 std::cout << "send response with " << initialized_response.payload().number_of_bytes() << " bytes"
                           << std::endl;
-                send(std::move(initialized_response)).expect("send successful");
+                send(std::move(initialized_response)).value();
             } else {
                 break;
             }

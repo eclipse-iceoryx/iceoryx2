@@ -27,13 +27,10 @@ void find_and_cleanup_dead_nodes();
 
 auto main() -> int {
     set_log_level_from_env_or(LogLevel::Info);
-    auto service_name_1 = ServiceName::create("service_1").expect("");
-    auto service_name_2 = ServiceName::create("service_2").expect("");
+    auto service_name_1 = ServiceName::create("service_1").value();
+    auto service_name_2 = ServiceName::create("service_2").value();
 
-    auto node = NodeBuilder()
-                    .name(NodeName::create("central daemon").expect(""))
-                    .create<ServiceType::Ipc>()
-                    .expect("successful node creation");
+    auto node = NodeBuilder().name(NodeName::create("central daemon").value()).create<ServiceType::Ipc>().value();
 
     // The central daemon is responsible to create all services before hand and the other processes
     // just open the communication resources and start communicating.
@@ -42,7 +39,7 @@ auto main() -> int {
                                 // We use here open_or_create so that, in case of a crash of the central daemon, it can
                                 // be restarted.
                                 .open_or_create()
-                                .expect("successful service creation/opening");
+                                .value();
 
     auto service_event_1 = node.service_builder(service_name_1)
                                .event()
@@ -61,12 +58,9 @@ auto main() -> int {
                                // detects a dead node and cleaned up all of its stale resources succesfully.
                                .notifier_dead_event(iox2::bb::into<EventId>(PubSubEvent::ProcessDied))
                                .open_or_create()
-                               .expect("successful service creation/opening");
+                               .value();
 
-    auto service_pubsub_2 = node.service_builder(service_name_2)
-                                .publish_subscribe<uint64_t>()
-                                .open_or_create()
-                                .expect("successful service creation/opening");
+    auto service_pubsub_2 = node.service_builder(service_name_2).publish_subscribe<uint64_t>().open_or_create().value();
 
     auto service_event_2 = node.service_builder(service_name_2)
                                .event()
@@ -75,9 +69,9 @@ auto main() -> int {
                                .notifier_dropped_event(iox2::bb::into<EventId>(PubSubEvent::PublisherDisconnected))
                                .notifier_dead_event(iox2::bb::into<EventId>(PubSubEvent::ProcessDied))
                                .open_or_create()
-                               .expect("successful service creation/opening");
+                               .value();
 
-    auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().expect("");
+    auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().value();
     auto cycle_guard = waitset.attach_interval(CYCLE_TIME);
 
     std::cout << "Central daemon up and running." << std::endl;
@@ -92,7 +86,7 @@ auto main() -> int {
             find_and_cleanup_dead_nodes();
             return CallbackProgression::Continue;
         })
-        .expect("");
+        .value();
 
     std::cout << "exit" << std::endl;
 
@@ -108,9 +102,9 @@ void find_and_cleanup_dead_nodes() {
                 std::cout << view.details().value().name().to_string().c_str();
             }
             std::cout << std::endl;
-            view.remove_stale_resources().expect("");
+            IOX2_DISCARD_RESULT(view.remove_stale_resources().value());
         });
         return CallbackProgression::Continue;
-    }).expect("");
+    }).value();
 }
 } // namespace

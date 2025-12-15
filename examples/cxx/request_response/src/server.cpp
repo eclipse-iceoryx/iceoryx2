@@ -18,14 +18,14 @@ constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_millis(100);
 auto main() -> int {
     using namespace iox2;
     set_log_level_from_env_or(LogLevel::Info);
-    auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
+    auto node = NodeBuilder().create<ServiceType::Ipc>().value();
 
-    auto service = node.service_builder(ServiceName::create("My/Funk/ServiceName").expect("valid service name"))
+    auto service = node.service_builder(ServiceName::create("My/Funk/ServiceName").value())
                        .request_response<uint64_t, TransmissionData>()
                        .open_or_create()
-                       .expect("successful service creation/opening");
+                       .value();
 
-    auto server = service.server_builder().create().expect("successful server creation");
+    auto server = service.server_builder().create().value();
 
     std::cout << "Server ready to receive requests!" << std::endl;
 
@@ -33,22 +33,22 @@ auto main() -> int {
 
     while (node.wait(CYCLE_TIME).has_value()) {
         while (true) {
-            auto active_request = server.receive().expect("receive successful");
+            auto active_request = server.receive().value();
             if (active_request.has_value()) {
                 std::cout << "received request: " << active_request->payload() << std::endl;
 
                 auto response = TransmissionData { 5 + counter, 6 * counter, 7.77 }; // NOLINT
                 std::cout << "send response: " << response << std::endl;
                 // send first response by using the slower, non-zero-copy API
-                active_request->send_copy(response).expect("send successful");
+                active_request->send_copy(response).value();
 
                 // use zero copy API, send out some responses to demonstrate the streaming API
                 for (auto iter = 0; iter < static_cast<int32_t>(active_request->payload()) % 2; iter++) {
-                    auto response = active_request->loan_uninit().expect("loan successful");
+                    auto response = active_request->loan_uninit().value();
                     auto initialized_response = response.write_payload(
                         TransmissionData { counter * (iter + 1), counter + iter, counter * 0.1234 }); // NOLINT
                     std::cout << "send response: " << initialized_response.payload() << std::endl;
-                    send(std::move(initialized_response)).expect("send successful");
+                    send(std::move(initialized_response)).value();
                 }
             } else {
                 break;

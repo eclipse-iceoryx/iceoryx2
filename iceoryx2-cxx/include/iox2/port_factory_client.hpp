@@ -16,8 +16,8 @@
 #include "iox/builder_addendum.hpp"
 #include "iox2/client.hpp"
 #include "iox2/client_error.hpp"
+#include "iox2/container/expected.hpp"
 #include "iox2/container/optional.hpp"
-#include "iox2/legacy/expected.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/unable_to_deliver_strategy.hpp"
 
@@ -59,7 +59,7 @@ class PortFactoryClient {
     auto allocation_strategy(AllocationStrategy value) && -> PortFactoryClient&&;
 
     /// Creates a new [`Client`] or returns a [`ClientCreateError`] on failure.
-    auto create() && -> iox2::legacy::expected<
+    auto create() && -> container::Expected<
         Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         ClientCreateError>;
 
@@ -105,7 +105,7 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseUserHeader>
 inline auto PortFactoryClient<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
-    create() && -> iox2::legacy::expected<
+    create() && -> container::Expected<
         Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         ClientCreateError> {
     if (m_unable_to_deliver_strategy.has_value()) {
@@ -127,11 +127,10 @@ inline auto PortFactoryClient<Service, RequestPayload, RequestUserHeader, Respon
     auto result = iox2_port_factory_client_builder_create(m_handle, nullptr, &client_handle);
 
     if (result == IOX2_OK) {
-        return iox2::legacy::ok(
-            Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(client_handle));
+        return Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(client_handle);
     }
 
-    return iox2::legacy::err(iox2::bb::into<ClientCreateError>(result));
+    return container::err(bb::into<ClientCreateError>(result));
 }
 
 template <ServiceType Service,

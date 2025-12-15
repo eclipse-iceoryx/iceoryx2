@@ -22,20 +22,20 @@ constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_secs(1);
 auto main() -> int {
     using namespace iox2;
     set_log_level_from_env_or(LogLevel::Info);
-    auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
+    auto node = NodeBuilder().create<ServiceType::Ipc>().value();
 
-    auto service = node.service_builder(ServiceName::create("CrossLanguageComplexTypes").expect("valid service name"))
+    auto service = node.service_builder(ServiceName::create("CrossLanguageComplexTypes").value())
                        .publish_subscribe<ComplexType>()
                        .open_or_create()
-                       .expect("successful service creation/opening");
+                       .value();
 
-    auto publisher = service.publisher_builder().create().expect("successful publisher creation");
+    auto publisher = service.publisher_builder().create().value();
 
     auto counter = 0;
     while (node.wait(CYCLE_TIME).has_value()) {
         counter += 1;
 
-        auto sample = publisher.loan_uninit().expect("acquire sample");
+        auto sample = publisher.loan_uninit().value();
         new (&sample.payload_mut()) ComplexType {};
 
         auto& payload = sample.payload_mut();
@@ -50,7 +50,7 @@ auto main() -> int {
         payload.some_matrix.unchecked_access()[2].unchecked_access()[5] = counter * 1.2123; //NOLINT
 
         auto initialized_sample = assume_init(std::move(sample));
-        send(std::move(initialized_sample)).expect("send successful");
+        send(std::move(initialized_sample)).value();
 
         std::cout << "Send sample " << counter << "..." << std::endl;
     }

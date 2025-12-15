@@ -78,7 +78,7 @@ TEST(Layout, create_with_invalid_alignment_fails) {
 
     auto sut = Layout::create(SIZE, ALIGN_NOT_POWER_OF_TWO);
 
-    ASSERT_TRUE(sut.has_error());
+    ASSERT_FALSE(sut.has_value());
     ASSERT_EQ(sut.error(), LayoutCreationError::InvalidAlignment);
 }
 } // namespace

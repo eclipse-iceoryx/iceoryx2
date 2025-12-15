@@ -17,31 +17,30 @@
 auto main() -> int {
     using namespace iox2;
     set_log_level_from_env_or(LogLevel::Info);
-    auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
+    auto node = NodeBuilder().create<ServiceType::Ipc>().value();
 
     auto attribute_verifier = AttributeVerifier();
-    attribute_verifier.require("camera_resolution", "3840x2160").expect("");
-    auto incompatible_service =
-        node.service_builder(ServiceName::create("Service/With/Properties").expect("valid service name"))
-            .publish_subscribe<uint64_t>()
-            .open_with_attributes(
-                // the opening of the service will fail since the
-                // `camera_resolution` attribute is `1920x1080` and not
-                // `3840x2160`
-                attribute_verifier);
-    if (incompatible_service.has_error()) {
+    attribute_verifier.require("camera_resolution", "3840x2160").value();
+    auto incompatible_service = node.service_builder(ServiceName::create("Service/With/Properties").value())
+                                    .publish_subscribe<uint64_t>()
+                                    .open_with_attributes(
+                                        // the opening of the service will fail since the
+                                        // `camera_resolution` attribute is `1920x1080` and not
+                                        // `3840x2160`
+                                        attribute_verifier);
+    if (!incompatible_service.has_value()) {
         std::cout << "camera_resolution: 3840x2160 -> not available" << std::endl;
     }
 
     attribute_verifier = AttributeVerifier();
-    attribute_verifier.require_key("camera_type").expect("");
-    incompatible_service = node.service_builder(ServiceName::create("My/Funk/ServiceName").expect("valid service name"))
+    attribute_verifier.require_key("camera_type").value();
+    incompatible_service = node.service_builder(ServiceName::create("My/Funk/ServiceName").value())
                                .publish_subscribe<uint64_t>()
                                .open_with_attributes(
                                    // the opening of the service will fail since the key is not
                                    // defined.
                                    attribute_verifier);
-    if (incompatible_service.has_error()) {
+    if (!incompatible_service.has_value()) {
         std::cout << "camera_type -> not available" << std::endl;
     }
 

@@ -21,15 +21,15 @@ using namespace iox2;
 
 auto main() -> int {
     set_log_level_from_env_or(LogLevel::Info);
-    auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
+    auto node = NodeBuilder().create<ServiceType::Ipc>().value();
 
-    auto subscriber = CustomSubscriber::create(node, ServiceName::create("My/Funk/ServiceName").expect(""));
+    auto subscriber = CustomSubscriber::create(node, ServiceName::create("My/Funk/ServiceName").value());
 
-    auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().expect("");
+    auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().value();
 
     // The subscriber is attached as a deadline, meaning that we expect some activity
     // latest after the deadline has passed.
-    auto subscriber_guard = waitset.attach_deadline(subscriber, DEADLINE).expect("");
+    auto subscriber_guard = waitset.attach_deadline(subscriber, DEADLINE).value();
 
     auto on_event = [&](WaitSetAttachmentId<ServiceType::Ipc> attachment_id) -> auto {
         // If we have received a new event on the subscriber we handle it.
@@ -44,7 +44,7 @@ auto main() -> int {
         return CallbackProgression::Continue;
     };
 
-    waitset.wait_and_process(on_event).expect("");
+    waitset.wait_and_process(on_event).value();
 
     std::cout << "exit" << std::endl;
 

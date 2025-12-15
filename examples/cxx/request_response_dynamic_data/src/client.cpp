@@ -18,12 +18,12 @@ constexpr uint8_t MAX_VALUE = 255;
 auto main() -> int {
     using namespace iox2;
     set_log_level_from_env_or(LogLevel::Info);
-    auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
+    auto node = NodeBuilder().create<ServiceType::Ipc>().value();
 
-    auto service = node.service_builder(ServiceName::create("My/Funk/ServiceName").expect("valid service name"))
+    auto service = node.service_builder(ServiceName::create("My/Funk/ServiceName").value())
                        .request_response<iox::Slice<uint8_t>, iox::Slice<uint8_t>>()
                        .open_or_create()
-                       .expect("successful service creation/opening");
+                       .value();
 
     constexpr uint64_t INITIAL_SIZE_HINT = 16;
     auto client = service
@@ -37,16 +37,16 @@ auto main() -> int {
                       // memory than available.
                       .allocation_strategy(AllocationStrategy::PowerOfTwo)
                       .create()
-                      .expect("successful client creation");
+                      .value();
 
     auto counter = 1U;
 
     while (true) {
         auto required_memory_size = std::min(1000000U, counter * counter); // NOLINT
-        auto request = client.loan_slice_uninit(required_memory_size).expect("loan successful");
+        auto request = client.loan_slice_uninit(required_memory_size).value();
         auto initialized_request = request.write_from_fn(
             [&](auto byte_idx) { return static_cast<uint8_t>((byte_idx + counter) % MAX_VALUE); }); // NOLINT
-        auto pending_response = send(std::move(initialized_request)).expect("send successful");
+        auto pending_response = send(std::move(initialized_request)).value();
         std::cout << "send request " << counter << " with " << required_memory_size << " bytes ..." << std::endl;
 
         if (!node.wait(CYCLE_TIME).has_value()) {
@@ -55,7 +55,7 @@ auto main() -> int {
 
         // acquire all responses to our request from our buffer that were sent by the servers
         while (true) {
-            auto response = pending_response.receive().expect("receive successful");
+            auto response = pending_response.receive().value();
             if (response.has_value()) {
                 std::cout << "received response with " << response->payload().number_of_bytes() << " bytes"
                           << std::endl;

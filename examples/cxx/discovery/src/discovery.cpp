@@ -21,7 +21,7 @@ auto main() -> int {
     Service<ServiceType::Ipc>::list(Config::global_config(), [](auto service) -> auto {
         std::cout << service.static_details << std::endl;
         return CallbackProgression::Continue;
-    }).expect("discover all available services");
+    }).value();
 
     return 0;
 }

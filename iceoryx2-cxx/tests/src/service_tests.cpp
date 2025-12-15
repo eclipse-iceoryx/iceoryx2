@@ -34,43 +34,43 @@ TYPED_TEST(ServiceTest, does_exist_works) {
 
     ASSERT_FALSE(
         Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::PublishSubscribe)
-            .expect(""));
+            .value());
     ASSERT_FALSE(
-        Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::Event).expect(""));
+        Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::Event).value());
     ASSERT_FALSE(
         Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::RequestResponse)
-            .expect(""));
-    ASSERT_FALSE(Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::Blackboard)
-                     .expect(""));
+            .value());
+    ASSERT_FALSE(
+        Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::Blackboard).value());
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
 
     {
-        auto sut = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().expect("");
+        auto sut = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value();
 
         ASSERT_TRUE(
             Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::PublishSubscribe)
-                .expect(""));
-        ASSERT_FALSE(Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::Event)
-                         .expect(""));
+                .value());
+        ASSERT_FALSE(
+            Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::Event).value());
         ASSERT_FALSE(
             Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::RequestResponse)
-                .expect(""));
+                .value());
         ASSERT_FALSE(
             Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::Blackboard)
-                .expect(""));
+                .value());
     }
 
     ASSERT_FALSE(
         Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::PublishSubscribe)
-            .expect(""));
+            .value());
     ASSERT_FALSE(
-        Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::Event).expect(""));
+        Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::Event).value());
     ASSERT_FALSE(
         Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::RequestResponse)
-            .expect(""));
-    ASSERT_FALSE(Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::Blackboard)
-                     .expect(""));
+            .value());
+    ASSERT_FALSE(
+        Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::Blackboard).value());
 }
 
 TYPED_TEST(ServiceTest, list_works) {
@@ -81,17 +81,16 @@ TYPED_TEST(ServiceTest, list_works) {
     const auto service_name_3 = iox2_testing::generate_service_name();
     const auto service_name_4 = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
 
-    auto sut_1 = node.service_builder(service_name_1).template publish_subscribe<uint64_t>().create().expect("");
-    auto sut_2 = node.service_builder(service_name_2).event().create().expect("");
-    auto sut_3 =
-        node.service_builder(service_name_3).template request_response<uint64_t, uint64_t>().create().expect("");
+    auto sut_1 = node.service_builder(service_name_1).template publish_subscribe<uint64_t>().create().value();
+    auto sut_2 = node.service_builder(service_name_2).event().create().value();
+    auto sut_3 = node.service_builder(service_name_3).template request_response<uint64_t, uint64_t>().create().value();
     auto sut_4 = node.service_builder(service_name_4)
                      .template blackboard_creator<uint64_t>()
                      .template add_with_default<uint64_t>(0)
                      .create()
-                     .expect("");
+                     .value();
 
     //NOLINTBEGIN(readability-function-cognitive-complexity), false positive caused by EXPECT_THAT
     auto verify = [&](auto details) -> CallbackProgression {
@@ -137,25 +136,25 @@ TYPED_TEST(ServiceTest, list_works_with_attributes) {
     const auto service_name_3 = iox2_testing::generate_service_name();
     const auto service_name_4 = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
 
     auto attribute_specifier = AttributeSpecifier();
-    attribute_specifier.define(key_1, value_1).expect("");
-    attribute_specifier.define(key_2, value_2).expect("");
+    attribute_specifier.define(key_1, value_1).value();
+    attribute_specifier.define(key_2, value_2).value();
     auto sut_1 = node.service_builder(service_name_1)
                      .template publish_subscribe<uint64_t>()
                      .create_with_attributes(attribute_specifier)
-                     .expect("");
-    auto sut_2 = node.service_builder(service_name_2).event().create().expect("");
+                     .value();
+    auto sut_2 = node.service_builder(service_name_2).event().create().value();
     auto sut_3 = node.service_builder(service_name_3)
                      .template request_response<uint64_t, uint64_t>()
                      .create_with_attributes(attribute_specifier)
-                     .expect("");
+                     .value();
     auto sut_4 = node.service_builder(service_name_4)
                      .template blackboard_creator<uint64_t>()
                      .template add_with_default<uint64_t>(0)
                      .create_with_attributes(attribute_specifier)
-                     .expect("");
+                     .value();
 
     auto counter = 0;
     //NOLINTBEGIN(readability-function-cognitive-complexity), false positive caused by EXPECT_THAT
@@ -249,15 +248,15 @@ TYPED_TEST(ServiceTest, details_works) {
     const auto service_name_1 = iox2_testing::generate_service_name();
     const auto service_name_2 = iox2_testing::generate_service_name();
 
-    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
 
     auto attribute_specifier = AttributeSpecifier();
-    attribute_specifier.define(key_1, value_1).expect("");
-    attribute_specifier.define(key_2, value_2).expect("");
+    attribute_specifier.define(key_1, value_1).value();
+    attribute_specifier.define(key_2, value_2).value();
     auto sut = node.service_builder(service_name_1)
                    .template publish_subscribe<uint64_t>()
                    .create_with_attributes(attribute_specifier)
-                   .expect("");
+                   .value();
 
     auto result =
         Service<SERVICE_TYPE>::details(service_name_1, Config::global_config(), MessagingPattern::PublishSubscribe);

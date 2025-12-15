@@ -23,9 +23,9 @@ constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_secs(1);
 auto main() -> int {
     using namespace iox2;
     set_log_level_from_env_or(LogLevel::Info);
-    auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
+    auto node = NodeBuilder().create<ServiceType::Ipc>().value();
 
-    auto service = node.service_builder(ServiceName::create("CrossLanguageContainer").expect("valid service name"))
+    auto service = node.service_builder(ServiceName::create("CrossLanguageContainer").value())
                        .publish_subscribe<iox2::container::StaticVector<uint64_t, 32>>() // NOLINT
                        .user_header<iox2::container::StaticString<64>>()                 // NOLINT
                        // add some QoS, disable safe overflow and the subscriber shall get the
@@ -34,22 +34,22 @@ auto main() -> int {
                        .subscriber_max_buffer_size(5) // NOLINT
                        .enable_safe_overflow(false)
                        .open_or_create()
-                       .expect("successful service creation/opening");
+                       .value();
 
-    auto publisher = service.publisher_builder().create().expect("successful publisher creation");
+    auto publisher = service.publisher_builder().create().value();
 
     uint64_t counter = 0;
     while (node.wait(CYCLE_TIME).has_value()) {
         counter += 1;
 
-        auto sample = publisher.loan_uninit().expect("acquire sample");
+        auto sample = publisher.loan_uninit().value();
         sample.user_header_mut() =
             *container::StaticString<64>::from_utf8("Why are Kermit and Miss Piggy no longer together?"); // NOLINT
 
         auto initialized_sample =
             sample.write_payload(*container::StaticVector<uint64_t, 32>::from_value(2, counter)); // NOLINT
 
-        send(std::move(initialized_sample)).expect("send successful");
+        send(std::move(initialized_sample)).value();
 
         std::cout << "Send sample " << counter << "..." << std::endl;
     }

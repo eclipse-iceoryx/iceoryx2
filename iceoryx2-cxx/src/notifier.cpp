@@ -48,29 +48,29 @@ auto Notifier<S>::id() const -> UniqueNotifierId {
 }
 
 template <ServiceType S>
-auto Notifier<S>::notify() const -> iox2::legacy::expected<size_t, NotifierNotifyError> {
+auto Notifier<S>::notify() const -> container::Expected<size_t, NotifierNotifyError> {
     size_t number_of_notified_listeners = 0;
     auto result = iox2_notifier_notify(&m_handle, &number_of_notified_listeners);
 
     if (result == IOX2_OK) {
-        return iox2::legacy::ok(number_of_notified_listeners);
+        return number_of_notified_listeners;
     }
 
-    return iox2::legacy::err(iox2::bb::into<NotifierNotifyError>(result));
+    return container::err(bb::into<NotifierNotifyError>(result));
 }
 
 template <ServiceType S>
 auto Notifier<S>::notify_with_custom_event_id(EventId event_id) const
-    -> iox2::legacy::expected<size_t, NotifierNotifyError> {
+    -> container::Expected<size_t, NotifierNotifyError> {
     size_t number_of_notified_listeners = 0;
     auto result =
         iox2_notifier_notify_with_custom_event_id(&m_handle, &event_id.m_value, &number_of_notified_listeners);
 
     if (result == IOX2_OK) {
-        return iox2::legacy::ok(number_of_notified_listeners);
+        return number_of_notified_listeners;
     }
 
-    return iox2::legacy::err(iox2::bb::into<NotifierNotifyError>(result));
+    return container::err(bb::into<NotifierNotifyError>(result));
 }
 
 template <ServiceType S>

@@ -30,31 +30,28 @@ void handle_incoming_events(Listener<ServiceType::Ipc>& listener,
 
 auto main() -> int {
     set_log_level_from_env_or(LogLevel::Info);
-    auto service_name_1 = ServiceName::create("service_1").expect("");
-    auto service_name_2 = ServiceName::create("service_2").expect("");
+    auto service_name_1 = ServiceName::create("service_1").value();
+    auto service_name_2 = ServiceName::create("service_2").value();
 
-    auto node = NodeBuilder()
-                    .name(NodeName::create("subscruber").expect(""))
-                    .create<ServiceType::Ipc>()
-                    .expect("successful node creation");
+    auto node = NodeBuilder().name(NodeName::create("subscruber").value()).create<ServiceType::Ipc>().value();
 
     // open a pubsub and an event service with the same name
     auto service_1 = open_service(node, service_name_1);
     auto service_2 = open_service(node, service_name_2);
 
-    auto subscriber_1 = service_1.pubsub.subscriber_builder().create().expect("");
-    auto subscriber_2 = service_2.pubsub.subscriber_builder().create().expect("");
-    auto listener_1 = service_1.event.listener_builder().create().expect("");
-    auto listener_2 = service_2.event.listener_builder().create().expect("");
+    auto subscriber_1 = service_1.pubsub.subscriber_builder().create().value();
+    auto subscriber_2 = service_2.pubsub.subscriber_builder().create().value();
+    auto listener_1 = service_1.event.listener_builder().create().value();
+    auto listener_2 = service_2.event.listener_builder().create().value();
 
-    auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().expect("");
+    auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().value();
 
     // If the service has defined a deadline we will use it, otherwise
     // we expect that the listener receive a message sent event after at most CYCLE_TIME_X
     auto deadline_1 = listener_1.deadline().value_or(CYCLE_TIME_1);
     auto deadline_2 = listener_2.deadline().value_or(CYCLE_TIME_2);
-    auto listener_1_guard = waitset.attach_deadline(listener_1, deadline_1).expect("");
-    auto listener_2_guard = waitset.attach_deadline(listener_2, deadline_2).expect("");
+    auto listener_1_guard = waitset.attach_deadline(listener_1, deadline_1).value();
+    auto listener_2_guard = waitset.attach_deadline(listener_2, deadline_2).value();
 
     auto missed_deadline = [](const ServiceName& service_name, const iox2::bb::Duration& cycle_time) -> auto {
         std::cout << service_name.to_string().c_str() << ": voilated contract and did not send a message after "
@@ -88,7 +85,7 @@ auto main() -> int {
         return CallbackProgression::Continue;
     };
 
-    waitset.wait_and_process(on_event).expect("");
+    waitset.wait_and_process(on_event).value();
 
     std::cout << "exit" << std::endl;
 
@@ -116,7 +113,7 @@ void handle_incoming_events(Listener<ServiceType::Ipc>& listener,
                 }
             }
         })
-        .expect("");
+        .value();
 }
 
 void find_and_cleanup_dead_nodes() {
@@ -127,9 +124,9 @@ void find_and_cleanup_dead_nodes() {
                 std::cout << view.details().value().name().to_string().c_str();
             }
             std::cout << std::endl;
-            view.remove_stale_resources().expect("");
+            IOX2_DISCARD_RESULT(view.remove_stale_resources().value());
         });
         return CallbackProgression::Continue;
-    }).expect("");
+    }).value();
 }
 } // namespace
