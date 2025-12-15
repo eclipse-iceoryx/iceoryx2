@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/attribute_verifier.hpp"
+#include "iox2/bb/expected.hpp"
 #include "iox2/container/static_vector.hpp"
 
 namespace iox2 {
@@ -45,22 +46,22 @@ auto AttributeVerifier::operator=(AttributeVerifier&& rhs) noexcept -> Attribute
 }
 
 auto AttributeVerifier::require(const Attribute::Key& key, const Attribute::Value& value)
-    -> container::Expected<void, AttributeDefinitionError> {
+    -> bb::Expected<void, AttributeDefinitionError> {
     auto result = iox2_attribute_verifier_require(&m_handle, key.c_str(), value.c_str());
     if (result == IOX2_OK) {
-        return { container::in_place };
+        return {};
     }
 
-    return container::err(bb::into<AttributeDefinitionError>(result));
+    return bb::err(bb::into<AttributeDefinitionError>(result));
 }
 
-auto AttributeVerifier::require_key(const Attribute::Key& key) -> container::Expected<void, AttributeDefinitionError> {
+auto AttributeVerifier::require_key(const Attribute::Key& key) -> bb::Expected<void, AttributeDefinitionError> {
     auto result = iox2_attribute_verifier_require_key(&m_handle, key.c_str());
     if (result == IOX2_OK) {
-        return { container::in_place };
+        return {};
     }
 
-    return container::err(bb::into<AttributeDefinitionError>(result));
+    return bb::err(bb::into<AttributeDefinitionError>(result));
 }
 
 auto AttributeVerifier::attributes() const -> AttributeSetView {
@@ -80,16 +81,15 @@ auto AttributeVerifier::keys() const -> iox2::container::StaticVector<Attribute:
     return attributes;
 }
 
-auto AttributeVerifier::verify_requirements(const AttributeSetView& rhs) const
-    -> container::Expected<void, Attribute::Key> {
+auto AttributeVerifier::verify_requirements(const AttributeSetView& rhs) const -> bb::Expected<void, Attribute::Key> {
     // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays, modernize-avoid-c-arrays) used as an uninitialized buffer
     char buffer[Attribute::Key::capacity()];
     if (iox2_attribute_verifier_verify_requirements(&m_handle, rhs.m_handle, &buffer[0], Attribute::Key::capacity())
         == IOX2_OK) {
-        return { container::in_place };
+        return {};
     }
 
-    return container::err(Attribute::Key(legacy::TruncateToCapacity, &buffer[0]));
+    return bb::err(Attribute::Key(legacy::TruncateToCapacity, &buffer[0]));
 }
 
 

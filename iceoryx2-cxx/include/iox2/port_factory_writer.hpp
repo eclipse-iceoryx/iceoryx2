@@ -13,7 +13,7 @@
 #ifndef IOX2_PORTFACTORY_WRITER_HPP
 #define IOX2_PORTFACTORY_WRITER_HPP
 
-#include "iox2/container/expected.hpp"
+#include "iox2/bb/expected.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/writer.hpp"
 #include "iox2/writer_error.hpp"
@@ -32,7 +32,7 @@ class PortFactoryWriter {
     auto operator=(const PortFactoryWriter&) -> PortFactoryWriter& = delete;
 
     /// Creates a new [`Writer`] port or returns a [`WriterCreateError`] on failure.
-    auto create() && -> container::Expected<Writer<S, KeyType>, WriterCreateError>;
+    auto create() && -> bb::Expected<Writer<S, KeyType>, WriterCreateError>;
 
   private:
     template <ServiceType, typename>
@@ -49,7 +49,7 @@ inline PortFactoryWriter<S, KeyType>::PortFactoryWriter(iox2_port_factory_writer
 }
 
 template <ServiceType S, typename KeyType>
-inline auto PortFactoryWriter<S, KeyType>::create() && -> container::Expected<Writer<S, KeyType>, WriterCreateError> {
+inline auto PortFactoryWriter<S, KeyType>::create() && -> bb::Expected<Writer<S, KeyType>, WriterCreateError> {
     iox2_writer_h writer_handle {};
     auto result = iox2_port_factory_writer_builder_create(m_handle, nullptr, &writer_handle);
 
@@ -57,7 +57,7 @@ inline auto PortFactoryWriter<S, KeyType>::create() && -> container::Expected<Wr
         return Writer<S, KeyType>(writer_handle);
     }
 
-    return container::err(bb::into<WriterCreateError>(result));
+    return bb::err(bb::into<WriterCreateError>(result));
 }
 } // namespace iox2
 

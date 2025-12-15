@@ -81,15 +81,15 @@ void ServiceName::drop() noexcept {
     }
 }
 
-auto ServiceName::create(const char* value) -> iox2::container::Expected<ServiceName, bb::SemanticStringError> {
+auto ServiceName::create(const char* value) -> iox2::bb::Expected<ServiceName, bb::SemanticStringError> {
     return ServiceName::create_impl(value, strnlen(value, IOX2_SERVICE_NAME_LENGTH + 1));
 }
 
 auto ServiceName::create_impl(const char* value, const size_t value_len)
-    -> container::Expected<ServiceName, bb::SemanticStringError> {
+    -> bb::Expected<ServiceName, bb::SemanticStringError> {
     iox2_service_name_h handle {};
     if (value_len > IOX2_SERVICE_NAME_LENGTH) {
-        return container::err(bb::SemanticStringError::ExceedsMaximumLength);
+        return bb::err(bb::SemanticStringError::ExceedsMaximumLength);
     }
 
     const auto ret_val = iox2_service_name_new(nullptr, value, value_len, &handle);
@@ -98,7 +98,7 @@ auto ServiceName::create_impl(const char* value, const size_t value_len)
         return ServiceName { handle };
     }
 
-    return container::err(bb::into<bb::SemanticStringError>(ret_val));
+    return bb::err(bb::into<bb::SemanticStringError>(ret_val));
 }
 
 auto ServiceName::to_string() const -> iox2::legacy::string<IOX2_SERVICE_NAME_LENGTH> {

@@ -81,14 +81,14 @@ Config::Config(iox2_config_h handle)
     : m_handle { handle } {
 }
 
-auto Config::from_file(const iox2::bb::FilePath& file) -> iox2::container::Expected<Config, ConfigCreationError> {
+auto Config::from_file(const iox2::bb::FilePath& file) -> iox2::bb::Expected<Config, ConfigCreationError> {
     iox2_config_h handle = nullptr;
     auto result = iox2_config_from_file(nullptr, &handle, file.as_string().c_str());
     if (result == IOX2_OK) {
         return Config(handle);
     }
 
-    return iox2::container::err(iox2::bb::into<ConfigCreationError>(result));
+    return iox2::bb::err(iox2::bb::into<ConfigCreationError>(result));
 }
 
 auto Config::global() -> config::Global {
@@ -210,16 +210,16 @@ void Event::set_event_id_max_value(size_t value) && {
     iox2_config_defaults_event_set_event_id_max_value(m_config, value);
 }
 
-auto Event::notifier_created_event() && -> iox2::container::Optional<size_t> {
+auto Event::notifier_created_event() && -> bb::Optional<size_t> {
     size_t value = 0;
     if (iox2_config_defaults_event_notifier_created_event(m_config, &value)) {
         return { value };
     }
 
-    return iox2::container::nullopt;
+    return bb::NULLOPT;
 }
 
-void Event::set_notifier_created_event(iox2::container::Optional<size_t> value) && {
+void Event::set_notifier_created_event(bb::Optional<size_t> value) && {
     if (value.has_value()) {
         iox2_config_defaults_event_set_notifier_created_event(m_config, &*value);
     } else {
@@ -227,16 +227,16 @@ void Event::set_notifier_created_event(iox2::container::Optional<size_t> value) 
     }
 }
 
-auto Event::notifier_dropped_event() && -> iox2::container::Optional<size_t> {
+auto Event::notifier_dropped_event() && -> bb::Optional<size_t> {
     size_t value = 0;
     if (iox2_config_defaults_event_notifier_dropped_event(m_config, &value)) {
         return { value };
     }
 
-    return iox2::container::nullopt;
+    return bb::NULLOPT;
 }
 
-void Event::set_notifier_dropped_event(iox2::container::Optional<size_t> value) && {
+void Event::set_notifier_dropped_event(bb::Optional<size_t> value) && {
     if (value.has_value()) {
         iox2_config_defaults_event_set_notifier_dropped_event(m_config, &*value);
     } else {
@@ -244,16 +244,16 @@ void Event::set_notifier_dropped_event(iox2::container::Optional<size_t> value) 
     }
 }
 
-auto Event::notifier_dead_event() && -> iox2::container::Optional<size_t> {
+auto Event::notifier_dead_event() && -> bb::Optional<size_t> {
     size_t value = 0;
     if (iox2_config_defaults_event_notifier_dead_event(m_config, &value)) {
         return { value };
     }
 
-    return iox2::container::nullopt;
+    return bb::NULLOPT;
 }
 
-void Event::set_notifier_dead_event(iox2::container::Optional<size_t> value) && {
+void Event::set_notifier_dead_event(bb::Optional<size_t> value) && {
     if (value.has_value()) {
         iox2_config_defaults_event_set_notifier_dead_event(m_config, &*value);
     } else {
@@ -261,17 +261,17 @@ void Event::set_notifier_dead_event(iox2::container::Optional<size_t> value) && 
     }
 }
 
-auto Event::deadline() && -> iox2::container::Optional<iox2::bb::Duration> {
+auto Event::deadline() && -> bb::Optional<iox2::bb::Duration> {
     uint64_t seconds = 0;
     uint32_t nanoseconds = 0;
     if (iox2_config_defaults_event_deadline(m_config, &seconds, &nanoseconds)) {
         return { iox2::bb::Duration::from_secs(seconds) + iox2::bb::Duration::from_nanos(nanoseconds) };
     }
 
-    return iox2::container::nullopt;
+    return bb::NULLOPT;
 }
 
-void Event::set_deadline(iox2::container::Optional<iox2::bb::Duration> deadline) && {
+void Event::set_deadline(bb::Optional<iox2::bb::Duration> deadline) && {
     if (deadline.has_value()) {
         auto duration = deadline.value();
         const auto secs = duration.as_secs();

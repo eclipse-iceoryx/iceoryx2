@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/container/expected.hpp"
+#include "iox2/bb/detail/expected.hpp"
 
 #include "testing/observable.hpp"
 
@@ -19,7 +19,7 @@
 
 namespace {
 using namespace ::testing;
-using namespace ::iox2::container;
+using namespace ::iox2::bb::detail;
 
 using iox2::container::testing::Observable;
 
@@ -63,7 +63,7 @@ TEST(ExpectedFixture, unexpected_can_be_constructed_with_error_rvalue) {
 TEST(ExpectedFixture, unexpected_can_be_constructed_with_error_in_place) {
     Observable::s_counter.was_initialized = 0;
 
-    const Unexpected<Observable> sut(in_place, Observable {});
+    const Unexpected<Observable> sut(IN_PLACE, Observable {});
 
     EXPECT_EQ(Observable::s_counter.was_initialized, 1);
 }
@@ -101,21 +101,16 @@ TEST(Expected, error_of_const_rvalue_unexpected_has_correct_error) {
 
 // BEGIN Expected ctors
 
-TEST(ExpectedFixture, expected_can_be_constructed_with_err_free_function_from_lvalue) {
-    Observable::s_counter.was_initialized = 0;
-    auto observable = Observable {};
-
-    const Expected<Value, Observable> sut = err(observable);
-
-    EXPECT_EQ(Observable::s_counter.was_initialized, 1);
-}
-
-TEST(ExpectedFixture, expected_can_be_constructed_with_err_free_function_from_rvalue) {
+TEST(ExpectedFixture, expected_can_be_constructed_with_default_value) {
     Observable::s_counter.was_initialized = 0;
 
-    const Expected<Value, Observable> sut = err(Observable {});
+    const Expected<Observable, Error> sut1 {};
 
     EXPECT_EQ(Observable::s_counter.was_initialized, 1);
+    EXPECT_TRUE(sut1.has_value());
+
+    const Expected<void, Error> sut2 {};
+    EXPECT_TRUE(sut2.has_value());
 }
 
 TEST(ExpectedFixture, expected_can_be_constructed_with_value) {
@@ -155,13 +150,13 @@ TEST(ExpectedFixture, expected_can_be_constructed_with_unexpected_rvalue) {
 TEST(ExpectedFixture, expected_can_be_constructed_with_value_in_place) {
     Observable::s_counter.was_initialized = 0;
 
-    const Expected<Observable, Error> sut(in_place, Observable {});
+    const Expected<Observable, Error> sut(IN_PLACE, Observable {});
 
     EXPECT_EQ(Observable::s_counter.was_initialized, 1);
 }
 
 TEST(Expected, expected_can_be_constructed_with_void_type) {
-    const Expected<void, Error> sut(in_place);
+    const Expected<void, Error> sut(IN_PLACE);
 
     ASSERT_TRUE(sut.has_value());
 }
@@ -169,13 +164,13 @@ TEST(Expected, expected_can_be_constructed_with_void_type) {
 TEST(ExpectedFixture, expected_can_be_constructed_with_error) {
     Observable::s_counter.was_initialized = 0;
 
-    const Expected<Value, Observable> sut(unexpect, Observable {});
+    const Expected<Value, Observable> sut(UNEXPECT, Observable {});
 
     EXPECT_EQ(Observable::s_counter.was_initialized, 1);
 }
 
 TEST(ExpectedFixture, expected_can_be_copy_constructed_with_value_in_place) {
-    const Expected<Observable, Error> val(in_place, Observable {});
+    const Expected<Observable, Error> val(IN_PLACE, Observable {});
 
     Observable::s_counter.was_initialized = 0;
     Observable::s_counter.was_copy_constructed = 0;
@@ -190,7 +185,7 @@ TEST(ExpectedFixture, expected_can_be_copy_constructed_with_value_in_place) {
 }
 
 TEST(ExpectedFixture, expected_can_be_copy_constructed_with_error) {
-    const Expected<Value, Observable> err(unexpect, Observable {});
+    const Expected<Value, Observable> err(UNEXPECT, Observable {});
 
     Observable::s_counter.was_initialized = 0;
     Observable::s_counter.was_copy_constructed = 0;
@@ -205,7 +200,7 @@ TEST(ExpectedFixture, expected_can_be_copy_constructed_with_error) {
 }
 
 TEST(ExpectedFixture, expected_can_be_move_constructed_with_value_in_place) {
-    Expected<Observable, Error> val(in_place, Observable {});
+    Expected<Observable, Error> val(IN_PLACE, Observable {});
 
     Observable::s_counter.was_initialized = 0;
     Observable::s_counter.was_copy_constructed = 0;
@@ -219,7 +214,7 @@ TEST(ExpectedFixture, expected_can_be_move_constructed_with_value_in_place) {
 }
 
 TEST(ExpectedFixture, expected_can_be_move_constructed_with_error) {
-    Expected<Value, Observable> err(unexpect, Observable {});
+    Expected<Value, Observable> err(UNEXPECT, Observable {});
 
     Observable::s_counter.was_initialized = 0;
     Observable::s_counter.was_copy_constructed = 0;
@@ -238,8 +233,8 @@ TEST(ExpectedFixture, expected_can_be_move_constructed_with_error) {
 // BEGIN Expected assignment operators
 
 TEST(ExpectedFixture, expected_can_be_copy_assigned_with_value) {
-    const Expected<Observable, Error> other(in_place, Observable {});
-    Expected<Observable, Error> sut(in_place, Observable {});
+    const Expected<Observable, Error> other(IN_PLACE, Observable {});
+    Expected<Observable, Error> sut(IN_PLACE, Observable {});
 
     Observable::s_counter.was_initialized = 0;
     Observable::s_counter.was_copy_assigned = 0;
@@ -253,8 +248,8 @@ TEST(ExpectedFixture, expected_can_be_copy_assigned_with_value) {
 }
 
 TEST(ExpectedFixture, expected_can_be_copy_assigned_with_error) {
-    const Expected<Value, Observable> other(unexpect, Observable {});
-    Expected<Value, Observable> sut(unexpect, Observable {});
+    const Expected<Value, Observable> other(UNEXPECT, Observable {});
+    Expected<Value, Observable> sut(UNEXPECT, Observable {});
 
     Observable::s_counter.was_initialized = 0;
     Observable::s_counter.was_copy_assigned = 0;
@@ -268,8 +263,8 @@ TEST(ExpectedFixture, expected_can_be_copy_assigned_with_error) {
 }
 
 TEST(ExpectedFixture, expected_can_be_move_assigned_with_value) {
-    Expected<Observable, Error> other(in_place, Observable {});
-    Expected<Observable, Error> sut(in_place, Observable {});
+    Expected<Observable, Error> other(IN_PLACE, Observable {});
+    Expected<Observable, Error> sut(IN_PLACE, Observable {});
 
     Observable::s_counter.was_initialized = 0;
     Observable::s_counter.was_copy_assigned = 0;
@@ -283,8 +278,8 @@ TEST(ExpectedFixture, expected_can_be_move_assigned_with_value) {
 }
 
 TEST(ExpectedFixture, expected_can_be_move_assigned_with_error) {
-    Expected<Value, Observable> other(unexpect, Observable {});
-    Expected<Value, Observable> sut(unexpect, Observable {});
+    Expected<Value, Observable> other(UNEXPECT, Observable {});
+    Expected<Value, Observable> sut(UNEXPECT, Observable {});
 
     Observable::s_counter.was_initialized = 0;
     Observable::s_counter.was_copy_assigned = 0;
@@ -303,7 +298,7 @@ TEST(ExpectedFixture, expected_can_be_move_assigned_with_error) {
 TEST(ExpectedFixture, expected_with_value_is_destructed) {
     Observable::s_counter.was_destructed = 0;
     {
-        const Expected<Observable, Error> sut(in_place, Observable {});
+        const Expected<Observable, Error> sut(IN_PLACE, Observable {});
         EXPECT_EQ(Observable::s_counter.was_destructed, 1);
         Observable::s_counter.was_destructed = 0;
     }
@@ -314,7 +309,7 @@ TEST(ExpectedFixture, expected_with_value_is_destructed) {
 TEST(ExpectedFixture, expected_with_error_is_destructed) {
     Observable::s_counter.was_destructed = 0;
     {
-        const Expected<Value, Observable> sut(unexpect, Observable {});
+        const Expected<Value, Observable> sut(UNEXPECT, Observable {});
         EXPECT_EQ(Observable::s_counter.was_destructed, 1);
         Observable::s_counter.was_destructed = 0;
     }
@@ -328,13 +323,13 @@ TEST(ExpectedFixture, expected_with_error_is_destructed) {
 // BEGIN Expected has_value
 
 TEST(ExpectedFixture, has_value_of_expected_with_value_is_true) {
-    const Expected<Observable, Error> sut(in_place, Observable {});
+    const Expected<Observable, Error> sut(IN_PLACE, Observable {});
 
     EXPECT_TRUE(sut.has_value());
 }
 
 TEST(ExpectedFixture, has_value_of_expected_with_error_is_false) {
-    const Expected<Value, Observable> sut(unexpect, Observable {});
+    const Expected<Value, Observable> sut(UNEXPECT, Observable {});
 
     EXPECT_FALSE(sut.has_value());
 }
@@ -345,13 +340,13 @@ TEST(ExpectedFixture, has_value_of_expected_with_error_is_false) {
 // BEGIN Expected operator bool
 
 TEST(ExpectedFixture, operator_bool_of_expected_with_value_is_true) {
-    const Expected<Observable, Error> sut(in_place, Observable {});
+    const Expected<Observable, Error> sut(IN_PLACE, Observable {});
 
     EXPECT_TRUE(sut.operator bool());
 }
 
 TEST(ExpectedFixture, operator_bool_of_expected_with_error_is_false) {
-    const Expected<Value, Observable> sut(unexpect, Observable {});
+    const Expected<Value, Observable> sut(UNEXPECT, Observable {});
 
     EXPECT_FALSE(sut.operator bool());
 }
@@ -362,7 +357,7 @@ TEST(ExpectedFixture, operator_bool_of_expected_with_error_is_false) {
 // BEGIN Expected value
 
 TEST(Expected, value_of_lvalue_expected_with_void_type_has_correct_type) {
-    const Expected<void, Error> sut(in_place);
+    const Expected<void, Error> sut(IN_PLACE);
 
     using ValueType = decltype(sut.value());
     const bool value_type_is_void = std::is_same<ValueType, void>::value;
@@ -371,20 +366,20 @@ TEST(Expected, value_of_lvalue_expected_with_void_type_has_correct_type) {
 
 TEST(Expected, value_of_lvalue_expected_with_value_has_correct_value) {
     constexpr uint32_t EXPECTED_VALUE { 23 };
-    const Expected<Value, Error> sut(in_place, Value { EXPECTED_VALUE });
+    const Expected<Value, Error> sut(IN_PLACE, Value { EXPECTED_VALUE });
 
     EXPECT_THAT(sut.value().val, Eq(EXPECTED_VALUE));
 }
 
 TEST(Expected, value_of_const_lvalue_expected_with_value_has_correct_value) {
     constexpr uint32_t EXPECTED_VALUE { 37 };
-    const Expected<Value, Error> sut(in_place, Value { EXPECTED_VALUE });
+    const Expected<Value, Error> sut(IN_PLACE, Value { EXPECTED_VALUE });
 
     EXPECT_THAT(sut.value().val, Eq(EXPECTED_VALUE));
 }
 
 TEST(Expected, value_of_rvalue_expected_with_void_type_has_correct_type) {
-    const Expected<void, Error> sut(in_place);
+    const Expected<void, Error> sut(IN_PLACE);
 
     using ValueType = decltype(std::move(sut).value());
     const bool value_type_is_void = std::is_same<ValueType, void>::value;
@@ -393,14 +388,14 @@ TEST(Expected, value_of_rvalue_expected_with_void_type_has_correct_type) {
 
 TEST(Expected, value_of_rvalue_expected_with_value_has_correct_value) {
     constexpr uint32_t EXPECTED_VALUE { 66 };
-    Expected<Value, Error> sut(in_place, Value { EXPECTED_VALUE });
+    Expected<Value, Error> sut(IN_PLACE, Value { EXPECTED_VALUE });
 
     EXPECT_THAT(std::move(sut).value().val, Eq(EXPECTED_VALUE));
 }
 
 TEST(Expected, value_of_const_rvalue_expected_with_value_has_correct_value) {
     constexpr uint32_t EXPECTED_VALUE { 101 };
-    const Expected<Value, Error> sut(in_place, Value { EXPECTED_VALUE });
+    const Expected<Value, Error> sut(IN_PLACE, Value { EXPECTED_VALUE });
 
     EXPECT_THAT(std::move(sut).value().val, Eq(EXPECTED_VALUE));
 }
@@ -411,7 +406,7 @@ TEST(Expected, value_of_const_rvalue_expected_with_value_has_correct_value) {
 // BEGIN Expected operator star
 
 TEST(Expected, operator_star_of_lvalue_expected_with_void_type_has_correct_type) {
-    const Expected<void, Error> sut(in_place);
+    const Expected<void, Error> sut(IN_PLACE);
 
     using ValueType = decltype(sut.operator*());
     const bool value_type_is_void = std::is_same<ValueType, void>::value;
@@ -420,28 +415,28 @@ TEST(Expected, operator_star_of_lvalue_expected_with_void_type_has_correct_type)
 
 TEST(Expected, operator_star_of_lvalue_expected_with_value_has_correct_value) {
     constexpr uint32_t EXPECTED_VALUE { 23 };
-    const Expected<Value, Error> sut(in_place, Value { EXPECTED_VALUE });
+    const Expected<Value, Error> sut(IN_PLACE, Value { EXPECTED_VALUE });
 
     EXPECT_THAT(sut.operator*().val, Eq(EXPECTED_VALUE));
 }
 
 TEST(Expected, operator_star_of_const_lvalue_expected_with_value_has_correct_value) {
     constexpr uint32_t EXPECTED_VALUE { 37 };
-    const Expected<Value, Error> sut(in_place, Value { EXPECTED_VALUE });
+    const Expected<Value, Error> sut(IN_PLACE, Value { EXPECTED_VALUE });
 
     EXPECT_THAT(sut.operator*().val, Eq(EXPECTED_VALUE));
 }
 
 TEST(Expected, operator_star_of_rvalue_expected_with_value_has_correct_value) {
     constexpr uint32_t EXPECTED_VALUE { 66 };
-    Expected<Value, Error> sut(in_place, Value { EXPECTED_VALUE });
+    Expected<Value, Error> sut(IN_PLACE, Value { EXPECTED_VALUE });
 
     EXPECT_THAT(std::move(sut).operator*().val, Eq(EXPECTED_VALUE));
 }
 
 TEST(Expected, operator_star_of_const_rvalue_expected_with_value_has_correct_value) {
     constexpr uint32_t EXPECTED_VALUE { 101 };
-    const Expected<Value, Error> sut(in_place, Value { EXPECTED_VALUE });
+    const Expected<Value, Error> sut(IN_PLACE, Value { EXPECTED_VALUE });
 
     EXPECT_THAT(std::move(sut).operator*().val, Eq(EXPECTED_VALUE));
 }
@@ -453,14 +448,14 @@ TEST(Expected, operator_star_of_const_rvalue_expected_with_value_has_correct_val
 
 TEST(Expected, operator_arrow_of_lvalue_expected_with_value_has_correct_value) {
     constexpr uint32_t EXPECTED_VALUE { 23 };
-    Expected<Value, Error> sut(in_place, Value { EXPECTED_VALUE });
+    Expected<Value, Error> sut(IN_PLACE, Value { EXPECTED_VALUE });
 
     EXPECT_THAT(sut->val, Eq(EXPECTED_VALUE));
 }
 
 TEST(Expected, operator_arrow_of_const_lvalue_expected_with_value_has_correct_value) {
     constexpr uint32_t EXPECTED_VALUE { 37 };
-    const Expected<Value, Error> sut(in_place, Value { EXPECTED_VALUE });
+    const Expected<Value, Error> sut(IN_PLACE, Value { EXPECTED_VALUE });
 
     EXPECT_THAT(sut->val, Eq(EXPECTED_VALUE));
 }
@@ -472,28 +467,28 @@ TEST(Expected, operator_arrow_of_const_lvalue_expected_with_value_has_correct_va
 
 TEST(Expected, error_of_lvalue_expected_with_error_has_correct_error) {
     constexpr uint32_t EXPECTED_ERROR { 23 };
-    Expected<Value, Error> sut(unexpect, Error { EXPECTED_ERROR });
+    Expected<Value, Error> sut(UNEXPECT, Error { EXPECTED_ERROR });
 
     EXPECT_THAT(sut.error().err, Eq(EXPECTED_ERROR));
 }
 
 TEST(Expected, error_of_const_lvalue_expected_with_error_has_correct_error) {
     constexpr uint32_t EXPECTED_ERROR { 37 };
-    const Expected<Value, Error> sut(unexpect, Error { EXPECTED_ERROR });
+    const Expected<Value, Error> sut(UNEXPECT, Error { EXPECTED_ERROR });
 
     EXPECT_THAT(sut.error().err, Eq(EXPECTED_ERROR));
 }
 
 TEST(Expected, error_of_rvalue_expected_with_error_has_correct_error) {
     constexpr uint32_t EXPECTED_ERROR { 66 };
-    Expected<Value, Error> sut(unexpect, Error { EXPECTED_ERROR });
+    Expected<Value, Error> sut(UNEXPECT, Error { EXPECTED_ERROR });
 
     EXPECT_THAT(std::move(sut).error().err, Eq(EXPECTED_ERROR));
 }
 
 TEST(Expected, error_of_const_rvalue_expected_with_error_has_correct_error) {
     constexpr uint32_t EXPECTED_ERROR { 101 };
-    const Expected<Value, Error> sut(unexpect, Error { EXPECTED_ERROR });
+    const Expected<Value, Error> sut(UNEXPECT, Error { EXPECTED_ERROR });
 
     EXPECT_THAT(std::move(sut).error().err, Eq(EXPECTED_ERROR));
 }

@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/node_name.hpp"
-#include "iox2/container/expected.hpp"
+#include "iox2/bb/expected.hpp"
 #include "iox2/legacy/assertions.hpp"
 
 #include <cstring>
@@ -84,14 +84,14 @@ void NodeName::drop() noexcept {
     }
 }
 
-auto NodeName::create(const char* value) -> iox2::container::Expected<NodeName, bb::SemanticStringError> {
+auto NodeName::create(const char* value) -> iox2::bb::Expected<NodeName, bb::SemanticStringError> {
     return NodeName::create_impl(value, strnlen(value, IOX2_NODE_NAME_LENGTH + 1));
 }
 
 auto NodeName::create_impl(const char* value, size_t value_len)
-    -> iox2::container::Expected<NodeName, bb::SemanticStringError> {
+    -> iox2::bb::Expected<NodeName, bb::SemanticStringError> {
     if (value_len > IOX2_NODE_NAME_LENGTH) {
-        return container::err(bb::SemanticStringError::ExceedsMaximumLength);
+        return bb::err(bb::SemanticStringError::ExceedsMaximumLength);
     }
 
     iox2_node_name_h handle {};
@@ -100,7 +100,7 @@ auto NodeName::create_impl(const char* value, size_t value_len)
         return NodeName { handle };
     }
 
-    return container::err(iox2::bb::into<bb::SemanticStringError>(ret_val));
+    return bb::err(iox2::bb::into<bb::SemanticStringError>(ret_val));
 }
 
 auto NodeName::to_string() const -> iox2::legacy::string<IOX2_NODE_NAME_LENGTH> {

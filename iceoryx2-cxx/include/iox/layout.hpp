@@ -13,7 +13,7 @@
 #ifndef IOX2_LAYOUT_HPP
 #define IOX2_LAYOUT_HPP
 
-#include "iox2/container/expected.hpp"
+#include "iox2/bb/expected.hpp"
 #include <cstdint>
 #include <type_traits>
 
@@ -41,7 +41,7 @@ class Layout {
     ///  * If the `size` is not a multiple of `align` it will be rounded up so that it
     ///      becomes a multiple of `align`.
     ///  * If `align` is not a power of two it fails.
-    static auto create(uint64_t size, uint64_t align) -> iox2::container::Expected<Layout, LayoutCreationError>;
+    static auto create(uint64_t size, uint64_t align) -> iox2::bb::Expected<Layout, LayoutCreationError>;
 
     /// Returns the stored size.
     auto size() const -> uint64_t;
@@ -72,9 +72,9 @@ inline auto Layout::from() -> std::enable_if_t<std::is_same<T, void>::value, Lay
 }
 
 inline auto Layout::create(const uint64_t size, const uint64_t align)
-    -> iox2::container::Expected<Layout, LayoutCreationError> {
+    -> iox2::bb::Expected<Layout, LayoutCreationError> {
     if (!is_power_of_two(align)) {
-        return iox2::container::err(LayoutCreationError::InvalidAlignment);
+        return iox2::bb::err(LayoutCreationError::InvalidAlignment);
     }
 
     return Layout(round_up_to(size, align), align);

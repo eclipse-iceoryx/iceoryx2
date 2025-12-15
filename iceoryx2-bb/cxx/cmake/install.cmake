@@ -68,6 +68,8 @@ install(
 install(
     # the '/' at the end is important in order to not have the 'include' folder installed but only the content
     DIRECTORY ${PROJECT_SOURCE_DIR}/include/
+              ${PROJECT_SOURCE_DIR}/variation/${IOX2_VARIATION_EXPECTED_INCLUDE}/
+              ${PROJECT_SOURCE_DIR}/variation/${IOX2_VARIATION_OPTIONAL_INCLUDE}/
     DESTINATION ${DESTINATION_INCLUDEDIR}
     COMPONENT dev
 )

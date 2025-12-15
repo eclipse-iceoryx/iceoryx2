@@ -20,6 +20,30 @@ filegroup(
 )
 
 cc_library(
+    name = "iceoryx2-bb-cxx-variation-iox2-expected",
+    hdrs = glob(["variation/expected-iox2-include/**"]),
+    strip_include_prefix = "variation/expected-iox2-include",
+)
+
+cc_library(
+    name = "iceoryx2-bb-cxx-variation-std-expected",
+    hdrs = glob(["variation/expected-std-include/**"]),
+    strip_include_prefix = "variation/expected-std-include",
+)
+
+cc_library(
+    name = "iceoryx2-bb-cxx-variation-iox2-optional",
+    hdrs = glob(["variation/optional-iox2-include/**"]),
+    strip_include_prefix = "variation/optional-iox2-include",
+)
+
+cc_library(
+    name = "iceoryx2-bb-cxx-variation-std-optional",
+    hdrs = glob(["variation/optional-std-include/**"]),
+    strip_include_prefix = "variation/optional-std-include",
+)
+
+cc_library(
     name = "iceoryx2-bb-cxx",
     srcs = glob(
         [
@@ -27,4 +51,11 @@ cc_library(
         ]),
     hdrs = glob(["include/**"]),
     strip_include_prefix = "include",
+    deps = select({
+        "//:cfg_use_std_expected": [ ":iceoryx2-bb-cxx-variation-std-expected" ],
+        "//conditions:default": [ ":iceoryx2-bb-cxx-variation-iox2-expected" ],
+    }) + select({
+        "//:cfg_use_std_optional": [ ":iceoryx2-bb-cxx-variation-std-optional" ],
+        "//conditions:default": [ ":iceoryx2-bb-cxx-variation-iox2-optional" ],
+    }),
 )

@@ -15,8 +15,8 @@
 
 #include "iox/builder_addendum.hpp"
 #include "iox2/allocation_strategy.hpp"
-#include "iox2/container/expected.hpp"
-#include "iox2/container/optional.hpp"
+#include "iox2/bb/expected.hpp"
+#include "iox2/bb/optional.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/publisher.hpp"
 #include "iox2/service_type.hpp"
@@ -65,7 +65,7 @@ class PortFactoryPublisher {
     auto allocation_strategy(AllocationStrategy value) && -> PortFactoryPublisher&&;
 
     /// Creates a new [`Publisher`] or returns a [`PublisherCreateError`] on failure.
-    auto create() && -> container::Expected<Publisher<S, Payload, UserHeader>, PublisherCreateError>;
+    auto create() && -> bb::Expected<Publisher<S, Payload, UserHeader>, PublisherCreateError>;
 
   private:
     template <ServiceType, typename, typename>
@@ -74,8 +74,8 @@ class PortFactoryPublisher {
     explicit PortFactoryPublisher(iox2_port_factory_publisher_builder_h handle);
 
     iox2_port_factory_publisher_builder_h m_handle = nullptr;
-    container::Optional<uint64_t> m_max_slice_len;
-    container::Optional<AllocationStrategy> m_allocation_strategy;
+    bb::Optional<uint64_t> m_max_slice_len;
+    bb::Optional<AllocationStrategy> m_allocation_strategy;
 };
 
 template <ServiceType S, typename Payload, typename UserHeader>
@@ -100,9 +100,8 @@ inline auto PortFactoryPublisher<S, Payload, UserHeader>::allocation_strategy(
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
-inline auto
-PortFactoryPublisher<S, Payload, UserHeader>::create() && -> container::Expected<Publisher<S, Payload, UserHeader>,
-                                                                                 PublisherCreateError> {
+inline auto PortFactoryPublisher<S, Payload, UserHeader>::create() && -> bb::Expected<Publisher<S, Payload, UserHeader>,
+                                                                                      PublisherCreateError> {
     if (m_unable_to_deliver_strategy.has_value()) {
         iox2_port_factory_publisher_builder_unable_to_deliver_strategy(
             &m_handle,
@@ -129,7 +128,7 @@ PortFactoryPublisher<S, Payload, UserHeader>::create() && -> container::Expected
         return Publisher<S, Payload, UserHeader>(pub_handle);
     }
 
-    return container::err(bb::into<PublisherCreateError>(result));
+    return bb::err(bb::into<PublisherCreateError>(result));
 }
 } // namespace iox2
 

@@ -13,19 +13,19 @@
 #ifndef IOX2_INCLUDE_GUARD_CONTAINER_EXPECTED_HPP
 #define IOX2_INCLUDE_GUARD_CONTAINER_EXPECTED_HPP
 
+#include "iox2/legacy/attributes.hpp"
 #include "iox2/legacy/detail/expected_helper.hpp"
 #include "iox2/legacy/expected.hpp"
 #include <type_traits>
 
 namespace iox2 {
-namespace container {
+namespace bb {
+namespace detail {
 
 struct InPlaceT { };
-// NOLINTNEXTLINE(readability-identifier-naming), for consistency with C++23 code using std::expected
-constexpr InPlaceT in_place {};
+constexpr InPlaceT IN_PLACE {};
 struct UnexpectT { };
-// NOLINTNEXTLINE(readability-identifier-naming), for consistency with C++23 code using std::expected
-constexpr UnexpectT unexpect {};
+constexpr UnexpectT UNEXPECT {};
 
 
 template <typename E>
@@ -74,24 +74,16 @@ template <typename E>
 Unexpected(E) -> Unexpected<E>;
 #endif
 
-template <typename E>
-constexpr auto err(const E& error) -> Unexpected<E> {
-    return Unexpected<E>(error);
-}
-
-template <typename E, std::enable_if_t<!std::is_lvalue_reference<E>::value, bool> = true>
-constexpr auto err(E&& error) -> Unexpected<E> {
-    return Unexpected<E>(std::forward<E>(error));
-}
-
 template <typename T, typename E>
-class Expected {
+class IOX2_NO_DISCARD Expected {
   private:
     legacy::expected<T, E> m_value;
 
   public:
     // BEGIN ctors
-    constexpr Expected() = delete;
+    constexpr Expected()
+        : m_value(iox2::legacy::in_place) {
+    }
 
     template <typename U,
               typename V = std::remove_cv_t<T>,
@@ -235,7 +227,8 @@ class Expected {
     // END error method
 };
 
-} // namespace container
+} // namespace detail
+} // namespace bb
 } // namespace iox2
 
 #endif // IOX2_INCLUDE_GUARD_CONTAINER_EXPECTED_HPP

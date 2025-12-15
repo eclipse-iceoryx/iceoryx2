@@ -16,8 +16,8 @@
 #include "iox/builder_addendum.hpp"
 #include "iox2/attribute_specifier.hpp"
 #include "iox2/attribute_verifier.hpp"
-#include "iox2/container/expected.hpp"
-#include "iox2/container/optional.hpp"
+#include "iox2/bb/expected.hpp"
+#include "iox2/bb/optional.hpp"
 #include "iox2/event_id.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/port_factory_event.hpp"
@@ -102,30 +102,29 @@ class ServiceBuilderEvent {
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
     /// created.
-    auto open_or_create() && -> container::Expected<PortFactoryEvent<S>, EventOpenOrCreateError>;
+    auto open_or_create() && -> bb::Expected<PortFactoryEvent<S>, EventOpenOrCreateError>;
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
     /// created. It defines a set of attributes. If the [`Service`] already exists all attribute
     /// requirements must be satisfied otherwise the open process will fail. If the [`Service`]
     /// does not exist the required attributes will be defined in the [`Service`].
     auto open_or_create_with_attributes(
-        const AttributeVerifier&
-            required_attributes) && -> container::Expected<PortFactoryEvent<S>, EventOpenOrCreateError>;
+        const AttributeVerifier& required_attributes) && -> bb::Expected<PortFactoryEvent<S>, EventOpenOrCreateError>;
 
     /// Opens an existing [`Service`].
-    auto open() && -> container::Expected<PortFactoryEvent<S>, EventOpenError>;
+    auto open() && -> bb::Expected<PortFactoryEvent<S>, EventOpenError>;
 
     /// Opens an existing [`Service`] with attribute requirements. If the defined attribute
     /// requirements are not satisfied the open process will fail.
     auto open_with_attributes(
-        const AttributeVerifier& required_attributes) && -> container::Expected<PortFactoryEvent<S>, EventOpenError>;
+        const AttributeVerifier& required_attributes) && -> bb::Expected<PortFactoryEvent<S>, EventOpenError>;
 
     /// Creates a new [`Service`].
-    auto create() && -> container::Expected<PortFactoryEvent<S>, EventCreateError>;
+    auto create() && -> bb::Expected<PortFactoryEvent<S>, EventCreateError>;
 
     /// Creates a new [`Service`] with a set of attributes.
     auto create_with_attributes(
-        const AttributeSpecifier& attributes) && -> container::Expected<PortFactoryEvent<S>, EventCreateError>;
+        const AttributeSpecifier& attributes) && -> bb::Expected<PortFactoryEvent<S>, EventCreateError>;
 
   private:
     template <ServiceType>
@@ -137,10 +136,10 @@ class ServiceBuilderEvent {
 
     iox2_service_builder_event_h m_handle = nullptr;
 
-    container::Optional<EventId> m_notifier_dead_event;
-    container::Optional<EventId> m_notifier_created_event;
-    container::Optional<EventId> m_notifier_dropped_event;
-    container::Optional<bb::Duration> m_deadline;
+    bb::Optional<EventId> m_notifier_dead_event;
+    bb::Optional<EventId> m_notifier_created_event;
+    bb::Optional<EventId> m_notifier_dropped_event;
+    bb::Optional<bb::Duration> m_deadline;
     bool m_verify_notifier_dead_event = false;
     bool m_verify_notifier_created_event = false;
     bool m_verify_notifier_dropped_event = false;

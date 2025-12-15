@@ -12,7 +12,7 @@
 
 #include "iox2/config.hpp"
 
-#include "iox2/container/optional.hpp"
+#include "iox2/bb/optional.hpp"
 #include "test.hpp"
 
 namespace {
@@ -43,36 +43,36 @@ TEST(Config, defaults_event_max_listeners) {
 }
 
 TEST(Config, defaults_event_notifier_created_event) {
-    const auto test_value = iox2::container::Optional<size_t>(12U);
+    const auto test_value = bb::Optional<size_t>(12U);
     auto config = Config();
 
     config.defaults().event().set_notifier_created_event(test_value);
     ASSERT_THAT(config.defaults().event().notifier_created_event(), Eq(test_value));
 
-    config.defaults().event().set_notifier_created_event(iox2::container::nullopt);
-    ASSERT_THAT(config.defaults().event().notifier_created_event(), Eq(iox2::container::nullopt));
+    config.defaults().event().set_notifier_created_event(bb::NULLOPT);
+    ASSERT_THAT(config.defaults().event().notifier_created_event(), Eq(bb::NULLOPT));
 }
 
 TEST(Config, defaults_event_notifier_dropped_event) {
-    const auto test_value = iox2::container::Optional<size_t>(13U);
+    const auto test_value = bb::Optional<size_t>(13U);
     auto config = Config();
 
     config.defaults().event().set_notifier_dropped_event(test_value);
     ASSERT_THAT(config.defaults().event().notifier_dropped_event(), Eq(test_value));
 
-    config.defaults().event().set_notifier_dropped_event(iox2::container::nullopt);
-    ASSERT_THAT(config.defaults().event().notifier_dropped_event(), Eq(iox2::container::nullopt));
+    config.defaults().event().set_notifier_dropped_event(bb::NULLOPT);
+    ASSERT_THAT(config.defaults().event().notifier_dropped_event(), Eq(bb::NULLOPT));
 }
 
 TEST(Config, defaults_event_notifier_dead_event) {
-    const auto test_value = iox2::container::Optional<size_t>(14U);
+    const auto test_value = bb::Optional<size_t>(14U);
     auto config = Config();
 
     config.defaults().event().set_notifier_dead_event(test_value);
     ASSERT_THAT(config.defaults().event().notifier_dead_event(), Eq(test_value));
 
-    config.defaults().event().set_notifier_dead_event(iox2::container::nullopt);
-    ASSERT_THAT(config.defaults().event().notifier_dead_event(), Eq(iox2::container::nullopt));
+    config.defaults().event().set_notifier_dead_event(bb::NULLOPT);
+    ASSERT_THAT(config.defaults().event().notifier_dead_event(), Eq(bb::NULLOPT));
 }
 
 TEST(Config, defaults_event_max_notifiers) {

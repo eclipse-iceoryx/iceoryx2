@@ -17,7 +17,7 @@
 #include "iox/layout.hpp"
 #include "iox2/attribute_specifier.hpp"
 #include "iox2/attribute_verifier.hpp"
-#include "iox2/container/expected.hpp"
+#include "iox2/bb/expected.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/internal/service_builder_internal.hpp"
 #include "iox2/payload_info.hpp"
@@ -159,7 +159,7 @@ class ServiceBuilderRequestResponse {
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
     /// created.
-    auto open_or_create() && -> container::Expected<
+    auto open_or_create() && -> bb::Expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseOpenOrCreateError>;
 
@@ -169,28 +169,28 @@ class ServiceBuilderRequestResponse {
     /// If the [`Service`] already exists all attribute requirements must be satisfied,
     /// and service payload type must be the same, otherwise the open process will fail.
     /// If the [`Service`] does not exist the required attributes will be defined in the [`Service`].
-    auto open_or_create_with_attributes(const AttributeVerifier& required_attributes) && -> container::Expected<
+    auto open_or_create_with_attributes(const AttributeVerifier& required_attributes) && -> bb::Expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseOpenOrCreateError>;
 
     /// Opens an existing [`Service`].
-    auto open() && -> container::Expected<
+    auto open() && -> bb::Expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseOpenError>;
 
     /// Opens an existing [`Service`] with attribute requirements. If the defined attribute
     /// requirements are not satisfied the open process will fail.
-    auto open_with_attributes(const AttributeVerifier& required_attributes) && -> container::Expected<
+    auto open_with_attributes(const AttributeVerifier& required_attributes) && -> bb::Expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseOpenError>;
 
     /// Creates a new [`Service`].
-    auto create() && -> container::Expected<
+    auto create() && -> bb::Expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseCreateError>;
 
     /// Creates a new [`Service`] with a set of attributes.
-    auto create_with_attributes(const AttributeSpecifier& attributes) && -> container::Expected<
+    auto create_with_attributes(const AttributeSpecifier& attributes) && -> bb::Expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseCreateError>;
 
@@ -255,7 +255,7 @@ template <typename RequestPayload,
           typename ResponseUserHeader,
           ServiceType S>
 inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
-    open_or_create() && -> container::Expected<
+    open_or_create() && -> bb::Expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseOpenOrCreateError> {
     set_parameters();
@@ -268,7 +268,7 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
             port_factory_handle);
     }
 
-    return container::err(bb::into<RequestResponseOpenOrCreateError>(result));
+    return bb::err(bb::into<RequestResponseOpenOrCreateError>(result));
 }
 
 template <typename RequestPayload,
@@ -277,7 +277,7 @@ template <typename RequestPayload,
           typename ResponseUserHeader,
           ServiceType S>
 inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
-    open_or_create_with_attributes(const AttributeVerifier& required_attributes) && -> container::Expected<
+    open_or_create_with_attributes(const AttributeVerifier& required_attributes) && -> bb::Expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseOpenOrCreateError> {
     set_parameters();
@@ -291,7 +291,7 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
             port_factory_handle);
     }
 
-    return container::err(bb::into<RequestResponseOpenOrCreateError>(result));
+    return bb::err(bb::into<RequestResponseOpenOrCreateError>(result));
 }
 
 template <typename RequestPayload,
@@ -300,7 +300,7 @@ template <typename RequestPayload,
           typename ResponseUserHeader,
           ServiceType S>
 inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
-    open() && -> container::Expected<
+    open() && -> bb::Expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseOpenError> {
     set_parameters();
@@ -313,7 +313,7 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
             port_factory_handle);
     }
 
-    return container::err(bb::into<RequestResponseOpenError>(result));
+    return bb::err(bb::into<RequestResponseOpenError>(result));
 }
 
 template <typename RequestPayload,
@@ -322,7 +322,7 @@ template <typename RequestPayload,
           typename ResponseUserHeader,
           ServiceType S>
 inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
-    open_with_attributes(const AttributeVerifier& required_attributes) && -> container::Expected<
+    open_with_attributes(const AttributeVerifier& required_attributes) && -> bb::Expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseOpenError> {
     set_parameters();
@@ -336,7 +336,7 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
             port_factory_handle);
     }
 
-    return container::err(bb::into<RequestResponseOpenError>(result));
+    return bb::err(bb::into<RequestResponseOpenError>(result));
 }
 
 template <typename RequestPayload,
@@ -345,7 +345,7 @@ template <typename RequestPayload,
           typename ResponseUserHeader,
           ServiceType S>
 inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
-    create() && -> container::Expected<
+    create() && -> bb::Expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseCreateError> {
     set_parameters();
@@ -358,7 +358,7 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
             port_factory_handle);
     }
 
-    return container::err(bb::into<RequestResponseCreateError>(result));
+    return bb::err(bb::into<RequestResponseCreateError>(result));
 }
 
 template <typename RequestPayload,
@@ -367,7 +367,7 @@ template <typename RequestPayload,
           typename ResponseUserHeader,
           ServiceType S>
 inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
-    create_with_attributes(const AttributeSpecifier& attributes) && -> container::Expected<
+    create_with_attributes(const AttributeSpecifier& attributes) && -> bb::Expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseCreateError> {
     set_parameters();
@@ -381,7 +381,7 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
             port_factory_handle);
     }
 
-    return container::err(bb::into<RequestResponseCreateError>(result));
+    return bb::err(bb::into<RequestResponseCreateError>(result));
 }
 
 template <typename RequestPayload,

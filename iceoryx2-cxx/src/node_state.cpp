@@ -19,7 +19,7 @@ constexpr uint64_t INACCESSIBLE_STATE = 2;
 constexpr uint64_t UNDEFINED_STATE = 3;
 
 template <ServiceType T>
-AliveNodeView<T>::AliveNodeView(NodeId node_id, const iox2::container::Optional<NodeDetails>& details)
+AliveNodeView<T>::AliveNodeView(NodeId node_id, const bb::Optional<NodeDetails>& details)
     : m_id { std::move(node_id) }
     , m_details { details } {
 }
@@ -30,7 +30,7 @@ auto AliveNodeView<T>::id() const -> const NodeId& {
 }
 
 template <ServiceType T>
-auto AliveNodeView<T>::details() const -> const iox2::container::Optional<NodeDetails>& {
+auto AliveNodeView<T>::details() const -> const bb::Optional<NodeDetails>& {
     return m_details;
 }
 
@@ -45,14 +45,14 @@ auto DeadNodeView<T>::id() const -> const NodeId& {
 }
 
 template <ServiceType T>
-auto DeadNodeView<T>::details() const -> iox2::container::Optional<NodeDetails> {
+auto DeadNodeView<T>::details() const -> bb::Optional<NodeDetails> {
     return m_view.details();
 }
 
 template <ServiceType T>
-auto DeadNodeView<T>::remove_stale_resources() -> iox2::container::Expected<bool, NodeCleanupFailure> {
+auto DeadNodeView<T>::remove_stale_resources() -> iox2::bb::Expected<bool, NodeCleanupFailure> {
     if (!m_view.details().has_value()) {
-        return iox2::container::err(NodeCleanupFailure::InsufficientPermissions);
+        return iox2::bb::err(NodeCleanupFailure::InsufficientPermissions);
     }
 
     bool has_success = false;
@@ -65,7 +65,7 @@ auto DeadNodeView<T>::remove_stale_resources() -> iox2::container::Expected<bool
         return has_success;
     }
 
-    return iox2::container::err(iox2::bb::into<NodeCleanupFailure>(result));
+    return iox2::bb::err(iox2::bb::into<NodeCleanupFailure>(result));
 }
 
 template <ServiceType T>

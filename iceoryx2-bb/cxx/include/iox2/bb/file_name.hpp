@@ -58,11 +58,11 @@ file_name_does_contain_invalid_characters(const legacy::string<platform::IOX2_MA
         // NOLINTNEXTLINE(readability-identifier-length)
         const char c { value.unchecked_at(i) };
 
-        const bool is_small_letter { detail::ASCII_A <= c && c <= detail::ASCII_Z };
-        const bool is_capital_letter { detail::ASCII_CAPITAL_A <= c && c <= detail::ASCII_CAPITAL_Z };
-        const bool is_number { detail::ASCII_0 <= c && c <= detail::ASCII_9 };
-        const bool is_special_character { c == detail::ASCII_DASH || c == detail::ASCII_DOT || c == detail::ASCII_COLON
-                                          || c == detail::ASCII_UNDERSCORE };
+        const bool is_small_letter { ASCII_A <= c && c <= ASCII_Z };
+        const bool is_capital_letter { ASCII_CAPITAL_A <= c && c <= ASCII_CAPITAL_Z };
+        const bool is_number { ASCII_0 <= c && c <= ASCII_9 };
+        const bool is_special_character { c == ASCII_DASH || c == ASCII_DOT || c == ASCII_COLON
+                                          || c == ASCII_UNDERSCORE };
 
         if ((!is_small_letter && !is_capital_letter) && (!is_number && !is_special_character)) {
             return true;

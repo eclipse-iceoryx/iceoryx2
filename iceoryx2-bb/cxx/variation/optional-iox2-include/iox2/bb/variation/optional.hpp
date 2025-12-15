@@ -10,16 +10,21 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_INCLUDE_GUARD_CONTAINER_CONFIG_HPP
-#define IOX2_INCLUDE_GUARD_CONTAINER_CONFIG_HPP
+#ifndef IOX2_INCLUDE_GUARD_VARIATION_OPTIONAL_HPP
+#define IOX2_INCLUDE_GUARD_VARIATION_OPTIONAL_HPP
 
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define IOX2_CONTAINER_CONFIG_USE_STD_OPTIONAL 0
+#include "iox2/bb/detail/optional.hpp"
 
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define IOX2_CONTAINER_CONFIG_USE_STD_EXPECTED 1
+namespace iox2 {
+namespace bb {
 
-// custom headers go here
+template <typename T>
+using Optional = detail::Optional<T>;
+using NulloptT = detail::NulloptT;
 
+constexpr NulloptT NULLOPT = detail::NULLOPT;
 
-#endif
+} // namespace bb
+} // namespace iox2
+
+#endif // IOX2_INCLUDE_GUARD_CONTAINER_OPTIONAL_HPP

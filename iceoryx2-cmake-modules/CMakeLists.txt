@@ -38,6 +38,23 @@ set(${PROJECT_NAME}_DIR ${PROJECT_SOURCE_DIR}/cmake
 )
 
 #
+########## define C++ version ##########
+#
+
+if (CMAKE_SYSTEM_NAME MATCHES Windows OR CMAKE_SYSTEM_NAME MATCHES Darwin)
+    set(IOX2_CXX_STD_VERSION_DEFAULT 17)
+else()
+    set(IOX2_CXX_STD_VERSION_DEFAULT 14)
+endif()
+
+include(modules/Iceoryx2OptionAndParamMacros.cmake)
+include(cmake/options.cmake)
+
+configure_file(cmake/Iceoryx2CxxStdVersion.cmake.in
+               ${CMAKE_BINARY_DIR}/generated/iceoryx2-cmake-modules/modules/Iceoryx2CxxStdVersion.cmake @ONLY
+)
+
+#
 ########## set variables for export ##########
 #
 
@@ -71,6 +88,11 @@ install(
 )
 install(
     DIRECTORY "${PROJECT_SOURCE_DIR}/platform/${IOX2_INTERNAL_MODULE_PLATFORM_ID}/modules/"
+    DESTINATION ${DESTINATION_CONFIGDIR}/modules
+    COMPONENT dev
+)
+install(
+    DIRECTORY "${CMAKE_BINARY_DIR}/generated/iceoryx2-cmake-modules/modules/"
     DESTINATION ${DESTINATION_CONFIGDIR}/modules
     COMPONENT dev
 )

@@ -33,6 +33,9 @@
   [#951](https://github.com/eclipse-iceoryx/iceoryx2/issues/951)
 * Use `epoll` instead of `select` for the `WaitSet` on Linux
   [#961](https://github.com/eclipse-iceoryx/iceoryx2/issues/961)
+* Configuration mechanism to for replacing vocabulary types in iceoryx2-bb-cxx
+  with STL types
+  [#971](https://github.com/eclipse-iceoryx/iceoryx2/issues/971)
 * Add a Rust vector type with fixed compile-time capacity which has the same
   memory layout as the C++ vector
   [#1073](https://github.com/eclipse-iceoryx/iceoryx2/issues/1073)
@@ -289,13 +292,13 @@ CMake package.
    // old
    let entry_value = entry_value_uninit.write(123);
    let entry_handle_mut = entry_value.update();
-   
+
    // new
    let entry_handle_mut = entry_value_uninit.update_with_copy(123);
    ```
 
 1. **C++:** Replace `iox::optional` from `iceoryx_hoofs` with
-   `iox2::container::Optional`
+   `iox2::bb::Optional`
 
    The new `Optional` in iceoryx2 has a reduced API compared to the one from
    `iceroyx_hoofs`. The functional interface, which deviated from the STL was
@@ -323,7 +326,7 @@ CMake package.
    auto val = ret_val.value();
    ```
 
-9. Replace `iox::expected` from `iceoryx_hoofs` with `iox2::container::Expected`
+9. Replace `iox::expected` from `iceoryx_hoofs` with `iox2::bb::Expected`
 
    The new `Expected` in iceoryx2 has a reduced API compared to the one from
    `iceroyx_hoofs`. The functional interface, which deviated from the STL was

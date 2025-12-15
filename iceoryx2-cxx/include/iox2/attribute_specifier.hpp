@@ -16,7 +16,7 @@
 #include "attribute_error.hpp"
 #include "iox2/attribute_error.hpp"
 #include "iox2/attribute_set.hpp"
-#include "iox2/container/expected.hpp"
+#include "iox2/bb/expected.hpp"
 
 namespace iox2 {
 
@@ -35,7 +35,7 @@ class AttributeSpecifier {
 
     /// Defines a value for a specific key. A key is allowed to have multiple values.
     auto define(const Attribute::Key& key, const Attribute::Value& value)
-        -> container::Expected<void, AttributeDefinitionError>;
+        -> bb::Expected<void, AttributeDefinitionError>;
 
     /// Returns the underlying [`AttributeSetView`]
     auto attributes() const -> AttributeSetView;

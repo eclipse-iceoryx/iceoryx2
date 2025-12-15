@@ -14,8 +14,8 @@
 #define IOX2_PORTFACTORY_SERVER_HPP
 
 #include "iox/builder_addendum.hpp"
-#include "iox2/container/expected.hpp"
-#include "iox2/container/optional.hpp"
+#include "iox2/bb/expected.hpp"
+#include "iox2/bb/optional.hpp"
 #include "iox2/server.hpp"
 #include "iox2/server_error.hpp"
 #include "iox2/service_type.hpp"
@@ -68,9 +68,9 @@ class PortFactoryServer {
     auto allocation_strategy(AllocationStrategy value) && -> PortFactoryServer&&;
 
     /// Creates a new [`Server`] or returns a [`ServerCreateError`] on failure.
-    auto create() && -> container::Expected<
-        Server<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
-        ServerCreateError>;
+    auto
+    create() && -> bb::Expected<Server<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
+                                ServerCreateError>;
 
   private:
     template <ServiceType, typename, typename, typename, typename>
@@ -79,8 +79,8 @@ class PortFactoryServer {
     explicit PortFactoryServer(iox2_port_factory_server_builder_h handle);
 
     iox2_port_factory_server_builder_h m_handle = nullptr;
-    container::Optional<uint64_t> m_max_slice_len;
-    container::Optional<AllocationStrategy> m_allocation_strategy;
+    bb::Optional<uint64_t> m_max_slice_len;
+    bb::Optional<AllocationStrategy> m_allocation_strategy;
 };
 
 template <ServiceType Service,
@@ -114,9 +114,8 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseUserHeader>
 inline auto PortFactoryServer<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
-    create() && -> container::Expected<
-        Server<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
-        ServerCreateError> {
+    create() && -> bb::Expected<Server<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
+                                ServerCreateError> {
     if (m_unable_to_deliver_strategy.has_value()) {
         iox2_port_factory_server_builder_unable_to_deliver_strategy(
             &m_handle,
@@ -143,7 +142,7 @@ inline auto PortFactoryServer<Service, RequestPayload, RequestUserHeader, Respon
         return Server<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(server_handle);
     }
 
-    return container::err(bb::into<ServerCreateError>(result));
+    return bb::err(bb::into<ServerCreateError>(result));
 }
 
 template <ServiceType Service,

@@ -16,7 +16,7 @@
 #include "iox/builder_addendum.hpp"
 #include "iox2/attribute_specifier.hpp"
 #include "iox2/attribute_verifier.hpp"
-#include "iox2/container/expected.hpp"
+#include "iox2/bb/expected.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/port_factory_blackboard.hpp"
 #include "iox2/service_builder_blackboard_error.hpp"
@@ -62,12 +62,12 @@ class ServiceBuilderBlackboardCreator {
     auto add_with_default(KeyType key) -> ServiceBuilderBlackboardCreator&&;
 
     /// Creates a new [`Service`].
-    auto create() && -> container::Expected<PortFactoryBlackboard<S, KeyType>, BlackboardCreateError>;
+    auto create() && -> bb::Expected<PortFactoryBlackboard<S, KeyType>, BlackboardCreateError>;
 
     /// Creates a new [`Service`] with a set of attributes.
-    auto create_with_attributes(
-        const AttributeSpecifier&
-            attributes) && -> container::Expected<PortFactoryBlackboard<S, KeyType>, BlackboardCreateError>;
+    auto
+    create_with_attributes(const AttributeSpecifier&
+                               attributes) && -> bb::Expected<PortFactoryBlackboard<S, KeyType>, BlackboardCreateError>;
 
   private:
     template <ServiceType>
@@ -99,13 +99,13 @@ class ServiceBuilderBlackboardOpener {
 
   public:
     /// Opens an existing [`Service`].
-    auto open() && -> container::Expected<PortFactoryBlackboard<S, KeyType>, BlackboardOpenError>;
+    auto open() && -> bb::Expected<PortFactoryBlackboard<S, KeyType>, BlackboardOpenError>;
 
     /// Opens an existing [`Service`] with attribute requirements. If the defined attribute
     /// requirements are not satisfied the open process will fail.
     auto open_with_attributes(
         const AttributeVerifier&
-            required_attributes) && -> container::Expected<PortFactoryBlackboard<S, KeyType>, BlackboardOpenError>;
+            required_attributes) && -> bb::Expected<PortFactoryBlackboard<S, KeyType>, BlackboardOpenError>;
 
   private:
     template <ServiceType>
@@ -191,9 +191,8 @@ inline auto ServiceBuilderBlackboardCreator<KeyType, S>::add_with_default(KeyTyp
 }
 
 template <typename KeyType, ServiceType S>
-inline auto
-ServiceBuilderBlackboardCreator<KeyType, S>::create() && -> container::Expected<PortFactoryBlackboard<S, KeyType>,
-                                                                                BlackboardCreateError> {
+inline auto ServiceBuilderBlackboardCreator<KeyType, S>::create() && -> bb::Expected<PortFactoryBlackboard<S, KeyType>,
+                                                                                     BlackboardCreateError> {
     set_parameters();
 
     iox2_port_factory_blackboard_h port_factory_handle {};
@@ -203,13 +202,12 @@ ServiceBuilderBlackboardCreator<KeyType, S>::create() && -> container::Expected<
         return PortFactoryBlackboard<S, KeyType>(port_factory_handle);
     }
 
-    return container::err(bb::into<BlackboardCreateError>(result));
+    return bb::err(bb::into<BlackboardCreateError>(result));
 }
 
 template <typename KeyType, ServiceType S>
 inline auto ServiceBuilderBlackboardCreator<KeyType, S>::create_with_attributes(
-    const AttributeSpecifier&
-        attributes) && -> container::Expected<PortFactoryBlackboard<S, KeyType>, BlackboardCreateError> {
+    const AttributeSpecifier& attributes) && -> bb::Expected<PortFactoryBlackboard<S, KeyType>, BlackboardCreateError> {
     set_parameters();
 
     iox2_port_factory_blackboard_h port_factory_handle {};
@@ -220,7 +218,7 @@ inline auto ServiceBuilderBlackboardCreator<KeyType, S>::create_with_attributes(
         return PortFactoryBlackboard<S, KeyType>(port_factory_handle);
     }
 
-    return container::err(bb::into<BlackboardCreateError>(result));
+    return bb::err(bb::into<BlackboardCreateError>(result));
 }
 
 template <typename KeyType, ServiceType S>
@@ -247,9 +245,8 @@ inline void ServiceBuilderBlackboardOpener<KeyType, S>::set_parameters() {
 }
 
 template <typename KeyType, ServiceType S>
-inline auto
-ServiceBuilderBlackboardOpener<KeyType, S>::open() && -> container::Expected<PortFactoryBlackboard<S, KeyType>,
-                                                                             BlackboardOpenError> {
+inline auto ServiceBuilderBlackboardOpener<KeyType, S>::open() && -> bb::Expected<PortFactoryBlackboard<S, KeyType>,
+                                                                                  BlackboardOpenError> {
     set_parameters();
 
     iox2_port_factory_blackboard_h port_factory_handle {};
@@ -259,13 +256,13 @@ ServiceBuilderBlackboardOpener<KeyType, S>::open() && -> container::Expected<Por
         return PortFactoryBlackboard<S, KeyType>(port_factory_handle);
     }
 
-    return container::err(bb::into<BlackboardOpenError>(result));
+    return bb::err(bb::into<BlackboardOpenError>(result));
 }
 
 template <typename KeyType, ServiceType S>
 inline auto ServiceBuilderBlackboardOpener<KeyType, S>::open_with_attributes(
     const AttributeVerifier&
-        required_attributes) && -> container::Expected<PortFactoryBlackboard<S, KeyType>, BlackboardOpenError> {
+        required_attributes) && -> bb::Expected<PortFactoryBlackboard<S, KeyType>, BlackboardOpenError> {
     set_parameters();
 
     iox2_port_factory_blackboard_h port_factory_handle {};
@@ -276,7 +273,7 @@ inline auto ServiceBuilderBlackboardOpener<KeyType, S>::open_with_attributes(
         return PortFactoryBlackboard<S, KeyType>(port_factory_handle);
     }
 
-    return container::err(bb::into<BlackboardOpenError>(result));
+    return bb::err(bb::into<BlackboardOpenError>(result));
 }
 } // namespace iox2
 

@@ -13,7 +13,7 @@
 #ifndef IOX2_FILE_DESCRIPTOR_HPP
 #define IOX2_FILE_DESCRIPTOR_HPP
 
-#include "iox2/container/optional.hpp"
+#include "iox2/bb/optional.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 
 namespace iox2 {
@@ -66,12 +66,12 @@ class FileDescriptorView : public FileDescriptorBased {
 class FileDescriptor {
   public:
     /// Creates a new [`FileDescriptor`] object that owns it. If the provided value is an
-    /// invalid [`FileDescriptor`] it returns [`iox2::container::nullopt`].
-    static auto create_owning(int32_t file_descriptor) -> iox2::container::Optional<FileDescriptor>;
+    /// invalid [`FileDescriptor`] it returns [`bb::NULLOPT`].
+    static auto create_owning(int32_t file_descriptor) -> bb::Optional<FileDescriptor>;
 
     /// Creates a new [`FileDescriptor`] object that does not own it. If the provided value is an
-    /// invalid [`FileDescriptor`] it returns [`iox2::container::nullopt`].
-    static auto create_non_owning(int32_t file_descriptor) -> iox2::container::Optional<FileDescriptor>;
+    /// invalid [`FileDescriptor`] it returns [`bb::NULLOPT`].
+    static auto create_non_owning(int32_t file_descriptor) -> bb::Optional<FileDescriptor>;
 
     FileDescriptor(const FileDescriptor&) = delete;
     auto operator=(const FileDescriptor&) -> FileDescriptor& = delete;

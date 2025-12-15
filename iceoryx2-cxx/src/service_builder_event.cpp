@@ -129,7 +129,7 @@ auto ServiceBuilderEvent<S>::disable_deadline() && -> ServiceBuilderEvent&& {
 }
 
 template <ServiceType S>
-auto ServiceBuilderEvent<S>::open_or_create() && -> container::Expected<PortFactoryEvent<S>, EventOpenOrCreateError> {
+auto ServiceBuilderEvent<S>::open_or_create() && -> bb::Expected<PortFactoryEvent<S>, EventOpenOrCreateError> {
     set_parameters();
     iox2_port_factory_event_h event_handle {};
     auto result = iox2_service_builder_event_open_or_create(m_handle, nullptr, &event_handle);
@@ -138,11 +138,11 @@ auto ServiceBuilderEvent<S>::open_or_create() && -> container::Expected<PortFact
         return PortFactoryEvent<S>(event_handle);
     }
 
-    return container::err(bb::into<EventOpenOrCreateError>(result));
+    return bb::err(bb::into<EventOpenOrCreateError>(result));
 }
 
 template <ServiceType S>
-auto ServiceBuilderEvent<S>::open() && -> container::Expected<PortFactoryEvent<S>, EventOpenError> {
+auto ServiceBuilderEvent<S>::open() && -> bb::Expected<PortFactoryEvent<S>, EventOpenError> {
     set_parameters();
 
     iox2_port_factory_event_h event_handle {};
@@ -152,11 +152,11 @@ auto ServiceBuilderEvent<S>::open() && -> container::Expected<PortFactoryEvent<S
         return PortFactoryEvent<S>(event_handle);
     }
 
-    return container::err(bb::into<EventOpenError>(result));
+    return bb::err(bb::into<EventOpenError>(result));
 }
 
 template <ServiceType S>
-auto ServiceBuilderEvent<S>::create() && -> container::Expected<PortFactoryEvent<S>, EventCreateError> {
+auto ServiceBuilderEvent<S>::create() && -> bb::Expected<PortFactoryEvent<S>, EventCreateError> {
     set_parameters();
 
     iox2_port_factory_event_h event_handle {};
@@ -166,13 +166,12 @@ auto ServiceBuilderEvent<S>::create() && -> container::Expected<PortFactoryEvent
         return PortFactoryEvent<S>(event_handle);
     }
 
-    return container::err(bb::into<EventCreateError>(result));
+    return bb::err(bb::into<EventCreateError>(result));
 }
 
 template <ServiceType S>
 auto ServiceBuilderEvent<S>::open_or_create_with_attributes(
-    const AttributeVerifier&
-        required_attributes) && -> container::Expected<PortFactoryEvent<S>, EventOpenOrCreateError> {
+    const AttributeVerifier& required_attributes) && -> bb::Expected<PortFactoryEvent<S>, EventOpenOrCreateError> {
     set_parameters();
 
     iox2_port_factory_event_h event_handle {};
@@ -183,12 +182,12 @@ auto ServiceBuilderEvent<S>::open_or_create_with_attributes(
         return PortFactoryEvent<S>(event_handle);
     }
 
-    return container::err(bb::into<EventOpenOrCreateError>(result));
+    return bb::err(bb::into<EventOpenOrCreateError>(result));
 }
 
 template <ServiceType S>
 auto ServiceBuilderEvent<S>::open_with_attributes(
-    const AttributeVerifier& required_attributes) && -> container::Expected<PortFactoryEvent<S>, EventOpenError> {
+    const AttributeVerifier& required_attributes) && -> bb::Expected<PortFactoryEvent<S>, EventOpenError> {
     set_parameters();
 
     iox2_port_factory_event_h event_handle {};
@@ -199,12 +198,12 @@ auto ServiceBuilderEvent<S>::open_with_attributes(
         return PortFactoryEvent<S>(event_handle);
     }
 
-    return container::err(bb::into<EventOpenError>(result));
+    return bb::err(bb::into<EventOpenError>(result));
 }
 
 template <ServiceType S>
 auto ServiceBuilderEvent<S>::create_with_attributes(
-    const AttributeSpecifier& attributes) && -> container::Expected<PortFactoryEvent<S>, EventCreateError> {
+    const AttributeSpecifier& attributes) && -> bb::Expected<PortFactoryEvent<S>, EventCreateError> {
     set_parameters();
 
     iox2_port_factory_event_h event_handle {};
@@ -215,7 +214,7 @@ auto ServiceBuilderEvent<S>::create_with_attributes(
         return PortFactoryEvent<S>(event_handle);
     }
 
-    return container::err(bb::into<EventCreateError>(result));
+    return bb::err(bb::into<EventCreateError>(result));
 }
 
 template class ServiceBuilderEvent<ServiceType::Ipc>;

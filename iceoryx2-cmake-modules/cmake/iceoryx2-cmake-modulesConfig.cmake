@@ -19,3 +19,4 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
 # NOTE: leaving the list dir is fine here, since this file is used for in source tree builds
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/../modules)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/../platform/${IOX2_INTERNAL_MODULE_PLATFORM_ID}/modules)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR}/generated/iceoryx2-cmake-modules/modules)

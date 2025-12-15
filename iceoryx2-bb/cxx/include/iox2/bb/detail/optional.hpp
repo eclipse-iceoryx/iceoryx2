@@ -10,39 +10,17 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_INCLUDE_GUARD_CONTAINER_OPTIONAL_HPP
-#define IOX2_INCLUDE_GUARD_CONTAINER_OPTIONAL_HPP
-
-#include "iox2/container/config.hpp"
+#ifndef IOX2_INCLUDE_GUARD_BB_DETAIL_OPTIONAL_HPP
+#define IOX2_INCLUDE_GUARD_BB_DETAIL_OPTIONAL_HPP
 
 #include <cstdlib>
 #include <memory>
 #include <type_traits>
 #include <utility>
 
-#if IOX2_CONTAINER_CONFIG_USE_STD_OPTIONAL && IOX2_CONTAINER_CONFIG_USE_CUSTOM_OPTIONAL
-#error Optional cannot be overriden to use both custom and std variants at the same time.
-#endif
-
-#if IOX2_CONTAINER_CONFIG_USE_STD_OPTIONAL
-#include <optional>
-#endif
-
 namespace iox2 {
-namespace container {
-
-#if IOX2_CONTAINER_CONFIG_USE_STD_OPTIONAL
-
-template <typename T>
-using Optional = std::optional<T>;
-using NulloptT = std::nullopt_t;
-
-#elif defined(IOX2_CONTAINER_CONFIG_USE_CUSTOM_OPTIONAL)
-
-template <typename T>
-using Optional = IOX2_CONTAINER_CONFIG_USE_CUSTOM_OPTIONAL<T>;
-
-#else
+namespace bb {
+namespace detail {
 
 /// A drop-in replacement for C++17 `std::optional`.
 template <class T>
@@ -60,8 +38,7 @@ struct NulloptT {
     constexpr explicit NulloptT(detail::NulloptTConstructorTag /* unused */) noexcept {
     }
 };
-// NOLINTNEXTLINE(readability-identifier-naming), for consistency with C++17 code using std::optional
-constexpr NulloptT nullopt = NulloptT(detail::NulloptTConstructorTag {});
+constexpr NulloptT NULLOPT = NulloptT(detail::NulloptTConstructorTag {});
 
 namespace detail {
 /// Internal union implementation for Optional.
@@ -373,9 +350,8 @@ template <class T>
 Optional(T) -> Optional<T>;
 #endif
 
-#endif
-
-} // namespace container
+} // namespace detail
+} // namespace bb
 } // namespace iox2
 
-#endif
+#endif // IOX2_INCLUDE_GUARD_BB_DETAIL_OPTIONAL_HPP

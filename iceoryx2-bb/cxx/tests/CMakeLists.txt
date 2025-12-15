@@ -35,6 +35,7 @@ target_sources(iceoryx2-bb-cxx-tests
     PRIVATE
     ${PROJECT_SOURCE_DIR}/src/main.cpp
     ${PROJECT_SOURCE_DIR}/src/duration_tests.cpp
+    ${PROJECT_SOURCE_DIR}/src/expected_err_free_function_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/expected_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/into_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/optional_tests.cpp
