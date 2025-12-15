@@ -78,7 +78,6 @@ target_sources(iceoryx2-bb-cxx
     src/hoofs_error_reporting.cpp
     src/logger.cpp
     src/memory.cpp
-    src/type_traits.cpp
 )
 
 target_include_directories(iceoryx2-bb-cxx
