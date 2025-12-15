@@ -59,7 +59,7 @@ inline void IOX2_DISCARD_RESULT_IMPL(T&&) noexcept {
 #if __cplusplus >= 201703L
 // clang prints a warning therefore we exclude it here
 #define IOX2_FALLTHROUGH [[fallthrough]]
-#elif (defined(__GNUC__) && (__GNUC__ >= 7)) && !defined(__clang__)
+#elif (defined(__GNUC__) && (__GNUC__ >= 7)) || defined(__clang__)
 #define IOX2_FALLTHROUGH [[gnu::fallthrough]]
 #else
 #define IOX2_FALLTHROUGH
@@ -69,7 +69,7 @@ inline void IOX2_DISCARD_RESULT_IMPL(T&&) noexcept {
 /// compiler or uses C++17's 'maybe_unused'.
 #if __cplusplus >= 201703L
 #define IOX2_MAYBE_UNUSED [[maybe_unused]]
-#elif (defined(__GNUC__) && (__GNUC__ >= 7)) && !defined(__clang__)
+#elif (defined(__GNUC__) && (__GNUC__ >= 7)) || defined(__clang__)
 #define IOX2_MAYBE_UNUSED [[gnu::unused]]
 #else
 #define IOX2_MAYBE_UNUSED
