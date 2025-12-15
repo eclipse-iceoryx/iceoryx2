@@ -87,6 +87,8 @@
     [#1198](https://github.com/eclipse-iceoryx/iceoryx2/issues/1198)
 * Update urllib3 dependency to 2.6.0 (security issue in 2.5.0)
     [#1228](https://github.com/eclipse-iceoryx/iceoryx2/issues/1228)
+* Fix incomplete cleanup of file lock based monitoring concept
+    [#1252](https://github.com/eclipse-iceoryx/iceoryx2/issues/1252)
 
 ### Refactoring
 
@@ -112,7 +114,7 @@
 * Support C++14 for the C++ Bindings
     [#1167](https://github.com/eclipse-iceoryx/iceoryx2/issues/1167)
 * Replace legacy types in public API with iceoryx2 counterparts
-  [#1234](https://github.com/eclipse-iceoryx/iceoryx2/issues/1234)
+    [#1234](https://github.com/eclipse-iceoryx/iceoryx2/issues/1234)
 
 ### Workflow
 
