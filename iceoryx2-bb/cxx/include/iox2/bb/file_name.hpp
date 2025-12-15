@@ -51,13 +51,8 @@ class FileName : public SemanticString<FileName,
 namespace detail {
 inline auto file_name_does_contain_invalid_characters(
     const container::StaticString<platform::IOX2_MAX_FILENAME_LENGTH>& value) noexcept -> bool {
-    const auto value_size = value.size();
-
-    for (uint64_t i { 0 }; i < value_size; ++i) {
-        // AXIVION Next Construct AutosarC++19_03-A3.9.1: Not used as an integer but as actual character
-        // NOLINTNEXTLINE(readability-identifier-length)
-        const char c { value.unchecked_access()[i] };
-
+    // NOLINTNEXTLINE(readability-use-anyofallof) not yet supported in all compilers
+    for (const char c : value.unchecked_access()) { // NOLINT(readability-identifier-length)
         const bool is_small_letter { ASCII_A <= c && c <= ASCII_Z };
         const bool is_capital_letter { ASCII_CAPITAL_A <= c && c <= ASCII_CAPITAL_Z };
         const bool is_number { ASCII_0 <= c && c <= ASCII_9 };

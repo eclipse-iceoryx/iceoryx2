@@ -29,10 +29,10 @@
 namespace iox2 {
 namespace bb {
 template <uint64_t Capacity>
-using DoesContainInvalidCharacter = bool (*)(const typename container::StaticString<Capacity>& value);
+using DoesContainInvalidCharacter = bool (*)(const container::StaticString<Capacity>& value);
 
 template <uint64_t Capacity>
-using DoesContainInvalidContent = bool (*)(const typename container::StaticString<Capacity>& value);
+using DoesContainInvalidContent = bool (*)(const container::StaticString<Capacity>& value);
 
 template <typename, uint64_t Capacity, DoesContainInvalidContent<Capacity>, DoesContainInvalidCharacter<Capacity>>
 class SemanticString;
@@ -213,10 +213,9 @@ class StaticString {
             if (index > m_parent->m_size) {
                 return false;
             }
-            auto number_of_characters_to_move = m_parent->m_size - index;
-            std::memmove(
-                &m_parent->m_string[index + sub_str_size], &m_parent->m_string[index], number_of_characters_to_move);
-            std::memcpy(&m_parent->m_string[index], sub_str->m_string, static_cast<size_t>(sub_str_size));
+            std::copy_backward(
+                &m_parent->m_string[index], &m_parent->m_string[m_parent->m_size], &m_parent->m_string[new_size]);
+            std::copy(&sub_str->m_string[0], &sub_str->m_string[sub_str_size], &m_parent->m_string[index]);
 
             m_parent->m_string[new_size] = '\0';
             m_parent->m_size = new_size;
@@ -691,7 +690,7 @@ class StaticString {
 
         auto const length = std::min(static_cast<uint64_t>(count), m_size - pos);
         StaticString sub_str;
-        std::memcpy(sub_str.m_string, &m_string[pos], length);
+        std::copy(&m_string[pos], &m_string[pos + length], &sub_str.m_string[0]);
         sub_str.m_string[length] = '\0';
         sub_str.m_size = length;
         return sub_str;

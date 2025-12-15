@@ -241,7 +241,7 @@ inline auto PathAndFileVerifier<StringCapacity>::does_end_with_path_separator(
         return false;
     }
     // AXIVION Next Construct AutosarC++19_03-A3.9.1: Not used as an integer but as actual character
-    const char last_character { name.unchecked_access()[name.size() - 1U] };
+    const char last_character { *name.code_units().back_element() };
 
     // NOLINTNEXTLINE(readability-use-anyofallof)
     for (const auto separator : platform::IOX2_PATH_SEPARATORS) {

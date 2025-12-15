@@ -29,10 +29,10 @@ enum class SemanticStringError : uint8_t {
 };
 
 template <uint64_t Capacity>
-using DoesContainInvalidCharacter = bool (*)(const typename container::StaticString<Capacity>& value);
+using DoesContainInvalidCharacter = bool (*)(const container::StaticString<Capacity>& value);
 
 template <uint64_t Capacity>
-using DoesContainInvalidContent = bool (*)(const typename container::StaticString<Capacity>& value);
+using DoesContainInvalidContent = bool (*)(const container::StaticString<Capacity>& value);
 
 /// @brief The SemanticString is a string which has an inner syntax and restrictions
 ///         to valid content. Examples are for instance
