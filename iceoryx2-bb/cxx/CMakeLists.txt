@@ -50,6 +50,7 @@ add_library(iceoryx2-bb-cxx::iceoryx2-bb-cxx ALIAS iceoryx2-bb-cxx)
 
 target_sources(iceoryx2-bb-cxx PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/detail/assertions.hpp>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/detail/builder.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/detail/path_and_file_verifier.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/detail/static_function.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/detail/expected.hpp>

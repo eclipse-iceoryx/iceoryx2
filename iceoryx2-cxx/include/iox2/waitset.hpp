@@ -13,7 +13,7 @@
 #ifndef IOX2_WAITSET_HPP
 #define IOX2_WAITSET_HPP
 
-#include "iox/builder_addendum.hpp"
+#include "iox2/bb/detail/builder.hpp"
 #include "iox2/bb/duration.hpp"
 #include "iox2/bb/expected.hpp"
 #include "iox2/callback_progression.hpp"

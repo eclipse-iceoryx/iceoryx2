@@ -13,10 +13,10 @@
 #ifndef IOX2_SERVICE_BUILDER_REQUEST_RESPONSE_HPP
 #define IOX2_SERVICE_BUILDER_REQUEST_RESPONSE_HPP
 
-#include "iox/builder_addendum.hpp"
 #include "iox/layout.hpp"
 #include "iox2/attribute_specifier.hpp"
 #include "iox2/attribute_verifier.hpp"
+#include "iox2/bb/detail/builder.hpp"
 #include "iox2/bb/expected.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/internal/service_builder_internal.hpp"
