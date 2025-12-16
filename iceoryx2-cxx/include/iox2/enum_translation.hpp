@@ -15,6 +15,7 @@
 
 #include "iox2/allocation_strategy.hpp"
 #include "iox2/attribute_error.hpp"
+#include "iox2/bb/detail/assertions.hpp"
 #include "iox2/bb/into.hpp"
 #include "iox2/bb/semantic_string.hpp"
 #include "iox2/callback_progression.hpp"
@@ -24,7 +25,6 @@
 #include "iox2/entry_handle_error.hpp"
 #include "iox2/entry_handle_mut_error.hpp"
 #include "iox2/iceoryx2.h"
-#include "iox2/legacy/assertions.hpp"
 #include "iox2/listener_error.hpp"
 #include "iox2/log_level.hpp"
 #include "iox2/messaging_pattern.hpp"

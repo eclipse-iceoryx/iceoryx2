@@ -15,7 +15,7 @@
 #ifndef IOX2_BB_VOCABULARY_EXPECTED_INL
 #define IOX2_BB_VOCABULARY_EXPECTED_INL
 
-#include "iox2/legacy/assertions.hpp"
+#include "iox2/bb/detail/assertions.hpp"
 #include "iox2/legacy/expected.hpp"
 
 namespace iox2 {

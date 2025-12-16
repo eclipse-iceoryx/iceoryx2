@@ -13,7 +13,7 @@
 
 #include <gtest/gtest.h>
 
-#include "iox2/legacy/assertions.hpp"
+#include "iox2/bb/detail/assertions.hpp"
 
 // some dummy modules under test
 #include "module_a/error_reporting.hpp"

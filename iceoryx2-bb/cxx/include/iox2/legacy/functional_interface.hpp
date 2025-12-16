@@ -14,7 +14,7 @@
 #ifndef IOX2_BB_DESIGN_FUNCTIONAL_INTERFACE_HPP
 #define IOX2_BB_DESIGN_FUNCTIONAL_INTERFACE_HPP
 
-#include "iox2/legacy/assertions.hpp"
+#include "iox2/bb/detail/assertions.hpp"
 #include "iox2/legacy/function_ref.hpp"
 #include "iox2/legacy/type_traits.hpp"
 

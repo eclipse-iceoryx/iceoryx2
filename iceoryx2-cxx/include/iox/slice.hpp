@@ -13,7 +13,7 @@
 #ifndef IOX2_SLICE_HPP
 #define IOX2_SLICE_HPP
 
-#include "iox/assertions_addendum.hpp"
+#include "iox2/bb/detail/assertions.hpp"
 
 #include <cstdint>
 #include <type_traits>

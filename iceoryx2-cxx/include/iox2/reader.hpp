@@ -13,11 +13,11 @@
 #ifndef IOX2_READER_HPP
 #define IOX2_READER_HPP
 
+#include "iox2/bb/detail/assertions.hpp"
 #include "iox2/bb/expected.hpp"
 #include "iox2/entry_handle.hpp"
 #include "iox2/entry_handle_error.hpp"
 #include "iox2/internal/service_builder_internal.hpp"
-#include "iox2/legacy/assertions.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/unique_port_id.hpp"
 

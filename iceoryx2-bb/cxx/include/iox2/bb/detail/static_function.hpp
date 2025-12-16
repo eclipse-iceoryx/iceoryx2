@@ -14,7 +14,7 @@
 #ifndef IOX2_BB_STATIC_FUNCTION_HPP
 #define IOX2_BB_STATIC_FUNCTION_HPP
 
-#include "iox2/legacy/assertions.hpp"
+#include "iox2/bb/detail/assertions.hpp"
 #include "iox2/legacy/memory.hpp"
 #include "iox2/legacy/type_traits.hpp"
 #include "iox2/legacy/uninitialized_array.hpp"
