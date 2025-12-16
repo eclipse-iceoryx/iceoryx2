@@ -16,7 +16,7 @@ SCRIPT_START_TIME=$(date +%s)
 # Parse Arguments
 # ---------------
 DRY_RUN=false
-RUST_VERSION="1.88.0"
+RUST_VERSION="1.90.0"
 RUSTDIR="$HOME/source/rust"
 IMAGE_DIR="$HOME/images/default"
 BUILD_REMOTE_TOOLS=true
