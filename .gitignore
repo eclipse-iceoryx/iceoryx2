@@ -5,6 +5,7 @@ debug/
 .vscode
 build
 bazel-*
+CMakeUserPresets.json
 
 Cargo.lock
 **/*.rs.bk
