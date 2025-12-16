@@ -13,8 +13,8 @@
 #ifndef IOX2_PUBLISHER_HPP
 #define IOX2_PUBLISHER_HPP
 
-#include "iox/slice.hpp"
 #include "iox2/bb/expected.hpp"
+#include "iox2/bb/slice.hpp"
 #include "iox2/connection_failure.hpp"
 #include "iox2/iceoryx2.h"
 #include "iox2/internal/helper.hpp"
@@ -50,23 +50,23 @@ class Publisher {
     auto unable_to_deliver_strategy() const -> UnableToDeliverStrategy;
 
     /// Returns the maximum number of elements that can be loaned in a slice.
-    template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto initial_max_slice_len() const -> uint64_t;
 
     /// Copies the input `value` into a [`SampleMut`] and delivers it.
     /// On success it returns the number of [`Subscriber`]s that received
     /// the data, otherwise a [`SendError`] describing the failure.
-    template <typename T = Payload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
+    template <typename T = Payload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
     auto send_copy(const Payload& payload) const -> bb::Expected<size_t, SendError>;
 
-    template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
-    auto send_slice_copy(iox::ImmutableSlice<ValueType>& payload) const -> bb::Expected<size_t, SendError>;
+    template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
+    auto send_slice_copy(bb::ImmutableSlice<ValueType>& payload) const -> bb::Expected<size_t, SendError>;
 
     /// Loans/allocates a [`SampleMutUninit`] from the underlying data segment of the [`Publisher`].
     /// The user has to initialize the payload before it can be sent.
     ///
     /// On failure it returns [`LoanError`] describing the failure.
-    template <typename T = Payload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
+    template <typename T = Payload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
     auto loan_uninit() -> bb::Expected<SampleMutUninit<S, Payload, UserHeader>, LoanError>;
 
     /// Loans/allocates a [`SampleMut`] from the underlying data segment of the [`Publisher`]
@@ -74,7 +74,7 @@ class Publisher {
     /// can be used to loan an uninitalized [`SampleMut`].
     ///
     /// On failure it returns [`LoanError`] describing the failure.
-    template <typename T = Payload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
+    template <typename T = Payload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
     auto loan() -> bb::Expected<SampleMut<S, Payload, UserHeader>, LoanError>;
 
     /// Loans/allocates a [`SampleMut`] from the underlying data segment of the [`Publisher`]
@@ -83,14 +83,14 @@ class Publisher {
     /// [`Payload`].
     ///
     /// On failure it returns [`LoanError`] describing the failure.
-    template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto loan_slice(uint64_t number_of_elements) -> bb::Expected<SampleMut<S, T, UserHeader>, LoanError>;
 
     /// Loans/allocates a [`SampleMutUninit`] from the underlying data segment of the [`Publisher`].
     /// The user has to initialize the payload before it can be sent.
     ///
     /// On failure it returns [`LoanError`] describing the failure.
-    template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto loan_slice_uninit(uint64_t number_of_elements) -> bb::Expected<SampleMutUninit<S, T, UserHeader>, LoanError>;
 
     /// Explicitly updates all connections to the [`Subscriber`]s. This is
@@ -186,7 +186,7 @@ inline auto Publisher<S, Payload, UserHeader>::send_copy(const Payload& payload)
 
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
-inline auto Publisher<S, Payload, UserHeader>::send_slice_copy(iox::ImmutableSlice<ValueType>& payload) const
+inline auto Publisher<S, Payload, UserHeader>::send_slice_copy(bb::ImmutableSlice<ValueType>& payload) const
     -> bb::Expected<size_t, SendError> {
     size_t number_of_recipients = 0;
     auto result = iox2_publisher_send_slice_copy(&m_handle,

@@ -54,14 +54,14 @@ class PortFactoryPublisher {
 
     /// Sets the maximum slice length that a user can allocate with
     /// [`Publisher::loan_slice()`] or [`Publisher::loan_slice_uninit()`].
-    template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto initial_max_slice_len(uint64_t value) && -> PortFactoryPublisher&&;
 
     /// Defines the allocation strategy that is used when the provided
     /// [`PortFactoryPublisher::initial_max_slice_len()`] is exhausted. This happens when the user
     /// acquires a more than max slice len in [`Publisher::loan_slice()`] or
     /// [`Publisher::loan_slice_uninit()`].
-    template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto allocation_strategy(AllocationStrategy value) && -> PortFactoryPublisher&&;
 
     /// Creates a new [`Publisher`] or returns a [`PublisherCreateError`] on failure.

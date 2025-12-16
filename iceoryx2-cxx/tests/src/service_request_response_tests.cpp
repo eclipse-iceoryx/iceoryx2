@@ -429,7 +429,7 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_request_default_constructs_req
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
-                       .template request_response<iox::Slice<uint64_t>, uint64_t>()
+                       .template request_response<bb::Slice<uint64_t>, uint64_t>()
                        .template request_user_header<UserHeader>()
                        .create()
                        .value();
@@ -451,7 +451,7 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_uninit_request_default_constru
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
-                       .template request_response<iox::Slice<uint64_t>, uint64_t>()
+                       .template request_response<bb::Slice<uint64_t>, uint64_t>()
                        .template request_user_header<UserHeader>()
                        .create()
                        .value();
@@ -521,7 +521,7 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_response_default_constructs_re
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
-                       .template request_response<uint64_t, iox::Slice<uint64_t>>()
+                       .template request_response<uint64_t, bb::Slice<uint64_t>>()
                        .template response_user_header<UserHeader>()
                        .create()
                        .value();
@@ -545,7 +545,7 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_uninit_response_default_constr
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
-                       .template request_response<uint64_t, iox::Slice<uint64_t>>()
+                       .template request_response<uint64_t, bb::Slice<uint64_t>>()
                        .template response_user_header<UserHeader>()
                        .create()
                        .value();
@@ -575,7 +575,7 @@ TYPED_TEST(ServiceRequestResponseTest, send_slice_copy_and_receive_works) {
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
-                       .template request_response<iox::Slice<DummyData>, iox::Slice<DummyData>>()
+                       .template request_response<bb::Slice<DummyData>, bb::Slice<DummyData>>()
                        .create()
                        .value();
 
@@ -586,7 +586,7 @@ TYPED_TEST(ServiceRequestResponseTest, send_slice_copy_and_receive_works) {
     for (auto& item : elements) {
         new (&item) DummyData {};
     }
-    auto payload = iox::ImmutableSlice<DummyData>(elements.begin(), SLICE_MAX_LENGTH);
+    auto payload = bb::ImmutableSlice<DummyData>(elements.begin(), SLICE_MAX_LENGTH);
     auto pending_response = sut_client.send_slice_copy(payload);
     ASSERT_TRUE(pending_response.has_value());
     EXPECT_THAT(pending_response->payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
@@ -628,7 +628,7 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_uninit_write_payload_send_rece
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
-                       .template request_response<iox::Slice<DummyData>, iox::Slice<DummyData>>()
+                       .template request_response<bb::Slice<DummyData>, bb::Slice<DummyData>>()
                        .create()
                        .value();
 
@@ -643,7 +643,7 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_uninit_write_payload_send_rece
     for (auto& item : elements) {
         new (&item) DummyData {};
     }
-    auto payload = iox::ImmutableSlice<DummyData>(elements.begin(), SLICE_MAX_LENGTH);
+    auto payload = bb::ImmutableSlice<DummyData>(elements.begin(), SLICE_MAX_LENGTH);
     auto request = request_uninit->write_from_slice(payload);
     EXPECT_THAT(request.payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
     auto pending_response = send(std::move(request)).value();
@@ -694,7 +694,7 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_write_payload_send_receive_wor
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
-                       .template request_response<iox::Slice<DummyData>, iox::Slice<DummyData>>()
+                       .template request_response<bb::Slice<DummyData>, bb::Slice<DummyData>>()
                        .create()
                        .value();
 
@@ -776,7 +776,7 @@ TYPED_TEST(ServiceRequestResponseTest, write_from_fn_works) {
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
-                       .template request_response<iox::Slice<DummyData>, iox::Slice<DummyData>>()
+                       .template request_response<bb::Slice<DummyData>, bb::Slice<DummyData>>()
                        .create()
                        .value();
 
@@ -984,7 +984,7 @@ TYPED_TEST(ServiceRequestResponseTest, server_applies_initial_max_slice_length) 
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service =
-        node.service_builder(service_name).template request_response<uint64_t, iox::Slice<uint64_t>>().create().value();
+        node.service_builder(service_name).template request_response<uint64_t, bb::Slice<uint64_t>>().create().value();
 
     auto sut_server = service.server_builder().initial_max_slice_len(INITIAL_MAX_SLICE_LEN).create().value();
 
@@ -1016,7 +1016,7 @@ TYPED_TEST(ServiceRequestResponseTest, client_applies_initial_max_slice_length) 
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service =
-        node.service_builder(service_name).template request_response<iox::Slice<uint64_t>, uint64_t>().create().value();
+        node.service_builder(service_name).template request_response<bb::Slice<uint64_t>, uint64_t>().create().value();
 
     auto sut_client = service.client_builder().initial_max_slice_len(INITIAL_MAX_SLICE_LEN).create().value();
 
@@ -1202,7 +1202,7 @@ TYPED_TEST(ServiceRequestResponseTest, client_reallocates_memory_when_allocation
     const auto service_name = iox2_testing::generate_service_name();
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service =
-        node.service_builder(service_name).template request_response<iox::Slice<uint64_t>, uint64_t>().create().value();
+        node.service_builder(service_name).template request_response<bb::Slice<uint64_t>, uint64_t>().create().value();
 
     auto client = service.client_builder()
                       .initial_max_slice_len(INITIAL_SIZE)
@@ -1233,7 +1233,7 @@ TYPED_TEST(ServiceRequestResponseTest, client_does_not_reallocate_when_allocatio
     const auto service_name = iox2_testing::generate_service_name();
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service =
-        node.service_builder(service_name).template request_response<iox::Slice<uint64_t>, uint64_t>().create().value();
+        node.service_builder(service_name).template request_response<bb::Slice<uint64_t>, uint64_t>().create().value();
 
     auto client = service.client_builder()
                       .initial_max_slice_len(INITIAL_SIZE)
@@ -1260,7 +1260,7 @@ TYPED_TEST(ServiceRequestResponseTest, server_reallocates_memory_when_allocation
     const auto service_name = iox2_testing::generate_service_name();
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
-                       .template request_response<uint64_t, iox::Slice<uint64_t>>()
+                       .template request_response<uint64_t, bb::Slice<uint64_t>>()
                        .max_clients(1)
                        .max_servers(1)
                        .create()
@@ -1300,7 +1300,7 @@ TYPED_TEST(ServiceRequestResponseTest, server_does_not_reallocate_when_allocatio
     const auto service_name = iox2_testing::generate_service_name();
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service =
-        node.service_builder(service_name).template request_response<uint64_t, iox::Slice<uint64_t>>().create().value();
+        node.service_builder(service_name).template request_response<uint64_t, bb::Slice<uint64_t>>().create().value();
 
     auto client = service.client_builder().create().value();
     auto server = service.server_builder()
@@ -1730,7 +1730,7 @@ TYPED_TEST(ServiceRequestResponseTest,
     }
     {
         auto service = node.service_builder(service_name)
-                           .template request_response<iox::Slice<uint8_t>, iox::Slice<uint8_t>>()
+                           .template request_response<bb::Slice<uint8_t>, bb::Slice<uint8_t>>()
                            .create()
                            .value();
         auto static_config = service.static_config();
@@ -1739,7 +1739,7 @@ TYPED_TEST(ServiceRequestResponseTest,
     }
     {
         auto service = node.service_builder(service_name)
-                           .template request_response<iox::Slice<uint16_t>, iox::Slice<uint16_t>>()
+                           .template request_response<bb::Slice<uint16_t>, bb::Slice<uint16_t>>()
                            .create()
                            .value();
         auto static_config = service.static_config();
@@ -1748,7 +1748,7 @@ TYPED_TEST(ServiceRequestResponseTest,
     }
     {
         auto service = node.service_builder(service_name)
-                           .template request_response<iox::Slice<uint32_t>, iox::Slice<uint32_t>>()
+                           .template request_response<bb::Slice<uint32_t>, bb::Slice<uint32_t>>()
                            .create()
                            .value();
         auto static_config = service.static_config();
@@ -1757,7 +1757,7 @@ TYPED_TEST(ServiceRequestResponseTest,
     }
     {
         auto service = node.service_builder(service_name)
-                           .template request_response<iox::Slice<uint64_t>, iox::Slice<uint64_t>>()
+                           .template request_response<bb::Slice<uint64_t>, bb::Slice<uint64_t>>()
                            .create()
                            .value();
         auto static_config = service.static_config();
@@ -1766,7 +1766,7 @@ TYPED_TEST(ServiceRequestResponseTest,
     }
     {
         auto service = node.service_builder(service_name)
-                           .template request_response<iox::Slice<int8_t>, iox::Slice<int8_t>>()
+                           .template request_response<bb::Slice<int8_t>, bb::Slice<int8_t>>()
                            .create()
                            .value();
         auto static_config = service.static_config();
@@ -1775,7 +1775,7 @@ TYPED_TEST(ServiceRequestResponseTest,
     }
     {
         auto service = node.service_builder(service_name)
-                           .template request_response<iox::Slice<int16_t>, iox::Slice<int16_t>>()
+                           .template request_response<bb::Slice<int16_t>, bb::Slice<int16_t>>()
                            .create()
                            .value();
         auto static_config = service.static_config();
@@ -1784,7 +1784,7 @@ TYPED_TEST(ServiceRequestResponseTest,
     }
     {
         auto service = node.service_builder(service_name)
-                           .template request_response<iox::Slice<int32_t>, iox::Slice<int32_t>>()
+                           .template request_response<bb::Slice<int32_t>, bb::Slice<int32_t>>()
                            .create()
                            .value();
         auto static_config = service.static_config();
@@ -1793,7 +1793,7 @@ TYPED_TEST(ServiceRequestResponseTest,
     }
     {
         auto service = node.service_builder(service_name)
-                           .template request_response<iox::Slice<int64_t>, iox::Slice<int64_t>>()
+                           .template request_response<bb::Slice<int64_t>, bb::Slice<int64_t>>()
                            .create()
                            .value();
         auto static_config = service.static_config();
@@ -1802,7 +1802,7 @@ TYPED_TEST(ServiceRequestResponseTest,
     }
     {
         auto service = node.service_builder(service_name)
-                           .template request_response<iox::Slice<float>, iox::Slice<float>>()
+                           .template request_response<bb::Slice<float>, bb::Slice<float>>()
                            .create()
                            .value();
         auto static_config = service.static_config();
@@ -1811,7 +1811,7 @@ TYPED_TEST(ServiceRequestResponseTest,
     }
     {
         auto service = node.service_builder(service_name)
-                           .template request_response<iox::Slice<double>, iox::Slice<double>>()
+                           .template request_response<bb::Slice<double>, bb::Slice<double>>()
                            .create()
                            .value();
         auto static_config = service.static_config();
@@ -1825,7 +1825,7 @@ TYPED_TEST(ServiceRequestResponseTest, payload_type_name_is_set_to_inner_type_na
     const auto service_name = iox2_testing::generate_service_name();
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
-                       .template request_response<iox::Slice<Payload>, iox::Slice<Payload>>()
+                       .template request_response<bb::Slice<Payload>, bb::Slice<Payload>>()
                        .create()
                        .value();
 
@@ -1918,9 +1918,9 @@ TYPED_TEST(ServiceRequestResponseTest, client_details_are_correct) {
     const auto service_name = iox2_testing::generate_service_name();
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut =
-        node.service_builder(service_name).template request_response<iox::Slice<uint64_t>, uint64_t>().create().value();
+        node.service_builder(service_name).template request_response<bb::Slice<uint64_t>, uint64_t>().create().value();
 
-    iox2::Client<SERVICE_TYPE, iox::Slice<uint64_t>, void, uint64_t, void> client =
+    iox2::Client<SERVICE_TYPE, bb::Slice<uint64_t>, void, uint64_t, void> client =
         sut.client_builder().initial_max_slice_len(MAX_SLICE_LEN).create().value();
 
     auto counter = 0;
@@ -2001,9 +2001,9 @@ TYPED_TEST(ServiceRequestResponseTest, server_details_are_correct) {
     const auto service_name = iox2_testing::generate_service_name();
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut =
-        node.service_builder(service_name).template request_response<uint64_t, iox::Slice<uint64_t>>().create().value();
+        node.service_builder(service_name).template request_response<uint64_t, bb::Slice<uint64_t>>().create().value();
 
-    iox2::Server<SERVICE_TYPE, uint64_t, void, iox::Slice<uint64_t>, void> server =
+    iox2::Server<SERVICE_TYPE, uint64_t, void, bb::Slice<uint64_t>, void> server =
         sut.server_builder().initial_max_slice_len(MAX_SLICE_LEN).create().value();
 
     auto counter = 0;

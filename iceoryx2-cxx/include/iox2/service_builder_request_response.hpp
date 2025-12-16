@@ -448,7 +448,7 @@ inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
     // request payload type details
     using RequestValueType = typename PayloadInfo<RequestPayload>::ValueType;
     auto type_variant_request_payload =
-        iox::IsSlice<RequestPayload>::VALUE ? iox2_type_variant_e_DYNAMIC : iox2_type_variant_e_FIXED_SIZE;
+        bb::IsSlice<RequestPayload>::VALUE ? iox2_type_variant_e_DYNAMIC : iox2_type_variant_e_FIXED_SIZE;
 
     const auto request_payload_type_name = internal::get_type_name<RequestPayload>();
     const auto request_payload_type_size = sizeof(RequestValueType);
@@ -469,7 +469,7 @@ inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
     // response payload type details
     using ResponseValueType = typename PayloadInfo<ResponsePayload>::ValueType;
     auto type_variant_response_payload =
-        iox::IsSlice<ResponsePayload>::VALUE ? iox2_type_variant_e_DYNAMIC : iox2_type_variant_e_FIXED_SIZE;
+        bb::IsSlice<ResponsePayload>::VALUE ? iox2_type_variant_e_DYNAMIC : iox2_type_variant_e_FIXED_SIZE;
 
     const auto response_payload_type_name = internal::get_type_name<ResponsePayload>();
     const auto response_payload_type_size = sizeof(ResponseValueType);

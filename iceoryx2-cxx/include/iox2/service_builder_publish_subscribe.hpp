@@ -180,7 +180,7 @@ inline void ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_paramete
     }
 
     using ValueType = typename PayloadInfo<Payload>::ValueType;
-    auto type_variant = iox::IsSlice<Payload>::VALUE ? iox2_type_variant_e_DYNAMIC : iox2_type_variant_e_FIXED_SIZE;
+    auto type_variant = bb::IsSlice<Payload>::VALUE ? iox2_type_variant_e_DYNAMIC : iox2_type_variant_e_FIXED_SIZE;
 
     // payload type details
     const auto payload_type_name = internal::get_type_name<Payload>();

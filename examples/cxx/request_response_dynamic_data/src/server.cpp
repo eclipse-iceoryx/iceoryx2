@@ -21,7 +21,7 @@ auto main() -> int {
     auto node = NodeBuilder().create<ServiceType::Ipc>().value();
 
     auto service = node.service_builder(ServiceName::create("My/Funk/ServiceName").value())
-                       .request_response<iox::Slice<uint8_t>, iox::Slice<uint8_t>>()
+                       .request_response<bb::Slice<uint8_t>, bb::Slice<uint8_t>>()
                        .open_or_create()
                        .value();
 

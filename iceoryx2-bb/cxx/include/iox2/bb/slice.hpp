@@ -10,15 +10,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_SLICE_HPP
-#define IOX2_SLICE_HPP
+#ifndef IOX2_BB_SLICE_HPP
+#define IOX2_BB_SLICE_HPP
 
 #include "iox2/bb/detail/assertions.hpp"
 
 #include <cstdint>
 #include <type_traits>
 
-namespace iox {
+namespace iox2 {
+namespace bb {
 
 /// @brief A class representing a slice of contiguous elements of type T.
 ///
@@ -162,6 +163,8 @@ template <typename T>
 struct IsSlice<Slice<T>> {
     static constexpr bool VALUE = true;
 };
-} // namespace iox
 
-#endif
+} // namespace bb
+} // namespace iox2
+
+#endif // IOX2_BB_SLICE_HPP

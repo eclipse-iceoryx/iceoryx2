@@ -111,7 +111,7 @@ languages can communicate.
 
 You can also send dynamic data between Python, C++ and Rust applications (see
 [Publish-Subscribe With Dynamic Data](../publish_subscribe_dynamic_data)). If
-you send `iox::Slice`s of `(u)int{8|16|32|64}_t`, `float`, `double` or `bool`,
+you send `iox2:bb::Slice`s of `(u)int{8|16|32|64}_t`, `float`, `double` or `bool`,
 the payload type name is automatically translated to the Rust equivalent. For
 other slice types, you have to set `IOX2_TYPE_NAME` for the inner type to the
 Rust equivalent to enable the communication.

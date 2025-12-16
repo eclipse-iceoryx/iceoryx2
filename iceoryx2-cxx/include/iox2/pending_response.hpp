@@ -13,9 +13,9 @@
 #ifndef IOX2_PENDING_RESPONSE_HPP
 #define IOX2_PENDING_RESPONSE_HPP
 
-#include "iox/slice.hpp"
 #include "iox2/bb/expected.hpp"
 #include "iox2/bb/optional.hpp"
+#include "iox2/bb/slice.hpp"
 #include "iox2/header_request_response.hpp"
 #include "iox2/payload_info.hpp"
 #include "iox2/response.hpp"
@@ -63,13 +63,13 @@ class PendingResponse {
 
     /// Returns a reference to the request payload of the corresponding
     /// [`RequestMut`]
-    template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
+    template <typename T = RequestPayload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
     auto payload() const -> const T&;
 
     /// Returns a reference to the request payload of the corresponding
     /// [`RequestMut`]
-    template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
-    auto payload() const -> iox::ImmutableSlice<ValueType>;
+    template <typename T = RequestPayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
+    auto payload() const -> bb::ImmutableSlice<ValueType>;
 
     /// Returns how many [`Server`]s received the corresponding
     /// [`RequestMut`] initially.
@@ -215,13 +215,13 @@ template <ServiceType Service,
 template <typename T, typename>
 inline auto
 PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::payload() const
-    -> iox::ImmutableSlice<ValueType> {
+    -> bb::ImmutableSlice<ValueType> {
     const void* ptr = nullptr;
     size_t number_of_elements = 0;
 
     iox2_pending_response_payload(&m_handle, &ptr, &number_of_elements);
 
-    return iox::ImmutableSlice<ValueType>(static_cast<const ValueType*>(ptr), number_of_elements);
+    return bb::ImmutableSlice<ValueType>(static_cast<const ValueType*>(ptr), number_of_elements);
 }
 
 template <ServiceType Service,

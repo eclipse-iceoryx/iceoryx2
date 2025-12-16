@@ -13,7 +13,7 @@
 #ifndef IOX2_PAYLOAD_INFO_HPP
 #define IOX2_PAYLOAD_INFO_HPP
 
-#include "iox/slice.hpp"
+#include "iox2/bb/slice.hpp"
 
 namespace iox2 {
 
@@ -23,8 +23,8 @@ struct PayloadInfo {
 };
 
 template <typename T>
-struct PayloadInfo<iox::Slice<T>> {
-    using ValueType = typename iox::Slice<T>::ValueType;
+struct PayloadInfo<bb::Slice<T>> {
+    using ValueType = typename bb::Slice<T>::ValueType;
 };
 
 } // namespace iox2

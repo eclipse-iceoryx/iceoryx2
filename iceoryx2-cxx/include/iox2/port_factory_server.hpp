@@ -57,14 +57,14 @@ class PortFactoryServer {
     ~PortFactoryServer() = default;
 
     /// Sets the maximum initial slice length configured for this [`Server`].
-    template <typename T = ResponsePayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    template <typename T = ResponsePayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto initial_max_slice_len(uint64_t value) && -> PortFactoryServer&&;
 
     /// Defines the allocation strategy that is used when the provided
     /// [`PortFactoryServer::initial_max_slice_len()`] is exhausted. This happens when the user
     /// acquires more than max slice len in [`ActiveRequest::loan_slice()`] or
     /// [`ActiveRequest::loan_slice_uninit()`].
-    template <typename T = ResponsePayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    template <typename T = ResponsePayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto allocation_strategy(AllocationStrategy value) && -> PortFactoryServer&&;
 
     /// Creates a new [`Server`] or returns a [`ServerCreateError`] on failure.
