@@ -13,7 +13,7 @@
 #ifndef IOX2_PORTFACTORY_CLIENT_HPP
 #define IOX2_PORTFACTORY_CLIENT_HPP
 
-#include "iox/builder_addendum.hpp"
+#include "iox2/bb/detail/builder.hpp"
 #include "iox2/bb/expected.hpp"
 #include "iox2/bb/optional.hpp"
 #include "iox2/client.hpp"
@@ -48,14 +48,14 @@ class PortFactoryClient {
     ~PortFactoryClient() = default;
 
     /// Sets the maximum number of elements that can be loaned in a slice.
-    template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    template <typename T = RequestPayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto initial_max_slice_len(uint64_t value) && -> PortFactoryClient&&;
 
     /// Defines the allocation strategy that is used when the provided
     /// [`PortFactoryClient::initial_max_slice_len()`] is exhausted. This happens when the user
     /// acquires more than max slice len in [`Client::loan_slice()`] or
     /// [`Client::loan_slice_uninit()`].
-    template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    template <typename T = RequestPayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto allocation_strategy(AllocationStrategy value) && -> PortFactoryClient&&;
 
     /// Creates a new [`Client`] or returns a [`ClientCreateError`] on failure.

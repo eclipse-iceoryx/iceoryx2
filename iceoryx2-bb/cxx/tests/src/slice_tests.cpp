@@ -10,12 +10,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox/slice.hpp"
-#include "test.hpp"
+#include "iox2/bb/slice.hpp"
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include <array>
 
 namespace {
+using namespace ::testing;
+using namespace iox2::bb;
 
 struct DummyData {
     static constexpr uint64_t DEFAULT_VALUE_A = 42;
@@ -29,26 +33,26 @@ TEST(SliceTest, const_correctness_is_maintained) {
 
     auto elements = std::array<DummyData, SLICE_MAX_LENGTH> {};
 
-    auto mutable_slice = iox::MutableSlice<DummyData>(elements.data(), SLICE_MAX_LENGTH);
+    auto mutable_slice = MutableSlice<DummyData>(elements.data(), SLICE_MAX_LENGTH);
     ASSERT_FALSE(std::is_const<std::remove_pointer_t<decltype(mutable_slice.begin())>>::value);
     ASSERT_FALSE(std::is_const<std::remove_pointer_t<decltype(mutable_slice.end())>>::value);
     ASSERT_FALSE(std::is_const<std::remove_pointer_t<decltype(mutable_slice.data())>>::value);
     ASSERT_FALSE(std::is_const<std::remove_reference_t<decltype(mutable_slice[0])>>::value);
 
     // const instances of MutableSlice are also not mutable
-    const auto const_mutable_slice = iox::MutableSlice<DummyData>(elements.data(), SLICE_MAX_LENGTH);
+    const auto const_mutable_slice = MutableSlice<DummyData>(elements.data(), SLICE_MAX_LENGTH);
     ASSERT_TRUE(std::is_const<std::remove_pointer_t<decltype(const_mutable_slice.begin())>>::value);
     ASSERT_TRUE(std::is_const<std::remove_pointer_t<decltype(const_mutable_slice.end())>>::value);
     ASSERT_TRUE(std::is_const<std::remove_pointer_t<decltype(const_mutable_slice.data())>>::value);
     ASSERT_TRUE(std::is_const<std::remove_reference_t<decltype(const_mutable_slice[0])>>::value);
 
-    auto immutable_slice = iox::ImmutableSlice<DummyData>(elements.data(), SLICE_MAX_LENGTH);
+    auto immutable_slice = ImmutableSlice<DummyData>(elements.data(), SLICE_MAX_LENGTH);
     ASSERT_TRUE(std::is_const<std::remove_pointer_t<decltype(immutable_slice.begin())>>::value);
     ASSERT_TRUE(std::is_const<std::remove_pointer_t<decltype(immutable_slice.end())>>::value);
     ASSERT_TRUE(std::is_const<std::remove_pointer_t<decltype(immutable_slice.data())>>::value);
     ASSERT_TRUE(std::is_const<std::remove_reference_t<decltype(immutable_slice[0])>>::value);
 
-    const auto const_immutable_slice = iox::ImmutableSlice<DummyData>(elements.data(), SLICE_MAX_LENGTH);
+    const auto const_immutable_slice = ImmutableSlice<DummyData>(elements.data(), SLICE_MAX_LENGTH);
     ASSERT_TRUE(std::is_const<std::remove_pointer_t<decltype(const_immutable_slice.begin())>>::value);
     ASSERT_TRUE(std::is_const<std::remove_pointer_t<decltype(const_immutable_slice.end())>>::value);
     ASSERT_TRUE(std::is_const<std::remove_pointer_t<decltype(const_immutable_slice.data())>>::value);
@@ -60,7 +64,7 @@ TEST(SliceTest, can_iterate_mutable_slice) {
 
     auto elements = std::array<DummyData, SLICE_MAX_LENGTH> {};
 
-    auto mutable_slice = iox::MutableSlice<DummyData>(elements.data(), SLICE_MAX_LENGTH);
+    auto mutable_slice = MutableSlice<DummyData>(elements.data(), SLICE_MAX_LENGTH);
     auto iterations = 0;
     for (auto element : mutable_slice) {
         ASSERT_THAT(element.a, Eq(DummyData::DEFAULT_VALUE_A));
@@ -75,7 +79,7 @@ TEST(SliceTest, can_iterate_const_mutable_slice) {
 
     auto elements = std::array<DummyData, SLICE_MAX_LENGTH> {};
 
-    const auto slice = iox::MutableSlice<DummyData>(elements.data(), SLICE_MAX_LENGTH);
+    const auto slice = MutableSlice<DummyData>(elements.data(), SLICE_MAX_LENGTH);
     auto iterations = 0;
     for (auto element : slice) {
         ASSERT_THAT(element.a, Eq(DummyData::DEFAULT_VALUE_A));
@@ -90,7 +94,7 @@ TEST(SliceTest, can_iterate_immutable_slice) {
 
     auto elements = std::array<DummyData, SLICE_MAX_LENGTH> {};
 
-    auto slice = iox::ImmutableSlice<DummyData>(elements.data(), SLICE_MAX_LENGTH);
+    auto slice = ImmutableSlice<DummyData>(elements.data(), SLICE_MAX_LENGTH);
     auto iterations = 0;
     for (auto element : slice) {
         ASSERT_THAT(element.a, Eq(DummyData::DEFAULT_VALUE_A));
@@ -105,7 +109,7 @@ TEST(SliceTest, can_iterate_const_immutable_slice) {
 
     auto elements = std::array<DummyData, SLICE_MAX_LENGTH> {};
 
-    const auto slice = iox::ImmutableSlice<DummyData>(elements.data(), SLICE_MAX_LENGTH);
+    const auto slice = ImmutableSlice<DummyData>(elements.data(), SLICE_MAX_LENGTH);
     auto iterations = 0;
     for (auto element : slice) {
         ASSERT_THAT(element.a, Eq(DummyData::DEFAULT_VALUE_A));

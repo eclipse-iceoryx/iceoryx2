@@ -13,10 +13,10 @@
 #ifndef IOX2_SERVER_HPP
 #define IOX2_SERVER_HPP
 
-#include "iox/slice.hpp"
 #include "iox2/active_request.hpp"
 #include "iox2/bb/expected.hpp"
 #include "iox2/bb/optional.hpp"
+#include "iox2/bb/slice.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/unique_port_id.hpp"
 
@@ -45,7 +45,7 @@ class Server {
         ReceiveError>;
 
     /// Returns the maximum initial slice length configured for this [`Server`].
-    template <typename T = ResponsePayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    template <typename T = ResponsePayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto initial_max_slice_len() const -> uint64_t;
 
     /// Returns the [`UniqueServerId`] of the [`Server`]

@@ -15,7 +15,7 @@
 #ifndef IOX2_BB_FUNCTIONAL_FUNCTION_REF_INL
 #define IOX2_BB_FUNCTIONAL_FUNCTION_REF_INL
 
-#include "iox2/legacy/assertions.hpp"
+#include "iox2/bb/detail/assertions.hpp"
 #include "iox2/legacy/function_ref.hpp"
 
 #include <memory>

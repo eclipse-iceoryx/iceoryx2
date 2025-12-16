@@ -13,8 +13,8 @@
 #ifndef IOX2_RESPONSE_MUT_HPP
 #define IOX2_RESPONSE_MUT_HPP
 
-#include "iox/slice.hpp"
 #include "iox2/bb/expected.hpp"
+#include "iox2/bb/slice.hpp"
 #include "iox2/header_request_response.hpp"
 #include "iox2/payload_info.hpp"
 #include "iox2/port_error.hpp"
@@ -57,20 +57,20 @@ class ResponseMut {
     auto user_header_mut() -> T&;
 
     /// Returns a reference to the payload of the response.
-    template <typename T = ResponsePayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
+    template <typename T = ResponsePayload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
     auto payload() const -> const ResponsePayload&;
 
     /// Returns a reference to the payload of the response.
-    template <typename T = ResponsePayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
-    auto payload() const -> iox::ImmutableSlice<ValueType>;
+    template <typename T = ResponsePayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
+    auto payload() const -> bb::ImmutableSlice<ValueType>;
 
     /// Returns a mutable reference to the payload of the response.
-    template <typename T = ResponsePayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
+    template <typename T = ResponsePayload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
     auto payload_mut() -> ResponsePayload&;
 
     /// Returns a mutable reference to the payload of the response.
-    template <typename T = ResponsePayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
-    auto payload_mut() -> iox::MutableSlice<ValueType>;
+    template <typename T = ResponsePayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
+    auto payload_mut() -> bb::MutableSlice<ValueType>;
 
   private:
     template <ServiceType, typename, typename>
@@ -154,11 +154,11 @@ inline auto ResponseMut<Service, ResponsePayload, ResponseUserHeader>::payload()
 template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
 template <typename T, typename>
 inline auto ResponseMut<Service, ResponsePayload, ResponseUserHeader>::payload() const
-    -> iox::ImmutableSlice<ValueType> {
+    -> bb::ImmutableSlice<ValueType> {
     const void* ptr = nullptr;
     size_t number_of_elements = 0;
     iox2_response_mut_payload(&m_handle, &ptr, &number_of_elements);
-    return iox::ImmutableSlice<ValueType>(static_cast<const ValueType*>(ptr), number_of_elements);
+    return bb::ImmutableSlice<ValueType>(static_cast<const ValueType*>(ptr), number_of_elements);
 }
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
@@ -171,12 +171,12 @@ inline auto ResponseMut<Service, ResponsePayload, ResponseUserHeader>::payload_m
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
 template <typename T, typename>
-inline auto ResponseMut<Service, ResponsePayload, ResponseUserHeader>::payload_mut() -> iox::MutableSlice<ValueType> {
+inline auto ResponseMut<Service, ResponsePayload, ResponseUserHeader>::payload_mut() -> bb::MutableSlice<ValueType> {
     void* ptr = nullptr;
     size_t number_of_elements = 0;
     iox2_response_mut_payload_mut(&m_handle, &ptr, &number_of_elements);
 
-    return iox::MutableSlice<ValueType>(static_cast<ValueType*>(ptr), number_of_elements);
+    return bb::MutableSlice<ValueType>(static_cast<ValueType*>(ptr), number_of_elements);
 }
 
 

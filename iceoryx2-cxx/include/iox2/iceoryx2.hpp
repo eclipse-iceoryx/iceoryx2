@@ -13,9 +13,9 @@
 #ifndef IOX2_ICEORYX2_HPP
 #define IOX2_ICEORYX2_HPP
 
-#include "iox/layout.hpp"
-#include "iox/slice.hpp"
 #include "iox2/bb/duration.hpp"
+#include "iox2/bb/layout.hpp"
+#include "iox2/bb/slice.hpp"
 #include "iox2/legacy/string.hpp"
 
 #include "iox2/active_request.hpp"

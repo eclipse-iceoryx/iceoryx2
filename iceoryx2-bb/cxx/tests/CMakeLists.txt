@@ -38,10 +38,12 @@ target_sources(iceoryx2-bb-cxx-tests
     ${PROJECT_SOURCE_DIR}/src/expected_err_free_function_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/expected_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/into_tests.cpp
+    ${PROJECT_SOURCE_DIR}/src/layout_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/optional_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/path_and_file_verifier_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/raw_byte_storage_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/semantic_string_tests.cpp
+    ${PROJECT_SOURCE_DIR}/src/slice_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/static_function_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/static_string_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/static_vector_tests.cpp

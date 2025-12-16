@@ -15,7 +15,7 @@
 #ifndef IOX2_BB_VOCABULARY_OPTIONAL_HPP
 #define IOX2_BB_VOCABULARY_OPTIONAL_HPP
 
-#include "iox2/legacy/assertions.hpp"
+#include "iox2/bb/detail/assertions.hpp"
 #include "iox2/legacy/functional_interface.hpp"
 #include "iox2/legacy/memory.hpp"
 

@@ -13,11 +13,11 @@
 #ifndef IOX2_SERVICE_BUILDER_REQUEST_RESPONSE_HPP
 #define IOX2_SERVICE_BUILDER_REQUEST_RESPONSE_HPP
 
-#include "iox/builder_addendum.hpp"
-#include "iox/layout.hpp"
 #include "iox2/attribute_specifier.hpp"
 #include "iox2/attribute_verifier.hpp"
+#include "iox2/bb/detail/builder.hpp"
 #include "iox2/bb/expected.hpp"
+#include "iox2/bb/layout.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/internal/service_builder_internal.hpp"
 #include "iox2/payload_info.hpp"
@@ -448,7 +448,7 @@ inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
     // request payload type details
     using RequestValueType = typename PayloadInfo<RequestPayload>::ValueType;
     auto type_variant_request_payload =
-        iox::IsSlice<RequestPayload>::VALUE ? iox2_type_variant_e_DYNAMIC : iox2_type_variant_e_FIXED_SIZE;
+        bb::IsSlice<RequestPayload>::VALUE ? iox2_type_variant_e_DYNAMIC : iox2_type_variant_e_FIXED_SIZE;
 
     const auto request_payload_type_name = internal::get_type_name<RequestPayload>();
     const auto request_payload_type_size = sizeof(RequestValueType);
@@ -469,7 +469,7 @@ inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
     // response payload type details
     using ResponseValueType = typename PayloadInfo<ResponsePayload>::ValueType;
     auto type_variant_response_payload =
-        iox::IsSlice<ResponsePayload>::VALUE ? iox2_type_variant_e_DYNAMIC : iox2_type_variant_e_FIXED_SIZE;
+        bb::IsSlice<ResponsePayload>::VALUE ? iox2_type_variant_e_DYNAMIC : iox2_type_variant_e_FIXED_SIZE;
 
     const auto response_payload_type_name = internal::get_type_name<ResponsePayload>();
     const auto response_payload_type_size = sizeof(ResponseValueType);
@@ -488,7 +488,7 @@ inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
     }
 
     // request header type details
-    const auto request_header_layout = iox::Layout::from<RequestUserHeader>();
+    const auto request_header_layout = bb::Layout::from<RequestUserHeader>();
     const auto request_header_type_name = internal::get_type_name<RequestUserHeader>();
     const auto request_header_type_size = request_header_layout.size();
     const auto request_header_type_align = request_header_layout.alignment();
@@ -506,7 +506,7 @@ inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
     }
 
     // response header type details
-    const auto response_header_layout = iox::Layout::from<ResponseUserHeader>();
+    const auto response_header_layout = bb::Layout::from<ResponseUserHeader>();
     const auto response_header_type_name = internal::get_type_name<ResponseUserHeader>();
     const auto response_header_type_size = response_header_layout.size();
     const auto response_header_type_align = response_header_layout.alignment();

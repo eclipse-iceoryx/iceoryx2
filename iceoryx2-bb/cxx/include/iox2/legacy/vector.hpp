@@ -15,7 +15,7 @@
 #ifndef IOX2_BB_CONTAINER_VECTOR_HPP
 #define IOX2_BB_CONTAINER_VECTOR_HPP
 
-#include "iox2/legacy/assertions.hpp"
+#include "iox2/bb/detail/assertions.hpp"
 #include "iox2/legacy/attributes.hpp"
 #include "iox2/legacy/logging.hpp"
 #include "iox2/legacy/uninitialized_array.hpp"

@@ -310,7 +310,7 @@ TYPED_TEST(ServicePublishSubscribeTest, slice_copy_send_receive_works) {
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service =
-        node.service_builder(service_name).template publish_subscribe<iox::Slice<DummyData>>().create().value();
+        node.service_builder(service_name).template publish_subscribe<bb::Slice<DummyData>>().create().value();
 
     auto sut_publisher = service.publisher_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().value();
     auto sut_subscriber = service.subscriber_builder().create().value();
@@ -319,7 +319,7 @@ TYPED_TEST(ServicePublishSubscribeTest, slice_copy_send_receive_works) {
     for (auto& item : elements) {
         new (&item) DummyData {};
     }
-    auto payload = iox::ImmutableSlice<DummyData>(elements.begin(), SLICE_MAX_LENGTH);
+    auto payload = bb::ImmutableSlice<DummyData>(elements.begin(), SLICE_MAX_LENGTH);
     sut_publisher.send_slice_copy(payload).value();
 
     auto recv_result = sut_subscriber.receive().value();
@@ -347,7 +347,7 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_slice_send_receive_works) {
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
-                       .template publish_subscribe<iox::Slice<DummyData>>()
+                       .template publish_subscribe<bb::Slice<DummyData>>()
                        .payload_alignment(PAYLOAD_ALIGNMENT)
                        .create()
                        .value();
@@ -410,7 +410,7 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_slice_uninit_send_receive_works) {
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
-                       .template publish_subscribe<iox::Slice<DummyData>>()
+                       .template publish_subscribe<bb::Slice<DummyData>>()
                        .payload_alignment(PAYLOAD_ALIGNMENT)
                        .create()
                        .value();
@@ -452,7 +452,7 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_slice_uninit_with_bytes_send_receiv
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
-                       .template publish_subscribe<iox::Slice<uint8_t>>()
+                       .template publish_subscribe<bb::Slice<uint8_t>>()
                        .payload_alignment(PAYLOAD_ALIGNMENT)
                        .create()
                        .value();
@@ -485,7 +485,7 @@ TYPED_TEST(ServicePublishSubscribeTest, write_from_fn_send_receive_works) {
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service =
-        node.service_builder(service_name).template publish_subscribe<iox::Slice<DummyData>>().create().value();
+        node.service_builder(service_name).template publish_subscribe<bb::Slice<DummyData>>().create().value();
 
     auto sut_publisher = service.publisher_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().value();
     auto sut_subscriber = service.subscriber_builder().create().value();
@@ -519,7 +519,7 @@ TYPED_TEST(ServicePublishSubscribeTest, write_from_slice_send_receive_works) {
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service =
-        node.service_builder(service_name).template publish_subscribe<iox::Slice<DummyData>>().create().value();
+        node.service_builder(service_name).template publish_subscribe<bb::Slice<DummyData>>().create().value();
 
     auto sut_publisher = service.publisher_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().value();
     auto sut_subscriber = service.subscriber_builder().create().value();
@@ -528,7 +528,7 @@ TYPED_TEST(ServicePublishSubscribeTest, write_from_slice_send_receive_works) {
     for (auto& item : elements) {
         new (&item) DummyData {};
     }
-    auto payload = iox::ImmutableSlice<DummyData>(elements.begin(), SLICE_MAX_LENGTH);
+    auto payload = bb::ImmutableSlice<DummyData>(elements.begin(), SLICE_MAX_LENGTH);
     auto sample_uninit = sut_publisher.loan_slice_uninit(SLICE_MAX_LENGTH).value();
     auto send_sample = sample_uninit.write_from_slice(payload);
     send(std::move(send_sample)).value();
@@ -708,7 +708,7 @@ TYPED_TEST(ServicePublishSubscribeTest, publisher_applies_max_slice_len) {
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service =
-        node.service_builder(service_name).template publish_subscribe<iox::Slice<ValueType>>().create().value();
+        node.service_builder(service_name).template publish_subscribe<bb::Slice<ValueType>>().create().value();
 
     auto sut = service.publisher_builder().initial_max_slice_len(DESIRED_MAX_SLICE_LEN).create().value();
 
@@ -802,7 +802,7 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_slice_has_default_constructed_user_
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
-                       .template publish_subscribe<iox::Slice<uint64_t>>()
+                       .template publish_subscribe<bb::Slice<uint64_t>>()
                        .template user_header<UserHeader>()
                        .create()
                        .value();
@@ -822,7 +822,7 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_slice_uninit_has_default_constructe
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
-                       .template publish_subscribe<iox::Slice<uint64_t>>()
+                       .template publish_subscribe<bb::Slice<uint64_t>>()
                        .template user_header<UserHeader>()
                        .create()
                        .value();
@@ -952,7 +952,7 @@ TYPED_TEST(ServicePublishSubscribeTest, publisher_reallocates_memory_when_alloca
     const auto service_name = iox2_testing::generate_service_name();
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service =
-        node.service_builder(service_name).template publish_subscribe<iox::Slice<ValueType>>().create().value();
+        node.service_builder(service_name).template publish_subscribe<bb::Slice<ValueType>>().create().value();
 
     auto publisher = service.publisher_builder()
                          .initial_max_slice_len(INITIAL_SIZE)
@@ -984,7 +984,7 @@ TYPED_TEST(ServicePublishSubscribeTest, publisher_does_not_reallocate_when_alloc
     const auto service_name = iox2_testing::generate_service_name();
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service =
-        node.service_builder(service_name).template publish_subscribe<iox::Slice<ValueType>>().create().value();
+        node.service_builder(service_name).template publish_subscribe<bb::Slice<ValueType>>().create().value();
 
     auto publisher = service.publisher_builder()
                          .initial_max_slice_len(INITIAL_SIZE)
@@ -1384,61 +1384,61 @@ TYPED_TEST(ServicePublishSubscribeTest, PayloadTypeNameIsSetToRustPendantForFixe
     }
     {
         auto service =
-            node.service_builder(service_name).template publish_subscribe<iox::Slice<uint8_t>>().create().value();
+            node.service_builder(service_name).template publish_subscribe<bb::Slice<uint8_t>>().create().value();
         auto static_config = service.static_config();
         ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("u8"));
     }
     {
         auto service =
-            node.service_builder(service_name).template publish_subscribe<iox::Slice<uint16_t>>().create().value();
+            node.service_builder(service_name).template publish_subscribe<bb::Slice<uint16_t>>().create().value();
         auto static_config = service.static_config();
         ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("u16"));
     }
     {
         auto service =
-            node.service_builder(service_name).template publish_subscribe<iox::Slice<uint32_t>>().create().value();
+            node.service_builder(service_name).template publish_subscribe<bb::Slice<uint32_t>>().create().value();
         auto static_config = service.static_config();
         ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("u32"));
     }
     {
         auto service =
-            node.service_builder(service_name).template publish_subscribe<iox::Slice<uint64_t>>().create().value();
+            node.service_builder(service_name).template publish_subscribe<bb::Slice<uint64_t>>().create().value();
         auto static_config = service.static_config();
         ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("u64"));
     }
     {
         auto service =
-            node.service_builder(service_name).template publish_subscribe<iox::Slice<int8_t>>().create().value();
+            node.service_builder(service_name).template publish_subscribe<bb::Slice<int8_t>>().create().value();
         auto static_config = service.static_config();
         ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("i8"));
     }
     {
         auto service =
-            node.service_builder(service_name).template publish_subscribe<iox::Slice<int16_t>>().create().value();
+            node.service_builder(service_name).template publish_subscribe<bb::Slice<int16_t>>().create().value();
         auto static_config = service.static_config();
         ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("i16"));
     }
     {
         auto service =
-            node.service_builder(service_name).template publish_subscribe<iox::Slice<int32_t>>().create().value();
+            node.service_builder(service_name).template publish_subscribe<bb::Slice<int32_t>>().create().value();
         auto static_config = service.static_config();
         ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("i32"));
     }
     {
         auto service =
-            node.service_builder(service_name).template publish_subscribe<iox::Slice<int64_t>>().create().value();
+            node.service_builder(service_name).template publish_subscribe<bb::Slice<int64_t>>().create().value();
         auto static_config = service.static_config();
         ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("i64"));
     }
     {
         auto service =
-            node.service_builder(service_name).template publish_subscribe<iox::Slice<float>>().create().value();
+            node.service_builder(service_name).template publish_subscribe<bb::Slice<float>>().create().value();
         auto static_config = service.static_config();
         ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("f32"));
     }
     {
         auto service =
-            node.service_builder(service_name).template publish_subscribe<iox::Slice<double>>().create().value();
+            node.service_builder(service_name).template publish_subscribe<bb::Slice<double>>().create().value();
         auto static_config = service.static_config();
         ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("f64"));
     }
@@ -1448,8 +1448,7 @@ TYPED_TEST(ServicePublishSubscribeTest, PayloadTypeNameIsSetToInnerTypeNameIfPro
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name = iox2_testing::generate_service_name();
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
-    auto service =
-        node.service_builder(service_name).template publish_subscribe<iox::Slice<Payload>>().create().value();
+    auto service = node.service_builder(service_name).template publish_subscribe<bb::Slice<Payload>>().create().value();
 
     auto static_config = service.static_config();
     ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("Payload"));
@@ -1616,9 +1615,9 @@ TYPED_TEST(ServicePublishSubscribeTest, publisher_details_are_correct) {
 
     const auto service_name = iox2_testing::generate_service_name();
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
-    auto sut = node.service_builder(service_name).template publish_subscribe<iox::Slice<uint64_t>>().create().value();
+    auto sut = node.service_builder(service_name).template publish_subscribe<bb::Slice<uint64_t>>().create().value();
 
-    iox2::Publisher<SERVICE_TYPE, iox::Slice<uint64_t>, void> publisher =
+    iox2::Publisher<SERVICE_TYPE, bb::Slice<uint64_t>, void> publisher =
         sut.publisher_builder().initial_max_slice_len(INITIAL_MAX_SLICE_LEN).create().value();
 
     auto counter = 0;

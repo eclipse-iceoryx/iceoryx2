@@ -12,8 +12,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_BB_REPORTING_ASSERTIONS_HPP
-#define IOX2_BB_REPORTING_ASSERTIONS_HPP
+#ifndef IOX2_BB_DETAIL_ASSERTIONS_HPP
+#define IOX2_BB_DETAIL_ASSERTIONS_HPP
 
 #include "iox2/legacy/error_reporting/configuration.hpp"
 #include "iox2/legacy/error_reporting/error_forwarding.hpp"
@@ -78,6 +78,10 @@
     iox2::legacy::er::detail::unreachable_wrapped<void, void>(IOX2_CURRENT_SOURCE_LOCATION,                            \
                                                               "Reached code that was supposed to be unreachable.")
 
+/// @brief panic if control flow reaches this code at runtime and tells the user that this part of the code is not yet
+/// implemented
+#define IOX2_TODO() iox2::legacy::er::forwardPanic(IOX2_CURRENT_SOURCE_LOCATION, "Not yet implemented!")
+
 // NOLINTEND(cppcoreguidelines-macro-usage)
 
-#endif // IOX2_BB_REPORTING_ASSERTIONS_HPP
+#endif // IOX2_BB_DETAIL_ASSERTIONS_HPP

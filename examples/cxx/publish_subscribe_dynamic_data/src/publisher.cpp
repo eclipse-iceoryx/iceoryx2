@@ -25,7 +25,7 @@ auto main() -> int {
     auto node = NodeBuilder().create<ServiceType::Ipc>().value();
 
     auto service = node.service_builder(ServiceName::create("Service With Dynamic Data").value())
-                       .publish_subscribe<iox::Slice<uint8_t>>()
+                       .publish_subscribe<bb::Slice<uint8_t>>()
                        .open_or_create()
                        .value();
 

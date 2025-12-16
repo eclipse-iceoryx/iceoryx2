@@ -18,7 +18,7 @@
 
 #include "iox2/legacy/string.hpp"
 
-#include "iox2/legacy/assertions.hpp"
+#include "iox2/bb/detail/assertions.hpp"
 #include "iox2/legacy/logging.hpp"
 
 namespace iox2 {

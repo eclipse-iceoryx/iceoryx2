@@ -42,31 +42,31 @@ class ActiveRequest {
     auto operator=(const ActiveRequest&) noexcept -> ActiveRequest& = delete;
 
     /// Loans uninitialized memory for a [`ResponseMutUninit`] where the user can write its payload to.
-    template <typename T = ResponsePayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
+    template <typename T = ResponsePayload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
     auto loan_uninit() -> bb::Expected<ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>, LoanError>;
 
     /// Loans uninitialized memory for a [`ResponseMutUninit`] where the user can write its payload to.
-    template <typename T = ResponsePayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    template <typename T = ResponsePayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto loan_slice_uninit(uint64_t number_of_elements)
         -> bb::Expected<ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>, LoanError>;
 
     /// Sends a copy of the provided data to the [`PendingResponse`] of the corresponding
     /// [`Client`]. This is not a zero-copy API. Use [`ActiveRequest::loan_uninit()`] instead.
-    template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
+    template <typename T = RequestPayload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
     auto send_copy(const ResponsePayload& payload) const -> bb::Expected<void, SendError>;
 
     /// Sends a copy of the provided data to the [`PendingResponse`] of the corresponding
     /// [`Client`]. This is not a zero-copy API. Use [`ActiveRequest::loan_slice_uninit()`] instead.
-    template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
-    auto send_slice_copy(const iox::ImmutableSlice<ValueType>& payload) const -> bb::Expected<void, SendError>;
+    template <typename T = RequestPayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
+    auto send_slice_copy(const bb::ImmutableSlice<ValueType>& payload) const -> bb::Expected<void, SendError>;
 
     /// Returns a reference to the payload of the received [`RequestMut`]
-    template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
+    template <typename T = RequestPayload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
     auto payload() const -> const T&;
 
     /// Returns a reference to the payload of the received [`RequestMut`]
-    template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
-    auto payload() const -> iox::ImmutableSlice<ValueType>;
+    template <typename T = RequestPayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
+    auto payload() const -> bb::ImmutableSlice<ValueType>;
 
     /// Returns a reference to the user_header of the received [`RequestMut`]
     template <typename T = RequestUserHeader,
@@ -91,12 +91,12 @@ class ActiveRequest {
 
     /// Loans default initialized memory for a [`ResponseMut`] where the user can write its
     /// payload to.
-    template <typename T = ResponsePayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
+    template <typename T = ResponsePayload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
     auto loan() -> bb::Expected<ResponseMut<Service, ResponsePayload, ResponseUserHeader>, LoanError>;
 
     /// Loans default initialized memory for a [`ResponseMut`] where the user can write its
     /// payload to.
-    template <typename T = ResponsePayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    template <typename T = ResponsePayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto loan_slice(uint64_t number_of_elements)
         -> bb::Expected<ResponseMut<Service, ResponsePayload, ResponseUserHeader>, LoanError>;
 
@@ -215,7 +215,7 @@ template <ServiceType Service,
 template <typename T, typename>
 inline auto
 ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::send_slice_copy(
-    const iox::ImmutableSlice<ValueType>& payload) const -> bb::Expected<void, SendError> {
+    const bb::ImmutableSlice<ValueType>& payload) const -> bb::Expected<void, SendError> {
     static_assert(std::is_trivially_copyable<ValueType>::value,
                   "The server supports only trivially copyable response payload types.");
 
@@ -249,13 +249,13 @@ template <ServiceType Service,
 template <typename T, typename>
 inline auto
 ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::payload() const
-    -> iox::ImmutableSlice<ValueType> {
+    -> bb::ImmutableSlice<ValueType> {
     const void* ptr = nullptr;
     size_t number_of_elements = 0;
 
     iox2_active_request_payload(&m_handle, &ptr, &number_of_elements);
 
-    return iox::ImmutableSlice<ValueType>(static_cast<const ValueType*>(ptr), number_of_elements);
+    return bb::ImmutableSlice<ValueType>(static_cast<const ValueType*>(ptr), number_of_elements);
 }
 
 template <ServiceType Service,

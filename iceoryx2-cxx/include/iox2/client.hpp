@@ -13,8 +13,8 @@
 #ifndef IOX2_CLIENT_HPP
 #define IOX2_CLIENT_HPP
 
-#include "iox/slice.hpp"
 #include "iox2/bb/expected.hpp"
+#include "iox2/bb/slice.hpp"
 #include "iox2/internal/helper.hpp"
 #include "iox2/payload_info.hpp"
 #include "iox2/request_mut_uninit.hpp"
@@ -47,13 +47,13 @@ class Client {
     auto unable_to_deliver_strategy() const -> UnableToDeliverStrategy;
 
     /// Returns the maximum number of elements that can be loaned in a slice.
-    template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    template <typename T = RequestPayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto initial_max_slice_len() const -> uint64_t;
 
     /// Copies the input value into a [`RequestMut`] and sends it. On success it
     /// returns a [`PendingResponse`] that can be used to receive a stream of
     /// [`Response`]s from the [`Server`].
-    template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
+    template <typename T = RequestPayload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
     auto send_copy(const RequestPayload& payload) const -> bb::Expected<
         PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestSendError>;
@@ -61,21 +61,21 @@ class Client {
     /// Copies the input value into a [`RequestMut`] and sends it. On success it
     /// returns a [`PendingResponse`] that can be used to receive a stream of
     /// [`Response`]s from the [`Server`].
-    template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
-    auto send_slice_copy(iox::ImmutableSlice<ValueType>& payload) const -> bb::Expected<
+    template <typename T = RequestPayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
+    auto send_slice_copy(bb::ImmutableSlice<ValueType>& payload) const -> bb::Expected<
         PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestSendError>;
 
     /// Acquires an [`RequestMutUninit`] to store payload. This API shall be used
     /// by default to avoid unnecessary copies.
-    template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
+    template <typename T = RequestPayload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
     auto loan_uninit() -> bb::Expected<
         RequestMutUninit<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         LoanError>;
 
     /// Acquires an [`RequestMutUninit`] to store payload. This API shall be used
     /// by default to avoid unnecessary copies.
-    template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    template <typename T = RequestPayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto loan_slice_uninit(uint64_t number_of_elements)
         -> bb::Expected<RequestMutUninit<Service, T, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
                         LoanError>;
@@ -83,14 +83,14 @@ class Client {
     /// Acquires the payload for the request and initializes the underlying memory
     /// with default. This can be very expensive when the payload is large, therefore
     /// prefer [`Client::loan_uninit()`] when possible.
-    template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
+    template <typename T = RequestPayload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
     auto loan()
         -> bb::Expected<RequestMut<Service, T, RequestUserHeader, ResponsePayload, ResponseUserHeader>, LoanError>;
 
     /// Acquires the payload for the request and initializes the underlying memory
     /// with default. This can be very expensive when the payload is large, therefore
     /// prefer [`Client::loan_uninit()`] when possible.
-    template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    template <typename T = RequestPayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto loan_slice(uint64_t number_of_elements)
         -> bb::Expected<RequestMut<Service, T, RequestUserHeader, ResponsePayload, ResponseUserHeader>, LoanError>;
 
@@ -246,7 +246,7 @@ template <ServiceType Service,
           typename ResponseUserHeader>
 template <typename T, typename>
 inline auto Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::send_slice_copy(
-    iox::ImmutableSlice<ValueType>& payload) const
+    bb::ImmutableSlice<ValueType>& payload) const
     -> bb::Expected<PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
                     RequestSendError> {
     static_assert(std::is_trivially_copyable<ValueType>::value,

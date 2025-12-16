@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_BUILDER_ADDENDUM_HPP
-#define IOX2_BUILDER_ADDENDUM_HPP
+#ifndef IOX2_BB_DETAIL_BUILDER_HPP
+#define IOX2_BB_DETAIL_BUILDER_HPP
 
 #include "iox2/bb/optional.hpp"
 
@@ -61,4 +61,4 @@
 // NOLINTEND(bugprone-macro-parentheses)
 // NOLINTEND(cppcoreguidelines-macro-usage)
 
-#endif
+#endif // IOX2_BB_DETAIL_BUILDER_HPP

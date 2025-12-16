@@ -53,36 +53,36 @@ class RequestMutUninit {
     auto user_header_mut() -> T&;
 
     /// Returns a reference to the user defined request payload.
-    template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
+    template <typename T = RequestPayload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
     auto payload() const -> const RequestPayload&;
 
     /// Returns a reference to the user defined request payload.
-    template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
-    auto payload() const -> iox::ImmutableSlice<ValueType>;
+    template <typename T = RequestPayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
+    auto payload() const -> bb::ImmutableSlice<ValueType>;
 
     /// Returns a mutable reference to the user defined request payload.
-    template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
+    template <typename T = RequestPayload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
     auto payload_mut() -> RequestPayload&;
 
     /// Returns a mutable reference to the user defined request payload.
-    template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
-    auto payload_mut() -> iox::MutableSlice<ValueType>;
+    template <typename T = RequestPayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
+    auto payload_mut() -> bb::MutableSlice<ValueType>;
 
     /// Copies the provided payload into the uninitialized request and returns
     /// an initialized [`RequestMut`].
-    template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, T>>
+    template <typename T = RequestPayload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, T>>
     auto write_payload(RequestPayload&& payload)
         -> RequestMut<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>;
 
     /// Copies the provided payload into the uninitialized request and returns
     /// an initialized [`RequestMut`].
-    template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, T>>
-    auto write_from_slice(iox::ImmutableSlice<ValueType>& value)
+    template <typename T = RequestPayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, T>>
+    auto write_from_slice(bb::ImmutableSlice<ValueType>& value)
         -> RequestMut<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>;
 
     /// Copies the provided payload into the uninitialized request and returns
     /// an initialized [`RequestMut`].
-    template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, T>>
+    template <typename T = RequestPayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, T>>
     auto write_from_fn(const iox2::bb::StaticFunction<typename T::ValueType(uint64_t)>& initializer)
         -> RequestMut<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>;
 
@@ -159,7 +159,7 @@ template <ServiceType Service,
 template <typename T, typename>
 inline auto
 RequestMutUninit<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::payload() const
-    -> iox::ImmutableSlice<ValueType> {
+    -> bb::ImmutableSlice<ValueType> {
     return m_request.payload();
 }
 
@@ -183,7 +183,7 @@ template <ServiceType Service,
 template <typename T, typename>
 inline auto
 RequestMutUninit<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::payload_mut()
-    -> iox::MutableSlice<ValueType> {
+    -> bb::MutableSlice<ValueType> {
     return m_request.payload_mut();
 }
 
@@ -209,7 +209,7 @@ template <ServiceType Service,
 template <typename T, typename>
 inline auto
 RequestMutUninit<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::write_from_slice(
-    iox::ImmutableSlice<ValueType>& value)
+    bb::ImmutableSlice<ValueType>& value)
     -> RequestMut<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader> {
     auto dest = payload_mut();
     IOX2_ASSERT(dest.number_of_bytes() >= value.number_of_bytes(),

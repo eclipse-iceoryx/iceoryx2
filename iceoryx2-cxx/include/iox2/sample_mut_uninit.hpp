@@ -13,7 +13,7 @@
 #ifndef IOX2_SAMPLE_MUT_UNINIT_HPP
 #define IOX2_SAMPLE_MUT_UNINIT_HPP
 
-#include "iox/slice.hpp"
+#include "iox2/bb/slice.hpp"
 #include "iox2/bb/static_function.hpp"
 #include "iox2/header_publish_subscribe.hpp"
 #include "iox2/sample_mut.hpp"
@@ -45,31 +45,31 @@ class SampleMutUninit {
     auto user_header_mut() -> T&;
 
     /// Returns a reference to the const payload of the sample.
-    template <typename T = Payload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
+    template <typename T = Payload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
     auto payload() const -> const ValueType&;
 
     /// Returns a reference to the payload of the sample.
-    template <typename T = Payload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
+    template <typename T = Payload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
     auto payload_mut() -> ValueType&;
 
-    template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
-    auto payload() const -> iox::ImmutableSlice<ValueType>;
+    template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
+    auto payload() const -> bb::ImmutableSlice<ValueType>;
 
-    template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
-    auto payload_mut() -> iox::MutableSlice<ValueType>;
+    template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
+    auto payload_mut() -> bb::MutableSlice<ValueType>;
 
     /// Writes the payload to the sample
-    template <typename T = Payload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, T>>
+    template <typename T = Payload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, T>>
     auto write_payload(T&& value) -> SampleMut<S, Payload, UserHeader>;
 
     /// Writes the payload to the sample
-    template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, T>>
+    template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, T>>
     auto write_from_fn(const iox2::bb::StaticFunction<typename T::ValueType(uint64_t)>& initializer)
         -> SampleMut<S, Payload, UserHeader>;
 
     /// mem copies the value to the sample
-    template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, T>>
-    auto write_from_slice(iox::ImmutableSlice<ValueType>& value) -> SampleMut<S, Payload, UserHeader>;
+    template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, T>>
+    auto write_from_slice(bb::ImmutableSlice<ValueType>& value) -> SampleMut<S, Payload, UserHeader>;
 
   private:
     template <ServiceType, typename, typename>
@@ -123,13 +123,13 @@ inline auto SampleMutUninit<S, Payload, UserHeader>::payload_mut() -> ValueType&
 
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
-inline auto SampleMutUninit<S, Payload, UserHeader>::payload() const -> iox::ImmutableSlice<ValueType> {
+inline auto SampleMutUninit<S, Payload, UserHeader>::payload() const -> bb::ImmutableSlice<ValueType> {
     return m_sample.payload();
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
-inline auto SampleMutUninit<S, Payload, UserHeader>::payload_mut() -> iox::MutableSlice<ValueType> {
+inline auto SampleMutUninit<S, Payload, UserHeader>::payload_mut() -> bb::MutableSlice<ValueType> {
     return m_sample.payload_mut();
 }
 
@@ -153,7 +153,7 @@ inline auto SampleMutUninit<S, Payload, UserHeader>::write_from_fn(
 
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
-inline auto SampleMutUninit<S, Payload, UserHeader>::write_from_slice(iox::ImmutableSlice<ValueType>& value)
+inline auto SampleMutUninit<S, Payload, UserHeader>::write_from_slice(bb::ImmutableSlice<ValueType>& value)
     -> SampleMut<S, Payload, UserHeader> {
     auto dest = payload_mut();
     IOX2_ASSERT(dest.number_of_bytes() >= value.number_of_bytes(),

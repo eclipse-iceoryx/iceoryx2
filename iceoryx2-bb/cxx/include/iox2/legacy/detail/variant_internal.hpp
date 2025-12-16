@@ -15,7 +15,7 @@
 #ifndef IOX2_BB_VOCABULARY_VARIANT_INTERNAL_HPP
 #define IOX2_BB_VOCABULARY_VARIANT_INTERNAL_HPP
 
-#include "iox2/legacy/assertions.hpp"
+#include "iox2/bb/detail/assertions.hpp"
 
 #include <cstdint>
 #include <type_traits>

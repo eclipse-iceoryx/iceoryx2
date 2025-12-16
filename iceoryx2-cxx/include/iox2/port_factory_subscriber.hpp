@@ -13,7 +13,7 @@
 #ifndef IOX2_PORTFACTORY_SUBSCRIBER_HPP
 #define IOX2_PORTFACTORY_SUBSCRIBER_HPP
 
-#include "iox/builder_addendum.hpp"
+#include "iox2/bb/detail/builder.hpp"
 #include "iox2/bb/expected.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/service_type.hpp"

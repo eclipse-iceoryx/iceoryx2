@@ -13,7 +13,7 @@
 #ifndef IOX2_RESPONSE_MUT_UNINIT_HPP
 #define IOX2_RESPONSE_MUT_UNINIT_HPP
 
-#include "iox/slice.hpp"
+#include "iox2/bb/slice.hpp"
 #include "iox2/bb/static_function.hpp"
 #include "iox2/payload_info.hpp"
 #include "iox2/response_mut.hpp"
@@ -55,34 +55,34 @@ class ResponseMutUninit {
     auto user_header_mut() -> T&;
 
     /// Returns a reference to the payload of the response.
-    template <typename T = ResponsePayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
+    template <typename T = ResponsePayload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
     auto payload() const -> const T&;
 
     /// Returns a reference to the payload of the response.
-    template <typename T = ResponsePayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
-    auto payload() const -> iox::ImmutableSlice<ValueType>;
+    template <typename T = ResponsePayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
+    auto payload() const -> bb::ImmutableSlice<ValueType>;
 
     /// Returns a mutable reference to the payload of the response.
-    template <typename T = ResponsePayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
+    template <typename T = ResponsePayload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
     auto payload_mut() -> T&;
 
     /// Returns a mutable reference to the payload of the response.
-    template <typename T = ResponsePayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
-    auto payload_mut() -> iox::MutableSlice<ValueType>;
+    template <typename T = ResponsePayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
+    auto payload_mut() -> bb::MutableSlice<ValueType>;
 
     /// Writes the provided payload into the [`ResponseMutUninit`] and returns an initialized
     /// [`ResponseMut`] that is ready to be sent.
-    template <typename T = ResponsePayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, T>>
+    template <typename T = ResponsePayload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, T>>
     auto write_payload(ResponsePayload&& payload) -> ResponseMut<Service, T, ResponseUserHeader>;
 
     /// Writes the provided payload into the [`ResponseMutUninit`] and returns an initialized
     /// [`ResponseMut`] that is ready to be sent.
-    template <typename T = ResponsePayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, T>>
-    auto write_from_slice(iox::ImmutableSlice<ValueType>& value) -> ResponseMut<Service, T, ResponseUserHeader>;
+    template <typename T = ResponsePayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, T>>
+    auto write_from_slice(bb::ImmutableSlice<ValueType>& value) -> ResponseMut<Service, T, ResponseUserHeader>;
 
     /// Writes the provided payload into the [`ResponseMutUninit`] and returns an initialized
     /// [`ResponseMut`] that is ready to be sent.
-    template <typename T = ResponsePayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, T>>
+    template <typename T = ResponsePayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, T>>
     auto write_from_fn(const iox2::bb::StaticFunction<typename T::ValueType(uint64_t)>& initializer)
         -> ResponseMut<Service, T, ResponseUserHeader>;
 
@@ -125,7 +125,7 @@ inline auto ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>::pay
 template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
 template <typename T, typename>
 inline auto ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>::payload() const
-    -> iox::ImmutableSlice<ValueType> {
+    -> bb::ImmutableSlice<ValueType> {
     return m_response.payload();
 }
 
@@ -138,7 +138,7 @@ inline auto ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>::pay
 template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
 template <typename T, typename>
 inline auto ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>::payload_mut()
-    -> iox::MutableSlice<ValueType> {
+    -> bb::MutableSlice<ValueType> {
     return m_response.payload_mut();
 }
 
@@ -153,7 +153,7 @@ inline auto ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>::wri
 template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
 template <typename T, typename>
 inline auto
-ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>::write_from_slice(iox::ImmutableSlice<ValueType>& value)
+ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>::write_from_slice(bb::ImmutableSlice<ValueType>& value)
     -> ResponseMut<Service, T, ResponseUserHeader> {
     auto dest = payload_mut();
     IOX2_ASSERT(dest.number_of_bytes() >= value.number_of_bytes(),
