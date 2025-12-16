@@ -14,7 +14,6 @@
 
 #include "iox2/legacy/detail/hoofs_error_reporting.hpp"
 #include "iox2/legacy/expected.hpp"
-#include "iox2/legacy/string.hpp"
 
 #include "iox2/legacy/testing/fatal_failure.hpp"
 

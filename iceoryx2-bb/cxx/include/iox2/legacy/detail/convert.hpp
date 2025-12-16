@@ -17,8 +17,8 @@
 #ifndef IOX2_BB_UTILITY_CONVERT_HPP
 #define IOX2_BB_UTILITY_CONVERT_HPP
 
+#include "iox2/legacy/optional.hpp"
 #include "iox2/legacy/posix_call.hpp"
-#include "iox2/legacy/string.hpp"
 
 #include <climits>
 #include <cmath>

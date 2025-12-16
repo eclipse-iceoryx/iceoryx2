@@ -32,13 +32,15 @@ auto main(int argc, char** argv) -> int {
     });
 
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers) fine for the example
-    const CliOption<32> option_domain {
-        "-d", "--domain", "iox2_", "Invalid parameter! The domain must be passed after '-d' or '--domain'"
-    };
+    const CliOption<32> option_domain { "-d",
+                                        "--domain",
+                                        iox2::container::StaticString<32>::from_utf8_unchecked("iox2_"),
+                                        "Invalid parameter! The domain must be passed after '-d' or '--domain'" };
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers) fine for the example
-    const CliOption<256> option_service {
-        "-s", "--service", "my_funky_service", "Invalid parameter! The service must be passed after '-s' or '--service'"
-    };
+    const CliOption<256> option_service { "-s",
+                                          "--service",
+                                          iox2::container::StaticString<256>::from_utf8_unchecked("my_funky_service"),
+                                          "Invalid parameter! The service must be passed after '-s' or '--service'" };
 
     auto domain = parse_from_args(argc, argv, option_domain);
     auto service_name = parse_from_args(argc, argv, option_service);
@@ -49,8 +51,8 @@ auto main(int argc, char** argv) -> int {
     // The domain name becomes the prefix for all resources.
     // Therefore, different domain names never share the same resources.
     config.global().set_prefix(
-        iox2::bb::FileName::create(
-            *container::StaticString<32>::from_utf8_null_terminated_unchecked(domain.c_str())) // NOLINT
+        iox2::bb::FileName::create(*container::StaticString<32>::from_utf8_null_terminated_unchecked( // NOLINT
+                                       domain.unchecked_access().c_str()))
             .expect("valid domain name"));
 
     auto node = NodeBuilder()
@@ -60,7 +62,7 @@ auto main(int argc, char** argv) -> int {
                     .create<ServiceType::Ipc>()
                     .value();
 
-    auto service = node.service_builder(ServiceName::create(service_name.c_str()).value())
+    auto service = node.service_builder(ServiceName::create(service_name.unchecked_access().c_str()).value())
                        .publish_subscribe<TransmissionData>()
                        .open_or_create()
                        .value();

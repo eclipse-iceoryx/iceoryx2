@@ -12,7 +12,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/legacy/string.hpp"
 #include "iox2/legacy/type_traits.hpp"
 
 #include <gmock/gmock.h>
@@ -151,7 +150,6 @@ TEST(TypeTraitsTest, NonCharArraysAreIdentifiedCorrectly) {
     // NOLINTJUSTIFICATION we want test explicitly the c arrays case
     // NOLINTNEXTLINE(hicpp-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
     EXPECT_FALSE(is_char_array<int[10]>::value);
-    EXPECT_FALSE(is_char_array<iox2::legacy::string<11>>::value);
     EXPECT_FALSE(is_char_array<char>::value);
 }
 

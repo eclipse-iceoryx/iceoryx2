@@ -71,7 +71,6 @@ target_sources(iceoryx2-bb-cxx-tests
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_design_functional_interface_common.hpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_design_functional_interface_types.hpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_reporting_logstream.hpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_vocabulary_string.hpp
     PRIVATE
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/error_reporting/test_auxiliary_types.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/error_reporting/test_custom_error_reporting.cpp
@@ -103,14 +102,8 @@ target_sources(iceoryx2-bb-cxx-tests
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_reporting_logstream_hex_oct_bin.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_utility_convert.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_utility_deprecation_marker.cpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_utility_std_string_support.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_vocabulary_expected.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_vocabulary_optional.cpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_vocabulary_string.cpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_vocabulary_string_comparison.cpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_vocabulary_string_concatenate_append_and_insert.cpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_vocabulary_string_ctor_and_assign.cpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_vocabulary_variant.cpp
 )
 target_include_directories(iceoryx2-bb-cxx-tests
     PRIVATE ${PROJECT_SOURCE_DIR}/src

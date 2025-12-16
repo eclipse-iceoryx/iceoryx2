@@ -11,8 +11,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 
+#include "iox2/container/static_string.hpp"
 #include "iox2/iceoryx2.hpp"
-#include "iox2/legacy/std_string_support.hpp"
 #include "parse_args.hpp"
 
 #include <iostream>
@@ -33,19 +33,21 @@ auto main(int argc, char** argv) -> int {
     });
 
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers) fine for the example
-    const CliOption<256> option_service {
-        "-s", "--service", "fuu", "Invalid parameter! The service must be passed after '-s' or '--service'"
-    };
+    const CliOption<256> option_service { "-s",
+                                          "--service",
+                                          iox2::container::StaticString<256>::from_utf8_unchecked("fuu"),
+                                          "Invalid parameter! The service must be passed after '-s' or '--service'" };
 
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers) fine for the example
-    const CliOption<32> option_event_id {
-        "-e", "--event-id", "0", "Invalid parameter! The event-id must be passed after '-e' or '--event-id'"
-    };
+    const CliOption<32> option_event_id { "-e",
+                                          "--event-id",
+                                          iox2::container::StaticString<32>::from_utf8_unchecked("0"),
+                                          "Invalid parameter! The event-id must be passed after '-e' or '--event-id'" };
 
     auto service_name_arg = parse_from_args(argc, argv, option_service);
     auto event_id_string = parse_from_args(argc, argv, option_event_id);
 
-    std::istringstream iss(std::string(event_id_string.c_str()));
+    std::istringstream iss(std::string(event_id_string.unchecked_access().c_str()));
     uint64_t event_id_int { 0 };
     if (iss >> event_id_int) {
         // std::cout << "Converted number: " << num << std::endl;
@@ -56,7 +58,7 @@ auto main(int argc, char** argv) -> int {
 
     auto event_id = EventId(event_id_int);
 
-    auto service_name = ServiceName::create(service_name_arg.c_str()).value();
+    auto service_name = ServiceName::create(service_name_arg.unchecked_access().c_str()).value();
 
     auto node = NodeBuilder().create<ServiceType::Ipc>().value();
 
