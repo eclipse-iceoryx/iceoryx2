@@ -15,15 +15,22 @@ use core::fmt::{self, Write};
 pub struct Stdout;
 pub struct Stderr;
 
-static mut STDOUT: Stdout = Stdout;
-static mut STDERR: Stderr = Stderr;
-
 pub fn stdout() -> &'static mut Stdout {
-    unsafe { &mut *core::ptr::addr_of_mut!(STDOUT) }
+    static mut STDOUT: Stdout = Stdout;
+
+    unsafe {
+        #[allow(static_mut_refs)]
+        &mut STDOUT
+    }
 }
 
 pub fn stderr() -> &'static mut Stderr {
-    unsafe { &mut *core::ptr::addr_of_mut!(STDERR) }
+    static mut STDERR: Stderr = Stderr;
+
+    unsafe {
+        #[allow(static_mut_refs)]
+        &mut STDERR
+    }
 }
 
 #[cfg(feature = "std")]
