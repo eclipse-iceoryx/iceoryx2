@@ -2,6 +2,7 @@ target/
 debug/
 .cache
 .idea
+.vscode
 build
 bazel-*
 
