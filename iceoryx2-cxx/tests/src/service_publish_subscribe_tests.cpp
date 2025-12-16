@@ -84,7 +84,8 @@ TYPED_TEST(ServicePublishSubscribeTest, service_name_works) {
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value();
 
-    ASSERT_THAT(sut.name().to_string().c_str(), StrEq(service_name.to_string().c_str()));
+    ASSERT_THAT(sut.name().to_string().unchecked_access().c_str(),
+                StrEq(service_name.to_string().unchecked_access().c_str()));
 }
 
 //NOLINTBEGIN(readability-function-cognitive-complexity), false positive caused by ASSERT_THAT
@@ -106,9 +107,11 @@ TYPED_TEST(ServicePublishSubscribeTest, list_service_nodes_works) {
     auto verify_node = [&](const AliveNodeView<SERVICE_TYPE>& node_view) -> auto {
         counter++;
         if (node_view.id() == node_1.id()) {
-            ASSERT_THAT(node_view.details()->name().to_string().c_str(), StrEq(node_1.name().to_string().c_str()));
+            ASSERT_THAT(node_view.details()->name().to_string().unchecked_access().c_str(),
+                        StrEq(node_1.name().to_string().unchecked_access().c_str()));
         } else {
-            ASSERT_THAT(node_view.details()->name().to_string().c_str(), StrEq(node_2.name().to_string().c_str()));
+            ASSERT_THAT(node_view.details()->name().to_string().unchecked_access().c_str(),
+                        StrEq(node_2.name().to_string().unchecked_access().c_str()));
         }
     };
 
@@ -1004,8 +1007,8 @@ TYPED_TEST(ServicePublishSubscribeTest, publisher_does_not_reallocate_when_alloc
 TYPED_TEST(ServicePublishSubscribeTest, create_with_attributes_sets_attributes) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    auto key = Attribute::Key("want to make your machine run faster:");
-    auto value = Attribute::Value("sudo rm -rf /");
+    auto key = *Attribute::Key::from_utf8("want to make your machine run faster:");
+    auto value = *Attribute::Value::from_utf8("sudo rm -rf /");
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
@@ -1034,9 +1037,9 @@ TYPED_TEST(ServicePublishSubscribeTest, create_with_attributes_sets_attributes) 
 TYPED_TEST(ServicePublishSubscribeTest, open_fails_when_attributes_are_incompatible) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    auto key = Attribute::Key("whats hypnotoad doing these days?");
-    auto value = Attribute::Value("eating hypnoflies?");
-    auto missing_key = Attribute::Key("no he is singing a song!");
+    auto key = *Attribute::Key::from_utf8("whats hypnotoad doing these days?");
+    auto value = *Attribute::Value::from_utf8("eating hypnoflies?");
+    auto missing_key = *Attribute::Key::from_utf8("no he is singing a song!");
     const auto service_name = iox2_testing::generate_service_name();
 
     auto attribute_verifier = AttributeVerifier();

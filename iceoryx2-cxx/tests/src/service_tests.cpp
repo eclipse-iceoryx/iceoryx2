@@ -96,19 +96,19 @@ TYPED_TEST(ServiceTest, list_works) {
     auto verify = [&](auto details) -> CallbackProgression {
         switch (details.static_details.messaging_pattern()) {
         case MessagingPattern::PublishSubscribe:
-            EXPECT_THAT(details.static_details.name(), StrEq(service_name_1.to_string().c_str()));
+            EXPECT_THAT(details.static_details.name(), StrEq(service_name_1.to_string().unchecked_access().c_str()));
             EXPECT_THAT(details.static_details.id(), StrEq(sut_1.service_id().c_str()));
             break;
         case MessagingPattern::Event:
-            EXPECT_THAT(details.static_details.name(), StrEq(service_name_2.to_string().c_str()));
+            EXPECT_THAT(details.static_details.name(), StrEq(service_name_2.to_string().unchecked_access().c_str()));
             EXPECT_THAT(details.static_details.id(), StrEq(sut_2.service_id().c_str()));
             break;
         case MessagingPattern::RequestResponse:
-            EXPECT_THAT(details.static_details.name(), StrEq(service_name_3.to_string().c_str()));
+            EXPECT_THAT(details.static_details.name(), StrEq(service_name_3.to_string().unchecked_access().c_str()));
             EXPECT_THAT(details.static_details.id(), StrEq(sut_3.service_id().c_str()));
             break;
         case MessagingPattern::Blackboard:
-            EXPECT_THAT(details.static_details.name(), StrEq(service_name_4.to_string().c_str()));
+            EXPECT_THAT(details.static_details.name(), StrEq(service_name_4.to_string().unchecked_access().c_str()));
             EXPECT_THAT(details.static_details.id(), StrEq(sut_4.service_id().c_str()));
             break;
         }
@@ -125,10 +125,10 @@ TYPED_TEST(ServiceTest, list_works) {
 TYPED_TEST(ServiceTest, list_works_with_attributes) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    auto key_1 = Attribute::Key("do elephants like strawberries?");
-    auto value_1 = Attribute::Value("do strawberries like elephants?");
-    auto key_2 = Attribute::Key("the berry of the straw");
-    auto value_2 = Attribute::Value("has left the field!");
+    auto key_1 = *Attribute::Key::from_utf8("do elephants like strawberries?");
+    auto value_1 = *Attribute::Value::from_utf8("do strawberries like elephants?");
+    auto key_2 = *Attribute::Key::from_utf8("the berry of the straw");
+    auto value_2 = *Attribute::Value::from_utf8("has left the field!");
 
 
     const auto service_name_1 = iox2_testing::generate_service_name();
@@ -161,12 +161,12 @@ TYPED_TEST(ServiceTest, list_works_with_attributes) {
     auto verify = [&](auto details) -> CallbackProgression {
         switch (details.static_details.messaging_pattern()) {
         case MessagingPattern::PublishSubscribe:
-            EXPECT_THAT(details.static_details.name(), StrEq(service_name_1.to_string().c_str()));
+            EXPECT_THAT(details.static_details.name(), StrEq(service_name_1.to_string().unchecked_access().c_str()));
             EXPECT_THAT(details.static_details.id(), StrEq(sut_1.service_id().c_str()));
 
             counter = 0;
             details.static_details.attributes().iter_key_values(key_1, [&](auto& value) -> CallbackProgression {
-                EXPECT_THAT(value.c_str(), StrEq(value_1.c_str()));
+                EXPECT_THAT(value.unchecked_access().c_str(), StrEq(value_1.unchecked_access().c_str()));
                 counter++;
                 return CallbackProgression::Continue;
             });
@@ -174,23 +174,23 @@ TYPED_TEST(ServiceTest, list_works_with_attributes) {
 
             counter = 0;
             details.static_details.attributes().iter_key_values(key_2, [&](auto& value) -> CallbackProgression {
-                EXPECT_THAT(value.c_str(), StrEq(value_2.c_str()));
+                EXPECT_THAT(value.unchecked_access().c_str(), StrEq(value_2.unchecked_access().c_str()));
                 counter++;
                 return CallbackProgression::Continue;
             });
             EXPECT_THAT(counter, Eq(1));
             break;
         case MessagingPattern::Event:
-            EXPECT_THAT(details.static_details.name(), StrEq(service_name_2.to_string().c_str()));
+            EXPECT_THAT(details.static_details.name(), StrEq(service_name_2.to_string().unchecked_access().c_str()));
             EXPECT_THAT(details.static_details.id(), StrEq(sut_2.service_id().c_str()));
             break;
         case MessagingPattern::RequestResponse:
-            EXPECT_THAT(details.static_details.name(), StrEq(service_name_3.to_string().c_str()));
+            EXPECT_THAT(details.static_details.name(), StrEq(service_name_3.to_string().unchecked_access().c_str()));
             EXPECT_THAT(details.static_details.id(), StrEq(sut_3.service_id().c_str()));
 
             counter = 0;
             details.static_details.attributes().iter_key_values(key_1, [&](auto& value) -> CallbackProgression {
-                EXPECT_THAT(value.c_str(), StrEq(value_1.c_str()));
+                EXPECT_THAT(value.unchecked_access().c_str(), StrEq(value_1.unchecked_access().c_str()));
                 counter++;
                 return CallbackProgression::Continue;
             });
@@ -198,19 +198,19 @@ TYPED_TEST(ServiceTest, list_works_with_attributes) {
 
             counter = 0;
             details.static_details.attributes().iter_key_values(key_2, [&](auto& value) -> CallbackProgression {
-                EXPECT_THAT(value.c_str(), StrEq(value_2.c_str()));
+                EXPECT_THAT(value.unchecked_access().c_str(), StrEq(value_2.unchecked_access().c_str()));
                 counter++;
                 return CallbackProgression::Continue;
             });
             EXPECT_THAT(counter, Eq(1));
             break;
         case MessagingPattern::Blackboard:
-            EXPECT_THAT(details.static_details.name(), StrEq(service_name_4.to_string().c_str()));
+            EXPECT_THAT(details.static_details.name(), StrEq(service_name_4.to_string().unchecked_access().c_str()));
             EXPECT_THAT(details.static_details.id(), StrEq(sut_4.service_id().c_str()));
 
             counter = 0;
             details.static_details.attributes().iter_key_values(key_1, [&](auto& value) -> CallbackProgression {
-                EXPECT_THAT(value.c_str(), StrEq(value_1.c_str()));
+                EXPECT_THAT(value.unchecked_access().c_str(), StrEq(value_1.unchecked_access().c_str()));
                 counter++;
                 return CallbackProgression::Continue;
             });
@@ -218,7 +218,7 @@ TYPED_TEST(ServiceTest, list_works_with_attributes) {
 
             counter = 0;
             details.static_details.attributes().iter_key_values(key_2, [&](auto& value) -> CallbackProgression {
-                EXPECT_THAT(value.c_str(), StrEq(value_2.c_str()));
+                EXPECT_THAT(value.unchecked_access().c_str(), StrEq(value_2.unchecked_access().c_str()));
                 counter++;
                 return CallbackProgression::Continue;
             });
@@ -239,10 +239,10 @@ TYPED_TEST(ServiceTest, list_works_with_attributes) {
 TYPED_TEST(ServiceTest, details_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    auto key_1 = Attribute::Key("gimme a strawberries?");
-    auto value_1 = Attribute::Value("i want a strawberry!");
-    auto key_2 = Attribute::Key("it makes me immortal");
-    auto value_2 = Attribute::Value("or at least sticky");
+    auto key_1 = *Attribute::Key::from_utf8("gimme a strawberries?");
+    auto value_1 = *Attribute::Value::from_utf8("i want a strawberry!");
+    auto key_2 = *Attribute::Key::from_utf8("it makes me immortal");
+    auto value_2 = *Attribute::Value::from_utf8("or at least sticky");
 
 
     const auto service_name_1 = iox2_testing::generate_service_name();
@@ -264,12 +264,12 @@ TYPED_TEST(ServiceTest, details_works) {
     ASSERT_THAT(result.has_value(), Eq(true));
     ASSERT_THAT(result->has_value(), Eq(true));
 
-    ASSERT_THAT(result.value()->static_details.name(), StrEq(service_name_1.to_string().c_str()));
-    ASSERT_THAT(result.value()->static_details.name(), StrEq(service_name_1.to_string().c_str()));
+    ASSERT_THAT(result.value()->static_details.name(), StrEq(service_name_1.to_string().unchecked_access().c_str()));
+    ASSERT_THAT(result.value()->static_details.name(), StrEq(service_name_1.to_string().unchecked_access().c_str()));
 
     auto counter = 0;
     result.value()->static_details.attributes().iter_key_values(key_1, [&](auto& value) -> CallbackProgression {
-        EXPECT_THAT(value.c_str(), StrEq(value_1.c_str()));
+        EXPECT_THAT(value.unchecked_access().c_str(), StrEq(value_1.unchecked_access().c_str()));
         counter++;
         return CallbackProgression::Continue;
     });
@@ -277,7 +277,7 @@ TYPED_TEST(ServiceTest, details_works) {
 
     counter = 0;
     result.value()->static_details.attributes().iter_key_values(key_2, [&](auto& value) -> CallbackProgression {
-        EXPECT_THAT(value.c_str(), StrEq(value_2.c_str()));
+        EXPECT_THAT(value.unchecked_access().c_str(), StrEq(value_2.unchecked_access().c_str()));
         counter++;
         return CallbackProgression::Continue;
     });

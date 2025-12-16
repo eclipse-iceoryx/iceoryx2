@@ -15,7 +15,7 @@
 #ifndef IOX2_BB_DETAIL_PATH_AND_FILE_VERIFIER_HPP
 #define IOX2_BB_DETAIL_PATH_AND_FILE_VERIFIER_HPP
 
-#include "iox2/legacy/string.hpp"
+#include "iox2/container/static_string.hpp"
 
 #include <cstdint>
 
@@ -52,57 +52,57 @@ enum class RelativePathComponents : uint8_t {
     Accept
 };
 
-/// @brief checks if the given string is a valid path entry. A path entry is the string between
-///        two path separators.
-/// @note A valid path entry for iceoryx must be platform independent and also supported
-///       by various file systems. The file systems we intend to support are
-///         * linux: ext3, ext4, btrfs
-///         * windows: ntfs, exfat, fat
-///         * freebsd: ufs, ffs
-///         * apple: apfs
-///         * qnx: etfs
-///         * android: ext3, ext4, fat
-///
-///       Sometimes it is also possible that a certain file character is supported by the filesystem
-///       itself but not by the platforms SDK. One example are files which end with a dot like "myFile."
-///       which are supported by ntfs but not by the Windows SDK.
-/// @param[in] name the path entry in question
-/// @param[in] relativePathComponents are relative path components are allowed for this path entry
-/// @return true if it is valid, otherwise false
 template <uint64_t StringCapacity>
-auto is_valid_path_entry(const legacy::string<StringCapacity>& name,
-                         RelativePathComponents relative_path_components) noexcept -> bool;
+class PathAndFileVerifier {
+  public:
+    /// @brief checks if the given string is a valid path entry. A path entry is the string between
+    ///        two path separators.
+    /// @note A valid path entry for iceoryx must be platform independent and also supported
+    ///       by various file systems. The file systems we intend to support are
+    ///         * linux: ext3, ext4, btrfs
+    ///         * windows: ntfs, exfat, fat
+    ///         * freebsd: ufs, ffs
+    ///         * apple: apfs
+    ///         * qnx: etfs
+    ///         * android: ext3, ext4, fat
+    ///
+    ///       Sometimes it is also possible that a certain file character is supported by the filesystem
+    ///       itself but not by the platforms SDK. One example are files which end with a dot like "myFile."
+    ///       which are supported by ntfs but not by the Windows SDK.
+    /// @param[in] name the path entry in question
+    /// @param[in] relativePathComponents are relative path components are allowed for this path entry
+    /// @return true if it is valid, otherwise false
+    static auto is_valid_path_entry(const container::StaticString<StringCapacity>& name,
+                                    RelativePathComponents relative_path_components) noexcept -> bool;
 
-/// @brief checks if the given string is a valid filename. It must fulfill the
-///        requirements of a valid path entry (see, isValidPathEntry) and is not allowed
-///        to contain relative path components
-/// @param[in] name the string to verify
-/// @return true if the string is a filename, otherwise false
-template <uint64_t StringCapacity>
-auto is_valid_file_name(const legacy::string<StringCapacity>& name) noexcept -> bool;
+    /// @brief checks if the given string is a valid filename. It must fulfill the
+    ///        requirements of a valid path entry (see, isValidPathEntry) and is not allowed
+    ///        to contain relative path components
+    /// @param[in] name the string to verify
+    /// @return true if the string is a filename, otherwise false
+    static auto is_valid_file_name(const container::StaticString<StringCapacity>& name) noexcept -> bool;
 
-/// @brief verifies if the given string is a valid path to a file
-/// @param[in] name the string to verify
-/// @return true if the string is a path to a file, otherwise false
-template <uint64_t StringCapacity>
-auto is_valid_path_to_file(const legacy::string<StringCapacity>& name) noexcept -> bool;
+    /// @brief verifies if the given string is a valid path to a file
+    /// @param[in] name the string to verify
+    /// @return true if the string is a path to a file, otherwise false
+    static auto is_valid_path_to_file(const typename container::StaticString<StringCapacity>& name) noexcept -> bool;
 
-/// @brief returns true if the provided name is a valid path, otherwise false
-/// @param[in] name the string to verify
-template <uint64_t StringCapacity>
-auto is_valid_path_to_directory(const legacy::string<StringCapacity>& name) noexcept -> bool;
+    /// @brief returns true if the provided name is a valid path, otherwise false
+    /// @param[in] name the string to verify
+    static auto is_valid_path_to_directory(const container::StaticString<StringCapacity>& name) noexcept -> bool;
 
-/// @brief returns true if the provided name ends with a path separator, otherwise false
-/// @param[in] name the string which may contain a path separator at the end
-template <uint64_t StringCapacity>
-auto does_end_with_path_separator(const legacy::string<StringCapacity>& name) noexcept -> bool;
-
+    /// @brief returns true if the provided name ends with a path separator, otherwise false
+    /// @param[in] name the string which may contain a path separator at the end
+    static auto does_end_with_path_separator(const container::StaticString<StringCapacity>& name) noexcept -> bool;
+};
 
 template <uint64_t StringCapacity>
-inline auto is_valid_path_entry(const legacy::string<StringCapacity>& name,
-                                const RelativePathComponents relative_path_components) noexcept -> bool {
-    const legacy::string<StringCapacity> current_directory { "." };
-    const legacy::string<StringCapacity> parent_directory { ".." };
+inline auto
+PathAndFileVerifier<StringCapacity>::is_valid_path_entry(const container::StaticString<StringCapacity>& name,
+                                                         const RelativePathComponents relative_path_components) noexcept
+    -> bool {
+    const auto current_directory = container::StaticString<StringCapacity>::from_utf8_unchecked(".");
+    const auto parent_directory = container::StaticString<StringCapacity>::from_utf8_unchecked("..");
 
     if ((name == current_directory) || (name == parent_directory)) {
         return relative_path_components == RelativePathComponents::Accept;
@@ -113,7 +113,7 @@ inline auto is_valid_path_entry(const legacy::string<StringCapacity>& name,
     for (uint64_t i { 0 }; i < name_size; ++i) {
         // AXIVION Next Construct AutosarC++19_03-A3.9.1: Not used as an integer but as actual character
         // NOLINTNEXTLINE(readability-identifier-length)
-        const char c { name[i] };
+        const char c { name.unchecked_access()[i] };
 
         // AXIVION DISABLE STYLE FaultDetection-UnusedAssignments : False positive, variable IS used
         // AXIVION DISABLE STYLE AutosarC++19_03-A0.1.1 : False positive, variable IS used
@@ -137,11 +137,13 @@ inline auto is_valid_path_entry(const legacy::string<StringCapacity>& name,
     }
 
     // dot at the end is invalid to be compatible with windows api
-    return !(name[name_size - 1] == '.');
+    return !(name.unchecked_access()[name_size - 1] == '.');
 }
 
 template <uint64_t StringCapacity>
-inline auto is_valid_file_name(const legacy::string<StringCapacity>& name) noexcept -> bool {
+inline auto
+PathAndFileVerifier<StringCapacity>::is_valid_file_name(const container::StaticString<StringCapacity>& name) noexcept
+    -> bool {
     if (name.empty()) {
         return false;
     }
@@ -151,14 +153,13 @@ inline auto is_valid_file_name(const legacy::string<StringCapacity>& name) noexc
 }
 
 template <uint64_t StringCapacity>
-inline auto is_valid_path_to_file(const legacy::string<StringCapacity>& name) noexcept -> bool {
+inline auto PathAndFileVerifier<StringCapacity>::is_valid_path_to_file(
+    const typename container::StaticString<StringCapacity>& name) noexcept -> bool {
     if (does_end_with_path_separator(name)) {
         return false;
     }
 
-    auto maybe_separator = name.find_last_of(legacy::string<platform::IOX2_NUMBER_OF_PATH_SEPARATORS>(
-        legacy::TruncateToCapacity, &platform::IOX2_PATH_SEPARATORS[0], platform::IOX2_NUMBER_OF_PATH_SEPARATORS));
-
+    auto maybe_separator = name.code_units().find_last_of(platform::IOX2_PATH_SEPARATORS);
     if (!maybe_separator.has_value()) {
         return is_valid_file_name(name);
     }
@@ -166,37 +167,36 @@ inline auto is_valid_path_to_file(const legacy::string<StringCapacity>& name) no
     const auto& position = maybe_separator.value();
 
     bool is_file_name_valid { false };
-    name.substr(position + 1).and_then([&is_file_name_valid](const auto& str) noexcept -> void {
-        is_file_name_valid = is_valid_file_name(str);
-    });
+    auto sub_str = name.code_units().substr(position + 1, name.size());
+    if (sub_str.has_value()) {
+        is_file_name_valid = is_valid_file_name(*sub_str);
+    }
 
     bool is_path_valid { false };
-    name.substr(0, position).and_then([&is_path_valid](const auto& str) noexcept -> void {
-        const bool is_empty_path { str.empty() };
-        const bool is_path_to_directory_valid { is_valid_path_to_directory(str) };
+    sub_str = name.code_units().substr(0, position);
+    if (sub_str.has_value()) {
+        const bool is_empty_path { sub_str->empty() };
+        const bool is_path_to_directory_valid { is_valid_path_to_directory(*sub_str) };
         is_path_valid = is_empty_path || is_path_to_directory_valid;
-    });
+    }
 
     // AXIVION Next Construct AutosarC++19_03-M0.1.2, AutosarC++19_03-M0.1.9, FaultDetection-DeadBranches : False positive! Branching depends on input parameter
     return is_path_valid && is_file_name_valid;
 }
 
 template <uint64_t StringCapacity>
-inline auto is_valid_path_to_directory(const legacy::string<StringCapacity>& name) noexcept -> bool {
+inline auto PathAndFileVerifier<StringCapacity>::is_valid_path_to_directory(
+    const container::StaticString<StringCapacity>& name) noexcept -> bool {
     if (name.empty()) {
         return false;
     }
 
-    const legacy::string<StringCapacity> current_directory { "." };
-    const legacy::string<StringCapacity> parent_directory { ".." };
-
-    const legacy::string<platform::IOX2_NUMBER_OF_PATH_SEPARATORS> path_separators {
-        legacy::TruncateToCapacity, &platform::IOX2_PATH_SEPARATORS[0], platform::IOX2_NUMBER_OF_PATH_SEPARATORS
-    };
+    auto const current_directory = container::StaticString<StringCapacity>::from_utf8_unchecked(".");
+    auto const parent_directory = container::StaticString<StringCapacity>::from_utf8_unchecked("..");
 
     auto remaining = name;
     while (!remaining.empty()) {
-        const auto separator_position = remaining.find_first_of(path_separators);
+        const auto separator_position = remaining.code_units().find_first_of(platform::IOX2_PATH_SEPARATORS);
 
         if (separator_position.has_value()) {
             const uint64_t position { separator_position.value() };
@@ -210,7 +210,7 @@ inline auto is_valid_path_to_directory(const legacy::string<StringCapacity>& nam
             // name, e.g. either it has the relative component . or .. or conforms
             // with a valid file name
             if (position != 0) {
-                const auto guaranteed_substr = remaining.substr(0, position);
+                const auto guaranteed_substr = remaining.code_units().substr(0, position);
                 const auto& filename_to_verify = guaranteed_substr.value();
                 const bool is_valid_directory { (is_valid_file_name(filename_to_verify))
                                                 || ((filename_to_verify == current_directory)
@@ -220,9 +220,10 @@ inline auto is_valid_path_to_directory(const legacy::string<StringCapacity>& nam
                 }
             }
 
-            remaining.substr(position + 1).and_then([&remaining](const auto& str) noexcept -> void {
-                remaining = str;
-            });
+            auto sub_str = remaining.code_units().substr(position + 1, remaining.size());
+            if (sub_str.has_value()) {
+                remaining = *sub_str;
+            }
         } else // we reached the last entry, if its a valid file name the path is valid
         {
             return is_valid_path_entry(remaining, RelativePathComponents::Accept);
@@ -234,12 +235,13 @@ inline auto is_valid_path_to_directory(const legacy::string<StringCapacity>& nam
 
 // AXIVION Next Construct AutosarC++19_03-A5.2.5, AutosarC++19_03-M5.0.16, FaultDetection-OutOfBounds : IOX2_PATH_SEPARATORS is not a string but an array of chars without a null termination and all elements are valid characters
 template <uint64_t StringCapacity>
-inline auto does_end_with_path_separator(const legacy::string<StringCapacity>& name) noexcept -> bool {
+inline auto PathAndFileVerifier<StringCapacity>::does_end_with_path_separator(
+    const container::StaticString<StringCapacity>& name) noexcept -> bool {
     if (name.empty()) {
         return false;
     }
     // AXIVION Next Construct AutosarC++19_03-A3.9.1: Not used as an integer but as actual character
-    const char last_character { name[name.size() - 1U] };
+    const char last_character { *name.code_units().back_element() };
 
     // NOLINTNEXTLINE(readability-use-anyofallof)
     for (const auto separator : platform::IOX2_PATH_SEPARATORS) {

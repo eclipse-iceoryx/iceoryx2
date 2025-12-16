@@ -12,6 +12,7 @@
 
 #include "iox2/attribute_set.hpp"
 #include "iox2/internal/callback_context.hpp"
+#include "iox2/internal/iceoryx2.hpp"
 #include "iox2/legacy/uninitialized_array.hpp"
 
 namespace iox2 {
@@ -19,7 +20,8 @@ namespace {
 auto get_key_values_callback(const char* value, iox2_callback_context context) -> iox2_callback_progression_e {
     auto* callback =
         internal::ctx_cast<iox2::bb::StaticFunction<CallbackProgression(const Attribute::Value&)>>(context);
-    auto typed_value = Attribute::Value(iox2::legacy::TruncateToCapacity, value);
+    auto typed_value =
+        Attribute::Value::from_utf8_null_terminated_unchecked_truncated(value, IOX2_ATTRIBUTE_VALUE_LENGTH);
     return iox2::bb::into<iox2_callback_progression_e>(callback->value()(typed_value));
 }
 } // namespace
@@ -41,26 +43,32 @@ auto AttributeSetView::operator[](const uint64_t index) const -> AttributeView {
 }
 
 auto AttributeSetView::number_of_key_values(const Attribute::Key& key) const -> uint64_t {
-    return iox2_attribute_set_number_of_key_values(m_handle, key.c_str());
+    return iox2_attribute_set_number_of_key_values(m_handle, key.unchecked_access().c_str());
 }
 
 auto AttributeSetView::key_value(const Attribute::Key& key, const uint64_t idx) -> bb::Optional<Attribute::Value> {
     iox2::legacy::UninitializedArray<char, Attribute::Value::capacity()> buffer;
     bool has_value = false;
-    iox2_attribute_set_key_value(m_handle, key.c_str(), idx, &buffer[0], Attribute::Value::capacity(), &has_value);
+    iox2_attribute_set_key_value(
+        m_handle, key.unchecked_access().c_str(), idx, &buffer[0], Attribute::Value::capacity(), &has_value);
 
     if (!has_value) {
         return bb::NULLOPT;
     }
 
-    return Attribute::Value(iox2::legacy::TruncateToCapacity, &buffer[0]);
+    auto value = Attribute::Value::from_utf8_null_terminated_unchecked(&buffer[0]);
+    if (!value.has_value()) {
+        return bb::NULLOPT;
+    }
+    return *value;
 }
 
 void AttributeSetView::iter_key_values(
     const Attribute::Key& key,
     const iox2::bb::StaticFunction<CallbackProgression(const Attribute::Value&)>& callback) const {
     auto ctx = internal::ctx(callback);
-    iox2_attribute_set_iter_key_values(m_handle, key.c_str(), get_key_values_callback, static_cast<void*>(&ctx));
+    iox2_attribute_set_iter_key_values(
+        m_handle, key.unchecked_access().c_str(), get_key_values_callback, static_cast<void*>(&ctx));
 }
 
 auto AttributeSetView::to_owned() const -> AttributeSet {

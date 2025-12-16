@@ -44,7 +44,8 @@ auto main() -> int {
 
     waitset
         .wait_and_process([&](auto) -> auto {
-            std::cout << service_name.to_string().c_str() << ": Send sample " << counter << " ..." << std::endl;
+            std::cout << service_name.to_string().unchecked_access().c_str() << ": Send sample " << counter << " ..."
+                      << std::endl;
             publisher.send_copy(counter).value();
             notifier.notify().value();
             counter += 1;

@@ -23,7 +23,7 @@ TEST(ServiceName, valid_service_name_can_be_created) {
 
     ASSERT_THAT(sut.has_value(), Eq(true));
 
-    ASSERT_THAT(sut->to_string().c_str(), StrEq(valid_name));
+    ASSERT_THAT(sut->to_string().unchecked_access().c_str(), StrEq(valid_name));
 }
 
 TEST(ServiceName, creating_service_name_with_too_long_name_fails) {
@@ -47,7 +47,7 @@ TEST(ServiceName, as_view_works) {
     auto sut = ServiceName::create(valid_name).value();
     auto sut_view = sut.as_view();
 
-    ASSERT_THAT(sut.to_string().c_str(), StrEq(sut_view.to_string().c_str()));
+    ASSERT_THAT(sut.to_string().unchecked_access().c_str(), StrEq(sut_view.to_string().unchecked_access().c_str()));
 }
 
 TEST(ServiceName, to_owned_works) {
@@ -56,7 +56,8 @@ TEST(ServiceName, to_owned_works) {
     auto sut_view = sut.as_view();
     auto sut_owned = sut_view.to_owned();
 
-    ASSERT_THAT(sut_view.to_string().c_str(), StrEq(sut_owned.to_string().c_str()));
+    ASSERT_THAT(sut_view.to_string().unchecked_access().c_str(),
+                StrEq(sut_owned.to_string().unchecked_access().c_str()));
 }
 
 TEST(ServiceName, copy_works) {
@@ -66,7 +67,7 @@ TEST(ServiceName, copy_works) {
     const ServiceName sut_copy { sut }; //NOLINT
     sut_assign = sut;
 
-    ASSERT_THAT(sut.to_string().c_str(), StrEq(valid_name));
+    ASSERT_THAT(sut.to_string().unchecked_access().c_str(), StrEq(valid_name));
     ASSERT_THAT(sut.to_string(), Eq(sut_copy.to_string()));
     ASSERT_THAT(sut.to_string(), Eq(sut_assign.to_string()));
 }
@@ -76,8 +77,8 @@ TEST(ServiceName, move_works) {
     ServiceName sut = ServiceName::create(valid_name).value();
     ServiceName sut_move { std::move(sut) };
 
-    ASSERT_THAT(sut_move.to_string().c_str(), StrEq(valid_name));
+    ASSERT_THAT(sut_move.to_string().unchecked_access().c_str(), StrEq(valid_name));
     sut = std::move(sut_move);
-    ASSERT_THAT(sut.to_string().c_str(), StrEq(valid_name));
+    ASSERT_THAT(sut.to_string().unchecked_access().c_str(), StrEq(valid_name));
 }
 } // namespace

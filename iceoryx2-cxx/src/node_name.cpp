@@ -12,15 +12,17 @@
 
 #include "iox2/node_name.hpp"
 #include "iox2/bb/expected.hpp"
+#include "iox2/internal/iceoryx2.hpp"
 #include "iox2/legacy/assertions.hpp"
 
 #include <cstring>
 
 namespace iox2 {
-auto NodeNameView::to_string() const -> iox2::legacy::string<IOX2_NODE_NAME_LENGTH> {
+auto NodeNameView::to_string() const -> iox2::container::StaticString<IOX2_NODE_NAME_LENGTH> {
     size_t len = 0;
     const auto* chars = iox2_node_name_as_chars(m_ptr, &len);
-    return { iox2::legacy::TruncateToCapacity, chars, len };
+    return iox2::container::StaticString<IOX2_NODE_NAME_LENGTH>::from_utf8_null_terminated_unchecked_truncated(
+        chars, IOX2_NODE_NAME_LENGTH);
 }
 
 auto NodeNameView::to_owned() const -> NodeName {
@@ -103,7 +105,7 @@ auto NodeName::create_impl(const char* value, size_t value_len)
     return bb::err(iox2::bb::into<bb::SemanticStringError>(ret_val));
 }
 
-auto NodeName::to_string() const -> iox2::legacy::string<IOX2_NODE_NAME_LENGTH> {
+auto NodeName::to_string() const -> iox2::container::StaticString<IOX2_NODE_NAME_LENGTH> {
     return as_view().to_string();
 }
 

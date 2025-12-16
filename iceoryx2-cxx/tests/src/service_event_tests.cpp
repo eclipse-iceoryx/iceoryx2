@@ -427,8 +427,8 @@ TYPED_TEST(ServiceEventTest, service_can_be_opened_when_there_is_a_listener) {
 TYPED_TEST(ServiceEventTest, create_with_attributes_sets_attributes) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    auto key = Attribute::Key("want to make your machine run faster:");
-    auto value = Attribute::Value("sudo rm -rf /");
+    auto key = *Attribute::Key::from_utf8("want to make your machine run faster:");
+    auto value = *Attribute::Value::from_utf8("sudo rm -rf /");
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
@@ -455,9 +455,9 @@ TYPED_TEST(ServiceEventTest, create_with_attributes_sets_attributes) {
 TYPED_TEST(ServiceEventTest, open_fails_when_attributes_are_incompatible) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    auto key = Attribute::Key("whats hypnotoad doing these days?");
-    auto value = Attribute::Value("eating hypnoflies?");
-    auto missing_key = Attribute::Key("no he is singing a song!");
+    auto key = *Attribute::Key::from_utf8("whats hypnotoad doing these days?");
+    auto value = *Attribute::Value::from_utf8("eating hypnoflies?");
+    auto missing_key = *Attribute::Key::from_utf8("no he is singing a song!");
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
@@ -635,9 +635,11 @@ TYPED_TEST(ServiceEventTest, list_service_nodes_works) {
     auto verify_node = [&](const AliveNodeView<SERVICE_TYPE>& node_view) -> auto {
         counter++;
         if (node_view.id() == node_1.id()) {
-            ASSERT_THAT(node_view.details()->name().to_string().c_str(), StrEq(node_1.name().to_string().c_str()));
+            ASSERT_THAT(node_view.details()->name().to_string().unchecked_access().c_str(),
+                        StrEq(node_1.name().to_string().unchecked_access().c_str()));
         } else {
-            ASSERT_THAT(node_view.details()->name().to_string().c_str(), StrEq(node_2.name().to_string().c_str()));
+            ASSERT_THAT(node_view.details()->name().to_string().unchecked_access().c_str(),
+                        StrEq(node_2.name().to_string().unchecked_access().c_str()));
         }
     };
 

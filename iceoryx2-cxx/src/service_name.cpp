@@ -11,15 +11,17 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/service_name.hpp"
+#include "iox2/internal/iceoryx2.hpp"
 #include "iox2/legacy/assertions.hpp"
 
 #include <cstring>
 
 namespace iox2 {
-auto ServiceNameView::to_string() const -> iox2::legacy::string<IOX2_SERVICE_NAME_LENGTH> {
+auto ServiceNameView::to_string() const -> iox2::container::StaticString<IOX2_SERVICE_NAME_LENGTH> {
     size_t len = 0;
     const auto* chars = iox2_service_name_as_chars(m_ptr, &len);
-    return { iox2::legacy::TruncateToCapacity, chars, len };
+    return iox2::container::StaticString<IOX2_SERVICE_NAME_LENGTH>::from_utf8_null_terminated_unchecked_truncated(
+        chars, IOX2_SERVICE_NAME_LENGTH);
 }
 
 auto ServiceNameView::to_owned() const -> ServiceName {
@@ -101,7 +103,7 @@ auto ServiceName::create_impl(const char* value, const size_t value_len)
     return bb::err(bb::into<bb::SemanticStringError>(ret_val));
 }
 
-auto ServiceName::to_string() const -> iox2::legacy::string<IOX2_SERVICE_NAME_LENGTH> {
+auto ServiceName::to_string() const -> iox2::container::StaticString<IOX2_SERVICE_NAME_LENGTH> {
     return as_view().to_string();
 }
 

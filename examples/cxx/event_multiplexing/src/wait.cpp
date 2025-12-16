@@ -68,8 +68,8 @@ auto main(int argc, char** argv) -> int {
     auto on_event = [&](WaitSetAttachmentId<ServiceType::Ipc> attachment_id) -> auto {
         auto entry = listeners.find(attachment_id);
         if (entry != listeners.end()) {
-            std::cout << "Received trigger from \"" << entry->second.service_name.to_string().c_str() << "\""
-                      << std::endl;
+            std::cout << "Received trigger from \"" << entry->second.service_name.to_string().unchecked_access().c_str()
+                      << "\"" << std::endl;
 
             auto& listener = entry->second.listener;
             // IMPORTANT:
@@ -83,8 +83,8 @@ auto main(int argc, char** argv) -> int {
         return iox2::CallbackProgression::Continue;
     };
 
-    std::cout << "Waiting on the following services: " << service_name_1.to_string().c_str() << ", "
-              << service_name_2.to_string().c_str() << std::endl;
+    std::cout << "Waiting on the following services: " << service_name_1.to_string().unchecked_access().c_str() << ", "
+              << service_name_2.to_string().unchecked_access().c_str() << std::endl;
 
     // loops until the user has pressed CTRL+c, the application has received a SIGTERM or SIGINT
     // signal or the user has called explicitly `waitset.stop()` in the `on_event` callback. We

@@ -99,7 +99,7 @@ void find_and_cleanup_dead_nodes() {
         node_state.dead([](auto view) -> auto {
             std::cout << "detected dead node: ";
             if (view.details().has_value()) {
-                std::cout << view.details().value().name().to_string().c_str();
+                std::cout << view.details().value().name().to_string().unchecked_access().c_str();
             }
             std::cout << std::endl;
             IOX2_DISCARD_RESULT(view.remove_stale_resources().value());

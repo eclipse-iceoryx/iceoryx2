@@ -57,7 +57,7 @@ pub unsafe extern "C" fn iox2_attribute_key(
     handle: iox2_attribute_h_ref,
     buffer: *mut c_char,
     buffer_len: usize,
-) -> usize {
+) {
     debug_assert!(!handle.is_null());
 
     let attribute = (*handle).underlying_type();
@@ -68,9 +68,6 @@ pub unsafe extern "C" fn iox2_attribute_key(
             buffer.cast(),
             copied_key_length,
         );
-        copied_key_length
-    } else {
-        0
     }
 }
 
@@ -99,20 +96,17 @@ pub unsafe extern "C" fn iox2_attribute_value(
     handle: iox2_attribute_h_ref,
     buffer: *mut c_char,
     buffer_len: usize,
-) -> usize {
+) {
     debug_assert!(!handle.is_null());
 
     let attribute = (*handle).underlying_type();
     if let Ok(value) = CString::new(attribute.value().as_bytes()) {
-        let copied_key_length = buffer_len.min(value.as_bytes_with_nul().len());
+        let copied_value_length = buffer_len.min(value.as_bytes_with_nul().len());
         core::ptr::copy_nonoverlapping(
             value.as_bytes_with_nul().as_ptr(),
             buffer.cast(),
-            copied_key_length,
+            copied_value_length,
         );
-        copied_key_length
-    } else {
-        0
     }
 }
 // END C API
