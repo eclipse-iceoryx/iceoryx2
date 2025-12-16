@@ -59,6 +59,8 @@
   [#1223](https://github.com/eclipse-iceoryx/iceoryx2/issues/1223)
 * Add socket directory configuration in platform
   [#1232](https://github.com/eclipse-iceoryx/iceoryx2/issues/1232)
+* Refactor to enable users to pull in Iceoryx2 as a Bazel module/dependency
+  [#1263](https://github.com/eclipse-iceoryx/iceoryx2/issues/1263)
 
 ### Bugfixes
 
