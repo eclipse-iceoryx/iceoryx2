@@ -18,7 +18,6 @@
 #define IOX2_BB_UTILITY_CONVERT_INL
 
 #include "iox2/legacy/detail/convert.hpp"
-#include "iox2/legacy/detail/string_type_traits.hpp"
 #include "iox2/legacy/logging.hpp"
 
 namespace iox2 {
