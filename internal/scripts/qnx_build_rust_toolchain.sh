@@ -105,7 +105,7 @@ if [[ "$QNX_TARGET" == *"qnx710"* ]]; then
 elif [[ "$QNX_TARGET" == *"qnx800"* ]]; then
     QNX_VERSION="8.0"
     QNX_TOOLCHAIN=$(dirname "$(dirname "$QNX_TARGET")")
-    TARGETS="aarch64-unknown-nto-qnx800,x86_64-pc-nto-qnx800,x86_64-unknown-linux-gnu"
+    TARGETS="aarch64-unknown-nto-qnx800,x86_64-pc-nto-qnx800"
 else
     echo -e "${RED}ERROR: Could not determine QNX version from QNX_TARGET${NC}"
     exit 1
@@ -326,8 +326,7 @@ else
         
         # Build QNX targets with only core and alloc
         set +e
-        QNX_TARGETS="aarch64-unknown-nto-qnx800,x86_64-pc-nto-qnx800"
-        ./x.py build --target "$QNX_TARGETS" library/core library/alloc
+        ./x.py build --target "$TARGETS" library/core library/alloc
         QNX_EXIT_CODE=$?
         set -e
         
