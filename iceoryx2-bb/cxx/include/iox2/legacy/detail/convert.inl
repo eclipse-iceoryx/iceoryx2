@@ -52,16 +52,7 @@ convert::toString(const Source& t) noexcept {
     return t;
 }
 
-template <typename TargetType, typename std::enable_if_t<is_iox_string<TargetType>::value, int>>
-inline iox2::legacy::optional<TargetType> convert::from_string(const char* v) noexcept {
-    using IoxString = TargetType;
-    if (strlen(v) > IoxString::capacity()) {
-        return iox2::legacy::nullopt;
-    }
-    return iox2::legacy::optional<IoxString>(IoxString(TruncateToCapacity, v));
-}
-
-template <typename TargetType, typename std::enable_if_t<!is_iox_string<TargetType>::value, int>>
+template <typename TargetType>
 inline iox2::legacy::optional<TargetType> convert::from_string(const char* v IOX2_MAYBE_UNUSED) noexcept {
     static_assert(always_false_v<TargetType>,
                   "For a conversion to 'std::string' please include 'iox/std_string_support.hpp'!\nConversion not "

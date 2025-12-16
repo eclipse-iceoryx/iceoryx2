@@ -66,7 +66,6 @@ target_sources(iceoryx2-bb-cxx-tests
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/error_reporting/module_a/error_reporting.hpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/error_reporting/module_b/errors.hpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/error_reporting/module_b/error_reporting.hpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_cli_command_line_common.hpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_design_functional_interface_common.hpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_design_functional_interface_types.hpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_reporting_logstream.hpp
@@ -79,10 +78,6 @@ target_sources(iceoryx2-bb-cxx-tests
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/error_reporting/test_error_reporting_macros.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/error_reporting/test_error_reporting_violation.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/error_reporting/test_testing_error_handler.cpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_cli_cli_definition.cpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_cli_command_line_parser.cpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_cli_option.cpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_cli_option_definition.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_container_uninitialized_array.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_container_vector.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_design_functional_interface_and_then.cpp

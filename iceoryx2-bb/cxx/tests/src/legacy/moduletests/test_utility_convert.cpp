@@ -852,24 +852,4 @@ TEST_F(convert_test, fromString_LongDouble_EdgeCase_OtherDecimalNotation_Success
 
 /// SPECIAL FLOATING POINT TYPE EDGE CASES END
 
-TEST_F(convert_test, fromString_ioxString) {
-    ::testing::Test::RecordProperty("TEST_ID", "dbf015bb-5f51-47e1-9d0e-0525f65e7803");
-    std::string source = "hello";
-    constexpr uint64_t STRING_CAPACITY { 8 };
-    EXPECT_THAT(iox2::legacy::convert::from_string<iox2::legacy::string<STRING_CAPACITY>>(source.c_str()).has_value(),
-                Eq(true));
-    source = "";
-    EXPECT_THAT(iox2::legacy::convert::from_string<iox2::legacy::string<STRING_CAPACITY>>(source.c_str()).has_value(),
-                Eq(true));
-    source = "12345678";
-    EXPECT_THAT(iox2::legacy::convert::from_string<iox2::legacy::string<STRING_CAPACITY>>(source.c_str()).has_value(),
-                Eq(true));
-    source = "123456789";
-    EXPECT_THAT(iox2::legacy::convert::from_string<iox2::legacy::string<STRING_CAPACITY>>(source.c_str()).has_value(),
-                Eq(false));
-    source = "this_is_a_very_long_string";
-    EXPECT_THAT(iox2::legacy::convert::from_string<iox2::legacy::string<STRING_CAPACITY>>(source.c_str()).has_value(),
-                Eq(false));
-}
-
 } // namespace

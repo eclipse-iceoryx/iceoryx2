@@ -10,28 +10,29 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+
 #include "iox2/iceoryx2.hpp"
-#include "iox2/legacy/cli_definition.hpp"
+#include "iox2/legacy/std_string_support.hpp"
+#include "parse_args.hpp"
 
 #include <iostream>
-
-// NOLINTBEGIN
-struct Args {
-    IOX2_CLI_DEFINITION(Args);
-    IOX2_CLI_OPTIONAL(iox2::legacy::string<32>,
-                      domain,
-                      { "iox2_" },
-                      'd',
-                      "domain",
-                      "The name of the domain. Must be a valid file name.");
-    IOX2_CLI_SWITCH(debug, 'e', "debug", "Enable full debug log output");
-};
-// NOLINTEND
 
 auto main(int argc, char** argv) -> int {
     using namespace iox2;
     set_log_level_from_env_or(LogLevel::Info);
-    auto args = Args::parse(argc, argv, "Discovery of the domain example.");
+
+    check_for_help_from_args(argc, argv, []() -> auto {
+        std::cout << "Discovery of the domain example." << std::endl;
+        std::cout << std::endl;
+        std::cout << "Use '-d' or '--domain' to specify the name of the domain." << std::endl;
+    });
+
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers) fine for the example
+    const CliOption<32> option_domain {
+        "-d", "--domain", "iox2_", "Invalid parameter! The domain must be passed after '-d' or '--domain'"
+    };
+
+    auto domain = parse_from_args(argc, argv, option_domain);
 
     // create a new config based on the global config
     auto config = Config::global_config().to_owned();
@@ -40,11 +41,11 @@ auto main(int argc, char** argv) -> int {
     // Therefore, different domain names never share the same resources.
     config.global().set_prefix(
         iox2::bb::FileName::create(
-            *container::StaticString<32>::from_utf8_null_terminated_unchecked(args.domain().c_str())) // NOLINT
+            *container::StaticString<32>::from_utf8_null_terminated_unchecked(domain.c_str())) // NOLINT
             .expect("valid domain name"));
 
 
-    std::cout << "Services running in domain \"" << args.domain() << "\":" << std::endl;
+    std::cout << "Services running in domain \"" << domain.c_str() << "\":" << std::endl;
 
     Service<ServiceType::Ipc>::list(config.view(), [](auto service) -> auto {
         std::cout << service.static_details << std::endl;
