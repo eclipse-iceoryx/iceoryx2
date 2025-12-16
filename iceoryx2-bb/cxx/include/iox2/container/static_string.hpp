@@ -325,8 +325,8 @@ class StaticString {
                 return bb::NULLOPT;
             }
 
-            auto str_data = detail::GetData<T>::call(str);
-            auto str_size = detail::GetSize<T>::call(str);
+            auto str_data = detail::get_data(str);
+            auto str_size = detail::get_size(str);
             for (auto position = pos; position < m_parent->m_size; ++position) {
                 auto found = memchr(str_data, m_parent->m_string[position], static_cast<size_t>(str_size));
                 if (found != nullptr) {
@@ -350,8 +350,8 @@ class StaticString {
             }
 
             auto position = std::min(static_cast<uint64_t>(pos), m_parent->m_size - 1);
-            auto str_data = detail::GetData<T>::call(str);
-            auto str_size = detail::GetSize<T>::call(str);
+            auto str_data = detail::get_data(str);
+            auto str_size = detail::get_size(str);
             for (; position > 0; --position) {
                 auto found = memchr(str_data, m_parent->m_string[position], str_size);
                 if (found != nullptr) {
