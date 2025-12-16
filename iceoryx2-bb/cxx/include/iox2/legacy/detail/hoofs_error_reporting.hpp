@@ -48,11 +48,20 @@ enum class HoofsError : iox2::legacy::er::ErrorCode::type {
     IOX2_BB_ERRORS(IOX2_CREATE_ERROR_ENUM)
 };
 
-const char* asStringLiteral(const HoofsError error) noexcept;
+static const char* asStringLiteral(const HoofsError error) {
+    // NOLINTJUSTIFICATION Use to map enum tag names to strings
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,hicpp-avoid-c-arrays)
+    const char* const BB_ERROR_NAMES[] = { IOX2_BB_ERRORS(IOX2_CREATE_ERROR_STRING) };
 
-inline log::LogStream& operator<<(log::LogStream& stream, HoofsError value) noexcept {
-    stream << asStringLiteral(value);
-    return stream;
+    auto end =
+        static_cast<std::underlying_type<HoofsError>::type>(HoofsError::DO_NOT_USE_AS_ERROR_THIS_IS_AN_INTERNAL_MARKER);
+    auto index = static_cast<std::underlying_type<HoofsError>::type>(error);
+    if (index >= end) {
+        return "Unknown Error Code!";
+    }
+    // NOLINTJUSTIFICATION Bounds are checked and access is safe
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+    return BB_ERROR_NAMES[index];
 }
 
 class HoofsErrorType {

@@ -15,12 +15,10 @@
 #define IOX2_BB_STATIC_FUNCTION_HPP
 
 #include "iox2/bb/detail/assertions.hpp"
-#include "iox2/legacy/memory.hpp"
 #include "iox2/legacy/type_traits.hpp"
 #include "iox2/legacy/uninitialized_array.hpp"
 
 #include <utility>
-
 
 namespace iox2 {
 namespace bb {
@@ -47,10 +45,10 @@ class StaticFunction<Capacity, Signature<ReturnType, Args...>> final {
     struct Operations;
     Operations m_operations; // operations depending on type-erased callable (copy, move, destroy)
 
-    legacy::UninitializedArray<legacy::byte, Capacity> m_storage; // storage for the callable
-    void* m_callable { nullptr };                                 // pointer to stored type-erased callable
-    ReturnType (*m_invoker)(void*, Args&&...) { nullptr };        // indirection to invoke the stored callable,
-                                                                  // nullptr if no callable is stored
+    legacy::UninitializedArray<char, Capacity> m_storage;  // storage for the callable
+    void* m_callable { nullptr };                          // pointer to stored type-erased callable
+    ReturnType (*m_invoker)(void*, Args&&...) { nullptr }; // indirection to invoke the stored callable,
+                                                           // nullptr if no callable is stored
 
   public:
     using SignatureT = Signature<ReturnType, Args...>;
@@ -351,7 +349,10 @@ constexpr auto StaticFunction<Capacity, Signature<ReturnType, Args...>>::safe_al
     // AXIVION DISABLE STYLE AutosarC++19_03-M5.2.9 : Conversion required for low level pointer alignment
     // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast, performance-no-int-to-ptr)
     const uint64_t alignment { alignof(T) };
-    const uint64_t aligned_position { legacy::align(reinterpret_cast<uint64_t>(start_address), alignment) };
+    const auto align = [](const uint64_t value, const uint64_t alignment) -> auto {
+        return (value + (alignment - 1U)) & (~alignment + 1U);
+    };
+    const uint64_t aligned_position { align(reinterpret_cast<uint64_t>(start_address), alignment) };
     return reinterpret_cast<void*>(aligned_position);
     // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast, performance-no-int-to-ptr)
     // AXIVION ENABLE STYLE AutosarC++19_03-M5.2.9

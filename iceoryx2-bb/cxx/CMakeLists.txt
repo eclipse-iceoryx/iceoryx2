@@ -78,10 +78,6 @@ target_sources(iceoryx2-bb-cxx PUBLIC
 target_sources(iceoryx2-bb-cxx
     PRIVATE
     src/console_logger.cpp
-    src/default_error_handler.cpp
-    src/hoofs_error_reporting.cpp
-    src/logger.cpp
-    src/memory.cpp
 )
 
 target_include_directories(iceoryx2-bb-cxx
