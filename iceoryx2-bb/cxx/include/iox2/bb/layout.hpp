@@ -10,14 +10,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_LAYOUT_HPP
-#define IOX2_LAYOUT_HPP
+#ifndef IOX2_BB_LAYOUT_HPP
+#define IOX2_BB_LAYOUT_HPP
 
 #include "iox2/bb/expected.hpp"
 #include <cstdint>
 #include <type_traits>
 
-namespace iox {
+namespace iox2 {
+namespace bb {
+
 /// Defines all errors that can occur while creating a new [`Layout`].
 enum class LayoutCreationError : uint8_t {
     /// The provided alignment was not a power of two.
@@ -101,7 +103,7 @@ inline Layout::Layout(const uint64_t size, const uint64_t align)
     , m_align { align } {
 }
 
+} // namespace bb
+} // namespace iox2
 
-} // namespace iox
-
-#endif
+#endif // IOX2_BB_LAYOUT_HPP

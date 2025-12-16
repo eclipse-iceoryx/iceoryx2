@@ -13,11 +13,11 @@
 #ifndef IOX2_SERVICE_BUILDER_PUBLISH_SUBSCRIBE_HPP
 #define IOX2_SERVICE_BUILDER_PUBLISH_SUBSCRIBE_HPP
 
-#include "iox/layout.hpp"
 #include "iox2/attribute_specifier.hpp"
 #include "iox2/attribute_verifier.hpp"
 #include "iox2/bb/detail/builder.hpp"
 #include "iox2/bb/expected.hpp"
+#include "iox2/bb/layout.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/internal/service_builder_internal.hpp"
 #include "iox2/payload_info.hpp"
@@ -200,7 +200,7 @@ inline void ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_paramete
     }
 
     // user header type details
-    const auto header_layout = iox::Layout::from<UserHeader>();
+    const auto header_layout = bb::Layout::from<UserHeader>();
     const auto user_header_type_name = internal::get_type_name<UserHeader>();
     const auto user_header_type_size = header_layout.size();
     const auto user_header_type_align = header_layout.alignment();

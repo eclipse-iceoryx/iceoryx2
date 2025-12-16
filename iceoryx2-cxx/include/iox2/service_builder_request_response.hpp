@@ -13,11 +13,11 @@
 #ifndef IOX2_SERVICE_BUILDER_REQUEST_RESPONSE_HPP
 #define IOX2_SERVICE_BUILDER_REQUEST_RESPONSE_HPP
 
-#include "iox/layout.hpp"
 #include "iox2/attribute_specifier.hpp"
 #include "iox2/attribute_verifier.hpp"
 #include "iox2/bb/detail/builder.hpp"
 #include "iox2/bb/expected.hpp"
+#include "iox2/bb/layout.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/internal/service_builder_internal.hpp"
 #include "iox2/payload_info.hpp"
@@ -488,7 +488,7 @@ inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
     }
 
     // request header type details
-    const auto request_header_layout = iox::Layout::from<RequestUserHeader>();
+    const auto request_header_layout = bb::Layout::from<RequestUserHeader>();
     const auto request_header_type_name = internal::get_type_name<RequestUserHeader>();
     const auto request_header_type_size = request_header_layout.size();
     const auto request_header_type_align = request_header_layout.alignment();
@@ -506,7 +506,7 @@ inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
     }
 
     // response header type details
-    const auto response_header_layout = iox::Layout::from<ResponseUserHeader>();
+    const auto response_header_layout = bb::Layout::from<ResponseUserHeader>();
     const auto response_header_type_name = internal::get_type_name<ResponseUserHeader>();
     const auto response_header_type_size = response_header_layout.size();
     const auto response_header_type_align = response_header_layout.alignment();

@@ -60,6 +60,7 @@ target_sources(iceoryx2-bb-cxx PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/file_name.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/file_path.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/into.hpp>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/layout.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/optional.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/path.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/semantic_string.hpp>
