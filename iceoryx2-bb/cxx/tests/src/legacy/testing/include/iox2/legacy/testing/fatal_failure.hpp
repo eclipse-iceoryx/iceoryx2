@@ -37,7 +37,7 @@ namespace testing {
 /// iceoryx error handler.
 /// @code
 /// TEST(MyTest, valueOnNulloptIsFatal) {
-///     iox2::legacy::optional<bool> sut;
+///     iox2::bb::Optional<bool> sut;
 ///     IOX2_EXPECT_FATAL_FAILURE([&] { sut.value(); }, iox2::legacy::er::ENFORCE_VIOLATION));
 /// }
 /// @endcode
@@ -68,7 +68,7 @@ bool IOX2_EXPECT_FATAL_FAILURE(const function_ref<void()> testFunction, const Er
 /// works in combination with the iceoryx error handler.
 /// @code
 /// TEST(MyTest, valueIsNotFatal) {
-///     iox2::legacy::optional<bool> sut{false};
+///     iox2::bb::Optional<bool> sut{false};
 ///     IOX2_EXPECT_NO_FATAL_FAILURE([&] { sut.value(); });
 /// }
 /// @endcode

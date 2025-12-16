@@ -17,7 +17,7 @@
 #ifndef IOX2_BB_UTILITY_CONVERT_HPP
 #define IOX2_BB_UTILITY_CONVERT_HPP
 
-#include "iox2/legacy/optional.hpp"
+#include "iox2/bb/optional.hpp"
 #include "iox2/legacy/posix_call.hpp"
 
 #include <climits>
@@ -83,15 +83,14 @@ class convert {
     /// @note   for the 'TargetType' equal to 'std::string,' please include 'iox/std_string_support.hpp'
     /// @tparam TargetType the desired target type for converting text
     /// @param v the input string in c type
-    /// @return an iox2::legacy::optional<TargetType> where, if the return value is iox2::legacy::nullopt, it indicates
+    /// @return an iox2::bb::Pptional<TargetType> where, if the return value is iox2::bb::NULLOPT, it indicates
     /// a failed conversion process
     template <typename TargetType>
-    static iox2::legacy::optional<TargetType> from_string(const char* v) noexcept;
+    static bb::Optional<TargetType> from_string(const char* v) noexcept;
 
   private:
     template <typename TargetType, typename CallType>
-    static iox2::legacy::optional<TargetType>
-    evaluate_return_value(CallType& call, const char* end_ptr, const char* v) noexcept;
+    static bb::Optional<TargetType> evaluate_return_value(CallType& call, const char* end_ptr, const char* v) noexcept;
 
     template <typename TargetType, typename SourceType>
     static bool check_edge_case(decltype(errno) errno_cache,

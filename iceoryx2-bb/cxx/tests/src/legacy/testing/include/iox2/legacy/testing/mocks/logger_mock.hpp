@@ -17,7 +17,6 @@
 #include "iox2/legacy/log/logger.hpp"
 #include "iox2/legacy/log/logstream.hpp"
 #include "iox2/legacy/logging.hpp"
-#include "iox2/legacy/optional.hpp"
 
 #include <mutex>
 #include <vector>

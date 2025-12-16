@@ -15,9 +15,9 @@
 #ifndef IOX2_BB_VOCABULARY_EXPECTED_HPP
 #define IOX2_BB_VOCABULARY_EXPECTED_HPP
 
+#include "iox2/bb/detail/attributes.hpp"
 #include "iox2/legacy/detail/expected_helper.hpp"
 #include "iox2/legacy/functional_interface.hpp"
-#include "iox2/legacy/optional.hpp"
 
 namespace iox2 {
 namespace legacy {
@@ -332,13 +332,6 @@ class IOX2_NO_DISCARD expected final
     // template <typename E>
     // NOLINTNEXTLINE(hicpp-explicit-conversions)
     operator expected<void, ErrorType>() const noexcept;
-
-    /// @brief conversion operator to an optional.
-    /// @tparam U helper template parameter for SFINEA
-    /// @return optional containing the value if the expected contains a value, otherwise a nullopt
-    /// @note this only works for non void ValueTypes
-    template <typename U = ValueType>
-    optional<enable_if_non_void_t<U>> to_optional() const noexcept;
 
     template <typename T, typename E>
     friend constexpr bool ::iox2::legacy::operator==(const expected<T, E>&, const expected<T, E>&) noexcept;

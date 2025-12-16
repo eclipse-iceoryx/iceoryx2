@@ -61,33 +61,6 @@ GenericPlain GenericPlainFactory::createInvalidObject() noexcept {
 /// END GenericPlainFactory
 ///////////////////////////
 
-/////////////////////////
-/// BEGIN OptionalFactory
-/////////////////////////
-OptionalFactory::value_t OptionalFactory::usedTestValue = 56;
-OptionalFactory::value_t OptionalFactory::anotherTestValue = 1174;
-
-void OptionalFactory::configureNextTestCase() noexcept {
-    // we increment all the values with an arbitrary value every test case
-    // so that we have some variation with every test and reduce the false positives
-    // probability due to memory corruptions
-    constexpr value_t NEXT_CASE_VALUE_INCREMENT = 67;
-    constexpr value_t NEXT_CASE_VALUE_2_INCREMENT = 69;
-    usedTestValue += NEXT_CASE_VALUE_INCREMENT;
-    anotherTestValue += NEXT_CASE_VALUE_2_INCREMENT;
-}
-
-OptionalFactory::Type OptionalFactory::createValidObject() noexcept {
-    return OptionalFactory::Type(iox2::legacy::in_place, usedTestValue);
-}
-
-OptionalFactory::Type OptionalFactory::createInvalidObject() noexcept {
-    return iox2::legacy::nullopt;
-}
-///////////////////////
-/// END OptionalFactory
-///////////////////////
-
 //////////////////////////////////
 /// BEGIN ExpectedValueErrorFactory
 //////////////////////////////////
