@@ -17,7 +17,6 @@
 
 #include "iox2/bb/detail/attributes.hpp"
 #include "iox2/legacy/detail/expected_helper.hpp"
-#include "iox2/legacy/functional_interface.hpp"
 
 namespace iox2 {
 namespace legacy {
@@ -120,8 +119,7 @@ detail::err<T> err(Targs&&... args);
 /// @param ValueType type of the value which can be stored in the expected
 /// @param ErrorType type of the error which can be stored in the expected
 template <typename ValueType, typename ErrorType>
-class IOX2_NO_DISCARD expected final
-    : public FunctionalInterface<expected<ValueType, ErrorType>, ValueType, ErrorType> {
+class IOX2_NO_DISCARD expected final {
   public:
     /// @brief default ctor is deleted since you have to clearly state if the
     ///         expected contains a success value or an error value

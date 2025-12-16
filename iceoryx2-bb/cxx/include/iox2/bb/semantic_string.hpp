@@ -14,8 +14,8 @@
 #ifndef IOX2_BB_SEMANTIC_STRING_HPP
 #define IOX2_BB_SEMANTIC_STRING_HPP
 
+#include "iox2/bb/expected.hpp"
 #include "iox2/container/static_string.hpp"
-#include "iox2/legacy/expected.hpp"
 #include "iox2/legacy/logging.hpp"
 
 #include <cstdint>
@@ -82,7 +82,7 @@ class SemanticString {
     // avoid-c-arrays: we would like to assign string literals, safe since it is known
     //                 at compile time.
     // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays, hicpp-explicit-conversions, modernize-avoid-c-arrays)
-    static auto create(const char (&value)[N]) noexcept -> legacy::expected<Child, SemanticStringError>;
+    static auto create(const char (&value)[N]) noexcept -> bb::Expected<Child, SemanticStringError>;
 
     /// @brief Creates a new SemanticString from the provided string.
     ///         If the value contains invalid characters or invalid content
@@ -90,8 +90,7 @@ class SemanticString {
     /// @param[in] value the value of the SemanticString
     /// @return expected either containing the new SemanticString or an error
     template <uint64_t N>
-    static auto create(const container::StaticString<N>& value) noexcept
-        -> legacy::expected<Child, SemanticStringError>;
+    static auto create(const container::StaticString<N>& value) noexcept -> bb::Expected<Child, SemanticStringError>;
 
     /// @brief Returns the number of characters.
     /// @return number of characters
@@ -113,7 +112,7 @@ class SemanticString {
     /// @param[in] value the value which should be added
     /// @return on failure the error inside the expected describes the failure
     template <typename T>
-    auto append(const T& value) noexcept -> legacy::expected<void, SemanticStringError>;
+    auto append(const T& value) noexcept -> bb::Expected<void, SemanticStringError>;
 
     /// @brief Inserts another string into the SemanticString. If the value contains
     ///        invalid characters or the result would end up in invalid content
@@ -123,7 +122,7 @@ class SemanticString {
     /// @param[in] count how many characters of str shall be inserted
     /// @return on failure the error inside the expected describes the failure
     template <typename T>
-    auto insert(uint64_t pos, const T& str, uint64_t count) noexcept -> legacy::expected<void, SemanticStringError>;
+    auto insert(uint64_t pos, const T& str, uint64_t count) noexcept -> bb::Expected<void, SemanticStringError>;
 
     /// @brief checks if another SemanticString is equal to this string
     /// @param [in] rhs the other SemanticString
@@ -197,7 +196,7 @@ class SemanticString {
 
   private:
     template <uint64_t N>
-    static auto create_impl(const char* value) noexcept -> legacy::expected<Child, SemanticStringError>;
+    static auto create_impl(const char* value) noexcept -> bb::Expected<Child, SemanticStringError>;
 };
 
 
@@ -218,12 +217,12 @@ template <typename Child,
 template <uint64_t N>
 inline auto
 SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::create_impl(
-    const char* value) noexcept -> legacy::expected<Child, SemanticStringError> {
+    const char* value) noexcept -> bb::Expected<Child, SemanticStringError> {
     if (N > Capacity) {
         IOX2_LOG(Debug,
                  "Unable to create semantic string since the value \""
                      << value << "\" exceeds the maximum valid length of " << Capacity << ".");
-        return legacy::err(SemanticStringError::ExceedsMaximumLength);
+        return bb::err(SemanticStringError::ExceedsMaximumLength);
     }
 
     auto str = container::StaticString<Capacity>::from_utf8_null_terminated_unchecked_truncated(value, N);
@@ -232,16 +231,16 @@ SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvali
         IOX2_LOG(Debug,
                  "Unable to create semantic string since the value \"" << value
                                                                        << "\" contains invalid characters as content");
-        return legacy::err(SemanticStringError::InvalidContent);
+        return bb::err(SemanticStringError::InvalidContent);
     }
 
     if (DoesContainInvalidContentCall(str)) {
         IOX2_LOG(Debug,
                  "Unable to create semantic string since the value \"" << value << "\" contains invalid content");
-        return legacy::err(SemanticStringError::InvalidContent);
+        return bb::err(SemanticStringError::InvalidContent);
     }
 
-    return legacy::ok(Child(str));
+    return Child(str);
 }
 
 template <typename Child,
@@ -252,7 +251,7 @@ template <uint64_t N>
 inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::create(
     // avoid-c-arrays: justification in header
     // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays, hicpp-explicit-conversions, modernize-avoid-c-arrays)
-    const char (&value)[N]) noexcept -> legacy::expected<Child, SemanticStringError> {
+    const char (&value)[N]) noexcept -> bb::Expected<Child, SemanticStringError> {
     return SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::
         template create_impl<N>(value);
 }
@@ -263,7 +262,7 @@ template <typename Child,
           DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
 template <uint64_t N>
 inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::create(
-    const container::StaticString<N>& value) noexcept -> legacy::expected<Child, SemanticStringError> {
+    const container::StaticString<N>& value) noexcept -> bb::Expected<Child, SemanticStringError> {
     return SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::
         template create_impl<N>(value.unchecked_access().c_str());
 }
@@ -304,7 +303,7 @@ template <typename Child,
           DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
 template <typename T>
 inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::append(
-    const T& value) noexcept -> legacy::expected<void, SemanticStringError> {
+    const T& value) noexcept -> bb::Expected<void, SemanticStringError> {
     return insert(size(), value, container::detail::get_size(value));
 }
 
@@ -314,7 +313,7 @@ template <typename Child,
           DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
 template <typename T>
 inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::insert(
-    const uint64_t pos, const T& str, const uint64_t count) noexcept -> legacy::expected<void, SemanticStringError> {
+    const uint64_t pos, const T& str, const uint64_t count) noexcept -> bb::Expected<void, SemanticStringError> {
     auto temp = m_data;
     if (!temp.unchecked_code_units().insert(pos, str, 0, count)) {
         IOX2_LOG(Debug,
@@ -322,7 +321,7 @@ inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesC
                      << str.unchecked_access().c_str()
                      << "\" to the semantic string since it would exceed the maximum valid length of " << Capacity
                      << ".");
-        return legacy::err(SemanticStringError::ExceedsMaximumLength);
+        return bb::err(SemanticStringError::ExceedsMaximumLength);
     }
 
     if (DoesContainInvalidCharacterCall(temp)) {
@@ -330,7 +329,7 @@ inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesC
                  "Unable to insert the value \""
                      << str.unchecked_access().c_str()
                      << "\" to the semantic string since it contains invalid characters as content.");
-        return legacy::err(SemanticStringError::InvalidContent);
+        return bb::err(SemanticStringError::InvalidContent);
     }
 
     if (DoesContainInvalidContentCall(temp)) {
@@ -338,11 +337,11 @@ inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesC
                  "Unable to insert the value \""
                      << str.unchecked_access().c_str()
                      << "\" to the semantic string since it would lead to invalid content.");
-        return legacy::err(SemanticStringError::InvalidContent);
+        return bb::err(SemanticStringError::InvalidContent);
     }
 
     m_data = temp;
-    return legacy::ok();
+    return {};
 }
 
 template <typename Child,

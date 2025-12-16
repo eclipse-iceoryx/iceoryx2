@@ -68,8 +68,6 @@ target_sources(iceoryx2-bb-cxx-tests
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/error_reporting/module_a/error_reporting.hpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/error_reporting/module_b/errors.hpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/error_reporting/module_b/error_reporting.hpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_design_functional_interface_common.hpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_design_functional_interface_types.hpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_reporting_logstream.hpp
     PRIVATE
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/error_reporting/test_auxiliary_types.cpp
@@ -80,13 +78,6 @@ target_sources(iceoryx2-bb-cxx-tests
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/error_reporting/test_error_reporting_violation.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/error_reporting/test_testing_error_handler.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_container_uninitialized_array.cpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_design_functional_interface_and_then.cpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_design_functional_interface_common.cpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_design_functional_interface_concat_multiple_calls.cpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_design_functional_interface_expect.cpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_design_functional_interface_or_else.cpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_design_functional_interface_types.cpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_design_functional_interface_value_or.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_design_polymorphic_handler.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_design_static_lifetime_guard.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_functional_function_ref.cpp
