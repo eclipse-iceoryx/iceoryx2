@@ -16,7 +16,7 @@
 
 #include <gtest/gtest.h>
 
-#include "iox2/legacy/function_ref.hpp"
+#include "iox2/bb/static_function.hpp"
 #include "iox2/legacy/testing/error_reporting/testing_error_handler.hpp"
 
 #include <thread>
@@ -57,7 +57,7 @@ bool isInNormalState();
 /// @brief runs testFunction in a testContext that can detect fatal failures;
 /// runs in a separate thread
 /// @note uses a longjump inside the thread it runs the function in
-void runInTestThread(const function_ref<void()> testFunction);
+void runInTestThread(const bb::StaticFunction<void()> testFunction);
 
 } // namespace testing
 } // namespace legacy

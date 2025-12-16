@@ -43,7 +43,7 @@ bool isInNormalState() {
     return !(hasPanicked() || hasError() || hasViolation());
 }
 
-void runInTestThread(const function_ref<void()> testFunction) {
+void runInTestThread(const bb::StaticFunction<void()> testFunction) {
     auto t = std::thread([&]() {
         auto successfullRun = ErrorHandler::instance().fatalFailureTestContext(testFunction);
         if (!successfullRun) {

@@ -15,9 +15,9 @@
 #define IOX2_BB_TESTING_FATAL_FAILURE_HPP
 
 #include "iox2/bb/detail/attributes.hpp"
+#include "iox2/bb/static_function.hpp"
 #include "iox2/legacy/error_reporting/error_kind.hpp"
 #include "iox2/legacy/error_reporting/types.hpp"
-#include "iox2/legacy/function_ref.hpp"
 #include "iox2/legacy/logging.hpp"
 
 #include "iox2/legacy/testing/error_reporting/testing_support.hpp"
@@ -50,19 +50,19 @@ template <typename ErrorType,
                                && !std::is_same<ErrorType, iox2::legacy::er::EnforceViolationKind>::value
                                && !std::is_same<ErrorType, iox2::legacy::er::AssertViolationKind>::value,
                            bool> = true>
-bool IOX2_EXPECT_FATAL_FAILURE(const function_ref<void()> testFunction, const ErrorType expectedError);
+bool IOX2_EXPECT_FATAL_FAILURE(const bb::StaticFunction<void()> testFunction, const ErrorType expectedError);
 
 template <typename ErrorType,
           std::enable_if_t<std::is_same<ErrorType, iox2::legacy::er::FatalKind>::value, bool> = true>
-bool IOX2_EXPECT_FATAL_FAILURE(const function_ref<void()> testFunction, const ErrorType expectedError);
+bool IOX2_EXPECT_FATAL_FAILURE(const bb::StaticFunction<void()> testFunction, const ErrorType expectedError);
 
 template <typename ErrorType,
           std::enable_if_t<std::is_same<ErrorType, iox2::legacy::er::EnforceViolationKind>::value, bool> = true>
-bool IOX2_EXPECT_FATAL_FAILURE(const function_ref<void()> testFunction, const ErrorType expectedError);
+bool IOX2_EXPECT_FATAL_FAILURE(const bb::StaticFunction<void()> testFunction, const ErrorType expectedError);
 
 template <typename ErrorType,
           std::enable_if_t<std::is_same<ErrorType, iox2::legacy::er::AssertViolationKind>::value, bool> = true>
-bool IOX2_EXPECT_FATAL_FAILURE(const function_ref<void()> testFunction, const ErrorType expectedError);
+bool IOX2_EXPECT_FATAL_FAILURE(const bb::StaticFunction<void()> testFunction, const ErrorType expectedError);
 
 /// @brief This function is used in cases no fatal failure is expected but could potentially occur. The function only
 /// works in combination with the iceoryx error handler.
@@ -74,7 +74,7 @@ bool IOX2_EXPECT_FATAL_FAILURE(const function_ref<void()> testFunction, const Er
 /// @endcode
 /// @param[in] testFunction This function will be executed as SUT and is not expected to call the error handler
 /// @return true if no fatal failure occurs, false otherwise
-bool IOX2_EXPECT_NO_FATAL_FAILURE(const function_ref<void()> testFunction);
+bool IOX2_EXPECT_NO_FATAL_FAILURE(const bb::StaticFunction<void()> testFunction);
 
 } // namespace testing
 } // namespace legacy

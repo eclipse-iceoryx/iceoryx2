@@ -15,13 +15,13 @@
 #ifndef IOX2_BB_TESTING_ERROR_REPORTING_TESTING_ERROR_HANDLER_HPP
 #define IOX2_BB_TESTING_ERROR_REPORTING_TESTING_ERROR_HANDLER_HPP
 
+#include "iox2/bb/static_function.hpp"
 #include "iox2/legacy/atomic.hpp"
 #include "iox2/legacy/error_reporting/custom/default/error_handler_interface.hpp"
 #include "iox2/legacy/error_reporting/error_logging.hpp"
 #include "iox2/legacy/error_reporting/source_location.hpp"
 #include "iox2/legacy/error_reporting/types.hpp"
 #include "iox2/legacy/error_reporting/violation.hpp"
-#include "iox2/legacy/function_ref.hpp"
 #include "iox2/legacy/static_lifetime_guard.hpp"
 
 #include <gmock/gmock.h>
@@ -98,7 +98,7 @@ class TestingErrorHandler : public iox2::legacy::er::ErrorHandlerInterface {
     /// @brief runs testFunction in a test context that can detect fatal failures;
     /// runs in the same thread
     /// @note uses setjmp/longjmp
-    bool fatalFailureTestContext(const function_ref<void()> testFunction);
+    bool fatalFailureTestContext(const bb::StaticFunction<void()> testFunction);
 
   private:
     void jump() noexcept;
