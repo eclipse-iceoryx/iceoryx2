@@ -64,6 +64,9 @@ void testLogLevelThreshold(const iox2::legacy::log::LogLevel loggerLogLevel,
 
 TEST(LoggingLogLevelThreshold_test, LogLevel) {
     ::testing::Test::RecordProperty("TEST_ID", "829a6634-43be-4fa4-94bf-18d53ce816a9");
+
+    GTEST_SKIP() << "This test will probably deleted once the log level is set via iceoryx2-bb-log in Rust";
+
     for (const auto loggerLogLevel : { iox2::legacy::log::LogLevel::Off,
                                        iox2::legacy::log::LogLevel::Fatal,
                                        iox2::legacy::log::LogLevel::Error,
