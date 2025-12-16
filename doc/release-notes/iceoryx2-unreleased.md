@@ -21,6 +21,8 @@
 * Introduce `RelocatableOption` and `RelocatableDuration` which are
   `ZeroCopySend`
   [#1312](https://github.com/eclipse-iceoryx/iceoryx2/issues/1312)
+* Refactor to enable users to pull in Iceoryx2 as a Bazel module/dependency
+  [#1263](https://github.com/eclipse-iceoryx/iceoryx2/issues/1263)
 
 ### Bugfixes
 

@@ -10,7 +10,5 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// This file is used to make bazel generate the `OUT_DIR` environment variable
-// to let rustc find the `posix_generated.rs` file
-
-fn main() {}
+// Empty implementation for bindgen
+void __iceoryx2_pal_os_api_dummy() {}
