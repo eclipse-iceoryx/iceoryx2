@@ -80,7 +80,6 @@ target_sources(iceoryx2-bb-cxx-tests
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/error_reporting/test_error_reporting_violation.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/error_reporting/test_testing_error_handler.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_container_uninitialized_array.cpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_container_vector.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_design_functional_interface_and_then.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_design_functional_interface_common.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_design_functional_interface_concat_multiple_calls.cpp

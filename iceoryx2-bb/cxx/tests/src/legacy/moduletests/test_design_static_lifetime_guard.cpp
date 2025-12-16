@@ -12,7 +12,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/legacy/static_lifetime_guard.hpp"
-#include "iox2/legacy/vector.hpp"
 
 #include "iox2/legacy/testing/barrier.hpp"
 
@@ -21,6 +20,7 @@
 
 #include <chrono>
 #include <thread>
+#include <vector>
 
 namespace {
 using namespace ::testing;
@@ -329,7 +329,8 @@ TEST_F(StaticLifetimeGuard_test, instanceCtorIsConcurrentlyCalledExactlyOnce) {
         Sut::instance(std::chrono::milliseconds(1));
     };
 
-    iox2::legacy::vector<std::thread, NUM_THREADS> threads;
+    std::vector<std::thread> threads;
+    threads.reserve(NUM_THREADS);
 
     for (uint32_t i = 0; i < NUM_THREADS; ++i) {
         threads.emplace_back(createInstance);
