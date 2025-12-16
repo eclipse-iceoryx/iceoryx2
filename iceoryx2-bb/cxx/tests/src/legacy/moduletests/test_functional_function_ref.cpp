@@ -12,7 +12,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/legacy/attributes.hpp"
+#include "iox2/bb/detail/attributes.hpp"
 #include "iox2/legacy/detail/hoofs_error_reporting.hpp"
 #include "iox2/legacy/function_ref.hpp"
 #include "iox2/legacy/testing/error_reporting/testing_support.hpp"

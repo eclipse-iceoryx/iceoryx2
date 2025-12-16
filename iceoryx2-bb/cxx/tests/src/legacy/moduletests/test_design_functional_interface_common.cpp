@@ -12,7 +12,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "test_design_functional_interface_common.hpp"
-#include "iox2/legacy/attributes.hpp"
+#include "iox2/bb/detail/attributes.hpp"
 
 namespace test_design_functional_interface {
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) only for testing purposes

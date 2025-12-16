@@ -15,7 +15,7 @@
 #ifndef IOX2_BB_INTO_HPP
 #define IOX2_BB_INTO_HPP
 
-#include "iox2/legacy/attributes.hpp"
+#include "iox2/bb/detail/attributes.hpp"
 #include "iox2/legacy/type_traits.hpp"
 
 namespace iox2 {

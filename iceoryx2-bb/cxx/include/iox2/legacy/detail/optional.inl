@@ -15,7 +15,7 @@
 #ifndef IOX2_BB_VOCABULARY_OPTIONAL_INL
 #define IOX2_BB_VOCABULARY_OPTIONAL_INL
 
-#include "iox2/legacy/attributes.hpp"
+#include "iox2/bb/detail/attributes.hpp"
 #include "iox2/legacy/optional.hpp"
 
 namespace iox2 {

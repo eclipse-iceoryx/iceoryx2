@@ -16,7 +16,7 @@
 
 #include "iox2/legacy/detail/platform_correction.hpp"
 
-#include "iox2/legacy/attributes.hpp"
+#include "iox2/bb/detail/attributes.hpp"
 #include "iox2/legacy/expected.hpp"
 
 #include <cstdint>

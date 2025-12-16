@@ -14,7 +14,7 @@
 #ifndef IOX2_BB_TESTING_FATAL_FAILURE_HPP
 #define IOX2_BB_TESTING_FATAL_FAILURE_HPP
 
-#include "iox2/legacy/attributes.hpp"
+#include "iox2/bb/detail/attributes.hpp"
 #include "iox2/legacy/error_reporting/error_kind.hpp"
 #include "iox2/legacy/error_reporting/types.hpp"
 #include "iox2/legacy/function_ref.hpp"
