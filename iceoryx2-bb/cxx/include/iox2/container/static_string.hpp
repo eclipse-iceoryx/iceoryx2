@@ -38,8 +38,17 @@ template <typename, uint64_t Capacity, DoesContainInvalidContent<Capacity>, Does
 class SemanticString;
 
 namespace detail {
-template <uint64_t>
-class PathAndFileVerifier;
+/// @brief verifies if the given string is a valid path to a file
+/// @param[in] name the string to verify
+/// @return true if the string is a path to a file, otherwise false
+template <uint64_t StringCapacity>
+auto is_valid_path_to_file(const container::StaticString<StringCapacity>& name) noexcept -> bool;
+
+/// @brief returns true if the provided name is a valid path, otherwise false
+/// @param[in] name the string to verify
+template <uint64_t StringCapacity>
+auto is_valid_path_to_directory(const container::StaticString<StringCapacity>& name) noexcept -> bool;
+
 } // namespace detail
 } // namespace bb
 namespace container {
@@ -284,8 +293,8 @@ class StaticString {
     /// This class provides the interface for accessing individual code units of the string.
     class ConstAccessorCodeUnits {
         friend class StaticString;
-        template <uint64_t>
-        friend class bb::detail::PathAndFileVerifier;
+        friend auto bb::detail::is_valid_path_to_file<N>(const container::StaticString<N>& name) noexcept -> bool;
+        friend auto bb::detail::is_valid_path_to_directory<N>(const container::StaticString<N>& name) noexcept -> bool;
 
       private:
         StaticString const* m_parent;
