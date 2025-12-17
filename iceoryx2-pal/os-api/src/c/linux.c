@@ -11,4 +11,5 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 // Empty implementation for bindgen
-void __iceoryx2_pal_os_api_dummy() {}
+void __iceoryx2_pal_os_api_dummy() {
+}
