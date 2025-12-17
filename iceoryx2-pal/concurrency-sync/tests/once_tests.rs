@@ -12,8 +12,8 @@
 
 use core::sync::atomic::{AtomicU32, Ordering};
 
-use iceoryx2_bb_concurrency::once::Once;
 use iceoryx2_pal_concurrency_sync::barrier::Barrier;
+use iceoryx2_pal_concurrency_sync::once::Once;
 use iceoryx2_pal_testing::assert_that;
 
 #[test]

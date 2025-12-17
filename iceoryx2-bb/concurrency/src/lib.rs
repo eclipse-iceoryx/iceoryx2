@@ -16,9 +16,6 @@ pub mod atomic;
 pub mod spin_lock;
 
 #[cfg(not(feature = "std"))]
-pub mod once;
-
+pub use iceoryx2_pal_concurrency_sync::once::Once;
 #[cfg(feature = "std")]
-pub mod once {
-    pub use std::sync::Once;
-}
+pub use std::sync::Once;

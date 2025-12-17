@@ -10,8 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::atomic::AtomicU8;
 use core::sync::atomic::Ordering;
+
+use crate::atomic::AtomicU8;
 
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
