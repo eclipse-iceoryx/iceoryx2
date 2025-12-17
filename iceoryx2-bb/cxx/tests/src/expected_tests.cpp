@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/bb/detail/expected.hpp"
+#include "iox2/bb/stl/expected.hpp"
 
 #include "testing/observable.hpp"
 
@@ -19,7 +19,7 @@
 
 namespace {
 using namespace ::testing;
-using namespace ::iox2::bb::detail;
+using namespace ::iox2::bb::stl;
 
 using iox2::container::testing::Observable;
 

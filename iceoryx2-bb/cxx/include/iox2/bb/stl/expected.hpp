@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_INCLUDE_GUARD_CONTAINER_EXPECTED_HPP
-#define IOX2_INCLUDE_GUARD_CONTAINER_EXPECTED_HPP
+#ifndef IOX2_INCLUDE_GUARD_BB_STL_EXPECTED_HPP
+#define IOX2_INCLUDE_GUARD_BB_STL_EXPECTED_HPP
 
 #include "iox2/bb/detail/attributes.hpp"
 #include "iox2/legacy/detail/expected_helper.hpp"
@@ -20,7 +20,7 @@
 
 namespace iox2 {
 namespace bb {
-namespace detail {
+namespace stl {
 
 struct InPlaceT { };
 constexpr InPlaceT IN_PLACE {};
@@ -227,7 +227,7 @@ class IOX2_NO_DISCARD Expected {
     // END error method
 };
 
-} // namespace detail
+} // namespace stl
 } // namespace bb
 } // namespace iox2
 
