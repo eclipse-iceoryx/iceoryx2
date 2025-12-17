@@ -36,15 +36,18 @@ class DefaultErrorHandler : public ErrorHandlerInterface {
     DefaultErrorHandler& operator=(DefaultErrorHandler&&) = delete;
 
     /// @brief Defines the reaction on panic.
-    void onPanic() override;
+    void onPanic() override {
+    }
 
     /// @brief Defines the reaction on error.
     /// @param desc error descriptor
-    void onReportError(ErrorDescriptor desc) override;
+    void onReportError(ErrorDescriptor /* desc */) override {
+    }
 
     /// @brief Defines the reaction on violation.
     /// @param desc error descriptor
-    void onReportViolation(ErrorDescriptor desc) override;
+    void onReportViolation(ErrorDescriptor /* desc */) override {
+    }
 };
 
 } // namespace er

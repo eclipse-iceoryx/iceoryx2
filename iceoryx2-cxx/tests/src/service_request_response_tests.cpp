@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/bb/optional.hpp"
+#include "iox2/bb/variation/optional.hpp"
 #include "iox2/node.hpp"
 #include "iox2/service.hpp"
 
@@ -1153,8 +1154,8 @@ TYPED_TEST(ServiceRequestResponseTest, is_connected_works_for_active_request) {
     auto sut_client = service.client_builder().create().value();
     auto sut_server = service.server_builder().create().value();
 
-    auto pending_response = iox2::legacy::make_optional<PendingResponse<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(
-        sut_client.send_copy(3).value());
+    bb::Optional<PendingResponse<SERVICE_TYPE, uint64_t, void, uint64_t, void>> pending_response;
+    pending_response.emplace(sut_client.send_copy(3).value());
 
     auto active_request = sut_server.receive().value();
     EXPECT_TRUE(active_request->is_connected());
@@ -1180,12 +1181,12 @@ TYPED_TEST(ServiceRequestResponseTest, is_connected_works_for_pending_response) 
 
     auto tmp = server1.receive().value();
     ASSERT_TRUE(tmp.has_value());
-    auto active_request_1 = iox2::legacy::make_optional<ActiveRequest<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(
-        std::move(tmp.value()));
+    bb::Optional<ActiveRequest<SERVICE_TYPE, uint64_t, void, uint64_t, void>> active_request_1;
+    active_request_1.emplace(std::move(tmp.value()));
     tmp = server2.receive().value();
     ASSERT_TRUE(tmp.has_value());
-    auto active_request_2 = iox2::legacy::make_optional<ActiveRequest<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(
-        std::move(tmp.value()));
+    bb::Optional<ActiveRequest<SERVICE_TYPE, uint64_t, void, uint64_t, void>> active_request_2;
+    active_request_2.emplace(std::move(tmp.value()));
     EXPECT_TRUE(pending_response.is_connected());
 
     active_request_1.reset();
@@ -2075,9 +2076,8 @@ TYPED_TEST(ServiceRequestResponseTest, client_can_request_graceful_disconnect) {
     auto sut_client = service.client_builder().create().value();
     auto sut_server = service.server_builder().create().value();
 
-    auto pending_response =
-        iox2::legacy::make_optional<iox2::PendingResponse<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(
-            sut_client.send_copy(0).value());
+    bb::Optional<PendingResponse<SERVICE_TYPE, uint64_t, void, uint64_t, void>> pending_response;
+    pending_response.emplace(sut_client.send_copy(0).value());
     auto active_request = sut_server.receive().value().value();
 
     ASSERT_TRUE(pending_response->is_connected());

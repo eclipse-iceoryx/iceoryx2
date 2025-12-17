@@ -14,11 +14,17 @@
 #ifndef IOX2_BB_VOCABULARY_EXPECTED_HELPER_HPP
 #define IOX2_BB_VOCABULARY_EXPECTED_HELPER_HPP
 
-#include "iox2/legacy/optional.hpp"
 #include "iox2/legacy/variant.hpp"
 
 namespace iox2 {
 namespace legacy {
+/// @brief helper struct which is used to call the in-place-construction constructor
+struct in_place_t { };
+
+// AXIVION Next Construct AutosarC++19_03-M17.0.2 : in_place is defined within iox namespace which prevents easy
+// misuse
+constexpr in_place_t in_place {};
+
 /// @brief helper struct which is used to call the in-place-construction constructor for error types
 struct unexpect_t { };
 constexpr unexpect_t unexpect {};

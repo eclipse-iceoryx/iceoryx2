@@ -129,11 +129,6 @@ class ConsoleLogger {
     };
 
     static ThreadLocalData& getThreadLocalData() noexcept;
-
-  private:
-    // NOLINTJUSTIFICATION needed for the functionality and a private member of the class
-    // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-    static concurrent::Atomic<LogLevel> s_activeLogLevel; // initialized in corresponding cpp file
 };
 
 } // namespace log

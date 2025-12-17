@@ -15,8 +15,6 @@
 #ifndef IOX2_BB_CONTAINER_UNINITIALIZED_ARRAY_HPP
 #define IOX2_BB_CONTAINER_UNINITIALIZED_ARRAY_HPP
 
-#include "iox2/legacy/memory.hpp"
-
 #include <cstdint>
 
 namespace iox2 {
@@ -32,7 +30,7 @@ struct ZeroedBuffer {
         // AXIVION Next Construct AutosarC++19_03-A1.1.1 : object size depends on template parameter and has to be taken care of at the specific template instantiation
         // AXIVION Next Construct AutosarC++19_03-A18.1.1 : required as low level building block, encapsulated in abstraction and not directly used
         // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays, hicpp-avoid-c-arrays)
-        byte data[sizeof(ElementType)];
+        char data[sizeof(ElementType)];
     };
     // AXIVION Next Construct AutosarC++19_03-A1.1.1 : object size depends on template parameter and has to be taken care of at the specific template instantiation
     // AXIVION Next Construct AutosarC++19_03-A18.1.1 : required as low level building block, encapsulated in abstraction and not directly used
@@ -50,7 +48,7 @@ struct NonZeroedBuffer {
         // AXIVION Next Construct AutosarC++19_03-A1.1.1 : object size depends on template parameter and has to be taken care of at the specific template instantiation
         // AXIVION Next Construct AutosarC++19_03-A18.1.1 : required as low level building block, encapsulated in abstraction and not directly used
         // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays, hicpp-avoid-c-arrays)
-        byte data[sizeof(ElementType)];
+        char data[sizeof(ElementType)];
     };
     // AXIVION Next Construct AutosarC++19_03-A1.1.1 : object size depends on template parameter and has to be taken care of at the specific template instantiation
     // AXIVION Next Construct AutosarC++19_03-A18.1.1 : required as low level building block, encapsulated in abstraction and not directly used

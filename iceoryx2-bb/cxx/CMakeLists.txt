@@ -45,10 +45,10 @@ else()
     set(IOX2_VARIATION_OPTIONAL_INCLUDE "optional-iox2-include")
 endif()
 
-add_library(iceoryx2-bb-cxx)
+add_library(iceoryx2-bb-cxx INTERFACE)
 add_library(iceoryx2-bb-cxx::iceoryx2-bb-cxx ALIAS iceoryx2-bb-cxx)
 
-target_sources(iceoryx2-bb-cxx PUBLIC
+target_sources(iceoryx2-bb-cxx INTERFACE
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/detail/assertions.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/detail/builder.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/detail/path_and_file_verifier.hpp>
@@ -75,30 +75,21 @@ target_sources(iceoryx2-bb-cxx PUBLIC
     $<BUILD_INTERFACE:$<$<CXX_COMPILER_ID:MSVC>:${PROJECT_SOURCE_DIR}/iceoryx2-bb-cxx.natvis>>
 )
 
-target_sources(iceoryx2-bb-cxx
-    PRIVATE
-    src/console_logger.cpp
-    src/default_error_handler.cpp
-    src/hoofs_error_reporting.cpp
-    src/logger.cpp
-    src/memory.cpp
-)
-
 target_include_directories(iceoryx2-bb-cxx
-    PUBLIC
+    INTERFACE
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/variation/${IOX2_VARIATION_EXPECTED_INCLUDE}>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/variation/${IOX2_VARIATION_OPTIONAL_INCLUDE}>
     $<INSTALL_INTERFACE:include/${PREFIX}>
 )
 
-target_compile_features(iceoryx2-bb-cxx PRIVATE ${ICEORYX2_CXX_STD})
+target_compile_features(iceoryx2-bb-cxx INTERFACE ${ICEORYX2_CXX_STD})
 
 # NOTE: position independent code is required due to the usage of thread-local-storage
 set_target_properties(iceoryx2-bb-cxx PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 target_gdb_pretty_printer(iceoryx2-bb-cxx
-    PUBLIC
+    INTERFACE
     ${PROJECT_SOURCE_DIR}/iceoryx2-bb-cxx-pretty-printer.py
 )
 

@@ -11,22 +11,22 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_BB_PRIMITIVES_ATTRIBUTES_HPP
-#define IOX2_BB_PRIMITIVES_ATTRIBUTES_HPP
+#ifndef IOX2_BB_DETAIL_ATTRIBUTES_HPP
+#define IOX2_BB_DETAIL_ATTRIBUTES_HPP
 
 namespace iox2 {
-namespace legacy {
-namespace internal {
+namespace bb {
+namespace detail {
 /// We use this as an alternative to "static_cast<void>(someVar)" to signal the
 /// compiler an unused variable. "static_cast" produces an useless-cast warning
 /// on gcc and this approach solves it cleanly.
 template <typename T>
 // AXIVION Next Construct AutosarC++19_03-M0.1.8 : No side effects are the intended behavior of the function
 // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward) intended for this function
-inline void IOX2_DISCARD_RESULT_IMPL(T&&) noexcept {
+inline void iox2_discard_result_impl(T&& /* unused */) noexcept {
 }
-} // namespace internal
-} // namespace legacy
+} // namespace detail
+} // namespace bb
 } // namespace iox2
 
 // AXIVION Next Construct AutosarC++19_03-A16.0.1 : Aliasing of fully qualified templated function.
@@ -40,7 +40,7 @@ inline void IOX2_DISCARD_RESULT_IMPL(T&&) noexcept {
 ///     uint32_t foo();
 ///     IOX2_DISCARD_RESULT(foo()); // suppress compiler warning for unused return value
 /// @endcode
-#define IOX2_DISCARD_RESULT(expr) ::iox2::legacy::internal::IOX2_DISCARD_RESULT_IMPL(expr)
+#define IOX2_DISCARD_RESULT(expr) ::iox2::bb::detail::iox2_discard_result_impl(expr)
 
 /// @brief IOX2_NO_DISCARD adds the [[nodiscard]] keyword if it is available for the current compiler.
 
@@ -77,4 +77,4 @@ inline void IOX2_DISCARD_RESULT_IMPL(T&&) noexcept {
 
 // NOLINTEND(cppcoreguidelines-macro-usage)
 
-#endif
+#endif // IOX2_BB_DETAIL_ATTRIBUTES_HPP

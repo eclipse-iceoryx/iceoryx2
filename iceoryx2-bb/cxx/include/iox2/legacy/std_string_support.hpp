@@ -15,8 +15,8 @@
 #define IOX2_BB_UTILITY_STD_STRING_SUPPORT_HPP
 
 #include "iox2/bb/into.hpp"
+#include "iox2/bb/optional.hpp"
 #include "iox2/legacy/detail/convert.hpp"
-#include "iox2/legacy/optional.hpp"
 
 #include <string>
 
@@ -25,11 +25,11 @@ namespace legacy {
 
 /// @brief A specialization function of convert::from_string for std::string
 /// @param v the input string in c type
-/// @return an iox2::legacy::optional<Destination> where, if the return value is iox2::legacy::nullopt, it indicates a
+/// @return an iox2::bb::Optional<Destination> where, if the return value is iox2::bb::NULLOPT, it indicates a
 /// failed conversion process
 template <>
-inline iox2::legacy::optional<std::string> convert::from_string(const char* v) noexcept {
-    return iox2::legacy::optional<std::string>(v);
+inline bb::Optional<std::string> convert::from_string(const char* v) noexcept {
+    return std::string(v);
 }
 
 } // namespace legacy

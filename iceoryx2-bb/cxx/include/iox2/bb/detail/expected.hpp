@@ -13,7 +13,7 @@
 #ifndef IOX2_INCLUDE_GUARD_CONTAINER_EXPECTED_HPP
 #define IOX2_INCLUDE_GUARD_CONTAINER_EXPECTED_HPP
 
-#include "iox2/legacy/attributes.hpp"
+#include "iox2/bb/detail/attributes.hpp"
 #include "iox2/legacy/detail/expected_helper.hpp"
 #include "iox2/legacy/expected.hpp"
 #include <type_traits>

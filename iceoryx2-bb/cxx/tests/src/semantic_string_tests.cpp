@@ -190,8 +190,8 @@ class SemanticStringTest : public Test {
         *StaticString<SutType::capacity()>::from_utf8_null_terminated_unchecked(
             TestValues<SutType>::SMALLER_VALID_VALUE.c_str());
 
-    SutType greater_value = SutType::create(greater_value_str).expect("Failed to create test string.");
-    SutType smaller_value = SutType::create(smaller_value_str).expect("Failed to create test string.");
+    SutType greater_value = SutType::create(greater_value_str).value();
+    SutType smaller_value = SutType::create(smaller_value_str).value();
     // NOLINTEND(misc-non-private-member-variables-in-classes)
 };
 
@@ -205,7 +205,7 @@ TYPED_TEST(SemanticStringTest, InitializeWithValidStringLiteralWorks) {
 
     auto sut = SutType::create("alwaysvalid");
 
-    ASSERT_THAT(sut.has_error(), Eq(false));
+    ASSERT_THAT(sut.has_value(), Eq(true));
     EXPECT_THAT(sut->size(), Eq(11));
     EXPECT_THAT(sut->capacity(), Eq(TestValues<SutType>::CAPACITY));
     EXPECT_STREQ(sut->as_string().unchecked_access().c_str(), "alwaysvalid");
@@ -219,7 +219,7 @@ TYPED_TEST(SemanticStringTest, SizeWorksCorrectly) {
         TestValues<SutType>::GREATER_VALID_VALUE.c_str());
     auto sut = SutType::create(test_string);
 
-    ASSERT_THAT(sut.has_error(), Eq(false));
+    ASSERT_THAT(sut.has_value(), Eq(true));
     EXPECT_THAT(sut->size(), Eq(test_string.size()));
 }
 
@@ -231,7 +231,7 @@ TYPED_TEST(SemanticStringTest, AsStringWorksCorrectly) {
         TestValues<SutType>::SMALLER_VALID_VALUE.c_str());
     auto sut = SutType::create(test_string);
 
-    ASSERT_THAT(sut.has_error(), Eq(false));
+    ASSERT_THAT(sut.has_value(), Eq(true));
     EXPECT_THAT(sut->as_string().unchecked_access().c_str(), StrEq(test_string.unchecked_access().c_str()));
 }
 
@@ -250,7 +250,7 @@ TYPED_TEST(SemanticStringTest, CanBeFilledUpToMaxCapacity) {
         TestValues<SutType>::MAX_CAPACITY_VALUE.c_str());
     auto sut = SutType::create(test_string);
 
-    ASSERT_THAT(sut.has_error(), Eq(false));
+    ASSERT_THAT(sut.has_value(), Eq(true));
     EXPECT_THAT(sut->as_string().unchecked_access().c_str(), StrEq(test_string.unchecked_access().c_str()));
 }
 
@@ -262,7 +262,7 @@ TYPED_TEST(SemanticStringTest, InitializeWithValidStringValueWorks) {
         auto sut =
             SutType::create(*StaticString<SutType::capacity()>::from_utf8_null_terminated_unchecked(value.c_str()));
 
-        ASSERT_THAT(sut.has_error(), Eq(false));
+        ASSERT_THAT(sut.has_value(), Eq(true));
         EXPECT_THAT(sut->size(), Eq(value.size()));
         EXPECT_THAT(sut->capacity(), Eq(TestValues<SutType>::CAPACITY));
         EXPECT_THAT(sut->as_string().unchecked_access().c_str(), StrEq(value));
@@ -277,7 +277,7 @@ TYPED_TEST(SemanticStringTest, InitializeWithStringContainingIllegalCharactersFa
         auto sut =
             SutType::create(*StaticString<SutType::capacity()>::from_utf8_null_terminated_unchecked(value.c_str()));
 
-        ASSERT_THAT(sut.has_error(), Eq(true));
+        ASSERT_THAT(sut.has_value(), Eq(false));
         ASSERT_THAT(sut.error(), Eq(SemanticStringError::InvalidContent));
     }
 }
@@ -290,7 +290,7 @@ TYPED_TEST(SemanticStringTest, InitializeWithStringContainingIllegalContentFails
         auto sut =
             SutType::create(*StaticString<SutType::capacity()>::from_utf8_null_terminated_unchecked(value.c_str()));
 
-        ASSERT_THAT(sut.has_error(), Eq(true));
+        ASSERT_THAT(sut.has_value(), Eq(false));
         ASSERT_THAT(sut.error(), Eq(SemanticStringError::InvalidContent));
     }
 }
@@ -303,7 +303,7 @@ TYPED_TEST(SemanticStringTest, InitializeWithTooLongContentFails) {
         auto sut =
             SutType::create(*StaticString<SutType::capacity() * 2>::from_utf8_null_terminated_unchecked(value.c_str()));
 
-        ASSERT_THAT(sut.has_error(), Eq(true));
+        ASSERT_THAT(sut.has_value(), Eq(false));
         ASSERT_THAT(sut.error(), Eq(SemanticStringError::ExceedsMaximumLength));
     }
 }
@@ -317,12 +317,12 @@ TYPED_TEST(SemanticStringTest, AppendValidContentToValidStringWorks) {
         for (auto& add_value : TestValues<SutType>::VALID_VALUES) {
             auto sut =
                 SutType::create(*StaticString<SutType::capacity()>::from_utf8_null_terminated_unchecked(value.c_str()));
-            ASSERT_THAT(sut.has_error(), Eq(false));
+            ASSERT_THAT(sut.has_value(), Eq(true));
 
             EXPECT_THAT(
                 sut->append(*StaticString<SutType::capacity()>::from_utf8_null_terminated_unchecked(add_value.c_str()))
-                    .has_error(),
-                Eq(false));
+                    .has_value(),
+                Eq(true));
             auto result_size = value.size() + add_value.size();
             EXPECT_THAT(sut->size(), result_size);
             EXPECT_THAT(sut->capacity(), Eq(TestValues<SutType>::CAPACITY));
@@ -341,11 +341,11 @@ TYPED_TEST(SemanticStringTest, AppendInvalidCharactersToValidStringFails) {
         for (auto& invalid_value : TestValues<SutType>::INVALID_CHARACTER_VALUES) {
             auto sut =
                 SutType::create(*StaticString<SutType::capacity()>::from_utf8_null_terminated_unchecked(value.c_str()));
-            ASSERT_THAT(sut.has_error(), Eq(false));
+            ASSERT_THAT(sut.has_value(), Eq(true));
 
             auto result = sut->append(
                 *StaticString<SutType::capacity()>::from_utf8_null_terminated_unchecked(invalid_value.c_str()));
-            ASSERT_TRUE(result.has_error());
+            ASSERT_FALSE(result.has_value());
             EXPECT_THAT(result.error(), Eq(SemanticStringError::InvalidContent));
             EXPECT_THAT(sut->size(), value.size());
             EXPECT_THAT(sut->capacity(), Eq(TestValues<SutType>::CAPACITY));
@@ -363,11 +363,11 @@ TYPED_TEST(SemanticStringTest, GenerateInvalidContentWithAppend) {
         for (auto& invalid_value : TestValues<SutType>::ADD_VALID_CHARS_TO_CREATE_INVALID_CONTENT_AT_END) {
             auto sut =
                 SutType::create(*StaticString<SutType::capacity()>::from_utf8_null_terminated_unchecked(value.c_str()));
-            ASSERT_THAT(sut.has_error(), Eq(false));
+            ASSERT_THAT(sut.has_value(), Eq(true));
 
             auto result = sut->append(
                 *StaticString<SutType::capacity()>::from_utf8_null_terminated_unchecked(invalid_value.c_str()));
-            ASSERT_TRUE(result.has_error());
+            ASSERT_FALSE(result.has_value());
             EXPECT_THAT(result.error(), Eq(SemanticStringError::InvalidContent));
             EXPECT_THAT(sut->size(), value.size());
             EXPECT_THAT(sut->capacity(), Eq(TestValues<SutType>::CAPACITY));
@@ -385,13 +385,13 @@ TYPED_TEST(SemanticStringTest, GenerateInvalidContentWithInsert) {
         for (auto& invalid_value : TestValues<SutType>::ADD_VALID_CHARS_TO_CREATE_INVALID_CONTENT_AT_BEGIN) {
             auto sut =
                 SutType::create(*StaticString<SutType::capacity()>::from_utf8_null_terminated_unchecked(value.c_str()));
-            ASSERT_THAT(sut.has_error(), Eq(false));
+            ASSERT_THAT(sut.has_value(), Eq(true));
 
             auto result = sut->insert(
                 0,
                 *StaticString<SutType::capacity()>::from_utf8_null_terminated_unchecked(invalid_value.c_str()),
                 invalid_value.size());
-            ASSERT_TRUE(result.has_error());
+            ASSERT_FALSE(result.has_value());
             EXPECT_THAT(result.error(), Eq(SemanticStringError::InvalidContent));
             EXPECT_THAT(sut->size(), value.size());
             EXPECT_THAT(sut->capacity(), Eq(TestValues<SutType>::CAPACITY));
@@ -409,12 +409,12 @@ TYPED_TEST(SemanticStringTest, AppendTooLongContentToValidStringFails) {
         for (auto& invalid_value : TestValues<SutType>::TOO_LONG_CONTENT_VALUES) {
             auto sut =
                 SutType::create(*StaticString<SutType::capacity()>::from_utf8_null_terminated_unchecked(value.c_str()));
-            ASSERT_THAT(sut.has_error(), Eq(false));
+            ASSERT_THAT(sut.has_value(), Eq(true));
 
             EXPECT_THAT(sut->append(*StaticString<SutType::capacity() + 2>::from_utf8_null_terminated_unchecked(
                                         invalid_value.c_str()))
-                            .has_error(),
-                        Eq(true));
+                            .has_value(),
+                        Eq(false));
             EXPECT_THAT(sut->size(), Eq(value.size()));
             EXPECT_THAT(sut->capacity(), Eq(TestValues<SutType>::CAPACITY));
 
@@ -434,14 +434,14 @@ TYPED_TEST(SemanticStringTest, InsertValidContentToValidStringWorks) {
                 for (size_t insert_position = 0; insert_position < value.size(); ++insert_position) {
                     auto sut = SutType::create(
                         *StaticString<SutType::capacity()>::from_utf8_null_terminated_unchecked(value.c_str()));
-                    ASSERT_THAT(sut.has_error(), Eq(false));
+                    ASSERT_THAT(sut.has_value(), Eq(true));
 
                     EXPECT_THAT(sut->insert(insert_position,
                                             *StaticString<SutType::capacity()>::from_utf8_null_terminated_unchecked(
                                                 add_value.c_str()),
                                             add_value.size())
-                                    .has_error(),
-                                Eq(false));
+                                    .has_value(),
+                                Eq(true));
 
 
                     EXPECT_THAT(sut->size(), Eq(value.size() + add_value.size()));
@@ -465,13 +465,13 @@ TYPED_TEST(SemanticStringTest, InsertInvalidCharactersToValidStringFails) {
             for (uint64_t insert_position = 0; insert_position < value.size(); ++insert_position) {
                 auto sut = SutType::create(
                     *StaticString<SutType::capacity()>::from_utf8_null_terminated_unchecked(value.c_str()));
-                ASSERT_THAT(sut.has_error(), Eq(false));
+                ASSERT_THAT(sut.has_value(), Eq(true));
 
                 auto result = sut->insert(
                     insert_position,
                     *StaticString<SutType::capacity()>::from_utf8_null_terminated_unchecked(add_value.c_str()),
                     add_value.size());
-                ASSERT_TRUE(result.has_error());
+                ASSERT_FALSE(result.has_value());
                 EXPECT_THAT(result.error(), Eq(SemanticStringError::InvalidContent));
 
 
@@ -492,14 +492,14 @@ TYPED_TEST(SemanticStringTest, InsertTooLongContentToValidStringFails) {
             for (uint64_t insert_position = 0; insert_position < value.size(); ++insert_position) {
                 auto sut = SutType::create(
                     *StaticString<SutType::capacity()>::from_utf8_null_terminated_unchecked(value.c_str()));
-                ASSERT_THAT(sut.has_error(), Eq(false));
+                ASSERT_THAT(sut.has_value(), Eq(true));
 
                 EXPECT_THAT(sut->insert(insert_position,
                                         *StaticString<SutType::capacity() + 2>::from_utf8_null_terminated_unchecked(
                                             add_value.c_str()),
                                         add_value.size())
-                                .has_error(),
-                            Eq(true));
+                                .has_value(),
+                            Eq(false));
 
 
                 EXPECT_THAT(sut->size(), Eq(value.size()));

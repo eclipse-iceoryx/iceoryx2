@@ -241,16 +241,6 @@ inline expected<ValueType, ErrorType>::operator expected<void, ErrorType>() cons
 }
 
 template <typename ValueType, typename ErrorType>
-template <typename U>
-inline optional<enable_if_non_void_t<U>> expected<ValueType, ErrorType>::to_optional() const noexcept {
-    optional<enable_if_non_void_t<U>> returnValue;
-    if (has_value()) {
-        returnValue.emplace(m_store.value_unchecked());
-    }
-    return returnValue;
-}
-
-template <typename ValueType, typename ErrorType>
 inline constexpr bool operator==(const expected<ValueType, ErrorType>& lhs,
                                  const expected<ValueType, ErrorType>& rhs) noexcept {
     if (lhs.has_error() != rhs.has_error()) {

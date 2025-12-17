@@ -19,7 +19,6 @@
 #include "iox2/legacy/detail/platform_correction.hpp"
 
 #include "iox2/legacy/detail/variant_internal.hpp"
-#include "iox2/legacy/memory.hpp"
 
 #include <cstdint>
 #include <iostream>
@@ -64,6 +63,20 @@ struct in_place_type {
 /// @endcode
 static constexpr uint64_t INVALID_VARIANT_INDEX { std::numeric_limits<uint64_t>::max() };
 
+namespace detail {
+/// template recursion stopper for maximum size calculation
+template <std::size_t S = 0>
+constexpr std::size_t maxSize() noexcept {
+    return S;
+}
+
+/// calculate maximum size of supplied types
+template <typename T, typename... Args>
+constexpr std::size_t maxSize() noexcept {
+    return (sizeof(T) > maxSize<Args...>()) ? sizeof(T) : maxSize<Args...>();
+}
+} // namespace detail
+
 /// @brief Variant implementation from the C++17 standard with C++11. The
 ///         interface is inspired by the C++17 standard but it has changes in
 ///         get and emplace since we are not allowed to throw exceptions.
@@ -101,7 +114,7 @@ template <typename... Types>
 class variant final {
   private:
     /// @brief contains the size of the largest element
-    static constexpr uint64_t TYPE_SIZE { maxSize<Types...>() };
+    static constexpr uint64_t TYPE_SIZE { detail::maxSize<Types...>() };
 
   public:
     /// @brief the default constructor constructs a variant which does not contain
@@ -279,7 +292,7 @@ class variant final {
         // AXIVION Next Construct AutosarC++19_03-M0.1.3 : data provides the actual storage and is accessed via m_storage since &m_storage.data = &m_storage
         // AXIVION Next Construct AutosarC++19_03-A18.1.1 : safe access is guaranteed since the c-array is wrapped inside the variant class
         // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,hicpp-avoid-c-arrays)
-        byte data[TYPE_SIZE];
+        char data[TYPE_SIZE];
     };
     storage_t m_storage {};
     uint64_t m_type_index { INVALID_VARIANT_INDEX };

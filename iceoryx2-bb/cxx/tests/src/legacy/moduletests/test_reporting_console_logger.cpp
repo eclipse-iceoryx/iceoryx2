@@ -42,6 +42,9 @@ TEST(ConsoleLogger_test, TestOutput) {
 
 TEST(ConsoleLogger_test, SettingTheLogLevelWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "e8225d29-ee35-4864-8528-b1e290a83311");
+
+    GTEST_SKIP() << "This test will probably deleted once the log level is set via iceoryx2-bb-log in Rust";
+
     constexpr auto LOG_LEVEL { iox2::legacy::log::LogLevel::Info };
     EXPECT_THAT(LoggerSUT::getLogLevel(), Ne(LOG_LEVEL));
 

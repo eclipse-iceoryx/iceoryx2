@@ -18,7 +18,6 @@
 #define IOX2_BB_UTILITY_CONVERT_INL
 
 #include "iox2/legacy/detail/convert.hpp"
-#include "iox2/legacy/detail/string_type_traits.hpp"
 #include "iox2/legacy/logging.hpp"
 
 namespace iox2 {
@@ -53,30 +52,30 @@ convert::toString(const Source& t) noexcept {
 }
 
 template <typename TargetType>
-inline iox2::legacy::optional<TargetType> convert::from_string(const char* v IOX2_MAYBE_UNUSED) noexcept {
+inline bb::Optional<TargetType> convert::from_string(const char* v IOX2_MAYBE_UNUSED) noexcept {
     static_assert(always_false_v<TargetType>,
                   "For a conversion to 'std::string' please include 'iox/std_string_support.hpp'!\nConversion not "
                   "supported!");
 }
 
 template <>
-inline iox2::legacy::optional<char> convert::from_string<char>(const char* v) noexcept {
+inline bb::Optional<char> convert::from_string<char>(const char* v) noexcept {
     if (strlen(v) != 1U) {
         IOX2_LOG(Debug, v << " is not a char");
-        return iox2::legacy::nullopt;
+        return bb::NULLOPT;
     }
 
     // NOLINTJUSTIFICATION encapsulated in abstraction
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    return iox2::legacy::optional<char>(v[0]);
+    return v[0];
 }
 
 template <>
-inline iox2::legacy::optional<bool> convert::from_string<bool>(const char* v) noexcept {
+inline bb::Optional<bool> convert::from_string<bool>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     if (start_with_neg_sign(v)) {
-        return iox2::legacy::nullopt;
+        return bb::NULLOPT;
     }
 
     auto call = IOX2_POSIX_CALL(strtoul)(v, &end_ptr, STRTOUL_BASE)
@@ -90,7 +89,7 @@ inline iox2::legacy::optional<bool> convert::from_string<bool>(const char* v) no
 }
 
 template <>
-inline iox2::legacy::optional<float> convert::from_string<float>(const char* v) noexcept {
+inline bb::Optional<float> convert::from_string<float>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     auto call = IOX2_POSIX_CALL(strtof)(v, &end_ptr)
@@ -102,7 +101,7 @@ inline iox2::legacy::optional<float> convert::from_string<float>(const char* v) 
 }
 
 template <>
-inline iox2::legacy::optional<double> convert::from_string<double>(const char* v) noexcept {
+inline bb::Optional<double> convert::from_string<double>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     auto call = IOX2_POSIX_CALL(strtod)(v, &end_ptr)
@@ -114,7 +113,7 @@ inline iox2::legacy::optional<double> convert::from_string<double>(const char* v
 }
 
 template <>
-inline iox2::legacy::optional<long double> convert::from_string<long double>(const char* v) noexcept {
+inline bb::Optional<long double> convert::from_string<long double>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     auto call = IOX2_POSIX_CALL(strtold)(v, &end_ptr)
@@ -126,11 +125,11 @@ inline iox2::legacy::optional<long double> convert::from_string<long double>(con
 }
 
 template <>
-inline iox2::legacy::optional<unsigned long long> convert::from_string<unsigned long long>(const char* v) noexcept {
+inline bb::Optional<unsigned long long> convert::from_string<unsigned long long>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     if (start_with_neg_sign(v)) {
-        return iox2::legacy::nullopt;
+        return bb::NULLOPT;
     }
 
     auto call = IOX2_POSIX_CALL(strtoull)(v, &end_ptr, STRTOULL_BASE)
@@ -142,11 +141,11 @@ inline iox2::legacy::optional<unsigned long long> convert::from_string<unsigned 
 }
 
 template <>
-inline iox2::legacy::optional<unsigned long> convert::from_string<unsigned long>(const char* v) noexcept {
+inline bb::Optional<unsigned long> convert::from_string<unsigned long>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     if (start_with_neg_sign(v)) {
-        return iox2::legacy::nullopt;
+        return bb::NULLOPT;
     }
 
     auto call = IOX2_POSIX_CALL(strtoul)(v, &end_ptr, STRTOUL_BASE)
@@ -158,11 +157,11 @@ inline iox2::legacy::optional<unsigned long> convert::from_string<unsigned long>
 }
 
 template <>
-inline iox2::legacy::optional<unsigned int> convert::from_string<unsigned int>(const char* v) noexcept {
+inline bb::Optional<unsigned int> convert::from_string<unsigned int>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     if (start_with_neg_sign(v)) {
-        return iox2::legacy::nullopt;
+        return bb::NULLOPT;
     }
 
     // use alwaysSuccess for the conversion edge cases in 32-bit system?
@@ -175,11 +174,11 @@ inline iox2::legacy::optional<unsigned int> convert::from_string<unsigned int>(c
 }
 
 template <>
-inline iox2::legacy::optional<unsigned short> convert::from_string<unsigned short>(const char* v) noexcept {
+inline bb::Optional<unsigned short> convert::from_string<unsigned short>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     if (start_with_neg_sign(v)) {
-        return iox2::legacy::nullopt;
+        return bb::NULLOPT;
     }
 
     auto call = IOX2_POSIX_CALL(strtoul)(v, &end_ptr, STRTOUL_BASE)
@@ -191,11 +190,11 @@ inline iox2::legacy::optional<unsigned short> convert::from_string<unsigned shor
 }
 
 template <>
-inline iox2::legacy::optional<unsigned char> convert::from_string<unsigned char>(const char* v) noexcept {
+inline bb::Optional<unsigned char> convert::from_string<unsigned char>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     if (start_with_neg_sign(v)) {
-        return iox2::legacy::nullopt;
+        return bb::NULLOPT;
     }
 
     auto call = IOX2_POSIX_CALL(strtoul)(v, &end_ptr, STRTOULL_BASE)
@@ -207,7 +206,7 @@ inline iox2::legacy::optional<unsigned char> convert::from_string<unsigned char>
 }
 
 template <>
-inline iox2::legacy::optional<long long> convert::from_string<long long>(const char* v) noexcept {
+inline bb::Optional<long long> convert::from_string<long long>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     auto call = IOX2_POSIX_CALL(strtoll)(v, &end_ptr, STRTOLL_BASE)
@@ -219,7 +218,7 @@ inline iox2::legacy::optional<long long> convert::from_string<long long>(const c
 }
 
 template <>
-inline iox2::legacy::optional<long> convert::from_string<long>(const char* v) noexcept {
+inline bb::Optional<long> convert::from_string<long>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     auto call = IOX2_POSIX_CALL(strtol)(v, &end_ptr, STRTOL_BASE)
@@ -231,7 +230,7 @@ inline iox2::legacy::optional<long> convert::from_string<long>(const char* v) no
 }
 
 template <>
-inline iox2::legacy::optional<int> convert::from_string<int>(const char* v) noexcept {
+inline bb::Optional<int> convert::from_string<int>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     // use alwaysSuccess for the conversion edge cases in 32-bit system?
@@ -244,7 +243,7 @@ inline iox2::legacy::optional<int> convert::from_string<int>(const char* v) noex
 }
 
 template <>
-inline iox2::legacy::optional<short> convert::from_string<short>(const char* v) noexcept {
+inline bb::Optional<short> convert::from_string<short>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     auto call = IOX2_POSIX_CALL(strtol)(v, &end_ptr, STRTOL_BASE)
@@ -256,7 +255,7 @@ inline iox2::legacy::optional<short> convert::from_string<short>(const char* v) 
 }
 
 template <>
-inline iox2::legacy::optional<signed char> convert::from_string<signed char>(const char* v) noexcept {
+inline bb::Optional<signed char> convert::from_string<signed char>(const char* v) noexcept {
     char* end_ptr = nullptr;
 
     auto call = IOX2_POSIX_CALL(strtol)(v, &end_ptr, STRTOL_BASE)
@@ -277,17 +276,17 @@ inline bool convert::check_edge_case(decltype(errno) errno_cache,
 }
 
 template <typename TargetType, typename CallType>
-inline iox2::legacy::optional<TargetType>
+inline bb::Optional<TargetType>
 convert::evaluate_return_value(CallType& call, const char* end_ptr, const char* v) noexcept {
     if (call.has_error()) {
-        return iox2::legacy::nullopt;
+        return bb::NULLOPT;
     }
 
     if (!check_edge_case<TargetType>(call->errnum, end_ptr, v, call->value)) {
-        return iox2::legacy::nullopt;
+        return bb::NULLOPT;
     }
 
-    return iox2::legacy::optional<TargetType>(static_cast<TargetType>(call->value));
+    return static_cast<TargetType>(call->value);
 }
 
 template <typename SourceType>

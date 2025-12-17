@@ -14,9 +14,9 @@
 #ifndef IOX2_BB_PATH_HPP
 #define IOX2_BB_PATH_HPP
 
+#include "iox2/bb/detail/attributes.hpp"
 #include "iox2/bb/file_path.hpp"
 #include "iox2/bb/semantic_string.hpp"
-#include "iox2/legacy/attributes.hpp"
 
 namespace iox2 {
 namespace bb {

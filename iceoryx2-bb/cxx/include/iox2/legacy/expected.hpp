@@ -15,9 +15,8 @@
 #ifndef IOX2_BB_VOCABULARY_EXPECTED_HPP
 #define IOX2_BB_VOCABULARY_EXPECTED_HPP
 
+#include "iox2/bb/detail/attributes.hpp"
 #include "iox2/legacy/detail/expected_helper.hpp"
-#include "iox2/legacy/functional_interface.hpp"
-#include "iox2/legacy/optional.hpp"
 
 namespace iox2 {
 namespace legacy {
@@ -116,12 +115,34 @@ detail::err<T> err(T&& error);
 template <typename T, typename... Targs>
 detail::err<T> err(Targs&&... args);
 
+template <typename ValueType, typename ErrorType>
+class expected;
+
+/// @brief equality check for two distinct expected types
+/// @tparam ValueType type of the value stored in the expected
+/// @tparam ErrorType type of the error stored in the expected
+/// @param[in] lhs left side of the comparison
+/// @param[in] rhs right side of the comparison
+/// @return true if the expecteds are equal, otherwise false
+template <typename ValueType, typename ErrorType>
+constexpr bool operator==(const expected<ValueType, ErrorType>& lhs,
+                          const expected<ValueType, ErrorType>& rhs) noexcept;
+
+/// @brief inequality check for two distinct expected types
+/// @tparam ValueType type of the value stored in the expected
+/// @tparam ErrorType type of the error stored in the expected
+/// @param[in] lhs left side of the comparison
+/// @param[in] rhs right side of the comparison
+/// @return true if the expecteds are not equal, otherwise false
+template <typename ValueType, typename ErrorType>
+constexpr bool operator!=(const expected<ValueType, ErrorType>& lhs,
+                          const expected<ValueType, ErrorType>& rhs) noexcept;
+
 /// @brief Implementation of the C++23 expected class which can contain an error or a success value
 /// @param ValueType type of the value which can be stored in the expected
 /// @param ErrorType type of the error which can be stored in the expected
 template <typename ValueType, typename ErrorType>
-class IOX2_NO_DISCARD expected final
-    : public FunctionalInterface<expected<ValueType, ErrorType>, ValueType, ErrorType> {
+class IOX2_NO_DISCARD expected final {
   public:
     /// @brief default ctor is deleted since you have to clearly state if the
     ///         expected contains a success value or an error value
@@ -333,13 +354,6 @@ class IOX2_NO_DISCARD expected final
     // NOLINTNEXTLINE(hicpp-explicit-conversions)
     operator expected<void, ErrorType>() const noexcept;
 
-    /// @brief conversion operator to an optional.
-    /// @tparam U helper template parameter for SFINEA
-    /// @return optional containing the value if the expected contains a value, otherwise a nullopt
-    /// @note this only works for non void ValueTypes
-    template <typename U = ValueType>
-    optional<enable_if_non_void_t<U>> to_optional() const noexcept;
-
     template <typename T, typename E>
     friend constexpr bool ::iox2::legacy::operator==(const expected<T, E>&, const expected<T, E>&) noexcept;
 
@@ -355,26 +369,6 @@ class IOX2_NO_DISCARD expected final
   private:
     detail::expected_storage<ValueType, ErrorType> m_store;
 };
-
-/// @brief equality check for two distinct expected types
-/// @tparam ValueType type of the value stored in the expected
-/// @tparam ErrorType type of the error stored in the expected
-/// @param[in] lhs left side of the comparison
-/// @param[in] rhs right side of the comparison
-/// @return true if the expecteds are equal, otherwise false
-template <typename ValueType, typename ErrorType>
-constexpr bool operator==(const expected<ValueType, ErrorType>& lhs,
-                          const expected<ValueType, ErrorType>& rhs) noexcept;
-
-/// @brief inequality check for two distinct expected types
-/// @tparam ValueType type of the value stored in the expected
-/// @tparam ErrorType type of the error stored in the expected
-/// @param[in] lhs left side of the comparison
-/// @param[in] rhs right side of the comparison
-/// @return true if the expecteds are not equal, otherwise false
-template <typename ValueType, typename ErrorType>
-constexpr bool operator!=(const expected<ValueType, ErrorType>& lhs,
-                          const expected<ValueType, ErrorType>& rhs) noexcept;
 
 } // namespace legacy
 } // namespace iox2

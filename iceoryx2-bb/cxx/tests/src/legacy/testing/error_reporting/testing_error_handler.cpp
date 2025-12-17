@@ -13,6 +13,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/legacy/testing/error_reporting/testing_error_handler.hpp"
+#include "iox2/bb/static_function.hpp"
 #include "iox2/legacy/error_reporting/custom/default/error_handler.hpp"
 #include "iox2/legacy/error_reporting/custom/default/error_handler_interface.hpp"
 #include "iox2/legacy/error_reporting/types.hpp"
@@ -93,7 +94,7 @@ bool TestingErrorHandler::hasViolation(ErrorCode code) const noexcept {
     return false;
 }
 
-bool TestingErrorHandler::fatalFailureTestContext(const function_ref<void()> testFunction) {
+bool TestingErrorHandler::fatalFailureTestContext(const bb::StaticFunction<void()> testFunction) {
     // if there are multiple threads trying to perform a test, only the winner can proceed with the jump
     if (m_jumpState.exchange(JumpState::Pending) == JumpState::Pending) {
         return false;
