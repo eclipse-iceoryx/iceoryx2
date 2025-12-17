@@ -2,8 +2,10 @@ target/
 debug/
 .cache
 .idea
+.vscode
 build
 bazel-*
+CMakeUserPresets.json
 
 Cargo.lock
 **/*.rs.bk
