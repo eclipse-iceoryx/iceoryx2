@@ -83,7 +83,7 @@ class convert {
     /// @note   for the 'TargetType' equal to 'std::string,' please include 'iox/std_string_support.hpp'
     /// @tparam TargetType the desired target type for converting text
     /// @param v the input string in c type
-    /// @return an iox2::bb::Pptional<TargetType> where, if the return value is iox2::bb::NULLOPT, it indicates
+    /// @return an iox2::bb::Optional<TargetType> where, if the return value is iox2::bb::NULLOPT, it indicates
     /// a failed conversion process
     template <typename TargetType>
     static bb::Optional<TargetType> from_string(const char* v) noexcept;
