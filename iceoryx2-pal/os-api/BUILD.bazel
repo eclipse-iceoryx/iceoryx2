@@ -45,8 +45,7 @@ rust_library(
     rustc_flags = ["--cfg=bazel_build"],
     deps = [
         "//iceoryx2-pal/posix:iceoryx2-pal-posix",
-        ":bazel_bindgen_workaround",
-        "@crate_index//:lazy_static",
         ":iceoryx2-pal-os-api-bindgen",
+        "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
     ],
 )

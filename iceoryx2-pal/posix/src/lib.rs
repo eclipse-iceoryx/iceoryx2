@@ -92,10 +92,7 @@ pub(crate) mod internal {
     #![allow(unnecessary_transmutes)]
     #![allow(clippy::all)]
     #[cfg(not(bazel_build))]
-    include!(concat!(
-        env!("OUT_DIR"),
-        "/posix_generated.rs"
-    ));
+    include!(concat!(env!("OUT_DIR"), "/posix_generated.rs"));
 
     #[cfg(bazel_build)]
     pub use iceoryx2_pal_posix_bindgen::*;

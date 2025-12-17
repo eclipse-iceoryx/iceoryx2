@@ -20,6 +20,9 @@ fn main() {
     let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap();
     println!("Building for target: {}", target_os);
 
+    // Define that bazel_build as a cfg is valid to avoid errors/warnings, but not used for cargo builds
+    println!("cargo:rustc-check-cfg=cfg(bazel_build)");
+
     // the check for 'linux' in the next line refers to native compilation
     // and prevents to pull in bindgen
     #[cfg(target_os = "linux")]

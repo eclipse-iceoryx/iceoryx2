@@ -1,9 +1,43 @@
-# Use iceoryx2 with bazel
+# Use iceoryx2 with Bazel
 
-On Linux, iceoryx2 can be build with bazel. Other OSes are not yet supported.
+iceoryx2 supports Bazel as a build target, via both bazel workspaces and bazel modules. Other operating systems are not yet supported.
 
-## Instructions for iceoryx2 users
+## Setup with Bazel build system
 
+You can pull the iceoryx2 repo into your bazel project in two different manners. Full examples can be found under `examples/bazel`.
+
+### Setup via Bzlmod (Recommended)
+
+There's an example for using Bazel under `examples/bazel`. Alternatively, you can follow this abreviated guide, and ensure the following is present in your `MODULE.bazel` or `MODULE` file:
+
+```bazel
+bazel_dep(name = "iceoryx2", version = "0.7.0")
+bazel_dep(name = "rules_rust", version = "0.68.1")
+
+# ==============================================================================
+# Iceoryx2 Setup
+# ==============================================================================
+
+
+git_override(
+    module_name = iceoryx2,
+    remote = "https://github.com/eclipse-iceoryx/iceoryx2.git",
+    # Insert your git ref below. It can be a tag, commit, or branch
+    commit = "0.7.0"
+)
+
+# ==============================================================================
+# Rust Setup (Example)
+# ==============================================================================
+
+rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
+rust.toolchain(
+    edition = "2021",
+    versions = ["1.87.0"],
+)
+```
+
+### Setup via Workspace (legacy)
 To use iceoryx2 as an external dependency, ensure the following setup is present
 in your `WORKSPACE` file:
 
@@ -132,7 +166,7 @@ load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
 bazel_skylib_workspace()
 ```
 
-### Syncing Dependencies
+### Initial Build
 
 For the initial build, you must sync dependencies with crates.io.
 This can be done by running one of the following commands:
@@ -157,7 +191,7 @@ build --action_env=CARGO_BAZEL_REPIN=true
 For more details, refer to the
 [Crate Universe Repinning Guide](https://bazelbuild.github.io/rules_rust/crate_universe.html#repinning--updating-dependencies-1).
 
-### Linking iceoryx2 in Your `BUILD.bazel`
+## Linking iceoryx2 in Your `BUILD.bazel`
 
 To use iceoryx2 in your Bazel project, link the appropriate static or shared
 library. For example, in `BUILD.bazel`:
@@ -182,13 +216,19 @@ cc_binary(
 * **For C++**: Use `@iceoryx2//:iceoryx2-cxx-static` or
   `@iceoryx2//:iceoryx2-cxx-shared`
 
-### Feature Flags
+## Feature Flags
 
 iceoryx2 provides several feature flags that can be configured using bazel
 build options. These flags allow you to enable or disable specific features
 when building the project.
 
-#### Enabling a Feature Flag via Command Line
+| Feature Flag            | Valid Values                 | Crate Default      |
+| ----------------------- | ---------------------------- | ------------------ |
+| dev_permissions         | auto, on, off                | auto == off        |
+| logger_log              | auto, on, off                | auto == off        |
+| logger_tracing          | auto, on, off                | auto == off        |
+
+### Enabling a Feature Flag via Command Line
 
 To set a feature flag directly from the command line during the build, use the
 following format:
@@ -203,7 +243,7 @@ For example, to enable a feature flag called `foo`, you would run:
 bazel build --@iceoryx2//:foo //...
 ```
 
-#### Setting Feature Flags in .bazelrc
+### Setting Feature Flags in .bazelrc
 
 You can also persist feature flag configurations by specifying them in the
 `.bazelrc` file. This method is useful for keeping your build settings
@@ -219,15 +259,7 @@ For instance, to enable the `foo` feature by default in `.bazelrc`, you would ad
 build --@iceoryx2//:foo=on
 ```
 
-#### List of Available Features
-
-| Feature Flag            | Valid Values                 | Crate Default      |
-| ----------------------- | ---------------------------- | ------------------ |
-| dev_permissions         | auto, on, off                | auto == off        |
-| logger_log              | auto, on, off                | auto == off        |
-| logger_tracing          | auto, on, off                | auto == off        |
-
-### Running iceory2x Tests in External Project
+## Running iceory2x Tests in External Project
 
 In general, the iceoryx2 tests can be run in parallel. However, there are
 exceptions, as some tests deliberately try to bring the system into an

@@ -99,6 +99,7 @@ target_include_directories(iceoryx2-bb-cxx-tests
 target_link_libraries(
     iceoryx2-bb-cxx-tests
     PRIVATE
+    $<$<PLATFORM_ID:Linux>:atomic>
     iceoryx2-bb-cxx::iceoryx2-bb-cxx
     GTest::gtest GTest::gmock
     ${ICEORYX2_SANITIZER_FLAGS}

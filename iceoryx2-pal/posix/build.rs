@@ -22,6 +22,9 @@ fn main() {
     // needed for bazel but can be empty for cargo builds
     println!("cargo:rustc-env=BAZEL_BINDGEN_PATH_CORRECTION=");
 
+    // Define that bazel_build as a cfg is valid to avoid errors/warnings, but not used for cargo builds
+    println!("cargo:rustc-check-cfg=cfg(bazel_build)");
+
     // #[cfg(any(...))] does not work when cross-compiling
     // when cross compiling, 'target_os' is set to the environment the build script
     // is executed; to get the actual target OS, use the cargo 'TARGET' env variable

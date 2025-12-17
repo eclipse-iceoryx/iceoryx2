@@ -45,12 +45,6 @@ cc_library(
 
 cc_library(
     name = "iceoryx2-bb-cxx",
-    srcs = glob(
-        [
-            "src/**",
-        ],
-        allow_empty = True,
-    ),
     hdrs = glob(["include/**"]),
     strip_include_prefix = "include",
     deps = select({

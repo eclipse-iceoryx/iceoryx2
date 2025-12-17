@@ -1,0 +1,69 @@
+# Copyright (c) 2026 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache Software License 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+# which is available at https://opensource.org/licenses/MIT.
+#
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+module(
+    name = "iceoryx2_bazel_example",
+    version = "0.0.0",
+)
+
+# ==============================================================================
+# Bazel Dependencies
+# ==============================================================================
+
+bazel_dep(name = "bazel_skylib", version = "1.8.2")
+bazel_dep(name = "rules_rust", version = "0.68.1")
+bazel_dep(name = "rules_rust_bindgen", version = "0.68.1")
+bazel_dep(name = "rules_cc", version = "0.2.8")
+bazel_dep(name = "toolchains_llvm", version = "1.5.0")
+bazel_dep(name = "iceoryx2", version = "0.7.0")
+
+# ==============================================================================
+# Iceoryx2 Setup
+# ==============================================================================
+
+# Override iceoryx2 to use the local parent directory.
+# For external projects, change this path or use git_override/archive_override.
+local_path_override(
+    module_name = "iceoryx2",
+    path = "../..",
+)
+
+# ==============================================================================
+# LLVM Toolchain Setup
+# ==============================================================================
+
+# As the root module, we set up the LLVM extension.
+# This provides the bindgen toolchain needed for iceoryx2.
+llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm")
+llvm.toolchain(llvm_version = "17.0.6")
+use_repo(llvm, "llvm_toolchain_llvm")
+
+# ==============================================================================
+# Rust Toolchain Setup
+# ==============================================================================
+
+rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
+rust.toolchain(
+    edition = "2021",
+    versions = ["1.83.0"],
+)
+use_repo(rust, "rust_toolchains")
+
+# ==============================================================================
+# Toolchain Registration
+# ==============================================================================
+
+# Register our custom bindgen toolchain first so it takes precedence
+register_toolchains(
+    "@rust_toolchains//:all",
+    "//bazel/toolchains:bindgen_toolchain",
+)

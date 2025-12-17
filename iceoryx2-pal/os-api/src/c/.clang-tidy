@@ -1,0 +1,4 @@
+InheritParentConfig: true
+ExtraArgsBefore:
+  - -xc
+  - -std=c11

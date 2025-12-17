@@ -1,5 +1,5 @@
 {
-  "checksum": "9f7340a9c10027557d8a2db6321efa9f2e739315ad6c323a23aadaf3844e4a9e",
+  "checksum": "1277e9a9ee7d849cba0a66cb83f4d3ea45a52da8efe6fe33a03d7f74fac9d1ab",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -2117,14 +2117,14 @@
       ],
       "license_file": "LICENSE-MIT"
     },
-    "cbindgen 0.27.0": {
+    "cbindgen 0.29.2": {
       "name": "cbindgen",
-      "version": "0.27.0",
+      "version": "0.29.2",
       "package_url": "https://github.com/mozilla/cbindgen",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/cbindgen/0.27.0/download",
-          "sha256": "3fce8dd7fcfcbf3a0a87d8f515194b49d6135acab73e18bd380d1d93bb1a15eb"
+          "url": "https://static.crates.io/crates/cbindgen/0.29.2/download",
+          "sha256": "befbfd072a8e81c02f8c507aefce431fe5e7d051f83d48a23ffc9b9fe5a11799"
         }
       },
       "targets": [
@@ -2132,6 +2132,18 @@
           "Library": {
             "crate_name": "cbindgen",
             "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        },
+        {
+          "Binary": {
+            "crate_name": "cbindgen",
+            "crate_root": "src/main.rs",
             "srcs": {
               "allow_empty": true,
               "include": [
@@ -2168,7 +2180,7 @@
         "deps": {
           "common": [
             {
-              "id": "cbindgen 0.27.0",
+              "id": "cbindgen 0.29.2",
               "target": "build_script_build"
             },
             {
@@ -2176,7 +2188,7 @@
               "target": "clap"
             },
             {
-              "id": "heck 0.4.1",
+              "id": "heck 0.5.0",
               "target": "heck"
             },
             {
@@ -2212,14 +2224,14 @@
               "target": "tempfile"
             },
             {
-              "id": "toml 0.8.19",
+              "id": "toml 0.9.8",
               "target": "toml"
             }
           ],
           "selects": {}
         },
-        "edition": "2018",
-        "version": "0.27.0"
+        "edition": "2021",
+        "version": "0.29.2"
       },
       "build_script_attrs": {
         "compile_data_glob": [
@@ -3709,6 +3721,9 @@
       "build_script_attrs": {
         "compile_data_glob": [
           "**"
+        ],
+        "compile_data_glob_excludes": [
+          "**/*.rs"
         ],
         "data_glob": [
           "**"
@@ -6541,6 +6556,9 @@
         "compile_data_glob": [
           "**"
         ],
+        "compile_data_glob_excludes": [
+          "**/*.rs"
+        ],
         "data_glob": [
           "**"
         ],
@@ -7350,51 +7368,6 @@
         },
         "edition": "2021",
         "version": "0.16.1"
-      },
-      "license": "MIT OR Apache-2.0",
-      "license_ids": [
-        "Apache-2.0",
-        "MIT"
-      ],
-      "license_file": "LICENSE-APACHE"
-    },
-    "heck 0.4.1": {
-      "name": "heck",
-      "version": "0.4.1",
-      "package_url": "https://github.com/withoutboats/heck",
-      "repository": {
-        "Http": {
-          "url": "https://static.crates.io/crates/heck/0.4.1/download",
-          "sha256": "95505c38b4572b2d910cecb0281560f54b440a19336cbbcb27bf6ce6adc6f5a8"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "heck",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "allow_empty": true,
-              "include": [
-                "**/*.rs"
-              ]
-            }
-          }
-        }
-      ],
-      "library_target_name": "heck",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "crate_features": {
-          "common": [
-            "default"
-          ],
-          "selects": {}
-        },
-        "edition": "2018",
-        "version": "0.4.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8541,6 +8514,9 @@
         "compile_data_glob": [
           "**"
         ],
+        "compile_data_glob_excludes": [
+          "**/*.rs"
+        ],
         "data_glob": [
           "**"
         ]
@@ -9122,6 +9098,13 @@
         "compile_data_glob": [
           "**"
         ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
         "edition": "2021",
         "version": "0.8.999"
       },
@@ -9209,7 +9192,7 @@
         "deps": {
           "common": [
             {
-              "id": "cbindgen 0.27.0",
+              "id": "cbindgen 0.29.2",
               "target": "cbindgen"
             }
           ],
@@ -9782,6 +9765,13 @@
         "compile_data_glob": [
           "**"
         ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
         "deps": {
           "common": [
             {
@@ -9834,6 +9824,13 @@
         "compile_data_glob": [
           "**"
         ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
         "edition": "2021",
         "proc_macro_deps_dev": {
           "common": [
@@ -16541,6 +16538,9 @@
         "compile_data_glob": [
           "**"
         ],
+        "compile_data_glob_excludes": [
+          "**/*.rs"
+        ],
         "data_glob": [
           "**"
         ]
@@ -19994,7 +19994,23 @@
             "alloc",
             "serde"
           ],
-          "selects": {}
+          "selects": {
+            "aarch64-apple-darwin": [
+              "std"
+            ],
+            "aarch64-unknown-linux-gnu": [
+              "std"
+            ],
+            "x86_64-pc-windows-msvc": [
+              "std"
+            ],
+            "x86_64-unknown-linux-gnu": [
+              "std"
+            ],
+            "x86_64-unknown-nixos-gnu": [
+              "std"
+            ]
+          }
         },
         "deps": {
           "common": [
@@ -21260,6 +21276,9 @@
         "compile_data_glob": [
           "**"
         ],
+        "compile_data_glob_excludes": [
+          "**/*.rs"
+        ],
         "data_glob": [
           "**"
         ]
@@ -21351,6 +21370,9 @@
       "build_script_attrs": {
         "compile_data_glob": [
           "**"
+        ],
+        "compile_data_glob_excludes": [
+          "**/*.rs"
         ],
         "data_glob": [
           "**"
@@ -21448,6 +21470,9 @@
       "build_script_attrs": {
         "compile_data_glob": [
           "**"
+        ],
+        "compile_data_glob_excludes": [
+          "**/*.rs"
         ],
         "data_glob": [
           "**"
@@ -23315,28 +23340,7 @@
           "common": [
             "display"
           ],
-          "selects": {
-            "aarch64-apple-darwin": [
-              "default",
-              "parse"
-            ],
-            "aarch64-unknown-linux-gnu": [
-              "default",
-              "parse"
-            ],
-            "x86_64-pc-windows-msvc": [
-              "default",
-              "parse"
-            ],
-            "x86_64-unknown-linux-gnu": [
-              "default",
-              "parse"
-            ],
-            "x86_64-unknown-nixos-gnu": [
-              "default",
-              "parse"
-            ]
-          }
+          "selects": {}
         },
         "deps": {
           "common": [
@@ -23404,7 +23408,23 @@
             "parse",
             "serde"
           ],
-          "selects": {}
+          "selects": {
+            "aarch64-apple-darwin": [
+              "std"
+            ],
+            "aarch64-unknown-linux-gnu": [
+              "std"
+            ],
+            "x86_64-pc-windows-msvc": [
+              "std"
+            ],
+            "x86_64-unknown-linux-gnu": [
+              "std"
+            ],
+            "x86_64-unknown-nixos-gnu": [
+              "std"
+            ]
+          }
         },
         "deps": {
           "common": [
@@ -23609,23 +23629,7 @@
             "display",
             "serde"
           ],
-          "selects": {
-            "aarch64-apple-darwin": [
-              "parse"
-            ],
-            "aarch64-unknown-linux-gnu": [
-              "parse"
-            ],
-            "x86_64-pc-windows-msvc": [
-              "parse"
-            ],
-            "x86_64-unknown-linux-gnu": [
-              "parse"
-            ],
-            "x86_64-unknown-nixos-gnu": [
-              "parse"
-            ]
-          }
+          "selects": {}
         },
         "deps": {
           "common": [
@@ -23646,38 +23650,7 @@
               "target": "toml_datetime"
             }
           ],
-          "selects": {
-            "aarch64-apple-darwin": [
-              {
-                "id": "winnow 0.6.20",
-                "target": "winnow"
-              }
-            ],
-            "aarch64-unknown-linux-gnu": [
-              {
-                "id": "winnow 0.6.20",
-                "target": "winnow"
-              }
-            ],
-            "x86_64-pc-windows-msvc": [
-              {
-                "id": "winnow 0.6.20",
-                "target": "winnow"
-              }
-            ],
-            "x86_64-unknown-linux-gnu": [
-              {
-                "id": "winnow 0.6.20",
-                "target": "winnow"
-              }
-            ],
-            "x86_64-unknown-nixos-gnu": [
-              {
-                "id": "winnow 0.6.20",
-                "target": "winnow"
-              }
-            ]
-          }
+          "selects": {}
         },
         "edition": "2021",
         "version": "0.22.22"
@@ -24493,6 +24466,9 @@
       "build_script_attrs": {
         "compile_data_glob": [
           "**"
+        ],
+        "compile_data_glob_excludes": [
+          "**/*.rs"
         ],
         "data_glob": [
           "**"
@@ -28291,6 +28267,9 @@
         "compile_data_glob": [
           "**"
         ],
+        "compile_data_glob_excludes": [
+          "**/*.rs"
+        ],
         "data_glob": [
           "**"
         ]
@@ -28571,6 +28550,9 @@
       "build_script_attrs": {
         "compile_data_glob": [
           "**"
+        ],
+        "compile_data_glob_excludes": [
+          "**/*.rs"
         ],
         "data_glob": [
           "**"
@@ -28853,6 +28835,9 @@
         "compile_data_glob": [
           "**"
         ],
+        "compile_data_glob_excludes": [
+          "**/*.rs"
+        ],
         "data_glob": [
           "**"
         ]
@@ -28991,6 +28976,9 @@
       "build_script_attrs": {
         "compile_data_glob": [
           "**"
+        ],
+        "compile_data_glob_excludes": [
+          "**/*.rs"
         ],
         "data_glob": [
           "**"
@@ -29273,6 +29261,9 @@
         "compile_data_glob": [
           "**"
         ],
+        "compile_data_glob_excludes": [
+          "**/*.rs"
+        ],
         "data_glob": [
           "**"
         ]
@@ -29553,6 +29544,9 @@
       "build_script_attrs": {
         "compile_data_glob": [
           "**"
+        ],
+        "compile_data_glob_excludes": [
+          "**/*.rs"
         ],
         "data_glob": [
           "**"
@@ -29835,6 +29829,9 @@
         "compile_data_glob": [
           "**"
         ],
+        "compile_data_glob_excludes": [
+          "**/*.rs"
+        ],
         "data_glob": [
           "**"
         ]
@@ -30116,6 +30113,9 @@
         "compile_data_glob": [
           "**"
         ],
+        "compile_data_glob_excludes": [
+          "**/*.rs"
+        ],
         "data_glob": [
           "**"
         ]
@@ -30126,52 +30126,6 @@
         "MIT"
       ],
       "license_file": "license-apache-2.0"
-    },
-    "winnow 0.6.20": {
-      "name": "winnow",
-      "version": "0.6.20",
-      "package_url": "https://github.com/winnow-rs/winnow",
-      "repository": {
-        "Http": {
-          "url": "https://static.crates.io/crates/winnow/0.6.20/download",
-          "sha256": "36c1fec1a2bb5866f07c25f68c26e565c4c200aebb96d7e55710c19d3e8ac49b"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "winnow",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "allow_empty": true,
-              "include": [
-                "**/*.rs"
-              ]
-            }
-          }
-        }
-      ],
-      "library_target_name": "winnow",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "crate_features": {
-          "common": [
-            "alloc",
-            "default",
-            "std"
-          ],
-          "selects": {}
-        },
-        "edition": "2021",
-        "version": "0.6.20"
-      },
-      "license": "MIT",
-      "license_ids": [
-        "MIT"
-      ],
-      "license_file": "LICENSE-MIT"
     },
     "winnow 0.7.13": {
       "name": "winnow",
@@ -33735,6 +33689,9 @@
         "compile_data_glob": [
           "**"
         ],
+        "compile_data_glob_excludes": [
+          "**/*.rs"
+        ],
         "data_glob": [
           "**"
         ]
@@ -33746,7 +33703,9 @@
       "license_file": "LICENSE-MIT"
     }
   },
-  "binary_crates": [],
+  "binary_crates": [
+    "cbindgen 0.29.2"
+  ],
   "workspace_members": {
     "benchmark-event 0.8.999": "benchmarks/event",
     "benchmark-publish-subscribe 0.8.999": "benchmarks/publish-subscribe",
@@ -34038,7 +33997,7 @@
     "better-panic 0.3.0",
     "bindgen 0.72.0",
     "cargo_metadata 0.18.1",
-    "cbindgen 0.27.0",
+    "cbindgen 0.29.2",
     "cc 1.2.21",
     "clap 4.5.19",
     "colored 2.1.0",
