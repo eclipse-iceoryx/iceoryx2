@@ -26,7 +26,7 @@ class ServiceId {
     auto c_str() const -> const char*;
 
   private:
-    explicit ServiceId(const iox2::container::StaticString<IOX2_SERVICE_ID_LENGTH>& value);
+    explicit ServiceId(const iox2::bb::StaticString<IOX2_SERVICE_ID_LENGTH>& value);
 
     template <ServiceType>
     friend class PortFactoryEvent;
@@ -37,7 +37,7 @@ class ServiceId {
     template <ServiceType, typename>
     friend class PortFactoryBlackboard;
 
-    iox2::container::StaticString<IOX2_SERVICE_ID_LENGTH> m_value;
+    iox2::bb::StaticString<IOX2_SERVICE_ID_LENGTH> m_value;
 };
 
 } // namespace iox2

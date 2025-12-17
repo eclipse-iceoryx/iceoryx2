@@ -15,7 +15,7 @@
 #ifndef IOX2_BB_DETAIL_PATH_AND_FILE_VERIFIER_HPP
 #define IOX2_BB_DETAIL_PATH_AND_FILE_VERIFIER_HPP
 
-#include "iox2/container/static_string.hpp"
+#include "iox2/bb/static_string.hpp"
 
 #include <cstdint>
 
@@ -70,7 +70,7 @@ enum class RelativePathComponents : uint8_t {
 /// @param[in] relativePathComponents are relative path components are allowed for this path entry
 /// @return true if it is valid, otherwise false
 template <uint64_t StringCapacity>
-auto is_valid_path_entry(const container::StaticString<StringCapacity>& name,
+auto is_valid_path_entry(const bb::StaticString<StringCapacity>& name,
                          RelativePathComponents relative_path_components) noexcept -> bool;
 
 /// @brief checks if the given string is a valid filename. It must fulfill the
@@ -79,18 +79,18 @@ auto is_valid_path_entry(const container::StaticString<StringCapacity>& name,
 /// @param[in] name the string to verify
 /// @return true if the string is a filename, otherwise false
 template <uint64_t StringCapacity>
-auto is_valid_file_name(const container::StaticString<StringCapacity>& name) noexcept -> bool;
+auto is_valid_file_name(const bb::StaticString<StringCapacity>& name) noexcept -> bool;
 
 /// @brief returns true if the provided name ends with a path separator, otherwise false
 /// @param[in] name the string which may contain a path separator at the end
 template <uint64_t StringCapacity>
-auto does_end_with_path_separator(const container::StaticString<StringCapacity>& name) noexcept -> bool;
+auto does_end_with_path_separator(const bb::StaticString<StringCapacity>& name) noexcept -> bool;
 
 template <uint64_t StringCapacity>
-inline auto is_valid_path_entry(const container::StaticString<StringCapacity>& name,
+inline auto is_valid_path_entry(const bb::StaticString<StringCapacity>& name,
                                 RelativePathComponents relative_path_components) noexcept -> bool {
-    const auto current_directory = container::StaticString<StringCapacity>::from_utf8_unchecked(".");
-    const auto parent_directory = container::StaticString<StringCapacity>::from_utf8_unchecked("..");
+    const auto current_directory = bb::StaticString<StringCapacity>::from_utf8_unchecked(".");
+    const auto parent_directory = bb::StaticString<StringCapacity>::from_utf8_unchecked("..");
 
     if ((name == current_directory) || (name == parent_directory)) {
         return relative_path_components == RelativePathComponents::Accept;
@@ -129,7 +129,7 @@ inline auto is_valid_path_entry(const container::StaticString<StringCapacity>& n
 }
 
 template <uint64_t StringCapacity>
-inline auto is_valid_file_name(const container::StaticString<StringCapacity>& name) noexcept -> bool {
+inline auto is_valid_file_name(const bb::StaticString<StringCapacity>& name) noexcept -> bool {
     if (name.empty()) {
         return false;
     }
@@ -139,7 +139,7 @@ inline auto is_valid_file_name(const container::StaticString<StringCapacity>& na
 }
 
 template <uint64_t StringCapacity>
-inline auto is_valid_path_to_file(const container::StaticString<StringCapacity>& name) noexcept -> bool {
+inline auto is_valid_path_to_file(const bb::StaticString<StringCapacity>& name) noexcept -> bool {
     if (does_end_with_path_separator(name)) {
         return false;
     }
@@ -170,13 +170,13 @@ inline auto is_valid_path_to_file(const container::StaticString<StringCapacity>&
 }
 
 template <uint64_t StringCapacity>
-inline auto is_valid_path_to_directory(const container::StaticString<StringCapacity>& name) noexcept -> bool {
+inline auto is_valid_path_to_directory(const bb::StaticString<StringCapacity>& name) noexcept -> bool {
     if (name.empty()) {
         return false;
     }
 
-    auto const current_directory = container::StaticString<StringCapacity>::from_utf8_unchecked(".");
-    auto const parent_directory = container::StaticString<StringCapacity>::from_utf8_unchecked("..");
+    auto const current_directory = bb::StaticString<StringCapacity>::from_utf8_unchecked(".");
+    auto const parent_directory = bb::StaticString<StringCapacity>::from_utf8_unchecked("..");
 
     auto remaining = name;
     while (!remaining.empty()) {
@@ -219,7 +219,7 @@ inline auto is_valid_path_to_directory(const container::StaticString<StringCapac
 
 // AXIVION Next Construct AutosarC++19_03-A5.2.5, AutosarC++19_03-M5.0.16, FaultDetection-OutOfBounds : IOX2_PATH_SEPARATORS is not a string but an array of chars without a null termination and all elements are valid characters
 template <uint64_t StringCapacity>
-inline auto does_end_with_path_separator(const container::StaticString<StringCapacity>& name) noexcept -> bool {
+inline auto does_end_with_path_separator(const bb::StaticString<StringCapacity>& name) noexcept -> bool {
     if (name.empty()) {
         return false;
     }

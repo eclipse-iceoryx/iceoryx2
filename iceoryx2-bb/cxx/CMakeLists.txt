@@ -54,6 +54,7 @@ target_sources(iceoryx2-bb-cxx INTERFACE
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/detail/path_and_file_verifier.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/detail/raw_byte_storage.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/detail/static_function.hpp>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/detail/string_internal.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/expected.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/duration.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/file_name.hpp>
@@ -65,11 +66,11 @@ target_sources(iceoryx2-bb-cxx INTERFACE
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/semantic_string.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/slice.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/static_function.hpp>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/static_string.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/static_vector.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/std_chrono_support.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/stl/expected.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/stl/optional.hpp>
-    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/static_string.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/variation/${IOX2_VARIATION_EXPECTED_INCLUDE}/iox2/bb/variation/expected.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/variation/${IOX2_VARIATION_OPTIONAL_INCLUDE}/iox2/bb/variation/optional.hpp>
     $<BUILD_INTERFACE:$<$<CXX_COMPILER_ID:MSVC>:${PROJECT_SOURCE_DIR}/iceoryx2-bb-cxx.natvis>>

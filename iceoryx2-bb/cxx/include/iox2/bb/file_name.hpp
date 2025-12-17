@@ -16,7 +16,7 @@
 
 #include "iox2/bb/detail/path_and_file_verifier.hpp"
 #include "iox2/bb/semantic_string.hpp"
-#include "iox2/container/static_string.hpp"
+#include "iox2/bb/static_string.hpp"
 
 namespace iox2 {
 namespace bb {
@@ -30,9 +30,9 @@ constexpr uint64_t IOX2_MAX_FILENAME_LENGTH = 255U;
 
 namespace detail {
 auto file_name_does_contain_invalid_characters(
-    const container::StaticString<platform::IOX2_MAX_FILENAME_LENGTH>& value) noexcept -> bool;
-auto file_name_does_contain_invalid_content(
-    const container::StaticString<platform::IOX2_MAX_FILENAME_LENGTH>& value) noexcept -> bool;
+    const bb::StaticString<platform::IOX2_MAX_FILENAME_LENGTH>& value) noexcept -> bool;
+auto file_name_does_contain_invalid_content(const bb::StaticString<platform::IOX2_MAX_FILENAME_LENGTH>& value) noexcept
+    -> bool;
 } // namespace detail
 
 /// @brief Represents a single file name. It is not allowed to contain any path elements
@@ -49,8 +49,9 @@ class FileName : public SemanticString<FileName,
 };
 
 namespace detail {
-inline auto file_name_does_contain_invalid_characters(
-    const container::StaticString<platform::IOX2_MAX_FILENAME_LENGTH>& value) noexcept -> bool {
+inline auto
+file_name_does_contain_invalid_characters(const bb::StaticString<platform::IOX2_MAX_FILENAME_LENGTH>& value) noexcept
+    -> bool {
     // NOLINTNEXTLINE(readability-use-anyofallof) not yet supported in all compilers
     for (const char c : value.unchecked_access()) { // NOLINT(readability-identifier-length)
         const bool is_small_letter { ASCII_A <= c && c <= ASCII_Z };
@@ -67,11 +68,11 @@ inline auto file_name_does_contain_invalid_characters(
     return false;
 }
 
-inline auto file_name_does_contain_invalid_content(
-    const container::StaticString<platform::IOX2_MAX_FILENAME_LENGTH>& value) noexcept -> bool {
-    return (value.empty()
-            || value == container::StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8_unchecked(".")
-            || value == container::StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8_unchecked(".."));
+inline auto
+file_name_does_contain_invalid_content(const bb::StaticString<platform::IOX2_MAX_FILENAME_LENGTH>& value) noexcept
+    -> bool {
+    return (value.empty() || value == bb::StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8_unchecked(".")
+            || value == bb::StaticString<platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8_unchecked(".."));
 }
 } // namespace detail
 } // namespace bb

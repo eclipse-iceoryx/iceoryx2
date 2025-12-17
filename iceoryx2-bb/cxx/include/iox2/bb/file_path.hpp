@@ -16,7 +16,7 @@
 
 #include "iox2/bb/detail/path_and_file_verifier.hpp"
 #include "iox2/bb/semantic_string.hpp"
-#include "iox2/container/static_string.hpp"
+#include "iox2/bb/static_string.hpp"
 
 namespace iox2 {
 namespace bb {
@@ -29,10 +29,10 @@ constexpr uint64_t IOX2_MAX_PATH_LENGTH = 1023U;
 } // namespace platform
 
 namespace detail {
-auto file_path_does_contain_invalid_characters(
-    const container::StaticString<platform::IOX2_MAX_PATH_LENGTH>& value) noexcept -> bool;
-auto file_path_does_contain_invalid_content(
-    const container::StaticString<platform::IOX2_MAX_PATH_LENGTH>& value) noexcept -> bool;
+auto file_path_does_contain_invalid_characters(const bb::StaticString<platform::IOX2_MAX_PATH_LENGTH>& value) noexcept
+    -> bool;
+auto file_path_does_contain_invalid_content(const bb::StaticString<platform::IOX2_MAX_PATH_LENGTH>& value) noexcept
+    -> bool;
 } // namespace detail
 
 /// @brief Represents a path to a file. It is not allowed to end with a path separator
@@ -51,7 +51,7 @@ class FilePath : public SemanticString<FilePath,
 
 namespace detail {
 inline auto
-file_path_does_contain_invalid_characters(const container::StaticString<platform::IOX2_MAX_PATH_LENGTH>& value) noexcept
+file_path_does_contain_invalid_characters(const bb::StaticString<platform::IOX2_MAX_PATH_LENGTH>& value) noexcept
     -> bool {
     // NOLINTNEXTLINE(readability-identifier-length)
     for (const char c : value.unchecked_access()) {
@@ -80,8 +80,7 @@ file_path_does_contain_invalid_characters(const container::StaticString<platform
 }
 
 inline auto
-file_path_does_contain_invalid_content(const container::StaticString<platform::IOX2_MAX_PATH_LENGTH>& value) noexcept
-    -> bool {
+file_path_does_contain_invalid_content(const bb::StaticString<platform::IOX2_MAX_PATH_LENGTH>& value) noexcept -> bool {
     return !is_valid_path_to_file(value);
 }
 } // namespace detail

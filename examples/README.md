@@ -70,7 +70,7 @@ memory. For Rust, we offer:
 For C++, we provide:
 
 * `iox2::bb::StaticVector`
-* `iox2::container::StaticString`
+* `iox2::bb::StaticString`
 
 These types are demonstrated in the complex data types example.
 

@@ -13,14 +13,14 @@
 #ifndef IOX2_EXAMPLES_CROSS_LANGUAGE_COMPLEX_TYPE_HPP
 #define IOX2_EXAMPLES_CROSS_LANGUAGE_COMPLEX_TYPE_HPP
 
+#include "iox2/bb/static_string.hpp"
 #include "iox2/bb/static_vector.hpp"
-#include "iox2/container/static_string.hpp"
 
 #include <cstdint>
 
 struct FullName {
-    iox2::container::StaticString<256> first_name; // NOLINT
-    iox2::container::StaticString<256> last_name;  // NOLINT
+    iox2::bb::StaticString<256> first_name; // NOLINT
+    iox2::bb::StaticString<256> last_name;  // NOLINT
 };
 
 struct ComplexType {

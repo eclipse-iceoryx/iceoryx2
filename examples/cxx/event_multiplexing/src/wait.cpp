@@ -13,8 +13,8 @@
 #include <iostream>
 #include <map>
 
+#include "iox2/bb/static_string.hpp"
 #include "iox2/bb/static_vector.hpp"
-#include "iox2/container/static_string.hpp"
 #include "iox2/iceoryx2.hpp"
 #include "parse_args.hpp"
 
@@ -38,14 +38,14 @@ auto main(int argc, char** argv) -> int {
     const CliOption<256> option_service_1 {
         "-s",
         "--service1",
-        iox2::container::StaticString<256>::from_utf8_unchecked("fuu"),
+        iox2::bb::StaticString<256>::from_utf8_unchecked("fuu"),
         "Invalid parameter! The service must be passed after '-s' or '--service2'"
     };
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers) fine for the example
     const CliOption<256> option_service_2 {
         "-t",
         "--service2",
-        iox2::container::StaticString<256>::from_utf8_unchecked("bar"),
+        iox2::bb::StaticString<256>::from_utf8_unchecked("bar"),
         "Invalid parameter! The service must be passed after '-t' or '--service2'"
     };
 

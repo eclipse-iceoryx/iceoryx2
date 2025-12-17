@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include "iox2/bb/static_string.hpp"
 #include "iox2/bb/static_vector.hpp"
-#include "iox2/container/static_string.hpp"
 #include "iox2/iceoryx2.hpp"
 
 #include <cstdint>
@@ -26,7 +26,7 @@ auto main() -> int {
 
     auto service = node.service_builder(ServiceName::create("CrossLanguageContainer").value())
                        .publish_subscribe<iox2::bb::StaticVector<uint64_t, 32>>() // NOLINT
-                       .user_header<iox2::container::StaticString<64>>()          // NOLINT
+                       .user_header<iox2::bb::StaticString<64>>()                 // NOLINT
                        // add some QoS, disable safe overflow and the subscriber shall get the
                        // last 5 samples when connecting to the service
                        .history_size(5)               // NOLINT

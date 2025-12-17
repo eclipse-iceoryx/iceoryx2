@@ -149,7 +149,7 @@ auto check_metrics_for_vector(ContainerTestRequest const& req) -> bool {
 
 template <uint64_t TestCapacity>
 auto check_metrics_for_string(ContainerTestRequest const& req) -> bool {
-    iox2::container::StaticString<TestCapacity> test_string;
+    iox2::bb::StaticString<TestCapacity> test_string;
     auto const stats = test_string.static_memory_layout_metrics();
     if ((stats.string_size > std::numeric_limits<int32_t>::max())
         || (static_cast<int32_t>(stats.string_size) != req.container_size)) {
