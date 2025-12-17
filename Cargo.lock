@@ -1644,9 +1644,9 @@ dependencies = [
 name = "iceoryx2-log"
 version = "0.7.0"
 dependencies = [
- "iceoryx2-bb-concurrency",
  "iceoryx2-log-types",
  "iceoryx2-loggers",
+ "iceoryx2-pal-concurrency-sync",
 ]
 
 [[package]]
@@ -1657,8 +1657,8 @@ version = "0.7.0"
 name = "iceoryx2-loggers"
 version = "0.7.0"
 dependencies = [
- "iceoryx2-bb-concurrency",
  "iceoryx2-log-types",
+ "iceoryx2-pal-concurrency-sync",
  "log",
  "tracing",
 ]
