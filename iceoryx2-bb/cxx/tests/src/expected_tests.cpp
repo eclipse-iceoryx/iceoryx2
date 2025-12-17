@@ -21,9 +21,9 @@ namespace {
 using namespace ::testing;
 using namespace ::iox2::bb::stl;
 
-using iox2::container::testing::Observable;
+using iox2::bb::testing::Observable;
 
-class ExpectedFixture : public iox2::container::testing::DetectLeakedObservablesFixture { };
+class ExpectedFixture : public iox2::bb::testing::DetectLeakedObservablesFixture { };
 
 struct Value {
     int32_t val { 0 };

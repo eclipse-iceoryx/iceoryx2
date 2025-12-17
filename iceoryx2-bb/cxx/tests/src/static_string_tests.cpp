@@ -211,7 +211,7 @@ TEST(StaticString, copy_assignment_does_not_change_value_on_self_assignment) {
     constexpr uint64_t const STRING_SIZE = 5;
     auto sut = *iox2::bb::StaticString<STRING_SIZE>::from_utf8("ABCD");
     auto* sut_again_but_we_confuse_the_compiler = &sut;
-    iox2::container::testing::opaque_use(static_cast<void*>(&sut_again_but_we_confuse_the_compiler));
+    iox2::bb::testing::opaque_use(static_cast<void*>(&sut_again_but_we_confuse_the_compiler));
     ASSERT_EQ(sut.size(), 4);
     ASSERT_STREQ(sut.unchecked_access().c_str(), "ABCD");
     sut = *sut_again_but_we_confuse_the_compiler;
@@ -925,7 +925,7 @@ TEST(StaticString, unchecked_const_c_str_returns_pointer_to_string) {
 TEST(StaticString, unchecked_c_str_returns_pointer_to_string) {
     constexpr uint64_t const STRING_SIZE = 5;
     auto sut = *iox2::bb::StaticString<STRING_SIZE>::from_utf8("ABC");
-    iox2::container::testing::opaque_use(sut);
+    iox2::bb::testing::opaque_use(sut);
     ASSERT_STREQ(sut.unchecked_access().c_str(), "ABC");
     // NOLINTNEXTLINE(readability-container-data-pointer) testing
     ASSERT_EQ(sut.unchecked_access().c_str(), &sut.unchecked_access()[0]);

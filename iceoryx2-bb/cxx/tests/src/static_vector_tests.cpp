@@ -21,9 +21,9 @@
 #include <string>
 
 namespace {
-using iox2::container::testing::Observable;
+using iox2::bb::testing::Observable;
 
-class StaticVectorFixture : public iox2::container::testing::VerifyAllObservableInteractionsFixture { };
+class StaticVectorFixture : public iox2::bb::testing::VerifyAllObservableInteractionsFixture { };
 
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
 constexpr size_t const G_TEST_ARRAY_SIZE = 5;
@@ -48,21 +48,21 @@ TEST(StaticVector, copy_constructor_copies_vector_contents) {
     iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> src_vec;
     {
         iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(src_vec);
-        iox2::container::testing::opaque_use(sut);
+        iox2::bb::testing::opaque_use(sut);
         ASSERT_TRUE(sut.empty());
         ASSERT_EQ(sut.size(), 0);
     }
     ASSERT_TRUE(src_vec.try_emplace_back(1));
     {
         iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(src_vec);
-        iox2::container::testing::opaque_use(sut);
+        iox2::bb::testing::opaque_use(sut);
         ASSERT_EQ(sut.size(), 1);
         EXPECT_EQ(sut.unchecked_access()[0], 1);
     }
     ASSERT_TRUE(src_vec.try_emplace_back(2));
     {
         iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(src_vec);
-        iox2::container::testing::opaque_use(sut);
+        iox2::bb::testing::opaque_use(sut);
         ASSERT_EQ(sut.size(), 2);
         EXPECT_EQ(sut.unchecked_access()[0], 1);
         EXPECT_EQ(sut.unchecked_access()[1], 2);
@@ -72,7 +72,7 @@ TEST(StaticVector, copy_constructor_copies_vector_contents) {
     ASSERT_TRUE(src_vec.try_emplace_back(G_TEST_ARRAY[3]));
     {
         iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(src_vec);
-        iox2::container::testing::opaque_use(sut);
+        iox2::bb::testing::opaque_use(sut);
         ASSERT_EQ(sut.size(), G_TEST_ARRAY_SIZE);
         EXPECT_EQ(sut.unchecked_access()[0], 1);
         EXPECT_EQ(sut.unchecked_access()[1], 2);
@@ -86,21 +86,21 @@ TEST(StaticVector, copy_constructor_copies_vector_contents_to_larger_capacity) {
     iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> src_vec;
     {
         iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut(src_vec);
-        iox2::container::testing::opaque_use(sut);
+        iox2::bb::testing::opaque_use(sut);
         ASSERT_TRUE(sut.empty());
         ASSERT_EQ(sut.size(), 0);
     }
     ASSERT_TRUE(src_vec.try_emplace_back(1));
     {
         iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut(src_vec);
-        iox2::container::testing::opaque_use(sut);
+        iox2::bb::testing::opaque_use(sut);
         ASSERT_EQ(sut.size(), 1);
         EXPECT_EQ(sut.unchecked_access()[0], 1);
     }
     ASSERT_TRUE(src_vec.try_emplace_back(2));
     {
         iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut(src_vec);
-        iox2::container::testing::opaque_use(sut);
+        iox2::bb::testing::opaque_use(sut);
         ASSERT_EQ(sut.size(), 2);
         EXPECT_EQ(sut.unchecked_access()[0], 1);
         EXPECT_EQ(sut.unchecked_access()[1], 2);
@@ -110,7 +110,7 @@ TEST(StaticVector, copy_constructor_copies_vector_contents_to_larger_capacity) {
     ASSERT_TRUE(src_vec.try_emplace_back(G_TEST_ARRAY[3]));
     {
         iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut(src_vec);
-        iox2::container::testing::opaque_use(sut);
+        iox2::bb::testing::opaque_use(sut);
         ASSERT_EQ(sut.size(), G_TEST_ARRAY_SIZE);
         EXPECT_EQ(sut.unchecked_access()[0], 1);
         EXPECT_EQ(sut.unchecked_access()[1], 2);
@@ -164,7 +164,7 @@ TEST(StaticVector, copy_assignment_returns_reference_to_self) {
 TEST(StaticVector, copy_assignment_self_assignment) {
     iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
     auto const& reference_to_self = sut;
-    iox2::container::testing::opaque_use(&reference_to_self);
+    iox2::bb::testing::opaque_use(&reference_to_self);
     sut = reference_to_self;
     ASSERT_TRUE(!sut.empty());
     ASSERT_EQ(sut.size(), G_TEST_ARRAY_SIZE);
@@ -1143,7 +1143,7 @@ TEST(StaticVector, front_element_returns_mutable_reference_to_first_element) {
 
 TEST(StaticVector, front_element_fails_for_empty_vector) {
     iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut;
-    iox2::container::testing::opaque_use(sut);
+    iox2::bb::testing::opaque_use(sut);
     ASSERT_FALSE(sut.front_element());
 }
 
@@ -1169,7 +1169,7 @@ TEST(StaticVector, back_element_returns_mutable_reference_to_first_element) {
 
 TEST(StaticVector, back_element_fails_for_empty_vector) {
     iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut;
-    iox2::container::testing::opaque_use(sut);
+    iox2::bb::testing::opaque_use(sut);
     ASSERT_FALSE(sut.back_element());
 }
 
