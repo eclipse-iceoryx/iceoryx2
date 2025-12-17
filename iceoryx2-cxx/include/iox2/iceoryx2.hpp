@@ -16,7 +16,6 @@
 #include "iox2/bb/duration.hpp"
 #include "iox2/bb/layout.hpp"
 #include "iox2/bb/slice.hpp"
-#include "iox2/legacy/string.hpp"
 
 #include "iox2/active_request.hpp"
 #include "iox2/allocation_strategy.hpp"

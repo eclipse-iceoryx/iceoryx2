@@ -17,67 +17,11 @@
 #include "iox2/bb/into.hpp"
 #include "iox2/legacy/detail/convert.hpp"
 #include "iox2/legacy/optional.hpp"
-#include "iox2/legacy/string.hpp"
 
-#include <cstdint>
-#include <ostream>
 #include <string>
 
 namespace iox2 {
-
-namespace bb {
-template <uint64_t N>
-struct From<legacy::string<N>, std::string> {
-    static std::string from(const legacy::string<N>& value) noexcept;
-};
-
-template <uint64_t N>
-struct From<std::string, legacy::string<N>> {
-    static legacy::string<N> from(const std::string& value) noexcept;
-};
-
-template <uint64_t N>
-struct From<std::string, legacy::optional<legacy::string<N>>> {
-    static legacy::optional<legacy::string<N>> from(const std::string& value) noexcept;
-};
-
-template <uint64_t N>
-struct From<std::string, bb::Lossy<legacy::string<N>>> {
-    static legacy::string<N> from(const std::string& value) noexcept;
-};
-} // namespace bb
-
 namespace legacy {
-
-template <>
-struct is_custom_string<std::string> : public std::true_type { };
-
-namespace internal {
-/// @brief struct to get a pointer to the char array of the std::string
-template <>
-struct GetData<std::string> {
-    static const char* call(const std::string& data) noexcept {
-        return data.data();
-    }
-};
-
-/// @brief struct to get size of a std::string
-template <>
-struct GetSize<std::string> {
-    static uint64_t call(const std::string& data) noexcept {
-        return data.size();
-    }
-};
-} // namespace internal
-
-/// @brief outputs the fixed string on stream
-///
-/// @param [in] stream is the output stream
-/// @param [in] str is the fixed string
-///
-/// @return the stream output of the fixed string
-template <uint64_t Capacity>
-std::ostream& operator<<(std::ostream& stream, const string<Capacity>& str) noexcept;
 
 /// @brief A specialization function of convert::from_string for std::string
 /// @param v the input string in c type
@@ -90,7 +34,5 @@ inline iox2::legacy::optional<std::string> convert::from_string(const char* v) n
 
 } // namespace legacy
 } // namespace iox2
-
-#include "iox2/legacy/detail/std_string_support.inl"
 
 #endif // IOX2_BB_UTILITY_STD_STRING_SUPPORT_HPP

@@ -20,9 +20,6 @@
 
 namespace iox2 {
 namespace legacy {
-template <uint64_t Capacity>
-class string;
-///
 /// @brief Conditionally add const to type T if C has the const qualifier
 /// @tparam T is the type to conditionally add the const qualifier
 /// @tparam Condition is the type which determines if the const qualifier needs to be added to T

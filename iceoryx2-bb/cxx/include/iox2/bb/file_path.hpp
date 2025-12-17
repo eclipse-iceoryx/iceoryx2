@@ -82,7 +82,7 @@ file_path_does_contain_invalid_characters(const container::StaticString<platform
 inline auto
 file_path_does_contain_invalid_content(const container::StaticString<platform::IOX2_MAX_PATH_LENGTH>& value) noexcept
     -> bool {
-    return !PathAndFileVerifier<platform::IOX2_MAX_PATH_LENGTH>::is_valid_path_to_file(value);
+    return !is_valid_path_to_file(value);
 }
 } // namespace detail
 } // namespace bb

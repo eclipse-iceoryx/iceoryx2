@@ -11,8 +11,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 
+#include "iox2/container/static_string.hpp"
 #include "iox2/iceoryx2.hpp"
-#include "iox2/legacy/std_string_support.hpp"
 #include "parse_args.hpp"
 
 #include <iostream>
@@ -28,9 +28,10 @@ auto main(int argc, char** argv) -> int {
     });
 
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers) fine for the example
-    const CliOption<32> option_domain {
-        "-d", "--domain", "iox2_", "Invalid parameter! The domain must be passed after '-d' or '--domain'"
-    };
+    const CliOption<32> option_domain { "-d",
+                                        "--domain",
+                                        iox2::container::StaticString<32>::from_utf8_unchecked("iox2_"),
+                                        "Invalid parameter! The domain must be passed after '-d' or '--domain'" };
 
     auto domain = parse_from_args(argc, argv, option_domain);
 
@@ -39,13 +40,10 @@ auto main(int argc, char** argv) -> int {
 
     // The domain name becomes the prefix for all resources.
     // Therefore, different domain names never share the same resources.
-    config.global().set_prefix(
-        iox2::bb::FileName::create(
-            *container::StaticString<32>::from_utf8_null_terminated_unchecked(domain.c_str())) // NOLINT
-            .expect("valid domain name"));
+    config.global().set_prefix(iox2::bb::FileName::create(domain).value());
 
 
-    std::cout << "Services running in domain \"" << domain.c_str() << "\":" << std::endl;
+    std::cout << "Services running in domain \"" << domain.unchecked_access().c_str() << "\":" << std::endl;
 
     Service<ServiceType::Ipc>::list(config.view(), [](auto service) -> auto {
         std::cout << service.static_details << std::endl;

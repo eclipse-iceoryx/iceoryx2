@@ -305,7 +305,7 @@ template <typename Child,
 template <typename T>
 inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::append(
     const T& value) noexcept -> legacy::expected<void, SemanticStringError> {
-    return insert(size(), value, container::detail::GetSize<T>::call(value));
+    return insert(size(), value, container::detail::get_size(value));
 }
 
 template <typename Child,
