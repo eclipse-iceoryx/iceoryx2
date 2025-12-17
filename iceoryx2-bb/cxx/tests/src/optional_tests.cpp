@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/bb/detail/optional.hpp"
+#include "iox2/bb/stl/optional.hpp"
 
 #include "testing/observable.hpp"
 #include "testing/test_utils.hpp"
@@ -18,7 +18,7 @@
 #include <gtest/gtest.h>
 
 namespace {
-using namespace iox2::bb::detail;
+using namespace iox2::bb::stl;
 
 using iox2::container::testing::Observable;
 
