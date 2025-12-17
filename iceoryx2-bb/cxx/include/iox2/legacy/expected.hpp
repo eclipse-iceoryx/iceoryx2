@@ -115,6 +115,29 @@ detail::err<T> err(T&& error);
 template <typename T, typename... Targs>
 detail::err<T> err(Targs&&... args);
 
+template <typename ValueType, typename ErrorType>
+class expected;
+
+/// @brief equality check for two distinct expected types
+/// @tparam ValueType type of the value stored in the expected
+/// @tparam ErrorType type of the error stored in the expected
+/// @param[in] lhs left side of the comparison
+/// @param[in] rhs right side of the comparison
+/// @return true if the expecteds are equal, otherwise false
+template <typename ValueType, typename ErrorType>
+constexpr bool operator==(const expected<ValueType, ErrorType>& lhs,
+                          const expected<ValueType, ErrorType>& rhs) noexcept;
+
+/// @brief inequality check for two distinct expected types
+/// @tparam ValueType type of the value stored in the expected
+/// @tparam ErrorType type of the error stored in the expected
+/// @param[in] lhs left side of the comparison
+/// @param[in] rhs right side of the comparison
+/// @return true if the expecteds are not equal, otherwise false
+template <typename ValueType, typename ErrorType>
+constexpr bool operator!=(const expected<ValueType, ErrorType>& lhs,
+                          const expected<ValueType, ErrorType>& rhs) noexcept;
+
 /// @brief Implementation of the C++23 expected class which can contain an error or a success value
 /// @param ValueType type of the value which can be stored in the expected
 /// @param ErrorType type of the error which can be stored in the expected
@@ -346,26 +369,6 @@ class IOX2_NO_DISCARD expected final {
   private:
     detail::expected_storage<ValueType, ErrorType> m_store;
 };
-
-/// @brief equality check for two distinct expected types
-/// @tparam ValueType type of the value stored in the expected
-/// @tparam ErrorType type of the error stored in the expected
-/// @param[in] lhs left side of the comparison
-/// @param[in] rhs right side of the comparison
-/// @return true if the expecteds are equal, otherwise false
-template <typename ValueType, typename ErrorType>
-constexpr bool operator==(const expected<ValueType, ErrorType>& lhs,
-                          const expected<ValueType, ErrorType>& rhs) noexcept;
-
-/// @brief inequality check for two distinct expected types
-/// @tparam ValueType type of the value stored in the expected
-/// @tparam ErrorType type of the error stored in the expected
-/// @param[in] lhs left side of the comparison
-/// @param[in] rhs right side of the comparison
-/// @return true if the expecteds are not equal, otherwise false
-template <typename ValueType, typename ErrorType>
-constexpr bool operator!=(const expected<ValueType, ErrorType>& lhs,
-                          const expected<ValueType, ErrorType>& rhs) noexcept;
 
 } // namespace legacy
 } // namespace iox2
