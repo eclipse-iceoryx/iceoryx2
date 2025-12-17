@@ -37,12 +37,7 @@ mod supported_platform {
     use clap::Parser;
     use cli::Cli;
 
-    use iceoryx2::prelude::*;
-
-    use iceoryx2_log::fail;
-    use iceoryx2_log::info;
     use iceoryx2_log::set_log_level_from_env_or;
-    use iceoryx2_log::warn;
     use iceoryx2_log::LogLevel;
 
     pub fn main() -> anyhow::Result<()> {

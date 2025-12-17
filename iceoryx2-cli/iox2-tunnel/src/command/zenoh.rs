@@ -12,9 +12,9 @@
 
 use iceoryx2::prelude::*;
 
-use iceoryx2_bb_log::fail;
-use iceoryx2_bb_log::info;
-use iceoryx2_bb_log::warn;
+use iceoryx2_log::fail;
+use iceoryx2_log::info;
+use iceoryx2_log::warn;
 
 use iceoryx2_tunnel::Tunnel;
 
