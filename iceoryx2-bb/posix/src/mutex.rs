@@ -59,7 +59,6 @@ use iceoryx2_pal_posix::*;
 
 use crate::adaptive_wait::*;
 use crate::clock::{AsTimespec, ClockType, NanosleepError, Time, TimeError};
-use crate::handle_errno;
 use iceoryx2_pal_posix::posix::errno::Errno;
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]

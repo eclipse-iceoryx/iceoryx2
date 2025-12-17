@@ -201,7 +201,7 @@ impl BaseAllocator for PoolAllocator {
 
         match unsafe { self.buckets.acquire_raw_index() } {
             Ok(v) => Ok(unsafe {
-                NonNull::new_unchecked(core::slice::from_raw_parts_mut(
+                NonNull::new_unchecked(core::ptr::slice_from_raw_parts_mut(
                     (self.start + v as usize * self.bucket_size) as *mut u8,
                     layout.size(),
                 ))
@@ -247,7 +247,7 @@ impl Allocator for PoolAllocator {
                 "{} since the new size {} exceeds the maximum supported size.", msg, new_layout.size());
         }
 
-        Ok(NonNull::new(core::slice::from_raw_parts_mut(
+        Ok(NonNull::new(core::ptr::slice_from_raw_parts_mut(
             ptr.as_ptr(),
             new_layout.size(),
         ))
@@ -275,7 +275,7 @@ impl Allocator for PoolAllocator {
                 "{} since the new alignment {} exceeds the maximum supported alignment.", msg, new_layout.align() );
         }
 
-        Ok(NonNull::new(core::slice::from_raw_parts_mut(
+        Ok(NonNull::new(core::ptr::slice_from_raw_parts_mut(
             ptr.as_ptr(),
             new_layout.size(),
         ))

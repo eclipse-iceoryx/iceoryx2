@@ -41,7 +41,7 @@ impl BaseAllocator for BumpAllocator {
 
         unsafe {
             Ok(core::ptr::NonNull::new_unchecked(
-                core::slice::from_raw_parts_mut(
+                core::ptr::slice_from_raw_parts_mut(
                     self.start.add(mem - self.start as usize),
                     layout.size(),
                 ),

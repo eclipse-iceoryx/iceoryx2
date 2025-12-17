@@ -32,7 +32,6 @@ use core::ffi::CStr;
 use core::fmt::Display;
 
 use crate::group::Gid;
-use crate::handle_errno;
 use crate::{config::PASSWD_BUFFER_SIZE, system_configuration::*};
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_log::{fail, warn};

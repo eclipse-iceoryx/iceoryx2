@@ -43,7 +43,6 @@
 use crate::file_descriptor::{FileDescriptor, FileDescriptorBased, FileDescriptorManagement};
 use crate::group::Gid;
 use crate::group::GroupError;
-use crate::handle_errno;
 use crate::ownership::OwnershipBuilder;
 use crate::user::{Uid, UserError};
 use core::fmt::Debug;

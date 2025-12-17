@@ -379,7 +379,7 @@ impl<
                             RawSample::new_slice_unchecked(
                                 chunk.header.cast(),
                                 chunk.user_header.cast(),
-                                core::slice::from_raw_parts(
+                                core::ptr::slice_from_raw_parts(
                                     chunk.payload.cast::<ResponsePayload>(),
                                     header.number_of_elements() as _,
                                 ),
@@ -441,7 +441,7 @@ impl<
                             RawSample::new_slice_unchecked(
                                 chunk.header.cast(),
                                 chunk.user_header.cast(),
-                                core::slice::from_raw_parts(
+                                core::ptr::slice_from_raw_parts(
                                     chunk.payload.cast::<CustomPayloadMarker>(),
                                     number_of_bytes as _,
                                 ),

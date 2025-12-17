@@ -46,7 +46,6 @@
 //! ```
 pub use crate::ipc_capable::{Handle, IpcCapable};
 
-use crate::handle_errno;
 use crate::ipc_capable::internal::{Capability, HandleStorage, IpcConstructible};
 use iceoryx2_bb_elementary::{enum_gen, scope_guard::ScopeGuardBuilder};
 use iceoryx2_bb_log::{fail, fatal_panic, warn};

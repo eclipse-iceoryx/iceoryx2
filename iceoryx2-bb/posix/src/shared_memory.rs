@@ -65,7 +65,6 @@
 
 use crate::file::{FileStatError, FileTruncateError};
 use crate::file_descriptor::*;
-use crate::handle_errno;
 use crate::memory_lock::{MemoryLock, MemoryLockCreationError};
 use crate::signal::SignalHandler;
 use crate::system_configuration::Limit;

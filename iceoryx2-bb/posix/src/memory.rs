@@ -64,7 +64,7 @@ pub enum MemoryError {
 
 /// Performs heap allocations. Basis for a heap allocator.
 pub mod heap {
-    use crate::handle_errno;
+
     use iceoryx2_bb_log::fail;
 
     use super::*;
@@ -88,9 +88,10 @@ pub mod heap {
         let aligned_start = align(addr + MEMORY_START_STORAGE_SPACE, layout.align());
         unsafe { *(aligned_start as *mut usize).offset(-1) = addr };
 
-        Ok(NonNull::new(unsafe {
-            core::slice::from_raw_parts_mut(aligned_start as *mut u8, layout.size())
-        })
+        Ok(NonNull::new(core::ptr::slice_from_raw_parts_mut(
+            aligned_start as *mut u8,
+            layout.size(),
+        ))
         .unwrap())
     }
 

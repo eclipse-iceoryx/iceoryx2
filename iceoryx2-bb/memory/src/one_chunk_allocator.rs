@@ -109,9 +109,10 @@ impl BaseAllocator for OneChunkAllocator {
 
         self.allocated_chunk_start
             .store(adjusted_start, Ordering::Relaxed);
-        Ok(NonNull::new(unsafe {
-            core::slice::from_raw_parts_mut(adjusted_start as *mut u8, available_size)
-        })
+        Ok(NonNull::new(core::ptr::slice_from_raw_parts_mut(
+            adjusted_start as *mut u8,
+            available_size,
+        ))
         .unwrap())
     }
 
@@ -149,7 +150,7 @@ impl Allocator for OneChunkAllocator {
                 "{} since the size of {} exceeds the available memory size of {}.", msg, new_layout.size(), available_size);
         }
 
-        Ok(NonNull::new(core::slice::from_raw_parts_mut(
+        Ok(NonNull::new(core::ptr::slice_from_raw_parts_mut(
             ptr.as_ptr(),
             available_size,
         ))
@@ -175,7 +176,7 @@ impl Allocator for OneChunkAllocator {
                 "{} since this allocator does not support to any alignment increase in this operation.", msg);
         }
 
-        Ok(NonNull::new(core::slice::from_raw_parts_mut(
+        Ok(NonNull::new(core::ptr::slice_from_raw_parts_mut(
             ptr.as_ptr(),
             new_layout.size(),
         ))
