@@ -40,10 +40,7 @@ auto main(int argc, char** argv) -> int {
 
     // The domain name becomes the prefix for all resources.
     // Therefore, different domain names never share the same resources.
-    config.global().set_prefix(
-        iox2::bb::FileName::create(*container::StaticString<32>::from_utf8_null_terminated_unchecked( // NOLINT
-                                       domain.unchecked_access().c_str()))
-            .expect("valid domain name"));
+    config.global().set_prefix(iox2::bb::FileName::create(domain).value());
 
 
     std::cout << "Services running in domain \"" << domain.unchecked_access().c_str() << "\":" << std::endl;

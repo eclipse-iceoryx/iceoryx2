@@ -49,10 +49,7 @@ auto main(int argc, char** argv) -> int {
 
     // The domain name becomes the prefix for all resources.
     // Therefore, different domain names never share the same resources.
-    config.global().set_prefix(
-        iox2::bb::FileName::create(*container::StaticString<32>::from_utf8_null_terminated_unchecked( // NOLINT
-                                       domain.unchecked_access().c_str()))
-            .expect("valid domain name"));
+    config.global().set_prefix(iox2::bb::FileName::create(domain).value());
 
     auto node = NodeBuilder()
                     // use the custom config when creating the custom node
@@ -68,7 +65,8 @@ auto main(int argc, char** argv) -> int {
 
     auto subscriber = service.subscriber_builder().create().value();
 
-    std::cout << "subscribed to: [domain: \"" << domain << "\", service: \"" << service_name << "\"]" << std::endl;
+    std::cout << "subscribed to: [domain: \"" << domain.unchecked_access().c_str() << "\", service: \""
+              << service_name.unchecked_access().c_str() << "\"]" << std::endl;
     while (node.wait(CYCLE_TIME).has_value()) {
         auto sample = subscriber.receive().value();
         while (sample.has_value()) {

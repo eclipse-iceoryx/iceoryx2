@@ -12,7 +12,6 @@
 
 #include "iox2/container/static_string.hpp"
 #include "iox2/iceoryx2.hpp"
-#include "iox2/legacy/std_string_support.hpp"
 #include "parse_args.hpp"
 #include "transmission_data.hpp"
 
@@ -50,10 +49,7 @@ auto main(int argc, char** argv) -> int {
 
     // The domain name becomes the prefix for all resources.
     // Therefore, different domain names never share the same resources.
-    config.global().set_prefix(
-        iox2::bb::FileName::create(*container::StaticString<32>::from_utf8_null_terminated_unchecked( // NOLINT
-                                       domain.unchecked_access().c_str()))
-            .expect("valid domain name"));
+    config.global().set_prefix(iox2::bb::FileName::create(domain).value());
 
     auto node = NodeBuilder()
                     // use the custom config when creating the custom node
@@ -80,8 +76,8 @@ auto main(int argc, char** argv) -> int {
 
         send(std::move(initialized_sample)).value();
 
-        std::cout << "[domain: \"" << domain << "\", service: \"" << service_name << "] Send sample " << counter
-                  << "..." << std::endl;
+        std::cout << "[domain: \"" << domain.unchecked_access().c_str() << "\", service: \""
+                  << service_name.unchecked_access().c_str() << "] Send sample " << counter << "..." << std::endl;
     }
 
     std::cout << "exit" << std::endl;
