@@ -16,7 +16,7 @@ This example demonstrates how the zero-copy compatible versions of
 `std::vector` or `std::string` can be sent.
 The library `iceoryx2-bb-cxx` provides versions that are shared memory
 compatible like the `iox2::container::StaticString` and the
-`iox2::container::StaticVector`.
+`iox2::bb::StaticVector`.
 
 ## How to Build
 

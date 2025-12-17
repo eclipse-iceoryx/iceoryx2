@@ -14,13 +14,13 @@
 #define IOX2_UNIQUE_PORT_ID_HPP
 
 #include "iox2/bb/optional.hpp"
-#include "iox2/container/static_vector.hpp"
+#include "iox2/bb/static_vector.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 
 namespace iox2 {
 
 constexpr uint64_t UNIQUE_PORT_ID_LENGTH = 16;
-using RawIdType = iox2::container::StaticVector<uint8_t, UNIQUE_PORT_ID_LENGTH>;
+using RawIdType = iox2::bb::StaticVector<uint8_t, UNIQUE_PORT_ID_LENGTH>;
 
 /// The system-wide unique id of a [`Publisher`].
 class UniquePublisherId {

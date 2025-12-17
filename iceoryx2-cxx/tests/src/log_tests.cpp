@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include "iox2/bb/static_vector.hpp"
 #include "iox2/container/static_string.hpp"
-#include "iox2/container/static_vector.hpp"
 #include "iox2/log.hpp"
 #include "iox2/log_level.hpp"
 
@@ -58,14 +58,14 @@ class TestLogger : public Log {
         }
     }
 
-    auto get_log_buffer() -> iox2::container::StaticVector<Entry, TEST_LOGGER_CAPACITY> {
+    auto get_log_buffer() -> iox2::bb::StaticVector<Entry, TEST_LOGGER_CAPACITY> {
         auto buffer = m_log_buffer;
         m_log_buffer.clear();
         return buffer;
     }
 
   private:
-    iox2::container::StaticVector<Entry, TEST_LOGGER_CAPACITY> m_log_buffer;
+    iox2::bb::StaticVector<Entry, TEST_LOGGER_CAPACITY> m_log_buffer;
 };
 
 TEST(Log, custom_logger_works) {

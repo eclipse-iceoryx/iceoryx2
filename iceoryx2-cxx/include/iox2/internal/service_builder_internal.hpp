@@ -14,8 +14,8 @@
 #define IOX2_SERVICE_BUILDER_INTERNAL_HPP
 
 #include "iox2/bb/slice.hpp"
+#include "iox2/bb/static_vector.hpp"
 #include "iox2/container/static_string.hpp"
-#include "iox2/container/static_vector.hpp"
 #include "iox2/payload_info.hpp"
 #include "iox2/type_name.hpp"
 
@@ -39,12 +39,12 @@ using FromCustomizedPayloadTypeName = std::enable_if_t<HasPayloadTypeNameMember<
 
 template <typename Payload>
 using FromNonSlice = std::enable_if_t<!HasPayloadTypeNameMember<Payload>::value && !bb::IsSlice<Payload>::VALUE
-                                          && !iox2::container::IsStaticVector<Payload>::value
+                                          && !iox2::bb::IsStaticVector<Payload>::value
                                           && !iox2::container::IsStaticString<Payload>::value,
                                       TypeName>;
 
 template <typename Payload>
-using FromStaticVector = std::enable_if_t<iox2::container::IsStaticVector<Payload>::value, TypeName>;
+using FromStaticVector = std::enable_if_t<iox2::bb::IsStaticVector<Payload>::value, TypeName>;
 
 template <typename Payload>
 using FromStaticString = std::enable_if_t<iox2::container::IsStaticString<Payload>::value, TypeName>;

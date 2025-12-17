@@ -13,8 +13,8 @@
 #include <iostream>
 #include <map>
 
+#include "iox2/bb/static_vector.hpp"
 #include "iox2/container/static_string.hpp"
-#include "iox2/container/static_vector.hpp"
 #include "iox2/iceoryx2.hpp"
 #include "parse_args.hpp"
 
@@ -66,7 +66,7 @@ auto main(int argc, char** argv) -> int {
     // create the waitset and attach the listeners to it
     auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().value();
     // NOLINTNEXTLINE(misc-const-correctness) false positive
-    iox2::container::StaticVector<WaitSetGuard<ServiceType::Ipc>, 2> guards;
+    iox2::bb::StaticVector<WaitSetGuard<ServiceType::Ipc>, 2> guards;
 
     guards.try_emplace_back(waitset.attach_notification(listener_1).value());
     guards.try_emplace_back(waitset.attach_notification(listener_2).value());
