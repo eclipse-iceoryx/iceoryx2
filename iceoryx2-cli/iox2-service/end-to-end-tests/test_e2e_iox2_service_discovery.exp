@@ -20,26 +20,21 @@ source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 
 #### Test Setup
 
-set timeout 10
+set timeout 30
 
 #### Test
 
 spawn cargo run --bin iox2-service discovery
-set id_iox2_discovery $spawn_id
-
-sleep 1
+set id_discovery $spawn_id
+expect_output_from $id_discovery {Discovering Services}
 
 spawn cargo run --example publish_subscribe_subscriber
 set id_subscriber $spawn_id
+expect_output_from $id_subscriber {Subscriber ready to receive data!}
+expect_output_from $id_discovery {Added(PublishSubscribe("My/Funk/ServiceName"))}
 
-sleep 1
 send -i $id_subscriber $SIGINT
 expect -i $id_subscriber eof
-
-#### Test Assertion
-
-expect_output_from $id_iox2_discovery {Discovering Services (rate: 100ms)}
-expect_output_from $id_iox2_discovery {Added(PublishSubscribe("My/Funk/ServiceName"))}
-expect_output_from $id_iox2_discovery {Removed(PublishSubscribe("My/Funk/ServiceName"))}
+expect_output_from $id_discovery {Removed(PublishSubscribe("My/Funk/ServiceName"))}
 
 show_test_passed

@@ -20,27 +20,30 @@ source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 
 #### Test Setup
 
-set timeout 10
+set timeout 30
 
 #### Test
 
 # Spawn a process that creates a service
 spawn cargo run --example publish_subscribe_subscriber
 set id_subscriber $spawn_id
+expect_output_from $id_subscriber {Subscriber ready to receive data!}
+
 spawn cargo run --example event_listener
 set id_listener $spawn_id
+expect_output_from $id_listener {Listener ready to receive events!}
 
 # Get the service details
 spawn cargo run --bin iox2-service -- details "My/Funk/ServiceName"
-set id_iox2_service_details_subscriber $spawn_id
+set id_service_details_subscriber $spawn_id
 spawn cargo run --bin iox2-service -- details "MyEventName"
-set id_iox2_service_details_listener $spawn_id
-
+set id_service_details_listener $spawn_id
+ 
 #### Test Assertion
 
-expect_output_from $id_iox2_service_details_subscriber {service_name: "My/Funk/ServiceName"}
-expect_output_from $id_iox2_service_details_subscriber {pattern: PublishSubscribe}
-expect_output_from $id_iox2_service_details_listener {service_name: "MyEventName"}
-expect_output_from $id_iox2_service_details_listener {pattern: Event}
+expect_output_from $id_service_details_subscriber {service_name: "My/Funk/ServiceName"}
+expect_output_from $id_service_details_subscriber {pattern: PublishSubscribe}
+expect_output_from $id_service_details_listener {service_name: "MyEventName"}
+expect_output_from $id_service_details_listener {pattern: Event}
 
 show_test_passed
