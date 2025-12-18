@@ -116,12 +116,20 @@ impl UniqueSystemId {
     }
 
     fn create(pid: u32, now: Time) -> UniqueSystemId {
+        #[cfg(not(all(test, loom, feature = "std")))]
         static COUNTER: IoxAtomicU32 = IoxAtomicU32::new(0);
+        #[cfg(all(test, loom, feature = "std"))]
+        static COUNTER: std::sync::LazyLock<IoxAtomicU32> = std::sync::LazyLock::new(|| {
+            unimplemented!("loom does not provide const-initialization for atomic variables.")
+        });
+
+        let counter = COUNTER.fetch_add(1, Ordering::Relaxed);
+
         UniqueSystemId {
             pid,
             seconds: now.seconds() as u32,
             nanoseconds: now.nanoseconds(),
-            counter: COUNTER.fetch_add(1, Ordering::Relaxed),
+            counter,
         }
     }
 

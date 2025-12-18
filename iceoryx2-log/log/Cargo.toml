@@ -20,3 +20,6 @@ iceoryx2-pal-concurrency-sync = { workspace = true }
 
 [dev-dependencies]
 iceoryx2-loggers = { workspace = true }
+
+[lints]
+workspace = true

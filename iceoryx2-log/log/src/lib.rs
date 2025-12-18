@@ -138,10 +138,22 @@ mod fail;
 mod log;
 
 const DEFAULT_LOG_LEVEL: LogLevel = LogLevel::Info;
-static LOG_LEVEL: IoxAtomicU8 = IoxAtomicU8::new(DEFAULT_LOG_LEVEL as u8);
 
 static mut LOGGER: Option<&'static dyn Log> = None;
+
+#[cfg(not(all(test, loom, feature = "std")))]
+static LOG_LEVEL: IoxAtomicU8 = IoxAtomicU8::new(DEFAULT_LOG_LEVEL as u8);
+#[cfg(all(test, loom, feature = "std"))]
+static LOG_LEVEL: std::sync::LazyLock<IoxAtomicU8> = std::sync::LazyLock::new(|| {
+    unimplemented!("loom does not provide const-initialization for atomic variables.")
+});
+
+#[cfg(not(all(test, loom, feature = "std")))]
 static INIT: Once = Once::new();
+#[cfg(all(test, loom, feature = "std"))]
+static INIT: std::sync::LazyLock<Once> = std::sync::LazyLock::new(|| {
+    unimplemented!("loom does not provide const-initialization for atomic variables.")
+});
 
 /// Sets the current log level. This is ignored for external frameworks like `log` or `tracing`.
 /// Here you have to use the log-level settings of that framework.

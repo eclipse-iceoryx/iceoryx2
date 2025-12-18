@@ -81,3 +81,19 @@ called `Option::unwrap()` on a `None` value
 
 may be due to an out-of-date `rules_rust` being used by the bazel build.
 Updating to a newer version may resolve the issue.
+
+## Loom tests fail with errors related to `const fn`
+
+Loom does not support `const fn`. Provide a non-const version for loom tests
+using conditional compilation:
+
+```rust
+#[cfg(not(all(test, loom)))]
+pub const fn new() -> Self { /* ... */ }
+
+#[cfg(all(test, loom))]
+pub fn new() -> Self { /* ... */ }
+```
+
+This allows the codebase to maintain `const fn` for regular builds while
+providing a non-const version specifically for loom tests.

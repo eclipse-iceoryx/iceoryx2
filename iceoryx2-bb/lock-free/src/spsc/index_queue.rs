@@ -44,7 +44,13 @@
 //! }
 //! ```
 
-use core::{alloc::Layout, cell::UnsafeCell, fmt::Debug, sync::atomic::Ordering};
+#[cfg(all(test, loom, feature = "std"))]
+use loom::cell::UnsafeCell;
+
+#[cfg(not(all(test, loom, feature = "std")))]
+use core::cell::UnsafeCell;
+
+use core::{alloc::Layout, fmt::Debug};
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
 use iceoryx2_bb_elementary::{bump_allocator::BumpAllocator, relocatable_ptr::RelocatablePointer};
 use iceoryx2_bb_elementary_traits::{
@@ -52,8 +58,7 @@ use iceoryx2_bb_elementary_traits::{
     relocatable_container::RelocatableContainer,
 };
 use iceoryx2_log::{fail, fatal_panic};
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
+use iceoryx2_pal_concurrency_sync::iox_atomic::{fence, IoxAtomicBool, IoxAtomicU64, Ordering};
 
 /// The [`Producer`] of the [`IndexQueue`]/[`FixedSizeIndexQueue`] which can add values to it
 /// via [`Producer::push()`].
@@ -197,11 +202,19 @@ pub mod details {
         }
 
         unsafe fn at(&self, position: u64) -> *mut u64 {
-            (*self
+            let cell = &*self
                 .data_ptr
                 .as_ptr()
-                .add((position % self.capacity as u64) as usize))
-            .get()
+                .add((position % self.capacity as u64) as usize);
+
+            #[cfg(all(test, loom, feature = "std"))]
+            {
+                cell.get_mut().deref() as *mut u64
+            }
+            #[cfg(not(all(test, loom, feature = "std")))]
+            {
+                cell.get()
+            }
         }
 
         /// Acquires the [`Producer`] of the [`IndexQueue`]. This is threadsafe and lock-free without
@@ -315,7 +328,7 @@ pub mod details {
             let value = unsafe { *self.at(read_position) };
             // prevent that `out` and `read_position` statements are reordered according to
             // the AS-IF rule.
-            core::sync::atomic::fence(Ordering::AcqRel);
+            fence(Ordering::AcqRel);
             self.read_position
                 .store(read_position + 1, Ordering::Relaxed);
 
