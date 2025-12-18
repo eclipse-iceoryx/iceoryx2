@@ -88,11 +88,12 @@
 //! println!("The thread {:?} was created.", thread);
 //! ```
 
-use core::{cell::UnsafeCell, fmt::Debug, marker::PhantomData};
+use core::{fmt::Debug, marker::PhantomData};
 
 use alloc::vec;
 use alloc::vec::Vec;
 
+use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::string::*;
 use iceoryx2_bb_elementary::{enum_gen, scope_guard::ScopeGuardBuilder};
 use iceoryx2_log::{fail, fatal_panic, warn};

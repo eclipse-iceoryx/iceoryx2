@@ -15,31 +15,31 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod arc_sync_policy_trait {
-    use core::sync::atomic::Ordering;
+    use iceoryx2_bb_concurrency::atomic::Ordering;
 
+    use iceoryx2_bb_concurrency::atomic::AtomicU64;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
-    use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 
     #[conformance_test]
-    pub fn create_and_locked_access_to_value_works<Sut: ArcSyncPolicy<IoxAtomicU64>>() {
-        let sut = Sut::new(IoxAtomicU64::new(1234)).unwrap();
+    pub fn create_and_locked_access_to_value_works<Sut: ArcSyncPolicy<AtomicU64>>() {
+        let sut = Sut::new(AtomicU64::new(1234)).unwrap();
         sut.lock().store(4567, Ordering::Relaxed);
         assert_that!(sut.lock().load(Ordering::Relaxed), eq 4567);
     }
 
     #[conformance_test]
-    pub fn create_and_guarded_access_to_value_works<Sut: ArcSyncPolicy<IoxAtomicU64>>() {
-        let sut = Sut::new(IoxAtomicU64::new(987)).unwrap();
+    pub fn create_and_guarded_access_to_value_works<Sut: ArcSyncPolicy<AtomicU64>>() {
+        let sut = Sut::new(AtomicU64::new(987)).unwrap();
         let guard = sut.lock();
         guard.store(765, Ordering::Relaxed);
         assert_that!(guard.load(Ordering::Relaxed), eq 765);
     }
 
     #[conformance_test]
-    pub fn has_arc_behavior_and_performs_shallow_copy<Sut: ArcSyncPolicy<IoxAtomicU64>>() {
-        let sut_1 = Sut::new(IoxAtomicU64::new(5543)).unwrap();
+    pub fn has_arc_behavior_and_performs_shallow_copy<Sut: ArcSyncPolicy<AtomicU64>>() {
+        let sut_1 = Sut::new(AtomicU64::new(5543)).unwrap();
         let sut_2 = sut_1.clone();
 
         sut_2.lock().store(1010101, Ordering::Relaxed);
@@ -51,8 +51,8 @@ pub mod arc_sync_policy_trait {
     }
 
     #[conformance_test]
-    pub fn uses_recursive_locking<Sut: ArcSyncPolicy<IoxAtomicU64>>() {
-        let sut = Sut::new(IoxAtomicU64::new(55355)).unwrap();
+    pub fn uses_recursive_locking<Sut: ArcSyncPolicy<AtomicU64>>() {
+        let sut = Sut::new(AtomicU64::new(55355)).unwrap();
         let guard_1 = sut.lock();
         let guard_2 = sut.lock();
         guard_1.store(33533, Ordering::Relaxed);

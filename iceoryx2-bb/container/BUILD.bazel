@@ -26,7 +26,7 @@ rust_library(
         "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
         "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
         "//iceoryx2-log/log:iceoryx2-log",
-        "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
+        "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
         "@crate_index//:serde",
     ],
     proc_macro_deps = [
@@ -41,6 +41,7 @@ rust_test_suite(
         ":iceoryx2-bb-container",
         "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
         "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
+        "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
         "//iceoryx2-pal/testing:iceoryx2-pal-testing",
         "//iceoryx2-log/loggers:iceoryx2-loggers",

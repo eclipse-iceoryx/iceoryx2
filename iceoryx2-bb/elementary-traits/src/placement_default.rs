@@ -13,10 +13,7 @@
 //! Trait to perform placement new construction on a given pointer via [`Default::default()`].
 //! See [`PlacementDefault`] for example.
 
-use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
-
-use iceoryx2_pal_concurrency_sync::iox_atomic::*;
 
 /// A trait that allows types to perform a placement new based on their
 /// [`Default::default()`] implementation. This can be used to avoid additional
@@ -91,17 +88,6 @@ Impl!(isize);
 Impl!(usize);
 Impl!(char);
 Impl!(bool);
-Impl!(IoxAtomicBool);
-Impl!(IoxAtomicU8);
-Impl!(IoxAtomicU16);
-Impl!(IoxAtomicU32);
-Impl!(IoxAtomicU64);
-Impl!(IoxAtomicI8);
-Impl!(IoxAtomicI16);
-Impl!(IoxAtomicI32);
-Impl!(IoxAtomicI64);
-Impl!(IoxAtomicIsize);
-Impl!(IoxAtomicUsize);
 
 impl<T: PlacementDefault> PlacementDefault for [T] {
     unsafe fn placement_default(ptr: *mut Self) {
@@ -178,10 +164,4 @@ impl<T> PlacementDefault for Option<T> {
 
 impl<T: PlacementDefault> PlacementDefault for core::mem::MaybeUninit<T> {
     unsafe fn placement_default(_ptr: *mut Self) {}
-}
-
-impl<T: Default> PlacementDefault for UnsafeCell<T> {
-    unsafe fn placement_default(ptr: *mut Self) {
-        ptr.write(UnsafeCell::default());
-    }
 }

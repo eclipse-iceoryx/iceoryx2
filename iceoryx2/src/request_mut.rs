@@ -35,18 +35,16 @@
 //! # }
 //! ```
 
+use core::ops::{Deref, DerefMut};
 use core::{fmt::Debug, marker::PhantomData};
-use core::{
-    ops::{Deref, DerefMut},
-    sync::atomic::Ordering,
-};
+
+use iceoryx2_bb_concurrency::atomic::AtomicBool;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
+use iceoryx2_cal::shm_allocator::PointerOffset;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
 use iceoryx2_log::fatal_panic;
-
-use iceoryx2_cal::shm_allocator::PointerOffset;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
 use crate::{
     pending_response::PendingResponse,
@@ -73,7 +71,7 @@ pub struct RequestMut<
     pub(crate) sample_size: usize,
     pub(crate) offset_to_chunk: PointerOffset,
     pub(crate) client_shared_state: Service::ArcThreadSafetyPolicy<ClientSharedState<Service>>,
-    pub(crate) was_sample_sent: IoxAtomicBool,
+    pub(crate) was_sample_sent: AtomicBool,
     pub(crate) channel_id: ChannelId,
     pub(crate) _response_payload: PhantomData<ResponsePayload>,
     pub(crate) _response_header: PhantomData<ResponseHeader>,

@@ -56,9 +56,9 @@
 //! ```
 
 use core::ops::Deref;
-use core::sync::atomic::Ordering;
 use core::{fmt::Debug, marker::PhantomData};
 
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_log::fail;

@@ -32,11 +32,11 @@
 //! ```
 
 use core::any::TypeId;
-use core::cell::UnsafeCell;
 use core::fmt::Debug;
 use core::marker::PhantomData;
-use core::sync::atomic::Ordering;
 
+use iceoryx2_bb_concurrency::atomic::Ordering;
+use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::slotmap::SlotMap;
 use iceoryx2_bb_container::vector::polymorphic_vec::*;
 use iceoryx2_bb_elementary::cyclic_tagger::CyclicTagger;

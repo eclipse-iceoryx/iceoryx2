@@ -1,4 +1,5 @@
 disallowed-types = [
+    "core::sync::atomic::Ordering",
     "core::sync::atomic::AtomicI8",
     "core::sync::atomic::AtomicI16",
     "core::sync::atomic::AtomicI32",
@@ -23,4 +24,10 @@ disallowed-types = [
     "core::sync::atomic::AtomicIsize",
     "core::sync::atomic::AtomicPtr",
     "core::sync::atomic::AtomicUsize",
+    "core::cell::Cell",
+    "core::cell::OnceCell",
+    "core::cell::Ref",
+    "core::cell::RefCell",
+    "core::cell::RefMut",
+    "core::cell::UnsafeCell",
 ]

@@ -39,18 +39,16 @@
 //! }
 //! ```
 
+use iceoryx2_bb_concurrency::atomic::AtomicU32;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::fail;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU32;
 use iceoryx2_pal_posix::posix;
 use serde::{Deserialize, Serialize};
 
-use core::{
-    fmt::{Debug, Display},
-    sync::atomic::Ordering,
-};
+use core::fmt::{Debug, Display};
 
 use crate::{
     clock::Time,
@@ -117,7 +115,7 @@ impl UniqueSystemId {
 
     fn create(pid: u32, now: Time) -> UniqueSystemId {
         #[cfg(not(all(test, loom, feature = "std")))]
-        static COUNTER: IoxAtomicU32 = IoxAtomicU32::new(0);
+        static COUNTER: AtomicU32 = AtomicU32::new(0);
         #[cfg(all(test, loom, feature = "std"))]
         static COUNTER: std::sync::LazyLock<IoxAtomicU32> = std::sync::LazyLock::new(|| {
             unimplemented!("loom does not provide const-initialization for atomic variables.")
@@ -187,7 +185,7 @@ mod tests {
         let id1 = UniqueSystemId::create(pid, now);
         // ideally, fork and exec the current process to reset the static counter inside UniqueSystemId::create
         // is better, but to ease the test now, we can duplicate the logic inside the lambda instead.
-        static COUNTER: IoxAtomicU32 = IoxAtomicU32::new(0);
+        static COUNTER: AtomicU32 = AtomicU32::new(0);
         let id2 = UniqueSystemId {
             pid: pid + 1,
             seconds: now.seconds() as u32,

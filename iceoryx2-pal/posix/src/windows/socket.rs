@@ -14,13 +14,16 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(unused_variables)]
 
+use core::time::Duration;
+use std::time::Instant;
+
 extern crate alloc;
 use alloc::ffi::CString;
-use core::cell::OnceCell;
-use core::sync::atomic::Ordering;
-use core::time::Duration;
-use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicU64, IoxAtomicU8};
-use std::time::Instant;
+
+use iceoryx2_pal_concurrency_sync::atomic::Ordering;
+use iceoryx2_pal_concurrency_sync::atomic::{AtomicU64, AtomicU8};
+use iceoryx2_pal_concurrency_sync::cell::OnceCell;
+
 use windows_sys::Win32::Networking::WinSock::{INVALID_SOCKET, SOCKADDR, SOCKET_ERROR, WSADATA};
 use windows_sys::Win32::Networking::WinSock::{SOCKADDR_UN, WSAEWOULDBLOCK};
 
@@ -46,7 +49,7 @@ impl MemZeroedStruct for WSADATA {}
 impl GlobalWsaInitializer {
     unsafe fn init() {
         static mut WSA_INSTANCE: OnceCell<GlobalWsaInitializer> = OnceCell::new();
-        static mut INITIALIZATION_STATE: IoxAtomicU8 = IoxAtomicU8::new(0);
+        static mut INITIALIZATION_STATE: AtomicU8 = AtomicU8::new(0);
 
         #[allow(static_mut_refs)] // only written here once when it is not initialized
         match INITIALIZATION_STATE.compare_exchange(0, 1, Ordering::Relaxed, Ordering::Relaxed) {
@@ -81,7 +84,7 @@ pub unsafe fn socketpair(
     protocol: int,
     socket_vector: *mut int, // actually it shall be [int; 2]
 ) -> int {
-    static COUNTER: IoxAtomicU64 = IoxAtomicU64::new(0);
+    static COUNTER: AtomicU64 = AtomicU64::new(0);
     let pid = getpid();
     let socket_listen = socket(domain, socket_type, protocol);
     if socket_listen == -1 {

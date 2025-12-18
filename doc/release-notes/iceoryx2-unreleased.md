@@ -120,6 +120,8 @@
     [#1133](https://github.com/eclipse-iceoryx/iceoryx2/issues/1133)
 * Support C++14 for the C++ Bindings
     [#1167](https://github.com/eclipse-iceoryx/iceoryx2/issues/1167)
+* Remove dependency on `iceoryx2-pal-concurrency-sync` in upper-level crates
+    [#1202](https://github.com/eclipse-iceoryx/iceoryx2/issues/1202)
 * Replace legacy types in public API with iceoryx2 counterparts
     [#1234](https://github.com/eclipse-iceoryx/iceoryx2/issues/1234)
 

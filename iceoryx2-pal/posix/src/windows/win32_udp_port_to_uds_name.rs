@@ -22,8 +22,10 @@ use windows_sys::Win32::{
 
 use crate::posix::{c_string_length, types::*};
 use core::ffi::CStr;
-use core::{cell::UnsafeCell, sync::atomic::Ordering};
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
+use iceoryx2_pal_concurrency_sync::atomic::Ordering;
+
+use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
+use iceoryx2_pal_concurrency_sync::cell::UnsafeCell;
 
 const IS_INITIALIZED: u64 = 0xaffedeadbeef;
 const INITIALIZATION_IN_PROGRESS: u64 = 0xbebebebebebebebe;
@@ -32,14 +34,14 @@ const SHM_SIZE: usize = core::mem::size_of::<PortToUdsNameMap>();
 const UNINITIALIZED_ENTRY: u64 = 1;
 
 struct Entries<const N: usize> {
-    aba_counters: [IoxAtomicU64; N],
+    aba_counters: [AtomicU64; N],
     storages: [[UnsafeCell<[u8; PATH_LENGTH]>; 2]; N],
 }
 
 impl<const N: usize> Entries<N> {
     fn initialize(&mut self) {
         for i in 0..N {
-            self.aba_counters[i] = IoxAtomicU64::new(UNINITIALIZED_ENTRY);
+            self.aba_counters[i] = AtomicU64::new(UNINITIALIZED_ENTRY);
         }
     }
 
@@ -143,7 +145,7 @@ fn normalized_name(name: &[u8]) -> [u8; PATH_LENGTH] {
 
 #[repr(C)]
 struct PortToUdsNameMap {
-    init_check: IoxAtomicU64,
+    init_check: AtomicU64,
     uds_names: Entries<65535>,
 }
 

@@ -18,7 +18,7 @@ use core::ffi::CStr;
 use core::unimplemented;
 
 use alloc::string::ToString;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU32;
+use iceoryx2_pal_concurrency_sync::atomic::AtomicU32;
 
 use crate::posix::types::*;
 
@@ -142,7 +142,7 @@ pub enum Errno {
     NOTIMPLEMENTED = i32::MAX,
 }
 
-pub static GLOBAL_ERRNO_VALUE: IoxAtomicU32 = IoxAtomicU32::new(Errno::ESUCCES as _);
+pub static GLOBAL_ERRNO_VALUE: AtomicU32 = AtomicU32::new(Errno::ESUCCES as _);
 impl Errno {
     pub fn get() -> Errno {
         GLOBAL_ERRNO_VALUE

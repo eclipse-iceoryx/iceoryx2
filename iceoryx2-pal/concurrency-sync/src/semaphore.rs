@@ -10,19 +10,20 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::iox_atomic::IoxAtomicU32;
-use core::{hint::spin_loop, sync::atomic::Ordering};
+use core::hint::spin_loop;
 
+use crate::atomic::AtomicU32;
+use crate::atomic::Ordering;
 use crate::{WaitAction, WaitResult, SPIN_REPETITIONS};
 
 pub struct Semaphore {
-    value: IoxAtomicU32,
+    value: AtomicU32,
 }
 
 impl Semaphore {
     pub fn new(initial_value: u32) -> Self {
         Self {
-            value: IoxAtomicU32::new(initial_value),
+            value: AtomicU32::new(initial_value),
         }
     }
 
@@ -30,12 +31,12 @@ impl Semaphore {
         self.value.load(Ordering::Relaxed)
     }
 
-    pub fn post<WakeUp: Fn(&IoxAtomicU32)>(&self, wakeup: WakeUp, value: u32) {
+    pub fn post<WakeUp: Fn(&AtomicU32)>(&self, wakeup: WakeUp, value: u32) {
         self.value.fetch_add(value, Ordering::Acquire);
         wakeup(&self.value);
     }
 
-    pub fn wait<Wait: Fn(&IoxAtomicU32, &u32) -> WaitAction>(&self, wait: Wait) -> WaitResult {
+    pub fn wait<Wait: Fn(&AtomicU32, &u32) -> WaitAction>(&self, wait: Wait) -> WaitResult {
         let mut retry_counter = 0;
         let mut current_value = self.value.load(Ordering::Relaxed);
 

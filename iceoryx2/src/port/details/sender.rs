@@ -11,13 +11,14 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::alloc::Layout;
-use core::cell::UnsafeCell;
-use core::sync::atomic::Ordering;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 
 use alloc::format;
 use alloc::sync::Arc;
 use alloc::vec::Vec;
 
+use iceoryx2_bb_concurrency::atomic::AtomicUsize;
+use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::cyclic_tagger::*;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::shm_allocator::{AllocationError, PointerOffset, ShmAllocationError};
@@ -26,7 +27,6 @@ use iceoryx2_cal::zero_copy_connection::{
     ZeroCopySendError, ZeroCopySender,
 };
 use iceoryx2_log::{error, fail, fatal_panic, warn};
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 use crate::node::SharedNode;
 use crate::port::{DegradationAction, DegradationCallback, LoanError, SendError};
@@ -117,7 +117,7 @@ pub(crate) struct Sender<Service: service::Service> {
     pub(crate) degradation_callback: Option<DegradationCallback<'static>>,
     pub(crate) service_state: Arc<ServiceState<Service, NoResource>>,
     pub(crate) tagger: CyclicTagger,
-    pub(crate) loan_counter: IoxAtomicUsize,
+    pub(crate) loan_counter: AtomicUsize,
     pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
     pub(crate) message_type_details: MessageTypeDetails,
     pub(crate) number_of_channels: usize,

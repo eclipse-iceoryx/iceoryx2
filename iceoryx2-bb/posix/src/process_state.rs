@@ -139,9 +139,11 @@ use alloc::format;
 use core::fmt::Debug;
 
 pub use iceoryx2_bb_container::semantic_string::SemanticString;
+pub use iceoryx2_bb_system_types::file_path::FilePath;
+
+use iceoryx2_bb_concurrency::cell::Cell;
 use iceoryx2_bb_container::semantic_string::SemanticStringError;
 use iceoryx2_bb_elementary::enum_gen;
-pub use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_log::{fail, trace};
 use iceoryx2_pal_posix::posix::{self, Errno, MemZeroedStruct};
 
@@ -625,7 +627,7 @@ impl ProcessGuard {
 /// }
 /// ```
 pub struct ProcessMonitor {
-    file: core::cell::Cell<Option<File>>,
+    file: Cell<Option<File>>,
     path: FilePath,
     owner_lock_path: FilePath,
 }
@@ -668,7 +670,7 @@ impl ProcessMonitor {
         };
 
         let new_self = Self {
-            file: core::cell::Cell::new(None),
+            file: Cell::new(None),
             path: *path,
             owner_lock_path,
         };

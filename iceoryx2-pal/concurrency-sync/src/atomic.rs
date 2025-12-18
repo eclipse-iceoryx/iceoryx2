@@ -11,13 +11,14 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::{
-    cell::UnsafeCell,
     fmt::Debug,
+    marker::Copy,
     ops::{AddAssign, BitAndAssign, BitOrAssign, BitXorAssign, Not, SubAssign},
 };
 
 #[cfg(not(all(test, loom, feature = "std")))]
-pub use core::sync::atomic::Ordering;
+#[allow(clippy::disallowed_types)]
+pub type Ordering = core::sync::atomic::Ordering;
 #[cfg(all(test, loom, feature = "std"))]
 pub use loom::sync::atomic::Ordering;
 
@@ -26,95 +27,97 @@ pub use core::sync::atomic::fence;
 #[cfg(all(test, loom, feature = "std"))]
 pub use loom::sync::atomic::fence;
 
-use crate::{rwlock::RwLockWriterPreference, WaitAction};
+use crate::cell::UnsafeCell;
+use crate::rwlock::RwLockWriterPreference;
+use crate::WaitAction;
 
 /// Behaves like [`core::sync::atomic::AtomicBool`]
 #[cfg(not(all(test, loom, feature = "std")))]
 #[allow(clippy::disallowed_types)]
-pub type IoxAtomicBool = core::sync::atomic::AtomicBool;
+pub type AtomicBool = core::sync::atomic::AtomicBool;
 
 #[cfg(all(test, loom, feature = "std"))]
-pub type IoxAtomicBool = loom::sync::atomic::AtomicBool;
+pub type AtomicBool = loom::sync::atomic::AtomicBool;
 
 /// Behaves like [`core::sync::atomic::AtomicUsize`]
 #[cfg(not(all(test, loom, feature = "std")))]
 #[allow(clippy::disallowed_types)]
-pub type IoxAtomicUsize = core::sync::atomic::AtomicUsize;
+pub type AtomicUsize = core::sync::atomic::AtomicUsize;
 
 #[cfg(all(test, loom, feature = "std"))]
-pub type IoxAtomicUsize = loom::sync::atomic::AtomicUsize;
+pub type AtomicUsize = loom::sync::atomic::AtomicUsize;
 
 /// Behaves like [`core::sync::atomic::AtomicIsize`]
 #[cfg(not(all(test, loom, feature = "std")))]
 #[allow(clippy::disallowed_types)]
-pub type IoxAtomicIsize = core::sync::atomic::AtomicIsize;
+pub type AtomicIsize = core::sync::atomic::AtomicIsize;
 
 #[cfg(all(test, loom, feature = "std"))]
-pub type IoxAtomicIsize = loom::sync::atomic::AtomicIsize;
+pub type AtomicIsize = loom::sync::atomic::AtomicIsize;
 
 /// Behaves like [`core::sync::atomic::AtomicU8`]
 #[cfg(not(all(test, loom, feature = "std")))]
 #[allow(clippy::disallowed_types)]
-pub type IoxAtomicU8 = core::sync::atomic::AtomicU8;
+pub type AtomicU8 = core::sync::atomic::AtomicU8;
 
 #[cfg(all(test, loom, feature = "std"))]
-pub type IoxAtomicU8 = loom::sync::atomic::AtomicU8;
+pub type AtomicU8 = loom::sync::atomic::AtomicU8;
 
 /// Behaves like [`core::sync::atomic::AtomicU16`]
 #[cfg(not(all(test, loom, feature = "std")))]
 #[allow(clippy::disallowed_types)]
-pub type IoxAtomicU16 = core::sync::atomic::AtomicU16;
+pub type AtomicU16 = core::sync::atomic::AtomicU16;
 
 #[cfg(all(test, loom, feature = "std"))]
-pub type IoxAtomicU16 = loom::sync::atomic::AtomicU16;
+pub type AtomicU16 = loom::sync::atomic::AtomicU16;
 
 /// Behaves like [`core::sync::atomic::AtomicU32`]
 #[cfg(not(all(test, loom, feature = "std")))]
 #[allow(clippy::disallowed_types)]
-pub type IoxAtomicU32 = core::sync::atomic::AtomicU32;
+pub type AtomicU32 = core::sync::atomic::AtomicU32;
 
 #[cfg(all(test, loom, feature = "std"))]
-pub type IoxAtomicU32 = loom::sync::atomic::AtomicU32;
+pub type AtomicU32 = loom::sync::atomic::AtomicU32;
 
 /// Behaves like [`core::sync::atomic::AtomicI8`]
 #[cfg(not(all(test, loom, feature = "std")))]
 #[allow(clippy::disallowed_types)]
-pub type IoxAtomicI8 = core::sync::atomic::AtomicI8;
+pub type AtomicI8 = core::sync::atomic::AtomicI8;
 
 #[cfg(all(test, loom, feature = "std"))]
-pub type IoxAtomicI8 = loom::sync::atomic::AtomicI8;
+pub type AtomicI8 = loom::sync::atomic::AtomicI8;
 
 /// Behaves like [`core::sync::atomic::AtomicI16`]
 #[cfg(not(all(test, loom, feature = "std")))]
 #[allow(clippy::disallowed_types)]
-pub type IoxAtomicI16 = core::sync::atomic::AtomicI16;
+pub type AtomicI16 = core::sync::atomic::AtomicI16;
 
 #[cfg(all(test, loom, feature = "std"))]
-pub type IoxAtomicI16 = loom::sync::atomic::AtomicI16;
+pub type AtomicI16 = loom::sync::atomic::AtomicI16;
 
 /// Behaves like [`core::sync::atomic::AtomicI32`]
 #[cfg(not(all(test, loom, feature = "std")))]
 #[allow(clippy::disallowed_types)]
-pub type IoxAtomicI32 = core::sync::atomic::AtomicI32;
+pub type AtomicI32 = core::sync::atomic::AtomicI32;
 
 #[cfg(all(test, loom, feature = "std"))]
-pub type IoxAtomicI32 = loom::sync::atomic::AtomicI32;
+pub type AtomicI32 = loom::sync::atomic::AtomicI32;
 
 /// Behaves like [`core::sync::atomic::AtomicI64`]
 #[cfg(not(all(test, loom, feature = "std")))]
 #[allow(clippy::disallowed_types)]
-pub type IoxAtomicI64 = core::sync::atomic::AtomicI64;
+pub type AtomicI64 = core::sync::atomic::AtomicI64;
 
 #[cfg(all(test, loom, feature = "std"))]
-pub type IoxAtomicI64 = loom::sync::atomic::AtomicI64;
+pub type AtomicI64 = loom::sync::atomic::AtomicI64;
 
 /// Behaves like [`core::sync::atomic::AtomicU64`]
 #[cfg(not(all(test, loom, feature = "std")))]
 #[allow(clippy::disallowed_types)]
-pub type IoxAtomicU64 = core::sync::atomic::AtomicU64;
+pub type AtomicU64 = core::sync::atomic::AtomicU64;
 
 #[cfg(all(test, loom, feature = "std"))]
-pub type IoxAtomicU64 = loom::sync::atomic::AtomicU64;
+pub type AtomicU64 = loom::sync::atomic::AtomicU64;
 
 type LockType = RwLockWriterPreference;
 
@@ -189,26 +192,26 @@ pub mod internal {
 /// those operations are no longer lock-free.
 #[derive(Default)]
 #[repr(C)]
-pub struct IoxAtomic<T: internal::AtomicInteger> {
+pub struct Atomic<T: internal::AtomicInteger> {
     data: UnsafeCell<T>,
     lock: LockType,
 }
 
-unsafe impl<T: internal::AtomicInteger> Send for IoxAtomic<T> {}
-unsafe impl<T: internal::AtomicInteger> Sync for IoxAtomic<T> {}
+unsafe impl<T: internal::AtomicInteger> Send for Atomic<T> {}
+unsafe impl<T: internal::AtomicInteger> Sync for Atomic<T> {}
 
-impl<T: internal::AtomicInteger> Debug for IoxAtomic<T> {
+impl<T: internal::AtomicInteger> Debug for Atomic<T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
-            "IoxAtomic<{}> {{ value: {:?} }}",
+            "Atomic<{}> {{ value: {:?} }}",
             core::any::type_name::<T>(),
             self.load(Ordering::Relaxed),
         )
     }
 }
 
-impl<T: internal::AtomicInteger> IoxAtomic<T> {
+impl<T: internal::AtomicInteger> Atomic<T> {
     /// See [`core::sync::atomic::AtomicU64::new()`]
     #[cfg(not(all(test, loom, feature = "std")))]
     pub const fn new(v: T) -> Self {

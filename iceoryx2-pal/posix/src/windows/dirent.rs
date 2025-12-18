@@ -23,8 +23,8 @@ use crate::{
     },
     win32call,
 };
-use core::sync::atomic::Ordering;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
+use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
+use iceoryx2_pal_concurrency_sync::atomic::Ordering;
 use iceoryx2_pal_configuration::PATH_LENGTH;
 use windows_sys::Win32::{
     Foundation::{
@@ -119,7 +119,7 @@ pub unsafe fn mkdir(pathname: *const c_char, mode: mode_t) -> int {
 }
 
 pub unsafe fn opendir(dirname: *const c_char) -> *mut DIR {
-    static COUNT: IoxAtomicU64 = IoxAtomicU64::new(1);
+    static COUNT: AtomicU64 = AtomicU64::new(1);
     let id = COUNT.fetch_add(1, Ordering::Relaxed);
 
     HandleTranslator::get_instance().add(FdHandleEntry::DirectoryStream(DirectoryHandle { id }));

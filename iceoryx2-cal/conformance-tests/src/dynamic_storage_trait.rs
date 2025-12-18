@@ -10,13 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use iceoryx2_bb_concurrency::atomic::AtomicI64;
 use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicI64;
 
 #[derive(Debug)]
 pub struct TestData {
-    value: IoxAtomicI64,
+    value: AtomicI64,
     supplementary_ptr: *mut u8,
     supplementary_len: usize,
     _lifetime_tracker: Option<LifetimeTracker>,
@@ -25,7 +25,7 @@ pub struct TestData {
 impl TestData {
     fn new(value: i64) -> Self {
         Self {
-            value: IoxAtomicI64::new(value),
+            value: AtomicI64::new(value),
             supplementary_ptr: core::ptr::null_mut::<u8>(),
             supplementary_len: 0,
             _lifetime_tracker: None,
@@ -34,7 +34,7 @@ impl TestData {
 
     fn new_with_lifetime_tracking(value: i64) -> Self {
         Self {
-            value: IoxAtomicI64::new(value),
+            value: AtomicI64::new(value),
             supplementary_ptr: core::ptr::null_mut::<u8>(),
             supplementary_len: 0,
             _lifetime_tracker: Some(LifetimeTracker::new()),
@@ -48,7 +48,7 @@ unsafe impl Sync for TestData {}
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod dynamic_storage_trait {
-    use core::sync::atomic::Ordering;
+    use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_elementary_traits::allocator::*;

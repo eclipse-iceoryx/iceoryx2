@@ -12,14 +12,15 @@
 
 #[doc(hidden)]
 pub mod details {
-    use core::cell::UnsafeCell;
     use core::fmt::Debug;
     use core::marker::PhantomData;
-    use core::sync::atomic::Ordering;
+    use iceoryx2_bb_concurrency::atomic::Ordering;
 
     use alloc::vec;
     use alloc::vec::Vec;
 
+    use iceoryx2_bb_concurrency::atomic::{AtomicU64, AtomicU8, AtomicUsize};
+    use iceoryx2_bb_concurrency::cell::UnsafeCell;
     use iceoryx2_bb_container::vector::relocatable_vec::*;
     use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
     use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
@@ -30,7 +31,6 @@ pub mod details {
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
     use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
     use iceoryx2_log::{fail, fatal_panic};
-    use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicU64, IoxAtomicU8, IoxAtomicUsize};
 
     pub use crate::zero_copy_connection::*;
 
@@ -137,14 +137,14 @@ pub mod details {
     #[derive(Debug)]
     struct SegmentDetails {
         used_chunk_list: RelocatableUsedChunkList,
-        sample_size: IoxAtomicUsize,
+        sample_size: AtomicUsize,
     }
 
     impl SegmentDetails {
         fn new_uninit(number_of_samples: usize) -> Self {
             Self {
                 used_chunk_list: unsafe { RelocatableUsedChunkList::new_uninit(number_of_samples) },
-                sample_size: IoxAtomicUsize::new(0),
+                sample_size: AtomicUsize::new(0),
             }
         }
 
@@ -162,7 +162,7 @@ pub mod details {
     struct Channel {
         submission_queue: RelocatableSafelyOverflowingIndexQueue,
         completion_queue: RelocatableIndexQueue,
-        state: IoxAtomicU64,
+        state: AtomicU64,
     }
 
     impl Channel {
@@ -174,7 +174,7 @@ pub mod details {
                 completion_queue: unsafe {
                     RelocatableIndexQueue::new_uninit(completion_queue_capacity)
                 },
-                state: IoxAtomicU64::new(INITIAL_CHANNEL_STATE),
+                state: AtomicU64::new(INITIAL_CHANNEL_STATE),
             }
         }
 
@@ -202,7 +202,7 @@ pub mod details {
     pub struct SharedManagementData {
         channels: RelocatableVec<Channel>,
         segment_details: RelocatableVec<SegmentDetails>,
-        state: IoxAtomicU8,
+        state: AtomicU8,
         max_borrowed_samples: usize,
         number_of_samples_per_segment: usize,
         number_of_segments: u8,
@@ -226,7 +226,7 @@ pub mod details {
                 max_borrowed_samples,
                 number_of_samples_per_segment,
                 number_of_segments,
-                state: IoxAtomicU8::new(State::None.value()),
+                state: AtomicU8::new(State::None.value()),
             }
         }
 
@@ -653,7 +653,7 @@ pub mod details {
             self.storage.get().channels.capacity()
         }
 
-        fn channel_state(&self, channel_id: ChannelId) -> &IoxAtomicU64 {
+        fn channel_state(&self, channel_id: ChannelId) -> &AtomicU64 {
             debug_assert!(channel_id.value() < self.storage.get().channels.capacity());
             &self.storage.get().channels[channel_id.value()].state
         }
@@ -889,7 +889,7 @@ pub mod details {
             self.storage.get().channels.capacity()
         }
 
-        fn channel_state(&self, channel_id: ChannelId) -> &IoxAtomicU64 {
+        fn channel_state(&self, channel_id: ChannelId) -> &AtomicU64 {
             debug_assert!(channel_id.value() < self.storage.get().channels.capacity());
             &self.storage.get().channels[channel_id.value()].state
         }

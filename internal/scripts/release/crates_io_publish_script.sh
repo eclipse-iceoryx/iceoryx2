@@ -37,6 +37,7 @@ CRATES_TO_PUBLISH=(
     iceoryx2-bb-conformance-test-macros
     iceoryx2-bb-elementary-traits
     iceoryx2-bb-testing
+    iceoryx2-bb-concurrency
     iceoryx2-bb-elementary
     iceoryx2-bb-derive-macros
     iceoryx2-bb-container

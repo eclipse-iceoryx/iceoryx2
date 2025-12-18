@@ -11,14 +11,13 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2::prelude::*;
+use iceoryx2_bb_concurrency::atomic::AtomicU32;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU32;
 
 use iceoryx2::config::Config;
 use iceoryx2::node::testing::__internal_node_staged_death;
-
-use core::sync::atomic::Ordering;
 
 pub struct TestDetails<S: Service> {
     node: Node<S>,
@@ -32,7 +31,7 @@ pub trait Test {
     }
 
     fn create_test_node(config: &Config) -> TestDetails<Self::Service> {
-        static COUNTER: IoxAtomicU32 = IoxAtomicU32::new(0);
+        static COUNTER: AtomicU32 = AtomicU32::new(0);
         let node_name = Self::generate_node_name(0, "toby or no toby");
         let fake_node_id = ((u32::MAX - COUNTER.fetch_add(1, Ordering::Relaxed)) as u128) << 96;
         let fake_node_id = unsafe { core::mem::transmute::<u128, UniqueSystemId>(fake_node_id) };

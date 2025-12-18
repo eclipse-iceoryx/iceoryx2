@@ -23,7 +23,7 @@ use iceoryx2_log::{
     get_log_level, set_log_level, set_logger, Log, LogLevel, __internal_print_log_msg,
 };
 
-use iceoryx2_pal_concurrency_sync::once::Once;
+use iceoryx2_bb_concurrency::Once;
 
 #[repr(C)]
 #[derive(Copy, Clone)]

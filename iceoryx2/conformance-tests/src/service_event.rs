@@ -15,7 +15,6 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod service_event {
-    use core::sync::atomic::Ordering;
     use core::time::Duration;
     use std::collections::HashSet;
     use std::sync::Barrier;
@@ -26,11 +25,12 @@ pub mod service_event {
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::event::{EventCreateError, EventOpenError};
     use iceoryx2::testing::*;
+    use iceoryx2_bb_concurrency::atomic::Ordering;
+    use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64};
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
-    use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64};
 
     const TIMEOUT: Duration = Duration::from_millis(50);
 
@@ -738,7 +738,7 @@ pub mod service_event {
         const NUMBER_OF_ITERATIONS: usize = 100;
         const EVENT_ID: EventId = EventId::new(8);
 
-        let keep_running = IoxAtomicBool::new(true);
+        let keep_running = AtomicBool::new(true);
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -798,7 +798,7 @@ pub mod service_event {
         const NUMBER_OF_ITERATIONS: usize = 100;
         const EVENT_ID: EventId = EventId::new(8);
 
-        let keep_running = IoxAtomicBool::new(true);
+        let keep_running = AtomicBool::new(true);
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -1046,7 +1046,7 @@ pub mod service_event {
             .create()
             .unwrap();
         let notifier = sut.notifier_builder().create().unwrap();
-        let counter = IoxAtomicU64::new(0);
+        let counter = AtomicU64::new(0);
         let barrier = Barrier::new(2);
 
         std::thread::scope(|s| {

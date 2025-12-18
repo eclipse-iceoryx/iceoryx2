@@ -18,6 +18,7 @@ path = "src/lib.rs"
 iceoryx2 = { workspace = true }
 iceoryx2-tunnel-backend = { workspace = true }
 iceoryx2-log = { workspace = true }
+iceoryx2-bb-concurrency = { workspace = true }
 
 serde_json = { workspace = true }
 zenoh = { workspace = true }

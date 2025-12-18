@@ -88,9 +88,12 @@
 //! ```
 
 use core::alloc::Layout;
-use core::cell::UnsafeCell;
 use core::fmt::Debug;
-use core::sync::atomic::{fence, Ordering};
+
+use iceoryx2_bb_concurrency::atomic::fence;
+use iceoryx2_bb_concurrency::atomic::Ordering;
+use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64};
+use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
@@ -98,7 +101,6 @@ use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
 use iceoryx2_bb_elementary_traits::pointer_trait::PointerTrait;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_log::{fail, fatal_panic};
-use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64};
 
 enum_gen! { UniqueIndexCreationError
   entry:
@@ -238,8 +240,8 @@ impl Drop for UniqueIndex<'_> {
 pub struct UniqueIndexSet {
     data_ptr: RelocatablePointer<UnsafeCell<u32>>,
     capacity: u32,
-    pub(crate) head: IoxAtomicU64,
-    is_memory_initialized: IoxAtomicBool,
+    pub(crate) head: AtomicU64,
+    is_memory_initialized: AtomicBool,
 }
 
 unsafe impl Sync for UniqueIndexSet {}
@@ -279,8 +281,8 @@ impl RelocatableContainer for UniqueIndexSet {
         Self {
             data_ptr: RelocatablePointer::new_uninit(),
             capacity: capacity as u32,
-            head: IoxAtomicU64::new(0),
-            is_memory_initialized: IoxAtomicBool::new(false),
+            head: AtomicU64::new(0),
+            is_memory_initialized: AtomicBool::new(false),
         }
     }
 

@@ -14,7 +14,9 @@ version = { workspace = true }
 default = [
   "lazy_static/spin_no_std"
 ]
-std = []
+std = [
+  "iceoryx2-bb-concurrency/std"
+]
 
 # The permissions of all resources will be set to read, write, execute for everyone.
 # This shall not be used in production and is meant to be enabled in a docker environment
@@ -24,6 +26,7 @@ dev_permissions = []
 [dependencies]
 iceoryx2-bb-posix = { workspace = true }
 iceoryx2-bb-linux = { workspace = true }
+iceoryx2-bb-concurrency = { workspace = true }
 iceoryx2-bb-container = { workspace = true }
 iceoryx2-bb-derive-macros = { workspace = true }
 iceoryx2-bb-system-types = { workspace = true }
@@ -32,7 +35,6 @@ iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-bb-memory = { workspace = true }
 iceoryx2-bb-lock-free = { workspace = true }
-iceoryx2-pal-concurrency-sync = { workspace = true }
 
 lazy_static = { workspace = true }
 postcard = { workspace = true }

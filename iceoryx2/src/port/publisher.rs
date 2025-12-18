@@ -102,14 +102,15 @@
 //! ```
 
 use core::any::TypeId;
-use core::cell::UnsafeCell;
 use core::fmt::Debug;
-use core::sync::atomic::Ordering;
 use core::{marker::PhantomData, mem::MaybeUninit};
 
 use alloc::sync::Arc;
 use alloc::vec::Vec;
 
+use iceoryx2_bb_concurrency::atomic::Ordering;
+use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicUsize};
+use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::cyclic_tagger::CyclicTagger;
 use iceoryx2_bb_elementary::CallbackProgression;
@@ -123,7 +124,6 @@ use iceoryx2_cal::zero_copy_connection::{
     ChannelId, ZeroCopyCreationError, ZeroCopyPortDetails, ZeroCopySender,
 };
 use iceoryx2_log::{fail, warn};
-use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
 
 use crate::port::details::sender::*;
 use crate::port::update_connections::{ConnectionFailure, UpdateConnections};
@@ -181,7 +181,7 @@ pub(crate) struct PublisherSharedState<Service: service::Service> {
     pub(crate) sender: Sender<Service>,
     subscriber_list_state: UnsafeCell<ContainerState<SubscriberDetails>>,
     history: Option<UnsafeCell<Queue<OffsetAndSize>>>,
-    is_active: IoxAtomicBool,
+    is_active: AtomicBool,
 }
 
 impl<Service: service::Service> PublisherSharedState<Service> {
@@ -424,7 +424,7 @@ impl<
 
         let publisher_shared_state =
             <Service as service::Service>::ArcThreadSafetyPolicy::new(PublisherSharedState {
-                is_active: IoxAtomicBool::new(true),
+                is_active: AtomicBool::new(true),
                 sender: Sender {
                     data_segment,
                     segment_states: {
@@ -448,7 +448,7 @@ impl<
                     degradation_callback: None,
                     service_state: service.clone(),
                     tagger: CyclicTagger::new(),
-                    loan_counter: IoxAtomicUsize::new(0),
+                    loan_counter: AtomicUsize::new(0),
                     sender_max_borrowed_samples: config.max_loaned_samples,
                     unable_to_deliver_strategy: config.unable_to_deliver_strategy,
                     message_type_details: static_config.message_type_details.clone(),

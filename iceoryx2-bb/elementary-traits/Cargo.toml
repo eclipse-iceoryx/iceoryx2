@@ -11,5 +11,3 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [dependencies]
-# required to implement ZeroCopySend for IoxAtomic*
-iceoryx2-pal-concurrency-sync = { workspace = true }

@@ -63,9 +63,10 @@
 //! }
 //! ```
 
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
+use iceoryx2_bb_concurrency::atomic::AtomicU64;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 
-use core::{marker::PhantomData, sync::atomic::Ordering};
+use core::marker::PhantomData;
 
 /// A building block to generate global unique ids
 #[derive(Debug, Eq, Hash, PartialEq)]
@@ -76,7 +77,7 @@ pub struct UniqueId {
 impl Default for UniqueId {
     fn default() -> Self {
         #[cfg(not(all(test, loom, feature = "std")))]
-        static COUNTER: IoxAtomicU64 = IoxAtomicU64::new(0);
+        static COUNTER: AtomicU64 = AtomicU64::new(0);
         #[cfg(all(test, loom, feature = "std"))]
         static COUNTER: std::sync::LazyLock<IoxAtomicU64> = std::sync::LazyLock::new(|| {
             unimplemented!("loom does not provide const-initialization for atomic variables.")
@@ -111,7 +112,7 @@ pub struct TypedUniqueId<T> {
 impl<T> Default for TypedUniqueId<T> {
     fn default() -> Self {
         #[cfg(not(all(test, loom, feature = "std")))]
-        static COUNTER: IoxAtomicU64 = IoxAtomicU64::new(0);
+        static COUNTER: AtomicU64 = AtomicU64::new(0);
         #[cfg(all(test, loom, feature = "std"))]
         static COUNTER: std::sync::LazyLock<IoxAtomicU64> = std::sync::LazyLock::new(|| {
             unimplemented!("loom does not provide const-initialization for atomic variables.")

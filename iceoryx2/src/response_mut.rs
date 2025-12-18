@@ -44,15 +44,15 @@ use core::{
     fmt::Debug,
     marker::PhantomData,
     ops::{Deref, DerefMut},
-    sync::atomic::Ordering,
 };
 
+use iceoryx2_bb_concurrency::atomic::AtomicUsize;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::{
     arc_sync_policy::ArcSyncPolicy, shm_allocator::PointerOffset, zero_copy_connection::ChannelId,
 };
 use iceoryx2_log::fail;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 use crate::{
     port::{
@@ -83,7 +83,7 @@ pub struct ResponseMut<
         ResponsePayload,
     >,
     pub(crate) shared_state: Service::ArcThreadSafetyPolicy<SharedServerState<Service>>,
-    pub(crate) shared_loan_counter: Arc<IoxAtomicUsize>,
+    pub(crate) shared_loan_counter: Arc<AtomicUsize>,
     pub(crate) offset_to_chunk: PointerOffset,
     pub(crate) sample_size: usize,
     pub(crate) channel_id: ChannelId,

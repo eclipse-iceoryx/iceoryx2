@@ -68,18 +68,18 @@
 //! ```
 
 use core::ptr::NonNull;
-use core::sync::atomic::Ordering;
 
 use alloc::vec;
 use alloc::vec::Vec;
 
+use iceoryx2_bb_concurrency::atomic::AtomicBool;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_system_types::file_name::*;
 use iceoryx2_bb_system_types::file_path::*;
 use iceoryx2_bb_system_types::path::*;
 use iceoryx2_log::{error, fail, fatal_panic, trace};
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use iceoryx2_pal_configuration::PATH_SEPARATOR;
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING;
@@ -222,7 +222,7 @@ impl SharedMemoryBuilder {
 
         let shm = SharedMemory {
             name: self.name,
-            has_ownership: IoxAtomicBool::new(false),
+            has_ownership: AtomicBool::new(false),
             memory_lock: None,
             memory_mapping,
             mapping_offset: self.mapping_offset,
@@ -337,7 +337,7 @@ impl SharedMemoryCreationBuilder {
 
             let shm = SharedMemory {
                 name: self.config.name,
-                has_ownership: IoxAtomicBool::new(self.config.has_ownership),
+                has_ownership: AtomicBool::new(self.config.has_ownership),
                 memory_lock: None,
                 memory_mapping,
                 mapping_offset: self.config.mapping_offset,
@@ -362,7 +362,7 @@ impl SharedMemoryCreationBuilder {
 
         let mut shm = SharedMemory {
             name: self.config.name,
-            has_ownership: IoxAtomicBool::new(self.config.has_ownership),
+            has_ownership: AtomicBool::new(self.config.has_ownership),
             memory_lock: None,
             memory_mapping,
             mapping_offset: self.config.mapping_offset,
@@ -411,7 +411,7 @@ impl SharedMemoryCreationBuilder {
 #[derive(Debug)]
 pub struct SharedMemory {
     name: FileName,
-    has_ownership: IoxAtomicBool,
+    has_ownership: AtomicBool,
     memory_mapping: MemoryMapping,
     memory_lock: Option<MemoryLock>,
     mapping_offset: isize,

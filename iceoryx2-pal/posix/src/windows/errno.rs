@@ -15,7 +15,9 @@
 
 use crate::posix::types::*;
 use crate::ErrnoEnumGenerator;
-use core::{cell::Cell, ffi::CStr, fmt::Display};
+use core::{ffi::CStr, fmt::Display};
+
+use iceoryx2_pal_concurrency_sync::cell::Cell;
 
 ErrnoEnumGenerator!(
   assign

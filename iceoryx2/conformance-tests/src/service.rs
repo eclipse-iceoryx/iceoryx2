@@ -16,7 +16,6 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[conformance_test_module]
 pub mod service {
     use core::marker::PhantomData;
-    use core::sync::atomic::Ordering;
     use core::time::Duration;
     use std::sync::Barrier;
 
@@ -34,13 +33,14 @@ pub mod service {
     use iceoryx2::service::port_factory::{blackboard, event, publish_subscribe, request_response};
     use iceoryx2::service::{ServiceDetailsError, ServiceListError};
     use iceoryx2::testing::*;
+    use iceoryx2_bb_concurrency::atomic::AtomicU64;
+    use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_log::{set_log_level, LogLevel};
-    use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 
     fn generate_name() -> ServiceName {
         ServiceName::new(&format!(
@@ -452,7 +452,7 @@ pub mod service {
         const NUMBER_OF_ITERATIONS: usize = 25;
         let test = Factory::new();
 
-        let success_counter = IoxAtomicU64::new(0);
+        let success_counter = AtomicU64::new(0);
         let barrier_enter = Barrier::new(number_of_threads);
         let barrier_exit = Barrier::new(number_of_threads);
         let service_name = generate_name();

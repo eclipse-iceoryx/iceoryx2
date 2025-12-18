@@ -14,9 +14,11 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(unused_variables)]
 
-use core::{cell::UnsafeCell, sync::atomic::Ordering, unimplemented};
+use core::{sync::atomic::Ordering, unimplemented};
 
-use iceoryx2_pal_concurrency_sync::{mutex::Mutex, WaitAction};
+use iceoryx2_pal_concurrency_sync::cell::UnsafeCell;
+use iceoryx2_pal_concurrency_sync::mutex::Mutex;
+use iceoryx2_pal_concurrency_sync::WaitAction;
 
 use crate::posix::*;
 

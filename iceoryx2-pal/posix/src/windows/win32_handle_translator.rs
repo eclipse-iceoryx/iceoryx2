@@ -19,9 +19,10 @@ use windows_sys::Win32::{
 
 use crate::posix::{c_string_length, types::*};
 use core::fmt::Debug;
-use core::sync::atomic::Ordering;
-use core::{cell::UnsafeCell, panic};
-use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU32, IoxAtomicUsize};
+use core::panic;
+use iceoryx2_pal_concurrency_sync::atomic::Ordering;
+use iceoryx2_pal_concurrency_sync::atomic::{AtomicBool, AtomicU32, AtomicUsize};
+use iceoryx2_pal_concurrency_sync::cell::UnsafeCell;
 use iceoryx2_pal_concurrency_sync::mutex::Mutex;
 use iceoryx2_pal_concurrency_sync::WaitAction;
 
@@ -141,7 +142,7 @@ pub struct HandleTranslator {
     fd2handle: [UnsafeCell<FdHandleEntry>; MAX_SUPPORTED_FD_HANDLES],
     free_fd_list_start: UnsafeCell<usize>,
     port_to_uds_translator: UnsafeCell<Option<PortToUds>>,
-    uds_datagram_counter: IoxAtomicUsize,
+    uds_datagram_counter: AtomicUsize,
     mtx: Mutex,
 }
 
@@ -158,14 +159,14 @@ impl HandleTranslator {
             fd2handle: [NEXT_FREE_FD; MAX_SUPPORTED_FD_HANDLES],
             free_fd_list_start: UnsafeCell::new(0),
             port_to_uds_translator: UnsafeCell::new(None),
-            uds_datagram_counter: IoxAtomicUsize::new(0),
+            uds_datagram_counter: AtomicUsize::new(0),
             mtx: Mutex::new(),
         }
     }
 
     pub fn get_instance() -> &'static HandleTranslator {
         static HANDLE_TRANSLATOR: HandleTranslator = HandleTranslator::new();
-        static IS_INITIALIZED: IoxAtomicBool = IoxAtomicBool::new(false);
+        static IS_INITIALIZED: AtomicBool = AtomicBool::new(false);
 
         if !IS_INITIALIZED.load(Ordering::Relaxed) {
             HANDLE_TRANSLATOR.lock();
@@ -188,7 +189,7 @@ impl HandleTranslator {
         self.mtx.lock(|atomic, value| {
             unsafe {
                 WaitOnAddress(
-                    (atomic as *const IoxAtomicU32).cast(),
+                    (atomic as *const AtomicU32).cast(),
                     (value as *const u32).cast(),
                     4,
                     INFINITE,
@@ -200,7 +201,7 @@ impl HandleTranslator {
 
     fn unlock(&self) {
         self.mtx.unlock(|atomic| unsafe {
-            WakeByAddressSingle((atomic as *const IoxAtomicU32).cast());
+            WakeByAddressSingle((atomic as *const AtomicU32).cast());
         });
     }
 

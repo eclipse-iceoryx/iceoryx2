@@ -10,14 +10,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::{hint::spin_loop, sync::atomic::Ordering};
+use core::hint::spin_loop;
 
-use crate::iox_atomic::IoxAtomicU32;
+use crate::atomic::AtomicU32;
+use crate::atomic::Ordering;
 use crate::{WaitAction, WaitResult};
 
 pub struct Mutex {
     // we use an AtomicU32 since it should be supported on nearly every platform
-    state: IoxAtomicU32,
+    state: AtomicU32,
 }
 
 impl Default for Mutex {
@@ -30,7 +31,7 @@ impl Mutex {
     #[cfg(not(all(test, loom, feature = "std")))]
     pub const fn new() -> Self {
         Self {
-            state: IoxAtomicU32::new(0),
+            state: AtomicU32::new(0),
         }
     }
 
@@ -41,7 +42,7 @@ impl Mutex {
         }
     }
 
-    pub fn lock<Wait: Fn(&IoxAtomicU32, &u32) -> WaitAction>(&self, wait: Wait) -> WaitResult {
+    pub fn lock<Wait: Fn(&AtomicU32, &u32) -> WaitAction>(&self, wait: Wait) -> WaitResult {
         if self.uncontested_lock(crate::SPIN_REPETITIONS) == WaitResult::Success {
             return WaitResult::Success;
         }
@@ -63,7 +64,7 @@ impl Mutex {
         }
     }
 
-    pub fn unlock<WakeOne: Fn(&IoxAtomicU32)>(&self, wake_one: WakeOne) {
+    pub fn unlock<WakeOne: Fn(&AtomicU32)>(&self, wake_one: WakeOne) {
         self.state.store(0, Ordering::Release);
         wake_one(&self.state);
     }

@@ -44,13 +44,13 @@
 //! }
 //! ```
 
-#[cfg(all(test, loom, feature = "std"))]
-use loom::cell::UnsafeCell;
-
-#[cfg(not(all(test, loom, feature = "std")))]
-use core::cell::UnsafeCell;
-
 use core::{alloc::Layout, fmt::Debug};
+
+use iceoryx2_bb_concurrency::atomic::fence;
+use iceoryx2_bb_concurrency::atomic::AtomicBool;
+use iceoryx2_bb_concurrency::atomic::AtomicU64;
+use iceoryx2_bb_concurrency::atomic::Ordering;
+use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
 use iceoryx2_bb_elementary::{bump_allocator::BumpAllocator, relocatable_ptr::RelocatablePointer};
 use iceoryx2_bb_elementary_traits::{
@@ -58,7 +58,6 @@ use iceoryx2_bb_elementary_traits::{
     relocatable_container::RelocatableContainer,
 };
 use iceoryx2_log::{fail, fatal_panic};
-use iceoryx2_pal_concurrency_sync::iox_atomic::{fence, IoxAtomicBool, IoxAtomicU64, Ordering};
 
 /// The [`Producer`] of the [`IndexQueue`]/[`FixedSizeIndexQueue`] which can add values to it
 /// via [`Producer::push()`].
@@ -114,11 +113,11 @@ pub mod details {
     pub struct IndexQueue<PointerType: PointerTrait<UnsafeCell<u64>>> {
         data_ptr: PointerType,
         capacity: usize,
-        write_position: IoxAtomicU64,
-        read_position: IoxAtomicU64,
-        pub(super) has_producer: IoxAtomicBool,
-        pub(super) has_consumer: IoxAtomicBool,
-        is_memory_initialized: IoxAtomicBool,
+        write_position: AtomicU64,
+        read_position: AtomicU64,
+        pub(super) has_producer: AtomicBool,
+        pub(super) has_consumer: AtomicBool,
+        is_memory_initialized: AtomicBool,
     }
 
     unsafe impl<PointerType: PointerTrait<UnsafeCell<u64>>> Sync for IndexQueue<PointerType> {}
@@ -135,11 +134,11 @@ pub mod details {
             Self {
                 data_ptr,
                 capacity,
-                write_position: IoxAtomicU64::new(0),
-                read_position: IoxAtomicU64::new(0),
-                has_producer: IoxAtomicBool::new(true),
-                has_consumer: IoxAtomicBool::new(true),
-                is_memory_initialized: IoxAtomicBool::new(true),
+                write_position: AtomicU64::new(0),
+                read_position: AtomicU64::new(0),
+                has_producer: AtomicBool::new(true),
+                has_consumer: AtomicBool::new(true),
+                is_memory_initialized: AtomicBool::new(true),
             }
         }
     }
@@ -149,11 +148,11 @@ pub mod details {
             Self {
                 data_ptr: RelocatablePointer::new_uninit(),
                 capacity,
-                write_position: IoxAtomicU64::new(0),
-                read_position: IoxAtomicU64::new(0),
-                has_producer: IoxAtomicBool::new(true),
-                has_consumer: IoxAtomicBool::new(true),
-                is_memory_initialized: IoxAtomicBool::new(false),
+                write_position: AtomicU64::new(0),
+                read_position: AtomicU64::new(0),
+                has_producer: AtomicBool::new(true),
+                has_consumer: AtomicBool::new(true),
+                is_memory_initialized: AtomicBool::new(false),
             }
         }
 

@@ -11,16 +11,17 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::alloc::Layout;
-use core::cell::UnsafeCell;
-use core::sync::atomic::Ordering;
 use core::time::Duration;
 use core::{fmt::Debug, marker::PhantomData};
+use iceoryx2_bb_concurrency::atomic::Ordering;
 
 use alloc::format;
 use alloc::string::ToString;
 use alloc::vec;
 use alloc::vec::Vec;
 
+use iceoryx2_bb_concurrency::atomic::{AtomicU64, AtomicUsize};
+use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_container::slotmap::{SlotMap, SlotMapKey};
 use iceoryx2_bb_container::string::String;
@@ -29,7 +30,6 @@ use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_log::fatal_panic;
 use iceoryx2_log::{fail, warn};
-use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicU64, IoxAtomicUsize};
 
 use crate::shared_memory::{
     AllocationStrategy, SegmentId, SharedMemoryForPoolAllocator, ShmPointer,
@@ -57,9 +57,9 @@ const INVALID_KEY: usize = usize::MAX;
 #[derive(Debug)]
 struct SharedState {
     allocation_strategy: AllocationStrategy,
-    max_number_of_chunks_hint: IoxAtomicU64,
-    max_chunk_size_hint: IoxAtomicU64,
-    max_chunk_alignment_hint: IoxAtomicU64,
+    max_number_of_chunks_hint: AtomicU64,
+    max_chunk_size_hint: AtomicU64,
+    max_chunk_alignment_hint: AtomicU64,
 }
 
 #[derive(Debug)]
@@ -88,7 +88,7 @@ struct InternalState<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
 #[derive(Debug)]
 struct ShmEntry<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
     shm: Shm,
-    chunk_count: IoxAtomicU64,
+    chunk_count: AtomicU64,
     _data: PhantomData<Allocator>,
 }
 
@@ -102,7 +102,7 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> ShmEntry<Allocator, 
     fn new(shm: Shm) -> Self {
         Self {
             shm,
-            chunk_count: IoxAtomicU64::new(0),
+            chunk_count: AtomicU64::new(0),
             _data: PhantomData,
         }
     }
@@ -179,7 +179,7 @@ where
             view_config: self.config,
             _mgmt_segment: mgmt_segment,
             shared_memory_map: UnsafeCell::new(shared_memory_map),
-            current_idx: IoxAtomicUsize::new(INVALID_KEY),
+            current_idx: AtomicUsize::new(INVALID_KEY),
             _data: PhantomData,
         })
     }
@@ -208,9 +208,9 @@ where
             },
             shared_state: SharedState {
                 allocation_strategy: AllocationStrategy::default(),
-                max_number_of_chunks_hint: IoxAtomicU64::new(1),
-                max_chunk_size_hint: IoxAtomicU64::new(1),
-                max_chunk_alignment_hint: IoxAtomicU64::new(1),
+                max_number_of_chunks_hint: AtomicU64::new(1),
+                max_chunk_size_hint: AtomicU64::new(1),
+                max_chunk_alignment_hint: AtomicU64::new(1),
             },
         }
     }
@@ -305,7 +305,7 @@ pub struct DynamicView<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
     view_config: ViewConfig<Allocator, Shm>,
     _mgmt_segment: Shm,
     shared_memory_map: UnsafeCell<SlotMap<ShmEntry<Allocator, Shm>>>,
-    current_idx: IoxAtomicUsize,
+    current_idx: AtomicUsize,
     _data: PhantomData<Allocator>,
 }
 

@@ -10,16 +10,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::sync::atomic::Ordering;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use std::sync::Barrier;
 
 use iceoryx2::prelude::*;
 use iceoryx2::testing::*;
+use iceoryx2_bb_concurrency::atomic::AtomicBool;
+use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_posix::system_configuration::SystemInfo;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::watchdog::Watchdog;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 #[test]
 fn notifying_events_concurrently_works() {
@@ -46,7 +46,7 @@ fn notifying_events_concurrently_works() {
     let listener = service.listener_builder().create().unwrap();
     let barrier = Barrier::new(number_of_notifier_threads + 1);
 
-    let number_of_finished_notifier_threads = IoxAtomicUsize::new(0);
+    let number_of_finished_notifier_threads = AtomicUsize::new(0);
     std::thread::scope(|s| {
         for _ in 0..number_of_notifier_threads {
             s.spawn(|| {
@@ -112,7 +112,7 @@ fn listening_on_events_concurrently_works() {
     let notifier = service.notifier_builder().create().unwrap();
     let listener = service.listener_builder().create().unwrap();
     let barrier = Barrier::new(number_of_listener_threads + 1);
-    let notification_finished = IoxAtomicBool::new(false);
+    let notification_finished = AtomicBool::new(false);
 
     std::thread::scope(|s| {
         let mut listener_threads = vec![];

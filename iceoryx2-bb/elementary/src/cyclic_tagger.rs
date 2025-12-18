@@ -46,13 +46,13 @@
 //! my_things.retain(|thing| thing.was_tagged_by(&global_tagger));
 //! ```
 
-use core::sync::atomic::Ordering;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU8;
+use iceoryx2_bb_concurrency::atomic::AtomicU8;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 
 /// The [`CyclicTagger`] can tag any object that implements [`Taggable`]. When tagging elements
 /// cyclicly the cycle shall always start with [`CyclicTagger::next_cycle()`].
 #[derive(Debug, Default)]
-pub struct CyclicTagger(IoxAtomicU8);
+pub struct CyclicTagger(AtomicU8);
 
 impl CyclicTagger {
     /// Creates a new [`CyclicTagger`] object.
@@ -62,13 +62,13 @@ impl CyclicTagger {
 
     /// Creates a new [`Tag`] so that it is identified as [`Taggable::was_tagged_by()`].
     pub fn create_tag(&self) -> Tag {
-        Tag(IoxAtomicU8::new(self.0.load(Ordering::Relaxed)))
+        Tag(AtomicU8::new(self.0.load(Ordering::Relaxed)))
     }
 
     /// Creates a new [`Tag`] so that it is identified as not
     /// [`Taggable::was_tagged_by()`] this [`CyclicTagger`].
     pub fn create_untagged_tag(&self) -> Tag {
-        Tag(IoxAtomicU8::new(
+        Tag(AtomicU8::new(
             self.0.load(Ordering::Relaxed).wrapping_sub(1),
         ))
     }
@@ -90,7 +90,7 @@ impl CyclicTagger {
 
 /// This tracks the mark of the [`CyclicTagger`] when it is tagged.
 #[derive(Debug)]
-pub struct Tag(IoxAtomicU8);
+pub struct Tag(AtomicU8);
 
 impl Taggable for Tag {
     fn tag(&self) -> &Tag {

@@ -152,9 +152,9 @@ impl Errno {
 }
 
 pub unsafe fn strerror_r(errnum: int, buf: *mut c_char, buflen: size_t) -> int {
-    use core::sync::atomic::Ordering;
-    use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
-    static IS_LOCKED: IoxAtomicBool = IoxAtomicBool::new(false);
+    use iceoryx2_pal_concurrency_sync::atomic::AtomicBool;
+    use iceoryx2_pal_concurrency_sync::atomic::Ordering;
+    static IS_LOCKED: AtomicBool = AtomicBool::new(false);
 
     while IS_LOCKED
         .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)

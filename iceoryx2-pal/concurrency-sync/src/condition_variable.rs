@@ -10,14 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::sync::atomic::Ordering;
-
-use crate::iox_atomic::IoxAtomicU32;
 pub use crate::mutex::Mutex;
+
+use crate::atomic::AtomicU32;
+use crate::atomic::Ordering;
 use crate::{semaphore::Semaphore, WaitAction, WaitResult};
 
 pub struct ConditionVariable {
-    number_of_waiters: IoxAtomicU32,
+    number_of_waiters: AtomicU32,
     semaphore: Semaphore,
 }
 
@@ -25,7 +25,7 @@ impl Default for ConditionVariable {
     fn default() -> Self {
         Self {
             semaphore: Semaphore::new(0),
-            number_of_waiters: IoxAtomicU32::new(0),
+            number_of_waiters: AtomicU32::new(0),
         }
     }
 }
@@ -35,22 +35,22 @@ impl ConditionVariable {
         Self::default()
     }
 
-    pub fn notify_one<WakeOne: Fn(&IoxAtomicU32)>(&self, wake_one: WakeOne) {
+    pub fn notify_one<WakeOne: Fn(&AtomicU32)>(&self, wake_one: WakeOne) {
         self.semaphore.post(
             wake_one,
             1.min(self.number_of_waiters.load(Ordering::Relaxed)),
         );
     }
 
-    pub fn notify_all<WakeAll: Fn(&IoxAtomicU32)>(&self, wake_all: WakeAll) {
+    pub fn notify_all<WakeAll: Fn(&AtomicU32)>(&self, wake_all: WakeAll) {
         self.semaphore
             .post(wake_all, self.number_of_waiters.load(Ordering::Relaxed));
     }
 
     pub fn wait<
-        WakeOne: Fn(&IoxAtomicU32),
-        Wait: Fn(&IoxAtomicU32, &u32) -> WaitAction,
-        MtxWait: Fn(&IoxAtomicU32, &u32) -> WaitAction,
+        WakeOne: Fn(&AtomicU32),
+        Wait: Fn(&AtomicU32, &u32) -> WaitAction,
+        MtxWait: Fn(&AtomicU32, &u32) -> WaitAction,
     >(
         &self,
         mtx: &Mutex,

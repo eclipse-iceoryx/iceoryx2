@@ -43,17 +43,17 @@
 pub use crate::named_concept::*;
 pub use crate::static_storage::*;
 
-use core::sync::atomic::Ordering;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 
 use alloc::collections::BTreeMap;
 use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
 
+use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_bb_posix::mutex::*;
 use iceoryx2_log::{fail, fatal_panic};
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
 use lazy_static::lazy_static;
 
@@ -175,7 +175,7 @@ impl StaticStorageLocked<Storage> for Locked {
 #[derive(Debug)]
 pub struct Storage {
     name: FileName,
-    has_ownership: IoxAtomicBool,
+    has_ownership: AtomicBool,
     config: Configuration,
     content: Arc<StorageContent>,
 }
@@ -350,7 +350,7 @@ impl StaticStorageBuilder<Storage> for Builder {
             } else {
                 return Ok(Storage {
                     name: self.name,
-                    has_ownership: IoxAtomicBool::new(self.has_ownership),
+                    has_ownership: AtomicBool::new(self.has_ownership),
                     config: self.config,
                     content: entry.content.clone(),
                 });
@@ -387,7 +387,7 @@ impl StaticStorageBuilder<Storage> for Builder {
         Ok(Locked {
             storage: Storage {
                 name: self.name,
-                has_ownership: IoxAtomicBool::new(self.has_ownership),
+                has_ownership: AtomicBool::new(self.has_ownership),
                 config: self.config,
                 content,
             },

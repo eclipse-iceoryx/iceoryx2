@@ -10,28 +10,28 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::sync::atomic::Ordering;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 
 use alloc::vec::Vec;
 
-use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicU64, IoxAtomicUsize};
+use iceoryx2_bb_concurrency::atomic::{AtomicU64, AtomicUsize};
 
 #[derive(Debug)]
 pub(crate) struct SegmentState {
-    sample_reference_counter: Vec<IoxAtomicU64>,
-    payload_size: IoxAtomicUsize,
+    sample_reference_counter: Vec<AtomicU64>,
+    payload_size: AtomicUsize,
 }
 
 impl SegmentState {
     pub(crate) fn new(number_of_samples: usize) -> Self {
         let mut sample_reference_counter = Vec::with_capacity(number_of_samples);
         for _ in 0..number_of_samples {
-            sample_reference_counter.push(IoxAtomicU64::new(0));
+            sample_reference_counter.push(AtomicU64::new(0));
         }
 
         Self {
             sample_reference_counter,
-            payload_size: IoxAtomicUsize::new(0),
+            payload_size: AtomicUsize::new(0),
         }
     }
 
