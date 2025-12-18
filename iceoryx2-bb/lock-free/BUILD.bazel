@@ -35,6 +35,7 @@ rust_test_suite(
     srcs = glob(["tests/**/*.rs"]),
     deps = [
         ":iceoryx2-bb-lock-free",
+        "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
         "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
         "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
