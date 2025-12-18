@@ -48,14 +48,16 @@ cc_library(
     srcs = glob(
         [
             "src/**",
-        ]),
+        ],
+        allow_empty = True,
+    ),
     hdrs = glob(["include/**"]),
     strip_include_prefix = "include",
     deps = select({
-        "//:cfg_use_std_expected": [ ":iceoryx2-bb-cxx-variation-std-expected" ],
-        "//conditions:default": [ ":iceoryx2-bb-cxx-variation-iox2-expected" ],
+        "//:cfg_use_std_expected": [":iceoryx2-bb-cxx-variation-std-expected"],
+        "//conditions:default": [":iceoryx2-bb-cxx-variation-iox2-expected"],
     }) + select({
-        "//:cfg_use_std_optional": [ ":iceoryx2-bb-cxx-variation-std-optional" ],
-        "//conditions:default": [ ":iceoryx2-bb-cxx-variation-iox2-optional" ],
+        "//:cfg_use_std_optional": [":iceoryx2-bb-cxx-variation-std-optional"],
+        "//conditions:default": [":iceoryx2-bb-cxx-variation-iox2-optional"],
     }),
 )
