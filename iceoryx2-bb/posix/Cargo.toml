@@ -17,9 +17,7 @@ workspace = true
 default = [
   "lazy_static/spin_no_std"
 ]
-std = [
-  "iceoryx2-bb-concurrency/std"
-]
+std = []
 
 # Use https://crates.io/crates/libc for the platform abstraction. This simplifies
 # cross-compilation since bindgen is not required anymore. Unfortunately, the libc crate
