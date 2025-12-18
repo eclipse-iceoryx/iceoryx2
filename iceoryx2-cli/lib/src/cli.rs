@@ -22,6 +22,7 @@ pub fn help_template(command_help: HelpOptions) -> String {
     let mut template = format!(
         "{{about}}\n\n\
          {} {{usage}}\n\n\
+         {{positionals}}\n\n\
          {}\n\
          {{options}}",
         "Usage:".bright_green().bold(),

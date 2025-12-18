@@ -16,7 +16,7 @@
 set REPO_ROOT [exec git rev-parse --show-toplevel]
 cd ${REPO_ROOT}
 
-source examples/cross-language-end-to-end-tests/common.exp
+source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 
 #### Test Setup and Assertion
 
@@ -24,7 +24,7 @@ set timeout 10
 
 spawn cargo run --bin iox2-service -- discovery
 # wait until ready
-expect_output "=== Service Started"
+expect_output "Discovering Services"
 
 spawn cargo run --example discovery_service
 set id_discovery_service $spawn_id

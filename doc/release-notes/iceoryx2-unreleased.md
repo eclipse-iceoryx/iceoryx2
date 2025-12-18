@@ -67,6 +67,10 @@
     conflicts when merging.
 -->
 
+* Print new line after CLI output to prevent '%' from being inserted by terminal
+    [#709](https://github.com/eclipse-iceoryx/iceoryx2/issues/709)
+* Print help for positional arguments in CLI
+    [#709](https://github.com/eclipse-iceoryx/iceoryx2/issues/709)
 * Remove duplicate entries in `iox2` command search path to prevent discovered
   commands from being listed multiple times
     [#1045](https://github.com/eclipse-iceoryx/iceoryx2/issues/1045)
@@ -121,14 +125,11 @@
 
 ### Workflow
 
-1. **iceoryx_hoofs** dependency
-
-The `iceoryx_hoofs` dependency was removed by importing the relevant files to
-the iceoryx2 repository. This simplifies the build process makes it trivial to
-add iceoryx2 specific features to the base lib.
-
-The files from the `iceoryx_hoofs` subset are available via the `iceoryx2-bb-cxx`
-CMake package.
+* Removed `iceoryx2_hoofs` dependency by importing relevant files into
+  a new `iceoryx2-bb-cxx` CMake package to simplify the build process.
+    [#301](https://github.com/eclipse-iceoryx/iceoryx2/issues/301)
+* Add end-to-end tests for `iceoryx2-cli`
+    [#709](https://github.com/eclipse-iceoryx/iceoryx2/issues/709)
 
 ### New API features
 
@@ -140,6 +141,8 @@ CMake package.
 * Add `list_keys()` to list all keys stored in the blackboard,
   `EntryHandle::is_up_to_date()` to check for value updates
   [#1189](https://github.com/eclipse-iceoryx/iceoryx2/issues/1189)
+* Add option to force overwrite configuration with `iox2 config generate`
+    [#709](https://github.com/eclipse-iceoryx/iceoryx2/issues/709)
 
 ### API Breaking Changes
 
@@ -326,7 +329,7 @@ CMake package.
    auto val = ret_val.value();
    ```
 
-9. Replace `iox::expected` from `iceoryx_hoofs` with `iox2::bb::Expected`
+1. Replace `iox::expected` from `iceoryx_hoofs` with `iox2::bb::Expected`
 
    The new `Expected` in iceoryx2 has a reduced API compared to the one from
    `iceroyx_hoofs`. The functional interface, which deviated from the STL was
@@ -356,7 +359,7 @@ CMake package.
 
 1. **C++:** Replace `iox::string` from `iceoryx_hoofs` with
    `iox2::bb::StaticString`.
-   
+
    ```cpp
    // old
    auto str = iox::string<10>("hello");
@@ -367,4 +370,181 @@ CMake package.
    if (str.has_value()) {
        std::cout << str->unchecked_access().c_str() << std::endl;
    }
+   ```
+
+1. Add summarized and detailed variants of `iox2 service discovery`
+
+   ```console
+   // old
+   $ iox2 service discovery
+   === Service Started (rate: 100ms) ===
+   Added((
+       service_id: ("4eacadf2695a3f4b2eb95485759246ce1a2aa906"),
+       service_name: "My/Funk/ServiceName",
+       attributes: ([]),
+       messaging_pattern: PublishSubscribe((
+           max_subscribers: 8,
+           max_publishers: 2,
+           max_nodes: 20,
+           history_size: 0,
+           subscriber_max_buffer_size: 2,
+           subscriber_max_borrowed_samples: 2,
+           enable_safe_overflow: true,
+           message_type_details: (
+               header: (
+                   variant: FixedSize,
+                   type_name: "iceoryx2::service::header::publish_subscribe::Header",
+                   size: 40,
+                   alignment: 8,
+               ),
+               user_header: (
+                   variant: FixedSize,
+                   type_name: "()",
+                   size: 0,
+                   alignment: 1,
+               ),
+               payload: (
+                   variant: FixedSize,
+                   type_name: "TransmissionData",
+                   size: 16,
+                   alignment: 8,
+               ),
+           ),
+       )),
+   ))
+   Removed((
+       service_id: ("4eacadf2695a3f4b2eb95485759246ce1a2aa906"),
+       service_name: "My/Funk/ServiceName",
+       attributes: ([]),
+       messaging_pattern: PublishSubscribe((
+           max_subscribers: 8,
+           max_publishers: 2,
+           max_nodes: 20,
+           history_size: 0,
+           subscriber_max_buffer_size: 2,
+           subscriber_max_borrowed_samples: 2,
+           enable_safe_overflow: true,
+           message_type_details: (
+               header: (
+                   variant: FixedSize,
+                   type_name: "iceoryx2::service::header::publish_subscribe::Header",
+                   size: 40,
+                   alignment: 8,
+               ),
+               user_header: (
+                   variant: FixedSize,
+                   type_name: "()",
+                   size: 0,
+                   alignment: 1,
+               ),
+               payload: (
+                   variant: FixedSize,
+                   type_name: "TransmissionData",
+                   size: 16,
+                   alignment: 8,
+               ),
+           ),
+       )),
+   ))
+
+   // new
+   $ iox2 service discovery
+   Discovering Services (rate: 100ms)
+   Added(PublishSubscribe("My/Funk/ServiceName"))
+   Removed(PublishSubscribe("My/Funk/ServiceName"))
+
+   $ iox2 service discovery --detailed
+   Discovering Services (rate: 100ms)
+   Added((
+       service_id: "4eacadf2695a3f4b2eb95485759246ce1a2aa906",
+       service_name: "My/Funk/ServiceName",
+       attributes: ([]),
+       pattern: PublishSubscribe((
+           max_subscribers: 8,
+           max_publishers: 2,
+           max_nodes: 20,
+           history_size: 0,
+           subscriber_max_buffer_size: 2,
+           subscriber_max_borrowed_samples: 2,
+           enable_safe_overflow: true,
+           message_type_details: (
+               header: (
+                   variant: FixedSize,
+                   type_name: "iceoryx2::service::header::publish_subscribe::Header",
+                   size: 40,
+                   alignment: 8,
+               ),
+               user_header: (
+                   variant: FixedSize,
+                   type_name: "()",
+                   size: 0,
+                   alignment: 1,
+               ),
+               payload: (
+                   variant: FixedSize,
+                   type_name: "TransmissionData",
+                   size: 16,
+                   alignment: 8,
+               ),
+           ),
+       )),
+       nodes: Some((
+           num: 1,
+           details: [
+               (
+                   state: Alive,
+                   id: ("0000000034fcd3b8000013a8000135c1"),
+                   pid: 79297,
+                   executable: Some("publish_subscribe_subscriber"),
+                   name: Some(""),
+               ),
+           ],
+       )),
+   ))
+   Removed((
+       service_id: "4eacadf2695a3f4b2eb95485759246ce1a2aa906",
+       service_name: "My/Funk/ServiceName",
+       attributes: ([]),
+       pattern: PublishSubscribe((
+           max_subscribers: 8,
+           max_publishers: 2,
+           max_nodes: 20,
+           history_size: 0,
+           subscriber_max_buffer_size: 2,
+           subscriber_max_borrowed_samples: 2,
+           enable_safe_overflow: true,
+           message_type_details: (
+               header: (
+                   variant: FixedSize,
+                   type_name: "iceoryx2::service::header::publish_subscribe::Header",
+                   size: 40,
+                   alignment: 8,
+               ),
+               user_header: (
+                   variant: FixedSize,
+                   type_name: "()",
+                   size: 0,
+                   alignment: 1,
+               ),
+               payload: (
+                   variant: FixedSize,
+                   type_name: "TransmissionData",
+                   size: 16,
+                   alignment: 8,
+               ),
+           ),
+       )),
+       nodes: Some((
+           num: 1,
+           details: [
+               (
+                   state: Alive,
+                   id: ("0000000034fcd3b8000013a8000135c1"),
+                   pid: 79297,
+                   executable: Some("publish_subscribe_subscriber"),
+                   name: Some(""),
+               ),
+           ],
+       )),
+   ))
    ```

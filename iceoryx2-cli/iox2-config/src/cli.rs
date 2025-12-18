@@ -13,6 +13,7 @@
 use clap::Parser;
 use clap::Subcommand;
 
+use clap::ValueEnum;
 use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_cli::help_template;
 use iceoryx2_cli::HelpOptions;
@@ -33,64 +34,38 @@ pub struct Cli {
     pub action: Option<Action>,
 }
 
-#[derive(Parser)]
-#[command(
-    name = "iox2-config",
-    about = "Query information about iceoryx2 configuration",
-    long_about = None,
-    version = PackageVersion::get_str(),
-    disable_help_subcommand = true,
-    arg_required_else_help = false,
-    help_template = help_template(HelpOptions::PrintCommandSection),
-)]
-pub struct ConfigShow {
-    #[clap(subcommand)]
-    pub action: Option<ShowSubcommand>,
-}
-
-#[derive(Parser)]
-#[command(
-    name = "iox2-config",
-    about = "Query information about iceoryx2 configuration",
-    long_about = None,
-    version = PackageVersion::get_str(),
-    disable_help_subcommand = true,
-    arg_required_else_help = false,
-    help_template = help_template(HelpOptions::PrintCommandSection),
-)]
-pub struct ConfigGenerate {
-    #[clap(subcommand)]
-    pub action: Option<GenerateSubcommand>,
-}
-
-#[derive(Subcommand, Debug)]
+#[derive(ValueEnum, Clone, Debug)]
 pub enum ShowSubcommand {
-    #[clap(about = "Show system configuration")]
     System,
-    #[clap(about = "Show current iceoryx2 configuration")]
     Current,
 }
 
-#[derive(Subcommand, Debug)]
+#[derive(ValueEnum, Clone, Debug)]
 pub enum GenerateSubcommand {
-    #[clap(about = "Generate a default configuration file for the local user")]
     Local,
-    #[clap(about = "Generate a default configuration file for the global system")]
     Global,
 }
 
 #[derive(Subcommand)]
 pub enum Action {
-    #[clap(about = "Show the currently used configuration", help_template = help_template(HelpOptions::DontPrintCommandSection))]
+    #[clap(
+        about = "Show the currently used configuration", 
+        help_template = help_template(HelpOptions::DontPrintCommandSection)
+    )]
     Show {
-        #[clap(subcommand)]
-        subcommand: Option<ShowSubcommand>,
+        #[clap(value_enum, help = "Specify which configuration to show")]
+        config: Option<ShowSubcommand>,
     },
-    #[clap(about = "Generate a default configuration file", help_template = help_template(HelpOptions::DontPrintCommandSection))]
+    #[clap(
+        about = "Generate a default configuration file", 
+        help_template = help_template(HelpOptions::DontPrintCommandSection)
+    )]
     Generate {
-        #[clap(subcommand)]
-        subcommand: Option<GenerateSubcommand>,
+        #[clap(value_enum, help = "Specify what kind of configuration to generate")]
+        config: Option<GenerateSubcommand>,
+        #[clap(short, long, help = "Force overwrite existing configuration file")]
+        force: bool,
     },
-    #[clap(about = "Explain the configuration parameters and there descriptions", help_template = help_template(HelpOptions::DontPrintCommandSection))]
+    #[clap(about = "Explain the configuration parameters and their descriptions", help_template = help_template(HelpOptions::DontPrintCommandSection))]
     Explain,
 }

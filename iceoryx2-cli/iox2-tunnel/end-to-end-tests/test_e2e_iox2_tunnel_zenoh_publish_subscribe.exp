@@ -1,0 +1,43 @@
+#!/usr/bin/expect
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache Software License 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+# which is available at https://opensource.org/licenses/MIT.
+#
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+#### Common Setup
+
+set REPO_ROOT [exec git rev-parse --show-toplevel]
+cd ${REPO_ROOT}
+
+source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
+
+#### Test Setup
+
+set timeout 10
+
+exec cargo build -p example 2>@1
+exec cargo build -p iceoryx2-cli 2>@1
+
+#### Test
+
+spawn cargo run --bin iox2-tunnel -- zenoh
+set id_iox2_tunnel $spawn_id
+expect_output_from $id_iox2_tunnel "Local Discovery via Tracker"
+
+spawn cargo run --example publish_subscribe_publisher
+set id_publisher $spawn_id
+expect_output_from $id_publisher "Send sample"
+
+#### Test Assertion
+
+expect_output_from $id_iox2_tunnel "Discovered PublishSubscribe"
+expect_output_from $id_iox2_tunnel "Propagated PublishSubscribe"
+
+show_test_passed

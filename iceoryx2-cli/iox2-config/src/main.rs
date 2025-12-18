@@ -11,21 +11,20 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 mod cli;
-mod commands;
+mod command;
 
 use anyhow::Result;
 use clap::CommandFactory;
 use clap::Parser;
 use cli::Action;
 use cli::Cli;
-use cli::ConfigGenerate;
-use cli::ConfigShow;
-use cli::GenerateSubcommand;
-use cli::ShowSubcommand;
 use iceoryx2_log::{set_log_level_from_env_or, LogLevel};
 
 #[cfg(not(debug_assertions))]
 use human_panic::setup_panic;
+
+use crate::cli::GenerateSubcommand;
+use crate::cli::ShowSubcommand;
 #[cfg(debug_assertions)]
 extern crate better_panic;
 
@@ -48,42 +47,38 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
     if let Some(action) = cli.action {
         match action {
-            Action::Show { subcommand } => match subcommand {
+            Action::Show { config } => match config {
                 Some(ShowSubcommand::System) => {
-                    if let Err(e) = commands::show_system_config() {
+                    if let Err(e) = command::show_system_config() {
                         eprintln!("Failed to show options: {e}");
                     }
                 }
                 Some(ShowSubcommand::Current) => {
-                    if let Err(e) = commands::show_current_config() {
+                    if let Err(e) = command::show_current_config() {
                         eprintln!("Failed to show options: {e}");
                     }
                 }
                 None => {
-                    ConfigShow::command()
-                        .print_help()
-                        .expect("Failed to print help");
+                    Cli::command().print_help().expect("Failed to print help");
                 }
             },
-            Action::Generate { subcommand } => match subcommand {
+            Action::Generate { config, force } => match config {
                 Some(GenerateSubcommand::Local) => {
-                    if let Err(e) = commands::generate_local() {
+                    if let Err(e) = command::generate_local(force) {
                         eprintln!("Failed to generate configuration file: {e}");
                     }
                 }
                 Some(GenerateSubcommand::Global) => {
-                    if let Err(e) = commands::generate_global() {
+                    if let Err(e) = command::generate_global(force) {
                         eprintln!("Failed to generate configuration file: {e}");
                     }
                 }
                 None => {
-                    ConfigGenerate::command()
-                        .print_help()
-                        .expect("Failed to print help");
+                    Cli::command().print_help().expect("Failed to print help");
                 }
             },
             Action::Explain => {
-                if let Err(e) = commands::print_config_description() {
+                if let Err(e) = command::explain() {
                     eprintln!("Failed to display configuration description: {e}");
                 }
             }

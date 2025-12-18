@@ -16,13 +16,8 @@ use human_panic::setup_panic;
 extern crate better_panic;
 
 mod cli;
-mod command_publish;
-mod command_record;
-mod command_replay;
-mod command_subscribe;
-mod commands;
+mod command;
 mod filter;
-mod helper_functions;
 
 use anyhow::Result;
 use clap::Parser;
@@ -51,50 +46,51 @@ fn main() -> Result<()> {
     if let Some(action) = cli.action {
         match action {
             Action::Notify(options) => {
-                if let Err(e) = commands::notify(options, cli.format) {
+                if let Err(e) = command::notify(options, cli.format) {
                     error!("failed to notify service: {}", e);
                 }
             }
             Action::Listen(options) => {
-                if let Err(e) = commands::listen(options, cli.format) {
+                if let Err(e) = command::listen(options, cli.format) {
                     error!("failed to wait for notifications: {}", e);
                 }
             }
             Action::List(options) => {
-                if let Err(e) = commands::list(options.filter, cli.format) {
+                if let Err(e) = command::list(options.filter, cli.format) {
                     error!("failed to list services: {}", e);
                 }
             }
             Action::Details(options) => {
-                if let Err(e) = commands::details(options.service, options.filter, cli.format) {
+                if let Err(e) = command::details(options.service, options.filter, cli.format) {
                     error!("failed to retrieve service details: {}", e);
                 }
             }
             Action::Publish(options) => {
-                if let Err(e) = command_publish::publish(options, cli.format) {
+                if let Err(e) = command::publish(options, cli.format) {
                     error!("failed to publish messages: {}", e);
                 }
             }
             Action::Subscribe(options) => {
-                if let Err(e) = command_subscribe::subscribe(options, cli.format) {
+                if let Err(e) = command::subscribe(options, cli.format) {
                     error!("failed to subscribe and receive messages: {}", e);
                 }
             }
             Action::Record(options) => {
-                if let Err(e) = command_record::record(options, cli.format) {
+                if let Err(e) = command::record(options, cli.format) {
                     error!("failed to record data: {}", e);
                 }
             }
             Action::Replay(options) => {
-                if let Err(e) = command_replay::replay(options, cli.format) {
+                if let Err(e) = command::replay(options, cli.format) {
                     error!("failed to replay data: {}", e);
                 }
             }
             Action::Discovery(options) => {
                 let should_publish = !options.disable_publish;
                 let should_notify = !options.disable_notify;
-                if let Err(e) = commands::discovery(
+                if let Err(e) = command::discovery(
                     options.rate,
+                    options.detailed,
                     should_publish,
                     options.max_subscribers,
                     should_notify,

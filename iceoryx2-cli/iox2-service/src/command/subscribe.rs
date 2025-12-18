@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::cli::{DataRepresentation, SubscribeOptions};
-use crate::helper_functions::{extract_pubsub_payload, get_pubsub_service_types};
+use crate::command::{extract_pubsub_payload, get_pubsub_service_types};
 use anyhow::Result;
 use iceoryx2::prelude::*;
 use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
@@ -80,7 +80,7 @@ fn print_iox2_dump(
     Ok(())
 }
 
-pub fn subscribe(options: SubscribeOptions, format: Format) -> Result<()> {
+pub(crate) fn subscribe(options: SubscribeOptions, format: Format) -> Result<()> {
     let node = NodeBuilder::new()
         .name(&NodeName::new(&options.node_name)?)
         .create::<ipc::Service>()?;
