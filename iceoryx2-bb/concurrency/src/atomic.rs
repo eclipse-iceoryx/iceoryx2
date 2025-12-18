@@ -62,7 +62,7 @@ pub struct AtomicI64(internal::AtomicI64);
 #[repr(transparent)]
 pub struct AtomicIsize(internal::AtomicIsize);
 
-macro_rules! zero_copy_send_atomic {
+macro_rules! Impl {
     ($type_name:ident, $base_type:ident) => {
         impl $type_name {
             #[inline]
@@ -94,17 +94,17 @@ macro_rules! zero_copy_send_atomic {
     };
 }
 
-zero_copy_send_atomic!(AtomicBool, bool);
-zero_copy_send_atomic!(AtomicU8, u8);
-zero_copy_send_atomic!(AtomicU16, u16);
-zero_copy_send_atomic!(AtomicU32, u32);
-zero_copy_send_atomic!(AtomicU64, u64);
-zero_copy_send_atomic!(AtomicUsize, usize);
-zero_copy_send_atomic!(AtomicI8, i8);
-zero_copy_send_atomic!(AtomicI16, i16);
-zero_copy_send_atomic!(AtomicI32, i32);
-zero_copy_send_atomic!(AtomicI64, i64);
-zero_copy_send_atomic!(AtomicIsize, isize);
+Impl!(AtomicBool, bool);
+Impl!(AtomicU8, u8);
+Impl!(AtomicU16, u16);
+Impl!(AtomicU32, u32);
+Impl!(AtomicU64, u64);
+Impl!(AtomicUsize, usize);
+Impl!(AtomicI8, i8);
+Impl!(AtomicI16, i16);
+Impl!(AtomicI32, i32);
+Impl!(AtomicI64, i64);
+Impl!(AtomicIsize, isize);
 
 mod internal {
     pub use iceoryx2_pal_concurrency_sync::atomic::AtomicBool;
