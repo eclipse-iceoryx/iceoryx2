@@ -15,7 +15,7 @@
 #![allow(unused_variables)]
 
 use core::panic;
-use core::sync::atomic::Ordering;
+use iceoryx2_pal_concurrency_sync::atomic::Ordering;
 use std::{
     os::windows::prelude::OsStrExt, os::windows::prelude::OsStringExt, time::SystemTime,
     time::UNIX_EPOCH,

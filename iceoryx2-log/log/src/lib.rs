@@ -129,10 +129,10 @@ pub use from_env::{set_log_level_from_env_or, set_log_level_from_env_or_default}
 
 // Re-export so library crates need only depend on this crate
 pub use iceoryx2_log_types::{Log, LogLevel};
-use iceoryx2_pal_concurrency_sync::atomic::AtomicU8;
-use iceoryx2_pal_concurrency_sync::once::Once;
 
-use core::sync::atomic::Ordering;
+use iceoryx2_pal_concurrency_sync::atomic::AtomicU8;
+use iceoryx2_pal_concurrency_sync::atomic::Ordering;
+use iceoryx2_pal_concurrency_sync::once::Once;
 
 mod fail;
 mod log;

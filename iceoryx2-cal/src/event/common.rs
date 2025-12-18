@@ -12,10 +12,11 @@
 
 #[doc(hidden)]
 pub mod details {
-    use core::{fmt::Debug, marker::PhantomData, sync::atomic::Ordering, time::Duration};
+    use core::{fmt::Debug, marker::PhantomData, time::Duration};
 
     use alloc::vec::Vec;
 
+    use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicUsize};
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
     use iceoryx2_bb_system_types::{file_name::FileName, path::Path};

@@ -23,8 +23,8 @@ use crate::{
     },
     win32call,
 };
-use core::sync::atomic::Ordering;
 use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
+use iceoryx2_pal_concurrency_sync::atomic::Ordering;
 use iceoryx2_pal_configuration::PATH_LENGTH;
 use windows_sys::Win32::{
     Foundation::{

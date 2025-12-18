@@ -68,12 +68,12 @@
 //! ```
 
 use core::ptr::NonNull;
-use core::sync::atomic::Ordering;
 
 use alloc::vec;
 use alloc::vec::Vec;
 
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_system_types::file_name::*;

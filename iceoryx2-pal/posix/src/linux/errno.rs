@@ -152,8 +152,8 @@ impl Errno {
 }
 
 pub unsafe fn strerror_r(errnum: int, buf: *mut c_char, buflen: size_t) -> int {
-    use core::sync::atomic::Ordering;
     use iceoryx2_pal_concurrency_sync::atomic::AtomicBool;
+    use iceoryx2_pal_concurrency_sync::atomic::Ordering;
 
     #[cfg(not(all(test, loom, feature = "std")))]
     static IS_LOCKED: AtomicBool = AtomicBool::new(false);

@@ -44,8 +44,9 @@
 //! }
 //! ```
 
-use core::{mem::MaybeUninit, sync::atomic::Ordering};
+use core::mem::MaybeUninit;
 
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64};
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 

@@ -10,10 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::sync::atomic::Ordering;
+pub use crate::mutex::Mutex;
 
 use crate::atomic::AtomicU32;
-pub use crate::mutex::Mutex;
+use crate::atomic::Ordering;
 use crate::{semaphore::Semaphore, WaitAction, WaitResult};
 
 pub struct ConditionVariable {

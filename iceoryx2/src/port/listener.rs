@@ -58,8 +58,8 @@
 //! # }
 //! ```
 
-use core::sync::atomic::Ordering;
 use core::time::Duration;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 
 use alloc::format;
 use alloc::sync::Arc;

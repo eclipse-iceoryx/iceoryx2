@@ -52,7 +52,7 @@ use core::fmt::Debug;
 use core::hash::Hash;
 use core::marker::PhantomData;
 use core::mem::MaybeUninit;
-use core::sync::atomic::Ordering;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;

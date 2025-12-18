@@ -12,13 +12,12 @@
 
 use iceoryx2::prelude::*;
 use iceoryx2_bb_concurrency::atomic::AtomicU32;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 
 use iceoryx2::config::Config;
 use iceoryx2::node::testing::__internal_node_staged_death;
-
-use core::sync::atomic::Ordering;
 
 pub struct TestDetails<S: Service> {
     node: Node<S>,

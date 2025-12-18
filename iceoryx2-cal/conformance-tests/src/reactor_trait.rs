@@ -24,8 +24,8 @@ pub mod reactor_trait {
     use iceoryx2_cal::reactor::{Reactor, *};
     use iceoryx2_cal::testing::{generate_isolated_config, generate_name};
 
-    use core::sync::atomic::Ordering;
     use core::time::Duration;
+    use iceoryx2_bb_concurrency::atomic::Ordering;
     use std::sync::{Barrier, Mutex};
     use std::time::Instant;
 

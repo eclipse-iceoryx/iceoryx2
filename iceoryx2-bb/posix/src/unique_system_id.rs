@@ -40,6 +40,7 @@
 //! ```
 
 use iceoryx2_bb_concurrency::atomic::AtomicU32;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -47,10 +48,7 @@ use iceoryx2_log::fail;
 use iceoryx2_pal_posix::posix;
 use serde::{Deserialize, Serialize};
 
-use core::{
-    fmt::{Debug, Display},
-    sync::atomic::Ordering,
-};
+use core::fmt::{Debug, Display};
 
 use crate::{
     clock::Time,

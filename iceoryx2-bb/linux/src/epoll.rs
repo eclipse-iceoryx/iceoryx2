@@ -56,8 +56,8 @@ extern crate alloc;
 use alloc::format;
 
 use core::mem::MaybeUninit;
-use core::sync::atomic::Ordering;
 use core::time::Duration;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_container::semantic_string::SemanticString;

@@ -89,8 +89,9 @@
 
 use core::alloc::Layout;
 use core::fmt::Debug;
-use core::sync::atomic::{fence, Ordering};
 
+use iceoryx2_bb_concurrency::atomic::fence;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64};
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;

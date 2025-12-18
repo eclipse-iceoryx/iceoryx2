@@ -64,8 +64,9 @@
 //! ```
 
 use iceoryx2_bb_concurrency::atomic::AtomicU64;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 
-use core::{marker::PhantomData, sync::atomic::Ordering};
+use core::marker::PhantomData;
 
 /// A building block to generate global unique ids
 #[derive(Debug, Eq, Hash, PartialEq)]

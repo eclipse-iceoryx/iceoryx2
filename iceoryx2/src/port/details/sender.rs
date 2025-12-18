@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::alloc::Layout;
-use core::sync::atomic::Ordering;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 
 use alloc::format;
 use alloc::sync::Arc;

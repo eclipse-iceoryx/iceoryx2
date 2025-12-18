@@ -14,11 +14,11 @@
 
 pub use core::alloc::Layout;
 pub use core::ptr::NonNull;
+
 use iceoryx2_bb_elementary::math::*;
 use iceoryx2_bb_elementary_traits::allocator::{
     AllocationError, AllocationGrowError, AllocationShrinkError,
 };
-
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::*;
 

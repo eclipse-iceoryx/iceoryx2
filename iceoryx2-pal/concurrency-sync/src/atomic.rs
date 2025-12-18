@@ -17,7 +17,8 @@ use core::{
 };
 
 #[cfg(not(all(test, loom, feature = "std")))]
-pub use core::sync::atomic::Ordering;
+#[allow(clippy::disallowed_types)]
+pub type Ordering = core::sync::atomic::Ordering;
 #[cfg(all(test, loom, feature = "std"))]
 pub use loom::sync::atomic::Ordering;
 

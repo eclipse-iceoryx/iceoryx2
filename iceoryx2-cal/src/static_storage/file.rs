@@ -46,7 +46,7 @@
 //! println!("Storage {} content: {}", reader.name(), content);
 //! ```
 
-use core::sync::atomic::Ordering;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 
 use alloc::format;
 use alloc::vec;

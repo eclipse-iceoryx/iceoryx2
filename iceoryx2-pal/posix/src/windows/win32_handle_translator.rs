@@ -20,7 +20,7 @@ use windows_sys::Win32::{
 use crate::posix::{c_string_length, types::*};
 use core::fmt::Debug;
 use core::panic;
-use core::sync::atomic::Ordering;
+use iceoryx2_pal_concurrency_sync::atomic::Ordering;
 use iceoryx2_pal_concurrency_sync::atomic::{AtomicBool, AtomicU32, AtomicUsize};
 use iceoryx2_pal_concurrency_sync::cell::UnsafeCell;
 use iceoryx2_pal_concurrency_sync::mutex::Mutex;

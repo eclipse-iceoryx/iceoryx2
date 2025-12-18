@@ -43,12 +43,12 @@
 //! ```
 
 use core::fmt::Debug;
-use core::sync::atomic::Ordering;
 
 use alloc::string::String;
 use alloc::vec::Vec;
 
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_system_types::file_path::FilePath;

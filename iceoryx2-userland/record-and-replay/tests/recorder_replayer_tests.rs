@@ -14,10 +14,10 @@
 mod recorder_replayer {
     use core::time::Duration;
 
-    use core::sync::atomic::Ordering;
     use iceoryx2::{
         prelude::MessagingPattern, service::static_config::message_type_details::TypeVariant,
     };
+    use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_posix::file::File;
     use iceoryx2_pal_testing::assert_that;
     use iceoryx2_userland_record_and_replay::{

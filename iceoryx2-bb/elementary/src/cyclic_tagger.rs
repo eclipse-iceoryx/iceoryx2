@@ -46,9 +46,8 @@
 //! my_things.retain(|thing| thing.was_tagged_by(&global_tagger));
 //! ```
 
-use core::sync::atomic::Ordering;
-
 use iceoryx2_bb_concurrency::atomic::AtomicU8;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 
 /// The [`CyclicTagger`] can tag any object that implements [`Taggable`]. When tagging elements
 /// cyclicly the cycle shall always start with [`CyclicTagger::next_cycle()`].

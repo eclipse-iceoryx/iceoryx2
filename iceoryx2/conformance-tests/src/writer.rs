@@ -16,8 +16,6 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[conformance_test_module]
 pub mod writer {
 
-    use core::sync::atomic::Ordering;
-
     use iceoryx2::constants::MAX_BLACKBOARD_KEY_SIZE;
     use iceoryx2::port::writer::*;
     use iceoryx2::prelude::*;
@@ -27,6 +25,7 @@ pub mod writer {
     use iceoryx2::service::Service;
     use iceoryx2::testing::*;
     use iceoryx2_bb_concurrency::atomic::AtomicU64;
+    use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;

@@ -43,7 +43,7 @@
 pub use crate::named_concept::*;
 pub use crate::static_storage::*;
 
-use core::sync::atomic::Ordering;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 
 use alloc::collections::BTreeMap;
 use alloc::sync::Arc;

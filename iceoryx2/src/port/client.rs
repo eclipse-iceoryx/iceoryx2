@@ -72,11 +72,10 @@
 //! # }
 //! ```
 
-use core::{
-    any::TypeId, fmt::Debug, marker::PhantomData, mem::MaybeUninit, sync::atomic::Ordering,
-};
+use core::{any::TypeId, fmt::Debug, marker::PhantomData, mem::MaybeUninit};
 use iceoryx2_bb_container::{queue::Queue, slotmap::SlotMap, vector::polymorphic_vec::*};
 
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64, AtomicUsize};
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::{cyclic_tagger::CyclicTagger, CallbackProgression};

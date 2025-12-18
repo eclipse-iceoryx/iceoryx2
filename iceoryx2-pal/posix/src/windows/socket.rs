@@ -14,14 +14,13 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(unused_variables)]
 
-use core::sync::atomic::Ordering;
 use core::time::Duration;
 use std::time::Instant;
 
 extern crate alloc;
 use alloc::ffi::CString;
 
-use iceoryx2_bb_concurrency::atomic::Ordering;
+use iceoryx2_pal_concurrency_sync::atomic::Ordering;
 use iceoryx2_pal_concurrency_sync::atomic::{AtomicU64, AtomicU8};
 use iceoryx2_pal_concurrency_sync::cell::OnceCell;
 

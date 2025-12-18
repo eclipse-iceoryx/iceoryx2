@@ -44,7 +44,7 @@ use core::any::Any;
 use core::fmt::Debug;
 use core::marker::PhantomData;
 use core::ptr::NonNull;
-use core::sync::atomic::Ordering;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 
 use alloc::collections::BTreeMap;
 use alloc::format;

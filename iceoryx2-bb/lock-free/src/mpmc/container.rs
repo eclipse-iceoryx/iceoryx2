@@ -58,6 +58,7 @@
 pub use crate::mpmc::unique_index_set::ReleaseMode;
 pub use iceoryx2_bb_elementary::CallbackProgression;
 
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64};
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
@@ -79,7 +80,7 @@ use alloc::vec::Vec;
 
 use core::alloc::Layout;
 use core::fmt::Debug;
-use core::{mem::MaybeUninit, sync::atomic::Ordering};
+use core::mem::MaybeUninit;
 
 /// States the reason why an element could not be added to the [`Container`]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

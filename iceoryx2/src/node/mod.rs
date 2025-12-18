@@ -146,8 +146,8 @@ pub mod node_name;
 pub mod testing;
 
 use core::marker::PhantomData;
-use core::sync::atomic::Ordering;
 use core::time::Duration;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 
 use alloc::collections::BTreeMap;
 use alloc::format;

@@ -10,9 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::{alloc::Layout, sync::atomic::Ordering};
+use core::alloc::Layout;
 
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_elementary::{
     bump_allocator::BumpAllocator,
     relocatable_ptr::{PointerTrait, RelocatablePointer},

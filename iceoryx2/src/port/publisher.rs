@@ -103,12 +103,12 @@
 
 use core::any::TypeId;
 use core::fmt::Debug;
-use core::sync::atomic::Ordering;
 use core::{marker::PhantomData, mem::MaybeUninit};
 
 use alloc::sync::Arc;
 use alloc::vec::Vec;
 
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicUsize};
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::queue::Queue;

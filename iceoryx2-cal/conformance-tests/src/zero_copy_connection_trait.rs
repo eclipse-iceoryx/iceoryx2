@@ -15,12 +15,12 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod zero_copy_connection_trait {
-    use core::sync::atomic::Ordering;
     use core::time::Duration;
     use std::collections::HashSet;
     use std::sync::{Arc, Barrier, Mutex};
     use std::time::Instant;
 
+    use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_posix::barrier::*;

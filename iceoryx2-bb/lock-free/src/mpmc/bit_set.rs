@@ -38,8 +38,9 @@
 //!  });
 //!  ```
 
-use core::{alloc::Layout, fmt::Debug, sync::atomic::Ordering};
+use core::{alloc::Layout, fmt::Debug};
 
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU8, AtomicUsize};
 use iceoryx2_bb_elementary::{
     bump_allocator::BumpAllocator,

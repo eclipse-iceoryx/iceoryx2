@@ -44,10 +44,10 @@ use core::{
     fmt::Debug,
     marker::PhantomData,
     ops::{Deref, DerefMut},
-    sync::atomic::Ordering,
 };
 
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::{
     arc_sync_policy::ArcSyncPolicy, shm_allocator::PointerOffset, zero_copy_connection::ChannelId,

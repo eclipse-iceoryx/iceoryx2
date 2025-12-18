@@ -17,7 +17,6 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 pub mod service_blackboard {
     use core::alloc::Layout;
     use core::ptr::copy_nonoverlapping;
-    use core::sync::atomic::Ordering;
     use iceoryx2::constants::MAX_BLACKBOARD_KEY_SIZE;
     use iceoryx2::port::reader::*;
     use iceoryx2::port::writer::*;
@@ -29,6 +28,7 @@ pub mod service_blackboard {
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::Service;
     use iceoryx2::testing::*;
+    use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64};
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_container::string::*;

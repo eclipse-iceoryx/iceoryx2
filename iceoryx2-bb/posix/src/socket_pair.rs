@@ -28,9 +28,9 @@
 //! buffer.resize(128, 0);
 //! socket_2.try_receive(&mut buffer).unwrap();
 //! ```
-use core::sync::atomic::Ordering;
 use core::time::Duration;
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_log::fail;
 use iceoryx2_pal_posix::posix::{self, Errno};
 

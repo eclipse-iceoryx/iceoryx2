@@ -73,9 +73,9 @@ use crate::{
     clock::{ClockType, NanosleepError, Time, TimeError},
     mutex::*,
 };
-use core::sync::atomic::Ordering;
 use enum_iterator::{all, Sequence};
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_log::{fail, fatal_panic};
 use iceoryx2_pal_posix::posix::{Errno, MemZeroedStruct};

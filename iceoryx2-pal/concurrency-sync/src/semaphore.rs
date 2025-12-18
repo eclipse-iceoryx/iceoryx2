@@ -11,9 +11,9 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::hint::spin_loop;
-use core::sync::atomic::Ordering;
 
 use crate::atomic::AtomicU32;
+use crate::atomic::Ordering;
 use crate::{WaitAction, WaitResult, SPIN_REPETITIONS};
 
 pub struct Semaphore {

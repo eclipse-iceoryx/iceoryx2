@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::sync::atomic::Ordering;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 
 use iceoryx2_cal::zero_copy_connection::{ChannelId, ZeroCopyPortDetails};
 

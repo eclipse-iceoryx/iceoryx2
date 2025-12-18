@@ -15,7 +15,6 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod service_publish_subscribe {
-    use core::sync::atomic::Ordering;
     use std::sync::{Barrier, Mutex};
     use std::thread;
 
@@ -32,6 +31,7 @@ pub mod service_publish_subscribe {
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::{Service, ServiceDetails};
     use iceoryx2::testing;
+    use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicUsize};
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_derive_macros::ZeroCopySend;

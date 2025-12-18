@@ -17,8 +17,8 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod event_trait {
-    use core::sync::atomic::Ordering;
     use core::time::Duration;
+    use iceoryx2_bb_concurrency::atomic::Ordering;
     use std::collections::HashSet;
     use std::sync::{Barrier, Mutex};
     use std::time::Instant;

@@ -32,8 +32,9 @@
 
 use core::hint::spin_loop;
 use core::ops::{Deref, DerefMut};
-use core::sync::atomic::Ordering;
+
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
+use iceoryx2_pal_concurrency_sync::atomic::Ordering;
 
 use crate::atomic::AtomicBool;
 use crate::cell::UnsafeCell;

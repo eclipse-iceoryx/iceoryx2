@@ -48,7 +48,7 @@ unsafe impl Send for TestType {}
 mod mpmc_container {
     use core::fmt::Debug;
     use core::sync::atomic::AtomicU32;
-    use core::sync::atomic::Ordering;
+    use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
     use iceoryx2_bb_elementary::CallbackProgression;
     use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;

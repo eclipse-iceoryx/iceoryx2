@@ -19,7 +19,7 @@
 //! # extern crate iceoryx2_loggers;
 //!
 //! use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::*;
-//! use core::sync::atomic::Ordering;
+//! use iceoryx2_bb_concurrency::atomic::Ordering;
 //!
 //! let atomic = UnrestrictedAtomic::<[u8; 1024]>::new([0u8; 1024]);
 //!
@@ -33,8 +33,9 @@
 //! let my_data = atomic.load();
 //! ```
 
-use core::{fmt::Debug, mem::MaybeUninit, sync::atomic::Ordering};
+use core::{fmt::Debug, mem::MaybeUninit};
 
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64};
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::math::{align, max};

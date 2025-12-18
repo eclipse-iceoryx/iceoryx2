@@ -12,13 +12,12 @@
 
 //! The default [`Logger`] implementation.
 
-use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
-
-use core::sync::atomic::Ordering;
 use std::io::IsTerminal;
 
 use iceoryx2_log_types::Log;
 use iceoryx2_log_types::LogLevel;
+use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
+use iceoryx2_pal_concurrency_sync::atomic::Ordering;
 
 #[allow(dead_code)]
 enum ConsoleLogOrder {

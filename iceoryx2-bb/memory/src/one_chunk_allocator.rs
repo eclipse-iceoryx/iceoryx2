@@ -47,7 +47,7 @@
 
 pub use core::alloc::Layout;
 
-use core::sync::atomic::Ordering;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_elementary::math::align;

@@ -16,7 +16,6 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[conformance_test_module]
 pub mod client {
     use std::ops::Deref;
-    use std::sync::atomic::Ordering;
     use std::sync::Barrier;
     use std::time::Duration;
 
@@ -25,6 +24,7 @@ pub mod client {
     use iceoryx2::prelude::*;
     use iceoryx2::testing::*;
     use iceoryx2_bb_concurrency::atomic::AtomicBool;
+    use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;

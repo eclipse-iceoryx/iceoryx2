@@ -40,12 +40,10 @@
 //! ```
 
 use alloc::sync::Arc;
-use core::{
-    any::TypeId, fmt::Debug, marker::PhantomData, mem::MaybeUninit, ops::Deref,
-    sync::atomic::Ordering,
-};
+use core::{any::TypeId, fmt::Debug, marker::PhantomData, mem::MaybeUninit, ops::Deref};
 
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::{

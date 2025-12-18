@@ -15,7 +15,6 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod service_event {
-    use core::sync::atomic::Ordering;
     use core::time::Duration;
     use std::collections::HashSet;
     use std::sync::Barrier;
@@ -26,6 +25,7 @@ pub mod service_event {
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::event::{EventCreateError, EventOpenError};
     use iceoryx2::testing::*;
+    use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64};
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;

@@ -74,10 +74,10 @@
 //! ```
 
 use alloc::sync::Arc;
-use core::sync::atomic::Ordering;
 use core::{fmt::Debug, marker::PhantomData};
 
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::slotmap::SlotMap;
 use iceoryx2_bb_container::vector::polymorphic_vec::*;

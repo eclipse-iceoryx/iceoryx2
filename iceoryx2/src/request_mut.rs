@@ -35,13 +35,11 @@
 //! # }
 //! ```
 
+use core::ops::{Deref, DerefMut};
 use core::{fmt::Debug, marker::PhantomData};
-use core::{
-    ops::{Deref, DerefMut},
-    sync::atomic::Ordering,
-};
 
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::shm_allocator::PointerOffset;

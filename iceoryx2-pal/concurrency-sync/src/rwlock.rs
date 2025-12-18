@@ -10,9 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::{hint::spin_loop, sync::atomic::Ordering};
+use core::hint::spin_loop;
 
 use crate::atomic::AtomicU32;
+use crate::atomic::Ordering;
 use crate::{WaitAction, WaitResult, SPIN_REPETITIONS};
 
 const WRITE_LOCKED: u32 = u32::MAX;

@@ -16,7 +16,7 @@
 use iceoryx2_pal_concurrency_sync::atomic::AtomicU8;
 use iceoryx2_pal_configuration::PATH_SEPARATOR;
 
-use core::sync::atomic::Ordering;
+use iceoryx2_pal_concurrency_sync::atomic::Ordering;
 use std::io::Write;
 
 use crate::posix::*;

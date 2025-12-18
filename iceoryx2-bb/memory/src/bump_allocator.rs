@@ -15,9 +15,10 @@
 //! deallocate all allocated chunks. See this: `https://os.phil-opp.com/allocator-designs/`
 //! for more details.
 
-use core::{fmt::Display, ptr::NonNull, sync::atomic::Ordering};
+use core::{fmt::Display, ptr::NonNull};
 
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_elementary::math::align;
 use iceoryx2_log::fail;
 

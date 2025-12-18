@@ -57,12 +57,12 @@
 //! ```
 
 use core::fmt::Debug;
-use core::sync::atomic::Ordering;
 use core::time::Duration;
 
 use alloc::format;
 
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_system_types::ipv4_address::{self, Ipv4Address};
 use iceoryx2_bb_system_types::port::{self, Port};
 use iceoryx2_log::{fail, fatal_panic, trace};

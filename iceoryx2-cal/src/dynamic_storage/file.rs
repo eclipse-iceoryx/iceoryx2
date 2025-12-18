@@ -18,7 +18,7 @@ pub use core::ops::Deref;
 use core::fmt::Debug;
 use core::marker::PhantomData;
 use core::ptr::NonNull;
-use core::sync::atomic::Ordering;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 
 use alloc::format;
 use alloc::string::String;
