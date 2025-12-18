@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/container/detail/raw_byte_storage.hpp"
+#include "iox2/bb/detail/raw_byte_storage.hpp"
 
 #include "testing/observable.hpp"
 #include "testing/test_utils.hpp"
@@ -18,20 +18,20 @@
 #include "gtest/gtest.h"
 
 namespace {
-using iox2::container::testing::Observable;
+using iox2::bb::testing::Observable;
 
-struct RawByteStorageFixtureLeak : public iox2::container::testing::DetectLeakedObservablesFixture { };
-struct RawByteStorageFixtureStrict : public iox2::container::testing::VerifyAllObservableInteractionsFixture { };
+struct RawByteStorageFixtureLeak : public iox2::bb::testing::DetectLeakedObservablesFixture { };
+struct RawByteStorageFixtureStrict : public iox2::bb::testing::VerifyAllObservableInteractionsFixture { };
 
 TEST(RawByteStorage, construction_initializes_size_to_0) {
     constexpr uint64_t const STORAGE_CAPACITY = 5;
-    iox2::container::detail::RawByteStorage<char, STORAGE_CAPACITY> const sut;
+    iox2::bb::detail::RawByteStorage<char, STORAGE_CAPACITY> const sut;
     ASSERT_EQ(sut.size(), 0);
 }
 
 TEST(RawByteStorage, construction_initializes_all_storage_bytes_to_0) {
     constexpr uint64_t const STORAGE_CAPACITY = 5;
-    iox2::container::detail::RawByteStorage<char, STORAGE_CAPACITY> sut;
+    iox2::bb::detail::RawByteStorage<char, STORAGE_CAPACITY> sut;
     // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic) testing
     ASSERT_EQ(sut.pointer_from_index(0)[0], '\0');
     ASSERT_EQ(sut.pointer_from_index(0)[1], '\0');
@@ -57,30 +57,30 @@ TEST(RawByteStorage, storage_is_aligned_suitably_for_type) {
         return ret;
     };
     {
-        iox2::container::detail::RawByteStorage<int32_t, STORAGE_CAPACITY> sut;
+        iox2::bb::detail::RawByteStorage<int32_t, STORAGE_CAPACITY> sut;
         ASSERT_GE(determine_alignment(sut.pointer_from_index(0)), alignof(int32_t));
     }
     {
-        iox2::container::detail::RawByteStorage<int64_t, STORAGE_CAPACITY> sut;
+        iox2::bb::detail::RawByteStorage<int64_t, STORAGE_CAPACITY> sut;
         ASSERT_GE(determine_alignment(sut.pointer_from_index(0)), alignof(int64_t));
     }
     {
         constexpr size_t const EXTENDED_ALIGNMENT = 128;
         struct alignas(EXTENDED_ALIGNMENT) Overaligned { };
-        iox2::container::detail::RawByteStorage<Overaligned, STORAGE_CAPACITY> sut;
+        iox2::bb::detail::RawByteStorage<Overaligned, STORAGE_CAPACITY> sut;
         ASSERT_GE(determine_alignment(sut.pointer_from_index(0)), 128);
     }
     {
         constexpr size_t const PAGE_ALIGNMENT = 4096;
         struct alignas(PAGE_ALIGNMENT) PageAligned { };
-        iox2::container::detail::RawByteStorage<PageAligned, STORAGE_CAPACITY> sut;
+        iox2::bb::detail::RawByteStorage<PageAligned, STORAGE_CAPACITY> sut;
         ASSERT_GE(determine_alignment(sut.pointer_from_index(0)), 4096);
     }
 }
 
 TEST(RawByteStorage, emplace_back_inserts_a_new_element_at_the_back) {
     constexpr uint64_t const STORAGE_CAPACITY = 3;
-    iox2::container::detail::RawByteStorage<int64_t, STORAGE_CAPACITY> sut;
+    iox2::bb::detail::RawByteStorage<int64_t, STORAGE_CAPACITY> sut;
     int64_t const test_value = 12345678;
     sut.emplace_back(test_value);
     ASSERT_EQ(sut.size(), 1);
@@ -105,7 +105,7 @@ TEST_F(RawByteStorageFixtureLeak, emplace_back_forwards_arguments_for_initializa
     Observable test_object;
     test_object.id = tracking_id1;
     {
-        iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
+        iox2::bb::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
         ASSERT_EQ(Observable::s_counter.was_copy_constructed, 0);
         ASSERT_EQ(Observable::s_counter.was_move_constructed, 0);
         sut.emplace_back(test_object);
@@ -125,7 +125,7 @@ TEST_F(RawByteStorageFixtureLeak, emplace_back_forwards_arguments_for_initializa
 
 TEST_F(RawByteStorageFixtureStrict, copy_constructor_copies_all_elements) {
     constexpr uint64_t const STORAGE_CAPACITY = 5;
-    iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> obj;
+    iox2::bb::detail::RawByteStorage<Observable, STORAGE_CAPACITY> obj;
     int32_t const tracking_id1 = 100;
     int32_t const tracking_id2 = 200;
     int32_t const tracking_id3 = 300;
@@ -133,8 +133,8 @@ TEST_F(RawByteStorageFixtureStrict, copy_constructor_copies_all_elements) {
     obj.emplace_back(tracking_id2);
     obj.emplace_back(tracking_id3);
     {
-        iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut { obj };
-        iox2::container::testing::opaque_use(&sut);
+        iox2::bb::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut { obj };
+        iox2::bb::testing::opaque_use(&sut);
         ASSERT_EQ(Observable::s_counter.was_copy_constructed, 3);
         ASSERT_EQ(sut.size(), 3);
         EXPECT_EQ(sut.pointer_from_index(0)->id, tracking_id1);
@@ -156,7 +156,7 @@ TEST_F(RawByteStorageFixtureStrict, copy_constructor_copies_all_elements) {
 
 TEST_F(RawByteStorageFixtureStrict, copy_assignment_copies_all_elements_target_empty) {
     constexpr uint64_t const STORAGE_CAPACITY = 5;
-    iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> obj;
+    iox2::bb::detail::RawByteStorage<Observable, STORAGE_CAPACITY> obj;
     int32_t const tracking_id1 = 100;
     int32_t const tracking_id2 = 200;
     int32_t const tracking_id3 = 300;
@@ -164,8 +164,8 @@ TEST_F(RawByteStorageFixtureStrict, copy_assignment_copies_all_elements_target_e
     obj.emplace_back(tracking_id2);
     obj.emplace_back(tracking_id3);
     {
-        iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
-        iox2::container::testing::opaque_use(&sut);
+        iox2::bb::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
+        iox2::bb::testing::opaque_use(&sut);
         sut = obj;
         ASSERT_EQ(Observable::s_counter.was_copy_assigned, 0);
         ASSERT_EQ(Observable::s_counter.was_copy_constructed, 3);
@@ -190,7 +190,7 @@ TEST_F(RawByteStorageFixtureStrict, copy_assignment_copies_all_elements_target_e
 
 TEST_F(RawByteStorageFixtureStrict, copy_assignment_copies_all_elements_target_partially_filled) {
     constexpr uint64_t const STORAGE_CAPACITY = 5;
-    iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> obj;
+    iox2::bb::detail::RawByteStorage<Observable, STORAGE_CAPACITY> obj;
     int32_t const tracking_id1 = 100;
     int32_t const tracking_id2 = 200;
     int32_t const tracking_id3 = 300;
@@ -198,10 +198,10 @@ TEST_F(RawByteStorageFixtureStrict, copy_assignment_copies_all_elements_target_p
     obj.emplace_back(tracking_id2);
     obj.emplace_back(tracking_id3);
     {
-        iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
+        iox2::bb::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
         sut.emplace_back();
         sut.emplace_back();
-        iox2::container::testing::opaque_use(&sut);
+        iox2::bb::testing::opaque_use(&sut);
         sut = obj;
         ASSERT_EQ(Observable::s_counter.was_copy_assigned, 2);
         ASSERT_EQ(Observable::s_counter.was_copy_constructed, 1);
@@ -226,7 +226,7 @@ TEST_F(RawByteStorageFixtureStrict, copy_assignment_copies_all_elements_target_p
 
 TEST_F(RawByteStorageFixtureStrict, copy_assignment_copies_all_elements_target_filled) {
     constexpr uint64_t const STORAGE_CAPACITY = 5;
-    iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> obj;
+    iox2::bb::detail::RawByteStorage<Observable, STORAGE_CAPACITY> obj;
     int32_t const tracking_id1 = 100;
     int32_t const tracking_id2 = 200;
     int32_t const tracking_id3 = 300;
@@ -234,11 +234,11 @@ TEST_F(RawByteStorageFixtureStrict, copy_assignment_copies_all_elements_target_f
     obj.emplace_back(tracking_id2);
     obj.emplace_back(tracking_id3);
     {
-        iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
+        iox2::bb::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
         sut.emplace_back();
         sut.emplace_back();
         sut.emplace_back();
-        iox2::container::testing::opaque_use(&sut);
+        iox2::bb::testing::opaque_use(&sut);
         sut = obj;
         ASSERT_EQ(Observable::s_counter.was_copy_assigned, 3);
         ASSERT_EQ(Observable::s_counter.was_copy_constructed, 0);
@@ -263,7 +263,7 @@ TEST_F(RawByteStorageFixtureStrict, copy_assignment_copies_all_elements_target_f
 
 TEST_F(RawByteStorageFixtureStrict, copy_assignment_copies_all_elements_target_bigger) {
     constexpr uint64_t const STORAGE_CAPACITY = 5;
-    iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> obj;
+    iox2::bb::detail::RawByteStorage<Observable, STORAGE_CAPACITY> obj;
     int32_t const tracking_id1 = 100;
     int32_t const tracking_id2 = 200;
     int32_t const tracking_id3 = 300;
@@ -271,13 +271,13 @@ TEST_F(RawByteStorageFixtureStrict, copy_assignment_copies_all_elements_target_b
     obj.emplace_back(tracking_id2);
     obj.emplace_back(tracking_id3);
     {
-        iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
+        iox2::bb::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
         sut.emplace_back();
         sut.emplace_back();
         sut.emplace_back();
         sut.emplace_back();
         sut.emplace_back();
-        iox2::container::testing::opaque_use(&sut);
+        iox2::bb::testing::opaque_use(&sut);
         sut = obj;
         ASSERT_EQ(Observable::s_counter.was_copy_assigned, 3);
         ASSERT_EQ(Observable::s_counter.was_copy_constructed, 0);
@@ -302,7 +302,7 @@ TEST_F(RawByteStorageFixtureStrict, copy_assignment_copies_all_elements_target_b
 
 TEST_F(RawByteStorageFixtureStrict, copy_assignment_returns_reference_to_this) {
     constexpr uint64_t const STORAGE_CAPACITY = 5;
-    iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> obj;
+    iox2::bb::detail::RawByteStorage<Observable, STORAGE_CAPACITY> obj;
     int32_t const tracking_id1 = 100;
     int32_t const tracking_id2 = 200;
     int32_t const tracking_id3 = 300;
@@ -310,8 +310,8 @@ TEST_F(RawByteStorageFixtureStrict, copy_assignment_returns_reference_to_this) {
     obj.emplace_back(tracking_id2);
     obj.emplace_back(tracking_id3);
     {
-        iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
-        iox2::container::testing::opaque_use(&sut);
+        iox2::bb::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
+        iox2::bb::testing::opaque_use(&sut);
         ASSERT_EQ(&(sut = obj), &sut);
     }
     // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers) testing
@@ -323,7 +323,7 @@ TEST_F(RawByteStorageFixtureStrict, copy_assignment_returns_reference_to_this) {
 
 TEST_F(RawByteStorageFixtureStrict, copy_assignment_self_assignment_is_noop) {
     constexpr uint64_t const STORAGE_CAPACITY = 5;
-    iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
+    iox2::bb::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
     int32_t const tracking_id1 = 100;
     int32_t const tracking_id2 = 200;
     int32_t const tracking_id3 = 300;
@@ -331,7 +331,7 @@ TEST_F(RawByteStorageFixtureStrict, copy_assignment_self_assignment_is_noop) {
     sut.emplace_back(tracking_id2);
     sut.emplace_back(tracking_id3);
     auto& alias_to_sut = sut;
-    iox2::container::testing::opaque_use(&alias_to_sut);
+    iox2::bb::testing::opaque_use(&alias_to_sut);
     sut = alias_to_sut;
     ASSERT_EQ(Observable::s_counter.was_copy_constructed, 0);
     // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers) testing
@@ -342,7 +342,7 @@ TEST_F(RawByteStorageFixtureStrict, copy_assignment_self_assignment_is_noop) {
 
 TEST_F(RawByteStorageFixtureStrict, move_assignment_copies_all_elements_target_empty) {
     constexpr uint64_t const STORAGE_CAPACITY = 5;
-    iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> obj;
+    iox2::bb::detail::RawByteStorage<Observable, STORAGE_CAPACITY> obj;
     int32_t const tracking_id1 = 100;
     int32_t const tracking_id2 = 200;
     int32_t const tracking_id3 = 300;
@@ -350,8 +350,8 @@ TEST_F(RawByteStorageFixtureStrict, move_assignment_copies_all_elements_target_e
     obj.emplace_back(tracking_id2);
     obj.emplace_back(tracking_id3);
     {
-        iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
-        iox2::container::testing::opaque_use(&sut);
+        iox2::bb::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
+        iox2::bb::testing::opaque_use(&sut);
         sut = std::move(obj);
         ASSERT_EQ(Observable::s_counter.was_move_assigned, 0);
         ASSERT_EQ(Observable::s_counter.was_move_constructed, 3);
@@ -372,7 +372,7 @@ TEST_F(RawByteStorageFixtureStrict, move_assignment_copies_all_elements_target_e
 
 TEST_F(RawByteStorageFixtureStrict, move_assignment_copies_all_elements_target_partially_filled) {
     constexpr uint64_t const STORAGE_CAPACITY = 5;
-    iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> obj;
+    iox2::bb::detail::RawByteStorage<Observable, STORAGE_CAPACITY> obj;
     int32_t const tracking_id1 = 100;
     int32_t const tracking_id2 = 200;
     int32_t const tracking_id3 = 300;
@@ -380,10 +380,10 @@ TEST_F(RawByteStorageFixtureStrict, move_assignment_copies_all_elements_target_p
     obj.emplace_back(tracking_id2);
     obj.emplace_back(tracking_id3);
     {
-        iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
+        iox2::bb::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
         sut.emplace_back();
         sut.emplace_back();
-        iox2::container::testing::opaque_use(&sut);
+        iox2::bb::testing::opaque_use(&sut);
         sut = std::move(obj);
         ASSERT_EQ(Observable::s_counter.was_move_assigned, 2);
         ASSERT_EQ(Observable::s_counter.was_move_constructed, 1);
@@ -404,7 +404,7 @@ TEST_F(RawByteStorageFixtureStrict, move_assignment_copies_all_elements_target_p
 
 TEST_F(RawByteStorageFixtureStrict, move_assignment_copies_all_elements_target_filled) {
     constexpr uint64_t const STORAGE_CAPACITY = 5;
-    iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> obj;
+    iox2::bb::detail::RawByteStorage<Observable, STORAGE_CAPACITY> obj;
     int32_t const tracking_id1 = 100;
     int32_t const tracking_id2 = 200;
     int32_t const tracking_id3 = 300;
@@ -412,11 +412,11 @@ TEST_F(RawByteStorageFixtureStrict, move_assignment_copies_all_elements_target_f
     obj.emplace_back(tracking_id2);
     obj.emplace_back(tracking_id3);
     {
-        iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
+        iox2::bb::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
         sut.emplace_back();
         sut.emplace_back();
         sut.emplace_back();
-        iox2::container::testing::opaque_use(&sut);
+        iox2::bb::testing::opaque_use(&sut);
         sut = std::move(obj);
         ASSERT_EQ(Observable::s_counter.was_move_assigned, 3);
         ASSERT_EQ(Observable::s_counter.was_move_constructed, 0);
@@ -437,7 +437,7 @@ TEST_F(RawByteStorageFixtureStrict, move_assignment_copies_all_elements_target_f
 
 TEST_F(RawByteStorageFixtureStrict, move_assignment_copies_all_elements_target_bigger) {
     constexpr uint64_t const STORAGE_CAPACITY = 5;
-    iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> obj;
+    iox2::bb::detail::RawByteStorage<Observable, STORAGE_CAPACITY> obj;
     int32_t const tracking_id1 = 100;
     int32_t const tracking_id2 = 200;
     int32_t const tracking_id3 = 300;
@@ -445,13 +445,13 @@ TEST_F(RawByteStorageFixtureStrict, move_assignment_copies_all_elements_target_b
     obj.emplace_back(tracking_id2);
     obj.emplace_back(tracking_id3);
     {
-        iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
+        iox2::bb::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
         sut.emplace_back();
         sut.emplace_back();
         sut.emplace_back();
         sut.emplace_back();
         sut.emplace_back();
-        iox2::container::testing::opaque_use(&sut);
+        iox2::bb::testing::opaque_use(&sut);
         sut = std::move(obj);
         ASSERT_EQ(Observable::s_counter.was_move_assigned, 3);
         ASSERT_EQ(Observable::s_counter.was_move_constructed, 0);
@@ -472,7 +472,7 @@ TEST_F(RawByteStorageFixtureStrict, move_assignment_copies_all_elements_target_b
 
 TEST_F(RawByteStorageFixtureStrict, move_assignment_returns_reference_to_this) {
     constexpr uint64_t const STORAGE_CAPACITY = 5;
-    iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> obj;
+    iox2::bb::detail::RawByteStorage<Observable, STORAGE_CAPACITY> obj;
     int32_t const tracking_id1 = 100;
     int32_t const tracking_id2 = 200;
     int32_t const tracking_id3 = 300;
@@ -480,8 +480,8 @@ TEST_F(RawByteStorageFixtureStrict, move_assignment_returns_reference_to_this) {
     obj.emplace_back(tracking_id2);
     obj.emplace_back(tracking_id3);
     {
-        iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
-        iox2::container::testing::opaque_use(&sut);
+        iox2::bb::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
+        iox2::bb::testing::opaque_use(&sut);
         ASSERT_EQ(&(sut = std::move(obj)), &sut);
     }
     // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers) testing
@@ -493,7 +493,7 @@ TEST_F(RawByteStorageFixtureStrict, move_assignment_returns_reference_to_this) {
 
 TEST_F(RawByteStorageFixtureStrict, move_assignment_self_assignment_is_noop) {
     constexpr uint64_t const STORAGE_CAPACITY = 5;
-    iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
+    iox2::bb::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
     int32_t const tracking_id1 = 100;
     int32_t const tracking_id2 = 200;
     int32_t const tracking_id3 = 300;
@@ -501,7 +501,7 @@ TEST_F(RawByteStorageFixtureStrict, move_assignment_self_assignment_is_noop) {
     sut.emplace_back(tracking_id2);
     sut.emplace_back(tracking_id3);
     auto& alias_to_sut = sut;
-    iox2::container::testing::opaque_use(&alias_to_sut);
+    iox2::bb::testing::opaque_use(&alias_to_sut);
     sut = std::move(alias_to_sut);
     ASSERT_EQ(Observable::s_counter.was_copy_constructed, 0);
     // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers) testing
@@ -513,7 +513,7 @@ TEST_F(RawByteStorageFixtureStrict, move_assignment_self_assignment_is_noop) {
 TEST_F(RawByteStorageFixtureStrict, copy_constructor_to_larger_target_capacity_copies_all_elements) {
     constexpr uint64_t const SOURCE_CAPACITY = 4;
     constexpr uint64_t const TARGET_CAPACITY = 5;
-    iox2::container::detail::RawByteStorage<Observable, SOURCE_CAPACITY> obj;
+    iox2::bb::detail::RawByteStorage<Observable, SOURCE_CAPACITY> obj;
     int32_t const tracking_id1 = 100;
     int32_t const tracking_id2 = 200;
     int32_t const tracking_id3 = 300;
@@ -521,8 +521,8 @@ TEST_F(RawByteStorageFixtureStrict, copy_constructor_to_larger_target_capacity_c
     obj.emplace_back(tracking_id2);
     obj.emplace_back(tracking_id3);
     {
-        iox2::container::detail::RawByteStorage<Observable, TARGET_CAPACITY> sut { obj };
-        iox2::container::testing::opaque_use(&sut);
+        iox2::bb::detail::RawByteStorage<Observable, TARGET_CAPACITY> sut { obj };
+        iox2::bb::testing::opaque_use(&sut);
         ASSERT_EQ(Observable::s_counter.was_copy_constructed, 3);
         ASSERT_EQ(sut.size(), 3);
         EXPECT_EQ(sut.pointer_from_index(0)->id, tracking_id1);
@@ -544,7 +544,7 @@ TEST_F(RawByteStorageFixtureStrict, copy_constructor_to_larger_target_capacity_c
 
 TEST_F(RawByteStorageFixtureStrict, move_constructor_moves_all_elements) {
     constexpr uint64_t const STORAGE_CAPACITY = 5;
-    iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> obj;
+    iox2::bb::detail::RawByteStorage<Observable, STORAGE_CAPACITY> obj;
     int32_t const tracking_id1 = 100;
     int32_t const tracking_id2 = 200;
     int32_t const tracking_id3 = 300;
@@ -552,7 +552,7 @@ TEST_F(RawByteStorageFixtureStrict, move_constructor_moves_all_elements) {
     obj.emplace_back(tracking_id2);
     obj.emplace_back(tracking_id3);
     {
-        iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> const sut { std::move(obj) };
+        iox2::bb::detail::RawByteStorage<Observable, STORAGE_CAPACITY> const sut { std::move(obj) };
         ASSERT_EQ(Observable::s_counter.was_move_constructed, 3);
         ASSERT_EQ(sut.size(), 3);
         EXPECT_EQ(sut.pointer_from_index(0)->id, tracking_id1);
@@ -578,7 +578,7 @@ TEST_F(RawByteStorageFixtureStrict, move_constructor_moves_all_elements) {
 TEST_F(RawByteStorageFixtureStrict, move_constructor_to_larger_capacity_moves_all_elements) {
     constexpr uint64_t const SOURCE_CAPACITY = 4;
     constexpr uint64_t const TARGET_CAPACITY = 5;
-    iox2::container::detail::RawByteStorage<Observable, SOURCE_CAPACITY> obj;
+    iox2::bb::detail::RawByteStorage<Observable, SOURCE_CAPACITY> obj;
     int32_t const tracking_id1 = 100;
     int32_t const tracking_id2 = 200;
     int32_t const tracking_id3 = 300;
@@ -586,7 +586,7 @@ TEST_F(RawByteStorageFixtureStrict, move_constructor_to_larger_capacity_moves_al
     obj.emplace_back(tracking_id2);
     obj.emplace_back(tracking_id3);
     {
-        iox2::container::detail::RawByteStorage<Observable, TARGET_CAPACITY> const sut { std::move(obj) };
+        iox2::bb::detail::RawByteStorage<Observable, TARGET_CAPACITY> const sut { std::move(obj) };
         ASSERT_EQ(Observable::s_counter.was_move_constructed, 3);
         ASSERT_EQ(sut.size(), 3);
         EXPECT_EQ(sut.pointer_from_index(0)->id, tracking_id1);
@@ -645,7 +645,7 @@ TEST(RawByteStorage, destructor_destructs_elements_from_back_to_front) {
     } tracker;
     // NOLINTEND(misc-non-private-member-variables-in-classes,cppcoreguidelines-special-member-functions,hicpp-special-member-functions)
     {
-        iox2::container::detail::RawByteStorage<DestructionOrderTracker::TrackObject, STORAGE_CAPACITY> sut;
+        iox2::bb::detail::RawByteStorage<DestructionOrderTracker::TrackObject, STORAGE_CAPACITY> sut;
         sut.emplace_back(tracker.new_object());
         sut.emplace_back(tracker.new_object());
         sut.emplace_back(tracker.new_object());
@@ -661,7 +661,7 @@ TEST(RawByteStorage, destructor_destructs_elements_from_back_to_front) {
 
 TEST(RawByteStorage, emplace_at_inserts_in_the_middle_of_a_range) {
     constexpr uint64_t const STORAGE_CAPACITY = 5;
-    iox2::container::detail::RawByteStorage<int32_t, STORAGE_CAPACITY> sut;
+    iox2::bb::detail::RawByteStorage<int32_t, STORAGE_CAPACITY> sut;
     int32_t const marker_value = 99;
     sut.emplace_back(1);
     sut.emplace_back(2);
@@ -674,7 +674,7 @@ TEST(RawByteStorage, emplace_at_inserts_in_the_middle_of_a_range) {
 
 TEST(RawByteStorage, emplace_at_inserts_at_the_beginning_of_a_range) {
     constexpr uint64_t const STORAGE_CAPACITY = 5;
-    iox2::container::detail::RawByteStorage<int32_t, STORAGE_CAPACITY> sut;
+    iox2::bb::detail::RawByteStorage<int32_t, STORAGE_CAPACITY> sut;
     int32_t const marker_value = 99;
     sut.emplace_back(1);
     sut.emplace_back(2);
@@ -687,7 +687,7 @@ TEST(RawByteStorage, emplace_at_inserts_at_the_beginning_of_a_range) {
 
 TEST(RawByteStorage, emplace_at_inserts_at_the_end_of_a_range) {
     constexpr uint64_t const STORAGE_CAPACITY = 5;
-    iox2::container::detail::RawByteStorage<int32_t, STORAGE_CAPACITY> sut;
+    iox2::bb::detail::RawByteStorage<int32_t, STORAGE_CAPACITY> sut;
     int32_t const marker_value = 99;
     sut.emplace_back(1);
     sut.emplace_back(2);
@@ -700,7 +700,7 @@ TEST(RawByteStorage, emplace_at_inserts_at_the_end_of_a_range) {
 
 TEST(RawByteStorage, emplace_at_inserts_into_empty_range) {
     constexpr uint64_t const STORAGE_CAPACITY = 5;
-    iox2::container::detail::RawByteStorage<int32_t, STORAGE_CAPACITY> sut;
+    iox2::bb::detail::RawByteStorage<int32_t, STORAGE_CAPACITY> sut;
     int32_t const marker_value = 99;
     sut.emplace_at(0, marker_value);
     ASSERT_EQ(sut.size(), 1);
@@ -709,7 +709,7 @@ TEST(RawByteStorage, emplace_at_inserts_into_empty_range) {
 
 TEST_F(RawByteStorageFixtureLeak, emplace_at_does_not_copy_objects_for_relocation) {
     constexpr uint64_t const STORAGE_CAPACITY = 10;
-    iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
+    iox2::bb::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
     int32_t const marker_value = 99;
     sut.emplace_back(1);
     sut.emplace_back(2);
@@ -730,7 +730,7 @@ TEST_F(RawByteStorageFixtureLeak, emplace_at_does_not_copy_objects_for_relocatio
 
 TEST(RawByteStorage, insert_at_inserts_multiple_elements_in_the_middle_of_a_range) {
     constexpr uint64_t const STORAGE_CAPACITY = 10;
-    iox2::container::detail::RawByteStorage<int32_t, STORAGE_CAPACITY> sut;
+    iox2::bb::detail::RawByteStorage<int32_t, STORAGE_CAPACITY> sut;
     int32_t const marker_value = 99;
     uint64_t const element_count = 5;
     sut.emplace_back(1);
@@ -748,7 +748,7 @@ TEST(RawByteStorage, insert_at_inserts_multiple_elements_in_the_middle_of_a_rang
 
 TEST(RawByteStorage, insert_at_inserts_multiple_elements_at_the_beginning_of_a_range) {
     constexpr uint64_t const STORAGE_CAPACITY = 10;
-    iox2::container::detail::RawByteStorage<int32_t, STORAGE_CAPACITY> sut;
+    iox2::bb::detail::RawByteStorage<int32_t, STORAGE_CAPACITY> sut;
     int32_t const marker_value = 99;
     uint64_t const element_count = 5;
     sut.emplace_back(1);
@@ -766,7 +766,7 @@ TEST(RawByteStorage, insert_at_inserts_multiple_elements_at_the_beginning_of_a_r
 
 TEST(RawByteStorage, insert_at_inserts_multiple_elements_at_the_end_of_a_range) {
     constexpr uint64_t const STORAGE_CAPACITY = 10;
-    iox2::container::detail::RawByteStorage<int32_t, STORAGE_CAPACITY> sut;
+    iox2::bb::detail::RawByteStorage<int32_t, STORAGE_CAPACITY> sut;
     int32_t const marker_value = 99;
     uint64_t const element_count = 5;
     sut.emplace_back(1);
@@ -784,7 +784,7 @@ TEST(RawByteStorage, insert_at_inserts_multiple_elements_at_the_end_of_a_range) 
 
 TEST(RawByteStorage, insert_at_inserts_multiple_elements_into_empty_range) {
     constexpr uint64_t const STORAGE_CAPACITY = 5;
-    iox2::container::detail::RawByteStorage<int32_t, STORAGE_CAPACITY> sut;
+    iox2::bb::detail::RawByteStorage<int32_t, STORAGE_CAPACITY> sut;
     int32_t const marker_value = 99;
     uint64_t const element_count = 5;
     sut.insert_at(0, element_count, marker_value);
@@ -798,7 +798,7 @@ TEST(RawByteStorage, insert_at_inserts_multiple_elements_into_empty_range) {
 
 TEST(RawByteStorage, insert_at_single_element) {
     constexpr uint64_t const STORAGE_CAPACITY = 5;
-    iox2::container::detail::RawByteStorage<int32_t, STORAGE_CAPACITY> sut;
+    iox2::bb::detail::RawByteStorage<int32_t, STORAGE_CAPACITY> sut;
     int32_t const marker_value = 99;
     sut.emplace_back(1);
     sut.emplace_back(2);
@@ -815,7 +815,7 @@ TEST(RawByteStorage, insert_at_single_element) {
 
 TEST(RawByteStorage, insert_at_with_zero_elements_does_nothing) {
     constexpr uint64_t const STORAGE_CAPACITY = 5;
-    iox2::container::detail::RawByteStorage<int32_t, STORAGE_CAPACITY> sut;
+    iox2::bb::detail::RawByteStorage<int32_t, STORAGE_CAPACITY> sut;
     int32_t const marker_value = 99;
     sut.emplace_back(1);
     sut.emplace_back(2);
@@ -831,7 +831,7 @@ TEST(RawByteStorage, insert_at_with_zero_elements_does_nothing) {
 
 TEST_F(RawByteStorageFixtureLeak, insert_at_does_not_copy_elements_for_relocation) {
     constexpr uint64_t const STORAGE_CAPACITY = 10;
-    iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
+    iox2::bb::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
     int32_t const tracking_id = 99;
     sut.emplace_back(1);
     sut.emplace_back(2);
@@ -856,7 +856,7 @@ TEST_F(RawByteStorageFixtureLeak, insert_at_does_not_copy_elements_for_relocatio
 
 TEST(RawByteStorage, erase_at_erases_single_element) {
     constexpr uint64_t const STORAGE_CAPACITY = 5;
-    iox2::container::detail::RawByteStorage<int32_t, STORAGE_CAPACITY> sut;
+    iox2::bb::detail::RawByteStorage<int32_t, STORAGE_CAPACITY> sut;
     sut.emplace_back(1);
     sut.emplace_back(2);
     sut.emplace_back(3);
@@ -883,7 +883,7 @@ TEST(RawByteStorage, erase_at_erases_single_element) {
 
 TEST_F(RawByteStorageFixtureLeak, erase_at_does_not_copy_elements_for_relocation) {
     constexpr uint64_t const STORAGE_CAPACITY = 10;
-    iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
+    iox2::bb::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
     int32_t const tracking_id = 99;
     sut.emplace_back(1);
     sut.emplace_back(tracking_id);
@@ -906,7 +906,7 @@ TEST_F(RawByteStorageFixtureLeak, erase_at_does_not_copy_elements_for_relocation
 
 TEST(RawByteStorage, erase_at_erase_range_from_middle) {
     constexpr uint64_t const STORAGE_CAPACITY = 10;
-    iox2::container::detail::RawByteStorage<int32_t, STORAGE_CAPACITY> sut;
+    iox2::bb::detail::RawByteStorage<int32_t, STORAGE_CAPACITY> sut;
     int32_t const marker_value = 99;
     sut.emplace_back(1);
     sut.emplace_back(marker_value);
@@ -927,7 +927,7 @@ TEST(RawByteStorage, erase_at_erase_range_from_middle) {
 
 TEST(RawByteStorage, erase_at_erase_range_from_front) {
     constexpr uint64_t const STORAGE_CAPACITY = 10;
-    iox2::container::detail::RawByteStorage<int32_t, STORAGE_CAPACITY> sut;
+    iox2::bb::detail::RawByteStorage<int32_t, STORAGE_CAPACITY> sut;
     int32_t const marker_value = 99;
     sut.emplace_back(marker_value);
     sut.emplace_back(marker_value);
@@ -948,7 +948,7 @@ TEST(RawByteStorage, erase_at_erase_range_from_front) {
 
 TEST(RawByteStorage, erase_at_erase_range_from_back) {
     constexpr uint64_t const STORAGE_CAPACITY = 10;
-    iox2::container::detail::RawByteStorage<int32_t, STORAGE_CAPACITY> sut;
+    iox2::bb::detail::RawByteStorage<int32_t, STORAGE_CAPACITY> sut;
     int32_t const marker_value = 99;
     sut.emplace_back(1);
     sut.emplace_back(2);
@@ -969,7 +969,7 @@ TEST(RawByteStorage, erase_at_erase_range_from_back) {
 
 TEST(RawByteStorage, erase_at_erase_whole_range) {
     constexpr uint64_t const STORAGE_CAPACITY = 10;
-    iox2::container::detail::RawByteStorage<int32_t, STORAGE_CAPACITY> sut;
+    iox2::bb::detail::RawByteStorage<int32_t, STORAGE_CAPACITY> sut;
     int32_t const marker_value = 99;
     sut.emplace_back(marker_value);
     sut.emplace_back(marker_value);
@@ -984,7 +984,7 @@ TEST(RawByteStorage, erase_at_erase_whole_range) {
 
 TEST_F(RawByteStorageFixtureLeak, erase_at_range_does_not_copy_elements_for_relocation) {
     constexpr uint64_t const STORAGE_CAPACITY = 10;
-    iox2::container::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
+    iox2::bb::detail::RawByteStorage<Observable, STORAGE_CAPACITY> sut;
     int32_t const tracking_id = 99;
     sut.emplace_back(1);
     sut.emplace_back(tracking_id);

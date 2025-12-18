@@ -12,7 +12,7 @@
 
 #include "iox2/component-tests/common.hpp"
 
-#include <iox2/container/static_string.hpp>
+#include <iox2/bb/static_string.hpp>
 #include <iox2/iceoryx2.hpp>
 
 #include <algorithm>
@@ -24,13 +24,12 @@ constexpr const uint64_t TEST_NAME_LENGTH = 32;
 
 struct Test {
     // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
-    iox2::container::StaticString<TEST_NAME_LENGTH> test_name;
+    iox2::bb::StaticString<TEST_NAME_LENGTH> test_name;
     std::unique_ptr<IComponentTest> test;
     // NOLINTEND(misc-non-private-member-variables-in-classes)
 
     Test(char const* test_name_c_str, std::unique_ptr<IComponentTest> test)
-        : test_name(
-              *iox2::container::StaticString<TEST_NAME_LENGTH>::from_utf8_null_terminated_unchecked(test_name_c_str))
+        : test_name(*iox2::bb::StaticString<TEST_NAME_LENGTH>::from_utf8_null_terminated_unchecked(test_name_c_str))
         , test(std::move(test)) {
     }
 };
@@ -54,7 +53,7 @@ struct ComponentTestHeader {
     // IOX2_TYPE_NAME is equivalent to the payload type name used on the Rust side
     static constexpr const char* IOX2_TYPE_NAME = "ComponentTestHeader";
 
-    iox2::container::StaticString<TEST_NAME_LENGTH> test_name;
+    iox2::bb::StaticString<TEST_NAME_LENGTH> test_name;
 };
 
 

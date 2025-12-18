@@ -355,7 +355,7 @@ CMake package.
    ```
 
 1. **C++:** Replace `iox::string` from `iceoryx_hoofs` with
-   `iox2::container::StaticString`.
+   `iox2::bb::StaticString`.
    
    ```cpp
    // old
@@ -363,7 +363,7 @@ CMake package.
    std::cout << str.c_str() << std::endl;
    
    // new
-   auto str = iox2::container::StaticString<10>::from_utf8("hello");
+   auto str = iox2::bb::StaticString<10>::from_utf8("hello");
    if (str.has_value()) {
        std::cout << str->unchecked_access().c_str() << std::endl;
    }

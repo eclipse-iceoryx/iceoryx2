@@ -10,12 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_INCLUDE_GUARD_CONTAINER_STATIC_VECTOR_HPP
-#define IOX2_INCLUDE_GUARD_CONTAINER_STATIC_VECTOR_HPP
+#ifndef IOX2_INCLUDE_GUARD_BB_STATIC_VECTOR_HPP
+#define IOX2_INCLUDE_GUARD_BB_STATIC_VECTOR_HPP
 
 #include "iox2/bb/optional.hpp"
 
-#include "iox2/container/detail/raw_byte_storage.hpp"
+#include "iox2/bb/detail/raw_byte_storage.hpp"
 
 #include <algorithm>
 #include <cstddef>
@@ -27,7 +27,7 @@
 #include <type_traits>
 
 namespace iox2 {
-namespace container {
+namespace bb {
 
 /// A resizable container with compile-time fixed static capacity and contiguous inplace storage.
 template <typename T, uint64_t Capacity>
@@ -513,11 +513,11 @@ struct IsStaticVector : std::false_type { };
 template <typename T, uint64_t N>
 struct IsStaticVector<StaticVector<T, N>> : std::true_type { };
 
-} // namespace container
+} // namespace bb
 } // namespace iox2
 
 template <typename T, uint64_t N>
-auto operator<<(std::ostream& stream, const iox2::container::StaticVector<T, N>& value) -> std::ostream& {
+auto operator<<(std::ostream& stream, const iox2::bb::StaticVector<T, N>& value) -> std::ostream& {
     stream << "StaticVector::<" << N << "> { m_size: " << value.size() << ", m_data: [ ";
     if (!value.empty()) {
         stream << value.unchecked_access()[0];
@@ -529,4 +529,4 @@ auto operator<<(std::ostream& stream, const iox2::container::StaticVector<T, N>&
     return stream;
 }
 
-#endif
+#endif // IOX2_INCLUDE_GUARD_BB_STATIC_VECTOR_HPP

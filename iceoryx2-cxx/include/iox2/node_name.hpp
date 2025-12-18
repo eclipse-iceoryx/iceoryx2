@@ -38,8 +38,8 @@ class NodeNameView {
     auto operator=(const NodeNameView&) -> NodeNameView& = default;
     ~NodeNameView() = default;
 
-    /// Returns a [`iox2::container::StaticString`] containing the [`NodeName`].
-    auto to_string() const -> iox2::container::StaticString<IOX2_NODE_NAME_LENGTH>;
+    /// Returns a [`iox2::bb::StaticString`] containing the [`NodeName`].
+    auto to_string() const -> iox2::bb::StaticString<IOX2_NODE_NAME_LENGTH>;
 
     /// Creates a copy of the corresponding [`NodeName`] and returns it.
     auto to_owned() const -> NodeName;
@@ -77,8 +77,8 @@ class NodeName {
     /// [`SemanticStringError`] otherwise the [`NodeName`].
     static auto create(const char* value) -> iox2::bb::Expected<NodeName, bb::SemanticStringError>;
 
-    /// Returns a [`iox2::container::StaticString`] containing the [`NodeName`].
-    auto to_string() const -> iox2::container::StaticString<IOX2_NODE_NAME_LENGTH>;
+    /// Returns a [`iox2::bb::StaticString`] containing the [`NodeName`].
+    auto to_string() const -> iox2::bb::StaticString<IOX2_NODE_NAME_LENGTH>;
 
   private:
     friend class NodeBuilder;

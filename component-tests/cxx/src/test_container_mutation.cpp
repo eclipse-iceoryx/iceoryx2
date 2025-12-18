@@ -13,7 +13,7 @@
 #include "iox2/component-tests/common.hpp"
 
 #include <iox2/bb/optional.hpp>
-#include <iox2/container/static_vector.hpp>
+#include <iox2/bb/static_vector.hpp>
 
 #include <iostream>
 
@@ -36,38 +36,38 @@ class ContainerMutationTest : public IComponentTest {
 struct ContainerMutationTestRequest {
     // IOX2_TYPE_NAME is equivalent to the payload type name used on the Rust side
     static constexpr const char* IOX2_TYPE_NAME = "ContainerMutationTestRequest";
-    iox2::container::StaticVector<int32_t, 10> vector_add_element;
-    iox2::container::StaticVector<int32_t, 10> vector_remove_element;
-    iox2::container::StaticString<64> string_append;
-    iox2::container::StaticVector<iox2::container::StaticString<16>, 5> vector_strings_change_middle;
+    iox2::bb::StaticVector<int32_t, 10> vector_add_element;
+    iox2::bb::StaticVector<int32_t, 10> vector_remove_element;
+    iox2::bb::StaticString<64> string_append;
+    iox2::bb::StaticVector<iox2::bb::StaticString<16>, 5> vector_strings_change_middle;
 };
 
 struct ContainerMutationTestResponse {
     // IOX2_TYPE_NAME is equivalent to the payload type name used on the Rust side
     static constexpr const char* IOX2_TYPE_NAME = "ContainerMutationTestResponse";
-    iox2::container::StaticVector<int32_t, 10> vector_add_element;
-    iox2::container::StaticVector<int32_t, 10> vector_remove_element;
-    iox2::container::StaticString<64> string_append;
-    iox2::container::StaticVector<iox2::container::StaticString<16>, 5> vector_strings_change_middle;
+    iox2::bb::StaticVector<int32_t, 10> vector_add_element;
+    iox2::bb::StaticVector<int32_t, 10> vector_remove_element;
+    iox2::bb::StaticString<64> string_append;
+    iox2::bb::StaticVector<iox2::bb::StaticString<16>, 5> vector_strings_change_middle;
 };
 
 auto check_request(ContainerMutationTestRequest const& req) -> bool {
-    if (req.vector_add_element != iox2::container::StaticVector<int32_t, 10>({ 1, 2, 3, 4 })) {
+    if (req.vector_add_element != iox2::bb::StaticVector<int32_t, 10>({ 1, 2, 3, 4 })) {
         return false;
     }
-    if (req.vector_remove_element != iox2::container::StaticVector<int32_t, 10>({ 1, 2, 9999, 3, 4, 9999, 5, 9999 })) {
+    if (req.vector_remove_element != iox2::bb::StaticVector<int32_t, 10>({ 1, 2, 9999, 3, 4, 9999, 5, 9999 })) {
         return false;
     }
-    if (req.string_append != *iox2::container::StaticString<64>::from_utf8("Hello")) {
+    if (req.string_append != *iox2::bb::StaticString<64>::from_utf8("Hello")) {
         return false;
     }
     if (req.vector_strings_change_middle
-        != iox2::container::StaticVector<iox2::container::StaticString<16>, 5>(
-            { *iox2::container::StaticString<16>::from_utf8("Howdy!"),
-              *iox2::container::StaticString<16>::from_utf8("Yeehaw!"),
-              *iox2::container::StaticString<16>::from_utf8("How's the missus"),
-              *iox2::container::StaticString<16>::from_utf8("I'll be gone"),
-              *iox2::container::StaticString<16>::from_utf8("See you soon") })) {
+        != iox2::bb::StaticVector<iox2::bb::StaticString<16>, 5>(
+            { *iox2::bb::StaticString<16>::from_utf8("Howdy!"),
+              *iox2::bb::StaticString<16>::from_utf8("Yeehaw!"),
+              *iox2::bb::StaticString<16>::from_utf8("How's the missus"),
+              *iox2::bb::StaticString<16>::from_utf8("I'll be gone"),
+              *iox2::bb::StaticString<16>::from_utf8("See you soon") })) {
         return false;
     }
     return true;

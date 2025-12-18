@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/container/static_vector.hpp"
+#include "iox2/bb/static_vector.hpp"
 
 #include "testing/observable.hpp"
 #include "testing/test_utils.hpp"
@@ -21,9 +21,9 @@
 #include <string>
 
 namespace {
-using iox2::container::testing::Observable;
+using iox2::bb::testing::Observable;
 
-class StaticVectorFixture : public iox2::container::testing::VerifyAllObservableInteractionsFixture { };
+class StaticVectorFixture : public iox2::bb::testing::VerifyAllObservableInteractionsFixture { };
 
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
 constexpr size_t const G_TEST_ARRAY_SIZE = 5;
@@ -31,38 +31,38 @@ constexpr size_t const G_TEST_ARRAY_SIZE = 5;
 int32_t const G_TEST_ARRAY[G_TEST_ARRAY_SIZE] = { 4, 9, 77, 32, -5 };
 
 
-static_assert(std::is_standard_layout<iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>>::value,
+static_assert(std::is_standard_layout<iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>>::value,
               "StaticVector must be standard layout");
 
 TEST(StaticVector, default_constructor_initializes_to_empty) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> const sut;
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> const sut;
     ASSERT_TRUE(sut.empty());
 }
 
 TEST_F(StaticVectorFixture, default_constructor_does_not_construct_any_objects) {
-    iox2::container::StaticVector<Observable, G_TEST_ARRAY_SIZE> const sut;
+    iox2::bb::StaticVector<Observable, G_TEST_ARRAY_SIZE> const sut;
     ASSERT_TRUE(sut.empty());
 }
 
 TEST(StaticVector, copy_constructor_copies_vector_contents) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> src_vec;
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> src_vec;
     {
-        iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(src_vec);
-        iox2::container::testing::opaque_use(sut);
+        iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(src_vec);
+        iox2::bb::testing::opaque_use(sut);
         ASSERT_TRUE(sut.empty());
         ASSERT_EQ(sut.size(), 0);
     }
     ASSERT_TRUE(src_vec.try_emplace_back(1));
     {
-        iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(src_vec);
-        iox2::container::testing::opaque_use(sut);
+        iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(src_vec);
+        iox2::bb::testing::opaque_use(sut);
         ASSERT_EQ(sut.size(), 1);
         EXPECT_EQ(sut.unchecked_access()[0], 1);
     }
     ASSERT_TRUE(src_vec.try_emplace_back(2));
     {
-        iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(src_vec);
-        iox2::container::testing::opaque_use(sut);
+        iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(src_vec);
+        iox2::bb::testing::opaque_use(sut);
         ASSERT_EQ(sut.size(), 2);
         EXPECT_EQ(sut.unchecked_access()[0], 1);
         EXPECT_EQ(sut.unchecked_access()[1], 2);
@@ -71,8 +71,8 @@ TEST(StaticVector, copy_constructor_copies_vector_contents) {
     ASSERT_TRUE(src_vec.try_emplace_back(G_TEST_ARRAY[1]));
     ASSERT_TRUE(src_vec.try_emplace_back(G_TEST_ARRAY[3]));
     {
-        iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(src_vec);
-        iox2::container::testing::opaque_use(sut);
+        iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(src_vec);
+        iox2::bb::testing::opaque_use(sut);
         ASSERT_EQ(sut.size(), G_TEST_ARRAY_SIZE);
         EXPECT_EQ(sut.unchecked_access()[0], 1);
         EXPECT_EQ(sut.unchecked_access()[1], 2);
@@ -83,24 +83,24 @@ TEST(StaticVector, copy_constructor_copies_vector_contents) {
 }
 
 TEST(StaticVector, copy_constructor_copies_vector_contents_to_larger_capacity) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> src_vec;
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> src_vec;
     {
-        iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut(src_vec);
-        iox2::container::testing::opaque_use(sut);
+        iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut(src_vec);
+        iox2::bb::testing::opaque_use(sut);
         ASSERT_TRUE(sut.empty());
         ASSERT_EQ(sut.size(), 0);
     }
     ASSERT_TRUE(src_vec.try_emplace_back(1));
     {
-        iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut(src_vec);
-        iox2::container::testing::opaque_use(sut);
+        iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut(src_vec);
+        iox2::bb::testing::opaque_use(sut);
         ASSERT_EQ(sut.size(), 1);
         EXPECT_EQ(sut.unchecked_access()[0], 1);
     }
     ASSERT_TRUE(src_vec.try_emplace_back(2));
     {
-        iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut(src_vec);
-        iox2::container::testing::opaque_use(sut);
+        iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut(src_vec);
+        iox2::bb::testing::opaque_use(sut);
         ASSERT_EQ(sut.size(), 2);
         EXPECT_EQ(sut.unchecked_access()[0], 1);
         EXPECT_EQ(sut.unchecked_access()[1], 2);
@@ -109,8 +109,8 @@ TEST(StaticVector, copy_constructor_copies_vector_contents_to_larger_capacity) {
     ASSERT_TRUE(src_vec.try_emplace_back(G_TEST_ARRAY[1]));
     ASSERT_TRUE(src_vec.try_emplace_back(G_TEST_ARRAY[3]));
     {
-        iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut(src_vec);
-        iox2::container::testing::opaque_use(sut);
+        iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut(src_vec);
+        iox2::bb::testing::opaque_use(sut);
         ASSERT_EQ(sut.size(), G_TEST_ARRAY_SIZE);
         EXPECT_EQ(sut.unchecked_access()[0], 1);
         EXPECT_EQ(sut.unchecked_access()[1], 2);
@@ -121,8 +121,8 @@ TEST(StaticVector, copy_constructor_copies_vector_contents_to_larger_capacity) {
 }
 
 TEST(StaticVector, copy_assignment_assigns_vector_contents) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> src_vec;
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut;
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> src_vec;
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut;
     ASSERT_TRUE(sut.empty());
     sut = src_vec;
     ASSERT_TRUE(sut.empty());
@@ -152,8 +152,8 @@ TEST(StaticVector, copy_assignment_assigns_vector_contents) {
 }
 
 TEST(StaticVector, copy_assignment_returns_reference_to_self) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> src_vec;
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut;
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> src_vec;
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut;
     EXPECT_EQ(&(sut = src_vec), &sut);
     ASSERT_TRUE(src_vec.try_push_back(1));
     ASSERT_TRUE(src_vec.try_push_back(2));
@@ -162,9 +162,9 @@ TEST(StaticVector, copy_assignment_returns_reference_to_self) {
 }
 
 TEST(StaticVector, copy_assignment_self_assignment) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
     auto const& reference_to_self = sut;
-    iox2::container::testing::opaque_use(&reference_to_self);
+    iox2::bb::testing::opaque_use(&reference_to_self);
     sut = reference_to_self;
     ASSERT_TRUE(!sut.empty());
     ASSERT_EQ(sut.size(), G_TEST_ARRAY_SIZE);
@@ -176,25 +176,25 @@ TEST(StaticVector, copy_assignment_self_assignment) {
 }
 
 TEST(StaticVector, move_assignment_assigns_vector_contents) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> src_vec;
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut;
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> src_vec;
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut;
     ASSERT_TRUE(sut.empty());
     sut = std::move(src_vec);
-    src_vec = iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> {};
+    src_vec = iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> {};
     ASSERT_TRUE(sut.empty());
     ASSERT_EQ(sut.size(), 0);
     ASSERT_TRUE(src_vec.try_emplace_back(1));
     sut = std::move(src_vec);
     ASSERT_EQ(sut.size(), 1);
     EXPECT_EQ(sut.unchecked_access()[0], 1);
-    src_vec = iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> {};
+    src_vec = iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> {};
     ASSERT_TRUE(src_vec.try_emplace_back(1));
     ASSERT_TRUE(src_vec.try_emplace_back(2));
     sut = std::move(src_vec);
     ASSERT_EQ(sut.size(), 2);
     EXPECT_EQ(sut.unchecked_access()[0], 1);
     EXPECT_EQ(sut.unchecked_access()[1], 2);
-    src_vec = iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> {};
+    src_vec = iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> {};
     ASSERT_TRUE(src_vec.try_emplace_back(1));
     ASSERT_TRUE(src_vec.try_emplace_back(2));
     ASSERT_TRUE(src_vec.try_emplace_back(G_TEST_ARRAY[0]));
@@ -207,16 +207,16 @@ TEST(StaticVector, move_assignment_assigns_vector_contents) {
     EXPECT_EQ(sut.unchecked_access()[2], G_TEST_ARRAY[0]);
     EXPECT_EQ(sut.unchecked_access()[3], G_TEST_ARRAY[1]);
     EXPECT_EQ(sut.unchecked_access()[4], G_TEST_ARRAY[3]);
-    src_vec = iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> {};
+    src_vec = iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> {};
     sut = std::move(src_vec);
     ASSERT_EQ(sut.size(), 0);
 }
 
 TEST(StaticVector, move_assignment_returns_reference_to_self) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> src_vec;
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut;
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> src_vec;
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut;
     EXPECT_EQ(&(sut = std::move(src_vec)), &sut);
-    src_vec = iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> {};
+    src_vec = iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> {};
     ASSERT_TRUE(src_vec.try_push_back(1));
     ASSERT_TRUE(src_vec.try_push_back(2));
     ASSERT_TRUE(src_vec.try_push_back(3));
@@ -224,7 +224,7 @@ TEST(StaticVector, move_assignment_returns_reference_to_self) {
 }
 
 TEST(StaticVector, array_constructor_copies_array_elements_into_vector) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> const sut(G_TEST_ARRAY);
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> const sut(G_TEST_ARRAY);
     ASSERT_TRUE(!sut.empty());
     ASSERT_EQ(sut.size(), G_TEST_ARRAY_SIZE);
     EXPECT_EQ(*sut.element_at(0), G_TEST_ARRAY[0]);
@@ -235,14 +235,14 @@ TEST(StaticVector, array_constructor_copies_array_elements_into_vector) {
 }
 
 TEST(StaticVector, array_constructor_leaves_uninitialized_elements_up_to_capacity) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> const sut(G_TEST_ARRAY);
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> const sut(G_TEST_ARRAY);
     ASSERT_TRUE(!sut.empty());
     ASSERT_EQ(sut.size(), G_TEST_ARRAY_SIZE);
     EXPECT_TRUE(!sut.element_at(G_TEST_ARRAY_SIZE).has_value());
 }
 
 TEST_F(StaticVectorFixture, from_value_default_constructs_count_elements) {
-    auto const opt_sut = iox2::container::StaticVector<Observable, 4>::from_value(4);
+    auto const opt_sut = iox2::bb::StaticVector<Observable, 4>::from_value(4);
     ASSERT_TRUE(opt_sut);
     auto const& sut = *opt_sut;
     ASSERT_EQ(sut.size(), 4);
@@ -262,7 +262,7 @@ TEST_F(StaticVectorFixture, from_value_default_constructs_count_elements) {
 }
 
 TEST_F(StaticVectorFixture, from_value_constructs_empty_vector_for_zero_elements) {
-    auto const sut = iox2::container::StaticVector<Observable, 4>::from_value(0);
+    auto const sut = iox2::bb::StaticVector<Observable, 4>::from_value(0);
     ASSERT_TRUE(sut);
     ASSERT_EQ(sut->size(), 0);
     ASSERT_EQ(Observable::s_counter.was_initialized, 1);
@@ -277,13 +277,13 @@ TEST_F(StaticVectorFixture, from_value_constructs_empty_vector_for_zero_elements
 }
 
 TEST_F(StaticVectorFixture, from_value_fails_if_exceeding_capacity) {
-    ASSERT_FALSE((iox2::container::StaticVector<Observable, 4>::from_value(5)));
+    ASSERT_FALSE((iox2::bb::StaticVector<Observable, 4>::from_value(5)));
 }
 
 TEST_F(StaticVectorFixture, from_value_constructs_count_copies_of_element) {
     int32_t const tracking_id = 99;
     Observable const obj { tracking_id };
-    auto const sut = iox2::container::StaticVector<Observable, 4>::from_value(4, obj);
+    auto const sut = iox2::bb::StaticVector<Observable, 4>::from_value(4, obj);
     ASSERT_TRUE(sut);
     ASSERT_EQ(sut->size(), 4);
     EXPECT_EQ(sut->unchecked_access()[0].id, tracking_id);
@@ -304,7 +304,7 @@ TEST_F(StaticVectorFixture, from_value_constructs_count_copies_of_element) {
 TEST_F(StaticVectorFixture, from_value_with_object_constructs_empty_vector_for_zero_elements) {
     int32_t const tracking_id = 99;
     Observable const obj { tracking_id };
-    auto const sut = iox2::container::StaticVector<Observable, 4>::from_value(0, obj);
+    auto const sut = iox2::bb::StaticVector<Observable, 4>::from_value(0, obj);
     ASSERT_TRUE(sut);
     ASSERT_EQ(sut->size(), 0);
     ASSERT_EQ(Observable::s_counter.was_initialized, 1);
@@ -321,7 +321,7 @@ TEST_F(StaticVectorFixture, from_value_with_object_constructs_empty_vector_for_z
 TEST_F(StaticVectorFixture, from_value_with_static_count_constructs_count_copies_of_element) {
     int32_t const tracking_id = 142;
     Observable const obj { tracking_id };
-    auto const sut = iox2::container::StaticVector<Observable, 4>::from_value<4>(obj);
+    auto const sut = iox2::bb::StaticVector<Observable, 4>::from_value<4>(obj);
     ASSERT_EQ(sut.size(), 4);
     EXPECT_EQ(sut.unchecked_access()[0].id, tracking_id);
     EXPECT_EQ(sut.unchecked_access()[1].id, tracking_id);
@@ -341,7 +341,7 @@ TEST_F(StaticVectorFixture, from_value_with_static_count_constructs_count_copies
 TEST_F(StaticVectorFixture, from_value_with_static_count_constructs_one_copy_of_element) {
     int32_t const tracking_id = 147;
     Observable const obj { tracking_id };
-    auto const sut = iox2::container::StaticVector<Observable, 4>::from_value<1>(obj);
+    auto const sut = iox2::bb::StaticVector<Observable, 4>::from_value<1>(obj);
     ASSERT_EQ(sut.size(), 1);
     EXPECT_EQ(sut.unchecked_access()[0].id, tracking_id);
     ASSERT_EQ(Observable::s_counter.was_initialized, 1);
@@ -358,7 +358,7 @@ TEST_F(StaticVectorFixture, from_value_with_static_count_constructs_one_copy_of_
 TEST_F(StaticVectorFixture, from_value_with_static_count_constructs_empty_vector_for_zero_elements) {
     int32_t const tracking_id = 159;
     Observable const obj { tracking_id };
-    auto const sut = iox2::container::StaticVector<Observable, 4>::from_value<0>(obj);
+    auto const sut = iox2::bb::StaticVector<Observable, 4>::from_value<0>(obj);
     ASSERT_EQ(sut.size(), 0);
     ASSERT_EQ(Observable::s_counter.was_initialized, 1);
     ASSERT_EQ(Observable::s_counter.was_copy_constructed, 0);
@@ -375,14 +375,14 @@ TEST_F(StaticVectorFixture, from_value_with_static_count_constructs_empty_vector
 TEST_F(StaticVectorFixture, from_value_with_object_fails_if_exceeding_capacity) {
     int32_t const tracking_id = 99;
     Observable const obj { tracking_id };
-    ASSERT_FALSE((iox2::container::StaticVector<Observable, 4>::from_value(5, obj)));
+    ASSERT_FALSE((iox2::bb::StaticVector<Observable, 4>::from_value(5, obj)));
     expected_count().was_initialized = 1;
     expected_count().was_destructed = 1;
 }
 
 TEST(StaticVector, from_range_unchecked_constructs_from_range) {
-    auto const sut = iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_range_unchecked(
-        std::begin(G_TEST_ARRAY), std::end(G_TEST_ARRAY));
+    auto const sut = iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_range_unchecked(std::begin(G_TEST_ARRAY),
+                                                                                              std::end(G_TEST_ARRAY));
     ASSERT_TRUE(sut);
     ASSERT_EQ(sut->size(), G_TEST_ARRAY_SIZE);
     EXPECT_EQ(sut->unchecked_access()[0], G_TEST_ARRAY[0]);
@@ -393,20 +393,20 @@ TEST(StaticVector, from_range_unchecked_constructs_from_range) {
 }
 
 TEST(StaticVector, from_range_unchecked_from_empty_range_constructs_empty_vector) {
-    auto const sut = iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_range_unchecked(
-        std::end(G_TEST_ARRAY), std::end(G_TEST_ARRAY));
+    auto const sut = iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_range_unchecked(std::end(G_TEST_ARRAY),
+                                                                                              std::end(G_TEST_ARRAY));
     ASSERT_TRUE(sut);
     ASSERT_TRUE(sut->empty());
 }
 
 TEST(StaticVector, from_range_unchecked_fails_if_exceeding_capacity) {
-    auto const sut = iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE - 1>::from_range_unchecked(
+    auto const sut = iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE - 1>::from_range_unchecked(
         std::begin(G_TEST_ARRAY), std::end(G_TEST_ARRAY));
     ASSERT_FALSE(sut);
 }
 
 TEST(StaticVector, from_range_unchecked_constructs_from_range_object) {
-    auto const sut = iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_range_unchecked(G_TEST_ARRAY);
+    auto const sut = iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_range_unchecked(G_TEST_ARRAY);
     ASSERT_TRUE(sut);
     ASSERT_EQ(sut->size(), G_TEST_ARRAY_SIZE);
     EXPECT_EQ(sut->unchecked_access()[0], G_TEST_ARRAY[0]);
@@ -417,12 +417,12 @@ TEST(StaticVector, from_range_unchecked_constructs_from_range_object) {
 }
 
 TEST(StaticVector, from_range_unchecked_fails_if_range_object_is_exceeding_capacity) {
-    auto const sut = iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE - 1>::from_range_unchecked(G_TEST_ARRAY);
+    auto const sut = iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE - 1>::from_range_unchecked(G_TEST_ARRAY);
     ASSERT_FALSE(sut);
 }
 
 TEST(StaticVector, from_initializer_list_construction) {
-    auto const sut = iox2::container::StaticVector<int32_t, 4>::from_initializer_list({ 1, 2, 3, 4 });
+    auto const sut = iox2::bb::StaticVector<int32_t, 4>::from_initializer_list({ 1, 2, 3, 4 });
     ASSERT_TRUE(sut);
     ASSERT_EQ(sut->size(), 4);
     ASSERT_EQ(sut->unchecked_access()[0], 1);
@@ -432,26 +432,26 @@ TEST(StaticVector, from_initializer_list_construction) {
 }
 
 TEST(StaticVector, from_initializer_list_fails_if_exceeding_capacity) {
-    ASSERT_FALSE((iox2::container::StaticVector<int32_t, 3>::from_initializer_list({ 1, 2, 3, 4 })));
-    ASSERT_FALSE((iox2::container::StaticVector<int32_t, 4>::from_initializer_list({ 0, 0, 0, 0, 0 })));
+    ASSERT_FALSE((iox2::bb::StaticVector<int32_t, 3>::from_initializer_list({ 1, 2, 3, 4 })));
+    ASSERT_FALSE((iox2::bb::StaticVector<int32_t, 4>::from_initializer_list({ 0, 0, 0, 0, 0 })));
 }
 
 TEST(StaticVector, try_push_back_inserts_elements_at_the_back_if_there_is_room) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut(G_TEST_ARRAY);
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut(G_TEST_ARRAY);
     int32_t const test_value = 99;
     ASSERT_TRUE(sut.try_push_back(test_value));
     EXPECT_EQ(*sut.element_at(G_TEST_ARRAY_SIZE), test_value);
 }
 
 TEST(StaticVector, try_push_back_returns_false_if_there_is_no_room) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
     int32_t const test_value = 99;
     ASSERT_TRUE(!sut.try_push_back(test_value));
 }
 
 TEST_F(StaticVectorFixture, try_push_back_copies_values_into_vector) {
     {
-        iox2::container::StaticVector<Observable, G_TEST_ARRAY_SIZE> sut;
+        iox2::bb::StaticVector<Observable, G_TEST_ARRAY_SIZE> sut;
         int32_t const contained_value = 12345;
         {
             Observable const observable_value { contained_value };
@@ -472,7 +472,7 @@ TEST_F(StaticVectorFixture, try_push_back_copies_values_into_vector) {
 
 TEST_F(StaticVectorFixture, try_push_back_moves_temporaries_into_vector) {
     {
-        iox2::container::StaticVector<Observable, G_TEST_ARRAY_SIZE> sut;
+        iox2::bb::StaticVector<Observable, G_TEST_ARRAY_SIZE> sut;
         int32_t const contained_value = 12345;
         ASSERT_TRUE(sut.try_push_back(Observable { contained_value }));
         ASSERT_TRUE(sut.element_at(0).has_value());
@@ -489,7 +489,7 @@ TEST_F(StaticVectorFixture, try_push_back_moves_temporaries_into_vector) {
 
 TEST_F(StaticVectorFixture, try_push_back_fails_for_temporaries_if_vector_is_full) {
     constexpr size_t const SMALL_VECTOR_CAPACITY = 1;
-    iox2::container::StaticVector<Observable, SMALL_VECTOR_CAPACITY> sut;
+    iox2::bb::StaticVector<Observable, SMALL_VECTOR_CAPACITY> sut;
     ASSERT_TRUE(sut.try_push_back(Observable {}));
     EXPECT_EQ(Observable::s_counter.was_initialized, 1);
     EXPECT_EQ(Observable::s_counter.was_move_constructed, 1);
@@ -503,7 +503,7 @@ TEST_F(StaticVectorFixture, try_push_back_fails_for_temporaries_if_vector_is_ful
 
 TEST_F(StaticVectorFixture, try_emplace_back_constructs_in_place_at_back_of_vector) {
     constexpr size_t const VECTOR_CAPACITY = 5;
-    iox2::container::StaticVector<Observable, VECTOR_CAPACITY> sut;
+    iox2::bb::StaticVector<Observable, VECTOR_CAPACITY> sut;
     int32_t const tracking_id = 99;
     ASSERT_TRUE(sut.try_emplace_back());
     ASSERT_TRUE(sut.try_emplace_back(tracking_id));
@@ -519,7 +519,7 @@ TEST_F(StaticVectorFixture, try_emplace_back_constructs_in_place_at_back_of_vect
 
 TEST_F(StaticVectorFixture, try_emplace_back_forwards_its_arguments) {
     constexpr size_t const VECTOR_CAPACITY = 5;
-    iox2::container::StaticVector<Observable, VECTOR_CAPACITY> sut;
+    iox2::bb::StaticVector<Observable, VECTOR_CAPACITY> sut;
     int32_t const tracking_id1 = 99;
     ASSERT_TRUE(sut.try_emplace_back(Observable { tracking_id1 }));
     EXPECT_EQ(Observable::s_counter.was_initialized, 1);
@@ -546,7 +546,7 @@ TEST_F(StaticVectorFixture, try_emplace_back_forwards_its_arguments) {
 
 TEST_F(StaticVectorFixture, try_emplace_back_fails_if_vector_is_full) {
     constexpr size_t const SMALL_VECTOR_CAPACITY = 1;
-    iox2::container::StaticVector<Observable, SMALL_VECTOR_CAPACITY> sut;
+    iox2::bb::StaticVector<Observable, SMALL_VECTOR_CAPACITY> sut;
     int32_t const tracking_id = 99;
     ASSERT_TRUE(sut.try_emplace_back(tracking_id));
     ASSERT_EQ(sut.size(), 1);
@@ -562,7 +562,7 @@ TEST_F(StaticVectorFixture, try_emplace_back_fails_if_vector_is_full) {
 
 TEST(StaticVector, try_emplace_at_inserts_elements_in_the_middle_of_vector) {
     constexpr size_t const VECTOR_CAPACITY = 3;
-    iox2::container::StaticVector<int32_t, VECTOR_CAPACITY> sut;
+    iox2::bb::StaticVector<int32_t, VECTOR_CAPACITY> sut;
     ASSERT_TRUE(sut.try_emplace_back(1));
     ASSERT_TRUE(sut.try_emplace_back(3));
     ASSERT_TRUE(sut.try_emplace_at(1, 2));
@@ -574,7 +574,7 @@ TEST(StaticVector, try_emplace_at_inserts_elements_in_the_middle_of_vector) {
 
 TEST(StaticVector, try_emplace_at_inserts_elements_at_the_front_of_vector) {
     constexpr size_t const VECTOR_CAPACITY = 3;
-    iox2::container::StaticVector<int32_t, VECTOR_CAPACITY> sut;
+    iox2::bb::StaticVector<int32_t, VECTOR_CAPACITY> sut;
     ASSERT_TRUE(sut.try_emplace_back(2));
     ASSERT_TRUE(sut.try_emplace_back(3));
     ASSERT_TRUE(sut.try_emplace_at(0, 1));
@@ -586,7 +586,7 @@ TEST(StaticVector, try_emplace_at_inserts_elements_at_the_front_of_vector) {
 
 TEST(StaticVector, try_emplace_at_inserts_elements_at_the_back_of_vector) {
     constexpr size_t const VECTOR_CAPACITY = 3;
-    iox2::container::StaticVector<int32_t, VECTOR_CAPACITY> sut;
+    iox2::bb::StaticVector<int32_t, VECTOR_CAPACITY> sut;
     ASSERT_TRUE(sut.try_emplace_back(1));
     ASSERT_TRUE(sut.try_emplace_back(2));
     ASSERT_TRUE(sut.try_emplace_at(2, 3));
@@ -598,7 +598,7 @@ TEST(StaticVector, try_emplace_at_inserts_elements_at_the_back_of_vector) {
 
 TEST(StaticVector, try_emplace_at_fails_if_vector_is_full_leaving_contents_intact) {
     constexpr size_t const VECTOR_CAPACITY = 3;
-    iox2::container::StaticVector<int32_t, VECTOR_CAPACITY> sut;
+    iox2::bb::StaticVector<int32_t, VECTOR_CAPACITY> sut;
     ASSERT_TRUE(sut.try_emplace_back(1));
     ASSERT_TRUE(sut.try_emplace_back(2));
     ASSERT_TRUE(sut.try_emplace_back(3));
@@ -611,7 +611,7 @@ TEST(StaticVector, try_emplace_at_fails_if_vector_is_full_leaving_contents_intac
 
 TEST(StaticVector, try_emplace_at_fails_if_index_is_invalid_leaving_contents_intact) {
     constexpr size_t const VECTOR_CAPACITY = 3;
-    iox2::container::StaticVector<int32_t, VECTOR_CAPACITY> sut;
+    iox2::bb::StaticVector<int32_t, VECTOR_CAPACITY> sut;
     ASSERT_TRUE(sut.try_emplace_back(1));
     ASSERT_TRUE(sut.try_emplace_back(2));
     ASSERT_FALSE(sut.try_emplace_at(3, 3));
@@ -623,7 +623,7 @@ TEST(StaticVector, try_emplace_at_fails_if_index_is_invalid_leaving_contents_int
 }
 
 TEST(StaticVector, try_erase_at_removes_element_vector) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
     ASSERT_TRUE(sut.try_erase_at(4));
     ASSERT_EQ(sut.size(), G_TEST_ARRAY_SIZE - 1);
     EXPECT_EQ(*sut.element_at(0), G_TEST_ARRAY[0]);
@@ -647,7 +647,7 @@ TEST(StaticVector, try_erase_at_removes_element_vector) {
 
 TEST(StaticVector, try_erase_at_fails_for_invalid_index) {
     {
-        iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut(G_TEST_ARRAY);
+        iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut(G_TEST_ARRAY);
         ASSERT_FALSE(sut.try_erase_at(G_TEST_ARRAY_SIZE));
         ASSERT_FALSE(sut.try_erase_at(G_TEST_ARRAY_SIZE + 1));
         ASSERT_FALSE(sut.try_erase_at(G_TEST_ARRAY_SIZE + 2));
@@ -659,7 +659,7 @@ TEST(StaticVector, try_erase_at_fails_for_invalid_index) {
         EXPECT_EQ(*sut.element_at(4), G_TEST_ARRAY[4]);
     }
     {
-        iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut;
+        iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut;
         ASSERT_FALSE(sut.try_erase_at(0));
         ASSERT_FALSE(sut.try_erase_at(1));
         ASSERT_FALSE(sut.try_erase_at(2));
@@ -668,7 +668,7 @@ TEST(StaticVector, try_erase_at_fails_for_invalid_index) {
 }
 
 TEST(StaticVector, try_erase_at_removes_range_of_elements_from_middle) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
     ASSERT_TRUE(sut.try_erase_at(1, 3));
     ASSERT_EQ(sut.size(), 3);
     EXPECT_EQ(*sut.element_at(0), G_TEST_ARRAY[0]);
@@ -677,7 +677,7 @@ TEST(StaticVector, try_erase_at_removes_range_of_elements_from_middle) {
 }
 
 TEST(StaticVector, try_erase_at_removes_range_of_elements_from_back) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
     ASSERT_TRUE(sut.try_erase_at(3, G_TEST_ARRAY_SIZE));
     ASSERT_EQ(sut.size(), 3);
     EXPECT_EQ(*sut.element_at(0), G_TEST_ARRAY[0]);
@@ -686,7 +686,7 @@ TEST(StaticVector, try_erase_at_removes_range_of_elements_from_back) {
 }
 
 TEST(StaticVector, try_erase_at_removes_range_of_elements_from_front) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
     ASSERT_TRUE(sut.try_erase_at(0, 3));
     ASSERT_EQ(sut.size(), 2);
     EXPECT_EQ(*sut.element_at(0), G_TEST_ARRAY[3]);
@@ -694,13 +694,13 @@ TEST(StaticVector, try_erase_at_removes_range_of_elements_from_front) {
 }
 
 TEST(StaticVector, try_erase_at_removes_range_of_elements_entire_range) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
     ASSERT_TRUE(sut.try_erase_at(0, G_TEST_ARRAY_SIZE));
     ASSERT_EQ(sut.size(), 0);
 }
 
 TEST(StaticVector, try_erase_at_removes_range_of_elements_empty_range) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
     ASSERT_TRUE(sut.try_erase_at(0, 0));
     ASSERT_TRUE(sut.try_erase_at(1, 1));
     ASSERT_TRUE(sut.try_erase_at(2, 2));
@@ -714,7 +714,7 @@ TEST(StaticVector, try_erase_at_removes_range_of_elements_empty_range) {
 }
 
 TEST(StaticVector, try_erase_at_fails_for_invalid_start_index_leaving_contents_intact) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
     ASSERT_FALSE(sut.try_erase_at(1, 0));
     ASSERT_FALSE(sut.try_erase_at(2, 0));
     ASSERT_FALSE(sut.try_erase_at(2, 1));
@@ -730,7 +730,7 @@ TEST(StaticVector, try_erase_at_fails_for_invalid_start_index_leaving_contents_i
 }
 
 TEST(StaticVector, try_erase_at_fails_for_invalid_end_index_leaving_contents_intact) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
     ASSERT_FALSE(sut.try_erase_at(0, 6));
     ASSERT_FALSE(sut.try_erase_at(0, 7));
     ASSERT_FALSE(sut.try_erase_at(0, 8));
@@ -744,7 +744,7 @@ TEST(StaticVector, try_erase_at_fails_for_invalid_end_index_leaving_contents_int
 
 TEST(StaticVector, try_insert_at_inserts_elements_in_the_middle_of_vector) {
     constexpr size_t const VECTOR_CAPACITY = 3;
-    iox2::container::StaticVector<int32_t, VECTOR_CAPACITY> sut;
+    iox2::bb::StaticVector<int32_t, VECTOR_CAPACITY> sut;
     ASSERT_TRUE(sut.try_emplace_back(1));
     ASSERT_TRUE(sut.try_emplace_back(3));
     ASSERT_TRUE(sut.try_insert_at(1, 2));
@@ -756,7 +756,7 @@ TEST(StaticVector, try_insert_at_inserts_elements_in_the_middle_of_vector) {
 
 TEST(StaticVector, try_insert_at_inserts_elements_at_the_front_of_vector) {
     constexpr size_t const VECTOR_CAPACITY = 3;
-    iox2::container::StaticVector<int32_t, VECTOR_CAPACITY> sut;
+    iox2::bb::StaticVector<int32_t, VECTOR_CAPACITY> sut;
     ASSERT_TRUE(sut.try_emplace_back(2));
     ASSERT_TRUE(sut.try_emplace_back(3));
     ASSERT_TRUE(sut.try_insert_at(0, 1));
@@ -768,7 +768,7 @@ TEST(StaticVector, try_insert_at_inserts_elements_at_the_front_of_vector) {
 
 TEST(StaticVector, try_insert_at_inserts_elements_at_the_back_of_vector) {
     constexpr size_t const VECTOR_CAPACITY = 3;
-    iox2::container::StaticVector<int32_t, VECTOR_CAPACITY> sut;
+    iox2::bb::StaticVector<int32_t, VECTOR_CAPACITY> sut;
     ASSERT_TRUE(sut.try_emplace_back(1));
     ASSERT_TRUE(sut.try_emplace_back(2));
     ASSERT_TRUE(sut.try_insert_at(2, 3));
@@ -780,7 +780,7 @@ TEST(StaticVector, try_insert_at_inserts_elements_at_the_back_of_vector) {
 
 TEST(StaticVector, try_insert_at_fails_if_vector_is_full_leaving_contents_intact) {
     constexpr size_t const VECTOR_CAPACITY = 3;
-    iox2::container::StaticVector<int32_t, VECTOR_CAPACITY> sut;
+    iox2::bb::StaticVector<int32_t, VECTOR_CAPACITY> sut;
     ASSERT_TRUE(sut.try_emplace_back(1));
     ASSERT_TRUE(sut.try_emplace_back(2));
     ASSERT_TRUE(sut.try_emplace_back(3));
@@ -793,7 +793,7 @@ TEST(StaticVector, try_insert_at_fails_if_vector_is_full_leaving_contents_intact
 
 TEST(StaticVector, try_insert_at_fails_if_index_is_invalid_leaving_contents_intact) {
     constexpr size_t const VECTOR_CAPACITY = 3;
-    iox2::container::StaticVector<int32_t, VECTOR_CAPACITY> sut;
+    iox2::bb::StaticVector<int32_t, VECTOR_CAPACITY> sut;
     ASSERT_TRUE(sut.try_emplace_back(1));
     ASSERT_TRUE(sut.try_emplace_back(2));
     ASSERT_FALSE(sut.try_insert_at(3, 3));
@@ -806,7 +806,7 @@ TEST(StaticVector, try_insert_at_fails_if_index_is_invalid_leaving_contents_inta
 
 TEST_F(StaticVectorFixture, try_insert_at_moves_elements_if_argument_is_rvalue) {
     constexpr size_t const VECTOR_CAPACITY = 3;
-    iox2::container::StaticVector<Observable, VECTOR_CAPACITY> sut;
+    iox2::bb::StaticVector<Observable, VECTOR_CAPACITY> sut;
     ASSERT_TRUE(sut.try_emplace_back(Observable {}));
     ASSERT_TRUE(sut.try_emplace_back(Observable {}));
     ASSERT_EQ(Observable::s_counter.was_copy_constructed, 0);
@@ -823,7 +823,7 @@ TEST_F(StaticVectorFixture, try_insert_at_moves_elements_if_argument_is_rvalue) 
 
 TEST_F(StaticVectorFixture, try_insert_at_copies_elements_if_argument_is_lvalue) {
     constexpr size_t const VECTOR_CAPACITY = 3;
-    iox2::container::StaticVector<Observable, VECTOR_CAPACITY> sut;
+    iox2::bb::StaticVector<Observable, VECTOR_CAPACITY> sut;
     ASSERT_TRUE(sut.try_emplace_back(Observable {}));
     ASSERT_TRUE(sut.try_emplace_back(Observable {}));
     ASSERT_EQ(Observable::s_counter.was_copy_constructed, 0);
@@ -845,7 +845,7 @@ TEST_F(StaticVectorFixture, try_insert_at_copies_elements_if_argument_is_lvalue)
 
 TEST(StaticVector, try_insert_at_inserting_range_of_elements_in_the_middle) {
     constexpr size_t const VECTOR_CAPACITY = 6;
-    iox2::container::StaticVector<int32_t, VECTOR_CAPACITY> sut;
+    iox2::bb::StaticVector<int32_t, VECTOR_CAPACITY> sut;
     int32_t const inserted_value = 100;
     ASSERT_TRUE(sut.try_emplace_back(1));
     ASSERT_TRUE(sut.try_emplace_back(2));
@@ -861,7 +861,7 @@ TEST(StaticVector, try_insert_at_inserting_range_of_elements_in_the_middle) {
 
 TEST(StaticVector, try_insert_at_inserting_range_of_elements_at_the_front) {
     constexpr size_t const VECTOR_CAPACITY = 6;
-    iox2::container::StaticVector<int32_t, VECTOR_CAPACITY> sut;
+    iox2::bb::StaticVector<int32_t, VECTOR_CAPACITY> sut;
     int32_t const inserted_value = 100;
     ASSERT_TRUE(sut.try_emplace_back(1));
     ASSERT_TRUE(sut.try_emplace_back(2));
@@ -877,7 +877,7 @@ TEST(StaticVector, try_insert_at_inserting_range_of_elements_at_the_front) {
 
 TEST(StaticVector, try_insert_at_inserting_range_of_elements_at_the_back) {
     constexpr size_t const VECTOR_CAPACITY = 6;
-    iox2::container::StaticVector<int32_t, VECTOR_CAPACITY> sut;
+    iox2::bb::StaticVector<int32_t, VECTOR_CAPACITY> sut;
     int32_t const inserted_value = 100;
     ASSERT_TRUE(sut.try_emplace_back(1));
     ASSERT_TRUE(sut.try_emplace_back(2));
@@ -893,7 +893,7 @@ TEST(StaticVector, try_insert_at_inserting_range_of_elements_at_the_back) {
 
 TEST(StaticVector, try_insert_at_inserting_range_fails_for_invalid_index_preserving_vector_contents) {
     constexpr size_t const VECTOR_CAPACITY = 10;
-    iox2::container::StaticVector<int32_t, VECTOR_CAPACITY> sut;
+    iox2::bb::StaticVector<int32_t, VECTOR_CAPACITY> sut;
     int32_t const inserted_value = 100;
     ASSERT_TRUE(sut.try_emplace_back(1));
     ASSERT_TRUE(sut.try_emplace_back(2));
@@ -907,7 +907,7 @@ TEST(StaticVector, try_insert_at_inserting_range_fails_for_invalid_index_preserv
 
 TEST(StaticVector, try_insert_at_inserting_range_fails_if_count_exceeds_capacity_preserving_vector_contents) {
     constexpr size_t const VECTOR_CAPACITY = 10;
-    iox2::container::StaticVector<int32_t, VECTOR_CAPACITY> sut;
+    iox2::bb::StaticVector<int32_t, VECTOR_CAPACITY> sut;
     int32_t const inserted_value = 100;
     ASSERT_TRUE(sut.try_emplace_back(1));
     ASSERT_TRUE(sut.try_emplace_back(2));
@@ -920,7 +920,7 @@ TEST(StaticVector, try_insert_at_inserting_range_fails_if_count_exceeds_capacity
 }
 
 TEST(StaticVector, try_insert_at_unchecked_inserts_a_range_of_elements_in_the_middle) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 2> sut;
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 2> sut;
     ASSERT_TRUE(sut.try_emplace_back(1));
     ASSERT_TRUE(sut.try_emplace_back(2));
     ASSERT_TRUE(sut.try_insert_at_unchecked(1, std::begin(G_TEST_ARRAY), std::end(G_TEST_ARRAY)));
@@ -935,7 +935,7 @@ TEST(StaticVector, try_insert_at_unchecked_inserts_a_range_of_elements_in_the_mi
 }
 
 TEST(StaticVector, try_insert_at_unchecked_inserts_a_range_of_elements_at_the_back) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 2> sut;
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 2> sut;
     ASSERT_TRUE(sut.try_emplace_back(1));
     ASSERT_TRUE(sut.try_emplace_back(2));
     ASSERT_TRUE(sut.try_insert_at_unchecked(2, std::begin(G_TEST_ARRAY), std::end(G_TEST_ARRAY)));
@@ -950,7 +950,7 @@ TEST(StaticVector, try_insert_at_unchecked_inserts_a_range_of_elements_at_the_ba
 }
 
 TEST(StaticVector, try_insert_at_unchecked_inserts_a_range_of_elements_at_the_front) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 2> sut;
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 2> sut;
     ASSERT_TRUE(sut.try_emplace_back(1));
     ASSERT_TRUE(sut.try_emplace_back(2));
     ASSERT_TRUE(sut.try_insert_at_unchecked(0, std::begin(G_TEST_ARRAY), std::end(G_TEST_ARRAY)));
@@ -965,7 +965,7 @@ TEST(StaticVector, try_insert_at_unchecked_inserts_a_range_of_elements_at_the_fr
 }
 
 TEST(StaticVector, try_insert_at_unchecked_fails_for_invalid_index_leaving_vector_contents_intact) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 2> sut;
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 2> sut;
     ASSERT_TRUE(sut.try_emplace_back(1));
     ASSERT_TRUE(sut.try_emplace_back(2));
     ASSERT_FALSE(sut.try_insert_at_unchecked(3, std::begin(G_TEST_ARRAY), std::end(G_TEST_ARRAY)));
@@ -977,7 +977,7 @@ TEST(StaticVector, try_insert_at_unchecked_fails_for_invalid_index_leaving_vecto
 }
 
 TEST(StaticVector, try_insert_at_unchecked_fails_for_exceeding_capacity_leaving_vector_contents_intact) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut;
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut;
     ASSERT_TRUE(sut.try_emplace_back(1));
     ASSERT_TRUE(sut.try_emplace_back(2));
     ASSERT_FALSE(sut.try_insert_at_unchecked(0, std::begin(G_TEST_ARRAY), std::end(G_TEST_ARRAY)));
@@ -987,7 +987,7 @@ TEST(StaticVector, try_insert_at_unchecked_fails_for_exceeding_capacity_leaving_
 }
 
 TEST(StaticVector, try_insert_at_unchecked_inserts_an_init_list_in_the_middle) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 2> sut;
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 2> sut;
     ASSERT_TRUE(sut.try_emplace_back(1));
     ASSERT_TRUE(sut.try_emplace_back(2));
     ASSERT_TRUE(sut.try_insert_at_unchecked(1, { G_TEST_ARRAY[0], G_TEST_ARRAY[1], G_TEST_ARRAY[2] }));
@@ -1000,7 +1000,7 @@ TEST(StaticVector, try_insert_at_unchecked_inserts_an_init_list_in_the_middle) {
 }
 
 TEST(StaticVector, try_insert_at_unchecked_inserts_init_list_at_the_back) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 2> sut;
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 2> sut;
     ASSERT_TRUE(sut.try_emplace_back(1));
     ASSERT_TRUE(sut.try_emplace_back(2));
     ASSERT_TRUE(sut.try_insert_at_unchecked(2, { G_TEST_ARRAY[0], G_TEST_ARRAY[1], G_TEST_ARRAY[2] }));
@@ -1013,7 +1013,7 @@ TEST(StaticVector, try_insert_at_unchecked_inserts_init_list_at_the_back) {
 }
 
 TEST(StaticVector, try_insert_at_unchecked_inserts_init_list_at_the_front) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 2> sut;
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 2> sut;
     ASSERT_TRUE(sut.try_emplace_back(1));
     ASSERT_TRUE(sut.try_emplace_back(2));
     ASSERT_TRUE(sut.try_insert_at_unchecked(0, { G_TEST_ARRAY[0], G_TEST_ARRAY[1], G_TEST_ARRAY[2] }));
@@ -1026,7 +1026,7 @@ TEST(StaticVector, try_insert_at_unchecked_inserts_init_list_at_the_front) {
 }
 
 TEST(StaticVector, try_insert_at_unchecked_init_list_fails_for_invalid_index_leaving_vector_contents_intact) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 2> sut;
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 2> sut;
     ASSERT_TRUE(sut.try_emplace_back(1));
     ASSERT_TRUE(sut.try_emplace_back(2));
     ASSERT_FALSE(sut.try_insert_at_unchecked(3, { G_TEST_ARRAY[0], G_TEST_ARRAY[1], G_TEST_ARRAY[2] }));
@@ -1038,7 +1038,7 @@ TEST(StaticVector, try_insert_at_unchecked_init_list_fails_for_invalid_index_lea
 }
 
 TEST(StaticVector, try_insert_at_unchecked_init_list_fails_for_exceeding_capacity_leaving_vector_contents_intact) {
-    iox2::container::StaticVector<int32_t, 4> sut;
+    iox2::bb::StaticVector<int32_t, 4> sut;
     ASSERT_TRUE(sut.try_emplace_back(1));
     ASSERT_TRUE(sut.try_emplace_back(2));
     ASSERT_FALSE(sut.try_insert_at_unchecked(0, { G_TEST_ARRAY[0], G_TEST_ARRAY[1], G_TEST_ARRAY[2] }));
@@ -1048,14 +1048,14 @@ TEST(StaticVector, try_insert_at_unchecked_init_list_fails_for_exceeding_capacit
 }
 
 TEST(StaticVector, clear_removes_all_elements) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut(G_TEST_ARRAY);
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut(G_TEST_ARRAY);
     sut.clear();
     ASSERT_TRUE(sut.empty());
     ASSERT_EQ(sut.size(), 0);
 }
 
 TEST(StaticVector, try_pop_back_removes_last_element) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
     ASSERT_TRUE(sut.try_pop_back());
     ASSERT_EQ(sut.size(), 4);
     EXPECT_EQ(sut.unchecked_access()[0], G_TEST_ARRAY[0]);
@@ -1084,14 +1084,13 @@ TEST(StaticVector, try_pop_back_removes_last_element) {
 }
 
 TEST(StaticVector, capacity_retuns_capacity) {
-    ASSERT_EQ((iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> { G_TEST_ARRAY }.capacity()),
-              G_TEST_ARRAY_SIZE);
-    ASSERT_EQ((iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> {}.capacity()), G_TEST_ARRAY_SIZE + 1);
-    ASSERT_EQ((iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 2> {}.capacity()), G_TEST_ARRAY_SIZE + 2);
+    ASSERT_EQ((iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> { G_TEST_ARRAY }.capacity()), G_TEST_ARRAY_SIZE);
+    ASSERT_EQ((iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> {}.capacity()), G_TEST_ARRAY_SIZE + 1);
+    ASSERT_EQ((iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 2> {}.capacity()), G_TEST_ARRAY_SIZE + 2);
 }
 
 TEST(StaticVector, element_at_retrieves_mutable_reference_to_element_at_index) {
-    iox2::container::StaticVector<int32_t, 4> sut;
+    iox2::bb::StaticVector<int32_t, 4> sut;
     ASSERT_TRUE(sut.try_emplace_back(1));
     ASSERT_EQ(sut.size(), 1);
     ASSERT_TRUE(sut.element_at(0));
@@ -1102,7 +1101,7 @@ TEST(StaticVector, element_at_retrieves_mutable_reference_to_element_at_index) {
 }
 
 TEST(StaticVector, element_at_fails_for_invalid_index) {
-    iox2::container::StaticVector<int32_t, 4> sut;
+    iox2::bb::StaticVector<int32_t, 4> sut;
     ASSERT_TRUE(sut.try_emplace_back(1));
     ASSERT_FALSE(sut.element_at(1));
     ASSERT_FALSE(sut.element_at(2));
@@ -1111,7 +1110,7 @@ TEST(StaticVector, element_at_fails_for_invalid_index) {
 }
 
 TEST(StaticVector, element_at_retrieves_immutable_reference_from_const_vector) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> const sut(G_TEST_ARRAY);
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> const sut(G_TEST_ARRAY);
     ASSERT_EQ(sut.size(), G_TEST_ARRAY_SIZE);
     ASSERT_TRUE(sut.element_at(0));
     EXPECT_EQ(*sut.element_at(0), G_TEST_ARRAY[0]);
@@ -1126,7 +1125,7 @@ TEST(StaticVector, element_at_retrieves_immutable_reference_from_const_vector) {
 }
 
 TEST(StaticVector, element_at_fails_for_invalid_index_from_const_vector) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> const sut(G_TEST_ARRAY);
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> const sut(G_TEST_ARRAY);
     ASSERT_EQ(sut.size(), G_TEST_ARRAY_SIZE);
     ASSERT_FALSE(sut.element_at(5));
     ASSERT_FALSE(sut.element_at(6));
@@ -1134,7 +1133,7 @@ TEST(StaticVector, element_at_fails_for_invalid_index_from_const_vector) {
 }
 
 TEST(StaticVector, front_element_returns_mutable_reference_to_first_element) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut(G_TEST_ARRAY);
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut(G_TEST_ARRAY);
     ASSERT_TRUE(sut.front_element());
     EXPECT_EQ(*sut.front_element(), G_TEST_ARRAY[0]);
     sut.front_element()->get() += 2;
@@ -1143,24 +1142,24 @@ TEST(StaticVector, front_element_returns_mutable_reference_to_first_element) {
 }
 
 TEST(StaticVector, front_element_fails_for_empty_vector) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut;
-    iox2::container::testing::opaque_use(sut);
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut;
+    iox2::bb::testing::opaque_use(sut);
     ASSERT_FALSE(sut.front_element());
 }
 
 TEST(StaticVector, front_element_const_returns_first_element) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> const sut(G_TEST_ARRAY);
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> const sut(G_TEST_ARRAY);
     ASSERT_TRUE(sut.front_element());
     EXPECT_EQ(*sut.front_element(), G_TEST_ARRAY[0]);
 }
 
 TEST(StaticVector, front_element_const_fails_for_empty_vector) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> const sut;
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> const sut;
     ASSERT_FALSE(sut.front_element());
 }
 
 TEST(StaticVector, back_element_returns_mutable_reference_to_first_element) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut(G_TEST_ARRAY);
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut(G_TEST_ARRAY);
     ASSERT_TRUE(sut.back_element());
     EXPECT_EQ(*sut.back_element(), G_TEST_ARRAY[G_TEST_ARRAY_SIZE - 1]);
     sut.back_element()->get() += 2;
@@ -1169,45 +1168,45 @@ TEST(StaticVector, back_element_returns_mutable_reference_to_first_element) {
 }
 
 TEST(StaticVector, back_element_fails_for_empty_vector) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut;
-    iox2::container::testing::opaque_use(sut);
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> sut;
+    iox2::bb::testing::opaque_use(sut);
     ASSERT_FALSE(sut.back_element());
 }
 
 TEST(StaticVector, back_element_const_returns_first_element) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> const sut(G_TEST_ARRAY);
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> const sut(G_TEST_ARRAY);
     ASSERT_TRUE(sut.back_element());
     EXPECT_EQ(*sut.back_element(), G_TEST_ARRAY[G_TEST_ARRAY_SIZE - 1]);
 }
 
 TEST(StaticVector, back_element_const_fails_for_empty_vector) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> const sut;
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE + 1> const sut;
     ASSERT_FALSE(sut.back_element());
 }
 
 TEST(StaticVector, unchecked_const_array_access) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> const sut(G_TEST_ARRAY);
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> const sut(G_TEST_ARRAY);
     // NOLINTNEXTLINE(readability-container-data-pointer) testing
     ASSERT_EQ(&sut.unchecked_access()[0], &sut.element_at(0).value().get());
 }
 
 TEST(StaticVector, unchecked_const_begin_iterator) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> const sut(G_TEST_ARRAY);
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> const sut(G_TEST_ARRAY);
     ASSERT_EQ(sut.unchecked_access().begin(), &sut.element_at(0).value().get());
 }
 
 TEST(StaticVector, unchecked_const_end_iterator) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> const sut(G_TEST_ARRAY);
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> const sut(G_TEST_ARRAY);
     ASSERT_EQ(sut.unchecked_access().end(), std::next(sut.unchecked_access().begin(), G_TEST_ARRAY_SIZE));
 }
 
 TEST(StaticVector, unchecked_const_data_pointer) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> const sut(G_TEST_ARRAY);
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> const sut(G_TEST_ARRAY);
     ASSERT_EQ(sut.unchecked_access().data(), &sut.element_at(0).value().get());
 }
 
 TEST(StaticVector, unchecked_mutable_array_access) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
     // NOLINTNEXTLINE(readability-container-data-pointer) testing
     ASSERT_EQ(&sut.unchecked_access()[0], &sut.element_at(0).value().get());
     sut.unchecked_access()[0] *= 2;
@@ -1215,84 +1214,83 @@ TEST(StaticVector, unchecked_mutable_array_access) {
 }
 
 TEST(StaticVector, unchecked_mutable_begin_iterator) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
     ASSERT_EQ(sut.unchecked_access().begin(), &sut.element_at(0).value().get());
     *sut.unchecked_access().begin() *= 2;
     EXPECT_EQ(*sut.element_at(0), G_TEST_ARRAY[0] * 2);
 }
 
 TEST(StaticVector, unchecked_mutable_end_iterator) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
     ASSERT_EQ(sut.unchecked_access().end(), std::next(sut.unchecked_access().begin(), G_TEST_ARRAY_SIZE));
     *(std::prev(sut.unchecked_access().end())) *= 2;
     EXPECT_EQ(*sut.element_at(G_TEST_ARRAY_SIZE - 1), G_TEST_ARRAY[G_TEST_ARRAY_SIZE - 1] * 2);
 }
 
 TEST(StaticVector, unchecked_mutable_data_pointer) {
-    iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
+    iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> sut(G_TEST_ARRAY);
     ASSERT_EQ(sut.unchecked_access().data(), &sut.element_at(0).value().get());
     *sut.unchecked_access().data() *= 2;
     EXPECT_EQ(*sut.element_at(0), G_TEST_ARRAY[0] * 2);
 }
 
 TEST(StaticVector, equality_comparison) {
-    ASSERT_TRUE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })
-                 == *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })));
-    ASSERT_FALSE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 0, 2, 3 })
-                  == *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })));
-    ASSERT_FALSE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })
-                  == *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 0, 2, 3 })));
-    ASSERT_FALSE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 0, 3 })
-                  == *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })));
-    ASSERT_FALSE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })
-                  == *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 0, 3 })));
-    ASSERT_FALSE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 0 })
-                  == *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })));
-    ASSERT_FALSE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })
-                  == *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 0 })));
-    ASSERT_FALSE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3, 4 })
-                  == *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })));
-    ASSERT_FALSE(
-        (*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })
-         == *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3, 4 })));
-    ASSERT_FALSE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1 })
-                  == *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 2 })));
-    ASSERT_TRUE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1 })
-                 == *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1 })));
-    ASSERT_TRUE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({})
-                 == *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({})));
+    ASSERT_TRUE((*iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })
+                 == *iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })));
+    ASSERT_FALSE((*iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 0, 2, 3 })
+                  == *iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })));
+    ASSERT_FALSE((*iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })
+                  == *iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 0, 2, 3 })));
+    ASSERT_FALSE((*iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 0, 3 })
+                  == *iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })));
+    ASSERT_FALSE((*iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })
+                  == *iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 0, 3 })));
+    ASSERT_FALSE((*iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 0 })
+                  == *iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })));
+    ASSERT_FALSE((*iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })
+                  == *iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 0 })));
+    ASSERT_FALSE((*iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3, 4 })
+                  == *iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })));
+    ASSERT_FALSE((*iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })
+                  == *iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3, 4 })));
+    ASSERT_FALSE((*iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1 })
+                  == *iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 2 })));
+    ASSERT_TRUE((*iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1 })
+                 == *iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1 })));
+    ASSERT_TRUE((*iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({})
+                 == *iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({})));
 }
 
 TEST(StaticVector, not_equal_comparison) {
-    ASSERT_FALSE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })
-                  != *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })));
-    ASSERT_TRUE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 0, 2, 3 })
-                 != *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })));
-    ASSERT_TRUE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })
-                 != *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 0, 2, 3 })));
-    ASSERT_TRUE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 0, 3 })
-                 != *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })));
-    ASSERT_TRUE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })
-                 != *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 0, 3 })));
-    ASSERT_TRUE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 0 })
-                 != *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })));
-    ASSERT_TRUE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })
-                 != *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 0 })));
-    ASSERT_TRUE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3, 4 })
-                 != *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })));
-    ASSERT_TRUE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })
-                 != *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3, 4 })));
-    ASSERT_TRUE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1 })
-                 != *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 2 })));
-    ASSERT_FALSE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1 })
-                  != *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1 })));
-    ASSERT_FALSE((*iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({})
-                  != *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({})));
+    ASSERT_FALSE((*iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })
+                  != *iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })));
+    ASSERT_TRUE((*iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 0, 2, 3 })
+                 != *iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })));
+    ASSERT_TRUE((*iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })
+                 != *iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 0, 2, 3 })));
+    ASSERT_TRUE((*iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 0, 3 })
+                 != *iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })));
+    ASSERT_TRUE((*iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })
+                 != *iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 0, 3 })));
+    ASSERT_TRUE((*iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 0 })
+                 != *iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })));
+    ASSERT_TRUE((*iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })
+                 != *iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 0 })));
+    ASSERT_TRUE((*iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3, 4 })
+                 != *iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })));
+    ASSERT_TRUE((*iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3 })
+                 != *iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1, 2, 3, 4 })));
+    ASSERT_TRUE((*iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1 })
+                 != *iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 2 })));
+    ASSERT_FALSE((*iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1 })
+                  != *iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({ 1 })));
+    ASSERT_FALSE((*iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({})
+                  != *iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_initializer_list({})));
 }
 
 TEST(StaticVector, ostream_insertion_converts_contents_to_string) {
     std::ostringstream sstr;
-    auto sut = *iox2::container::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_range_unchecked(G_TEST_ARRAY);
+    auto sut = *iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>::from_range_unchecked(G_TEST_ARRAY);
     sstr << sut;
     ASSERT_TRUE(sstr);
     EXPECT_EQ(sstr.str(), "StaticVector::<5> { m_size: 5, m_data: [ 4, 9, 77, 32, -5 ] }");
@@ -1333,7 +1331,7 @@ int32_t StaticVectorePrintable::s_print_count = 0;
 namespace {
 TEST(StaticVector, ostream_insertion_calls_ostream_inserter_for_values) {
     constexpr size_t const VECTOR_CAPACITY = 5;
-    iox2::container::StaticVector<StaticVectorePrintable, VECTOR_CAPACITY> sut;
+    iox2::bb::StaticVector<StaticVectorePrintable, VECTOR_CAPACITY> sut;
     StaticVectorePrintable::reset_print_count();
     std::ostringstream sstr;
     sstr << sut;

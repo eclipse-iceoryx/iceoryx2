@@ -10,14 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_INCLUDE_GUARD_CONTAINER_TESTING_TEST_UTILS_HPP
-#define IOX2_INCLUDE_GUARD_CONTAINER_TESTING_TEST_UTILS_HPP
+#ifndef IOX2_INCLUDE_GUARD_BB_TESTING_TEST_UTILS_HPP
+#define IOX2_INCLUDE_GUARD_BB_TESTING_TEST_UTILS_HPP
 
 #include <cstdint>
 #include <type_traits>
 
 namespace iox2 {
-namespace container {
+namespace bb {
 namespace testing {
 
 // An opaque function call that prevents the compiler from making arbitrary assumptions about how an object is used.
@@ -57,7 +57,7 @@ class CustomAddressOperator {
 };
 
 } // namespace testing
-} // namespace container
+} // namespace bb
 } // namespace iox2
 
-#endif
+#endif // IOX2_INCLUDE_GUARD_BB_TESTING_TEST_UTILS_HPP

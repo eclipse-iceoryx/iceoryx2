@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/container/static_string.hpp"
-#include "iox2/container/static_vector.hpp"
+#include "iox2/bb/static_string.hpp"
+#include "iox2/bb/static_vector.hpp"
 #include "iox2/iceoryx2.hpp"
 
 #include <cstdint>
@@ -19,15 +19,15 @@
 #include <utility>
 
 struct ComplexData {
-    iox2::container::StaticString<4> name;           // NOLINT
-    iox2::container::StaticVector<uint64_t, 4> data; // NOLINT
+    iox2::bb::StaticString<4> name;           // NOLINT
+    iox2::bb::StaticVector<uint64_t, 4> data; // NOLINT
 };
 
 struct ComplexDataType {
     uint64_t plain_old_data;
-    iox2::container::StaticString<8> text;                                  // NOLINT
-    iox2::container::StaticVector<uint64_t, 4> vec_of_data;                 // NOLINT
-    iox2::container::StaticVector<ComplexData, 404857> vec_of_complex_data; // NOLINT
+    iox2::bb::StaticString<8> text;                                  // NOLINT
+    iox2::bb::StaticVector<uint64_t, 4> vec_of_data;                 // NOLINT
+    iox2::bb::StaticVector<ComplexData, 404857> vec_of_complex_data; // NOLINT
 };
 
 constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_secs(1);
@@ -55,11 +55,11 @@ auto main() -> int {
 
         auto& payload = sample.payload_mut();
         payload.plain_old_data = counter;
-        payload.text = *iox2::container::StaticString<8>::from_utf8("hello"); // NOLINT
+        payload.text = *iox2::bb::StaticString<8>::from_utf8("hello"); // NOLINT
         payload.vec_of_data.try_push_back(counter);
         payload.vec_of_complex_data.try_push_back(
-            ComplexData { *iox2::container::StaticString<4>::from_utf8("bla"),
-                          iox2::container::StaticVector<uint64_t, 4>::from_value<2>(counter) });
+            ComplexData { *iox2::bb::StaticString<4>::from_utf8("bla"),
+                          iox2::bb::StaticVector<uint64_t, 4>::from_value<2>(counter) });
 
         auto initialized_sample = assume_init(std::move(sample));
         send(std::move(initialized_sample)).value();

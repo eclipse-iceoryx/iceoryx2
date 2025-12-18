@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/bb/optional.hpp"
-#include "iox2/container/static_string.hpp"
+#include "iox2/bb/static_string.hpp"
 #include "iox2/entry_handle_mut.hpp"
 #include "iox2/entry_value_uninit.hpp"
 #include "iox2/node.hpp"
@@ -1650,7 +1650,7 @@ constexpr uint64_t const STRING_CAPACITY = 25;
 struct Foo {
     Foo() = default;
     // NOLINTNEXTLINE(readability-identifier-length), come on, its a test
-    Foo(uint32_t a, int16_t b, uint8_t c, const container::StaticString<STRING_CAPACITY>& d)
+    Foo(uint32_t a, int16_t b, uint8_t c, const bb::StaticString<STRING_CAPACITY>& d)
         : m_a { a }
         , m_b { b }
         , m_c { c }
@@ -1665,7 +1665,7 @@ struct Foo {
     uint32_t m_a { 0 };
     int16_t m_b { 0 };
     uint8_t m_c { 0 };
-    container::StaticString<STRING_CAPACITY> m_d;
+    bb::StaticString<STRING_CAPACITY> m_d;
 };
 
 TYPED_TEST(ServiceBlackboardTest, simple_communication_with_key_struct_works) {
@@ -1673,8 +1673,8 @@ TYPED_TEST(ServiceBlackboardTest, simple_communication_with_key_struct_works) {
     constexpr int32_t VALUE_1 = 50;
     constexpr int32_t VALUE_2 = -12;
 
-    auto key_1 = Foo(2, -3, 0, container::StaticString<STRING_CAPACITY>::from_utf8("hatschu").value());
-    auto key_2 = Foo(2, -3, 0, container::StaticString<STRING_CAPACITY>::from_utf8("hatschuu").value());
+    auto key_1 = Foo(2, -3, 0, bb::StaticString<STRING_CAPACITY>::from_utf8("hatschu").value());
+    auto key_2 = Foo(2, -3, 0, bb::StaticString<STRING_CAPACITY>::from_utf8("hatschuu").value());
 
     const auto service_name = iox2_testing::generate_service_name();
 
@@ -1708,7 +1708,7 @@ TYPED_TEST(ServiceBlackboardTest, simple_communication_with_key_struct_works) {
 TYPED_TEST(ServiceBlackboardTest, adding_key_struct_twice_fails) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    auto key = Foo(2, -3, 0, container::StaticString<STRING_CAPACITY>::from_utf8("huiuiui").value());
+    auto key = Foo(2, -3, 0, bb::StaticString<STRING_CAPACITY>::from_utf8("huiuiui").value());
 
     const auto service_name = iox2_testing::generate_service_name();
 
@@ -1727,8 +1727,8 @@ TYPED_TEST(ServiceBlackboardTest, list_keys_with_key_struct_works) {
 
     const auto service_name = iox2_testing::generate_service_name();
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
-    std::vector<Foo> keys { Foo(2, -3, 0, container::StaticString<STRING_CAPACITY>::from_utf8("hatschu").value()),
-                            Foo(2, -3, 0, container::StaticString<STRING_CAPACITY>::from_utf8("hatschuu").value()) };
+    std::vector<Foo> keys { Foo(2, -3, 0, bb::StaticString<STRING_CAPACITY>::from_utf8("hatschu").value()),
+                            Foo(2, -3, 0, bb::StaticString<STRING_CAPACITY>::from_utf8("hatschuu").value()) };
     auto service = node.service_builder(service_name)
                        .template blackboard_creator<Foo>()
                        .template add<int32_t>(keys[0], -3)

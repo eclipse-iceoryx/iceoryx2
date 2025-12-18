@@ -13,11 +13,11 @@
 #ifndef IOX2_TYPE_NAME_HPP
 #define IOX2_TYPE_NAME_HPP
 
-#include "iox2/container/static_string.hpp"
+#include "iox2/bb/static_string.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 
 namespace iox2 {
-using TypeName = iox2::container::StaticString<IOX2_TYPE_NAME_LENGTH>;
+using TypeName = iox2::bb::StaticString<IOX2_TYPE_NAME_LENGTH>;
 } // namespace iox2
 
 #endif

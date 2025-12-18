@@ -21,7 +21,7 @@ auto ServiceId::c_str() const -> const char* {
     return m_value.unchecked_access().c_str();
 }
 
-ServiceId::ServiceId(const iox2::container::StaticString<IOX2_SERVICE_ID_LENGTH>& value)
+ServiceId::ServiceId(const iox2::bb::StaticString<IOX2_SERVICE_ID_LENGTH>& value)
     : m_value { value } {
 }
 } // namespace iox2

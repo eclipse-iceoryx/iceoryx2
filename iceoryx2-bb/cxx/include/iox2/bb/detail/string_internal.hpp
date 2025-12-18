@@ -10,14 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_INCLUDE_GUARD_CONTAINER_DETAIL_STRING_INTERNAL_HPP
-#define IOX2_INCLUDE_GUARD_CONTAINER_DETAIL_STRING_INTERNAL_HPP
+#ifndef IOX2_INCLUDE_GUARD_BB_DETAIL_STRING_INTERNAL_HPP
+#define IOX2_INCLUDE_GUARD_BB_DETAIL_STRING_INTERNAL_HPP
 
 #include <cstdint>
 #include <cstring>
 
 namespace iox2 {
-namespace container {
+namespace bb {
 template <uint64_t>
 class StaticString;
 
@@ -47,6 +47,7 @@ auto get_data(const CharArray<N>& data) -> const char* {
     return &data[0];
 }
 } // namespace detail
-} // namespace container
+} // namespace bb
 } // namespace iox2
-#endif // IOX2_INCLUDE_GUARD_CONTAINER_DETAIL_STRING_INTERNAL_HPP
+
+#endif // IOX2_INCLUDE_GUARD_BB_DETAIL_STRING_INTERNAL_HPP

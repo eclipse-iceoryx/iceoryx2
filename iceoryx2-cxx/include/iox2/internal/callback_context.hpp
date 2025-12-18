@@ -85,8 +85,8 @@ auto list_callback(iox2_node_state_e node_state,
             return bb::Optional<NodeDetails>();
         }
 
-        auto str = iox2::container::StaticString<iox2::bb::FileName::capacity()>::from_utf8_null_terminated_unchecked(
-            executable);
+        auto str =
+            iox2::bb::StaticString<iox2::bb::FileName::capacity()>::from_utf8_null_terminated_unchecked(executable);
         if (!str.has_value()) {
             return bb::Optional<NodeDetails>();
         }

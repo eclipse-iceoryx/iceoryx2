@@ -151,9 +151,8 @@ PortFactoryRequestResponse<Service, RequestPayload, RequestUserHeader, ResponseP
     iox2::legacy::UninitializedArray<char, IOX2_SERVICE_ID_LENGTH> buffer;
     iox2_port_factory_request_response_service_id(&m_handle, &buffer[0], IOX2_SERVICE_ID_LENGTH);
 
-    return ServiceId(
-        iox2::container::StaticString<IOX2_SERVICE_ID_LENGTH>::from_utf8_null_terminated_unchecked_truncated(
-            &buffer[0], IOX2_SERVICE_ID_LENGTH));
+    return ServiceId(iox2::bb::StaticString<IOX2_SERVICE_ID_LENGTH>::from_utf8_null_terminated_unchecked_truncated(
+        &buffer[0], IOX2_SERVICE_ID_LENGTH));
 }
 
 template <ServiceType Service,

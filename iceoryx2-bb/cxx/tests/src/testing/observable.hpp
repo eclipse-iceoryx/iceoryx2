@@ -10,15 +10,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_INCLUDE_GUARD_CONTAINER_TESTING_OBSERVABLE_HPP
-#define IOX2_INCLUDE_GUARD_CONTAINER_TESTING_OBSERVABLE_HPP
+#ifndef IOX2_INCLUDE_GUARD_BB_TESTING_OBSERVABLE_HPP
+#define IOX2_INCLUDE_GUARD_BB_TESTING_OBSERVABLE_HPP
 
 #include <gtest/gtest.h>
 
 #include <cstdint>
 
 namespace iox2 {
-namespace container {
+namespace bb {
 namespace testing {
 
 /// A mock type that tracks invocations of all special member functions and maintains an id for tracking copies.
@@ -95,7 +95,7 @@ class VerifyAllObservableInteractionsFixture : public ::testing::Test {
 };
 
 } // namespace testing
-} // namespace container
+} // namespace bb
 } // namespace iox2
 
-#endif
+#endif // IOX2_INCLUDE_GUARD_BB_TESTING_OBSERVABLE_HPP

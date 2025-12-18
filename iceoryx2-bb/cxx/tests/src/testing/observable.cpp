@@ -17,7 +17,7 @@
 #include <utility>
 
 namespace iox2 {
-namespace container {
+namespace bb {
 namespace testing {
 
 Observable::Counters Observable::s_counter = {};
@@ -129,5 +129,5 @@ auto VerifyAllObservableInteractionsFixture::expected_count() -> Observable::Cou
 }
 
 } // namespace testing
-} // namespace container
+} // namespace bb
 } // namespace iox2

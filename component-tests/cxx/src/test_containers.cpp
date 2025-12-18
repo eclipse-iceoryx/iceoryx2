@@ -12,7 +12,7 @@
 
 #include "iox2/component-tests/common.hpp"
 
-#include <iox2/container/static_vector.hpp>
+#include <iox2/bb/static_vector.hpp>
 
 #include <iostream>
 
@@ -98,7 +98,7 @@ struct alignas(64) ContainerTestOverAligned {
 
 template <typename TestType, uint64_t TestCapacity>
 auto check_metrics_for_vector(ContainerTestRequest const& req) -> bool {
-    iox2::container::StaticVector<TestType, TestCapacity> test_vec;
+    iox2::bb::StaticVector<TestType, TestCapacity> test_vec;
     auto const stats = test_vec.static_memory_layout_metrics();
     if ((stats.vector_size > std::numeric_limits<int32_t>::max())
         || (static_cast<int32_t>(stats.vector_size) != req.container_size)) {
@@ -149,7 +149,7 @@ auto check_metrics_for_vector(ContainerTestRequest const& req) -> bool {
 
 template <uint64_t TestCapacity>
 auto check_metrics_for_string(ContainerTestRequest const& req) -> bool {
-    iox2::container::StaticString<TestCapacity> test_string;
+    iox2::bb::StaticString<TestCapacity> test_string;
     auto const stats = test_string.static_memory_layout_metrics();
     if ((stats.string_size > std::numeric_limits<int32_t>::max())
         || (static_cast<int32_t>(stats.string_size) != req.container_size)) {
@@ -201,7 +201,7 @@ auto check_request(ContainerTestRequest const& req) -> bool {
         return check_metrics_for_vector<ContainerTestOverAligned, 5>(req);
     case ContainerTypeSequence::VecVec8_10:
         // NOLINTNEXTLINE(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
-        return check_metrics_for_vector<iox2::container::StaticVector<int8_t, 10>, 10>(req);
+        return check_metrics_for_vector<iox2::bb::StaticVector<int8_t, 10>, 10>(req);
     case ContainerTypeSequence::String_10:
         // NOLINTNEXTLINE(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
         return check_metrics_for_string<10>(req);

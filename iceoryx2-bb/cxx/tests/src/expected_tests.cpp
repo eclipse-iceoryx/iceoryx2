@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/bb/detail/expected.hpp"
+#include "iox2/bb/stl/expected.hpp"
 
 #include "testing/observable.hpp"
 
@@ -19,11 +19,11 @@
 
 namespace {
 using namespace ::testing;
-using namespace ::iox2::bb::detail;
+using namespace ::iox2::bb::stl;
 
-using iox2::container::testing::Observable;
+using iox2::bb::testing::Observable;
 
-class ExpectedFixture : public iox2::container::testing::DetectLeakedObservablesFixture { };
+class ExpectedFixture : public iox2::bb::testing::DetectLeakedObservablesFixture { };
 
 struct Value {
     int32_t val { 0 };

@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/bb/detail/optional.hpp"
+#include "iox2/bb/stl/optional.hpp"
 
 #include "testing/observable.hpp"
 #include "testing/test_utils.hpp"
@@ -18,11 +18,11 @@
 #include <gtest/gtest.h>
 
 namespace {
-using namespace iox2::bb::detail;
+using namespace iox2::bb::stl;
 
-using iox2::container::testing::Observable;
+using iox2::bb::testing::Observable;
 
-class OptionalFixture : public iox2::container::testing::DetectLeakedObservablesFixture { };
+class OptionalFixture : public iox2::bb::testing::DetectLeakedObservablesFixture { };
 
 TEST(Optional, default_constructor_initializes_empty_optional) {
     // [optional.ctor] / 2
@@ -105,7 +105,7 @@ TEST(Optional, copy_constructor_constructs_empty_from_empty) {
     Optional<int32_t> const empty;
     Optional<int32_t> sut { empty };
     ASSERT_TRUE(!sut.has_value());
-    iox2::container::testing::opaque_use(sut);
+    iox2::bb::testing::opaque_use(sut);
 }
 
 TEST_F(OptionalFixture, copy_construction_from_empty_does_not_initialize_object) {
@@ -116,7 +116,7 @@ TEST_F(OptionalFixture, copy_construction_from_empty_does_not_initialize_object)
         Optional<Observable> sut { empty };
         ASSERT_TRUE(!sut.has_value());
         ASSERT_EQ(Observable::s_counter.was_initialized, 0);
-        iox2::container::testing::opaque_use(sut);
+        iox2::bb::testing::opaque_use(sut);
     }
     EXPECT_EQ(Observable::s_counter.was_destructed, 0);
 }
@@ -127,7 +127,7 @@ TEST(Optional, copy_construction_from_filled_object_constructs_new_object) {
     Optional<int32_t> sut { full };
     ASSERT_TRUE(sut.has_value());
     EXPECT_EQ(*sut, contained_valued);
-    iox2::container::testing::opaque_use(sut);
+    iox2::bb::testing::opaque_use(sut);
 }
 
 
@@ -150,7 +150,7 @@ TEST_F(OptionalFixture, copy_construction_from_filled_object_invokes_copy_constr
         EXPECT_EQ(sut->id, tracking_id);
         ASSERT_TRUE(full.has_value());
         EXPECT_EQ(full->id, tracking_id);
-        iox2::container::testing::opaque_use(sut);
+        iox2::bb::testing::opaque_use(sut);
         ASSERT_EQ(Observable::s_counter.was_destructed, 0);
     }
     ASSERT_EQ(Observable::s_counter.was_destructed, 2);
@@ -170,7 +170,7 @@ TEST_F(OptionalFixture, move_construction_from_empty_does_not_initialize_object)
         Optional<Observable> sut { std::move(empty) };
         ASSERT_TRUE(!sut.has_value());
         ASSERT_EQ(Observable::s_counter.was_initialized, 0);
-        iox2::container::testing::opaque_use(sut);
+        iox2::bb::testing::opaque_use(sut);
     }
     ASSERT_EQ(Observable::s_counter.was_destructed, 0);
 }
@@ -201,7 +201,7 @@ TEST_F(OptionalFixture, move_constructor_from_filled_object_moves_value) {
         ASSERT_EQ(Observable::s_counter.was_move_constructed, 1);
         ASSERT_TRUE(sut.has_value());
         EXPECT_EQ(sut->id, tracking_id);
-        iox2::container::testing::opaque_use(sut);
+        iox2::bb::testing::opaque_use(sut);
         ASSERT_EQ(Observable::s_counter.was_destructed, 0);
     }
     ASSERT_EQ(Observable::s_counter.was_destructed, 2);
@@ -1054,22 +1054,22 @@ TEST_F(OptionalFixture, reset_on_full_optional_destructs_contained_value) {
 
 TEST(Optional, operator_arrow_should_bypass_overloaded_operator_ampersand) {
     int32_t const tracking_id = 54321;
-    iox2::container::testing::CustomAddressOperator obj;
+    iox2::bb::testing::CustomAddressOperator obj;
     obj.id = tracking_id;
-    Optional<iox2::container::testing::CustomAddressOperator> sut { obj };
-    iox2::container::testing::CustomAddressOperator::s_count_address_operator = 0;
+    Optional<iox2::bb::testing::CustomAddressOperator> sut { obj };
+    iox2::bb::testing::CustomAddressOperator::s_count_address_operator = 0;
     ASSERT_EQ(sut->id, tracking_id);
-    ASSERT_EQ(iox2::container::testing::CustomAddressOperator::s_count_address_operator, 0);
+    ASSERT_EQ(iox2::bb::testing::CustomAddressOperator::s_count_address_operator, 0);
 }
 
 TEST(Optional, const_operator_arrow_should_bypass_overloaded_operator_ampersand) {
     int32_t const tracking_id = 54321;
-    iox2::container::testing::CustomAddressOperator obj;
+    iox2::bb::testing::CustomAddressOperator obj;
     obj.id = tracking_id;
-    Optional<iox2::container::testing::CustomAddressOperator> const sut { obj };
-    iox2::container::testing::CustomAddressOperator::s_count_address_operator = 0;
+    Optional<iox2::bb::testing::CustomAddressOperator> const sut { obj };
+    iox2::bb::testing::CustomAddressOperator::s_count_address_operator = 0;
     ASSERT_EQ(sut->id, tracking_id);
-    ASSERT_EQ(iox2::container::testing::CustomAddressOperator::s_count_address_operator, 0);
+    ASSERT_EQ(iox2::bb::testing::CustomAddressOperator::s_count_address_operator, 0);
 }
 
 TEST(Optional, operator_equal_with_two_empty_optionals_are_equal) {

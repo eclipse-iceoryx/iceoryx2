@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/container/static_string.hpp"
-#include "iox2/container/static_vector.hpp"
+#include "iox2/bb/static_string.hpp"
+#include "iox2/bb/static_vector.hpp"
 #include "iox2/log.hpp"
 #include "iox2/log_level.hpp"
 
@@ -24,23 +24,21 @@ constexpr uint64_t STRING_CAPACITY = 64;
 class Entry {
   private:
     LogLevel m_log_level;
-    iox2::container::StaticString<STRING_CAPACITY> m_origin;
-    iox2::container::StaticString<STRING_CAPACITY> m_message;
+    iox2::bb::StaticString<STRING_CAPACITY> m_origin;
+    iox2::bb::StaticString<STRING_CAPACITY> m_message;
 
   public:
     Entry() = delete;
     Entry(LogLevel log_level, const char* origin, const char* message)
         : m_log_level { log_level }
-        , m_origin { *iox2::container::StaticString<STRING_CAPACITY>::from_utf8_null_terminated_unchecked(origin) }
-        , m_message { *iox2::container::StaticString<STRING_CAPACITY>::from_utf8_null_terminated_unchecked(message) } {
+        , m_origin { *iox2::bb::StaticString<STRING_CAPACITY>::from_utf8_null_terminated_unchecked(origin) }
+        , m_message { *iox2::bb::StaticString<STRING_CAPACITY>::from_utf8_null_terminated_unchecked(message) } {
     }
 
     auto is_equal(LogLevel log_level, const char* origin, const char* message) -> bool {
         return m_log_level == log_level
-               && m_origin
-                      == *iox2::container::StaticString<STRING_CAPACITY>::from_utf8_null_terminated_unchecked(origin)
-               && m_message
-                      == *iox2::container::StaticString<STRING_CAPACITY>::from_utf8_null_terminated_unchecked(message);
+               && m_origin == *iox2::bb::StaticString<STRING_CAPACITY>::from_utf8_null_terminated_unchecked(origin)
+               && m_message == *iox2::bb::StaticString<STRING_CAPACITY>::from_utf8_null_terminated_unchecked(message);
     }
 };
 
@@ -58,14 +56,14 @@ class TestLogger : public Log {
         }
     }
 
-    auto get_log_buffer() -> iox2::container::StaticVector<Entry, TEST_LOGGER_CAPACITY> {
+    auto get_log_buffer() -> iox2::bb::StaticVector<Entry, TEST_LOGGER_CAPACITY> {
         auto buffer = m_log_buffer;
         m_log_buffer.clear();
         return buffer;
     }
 
   private:
-    iox2::container::StaticVector<Entry, TEST_LOGGER_CAPACITY> m_log_buffer;
+    iox2::bb::StaticVector<Entry, TEST_LOGGER_CAPACITY> m_log_buffer;
 };
 
 TEST(Log, custom_logger_works) {

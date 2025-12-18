@@ -13,7 +13,7 @@
 #include "testing/test_utils.hpp"
 
 namespace iox2 {
-namespace container {
+namespace bb {
 namespace testing {
 
 void opaque_use(void* /* object */) {
@@ -24,5 +24,5 @@ void opaque_use(void const* /* object */) {
 int32_t CustomAddressOperator::s_count_address_operator = 0;
 
 } // namespace testing
-} // namespace container
+} // namespace bb
 } // namespace iox2

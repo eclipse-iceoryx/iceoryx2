@@ -14,7 +14,7 @@
 
 #include "iox2/bb/detail/path_and_file_verifier.hpp"
 #include "iox2/bb/file_name.hpp"
-#include "iox2/container/static_string.hpp"
+#include "iox2/bb/static_string.hpp"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -26,7 +26,6 @@ using namespace ::testing;
 using namespace iox2::bb;
 using namespace iox2::bb::detail;
 using namespace iox2::legacy;
-using namespace iox2::container;
 
 constexpr uint64_t FILE_PATH_LENGTH = 128U;
 

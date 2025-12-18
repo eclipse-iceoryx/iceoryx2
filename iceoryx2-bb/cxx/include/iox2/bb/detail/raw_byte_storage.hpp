@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_INCLUDE_GUARD_CONTAINER_DETAIL_RAW_BYTE_STORAGE_HPP
-#define IOX2_INCLUDE_GUARD_CONTAINER_DETAIL_RAW_BYTE_STORAGE_HPP
+#ifndef IOX2_INCLUDE_GUARD_BB_DETAIL_RAW_BYTE_STORAGE_HPP
+#define IOX2_INCLUDE_GUARD_BB_DETAIL_RAW_BYTE_STORAGE_HPP
 
 #include <algorithm>
 #include <cstdint>
@@ -20,7 +20,7 @@
 #include <type_traits>
 
 namespace iox2 {
-namespace container {
+namespace bb {
 namespace detail {
 
 /// A class for storing at most N objects of type T in a contiguous storage.
@@ -222,7 +222,7 @@ class RawByteStorage {
     }
 };
 } // namespace detail
-} // namespace container
+} // namespace bb
 } // namespace iox2
 
-#endif
+#endif // IOX2_INCLUDE_GUARD_BB_DETAIL_RAW_BYTE_STORAGE_HPP

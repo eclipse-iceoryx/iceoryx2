@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
-  <Type Name="iox2::bb::detail::Optional&lt;*&gt;">
+  <Type Name="iox2::bb::stl::Optional&lt;*&gt;">
     <Intrinsic Name="has_value" Expression="!m_value.m_is_empty"/>
     <Intrinsic Name="value" Expression="m_value.m_u_value"/>
     <DisplayString Condition="!has_value()">NULLOPT</DisplayString>

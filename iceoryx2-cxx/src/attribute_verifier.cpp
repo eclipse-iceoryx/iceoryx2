@@ -12,7 +12,7 @@
 
 #include "iox2/attribute_verifier.hpp"
 #include "iox2/bb/expected.hpp"
-#include "iox2/container/static_vector.hpp"
+#include "iox2/bb/static_vector.hpp"
 
 namespace iox2 {
 AttributeVerifier::AttributeVerifier() {
@@ -69,9 +69,9 @@ auto AttributeVerifier::attributes() const -> AttributeSetView {
     return AttributeSetView(iox2_attribute_verifier_attributes(&m_handle));
 }
 
-auto AttributeVerifier::keys() const -> iox2::container::StaticVector<Attribute::Key, IOX2_MAX_ATTRIBUTES_PER_SERVICE> {
+auto AttributeVerifier::keys() const -> iox2::bb::StaticVector<Attribute::Key, IOX2_MAX_ATTRIBUTES_PER_SERVICE> {
     auto number_of_keys = iox2_attribute_verifier_number_of_keys(&m_handle);
-    iox2::container::StaticVector<Attribute::Key, IOX2_MAX_ATTRIBUTES_PER_SERVICE> attributes;
+    iox2::bb::StaticVector<Attribute::Key, IOX2_MAX_ATTRIBUTES_PER_SERVICE> attributes;
     for (uint64_t i = 0; i < number_of_keys; ++i) {
         // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays, modernize-avoid-c-arrays) used as an uninitialized buffer
         char buffer[Attribute::Key::capacity()];

@@ -40,10 +40,10 @@ auto main() -> int {
 
         auto& payload = sample.payload_mut();
         payload.address_book.try_emplace_back(FullName {
-            *container::StaticString<256>::from_utf8("Lisa"),    // NOLINT
-            *container::StaticString<256>::from_utf8("The Log"), // NOLINT
+            *bb::StaticString<256>::from_utf8("Lisa"),    // NOLINT
+            *bb::StaticString<256>::from_utf8("The Log"), // NOLINT
         });
-        payload.some_matrix.try_insert_at(0, 8, container::StaticVector<double, 8>()); //NOLINT
+        payload.some_matrix.try_insert_at(0, 8, bb::StaticVector<double, 8>()); //NOLINT
         for (uint64_t idx = 0; idx < payload.some_matrix.size(); ++idx) {
             payload.some_matrix.unchecked_access()[idx].try_insert_at(0, 8, 0.0); //NOLINT
         }

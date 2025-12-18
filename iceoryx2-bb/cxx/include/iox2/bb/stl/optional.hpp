@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_INCLUDE_GUARD_BB_DETAIL_OPTIONAL_HPP
-#define IOX2_INCLUDE_GUARD_BB_DETAIL_OPTIONAL_HPP
+#ifndef IOX2_INCLUDE_GUARD_BB_STL_OPTIONAL_HPP
+#define IOX2_INCLUDE_GUARD_BB_STL_OPTIONAL_HPP
 
 #include <cstdlib>
 #include <memory>
@@ -20,7 +20,7 @@
 
 namespace iox2 {
 namespace bb {
-namespace detail {
+namespace stl {
 
 /// A drop-in replacement for C++17 `std::optional`.
 template <class T>
@@ -350,8 +350,8 @@ template <class T>
 Optional(T) -> Optional<T>;
 #endif
 
-} // namespace detail
+} // namespace stl
 } // namespace bb
 } // namespace iox2
 
-#endif // IOX2_INCLUDE_GUARD_BB_DETAIL_OPTIONAL_HPP
+#endif // IOX2_INCLUDE_GUARD_BB_STL_OPTIONAL_HPP

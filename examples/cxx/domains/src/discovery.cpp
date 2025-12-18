@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 
-#include "iox2/container/static_string.hpp"
+#include "iox2/bb/static_string.hpp"
 #include "iox2/iceoryx2.hpp"
 #include "parse_args.hpp"
 
@@ -30,7 +30,7 @@ auto main(int argc, char** argv) -> int {
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers) fine for the example
     const CliOption<32> option_domain { "-d",
                                         "--domain",
-                                        iox2::container::StaticString<32>::from_utf8_unchecked("iox2_"),
+                                        iox2::bb::StaticString<32>::from_utf8_unchecked("iox2_"),
                                         "Invalid parameter! The domain must be passed after '-d' or '--domain'" };
 
     auto domain = parse_from_args(argc, argv, option_domain);

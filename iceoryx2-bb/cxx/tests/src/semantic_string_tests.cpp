@@ -15,7 +15,7 @@
 #include "iox2/bb/file_path.hpp"
 #include "iox2/bb/path.hpp"
 #include "iox2/bb/semantic_string.hpp"
-#include "iox2/container/static_string.hpp"
+#include "iox2/bb/static_string.hpp"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -27,7 +27,6 @@ namespace {
 using namespace ::testing;
 using namespace iox2::bb;
 using namespace iox2::bb::platform;
-using namespace iox2::container;
 using namespace iox2::legacy;
 
 template <typename T>
