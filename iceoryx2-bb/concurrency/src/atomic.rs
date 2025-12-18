@@ -17,73 +17,62 @@ pub use iceoryx2_pal_concurrency_sync::atomic::Ordering;
 
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_pal_concurrency_sync::atomic::AtomicBool as InternalAtomicBool;
-use iceoryx2_pal_concurrency_sync::atomic::AtomicI16 as InternalAtomicI16;
-use iceoryx2_pal_concurrency_sync::atomic::AtomicI32 as InternalAtomicI32;
-use iceoryx2_pal_concurrency_sync::atomic::AtomicI64 as InternalAtomicI64;
-use iceoryx2_pal_concurrency_sync::atomic::AtomicI8 as InternalAtomicI8;
-use iceoryx2_pal_concurrency_sync::atomic::AtomicIsize as InternalAtomicIsize;
-use iceoryx2_pal_concurrency_sync::atomic::AtomicU16 as InternalAtomicU16;
-use iceoryx2_pal_concurrency_sync::atomic::AtomicU32 as InternalAtomicU32;
-use iceoryx2_pal_concurrency_sync::atomic::AtomicU64 as InternalAtomicU64;
-use iceoryx2_pal_concurrency_sync::atomic::AtomicU8 as InternalAtomicU8;
-use iceoryx2_pal_concurrency_sync::atomic::AtomicUsize as InternalAtomicUsize;
 
 #[derive(Debug, Default)]
 #[repr(transparent)]
-pub struct AtomicBool(InternalAtomicBool);
+pub struct AtomicBool(internal::AtomicBool);
 
 #[derive(Debug, Default)]
 #[repr(transparent)]
-pub struct AtomicU8(InternalAtomicU8);
+pub struct AtomicU8(internal::AtomicU8);
 
 #[derive(Debug, Default)]
 #[repr(transparent)]
-pub struct AtomicU16(InternalAtomicU16);
+pub struct AtomicU16(internal::AtomicU16);
 
 #[derive(Debug, Default)]
 #[repr(transparent)]
-pub struct AtomicU32(InternalAtomicU32);
+pub struct AtomicU32(internal::AtomicU32);
 
 #[derive(Debug, Default)]
 #[repr(transparent)]
-pub struct AtomicU64(InternalAtomicU64);
+pub struct AtomicU64(internal::AtomicU64);
 
 #[derive(Debug, Default)]
 #[repr(transparent)]
-pub struct AtomicUsize(InternalAtomicUsize);
+pub struct AtomicUsize(internal::AtomicUsize);
 
 #[derive(Debug, Default)]
 #[repr(transparent)]
-pub struct AtomicI8(InternalAtomicI8);
+pub struct AtomicI8(internal::AtomicI8);
 
 #[derive(Debug, Default)]
 #[repr(transparent)]
-pub struct AtomicI16(InternalAtomicI16);
+pub struct AtomicI16(internal::AtomicI16);
 
 #[derive(Debug, Default)]
 #[repr(transparent)]
-pub struct AtomicI32(InternalAtomicI32);
+pub struct AtomicI32(internal::AtomicI32);
 
 #[derive(Debug, Default)]
 #[repr(transparent)]
-pub struct AtomicI64(InternalAtomicI64);
+pub struct AtomicI64(internal::AtomicI64);
 
 #[derive(Debug, Default)]
 #[repr(transparent)]
-pub struct AtomicIsize(InternalAtomicIsize);
+pub struct AtomicIsize(internal::AtomicIsize);
 
 macro_rules! zero_copy_send_atomic {
-    ($type_name:ident, $wrapped_type_name:ident, $base_type:ident) => {
+    ($type_name:ident, $base_type:ident) => {
         impl $type_name {
             #[inline]
             pub const fn new(v: $base_type) -> Self {
-                Self($wrapped_type_name::new(v))
+                Self(internal::$type_name::new(v))
             }
         }
 
         impl Deref for $type_name {
-            type Target = $wrapped_type_name;
+            type Target = internal::$type_name;
             fn deref(&self) -> &Self::Target {
                 &self.0
             }
@@ -105,14 +94,28 @@ macro_rules! zero_copy_send_atomic {
     };
 }
 
-zero_copy_send_atomic!(AtomicBool, InternalAtomicBool, bool);
-zero_copy_send_atomic!(AtomicU8, InternalAtomicU8, u8);
-zero_copy_send_atomic!(AtomicU16, InternalAtomicU16, u16);
-zero_copy_send_atomic!(AtomicU32, InternalAtomicU32, u32);
-zero_copy_send_atomic!(AtomicU64, InternalAtomicU64, u64);
-zero_copy_send_atomic!(AtomicUsize, InternalAtomicUsize, usize);
-zero_copy_send_atomic!(AtomicI8, InternalAtomicI8, i8);
-zero_copy_send_atomic!(AtomicI16, InternalAtomicI16, i16);
-zero_copy_send_atomic!(AtomicI32, InternalAtomicI32, i32);
-zero_copy_send_atomic!(AtomicI64, InternalAtomicI64, i64);
-zero_copy_send_atomic!(AtomicIsize, InternalAtomicIsize, isize);
+zero_copy_send_atomic!(AtomicBool, bool);
+zero_copy_send_atomic!(AtomicU8, u8);
+zero_copy_send_atomic!(AtomicU16, u16);
+zero_copy_send_atomic!(AtomicU32, u32);
+zero_copy_send_atomic!(AtomicU64, u64);
+zero_copy_send_atomic!(AtomicUsize, usize);
+zero_copy_send_atomic!(AtomicI8, i8);
+zero_copy_send_atomic!(AtomicI16, i16);
+zero_copy_send_atomic!(AtomicI32, i32);
+zero_copy_send_atomic!(AtomicI64, i64);
+zero_copy_send_atomic!(AtomicIsize, isize);
+
+mod internal {
+    pub use iceoryx2_pal_concurrency_sync::atomic::AtomicBool;
+    pub use iceoryx2_pal_concurrency_sync::atomic::AtomicI16;
+    pub use iceoryx2_pal_concurrency_sync::atomic::AtomicI32;
+    pub use iceoryx2_pal_concurrency_sync::atomic::AtomicI64;
+    pub use iceoryx2_pal_concurrency_sync::atomic::AtomicI8;
+    pub use iceoryx2_pal_concurrency_sync::atomic::AtomicIsize;
+    pub use iceoryx2_pal_concurrency_sync::atomic::AtomicU16;
+    pub use iceoryx2_pal_concurrency_sync::atomic::AtomicU32;
+    pub use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
+    pub use iceoryx2_pal_concurrency_sync::atomic::AtomicU8;
+    pub use iceoryx2_pal_concurrency_sync::atomic::AtomicUsize;
+}

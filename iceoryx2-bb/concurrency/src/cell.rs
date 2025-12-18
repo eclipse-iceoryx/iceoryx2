@@ -12,16 +12,13 @@
 
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_pal_concurrency_sync::cell::Cell as InternalCell;
-use iceoryx2_pal_concurrency_sync::cell::OnceCell as InternalOnceCell;
-use iceoryx2_pal_concurrency_sync::cell::Ref;
-use iceoryx2_pal_concurrency_sync::cell::RefCell as InternalRefCell;
-use iceoryx2_pal_concurrency_sync::cell::RefMut;
-use iceoryx2_pal_concurrency_sync::cell::UnsafeCell as InternalUnsafeCell;
+
+pub use internal::Ref;
+pub use internal::RefMut;
 
 #[derive(Default)]
 #[repr(transparent)]
-pub struct Cell<T: ?Sized>(InternalCell<T>);
+pub struct Cell<T: ?Sized>(internal::Cell<T>);
 
 impl<T: Default> PlacementDefault for Cell<T> {
     unsafe fn placement_default(ptr: *mut Self) {
@@ -31,11 +28,11 @@ impl<T: Default> PlacementDefault for Cell<T> {
 
 #[derive(Debug, Default)]
 #[repr(transparent)]
-pub struct OnceCell<T>(InternalOnceCell<T>);
+pub struct OnceCell<T>(internal::OnceCell<T>);
 
 impl<T> Cell<T> {
     pub const fn new(value: T) -> Self {
-        Self(InternalCell::new(value))
+        Self(internal::Cell::new(value))
     }
 
     pub fn as_ptr(&self) -> *mut T {
@@ -55,11 +52,11 @@ impl<T: Default> PlacementDefault for OnceCell<T> {
 
 #[derive(Debug, Default)]
 #[repr(transparent)]
-pub struct RefCell<T>(InternalRefCell<T>);
+pub struct RefCell<T>(internal::RefCell<T>);
 
 impl<T> RefCell<T> {
     pub const fn new(value: T) -> Self {
-        Self(InternalRefCell::new(value))
+        Self(internal::RefCell::new(value))
     }
 
     pub fn borrow(&self) -> Ref<'_, T> {
@@ -79,11 +76,11 @@ impl<T: Default> PlacementDefault for RefCell<T> {
 
 #[derive(Debug, Default)]
 #[repr(transparent)]
-pub struct UnsafeCell<T>(InternalUnsafeCell<T>);
+pub struct UnsafeCell<T>(internal::UnsafeCell<T>);
 
 impl<T> UnsafeCell<T> {
     pub const fn new(value: T) -> Self {
-        Self(InternalUnsafeCell::new(value))
+        Self(internal::UnsafeCell::new(value))
     }
 
     pub fn get(&self) -> *mut T {
@@ -102,3 +99,12 @@ impl<T: Default> PlacementDefault for UnsafeCell<T> {
 }
 
 unsafe impl<T: ZeroCopySend> ZeroCopySend for UnsafeCell<T> {}
+
+mod internal {
+    pub use iceoryx2_pal_concurrency_sync::cell::Cell;
+    pub use iceoryx2_pal_concurrency_sync::cell::OnceCell;
+    pub use iceoryx2_pal_concurrency_sync::cell::Ref;
+    pub use iceoryx2_pal_concurrency_sync::cell::RefCell;
+    pub use iceoryx2_pal_concurrency_sync::cell::RefMut;
+    pub use iceoryx2_pal_concurrency_sync::cell::UnsafeCell;
+}
