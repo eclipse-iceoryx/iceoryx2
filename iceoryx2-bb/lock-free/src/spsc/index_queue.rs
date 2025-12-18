@@ -44,15 +44,12 @@
 //! }
 //! ```
 
-#[cfg(all(test, loom, feature = "std"))]
-use loom::cell::UnsafeCell;
+use core::{alloc::Layout, fmt::Debug, sync::atomic::Ordering};
 
-#[cfg(not(all(test, loom, feature = "std")))]
-use core::cell::UnsafeCell;
-use core::{alloc::Layout, fmt::Debug};
-
+use iceoryx2_bb_concurrency::atomic::fence;
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_concurrency::atomic::AtomicU64;
+use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
 use iceoryx2_bb_elementary::{bump_allocator::BumpAllocator, relocatable_ptr::RelocatablePointer};
 use iceoryx2_bb_elementary_traits::{

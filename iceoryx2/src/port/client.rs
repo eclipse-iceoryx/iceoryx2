@@ -73,12 +73,12 @@
 //! ```
 
 use core::{
-    any::TypeId, cell::UnsafeCell, fmt::Debug, marker::PhantomData, mem::MaybeUninit,
-    sync::atomic::Ordering,
+    any::TypeId, fmt::Debug, marker::PhantomData, mem::MaybeUninit, sync::atomic::Ordering,
 };
 use iceoryx2_bb_container::{queue::Queue, slotmap::SlotMap, vector::polymorphic_vec::*};
 
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64, AtomicUsize};
+use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::{cyclic_tagger::CyclicTagger, CallbackProgression};
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};

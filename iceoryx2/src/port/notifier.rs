@@ -35,12 +35,13 @@
 //! # }
 //! ```
 
-use core::{cell::UnsafeCell, sync::atomic::Ordering, time::Duration};
+use core::{sync::atomic::Ordering, time::Duration};
 
 use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
 
+use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_cal::{

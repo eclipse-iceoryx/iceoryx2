@@ -22,8 +22,10 @@ use windows_sys::Win32::{
 
 use crate::posix::{c_string_length, types::*};
 use core::ffi::CStr;
-use core::{cell::UnsafeCell, sync::atomic::Ordering};
+use core::sync::atomic::Ordering;
+
 use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
+use iceoryx2_pal_concurrency_sync::cell::UnsafeCell;
 
 const IS_INITIALIZED: u64 = 0xaffedeadbeef;
 const INITIALIZATION_IN_PROGRESS: u64 = 0xbebebebebebebebe;

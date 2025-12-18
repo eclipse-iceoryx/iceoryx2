@@ -12,7 +12,6 @@
 
 #[doc(hidden)]
 pub mod details {
-    use core::cell::UnsafeCell;
     use core::fmt::Debug;
     use core::marker::PhantomData;
     use core::sync::atomic::Ordering;
@@ -21,6 +20,7 @@ pub mod details {
     use alloc::vec::Vec;
 
     use iceoryx2_bb_concurrency::atomic::{AtomicU64, AtomicU8, AtomicUsize};
+    use iceoryx2_bb_concurrency::cell::UnsafeCell;
     use iceoryx2_bb_container::vector::relocatable_vec::*;
     use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
     use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;

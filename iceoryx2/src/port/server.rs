@@ -74,20 +74,21 @@
 //! ```
 
 use alloc::sync::Arc;
-use core::{cell::UnsafeCell, sync::atomic::Ordering};
+use core::sync::atomic::Ordering;
 use core::{fmt::Debug, marker::PhantomData};
+
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
+use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::slotmap::SlotMap;
 use iceoryx2_bb_container::vector::polymorphic_vec::*;
-use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
-use iceoryx2_cal::zero_copy_connection::ChannelId;
-
 use iceoryx2_bb_elementary::{cyclic_tagger::CyclicTagger, CallbackProgression};
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
+use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
+use iceoryx2_cal::zero_copy_connection::ChannelId;
 use iceoryx2_log::{fail, warn};
 
 use crate::port::update_connections::UpdateConnections;

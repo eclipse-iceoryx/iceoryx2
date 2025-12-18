@@ -213,16 +213,14 @@
 //! # Ok(())
 //! # }
 
-use core::{
-    cell::RefCell, fmt::Debug, hash::Hash, marker::PhantomData, sync::atomic::Ordering,
-    time::Duration,
-};
+use core::{fmt::Debug, hash::Hash, marker::PhantomData, sync::atomic::Ordering, time::Duration};
 
 use alloc::collections::BTreeMap;
 use alloc::vec;
 use alloc::vec::Vec;
 
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
+use iceoryx2_bb_concurrency::cell::RefCell;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_posix::{
     deadline_queue::{DeadlineQueue, DeadlineQueueBuilder, DeadlineQueueGuard, DeadlineQueueIndex},

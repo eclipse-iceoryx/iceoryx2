@@ -11,7 +11,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::alloc::Layout;
-use core::cell::UnsafeCell;
 use core::sync::atomic::Ordering;
 
 use alloc::format;
@@ -19,6 +18,7 @@ use alloc::sync::Arc;
 use alloc::vec::Vec;
 
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
+use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::cyclic_tagger::*;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::shm_allocator::{AllocationError, PointerOffset, ShmAllocationError};

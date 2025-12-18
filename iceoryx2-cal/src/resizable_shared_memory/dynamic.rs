@@ -11,7 +11,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::alloc::Layout;
-use core::cell::UnsafeCell;
 use core::sync::atomic::Ordering;
 use core::time::Duration;
 use core::{fmt::Debug, marker::PhantomData};
@@ -22,6 +21,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 use iceoryx2_bb_concurrency::atomic::{AtomicU64, AtomicUsize};
+use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_container::slotmap::{SlotMap, SlotMapKey};
 use iceoryx2_bb_container::string::String;

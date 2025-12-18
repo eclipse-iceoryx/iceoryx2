@@ -16,10 +16,11 @@
 
 use crate::posix::*;
 
-use core::cell::UnsafeCell;
 use core::sync::atomic::Ordering;
+
 use iceoryx2_pal_concurrency_sync::atomic::AtomicU32;
 use iceoryx2_pal_concurrency_sync::barrier::Barrier;
+use iceoryx2_pal_concurrency_sync::cell::UnsafeCell;
 use iceoryx2_pal_concurrency_sync::mutex::Mutex;
 use iceoryx2_pal_concurrency_sync::{rwlock::*, WaitAction, WaitResult};
 

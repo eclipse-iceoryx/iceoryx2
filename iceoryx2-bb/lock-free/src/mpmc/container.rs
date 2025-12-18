@@ -56,10 +56,11 @@
 //! ```
 
 pub use crate::mpmc::unique_index_set::ReleaseMode;
-use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 pub use iceoryx2_bb_elementary::CallbackProgression;
 
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64};
+use iceoryx2_bb_concurrency::cell::UnsafeCell;
+use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::math::align_to;
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
 use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
@@ -78,7 +79,7 @@ use alloc::vec::Vec;
 
 use core::alloc::Layout;
 use core::fmt::Debug;
-use core::{cell::UnsafeCell, mem::MaybeUninit, sync::atomic::Ordering};
+use core::{mem::MaybeUninit, sync::atomic::Ordering};
 
 /// States the reason why an element could not be added to the [`Container`]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

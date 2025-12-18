@@ -15,13 +15,14 @@
 #![allow(unused_variables)]
 
 use core::panic;
-use core::{cell::UnsafeCell, sync::atomic::Ordering};
+use core::sync::atomic::Ordering;
 use std::{
     os::windows::prelude::OsStrExt, os::windows::prelude::OsStringExt, time::SystemTime,
     time::UNIX_EPOCH,
 };
 
 use iceoryx2_pal_concurrency_sync::atomic::AtomicU32;
+use iceoryx2_pal_concurrency_sync::cell::UnsafeCell;
 use iceoryx2_pal_concurrency_sync::rwlock::*;
 use iceoryx2_pal_concurrency_sync::{barrier::Barrier, mutex::Mutex};
 use iceoryx2_pal_concurrency_sync::{WaitAction, WaitResult};

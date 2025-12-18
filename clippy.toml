@@ -23,4 +23,10 @@ disallowed-types = [
     "core::sync::atomic::AtomicIsize",
     "core::sync::atomic::AtomicPtr",
     "core::sync::atomic::AtomicUsize",
+    "core::cell::Cell",
+    "core::cell::OnceCell",
+    "core::cell::Ref",
+    "core::cell::RefCell",
+    "core::cell::RefMut",
+    "core::cell::UnsafeCell",
 ]

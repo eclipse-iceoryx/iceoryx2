@@ -145,7 +145,6 @@ pub mod node_name;
 #[doc(hidden)]
 pub mod testing;
 
-use core::cell::UnsafeCell;
 use core::marker::PhantomData;
 use core::sync::atomic::Ordering;
 use core::time::Duration;
@@ -159,6 +158,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
+use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::CallbackProgression;

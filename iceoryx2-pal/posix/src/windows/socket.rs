@@ -14,13 +14,17 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(unused_variables)]
 
-extern crate alloc;
-use alloc::ffi::CString;
-use core::cell::OnceCell;
 use core::sync::atomic::Ordering;
 use core::time::Duration;
-use iceoryx2_pal_concurrency_sync::atomic::{AtomicU64, AtomicU8};
 use std::time::Instant;
+
+extern crate alloc;
+use alloc::ffi::CString;
+
+use iceoryx2_bb_concurrency::atomic::Ordering;
+use iceoryx2_pal_concurrency_sync::atomic::{AtomicU64, AtomicU8};
+use iceoryx2_pal_concurrency_sync::cell::OnceCell;
+
 use windows_sys::Win32::Networking::WinSock::{INVALID_SOCKET, SOCKADDR, SOCKET_ERROR, WSADATA};
 use windows_sys::Win32::Networking::WinSock::{SOCKADDR_UN, WSAEWOULDBLOCK};
 

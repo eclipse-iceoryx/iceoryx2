@@ -52,10 +52,10 @@
 pub use core::alloc::Layout;
 pub use iceoryx2_bb_elementary_traits::allocator::*;
 
-use core::cell::UnsafeCell;
 use core::sync::atomic::Ordering;
 
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
+use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_elementary_traits::relocatable_container::*;

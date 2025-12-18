@@ -11,7 +11,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::{
-    cell::UnsafeCell,
     fmt::Debug,
     marker::Copy,
     ops::{AddAssign, BitAndAssign, BitOrAssign, BitXorAssign, Not, SubAssign},
@@ -27,7 +26,9 @@ pub use core::sync::atomic::fence;
 #[cfg(all(test, loom, feature = "std"))]
 pub use loom::sync::atomic::fence;
 
-use crate::{rwlock::RwLockWriterPreference, WaitAction};
+use crate::cell::UnsafeCell;
+use crate::rwlock::RwLockWriterPreference;
+use crate::WaitAction;
 
 /// Behaves like [`core::sync::atomic::AtomicBool`]
 #[cfg(not(all(test, loom, feature = "std")))]

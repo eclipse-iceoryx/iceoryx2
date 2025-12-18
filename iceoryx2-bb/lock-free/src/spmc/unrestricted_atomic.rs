@@ -33,9 +33,10 @@
 //! let my_data = atomic.load();
 //! ```
 
-use core::{cell::UnsafeCell, fmt::Debug, mem::MaybeUninit, sync::atomic::Ordering};
+use core::{fmt::Debug, mem::MaybeUninit, sync::atomic::Ordering};
 
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64};
+use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::math::{align, max};
 
 // ATTENTION: To ensure the functionality also in the case of an overflow with the 'write_cell'

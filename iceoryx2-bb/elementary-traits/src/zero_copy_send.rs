@@ -76,7 +76,6 @@ unsafe impl<T: ZeroCopySend, const N: usize> ZeroCopySend for [T; N] {}
 unsafe impl<T: ZeroCopySend> ZeroCopySend for Option<T> {}
 unsafe impl<T: ZeroCopySend, E: ZeroCopySend> ZeroCopySend for Result<T, E> {}
 unsafe impl<T: ZeroCopySend> ZeroCopySend for core::mem::MaybeUninit<T> {}
-unsafe impl<T: ZeroCopySend> ZeroCopySend for core::cell::UnsafeCell<T> {}
 
 unsafe impl<T1: ZeroCopySend, T2: ZeroCopySend> ZeroCopySend for (T1, T2) {}
 unsafe impl<T1: ZeroCopySend, T2: ZeroCopySend, T3: ZeroCopySend> ZeroCopySend for (T1, T2, T3) {}

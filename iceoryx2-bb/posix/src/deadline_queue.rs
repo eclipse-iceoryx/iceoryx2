@@ -38,7 +38,7 @@
 //!     });
 //! ```
 
-use core::{cell::RefCell, fmt::Debug, sync::atomic::Ordering, time::Duration};
+use core::{fmt::Debug, sync::atomic::Ordering, time::Duration};
 
 use alloc::vec;
 use alloc::vec::Vec;
@@ -46,6 +46,7 @@ use alloc::vec::Vec;
 pub use iceoryx2_bb_elementary::CallbackProgression;
 
 use iceoryx2_bb_concurrency::atomic::AtomicU64;
+use iceoryx2_bb_concurrency::cell::RefCell;
 use iceoryx2_log::fail;
 
 use crate::{

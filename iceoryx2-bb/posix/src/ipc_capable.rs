@@ -10,8 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::{cell::UnsafeCell, sync::atomic::Ordering};
+use core::sync::atomic::Ordering;
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
+use iceoryx2_bb_concurrency::cell::UnsafeCell;
 
 pub(crate) mod internal {
     use core::fmt::Debug;

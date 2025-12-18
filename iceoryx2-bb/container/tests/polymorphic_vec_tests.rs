@@ -12,8 +12,7 @@
 
 extern crate iceoryx2_loggers;
 
-use std::cell::UnsafeCell;
-
+use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::vector::polymorphic_vec::*;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary_traits::allocator::AllocationError;

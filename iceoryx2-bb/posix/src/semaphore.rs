@@ -15,10 +15,10 @@
 
 pub use crate::ipc_capable::{Handle, IpcCapable};
 
-use core::cell::UnsafeCell;
 use core::fmt::Debug;
 
 use crate::ipc_capable::internal::{Capability, HandleStorage, IpcConstructible};
+use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_system_types::file_name::FileName;

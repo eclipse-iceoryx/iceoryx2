@@ -30,13 +30,13 @@
 //!
 //! ```
 
-use core::cell::UnsafeCell;
 use core::hint::spin_loop;
 use core::ops::{Deref, DerefMut};
 use core::sync::atomic::Ordering;
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 
 use crate::atomic::AtomicBool;
+use crate::cell::UnsafeCell;
 
 /// A spin lock with two locking functions: [`SpinLock::try_lock()`] only tries once to get a lock on `T`,
 /// [`SpinLock::blocking_lock()`] goes into a spin loop until it gets a lock on `T`

@@ -13,7 +13,6 @@
 //! Trait to perform placement new construction on a given pointer via [`Default::default()`].
 //! See [`PlacementDefault`] for example.
 
-use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 
 /// A trait that allows types to perform a placement new based on their
@@ -165,10 +164,4 @@ impl<T> PlacementDefault for Option<T> {
 
 impl<T: PlacementDefault> PlacementDefault for core::mem::MaybeUninit<T> {
     unsafe fn placement_default(_ptr: *mut Self) {}
-}
-
-impl<T: Default> PlacementDefault for UnsafeCell<T> {
-    unsafe fn placement_default(ptr: *mut Self) {
-        ptr.write(UnsafeCell::default());
-    }
 }
