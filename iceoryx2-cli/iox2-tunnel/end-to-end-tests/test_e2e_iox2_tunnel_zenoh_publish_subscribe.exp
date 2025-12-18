@@ -29,14 +29,15 @@ exec cargo build -p iceoryx2-cli 2>@1
 
 spawn cargo run --bin iox2-tunnel -- zenoh
 set id_iox2_tunnel $spawn_id
+expect_output_from $id_iox2_tunnel "Local Discovery via Tracker"
 
 spawn cargo run --example publish_subscribe_publisher
 set id_publisher $spawn_id
+expect_output_from $id_publisher "Send sample"
 
 #### Test Assertion
 
-expect_output_from $id_iox2_tunnel "CREATE PublisherChannel"
-expect_output_from $id_iox2_tunnel "CREATE SubscriberChannel"
-expect_output_from $id_iox2_tunnel "PROPAGATE PublisherChannel"
+expect_output_from $id_iox2_tunnel "Discovered PublishSubscribe"
+expect_output_from $id_iox2_tunnel "Propagated PublishSubscribe"
 
 show_test_passed
