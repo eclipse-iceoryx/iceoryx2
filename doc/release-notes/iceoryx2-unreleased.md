@@ -370,12 +370,94 @@
    // old
    auto str = iox::string<10>("hello");
    std::cout << str.c_str() << std::endl;
-   
+
    // new
    auto str = iox2::bb::StaticString<10>::from_utf8("hello");
    if (str.has_value()) {
        std::cout << str->unchecked_access().c_str() << std::endl;
    }
+   ```
+
+1. **C++** The `Attribute::Key` and `Attribute::Value` types switched from
+   `iox::string` to `iox2::bb::StaticString`
+
+   ```cpp
+   // old
+   auto attribute_specifier = AttributeSpecifier().define("my_key", "my_value");
+
+   // new
+   auto my_key = Attribute::Key::from_utf8("my_key");
+   auto my_value = Attribute::Value::from_utf8("my_value");
+   if (!my_key.has_value() || !my_value.has_value()) {
+       // do error handling
+   }
+   auto attribute_specifier = AttributeSpecifier().define(*my_key, *my_value);
+   ```
+
+
+1. **C++** Moved classes from `iceoryx_hoofs` to `iceoryx2` and adjusted
+   namespaces and naming convention
+
+   This is a non-exhaustive list of the changes. Please check the API
+   documentation for more details.
+
+   ```cpp
+   // old
+   #include "iox/duration.hpp"
+   auto d = iox::units::Duration::fromMilliseconds(42);
+
+   // new
+   #include "iox2/bb/duration.hpp"
+   auto d = iox2::bb::Duration::from_millis(42);
+
+
+   // old
+   #include "iox/into.hpp"
+   auto foo = iox::into<Foo>(bar);
+
+   // new
+   #include "iox2/bb/into.hpp"
+   auto foo = iox2::bb::into<Foo>(bar);
+
+
+   // old
+   #include "iox/file_name.hpp"
+   #include "iox/file_path.hpp"
+   #include "iox/path.hpp"
+   auto file_name = iox::FileName::create("foo.txt").expect("Creating file name");
+   auto file_path = iox::FilePath::create("/home/hypnotoad/foo.txt").expect("Creating file path");
+   auto path = iox::Path::create("/home/hypnotoad/").expect("Creating path");
+
+   // new
+   #include "iox2/bb/file_name.hpp"
+   #include "iox2/bb/file_path.hpp"
+   #include "iox2/bb/path.hpp"
+   auto file_name_result = iox2::bb::FileName::create("foo.txt");
+   if (!file_name_result.has_value()) {
+       // do error handling
+   }
+   auto file_name = file_name_result.value();
+
+   auto file_path_result = iox2::bb::FilePath::create("/home/hypnotoad/foo.txt");
+   if (!file_path_result.has_value()) {
+       // do error handling
+   }
+   auto file_path = file_path_result.value();
+
+   auto path_result = iox2::bb::Path::create("/home/hypnotoad/");
+   if (!path_result.has_value()) {
+       // do error handling
+   }
+   auto path = path_result.value();
+
+
+   // old
+   #include "iox/slice.hpp
+   auto s = iox::Slice<uint8_t>(dapa.ptr(), data.len());
+
+   // new
+   #include "iox2/bb/slice.hpp"
+   auto s = iox2::bb::Slice<uint8_t>(dapa.ptr(), data.len());
    ```
 
 1. Add summarized and detailed variants of `iox2 service discovery`
