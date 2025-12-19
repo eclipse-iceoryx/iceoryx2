@@ -67,3 +67,7 @@ pub unsafe fn sigemptyset(set: *mut sigset_t) -> int {
 pub unsafe fn sigpending(set: *mut sigset_t) -> int {
     libc::sigpending(set)
 }
+
+pub unsafe fn abort() {
+    libc::abort()
+}

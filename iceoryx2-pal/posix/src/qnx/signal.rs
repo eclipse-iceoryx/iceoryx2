@@ -86,3 +86,7 @@ pub unsafe fn sigemptyset(set: *mut sigset_t) -> int {
 pub unsafe fn sigpending(set: *mut sigset_t) -> int {
     crate::internal::sigpending(set)
 }
+
+pub unsafe fn abort() {
+    crate::internal::abort()
+}
