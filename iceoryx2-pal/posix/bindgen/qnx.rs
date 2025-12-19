@@ -22,6 +22,9 @@ pub fn configure_builder(builder: bindgen::Builder) -> bindgen::Builder {
 
     let mut builder = builder;
 
+    // NOTE: needs to live as long as compiler_args
+    let target_triple_flag: String;
+
     // Common compiler defines for QNX
     let mut compiler_args = vec![
         "-D__QNXNTO__",
@@ -42,6 +45,9 @@ pub fn configure_builder(builder: bindgen::Builder) -> bindgen::Builder {
             compiler_args.push("-D__GNUC_PATCHLEVEL__=0");
         }
         "nto80" => {
+            let target_triple = std::env::var("TARGET").unwrap().replace("qnx800", "800");
+            target_triple_flag = format!("--target={}", target_triple);
+            compiler_args.push(&target_triple_flag);
             compiler_args.push("-D__QNX__=800");
             compiler_args.push("-D__GNUC__=12");
             compiler_args.push("-D__GNUC_MINOR__=2");

@@ -23,6 +23,7 @@ MEMORY="1G"
 BRIDGE="br0"
 QEMU_BRIDGE_HELPER="/usr/lib/qemu/qemu-bridge-helper"
 BRIDGE_CONF="/etc/qemu/bridge.conf"
+BRIDGE_IP="172.31.1.1/24"
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -58,6 +59,10 @@ while [[ $# -gt 0 ]]; do
             BRIDGE_CONF="$2"
             shift 2
             ;;
+        --bridge-ip)
+            BRIDGE_IP="$2"
+            shift 2
+            ;;
         --help|-h)
             echo "Usage: $0 [OPTIONS]"
             echo ""
@@ -70,6 +75,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --bridge BRIDGE           Set bridge name (default: br0)"
             echo "  --qemu-bridge-helper PATH Set qemu bridge helper path (default: /usr/lib/qemu/qemu-bridge-helper)"
             echo "  --bridge-conf PATH        Set bridge configuration path (default: /etc/qemu/bridge.conf)"
+            echo "  --bridge-ip IP/MASK       Set bridge IP address (default: 172.31.1.1/24)"
             echo "  --help, -h                Show this help message"
             echo ""
             echo "This script runs a QNX image in QEMU with bridge networking."
@@ -173,6 +179,13 @@ if [ ! -f "$QEMU_BRIDGE_HELPER" ]; then
     echo -e "${YELLOW}Network bridging may not work properly${NC}"
 fi
 
+# Select appropriate network device
+if [ "$QNX_VERSION" = "7.1" ]; then
+    NET_DEVICE="e1000"
+else
+    NET_DEVICE="virtio-net-pci"
+fi
+
 # Generate random MAC address
 MAC=$(printf "52:54:00:%02x:%02x:%02x" $(( $RANDOM & 0xff)) $(( $RANDOM & 0xff )) $(( $RANDOM & 0xff)))
 
@@ -190,6 +203,8 @@ echo -e "  Image Directory:  ${IMAGE_DIR}"
 echo -e "  CPU Cores:        ${SMP}"
 echo -e "  Memory:           ${MEMORY}"
 echo -e "  Bridge:           ${BRIDGE}"
+echo -e "  Bridge IP:        ${BRIDGE_IP}"
+echo -e "  Network Device:   ${NET_DEVICE}"
 echo -e "  MAC Address:      ${MAC}"
 echo ""
 echo -e "${BLUE}Image Files:${NC}"
@@ -219,6 +234,54 @@ echo ""
 # Setup Network Bridge
 # -------------------
 
+if ! ip link show "$BRIDGE" &> /dev/null; then
+    echo -e "${BLUE}Bridge $BRIDGE does not exist, creating isolated bridge...${NC}"
+    
+    if [ "$DRY_RUN" = true ]; then
+        echo -e "${YELLOW}Would create bridge: $BRIDGE${NC}"
+    else
+        sudo brctl addbr "$BRIDGE"
+        sudo ip addr add "$BRIDGE_IP" dev "$BRIDGE"
+        sudo ip link set "$BRIDGE" up
+        echo -e "${GREEN}✓ Created isolated bridge $BRIDGE with IP $BRIDGE_IP${NC}"
+    fi
+else
+    echo -e "${GREEN}✓ Bridge $BRIDGE already exists${NC}"
+fi
+
+# Ensure qemu-bridge-helper is configured
+if [ ! -f "$BRIDGE_CONF" ] || ! sudo grep -q "allow $BRIDGE" "$BRIDGE_CONF" 2>/dev/null; then
+    echo -e "${BLUE}Configuring qemu-bridge-helper for bridge $BRIDGE...${NC}"
+    
+    if [ "$DRY_RUN" = true ]; then
+        echo -e "${YELLOW}Would configure $BRIDGE_CONF${NC}"
+    else
+        sudo mkdir -p "$(dirname "$BRIDGE_CONF")"
+        echo "allow $BRIDGE" | sudo tee -a "$BRIDGE_CONF" > /dev/null
+        sudo chmod 0644 "$BRIDGE_CONF"
+        echo -e "${GREEN}✓ Bridge configuration updated${NC}"
+    fi
+else
+    echo -e "${GREEN}✓ Bridge already configured in $BRIDGE_CONF${NC}"
+fi
+
+# Ensure qemu-bridge-helper has SUID bit
+if [ -f "$QEMU_BRIDGE_HELPER" ] && [ ! -u "$QEMU_BRIDGE_HELPER" ]; then
+    echo -e "${BLUE}Setting SUID bit on qemu-bridge-helper...${NC}"
+    
+    if [ "$DRY_RUN" = true ]; then
+        echo -e "${YELLOW}Would set SUID on $QEMU_BRIDGE_HELPER${NC}"
+    else
+        sudo chmod u+s "$QEMU_BRIDGE_HELPER"
+        echo -e "${GREEN}✓ SUID bit set${NC}"
+    fi
+fi
+
+echo ""
+
+# Configure Bridge Helper
+# -------------------
+
 NET_ARGS=""
 if [ "$QNX_VERSION" = "8.0" ]; then
     NET_ARGS="bridge"
@@ -230,7 +293,7 @@ if [ "$DRY_RUN" = true ]; then
     echo -e "${BLUE}Network setup command that would be executed:${NC}"
     echo -e "${YELLOW}$NET_CMD${NC}"
 else
-    echo -e "${BLUE}Setting up network bridge...${NC}"
+    echo -e "${BLUE}Configuring network bridge...${NC}"
     echo -e "${BLUE}Command: $NET_CMD${NC}"
     
     BRIDGE_START_TIME=$(date +%s)
@@ -242,9 +305,9 @@ else
     BRIDGE_DURATION=$((BRIDGE_END_TIME - BRIDGE_START_TIME))
     
     if [ $BRIDGE_EXIT_CODE -eq 0 ]; then
-        echo -e "${GREEN}✓ Network bridge setup completed (${BRIDGE_DURATION}s)${NC}"
+        echo -e "${GREEN}✓ Bridge configuration setup completed (${BRIDGE_DURATION}s)${NC}"
     else
-        echo -e "${YELLOW}⚠ Network bridge setup failed (${BRIDGE_DURATION}s, exit code: $BRIDGE_EXIT_CODE)${NC}"
+        echo -e "${YELLOW}⚠ Bridge configuration failed (${BRIDGE_DURATION}s, exit code: $BRIDGE_EXIT_CODE)${NC}"
         echo -e "${YELLOW}Continuing anyway - network may not work properly${NC}"
     fi
 fi
@@ -257,10 +320,11 @@ echo ""
 QEMU_ARGS=(
     "-smp" "$SMP"
     "-m" "$MEMORY"
+    "-cpu" "max"
     "-drive" "file=$DISK_IMAGE,if=ide,id=drv0"
     "-hdb" "fat:rw:$SHARED_DIR"
     "-netdev" "bridge,br=$BRIDGE,id=net0"
-    "-device" "e1000,netdev=net0,mac=$MAC"
+    "-device" "$NET_DEVICE,netdev=net0,mac=$MAC"
     "-nographic"
     "-kernel" "$KERNEL_IMAGE"
     "-serial" "mon:stdio"
