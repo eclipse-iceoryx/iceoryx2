@@ -127,7 +127,7 @@ The support levels can be adjusted when required.
 | Linux (32-bit)   | done                     |        tier 2         |               tier 1 |
 | Mac OS           | done                     |        tier 2         |               tier 2 |
 | QNX 7.1          | done                     |        tier 3         |               tier 1 |
-| QNX 8.0          | in-progress              |           -           |               tier 1 |
+| QNX 8.0          | done                     |        tier 3         |               tier 1 |
 | VxWorks          | proof-of-concept[^2]     |           -           |               tier 1 |
 | WatchOS          | planned                  |           -           |               tier 2 |
 | Windows          | done                     |        tier 2         |               tier 2 |
