@@ -44,38 +44,66 @@ pub unsafe fn fcntl2(fd: int, cmd: int) -> int {
 }
 
 pub unsafe fn fchmod(fd: int, mode: mode_t) -> int {
-    crate::internal::fchmod(fd, mode)
+    internal::fchmod(fd, mode)
 }
 
 pub unsafe fn open(pathname: *const c_char, flags: int) -> int {
     internal::open(pathname, flags)
 }
 
-#[cfg(target_pointer_width = "32")]
 mod internal {
     use super::*;
 
+    #[cfg(target_env = "nto80")]
+    pub unsafe fn fchmod(fd: int, mode: mode_t) -> int {
+        use crate::posix::constants::S_IFDIR;
+        use crate::posix::constants::S_IFMT;
+        use crate::posix::types::native_stat_t;
+
+        let mut buffer = native_stat_t::new_zeroed();
+        if fstat(fd, &mut buffer) != 0 {
+            return -1;
+        }
+
+        // Stub for directories, returns ENOSYS on QNX 8
+        if (buffer.st_mode & S_IFMT) == S_IFDIR {
+            return 0;
+        }
+
+        crate::internal::fchmod(fd, mode)
+    }
+
+    #[cfg(target_env = "nto71")]
+    pub unsafe fn fchmod(fd: int, mode: mode_t) -> int {
+        crate::internal::fchmod(fd, mode)
+    }
+
+    #[cfg(target_pointer_width = "32")]
     pub unsafe fn open(path: *const c_char, oflag: int) -> int {
         crate::internal::open(path, oflag)
     }
+
+    #[cfg(target_pointer_width = "32")]
     pub unsafe fn open_with_mode(path: *const c_char, oflag: int, mode: mode_t) -> int {
         crate::internal::open(path, oflag, mode)
     }
+
+    #[cfg(target_pointer_width = "32")]
     pub unsafe fn fstat(fd: int, buf: &mut native_stat_t) -> int {
         crate::internal::fstat(fd, buf)
     }
-}
 
-#[cfg(target_pointer_width = "64")]
-mod internal {
-    use super::*;
-
+    #[cfg(target_pointer_width = "64")]
     pub unsafe fn open(path: *const c_char, oflag: int) -> int {
         crate::internal::open64(path, oflag)
     }
+
+    #[cfg(target_pointer_width = "64")]
     pub unsafe fn open_with_mode(path: *const c_char, oflag: int, mode: mode_t) -> int {
         crate::internal::open64(path, oflag, mode)
     }
+
+    #[cfg(target_pointer_width = "64")]
     pub unsafe fn fstat(fd: int, buf: &mut native_stat_t) -> int {
         crate::internal::fstat64(fd, buf)
     }
