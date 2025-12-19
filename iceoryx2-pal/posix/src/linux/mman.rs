@@ -13,6 +13,9 @@
 #![allow(non_camel_case_types)]
 #![allow(clippy::missing_safety_doc)]
 
+use alloc::vec;
+use alloc::vec::Vec;
+
 use crate::posix::{closedir, opendir, readdir, types::*};
 
 pub unsafe fn mlock(addr: *const void, len: size_t) -> int {

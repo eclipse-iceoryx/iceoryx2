@@ -248,7 +248,7 @@ jobs:
         uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
         with:
           toolchain: ${{ matrix.toolchain }}
-          targets: i686-unknown-linux-gnu
+          targets: i686-unknown-linux-gnu, armv7r-none-eabihf
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -724,7 +724,10 @@ jobs:
         run: cargo build --package iceoryx2 --no-default-features
 
       - name: Build bare-metal examples (no_std)
-        run: cd examples/bare-metal/rust && cargo build && cd -
+        run: cd examples/nostd/bare-metal/rust && cargo build --examples && cd -
+
+      - name: Build posix examples (no_std)
+        run: cd examples/nostd/posix/rust && cargo build --examples && cd -
 
   x64_cxx_binding_vocabulary_types_variations:
     needs: [preflight-check, static-code-analysis, cargo-nextest]

@@ -234,7 +234,7 @@ dependencies = [
  "clap",
  "iceoryx2",
  "iceoryx2-bb-posix",
- "iceoryx2-log",
+ "iceoryx2-loggers",
 ]
 
 [[package]]
@@ -245,6 +245,7 @@ dependencies = [
  "iceoryx2",
  "iceoryx2-bb-container",
  "iceoryx2-bb-posix",
+ "iceoryx2-loggers",
 ]
 
 [[package]]
@@ -265,7 +266,7 @@ dependencies = [
  "iceoryx2",
  "iceoryx2-bb-container",
  "iceoryx2-bb-posix",
- "iceoryx2-log",
+ "iceoryx2-loggers",
 ]
 
 [[package]]
@@ -926,6 +927,7 @@ dependencies = [
  "iceoryx2-bb-system-types",
  "iceoryx2-cal",
  "iceoryx2-log",
+ "iceoryx2-loggers",
  "iceoryx2-services-discovery",
 ]
 
@@ -1565,6 +1567,7 @@ dependencies = [
  "iceoryx2-bb-testing",
  "iceoryx2-cal",
  "iceoryx2-log",
+ "iceoryx2-loggers",
  "iceoryx2-pal-posix",
  "iceoryx2-pal-testing",
  "iceoryx2-services-discovery",
@@ -1645,7 +1648,6 @@ name = "iceoryx2-log"
 version = "0.7.0"
 dependencies = [
  "iceoryx2-log-types",
- "iceoryx2-loggers",
  "iceoryx2-pal-concurrency-sync",
 ]
 
@@ -1659,6 +1661,7 @@ version = "0.7.0"
 dependencies = [
  "iceoryx2-log-types",
  "iceoryx2-pal-concurrency-sync",
+ "iceoryx2-pal-posix",
  "log",
  "tracing",
 ]

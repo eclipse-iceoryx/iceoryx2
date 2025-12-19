@@ -634,4 +634,10 @@ impl SignalHandler {
         self.registered_signals[detail.signal as usize] = None;
         self.register_signal_from_state(detail);
     }
+
+    pub fn abort() {
+        unsafe {
+            iceoryx2_pal_posix::posix::abort();
+        }
+    }
 }

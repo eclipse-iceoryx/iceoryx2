@@ -1,0 +1,20 @@
+[package]
+name = "bare-metal-nostd-publish-subscribe"
+description = "a bare metal application that runs on qemu emulating the r5"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = []
+semihosting = [
+  "bare-metal-nostd-common/semihosting"
+]
+
+[[example]]
+name = "bare_metal_nostd_publish_subscribe"
+path = "src/publish-subscribe.rs"
+
+[dependencies]
+iceoryx2 = { workspace = true }
+iceoryx2-loggers = { workspace = true }
+bare-metal-nostd-common = { workspace = true }

@@ -164,9 +164,12 @@ Currently, iceoryx2 does not provide an async API but it is
 However, we offer an event-based API to implement push notifications. For more
 details, see the [event example](examples/rust/event).
 
-### Selecting Default Log Backend
+### Changing Log Backend
 
-The default log backend is selected via feature flags at compile time.
+The `iceoryx2` crate automatically configures the console logger as the
+default logger backend, however it is possible to change this using feature
+flags on the `iceoryx2-loggers` crate.
+
 The following loggers are available:
 
 1. **console** - outputs log messages to the console
@@ -178,13 +181,27 @@ The following loggers are available:
 The feature can be set in a project's `Cargo.toml`:
 
 ```toml
-iceoryx2 = { version = "0.1.0", features = ["logger_console"]}
+iceoryx2-loggers = { version = "0.1.0", features = ["std", "file"]}
 ```
 
 Or specified when building the crate:
 
 ```console
-cargo build --features logger_console
+cargo build --features iceoryx2-loggers/std -features iceoryx2-loggers/file
+```
+
+Alternatively, a custom logger backend can be set at runtime at the very
+beginning of your application:
+
+```
+use iceoryx2::prelude::*;
+
+static LOGGER: MyLogger = MyLogger::new();
+
+fn main() {
+    set_logger(&LOGGER);
+    // ...
+}
 ```
 
 ### Supported Log Levels
@@ -250,30 +267,6 @@ rights management for services.
 
 ### Something Is Broken, How To Enable Debug Output
 
-#### Selecting a `Logger`
-
-By default, the `null` logger is used, which discards all log messages.
-To enable log output, a default logger must be selected at compile time
-by enabling the correspond feature flag:
-
-```toml
-iceoryx2 = { version = "0.7.0", features = ["logger_console"] }
-```
-
-Alternatively, if using a custom `Logger` implementation, it must be set
-at runtime at the very beginning of the application:
-
-```rust
-use iceoryx2::prelude::*;
-
-static LOGGER: MyLogger = MyLogger::new();
-
-fn main() {
-    set_logger(&LOGGER);
-    // ...
-}
-```
-
 #### Setting the `LogLevel`
 
 iceoryx2 provides different APIs which can be used to set the log level
@@ -320,9 +313,10 @@ If using the `iceoryx2` crate as a dependency, this is handled automatically,
 however if using a lower-level crate (such as `iceoryx2-cal` or one from
 `iceoryx2-bb`) the following is required:
 
-1. Include `iceoryx2-loggers` as a dependency:
+1. Include `iceoryx2-loggers` as a dependency with the corresponding feature
+   for your platform:
     ```toml
-    iceoryx2-loggers = { version = "0.7.0" }
+    iceoryx2-loggers = { version = "0.7.0", features = ["std", "console"] }
     ```
 1. Ensure the crate is linked to even if not used:
     ```rust

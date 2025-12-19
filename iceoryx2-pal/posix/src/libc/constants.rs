@@ -27,6 +27,9 @@ pub const USER_NAME_LENGTH: usize = 31;
 
 pub const GROUP_NAME_LENGTH: usize = 31;
 
+pub const STDOUT_FILENO: u32 = libc::STDOUT_FILENO as _;
+pub const STDERR_FILENO: u32 = libc::STDERR_FILENO as _;
+
 pub const O_RDONLY: int = libc::O_RDONLY as _;
 pub const O_WRONLY: int = libc::O_WRONLY as _;
 pub const O_RDWR: int = libc::O_RDWR as _;

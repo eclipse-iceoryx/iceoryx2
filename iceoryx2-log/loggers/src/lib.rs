@@ -26,60 +26,61 @@
 //! while allowing flexible backend selection at runtime.
 //!
 //! See `iceoryx2_log` for usage examples and the complete logging API.
+//!
+//! # Feature Flags
+//!
+//! Exactly one of these three features must be selected according to your
+//! platform:
+//!
+//!  * `std` - Build for platforms that have `std` support
+//!  * `posix` - Build for platforms that have a POSIX abastraction, but no `std` support
+//!  * `bare_metal` - Build for bare metal platforms
+//!
+//! Optionally, the default logger can also be configured. If none are
+//! configured, the null logger is used and all logs are discarded:
+//!
+//!  * `buffer` - output log messages to a buffer
+//!  * `console` - output log messages to the console
+//!  * `file` - output log messages to the file
+//!  * `log` - utilize the `log` crate to output log messages
+//!  * `tracing` - utilize the `tracing` crate to output log messages
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![warn(clippy::alloc_instead_of_core)]
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 
-#[cfg(all(feature = "logger_buffer", feature = "logger_file"))]
-compile_error!("Features 'logger_buffer' and 'logger_file' are mutually exclusive");
-
-#[cfg(all(feature = "logger_buffer", feature = "logger_console"))]
-compile_error!("Features 'logger_buffer' and 'logger_console' are mutually exclusive");
-
-#[cfg(all(feature = "logger_buffer", feature = "logger_log"))]
-compile_error!("Features 'logger_buffer' and 'logger_log' are mutually exclusive");
-
-#[cfg(all(feature = "logger_buffer", feature = "logger_tracing"))]
-compile_error!("Features 'logger_buffer' and 'logger_tracing' are mutually exclusive");
-
-#[cfg(all(feature = "logger_file", feature = "logger_console"))]
-compile_error!("Features 'logger_file' and 'logger_console' are mutually exclusive");
-
-#[cfg(all(feature = "logger_file", feature = "logger_log"))]
-compile_error!("Features 'logger_file' and 'logger_log' are mutually exclusive");
-
-#[cfg(all(feature = "logger_file", feature = "logger_tracing"))]
-compile_error!("Features 'logger_file' and 'logger_tracing' are mutually exclusive");
-
-#[cfg(all(feature = "logger_console", feature = "logger_log"))]
-compile_error!("Features 'logger_console' and 'logger_log' are mutually exclusive");
-
-#[cfg(all(feature = "logger_console", feature = "logger_tracing"))]
-compile_error!("Features 'logger_console' and 'logger_tracing' are mutually exclusive");
-
-#[cfg(all(feature = "logger_log", feature = "logger_tracing"))]
-compile_error!("Features 'logger_log' and 'logger_tracing' are mutually exclusive");
+use core::fmt::Write;
 
 use iceoryx2_log_types::Log;
 
-#[cfg(feature = "logger_buffer")]
+#[cfg(feature = "buffer")]
 mod buffer;
-#[cfg(feature = "logger_console")]
+#[cfg(feature = "console")]
 mod console;
-#[cfg(feature = "logger_file")]
+#[cfg(feature = "file")]
 mod file;
-#[cfg(feature = "logger_log")]
+#[cfg(feature = "log")]
 mod log;
-#[cfg(feature = "logger_tracing")]
+#[cfg(feature = "tracing")]
 mod tracing;
 
 mod null;
+mod writer;
 
 extern crate alloc;
 
-#[cfg(feature = "logger_console")]
+#[no_mangle]
+pub extern "Rust" fn __internal_stdout() -> &'static mut dyn Write {
+    writer::stdout()
+}
+
+#[no_mangle]
+pub extern "Rust" fn __internal_stderr() -> &'static mut dyn Write {
+    writer::stderr()
+}
+
+#[cfg(feature = "console")]
 #[no_mangle]
 pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
     {
@@ -88,7 +89,7 @@ pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
     }
 }
 
-#[cfg(feature = "logger_buffer")]
+#[cfg(feature = "buffer")]
 #[no_mangle]
 pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
     {
@@ -97,7 +98,7 @@ pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
     }
 }
 
-#[cfg(feature = "logger_file")]
+#[cfg(feature = "file")]
 #[no_mangle]
 pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
     {
@@ -108,7 +109,7 @@ pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
     }
 }
 
-#[cfg(feature = "logger_log")]
+#[cfg(feature = "log")]
 #[no_mangle]
 pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
     {
@@ -117,7 +118,7 @@ pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
     }
 }
 
-#[cfg(feature = "logger_tracing")]
+#[cfg(feature = "tracing")]
 #[no_mangle]
 pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
     {
@@ -127,11 +128,11 @@ pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
 }
 
 #[cfg(not(any(
-    feature = "logger_console",
-    feature = "logger_buffer",
-    feature = "logger_file",
-    feature = "logger_log",
-    feature = "logger_tracing"
+    feature = "console",
+    feature = "buffer",
+    feature = "file",
+    feature = "log",
+    feature = "tracing"
 )))]
 #[no_mangle]
 pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {

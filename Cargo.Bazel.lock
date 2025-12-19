@@ -1,5 +1,5 @@
 {
-  "checksum": "e676f772adc77589270f45466ba863fe25eac45ae87b9314ef2d13539e2c48dc",
+  "checksum": "cce96cf2c4515d2e4c4ca2a36a8cf6df595507b55977dd0672dffd57e682ff54",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -7796,7 +7796,6 @@
         "crate_features": {
           "common": [
             "default",
-            "logger_console",
             "std"
           ],
           "selects": {}
@@ -9009,6 +9008,18 @@
               ]
             }
           }
+        },
+        {
+          "BuildScript": {
+            "crate_name": "build_script_build",
+            "crate_root": "build.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
         }
       ],
       "library_target_name": "iceoryx2_loggers",
@@ -9018,14 +9029,31 @@
         ],
         "crate_features": {
           "common": [
+            "console",
             "default",
-            "logger_console",
             "std"
+          ],
+          "selects": {}
+        },
+        "deps": {
+          "common": [
+            {
+              "id": "iceoryx2-loggers 0.7.0",
+              "target": "build_script_build"
+            }
           ],
           "selects": {}
         },
         "edition": "2021",
         "version": "0.7.0"
+      },
+      "build_script_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "data_glob": [
+          "**"
+        ]
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [

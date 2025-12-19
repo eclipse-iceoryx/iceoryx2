@@ -36,4 +36,6 @@ apt-get install -y \
      libpython3-all-dev \
      libstdc++6-i386-cross \
      libdwarf-dev \
-     libelf-dev
+     libelf-dev \
+     libunwind-dev \
+     qemu-system-arm

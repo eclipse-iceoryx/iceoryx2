@@ -26,3 +26,7 @@ pub unsafe fn memcpy(dest: *mut void, src: *const void, n: size_t) -> *mut void 
 pub unsafe fn strncpy(dest: *mut c_char, src: *const c_char, n: size_t) -> *mut c_char {
     crate::internal::strncpy(dest, src, n as _)
 }
+
+pub unsafe fn abort() {
+    crate::internal::abort()
+}

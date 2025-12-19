@@ -14,7 +14,9 @@
 #![allow(clippy::missing_safety_doc)]
 
 use crate::posix::types::*;
+use alloc::borrow::ToOwned;
 use alloc::ffi::CString;
+use alloc::format;
 
 pub unsafe fn proc_pidpath(pid: pid_t, buffer: *mut c_char, buffer_len: size_t) -> isize {
     let path = if pid == crate::internal::getpid() {

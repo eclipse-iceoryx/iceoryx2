@@ -15,10 +15,10 @@
 
 mod startup;
 
-use bare_metal_common::global_allocator;
+use bare_metal_nostd_common::global_allocator;
 #[cfg(feature = "semihosting")]
-use bare_metal_common::semihosting;
-use bare_metal_common::writer;
+use bare_metal_nostd_common::semihosting;
+use bare_metal_nostd_common::writer;
 
 use core::panic::PanicInfo;
 

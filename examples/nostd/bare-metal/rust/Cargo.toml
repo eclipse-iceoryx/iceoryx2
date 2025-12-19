@@ -1,0 +1,15 @@
+[workspace]
+resolver = "2"
+members = [
+    "_common/",
+    "publish-subscribe/"
+]
+
+[workspace.dependencies]
+bare-metal-nostd-common = { path = "_common/", default-features = false }
+bare-metal-nostd-publish-subscribe = { path = "publish-subscribe/", default-features = false }
+
+iceoryx2 = { path = "../../../../iceoryx2/", default-features = false }
+iceoryx2-loggers = { path = "../../../../iceoryx2-log/loggers", default-features = false, features = ["bare_metal"] }
+iceoryx2-bb-memory = { path = "../../../../iceoryx2-bb/memory" }
+iceoryx2-bb-concurrency = { path = "../../../../iceoryx2-bb/concurrency" }
