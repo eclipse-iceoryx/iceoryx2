@@ -11,7 +11,12 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #![cfg_attr(
-    not(any(target_os = "windows", target_os = "macos", target_os = "freebsd")),
+    not(any(
+        target_os = "android",
+        target_os = "windows",
+        target_os = "macos",
+        target_os = "freebsd"
+    )),
     no_std
 )]
 #![allow(clippy::missing_safety_doc)]
