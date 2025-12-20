@@ -14,28 +14,19 @@ package(default_visibility = ["//visibility:public"])
 
 load("@rules_cc//cc:defs.bzl", "cc_library")
 load("@rules_rust//rust:defs.bzl", "rust_shared_library", "rust_static_library", "rust_test")
+load("//bazel/cbindgen:cbindgen.bzl", "rust_cbindgen_headers")
 
 filegroup(
     name = "all_srcs",
     srcs = glob(["**"]),
 )
 
-filegroup(
-    name = "cbindgen-cli",
-    srcs = ["@cbindgen//file"],
-)
-
-genrule(
+rust_cbindgen_headers(
     name = "iceoryx2-ffi-c-cbindgen",
-    srcs = glob(["src/**/*.rs"]) + [
-        "//:all_srcs",
-        "Cargo.toml",
-        "cbindgen.toml",
-        ":cbindgen-cli",
-    ],
-    outs = ["include/iox2/iceoryx2.h"],
-    # this is actually just 'cbindgen iceoryx2-ffi/c --quiet --config iceoryx2-ffi/c/cbindgen.toml --output include/iox2/iceoryx2.h'
-    cmd = "$(execpath :cbindgen-cli) $$(dirname $(location Cargo.toml)) --quiet --config $(location cbindgen.toml) --output $(OUTS)",
+    manifest_dir = "Cargo.toml",
+    config = "cbindgen.toml",
+    srcs = glob(["src/**/*.rs"]) + ["//:all_srcs"],
+    header = "include/iox2/iceoryx2.h",
 )
 
 rust_shared_library(
