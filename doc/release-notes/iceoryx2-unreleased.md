@@ -22,6 +22,8 @@
   [#832](https://github.com/eclipse-iceoryx/iceoryx2/issues/832)
 * Add traits to facilitate implementation of custom tunnelling mechanisms
   [#845](https://github.com/eclipse-iceoryx/iceoryx2/issues/845)
+* Add platform support for QNX 8
+  [#853](https://github.com/eclipse-iceoryx/iceoryx2/issues/853)
 * Add logger backend that uses the POSIX APIs instead of `std` to log to the
   console
   [#853](https://github.com/eclipse-iceoryx/iceoryx2/issues/853)

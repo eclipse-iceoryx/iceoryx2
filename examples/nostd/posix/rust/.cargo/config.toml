@@ -3,3 +3,15 @@ rustflags = [
     "-C", "link-arg=-lunwind",
     "-C", "link-arg=-lgcc_s"
 ]
+
+[target.x86_64-pc-nto-qnx800]
+rustflags = [
+    "-C", "link-arg=-lgcc_s",
+    "-C", "link-arg=-lsocket"
+]
+
+[target.aarch64-unknown-nto-qnx800]
+rustflags = [
+    "-C", "link-arg=-lgcc_s",
+    "-C", "link-arg=-lsocket"
+]
