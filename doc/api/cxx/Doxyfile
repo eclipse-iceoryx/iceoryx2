@@ -49,9 +49,11 @@ PREDEFINED                     += DOXYGEN_MACRO_FIX
 
 # Input Configuration
 INPUT                           = "../../../iceoryx2-cxx/include" \
+                                  "../../../iceoryx2-bb/cxx/include" \
                                   "mainpage.md"
 
 STRIP_FROM_PATH                 = "../../../iceoryx2-cxx/include" \
+                                  "../../../iceoryx2-bb/cxx/include" \
                                   "../../../doc/api/cxx"
 
 FILE_PATTERNS                   = *.h \
