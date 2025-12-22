@@ -198,7 +198,7 @@ qemu-system-x86_64 \
 
 ### Connect to the QNX via telnet
 
-> [!WARN]
+> [!WARNING]
 > Only available in 7.1 images
 
 `telnet` can be used to connect to a running image with default credentials
@@ -294,7 +294,7 @@ rustup toolchain link ${RUST_TOOLCHAIN} $RUSTDIR/build/host/stage1
 
 ### Build remote testing tools for QNX
 
-> [!WARN]
+> [!WARNING]
 > Unavailable on QNX 8.0 due to dependency on `std`.
 
 > [!TIP]
@@ -409,7 +409,7 @@ cargo +${RUST_TOOLCHAIN} build --target aarch64-unknown-nto-qnx800 --package ice
 
 ## Testing
 
-> [!WARN]
+> [!WARNING]
 > Unavailable on QNX 8.0 due to dependency on `std`.
 
 ### Running the Test Suite
@@ -458,7 +458,7 @@ $RUSTDIR/build/host/stage0-tools-bin/remote-test-client run 0 <test_binary>
 
 ### Running Benchmarks
 
-> [!WARN]
+> [!WARNING]
 > Unavailable on QNX 8.0 due to dependency on `std`.
 
 > [!TIP]
