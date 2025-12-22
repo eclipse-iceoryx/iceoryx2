@@ -12,7 +12,6 @@ version also needs to be increased when the `std::optional` (C++17) and/or
 
 The relevant CMake options are:
 
-* `IOX2_CXX_STD_VERSION`
 * `IOX2_BB_CXX_CONFIG_USE_STD_EXPECTED`
 * `IOX2_BB_CXX_CONFIG_USE_STD_OPTIONAL`
 
@@ -22,7 +21,6 @@ The following examples shows how to use both, the `std::optional` and
 ```cmake
 cmake -S . \
       -B target/ff/cc/build \
-      -DIOX2_CXX_STD_VERSION=23 \
       -DIOX2_BB_CXX_CONFIG_USE_STD_EXPECTED=ON \
       -DIOX2_BB_CXX_CONFIG_USE_STD_OPTIONAL=ON
 cmake --build target/ff/cc/build
@@ -45,7 +43,6 @@ as a blueprint to create a CMake package with the required files.
 
 The relevant CMake options are:
 
-* `IOX2_CXX_STD_VERSION`
 * `IOX2_BB_CXX_CONFIG_USE_CUSTOM_VOCABULARY_TYPES`
 * `IOX2_BB_CXX_CONFIG_CUSTOM_VOCABULARY_TYPES_CMAKE_TARGET`
 

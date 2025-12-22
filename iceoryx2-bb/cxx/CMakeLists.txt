@@ -102,6 +102,14 @@ else()
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/variation/${IOX2_VARIATION_EXPECTED_INCLUDE}>
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/variation/${IOX2_VARIATION_OPTIONAL_INCLUDE}>
     )
+
+    if(IOX2_BB_CXX_CONFIG_USE_STD_EXPECTED AND ${ICEORYX2_CXX_STD_VALUE} VERSION_LESS 23)
+        set(ICEORYX2_CXX_STD cxx_std_23)
+        message(STATUS "[i]  The std::expected requires at least C++23! Setting cxx_std_23 for iceoryx2-bb-cxx!")
+    elseif(IOX2_BB_CXX_CONFIG_USE_STD_OPTIONAL AND ${ICEORYX2_CXX_STD_VALUE} LESS 17)
+        set(ICEORYX2_CXX_STD cxx_std_17)
+        message(STATUS "[i]  The std::optional requires at least C++17! Setting cxx_std_17 for iceoryx2-bb-cxx!")
+    endif()
 endif()
 
 target_compile_features(iceoryx2-bb-cxx INTERFACE ${ICEORYX2_CXX_STD})
