@@ -19,6 +19,14 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_library(${PROJECT_NAME} INTERFACE)
 
+target_sources(${PROJECT_NAME}
+    INTERFACE
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/my_expected.hpp>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/my_optional.hpp>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/variation/expected_adaption.hpp>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/bb/variation/optional_adaption.hpp>
+)
+
 target_include_directories(${PROJECT_NAME}
     INTERFACE
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>

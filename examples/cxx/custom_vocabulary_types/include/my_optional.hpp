@@ -12,11 +12,11 @@
 
 // NOLINTBEGIN(readability-identifier-naming) STL naming required for example
 
-#ifndef MY_OPTIONAL
-#define MY_OPTIONAL
-
 // required for clang-tidy
 #if __cplusplus >= 201703L
+
+#ifndef MY_OPTIONAL
+#define MY_OPTIONAL
 
 #include <optional>
 
@@ -30,8 +30,8 @@ constexpr nullopt_t nullopt = std::nullopt;
 
 } // namespace my
 
-#endif
-
 #endif // MY_OPTIONAL
+
+#endif
 
 // NOLINTEND(readability-identifier-naming) STL naming required for example

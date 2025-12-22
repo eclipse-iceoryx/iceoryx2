@@ -12,11 +12,11 @@
 
 // NOLINTBEGIN(readability-identifier-naming) STL naming required for example
 
-#ifndef MY_EXPECTED
-#define MY_EXPECTED
-
 // required for clang-tidy
 #if __cplusplus > 202002L
+
+#ifndef MY_EXPECTED
+#define MY_EXPECTED
 
 #include <expected>
 
@@ -35,8 +35,8 @@ constexpr unexpect_t unexpect = std::unexpect;
 
 } // namespace my
 
-#endif
-
 #endif // MY_EXPECTED
+
+#endif
 
 //NOLINTEND(readability-identifier-naming)

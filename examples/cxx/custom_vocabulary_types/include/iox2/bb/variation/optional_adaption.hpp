@@ -10,6 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+// required for clang-tidy
+#if __cplusplus >= 201703L
+
 #ifndef MY_OPTIONAL_FOR_ICEORYX2
 #define MY_OPTIONAL_FOR_ICEORYX2
 
@@ -30,3 +33,5 @@ constexpr NulloptT NULLOPT = my::nullopt;
 } // namespace iox2
 
 #endif // MY_OPTIONAL_FOR_ICEORYX2
+
+#endif

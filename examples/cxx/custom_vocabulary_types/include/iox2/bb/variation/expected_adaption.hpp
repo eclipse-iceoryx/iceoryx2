@@ -10,6 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+// required for clang-tidy
+#if __cplusplus > 202002L
+
 #ifndef MY_EXPECTED_FOR_ICEORYX2
 #define MY_EXPECTED_FOR_ICEORYX2
 
@@ -35,3 +38,5 @@ constexpr UnexpectT UNEXPECT = my::unexpect;
 } // namespace iox2
 
 #endif // MY_EXPECTED_FOR_ICEORYX2
+
+#endif
