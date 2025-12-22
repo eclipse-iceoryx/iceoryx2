@@ -14,6 +14,8 @@
 
 include(CMakeFindDependencyMacro)
 
+@IOX2_VOCABULARY_TYPES_DEPENDENCY_CONFIG_CMAKE_IN@
+
 include("${CMAKE_CURRENT_LIST_DIR}/@TARGETS_EXPORT_NAME@.cmake")
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
 check_required_components("@PROJECT_NAME@")
