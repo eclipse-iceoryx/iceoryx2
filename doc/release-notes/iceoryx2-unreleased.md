@@ -64,6 +64,9 @@
   [#1223](https://github.com/eclipse-iceoryx/iceoryx2/issues/1223)
 * Add socket directory configuration in platform
   [#1232](https://github.com/eclipse-iceoryx/iceoryx2/issues/1232)
+* Configuration mechanism to for replacing vocabulary types in iceoryx2-bb-cxx
+  with custom implementations
+  [#1250](https://github.com/eclipse-iceoryx/iceoryx2/issues/1250)
 
 ### Bugfixes
 
