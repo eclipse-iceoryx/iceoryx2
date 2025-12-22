@@ -60,8 +60,8 @@ cmake --build target/ff/cc/build
 
 The CMake target must distribute the following headers:
 
-* `iox2/bb/variation/expected.hpp`
-* `iox2/bb/variation/optional.hpp`
+* `iox2/bb/variation/expected_adaption.hpp`
+* `iox2/bb/variation/optional_adaption.hpp`
 
 The header must contain either the code or type aliases for the vocabulary types.
 These aliases need to be in the `iox2::bb` namespace.
@@ -76,6 +76,7 @@ For the `Optional` these aliases and constants are required:
 
 namespace iox2 {
 namespace bb {
+namespace variation {
 
 template <typename T>
 using Optional = my::optional<T>;
@@ -83,6 +84,7 @@ using NulloptT = my::nullopt_t;
 
 constexpr NulloptT NULLOPT = my::nullopt;
 
+} // namespace variation
 } // namespace bb
 } // namespace iox2
 
@@ -99,6 +101,7 @@ For the `Optional` these aliases and constants are required:
 
 namespace iox2 {
 namespace bb {
+namespace variation {
 
 template <typename T, typename E>
 using Expected = my::expected<T, E>;
@@ -111,6 +114,7 @@ using UnexpectT = my::unexpect_t;
 constexpr InPlaceT IN_PLACE = my::in_place;
 constexpr UnexpectT UNEXPECT = my::unexpect;
 
+} // namespace variation
 } // namespace bb
 } // namespace iox2
 

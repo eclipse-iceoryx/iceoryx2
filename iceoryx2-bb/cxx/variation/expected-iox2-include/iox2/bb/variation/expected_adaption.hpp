@@ -10,31 +10,28 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_INCLUDE_GUARD_VARIATION_EXPECTED_HPP
-#define IOX2_INCLUDE_GUARD_VARIATION_EXPECTED_HPP
+#ifndef IOX2_INCLUDE_GUARD_VARIATION_EXPECTED_ADAPTION_HPP
+#define IOX2_INCLUDE_GUARD_VARIATION_EXPECTED_ADAPTION_HPP
 
-// required for clang-tidy
-#if __cplusplus > 202002L
-
-#include <expected>
+#include "iox2/bb/stl/expected.hpp"
 
 namespace iox2 {
 namespace bb {
+namespace variation {
 
 template <typename T, typename E>
-using Expected = std::expected<T, E>;
+using Expected = iox2::bb::stl::Expected<T, E>;
 template <typename E>
-using Unexpected = std::unexpected<E>;
+using Unexpected = iox2::bb::stl::Unexpected<E>;
 
-using InPlaceT = std::in_place_t;
-using UnexpectT = std::unexpect_t;
+using InPlaceT = iox2::bb::stl::InPlaceT;
+using UnexpectT = iox2::bb::stl::UnexpectT;
 
-constexpr InPlaceT IN_PLACE = std::in_place;
-constexpr UnexpectT UNEXPECT = std::unexpect;
+constexpr InPlaceT IN_PLACE = iox2::bb::stl::IN_PLACE;
+constexpr UnexpectT UNEXPECT = iox2::bb::stl::UNEXPECT;
 
+} // namespace variation
 } // namespace bb
 } // namespace iox2
 
-#endif
-
-#endif // IOX2_INCLUDE_GUARD_VARIATION_EXPECTED_HPP
+#endif // IOX2_INCLUDE_GUARD_VARIATION_EXPECTED_ADAPTION_HPP

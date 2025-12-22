@@ -10,21 +10,28 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef MY_OPTIONAL_FOR_ICEORYX2
-#define MY_OPTIONAL_FOR_ICEORYX2
+#ifndef MY_EXPECTED_FOR_ICEORYX2
+#define MY_EXPECTED_FOR_ICEORYX2
 
-#include "my_optional.hpp"
+#include "my_expected.hpp"
 
 namespace iox2 {
 namespace bb {
+namespace variation {
 
-template <typename T>
-using Optional = my::optional<T>;
-using NulloptT = my::nullopt_t;
+template <typename T, typename E>
+using Expected = my::expected<T, E>;
+template <typename E>
+using Unexpected = my::unexpected<E>;
 
-constexpr NulloptT NULLOPT = my::nullopt;
+using InPlaceT = my::in_place_t;
+using UnexpectT = my::unexpect_t;
 
+constexpr InPlaceT IN_PLACE = my::in_place;
+constexpr UnexpectT UNEXPECT = my::unexpect;
+
+} // namespace variation
 } // namespace bb
 } // namespace iox2
 
-#endif // MY_OPTIONAL_FOR_ICEORYX2
+#endif // MY_EXPECTED_FOR_ICEORYX2

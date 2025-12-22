@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_INCLUDE_GUARD_VARIATION_OPTIONAL_HPP
-#define IOX2_INCLUDE_GUARD_VARIATION_OPTIONAL_HPP
+#ifndef IOX2_INCLUDE_GUARD_VARIATION_OPTIONAL_ADAPTION_HPP
+#define IOX2_INCLUDE_GUARD_VARIATION_OPTIONAL_ADAPTION_HPP
 
 // required for clang-tidy
 #if __cplusplus >= 201703L
@@ -20,6 +20,7 @@
 
 namespace iox2 {
 namespace bb {
+namespace variation {
 
 template <typename T>
 using Optional = std::optional<T>;
@@ -27,9 +28,10 @@ using NulloptT = std::nullopt_t;
 
 constexpr NulloptT NULLOPT = std::nullopt;
 
+} // namespace variation
 } // namespace bb
 } // namespace iox2
 
 #endif
 
-#endif // IOX2_INCLUDE_GUARD_VARIATION_OPTIONAL_HPP
+#endif // IOX2_INCLUDE_GUARD_VARIATION_OPTIONAL_ADAPTION_HPP

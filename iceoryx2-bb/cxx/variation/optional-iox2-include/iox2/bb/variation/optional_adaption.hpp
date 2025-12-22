@@ -10,26 +10,23 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_INCLUDE_GUARD_VARIATION_EXPECTED_HPP
-#define IOX2_INCLUDE_GUARD_VARIATION_EXPECTED_HPP
+#ifndef IOX2_INCLUDE_GUARD_VARIATION_OPTIONAL_ADAPTION_HPP
+#define IOX2_INCLUDE_GUARD_VARIATION_OPTIONAL_ADAPTION_HPP
 
-#include "iox2/bb/stl/expected.hpp"
+#include "iox2/bb/stl/optional.hpp"
 
 namespace iox2 {
 namespace bb {
+namespace variation {
 
-template <typename T, typename E>
-using Expected = iox2::bb::stl::Expected<T, E>;
-template <typename E>
-using Unexpected = iox2::bb::stl::Unexpected<E>;
+template <typename T>
+using Optional = iox2::bb::stl::Optional<T>;
+using NulloptT = iox2::bb::stl::NulloptT;
 
-using InPlaceT = iox2::bb::stl::InPlaceT;
-using UnexpectT = iox2::bb::stl::UnexpectT;
+constexpr NulloptT NULLOPT = iox2::bb::stl::NULLOPT;
 
-constexpr InPlaceT IN_PLACE = iox2::bb::stl::IN_PLACE;
-constexpr UnexpectT UNEXPECT = iox2::bb::stl::UNEXPECT;
-
+} // namespace variation
 } // namespace bb
 } // namespace iox2
 
-#endif // IOX2_INCLUDE_GUARD_VARIATION_EXPECTED_HPP
+#endif // IOX2_INCLUDE_GUARD_VARIATION_OPTIONAL_ADAPTION_HPP

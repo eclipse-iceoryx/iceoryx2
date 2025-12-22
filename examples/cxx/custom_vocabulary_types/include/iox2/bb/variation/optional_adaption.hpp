@@ -10,21 +10,23 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_INCLUDE_GUARD_VARIATION_OPTIONAL_HPP
-#define IOX2_INCLUDE_GUARD_VARIATION_OPTIONAL_HPP
+#ifndef MY_OPTIONAL_FOR_ICEORYX2
+#define MY_OPTIONAL_FOR_ICEORYX2
 
-#include "iox2/bb/stl/optional.hpp"
+#include "my_optional.hpp"
 
 namespace iox2 {
 namespace bb {
+namespace variation {
 
 template <typename T>
-using Optional = iox2::bb::stl::Optional<T>;
-using NulloptT = iox2::bb::stl::NulloptT;
+using Optional = my::optional<T>;
+using NulloptT = my::nullopt_t;
 
-constexpr NulloptT NULLOPT = iox2::bb::stl::NULLOPT;
+constexpr NulloptT NULLOPT = my::nullopt;
 
+} // namespace variation
 } // namespace bb
 } // namespace iox2
 
-#endif // IOX2_INCLUDE_GUARD_CONTAINER_OPTIONAL_HPP
+#endif // MY_OPTIONAL_FOR_ICEORYX2

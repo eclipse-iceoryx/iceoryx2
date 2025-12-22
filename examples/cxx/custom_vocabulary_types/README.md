@@ -10,7 +10,6 @@ In order to use the custom implementation, the vocabulary types must be made
 available to the build system. In case of CMake this can be done as following:
 
 ```console
-```cmake
 cmake -S examples/cxx/custom_vocabulary_types  -B target/ff/cc/custom_vocabulary_types
 cmake --build target/ff/cc/custom_vocabulary_types
 cmake --install target/ff/cc/custom_vocabulary_types --prefix target/ff/cc/install

@@ -13,6 +13,18 @@
 #ifndef IOX2_INCLUDE_GUARD_BB_OPTIONAL_HPP
 #define IOX2_INCLUDE_GUARD_BB_OPTIONAL_HPP
 
-#include "iox2/bb/variation/optional.hpp"
+#include "iox2/bb/variation/optional_adaption.hpp"
+
+namespace iox2 {
+namespace bb {
+
+template <typename T>
+using Optional = iox2::bb::variation::Optional<T>;
+using NulloptT = iox2::bb::variation::NulloptT;
+
+constexpr NulloptT NULLOPT = iox2::bb::variation::NULLOPT;
+
+} // namespace bb
+} // namespace iox2
 
 #endif // IOX2_INCLUDE_GUARD_BB_OPTIONAL_HPP
