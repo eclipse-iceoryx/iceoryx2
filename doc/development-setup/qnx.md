@@ -267,7 +267,7 @@ source ${QNX_TOOLCHAIN}/qnxsdp-env.sh
 
 # Clone Rust source
 export RUSTDIR=~/source/rust
-git clone https://github.com/rust-lang/rust.git -b 1.88.0 --depth 1 $RUSTDIR
+git clone https://github.com/rust-lang/rust.git -b 1.90.0 --depth 1 $RUSTDIR
 
 # Configure the build
 echo -e "[build]\nextended = true" > $RUSTDIR/config.toml
@@ -382,7 +382,7 @@ export QNX_TOOLCHAIN="$HOME/qnx800"
 source $QNX_TOOLCHAIN/qnxsdp-env.sh
 
 export RUST_TOOLCHAIN="qnx800"
-cargo +${RUST_TOOLCHAIN} build --target x86_64-pc-nto-qnx800 --package iceoryx2
+cargo +${RUST_TOOLCHAIN} build --target x86_64-pc-nto-qnx800 --package iceoryx2 --no-default-features
 ```
 
 #### Aarch64
@@ -404,7 +404,7 @@ export QNX_TOOLCHAIN="$HOME/qnx800"
 source $QNX_TOOLCHAIN/qnxsdp-env.sh
 
 export RUST_TOOLCHAIN="qnx800"
-cargo +${RUST_TOOLCHAIN} build --target aarch64-unknown-nto-qnx800 --package iceoryx2
+cargo +${RUST_TOOLCHAIN} build --target aarch64-unknown-nto-qnx800 --package iceoryx2 --no-default-features
 ```
 
 ## Testing
