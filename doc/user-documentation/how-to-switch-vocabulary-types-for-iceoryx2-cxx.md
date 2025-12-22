@@ -39,6 +39,10 @@ bindings, it is also possible to use custom implementations of these types.
 To integrate the custom vocabulary types into iceoryx2, a CMake target for the
 `Expected` and `Optional` must be created.
 
+Please have a look at the
+[custom-vocabulary-types](../../examples/cxx/custom-vocabulary-types) example
+as a blueprint to create a CMake package with the required files.
+
 The relevant CMake options are:
 
 * `IOX2_CXX_STD_VERSION`
