@@ -155,17 +155,19 @@ The support levels can be adjusted when required.
 
 ## Language Bindings
 
-| Language |   State |
-| -------- | ------: |
-| C / C++  |    done |
-| Python   |    done |
-| Go       | planned |
-| C#       | planned |
-| Java     | planned |
-| Kotlin   | planned |
-| Lua      | planned |
-| Swift    | planned |
-| Zig      | planned |
+| Language |     State |
+| :------- | --------: |
+| C / C++  |      done |
+| Python   |      done |
+| Go       |   planned |
+| C#       |     [done](https://github.com/eclipse-iceoryx/iceoryx2-csharp)[^3] |
+| Java     |   planned |
+| Kotlin   |   planned |
+| Lua      |   planned |
+| Swift    |   planned |
+| Zig      |   planned |
+
+[^3]: C# bindings are available in a separate repository. May not be up to date with `main`.
 
 ## Commercial Support
 
