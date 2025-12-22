@@ -140,12 +140,12 @@ The support levels can be adjusted when required.
 
 * **tier 1** - All safety and security features are working.
 * **tier 2** - Works with a restricted security and safety feature set.
-* **tier 3** - Not tested in our CI, so might compile and run or not.
+* **tier 3** - Not tested in our CI, so may or may not compile and run.
 
 <!-- markdownlint-disable MD027 -->
 > [!NOTE]
-> Some commercial OS require expensive licenses and the support for these
-> platforms rely on funding of the license costs.
+> Some commercial operating systems require expensive licenses and the support
+> for these platforms relies on funding for the license costs.
 <!-- markdownlint-enable MD027 -->
 
 <!-- markdownlint-disable MD027 -->
