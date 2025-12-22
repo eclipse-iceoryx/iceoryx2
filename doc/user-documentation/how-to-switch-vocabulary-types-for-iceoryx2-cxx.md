@@ -32,12 +32,13 @@ In addition to use the `std::optional` and `std::expected` with the iceoryx2 C++
 bindings, it is also possible to use custom implementations of these types.
 
 > [!NOTE]
-> The custom implementations must be API compatible with the STL counterparts.
+> The custom implementations must be API compatible with the STL counterparts
+> and must not depend on iceoryx2-bb-cxx to avoid a circular dependency!
 
 To integrate the custom vocabulary types into iceoryx2, a CMake target for the
 `Expected` and `Optional` must be created.
 
-Please have a look at the
+Take a look at the
 [custom-vocabulary-types](../../examples/cxx/custom-vocabulary-types) example
 as a blueprint to create a CMake package with the required files.
 

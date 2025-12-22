@@ -15,9 +15,9 @@ cmake --build target/ff/cc/custom_vocabulary_types
 cmake --install target/ff/cc/custom_vocabulary_types --prefix target/ff/cc/install
 ```
 
-Now, iceoryx2 needs to be build with the custom vocabulary types:
+Now, iceoryx2 needs to be built with the custom vocabulary types:
 
-```
+```console
 cargo build --package iceoryx2-ffi-c
 cmake -S . \
       -B target/ff/cc/build \
