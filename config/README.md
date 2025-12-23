@@ -263,7 +263,7 @@ To configure the build to use the custom settings, the following must be done:
    confirm that the build has successfully built with the custom configuration
 
    ```console
-   warning: iceoryx2-pal-configuration@0.7.0: Building with custom configuration: /my/funky/platform/platform_configuration.rs
+   warning: iceoryx2-pal-configuration@x.y.z: Building with custom configuration: /my/funky/platform/platform_configuration.rs
    ```
 
 ## Custom Platform Abstraction Layer
@@ -306,5 +306,5 @@ The build steps are as follows:
    build has successfully built with the custom platform
 
    ```console
-   warning: iceoryx2-pal-posix@0.7.0: Building with custom POSIX abstraction at: /my/funky/platform/posix/
+   warning: iceoryx2-pal-posix@x.y.z: Building with custom POSIX abstraction at: /my/funky/platform/posix/
    ```
