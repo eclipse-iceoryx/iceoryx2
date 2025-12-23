@@ -177,6 +177,7 @@ while (( "$#" )); do
             echo -e ""
             echo -e "Usage: ${C_GREEN}$(basename $0)${C_OFF} --new-version 0.8.15"
             echo -e "Options:"
+            echo -e "    howto                          Prints the how to release iceoryx2 guide"
             echo -e "    --new-version <VERSION>        The release <VERSION> in the format X.Y.Z"
             echo -e ""
             exit 0
@@ -315,6 +316,10 @@ if [[ ${SELECTION} == ${YES} ]]; then
     git add .
 
     echo -e "Did you build with cargo, bazel and also the python bindings to update the corresponding lock files?"
+    echo -e ""
+    echo -e "cargo:  cargo build --all-targets"
+    echo -e "bazel:  USE_BAZEL_VERSION=7.4.1 bazelisk build //..."
+    echo -e "python: maturin build --manifest-path=iceoryx2-ffi/python/Cargo.toml"
     show_default_selector
 
     echo -e "Shall the changes be commited?"
