@@ -126,6 +126,10 @@ print_set_new_version_number() {
     echo -e "  * internal/VERSIONS"
 }
 
+print_do_crates_io_publishing_dry_run() {
+    echo -e "Do a 'cargo publish --dry-run'"
+}
+
 print_merge_all_changes_to_main_and_create_release_branch() {
     echo -e "Congratulations! You made it!"
     echo -e "Please commit all the changes and create a pull request to 'main'!"
@@ -157,6 +161,9 @@ print_howto() {
 
     print_step "Set New Version Number"
     print_set_new_version_number
+
+    print_step "Do dry-run publish to crates.io"
+    print_do_crates_io_publishing_dry_run
 
     print_step "Merge all changes to 'main' and Create Release Branch"
     print_merge_all_changes_to_main_and_create_release_branch
@@ -303,7 +310,6 @@ if [[ ${SELECTION} == ${YES} ]]; then
     show_completion
 fi
 
-
 print_step "Set New Version Number"
 echo -e "Shall the ${C_YELLOW}${ICEORYX2_RELEASE_VERSION}${C_OFF} release version be set in all files?"
 show_default_selector
@@ -328,6 +334,15 @@ if [[ ${SELECTION} == ${YES} ]]; then
     if [[ ${SELECTION} == ${YES} ]]; then
         git commit -m"[#77] Update version number to v${ICEORYX2_RELEASE_VERSION}"
     fi
+
+    show_completion
+fi
+
+print_step "Do crates.io publishing dry-run"
+echo -e "Shall a publishing dry-run be performed?"
+show_default_selector
+if [[ ${SELECTION} == ${YES} ]]; then
+    internal/scripts/release/crates_io_publish_script.sh dry-run
 
     show_completion
 fi
