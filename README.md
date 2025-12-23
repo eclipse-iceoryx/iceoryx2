@@ -136,7 +136,7 @@ The support levels can be adjusted when required.
 [^1]: A proof-of-concept for Android platform support is available. Currently
       only local, inter-thread communication works.
 [^2]: A proof-of-concept with `no_std` bare-metal support is available. The event
-      messaging-pattern does not work and the memory usage is not yet optimized.
+      messaging-pattern does not yet work and the memory usage is not yet optimized.
 [^3]: A proof-of-concept for VxWorks platform support is available on [this
       branch](https://github.com/ekxide/iceoryx2/blob/vxworks-mvp/doc/development-setup/vxworks.md)
       on the [ekxide](https://ekxide.io) fork
@@ -158,17 +158,20 @@ The support levels can be adjusted when required.
 
 ## Language Bindings
 
-| Language |     State |
-| :------- | --------: |
-| C / C++  |      done |
-| Python   |      done |
-| Go       |   planned |
-| C#       |     [done](https://github.com/eclipse-iceoryx/iceoryx2-csharp)[^3] |
-| Java     |   planned |
-| Kotlin   |   planned |
-| Lua      |   planned |
-| Swift    |   planned |
-| Zig      |   planned |
+| Language |     State                                                         |
+| :------- | ----------------------------------------------------------------: |
+| C / C++  |     done                                                          |
+| Python   |     done                                                          |
+| Go       |  planned                                                          |
+| C#       |    [done](https://github.com/eclipse-iceoryx/iceoryx2-csharp)[^4] |
+| Java     |  planned                                                          |
+| Kotlin   |  planned                                                          |
+| Lua      |  planned                                                          |
+| Swift    |  planned                                                          |
+| Zig      |  planned                                                          |
+
+[^4]: C# bindings are available in a separate repository. May not be up to date
+      with `main`.
 
 ## Commercial Support
 
