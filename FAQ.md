@@ -316,7 +316,7 @@ however if using a lower-level crate (such as `iceoryx2-cal` or one from
 1. Include `iceoryx2-loggers` as a dependency with the corresponding feature
    for your platform:
     ```toml
-    iceoryx2-loggers = { version = "0.7.0", features = ["std", "console"] }
+    iceoryx2-loggers = { version = "x.y.z", features = ["std", "console"] }
     ```
 1. Ensure the crate is linked to even if not used:
     ```rust

@@ -21,6 +21,7 @@ C_YELLOW='\033[1;33m'
 C_BLUE='\033[1;34m'
 
 DO_DRY_RUN=false
+ALLOW_DIRTY_FLAG=""
 DO_LIST_CRATES_TO_PUBLISH=false
 DO_PUBLISH=false
 DO_SANITY_CHECKS=false
@@ -83,6 +84,11 @@ while (( "$#" )); do
             DO_DRY_RUN=true
             shift 1
             ;;
+        "dry-run-allow-dirty")
+            DO_DRY_RUN=true
+            ALLOW_DIRTY_FLAG="--allow-dirty"
+            shift 1
+            ;;
         "list-crates-to-publish")
             DO_LIST_CRATES_TO_PUBLISH=true
             shift 1
@@ -102,6 +108,7 @@ while (( "$#" )); do
             echo -e "Options:"
             echo -e "    dry-run                 Simulate publishing to crates.io"
             echo -e "                            Only works with Rust >= 1.90"
+            echo -e "    dry-run-allow-diryt     Same as 'dry-run' but with a dirty workspace"
             echo -e "    publish                 Publish to crates.io"
             echo -e "    list-crates-to-publish  List crates to publish to crates.io"
             echo -e "    sanity-checks           Sanity checks for cyclic dependencies and new crates"
@@ -172,7 +179,7 @@ dry_run() {
     for CRATE in "${CRATES_TO_IGNORE[@]}"; do
         EXCLUDE_ARGS+="--exclude $CRATE "
     done
-    cargo publish --dry-run --workspace ${EXCLUDE_ARGS}
+    cargo publish --dry-run --workspace ${EXCLUDE_ARGS} ${ALLOW_DIRTY_FLAG}
 }
 
 list_crates_to_publish() {

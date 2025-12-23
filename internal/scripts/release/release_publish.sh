@@ -111,7 +111,7 @@ function show_default_selector() {
                 SELECTION=${SKIP}
                 break;
                 ;;
-            *) echo -e "${C_YELLOW}Please use either 'Y', 'N' or 'S'.${C_OFF}";;
+            *) echo -e "${C_YELLOW}Please use either 'Y', 'C' or 'S'.${C_OFF}";;
         esac
     done
 }

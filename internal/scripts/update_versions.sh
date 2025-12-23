@@ -80,6 +80,8 @@ if [[ ${UPDATE_ICEORYX2_VERSION} == true ]]; then
 
     sed -i 's/^version = "'"${OLD_VERSION}"'"/version = "'"${NEW_VERSION}"'"/g' \
         Cargo.toml
+    sed -i 's/^version = "'"${OLD_VERSION}"'"/version = "'"${NEW_VERSION}"'"/g' \
+        examples/nostd/posix/rust/Cargo.toml
 
     find . -name "Cargo.toml" -type f -exec \
         sed -i 's/"'"${OLD_VERSION}"'", path = "iceoryx2/"'"${NEW_VERSION}"'", path = "iceoryx2/g' {} \;

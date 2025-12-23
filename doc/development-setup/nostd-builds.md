@@ -62,19 +62,19 @@ For crates intended for platforms with `std` support, enable the `std` feature
 in the `Cargo.toml`:
 
 ```toml
-iceoryx2 = { version = "0.7.0", default-features = false, features = ["std"] }
+iceoryx2 = { version = "x.y.z", default-features = false, features = ["std"] }
 ```
 
 For crates intended for platform without `std` support, disable the `std`
 feature in the `Cargo.toml`:
 
 ```toml
-iceoryx2 = { version = "0.7.0", default-features = false }
+iceoryx2 = { version = "x.y.z", default-features = false }
 ```
 
 In addition, the logger must be configured by enabling the appropriate feature
 for your platform, for example:
 
 ```toml
-iceoryx2=loggers = { version = "0.7.0", features = ["bare_metal"] }
+iceoryx2=loggers = { version = "x.y.z", features = ["bare_metal"] }
 ```
