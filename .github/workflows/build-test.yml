@@ -857,8 +857,11 @@ jobs:
         with:
           toolchain: stable
 
+      - name: Update iceoryx2 version
+        run: ./internal/scripts/update_versions.sh --iceoryx2 0.8.15
+
       - name: Cargo Publish Dry-Run
-        run: ./internal/scripts/release/crates_io_publish_script.sh dry-run
+        run: ./internal/scripts/release/crates_io_publish_script.sh dry-run-allow-dirty
 
   grcov:
     needs: [preflight-check, static-code-analysis]
