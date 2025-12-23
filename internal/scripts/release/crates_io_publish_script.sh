@@ -108,7 +108,7 @@ while (( "$#" )); do
             echo -e "Options:"
             echo -e "    dry-run                 Simulate publishing to crates.io"
             echo -e "                            Only works with Rust >= 1.90"
-            echo -e "    dry-run-allow-diryt     Same as 'dry-run' but with a dirty workspace"
+            echo -e "    dry-run-allow-dirty     Same as 'dry-run' but with a dirty workspace"
             echo -e "    publish                 Publish to crates.io"
             echo -e "    list-crates-to-publish  List crates to publish to crates.io"
             echo -e "    sanity-checks           Sanity checks for cyclic dependencies and new crates"

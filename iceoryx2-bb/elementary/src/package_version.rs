@@ -65,7 +65,7 @@ impl PackageVersion {
     /// Returns the current [`PackageVersion`]
     pub fn get() -> PackageVersion {
         const MAJOR: u16 = 0;
-        const MINOR: u16 = 7;
+        const MINOR: u16 = 8;
         const PATCH: u16 = 0;
 
         PackageVersion::from_version(MAJOR, MINOR, PATCH)

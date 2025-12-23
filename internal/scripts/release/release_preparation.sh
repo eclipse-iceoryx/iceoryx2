@@ -88,12 +88,7 @@ print_manual_steps_hint() {
     echo -e "* Test if Yocto builds and runs with the current codebase"
     echo -e "* check if the new features are marked as done, e.g. README, ROADMAP, etc."
     echo -e "* grep for 'planned'"
-    echo -e "* verify to be on the right branch"
-}
-
-print_check_code_examples() {
-    echo -e "* '\$GIT_ROOT$/README.MD'"
-    echo -e "* '\$GIT_ROOT$/internal/cpp_doc_generator/*.rst'"
+    echo -e "* verify to be on the right branch, e.g. 'main' or 'release-x.y'"
 }
 
 print_sanity_checks() {
@@ -147,9 +142,6 @@ print_howto() {
     print_step "Check Manual Steps"
     print_manual_steps_hint
 
-    print_step "Check the Code examples in the documentation"
-    print_check_code_examples
-
     print_step "Sanity checks for crates.io release"
     print_sanity_checks
 
@@ -185,6 +177,7 @@ while (( "$#" )); do
             echo -e ""
             echo -e "Usage: ${C_GREEN}$(basename $0)${C_OFF} --new-version 0.8.15"
             echo -e "Options:"
+            echo -e "    howto                          Prints the how to release iceoryx2 guide"
             echo -e "    --new-version <VERSION>        The release <VERSION> in the format X.Y.Z"
             echo -e ""
             exit 0
@@ -248,10 +241,6 @@ show_default_selector print_article_hint
 
 print_step "Check Manual Steps"
 print_manual_steps_hint
-show_default_selector
-
-print_step "Did you check the Code examples in the documentation?"
-print_check_code_examples
 show_default_selector
 
 print_step "Sanity checks"
@@ -327,6 +316,10 @@ if [[ ${SELECTION} == ${YES} ]]; then
     git add .
 
     echo -e "Did you build with cargo, bazel and also the python bindings to update the corresponding lock files?"
+    echo -e ""
+    echo -e "cargo:  cargo build --all-targets"
+    echo -e "bazel:  USE_BAZEL_VERSION=7.4.1 bazelisk build //..."
+    echo -e "python: maturin build --manifest-path=iceoryx2-ffi/python/Cargo.toml"
     show_default_selector
 
     echo -e "Shall the changes be commited?"

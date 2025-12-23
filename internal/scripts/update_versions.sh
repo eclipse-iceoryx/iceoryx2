@@ -128,7 +128,7 @@ if [[ ${UPDATE_ICEORYX2_VERSION} == true ]]; then
         --exclude=header.html \
         --exclude=poetry.lock \
         --exclude=VERSIONS \
-        ${OLD_VERSION}; then
+        ${OLD_VERSION} | grep iceoryx2; then
 
         echo -e "${C_RED}ERROR:${C_OFF} Found the old iceoryx2 version string!"
         echo -e "Please update the script to include the new occurrences of '${OLD_VERSION}'"

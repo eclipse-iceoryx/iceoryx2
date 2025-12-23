@@ -118,6 +118,7 @@ The support levels can be adjusted when required.
 | Operating System | State                    | Current Support Level | Target Support Level |
 | ---------------- | :----------------------- | :-------------------: | -------------------: |
 | Android          | proof-of-concept[^1]     |           -           |               tier 1 |
+| Bare Metal       | proof-of-concept[^2]     |           -           |               tier 1 |
 | FreeBSD          | done                     |        tier 2         |               tier 1 |
 | FreeRTOS         | planned                  |           -           |               tier 2 |
 | ThreadX          | planned                  |           -           |               tier 2 |
@@ -128,13 +129,15 @@ The support levels can be adjusted when required.
 | Mac OS           | done                     |        tier 2         |               tier 2 |
 | QNX 7.1          | done                     |        tier 3         |               tier 1 |
 | QNX 8.0          | done                     |        tier 3         |               tier 1 |
-| VxWorks          | proof-of-concept[^2]     |           -           |               tier 1 |
+| VxWorks          | proof-of-concept[^3]     |           -           |               tier 1 |
 | WatchOS          | planned                  |           -           |               tier 2 |
 | Windows          | done                     |        tier 2         |               tier 2 |
 
 [^1]: A proof-of-concept for Android platform support is available. Currently
       only local, inter-thread communication works.
-[^2]: A proof-of-concept for VxWorks platform support is available on [this
+[^2]: A proof-of-concept with `no_std` bare-metal support is available. The event
+      messaging-pattern does not yet work and the memory usage is not yet optimized.
+[^3]: A proof-of-concept for VxWorks platform support is available on [this
       branch](https://github.com/ekxide/iceoryx2/blob/vxworks-mvp/doc/development-setup/vxworks.md)
       on the [ekxide](https://ekxide.io) fork
 
@@ -155,19 +158,20 @@ The support levels can be adjusted when required.
 
 ## Language Bindings
 
-| Language |     State |
-| :------- | --------: |
-| C / C++  |      done |
-| Python   |      done |
-| Go       |   planned |
-| C#       |     [done](https://github.com/eclipse-iceoryx/iceoryx2-csharp)[^3] |
-| Java     |   planned |
-| Kotlin   |   planned |
-| Lua      |   planned |
-| Swift    |   planned |
-| Zig      |   planned |
+| Language |     State                                                         |
+| :------- | ----------------------------------------------------------------: |
+| C / C++  |     done                                                          |
+| Python   |     done                                                          |
+| Go       |  planned                                                          |
+| C#       |    [done](https://github.com/eclipse-iceoryx/iceoryx2-csharp)[^4] |
+| Java     |  planned                                                          |
+| Kotlin   |  planned                                                          |
+| Lua      |  planned                                                          |
+| Swift    |  planned                                                          |
+| Zig      |  planned                                                          |
 
-[^3]: C# bindings are available in a separate repository. May not be up to date with `main`.
+[^4]: C# bindings are available in a separate repository. May not be up to date
+      with `main`.
 
 ## Commercial Support
 
