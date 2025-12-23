@@ -13,10 +13,21 @@
 #ifndef IOX2_INCLUDE_GUARD_BB_EXPECTED_HPP
 #define IOX2_INCLUDE_GUARD_BB_EXPECTED_HPP
 
-#include "iox2/bb/variation/expected.hpp"
+#include "iox2/bb/variation/expected_adaption.hpp"
 
 namespace iox2 {
 namespace bb {
+
+template <typename T, typename E>
+using Expected = iox2::bb::variation::Expected<T, E>;
+template <typename E>
+using Unexpected = iox2::bb::variation::Unexpected<E>;
+
+using InPlaceT = iox2::bb::variation::InPlaceT;
+using UnexpectT = iox2::bb::variation::UnexpectT;
+
+constexpr InPlaceT IN_PLACE = iox2::bb::variation::IN_PLACE;
+constexpr UnexpectT UNEXPECT = iox2::bb::variation::UNEXPECT;
 
 template <typename E>
 constexpr auto err(const E& error) -> Unexpected<E> {

@@ -10,26 +10,33 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_INCLUDE_GUARD_VARIATION_EXPECTED_HPP
-#define IOX2_INCLUDE_GUARD_VARIATION_EXPECTED_HPP
+// NOLINTBEGIN(readability-identifier-naming) STL naming required for example
 
-#include "iox2/bb/stl/expected.hpp"
+// required for clang-tidy
+#if __cplusplus > 202002L
 
-namespace iox2 {
-namespace bb {
+#ifndef MY_EXPECTED
+#define MY_EXPECTED
+
+#include <expected>
+
+namespace my {
 
 template <typename T, typename E>
-using Expected = iox2::bb::stl::Expected<T, E>;
+using expected = std::expected<T, E>;
 template <typename E>
-using Unexpected = iox2::bb::stl::Unexpected<E>;
+using unexpected = std::unexpected<E>;
 
-using InPlaceT = iox2::bb::stl::InPlaceT;
-using UnexpectT = iox2::bb::stl::UnexpectT;
+using in_place_t = std::in_place_t;
+using unexpect_t = std::unexpect_t;
 
-constexpr InPlaceT IN_PLACE = iox2::bb::stl::IN_PLACE;
-constexpr UnexpectT UNEXPECT = iox2::bb::stl::UNEXPECT;
+constexpr in_place_t in_place = std::in_place;
+constexpr unexpect_t unexpect = std::unexpect;
 
-} // namespace bb
-} // namespace iox2
+} // namespace my
 
-#endif // IOX2_INCLUDE_GUARD_VARIATION_EXPECTED_HPP
+#endif // MY_EXPECTED
+
+#endif
+
+//NOLINTEND(readability-identifier-naming)

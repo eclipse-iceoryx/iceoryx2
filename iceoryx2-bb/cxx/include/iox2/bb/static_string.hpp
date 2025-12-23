@@ -15,7 +15,6 @@
 
 #include "iox2/bb/detail/string_internal.hpp"
 #include "iox2/bb/optional.hpp"
-#include "iox2/bb/variation/optional.hpp"
 #include "iox2/legacy/type_traits.hpp"
 
 #include <algorithm>

@@ -21,16 +21,22 @@ if(NOT ICEORYX2_BB_CXX_OPTIONS_AND_PARAMS_LISTED)
         DEFAULT_VALUE OFF
     )
 
-    # TODO make this configurable
-    set(IOX2_BB_CXX_CONFIG_USE_CUSTOM_EXPECTED OFF)
-
     add_option(
         NAME IOX2_BB_CXX_CONFIG_USE_STD_OPTIONAL
         DESCRIPTION "Use the STL 'optional' instead of the iceoryx2 implementation"
         DEFAULT_VALUE OFF
     )
 
-    # TODO make this configurable
-    set(IOX2_BB_CXX_CONFIG_USE_CUSTOM_OPTIONAL OFF)
+    add_option(
+        NAME IOX2_BB_CXX_CONFIG_USE_CUSTOM_VOCABULARY_TYPES
+        DESCRIPTION "Use custom 'optional' and 'expected' instead of the iceoryx2 implementation"
+        DEFAULT_VALUE OFF
+    )
+
+    add_param(
+        NAME IOX2_BB_CXX_CONFIG_CUSTOM_VOCABULARY_TYPES_CMAKE_TARGET
+        DESCRIPTION "CMake target for custom 'optional' and 'expected'"
+        DEFAULT_VALUE ""
+    )
 
 endif()

@@ -10,21 +10,28 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_INCLUDE_GUARD_BB_OPTIONAL_HPP
-#define IOX2_INCLUDE_GUARD_BB_OPTIONAL_HPP
+// NOLINTBEGIN(readability-identifier-naming) STL naming required for example
 
-#include "iox2/bb/variation/optional_adaption.hpp"
+// required for clang-tidy
+#if __cplusplus >= 201703L
 
-namespace iox2 {
-namespace bb {
+#ifndef MY_OPTIONAL
+#define MY_OPTIONAL
+
+#include <optional>
+
+namespace my {
 
 template <typename T>
-using Optional = iox2::bb::variation::Optional<T>;
-using NulloptT = iox2::bb::variation::NulloptT;
+using optional = std::optional<T>;
+using nullopt_t = std::nullopt_t;
 
-constexpr NulloptT NULLOPT = iox2::bb::variation::NULLOPT;
+constexpr nullopt_t nullopt = std::nullopt;
 
-} // namespace bb
-} // namespace iox2
+} // namespace my
 
-#endif // IOX2_INCLUDE_GUARD_BB_OPTIONAL_HPP
+#endif // MY_OPTIONAL
+
+#endif
+
+// NOLINTEND(readability-identifier-naming) STL naming required for example
