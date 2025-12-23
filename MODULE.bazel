@@ -18,7 +18,7 @@
 ###############################################################################
 module(
     name = "iceoryx2",
-    version = "0.7.0",
+    version = "0.8.0",
 )
 
 bazel_dep(name = "bazel_features", version = "1.30.0")

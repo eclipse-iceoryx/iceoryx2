@@ -88,12 +88,7 @@ print_manual_steps_hint() {
     echo -e "* Test if Yocto builds and runs with the current codebase"
     echo -e "* check if the new features are marked as done, e.g. README, ROADMAP, etc."
     echo -e "* grep for 'planned'"
-    echo -e "* verify to be on the right branch"
-}
-
-print_check_code_examples() {
-    echo -e "* '\$GIT_ROOT$/README.MD'"
-    echo -e "* '\$GIT_ROOT$/internal/cpp_doc_generator/*.rst'"
+    echo -e "* verify to be on the right branch, e.g. 'main' or 'release-x.y'"
 }
 
 print_sanity_checks() {
@@ -146,9 +141,6 @@ print_howto() {
 
     print_step "Check Manual Steps"
     print_manual_steps_hint
-
-    print_step "Check the Code examples in the documentation"
-    print_check_code_examples
 
     print_step "Sanity checks for crates.io release"
     print_sanity_checks
@@ -248,10 +240,6 @@ show_default_selector print_article_hint
 
 print_step "Check Manual Steps"
 print_manual_steps_hint
-show_default_selector
-
-print_step "Did you check the Code examples in the documentation?"
-print_check_code_examples
 show_default_selector
 
 print_step "Sanity checks"

@@ -20,7 +20,7 @@ include(Iceoryx2PlatformSettings)
 set(CMAKE_CXX_STANDARD ${ICEORYX2_CXX_STD_VALUE})
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(iceoryx2-cxx 0.7.0 REQUIRED)
+find_package(iceoryx2-cxx 0.8.0 REQUIRED)
 
 add_executable(component-tests_cxx)
 target_compile_options(component-tests_cxx

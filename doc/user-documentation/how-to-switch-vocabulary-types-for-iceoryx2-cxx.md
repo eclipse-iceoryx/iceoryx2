@@ -92,7 +92,7 @@ constexpr NulloptT NULLOPT = my::nullopt;
 #endif // MY_OPTIONAL_FOR_ICEORYX2
 ```
 
-For the `Optional` these aliases and constants are required:
+For the `Expected` these aliases and constants are required:
 
 ```cpp
 #ifndef MY_EXPECTED_FOR_ICEORYX2
