@@ -88,7 +88,7 @@ impl Reactor for Epoll {
     fn attach<
         'reactor,
         'attachment,
-        F: iceoryx2_bb_posix::file_descriptor_set::SynchronousMultiplexing + core::fmt::Debug,
+        F: iceoryx2_bb_posix::file_descriptor_set::SynchronousMultiplexing + core::fmt::Debug + ?Sized,
     >(
         &'reactor self,
         value: &'attachment F,

@@ -649,7 +649,11 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     /// object the [`WaitSet`] informs the user in [`WaitSet::wait_and_process()`] to handle the event.
     /// The object cannot be attached twice and the
     /// [`WaitSet::capacity()`] is limited by the underlying implementation.
-    pub fn attach_notification<'waitset, 'attachment, T: SynchronousMultiplexing + Debug>(
+    pub fn attach_notification<
+        'waitset,
+        'attachment,
+        T: SynchronousMultiplexing + Debug + ?Sized,
+    >(
         &'waitset self,
         attachment: &'attachment T,
     ) -> Result<WaitSetGuard<'waitset, 'attachment, Service>, WaitSetAttachmentError> {
@@ -667,7 +671,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     /// The object cannot be attached twice and the
     /// [`WaitSet::capacity()`] is limited by the underlying implementation.
     /// Whenever the object emits an event the deadline is reset by the [`WaitSet`].
-    pub fn attach_deadline<'waitset, 'attachment, T: SynchronousMultiplexing + Debug>(
+    pub fn attach_deadline<'waitset, 'attachment, T: SynchronousMultiplexing + Debug + ?Sized>(
         &'waitset self,
         attachment: &'attachment T,
         deadline: Duration,
@@ -694,10 +698,10 @@ impl<Service: crate::service::Service> WaitSet<Service> {
 
     /// Attaches a tick event to the [`WaitSet`]. Whenever the timeout is reached the [`WaitSet`]
     /// informs the user in [`WaitSet::wait_and_process()`].
-    pub fn attach_interval(
-        &self,
+    pub fn attach_interval<'waitset>(
+        &'waitset self,
         interval: Duration,
-    ) -> Result<WaitSetGuard<'_, '_, Service>, WaitSetAttachmentError> {
+    ) -> Result<WaitSetGuard<'waitset, 'static, Service>, WaitSetAttachmentError> {
         let deadline_queue_guard = self.attach_to_deadline_queue(interval)?;
         self.attach()?;
 
@@ -948,7 +952,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         self.signal_handling_mode
     }
 
-    fn attach_to_reactor<'waitset, 'attachment, T: SynchronousMultiplexing + Debug>(
+    fn attach_to_reactor<'waitset, 'attachment, T: SynchronousMultiplexing + Debug + ?Sized>(
         &'waitset self,
         attachment: &'attachment T,
     ) -> Result<<Service::Reactor as Reactor>::Guard<'waitset, 'attachment>, WaitSetAttachmentError>
