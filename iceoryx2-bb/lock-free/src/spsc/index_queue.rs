@@ -400,7 +400,7 @@ impl<const CAPACITY: usize> FixedSizeIndexQueue<CAPACITY> {
     pub fn new() -> Self {
         let mut new_self = Self {
             state: unsafe { RelocatableIndexQueue::new_uninit(CAPACITY) },
-            data: core::array::from_fn(|_| UnsafeCell::new(0)),
+            data: [const { UnsafeCell::new(0) }; CAPACITY],
         };
 
         let allocator = BumpAllocator::new(new_self.data.as_mut_ptr().cast());

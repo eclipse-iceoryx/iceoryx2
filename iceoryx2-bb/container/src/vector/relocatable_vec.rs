@@ -33,7 +33,7 @@
 //!     pub fn new() -> Self {
 //!         let mut new_self = Self {
 //!             vec: unsafe { RelocatableVec::new_uninit(VEC_CAPACITY) },
-//!             vec_memory: core::array::from_fn(|_| MaybeUninit::uninit()),
+//!             vec_memory: [const { MaybeUninit::uninit() }; VEC_CAPACITY] ,
 //!         };
 //!
 //!         let allocator = BumpAllocator::new(new_self.vec_memory.as_mut_ptr().cast());

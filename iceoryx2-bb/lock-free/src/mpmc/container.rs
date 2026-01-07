@@ -462,8 +462,8 @@ impl<T: Copy + Debug, const CAPACITY: usize> Default for FixedSizeContainer<T, C
             container: unsafe { Container::new_uninit(CAPACITY) },
             next_free_index: core::array::from_fn(|i| UnsafeCell::new(i as u32 + 1)),
             next_free_index_plus_one: UnsafeCell::new(CAPACITY as u32 + 1),
-            active_index: core::array::from_fn(|_| AtomicU64::new(0)),
-            data: core::array::from_fn(|_| UnsafeCell::new(MaybeUninit::uninit())),
+            active_index: [const { AtomicU64::new(0) }; CAPACITY],
+            data: [const { UnsafeCell::new(MaybeUninit::uninit()) }; CAPACITY],
         };
 
         let allocator = BumpAllocator::new(new_self.next_free_index.as_mut_ptr().cast());

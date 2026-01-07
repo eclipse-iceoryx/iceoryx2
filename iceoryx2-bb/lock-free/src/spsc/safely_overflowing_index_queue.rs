@@ -447,7 +447,7 @@ impl<const CAPACITY: usize> FixedSizeSafelyOverflowingIndexQueue<CAPACITY> {
     pub fn new() -> Self {
         let mut new_self = Self {
             state: unsafe { RelocatableSafelyOverflowingIndexQueue::new_uninit(CAPACITY) },
-            data: core::array::from_fn(|_| UnsafeCell::new(0)),
+            data: [const { UnsafeCell::new(0) }; CAPACITY],
             data_plus_one: UnsafeCell::new(0),
         };
 

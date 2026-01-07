@@ -166,7 +166,7 @@ impl<const CAPACITY: usize> Default for FixedSizeUsedChunkList<CAPACITY> {
     fn default() -> Self {
         let mut new_self = Self {
             list: unsafe { RelocatableUsedChunkList::new_uninit(CAPACITY) },
-            data: core::array::from_fn(|_| AtomicBool::new(false)),
+            data: [const { AtomicBool::new(false) }; CAPACITY],
         };
 
         let allocator = BumpAllocator::new(new_self.data.as_mut_ptr().cast());

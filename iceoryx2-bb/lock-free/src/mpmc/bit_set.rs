@@ -310,7 +310,7 @@ impl<const CAPACITY: usize> Default for FixedSizeBitSet<CAPACITY> {
     fn default() -> Self {
         let mut new_self = Self {
             bitset: unsafe { RelocatableBitSet::new_uninit(CAPACITY) },
-            data: core::array::from_fn(|_| details::BitsetElement::new(0)),
+            data: [const { details::BitsetElement::new(0) }; CAPACITY],
         };
 
         let allocator = BumpAllocator::new(new_self.data.as_mut_ptr().cast());

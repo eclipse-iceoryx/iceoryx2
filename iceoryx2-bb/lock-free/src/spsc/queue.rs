@@ -102,7 +102,7 @@ impl<T: Copy, const CAPACITY: usize> Queue<T, CAPACITY> {
     /// Creates a new empty queue
     pub fn new() -> Self {
         Self {
-            data: core::array::from_fn(|_| UnsafeCell::new(MaybeUninit::uninit())),
+            data: [const { UnsafeCell::new(MaybeUninit::uninit()) }; CAPACITY],
             write_position: AtomicU64::new(0),
             read_position: AtomicU64::new(0),
             has_producer: AtomicBool::new(true),

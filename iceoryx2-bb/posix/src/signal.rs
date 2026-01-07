@@ -543,7 +543,7 @@ impl SignalHandler {
 
     fn new() -> Self {
         let mut sighandle = SignalHandler {
-            registered_signals: core::array::from_fn(|_| None),
+            registered_signals: [const { None }; posix::MAX_SIGNAL_VALUE],
             do_repeat_eintr_call: false,
         };
 

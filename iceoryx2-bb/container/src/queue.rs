@@ -77,7 +77,7 @@
 //!     pub fn new() -> Self {
 //!         let mut new_self = Self {
 //!             queue: unsafe { RelocatableQueue::new_uninit(QUEUE_CAPACITY) },
-//!             queue_memory: core::array::from_fn(|_| MaybeUninit::uninit()),
+//!             queue_memory: [const { MaybeUninit::uninit() }; QUEUE_CAPACITY] ,
 //!         };
 //!
 //!         let allocator = BumpAllocator::new(new_self.queue_memory.as_mut_ptr().cast());
