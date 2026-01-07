@@ -161,7 +161,7 @@ impl FileDescriptorSet {
     }
 
     /// Adds a file descriptor
-    pub fn add<'set, 'fd, F: SynchronousMultiplexing>(
+    pub fn add<'set, 'fd, F: SynchronousMultiplexing + ?Sized>(
         &'set self,
         fd: &'fd F,
     ) -> Result<FileDescriptorSetGuard<'set, 'fd>, FileDescriptorSetAddError> {

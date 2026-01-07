@@ -11,7 +11,8 @@
     conflicts when merging.
 -->
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+* Allow `dyn` types as `WaitSet` attachments
+  [#1285](https://github.com/eclipse-iceoryx/iceoryx2/issues/1285)
 
 ### Bugfixes
 

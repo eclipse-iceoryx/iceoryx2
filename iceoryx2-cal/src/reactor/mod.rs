@@ -80,7 +80,7 @@ pub trait Reactor: Sized + Debug + Send {
     fn len(&self) -> usize;
     fn is_empty(&self) -> bool;
 
-    fn attach<'reactor, 'attachment, F: SynchronousMultiplexing + Debug>(
+    fn attach<'reactor, 'attachment, F: SynchronousMultiplexing + Debug + ?Sized>(
         &'reactor self,
         value: &'attachment F,
     ) -> Result<Self::Guard<'reactor, 'attachment>, ReactorAttachError>;

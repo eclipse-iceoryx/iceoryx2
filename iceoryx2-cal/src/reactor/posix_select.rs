@@ -110,7 +110,7 @@ impl crate::reactor::Reactor for Reactor {
     fn attach<
         'reactor,
         'attachment,
-        F: iceoryx2_bb_posix::file_descriptor_set::SynchronousMultiplexing + Debug,
+        F: iceoryx2_bb_posix::file_descriptor_set::SynchronousMultiplexing + Debug + ?Sized,
     >(
         &'reactor self,
         value: &'attachment F,
