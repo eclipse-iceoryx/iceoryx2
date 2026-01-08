@@ -48,6 +48,7 @@ poetry --project iceoryx2-ffi/python fix-formatting
 
 ```sh
 poetry --project iceoryx2-ffi/python update urllib3
+poetry --project doc/api/python update urllib3
 ```
 
 ## Run Examples
