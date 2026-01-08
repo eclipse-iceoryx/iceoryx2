@@ -7,9 +7,6 @@ on:
     branches: [main, release*]
     types: [opened, ready_for_review, reopened, synchronize]
 
-# env:
-# RUSTFLAGS: "-C debug-assertions"
-
 jobs:
   changes:
     if: github.event.pull_request.draft == false
@@ -32,6 +29,8 @@ jobs:
               - '!**/*.md'
             markdown:
               - '**/*.md'
+
+############################## Begin section initial checks ##############################
 
   preflight-check:
     needs: changes
@@ -57,85 +56,30 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
 
-      - name: Setup GitHub CLI
-        run: |
-          type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
-          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
-          && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
-          && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
-          && sudo apt update \
-          && sudo apt install gh -y
-
       - name: Setup node.js
         uses: actions/setup-node@1a4442cacd436585916779262731d5b162bc6ec7 # ratchet:actions/setup-node@v3
         with:
           node-version: "20"
 
       - name: Install linters
-        run: npm install -g markdownlint-cli
+        run: npm install -g markdownlint-cli@0.47.0
 
-      - name: Check linting
-        env:
-          GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
-          GITHUB_BEFORE: ${{ github.event.before }}
-          GITHUB_AFTER: ${{ github.event.after }}
-        run: ./internal/scripts/ci_check_markdown_linting.sh
+      - name: Check linting on all docs
+        run: ./internal/scripts/ci_check_markdown_linting.sh --all
 
       - name: Check config key documentation
         run: ./internal/scripts/ci_check_description_vector_and_README.sh
 
+  # First rust code analysis with Ubuntu only
   static-code-analysis-rust:
     needs: preflight-check
     if: ${{ needs.changes.outputs.source-code == 'true' }}
-    strategy:
-      matrix:
-        os: [windows-2022, ubuntu-latest, macOS-latest] # todo (iox2-#1049): Use windows latest here
-        cargo-features-flag: [""]
-        include:
-          - os: ubuntu-latest
-            cargo-features-flag: "--features libc_platform"
-
-    timeout-minutes: 40
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
-
-      - name: Get changed files
-        id: changed-files
-        uses: tj-actions/changed-files@48d8f15b2aaa3d255ca5af3eba4870f807ce6b3c # ratchet:tj-actions/changed-files@v45
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
-        with:
-          toolchain: stable
-          components: rustfmt, clippy
-
-      - name: Run cargo fmt
-        run: cargo fmt --all -- --check
-
-      - name: Run cargo clippy
-        run: cargo clippy ${{ matrix.cargo-features-flag }} -- -D warnings
-
-      - name: Run code examples in documentation
-        run: cargo test --workspace --doc ${{ matrix.cargo-features-flag }}
-
-      - name: Build documentation
-        run: cargo doc ${{ matrix.cargo-features-flag }}
-
-      - name: Setup miri
-        uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
-        with:
-          toolchain: nightly
-          components: miri
-
-      - name: Run cargo miri
-        env:
-          ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
-        run: ./internal/scripts/ci_run_miri.sh
+    uses: ./.github/workflows/reuse_static_code_analysis.yml
+    with:
+      os: ubuntu-latest
+      cargo-features-flag: ""
 
   static-code-analysis-cpp:
-    needs: preflight-check
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     timeout-minutes: 40
     runs-on: ubuntu-latest
@@ -163,13 +107,36 @@ jobs:
           git fetch origin main
           internal/scripts/clang_tidy_scan.sh warning-as-error diff-to-main
 
-  # just to have a sync point for the C++ and Rust static code analysis
+  # Static Code Analysis on other variants
+  static-code-analysis-rust-extended:
+    needs: [preflight-check, cargo-nextest]
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    strategy:
+      matrix:
+        os: [macOS-latest]
+        cargo-features-flag: [""]
+        include:
+          - os: ubuntu-latest
+            cargo-features-flag: "--features libc_platform"
+    uses: ./.github/workflows/reuse_static_code_analysis.yml
+    with:
+      os: ${{ matrix.os }}
+      cargo-features-flag: ${{ matrix.cargo-features-flag }}
+  
+  # just to have a sync point for the first C++ and Rust static code analysis
+  # once the first quick checks have passed we have the confidence to continue
+  # with the remaining CI jobs
   static-code-analysis:
     needs: [static-code-analysis-cpp, static-code-analysis-rust]
     runs-on: ubuntu-latest
     steps:
       - name: Static code analysis sync point
         run: echo "Nothing to see, move along!"
+
+
+############################## End section initial checks ##############################
+
+############################## Begin section Build & Test ##############################
 
   cargo-nextest:
     needs: preflight-check
@@ -317,103 +284,13 @@ jobs:
       matrix:
         os: [ubuntu-latest] # [windows-latest, ubuntu-latest, macos-latest]
         toolchain: [stable] # [stable, 1.83.0, beta, nightly]
-        mode:
-          - name: "release"
-            arg: "--release"
-            cmake-build-type: "-DCMAKE_BUILD_TYPE=Release"
-          - name: "debug"
-            arg: ""
-            cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug"
-    timeout-minutes: 60
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
-
-      - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v2
-        with:
-          cmake-version: "3.31.x"
-
-      - name: Use cmake
-        run: cmake --version
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
-        with:
-          toolchain: ${{ matrix.toolchain }}
-          targets: i686-unknown-linux-gnu
-          components: rustfmt, clippy
-
-      - name: Download artifact cargo-nextest
-        uses: ./.github/actions/download-cached-rust-tool
-        with:
-          artifact-bin-name: cargo-nextest
-          artifact-upload-name: ${{ runner.os }}-cargo-nextest
-
-      - name: Prepare Windows
-        if: ${{ matrix.os == 'windows-2022' }} # todo (iox2-#1049): Use windows latest here
-        run: internal\scripts\ci_prepare_windows.ps1
-
-      - name: Prepare Linux
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: |
-          internal/scripts/ci_prepare_ubuntu.sh
-          uname -a
-
-      - name: Run cargo build
-        run: cargo build --workspace --exclude iceoryx2-ffi-python --all-targets ${{ matrix.mode.arg }} --target i686-unknown-linux-gnu
-
-      - name: Run cargo nextest
-        run: cargo nextest run --workspace --exclude iceoryx2-ffi-python --all-targets --no-fail-fast ${{ matrix.mode.arg }} --target i686-unknown-linux-gnu
-
-      - name: Build language bindings
-        shell: bash
-        run: |
-          cmake -S . \
-                -B target/ff/cc/build \
-                -DCMAKE_INSTALL_PREFIX=target/ff/cc/install \
-                -DBUILD_EXAMPLES=ON \
-                -DBUILD_TESTING=ON \
-                -DCMAKE_C_FLAGS="-m32 -malign-double" \
-                -DCMAKE_CXX_FLAGS="-m32 -malign-double" \
-                -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/i686-unknown-linux-gnu/${{ matrix.mode.name }}" \
-                ${{ matrix.mode.cmake-build-type }}
-          cmake --build target/ff/cc/build
-          cmake --install target/ff/cc/build
-
-      - name: Run C++ iceoryx2-bb tests
-        run: target/ff/cc/build/tests/iceoryx2-bb-cxx-tests
-
-      - name: Run C language binding tests
-        run: target/ff/cc/build/tests/iceoryx2-c-tests
-
-      - name: Run C++ language binding tests
-        # TODO: [#262] the skipped tests trigger an unaligned pointer access
-        run: target/ff/cc/build/tests/iceoryx2-cxx-tests --gtest_filter="-ServiceTest/*.list_works:ServiceTest/*.list_works_with_attributes:ServiceTest/*.details_works"
-
-      - name: Build C language binding examples in out-of-tree configuration
-        shell: bash
-        run: |
-          rm -rf target/ff/cc/build
-          cmake -S examples/c \
-                -B target/ff/out-of-tree-c \
-                -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ff/cc/install \
-                -DCMAKE_C_FLAGS="-m32 -malign-double" \
-                -DCMAKE_CXX_FLAGS="-m32 -malign-double" \
-                ${{ matrix.mode.cmake-build-type }}
-          cmake --build target/ff/out-of-tree-c
-
-      - name: Build C++ language binding examples in out-of-tree configuration
-        shell: bash
-        run: |
-          cmake -S examples/cxx \
-                -B target/ff/out-of-tree-cxx \
-                -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/cc/install" \
-                -DCMAKE_C_FLAGS="-m32 -malign-double" \
-                -DCMAKE_CXX_FLAGS="-m32 -malign-double" \
-                ${{ matrix.mode.cmake-build-type }}
-          cmake --build target/ff/out-of-tree-cxx
+    uses: ./.github/workflows/reuse_x86_32.yml
+    with:
+      os: ${{ matrix.os }}
+      toolchain: ${{ matrix.toolchain }}
+      name: "debug"
+      mode: "" # debug mode by default in cargo
+      cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug"
 
   x86_64:
     needs: [preflight-check, static-code-analysis, cargo-nextest]
