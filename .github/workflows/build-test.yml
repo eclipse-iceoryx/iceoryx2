@@ -298,8 +298,6 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        # NOTE: enable for MinGW
-        # toolchain: [stable, stable-gnu, 1.83.0]
         toolchain: [stable, 1.83.0]
         mode:
           - name: "debug"
@@ -308,20 +306,12 @@ jobs:
             cmake-build-config: "--config Debug" # required for Visual Studio at build and install time
         cargo-features-flag: ["", "--features libc_platform"]
         include:
-          # NOTE: enable for MinGW
-          # - toolchain: stable-gnu
-          #  cmake-build-system-generator: '-G "MinGW Makefiles"'
           - os: windows-2022 # todo (iox2-#1049): Use windows latest here
             toolchain: stable
             cmake-cxx-flags: '-DCMAKE_CXX_FLAGS="/MP"'
           - os: ubuntu-latest
             toolchain: stable
         exclude:
-          # NOTE: enable for MinGW
-          # - os: ubuntu-latest
-          #   toolchain: stable-gnu
-          # - os: macos-latest
-          #   toolchain: stable-gnu
           - os: windows-2022 # todo (iox2-#1049): Use windows latest here
             cargo-features-flag: "--features libc_platform"
           - os: macos-latest
@@ -366,56 +356,6 @@ jobs:
       os: ${{ matrix.os }}
       toolchain: ${{ matrix.toolchain }}
       mode-arg: ${{ matrix.mode.arg }}
-
-  ### TODO: does not work yet reliable on the GitHub CI, seems to end up in an infinite loop
-  ###       current alternative is a cirrus.yml aarch64 target
-  # arm:
-  #   runs-on: ubuntu-latest
-  #   if: ${{ needs.changes.outputs.source-code == 'true' }}
-  #   strategy:
-  #     matrix:
-  #       architecture: ["aarch64"] # ["aarch64", "armv7"]
-  #       toolchain: [ stable ] # [stable, 1.83.0, beta, nightly]
-  #       mode: ["--release", ""]
-  #   timeout-minutes: 30
-  #   steps:
-  #     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
-  #     - uses: uraimo/run-on-arch-action@v2
-  #       name: Run commands
-  #       with:
-  #         arch: ${{ matrix.architecture }}
-  #         distro: archarm_latest
-  #         run: |
-  #           ./internal/scripts/ci_prepare_archlinux.sh
-  #           rustup default ${{ matrix.toolchain }}
-  #           cargo fmt --all -- --check
-  #           cargo clippy -- -D warnings
-  #           cargo build --workspace --all-targets ${{ matrix.mode }}
-  #           cargo test --workspace --all-targets --no-fail-fast ${{ matrix.mode }}
-
-  # todo(#347): Reenable FreeBSD once it got stabilized and update the config
-  # freebsd:
-  #   needs: [preflight-check, static-code-analysis]
-  #   if: ${{ needs.changes.outputs.source-code == 'true' }}
-  #   runs-on: ubuntu-latest
-  #   timeout-minutes: 60
-  #   strategy:
-  #     matrix:
-  #       freebsd_version: [ "14.3" ]
-  #       toolchain: [ "stable", "1.83.0" ] # [stable, 1.83.0, beta, nightly]
-  #       mode: ["debug"] # ["release", "debug"]
-  #   steps:
-  #     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
-  #     - uses: vmactions/freebsd-vm@05856381fab64eeee9b038a0818f6cec649ca17a # ratchet:vmactions/freebsd-vm@v1
-  #       with:
-  #         release: ${{ matrix.freebsd_version }}
-  #         mem: 16384
-  #         copyback: false
-  #         prepare: pkg install -y cmake curl gcc git llvm
-  #         run: |
-  #           git config --global --add safe.directory /home/runner/work/iceoryx2/iceoryx2
-  #           ./internal/scripts/ci_prepare_freebsd.sh
-  #           ./internal/scripts/ci_build_and_test_freebsd.sh --toolchain ${{ matrix.toolchain }} --mode ${{ matrix.mode }}
 
   x86_64_bazel:
     needs: [preflight-check, static-code-analysis]
