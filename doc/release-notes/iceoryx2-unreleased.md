@@ -20,7 +20,8 @@
     conflicts when merging.
 -->
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+* Update urllib3 dependency to 2.6.3 (security issue in 2.6.0) 
+  [#1290](https://github.com/eclipse-iceoryx/iceoryx2/issues/1290)
 
 ### Refactoring
 
