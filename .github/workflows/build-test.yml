@@ -337,58 +337,35 @@ jobs:
       mode-cmake-cxx-flags: ${{ matrix.mode.cmake-cxx-flags }}
       cargo-features-flag: ${{ matrix.cargo-features-flag }}
 
+  x86_64-stable-release:
+    needs: [preflight-check, static-code-analysis, cargo-nextest]
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    uses: ./.github/workflows/x86_64_stable_workflow.yml
+    with:
+      os: ubuntu-latest
+      toolchain: stable
+      mode-name: "release"
+      mode-arg: "--release"
+      mode-cmake-build-type: "-DCMAKE_BUILD_TYPE=Release"
+      mode-cmake-build-config: "--config Release"
+      mode-cmake-cxx-flags: ""
+      cargo-features-flag: ""
+
   x86_64_unstable:
     needs: [preflight-check, static-code-analysis, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' && github.ref != 'refs/heads/main' }}
-    continue-on-error: true
     strategy:
       matrix:
-        os: [windows-2022, ubuntu-latest, macos-latest] # todo (iox2-#1049): Use windows latest here
-        toolchain: [beta, nightly]
+        os: [ubuntu-latest]
+        toolchain: [nightly]
         mode:
-          - name: "release"
-            arg: "--release"
           - name: "debug"
             arg: ""
-    timeout-minutes: 90
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
-
-      - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v2
-        with:
-          cmake-version: "3.31.x"
-      - name: Use cmake
-        run: cmake --version
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
-        with:
-          toolchain: ${{ matrix.toolchain }}
-          components: rustfmt, clippy
-
-      - name: Download artifact cargo-nextest
-        uses: ./.github/actions/download-cached-rust-tool
-        with:
-          artifact-bin-name: cargo-nextest
-          artifact-upload-name: ${{ runner.os }}-cargo-nextest
-
-      - name: Prepare Windows
-        if: ${{ matrix.os == 'windows-2022' }} # todo (iox2-#1049): Use windows latest here
-        run: internal\scripts\ci_prepare_windows.ps1
-      - name: Prepare Linux
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: |
-          internal/scripts/ci_prepare_ubuntu.sh
-          uname -a
-
-      - name: Run cargo build
-        run: cargo build --workspace --all-targets ${{ matrix.mode.arg }}
-
-      - name: Run cargo nextest
-        run: cargo nextest run --workspace --all-targets --no-fail-fast ${{ matrix.mode.arg }}
+    uses: ./.github/workflows/reuse_x86_64_unstable.yml
+    with:
+      os: ${{ matrix.os }}
+      toolchain: ${{ matrix.toolchain }}
+      mode-arg: ${{ matrix.mode.arg }}
 
   ### TODO: does not work yet reliable on the GitHub CI, seems to end up in an infinite loop
   ###       current alternative is a cirrus.yml aarch64 target
