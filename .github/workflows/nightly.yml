@@ -82,3 +82,26 @@ jobs:
       mode-cmake-build-config: ${{ matrix.mode.cmake-build-config }}
       mode-cmake-cxx-flags: ${{ matrix.mode.cmake-cxx-flags }}
       cargo-features-flag: ${{ matrix.cargo-features-flag }}
+
+  x86_64_unstable-nightly:
+    needs: [static-code-analysis-rust-nightly, cargo-nextest-nightly]
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        toolchain: [beta, nightly]
+        mode: 
+          - name: "release"
+            arg: "--release"
+          - name: "debug"
+            arg: ""
+        exclude:
+          - os: ubuntu-latest # Already run in Pull-Requests
+            toolchain: [nightly]
+            mode:
+              - name: "debug"
+                arg: ""
+    uses: ./.github/workflows/reuse_x86_64_unstable.yml
+    with:
+      os: ${{ matrix.os }}
+      toolchain: ${{ matrix.toolchain }}
+      mode-arg: ${{ matrix.mode.arg }}
