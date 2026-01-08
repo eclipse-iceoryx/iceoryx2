@@ -35,7 +35,7 @@
 //!     pub fn new() -> Self {
 //!         let mut new_self = Self {
 //!             my_str: unsafe { RelocatableString::new_uninit(STRING_CAPACITY) },
-//!             str_memory: core::array::from_fn(|_| MaybeUninit::uninit()),
+//!             str_memory: [const { MaybeUninit::uninit() }; STRING_CAPACITY + 1] ,
 //!         };
 //!
 //!         let allocator = BumpAllocator::new(new_self.str_memory.as_mut_ptr().cast());
