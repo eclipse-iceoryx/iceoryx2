@@ -297,15 +297,11 @@ jobs:
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
       matrix:
-        os: [windows-2022, ubuntu-latest, macos-latest] # todo (iox2-#1049): Use windows latest here
+        os: [ubuntu-latest, macos-latest]
         # NOTE: enable for MinGW
         # toolchain: [stable, stable-gnu, 1.83.0]
         toolchain: [stable, 1.83.0]
         mode:
-          - name: "release"
-            arg: "--release"
-            cmake-build-type: "-DCMAKE_BUILD_TYPE=Release" # required for Makefile Generators at config time
-            cmake-build-config: "--config Release" # required for Visual Studio at build and install time
           - name: "debug"
             arg: ""
             cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug" # required for Makefile Generators at config time
@@ -330,110 +326,16 @@ jobs:
             cargo-features-flag: "--features libc_platform"
           - os: macos-latest
             cargo-features-flag: "--features libc_platform"
-    timeout-minutes: 90
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
-
-      - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v2
-        with:
-          cmake-version: "3.31.x"
-      - name: Use cmake
-        run: cmake --version
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
-        with:
-          toolchain: ${{ matrix.toolchain }}
-          components: rustfmt, clippy
-
-      - name: Download artifact cargo-nextest
-        uses: ./.github/actions/download-cached-rust-tool
-        with:
-          artifact-bin-name: cargo-nextest
-          artifact-upload-name: ${{ runner.os }}-cargo-nextest
-
-      - name: Prepare Windows
-        if: ${{ matrix.os == 'windows-2022' }} # todo (iox2-#1049): Use windows latest here
-        run: internal\scripts\ci_prepare_windows.ps1
-      - name: Prepare Linux
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: |
-          internal/scripts/ci_prepare_ubuntu.sh
-          uname -a
-
-      - name: Run cargo build
-        run: cargo build --workspace --all-targets ${{ matrix.mode.arg }} ${{ matrix.cargo-features-flag }}
-
-      - name: Run cargo nextest
-        run: cargo nextest run --workspace --all-targets --no-fail-fast ${{ matrix.mode.arg }} ${{ matrix.cargo-features-flag }}
-
-      - name: Print native libs of FFI target
-        if: false # This step takes 1 to 2 minutes; only enable if there are linker issues with the FFI target
-        run: |
-          cd iceoryx2-ffi/c
-          cargo rustc -q -- --print=native-static-libs
-
-      - name: Remove files to increase available disk space
-        shell: bash
-        run: rm -rf ${{ github.workspace }}/target/${{ matrix.mode.name }}/{deps,incremental}
-
-      - name: Build language bindings
-        shell: bash
-        run: |
-          cmake -S . \
-                -B target/ff/cc/build \
-                -DBUILD_EXAMPLES=ON \
-                -DBUILD_TESTING=ON \
-                -DWARNING_AS_ERROR=ON \
-                ${{ matrix.mode.cmake-build-type }} \
-                ${{ matrix.mode.cmake-cxx-flags }} \
-                ${{ matrix.cmake-build-system-generator }} \
-                -DCMAKE_INSTALL_PREFIX=target/ff/cc/install \
-                -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/${{ matrix.mode.name }}"
-          cmake --build target/ff/cc/build ${{ matrix.mode.cmake-build-config }}
-          cmake --install target/ff/cc/build ${{ matrix.mode.cmake-build-config }}
-
-      - name: Run C++ iceoryx2-bb tests
-        run: target/ff/cc/build/tests/iceoryx2-bb-cxx-tests
-
-      - name: Run C language binding tests
-        run: target/ff/cc/build/tests/iceoryx2-c-tests
-
-      - name: Run C++ language binding tests
-        run: target/ff/cc/build/tests/iceoryx2-cxx-tests
-
-      - name: Remove language binding build artifacts on Windows
-        if: ${{ matrix.os == 'windows-2022' }} # todo (iox2-#1049): Use windows latest here
-        run: rm -r -force target/ff/cc/build
-
-      - name: Remove language binding build artifacts on non-Windows
-        if: ${{ matrix.os != 'windows-2022' }} # todo (iox2-#1049): Use windows latest here
-        run: rm -rf target/ff/cc/build
-
-      - name: Build C language binding examples in out-of-tree configuration
-        shell: bash
-        run: |
-          cmake -S examples/c \
-                -B target/ff/out-of-tree-c \
-                ${{ matrix.mode.cmake-build-type }} \
-                ${{ matrix.mode.cmake-cxx-flags }} \
-                ${{ matrix.cmake-build-system-generator }} \
-                -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/cc/install"
-          cmake --build target/ff/out-of-tree-c ${{ matrix.mode.cmake-build-config }}
-
-      - name: Build C++ language binding examples in out-of-tree configuration
-        shell: bash
-        run: |
-          cmake -S examples/cxx \
-                -B target/ff/out-of-tree-cxx \
-                ${{ matrix.mode.cmake-build-type }} \
-                ${{ matrix.mode.cmake-cxx-flags }} \
-                ${{ matrix.cmake-build-system-generator }} \
-                -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/cc/install"
-          cmake --build target/ff/out-of-tree-cxx ${{ matrix.mode.cmake-build-config }}
+    uses: ./.github/workflows/reuse_x86_64_stable.yml
+    with:
+      os: ${{ matrix.os }}
+      toolchain: ${{ matrix.toolchain }}
+      mode-name: ${{ matrix.mode.name }}
+      mode-arg: ${{ matrix.mode.arg }}
+      mode-cmake-build-type: ${{ matrix.mode.cmake-build-type }}
+      mode-cmake-build-config: ${{ matrix.mode.cmake-build-config }}
+      mode-cmake-cxx-flags: ${{ matrix.mode.cmake-cxx-flags }}
+      cargo-features-flag: ${{ matrix.cargo-features-flag }}
 
   x86_64_unstable:
     needs: [preflight-check, static-code-analysis, cargo-nextest]

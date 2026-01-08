@@ -48,3 +48,37 @@ jobs:
       name: "release"
       mode: "release"
       cmake-build-type: "-DCMAKE_BUILD_TYPE=Release"
+
+  x86_64-stable-nightly:
+    needs: [static-code-analysis-rust-nightly, cargo-nextest-nightly]
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        # NOTE: enable for MinGW
+        # toolchain: [stable, stable-gnu, 1.83.0]
+        toolchain: [stable, 1.83.0]
+        mode:
+          - name: "release"
+            arg: "--release"
+            cmake-build-type: "-DCMAKE_BUILD_TYPE=Release" # required for Makefile Generators at config time
+            cmake-build-config: "--config Release" # required for Visual Studio at build and install time
+        cargo-features-flag: ["", "--features libc_platform"]
+        include:
+          - os: windows-latest
+            toolchain: stable
+            cmake-cxx-flags: '-DCMAKE_CXX_FLAGS="/MP"'
+        exclude:
+          - os: windows-latest
+            cargo-features-flag: "--features libc_platform"
+          - os: macos-latest
+            cargo-features-flag: "--features libc_platform"
+    uses: ./.github/workflows/reuse_x86_64_stable.yml
+    with:
+      os: ${{ matrix.os }}
+      toolchain: ${{ matrix.toolchain }}
+      mode-name: ${{ matrix.mode.name }}
+      mode-arg: ${{ matrix.mode.arg }}
+      mode-cmake-build-type: ${{ matrix.mode.cmake-build-type }}
+      mode-cmake-build-config: ${{ matrix.mode.cmake-build-config }}
+      mode-cmake-cxx-flags: ${{ matrix.mode.cmake-cxx-flags }}
+      cargo-features-flag: ${{ matrix.cargo-features-flag }}
