@@ -18,10 +18,10 @@ jobs:
       markdown: ${{ steps.filter.outputs.markdown }}
     steps:
       - name: Checkout sources
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
 
       - name: Check for changed file types
-        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # ratchet:dorny/paths-filter@v3
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # version: v3.0.2
         id: filter
         with:
           filters: |
@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
 
       - name: Check format of all commit messages
         run: ./internal/scripts/ci_test_commit_msg.sh
@@ -54,12 +54,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
 
       - name: Setup node.js
-        uses: actions/setup-node@1a4442cacd436585916779262731d5b162bc6ec7 # ratchet:actions/setup-node@v3
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # version: v6.1.0
         with:
-          node-version: "20"
+          node-version: "24"
 
       - name: Install linters
         run: npm install -g markdownlint-cli@0.47.0
@@ -85,7 +85,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
 
       - name: Install clang-tidy and clang-format
         uses: ./.github/actions/install-iceoryx-deps-and-clang
@@ -145,7 +145,7 @@ jobs:
         os: [windows-latest, ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
       - name: Build and cache cargo-nextest
         uses: ./.github/actions/build-and-cache-rust-tool
         with:
@@ -162,22 +162,19 @@ jobs:
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
 
       - name: Prepare Linux
         run: |
           internal/scripts/ci_prepare_ubuntu.sh
           uname -a
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set Up Python & Install Poetry
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # version: v6.0.1
         with:
-          python-version: "3.12"
-
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          version: 2.1.3
+          python-version: "3.13"
+      - run: pip install poetry==2.2.1
+      - run: pip install poetry-plugin-shell==1.0.1
 
       - name: Install Python Dependencies
         run: poetry --project iceoryx2-ffi/python install
@@ -202,31 +199,27 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout sources
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
 
       - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v2
+        uses: jwlawson/actions-setup-cmake@802fa1a2c4e212495c05bf94dba2704a92a472be # version: v2.0.2
         with:
           cmake-version: "3.31.x"
       - name: Use cmake
         run: cmake --version
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # version: v1
         with:
           toolchain: ${{ matrix.toolchain }}
           targets: i686-unknown-linux-gnu, armv7r-none-eabihf
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set Up Python & Install Poetry
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # version: v6.0.1
         with:
-          python-version: "3.12"
-
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          version: 2.1.3
-          plugins: poetry-plugin-shell
+          python-version: "3.13"
+      - run: pip install poetry==2.2.1
+      - run: pip install poetry-plugin-shell==1.0.1
 
       - name: Prepare Linux
         run: |
@@ -247,10 +240,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # version: v1
         with:
           toolchain: stable
 
@@ -369,10 +362,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout sources
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # version: v1
         with:
           toolchain: ${{ matrix.toolchain }}
           components: rustfmt, clippy
@@ -383,7 +376,7 @@ jobs:
           uname -a
 
       - name: Set up Bazel
-        uses: bazel-contrib/setup-bazel@f3f50ea6791b9b0f4c4eeabba4507422426462f5 # ratchet:bazel-contrib/setup-bazel@0.9.1
+        uses: bazel-contrib/setup-bazel@43d7d5ceab59a307da44fc7585faa2a2fff4f88d # version: 0.16.0
 
       - name: Run bazel build
         env:
@@ -407,10 +400,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # version: v1
         with:
           toolchain: stable
 
@@ -429,13 +422,15 @@ jobs:
   mandatory-checks:
     needs:
       [
+        preflight-check,
         static-code-analysis,
         x86_64,
         x86_64_bazel,
         x86_32,
-        x64_cxx_binding_vocabulary_types_variations,
+        variants,
         python-bindings,
         end-to-end-tests,
+        cargo-publish-dry-run,
       ]
     runs-on: ubuntu-latest
     steps:

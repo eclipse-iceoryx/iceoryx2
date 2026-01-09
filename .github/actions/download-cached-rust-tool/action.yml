@@ -12,13 +12,13 @@ runs:
   steps:
     - name: Download artifact
       if: runner.os != 'Windows'
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # version: v7.0.0
       with:
         name: ${{ inputs.artifact-upload-name }}
         path: ~/.cargo/bin/
     - name: Download artifact
       if: runner.os == 'Windows'
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # version: v7.0.0
       with:
         name: ${{ inputs.artifact-upload-name }}
         path: C:/Users/runneradmin/.cargo/bin/
