@@ -1,4 +1,4 @@
-name: Nightly iceoryx2 run
+name: Nightly
 
 on:
   schedule:
@@ -42,7 +42,7 @@ jobs:
         os: [ubuntu-latest] # [windows-latest, ubuntu-latest, macos-latest]
         toolchain: [stable] # [stable, 1.83.0, beta, nightly]
     uses: ./.github/workflows/reuse_x86_32.yml
-    with: 
+    with:
       os: ${{ matrix.os }}
       toolchain: ${{ matrix.toolchain }}
       name: "release"
@@ -89,7 +89,7 @@ jobs:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
         toolchain: [beta, nightly]
-        mode: 
+        mode:
           - name: "release"
             arg: "--release"
           - name: "debug"
