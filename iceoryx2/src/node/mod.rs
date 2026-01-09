@@ -772,7 +772,7 @@ impl RegisteredServices {
         handle: ContainerHandle,
     ) {
         if services.insert(service_id, (handle, 1)).is_some() {
-            fatal_panic!(from "RegisteredServices::add()",
+            fatal_panic!(from "RegisteredServices::insert()",
                 "This should never happen! The service with the {:?} was already registered.",
                 service_id);
         }
