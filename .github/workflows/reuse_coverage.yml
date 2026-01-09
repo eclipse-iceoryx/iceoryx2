@@ -8,7 +8,7 @@ jobs:
     timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
       - name: Build and cache grcov
         uses: ./.github/actions/build-and-cache-rust-tool
         with:
@@ -20,7 +20,7 @@ jobs:
           artifact-bin-name: grcov
           artifact-upload-name: ${{ runner.os }}-grcov
 
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
 
       - name: Install dependencies
         uses: ./.github/actions/install-iceoryx-deps-and-clang
@@ -33,13 +33,13 @@ jobs:
           sudo groupadd testgroup2
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # ratchet:dtolnay/rust-toolchain@v1
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # version: v1
         with:
           toolchain: 1.92.0
           components: llvm-tools
 
       - name: Setup gcovr
-        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # ratchet:actions/setup-python@v6
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # version: v6.0.1
         with:
           python-version: "3.13"
           cache: "pip" # caching pip dependencies
@@ -58,7 +58,7 @@ jobs:
         run: ./internal/scripts/generate-cov-report.sh --html
 
       - name: Archive coverage-html artifacts
-        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # ratchet:actions/upload-artifact@v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # version: v6.0.0
         with:
           name: coverage-html
           path: target/ff/coverage/html/*
@@ -68,7 +68,7 @@ jobs:
         run: ./internal/scripts/generate-cov-report.sh --lcov
 
       - name: Upload Rust coverage to Codecov
-        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # ratchet:codecov/codecov-action@v4
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # version: v5.5.2
         with:
           files: target/ff/coverage/lcov/iceoryx2_lcov_rust.info
           name: iceoryx2
@@ -77,7 +77,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Upload C++ coverage to Codecov
-        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # ratchet:codecov/codecov-action@v4
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # version: v5.5.2
         with:
           files: target/ff/coverage/lcov/iceoryx2_lcov_cpp.info
           name: iceoryx2
