@@ -933,7 +933,7 @@ jobs:
         with:
           python-version: "3.13"
           cache: "pip" # caching pip dependencies
-      - run: pip install gcovr
+      - run: pip install -I gcovr==8.4
 
       - name: Download artifact grcov
         uses: ./.github/actions/download-cached-rust-tool
