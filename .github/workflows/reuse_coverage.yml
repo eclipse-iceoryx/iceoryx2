@@ -38,6 +38,14 @@ jobs:
           toolchain: 1.92.0
           components: llvm-tools
 
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@bafd42bd91680affe190f697cac6ef3ad958ecba # version: v0.0.9
+
+      - name: Set caching env vars on non-Windows
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+
       - name: Setup gcovr
         uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # version: v6.0.1
         with:

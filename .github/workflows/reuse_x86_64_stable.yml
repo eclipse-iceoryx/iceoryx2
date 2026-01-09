@@ -56,6 +56,21 @@ jobs:
           artifact-bin-name: cargo-nextest
           artifact-upload-name: ${{ runner.os }}-cargo-nextest
 
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@bafd42bd91680affe190f697cac6ef3ad958ecba # version: v0.0.9
+
+      - name: Set caching env vars on non-Windows
+        if: ${{ inputs.os != 'windows-latest' }}
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+
+      - name: Set caching env vars on Windows
+        if: ${{ inputs.os == 'windows-latest' }}
+        run: |
+          Add-Content -Path $env:GITHUB_ENV -Value "SCCACHE_GHA_ENABLED=true"
+          Add-Content -Path $env:GITHUB_ENV -Value "RUSTC_WRAPPER=sccache"
+
       - name: Prepare Windows
         if: ${{ inputs.os == 'windows-latest' }}
         run: internal\scripts\ci_prepare_windows.ps1
@@ -89,7 +104,9 @@ jobs:
                 ${{ inputs.mode-cmake-build-type }} \
                 ${{ inputs.mode-cmake-cxx-flags }} \
                 -DCMAKE_INSTALL_PREFIX=target/ff/cc/install \
-                -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/${{ inputs.mode-name }}"
+                -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/${{ inputs.mode-name }}" \
+                -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           cmake --build target/ff/cc/build ${{ inputs.mode-cmake-build-config }}
           cmake --install target/ff/cc/build ${{ inputs.mode-cmake-build-config }}
 
@@ -117,7 +134,9 @@ jobs:
                 -B target/ff/out-of-tree-c \
                 ${{ inputs.mode-cmake-build-type }} \
                 ${{ inputs.mode-cmake-cxx-flags }} \
-                -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/cc/install"
+                -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/cc/install" \
+                -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           cmake --build target/ff/out-of-tree-c ${{ matrix.mode.cmake-build-config }}
 
       - name: Build C++ language binding examples in out-of-tree configuration
@@ -127,5 +146,7 @@ jobs:
                 -B target/ff/out-of-tree-cxx \
                 ${{ inputs.mode-cmake-build-type }} \
                 ${{ inputs.mode-cmake-cxx-flags }} \
-                -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/cc/install"
+                -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/cc/install" \
+                -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           cmake --build target/ff/out-of-tree-cxx ${{ inputs.mode-cmake-build-config }}

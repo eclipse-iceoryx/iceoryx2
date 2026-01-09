@@ -22,6 +22,14 @@ jobs:
           components: rustfmt, clippy
           targets: armv7r-none-eabihf
 
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@bafd42bd91680affe190f697cac6ef3ad958ecba # version: v0.0.9
+
+      - name: Set caching env vars on non-Windows
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+
       - name: Prepare Linux
         run: |
           internal/scripts/ci_prepare_ubuntu.sh
@@ -48,6 +56,14 @@ jobs:
         with:
           toolchain: stable
 
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@bafd42bd91680affe190f697cac6ef3ad958ecba # version: v0.0.9
+
+      - name: Set caching env vars on non-Windows
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+    
       - name: Prepare Linux
         run: |
           internal/scripts/ci_prepare_ubuntu.sh
@@ -65,7 +81,9 @@ jobs:
                 -DRUST_BUILD_ARTIFACT_PATH=$(pwd)/target/debug \
                 -DIOX2_CXX_STD_VERSION=23 \
                 -DIOX2_BB_CXX_CONFIG_USE_STD_EXPECTED=OFF \
-                -DIOX2_BB_CXX_CONFIG_USE_STD_OPTIONAL=OFF
+                -DIOX2_BB_CXX_CONFIG_USE_STD_OPTIONAL=OFF \
+                -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           cmake --build target/ff/cc/build
           cmake --install target/ff/cc/build --prefix target/ff/cc/install
 
@@ -74,7 +92,9 @@ jobs:
 
           cmake -S examples/cxx \
                 -B target/ff/cc/out-of-tree \
-                -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ff/cc/install
+                -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ff/cc/install \
+                -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           cmake --build target/ff/cc/out-of-tree
 
           rm -rf target/ff/cc
@@ -87,7 +107,9 @@ jobs:
                 -DBUILD_TESTING=ON \
                 -DRUST_BUILD_ARTIFACT_PATH=$(pwd)/target/debug \
                 -DIOX2_BB_CXX_CONFIG_USE_STD_EXPECTED=ON \
-                -DIOX2_BB_CXX_CONFIG_USE_STD_OPTIONAL=OFF
+                -DIOX2_BB_CXX_CONFIG_USE_STD_OPTIONAL=OFF \
+                -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           cmake --build target/ff/cc/build
           cmake --install target/ff/cc/build --prefix target/ff/cc/install
 
@@ -96,7 +118,9 @@ jobs:
 
           cmake -S examples/cxx \
                 -B target/ff/cc/out-of-tree \
-                -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ff/cc/install
+                -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ff/cc/install \
+                -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           cmake --build target/ff/cc/out-of-tree
 
           rm -rf target/ff/cc
@@ -109,7 +133,9 @@ jobs:
                 -DBUILD_TESTING=ON \
                 -DRUST_BUILD_ARTIFACT_PATH=$(pwd)/target/debug \
                 -DIOX2_BB_CXX_CONFIG_USE_STD_EXPECTED=OFF \
-                -DIOX2_BB_CXX_CONFIG_USE_STD_OPTIONAL=ON
+                -DIOX2_BB_CXX_CONFIG_USE_STD_OPTIONAL=ON \
+                -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           cmake --build target/ff/cc/build
           cmake --install target/ff/cc/build --prefix target/ff/cc/install
 
@@ -118,7 +144,9 @@ jobs:
 
           cmake -S examples/cxx \
                 -B target/ff/cc/out-of-tree \
-                -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ff/cc/install
+                -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ff/cc/install \
+                -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           cmake --build target/ff/cc/out-of-tree
 
           rm -rf target/ff/cc
@@ -131,7 +159,9 @@ jobs:
                 -DBUILD_TESTING=ON \
                 -DRUST_BUILD_ARTIFACT_PATH=$(pwd)/target/debug \
                 -DIOX2_BB_CXX_CONFIG_USE_STD_EXPECTED=ON \
-                -DIOX2_BB_CXX_CONFIG_USE_STD_OPTIONAL=ON
+                -DIOX2_BB_CXX_CONFIG_USE_STD_OPTIONAL=ON \
+                -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           cmake --build target/ff/cc/build
           cmake --install target/ff/cc/build --prefix target/ff/cc/install
 
@@ -140,7 +170,9 @@ jobs:
 
           cmake -S examples/cxx \
                 -B target/ff/cc/out-of-tree \
-                -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ff/cc/install
+                -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ff/cc/install \
+                -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           cmake --build target/ff/cc/out-of-tree
 
           rm -rf target/ff/cc
@@ -158,7 +190,9 @@ jobs:
                 -DRUST_BUILD_ARTIFACT_PATH=$(pwd)/target/debug \
                 -DIOX2_BB_CXX_CONFIG_USE_CUSTOM_VOCABULARY_TYPES=ON \
                 -DIOX2_BB_CXX_CONFIG_CUSTOM_VOCABULARY_TYPES_CMAKE_TARGET="custom-vocabulary-types" \
-                -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ff/cc/install
+                -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ff/cc/install \
+                -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           cmake --build target/ff/cc/build
           cmake --install target/ff/cc/build --prefix target/ff/cc/install
 
@@ -167,7 +201,9 @@ jobs:
 
           cmake -S examples/cxx \
                 -B target/ff/cc/out-of-tree \
-                -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ff/cc/install
+                -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ff/cc/install \
+                -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           cmake --build target/ff/cc/out-of-tree
 
           rm -rf target/ff/cc

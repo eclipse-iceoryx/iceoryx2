@@ -47,6 +47,21 @@ jobs:
           artifact-bin-name: cargo-nextest
           artifact-upload-name: ${{ runner.os }}-cargo-nextest
 
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@bafd42bd91680affe190f697cac6ef3ad958ecba # version: v0.0.9
+
+      - name: Set caching env vars on non-Windows
+        if: ${{ inputs.os != 'windows-latest' }}
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+
+      - name: Set caching env vars on Windows
+        if: ${{ inputs.os == 'windows-latest' }}
+        run: |
+          Add-Content -Path $env:GITHUB_ENV -Value "SCCACHE_GHA_ENABLED=true"
+          Add-Content -Path $env:GITHUB_ENV -Value "RUSTC_WRAPPER=sccache"
+
       - name: Prepare Windows
         if: ${{ inputs.os == 'windows-latest' }}
         run: internal\scripts\ci_prepare_windows.ps1
@@ -74,7 +89,9 @@ jobs:
                 -DCMAKE_C_FLAGS="-m32 -malign-double" \
                 -DCMAKE_CXX_FLAGS="-m32 -malign-double" \
                 -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/i686-unknown-linux-gnu/${{ inputs.name }}" \
-                ${{ inputs.cmake-build-type }}
+                ${{ inputs.cmake-build-type }} \
+                -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           cmake --build target/ff/cc/build
           cmake --install target/ff/cc/build
 
@@ -97,7 +114,9 @@ jobs:
                 -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ff/cc/install \
                 -DCMAKE_C_FLAGS="-m32 -malign-double" \
                 -DCMAKE_CXX_FLAGS="-m32 -malign-double" \
-                ${{ inputs.cmake-build-type }}
+                ${{ inputs.cmake-build-type }} \
+                -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           cmake --build target/ff/out-of-tree-c
 
       - name: Build C++ language binding examples in out-of-tree configuration
@@ -108,5 +127,7 @@ jobs:
                 -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/cc/install" \
                 -DCMAKE_C_FLAGS="-m32 -malign-double" \
                 -DCMAKE_CXX_FLAGS="-m32 -malign-double" \
-                ${{ inputs.cmake-build-type }}
+                ${{ inputs.cmake-build-type }} \
+                -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           cmake --build target/ff/out-of-tree-cxx
