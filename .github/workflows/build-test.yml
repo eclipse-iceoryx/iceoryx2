@@ -1,4 +1,4 @@
-name: CI
+name: Main
 
 on:
   push:
@@ -122,7 +122,7 @@ jobs:
     with:
       os: ${{ matrix.os }}
       cargo-features-flag: ${{ matrix.cargo-features-flag }}
-  
+
   # just to have a sync point for the first C++ and Rust static code analysis
   # once the first quick checks have passed we have the confidence to continue
   # with the remaining CI jobs
