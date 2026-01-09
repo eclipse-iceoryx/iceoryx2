@@ -766,6 +766,18 @@ impl RegisteredServices {
         Self { handle }
     }
 
+    fn insert(
+        services: &mut BTreeMap<ServiceId, (ContainerHandle, u64)>,
+        service_id: ServiceId,
+        handle: ContainerHandle,
+    ) {
+        if services.insert(service_id, (handle, 1)).is_some() {
+            fatal_panic!(from "RegisteredServices::add()",
+                "This should never happen! The service with the {:?} was already registered.",
+                service_id);
+        }
+    }
+
     pub(crate) fn add(&self, service_id: &ServiceId, handle: ContainerHandle) {
         let mut guard = fatal_panic!(
             from self,
@@ -773,10 +785,7 @@ impl RegisteredServices {
             "Failed to lock mutex"
         );
 
-        if guard.insert(*service_id, (handle, 1)).is_some() {
-            fatal_panic!(from "RegisteredServices::add()",
-                "This should never happen! The service with the {:?} was already registered.", service_id);
-        }
+        Self::insert(&mut guard, *service_id, handle);
     }
 
     pub(crate) fn add_or<F: FnMut() -> Result<ContainerHandle, OpenDynamicStorageFailure>>(
@@ -795,9 +804,8 @@ impl RegisteredServices {
                 entry.1 += 1;
             }
             None => {
-                drop(guard);
                 let new_handle = or_callback()?;
-                self.add(service_id, new_handle);
+                Self::insert(&mut guard, *service_id, new_handle);
             }
         };
         Ok(())
