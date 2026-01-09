@@ -587,93 +587,10 @@ jobs:
       - name: Cargo Publish Dry-Run
         run: ./internal/scripts/release/crates_io_publish_script.sh dry-run-allow-dirty
 
-  grcov:
+  coverage:
     needs: [preflight-check, static-code-analysis]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
-    timeout-minutes: 10
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
-      - name: Build and cache grcov
-        uses: ./.github/actions/build-and-cache-rust-tool
-        with:
-          rust-toolchain: 1.86.0
-          rust-components: llvm-tools
-          check-and-install-cmd: grcov --version > /dev/null || cargo install grcov
-          print-version-cmd: grcov --version
-          cache-key: cache-2-${{ runner.os }}-grcov
-          artifact-bin-name: grcov
-          artifact-upload-name: ${{ runner.os }}-grcov
-
-  coverage:
-    needs: grcov
-    if: ${{ needs.changes.outputs.source-code == 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
-
-      - name: Install dependencies
-        uses: ./.github/actions/install-iceoryx-deps-and-clang
-
-      - name: Create test users and groups
-        run: |
-          sudo useradd testuser1
-          sudo useradd testuser2
-          sudo groupadd testgroup1
-          sudo groupadd testgroup2
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # ratchet:dtolnay/rust-toolchain@v1
-        with:
-          toolchain: 1.92.0
-          components: llvm-tools
-
-      - name: Setup gcovr
-        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # ratchet:actions/setup-python@v6
-        with:
-          python-version: "3.13"
-          cache: "pip" # caching pip dependencies
-      - run: pip install -I gcovr==8.4
-
-      - name: Download artifact grcov
-        uses: ./.github/actions/download-cached-rust-tool
-        with:
-          artifact-bin-name: grcov
-          artifact-upload-name: ${{ runner.os }}-grcov
-
-      - name: Generate raw coverage results
-        run: ./internal/scripts/generate-cov-report.sh --generate
-
-      - name: Generate coverage results for html artifacts
-        run: ./internal/scripts/generate-cov-report.sh --html
-
-      - name: Archive coverage-html artifacts
-        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # ratchet:actions/upload-artifact@v4
-        with:
-          name: coverage-html
-          path: target/ff/coverage/html/*
-          retention-days: 90
-
-      - name: Generate coverage reports for Codecov
-        run: ./internal/scripts/generate-cov-report.sh --lcov
-
-      - name: Upload Rust coverage to Codecov
-        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # ratchet:codecov/codecov-action@v4
-        with:
-          file: target/ff/coverage/lcov/iceoryx2_lcov_rust.info
-          name: iceoryx2
-          flags: Rust
-          fail_ci_if_error: false
-          token: ${{ secrets.CODECOV_TOKEN }}
-
-      - name: Upload C++ coverage to Codecov
-        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # ratchet:codecov/codecov-action@v4
-        with:
-          file: target/ff/coverage/lcov/iceoryx2_lcov_cpp.info
-          name: iceoryx2
-          flags: CPP
-          fail_ci_if_error: false
-          token: ${{ secrets.CODECOV_TOKEN }}
+    uses: ./.github/workflows/reuse_coverage.yml
 
   # Have a sync point for all CI jobs that need to pass, will be enforced by Otterdog
   mandatory-checks:
