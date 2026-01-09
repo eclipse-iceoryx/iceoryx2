@@ -11,7 +11,7 @@ jobs:
         os: 
           - ubuntu-latest
           - macos-latest          # aarch64
-          - windows-2022          # todo (iox2-#1049): Use windows latest here
+          - windows-latest
     defaults:
       run:
         shell: bash               # required for windows
