@@ -62,7 +62,7 @@ include(GNUInstallDirs)
 target_link_libraries(static-lib INTERFACE
     iceoryx2-c::includes-only
     $<BUILD_INTERFACE:${ICEORYX2_C_STATIC_LIB_LINK_FILE}>
-    $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_LIBDIR}/${ICEORYX2_C_STATIC_LIB_LINK_NAME}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_FULL_LIBDIR}/${ICEORYX2_C_STATIC_LIB_LINK_NAME}>
     $<$<NOT:$<PLATFORM_ID:Windows,QNX,Android>>:m pthread>
     $<$<PLATFORM_ID:Windows>:userenv ntdll psapi ws2_32 wsock32>
     $<$<AND:$<PLATFORM_ID:Windows>,$<OR:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>>:bcrypt synchronization>
@@ -74,7 +74,7 @@ target_link_libraries(static-lib INTERFACE
 target_link_libraries(shared-lib INTERFACE
     iceoryx2-c::includes-only
     $<BUILD_INTERFACE:${ICEORYX2_C_SHARED_LIB_LINK_FILE}>
-    $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_LIBDIR}/${ICEORYX2_C_SHARED_LIB_LINK_NAME}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_FULL_LIBDIR}/${ICEORYX2_C_SHARED_LIB_LINK_NAME}>
 )
 
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/install.cmake)
