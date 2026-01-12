@@ -46,7 +46,7 @@ jobs:
         run: cargo test --workspace --doc ${{ inputs.cargo-features-flag }}
 
       - name: Build documentation
-        run: cargo doc ${{ inputs.cargo-features-flag }}
+        run: cargo doc --no-deps ${{ inputs.cargo-features-flag }}
 
       - name: Setup miri
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # version: v1
