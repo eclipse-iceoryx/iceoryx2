@@ -318,7 +318,8 @@ instantiate_conformance_tests_with_module!(impl_a, my_test_crate::my_module, sup
 instantiate_conformance_tests_with_module!(impl_b, my_test_crate::my_module, super::ImplB);
 ```
 
-The `instantiate_conformance_tests_with_module!` macro will then expand to this code:
+The `instantiate_conformance_tests_with_module!` macro will then
+expand to this code:
 
 ```rs
 use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
