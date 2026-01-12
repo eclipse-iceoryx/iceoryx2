@@ -110,8 +110,8 @@ publisher, as it's confined to the process.
 
 | Service Type                | Scope         | Thread Safety     | Notes                                               |
 | --------------------------- | ------------- | ----------------- | --------------------------------------------------- |
-| `iox2_service_type_e_IPC`   | Inter-process | ✅ Thread-safe     | Adds mutex overhead for safe sharing across threads |
-| `iox2_service_type_e_LOCAL` | Intra-process | ✅ Thread-safe     | Safe for multi-threaded intra-process communication |
+| `iox2_service_type_e_IPC`   | Inter-process | ✅ Thread-safe    | Adds mutex overhead for safe sharing across threads |
+| `iox2_service_type_e_LOCAL` | Intra-process | ✅ Thread-safe    | Safe for multi-threaded intra-process communication |
 
 All ports (`Publisher`, `Subscriber`, etc.) and payloads (`Sample`, `Request`,
 etc.) are affected by the service type defined when the `Node` is created.
