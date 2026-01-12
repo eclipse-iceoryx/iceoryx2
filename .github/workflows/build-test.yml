@@ -80,6 +80,7 @@ jobs:
       cargo-features-flag: ""
 
   static-code-analysis-cpp:
+    needs: preflight-check
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     timeout-minutes: 40
     runs-on: ubuntu-latest
@@ -339,7 +340,7 @@ jobs:
   x86_64-stable-release:
     needs: [preflight-check, static-code-analysis, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
-    uses: ./.github/workflows/x86_64_stable_workflow.yml
+    uses: ./.github/workflows/reuse_x86_64_stable.yml
     with:
       os: ubuntu-latest
       toolchain: stable
