@@ -10,7 +10,7 @@ on:
 jobs:
   changes:
     if: github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions:
       pull-requests: read
     outputs:
@@ -36,7 +36,7 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     timeout-minutes: 10
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - name: Checkout sources
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
@@ -51,7 +51,7 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.markdown == 'true' }}
     timeout-minutes: 10
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - name: Checkout sources
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
@@ -129,7 +129,7 @@ jobs:
   # with the remaining CI jobs
   static-code-analysis:
     needs: [static-code-analysis-cpp, static-code-analysis-rust]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - name: Static code analysis sync point
         run: echo "Nothing to see, move along!"
@@ -143,7 +143,7 @@ jobs:
     needs: preflight-check
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [windows-latest, ubuntu-slim, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
@@ -441,6 +441,7 @@ jobs:
       [
         preflight-check,
         static-code-analysis,
+        static-code-analysis-rust-extended,
         x86_64,
         x86_64_bazel,
         x86_32,
@@ -449,7 +450,7 @@ jobs:
         end-to-end-tests,
         cargo-publish-dry-run,
       ]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - name: Mandatory Checks Sync
         run: echo "Sync point for collecting mandatory checks that need to pass for Pull-Requests"
