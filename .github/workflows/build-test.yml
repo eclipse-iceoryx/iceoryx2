@@ -307,7 +307,7 @@ jobs:
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         toolchain: [stable, 1.83.0]
         mode:
           - name: "debug"
@@ -315,12 +315,6 @@ jobs:
             cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug" # required for Makefile Generators at config time
             cmake-build-config: "--config Debug" # required for Visual Studio at build and install time
         cargo-features-flag: ["", "--features libc_platform"]
-        include:
-          - os: windows-latest
-            toolchain: stable
-            cmake-cxx-flags: '-DCMAKE_CXX_FLAGS="/MP"'
-          - os: ubuntu-latest
-            toolchain: stable
         exclude:
           - os: windows-latest
             cargo-features-flag: "--features libc_platform"
