@@ -63,11 +63,9 @@ jobs:
             cmake-build-type: "-DCMAKE_BUILD_TYPE=Release" # required for Makefile Generators at config time
             cmake-build-config: "--config Release" # required for Visual Studio at build and install time
         cargo-features-flag: ["", "--features libc_platform"]
-        include:
-          - os: windows-latest
-            toolchain: stable
-            cmake-cxx-flags: '-DCMAKE_CXX_FLAGS="/MP"'
         exclude:
+          - os: ubuntu-latest # already tested in Pull-Requests and main branch
+            cargo-features-flag: ""
           - os: windows-latest
             cargo-features-flag: "--features libc_platform"
           - os: macos-latest
