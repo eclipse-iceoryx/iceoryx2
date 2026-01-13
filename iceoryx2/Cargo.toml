@@ -31,7 +31,7 @@ dev_permissions = ["iceoryx2-cal/dev_permissions"]
 # does not offer all the functionality iceoryx2 requires on all of the supported
 # platforms. Therefore, only a subset of the supported platforms will work with this
 # feature flag.
-libc_platform = ["iceoryx2-bb-posix/libc_platform"]
+libc_platform = ["iceoryx2-cal/libc_platform"]
 
 [dependencies]
 iceoryx2-bb-concurrency = { workspace = true }
@@ -47,7 +47,6 @@ iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-cal = { workspace = true }
 iceoryx2-pal-configuration = { workspace = true }
-iceoryx2-pal-posix = { workspace = true }
 
 serde = { workspace = true }
 toml = { workspace = true }
