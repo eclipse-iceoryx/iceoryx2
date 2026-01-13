@@ -21,6 +21,7 @@ use iceoryx2_tunnel_backend::{
     types::publish_subscribe::{LoanFn, SampleMut},
 };
 use zenoh::{
+    bytes::ZBytes,
     handlers::{FifoChannel, FifoChannelHandler},
     pubsub::{Publisher, Subscriber},
     qos::Reliability,
@@ -151,13 +152,24 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
             self.static_config.name()
         );
 
+        let user_header = sample.user_header();
         let payload = sample.payload();
-        let bytes = payload.as_ptr() as *mut u8;
-        let len = payload.len();
+
+        let mut writer = ZBytes::writer();
+        writer.append(unsafe {
+            core::slice::from_raw_parts(
+                user_header as *const CustomHeaderMarker as *const u8,
+                user_header_size(&self.static_config),
+            )
+            .into()
+        });
+        writer.append(unsafe {
+            core::slice::from_raw_parts(payload.as_ptr() as *mut u8, payload.len()).into()
+        });
 
         fail!(
             from self,
-            when self.publisher.put(unsafe { core::slice::from_raw_parts(bytes, len) }).wait(),
+            when self.publisher.put(writer).wait(),
             with SendError::PayloadPut,
             "Failed to propagate publish-subscribe payload to zenoh"
         );
@@ -184,28 +196,40 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
                 self.static_config.name()
             );
 
-            let zenoh_payload = zenoh_sample.payload();
+            let bytes_received = zenoh_sample.payload().to_bytes();
+
+            let user_header_size = user_header_size(&self.static_config);
+            let user_header_received = &bytes_received[0..user_header_size];
+            let payload_received = &bytes_received[user_header_size..];
 
             let mut iceoryx_sample = fail!(
                 from self,
-                when loan(zenoh_payload.len()),
+                when loan(payload_received.len()),
                 with ReceiveError::IceoryxLoan,
                 "Failed to loan sample from iceoryx"
             );
-            let iceoryx_payload = iceoryx_sample.payload_mut();
+
+            let payload = iceoryx_sample.payload_mut();
 
             debug_assert!(
-                iceoryx_payload.len() >= zenoh_payload.len(),
-                "loan_size ({}) is too small for received payload ({})",
-                iceoryx_payload.len(),
-                zenoh_payload.len()
+                payload.len() >= payload_received.len(),
+                "Loaned payload size ({}) is too small for received payload ({})",
+                payload.len(),
+                payload_received.len()
             );
 
             unsafe {
                 core::ptr::copy_nonoverlapping(
-                    zenoh_payload.to_bytes().as_ptr(),
-                    iceoryx_payload.as_mut_ptr().cast(),
-                    zenoh_payload.len(),
+                    user_header_received.as_ptr(),
+                    iceoryx_sample.user_header_mut() as *mut CustomHeaderMarker as *mut u8,
+                    user_header_size,
+                );
+            }
+            unsafe {
+                core::ptr::copy_nonoverlapping(
+                    payload_received.as_ptr(),
+                    iceoryx_sample.payload_mut().as_mut_ptr().cast::<u8>(),
+                    payload_received.len(),
                 );
             }
             let initialized_sample = unsafe { iceoryx_sample.assume_init() };
@@ -215,4 +239,12 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
 
         Ok(None)
     }
+}
+
+fn user_header_size(static_config: &StaticConfig) -> usize {
+    static_config
+        .publish_subscribe()
+        .message_type_details()
+        .user_header
+        .size()
 }

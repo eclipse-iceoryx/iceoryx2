@@ -29,6 +29,21 @@ pub mod publish_subscribe_propagation {
     use iceoryx2_tunnel::Tunnel;
     use iceoryx2_tunnel_backend::traits::{testing::Testing, Backend};
 
+    #[derive(Default, Debug, Clone, PartialEq, ZeroCopySend)]
+    #[repr(C)]
+    pub struct MyHeader {
+        pub version: i32,
+        pub timestamp: u64,
+    }
+
+    #[derive(Debug, Clone, PartialEq, ZeroCopySend)]
+    #[repr(C)]
+    struct MyType {
+        id: u32,
+        value: f64,
+        active: bool,
+    }
+
     fn generate_service_name() -> ServiceName {
         ServiceName::new(&format!(
             "publish_subscribe_relay_tests_{}",
@@ -40,14 +55,6 @@ pub mod publish_subscribe_propagation {
     fn propagate_struct_payloads<S: Service, B: Backend<S> + Debug, T: Testing>(num: usize) {
         const MAX_ATTEMPTS: usize = 25;
         const TIMEOUT: Duration = Duration::from_millis(250);
-
-        #[derive(Debug, Clone, PartialEq, ZeroCopySend)]
-        #[repr(C)]
-        struct MyType {
-            id: u32,
-            value: f64,
-            active: bool,
-        }
 
         // === SETUP ===
         let service_name = generate_service_name();
@@ -66,6 +73,7 @@ pub mod publish_subscribe_propagation {
         let service_a = node_a
             .service_builder(&service_name)
             .publish_subscribe::<MyType>()
+            .user_header::<MyHeader>()
             .open_or_create()
             .unwrap();
         let publisher_a = service_a.publisher_builder().create().unwrap();
@@ -81,7 +89,7 @@ pub mod publish_subscribe_propagation {
         let mut tunnel_b =
             Tunnel::<S, B>::create(&tunnel_config_b, &iceoryx_config_b, &backend_config_b).unwrap();
 
-        // Wait for tunnel on host b to discover the service on host A
+        // Wait for tunnel on host B to discover the service on host A
         T::retry(
             || {
                 tunnel_b.discover_over_backend().unwrap();
@@ -89,15 +97,16 @@ pub mod publish_subscribe_propagation {
                 if service_discovered {
                     return Ok(());
                 }
-                Err("Failed to discover remote services")
+                Err("No services discovered")
             },
             TIMEOUT,
             Some(MAX_ATTEMPTS),
         )
-        .unwrap();
+        .unwrap_or_else(|e| panic!("Failed to discover remote services:\n{}", e));
+
         T::sync(service_a.service_id().as_str().to_string(), TIMEOUT);
 
-        // Create a subscribe to connect to the tunneled service
+        // Create a subscriber to connect to the tunneled service
         let node_b = NodeBuilder::new()
             .config(&iceoryx_config_b)
             .create::<S>()
@@ -105,6 +114,7 @@ pub mod publish_subscribe_propagation {
         let service_b = node_b
             .service_builder(&service_name)
             .publish_subscribe::<MyType>()
+            .user_header::<MyHeader>()
             .open_or_create()
             .unwrap();
         let subscriber_b = service_b.subscriber_builder().create().unwrap();
@@ -112,14 +122,19 @@ pub mod publish_subscribe_propagation {
         // === TEST ===
         for i in 0..num {
             // Publish
-            let payload_data = MyType {
+            let user_header_sent_at_a = MyHeader {
+                version: 0,
+                timestamp: 1000000000 + i as u64,
+            };
+            let payload_sent_at_a = MyType {
                 id: 42 + i as u32,
                 value: core::f64::consts::PI + i as f64,
                 active: i % 2 == 0,
             };
 
-            let sample_sent_at_a = publisher_a.loan_uninit().unwrap();
-            let sample_sent_at_a = sample_sent_at_a.write_payload(payload_data.clone());
+            let mut sample_sent_at_a = publisher_a.loan_uninit().unwrap();
+            *sample_sent_at_a.user_header_mut() = user_header_sent_at_a.clone();
+            let sample_sent_at_a = sample_sent_at_a.write_payload(payload_sent_at_a.clone());
             sample_sent_at_a.send().unwrap();
 
             // Propagate over tunnels
@@ -127,26 +142,30 @@ pub mod publish_subscribe_propagation {
                 || {
                     match subscriber_b.receive().unwrap() {
                         Some(sample_received_at_b) => {
+                            let user_header_received_at_b = sample_received_at_b.user_header();
                             let payload_received_at_b = sample_received_at_b.payload();
 
-                            // Check if we received the expected sample for this iteration
-                            if *payload_received_at_b == payload_data {
-                                Ok(())
-                            } else {
-                                Err("received unexpected sample")
+                            // Check correctly received header and payload
+                            if *user_header_received_at_b != user_header_sent_at_a {
+                                return Err("Failed to receive user header");
                             }
+                            if *payload_received_at_b != payload_sent_at_a {
+                                return Err("Failed to receive payload");
+                            };
+
+                            Ok(())
                         }
                         None => {
                             tunnel_a.propagate().unwrap();
                             tunnel_b.propagate().unwrap();
-                            Err("Failed to receive expected sample")
+                            Err("Failed to receive sample")
                         }
                     }
                 },
                 TIMEOUT,
                 Some(MAX_ATTEMPTS),
             )
-            .unwrap();
+            .unwrap_or_else(|e| panic!("Failed to propagate over tunnel:\n{}", e));
         }
     }
 
@@ -172,6 +191,7 @@ pub mod publish_subscribe_propagation {
         let service_a = node_a
             .service_builder(&service_name)
             .publish_subscribe::<[u8]>()
+            .user_header::<MyHeader>()
             .open_or_create()
             .unwrap();
         let publisher_a = service_a
@@ -199,12 +219,13 @@ pub mod publish_subscribe_propagation {
                 if service_discovered {
                     return Ok(());
                 }
-                Err("Failed to discover remote services")
+                Err("No services discovered")
             },
             TIMEOUT,
             Some(MAX_ATTEMPTS),
         )
-        .unwrap();
+        .unwrap_or_else(|e| panic!("Failed to discover remote services:\n{}", e));
+
         T::sync(service_a.service_id().as_str().to_string(), TIMEOUT);
 
         // Create a subscribe to connect to the tunneled service
@@ -215,6 +236,7 @@ pub mod publish_subscribe_propagation {
         let service_b = node_b
             .service_builder(&service_name)
             .publish_subscribe::<[u8]>()
+            .user_header::<MyHeader>()
             .open_or_create()
             .unwrap();
         let subscriber_b = service_b.subscriber_builder().create().unwrap();
@@ -222,42 +244,49 @@ pub mod publish_subscribe_propagation {
         // === TEST ===
         for i in 0..num {
             // Publish
-            let mut payload_data = String::with_capacity(PAYLOAD_DATA_LENGTH);
+            let user_header_sent_at_a = MyHeader {
+                version: 0,
+                timestamp: 1000000000 + i as u64,
+            };
+            let mut payload_sent_at_a = String::with_capacity(PAYLOAD_DATA_LENGTH);
             for j in 0..PAYLOAD_DATA_LENGTH {
                 let char_index = ((i * 7 + j * 13) % 26) as u8;
                 let char_value = (b'A' + char_index) as char;
-                payload_data.push(char_value);
+                payload_sent_at_a.push(char_value);
             }
 
-            let sample_sent_at_a = publisher_a.loan_slice_uninit(PAYLOAD_DATA_LENGTH).unwrap();
-            let sample_sent_at_a = sample_sent_at_a.write_from_slice(payload_data.as_bytes());
+            let mut sample_sent_at_a = publisher_a.loan_slice_uninit(PAYLOAD_DATA_LENGTH).unwrap();
+            *sample_sent_at_a.user_header_mut() = user_header_sent_at_a.clone();
+            let sample_sent_at_a = sample_sent_at_a.write_from_slice(payload_sent_at_a.as_bytes());
             sample_sent_at_a.send().unwrap();
 
             // Propagate over tunnels
             T::retry(
-                || {
-                    match subscriber_b.receive().unwrap() {
-                        Some(sample_received_at_b) => {
-                            let payload_received_at_b = sample_received_at_b.payload();
+                || match subscriber_b.receive().unwrap() {
+                    Some(sample_received_at_b) => {
+                        let user_header_received_at_b = sample_received_at_b.user_header();
+                        let payload_received_at_b = sample_received_at_b.payload();
 
-                            // Check if we received the expected sample for this iteration
-                            if *payload_received_at_b == *payload_data.as_bytes() {
-                                Ok(())
-                            } else {
-                                Err("received unexpected sample")
-                            }
+                        // Check correctly received headers and payload
+                        if *user_header_received_at_b != user_header_sent_at_a {
+                            return Err("Failed to receive user header");
                         }
-                        None => {
-                            tunnel_a.propagate().unwrap();
-                            tunnel_b.propagate().unwrap();
-                            Err("failed to receive expected sample")
-                        }
+                        if *payload_received_at_b != *payload_sent_at_a.as_bytes() {
+                            return Err("Failed to receive payload");
+                        };
+
+                        Ok(())
+                    }
+                    None => {
+                        tunnel_a.propagate().unwrap();
+                        tunnel_b.propagate().unwrap();
+                        Err("Failed to receive sample")
                     }
                 },
                 TIMEOUT,
                 Some(MAX_ATTEMPTS),
             )
-            .unwrap();
+            .unwrap_or_else(|e| panic!("Failed to propagate over tunnel:\n{}", e));
         }
     }
 
