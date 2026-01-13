@@ -21,7 +21,6 @@ use iceoryx2_tunnel_backend::{
     types::publish_subscribe::{LoanFn, SampleMut},
 };
 use zenoh::{
-    bytes::ZBytes,
     handlers::{FifoChannel, FifoChannelHandler},
     pubsub::{Publisher, Subscriber},
     qos::Reliability,
@@ -156,12 +155,11 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
         let bytes = payload.as_ptr() as *mut u8;
         let len = payload.len();
 
-        let payload = unsafe { ZBytes::from(core::slice::from_raw_parts(bytes, len)) };
         fail!(
             from self,
-            when self.publisher.put(payload).wait(),
+            when self.publisher.put(unsafe { core::slice::from_raw_parts(bytes, len) }).wait(),
             with SendError::PayloadPut,
-            "Failed to propagate propagate publish-subscribe payload to zenoh"
+            "Failed to propagate publish-subscribe payload to zenoh"
         );
 
         Ok(())
