@@ -499,6 +499,10 @@ jobs:
           cd iceoryx2-ffi/c
           cargo rustc -q -- --print=native-static-libs
 
+      - name: Remove files to increase available disk space
+        shell: bash
+        run: rm -rf ${{ github.workspace }}/target/${{ matrix.mode.name }}/{deps,incremental}
+
       - name: Build language bindings
         shell: bash
         run: |
