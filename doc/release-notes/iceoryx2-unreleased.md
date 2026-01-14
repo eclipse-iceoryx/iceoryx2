@@ -13,6 +13,9 @@
 
 * Allow `dyn` types as `WaitSet` attachments
   [#1285](https://github.com/eclipse-iceoryx/iceoryx2/issues/1285)
+* Propagate user headers in publish-subscribe samples in the reference tunnel
+  implementation
+  [#1289](https://github.com/eclipse-iceoryx/iceoryx2/issues/1289)
 
 ### Bugfixes
 
