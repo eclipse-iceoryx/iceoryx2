@@ -32,6 +32,7 @@ CRATES_TO_PUBLISH=(
     iceoryx2-pal-concurrency-sync
     iceoryx2-pal-posix
     iceoryx2-pal-os-api
+    iceoryx2-print
     iceoryx2-log-types
     iceoryx2-loggers
     iceoryx2-log

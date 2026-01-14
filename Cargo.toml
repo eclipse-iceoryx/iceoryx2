@@ -1,6 +1,8 @@
 [workspace]
 resolver = "2"
 members = [
+    "iceoryx2-cout/",
+
     "iceoryx2-log/log/",
     "iceoryx2-log/types/",
     "iceoryx2-log/loggers/",
@@ -77,6 +79,7 @@ rust-version = "1.83"
 version = "0.8.0"
 
 [workspace.dependencies]
+iceoryx2-cout = { version = "0.8.0", path = "iceoryx2-cout/" }
 iceoryx2-log = { version = "0.8.0", path = "iceoryx2-log/log/" }
 iceoryx2-log-types = { version = "0.8.0", path = "iceoryx2-log/types/" }
 iceoryx2-loggers = { version = "0.8.0", path = "iceoryx2-log/loggers/", default-features = false }
