@@ -1,5 +1,5 @@
 {
-  "checksum": "53b14139906047480ac43b2f4da6f130179fb63e7810ee3176ce520343e03b65",
+  "checksum": "5fe5f9873666c0739f0f8dd5549896804963b52cf3271c3bb5bf4675a42646eb",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -1390,9 +1390,9 @@
       ],
       "license_file": "LICENSE-APACHE"
     },
-    "benchmark-event 0.8.0": {
+    "benchmark-event 0.8.1": {
       "name": "benchmark-event",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [],
@@ -1411,7 +1411,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -1420,9 +1420,9 @@
       ],
       "license_file": null
     },
-    "benchmark-publish-subscribe 0.8.0": {
+    "benchmark-publish-subscribe 0.8.1": {
       "name": "benchmark-publish-subscribe",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [],
@@ -1441,7 +1441,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -1450,9 +1450,9 @@
       ],
       "license_file": null
     },
-    "benchmark-queue 0.8.0": {
+    "benchmark-queue 0.8.1": {
       "name": "benchmark-queue",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [],
@@ -1471,7 +1471,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -1480,9 +1480,9 @@
       ],
       "license_file": null
     },
-    "benchmark-request-response 0.8.0": {
+    "benchmark-request-response 0.8.1": {
       "name": "benchmark-request-response",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [],
@@ -1501,7 +1501,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -3125,9 +3125,9 @@
       ],
       "license_file": "LICENSE"
     },
-    "component-tests_rust 0.8.0": {
+    "component-tests_rust 0.8.1": {
       "name": "component-tests_rust",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [],
@@ -3137,7 +3137,7 @@
           "**"
         ],
         "edition": "2021",
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -5415,9 +5415,9 @@
       ],
       "license_file": "LICENSE-APACHE"
     },
-    "example 0.8.0": {
+    "example 0.8.1": {
       "name": "example",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -5449,7 +5449,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -7769,9 +7769,9 @@
       ],
       "license_file": "LICENSE-APACHE"
     },
-    "iceoryx2 0.8.0": {
+    "iceoryx2 0.8.1": {
       "name": "iceoryx2",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -7818,7 +7818,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -7827,9 +7827,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-bb-concurrency 0.8.0": {
+    "iceoryx2-bb-concurrency 0.8.1": {
       "name": "iceoryx2-bb-concurrency",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -7859,7 +7859,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -7868,9 +7868,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-bb-conformance-test-macros 0.8.0": {
+    "iceoryx2-bb-conformance-test-macros 0.8.1": {
       "name": "iceoryx2-bb-conformance-test-macros",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -7910,7 +7910,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -7919,9 +7919,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-bb-container 0.8.0": {
+    "iceoryx2-bb-container 0.8.1": {
       "name": "iceoryx2-bb-container",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -7971,7 +7971,7 @@
           ],
           "selects": {}
         },
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -7980,9 +7980,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-bb-derive-macros 0.8.0": {
+    "iceoryx2-bb-derive-macros 0.8.1": {
       "name": "iceoryx2-bb-derive-macros",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8022,7 +8022,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8031,9 +8031,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-bb-elementary 0.8.0": {
+    "iceoryx2-bb-elementary 0.8.1": {
       "name": "iceoryx2-bb-elementary",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8065,7 +8065,7 @@
           ],
           "selects": {}
         },
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8074,9 +8074,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-bb-elementary-traits 0.8.0": {
+    "iceoryx2-bb-elementary-traits 0.8.1": {
       "name": "iceoryx2-bb-elementary-traits",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8099,7 +8099,7 @@
           "**"
         ],
         "edition": "2021",
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8108,9 +8108,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-bb-linux 0.8.0": {
+    "iceoryx2-bb-linux 0.8.1": {
       "name": "iceoryx2-bb-linux",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8133,7 +8133,7 @@
           "**"
         ],
         "edition": "2021",
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8142,9 +8142,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-bb-lock-free 0.8.0": {
+    "iceoryx2-bb-lock-free 0.8.1": {
       "name": "iceoryx2-bb-lock-free",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8187,7 +8187,7 @@
           ],
           "selects": {}
         },
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8196,9 +8196,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-bb-memory 0.8.0": {
+    "iceoryx2-bb-memory 0.8.1": {
       "name": "iceoryx2-bb-memory",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8221,7 +8221,7 @@
           "**"
         ],
         "edition": "2021",
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8230,9 +8230,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-bb-posix 0.8.0": {
+    "iceoryx2-bb-posix 0.8.1": {
       "name": "iceoryx2-bb-posix",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8292,7 +8292,7 @@
           ],
           "selects": {}
         },
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8301,9 +8301,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-bb-system-types 0.8.0": {
+    "iceoryx2-bb-system-types 0.8.1": {
       "name": "iceoryx2-bb-system-types",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8335,7 +8335,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8344,9 +8344,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-bb-testing 0.8.0": {
+    "iceoryx2-bb-testing 0.8.1": {
       "name": "iceoryx2-bb-testing",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8369,7 +8369,7 @@
           "**"
         ],
         "edition": "2021",
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8378,9 +8378,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-bb-threadsafe 0.8.0": {
+    "iceoryx2-bb-threadsafe 0.8.1": {
       "name": "iceoryx2-bb-threadsafe",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8403,7 +8403,7 @@
           "**"
         ],
         "edition": "2021",
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8412,9 +8412,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-bb-trait-tests 0.8.0": {
+    "iceoryx2-bb-trait-tests 0.8.1": {
       "name": "iceoryx2-bb-trait-tests",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8446,7 +8446,7 @@
           ],
           "selects": {}
         },
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8455,9 +8455,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-cal 0.8.0": {
+    "iceoryx2-cal 0.8.1": {
       "name": "iceoryx2-cal",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8525,7 +8525,7 @@
           ],
           "selects": {}
         },
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8534,9 +8534,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-cal-conformance-tests 0.8.0": {
+    "iceoryx2-cal-conformance-tests 0.8.1": {
       "name": "iceoryx2-cal-conformance-tests",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8585,7 +8585,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8594,9 +8594,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-cli 0.8.0": {
+    "iceoryx2-cli 0.8.1": {
       "name": "iceoryx2-cli",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8704,7 +8704,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8713,9 +8713,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-conformance-tests 0.8.0": {
+    "iceoryx2-conformance-tests 0.8.1": {
       "name": "iceoryx2-conformance-tests",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8738,7 +8738,7 @@
           "**"
         ],
         "edition": "2021",
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8747,9 +8747,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-ffi-c 0.8.0": {
+    "iceoryx2-ffi-c 0.8.1": {
       "name": "iceoryx2-ffi-c",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8793,7 +8793,7 @@
         "deps": {
           "common": [
             {
-              "id": "iceoryx2-ffi-c 0.8.0",
+              "id": "iceoryx2-ffi-c 0.8.1",
               "target": "build_script_build"
             }
           ],
@@ -8809,7 +8809,7 @@
           ],
           "selects": {}
         },
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "build_script_attrs": {
         "compile_data_glob": [
@@ -8835,9 +8835,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-ffi-macros 0.8.0": {
+    "iceoryx2-ffi-macros 0.8.1": {
       "name": "iceoryx2-ffi-macros",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8877,7 +8877,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8886,9 +8886,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-ffi-python 0.8.0": {
+    "iceoryx2-ffi-python 0.8.1": {
       "name": "iceoryx2-ffi-python",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [],
@@ -8907,7 +8907,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8916,9 +8916,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-log 0.8.0": {
+    "iceoryx2-log 0.8.1": {
       "name": "iceoryx2-log",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8948,7 +8948,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8957,9 +8957,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-log-types 0.8.0": {
+    "iceoryx2-log-types 0.8.1": {
       "name": "iceoryx2-log-types",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8982,7 +8982,7 @@
           "**"
         ],
         "edition": "2021",
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8991,9 +8991,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-loggers 0.8.0": {
+    "iceoryx2-loggers 0.8.1": {
       "name": "iceoryx2-loggers",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -9038,14 +9038,14 @@
         "deps": {
           "common": [
             {
-              "id": "iceoryx2-loggers 0.8.0",
+              "id": "iceoryx2-loggers 0.8.1",
               "target": "build_script_build"
             }
           ],
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "build_script_attrs": {
         "compile_data_glob": [
@@ -9062,9 +9062,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-pal-concurrency-sync 0.8.0": {
+    "iceoryx2-pal-concurrency-sync 0.8.1": {
       "name": "iceoryx2-pal-concurrency-sync",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -9113,7 +9113,7 @@
           ],
           "selects": {}
         },
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -9122,9 +9122,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-pal-configuration 0.8.0": {
+    "iceoryx2-pal-configuration 0.8.1": {
       "name": "iceoryx2-pal-configuration",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -9161,14 +9161,14 @@
         "deps": {
           "common": [
             {
-              "id": "iceoryx2-pal-configuration 0.8.0",
+              "id": "iceoryx2-pal-configuration 0.8.1",
               "target": "build_script_build"
             }
           ],
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "build_script_attrs": {
         "compile_data_glob": [
@@ -9185,9 +9185,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-pal-os-api 0.8.0": {
+    "iceoryx2-pal-os-api 0.8.1": {
       "name": "iceoryx2-pal-os-api",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -9224,14 +9224,14 @@
         "deps": {
           "common": [
             {
-              "id": "iceoryx2-pal-os-api 0.8.0",
+              "id": "iceoryx2-pal-os-api 0.8.1",
               "target": "build_script_build"
             }
           ],
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "build_script_attrs": {
         "compile_data_glob": [
@@ -9261,9 +9261,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-pal-posix 0.8.0": {
+    "iceoryx2-pal-posix 0.8.1": {
       "name": "iceoryx2-pal-posix",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -9300,7 +9300,7 @@
         "deps": {
           "common": [
             {
-              "id": "iceoryx2-pal-posix 0.8.0",
+              "id": "iceoryx2-pal-posix 0.8.1",
               "target": "build_script_build"
             }
           ],
@@ -9326,7 +9326,7 @@
           }
         },
         "edition": "2021",
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "build_script_attrs": {
         "compile_data_glob": [
@@ -9356,9 +9356,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-pal-testing 0.8.0": {
+    "iceoryx2-pal-testing 0.8.1": {
       "name": "iceoryx2-pal-testing",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -9381,7 +9381,7 @@
           "**"
         ],
         "edition": "2021",
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -9390,9 +9390,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-services-discovery 0.8.0": {
+    "iceoryx2-services-discovery 0.8.1": {
       "name": "iceoryx2-services-discovery",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -9437,7 +9437,7 @@
           ],
           "selects": {}
         },
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -9446,9 +9446,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-tunnel 0.8.0": {
+    "iceoryx2-tunnel 0.8.1": {
       "name": "iceoryx2-tunnel",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -9480,7 +9480,7 @@
           ],
           "selects": {}
         },
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -9489,9 +9489,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-tunnel-backend 0.8.0": {
+    "iceoryx2-tunnel-backend 0.8.1": {
       "name": "iceoryx2-tunnel-backend",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -9514,7 +9514,7 @@
           "**"
         ],
         "edition": "2021",
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -9523,9 +9523,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-tunnel-conformance-tests 0.8.0": {
+    "iceoryx2-tunnel-conformance-tests 0.8.1": {
       "name": "iceoryx2-tunnel-conformance-tests",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -9548,7 +9548,7 @@
           "**"
         ],
         "edition": "2021",
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -9557,9 +9557,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-tunnel-end-to-end-tests 0.8.0": {
+    "iceoryx2-tunnel-end-to-end-tests 0.8.1": {
       "name": "iceoryx2-tunnel-end-to-end-tests",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -9591,7 +9591,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -9600,9 +9600,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-tunnel-zenoh 0.8.0": {
+    "iceoryx2-tunnel-zenoh 0.8.1": {
       "name": "iceoryx2-tunnel-zenoh",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -9638,7 +9638,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -9647,9 +9647,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-userland-record-and-replay 0.8.0": {
+    "iceoryx2-userland-record-and-replay 0.8.1": {
       "name": "iceoryx2-userland-record-and-replay",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -9685,7 +9685,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.8.0"
+        "version": "0.8.1"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -31696,49 +31696,49 @@
   },
   "binary_crates": [],
   "workspace_members": {
-    "benchmark-event 0.8.0": "benchmarks/event",
-    "benchmark-publish-subscribe 0.8.0": "benchmarks/publish-subscribe",
-    "benchmark-queue 0.8.0": "benchmarks/queue",
-    "benchmark-request-response 0.8.0": "benchmarks/request-response",
-    "component-tests_rust 0.8.0": "component-tests/rust",
-    "example 0.8.0": "examples",
-    "iceoryx2 0.8.0": "iceoryx2",
-    "iceoryx2-bb-concurrency 0.8.0": "iceoryx2-bb/concurrency",
-    "iceoryx2-bb-conformance-test-macros 0.8.0": "iceoryx2-bb/conformance-test-macros",
-    "iceoryx2-bb-container 0.8.0": "iceoryx2-bb/container",
-    "iceoryx2-bb-derive-macros 0.8.0": "iceoryx2-bb/derive-macros",
-    "iceoryx2-bb-elementary 0.8.0": "iceoryx2-bb/elementary",
-    "iceoryx2-bb-elementary-traits 0.8.0": "iceoryx2-bb/elementary-traits",
-    "iceoryx2-bb-linux 0.8.0": "iceoryx2-bb/linux",
-    "iceoryx2-bb-lock-free 0.8.0": "iceoryx2-bb/lock-free",
-    "iceoryx2-bb-memory 0.8.0": "iceoryx2-bb/memory",
-    "iceoryx2-bb-posix 0.8.0": "iceoryx2-bb/posix",
-    "iceoryx2-bb-system-types 0.8.0": "iceoryx2-bb/system-types",
-    "iceoryx2-bb-testing 0.8.0": "iceoryx2-bb/testing",
-    "iceoryx2-bb-threadsafe 0.8.0": "iceoryx2-bb/threadsafe",
-    "iceoryx2-bb-trait-tests 0.8.0": "iceoryx2-bb/trait-tests",
-    "iceoryx2-cal 0.8.0": "iceoryx2-cal",
-    "iceoryx2-cal-conformance-tests 0.8.0": "iceoryx2-cal/conformance-tests",
-    "iceoryx2-cli 0.8.0": "iceoryx2-cli",
-    "iceoryx2-conformance-tests 0.8.0": "iceoryx2/conformance-tests",
-    "iceoryx2-ffi-c 0.8.0": "iceoryx2-ffi/c",
-    "iceoryx2-ffi-macros 0.8.0": "iceoryx2-ffi/ffi-macros",
-    "iceoryx2-ffi-python 0.8.0": "iceoryx2-ffi/python",
-    "iceoryx2-log 0.8.0": "iceoryx2-log/log",
-    "iceoryx2-log-types 0.8.0": "iceoryx2-log/types",
-    "iceoryx2-loggers 0.8.0": "iceoryx2-log/loggers",
-    "iceoryx2-pal-concurrency-sync 0.8.0": "iceoryx2-pal/concurrency-sync",
-    "iceoryx2-pal-configuration 0.8.0": "iceoryx2-pal/configuration",
-    "iceoryx2-pal-os-api 0.8.0": "iceoryx2-pal/os-api",
-    "iceoryx2-pal-posix 0.8.0": "iceoryx2-pal/posix",
-    "iceoryx2-pal-testing 0.8.0": "iceoryx2-pal/testing",
-    "iceoryx2-services-discovery 0.8.0": "iceoryx2-services/discovery",
-    "iceoryx2-tunnel 0.8.0": "iceoryx2-tunnel/tunnel",
-    "iceoryx2-tunnel-backend 0.8.0": "iceoryx2-tunnel/backend",
-    "iceoryx2-tunnel-conformance-tests 0.8.0": "iceoryx2-tunnel/conformance-tests",
-    "iceoryx2-tunnel-end-to-end-tests 0.8.0": "iceoryx2-tunnel/end-to-end-tests",
-    "iceoryx2-tunnel-zenoh 0.8.0": "iceoryx2-tunnel/zenoh",
-    "iceoryx2-userland-record-and-replay 0.8.0": "iceoryx2-userland/record-and-replay"
+    "benchmark-event 0.8.1": "benchmarks/event",
+    "benchmark-publish-subscribe 0.8.1": "benchmarks/publish-subscribe",
+    "benchmark-queue 0.8.1": "benchmarks/queue",
+    "benchmark-request-response 0.8.1": "benchmarks/request-response",
+    "component-tests_rust 0.8.1": "component-tests/rust",
+    "example 0.8.1": "examples",
+    "iceoryx2 0.8.1": "iceoryx2",
+    "iceoryx2-bb-concurrency 0.8.1": "iceoryx2-bb/concurrency",
+    "iceoryx2-bb-conformance-test-macros 0.8.1": "iceoryx2-bb/conformance-test-macros",
+    "iceoryx2-bb-container 0.8.1": "iceoryx2-bb/container",
+    "iceoryx2-bb-derive-macros 0.8.1": "iceoryx2-bb/derive-macros",
+    "iceoryx2-bb-elementary 0.8.1": "iceoryx2-bb/elementary",
+    "iceoryx2-bb-elementary-traits 0.8.1": "iceoryx2-bb/elementary-traits",
+    "iceoryx2-bb-linux 0.8.1": "iceoryx2-bb/linux",
+    "iceoryx2-bb-lock-free 0.8.1": "iceoryx2-bb/lock-free",
+    "iceoryx2-bb-memory 0.8.1": "iceoryx2-bb/memory",
+    "iceoryx2-bb-posix 0.8.1": "iceoryx2-bb/posix",
+    "iceoryx2-bb-system-types 0.8.1": "iceoryx2-bb/system-types",
+    "iceoryx2-bb-testing 0.8.1": "iceoryx2-bb/testing",
+    "iceoryx2-bb-threadsafe 0.8.1": "iceoryx2-bb/threadsafe",
+    "iceoryx2-bb-trait-tests 0.8.1": "iceoryx2-bb/trait-tests",
+    "iceoryx2-cal 0.8.1": "iceoryx2-cal",
+    "iceoryx2-cal-conformance-tests 0.8.1": "iceoryx2-cal/conformance-tests",
+    "iceoryx2-cli 0.8.1": "iceoryx2-cli",
+    "iceoryx2-conformance-tests 0.8.1": "iceoryx2/conformance-tests",
+    "iceoryx2-ffi-c 0.8.1": "iceoryx2-ffi/c",
+    "iceoryx2-ffi-macros 0.8.1": "iceoryx2-ffi/ffi-macros",
+    "iceoryx2-ffi-python 0.8.1": "iceoryx2-ffi/python",
+    "iceoryx2-log 0.8.1": "iceoryx2-log/log",
+    "iceoryx2-log-types 0.8.1": "iceoryx2-log/types",
+    "iceoryx2-loggers 0.8.1": "iceoryx2-log/loggers",
+    "iceoryx2-pal-concurrency-sync 0.8.1": "iceoryx2-pal/concurrency-sync",
+    "iceoryx2-pal-configuration 0.8.1": "iceoryx2-pal/configuration",
+    "iceoryx2-pal-os-api 0.8.1": "iceoryx2-pal/os-api",
+    "iceoryx2-pal-posix 0.8.1": "iceoryx2-pal/posix",
+    "iceoryx2-pal-testing 0.8.1": "iceoryx2-pal/testing",
+    "iceoryx2-services-discovery 0.8.1": "iceoryx2-services/discovery",
+    "iceoryx2-tunnel 0.8.1": "iceoryx2-tunnel/tunnel",
+    "iceoryx2-tunnel-backend 0.8.1": "iceoryx2-tunnel/backend",
+    "iceoryx2-tunnel-conformance-tests 0.8.1": "iceoryx2-tunnel/conformance-tests",
+    "iceoryx2-tunnel-end-to-end-tests 0.8.1": "iceoryx2-tunnel/end-to-end-tests",
+    "iceoryx2-tunnel-zenoh 0.8.1": "iceoryx2-tunnel/zenoh",
+    "iceoryx2-userland-record-and-replay 0.8.1": "iceoryx2-userland/record-and-replay"
   },
   "conditions": {
     "aarch64-apple-darwin": [
