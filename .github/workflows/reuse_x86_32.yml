@@ -9,10 +9,7 @@ on:
       toolchain:
         required: true
         type: string
-      name:
-        required: true
-        type: string
-      mode:
+      cargo-build-type-flag:
         required: true
         type: string
       cmake-build-type:
@@ -73,10 +70,10 @@ jobs:
           uname -a
 
       - name: Run cargo build
-        run: cargo build --workspace --exclude iceoryx2-ffi-python --all-targets ${{ inputs.mode }} --target i686-unknown-linux-gnu
+        run: cargo build --workspace --exclude iceoryx2-ffi-python --all-targets ${{ inputs.cargo-build-type-flag }} --target i686-unknown-linux-gnu
 
       - name: Run cargo nextest
-        run: cargo nextest run --workspace --exclude iceoryx2-ffi-python --all-targets --no-fail-fast ${{ inputs.mode }} --target i686-unknown-linux-gnu
+        run: cargo nextest run --workspace --exclude iceoryx2-ffi-python --all-targets --no-fail-fast ${{ inputs.cargo-build-type-flag }} --target i686-unknown-linux-gnu
 
       - name: Build language bindings
         shell: bash
@@ -88,7 +85,7 @@ jobs:
                 -DBUILD_TESTING=ON \
                 -DCMAKE_C_FLAGS="-m32 -malign-double" \
                 -DCMAKE_CXX_FLAGS="-m32 -malign-double" \
-                -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/i686-unknown-linux-gnu/${{ inputs.name }}" \
+                -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/i686-unknown-linux-gnu/${{ inputs.cargo-build-type-flag }}" \
                 ${{ inputs.cmake-build-type }} \
                 -DCMAKE_C_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=sccache

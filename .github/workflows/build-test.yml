@@ -298,8 +298,7 @@ jobs:
     with:
       os: ${{ matrix.os }}
       toolchain: ${{ matrix.toolchain }}
-      name: "debug"
-      mode: "" # debug mode by default in cargo
+      cargo-build-type-flag: "debug"
       cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug"
 
   x86_64:
@@ -309,26 +308,29 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         toolchain: [stable, 1.83.0]
-        mode:
-          - name: "debug"
-            arg: ""
+        include:
+          - mode: "debug"
             cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug" # required for Makefile Generators at config time
             cmake-build-config: "--config Debug" # required for Visual Studio at build and install time
-        cargo-features-flag: ["", "--features libc_platform"]
-        exclude:
-          - os: windows-latest
+          - os: ubuntu-latest
+            toolchain: stable
+            mode: "debug"
+            cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug"
             cargo-features-flag: "--features libc_platform"
-          - os: macos-latest
-            cargo-features-flag: "--features libc_platform"
+          - os: ubuntu-latest
+            toolchain: 1.83.0
+            mode: "debug"
+            cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug"
+            cargo-features-flag: "--features iceoryx2/libc_platform" # NOTE: using 'iceoryx2/libc_platform' to trigger the feature
     uses: ./.github/workflows/reuse_x86_64_stable.yml
     with:
       os: ${{ matrix.os }}
       toolchain: ${{ matrix.toolchain }}
       mode-name: ${{ matrix.mode.name }}
-      mode-arg: ${{ matrix.mode.arg }}
-      mode-cmake-build-type: ${{ matrix.mode.cmake-build-type }}
-      mode-cmake-build-config: ${{ matrix.mode.cmake-build-config }}
-      mode-cmake-cxx-flags: ${{ matrix.mode.cmake-cxx-flags }}
+      mode-cmake-build-type: ${{ matrix.cmake-build-type }}
+      mode-cmake-build-config: ${{ matrix.cmake-build-config }}
+      mode-cmake-cxx-flags: ""
+      cargo-build-type-flag: "" # intentionally left blank because cargo builds in debug mode by default
       cargo-features-flag: ${{ matrix.cargo-features-flag }}
 
   x86_64-stable-release:
@@ -339,10 +341,10 @@ jobs:
       os: ubuntu-latest
       toolchain: stable
       mode-name: "release"
-      mode-arg: "--release"
       mode-cmake-build-type: "-DCMAKE_BUILD_TYPE=Release"
       mode-cmake-build-config: "--config Release"
       mode-cmake-cxx-flags: ""
+      cargo-build-type-flag: "--release"
       cargo-features-flag: ""
 
   x86_64_unstable:
@@ -351,15 +353,12 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        toolchain: [nightly]
-        mode:
-          - name: "debug"
-            arg: ""
+        toolchain: [beta, nightly]
     uses: ./.github/workflows/reuse_x86_64_unstable.yml
     with:
       os: ${{ matrix.os }}
       toolchain: ${{ matrix.toolchain }}
-      mode-arg: ${{ matrix.mode.arg }}
+      cargo-build-type-flag: "" # intentionally left blank because cargo builds in debug mode by default
 
   x86_64_bazel:
     needs: [preflight-check, static-code-analysis]
