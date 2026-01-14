@@ -38,7 +38,8 @@
     conflicts when merging.
 -->
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+* Move character output abstraction to separate crate
+  [#1300](https://github.com/eclipse-iceoryx/iceoryx2/issues/1300)
 
 ### Workflow
 
