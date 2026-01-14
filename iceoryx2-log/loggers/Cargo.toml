@@ -17,12 +17,15 @@ workspace = true
 default = []
 
 # Use the std module
-std = []
+std = [
+  "iceoryx2-print/std",
+  "iceoryx2-pal-concurrency-sync/std"
+]
 # Use POSIX APIs
-posix = ["iceoryx2-pal-posix"]
-# Stub out logging for Bare Metal
-# TODO: Add and use abstraction for character output
-bare_metal = []
+posix = [
+  "iceoryx2-pal-posix",
+  "iceoryx2-print/posix"
+]
 
 # Enables logging to buffer
 buffer = []
@@ -39,6 +42,7 @@ tracing = ["dep:tracing"]
 iceoryx2-log-types = { workspace = true }
 iceoryx2-pal-concurrency-sync = { workspace = true }
 iceoryx2-pal-posix = { workspace = true, optional = true }
+iceoryx2-print = { workspace = true }
 
 log = { workspace = true, optional = true }
 tracing = { workspace = true, optional = true }

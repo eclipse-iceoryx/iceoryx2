@@ -11,26 +11,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 fn main() {
-    // Validate platform selection
-    if cfg!(all(feature = "std", feature = "posix")) {
-        panic!("Cannot enable both 'std' and 'posix' features simultaneously");
-    }
-
-    if cfg!(all(feature = "std", feature = "bare_metal")) {
-        panic!("Cannot enable both 'std' and 'bare_metal' features simultaneously");
-    }
-
-    if cfg!(all(feature = "posix", feature = "bare_metal")) {
-        panic!("Cannot enable both 'posix' and 'bare_metal' features simultaneously");
-    }
-    if !cfg!(any(
-        feature = "std",
-        feature = "posix",
-        feature = "bare_metal"
-    )) {
-        println!("cargo:warning=No platform feature selected ('std', 'posix', or 'bare_metal'). Log output may be discarded.");
-    }
-
     // Validate logger selection
     if cfg!(all(feature = "buffer", feature = "file")) {
         panic!("Cannot enable both 'buffer' and 'file' features simultaneously");
@@ -73,39 +53,16 @@ fn main() {
     }
 
     // Prevent invalid platform-logger combinations
-    if cfg!(all(feature = "posix", feature = "buffer")) {
-        panic!("Invalid combination: 'posix' does not support 'buffer' logger");
+    if cfg!(all(not(feature = "std"), feature = "buffer")) {
+        panic!("Invalid combination: 'buffer' logger is only available for 'std' builds");
     }
-
-    if cfg!(all(feature = "posix", feature = "file")) {
-        panic!("Invalid combination: 'posix' does not support 'file' logger");
+    if cfg!(all(not(feature = "std"), feature = "file")) {
+        panic!("Invalid combination: 'file' logger is only available for 'std' builds");
     }
-
-    if cfg!(all(feature = "posix", feature = "log")) {
-        panic!("Invalid combination: 'posix' does not support 'log' (requires std)");
+    if cfg!(all(not(feature = "std"), feature = "log")) {
+        panic!("Invalid combination: 'log' logger is only available for 'std' builds");
     }
-
-    if cfg!(all(feature = "posix", feature = "tracing")) {
-        panic!("Invalid combination: 'posix' does not support 'tracing' (requires std)");
-    }
-
-    if cfg!(all(feature = "bare_metal", feature = "console")) {
-        panic!("Invalid combination: 'bare_metal' does not support 'console' logger");
-    }
-
-    if cfg!(all(feature = "bare_metal", feature = "buffer")) {
-        panic!("Invalid combination: 'bare_metal' does not support 'buffer' logger");
-    }
-
-    if cfg!(all(feature = "bare_metal", feature = "file")) {
-        panic!("Invalid combination: 'bare_metal' does not support 'file' logger");
-    }
-
-    if cfg!(all(feature = "bare_metal", feature = "log")) {
-        panic!("Invalid combination: 'bare_metal' does not support 'log' (requires std)");
-    }
-
-    if cfg!(all(feature = "bare_metal", feature = "tracing")) {
-        panic!("Invalid combination: 'bare_metal' does not support 'tracing' (requires std)");
+    if cfg!(all(not(feature = "std"), feature = "tracing")) {
+        panic!("Invalid combination: 'tracing' logger is only available for 'std' builds");
     }
 }

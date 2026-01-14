@@ -21,7 +21,6 @@ use iceoryx2::{
     port::{listener::Listener, subscriber::Subscriber},
     prelude::*,
 };
-use iceoryx2_log::cout;
 
 const REACTION_BUFFER_MS: u64 = 500;
 const CYCLE_TIME_1: Duration = Duration::from_millis(1000 + REACTION_BUFFER_MS);

@@ -29,10 +29,11 @@ rust_library(
         "//conditions:default": [],
     }),
     deps = [
+        "//iceoryx2-print:iceoryx2-print",
+        "//iceoryx2-log/log:iceoryx2-log",
         "//iceoryx2-bb/container:iceoryx2-bb-container",
         "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
         "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
-        "//iceoryx2-log/log:iceoryx2-log",
         "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
         "//iceoryx2-pal/configuration:iceoryx2-pal-configuration",
         "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",

@@ -17,7 +17,6 @@ use alloc::boxed::Box;
 
 use iceoryx2::prelude::*;
 use iceoryx2_bb_container::{queue::FixedSizeQueue, string::*, vector::*};
-use iceoryx2_log::cout;
 
 // For both data types we derive from PlacementDefault to allow in memory initialization
 // without any copy. Avoids stack overflows when data type is larger than the available stack.

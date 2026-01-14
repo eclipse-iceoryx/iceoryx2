@@ -1,5 +1,5 @@
 {
-  "checksum": "da954f784ffd28752a9b1932af8e46b3486450ef0776c29b5bb6b8a159bde193",
+  "checksum": "c92bafa0dfa73ce00526ff05fd0681a71fbab4207177134a25f3af5fe76dd28d",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -9340,7 +9340,8 @@
         ],
         "crate_features": {
           "common": [
-            "default"
+            "default",
+            "std"
           ],
           "selects": {}
         },
@@ -9632,6 +9633,47 @@
         "compile_data_glob": [
           "**"
         ],
+        "edition": "2021",
+        "version": "0.8.0"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-print 0.8.0": {
+      "name": "iceoryx2-print",
+      "version": "0.8.0",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_print",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_print",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
         "edition": "2021",
         "version": "0.8.0"
       },
@@ -33465,6 +33507,7 @@
     "iceoryx2-pal-os-api 0.8.0": "iceoryx2-pal/os-api",
     "iceoryx2-pal-posix 0.8.0": "iceoryx2-pal/posix",
     "iceoryx2-pal-testing 0.8.0": "iceoryx2-pal/testing",
+    "iceoryx2-print 0.8.0": "iceoryx2-print",
     "iceoryx2-services-discovery 0.8.0": "iceoryx2-services/discovery",
     "iceoryx2-tunnel 0.8.0": "iceoryx2-tunnel/tunnel",
     "iceoryx2-tunnel-backend 0.8.0": "iceoryx2-tunnel/backend",

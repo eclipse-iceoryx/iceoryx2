@@ -16,11 +16,11 @@ posix-nostd-common = { path = "_common/" }
 posix-nostd-publish-subscribe = { path = "publish-subscribe/" }
 posix-nostd-event = { path = "event/" }
 
-iceoryx2 = { path = "../../../../iceoryx2/", default-features = false }
 iceoryx2-loggers = { path = "../../../../iceoryx2-log/loggers", default-features = false, features = ["posix", "console"]}
 iceoryx2-bb-elementary-traits = { path = "../../../../iceoryx2-bb/elementary-traits" }
 iceoryx2-bb-memory = { path = "../../../../iceoryx2-bb/memory" }
 iceoryx2-bb-posix = { path = "../../../../iceoryx2-bb/posix" }
+iceoryx2 = { path = "../../../../iceoryx2/", default-features = false }
 
 [profile.dev]
 panic = "abort"

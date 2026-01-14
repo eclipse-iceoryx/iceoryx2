@@ -41,4 +41,4 @@ pub use iceoryx2_log::set_log_level_from_env_or;
 pub use iceoryx2_log::set_log_level_from_env_or_default;
 pub use iceoryx2_log::set_logger;
 pub use iceoryx2_log::LogLevel;
-pub use iceoryx2_log::{cerr, cout};
+pub use iceoryx2_print::{cerr, cout};

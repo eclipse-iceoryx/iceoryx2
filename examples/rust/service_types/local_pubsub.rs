@@ -19,7 +19,6 @@ use alloc::boxed::Box;
 use iceoryx2::prelude::*;
 use iceoryx2_bb_posix::clock::nanosleep;
 use iceoryx2_bb_posix::thread::{ThreadBuilder, ThreadName};
-use iceoryx2_log::cout;
 
 static KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
 const CYCLE_TIME: Duration = Duration::from_secs(1);

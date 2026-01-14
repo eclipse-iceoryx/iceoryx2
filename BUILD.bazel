@@ -346,6 +346,7 @@ filegroup(
         "//benchmarks/queue:all_srcs",
         "//benchmarks/request-response:all_srcs",
         "//component-tests/rust:all_srcs",
+        "//iceoryx2-print:all_srcs",
         "//iceoryx2-log/log:all_srcs",
         "//iceoryx2-log/loggers:all_srcs",
         "//iceoryx2-log/types:all_srcs",

@@ -130,8 +130,6 @@ pub use from_env::{set_log_level_from_env_or, set_log_level_from_env_or_default}
 // Re-export so library crates need only depend on this crate
 pub use iceoryx2_log_types::{Log, LogLevel};
 
-use core::fmt::Write;
-
 use iceoryx2_pal_concurrency_sync::atomic::AtomicU8;
 use iceoryx2_pal_concurrency_sync::atomic::Ordering;
 use iceoryx2_pal_concurrency_sync::once::Once;
@@ -258,30 +256,4 @@ pub fn __internal_print_log_msg(
 
 extern "Rust" {
     fn __internal_default_logger() -> &'static dyn Log;
-    fn __internal_stdout() -> &'static mut dyn Write;
-    fn __internal_stderr() -> &'static mut dyn Write;
-}
-
-#[inline(always)]
-pub fn stdout() -> &'static mut dyn Write {
-    unsafe { __internal_stdout() }
-}
-
-#[inline(always)]
-pub fn stderr() -> &'static mut dyn Write {
-    unsafe { __internal_stderr() }
-}
-
-#[macro_export]
-macro_rules! cout {
-    ($($arg:tt)*) => {{
-        let _ = core::writeln!($crate::stdout(), $($arg)*);
-    }};
-}
-
-#[macro_export]
-macro_rules! cerr {
-    ($($arg:tt)*) => {
-        let _ = core::writeln!($crate::stderr(), $($arg)*);
-    };
 }

@@ -1338,6 +1338,7 @@ dependencies = [
  "iceoryx2-loggers",
  "iceoryx2-pal-configuration",
  "iceoryx2-pal-testing",
+ "iceoryx2-print",
  "serde",
  "tiny-fn",
  "toml 0.9.8",
@@ -1472,6 +1473,7 @@ dependencies = [
  "iceoryx2-pal-configuration",
  "iceoryx2-pal-posix",
  "iceoryx2-pal-testing",
+ "iceoryx2-print",
  "lazy_static",
  "serde",
  "tiny-fn",
@@ -1639,15 +1641,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "iceoryx2-cout"
-version = "0.8.0"
-dependencies = [
- "iceoryx2-log-types",
- "iceoryx2-pal-concurrency-sync",
- "iceoryx2-pal-posix",
-]
-
-[[package]]
 name = "iceoryx2-ffi-c"
 version = "0.8.0"
 dependencies = [
@@ -1709,6 +1702,7 @@ dependencies = [
  "iceoryx2-log-types",
  "iceoryx2-pal-concurrency-sync",
  "iceoryx2-pal-posix",
+ "iceoryx2-print",
  "log",
  "tracing",
 ]
@@ -1754,6 +1748,13 @@ name = "iceoryx2-pal-testing"
 version = "0.8.0"
 dependencies = [
  "iceoryx2-pal-configuration",
+]
+
+[[package]]
+name = "iceoryx2-print"
+version = "0.8.0"
+dependencies = [
+ "iceoryx2-pal-posix",
 ]
 
 [[package]]

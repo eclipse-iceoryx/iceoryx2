@@ -21,17 +21,17 @@ pub fn is_terminal() -> bool {
     #[cfg(feature = "std")]
     {
         use std::io::IsTerminal;
-        return std::io::stderr().is_terminal();
+        std::io::stderr().is_terminal()
     }
 
     #[cfg(not(feature = "std"))]
-    return false;
+    false
 }
-
 
 #[macro_export]
 macro_rules! cout {
     ($($arg:tt)*) => {{
+        use core::fmt::Write as _;
         let _ = core::writeln!($crate::writer::stdout(), $($arg)*);
     }};
 }
@@ -39,6 +39,7 @@ macro_rules! cout {
 #[macro_export]
 macro_rules! cerr {
     ($($arg:tt)*) => {
+        use core::fmt::Write as _;
         let _ = core::writeln!($crate::writer::stderr(), $($arg)*);
     };
 }

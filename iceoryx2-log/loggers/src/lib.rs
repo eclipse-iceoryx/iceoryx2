@@ -50,8 +50,6 @@
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 
-use core::fmt::Write;
-
 use iceoryx2_log_types::Log;
 
 #[cfg(feature = "buffer")]
@@ -66,19 +64,8 @@ mod log;
 mod tracing;
 
 mod null;
-mod writer;
 
 extern crate alloc;
-
-#[no_mangle]
-pub extern "Rust" fn __internal_stdout() -> &'static mut dyn Write {
-    writer::stdout()
-}
-
-#[no_mangle]
-pub extern "Rust" fn __internal_stderr() -> &'static mut dyn Write {
-    writer::stderr()
-}
 
 #[cfg(feature = "console")]
 #[no_mangle]
