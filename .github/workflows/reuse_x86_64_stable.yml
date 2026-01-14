@@ -12,7 +12,7 @@ on:
       mode-name:
         required: true
         type: string
-      mode-arg:
+      cargo-build-type-flag:
         required: true
         type: string
       mode-cmake-build-type:
@@ -81,11 +81,15 @@ jobs:
           internal/scripts/ci_prepare_ubuntu.sh
           uname -a
 
+      - name: Additional setup for libc_platform
+        if: ${{ contains(inputs.cargo-features-flag, 'libc_platform') }}
+        run: sudo apt remove -y --purge '^libclang-.*-dev' # remove libclang to force a compile error if the feature is not propagated correctly and bindgen is used
+
       - name: Run cargo build
-        run: cargo build --workspace --all-targets ${{ inputs.mode-arg }} ${{ inputs.cargo-features-flag }}
+        run: cargo build --workspace --all-targets ${{ inputs.cargo-build-type-flag }} ${{ inputs.cargo-features-flag }}
 
       - name: Run cargo nextest
-        run: cargo nextest run --workspace --all-targets --no-fail-fast ${{ inputs.mode-arg }} ${{ inputs.cargo-features-flag }}
+        run: cargo nextest run --workspace --all-targets --no-fail-fast ${{ inputs.cargo-build-type-flag }} ${{ inputs.cargo-features-flag }}
 
       - name: Print native libs of FFI target
         if: false # This step takes 1 to 2 minutes; only enable if there are linker issues with the FFI target
