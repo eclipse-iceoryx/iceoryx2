@@ -25,9 +25,11 @@ use alloc::rc::Rc;
 use iceoryx2::prelude::{
     ipc, set_log_level_from_env_or, LogLevel, NodeBuilder, WaitSetAttachmentId, WaitSetBuilder,
 };
+use iceoryx2_bb_posix::clock::*;
 use iceoryx2_log::info;
 use iceoryx2_tunnel_end_to_end_tests::cli::*;
 use iceoryx2_tunnel_end_to_end_tests::config::*;
+use iceoryx2_tunnel_end_to_end_tests::header::CustomHeader;
 use iceoryx2_tunnel_end_to_end_tests::payload::*;
 use iceoryx2_tunnel_end_to_end_tests::testing::*;
 
@@ -39,6 +41,7 @@ fn run_pinger<P: PayloadWriter>() -> Result<(), Box<dyn core::error::Error>> {
     let ping_publisher = node
         .service_builder(&PING_SERVICE_NAME.try_into()?)
         .publish_subscribe::<P::PayloadType>()
+        .user_header::<CustomHeader>()
         .history_size(HISTORY_SIZE)
         .open_or_create()?
         .publisher_builder()
@@ -54,6 +57,7 @@ fn run_pinger<P: PayloadWriter>() -> Result<(), Box<dyn core::error::Error>> {
     let pong_subscriber = node
         .service_builder(&PONG_SERVICE_NAME.try_into()?)
         .publish_subscribe::<P::PayloadType>()
+        .user_header::<CustomHeader>()
         .history_size(HISTORY_SIZE)
         .open_or_create()?
         .subscriber_builder()
@@ -81,7 +85,10 @@ fn run_pinger<P: PayloadWriter>() -> Result<(), Box<dyn core::error::Error>> {
         P::write_payload(ptr.cast());
     }
 
-    // Wrap in Rc since on_event required to be FnMut as closure technically can run N times
+    let header = CustomHeader {
+        version: 0,
+        timestamp: Time::now().unwrap().as_duration().as_nanos() as u64,
+    };
     let payload = Rc::from(ptr as *const P::PayloadType);
 
     let on_event = |id: WaitSetAttachmentId<ipc::Service>| {
@@ -89,15 +96,21 @@ fn run_pinger<P: PayloadWriter>() -> Result<(), Box<dyn core::error::Error>> {
             match pong_subscriber.receive() {
                 Ok(sample) => match sample {
                     Some(pong_sample) => {
-                        if pong_sample.payload() == unsafe { &**payload } {
-                            pass_test();
-                        } else {
+                        if *pong_sample.user_header() != header {
                             fail_test(&format!(
-                                "Unexpected sample received at subscriber. Sent: {:?}, Received: {:?}",
+                                "Received user header not matching. Sent: {:?}, Received: {:?}",
+                                header,
+                                *pong_sample.user_header()
+                            ));
+                        }
+                        if pong_sample.payload() != unsafe { &**payload } {
+                            fail_test(&format!(
+                                "Received payload not matching. Sent: {:?}, Received: {:?}",
                                 *payload,
                                 *pong_sample.payload()
                             ));
                         }
+                        pass_test();
                     }
                     None => {
                         fail_test("None sample at Pong Subscriber");
@@ -117,6 +130,7 @@ fn run_pinger<P: PayloadWriter>() -> Result<(), Box<dyn core::error::Error>> {
 
     let mut ping_sample = ping_publisher.loan_uninit()?;
 
+    *ping_sample.user_header_mut() = header.clone();
     // The bytes of the payload are copied directly into shared memory, by-passing stack
     unsafe {
         copy_nonoverlapping(

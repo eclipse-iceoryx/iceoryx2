@@ -23,6 +23,7 @@ use iceoryx2::prelude::{
 use iceoryx2_log::info;
 use iceoryx2_tunnel_end_to_end_tests::cli::*;
 use iceoryx2_tunnel_end_to_end_tests::config::*;
+use iceoryx2_tunnel_end_to_end_tests::header::CustomHeader;
 use iceoryx2_tunnel_end_to_end_tests::payload::*;
 
 use clap::Parser;
@@ -33,6 +34,7 @@ fn run_ponger<P: PayloadWriter>() -> Result<(), Box<dyn core::error::Error>> {
     let ping_subscriber = node
         .service_builder(&PING_SERVICE_NAME.try_into()?)
         .publish_subscribe::<P::PayloadType>()
+        .user_header::<CustomHeader>()
         .history_size(HISTORY_SIZE)
         .open_or_create()?
         .subscriber_builder()
@@ -48,6 +50,7 @@ fn run_ponger<P: PayloadWriter>() -> Result<(), Box<dyn core::error::Error>> {
     let pong_publisher = node
         .service_builder(&PONG_SERVICE_NAME.try_into()?)
         .publish_subscribe::<P::PayloadType>()
+        .user_header::<CustomHeader>()
         .history_size(HISTORY_SIZE)
         .open_or_create()?
         .publisher_builder()
@@ -73,6 +76,7 @@ fn run_ponger<P: PayloadWriter>() -> Result<(), Box<dyn core::error::Error>> {
 
                 // Copy the received ping payload directly into the pong payload, by-passing stack
                 unsafe {
+                    *pong_sample.user_header_mut() = ping_sample.user_header().clone();
                     copy_nonoverlapping(
                         ping_sample.payload() as *const P::PayloadType as *const u8,
                         pong_sample.payload_mut().as_mut_ptr().cast(),

@@ -10,8 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub mod cli;
-pub mod config;
-pub mod header;
-pub mod payload;
-pub mod testing;
+use iceoryx2::prelude::ZeroCopySend;
+
+#[derive(Default, Clone, PartialEq, Debug, ZeroCopySend)]
+#[repr(C)]
+pub struct CustomHeader {
+    pub version: i32,
+    pub timestamp: u64,
+}
