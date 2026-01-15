@@ -12,6 +12,8 @@
 
 use core::time::Duration;
 
+use alloc::collections::btree_set::BTreeSet;
+use alloc::vec::Vec;
 use alloc::{format, string::String};
 
 use iceoryx2_bb_posix::clock::nanosleep;
@@ -27,13 +29,23 @@ pub trait Testing {
     {
         let mut attempt = 0;
 
+        let mut errors = BTreeSet::<&'static str>::new();
+
         loop {
             match f() {
                 Ok(_) => return Ok(()),
                 Err(failure) => {
+                    errors.insert(failure);
                     if let Some(max_attempts) = max_attempts {
                         if attempt >= max_attempts {
-                            return Err(format!("{} after {} attempts", failure, attempt));
+                            errors.insert("Retry attempts exceeded.");
+
+                            let errors_formatted = errors
+                                .iter()
+                                .map(|e| format!("  - {}", e))
+                                .collect::<Vec<_>>()
+                                .join("\n");
+                            return Err(errors_formatted);
                         }
                     }
                 }
