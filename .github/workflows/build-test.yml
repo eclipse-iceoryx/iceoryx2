@@ -121,7 +121,7 @@ jobs:
         run: cargo test --workspace --doc ${{ matrix.cargo-features-flag }}
 
       - name: Build documentation
-        run: cargo doc ${{ matrix.cargo-features-flag }}
+        run: cargo doc --no-deps ${{ matrix.cargo-features-flag }}
 
       - name: Setup miri
         uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
