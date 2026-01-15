@@ -16,7 +16,7 @@
 //! # Example
 //!
 //! ```rust,ignore
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_bb_posix::ownership::*;
 //! use iceoryx2_bb_posix::user::UserExt;

@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_loggers;
+extern crate iceoryx2_bb_loggers;
 
 #[generic_tests::define]
 mod used_chunk_list {

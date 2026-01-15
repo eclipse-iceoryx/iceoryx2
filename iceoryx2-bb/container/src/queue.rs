@@ -24,7 +24,7 @@
 //! ## Use the [`FixedSizeQueue`](crate::queue::FixedSizeQueue)
 //!
 //! ```
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_bb_container::queue::FixedSizeQueue;
 //!
@@ -42,7 +42,7 @@
 //! ## Use the [`Queue`](crate::queue::Queue)
 //!
 //! ```
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_bb_container::queue::Queue;
 //!
@@ -59,7 +59,7 @@
 //! ## Create [`RelocatableQueue`](crate::queue::RelocatableQueue) inside constructs which provides memory
 //!
 //! ```
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_bb_container::queue::RelocatableQueue;
 //! use iceoryx2_bb_elementary::math::align_to;
@@ -92,7 +92,7 @@
 //! ## Create [`RelocatableQueue`](crate::queue::RelocatableQueue) with allocator
 //!
 //! ```
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_bb_container::queue::RelocatableQueue;
 //! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;

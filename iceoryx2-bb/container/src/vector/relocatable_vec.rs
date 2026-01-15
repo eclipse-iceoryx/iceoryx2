@@ -48,7 +48,7 @@
 //! ## Create [`RelocatableVec`] with allocator
 //!
 //! ```
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //! use iceoryx2_bb_container::vector::*;
 //! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 //! use core::ptr::NonNull;

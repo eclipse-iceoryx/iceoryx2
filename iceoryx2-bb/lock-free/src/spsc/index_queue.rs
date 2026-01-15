@@ -16,7 +16,7 @@
 //! # Example
 //!
 //! ```
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_bb_lock_free::spsc::index_queue::*;
 //!
@@ -220,7 +220,7 @@ pub mod details {
         /// restrictions but when another thread has already acquired the [`Producer`] it returns
         /// [`None`] since it is a single producer single consumer [`IndexQueue`].
         /// ```
-        /// # extern crate iceoryx2_loggers;
+        /// # extern crate iceoryx2_bb_loggers;
         ///
         /// use iceoryx2_bb_lock_free::spsc::index_queue::*;
         ///
@@ -253,7 +253,7 @@ pub mod details {
         /// restrictions but when another thread has already acquired the [`Consumer`] it returns
         /// [`None`] since it is a single producer single consumer [`IndexQueue`].
         /// ```
-        /// # extern crate iceoryx2_loggers;
+        /// # extern crate iceoryx2_bb_loggers;
         ///
         /// use iceoryx2_bb_lock_free::spsc::index_queue::*;
         ///

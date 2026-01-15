@@ -16,12 +16,12 @@ use core::fmt::Write;
 
 use alloc::string::ToString;
 
+use iceoryx2_bb_print::is_terminal;
+use iceoryx2_bb_print::writer::stderr;
 use iceoryx2_log_types::Log;
 use iceoryx2_log_types::LogLevel;
 use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
 use iceoryx2_pal_concurrency_sync::atomic::Ordering;
-use iceoryx2_print::is_terminal;
-use iceoryx2_print::writer::stderr;
 
 #[allow(dead_code)]
 enum ConsoleLogOrder {

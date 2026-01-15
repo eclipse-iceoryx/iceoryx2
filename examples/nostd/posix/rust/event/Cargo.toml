@@ -18,5 +18,5 @@ path = "src/listener.rs"
 posix-nostd-common = { workspace = true }
 
 iceoryx2 = { workspace = true }
-iceoryx2-loggers = { workspace = true }
+iceoryx2-bb-loggers = { workspace = true }
 iceoryx2-bb-posix = { workspace  = true }

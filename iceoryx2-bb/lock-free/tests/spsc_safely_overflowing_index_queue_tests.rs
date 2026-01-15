@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_loggers;
+extern crate iceoryx2_bb_loggers;
 
 use iceoryx2_bb_lock_free::spsc::safely_overflowing_index_queue::*;
 use iceoryx2_bb_posix::barrier::*;

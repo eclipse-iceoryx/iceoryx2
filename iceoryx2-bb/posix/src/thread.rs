@@ -17,7 +17,7 @@
 //! ## Create a simple thread
 //!
 //! ```
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_bb_posix::thread::*;
 //!
@@ -33,7 +33,7 @@
 //! ## Create a thread with user provided stack memory
 //!
 //! ```ignore
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_bb_posix::thread::*;
 //!
@@ -53,7 +53,7 @@
 //! ## Create a highly customized thread with guarded stack
 //!
 //! ```ignore
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_bb_posix::thread::*;
 //! use iceoryx2_bb_posix::scheduler::*;
@@ -262,7 +262,7 @@ impl ThreadBuilder {
     ///
     /// The systems number of CPU cores can be acquired with:
     /// ```
-    /// # extern crate iceoryx2_loggers;
+    /// # extern crate iceoryx2_bb_loggers;
     ///
     /// use iceoryx2_bb_posix::system_configuration::*;
     ///
@@ -313,7 +313,7 @@ impl ThreadBuilder {
     /// Defines the stack size of the thread. It must be greater or equal the minimum thread stack
     /// size required by the system. One can acquire the minimum required thread stack size with:
     /// ```
-    /// # extern crate iceoryx2_loggers;
+    /// # extern crate iceoryx2_bb_loggers;
     ///
     /// use iceoryx2_bb_posix::system_configuration::*;
     ///
@@ -585,7 +585,7 @@ pub trait ThreadProperties {
 /// # Example
 ///
 /// ```ignore
-/// # extern crate iceoryx2_loggers;
+/// # extern crate iceoryx2_bb_loggers;
 ///
 /// use iceoryx2_bb_posix::thread::*;
 ///
@@ -711,7 +711,7 @@ struct ThreadStartupArgs<'thread, T: Send + Debug + 'thread, F: FnOnce() -> T + 
 /// See the [`ThreadBuilder`] for advanced construction examples.
 ///
 /// ```
-/// # extern crate iceoryx2_loggers;
+/// # extern crate iceoryx2_bb_loggers;
 ///
 /// use iceoryx2_bb_posix::thread::*;
 /// use core::sync::atomic::{AtomicBool, Ordering};

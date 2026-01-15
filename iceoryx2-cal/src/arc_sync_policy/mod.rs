@@ -22,7 +22,7 @@
 //! ## Generic Case
 //!
 //! ```
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 //!
@@ -35,7 +35,7 @@
 //! ## Mutex-Protected Version, implement [`Send`] and [`Sync`]
 //!
 //! ```
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 //! type Policy = iceoryx2_cal::arc_sync_policy::mutex_protected::MutexProtected<u64>;
@@ -49,7 +49,7 @@
 //! ## SingleThreaded Version, does not implement [`Send`] and [`Sync`]
 //!
 //! ```compile_fail
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 //! type Policy = iceoryx2_cal::arc_sync_policy::single_threaded::SingleThreaded<u64>;

@@ -43,17 +43,17 @@ default = ["tunnel_zenoh"]
 tunnel_zenoh = ["iceoryx2-tunnel-zenoh"]
 
 [dependencies]
+iceoryx2-log = { workspace = true }
+iceoryx2-userland-record-and-replay = { workspace = true }
 iceoryx2-services-discovery = { workspace = true }
 iceoryx2 = { workspace = true, features = ["std"] }
-iceoryx2-log = { workspace = true }
-iceoryx2-loggers = { workspace = true, features = ["std", "console"]}
-iceoryx2-pal-posix = { workspace = true }
+iceoryx2-cal = { workspace = true, features = ["std"] }
+iceoryx2-bb-loggers = { workspace = true, features = ["std", "console"]}
 iceoryx2-bb-posix = { workspace = true, features = ["std"] }
 iceoryx2-bb-system-types = { workspace = true }
 iceoryx2-bb-container = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }
-iceoryx2-cal = { workspace = true, features = ["std"] }
-iceoryx2-userland-record-and-replay = { workspace = true }
+iceoryx2-pal-posix = { workspace = true }
 
 anyhow = { workspace = true }
 better-panic = { workspace = true }

@@ -42,7 +42,7 @@ rust_test_suite(
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
         "//iceoryx2-pal/testing:iceoryx2-pal-testing",
-        "//iceoryx2-log/loggers:iceoryx2-loggers",
+        "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
     ],
     proc_macro_deps = [
         "@crate_index//:generic-tests",

@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_loggers;
+extern crate iceoryx2_bb_loggers;
 
 use iceoryx2_bb_system_types::ipv4_address::{
     Ipv4Address, Ipv4AddressParseError, BROADCAST, LOCALHOST, UNSPECIFIED,

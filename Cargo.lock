@@ -227,8 +227,8 @@ version = "0.8.0"
 dependencies = [
  "clap",
  "iceoryx2",
+ "iceoryx2-bb-loggers",
  "iceoryx2-bb-posix",
- "iceoryx2-loggers",
 ]
 
 [[package]]
@@ -238,8 +238,8 @@ dependencies = [
  "clap",
  "iceoryx2",
  "iceoryx2-bb-container",
+ "iceoryx2-bb-loggers",
  "iceoryx2-bb-posix",
- "iceoryx2-loggers",
 ]
 
 [[package]]
@@ -248,8 +248,8 @@ version = "0.8.0"
 dependencies = [
  "clap",
  "iceoryx2-bb-lock-free",
+ "iceoryx2-bb-loggers",
  "iceoryx2-bb-posix",
- "iceoryx2-loggers",
 ]
 
 [[package]]
@@ -259,8 +259,8 @@ dependencies = [
  "clap",
  "iceoryx2",
  "iceoryx2-bb-container",
+ "iceoryx2-bb-loggers",
  "iceoryx2-bb-posix",
- "iceoryx2-loggers",
 ]
 
 [[package]]
@@ -926,11 +926,11 @@ dependencies = [
  "iceoryx2-bb-derive-macros",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-system-types",
  "iceoryx2-cal",
  "iceoryx2-log",
- "iceoryx2-loggers",
  "iceoryx2-services-discovery",
 ]
 
@@ -1329,16 +1329,16 @@ dependencies = [
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-lock-free",
+ "iceoryx2-bb-loggers",
  "iceoryx2-bb-memory",
  "iceoryx2-bb-posix",
+ "iceoryx2-bb-print",
  "iceoryx2-bb-system-types",
  "iceoryx2-bb-testing",
  "iceoryx2-cal",
  "iceoryx2-log",
- "iceoryx2-loggers",
  "iceoryx2-pal-configuration",
  "iceoryx2-pal-testing",
- "iceoryx2-print",
  "serde",
  "tiny-fn",
  "toml 0.9.8",
@@ -1372,9 +1372,9 @@ dependencies = [
  "iceoryx2-bb-derive-macros",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
  "iceoryx2-bb-testing",
  "iceoryx2-log",
- "iceoryx2-loggers",
  "iceoryx2-pal-testing",
  "serde",
  "serde_test",
@@ -1414,11 +1414,11 @@ version = "0.8.0"
 dependencies = [
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-container",
+ "iceoryx2-bb-loggers",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-system-types",
  "iceoryx2-bb-testing",
  "iceoryx2-log",
- "iceoryx2-loggers",
  "iceoryx2-pal-os-api",
  "iceoryx2-pal-posix",
  "iceoryx2-pal-testing",
@@ -1432,12 +1432,24 @@ dependencies = [
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
  "iceoryx2-log",
- "iceoryx2-loggers",
  "iceoryx2-pal-testing",
  "loom",
+]
+
+[[package]]
+name = "iceoryx2-bb-loggers"
+version = "0.8.0"
+dependencies = [
+ "iceoryx2-bb-print",
+ "iceoryx2-log-types",
+ "iceoryx2-pal-concurrency-sync",
+ "iceoryx2-pal-posix",
+ "log",
+ "tracing",
 ]
 
 [[package]]
@@ -1448,10 +1460,10 @@ dependencies = [
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-lock-free",
+ "iceoryx2-bb-loggers",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
  "iceoryx2-log",
- "iceoryx2-loggers",
  "iceoryx2-pal-testing",
 ]
 
@@ -1466,17 +1478,24 @@ dependencies = [
  "iceoryx2-bb-derive-macros",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-print",
  "iceoryx2-bb-system-types",
  "iceoryx2-bb-testing",
  "iceoryx2-log",
- "iceoryx2-loggers",
  "iceoryx2-pal-configuration",
  "iceoryx2-pal-posix",
  "iceoryx2-pal-testing",
- "iceoryx2-print",
  "lazy_static",
  "serde",
  "tiny-fn",
+]
+
+[[package]]
+name = "iceoryx2-bb-print"
+version = "0.8.0"
+dependencies = [
+ "iceoryx2-pal-posix",
 ]
 
 [[package]]
@@ -1487,9 +1506,9 @@ dependencies = [
  "iceoryx2-bb-derive-macros",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
  "iceoryx2-bb-testing",
  "iceoryx2-log",
- "iceoryx2-loggers",
  "iceoryx2-pal-configuration",
  "iceoryx2-pal-posix",
  "iceoryx2-pal-testing",
@@ -1512,10 +1531,10 @@ dependencies = [
  "iceoryx2-bb-container",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
  "iceoryx2-log",
- "iceoryx2-loggers",
  "iceoryx2-pal-posix",
  "iceoryx2-pal-testing",
 ]
@@ -1529,11 +1548,11 @@ dependencies = [
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-lock-free",
+ "iceoryx2-bb-loggers",
  "iceoryx2-bb-memory",
  "iceoryx2-bb-system-types",
  "iceoryx2-bb-testing",
  "iceoryx2-cal",
- "iceoryx2-loggers",
  "iceoryx2-pal-testing",
 ]
 
@@ -1549,12 +1568,12 @@ dependencies = [
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-linux",
  "iceoryx2-bb-lock-free",
+ "iceoryx2-bb-loggers",
  "iceoryx2-bb-memory",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-system-types",
  "iceoryx2-bb-testing",
  "iceoryx2-log",
- "iceoryx2-loggers",
  "lazy_static",
  "postcard",
  "serde",
@@ -1572,12 +1591,12 @@ dependencies = [
  "iceoryx2-bb-container",
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-lock-free",
+ "iceoryx2-bb-loggers",
  "iceoryx2-bb-memory",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-system-types",
  "iceoryx2-bb-testing",
  "iceoryx2-cal",
- "iceoryx2-loggers",
  "iceoryx2-pal-posix",
  "iceoryx2-pal-testing",
  "lazy_static",
@@ -1602,12 +1621,12 @@ dependencies = [
  "iceoryx2",
  "iceoryx2-bb-container",
  "iceoryx2-bb-elementary",
+ "iceoryx2-bb-loggers",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-system-types",
  "iceoryx2-bb-testing",
  "iceoryx2-cal",
  "iceoryx2-log",
- "iceoryx2-loggers",
  "iceoryx2-pal-posix",
  "iceoryx2-pal-testing",
  "iceoryx2-services-discovery",
@@ -1653,13 +1672,13 @@ dependencies = [
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-lock-free",
+ "iceoryx2-bb-loggers",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-system-types",
  "iceoryx2-bb-testing",
  "iceoryx2-cal",
  "iceoryx2-ffi-macros",
  "iceoryx2-log",
- "iceoryx2-loggers",
  "iceoryx2-pal-testing",
 ]
 
@@ -1694,18 +1713,6 @@ dependencies = [
 [[package]]
 name = "iceoryx2-log-types"
 version = "0.8.0"
-
-[[package]]
-name = "iceoryx2-loggers"
-version = "0.8.0"
-dependencies = [
- "iceoryx2-log-types",
- "iceoryx2-pal-concurrency-sync",
- "iceoryx2-pal-posix",
- "iceoryx2-print",
- "log",
- "tracing",
-]
 
 [[package]]
 name = "iceoryx2-pal-concurrency-sync"
@@ -1748,13 +1755,6 @@ name = "iceoryx2-pal-testing"
 version = "0.8.0"
 dependencies = [
  "iceoryx2-pal-configuration",
-]
-
-[[package]]
-name = "iceoryx2-print"
-version = "0.8.0"
-dependencies = [
- "iceoryx2-pal-posix",
 ]
 
 [[package]]

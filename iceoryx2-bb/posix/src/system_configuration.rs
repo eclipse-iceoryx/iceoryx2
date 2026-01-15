@@ -29,7 +29,7 @@ pub const USER_CONFIG_PATH: Path =
 
 /// Generic information about the POSIX system.
 /// ```
-/// # extern crate iceoryx2_loggers;
+/// # extern crate iceoryx2_bb_loggers;
 ///
 /// use iceoryx2_bb_posix::system_configuration::*;
 ///
@@ -54,7 +54,7 @@ impl SystemInfo {
 
 /// The minimum and maximum limits of the POSIXs constructs.
 /// ```
-/// # extern crate iceoryx2_loggers;
+/// # extern crate iceoryx2_bb_loggers;
 ///
 /// use iceoryx2_bb_posix::system_configuration::*;
 ///
@@ -110,7 +110,7 @@ impl Limit {
 
 /// Can be used to verify if a POSIX system option is available at the system.
 /// ```
-/// # extern crate iceoryx2_loggers;
+/// # extern crate iceoryx2_bb_loggers;
 ///
 /// use iceoryx2_bb_posix::system_configuration::*;
 ///
@@ -166,7 +166,7 @@ impl SysOption {
 
 /// Can be used to verify if a POSIX feature is available at the system.
 /// ```
-/// # extern crate iceoryx2_loggers;
+/// # extern crate iceoryx2_bb_loggers;
 ///
 /// use iceoryx2_bb_posix::system_configuration::*;
 ///
@@ -215,7 +215,7 @@ impl Feature {
 
 /// Can be used to get or set the process resource limits.
 /// ```
-/// # extern crate iceoryx2_loggers;
+/// # extern crate iceoryx2_bb_loggers;
 ///
 /// use iceoryx2_bb_posix::system_configuration::*;
 ///

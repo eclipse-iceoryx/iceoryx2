@@ -19,7 +19,7 @@
 //! [`set_log_level()`] and read via [`get_log_level()`].
 //!
 //! The API includes convinience macros to combine error/panic handling
-//! directly with a logger selected from the `iceoryx2_loggers` crate.
+//! directly with a logger selected from the `iceoryx2_bb_loggers` crate.
 //! The [`fail!`] macro can return when the function which was called return an
 //! error containing result.
 //! The [`fatal_panic!`] macro calls [`panic!`].

@@ -19,7 +19,7 @@
 //! ## Working with groups
 //!
 //! ```rust,ignore
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_bb_posix::group::*;
 //! use iceoryx2_bb_system_types::group_name::GroupName;
@@ -40,7 +40,7 @@
 //! ## Use the trait
 //!
 //! ```rust,ignore
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_bb_posix::group::*;
 //!

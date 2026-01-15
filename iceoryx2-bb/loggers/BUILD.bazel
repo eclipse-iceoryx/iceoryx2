@@ -21,7 +21,7 @@ filegroup(
 )
 
 rust_library(
-    name = "iceoryx2-loggers",
+    name = "iceoryx2-bb-loggers",
     srcs = glob(["src/**/*.rs"]),
     crate_features = select({
         "//:cfg_feature_std": [

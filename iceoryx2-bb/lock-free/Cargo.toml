@@ -23,11 +23,11 @@ iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-elementary-traits = { workspace = true }
 
 [dev-dependencies]
+iceoryx2-bb-loggers = { workspace = true }
 iceoryx2-bb-posix = { workspace = true }
 iceoryx2-bb-testing = { workspace = true }
 iceoryx2-pal-testing = { workspace = true }
 generic-tests = { workspace = true }
-iceoryx2-loggers = { workspace = true }
 
 [target.'cfg(loom)'.dev-dependencies]
 loom = { workspace = true }

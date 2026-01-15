@@ -18,7 +18,7 @@
 //! # Example
 //!
 //! ```
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_bb_posix::unique_system_id::*;
 //!
@@ -153,7 +153,7 @@ impl UniqueSystemId {
 
 #[cfg(test)]
 mod tests {
-    extern crate iceoryx2_loggers;
+    extern crate iceoryx2_bb_loggers;
 
     use super::*;
     use iceoryx2_bb_testing::assert_that;

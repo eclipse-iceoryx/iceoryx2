@@ -89,56 +89,56 @@ add_rust_feature(
     NAME IOX2_FEATURE_LOGGER_STD
     DESCRIPTION "Use the std module in the logger backend"
     DEFAULT_VALUE ON
-    RUST_FEATURE "iceoryx2-loggers/std"
+    RUST_FEATURE "iceoryx2-bb-loggers/std"
 )
 
 add_rust_feature(
     NAME IOX2_FEATURE_LOGGER_POSIX
     DESCRIPTION "Use the POSIX abstraction in the logger backend"
     DEFAULT_VALUE OFF
-    RUST_FEATURE "iceoryx2-loggers/posix"
+    RUST_FEATURE "iceoryx2-bb-loggers/posix"
 )
 
 add_rust_feature(
     NAME IOX2_FEATURE_LOGGER_BARE_METAL
     DESCRIPTION "Use bare metal abstractions in the logger backend"
     DEFAULT_VALUE OFF
-    RUST_FEATURE "iceoryx2-loggers/bare_metal"
+    RUST_FEATURE "iceoryx2-bb-loggers/bare_metal"
 )
 
 add_rust_feature(
     NAME IOX2_FEATURE_LOGGER_BUFFER
     DESCRIPTION "Sets the buffer logger as the default logger backend"
     DEFAULT_VALUE OFF
-    RUST_FEATURE "iceoryx2-loggers/buffer"
+    RUST_FEATURE "iceoryx2-bb-loggers/buffer"
 )
 
 add_rust_feature(
     NAME IOX2_FEATURE_LOGGER_CONSOLE
     DESCRIPTION "Sets the console logger as the default logger backend"
     DEFAULT_VALUE ON
-    RUST_FEATURE "iceoryx2-loggers/console"
+    RUST_FEATURE "iceoryx2-bb-loggers/console"
 )
 
 add_rust_feature(
     NAME IOX2_FEATURE_LOGGER_FILE
     DESCRIPTION "Sets the file logger as the default logger backend"
     DEFAULT_VALUE OFF
-    RUST_FEATURE "iceoryx2-loggers/file"
+    RUST_FEATURE "iceoryx2-bb-loggers/file"
 )
 
 add_rust_feature(
     NAME IOX2_FEATURE_LOGGER_LOG
     DESCRIPTION "Enables https://crates.io/crates/log as default logger"
     DEFAULT_VALUE OFF
-    RUST_FEATURE "iceoryx2-loggers/log"
+    RUST_FEATURE "iceoryx2-bb-loggers/log"
 )
 
 add_rust_feature(
     NAME IOX2_FEATURE_LOGGER_TRACING
     DESCRIPTION "Enables https://crates.io/crates/tracing as default logger"
     DEFAULT_VALUE OFF
-    RUST_FEATURE "iceoryx2-loggers/tracing"
+    RUST_FEATURE "iceoryx2-bb-loggers/tracing"
 )
 
 # END Options, Params and Feature Flags

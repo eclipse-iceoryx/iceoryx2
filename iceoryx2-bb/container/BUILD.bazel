@@ -44,7 +44,7 @@ rust_test_suite(
         "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
         "//iceoryx2-pal/testing:iceoryx2-pal-testing",
-        "//iceoryx2-log/loggers:iceoryx2-loggers",
+        "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
         "@crate_index//:serde_test",
     ],
     proc_macro_deps = [

@@ -12,7 +12,7 @@ version = { workspace = true }
 
 [dependencies]
 iceoryx2 = { workspace = true, features = ["std"] }
-iceoryx2-loggers = { workspace = true, features = ["std", "console"]}
+iceoryx2-bb-loggers = { workspace = true, features = ["std", "console"]}
 iceoryx2-bb-posix = { workspace = true }
 
 clap = { workspace = true }

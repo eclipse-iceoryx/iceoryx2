@@ -17,7 +17,7 @@
 //! ## Mapping Anonymous Memory (`malloc` equivalent)
 //!
 //! ```
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_log::set_log_level;
 //! use iceoryx2_bb_posix::memory_mapping::*;
@@ -37,7 +37,7 @@
 //! ## Opening A File And Mapping It Into Memory
 //!
 //! ```no_run
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_bb_posix::memory_mapping::*;
 //!
@@ -55,7 +55,7 @@
 //! ## Mapping [`FileDescriptor`] Contents Into Memory
 //!
 //! ```no_run
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_bb_posix::memory_mapping::*;
 //! use iceoryx2_bb_posix::file_descriptor::FileDescriptor;
@@ -74,7 +74,7 @@
 //! ## Update Permissions To Mapped Memory (`mprotect`)
 //!
 //! ```
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_bb_posix::memory_mapping::*;
 //!

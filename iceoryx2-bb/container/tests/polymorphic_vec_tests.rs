@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_loggers;
+extern crate iceoryx2_bb_loggers;
 
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::vector::polymorphic_vec::*;

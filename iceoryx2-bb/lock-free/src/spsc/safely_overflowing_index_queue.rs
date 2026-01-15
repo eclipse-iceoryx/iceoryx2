@@ -17,7 +17,7 @@
 //! # Example
 //!
 //! ```
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_bb_lock_free::spsc::safely_overflowing_index_queue::*;
 //!
@@ -227,7 +227,7 @@ pub mod details {
         /// it returns [`None`] since it is a single producer single consumer
         /// [`SafelyOverflowingIndexQueue`].
         /// ```
-        /// # extern crate iceoryx2_loggers;
+        /// # extern crate iceoryx2_bb_loggers;
         ///
         /// use iceoryx2_bb_lock_free::spsc::safely_overflowing_index_queue::*;
         ///
@@ -261,7 +261,7 @@ pub mod details {
         /// it returns [`None`] since it is a single producer single consumer
         /// [`SafelyOverflowingIndexQueue`].
         /// ```
-        /// # extern crate iceoryx2_loggers;
+        /// # extern crate iceoryx2_bb_loggers;
         ///
         /// use iceoryx2_bb_lock_free::spsc::safely_overflowing_index_queue::*;
         ///

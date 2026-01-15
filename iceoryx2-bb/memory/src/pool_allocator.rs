@@ -17,7 +17,7 @@
 //! # Example
 //!
 //! ```
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_bb_memory::pool_allocator::*;
 //!

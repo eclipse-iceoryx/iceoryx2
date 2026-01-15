@@ -19,7 +19,7 @@
 //! ## Callbacks for signals
 //!
 //! ```
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_bb_posix::signal::*;
 //!
@@ -38,7 +38,7 @@
 //! ## Perform tasks until CTRL+c was pressed.
 //!
 //! ```no_run
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_bb_posix::signal::*;
 //!
@@ -52,7 +52,7 @@
 //! ## Wait until CTRL+c was pressed.
 //!
 //! ```no_run
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_bb_posix::signal::*;
 //!
@@ -341,7 +341,7 @@ impl SignalHandler {
     /// signal guard goes out of scope the callback is unregistered.
     ///
     /// ```
-    /// # extern crate iceoryx2_loggers;
+    /// # extern crate iceoryx2_bb_loggers;
     ///
     /// use iceoryx2_bb_posix::signal::*;
     ///
@@ -425,7 +425,7 @@ impl SignalHandler {
 
     /// Blocks until the provided signal was raised or an error occurred.
     /// ```no_run
-    /// # extern crate iceoryx2_loggers;
+    /// # extern crate iceoryx2_bb_loggers;
     ///
     /// use iceoryx2_bb_posix::signal::*;
     ///
@@ -461,7 +461,7 @@ impl SignalHandler {
     /// Blocks until the provided signal was raised or the timeout was reached. If the signal was
     /// raised it returns true otherwise false.
     /// ```ignore
-    /// # extern crate iceoryx2_loggers;
+    /// # extern crate iceoryx2_bb_loggers;
     ///
     /// use iceoryx2_bb_posix::signal::*;
     /// use core::time::Duration;

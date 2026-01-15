@@ -20,7 +20,8 @@
 //!
 //! The iceoryx2 logging system is split into two crates:
 //! - **`iceoryx2_log`**: The frontend providing the logging API and macros
-//! - **`iceoryx2_loggers`**: This crate, providing selectable logger backends
+//! - **`iceoryx2_bb_loggers`**: This crate, providing selectable logger backends
+//!   built on top of the platform abstraction
 //!
 //! This separation keeps the logging API lightweight and platform-agnostic
 //! while allowing flexible backend selection at runtime.

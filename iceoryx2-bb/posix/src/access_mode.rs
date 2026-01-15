@@ -36,7 +36,7 @@ impl AccessMode {
     /// [`posix::PROT_WRITE`] flag pendant
     /// # Examples
     /// ```
-    /// # extern crate iceoryx2_loggers;
+    /// # extern crate iceoryx2_bb_loggers;
     /// use iceoryx2_bb_posix::access_mode::*;
     /// let pflags = AccessMode::ReadWrite.as_protflag();
     /// ```
@@ -53,7 +53,7 @@ impl AccessMode {
     /// [`posix::O_RDWR`] flag pendant
     /// # Examples
     /// ```
-    /// # extern crate iceoryx2_loggers;
+    /// # extern crate iceoryx2_bb_loggers;
     /// use iceoryx2_bb_posix::access_mode::*;
     /// let oflags = AccessMode::ReadWrite.as_oflag();
     /// ```

@@ -177,7 +177,7 @@ pub trait String:
     /// If the string has no more capacity left it fails otherwise it succeeds.
     ///
     /// ```
-    /// # extern crate iceoryx2_loggers;
+    /// # extern crate iceoryx2_bb_loggers;
     ///
     /// use iceoryx2_bb_container::string::*;
     ///
@@ -195,7 +195,7 @@ pub trait String:
     /// If the string has no more capacity left it fails otherwise it succeeds.
     ///
     /// ```
-    /// # extern crate iceoryx2_loggers;
+    /// # extern crate iceoryx2_bb_loggers;
     ///
     /// use iceoryx2_bb_container::string::*;
     ///
@@ -263,7 +263,7 @@ pub trait String:
     /// Removes the last character from the string and returns it. If the string is empty it
     /// returns none.
     /// ```
-    /// # extern crate iceoryx2_loggers;
+    /// # extern crate iceoryx2_bb_loggers;
     ///
     /// use iceoryx2_bb_container::string::*;
     ///

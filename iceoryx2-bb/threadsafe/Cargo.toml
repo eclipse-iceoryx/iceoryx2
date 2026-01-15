@@ -11,14 +11,14 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [dependencies]
+iceoryx2-log = { workspace = true }
 iceoryx2-bb-container = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-bb-posix = { workspace = true }
-iceoryx2-log = { workspace = true }
 
 [dev-dependencies]
+iceoryx2-bb-loggers = { workspace = true }
 iceoryx2-bb-testing = { workspace = true }
 iceoryx2-pal-posix = { workspace = true }
 iceoryx2-pal-testing = { workspace = true }
-iceoryx2-loggers = { workspace = true }
