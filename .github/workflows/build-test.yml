@@ -121,7 +121,7 @@ jobs:
         run: cargo test --workspace --doc ${{ matrix.cargo-features-flag }}
 
       - name: Build documentation
-        run: cargo doc ${{ matrix.cargo-features-flag }}
+        run: cargo doc --no-deps ${{ matrix.cargo-features-flag }}
 
       - name: Setup miri
         uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
@@ -498,6 +498,10 @@ jobs:
         run: |
           cd iceoryx2-ffi/c
           cargo rustc -q -- --print=native-static-libs
+
+      - name: Remove files to increase available disk space
+        shell: bash
+        run: rm -rf ${{ github.workspace }}/target/${{ matrix.mode.name }}/{deps,incremental}
 
       - name: Build language bindings
         shell: bash
@@ -882,7 +886,7 @@ jobs:
           toolchain: stable
 
       - name: Update iceoryx2 version
-        run: ./internal/scripts/update_versions.sh --iceoryx2 0.8.15
+        run: ./internal/scripts/update_versions.sh --iceoryx2 0.0.0
 
       - name: Cargo Publish Dry-Run
         run: ./internal/scripts/release/crates_io_publish_script.sh dry-run-allow-dirty

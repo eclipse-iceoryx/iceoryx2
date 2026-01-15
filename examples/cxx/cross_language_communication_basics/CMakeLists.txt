@@ -13,7 +13,7 @@
 cmake_minimum_required(VERSION 3.22)
 project(example_cxx_cross_language_communication_basics LANGUAGES CXX)
 
-find_package(iceoryx2-cxx 0.8.0 REQUIRED)
+find_package(iceoryx2-cxx 0.8.1 REQUIRED)
 
 add_executable(example_cxx_cross_language_communication_basics_publisher src/publisher.cpp)
 target_link_libraries(example_cxx_cross_language_communication_basics_publisher iceoryx2-cxx::static-lib-cxx)
