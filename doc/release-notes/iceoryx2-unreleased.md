@@ -38,7 +38,9 @@
     conflicts when merging.
 -->
 
-* Move character output abstraction to separate crate
+* Move character output abstraction into building blocks as `iceoryx2-bb-print`
+  [#1300](https://github.com/eclipse-iceoryx/iceoryx2/issues/1300)
+* Move `iceoryx2-loggers` crate into building blocks as `iceoryx2-bb-loggers`
   [#1300](https://github.com/eclipse-iceoryx/iceoryx2/issues/1300)
 
 ### Workflow
@@ -61,12 +63,23 @@
 
 ### API Breaking Changes
 
-1. Example
+1. Loggers have been moved into `iceoryx2-bb-loggers` thus manually linking
+   to them needs to be adjusted accordingly.
 
    ```rust
    // old
-   let fuu = hello().is_it_me_you_re_looking_for()
+   extern crate iceoryx2_loggers;
+
+   use iceoryx2_log::*;
+
+   set_log_level(LogLevel::Info);
+   info!("some log message")
 
    // new
-   let fuu = hypnotoad().all_glory_to_the_hypnotoad()
+   extern crate iceoryx2_bb_loggers;
+
+   use iceoryx2_log::*;
+
+   set_log_level(LogLevel::Info);
+   info!("some log message")
    ```
