@@ -1,0 +1,26 @@
+[package]
+name = "iceoryx2-bb-print"
+description = "iceoryx2: [internal] abstraction over character printing"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[features]
+default = []
+
+# Use the std module
+std = []
+
+# Use POSIX APIs
+posix = ["iceoryx2-pal-posix"]
+
+[dependencies]
+iceoryx2-pal-posix = { workspace = true, optional = true }
+
+[lints]
+workspace = true

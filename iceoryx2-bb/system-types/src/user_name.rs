@@ -16,7 +16,7 @@
 //! # Example
 //!
 //! ```
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_bb_container::semantic_string::SemanticString;
 //! use iceoryx2_bb_system_types::user_name::*;

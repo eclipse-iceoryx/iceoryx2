@@ -18,7 +18,7 @@
 //! ## Transfer data
 //!
 //! ```
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_bb_posix::unix_datagram_socket::*;
 //! use iceoryx2_bb_posix::permission::*;
@@ -47,7 +47,7 @@
 //! ## Transfer [`SocketCred`]s
 //!
 //! ```ignore
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_bb_posix::unix_datagram_socket::*;
 //! use iceoryx2_bb_posix::socket_ancillary::*;
@@ -80,7 +80,7 @@
 //! ## Transfer [`FileDescriptor`]s
 //!
 //! ```no_run
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_bb_posix::unix_datagram_socket::*;
 //! use iceoryx2_bb_posix::socket_ancillary::*;

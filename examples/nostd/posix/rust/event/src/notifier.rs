@@ -57,7 +57,7 @@ extern "C" fn main() -> i32 {
     let mut counter: usize = 0;
     while node.wait(CYCLE_TIME).is_ok() {
         counter += 1;
-        if let Err(e) = notifier.notify_with_custom_event_id(EventId::new(counter % max_event_id)){
+        if let Err(e) = notifier.notify_with_custom_event_id(EventId::new(counter % max_event_id)) {
             cout!("Failed to send event: {:?}", e);
             continue;
         }

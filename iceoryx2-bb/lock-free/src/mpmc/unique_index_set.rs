@@ -19,7 +19,7 @@
 //! ## Runtime fixed size UniqueIndexSet
 //!
 //! ```
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_bb_elementary::bump_allocator::*;
 //! use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
@@ -46,7 +46,7 @@
 //! ## Compile time FixedSizeUniqueIndexSet
 //!
 //! ```
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
 //!
@@ -68,7 +68,7 @@
 //! ## Manual index return
 //!
 //! ```
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
 //!
@@ -182,7 +182,7 @@ impl Drop for UniqueIndex<'_> {
 ///
 /// ## With a custom allocator
 /// ```
-/// # extern crate iceoryx2_loggers;
+/// # extern crate iceoryx2_bb_loggers;
 ///
 /// use iceoryx2_bb_elementary::bump_allocator::*;
 /// use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
@@ -203,7 +203,7 @@ impl Drop for UniqueIndex<'_> {
 ///
 /// ## Provide memory in a separate struct
 /// ```
-/// # extern crate iceoryx2_loggers;
+/// # extern crate iceoryx2_bb_loggers;
 ///
 /// use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
 /// use iceoryx2_bb_elementary_traits::relocatable_container::*;
@@ -371,7 +371,7 @@ impl UniqueIndexSet {
     /// # Example
     ///
     /// ```
-    /// # extern crate iceoryx2_loggers;
+    /// # extern crate iceoryx2_bb_loggers;
     ///
     /// use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
     ///
@@ -508,7 +508,7 @@ impl UniqueIndexSet {
 /// # Example
 ///
 /// ```
-/// # extern crate iceoryx2_loggers;
+/// # extern crate iceoryx2_bb_loggers;
 ///
 /// use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
 ///
@@ -621,7 +621,7 @@ impl<const CAPACITY: usize> FixedSizeUniqueIndexSet<CAPACITY> {
 
 #[cfg(test)]
 mod test {
-    extern crate iceoryx2_loggers;
+    extern crate iceoryx2_bb_loggers;
 
     use iceoryx2_bb_testing::assert_that;
 

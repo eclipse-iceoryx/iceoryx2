@@ -20,7 +20,8 @@
 //!
 //! The iceoryx2 logging system is split into two crates:
 //! - **`iceoryx2_log`**: The frontend providing the logging API and macros
-//! - **`iceoryx2_loggers`**: This crate, providing selectable logger backends
+//! - **`iceoryx2_bb_loggers`**: This crate, providing selectable logger backends
+//!   built on top of the platform abstraction
 //!
 //! This separation keeps the logging API lightweight and platform-agnostic
 //! while allowing flexible backend selection at runtime.
@@ -50,8 +51,6 @@
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 
-use core::fmt::Write;
-
 use iceoryx2_log_types::Log;
 
 #[cfg(feature = "buffer")]
@@ -66,19 +65,8 @@ mod log;
 mod tracing;
 
 mod null;
-mod writer;
 
 extern crate alloc;
-
-#[no_mangle]
-pub extern "Rust" fn __internal_stdout() -> &'static mut dyn Write {
-    writer::stdout()
-}
-
-#[no_mangle]
-pub extern "Rust" fn __internal_stderr() -> &'static mut dyn Write {
-    writer::stderr()
-}
 
 #[cfg(feature = "console")]
 #[no_mangle]

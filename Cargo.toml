@@ -1,10 +1,12 @@
 [workspace]
 resolver = "2"
 members = [
+
     "iceoryx2-log/log/",
     "iceoryx2-log/types/",
-    "iceoryx2-log/loggers/",
 
+    "iceoryx2-bb/print/",
+    "iceoryx2-bb/loggers/",
     "iceoryx2-bb/lock-free/",
     "iceoryx2-bb/threadsafe/",
     "iceoryx2-bb/concurrency",
@@ -79,7 +81,8 @@ version = "0.8.0"
 [workspace.dependencies]
 iceoryx2-log = { version = "0.8.0", path = "iceoryx2-log/log/" }
 iceoryx2-log-types = { version = "0.8.0", path = "iceoryx2-log/types/" }
-iceoryx2-loggers = { version = "0.8.0", path = "iceoryx2-log/loggers/", default-features = false }
+iceoryx2-bb-print = { version = "0.8.0", path = "iceoryx2-bb/print" }
+iceoryx2-bb-loggers = { version = "0.8.0", path = "iceoryx2-bb/loggers/", default-features = false }
 iceoryx2-bb-threadsafe = { version = "0.8.0", path = "iceoryx2-bb/threadsafe/" }
 iceoryx2-bb-lock-free = { version = "0.8.0", path = "iceoryx2-bb/lock-free/" }
 iceoryx2-bb-concurrency = { version = "0.8.0", path = "iceoryx2-bb/concurrency/" }

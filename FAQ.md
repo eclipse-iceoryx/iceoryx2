@@ -168,7 +168,7 @@ details, see the [event example](examples/rust/event).
 
 The `iceoryx2` crate automatically configures the console logger as the
 default logger backend, however it is possible to change this using feature
-flags on the `iceoryx2-loggers` crate.
+flags on the `iceoryx2-bb-loggers` crate.
 
 The following loggers are available:
 
@@ -181,13 +181,13 @@ The following loggers are available:
 The feature can be set in a project's `Cargo.toml`:
 
 ```toml
-iceoryx2-loggers = { version = "0.1.0", features = ["std", "file"]}
+iceoryx2-bb-loggers = { version = "0.1.0", features = ["std", "file"]}
 ```
 
 Or specified when building the crate:
 
 ```console
-cargo build --features iceoryx2-loggers/std -features iceoryx2-loggers/file
+cargo build --features iceoryx2-bb-loggers/std -features iceoryx2-bb-loggers/file
 ```
 
 Alternatively, a custom logger backend can be set at runtime at the very
@@ -301,7 +301,7 @@ environment variable `IOX2_LOG_LEVEL` or set the log level directly in the code.
 ### Linking Error - undefined symbol `__internal_default_logger`
 
 The logger front-end retrieves the selected default logger by calling
-a function provided by the `iceoryx2-loggers` crate. If this crate is not
+a function provided by the `iceoryx2-bb-loggers` crate. If this crate is not
 linked against when building an application, a linking error of this form will
 be encountered:
 
@@ -313,10 +313,10 @@ If using the `iceoryx2` crate as a dependency, this is handled automatically,
 however if using a lower-level crate (such as `iceoryx2-cal` or one from
 `iceoryx2-bb`) the following is required:
 
-1. Include `iceoryx2-loggers` as a dependency with the corresponding feature
+1. Include `iceoryx2-bb-loggers` as a dependency with the corresponding feature
    for your platform:
     ```toml
-    iceoryx2-loggers = { version = "x.y.z", features = ["std", "console"] }
+    iceoryx2-bb-loggers = { version = "x.y.z", features = ["std", "console"] }
     ```
 1. Ensure the crate is linked to even if not used:
     ```rust

@@ -15,7 +15,7 @@
 //!
 //! # Examples
 //! ```
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_bb_posix::directory::*;
 //! use iceoryx2_bb_system_types::path::Path;
@@ -155,7 +155,7 @@ enum_gen! {
 /// # Example
 ///
 /// ```
-/// # extern crate iceoryx2_loggers;
+/// # extern crate iceoryx2_bb_loggers;
 ///
 /// use iceoryx2_bb_posix::directory::*;
 /// use iceoryx2_bb_system_types::path::Path;

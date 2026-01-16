@@ -19,7 +19,7 @@
 //! [`set_log_level()`] and read via [`get_log_level()`].
 //!
 //! The API includes convinience macros to combine error/panic handling
-//! directly with a logger selected from the `iceoryx2_loggers` crate.
+//! directly with a logger selected from the `iceoryx2_bb_loggers` crate.
 //! The [`fail!`] macro can return when the function which was called return an
 //! error containing result.
 //! The [`fatal_panic!`] macro calls [`panic!`].
@@ -129,8 +129,6 @@ pub use from_env::{set_log_level_from_env_or, set_log_level_from_env_or_default}
 
 // Re-export so library crates need only depend on this crate
 pub use iceoryx2_log_types::{Log, LogLevel};
-
-use core::fmt::Write;
 
 use iceoryx2_pal_concurrency_sync::atomic::AtomicU8;
 use iceoryx2_pal_concurrency_sync::atomic::Ordering;
@@ -258,30 +256,4 @@ pub fn __internal_print_log_msg(
 
 extern "Rust" {
     fn __internal_default_logger() -> &'static dyn Log;
-    fn __internal_stdout() -> &'static mut dyn Write;
-    fn __internal_stderr() -> &'static mut dyn Write;
-}
-
-#[inline(always)]
-pub fn stdout() -> &'static mut dyn Write {
-    unsafe { __internal_stdout() }
-}
-
-#[inline(always)]
-pub fn stderr() -> &'static mut dyn Write {
-    unsafe { __internal_stderr() }
-}
-
-#[macro_export]
-macro_rules! cout {
-    ($($arg:tt)*) => {{
-        let _ = core::writeln!($crate::stdout(), $($arg)*);
-    }};
-}
-
-#[macro_export]
-macro_rules! cerr {
-    ($($arg:tt)*) => {
-        let _ = core::writeln!($crate::stderr(), $($arg)*);
-    };
 }

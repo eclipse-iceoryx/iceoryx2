@@ -15,7 +15,7 @@
 //!
 //! # Examples
 //! ```no_run
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_bb_posix::file::*;
 //! use iceoryx2_bb_system_types::file_path::FilePath;
@@ -351,7 +351,7 @@ pub enum FileReadLineState {
 /// # Examples
 /// ## Open existing file for reading
 /// ```
-/// # extern crate iceoryx2_loggers;
+/// # extern crate iceoryx2_bb_loggers;
 ///
 /// use iceoryx2_bb_posix::file::*;
 /// use iceoryx2_bb_system_types::file_path::FilePath;
@@ -445,7 +445,7 @@ impl FileCreationBuilder {
     ///
     /// # Examples
     /// ```no_run
-    /// # extern crate iceoryx2_loggers;
+    /// # extern crate iceoryx2_bb_loggers;
     ///
     /// use iceoryx2_bb_posix::file::*;
     /// use iceoryx2_bb_system_types::file_path::FilePath;
@@ -467,7 +467,7 @@ impl FileCreationBuilder {
     ///
     /// # Examples
     /// ```no_run
-    /// # extern crate iceoryx2_loggers;
+    /// # extern crate iceoryx2_bb_loggers;
     ///
     /// use iceoryx2_bb_posix::file::*;
     /// use iceoryx2_bb_posix::user::UserExt;
@@ -490,7 +490,7 @@ impl FileCreationBuilder {
     ///
     /// # Examples
     /// ```no_run
-    /// # extern crate iceoryx2_loggers;
+    /// # extern crate iceoryx2_bb_loggers;
     ///
     /// use iceoryx2_bb_posix::file::*;
     /// use iceoryx2_bb_posix::group::*;

@@ -31,13 +31,13 @@ dev_permissions = []
 libc_platform = ["iceoryx2-bb-linux/libc_platform", "iceoryx2-bb-posix/libc_platform"]
 
 [dependencies]
+iceoryx2-log = { workspace = true }
 iceoryx2-bb-posix = { workspace = true }
 iceoryx2-bb-linux = { workspace = true }
 iceoryx2-bb-concurrency = { workspace = true }
 iceoryx2-bb-container = { workspace = true }
 iceoryx2-bb-derive-macros = { workspace = true }
 iceoryx2-bb-system-types = { workspace = true }
-iceoryx2-log = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-bb-memory = { workspace = true }
@@ -52,5 +52,5 @@ tiny-fn = { workspace = true }
 
 [dev-dependencies]
 iceoryx2-bb-testing = { workspace = true }
-iceoryx2-loggers = { workspace = true }
+iceoryx2-bb-loggers = { workspace = true }
 generic-tests = { workspace = true }

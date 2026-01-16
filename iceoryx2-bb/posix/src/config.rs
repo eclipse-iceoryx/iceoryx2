@@ -17,8 +17,8 @@ use core::time::Duration;
 
 use alloc::{format, string::ToString};
 
+use iceoryx2_bb_print::cout;
 use iceoryx2_bb_system_types::{file_name::FileName, path::Path, user_name::UserName};
-use iceoryx2_log::cout;
 
 use crate::{scheduler::Scheduler, system_configuration::*};
 

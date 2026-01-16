@@ -17,7 +17,6 @@ use alloc::boxed::Box;
 
 use examples_common::{open_service, PubSubEvent};
 use iceoryx2::prelude::*;
-use iceoryx2_log::cout;
 
 const CYCLE_TIME: Duration = Duration::from_millis(1000);
 

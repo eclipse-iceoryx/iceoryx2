@@ -137,7 +137,7 @@ impl AsTimeval for Duration {
 ///
 /// # Examples
 /// ```
-/// # extern crate iceoryx2_loggers;
+/// # extern crate iceoryx2_bb_loggers;
 ///
 /// use iceoryx2_bb_posix::clock::*;
 /// let my_time = TimeBuilder::new().clock_type(ClockType::Realtime)
@@ -201,7 +201,7 @@ impl Time {
     ///
     /// # Examples
     /// ```ignore
-    /// # extern crate iceoryx2_loggers;
+    /// # extern crate iceoryx2_bb_loggers;
     ///
     /// use iceoryx2_bb_posix::clock::*;
     ///
@@ -232,7 +232,7 @@ impl Time {
     ///
     /// # Examples
     /// ```
-    /// # extern crate iceoryx2_loggers;
+    /// # extern crate iceoryx2_bb_loggers;
     ///
     /// use iceoryx2_bb_posix::clock::*;
     /// use core::time::Duration;
@@ -282,7 +282,7 @@ impl AsTimespec for Time {
 ///
 /// # Examples
 /// ```
-/// # extern crate iceoryx2_loggers;
+/// # extern crate iceoryx2_bb_loggers;
 ///
 /// use iceoryx2_bb_posix::clock::*;
 /// use core::time::Duration;
@@ -307,7 +307,7 @@ pub fn nanosleep(duration: Duration) -> Result<(), NanosleepError> {
 ///
 /// # Examples
 /// ```
-/// # extern crate iceoryx2_loggers;
+/// # extern crate iceoryx2_bb_loggers;
 ///
 /// use iceoryx2_bb_posix::clock::*;
 /// use core::time::Duration;

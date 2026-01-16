@@ -13,7 +13,6 @@
 use core::time::Duration;
 
 use iceoryx2::prelude::*;
-use iceoryx2_log::cout;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 

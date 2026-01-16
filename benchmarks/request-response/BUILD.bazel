@@ -26,7 +26,7 @@ rust_binary(
         "//iceoryx2:iceoryx2",
         "//iceoryx2-bb/container:iceoryx2-bb-container",
         "//iceoryx2-log/log:iceoryx2-log",
-        "//iceoryx2-log/loggers:iceoryx2-loggers",
+        "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
         "@crate_index//:clap",
     ],

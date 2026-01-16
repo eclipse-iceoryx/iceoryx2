@@ -15,7 +15,7 @@
 //! # Example
 //!
 //! ```ignore
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_bb_posix::mutex::*;
 //! use core::time::Duration;
@@ -168,7 +168,7 @@ impl From<MutexCreationError> for MutexError {
 /// # Example
 ///
 /// ```
-/// extern crate iceoryx2_loggers;
+/// extern crate iceoryx2_bb_loggers;
 ///
 /// use iceoryx2_bb_posix::mutex::*;
 ///
@@ -479,7 +479,7 @@ impl<T: Sized + Debug> MutexHandle<T> {
 /// For a detailed builder example, see [`MutexBuilder`].
 ///
 /// ```
-/// extern crate iceoryx2_loggers;
+/// extern crate iceoryx2_bb_loggers;
 ///
 /// use iceoryx2_bb_posix::mutex::*;
 /// use core::time::Duration;

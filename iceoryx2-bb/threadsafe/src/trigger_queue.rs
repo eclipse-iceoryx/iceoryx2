@@ -16,7 +16,7 @@
 //! # Example
 //!
 //! ```
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use std::thread;
 //! use iceoryx2_bb_threadsafe::trigger_queue::*;

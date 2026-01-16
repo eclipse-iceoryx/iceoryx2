@@ -95,30 +95,14 @@ impl Write for Stderr {
     }
 }
 
-#[cfg(feature = "bare_metal")]
-impl Write for Stdout {
-    fn write_str(&mut self, _s: &str) -> fmt::Result {
-        // TODO: Use character output abstraction
-        Ok(())
-    }
-}
-
-#[cfg(feature = "bare_metal")]
-impl Write for Stderr {
-    fn write_str(&mut self, _s: &str) -> fmt::Result {
-        // TODO: Use character output abstraction
-        Ok(())
-    }
-}
-
-#[cfg(not(any(feature = "std", feature = "posix", feature = "bare_metal")))]
+#[cfg(not(any(feature = "std", feature = "posix")))]
 impl Write for Stdout {
     fn write_str(&mut self, _s: &str) -> fmt::Result {
         Ok(())
     }
 }
 
-#[cfg(not(any(feature = "std", feature = "posix", feature = "bare_metal")))]
+#[cfg(not(any(feature = "std", feature = "posix")))]
 impl Write for Stderr {
     fn write_str(&mut self, _s: &str) -> fmt::Result {
         Ok(())

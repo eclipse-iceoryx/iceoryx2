@@ -16,7 +16,7 @@
 //! # Example
 //!
 //! ```no_run
-//! # extern crate iceoryx2_loggers;
+//! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_bb_posix::file::*;
 //! use iceoryx2_bb_posix::file_lock::*;
