@@ -3,6 +3,9 @@ name: Nightly
 on:
   schedule:
   - cron: "0 1 * * *" # Runs at 1 AM UTC timezone
+  pull_request:
+    branches: [main]
+    types: [opened, ready_for_review, reopened, synchronize]
   workflow_dispatch:
 
 
