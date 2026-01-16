@@ -109,8 +109,8 @@ publisher, as it's confined to the process.
 
 | Service Type         | Scope         | Thread Safety     | Notes                                               |
 | -------------------- | ------------- | ----------------- | --------------------------------------------------- |
-| `ServiceType::Ipc`   | Inter-process | ✅ Thread-safe     | Adds mutex overhead for safe sharing across threads |
-| `ServiceType::Local` | Intra-process | ✅ Thread-safe     | Safe for multi-threaded intra-process communication |
+| `ServiceType::Ipc`   | Inter-process | ✅ Thread-safe    | Adds mutex overhead for safe sharing across threads |
+| `ServiceType::Local` | Intra-process | ✅ Thread-safe    | Safe for multi-threaded intra-process communication |
 
 All ports (`Publisher`, `Subscriber`, etc.) and payloads (`Sample`, `Request`,
 etc.) are affected by the service type defined when the `Node` is created.
