@@ -44,7 +44,7 @@ jobs:
       - name: Build posix examples (no_std)
         run: cd examples/nostd/posix/rust && cargo build --examples && cd -
 
-  x64_cxx_binding_vocabulary_types_variations:
+  x86_64_cxx_binding_vocabulary_types_variations:
     timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
