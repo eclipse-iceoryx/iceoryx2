@@ -9,12 +9,12 @@ on:
       toolchain:
         required: true
         type: string
-      cargo-build-type-flag:
-        required: true
+      cargo-profile:
+        required: false
         type: string
 
 jobs:
-  x86_64_unstable:
+  x86_64:
     continue-on-error: true
     timeout-minutes: 90
     runs-on: ${{ inputs.os }}
@@ -71,13 +71,12 @@ jobs:
           mode: "pre-build"
 
       - name: Run cargo build
-        run: cargo build --workspace --all-targets ${{ inputs.cargo-build-type-flag }}
+        run: cargo build --workspace --all-targets ${{ inputs.cargo-profile }}
 
       - name: Run cargo nextest
-        run: cargo nextest run --workspace --all-targets --no-fail-fast ${{ inputs.cargo-build-type-flag }}
+        run: cargo nextest run --workspace --all-targets --no-fail-fast ${{ inputs.cargo-profile }}
 
       - name: Cleanup build artifacts
         uses: ./.github/actions/save-disk-space
         with:
           mode: "post-build"
-

@@ -7,7 +7,7 @@ on:
         required: true
         type: string
       cargo-features-flag:
-        required: true
+        required: false
         type: string
 
 jobs:

@@ -9,23 +9,23 @@ on:
       toolchain:
         required: true
         type: string
-      mode-name:
+      mode:
         required: true
         type: string
-      cargo-build-type-flag:
-        required: true
-        type: string
-      mode-cmake-build-type:
-        required: true
-        type: string
-      mode-cmake-build-config:
-        required: true
-        type: string
-      mode-cmake-cxx-flags:
+      cargo-profile:
         required: false
         type: string
       cargo-features-flag:
+        required: false
+        type: string
+      cmake-build-type:
         required: true
+        type: string
+      cmake-build-config:
+        required: true
+        type: string
+      cmake-cxx-flags:
+        required: false
         type: string
 
 
@@ -91,10 +91,10 @@ jobs:
           mode: "pre-build"
 
       - name: Run cargo build
-        run: cargo build --workspace --all-targets ${{ inputs.cargo-build-type-flag }} ${{ inputs.cargo-features-flag }}
+        run: cargo build --workspace --all-targets ${{ inputs.cargo-profile }} ${{ inputs.cargo-features-flag }}
 
       - name: Run cargo nextest
-        run: cargo nextest run --workspace --all-targets --no-fail-fast ${{ inputs.cargo-build-type-flag }} ${{ inputs.cargo-features-flag }}
+        run: cargo nextest run --workspace --all-targets --no-fail-fast ${{ inputs.cargo-profile }} ${{ inputs.cargo-features-flag }}
 
       - name: Cleanup build artifacts
         uses: ./.github/actions/save-disk-space
@@ -115,14 +115,14 @@ jobs:
                 -DBUILD_EXAMPLES=ON \
                 -DBUILD_TESTING=ON \
                 -DWARNING_AS_ERROR=ON \
-                ${{ inputs.mode-cmake-build-type }} \
-                ${{ inputs.mode-cmake-cxx-flags }} \
+                ${{ inputs.cmake-build-type }} \
+                ${{ inputs.cmake-cxx-flags }} \
                 -DCMAKE_INSTALL_PREFIX=target/ff/cc/install \
-                -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/${{ inputs.mode-name }}" \
+                -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/${{ inputs.mode }}" \
                 -DCMAKE_C_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-          cmake --build target/ff/cc/build ${{ inputs.mode-cmake-build-config }}
-          cmake --install target/ff/cc/build ${{ inputs.mode-cmake-build-config }}
+          cmake --build target/ff/cc/build ${{ inputs.cmake-build-config }}
+          cmake --install target/ff/cc/build ${{ inputs.cmake-build-config }}
 
       - name: Run C++ iceoryx2-bb tests
         run: target/ff/cc/build/tests/iceoryx2-bb-cxx-tests
@@ -138,21 +138,21 @@ jobs:
         run: |
           cmake -S examples/c \
                 -B target/ff/out-of-tree-c \
-                ${{ inputs.mode-cmake-build-type }} \
-                ${{ inputs.mode-cmake-cxx-flags }} \
+                ${{ inputs.cmake-build-type }} \
+                ${{ inputs.cmake-cxx-flags }} \
                 -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/cc/install" \
                 -DCMAKE_C_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-          cmake --build target/ff/out-of-tree-c ${{ matrix.mode.cmake-build-config }}
+          cmake --build target/ff/out-of-tree-c ${{ inputs.cmake-build-config }}
 
       - name: Build C++ language binding examples in out-of-tree configuration
         shell: bash
         run: |
           cmake -S examples/cxx \
                 -B target/ff/out-of-tree-cxx \
-                ${{ inputs.mode-cmake-build-type }} \
-                ${{ inputs.mode-cmake-cxx-flags }} \
+                ${{ inputs.cmake-build-type }} \
+                ${{ inputs.cmake-cxx-flags }} \
                 -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/cc/install" \
                 -DCMAKE_C_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-          cmake --build target/ff/out-of-tree-cxx ${{ inputs.mode-cmake-build-config }}
+          cmake --build target/ff/out-of-tree-cxx ${{ inputs.cmake-build-config }}

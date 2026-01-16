@@ -9,8 +9,11 @@ on:
       toolchain:
         required: true
         type: string
-      cargo-build-type-flag:
+      mode:
         required: true
+        type: string
+      cargo-profile:
+        required: false
         type: string
       cmake-build-type:
         required: true
@@ -75,10 +78,10 @@ jobs:
           mode: "pre-build"
 
       - name: Run cargo build
-        run: cargo build --workspace --exclude iceoryx2-ffi-python --all-targets ${{ inputs.cargo-build-type-flag }} --target i686-unknown-linux-gnu
+        run: cargo build --workspace --exclude iceoryx2-ffi-python --all-targets ${{ inputs.cargo-profile }} --target i686-unknown-linux-gnu
 
       - name: Run cargo nextest
-        run: cargo nextest run --workspace --exclude iceoryx2-ffi-python --all-targets --no-fail-fast ${{ inputs.cargo-build-type-flag }} --target i686-unknown-linux-gnu
+        run: cargo nextest run --workspace --exclude iceoryx2-ffi-python --all-targets --no-fail-fast ${{ inputs.cargo-profile }} --target i686-unknown-linux-gnu
 
       - name: Cleanup build artifacts
         uses: ./.github/actions/save-disk-space
@@ -95,7 +98,7 @@ jobs:
                 -DBUILD_TESTING=ON \
                 -DCMAKE_C_FLAGS="-m32 -malign-double" \
                 -DCMAKE_CXX_FLAGS="-m32 -malign-double" \
-                -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/i686-unknown-linux-gnu/${{ inputs.cargo-build-type-flag }}" \
+                -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/i686-unknown-linux-gnu/${{ inputs.mode }}" \
                 ${{ inputs.cmake-build-type }} \
                 -DCMAKE_C_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=sccache

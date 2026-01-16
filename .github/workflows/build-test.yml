@@ -115,7 +115,6 @@ jobs:
     strategy:
       matrix:
         os: [macOS-latest]
-        cargo-features-flag: [""]
         include:
           - os: ubuntu-latest
             cargo-features-flag: "--features libc_platform"
@@ -287,7 +286,7 @@ jobs:
             --abort-on-container-exit \
             --exit-code-from pinger
 
-  x86_32:
+  x86_32-debug:
     needs: [preflight-check, static-code-analysis, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
@@ -298,10 +297,11 @@ jobs:
     with:
       os: ${{ matrix.os }}
       toolchain: ${{ matrix.toolchain }}
-      cargo-build-type-flag: "debug"
+      mode: "debug"
+      cargo-profile: "" # debug by default
       cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug"
 
-  x86_64:
+  stable-debug:
     needs: [preflight-check, static-code-analysis, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
@@ -309,45 +309,38 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
         toolchain: [stable, 1.83.0]
         include:
-          - mode: "debug"
-            cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug" # required for Makefile Generators at config time
-            cmake-build-config: "--config Debug" # required for Visual Studio at build and install time
-          - os: ubuntu-latest
+          - cargo-features-flag: ""
+            os: ubuntu-latest
             toolchain: stable
-            mode: "debug"
-            cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug"
-            cargo-features-flag: "--features libc_platform"
-          - os: ubuntu-latest
-            toolchain: 1.83.0
-            mode: "debug"
-            cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug"
-            cargo-features-flag: "--features iceoryx2/libc_platform" # NOTE: using 'iceoryx2/libc_platform' to trigger the feature
+          - cargo-features-flag: "--features iceoryx2/libc_platform"
+            os: ubuntu-latest
+            toolchain: stable
     uses: ./.github/workflows/reuse_x86_64_stable.yml
     with:
       os: ${{ matrix.os }}
       toolchain: ${{ matrix.toolchain }}
-      mode-name: ${{ matrix.mode.name }}
-      mode-cmake-build-type: ${{ matrix.cmake-build-type }}
-      mode-cmake-build-config: ${{ matrix.cmake-build-config }}
-      mode-cmake-cxx-flags: ""
-      cargo-build-type-flag: "" # intentionally left blank because cargo builds in debug mode by default
+      mode: "debug"
+      cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug"
+      cmake-build-config: "--config Debug"
+      cmake-cxx-flags: ""
+      cargo-profile: "" # debug by default
       cargo-features-flag: ${{ matrix.cargo-features-flag }}
 
-  x86_64-stable-release:
+  stable-release:
     needs: [preflight-check, static-code-analysis, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     uses: ./.github/workflows/reuse_x86_64_stable.yml
     with:
       os: ubuntu-latest
       toolchain: stable
-      mode-name: "release"
-      mode-cmake-build-type: "-DCMAKE_BUILD_TYPE=Release"
-      mode-cmake-build-config: "--config Release"
-      mode-cmake-cxx-flags: ""
-      cargo-build-type-flag: "--release"
+      mode: "release"
+      cmake-build-type: "-DCMAKE_BUILD_TYPE=Release"
+      cmake-build-config: "--config Release"
+      cmake-cxx-flags: ""
+      cargo-profile: "--release"
       cargo-features-flag: ""
 
-  x86_64_unstable:
+  unstable:
     needs: [preflight-check, static-code-analysis, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' && github.ref != 'refs/heads/main' }}
     strategy:
@@ -358,9 +351,8 @@ jobs:
     with:
       os: ${{ matrix.os }}
       toolchain: ${{ matrix.toolchain }}
-      cargo-build-type-flag: "" # intentionally left blank because cargo builds in debug mode by default
 
-  x86_64_bazel:
+  Bazel:
     needs: [preflight-check, static-code-analysis]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
@@ -435,9 +427,9 @@ jobs:
         preflight-check,
         static-code-analysis,
         static-code-analysis-rust-extended,
-        x86_64,
-        x86_64_bazel,
-        x86_32,
+        stable-debug,
+        Bazel,
+        x86_32-debug,
         variants,
         python-bindings,
         end-to-end-tests,
