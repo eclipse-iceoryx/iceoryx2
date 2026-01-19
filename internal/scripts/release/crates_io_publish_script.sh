@@ -67,6 +67,7 @@ CRATES_TO_IGNORE=(
     benchmark-publish-subscribe
     benchmark-request-response
     benchmark-queue
+    component-tests_rust
     example
     iceoryx2-ffi-c
     iceoryx2-ffi-macros
