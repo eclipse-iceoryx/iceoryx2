@@ -14,13 +14,17 @@ use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
 
-use crate::port::port_identifiers::{UniqueClientId, UniqueServerId};
+use crate::{
+    node::NodeId,
+    port::port_identifiers::{UniqueClientId, UniqueServerId},
+};
 
 /// Request header used by
 /// [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse)
 #[derive(Debug, Copy, Clone, ZeroCopySend)]
 #[repr(C)]
 pub struct RequestHeader {
+    pub(crate) node_id: NodeId,
     pub(crate) client_id: UniqueClientId,
     pub(crate) channel_id: ChannelId,
     pub(crate) request_id: u64,
@@ -46,6 +50,12 @@ impl RequestHeader {
     pub fn number_of_elements(&self) -> u64 {
         self.number_of_elements
     }
+
+    /// Returns the [`NodeId`] of the source node that published the
+    /// [`RequestMut`](crate::request_mut::RequestMut).
+    pub fn node_id(&self) -> NodeId {
+        self.node_id
+    }
 }
 
 /// Response header used by
@@ -53,12 +63,19 @@ impl RequestHeader {
 #[derive(Debug, Copy, Clone, ZeroCopySend)]
 #[repr(C)]
 pub struct ResponseHeader {
+    pub(crate) node_id: NodeId,
     pub(crate) server_id: UniqueServerId,
     pub(crate) request_id: u64,
     pub(crate) number_of_elements: u64,
 }
 
 impl ResponseHeader {
+    /// Returns the [`NodeId`] of the source node that published the
+    /// [`Response`](crate::response::Response).
+    pub fn node_id(&self) -> NodeId {
+        self.node_id
+    }
+
     /// Returns the [`UniqueServerId`] of the [`Server`](crate::port::server::Server)
     /// which sent the [`Response`](crate::response::Response)
     pub fn server_id(&self) -> UniqueServerId {

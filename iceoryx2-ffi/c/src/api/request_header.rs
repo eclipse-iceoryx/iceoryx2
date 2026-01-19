@@ -26,7 +26,7 @@ use crate::{
 #[repr(C)]
 #[repr(align(8))] // core::mem::align_of::<Option<RequestHeader>>()
 pub struct iox2_request_header_storage_t {
-    internal: [u8; 48], // core::mem::size_of::<Option<RequestHeader>>()
+    internal: [u8; 64], // core::mem::size_of::<Option<RequestHeader>>()
 }
 
 #[repr(C)]

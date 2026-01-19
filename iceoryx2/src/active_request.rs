@@ -317,6 +317,7 @@ impl<
         let user_header_ptr: *mut ResponseHeader = chunk.user_header.cast();
         unsafe {
             header_ptr.write(service::header::request_response::ResponseHeader {
+                node_id: *shared_state.response_sender.shared_node.id(),
                 server_id: UniqueServerId(UniqueSystemId::from(
                     shared_state.response_sender.sender_port_id,
                 )),
@@ -563,6 +564,7 @@ impl<
         let user_header_ptr: *mut ResponseHeader = chunk.user_header.cast();
         unsafe {
             header_ptr.write(service::header::request_response::ResponseHeader {
+                node_id: *shared_state.response_sender.shared_node.id(),
                 server_id: UniqueServerId(UniqueSystemId::from(
                     shared_state.response_sender.sender_port_id,
                 )),
