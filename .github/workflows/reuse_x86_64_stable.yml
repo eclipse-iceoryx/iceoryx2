@@ -85,11 +85,21 @@ jobs:
         if: ${{ contains(inputs.cargo-features-flag, 'libc_platform') }}
         run: sudo apt remove -y --purge '^libclang-.*-dev' # remove libclang to force a compile error if the feature is not propagated correctly and bindgen is used
 
+      - name: Save disk space
+        uses: ./.github/actions/save-disk-space
+        with:
+          mode: "pre-build"
+
       - name: Run cargo build
         run: cargo build --workspace --all-targets ${{ inputs.cargo-build-type-flag }} ${{ inputs.cargo-features-flag }}
 
       - name: Run cargo nextest
         run: cargo nextest run --workspace --all-targets --no-fail-fast ${{ inputs.cargo-build-type-flag }} ${{ inputs.cargo-features-flag }}
+
+      - name: Cleanup build artifacts
+        uses: ./.github/actions/save-disk-space
+        with:
+          mode: "post-build"
 
       - name: Print native libs of FFI target
         if: false # This step takes 1 to 2 minutes; only enable if there are linker issues with the FFI target
@@ -122,14 +132,6 @@ jobs:
 
       - name: Run C++ language binding tests
         run: target/ff/cc/build/tests/iceoryx2-cxx-tests
-
-      - name: Remove language binding build artifacts on Windows
-        if: ${{ inputs.os == 'windows-latest' }}
-        run: rm -r -force target/ff/cc/build
-
-      - name: Remove language binding build artifacts on non-Windows
-        if: ${{ inputs.os != 'windows-latest' }}
-        run: rm -rf target/ff/cc/build
 
       - name: Build C language binding examples in out-of-tree configuration
         shell: bash

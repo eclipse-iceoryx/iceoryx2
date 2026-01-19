@@ -1,0 +1,30 @@
+name: 'Save disk space'
+description: 'Removes software packages and build artifacts that are not needed by the CI'
+inputs:
+  mode:
+    description: "Defines wether to execute the action before or after cargo build {pre-build,post-build}"
+    required: true
+runs:
+  using: "composite"
+  steps:
+      - name: Remove unneeded software
+        if: ${{ inputs.mode == 'pre-build' }}
+        shell: bash
+        run: |
+          sudo rm -rf /usr/local/lib/android || true # Remove Android
+          sudo rm -rf /usr/share/dotnet || true # Remove Dotnet
+          sudo rm -rf /opt/ghc || true # Remove Haskell
+          sudo rm -rf /usr/local/.ghcup || true # Remove Haskell
+          sudo rm -rf /usr/share/swift || true 
+          sudo rm -rf /usr/lib/google-cloud-sdk || true 
+          sudo rm -rf /usr/local/share/chromium || true 
+          sudo rm -rf /opt/microsoft/msedge || true 
+          sudo rm -rf /opt/google/chrome || true 
+
+
+      - name: Cleanup cargo target folder
+        if: ${{ inputs.mode == 'post-build' }}
+        shell: bash
+        run: |
+          rm -rf ${{ github.workspace }}/target/{debug,release}/{deps,incremental}
+          rm -rf ${{ github.workspace }}/target/*/{debug,release}/{deps,incremental} # Cleanup subfolders for target triples

@@ -59,6 +59,11 @@ jobs:
           artifact-bin-name: grcov
           artifact-upload-name: ${{ runner.os }}-grcov
 
+      - name: Save disk space
+        uses: ./.github/actions/save-disk-space
+        with:
+          mode: "pre-build"
+
       - name: Generate raw coverage results
         run: ./internal/scripts/generate-cov-report.sh --generate
 

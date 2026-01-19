@@ -65,8 +65,19 @@ jobs:
           internal/scripts/ci_prepare_ubuntu.sh
           uname -a
 
+      - name: Save disk space
+        uses: ./.github/actions/save-disk-space
+        with:
+          mode: "pre-build"
+
       - name: Run cargo build
         run: cargo build --workspace --all-targets ${{ inputs.cargo-build-type-flag }}
 
       - name: Run cargo nextest
         run: cargo nextest run --workspace --all-targets --no-fail-fast ${{ inputs.cargo-build-type-flag }}
+
+      - name: Cleanup build artifacts
+        uses: ./.github/actions/save-disk-space
+        with:
+          mode: "post-build"
+

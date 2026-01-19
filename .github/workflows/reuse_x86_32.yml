@@ -69,11 +69,21 @@ jobs:
           internal/scripts/ci_prepare_ubuntu.sh
           uname -a
 
+      - name: Save disk space
+        uses: ./.github/actions/save-disk-space
+        with:
+          mode: "pre-build"
+
       - name: Run cargo build
         run: cargo build --workspace --exclude iceoryx2-ffi-python --all-targets ${{ inputs.cargo-build-type-flag }} --target i686-unknown-linux-gnu
 
       - name: Run cargo nextest
         run: cargo nextest run --workspace --exclude iceoryx2-ffi-python --all-targets --no-fail-fast ${{ inputs.cargo-build-type-flag }} --target i686-unknown-linux-gnu
+
+      - name: Cleanup build artifacts
+        uses: ./.github/actions/save-disk-space
+        with:
+          mode: "post-build"
 
       - name: Build language bindings
         shell: bash
