@@ -2,7 +2,7 @@
 # The file is used by scripts to update all locations with the version information
 
 # This version is set by the update_versions.sh and release_preparations.sh scripts
-CURRENT: 0.8.0
+CURRENT: 0.8.999
 
 # This version is set by the release_preparations.sh script
 PREVIOUS_RELEASE: 0.8.0
