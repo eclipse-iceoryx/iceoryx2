@@ -39,7 +39,8 @@
     NOTE: Add new entries sorted by issue number to minimize the possibility of
     conflicts when merging.
 -->
-
+* Adjust test names to naming convention
+  [#1273](https://github.com/eclipse-iceoryx/iceoryx2/issues/1273)
 * Move character output abstraction into building blocks as `iceoryx2-bb-print`
   [#1300](https://github.com/eclipse-iceoryx/iceoryx2/issues/1300)
 * Move `iceoryx2-loggers` crate into building blocks as `iceoryx2-bb-loggers`
