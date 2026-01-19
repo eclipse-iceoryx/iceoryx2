@@ -667,6 +667,7 @@ impl<
         let user_header_ptr: *mut RequestHeader = chunk.user_header.cast();
         unsafe {
             header_ptr.write(service::header::request_response::RequestHeader {
+                node_id: *client_shared_state.request_sender.shared_node.id(),
                 client_id: self.id(),
                 channel_id,
                 request_id: self.request_id_counter.fetch_add(1, Ordering::Relaxed),
@@ -945,6 +946,7 @@ impl<
         let header_ptr = chunk.header as *mut header::request_response::RequestHeader;
         unsafe {
             header_ptr.write(header::request_response::RequestHeader {
+                node_id: *client_shared_state.request_sender.shared_node.id(),
                 client_id: self.id(),
                 channel_id,
                 request_id: self.request_id_counter.fetch_add(1, Ordering::Relaxed),
