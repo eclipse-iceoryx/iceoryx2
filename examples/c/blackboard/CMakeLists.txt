@@ -13,7 +13,7 @@
 cmake_minimum_required(VERSION 3.22)
 project(example_c_blackboard LANGUAGES C)
 
-find_package(iceoryx2-c 0.8.0 REQUIRED)
+find_package(iceoryx2-c 0.8.999 REQUIRED)
 
 add_executable(example_c_creator src/creator.c)
 target_link_libraries(example_c_creator iceoryx2-c::static-lib)

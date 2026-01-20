@@ -12,7 +12,7 @@
 
 cmake_minimum_required(VERSION 3.22)
 
-set(IOX2_VERSION 0.8.0)
+set(IOX2_VERSION 0.8.999)
 project(iceoryx2-cmake-modules VERSION ${IOX2_VERSION})
 
 #

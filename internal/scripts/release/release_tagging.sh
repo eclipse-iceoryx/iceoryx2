@@ -73,6 +73,14 @@ print_publish_release() {
     echo -e "  * Select correct 'Previous tag'"
     echo -e "  * Add the content from 'doc/release-notes/iceoryx2-v.${NEW_VERSION}md', beginning at '[Full Changelog]', to 'Release notes'"
 
+    echo -e "* Set iceoryx2 dev version on 'main'"
+    echo -e "  * In case of a .0 release, update the version on main to x.y.999 with y being the next feature release minus 1"
+    echo -e "    ${C_YELLOW}internal/scripts/update_versions.sh --iceoryx2 ${NEW_MAJOR}.${NEW_MINOR}.999${C_OFF}"
+
+    echo -e "* Backport changelog to 'main'"
+    echo -e "  * In case of a release from a branch, backport the changelog to main and remove the entries from the patch release from 'iceoryx2-unreleased.md'"
+    echo -e "  * Set the PREVIOUS_VERSION in 'internal/VERSIONS' on main to the latest patch release"
+
     echo -e "* For the publishing, the '\$GIT_ROOT$/internal/scripts/release/release_publish.sh' script can be used!"
 }
 
