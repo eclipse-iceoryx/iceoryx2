@@ -18,25 +18,6 @@ get_repo_root() {
     git rev-parse --show-toplevel
 }
 
-get_changed_files() {
-    # We're running locally
-    # Get the name of the current branch
-    current_branch=$(git rev-parse --abbrev-ref HEAD)
-
-    if [ "$current_branch" = "main" ]; then
-        # If we're on main, just check uncommitted changes
-        git diff --name-only --diff-filter=ACMRT HEAD
-    else
-        merge_base=$(git merge-base main HEAD)
-
-        {
-            git diff --name-only --diff-filter=ACMRT $merge_base...HEAD
-            git ls-files --others --exclude-standard # New files not yet committed
-            git diff --name-only --diff-filter=ACMRT # Uncommitted changes to tracked files
-        } | sort -u
-    fi
-}
-
 get_all_md_files() {
     git ls-files '*.md'
 }
@@ -51,7 +32,7 @@ print_file_list() {
 
 # Set defaults
 MODE="check"
-CHECK_ALL=false
+CHECK_ALL=true
 REPO_ROOT=$(get_repo_root)
 MARKDOWNLINT_CONFIG="$REPO_ROOT/.markdownlint.yaml"
 
@@ -88,10 +69,6 @@ echo "Running Markdown lint in $MODE mode..."
 if [ "$CHECK_ALL" = true ]; then
     md_files=$(get_all_md_files)
     echo "Checking all Markdown files in the repository..."
-else
-    changed_files=$(get_changed_files)
-    md_files=$(echo "$changed_files" | grep -E '\.md$' || true)
-    echo "Checking only changed Markdown files..."
 fi
 
 if [ -z "$md_files" ]; then
