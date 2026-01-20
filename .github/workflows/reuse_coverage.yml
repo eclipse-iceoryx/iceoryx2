@@ -9,18 +9,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
-      - name: Build and cache grcov
-        uses: ./.github/actions/build-and-cache-rust-tool
-        with:
-          rust-toolchain: 1.86.0
-          rust-components: llvm-tools
-          check-and-install-cmd: grcov --version > /dev/null || cargo install grcov
-          print-version-cmd: grcov --version
-          cache-key: cache-2-${{ runner.os }}-grcov
-          artifact-bin-name: grcov
-          artifact-upload-name: ${{ runner.os }}-grcov
-
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
 
       - name: Install dependencies
         uses: ./.github/actions/install-iceoryx-deps-and-clang
@@ -62,7 +50,7 @@ jobs:
       - name: Save disk space
         uses: ./.github/actions/save-disk-space
         with:
-          mode: "pre-build"
+          mode: "pre"
 
       - name: Generate raw coverage results
         run: ./internal/scripts/generate-cov-report.sh --generate

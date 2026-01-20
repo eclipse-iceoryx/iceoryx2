@@ -9,11 +9,8 @@ on:
       toolchain:
         required: true
         type: string
-      mode:
+      profile:
         required: true
-        type: string
-      cargo-profile:
-        required: false
         type: string
       cmake-build-type:
         required: true
@@ -51,23 +48,23 @@ jobs:
         uses: mozilla-actions/sccache-action@bafd42bd91680affe190f697cac6ef3ad958ecba # version: v0.0.9
 
       - name: Set caching env vars on non-Windows
-        if: ${{ inputs.os != 'windows-latest' }}
+        if: ${{ runner.os != 'Windows' }}
         run: |
           echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
           echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
 
       - name: Set caching env vars on Windows
-        if: ${{ inputs.os == 'windows-latest' }}
+        if: ${{ runner.os == 'Windows' }}
         run: |
           Add-Content -Path $env:GITHUB_ENV -Value "SCCACHE_GHA_ENABLED=true"
           Add-Content -Path $env:GITHUB_ENV -Value "RUSTC_WRAPPER=sccache"
 
       - name: Prepare Windows
-        if: ${{ inputs.os == 'windows-latest' }}
+        if: ${{ runner.os == 'Windows' }}
         run: internal\scripts\ci_prepare_windows.ps1
 
       - name: Prepare Linux
-        if: ${{ inputs.os == 'ubuntu-latest' }}
+        if: ${{ runner.os == 'Linux' }}
         run: |
           internal/scripts/ci_prepare_ubuntu.sh
           uname -a
@@ -75,18 +72,32 @@ jobs:
       - name: Save disk space
         uses: ./.github/actions/save-disk-space
         with:
-          mode: "pre-build"
+          mode: "pre"
 
       - name: Run cargo build
-        run: cargo build --workspace --exclude iceoryx2-ffi-python --all-targets ${{ inputs.cargo-profile }} --target i686-unknown-linux-gnu
+        shell: bash
+        run: |
+          BUILD_MODE=""
+          if [[ ${{ inputs.profile }} == 'release' ]]; then
+            BUILD_MODE="--release"
+          fi
+          echo "Cargo build mode: ${BUILD_MODE}"
+          cargo build --workspace --exclude iceoryx2-ffi-python --all-targets ${BUILD_MODE} --target i686-unknown-linux-gnu
 
       - name: Run cargo nextest
-        run: cargo nextest run --workspace --exclude iceoryx2-ffi-python --all-targets --no-fail-fast ${{ inputs.cargo-profile }} --target i686-unknown-linux-gnu
+        shell: bash
+        run: |
+          BUILD_MODE=""
+          if [[ ${{ inputs.profile }} == 'release' ]]; then
+            BUILD_MODE="--release"
+          fi
+          echo "Cargo build mode: ${BUILD_MODE}"  
+          cargo nextest run --workspace --exclude iceoryx2-ffi-python --all-targets --no-fail-fast ${BUILD_MODE} --target i686-unknown-linux-gnu
 
       - name: Cleanup build artifacts
         uses: ./.github/actions/save-disk-space
         with:
-          mode: "post-build"
+          mode: "post"
 
       - name: Build language bindings
         shell: bash
@@ -98,7 +109,7 @@ jobs:
                 -DBUILD_TESTING=ON \
                 -DCMAKE_C_FLAGS="-m32 -malign-double" \
                 -DCMAKE_CXX_FLAGS="-m32 -malign-double" \
-                -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/i686-unknown-linux-gnu/${{ inputs.mode }}" \
+                -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/i686-unknown-linux-gnu/${{ inputs.profile }}" \
                 ${{ inputs.cmake-build-type }} \
                 -DCMAKE_C_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=sccache

@@ -1,4 +1,4 @@
-name: Main
+name: Build and Test
 
 on:
   push:
@@ -30,13 +30,11 @@ jobs:
             markdown:
               - '**/*.md'
 
-############################## Begin section initial checks ##############################
-
   preflight-check:
     needs: changes
     if: ${{ needs.changes.outputs.source-code == 'true' }}
-    timeout-minutes: 10
-    runs-on: ubuntu-slim
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
@@ -46,6 +44,24 @@ jobs:
 
       - name: Check license header
         run: ./internal/scripts/ci_test_spdx_license_header.sh
+
+      - name: Install clang-tidy and clang-format
+        uses: ./.github/actions/install-iceoryx-deps-and-clang
+
+      - name: clang-format version
+        run: clang-format --version
+
+      - name: Run clang-format
+        run: git ls-files | grep -E "\.(c|cc|cpp|cxx|inl|h|hh|hpp|hxx)$" | xargs clang-format -i -style=file --Werror --dry-run
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # version: v1
+        with:
+          toolchain: stable
+          components: rustfmt
+
+      - name: Run cargo fmt
+        run: cargo fmt --all -- --check
 
   linting-markdown:
     needs: changes
@@ -72,7 +88,7 @@ jobs:
 
   # First rust code analysis with Ubuntu only
   static-code-analysis-rust:
-    needs: preflight-check
+    needs: changes
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     uses: ./.github/workflows/reuse_static_code_analysis.yml
     with:
@@ -80,7 +96,7 @@ jobs:
       cargo-features-flag: ""
 
   static-code-analysis-cpp:
-    needs: preflight-check
+    needs: changes
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     timeout-minutes: 40
     runs-on: ubuntu-latest
@@ -88,20 +104,11 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
 
-      - name: Install clang-tidy and clang-format
-        uses: ./.github/actions/install-iceoryx-deps-and-clang
-
-      - name: clang-format version
-        run: clang-format --version
-
       - name: clang-tidy version
         run: clang-tidy --version
 
       - name: cmake version
         run: cmake --version
-
-      - name: Run clang-format
-        run: git ls-files | grep -E "\.(c|cc|cpp|cxx|inl|h|hh|hpp|hxx)$" | xargs clang-format -i -style=file --Werror --dry-run
 
       - name: Run clang-tidy
         run: |
@@ -110,11 +117,12 @@ jobs:
 
   # Static Code Analysis on other variants
   static-code-analysis-rust-extended:
-    needs: [preflight-check, cargo-nextest]
+    needs: [static-code-analysis-rust, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
       matrix:
-        os: [macOS-latest]
+        os: [macos-latest]
+        cargo-features-flag: [""]
         include:
           - os: ubuntu-latest
             cargo-features-flag: "--features libc_platform"
@@ -133,10 +141,25 @@ jobs:
       - name: Static code analysis sync point
         run: echo "Nothing to see, move along!"
 
+  # Build documentation and run code examples
+  rust-doc-check:
+    needs: [preflight-check, cargo-nextest]
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            cargo-features-flag: "--features libc_platform"
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
 
-############################## End section initial checks ##############################
+      - name: Run code examples in documentation
+        run: cargo test --workspace --doc ${{ matrix.cargo-features-flag }}
 
-############################## Begin section Build & Test ##############################
+      - name: Build documentation
+        run: cargo doc --no-deps ${{ matrix.cargo-features-flag }}
 
   cargo-nextest:
     needs: preflight-check
@@ -297,8 +320,7 @@ jobs:
     with:
       os: ${{ matrix.os }}
       toolchain: ${{ matrix.toolchain }}
-      mode: "debug"
-      cargo-profile: "" # debug by default
+      profile: "debug"
       cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug"
 
   stable-debug:
@@ -319,11 +341,10 @@ jobs:
     with:
       os: ${{ matrix.os }}
       toolchain: ${{ matrix.toolchain }}
-      mode: "debug"
+      profile: "debug"
       cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug"
       cmake-build-config: "--config Debug"
       cmake-cxx-flags: ""
-      cargo-profile: "" # debug by default
       cargo-features-flag: ${{ matrix.cargo-features-flag }}
 
   stable-release:
@@ -333,11 +354,10 @@ jobs:
     with:
       os: ubuntu-latest
       toolchain: stable
-      mode: "release"
+      profile: "release"
       cmake-build-type: "-DCMAKE_BUILD_TYPE=Release"
       cmake-build-config: "--config Release"
       cmake-cxx-flags: ""
-      cargo-profile: "--release"
       cargo-features-flag: ""
 
   unstable:
@@ -351,6 +371,7 @@ jobs:
     with:
       os: ${{ matrix.os }}
       toolchain: ${{ matrix.toolchain }}
+      profile: "debug"
 
   Bazel:
     needs: [preflight-check, static-code-analysis]
@@ -370,7 +391,6 @@ jobs:
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # version: v1
         with:
           toolchain: ${{ matrix.toolchain }}
-          components: rustfmt, clippy
 
       - name: Prepare Linux
         run: |
@@ -390,10 +410,15 @@ jobs:
           USE_BAZEL_VERSION: "7.4.1"
         run: bazel test //... ${{ matrix.bazel-mode }}
 
-  variants:
+  cxx-vocabulary-types:
     needs: [preflight-check, static-code-analysis]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
-    uses: ./.github/workflows/reuse_variants.yml
+    uses: ./.github/workflows/reuse_cxx_vocabulary_types.yml
+
+  no_std:
+    needs: [preflight-check, static-code-analysis]
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    uses: ./.github/workflows/reuse_no_std.yml
 
   cargo-publish-dry-run:
     needs: [preflight-check, static-code-analysis]
@@ -415,9 +440,25 @@ jobs:
       - name: Cargo Publish Dry-Run
         run: ./internal/scripts/release/crates_io_publish_script.sh dry-run-allow-dirty
 
-  coverage:
+  grcov:
     needs: [preflight-check, static-code-analysis]
-    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+      - name: Build and cache grcov
+        uses: ./.github/actions/build-and-cache-rust-tool
+        with:
+          rust-toolchain: 1.86.0
+          rust-components: llvm-tools
+          check-and-install-cmd: grcov --version > /dev/null || cargo install grcov
+          print-version-cmd: grcov --version
+          cache-key: cache-2-${{ runner.os }}-grcov
+          artifact-bin-name: grcov
+          artifact-upload-name: ${{ runner.os }}-grcov
+
+  coverage:
+    needs: grcov
     uses: ./.github/workflows/reuse_coverage.yml
 
   # Have a sync point for all CI jobs that need to pass, will be enforced by Otterdog
@@ -425,12 +466,14 @@ jobs:
     needs:
       [
         preflight-check,
+        rust-doc-check,
         static-code-analysis,
         static-code-analysis-rust-extended,
         stable-debug,
         Bazel,
         x86_32-debug,
-        variants,
+        no_std,
+        cxx-vocabulary-types,
         python-bindings,
         end-to-end-tests,
         cargo-publish-dry-run,

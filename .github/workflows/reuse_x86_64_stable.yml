@@ -9,11 +9,8 @@ on:
       toolchain:
         required: true
         type: string
-      mode:
+      profile:
         required: true
-        type: string
-      cargo-profile:
-        required: false
         type: string
       cargo-features-flag:
         required: false
@@ -48,7 +45,6 @@ jobs:
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # version: v1
         with:
           toolchain: ${{ inputs.toolchain }}
-          components: rustfmt, clippy
 
       - name: Download artifact cargo-nextest
         uses: ./.github/actions/download-cached-rust-tool
@@ -60,23 +56,23 @@ jobs:
         uses: mozilla-actions/sccache-action@bafd42bd91680affe190f697cac6ef3ad958ecba # version: v0.0.9
 
       - name: Set caching env vars on non-Windows
-        if: ${{ inputs.os != 'windows-latest' }}
+        if: ${{ runner.os != 'Windows' }}
         run: |
           echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
           echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
 
       - name: Set caching env vars on Windows
-        if: ${{ inputs.os == 'windows-latest' }}
+        if: ${{ runner.os == 'Windows' }}
         run: |
           Add-Content -Path $env:GITHUB_ENV -Value "SCCACHE_GHA_ENABLED=true"
           Add-Content -Path $env:GITHUB_ENV -Value "RUSTC_WRAPPER=sccache"
 
       - name: Prepare Windows
-        if: ${{ inputs.os == 'windows-latest' }}
+        if: ${{ runner.os == 'Windows' }}
         run: internal\scripts\ci_prepare_windows.ps1
 
       - name: Prepare Linux
-        if: ${{ inputs.os == 'ubuntu-latest' }}
+        if: ${{ runner.os == 'Linux' }}
         run: |
           internal/scripts/ci_prepare_ubuntu.sh
           uname -a
@@ -88,18 +84,32 @@ jobs:
       - name: Save disk space
         uses: ./.github/actions/save-disk-space
         with:
-          mode: "pre-build"
+          mode: "pre"
 
       - name: Run cargo build
-        run: cargo build --workspace --all-targets ${{ inputs.cargo-profile }} ${{ inputs.cargo-features-flag }}
+        shell: bash
+        run: |
+          BUILD_MODE=""
+          if [[ ${{ inputs.profile }} == 'release' ]]; then
+            BUILD_MODE="--release"
+          fi
+          echo "Cargo build mode: ${BUILD_MODE}"
+          cargo build --workspace --all-targets ${BUILD_MODE} ${{ inputs.cargo-features-flag }}
 
       - name: Run cargo nextest
-        run: cargo nextest run --workspace --all-targets --no-fail-fast ${{ inputs.cargo-profile }} ${{ inputs.cargo-features-flag }}
+        shell: bash
+        run: |
+          BUILD_MODE=""
+          if [[ ${{ inputs.profile }} == 'release' ]]; then
+            BUILD_MODE="--release"
+          fi
+          echo "Cargo build mode: ${BUILD_MODE}"
+          cargo nextest run --workspace --all-targets --no-fail-fast ${BUILD_MODE} ${{ inputs.cargo-features-flag }}
 
       - name: Cleanup build artifacts
         uses: ./.github/actions/save-disk-space
         with:
-          mode: "post-build"
+          mode: "post"
 
       - name: Print native libs of FFI target
         if: false # This step takes 1 to 2 minutes; only enable if there are linker issues with the FFI target
@@ -118,7 +128,7 @@ jobs:
                 ${{ inputs.cmake-build-type }} \
                 ${{ inputs.cmake-cxx-flags }} \
                 -DCMAKE_INSTALL_PREFIX=target/ff/cc/install \
-                -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/${{ inputs.mode }}" \
+                -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/${{ inputs.profile }}" \
                 -DCMAKE_C_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           cmake --build target/ff/cc/build ${{ inputs.cmake-build-config }}
@@ -132,6 +142,10 @@ jobs:
 
       - name: Run C++ language binding tests
         run: target/ff/cc/build/tests/iceoryx2-cxx-tests
+
+      - name: Remove language binding build artifacts
+        shell: bash
+        run: rm -rf target/ff/cc/build
 
       - name: Build C language binding examples in out-of-tree configuration
         shell: bash

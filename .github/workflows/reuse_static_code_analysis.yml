@@ -26,7 +26,7 @@ jobs:
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # version: v1
         with:
           toolchain: stable
-          components: rustfmt, clippy
+          components: clippy
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@bafd42bd91680affe190f697cac6ef3ad958ecba # version: v0.0.9
@@ -36,17 +36,8 @@ jobs:
           echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
           echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
 
-      - name: Run cargo fmt
-        run: cargo fmt --all -- --check
-
       - name: Run cargo clippy
         run: cargo clippy ${{ inputs.cargo-features-flag }} -- -D warnings
-
-      - name: Run code examples in documentation
-        run: cargo test --workspace --doc ${{ inputs.cargo-features-flag }}
-
-      - name: Build documentation
-        run: cargo doc --no-deps ${{ inputs.cargo-features-flag }}
 
       - name: Setup miri
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # version: v1

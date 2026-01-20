@@ -1,49 +1,8 @@
-name: Reusable workflow for build variants
+name: Reusable workflow for C++ Vocabulary Types
 
 on:
   workflow_call:
-
 jobs:
-  x86_64_nostd:
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        toolchain: [stable]
-    timeout-minutes: 60
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # version: v1
-        with:
-          toolchain: ${{ matrix.toolchain }}
-          components: rustfmt, clippy
-          targets: armv7r-none-eabihf
-
-      - name: Setup sccache
-        uses: mozilla-actions/sccache-action@bafd42bd91680affe190f697cac6ef3ad958ecba # version: v0.0.9
-
-      - name: Set caching env vars on non-Windows
-        run: |
-          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
-
-      - name: Prepare Linux
-        run: |
-          internal/scripts/ci_prepare_ubuntu.sh
-          uname -a
-
-      - name: Build iceoryx2 (no_std)
-        run: cargo build --package iceoryx2 --no-default-features
-
-      - name: Build bare-metal examples (no_std)
-        run: cd examples/nostd/bare-metal/rust && cargo build --examples && cd -
-
-      - name: Build posix examples (no_std)
-        run: cd examples/nostd/posix/rust && cargo build --examples && cd -
-
   x86_64_cxx_binding_vocabulary_types_variations:
     timeout-minutes: 60
     runs-on: ubuntu-latest
