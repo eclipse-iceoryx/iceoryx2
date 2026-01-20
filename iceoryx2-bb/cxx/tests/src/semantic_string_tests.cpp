@@ -166,7 +166,7 @@ const std::vector<std::string> TestValues<Path>::ADD_VALID_CHARS_TO_CREATE_INVAL
 // NOLINTEND(cert-err58-cpp)
 
 template <typename T>
-class SemanticStringTest : public Test {
+class SemanticStringFixture : public Test {
   public:
     void SetUp() override {
         EXPECT_FALSE(TestValues<T>::VALID_VALUES.empty());
@@ -196,9 +196,9 @@ class SemanticStringTest : public Test {
 
 using Implementations = Types<FileName, FilePath, Path>;
 
-TYPED_TEST_SUITE(SemanticStringTest, Implementations, );
+TYPED_TEST_SUITE(SemanticStringFixture, Implementations, );
 
-TYPED_TEST(SemanticStringTest, InitializeWithValidStringLiteralWorks) {
+TYPED_TEST(SemanticStringFixture, initialize_with_valid_string_literal_works) {
     ::testing::Test::RecordProperty("TEST_ID", "31a2cd17-ca02-486a-b173-3f1f219d8ca3");
     using SutType = typename TestFixture::SutType;
 
@@ -210,7 +210,7 @@ TYPED_TEST(SemanticStringTest, InitializeWithValidStringLiteralWorks) {
     EXPECT_STREQ(sut->as_string().unchecked_access().c_str(), "alwaysvalid");
 }
 
-TYPED_TEST(SemanticStringTest, SizeWorksCorrectly) {
+TYPED_TEST(SemanticStringFixture, size_works_correctly) {
     ::testing::Test::RecordProperty("TEST_ID", "26cc39ac-84c6-45cf-b221-b6db7d210c44");
     using SutType = typename TestFixture::SutType;
 
@@ -222,7 +222,7 @@ TYPED_TEST(SemanticStringTest, SizeWorksCorrectly) {
     EXPECT_THAT(sut->size(), Eq(test_string.size()));
 }
 
-TYPED_TEST(SemanticStringTest, AsStringWorksCorrectly) {
+TYPED_TEST(SemanticStringFixture, as_string_works_correctly) {
     ::testing::Test::RecordProperty("TEST_ID", "c4d721d2-0cf8-41d6-a3fe-fbc4b19e9b10");
     using SutType = typename TestFixture::SutType;
 
@@ -234,14 +234,14 @@ TYPED_TEST(SemanticStringTest, AsStringWorksCorrectly) {
     EXPECT_THAT(sut->as_string().unchecked_access().c_str(), StrEq(test_string.unchecked_access().c_str()));
 }
 
-TYPED_TEST(SemanticStringTest, CapacityWorksCorrectly) {
+TYPED_TEST(SemanticStringFixture, capacity_works_correctly) {
     ::testing::Test::RecordProperty("TEST_ID", "d8f6eb13-8f2c-496f-901d-734ee22d85e3");
     using SutType = typename TestFixture::SutType;
 
     ASSERT_THAT(SutType::capacity(), Eq(TestValues<SutType>::CAPACITY));
 }
 
-TYPED_TEST(SemanticStringTest, CanBeFilledUpToMaxCapacity) {
+TYPED_TEST(SemanticStringFixture, can_be_filled_up_to_max_capacity) {
     ::testing::Test::RecordProperty("TEST_ID", "c5ed0595-380c-4caa-a392-a8d2933646d9");
     using SutType = typename TestFixture::SutType;
 
@@ -253,7 +253,7 @@ TYPED_TEST(SemanticStringTest, CanBeFilledUpToMaxCapacity) {
     EXPECT_THAT(sut->as_string().unchecked_access().c_str(), StrEq(test_string.unchecked_access().c_str()));
 }
 
-TYPED_TEST(SemanticStringTest, InitializeWithValidStringValueWorks) {
+TYPED_TEST(SemanticStringFixture, initialize_with_valid_string_value_works) {
     ::testing::Test::RecordProperty("TEST_ID", "0100d764-628c-44ad-9af7-fe7a4540491a");
     using SutType = typename TestFixture::SutType;
 
@@ -268,7 +268,7 @@ TYPED_TEST(SemanticStringTest, InitializeWithValidStringValueWorks) {
     }
 }
 
-TYPED_TEST(SemanticStringTest, InitializeWithStringContainingIllegalCharactersFails) {
+TYPED_TEST(SemanticStringFixture, initialize_with_string_containing_illegal_characters_fails) {
     ::testing::Test::RecordProperty("TEST_ID", "14483f4e-d556-4770-89df-84d873428eee");
     using SutType = typename TestFixture::SutType;
 
@@ -281,7 +281,7 @@ TYPED_TEST(SemanticStringTest, InitializeWithStringContainingIllegalCharactersFa
     }
 }
 
-TYPED_TEST(SemanticStringTest, InitializeWithStringContainingIllegalContentFails) {
+TYPED_TEST(SemanticStringFixture, initialize_with_string_containing_illegal_content_fails) {
     ::testing::Test::RecordProperty("TEST_ID", "9380f932-527f-4116-bd4f-dc8078b63330");
     using SutType = typename TestFixture::SutType;
 
@@ -294,7 +294,7 @@ TYPED_TEST(SemanticStringTest, InitializeWithStringContainingIllegalContentFails
     }
 }
 
-TYPED_TEST(SemanticStringTest, InitializeWithTooLongContentFails) {
+TYPED_TEST(SemanticStringFixture, initialize_with_too_long_content_fails) {
     ::testing::Test::RecordProperty("TEST_ID", "b5597825-c559-48e7-96f3-5136fffc55d7");
     using SutType = typename TestFixture::SutType;
 
@@ -308,7 +308,7 @@ TYPED_TEST(SemanticStringTest, InitializeWithTooLongContentFails) {
 }
 
 // NOLINTBEGIN(readability-function-cognitive-complexity)
-TYPED_TEST(SemanticStringTest, AppendValidContentToValidStringWorks) {
+TYPED_TEST(SemanticStringFixture, append_valid_content_to_valid_string_works) {
     ::testing::Test::RecordProperty("TEST_ID", "0994fccc-5baa-4408-b17e-e2955439608d");
     using SutType = typename TestFixture::SutType;
 
@@ -332,7 +332,7 @@ TYPED_TEST(SemanticStringTest, AppendValidContentToValidStringWorks) {
     }
 }
 
-TYPED_TEST(SemanticStringTest, AppendInvalidCharactersToValidStringFails) {
+TYPED_TEST(SemanticStringFixture, append_invalid_characters_to_valid_string_fails) {
     ::testing::Test::RecordProperty("TEST_ID", "fddf4a56-c368-4ff0-8727-e732d6ebc87f");
     using SutType = typename TestFixture::SutType;
 
@@ -354,7 +354,7 @@ TYPED_TEST(SemanticStringTest, AppendInvalidCharactersToValidStringFails) {
     }
 }
 
-TYPED_TEST(SemanticStringTest, GenerateInvalidContentWithAppend) {
+TYPED_TEST(SemanticStringFixture, generate_invalid_content_with_append) {
     ::testing::Test::RecordProperty("TEST_ID", "a416c7c6-eaff-4e5e-8945-fe9f2d06ee6d");
     using SutType = typename TestFixture::SutType;
 
@@ -376,7 +376,7 @@ TYPED_TEST(SemanticStringTest, GenerateInvalidContentWithAppend) {
     }
 }
 
-TYPED_TEST(SemanticStringTest, GenerateInvalidContentWithInsert) {
+TYPED_TEST(SemanticStringFixture, generate_invalid_content_with_insert) {
     ::testing::Test::RecordProperty("TEST_ID", "e7db87d3-2574-4b5f-9c3e-c103e05a6b46");
     using SutType = typename TestFixture::SutType;
 
@@ -400,7 +400,7 @@ TYPED_TEST(SemanticStringTest, GenerateInvalidContentWithInsert) {
     }
 }
 
-TYPED_TEST(SemanticStringTest, AppendTooLongContentToValidStringFails) {
+TYPED_TEST(SemanticStringFixture, append_too_long_content_to_valid_string_fails) {
     ::testing::Test::RecordProperty("TEST_ID", "b8616fbf-601d-43b9-b4a3-f6b96acdf555");
     using SutType = typename TestFixture::SutType;
 
@@ -422,7 +422,7 @@ TYPED_TEST(SemanticStringTest, AppendTooLongContentToValidStringFails) {
     }
 }
 
-TYPED_TEST(SemanticStringTest, InsertValidContentToValidStringWorks) {
+TYPED_TEST(SemanticStringFixture, insert_valid_content_to_valid_string_works) {
     ::testing::Test::RecordProperty("TEST_ID", "56ea499f-5ac3-4ffe-abea-b56194cfd728");
     using SutType = typename TestFixture::SutType;
 
@@ -455,7 +455,7 @@ TYPED_TEST(SemanticStringTest, InsertValidContentToValidStringWorks) {
     }
 }
 
-TYPED_TEST(SemanticStringTest, InsertInvalidCharactersToValidStringFails) {
+TYPED_TEST(SemanticStringFixture, insert_invalid_characters_to_valid_string_fails) {
     ::testing::Test::RecordProperty("TEST_ID", "35229fb8-e6e9-44d9-9d47-d00b71a4ce01");
     using SutType = typename TestFixture::SutType;
 
@@ -482,7 +482,7 @@ TYPED_TEST(SemanticStringTest, InsertInvalidCharactersToValidStringFails) {
     }
 }
 
-TYPED_TEST(SemanticStringTest, InsertTooLongContentToValidStringFails) {
+TYPED_TEST(SemanticStringFixture, insert_too_long_content_to_valid_string_fails) {
     ::testing::Test::RecordProperty("TEST_ID", "b6939126-a878-4d7f-9fea-c2b438226e65");
     using SutType = typename TestFixture::SutType;
 
@@ -512,7 +512,7 @@ TYPED_TEST(SemanticStringTest, InsertTooLongContentToValidStringFails) {
 
 // NOLINTEND(readability-function-cognitive-complexity)
 
-TYPED_TEST(SemanticStringTest, EqualityOperatorWorks) {
+TYPED_TEST(SemanticStringFixture, equality_operator_works) {
     ::testing::Test::RecordProperty("TEST_ID", "97889932-ac3b-4155-9958-34c843d2d323");
 
     EXPECT_TRUE(this->greater_value == this->greater_value);
@@ -522,7 +522,7 @@ TYPED_TEST(SemanticStringTest, EqualityOperatorWorks) {
     EXPECT_FALSE(this->greater_value == this->smaller_value_str);
 }
 
-TYPED_TEST(SemanticStringTest, InequalityOperatorWorks) {
+TYPED_TEST(SemanticStringFixture, inequality_operator_works) {
     ::testing::Test::RecordProperty("TEST_ID", "32903b0b-3594-4c00-9869-d18e1dfc773f");
 
     EXPECT_FALSE(this->greater_value != this->greater_value);
@@ -532,7 +532,7 @@ TYPED_TEST(SemanticStringTest, InequalityOperatorWorks) {
     EXPECT_TRUE(this->greater_value != this->smaller_value_str);
 }
 
-TYPED_TEST(SemanticStringTest, LessThanOrEqualOperatorWorks) {
+TYPED_TEST(SemanticStringFixture, less_than_or_equal_operator_works) {
     ::testing::Test::RecordProperty("TEST_ID", "53f5b765-b462-4cc1-bab7-9b937fbbcecf");
 
     EXPECT_TRUE(this->greater_value <= this->greater_value);
@@ -540,7 +540,7 @@ TYPED_TEST(SemanticStringTest, LessThanOrEqualOperatorWorks) {
     EXPECT_FALSE(this->greater_value <= this->smaller_value);
 }
 
-TYPED_TEST(SemanticStringTest, LessThanOperatorWorks) {
+TYPED_TEST(SemanticStringFixture, less_than_operator_works) {
     ::testing::Test::RecordProperty("TEST_ID", "cea977a4-ccb3-42a6-9d13-e09dce24c273");
 
     EXPECT_FALSE(this->greater_value < this->greater_value);
@@ -548,7 +548,7 @@ TYPED_TEST(SemanticStringTest, LessThanOperatorWorks) {
     EXPECT_FALSE(this->greater_value < this->smaller_value);
 }
 
-TYPED_TEST(SemanticStringTest, GreaterThanOrEqualOperatorWorks) {
+TYPED_TEST(SemanticStringFixture, greater_than_or_equal_operator_works) {
     ::testing::Test::RecordProperty("TEST_ID", "5d731b17-f787-46fc-b64d-3d86c9102008");
 
     EXPECT_TRUE(this->greater_value >= this->greater_value);
@@ -556,7 +556,7 @@ TYPED_TEST(SemanticStringTest, GreaterThanOrEqualOperatorWorks) {
     EXPECT_TRUE(this->greater_value >= this->smaller_value);
 }
 
-TYPED_TEST(SemanticStringTest, GreaterThanOperatorWorks) {
+TYPED_TEST(SemanticStringFixture, greater_than_operator_works) {
     ::testing::Test::RecordProperty("TEST_ID", "8c046cff-fb69-43b4-9a45-e86f17c874db");
 
     EXPECT_FALSE(this->greater_value > this->greater_value);
