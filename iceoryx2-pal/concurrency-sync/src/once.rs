@@ -74,7 +74,7 @@ impl Once {
     #[cfg(all(test, loom, feature = "std"))]
     pub fn new() -> Self {
         Self {
-            state: IoxAtomicU8::new(State::Incomplete as u8),
+            state: AtomicU8::new(State::Incomplete as u8),
         }
     }
 

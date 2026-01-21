@@ -206,14 +206,7 @@ pub mod details {
                 .as_ptr()
                 .add((position % self.capacity as u64) as usize);
 
-            #[cfg(all(test, loom, feature = "std"))]
-            {
-                cell.get_mut().deref() as *mut u64
-            }
-            #[cfg(not(all(test, loom, feature = "std")))]
-            {
-                cell.get()
-            }
+            cell.get()
         }
 
         /// Acquires the [`Producer`] of the [`IndexQueue`]. This is threadsafe and lock-free without
