@@ -12,12 +12,11 @@
 
 //! The default [`Logger`] implementation.
 
-use core::fmt::Write;
-
 use alloc::string::ToString;
 
+use iceoryx2_bb_print::cerr;
+use iceoryx2_bb_print::cerrln;
 use iceoryx2_bb_print::is_terminal;
-use iceoryx2_bb_print::writer::stderr;
 use iceoryx2_log_types::Log;
 use iceoryx2_log_types::LogLevel;
 use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
@@ -141,15 +140,15 @@ impl Logger {
 
     fn print(separator: &str, color: &str, output: &str) {
         if is_terminal() {
-            let _ = core::write!(stderr(), "{color}");
+            cerr!("{color}");
         }
 
-        let _ = core::write!(stderr(), "{separator}{output}");
+        cerr!("{separator}{output}");
 
         if is_terminal() {
-            let _ = core::writeln!(stderr(), "\x1b[0m");
+            cerrln!("\x1b[0m");
         } else {
-            let _ = core::writeln!(stderr(), " ");
+            cerrln!(" ");
         }
     }
 
@@ -158,9 +157,9 @@ impl Logger {
     }
 
     fn print_origin(log_level: LogLevel, origin: &str) {
-        let _ = core::write!(stderr(), "{} ", Logger::log_level_string(log_level));
+        cerr!("{} ", Logger::log_level_string(log_level));
         Self::print("", Logger::origin_color(log_level), origin);
-        let _ = core::write!(stderr(), "| ");
+        cerr!("| ");
     }
 }
 
@@ -182,8 +181,7 @@ impl Log for Logger {
 
                 match origin_str.is_empty() {
                     false => {
-                        let _ = core::write!(
-                            stderr(),
+                        cerr!(
                             "{}{}.{:0>9} ",
                             Logger::counter_color(log_level),
                             time.as_secs(),
@@ -192,8 +190,7 @@ impl Log for Logger {
                         Self::print_origin(log_level, &origin_str);
                     }
                     true => {
-                        let _ = core::writeln!(
-                            stderr(),
+                        cerr!(
                             "{}{}.{:0>9} {} ",
                             Logger::counter_color(log_level),
                             time.as_secs(),
@@ -205,13 +202,11 @@ impl Log for Logger {
             }
             ConsoleLogOrder::Counter => match origin.to_string().is_empty() {
                 false => {
-                    let _ =
-                        core::write!(stderr(), "{}{} ", Logger::counter_color(log_level), counter);
+                    cerr!("{}{} ", Logger::counter_color(log_level), counter);
                     Self::print_origin(log_level, &origin_str);
                 }
                 true => {
-                    let _ = core::write!(
-                        stderr(),
+                    cerr!(
                         "{}{} {} ",
                         Logger::counter_color(log_level),
                         counter,
