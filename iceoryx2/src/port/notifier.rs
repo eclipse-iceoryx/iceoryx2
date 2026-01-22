@@ -308,7 +308,11 @@ impl<Service: service::Service> Notifier<Service> {
             Self::new_without_auto_event_emission(service.clone(), default_event_id)?;
 
         let static_config = service.static_config.event();
-        new_self.on_drop_notification = static_config.notifier_dropped_event.map(EventId::new);
+        new_self.on_drop_notification = static_config
+            .notifier_dropped_event
+            .clone()
+            .map(EventId::new)
+            .into();
 
         if let Some(event_id) = static_config.notifier_created_event() {
             match new_self.notify_with_custom_event_id(event_id) {
@@ -418,7 +422,9 @@ impl<Service: service::Service> Notifier<Service> {
             .static_config
             .event()
             .deadline
+            .clone()
             .map(|v| v.value)
+            .into()
     }
 
     /// Notifies all [`crate::port::listener::Listener`] connected to the service with a custom
@@ -485,6 +491,7 @@ impl<Service: service::Service> Notifier<Service> {
             .static_config
             .event()
             .deadline
+            .as_option_ref()
         {
             let msg = "The notification was sent";
             let duration_since_creation = fail!(from self, when deadline.creation_time.elapsed(),

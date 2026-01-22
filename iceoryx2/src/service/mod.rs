@@ -515,8 +515,8 @@ pub mod internal {
             return;
         }
 
-        let event_id = match service.static_config().notifier_dead_event {
-            Some(event_id) => event_id,
+        let event_id = match service.static_config().notifier_dead_event.as_option_ref() {
+            Some(event_id) => *event_id,
             None => return,
         };
 

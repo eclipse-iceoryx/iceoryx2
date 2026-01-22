@@ -219,7 +219,9 @@ impl<Service: service::Service> Listener<Service> {
             .static_config
             .event()
             .deadline
+            .clone()
             .map(|v| v.value)
+            .into()
     }
 
     /// Non-blocking wait for new [`EventId`]s. Collects all [`EventId`]s that were received and
