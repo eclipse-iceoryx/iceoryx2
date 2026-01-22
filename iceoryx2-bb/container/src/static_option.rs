@@ -146,11 +146,15 @@ impl<T: PlacementDefault> PlacementDefault for StaticOption<T> {
 
 impl<T: PartialEq> PartialEq for StaticOption<T> {
     fn eq(&self, other: &Self) -> bool {
-        if self.has_contents == false as u8 && self.has_contents == other.has_contents {
+        if self.has_contents != other.has_contents {
+            return false;
+        }
+
+        if self.has_contents == false as u8 {
             return true;
         }
 
-        false
+        self.as_ref().unwrap() == other.as_ref().unwrap()
     }
 }
 
@@ -171,12 +175,17 @@ impl<T: Clone> Clone for StaticOption<T> {
 
 impl<T: Copy> Copy for StaticOption<T> {}
 
-impl<T> Debug for StaticOption<T> {
+impl<T: Debug> core::fmt::Debug for StaticOption<T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         if self.is_none() {
-            write!(f, "StaticOption<{}>::None", core::any::type_name::<T>())
+            write!(f, "StaticOption<{}>::None()", core::any::type_name::<T>())
         } else {
-            write!(f, "StaticOption<{}>::Some", core::any::type_name::<T>(),)
+            write!(
+                f,
+                "StaticOption<{}>::Some({:?})",
+                core::any::type_name::<T>(),
+                self.as_ref().unwrap()
+            )
         }
     }
 }
@@ -249,7 +258,9 @@ impl<T> StaticOption<T> {
     /// message.
     pub fn expect(self, msg: &str) -> T {
         if self.is_none() {
-            fatal_panic!(from self, "Expect: {msg}");
+            let origin =
+                alloc::format!("StaticOption::<{}>::expect()", core::any::type_name::<T>());
+            fatal_panic!(from origin, "Expect: {msg}");
         }
 
         unsafe { self.data.assume_init() }
@@ -342,8 +353,12 @@ impl<T> StaticOption<T> {
     /// [`StaticOption`] does not contain a value a panic is raised.
     pub fn unwrap(self) -> T {
         if self.is_none() {
-            fatal_panic!(from self,
-                "This should never happen! Accessing the value of an empty StaticOption.");
+            let origin =
+                alloc::format!("StaticOption::<{}>::unwrap()", core::any::type_name::<T>());
+            fatal_panic!(
+                from origin,
+                "This should never happen! Accessing the value of an empty StaticOption."
+            );
         }
 
         unsafe { self.data.assume_init() }

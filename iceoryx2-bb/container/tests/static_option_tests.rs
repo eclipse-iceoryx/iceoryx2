@@ -161,3 +161,90 @@ fn inspect_callback_is_called_when_it_contains_a_value() {
 
     assert_that!(callback_was_called, eq true);
 }
+
+#[test]
+fn replace_returns_none_when_option_is_empty() {
+    let mut sut = StaticOption::<i32>::none();
+
+    assert_that!(sut.replace(89123).is_none(), eq true);
+    assert_that!(sut.unwrap(), eq 89123);
+}
+
+#[test]
+fn replace_returns_value_when_option_contains_value() {
+    let mut sut = StaticOption::<i32>::some(9012);
+
+    assert_that!(sut.replace(891231), eq StaticOption::some(9012));
+    assert_that!(sut.unwrap(), eq 891231);
+}
+
+#[test]
+fn take_empties_sut_and_returns_content() {
+    let mut sut_full = StaticOption::<i32>::some(90125);
+    let mut sut_empty = StaticOption::<i32>::none();
+
+    assert_that!(sut_full.take(), eq StaticOption::some(90125));
+    assert_that!(sut_empty.take(), eq StaticOption::none());
+
+    assert_that!(sut_full.is_none(), eq true);
+    assert_that!(sut_empty.is_none(), eq true);
+}
+
+#[test]
+fn take_if_does_not_call_callback_when_empty() {
+    let mut sut = StaticOption::<i32>::none();
+    let mut callback_was_called = false;
+    let ret_val = sut.take_if(|_| {
+        callback_was_called = true;
+        false
+    });
+
+    assert_that!(callback_was_called, eq false);
+    assert_that!(ret_val, eq StaticOption::none());
+    assert_that!(sut, eq StaticOption::none());
+}
+
+#[test]
+fn take_if_returns_none_when_callback_returns_false() {
+    let mut sut = StaticOption::<i32>::some(551);
+    let mut callback_was_called = false;
+    let ret_val = sut.take_if(|v| {
+        assert_that!(*v, eq 551);
+        callback_was_called = true;
+        false
+    });
+
+    assert_that!(callback_was_called, eq true);
+    assert_that!(ret_val, eq StaticOption::none());
+    assert_that!(sut, eq StaticOption::some(551));
+}
+
+#[test]
+fn take_if_returns_value_and_empties_option_when_callback_returns_true() {
+    let mut sut = StaticOption::<i32>::some(1551);
+    let mut callback_was_called = false;
+    let ret_val = sut.take_if(|v| {
+        assert_that!(*v, eq 1551);
+        callback_was_called = true;
+        true
+    });
+
+    assert_that!(callback_was_called, eq true);
+    assert_that!(ret_val, eq StaticOption::some(1551));
+    assert_that!(sut, eq StaticOption::none());
+}
+
+#[test]
+fn unwrap_returns_value_when_it_has_one() {
+    let sut = StaticOption::<i32>::some(15511);
+
+    assert_that!(sut.unwrap(), eq 15511);
+}
+
+#[should_panic]
+#[test]
+fn unwrap_panics_when_empty() {
+    let sut = StaticOption::<i32>::none();
+
+    sut.unwrap();
+}
