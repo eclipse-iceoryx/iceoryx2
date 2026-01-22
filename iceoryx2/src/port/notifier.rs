@@ -423,7 +423,7 @@ impl<Service: service::Service> Notifier<Service> {
             .event()
             .deadline
             .clone()
-            .map(|v| v.value)
+            .map(|v| v.value.into())
             .into()
     }
 
@@ -511,7 +511,7 @@ impl<Service: service::Service> Notifier<Service> {
                 duration_since_creation.as_nanos() as u64 - previous_duration_since_creation,
             );
 
-            if deadline.value < duration_since_last_notification {
+            if duration_since_last_notification > deadline.value.into() {
                 fail!(from self, with NotifierNotifyError::MissedDeadline,
                 "{} but the deadline was hit. The service requires a notification after {:?} but {:?} passed without a notification.",
                 msg, deadline.value, duration_since_last_notification);

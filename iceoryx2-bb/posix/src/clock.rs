@@ -185,6 +185,32 @@ impl TimeBuilder {
     }
 }
 
+/// A intermediate [`Duration`] representation with a fixed memory layout which
+/// is shared memory compatible.
+#[repr(C)]
+#[derive(
+    Default, Clone, Copy, Eq, PartialEq, Hash, Debug, ZeroCopySend, Serialize, Deserialize,
+)]
+pub struct StaticDuration {
+    seconds: u64,
+    nanoseconds: u32,
+}
+
+impl From<Duration> for StaticDuration {
+    fn from(value: Duration) -> Self {
+        Self {
+            seconds: value.as_secs(),
+            nanoseconds: value.subsec_nanos(),
+        }
+    }
+}
+
+impl From<StaticDuration> for Duration {
+    fn from(value: StaticDuration) -> Self {
+        Duration::from_secs(value.seconds) + Duration::from_nanos(value.nanoseconds as u64)
+    }
+}
+
 /// Represents time under a specified [`ClockType`]
 #[repr(C)]
 #[derive(

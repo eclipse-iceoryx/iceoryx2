@@ -231,7 +231,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     /// [`Notifier`](crate::port::notifier::Notifier) after at least the provided `deadline`.
     pub fn deadline(mut self, deadline: Duration) -> Self {
         self.config_details().deadline = StaticOption::some(Deadline {
-            value: deadline,
+            value: deadline.into(),
             creation_time: Time::default(),
         });
         self.verify_deadline = true;

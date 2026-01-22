@@ -70,8 +70,8 @@ impl PortFactoryEvent {
     /// Contains all settings that never change during the lifetime of the service.
     pub fn static_config(&self) -> StaticConfigEvent {
         match &*self.0.lock() {
-            PortFactoryEventType::Ipc(v) => StaticConfigEvent(*v.static_config()),
-            PortFactoryEventType::Local(v) => StaticConfigEvent(*v.static_config()),
+            PortFactoryEventType::Ipc(v) => StaticConfigEvent(v.static_config().clone()),
+            PortFactoryEventType::Local(v) => StaticConfigEvent(v.static_config().clone()),
         }
     }
 

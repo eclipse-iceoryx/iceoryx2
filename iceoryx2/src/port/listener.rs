@@ -220,7 +220,7 @@ impl<Service: service::Service> Listener<Service> {
             .event()
             .deadline
             .clone()
-            .map(|v| v.value)
+            .map(|v| v.value.into())
             .into()
     }
 

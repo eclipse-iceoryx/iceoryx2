@@ -38,14 +38,14 @@ use crate::{config, prelude::EventId};
 use iceoryx2_bb_container::static_option::StaticOption;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_posix::clock::Time;
+use iceoryx2_bb_posix::clock::{StaticDuration, Time};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq, ZeroCopySend, Serialize, Deserialize)]
 #[repr(C)]
 pub(crate) struct Deadline {
     pub(crate) creation_time: Time,
-    pub(crate) value: Duration,
+    pub(crate) value: StaticDuration,
 }
 
 /// The static configuration of an [`MessagingPattern::Event`](crate::service::messaging_pattern::MessagingPattern::Event)
@@ -76,7 +76,7 @@ impl StaticConfig {
                 .deadline
                 .map(|v| Deadline {
                     creation_time: Time::default(),
-                    value: v,
+                    value: v.into(),
                 })
                 .into(),
             event_id_max_value: config.defaults.event.event_id_max_value,
@@ -92,7 +92,7 @@ impl StaticConfig {
     /// to a [`WaitSet`](crate::waitset::WaitSet) are woken up and notified about the missed
     /// deadline.
     pub fn deadline(&self) -> Option<Duration> {
-        self.deadline.as_option_ref().map(|v| v.value)
+        self.deadline.as_option_ref().map(|v| v.value.into())
     }
 
     /// Returns the maximum supported amount of [`Node`](crate::node::Node)s that can open the
