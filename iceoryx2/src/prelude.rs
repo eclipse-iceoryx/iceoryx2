@@ -32,7 +32,7 @@ pub use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 pub use iceoryx2_bb_posix::file_descriptor::{FileDescriptor, FileDescriptorBased};
 pub use iceoryx2_bb_posix::file_descriptor_set::SynchronousMultiplexing;
 pub use iceoryx2_bb_posix::process::ProcessId;
-pub use iceoryx2_bb_print::{cerr, cout};
+pub use iceoryx2_bb_print::{cerr, coutln};
 pub use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath, path::Path};
 pub use iceoryx2_cal::shm_allocator::AllocationStrategy;
 pub use iceoryx2_log::set_log_level;

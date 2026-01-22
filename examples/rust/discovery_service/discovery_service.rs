@@ -45,7 +45,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let guard = waitset.attach_notification(&listener)?;
     let attachment = WaitSetAttachmentId::from_guard(&guard);
 
-    cout!("Discovery service ready!");
+    coutln!("Discovery service ready!");
 
     let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
         if attachment_id == attachment {
@@ -56,10 +56,10 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
             while let Ok(Some(sample)) = subscriber.receive() {
                 match sample.payload() {
                     Discovery::Added(details) => {
-                        cout!("Added: {:?}", details.name());
+                        coutln!("Added: {:?}", details.name());
                     }
                     Discovery::Removed(details) => {
-                        cout!("Removed: {:?}", details.name());
+                        coutln!("Removed: {:?}", details.name());
                     }
                 }
             }

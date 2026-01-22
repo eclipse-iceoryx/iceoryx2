@@ -31,15 +31,15 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let subscriber = service.subscriber_builder().create()?;
 
-    cout!("Subscriber ready to receive data!");
+    coutln!("Subscriber ready to receive data!");
 
     while node.wait(CYCLE_TIME).is_ok() {
         while let Some(sample) = subscriber.receive()? {
-            cout!("received {} bytes", sample.payload().len());
+            coutln!("received {} bytes", sample.payload().len());
         }
     }
 
-    cout!("exit");
+    coutln!("exit");
 
     Ok(())
 }

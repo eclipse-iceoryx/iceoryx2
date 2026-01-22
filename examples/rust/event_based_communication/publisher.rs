@@ -46,7 +46,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
         // when the cyclic trigger guard gets notified we send out a new message
         if attachment_id.has_event_from(&cyclic_trigger_guard) {
-            cout!("send message: {counter}");
+            coutln!("send message: {counter}");
             publisher.send(counter).unwrap();
             counter += 1;
             // when something else happens on the publisher we handle the events
@@ -60,7 +60,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     // event callback or an interrupt/termination signal was received.
     waitset.wait_and_process(on_event)?;
 
-    cout!("exit");
+    coutln!("exit");
 
     Ok(())
 }
@@ -117,17 +117,17 @@ impl CustomPublisher {
             let event: PubSubEvent = event.into();
             match event {
                 PubSubEvent::SubscriberConnected => {
-                    cout!("new subscriber connected - delivering history");
+                    coutln!("new subscriber connected - delivering history");
                     self.publisher.update_connections().unwrap();
                     self.notifier
                         .notify_with_custom_event_id(PubSubEvent::SentHistory.into())
                         .unwrap();
                 }
                 PubSubEvent::SubscriberDisconnected => {
-                    cout!("subscriber disconnected");
+                    coutln!("subscriber disconnected");
                 }
                 PubSubEvent::ReceivedSample => {
-                    cout!("subscriber has consumed sample");
+                    coutln!("subscriber has consumed sample");
                 }
                 _ => (),
             }

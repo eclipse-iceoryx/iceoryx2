@@ -66,7 +66,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
         sample.send()?;
 
-        cout!(
+        coutln!(
             "[domain: \"{}\", service: \"{}\"] Send sample {} ...",
             args.domain,
             args.service,
@@ -74,7 +74,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         );
     }
 
-    cout!("exit");
+    coutln!("exit");
 
     Ok(())
 }

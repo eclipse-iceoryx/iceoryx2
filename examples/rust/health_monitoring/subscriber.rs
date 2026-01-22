@@ -55,7 +55,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let listener_2_guard = waitset.attach_deadline(&listener_2, deadline_2)?;
 
     let missed_deadline = |service_name, cycle_time| {
-        cout!("{service_name}: violated contract and did not send a message after {cycle_time:?}.");
+        coutln!("{service_name}: violated contract and did not send a message after {cycle_time:?}.");
     };
 
     let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
@@ -87,7 +87,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     waitset.wait_and_process(on_event)?;
 
-    cout!("exit");
+    coutln!("exit");
 
     Ok(())
 }
@@ -95,7 +95,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 fn find_and_cleanup_dead_nodes() {
     Node::<ipc::Service>::list(Config::global_config(), |node_state| {
         if let NodeState::Dead(state) = node_state {
-            cout!(
+            coutln!(
                 "detected dead node: {:?}",
                 state.details().as_ref().map(|v| v.name())
             );
@@ -115,14 +115,14 @@ fn handle_incoming_event(
     listener
         .try_wait_all(|event_id| {
             if event_id == PubSubEvent::ProcessDied.into() {
-                cout!("{service_name}: process died!");
+                coutln!("{service_name}: process died!");
             } else if event_id == PubSubEvent::PublisherConnected.into() {
-                cout!("{service_name}: publisher connected!");
+                coutln!("{service_name}: publisher connected!");
             } else if event_id == PubSubEvent::PublisherDisconnected.into() {
-                cout!("{service_name}: publisher disconnected!");
+                coutln!("{service_name}: publisher disconnected!");
             } else if event_id == PubSubEvent::SentSample.into() {
                 if let Some(sample) = subscriber.receive().expect("") {
-                    cout!("{}: Received sample {} ...", service_name, *sample)
+                    coutln!("{}: Received sample {} ...", service_name, *sample)
                 }
             }
         })

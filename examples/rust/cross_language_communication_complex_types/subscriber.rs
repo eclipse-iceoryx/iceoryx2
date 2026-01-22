@@ -32,15 +32,15 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let subscriber = service.subscriber_builder().create()?;
 
-    cout!("Subscriber ready to receive data!");
+    coutln!("Subscriber ready to receive data!");
 
     while node.wait(CYCLE_TIME).is_ok() {
         while let Some(sample) = subscriber.receive()? {
-            cout!("received: {}", sample.some_matrix[2][5]);
+            coutln!("received: {}", sample.some_matrix[2][5]);
         }
     }
 
-    cout!("exit");
+    coutln!("exit");
 
     Ok(())
 }

@@ -30,7 +30,7 @@ extern "C" fn main() -> i32 {
     let node = match NodeBuilder::new().create::<ipc::Service>() {
         Ok(node) => node,
         Err(e) => {
-            cout!("Failed to create node: {:?}", e);
+            coutln!("Failed to create node: {:?}", e);
             return 1;
         }
     };
@@ -42,7 +42,7 @@ extern "C" fn main() -> i32 {
     {
         Ok(service) => service,
         Err(e) => {
-            cout!("Failed to open or create service: {:?}", e);
+            coutln!("Failed to open or create service: {:?}", e);
             return 1;
         }
     };
@@ -50,47 +50,47 @@ extern "C" fn main() -> i32 {
     let subscriber = match service.subscriber_builder().create() {
         Ok(subscriber) => subscriber,
         Err(e) => {
-            cout!("Failed to create subscriber: {:?}", e);
+            coutln!("Failed to create subscriber: {:?}", e);
             return 1;
         }
     };
 
-    cout!("Subscriber ready to receive data!");
+    coutln!("Subscriber ready to receive data!");
 
     while node.wait(CYCLE_TIME).is_ok() {
         loop {
             match subscriber.receive() {
                 Ok(Some(sample)) => {
-                    cout!("received: {:?}", *sample);
+                    coutln!("received: {:?}", *sample);
                 }
                 Ok(None) => {
                     // No more samples available
                     break;
                 }
                 Err(e) => {
-                    cout!("Failed to receive sample: {:?}", e);
+                    coutln!("Failed to receive sample: {:?}", e);
                     break;
                 }
             }
         }
     }
 
-    cout!("exit");
+    coutln!("exit");
 
     0
 }
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-    cout!("\n╔═══════════════════════════════════════╗\n");
-    cout!("║           PANIC OCCURRED!             ║\n");
-    cout!("╚═══════════════════════════════════════╝\n");
+    coutln!("╔═══════════════════════════════════════╗");
+    coutln!("║           PANIC OCCURRED!             ║");
+    coutln!("╚═══════════════════════════════════════╝");
 
     if let Some(location) = info.location() {
-        cout!("Location: {}:{}\n", location.file(), location.line());
+        coutln!("Location: {}:{}\n", location.file(), location.line());
     }
 
-    cout!("Message: {}\n", info);
+    coutln!("Message: {}\n", info);
 
     SignalHandler::abort();
 

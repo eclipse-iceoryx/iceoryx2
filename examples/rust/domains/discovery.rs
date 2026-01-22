@@ -29,11 +29,11 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     // Therefore, different domain names never share the same resources.
     config.global.prefix = FileName::new(args.domain.as_bytes())?;
 
-    cout!("\nServices running in domain \"{}\":", args.domain);
+    coutln!("\nServices running in domain \"{}\":", args.domain);
 
     // use the custom config when listing the services
     ipc::Service::list(&config, |service| {
-        cout!("  {}", &service.static_details.name());
+        coutln!("  {}", &service.static_details.name());
         CallbackProgression::Continue
     })?;
 

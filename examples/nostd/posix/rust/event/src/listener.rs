@@ -30,7 +30,7 @@ extern "C" fn main() -> i32 {
     let node = match NodeBuilder::new().create::<ipc::Service>() {
         Ok(node) => node,
         Err(e) => {
-            cout!("Failed to create node: {:?}", e);
+            coutln!("Failed to create node: {:?}", e);
             return 1;
         }
     };
@@ -42,7 +42,7 @@ extern "C" fn main() -> i32 {
     {
         Ok(service) => service,
         Err(e) => {
-            cout!("Failed to open or create service: {:?}", e);
+            coutln!("Failed to open or create service: {:?}", e);
             return 1;
         }
     };
@@ -50,35 +50,35 @@ extern "C" fn main() -> i32 {
     let listener = match service.listener_builder().create() {
         Ok(listener) => listener,
         Err(e) => {
-            cout!("Failed to create listener: {:?}", e);
+            coutln!("Failed to create listener: {:?}", e);
             return 1;
         }
     };
 
-    cout!("Listener ready to receive events!");
+    coutln!("Listener ready to receive events!");
 
     while node.wait(Duration::ZERO).is_ok() {
         if let Ok(Some(event_id)) = listener.timed_wait_one(CYCLE_TIME) {
-            cout!("event was triggered with id: {event_id:?}");
+            coutln!("event was triggered with id: {event_id:?}");
         }
     }
 
-    cout!("exit");
+    coutln!("exit");
 
     0
 }
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-    cout!("\n╔═══════════════════════════════════════╗\n");
-    cout!("║           PANIC OCCURRED!             ║\n");
-    cout!("╚═══════════════════════════════════════╝\n");
+    coutln!("\n╔═══════════════════════════════════════╗\n");
+    coutln!("║           PANIC OCCURRED!             ║\n");
+    coutln!("╚═══════════════════════════════════════╝\n");
 
     if let Some(location) = info.location() {
-        cout!("Location: {}:{}\n", location.file(), location.line());
+        coutln!("Location: {}:{}\n", location.file(), location.line());
     }
 
-    cout!("Message: {}\n", info);
+    coutln!("Message: {}\n", info);
 
     SignalHandler::abort();
 

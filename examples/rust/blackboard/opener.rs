@@ -38,13 +38,13 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let entry_handle_1 = reader.entry::<f64>(&key_1)?;
 
     while node.wait(CYCLE_TIME).is_ok() {
-        cout!("read values:");
+        coutln!("read values:");
 
-        cout!("key: 0, value: {}", entry_handle_0.get());
-        cout!("key: 1, value: {}\n", entry_handle_1.get());
+        coutln!("key: 0, value: {}", entry_handle_0.get());
+        coutln!("key: 1, value: {}\n", entry_handle_1.get());
     }
 
-    cout!("exit");
+    coutln!("exit");
 
     Ok(())
 }

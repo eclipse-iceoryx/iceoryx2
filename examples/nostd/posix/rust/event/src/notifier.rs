@@ -28,7 +28,7 @@ extern "C" fn main() -> i32 {
     let node = match NodeBuilder::new().create::<ipc::Service>() {
         Ok(node) => node,
         Err(e) => {
-            cout!("Failed to create node: {:?}", e);
+            coutln!("Failed to create node: {:?}", e);
             return 1;
         }
     };
@@ -40,7 +40,7 @@ extern "C" fn main() -> i32 {
     {
         Ok(service) => service,
         Err(e) => {
-            cout!("Failed to open or create service: {:?}", e);
+            coutln!("Failed to open or create service: {:?}", e);
             return 1;
         }
     };
@@ -49,7 +49,7 @@ extern "C" fn main() -> i32 {
     let notifier = match service.notifier_builder().create() {
         Ok(notifier) => notifier,
         Err(e) => {
-            cout!("Failed to create notifier: {:?}", e);
+            coutln!("Failed to create notifier: {:?}", e);
             return 1;
         }
     };
@@ -58,29 +58,29 @@ extern "C" fn main() -> i32 {
     while node.wait(CYCLE_TIME).is_ok() {
         counter += 1;
         if let Err(e) = notifier.notify_with_custom_event_id(EventId::new(counter % max_event_id)) {
-            cout!("Failed to send event: {:?}", e);
+            coutln!("Failed to send event: {:?}", e);
             continue;
         }
 
-        cout!("Trigger event with id {counter} ...");
+        coutln!("Trigger event with id {counter} ...");
     }
 
-    cout!("exit");
+    coutln!("exit");
 
     0
 }
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-    cout!("\n╔═══════════════════════════════════════╗\n");
-    cout!("║           PANIC OCCURRED!             ║\n");
-    cout!("╚═══════════════════════════════════════╝\n");
+    coutln!("\n╔═══════════════════════════════════════╗\n");
+    coutln!("║           PANIC OCCURRED!             ║\n");
+    coutln!("╚═══════════════════════════════════════╝\n");
 
     if let Some(location) = info.location() {
-        cout!("Location: {}:{}\n", location.file(), location.line());
+        coutln!("Location: {}:{}\n", location.file(), location.line());
     }
 
-    cout!("Message: {}\n", info);
+    coutln!("Message: {}\n", info);
 
     SignalHandler::abort();
 

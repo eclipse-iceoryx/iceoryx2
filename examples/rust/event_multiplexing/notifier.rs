@@ -37,10 +37,10 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     while node.wait(CYCLE_TIME).is_ok() {
         notifier.notify_with_custom_event_id(EventId::new(args.event_id))?;
 
-        cout!("[service: \"{}\"] Trigger event ...", args.service);
+        coutln!("[service: \"{}\"] Trigger event ...", args.service);
     }
 
-    cout!("exit");
+    coutln!("exit");
 
     Ok(())
 }

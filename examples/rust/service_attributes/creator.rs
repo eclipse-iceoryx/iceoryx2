@@ -42,7 +42,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let publisher = service.publisher_builder().create()?;
 
-    cout!("defined service attributes: {:?}", service.attributes());
+    coutln!("defined service attributes: {:?}", service.attributes());
 
     while node.wait(CYCLE_TIME).is_ok() {
         let sample = publisher.loan_uninit()?;
@@ -50,7 +50,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         sample.send()?;
     }
 
-    cout!("exit");
+    coutln!("exit");
 
     Ok(())
 }
