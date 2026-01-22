@@ -12,6 +12,8 @@
 
 extern crate iceoryx2_bb_loggers;
 
+use std::mem::MaybeUninit;
+
 use iceoryx2_bb_container::static_option::StaticOption;
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_testing::{assert_that, lifetime_tracker::LifetimeTracker};
@@ -247,4 +249,103 @@ fn unwrap_panics_when_empty() {
     let sut = StaticOption::<i32>::none();
 
     sut.unwrap();
+}
+
+#[test]
+fn unwrap_or_returns_provided_value_when_empty() {
+    let sut = StaticOption::<i32>::none();
+
+    assert_that!(sut.unwrap_or(8192), eq 8192);
+}
+
+#[test]
+fn unwrap_or_returns_value() {
+    let sut = StaticOption::<i32>::some(661);
+
+    assert_that!(sut.unwrap_or(8), eq 661);
+}
+
+#[test]
+fn unwrap_or_default_returns_default_when_empty() {
+    let sut = StaticOption::<i32>::none();
+
+    assert_that!(sut.unwrap_or_default(), eq i32::default());
+}
+
+#[test]
+fn unwrap_or_default_returns_value() {
+    let sut = StaticOption::<i32>::some(981);
+
+    assert_that!(sut.unwrap_or_default(), eq 981);
+}
+
+#[test]
+fn unwrap_or_else_returns_callable_value_when_empty() {
+    let sut = StaticOption::<i32>::none();
+
+    assert_that!(sut.unwrap_or_else(|| 8127), eq 8127);
+}
+
+#[test]
+fn unwrap_or_else_returns_value() {
+    let sut = StaticOption::<i32>::some(113);
+
+    let mut callable_was_called = false;
+    assert_that!(sut.unwrap_or_else(|| {callable_was_called = true; 8127}), eq 113);
+    assert_that!(callable_was_called, eq false);
+}
+
+#[test]
+fn unwrap_unchecked_returns_value() {
+    let sut = StaticOption::<i32>::some(1113);
+
+    assert_that!(unsafe { sut.unwrap_unchecked() }, eq 1113);
+}
+
+#[test]
+fn element_is_dropped_on_option_drop() {
+    let tracker = LifetimeTracker::start_tracking();
+    let sut = StaticOption::<LifetimeTracker>::some(LifetimeTracker::new());
+    assert_that!(tracker.number_of_living_instances(), eq 1);
+
+    drop(sut);
+    assert_that!(tracker.number_of_living_instances(), eq 0);
+}
+
+#[test]
+fn debug_fmt_works() {
+    let sut_none = StaticOption::<i32>::none();
+    let sut_some = StaticOption::<i32>::some(112);
+
+    assert_that!(format!("{:?}", sut_none), eq "StaticOption<i32>::none()");
+    assert_that!(format!("{:?}", sut_some), eq "StaticOption<i32>::some(112)");
+}
+
+#[test]
+fn clone_works() {
+    let sut_orig_some = StaticOption::<i32>::some(8812);
+    let sut_orig_none = StaticOption::<i32>::none();
+    let sut_clone_some = sut_orig_some.clone();
+    let sut_clone_none = sut_orig_none.clone();
+
+    assert_that!(sut_orig_some, eq sut_clone_some);
+    assert_that!(sut_orig_none, eq sut_clone_none);
+    assert_that!(sut_clone_none, ne sut_clone_some);
+}
+
+#[test]
+fn placement_default_works() {
+    let mut raw_sut = MaybeUninit::<StaticOption<i32>>::uninit();
+    unsafe { StaticOption::placement_default(raw_sut.as_mut_ptr()) };
+
+    assert_that!(unsafe { raw_sut.assume_init().is_none() }, eq true);
+}
+
+#[test]
+fn serialization_works() {
+    let sut_none = StaticOption::<i32>::none();
+    let sut_some = StaticOption::<i32>::some(551);
+
+    assert_tokens(&sut_none, &[Token::None]);
+    assert_tokens(&sut_some, &[Token::Some, Token::I32(551)]);
 }

@@ -78,6 +78,14 @@ pub struct StaticOption<T> {
     has_contents: u8,
 }
 
+impl<T> Drop for StaticOption<T> {
+    fn drop(&mut self) {
+        if self.is_some() {
+            unsafe { self.data.assume_init_drop() };
+        }
+    }
+}
+
 impl<T: Serialize> Serialize for StaticOption<T> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -173,16 +181,14 @@ impl<T: Clone> Clone for StaticOption<T> {
     }
 }
 
-impl<T: Copy> Copy for StaticOption<T> {}
-
 impl<T: Debug> core::fmt::Debug for StaticOption<T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         if self.is_none() {
-            write!(f, "StaticOption<{}>::None()", core::any::type_name::<T>())
+            write!(f, "StaticOption<{}>::none()", core::any::type_name::<T>())
         } else {
             write!(
                 f,
-                "StaticOption<{}>::Some({:?})",
+                "StaticOption<{}>::some({:?})",
                 core::any::type_name::<T>(),
                 self.as_ref().unwrap()
             )
@@ -263,7 +269,7 @@ impl<T> StaticOption<T> {
             fatal_panic!(from origin, "Expect: {msg}");
         }
 
-        unsafe { self.data.assume_init() }
+        unsafe { self.unwrap_unchecked() }
     }
 
     /// Creates a new [`StaticOption`] containing `none`.
@@ -361,7 +367,7 @@ impl<T> StaticOption<T> {
             );
         }
 
-        unsafe { self.data.assume_init() }
+        unsafe { self.unwrap_unchecked() }
     }
 
     /// Consumes the [`StaticOption`] and either returns the contained value,
@@ -370,7 +376,7 @@ impl<T> StaticOption<T> {
         if self.is_none() {
             default
         } else {
-            unsafe { self.data.assume_init() }
+            unsafe { self.unwrap_unchecked() }
         }
     }
 
@@ -383,7 +389,7 @@ impl<T> StaticOption<T> {
         if self.is_none() {
             T::default()
         } else {
-            unsafe { self.data.assume_init() }
+            unsafe { self.unwrap_unchecked() }
         }
     }
 
@@ -393,7 +399,7 @@ impl<T> StaticOption<T> {
         if self.is_none() {
             f()
         } else {
-            unsafe { self.data.assume_init() }
+            unsafe { self.unwrap_unchecked() }
         }
     }
 
@@ -403,7 +409,9 @@ impl<T> StaticOption<T> {
     ///
     /// *  [`StaticOption::is_some()`] == [`true`]
     ///
-    pub unsafe fn unwrap_unchecked<F: FnOnce() -> T>(self) -> T {
-        self.data.assume_init()
+    pub unsafe fn unwrap_unchecked(mut self) -> T {
+        debug_assert!(self.is_some());
+        self.has_contents = false as u8;
+        self.data.assume_init_read()
     }
 }
