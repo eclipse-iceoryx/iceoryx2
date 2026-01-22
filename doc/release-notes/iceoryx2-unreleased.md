@@ -36,7 +36,7 @@
 -->
 * Adjust test names to naming convention
   [#1273](https://github.com/eclipse-iceoryx/iceoryx2/issues/1273)
-* Move character output abstraction into building blocks as `iceoryx2-bb-print`
+* Move character output abstraction into their own crate
   [#1300](https://github.com/eclipse-iceoryx/iceoryx2/issues/1300)
 * Move `iceoryx2-loggers` crate into building blocks as `iceoryx2-bb-loggers`
   [#1300](https://github.com/eclipse-iceoryx/iceoryx2/issues/1300)
