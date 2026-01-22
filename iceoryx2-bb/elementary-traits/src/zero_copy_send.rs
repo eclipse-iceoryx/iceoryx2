@@ -69,12 +69,8 @@ unsafe impl ZeroCopySend for bool {}
 
 unsafe impl ZeroCopySend for () {}
 
-unsafe impl ZeroCopySend for core::time::Duration {}
-
 unsafe impl<T: ZeroCopySend> ZeroCopySend for [T] {}
 unsafe impl<T: ZeroCopySend, const N: usize> ZeroCopySend for [T; N] {}
-unsafe impl<T: ZeroCopySend> ZeroCopySend for Option<T> {}
-unsafe impl<T: ZeroCopySend, E: ZeroCopySend> ZeroCopySend for Result<T, E> {}
 unsafe impl<T: ZeroCopySend> ZeroCopySend for core::mem::MaybeUninit<T> {}
 
 unsafe impl<T1: ZeroCopySend, T2: ZeroCopySend> ZeroCopySend for (T1, T2) {}
