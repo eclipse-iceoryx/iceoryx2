@@ -110,6 +110,10 @@ pub mod flatmap;
 /// A trait that defines the interface of a string and several string variants.
 pub mod string;
 
+/// Implementation of an [`Option`] that has a stable memory layout and is
+/// shared memory compatible.
+pub mod static_option;
+
 #[doc(hidden)]
 pub(crate) mod vec;
 /// A trait that defines the interface of a vector and several vector variants.
