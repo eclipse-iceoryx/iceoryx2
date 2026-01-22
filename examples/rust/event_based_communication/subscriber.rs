@@ -45,7 +45,9 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
             // If the subscriber did not receive an event until DEADLINE has
             // passed, we print out a warning.
         } else if attachment_id.has_missed_deadline(&subscriber_guard) {
-            coutln!("Contract violation! The subscriber did not receive a message for {DEADLINE:?}.");
+            coutln!(
+                "Contract violation! The subscriber did not receive a message for {DEADLINE:?}."
+            );
         }
 
         CallbackProgression::Continue

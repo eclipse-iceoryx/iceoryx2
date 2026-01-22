@@ -72,9 +72,9 @@ extern "C" fn main() -> i32 {
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-    coutln!("\n╔═══════════════════════════════════════╗\n");
-    coutln!("║           PANIC OCCURRED!             ║\n");
-    coutln!("╚═══════════════════════════════════════╝\n");
+    coutln!("╔═══════════════════════════════════════╗");
+    coutln!("║           PANIC OCCURRED!             ║");
+    coutln!("╚═══════════════════════════════════════╝");
 
     if let Some(location) = info.location() {
         coutln!("Location: {}:{}\n", location.file(), location.line());

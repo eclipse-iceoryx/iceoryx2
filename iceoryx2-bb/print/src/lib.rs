@@ -29,10 +29,26 @@ pub fn is_terminal() -> bool {
 }
 
 #[macro_export]
+macro_rules! cout {
+    ($($arg:tt)*) => {{
+        use core::fmt::Write as _;
+        let _ = core::write!($crate::writer::stdout(), $($arg)*);
+    }};
+}
+
+#[macro_export]
 macro_rules! coutln {
     ($($arg:tt)*) => {{
         use core::fmt::Write as _;
         let _ = core::writeln!($crate::writer::stdout(), $($arg)*);
+    }};
+}
+
+#[macro_export]
+macro_rules! cerr {
+    ($($arg:tt)*) => {{
+        use core::fmt::Write as _;
+        let _ = core::write!($crate::writer::stderr(), $($arg)*);
     }};
 }
 

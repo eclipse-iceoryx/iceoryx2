@@ -55,7 +55,9 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let listener_2_guard = waitset.attach_deadline(&listener_2, deadline_2)?;
 
     let missed_deadline = |service_name, cycle_time| {
-        coutln!("{service_name}: violated contract and did not send a message after {cycle_time:?}.");
+        coutln!(
+            "{service_name}: violated contract and did not send a message after {cycle_time:?}."
+        );
     };
 
     let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
