@@ -17,15 +17,10 @@
 
 pub mod writer;
 
-pub fn is_terminal() -> bool {
-    #[cfg(feature = "std")]
-    {
-        use std::io::IsTerminal;
-        std::io::stderr().is_terminal()
-    }
+pub use writer::*;
 
-    #[cfg(not(feature = "std"))]
-    false
+pub trait IsTerminal {
+    fn is_terminal(&self) -> bool;
 }
 
 #[macro_export]

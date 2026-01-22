@@ -16,7 +16,8 @@ use alloc::string::ToString;
 
 use iceoryx2_bb_print::cerr;
 use iceoryx2_bb_print::cerrln;
-use iceoryx2_bb_print::is_terminal;
+use iceoryx2_bb_print::stderr;
+use iceoryx2_bb_print::IsTerminal;
 use iceoryx2_log_types::Log;
 use iceoryx2_log_types::LogLevel;
 use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
@@ -68,6 +69,10 @@ fn duration_since_epoch() -> core::time::Duration {
     {
         Duration::from_secs(0)
     }
+}
+
+fn is_terminal() -> bool {
+    stderr().is_terminal()
 }
 
 impl Logger {
