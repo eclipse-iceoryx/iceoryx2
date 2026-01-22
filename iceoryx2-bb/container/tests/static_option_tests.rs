@@ -165,6 +165,24 @@ fn inspect_callback_is_called_when_it_contains_a_value() {
 }
 
 #[test]
+fn map_of_empty_option_is_empty() {
+    let sut = StaticOption::<i32>::none();
+
+    let mut callback_was_called = false;
+    assert_that!(sut.map(|v| {
+        callback_was_called = true;
+        v + 1}).is_none(), eq true);
+    assert_that!(callback_was_called, eq false);
+}
+
+#[test]
+fn map_uses_value_and_creates_new_option() {
+    let sut = StaticOption::<i32>::some(5);
+
+    assert_that!(sut.map(|v| v + 1), eq StaticOption::some(6));
+}
+
+#[test]
 fn replace_returns_none_when_option_is_empty() {
     let mut sut = StaticOption::<i32>::none();
 

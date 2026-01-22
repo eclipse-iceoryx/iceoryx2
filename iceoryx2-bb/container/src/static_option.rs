@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::hash::Hash;
 use core::mem::MaybeUninit;
 use core::{
     fmt::Debug,
@@ -76,6 +77,16 @@ use serde::{de::Visitor, Deserialize, Serialize};
 pub struct StaticOption<T> {
     data: MaybeUninit<T>,
     has_contents: u8,
+}
+
+impl<T: Hash> Hash for StaticOption<T> {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        if self.is_some() {
+            unsafe { self.data.assume_init_ref() }.hash(state)
+        } else {
+            Option::<T>::None.hash(state)
+        }
+    }
 }
 
 impl<T> Drop for StaticOption<T> {
@@ -308,6 +319,15 @@ impl<T> StaticOption<T> {
     /// it returns [`false`].
     pub fn is_some(&self) -> bool {
         self.has_contents == true as u8
+    }
+
+    /// Maps a `StaticOption<T>` to a `StaticOption<U>`
+    pub fn map<U, F: FnOnce(T) -> U>(self, f: F) -> StaticOption<U> {
+        if self.is_none() {
+            StaticOption::none()
+        } else {
+            StaticOption::some(f(self.unwrap()))
+        }
     }
 
     /// Replaces the existing value of the [`StaticOption`] with the new value.
