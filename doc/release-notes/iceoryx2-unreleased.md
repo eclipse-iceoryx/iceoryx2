@@ -18,6 +18,8 @@
   [#1289](https://github.com/eclipse-iceoryx/iceoryx2/issues/1289)
 * Add source `NodeId` to request and response header
   [#1308](https://github.com/eclipse-iceoryx/iceoryx2/issues/1308)
+* Introduce `StaticOption` and `StaticDuration` which are `ZeroCopySend`
+  [#1312](https://github.com/eclipse-iceoryx/iceoryx2/issues/1312)
 
 ### Bugfixes
 
@@ -26,6 +28,8 @@
     conflicts when merging.
 -->
 
+* Remove default implementation of `ZeroCopySend` from `Option` and `Duration`
+  [#1312](https://github.com/eclipse-iceoryx/iceoryx2/issues/1312)
 * Bump wheel from 0.45.1 to 0.46.3 in /iceoryx2-ffi/python
   [#1316](https://github.com/eclipse-iceoryx/iceoryx2/issues/1316)
 
