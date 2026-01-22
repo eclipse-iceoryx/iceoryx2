@@ -37,7 +37,7 @@ macro_rules! coutln {
 }
 
 #[macro_export]
-macro_rules! cerr {
+macro_rules! cerrln {
     ($($arg:tt)*) => {
         use core::fmt::Write as _;
         let _ = core::writeln!($crate::writer::stderr(), $($arg)*);
