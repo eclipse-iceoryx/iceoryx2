@@ -51,6 +51,8 @@
 * Replace `lazy_static` dependency with `LazyLock` from `std` in `std` builds or
   a custom minimal spin-based implementation for `no_std` builds
   [#1321](https://github.com/eclipse-iceoryx/iceoryx2/issues/1321)
+* Remove support for Bazel Workspaces
+  [#1263](https://github.com/eclipse-iceoryx/iceoryx2/issues/1263)
 
 ### Workflow
 

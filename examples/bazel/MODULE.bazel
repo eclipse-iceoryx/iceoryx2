@@ -24,7 +24,7 @@ bazel_dep(name = "rules_rust", version = "0.68.1")
 bazel_dep(name = "rules_rust_bindgen", version = "0.68.1")
 bazel_dep(name = "rules_cc", version = "0.2.8")
 bazel_dep(name = "toolchains_llvm", version = "1.5.0")
-bazel_dep(name = "iceoryx2", version = "0.7.0")
+bazel_dep(name = "iceoryx2")
 
 # ==============================================================================
 # Iceoryx2 Setup
