@@ -21,7 +21,7 @@ filegroup(
 )
 
 rust_library(
-    name = "iceoryx2-bb-print",
+    name = "iceoryx2-pal-print",
     srcs = glob(["src/**/*.rs"]),
     crate_features = select({
         "//:cfg_feature_std": [
@@ -30,7 +30,7 @@ rust_library(
         "//conditions:default": [],
     }),
     deps = [
-        "//iceoryx2-pal/print:iceoryx2-pal-print",
+        "//iceoryx2-pal/posix:iceoryx2-pal-posix",
     ],
 )
 

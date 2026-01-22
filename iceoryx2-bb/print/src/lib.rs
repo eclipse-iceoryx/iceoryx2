@@ -15,42 +15,12 @@
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 
-pub mod writer;
+pub use iceoryx2_pal_print::IsTerminal;
 
-pub use writer::*;
+pub use iceoryx2_pal_print::stderr;
+pub use iceoryx2_pal_print::stdout;
 
-pub trait IsTerminal {
-    fn is_terminal(&self) -> bool;
-}
-
-#[macro_export]
-macro_rules! cout {
-    ($($arg:tt)*) => {{
-        use core::fmt::Write as _;
-        let _ = core::write!($crate::writer::stdout(), $($arg)*);
-    }};
-}
-
-#[macro_export]
-macro_rules! coutln {
-    ($($arg:tt)*) => {{
-        use core::fmt::Write as _;
-        let _ = core::writeln!($crate::writer::stdout(), $($arg)*);
-    }};
-}
-
-#[macro_export]
-macro_rules! cerr {
-    ($($arg:tt)*) => {{
-        use core::fmt::Write as _;
-        let _ = core::write!($crate::writer::stderr(), $($arg)*);
-    }};
-}
-
-#[macro_export]
-macro_rules! cerrln {
-    ($($arg:tt)*) => {
-        use core::fmt::Write as _;
-        let _ = core::writeln!($crate::writer::stderr(), $($arg)*);
-    };
-}
+pub use iceoryx2_pal_print::cerr;
+pub use iceoryx2_pal_print::cerrln;
+pub use iceoryx2_pal_print::cout;
+pub use iceoryx2_pal_print::coutln;

@@ -1,5 +1,5 @@
 [package]
-name = "iceoryx2-bb-print"
+name = "iceoryx2-pal-print"
 description = "iceoryx2: [internal] abstraction over character printing"
 categories = { workspace = true }
 edition = { workspace = true }
@@ -14,13 +14,13 @@ version = { workspace = true }
 default = []
 
 # Use the std module
-std = ["iceoryx2-pal-print/std"]
+std = []
 
 # Use POSIX APIs
-posix = ["iceoryx2-pal-print/posix"]
+posix = ["iceoryx2-pal-posix"]
 
 [dependencies]
-iceoryx2-pal-print = { workspace = true }
+iceoryx2-pal-posix = { workspace = true, optional = true }
 
 [lints]
 workspace = true
