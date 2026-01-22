@@ -79,6 +79,21 @@ pub struct StaticOption<T> {
     has_contents: u8,
 }
 
+impl<T> From<Option<T>> for StaticOption<T> {
+    fn from(value: Option<T>) -> Self {
+        match value {
+            Some(v) => StaticOption::some(v),
+            None => StaticOption::none(),
+        }
+    }
+}
+
+impl<T> From<StaticOption<T>> for Option<T> {
+    fn from(value: StaticOption<T>) -> Self {
+        value.to_option()
+    }
+}
+
 impl<T: Hash> Hash for StaticOption<T> {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         if self.is_some() {
@@ -208,8 +223,17 @@ impl<T: Debug> core::fmt::Debug for StaticOption<T> {
 }
 
 impl<T> StaticOption<T> {
+    /// Creates a new [`Option`] containing `T`.
+    pub fn to_option(self) -> Option<T> {
+        if self.is_none() {
+            None
+        } else {
+            Some(self.unwrap())
+        }
+    }
+
     /// Returns an [`Option`] with a reference to `T`
-    pub fn as_option(&self) -> Option<&T> {
+    pub fn as_option_ref(&self) -> Option<&T> {
         if self.is_some() {
             Some(unsafe { self.data.assume_init_ref() })
         } else {

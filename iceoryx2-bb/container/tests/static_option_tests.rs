@@ -31,14 +31,14 @@ fn default_created_option_is_empty() {
 fn when_empty_as_option_returns_empty_option() {
     let sut = StaticOption::<i32>::default();
 
-    assert_that!(sut.as_option(), eq None);
+    assert_that!(sut.as_option_ref(), eq None);
 }
 
 #[test]
 fn when_with_value_as_option_returns_option_with_reference_to_that_value() {
     let sut = StaticOption::<i32>::some(1234);
 
-    assert_that!(*sut.as_option().unwrap(), eq 1234);
+    assert_that!(*sut.as_option_ref().unwrap(), eq 1234);
 }
 
 #[test]
@@ -366,4 +366,34 @@ fn serialization_works() {
 
     assert_tokens(&sut_none, &[Token::None]);
     assert_tokens(&sut_some, &[Token::Some, Token::I32(551)]);
+}
+
+#[test]
+fn empty_create_empty_native_option() {
+    let sut = StaticOption::<i32>::none();
+
+    assert_that!(sut.to_option(), eq None);
+}
+
+#[test]
+fn value_creates_native_option_with_value() {
+    let sut = StaticOption::<i32>::some(772);
+
+    assert_that!(sut.to_option(), eq Some(772));
+}
+
+#[test]
+fn native_to_static_conversion_works() {
+    let native = Option::<i32>::Some(551);
+    let sut: StaticOption<i32> = native.into();
+
+    assert_that!(sut.to_option(), eq native);
+}
+
+#[test]
+fn static_to_native_conversion_works() {
+    let sut = StaticOption::<i32>::some(1823);
+    let native: Option<i32> = sut.clone().into();
+
+    assert_that!(sut.to_option(), eq native);
 }
