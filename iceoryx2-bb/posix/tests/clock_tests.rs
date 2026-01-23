@@ -85,3 +85,14 @@ fn clock_time_as_timespec_works() {
     assert_that!(timespec.tv_sec, eq now.as_duration().as_secs() as _);
     assert_that!(timespec.tv_nsec, eq now.as_duration().subsec_nanos() as _);
 }
+
+#[test]
+fn clock_static_duration_roundtrip_conversion() {
+    let secs = 123;
+    let nsecs = 456;
+    let duration = Duration::from_secs(secs) + Duration::from_nanos(nsecs);
+    let sut: StaticDuration = duration.into();
+    let duration_2: Duration = sut.into();
+
+    assert_that!(duration, eq duration_2);
+}
