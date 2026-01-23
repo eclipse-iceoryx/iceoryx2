@@ -60,7 +60,7 @@ use serde::{de::Visitor, Deserialize, Serialize};
 /// ## Match Statements
 ///
 /// The [`StaticOption`] can be converted to the rust [`Option`] with
-/// * [`StaticOption::as_option()`]
+/// * [`StaticOption::as_option_ref()`]
 /// * [`StaticOption::as_option_mut()`]
 ///
 /// to enable the usage in match statements.
