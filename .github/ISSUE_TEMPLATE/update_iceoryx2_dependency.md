@@ -12,6 +12,6 @@ assignees: ''
 * **iceoryx2 version:** (main, v0.8?)
 * **Language:** (C, C++, Python, Rust)
 * **Dependency:**
-  * **current version:**
-  * **new version:**
+    * **current version:**
+    * **new version:**
 * **Update Reason:** link to bug or cve report
