@@ -24,7 +24,6 @@ iceoryx2-bb-testing = { workspace = true }
 iceoryx2-pal-posix = { workspace = true }
 iceoryx2-pal-testing = { workspace = true }
 
-lazy_static = { workspace = true }
 serde = { workspace = true }
 
 [dev-dependencies]

@@ -55,6 +55,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
+use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
 use iceoryx2_bb_elementary_traits::allocator::BaseAllocator;
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
 use iceoryx2_bb_posix::mutex::*;
@@ -62,8 +63,6 @@ use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_log::{fail, fatal_panic};
-
-use lazy_static::lazy_static;
 
 pub use crate::dynamic_storage::*;
 use crate::named_concept::{
@@ -192,21 +191,17 @@ impl<T> Drop for StorageDetails<T> {
 unsafe impl<T> Send for StorageDetails<T> {}
 unsafe impl<T> Sync for StorageDetails<T> {}
 
-lazy_static! {
-    static ref PROCESS_LOCAL_MTX_HANDLE: MutexHandle<BTreeMap<FilePath, StorageEntry>> =
-        MutexHandle::new();
-    static ref PROCESS_LOCAL_STORAGE: Mutex<'static, 'static, BTreeMap<FilePath, StorageEntry>> = {
-        let result = MutexBuilder::new()
-            .is_interprocess_capable(false)
-            .create(BTreeMap::new(), &PROCESS_LOCAL_MTX_HANDLE);
+static PROCESS_LOCAL_MTX_HANDLE: LazyLock<MutexHandle<BTreeMap<FilePath, StorageEntry>>> =
+    LazyLock::new(MutexHandle::new);
 
-        if result.is_err() {
-            fatal_panic!(from "PROCESS_LOCAL_STORAGE", "Failed to create global dynamic storage");
-        }
-
-        result.unwrap()
-    };
-}
+static PROCESS_LOCAL_STORAGE: LazyLock<Mutex<'static, 'static, BTreeMap<FilePath, StorageEntry>>> =
+    LazyLock::new(|| {
+        fatal_panic!(from "PROCESS_LOCAL_STORAGE",
+            when MutexBuilder::new()
+                .is_interprocess_capable(false)
+                .create(BTreeMap::new(), &PROCESS_LOCAL_MTX_HANDLE),
+            "Failed to create global dynamic storage")
+    });
 
 #[derive(Debug)]
 pub struct Storage<T: Send + Sync + Debug + 'static> {

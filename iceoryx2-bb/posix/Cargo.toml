@@ -15,9 +15,11 @@ workspace = true
 
 [features]
 default = [
-  "lazy_static/spin_no_std"
 ]
-std = []
+
+std = [
+  "iceoryx2-bb-concurrency/std"
+]
 
 # Use https://crates.io/crates/libc for the platform abstraction. This simplifies
 # cross-compilation since bindgen is not required anymore. Unfortunately, the libc crate
@@ -38,7 +40,6 @@ iceoryx2-pal-posix = { workspace = true }
 iceoryx2-pal-configuration = { workspace = true }
 iceoryx2-bb-derive-macros = { workspace = true }
 
-lazy_static = { workspace = true }
 enum-iterator = { workspace = true }
 tiny-fn = { workspace = true }
 serde = { workspace = true }

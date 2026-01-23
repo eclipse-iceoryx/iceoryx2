@@ -24,10 +24,10 @@ rust_library(
     srcs = glob(["src/**/*.rs"]),
     deps = [
         "//iceoryx2",
+        "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
         "//iceoryx2-bb/container:iceoryx2-bb-container",
         "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
         "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
-        "@crate_index//:lazy_static",
         "@crate_index//:serde",
     ],
 )

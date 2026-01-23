@@ -15,6 +15,7 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod shm_allocator_trait {
+    use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
     use iceoryx2_bb_testing::assert_that;
@@ -22,8 +23,6 @@ pub mod shm_allocator_trait {
 
     use core::{alloc::Layout, ptr::NonNull};
     use std::{collections::HashSet, sync::Mutex};
-
-    use lazy_static::lazy_static;
 
     const MEMORY_SIZE: usize = 4096;
     const MGMT_SIZE: usize = 4096;
@@ -175,9 +174,8 @@ pub mod shm_allocator_trait {
 
     #[conformance_test]
     pub fn allocator_id_is_unique<Sut: ShmAllocator>() {
-        lazy_static! {
-            static ref ALLOCATOR_IDS: Mutex<HashSet<u8>> = Mutex::new(HashSet::new());
-        }
+        static ALLOCATOR_IDS: LazyLock<Mutex<HashSet<u8>>> =
+            LazyLock::new(|| Mutex::new(HashSet::new()));
 
         let uid = Sut::unique_id();
         let mut guard = ALLOCATOR_IDS.lock().unwrap();
