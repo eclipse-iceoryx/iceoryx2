@@ -10,14 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![cfg_attr(not(feature = "std"), no_std)]
-
-pub mod atomic;
-pub mod cell;
-pub mod lazy_lock;
-pub mod spin_lock;
-
 #[cfg(not(feature = "std"))]
-pub use iceoryx2_pal_concurrency_sync::once::Once;
+pub use iceoryx2_pal_concurrency_sync::lazy_lock::LazyLock;
 #[cfg(feature = "std")]
-pub use std::sync::Once;
+pub use std::sync::LazyLock;

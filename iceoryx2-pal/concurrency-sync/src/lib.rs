@@ -20,6 +20,7 @@ pub mod atomic;
 pub mod barrier;
 pub mod cell;
 pub mod condition_variable;
+pub mod lazy_lock;
 pub mod mutex;
 pub mod once;
 pub mod rwlock;
