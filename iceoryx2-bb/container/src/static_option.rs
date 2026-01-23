@@ -33,9 +33,11 @@ use serde::{de::Visitor, Deserialize, Serialize};
 ///
 /// # Examples
 ///
-/// ## Construction Comparision
+/// ## Construction Comparison
 ///
 /// ```
+/// use iceoryx2_bb_container::static_option::StaticOption;
+///
 /// // rust Option
 /// fn do_stuff_1(value: i32) -> Option<i32> {
 ///   if value > 0 {
@@ -48,9 +50,9 @@ use serde::{de::Visitor, Deserialize, Serialize};
 /// // StaticOption
 /// fn do_stuff_2(value: i32) -> StaticOption<i32> {
 ///   if value > 0 {
-///     StaticOption::Some(value)
+///     StaticOption::some(value)
 ///   } else {
-///     StaticOption::None
+///     StaticOption::none()
 ///   }
 /// }
 /// ```
@@ -64,11 +66,13 @@ use serde::{de::Visitor, Deserialize, Serialize};
 /// to enable the usage in match statements.
 ///
 /// ```
+/// use iceoryx2_bb_container::static_option::StaticOption;
+///
 /// fn do_stuff() -> StaticOption<i32> {
-///   StaticOption::None
+///   StaticOption::none()
 /// }
 ///
-/// match do_stuff().as_option() {
+/// match do_stuff().as_option_ref() {
 ///   Some(v) => println!("{v}"),
 ///   None => println!("none")
 /// }
@@ -250,7 +254,7 @@ impl<T> StaticOption<T> {
         }
     }
 
-    /// Converts the `StaticOption<T>` to `StaticOption<&T::Target>.
+    /// Converts the `StaticOption<T>` to `StaticOption<&T::Target>`.
     pub fn as_deref(&self) -> StaticOption<&<T as Deref>::Target>
     where
         T: Deref,
@@ -262,7 +266,7 @@ impl<T> StaticOption<T> {
         }
     }
 
-    /// Converts the `StaticOption<T>` to `StaticOption<&mut T::Target>.
+    /// Converts the `StaticOption<T>` to `StaticOption<&mut T::Target>`.
     pub fn as_deref_mut(&mut self) -> StaticOption<&mut <T as Deref>::Target>
     where
         T: DerefMut,

@@ -669,8 +669,8 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         }
 
         if self.verify_deadline
-            && existing_settings.deadline.clone().map(|v| v.value)
-                != required_settings.deadline.clone().map(|v| v.value)
+            && existing_settings.deadline.as_option_ref().map(|v| v.value)
+                != required_settings.deadline.as_option_ref().map(|v| v.value)
         {
             fail!(from self, with EventOpenError::IncompatibleDeadline,
                 "{} since the deadline is {:?} but a deadline of {:?} is required.",
