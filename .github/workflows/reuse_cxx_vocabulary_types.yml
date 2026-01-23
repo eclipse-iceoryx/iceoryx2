@@ -58,7 +58,7 @@ jobs:
 
           rm -rf target/ff/cc
 
-      - name: Build and test iceoryx2 C++ bindings with std::expected
+      - name: Build and test iceoryx2 C++ bindings with std::expected and std::optional
         run: |
           cmake -S . \
                 -B target/ff/cc/build \
