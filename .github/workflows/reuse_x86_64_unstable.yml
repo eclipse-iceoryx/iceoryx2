@@ -1,0 +1,95 @@
+name: Reusable workflow for x86_64_unstable
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        required: true
+        type: string
+      toolchain:
+        required: true
+        type: string
+      profile:
+        required: false
+        type: string
+
+jobs:
+  x86_64:
+    continue-on-error: true
+    timeout-minutes: 90
+    runs-on: ${{ inputs.os }}
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
+
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@802fa1a2c4e212495c05bf94dba2704a92a472be # version: v2.0.2
+        with:
+          cmake-version: "3.31.x"
+      - name: Use cmake
+        run: cmake --version
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # version: v1
+        with:
+          toolchain: ${{ inputs.toolchain }}
+
+      - name: Download artifact cargo-nextest
+        uses: ./.github/actions/download-cached-rust-tool
+        with:
+          artifact-bin-name: cargo-nextest
+          artifact-upload-name: ${{ runner.os }}-cargo-nextest
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@bafd42bd91680affe190f697cac6ef3ad958ecba # version: v0.0.9
+
+      - name: Set caching env vars on non-Windows
+        if: ${{ runner.os != 'Windows' }}
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+
+      - name: Set caching env vars on Windows
+        if: ${{ runner.os == 'Windows' }}
+        run: |
+          Add-Content -Path $env:GITHUB_ENV -Value "SCCACHE_GHA_ENABLED=true"
+          Add-Content -Path $env:GITHUB_ENV -Value "RUSTC_WRAPPER=sccache"
+
+      - name: Prepare Windows
+        if: ${{ runner.os == 'Windows' }}
+        run: internal\scripts\ci_prepare_windows.ps1
+      - name: Prepare Linux
+        if: ${{ runner.os == 'Linux' }}
+        run: |
+          internal/scripts/ci_prepare_ubuntu.sh
+          uname -a
+
+      - name: Save disk space
+        uses: ./.github/actions/save-disk-space
+        with:
+          mode: "pre"
+
+      - name: Run cargo build
+        shell: bash
+        run: |
+          BUILD_MODE=""
+          if [[ ${{ inputs.profile }} == 'release' ]]; then
+            BUILD_MODE="--release"
+          fi
+          echo "Cargo build mode: ${BUILD_MODE}"
+          cargo build --workspace --all-targets ${BUILD_MODE}
+
+      - name: Run cargo nextest
+        shell: bash
+        run: |
+          BUILD_MODE=""
+          if [[ ${{ inputs.profile }} == 'release' ]]; then
+            BUILD_MODE="--release"
+          fi
+          echo "Cargo build mode: ${BUILD_MODE}"
+          cargo nextest run --workspace --all-targets --no-fail-fast ${BUILD_MODE}
+
+      - name: Cleanup build artifacts
+        uses: ./.github/actions/save-disk-space
+        with:
+          mode: "post"

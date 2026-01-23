@@ -143,8 +143,8 @@
     * `dynamic_config_guard`
     * `fn new(service: &Service) -> Self`
 * Rename things
-    * With modules, every public thing should be named like the module, it will be
-    differentiate with the namespace \* All `iceoryx2_cal`s
+    * With modules, every public thing should be named like the module,
+    it will be differentiate with the namespace \* All `iceoryx2_cal`s
 * What if `reference_counter == 0` when creating new service ... wait for
   cleanup
 * Introduce `ShmIpc` trait and derive macro to add `#[repr(C)]` to all shm

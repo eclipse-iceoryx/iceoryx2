@@ -1,0 +1,154 @@
+name: Reusable workflow for x86_32
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        required: true
+        type: string
+      toolchain:
+        required: true
+        type: string
+      profile:
+        required: true
+        type: string
+      cmake-build-type:
+        required: true
+        type: string
+
+jobs:
+    x86_32:
+      timeout-minutes: 60
+      runs-on: ${{ inputs.os }}
+      steps:
+      - name: Checkout sources
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
+
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@802fa1a2c4e212495c05bf94dba2704a92a472be # version: v2.0.2
+        with:
+          cmake-version: "3.31.x"
+
+      - name: Use cmake
+        run: cmake --version
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # version: v1
+        with:
+            toolchain: ${{ inputs.toolchain }}
+            targets: i686-unknown-linux-gnu
+
+      - name: Download artifact cargo-nextest
+        uses: ./.github/actions/download-cached-rust-tool
+        with:
+          artifact-bin-name: cargo-nextest
+          artifact-upload-name: ${{ runner.os }}-cargo-nextest
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@bafd42bd91680affe190f697cac6ef3ad958ecba # version: v0.0.9
+
+      - name: Set caching env vars on non-Windows
+        if: ${{ runner.os != 'Windows' }}
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+
+      - name: Set caching env vars on Windows
+        if: ${{ runner.os == 'Windows' }}
+        run: |
+          Add-Content -Path $env:GITHUB_ENV -Value "SCCACHE_GHA_ENABLED=true"
+          Add-Content -Path $env:GITHUB_ENV -Value "RUSTC_WRAPPER=sccache"
+
+      - name: Prepare Windows
+        if: ${{ runner.os == 'Windows' }}
+        run: internal\scripts\ci_prepare_windows.ps1
+
+      - name: Prepare Linux
+        if: ${{ runner.os == 'Linux' }}
+        run: |
+          internal/scripts/ci_prepare_ubuntu.sh
+          uname -a
+
+      - name: Save disk space
+        uses: ./.github/actions/save-disk-space
+        with:
+          mode: "pre"
+
+      - name: Run cargo build
+        shell: bash
+        run: |
+          BUILD_MODE=""
+          if [[ ${{ inputs.profile }} == 'release' ]]; then
+            BUILD_MODE="--release"
+          fi
+          echo "Cargo build mode: ${BUILD_MODE}"
+          cargo build --workspace --exclude iceoryx2-ffi-python --all-targets ${BUILD_MODE} --target i686-unknown-linux-gnu
+
+      - name: Run cargo nextest
+        shell: bash
+        run: |
+          BUILD_MODE=""
+          if [[ ${{ inputs.profile }} == 'release' ]]; then
+            BUILD_MODE="--release"
+          fi
+          echo "Cargo build mode: ${BUILD_MODE}"  
+          cargo nextest run --workspace --exclude iceoryx2-ffi-python --all-targets --no-fail-fast ${BUILD_MODE} --target i686-unknown-linux-gnu
+
+      - name: Cleanup build artifacts
+        uses: ./.github/actions/save-disk-space
+        with:
+          mode: "post"
+
+      - name: Build language bindings
+        shell: bash
+        run: |
+          cmake -S . \
+                -B target/ff/cc/build \
+                -DCMAKE_INSTALL_PREFIX=target/ff/cc/install \
+                -DBUILD_EXAMPLES=ON \
+                -DBUILD_TESTING=ON \
+                -DCMAKE_C_FLAGS="-m32 -malign-double" \
+                -DCMAKE_CXX_FLAGS="-m32 -malign-double" \
+                -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/i686-unknown-linux-gnu/${{ inputs.profile }}" \
+                ${{ inputs.cmake-build-type }} \
+                -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          cmake --build target/ff/cc/build
+          cmake --install target/ff/cc/build
+
+      - name: Run C++ iceoryx2-bb tests
+        run: target/ff/cc/build/tests/iceoryx2-bb-cxx-tests
+
+      - name: Run C language binding tests
+        run: target/ff/cc/build/tests/iceoryx2-c-tests
+
+      - name: Run C++ language binding tests
+        # TODO: [#262] the skipped tests trigger an unaligned pointer access
+        run: target/ff/cc/build/tests/iceoryx2-cxx-tests --gtest_filter="-ServiceTest/*.list_works:ServiceTest/*.list_works_with_attributes:ServiceTest/*.details_works"
+
+      - name: Build C language binding examples in out-of-tree configuration
+        shell: bash
+        run: |
+          rm -rf target/ff/cc/build
+          cmake -S examples/c \
+                -B target/ff/out-of-tree-c \
+                -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ff/cc/install \
+                -DCMAKE_C_FLAGS="-m32 -malign-double" \
+                -DCMAKE_CXX_FLAGS="-m32 -malign-double" \
+                ${{ inputs.cmake-build-type }} \
+                -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          cmake --build target/ff/out-of-tree-c
+
+      - name: Build C++ language binding examples in out-of-tree configuration
+        shell: bash
+        run: |
+          cmake -S examples/cxx \
+                -B target/ff/out-of-tree-cxx \
+                -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/cc/install" \
+                -DCMAKE_C_FLAGS="-m32 -malign-double" \
+                -DCMAKE_CXX_FLAGS="-m32 -malign-double" \
+                ${{ inputs.cmake-build-type }} \
+                -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          cmake --build target/ff/out-of-tree-cxx

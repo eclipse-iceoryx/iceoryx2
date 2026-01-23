@@ -275,8 +275,8 @@ Similar to the platform configuration, users may want to use a completely
 different platform abstraction (from those in
 `iceoryx2/iceoryx2-pal/posix/src`) for a specific operating system.
 
-To achieve this, the environment variable `IOX2_CUSTOM_POSIX_PLATFORM_PATH` can be
-utilized.
+To achieve this, the environment variable `IOX2_CUSTOM_POSIX_PLATFORM_PATH` can
+be utilized.
 
 The first step is to prepare the customized platform at some location (which
 can be outside of the `iceoryx2` workspace).

@@ -1,0 +1,51 @@
+name: Reusable workflow for static code analysis
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        required: true
+        type: string
+      cargo-features-flag:
+        required: false
+        type: string
+
+jobs:
+  static-code-analysis-rust:
+    timeout-minutes: 40
+    runs-on: ${{ inputs.os }}
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@e0021407031f5be11a464abee9a0776171c79891 # version: v47.0.1
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # version: v1
+        with:
+          toolchain: stable
+          components: clippy
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@bafd42bd91680affe190f697cac6ef3ad958ecba # version: v0.0.9
+
+      - name: Set caching env vars on non-Windows
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+
+      - name: Run cargo clippy
+        run: cargo clippy ${{ inputs.cargo-features-flag }} -- -D warnings
+
+      - name: Setup miri
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # version: v1
+        with:
+          toolchain: nightly
+          components: miri
+
+      - name: Run cargo miri
+        env:
+          ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
+        run: ./internal/scripts/ci_run_miri.sh

@@ -1,0 +1,87 @@
+name: Reusable workflow for code coverage
+
+on:
+  workflow_call:
+
+jobs:
+  coverage:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
+
+      - name: Install dependencies
+        uses: ./.github/actions/install-iceoryx-deps-and-clang
+
+      - name: Create test users and groups
+        run: |
+          sudo useradd testuser1
+          sudo useradd testuser2
+          sudo groupadd testgroup1
+          sudo groupadd testgroup2
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # version: v1
+        with:
+          toolchain: 1.92.0
+          components: llvm-tools
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@bafd42bd91680affe190f697cac6ef3ad958ecba # version: v0.0.9
+
+      - name: Set caching env vars on non-Windows
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+
+      - name: Setup gcovr
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # version: v6.0.1
+        with:
+          python-version: "3.13"
+          cache: "pip" # caching pip dependencies
+      - run: pip install gcovr==8.4
+
+      - name: Download artifact grcov
+        uses: ./.github/actions/download-cached-rust-tool
+        with:
+          artifact-bin-name: grcov
+          artifact-upload-name: ${{ runner.os }}-grcov
+
+      - name: Save disk space
+        uses: ./.github/actions/save-disk-space
+        with:
+          mode: "pre"
+
+      - name: Generate raw coverage results
+        run: ./internal/scripts/generate-cov-report.sh --generate
+
+      - name: Generate coverage results for html artifacts
+        run: ./internal/scripts/generate-cov-report.sh --html
+
+      - name: Archive coverage-html artifacts
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # version: v6.0.0
+        with:
+          name: coverage-html
+          path: target/ff/coverage/html/*
+          retention-days: 90
+
+      - name: Generate coverage reports for Codecov
+        run: ./internal/scripts/generate-cov-report.sh --lcov
+
+      - name: Upload Rust coverage to Codecov
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # version: v5.5.2
+        with:
+          files: target/ff/coverage/lcov/iceoryx2_lcov_rust.info
+          name: iceoryx2
+          flags: Rust
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload C++ coverage to Codecov
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # version: v5.5.2
+        with:
+          files: target/ff/coverage/lcov/iceoryx2_lcov_cpp.info
+          name: iceoryx2
+          flags: CPP
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}

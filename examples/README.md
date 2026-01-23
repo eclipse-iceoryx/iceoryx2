@@ -7,8 +7,8 @@
 ## Foundations of Communication in iceoryx2 Applications
 
 > [!IMPORTANT]
-> The examples are not yet functional in all languages. Check the list below to see
-> what is already working!
+> The examples are not yet functional in all languages.
+> Check the list below to see what is already working!
 
 In the world of iceoryx2, communication is at the core of everything. To
 facilitate seamless communication, we always begin by opening or creating a

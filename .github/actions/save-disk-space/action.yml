@@ -1,0 +1,44 @@
+name: 'Save disk space'
+description: 'Removes software packages and build artifacts that are not needed by the CI'
+inputs:
+  mode:
+    description: "Defines wether to execute the action before or after cargo build {pre,post}"
+    required: true
+  remove-android:
+    description: "Defines if Android shall be removed in the pre step"
+    required: false
+    default: "true"
+  remove-dotnet:
+    description: "Defines if the Dotnet Framework shall be removed in the pre step"
+    required: false
+    default: "true"
+runs:
+  using: "composite"
+  steps:
+      - name: Remove unneeded software
+        if: ${{ inputs.mode == 'pre' }}
+        shell: bash
+        run: |
+          sudo rm -rf /opt/ghc || true # Remove Haskell
+          sudo rm -rf /usr/local/.ghcup || true # Remove Haskell
+          sudo rm -rf /usr/share/swift || true 
+          sudo rm -rf /usr/lib/google-cloud-sdk || true 
+          sudo rm -rf /usr/local/share/chromium || true 
+          sudo rm -rf /opt/microsoft/msedge || true
+          sudo rm -rf /opt/google/chrome || true
+
+          if [[ ${{ inputs.remove-android }} == 'true' ]]; then
+            sudo rm -rf /usr/local/lib/android || true
+          fi
+
+          if [[ ${{ inputs.remove-dotnet }} == 'true' ]]; then
+            sudo rm -rf /usr/share/dotnet || true
+          fi
+
+
+      - name: Cleanup cargo target folder
+        if: ${{ inputs.mode == 'post' }}
+        shell: bash
+        run: |
+          rm -rf ${{ github.workspace }}/target/{debug,release}/{deps,incremental}
+          rm -rf ${{ github.workspace }}/target/*/{debug,release}/{deps,incremental} # Cleanup subfolders for target triples

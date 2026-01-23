@@ -1,0 +1,150 @@
+name: Nightly
+
+on:
+  schedule:
+  - cron: "0 1 * * *" # Runs at 1 AM UTC timezone
+  workflow_dispatch:
+
+
+jobs:
+  cargo-nextest-nightly:
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
+      - name: Build and cache cargo-nextest
+        uses: ./.github/actions/build-and-cache-rust-tool
+        with:
+          rust-toolchain: stable
+          check-and-install-cmd: cargo-nextest --version > /dev/null || cargo install cargo-nextest --locked
+          print-version-cmd: cargo-nextest --version
+          # increment cache-N-${{}} if a new nextest version is required
+          cache-key: cache-2-${{ runner.os }}-cargo-nextest
+          artifact-bin-name: cargo-nextest
+          artifact-upload-name: ${{ runner.os }}-cargo-nextest
+
+  static-code-analysis-rust-nightly:
+    strategy:
+      matrix:
+        os: [windows-latest]
+    uses: ./.github/workflows/reuse_static_code_analysis.yml
+    with:
+      os: ${{ matrix.os }}
+
+  x86_32-nightly:
+    needs: [static-code-analysis-rust-nightly, cargo-nextest-nightly]
+    strategy:
+      matrix:
+        os: [ubuntu-latest] # [windows-latest, ubuntu-latest, macos-latest]
+        toolchain: [stable] # [stable, 1.83.0, beta, nightly]
+    uses: ./.github/workflows/reuse_x86_32.yml
+    with:
+      os: ${{ matrix.os }}
+      toolchain: ${{ matrix.toolchain }}
+      profile: "release"
+      cmake-build-type: "-DCMAKE_BUILD_TYPE=Release"
+
+  stable-nightly:
+    needs: [static-code-analysis-rust-nightly, cargo-nextest-nightly]
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        toolchain: [stable, 1.83.0]
+        profile: ["release", "debug"]
+        include:
+          - profile: "debug"
+            cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug" # required for Makefile Generators at config time
+            cmake-build-config: "--config Debug" # required for Visual Studio at build and install time
+          - profile: "release"
+            cmake-build-type: "-DCMAKE_BUILD_TYPE=Release" # required for Makefile Generators at config time
+            cmake-build-config: "--config Release" # required for Visual Studio at build and install time
+          - cargo-features-flag: "--features iceoryx2/libc_platform"
+            os: ubuntu-latest
+            profile: "release"
+            cmake-build-type: "-DCMAKE_BUILD_TYPE=Release" # required for Makefile Generators at config time
+            cmake-build-config: "--config Release" # required for Visual Studio at build and install time
+        exclude:
+          - os: ubuntu-latest # already tested in Pull-Requests and main branch
+            toolchain: stable
+            profile: "debug"
+    uses: ./.github/workflows/reuse_x86_64_stable.yml
+    with:
+      os: ${{ matrix.os }}
+      toolchain: ${{ matrix.toolchain }}
+      profile: ${{ matrix.profile }}
+      cmake-build-type: ${{ matrix.cmake-build-type }}
+      cmake-build-config: ${{ matrix.cmake-build-config }}
+      cmake-cxx-flags: ""
+      cargo-features-flag: ${{ matrix.cargo-features-flag }}
+
+  unstable-nightly:
+    needs: [static-code-analysis-rust-nightly, cargo-nextest-nightly]
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        toolchain: [beta, nightly]
+        profile: ["debug", "release"]
+        exclude:
+          - os: ubuntu-latest # Already run in Pull-Requests
+            toolchain: beta
+            profile: "debug"
+          - os: ubuntu-latest # Already run in Pull-Requests
+            toolchain: nightly
+            profile: "debug"
+    uses: ./.github/workflows/reuse_x86_64_unstable.yml
+    with:
+      os: ${{ matrix.os }}
+      toolchain: ${{ matrix.toolchain }}
+      profile: ${{ matrix.profile }}
+
+  ### TODO: does not work yet reliable on the GitHub CI, seems to end up in an infinite loop
+  ###       current alternative is a cirrus.yml aarch64 target
+  # arm:
+  #   runs-on: ubuntu-latest
+  #   if: ${{ needs.changes.outputs.source-code == 'true' }}
+  #   strategy:
+  #     matrix:
+  #       architecture: ["aarch64"] # ["aarch64", "armv7"]
+  #       toolchain: [ stable ] # [stable, 1.83.0, beta, nightly]
+  #       mode: ["--release", ""]
+  #   timeout-minutes: 30
+  #   steps:
+  #     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+  #     - uses: uraimo/run-on-arch-action@v2
+  #       name: Run commands
+  #       with:
+  #         arch: ${{ matrix.architecture }}
+  #         distro: archarm_latest
+  #         run: |
+  #           ./internal/scripts/ci_prepare_archlinux.sh
+  #           rustup default ${{ matrix.toolchain }}
+  #           cargo fmt --all -- --check
+  #           cargo clippy -- -D warnings
+  #           cargo build --workspace --all-targets ${{ matrix.mode }}
+  #           cargo test --workspace --all-targets --no-fail-fast ${{ matrix.mode }}
+
+  # todo(#347): Reenable FreeBSD once it got stabilized and update the config
+  # freebsd:
+  #   needs: [preflight-check, static-code-analysis]
+  #   if: ${{ needs.changes.outputs.source-code == 'true' }}
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 60
+  #   strategy:
+  #     matrix:
+  #       freebsd_version: [ "14.3" ]
+  #       toolchain: [ "stable", "1.83.0" ] # [stable, 1.83.0, beta, nightly]
+  #       mode: ["debug"] # ["release", "debug"]
+  #   steps:
+  #     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+  #     - uses: vmactions/freebsd-vm@05856381fab64eeee9b038a0818f6cec649ca17a # ratchet:vmactions/freebsd-vm@v1
+  #       with:
+  #         release: ${{ matrix.freebsd_version }}
+  #         mem: 16384
+  #         copyback: false
+  #         prepare: pkg install -y cmake curl gcc git llvm
+  #         run: |
+  #           git config --global --add safe.directory /home/runner/work/iceoryx2/iceoryx2
+  #           ./internal/scripts/ci_prepare_freebsd.sh
+  #           ./internal/scripts/ci_build_and_test_freebsd.sh --toolchain ${{ matrix.toolchain }} --mode ${{ matrix.mode }}

@@ -200,18 +200,19 @@ MD043: false
 # MD044/proper-names : Proper names should have the correct capitalization : https://github.com/DavidAnson/markdownlint/blob/v0.32.1/doc/md044.md
 MD044:
   # List of proper names
-  names: [
-    "iceoryx2",
-    "Rust",
-    "C",
-    "C++",
-    "macOS",
-    "iOS",
-    "FreeBSD",
-    "POSIX",
-    "IPC",
-    "GNU"
-  ]
+  names:
+    [
+      "iceoryx2",
+      "Rust",
+      "C",
+      "C++",
+      "macOS",
+      "iOS",
+      "FreeBSD",
+      "POSIX",
+      "IPC",
+      "GNU",
+    ]
   # Include code blocks
   code_blocks: false
   # Include HTML elements
@@ -285,3 +286,8 @@ MD058: true
 
 # MD059/descriptive-link-text : Link text should be descriptive : https://github.com/DavidAnson/markdownlint/blob/v0.38.0/doc/md059.md
 MD059: false
+
+# MD060/table-column-style : Table column style : https://github.com/DavidAnson/markdownlint/blob/v0.39.0/doc/md060.md
+MD060:
+  # Table column style
+  style: "any"
