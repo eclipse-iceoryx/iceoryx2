@@ -107,7 +107,7 @@ impl<T: Hash> Hash for StaticOption<T> {
 impl<T> Drop for StaticOption<T> {
     fn drop(&mut self) {
         if self.is_some() {
-            unsafe { self.data.assume_init_drop() };
+            unsafe { core::ptr::drop_in_place(self.data.as_mut_ptr()) };
         }
     }
 }
