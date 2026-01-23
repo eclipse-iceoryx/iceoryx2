@@ -26,7 +26,8 @@
     conflicts when merging.
 -->
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+* Bump wheel from 0.45.1 to 0.46.3 in /iceoryx2-ffi/python
+  [#1316](https://github.com/eclipse-iceoryx/iceoryx2/issues/1316)
 
 ### Refactoring
 
