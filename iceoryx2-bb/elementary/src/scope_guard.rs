@@ -85,8 +85,8 @@ impl<T, E, Finit: FnOnce(&mut T) -> Result<(), E>, Fdrop: FnOnce(&mut T)>
     /// succeeds it returns the [`ScopeGuard`] otherwise the error value which was returned by the
     /// init function.
     pub fn create(mut self) -> Result<ScopeGuard<T, Fdrop>, E> {
-        if self.on_init.is_some() {
-            self.on_init.unwrap()(&mut self.value)?;
+        if let Some(on_init) = self.on_init {
+            on_init(&mut self.value)?;
         }
 
         Ok(ScopeGuard {

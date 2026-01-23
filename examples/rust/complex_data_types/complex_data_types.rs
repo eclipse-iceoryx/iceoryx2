@@ -83,11 +83,11 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
             .push(StaticString::from_bytes(b"buh")?);
 
         sample.send()?;
-        cout!("{counter} :: send");
+        coutln!("{counter} :: send");
 
         // receive sample and print it
         while let Some(sample) = subscriber.receive()? {
-            cout!(
+            coutln!(
                 "{} :: received: {:?}",
                 counter,
                 sample.payload().plain_old_data

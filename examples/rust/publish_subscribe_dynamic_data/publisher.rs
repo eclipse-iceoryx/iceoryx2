@@ -50,12 +50,12 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
         sample.send()?;
 
-        cout!("Send sample {counter} with {required_memory_size} bytes...");
+        coutln!("Send sample {counter} with {required_memory_size} bytes...");
 
         counter += 1;
     }
 
-    cout!("exit");
+    coutln!("exit");
 
     Ok(())
 }

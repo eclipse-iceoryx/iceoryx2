@@ -377,6 +377,7 @@ filegroup(
         "//iceoryx2-pal/configuration:all_srcs",
         "//iceoryx2-pal/os-api:all_srcs",
         "//iceoryx2-pal/posix:all_srcs",
+        "//iceoryx2-pal/print:all_srcs",
         "//iceoryx2-pal/testing:all_srcs",
         "//iceoryx2-services/discovery:all_srcs",
         "//iceoryx2-tunnel/backend:all_srcs",

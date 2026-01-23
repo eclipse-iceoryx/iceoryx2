@@ -1495,7 +1495,7 @@ dependencies = [
 name = "iceoryx2-bb-print"
 version = "0.8.999"
 dependencies = [
- "iceoryx2-pal-posix",
+ "iceoryx2-pal-print",
 ]
 
 [[package]]
@@ -1748,6 +1748,13 @@ dependencies = [
  "iceoryx2-pal-testing",
  "libc",
  "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "iceoryx2-pal-print"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2-pal-posix",
 ]
 
 [[package]]

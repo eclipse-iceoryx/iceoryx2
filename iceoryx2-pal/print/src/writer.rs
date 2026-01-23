@@ -12,6 +12,8 @@
 
 use core::fmt::{self, Write};
 
+use crate::IsTerminal;
+
 pub struct Stdout;
 pub struct Stderr;
 
@@ -44,12 +46,28 @@ impl Write for Stdout {
 }
 
 #[cfg(feature = "std")]
+impl IsTerminal for Stdout {
+    fn is_terminal(&self) -> bool {
+        use std::io::IsTerminal;
+        std::io::stdout().is_terminal()
+    }
+}
+
+#[cfg(feature = "std")]
 impl Write for Stderr {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         use std::io::Write as IoWrite;
         std::io::stderr()
             .write_all(s.as_bytes())
             .map_err(|_| fmt::Error)
+    }
+}
+
+#[cfg(feature = "std")]
+impl IsTerminal for Stderr {
+    fn is_terminal(&self) -> bool {
+        use std::io::IsTerminal;
+        std::io::stderr().is_terminal()
     }
 }
 
@@ -75,6 +93,13 @@ impl Write for Stdout {
 }
 
 #[cfg(feature = "posix")]
+impl IsTerminal for Stdout {
+    fn is_terminal(&self) -> bool {
+        true
+    }
+}
+
+#[cfg(feature = "posix")]
 impl Write for Stderr {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         use iceoryx2_pal_posix::*;
@@ -95,6 +120,13 @@ impl Write for Stderr {
     }
 }
 
+#[cfg(feature = "posix")]
+impl IsTerminal for Stderr {
+    fn is_terminal(&self) -> bool {
+        true
+    }
+}
+
 #[cfg(not(any(feature = "std", feature = "posix")))]
 impl Write for Stdout {
     fn write_str(&mut self, _s: &str) -> fmt::Result {
@@ -103,8 +135,22 @@ impl Write for Stdout {
 }
 
 #[cfg(not(any(feature = "std", feature = "posix")))]
+impl IsTerminal for Stdout {
+    fn is_terminal(&self) -> bool {
+        false
+    }
+}
+
+#[cfg(not(any(feature = "std", feature = "posix")))]
 impl Write for Stderr {
     fn write_str(&mut self, _s: &str) -> fmt::Result {
         Ok(())
+    }
+}
+
+#[cfg(not(any(feature = "std", feature = "posix")))]
+impl IsTerminal for Stderr {
+    fn is_terminal(&self) -> bool {
+        false
     }
 }

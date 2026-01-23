@@ -49,10 +49,10 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
         sample.send()?;
 
-        cout!("Send sample {counter} ...");
+        coutln!("Send sample {counter} ...");
     }
 
-    cout!("exit");
+    coutln!("exit");
 
     Ok(())
 }

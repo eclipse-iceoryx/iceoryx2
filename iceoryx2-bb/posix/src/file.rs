@@ -519,8 +519,8 @@ impl FileCreationBuilder {
         let mut file = File::create(&self.config)?;
         fail!(from self.config, when file.set_permission(self.config.permission), "Failed to set permissions.");
 
-        if self.config.truncate_size.is_some() {
-            fail!(from self.config, when File::truncate(&file, self.config.truncate_size.unwrap()), "Failed to truncate file size.");
+        if let Some(size) = self.config.truncate_size {
+            fail!(from self.config, when File::truncate(&file, size), "Failed to truncate file size.");
         }
 
         if self.config.owner.is_some() || self.config.group.is_some() {

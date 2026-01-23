@@ -35,7 +35,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .add::<f64>(key_1, INITIAL_VALUE_1)
         .create()?;
 
-    cout!("Blackboard created.\n");
+    coutln!("Blackboard created.\n");
 
     let writer = service.writer_builder().create()?;
 
@@ -48,15 +48,15 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         counter += 1;
 
         entry_handle_mut_0.update_with_copy(counter);
-        cout!("Write new value for key 0: {counter}");
+        coutln!("Write new value for key 0: {counter}");
 
         let entry_value_uninit = entry_handle_mut_1.loan_uninit();
         let value = INITIAL_VALUE_1 * counter as f64;
         entry_handle_mut_1 = entry_value_uninit.update_with_copy(value);
-        cout!("Write new value for key 1: {}\n", value);
+        coutln!("Write new value for key 1: {}\n", value);
     }
 
-    cout!("exit");
+    coutln!("exit");
 
     Ok(())
 }

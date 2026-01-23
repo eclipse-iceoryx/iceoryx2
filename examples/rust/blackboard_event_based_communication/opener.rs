@@ -44,7 +44,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     while node.wait(Duration::ZERO).is_ok() {
         if let Ok(Some(id)) = listener.timed_wait_one(CYCLE_TIME) {
             if id == entry_handle.entry_id() {
-                cout!(
+                coutln!(
                     "read: {} for entry id {}",
                     entry_handle.get(),
                     id.as_value()
@@ -53,7 +53,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         }
     }
 
-    cout!("exit");
+    coutln!("exit");
 
     Ok(())
 }

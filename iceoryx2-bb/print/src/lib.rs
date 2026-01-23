@@ -15,31 +15,12 @@
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 
-pub mod writer;
+pub use iceoryx2_pal_print::IsTerminal;
 
-pub fn is_terminal() -> bool {
-    #[cfg(feature = "std")]
-    {
-        use std::io::IsTerminal;
-        std::io::stderr().is_terminal()
-    }
+pub use iceoryx2_pal_print::stderr;
+pub use iceoryx2_pal_print::stdout;
 
-    #[cfg(not(feature = "std"))]
-    false
-}
-
-#[macro_export]
-macro_rules! cout {
-    ($($arg:tt)*) => {{
-        use core::fmt::Write as _;
-        let _ = core::writeln!($crate::writer::stdout(), $($arg)*);
-    }};
-}
-
-#[macro_export]
-macro_rules! cerr {
-    ($($arg:tt)*) => {
-        use core::fmt::Write as _;
-        let _ = core::writeln!($crate::writer::stderr(), $($arg)*);
-    };
-}
+pub use iceoryx2_pal_print::cerr;
+pub use iceoryx2_pal_print::cerrln;
+pub use iceoryx2_pal_print::cout;
+pub use iceoryx2_pal_print::coutln;

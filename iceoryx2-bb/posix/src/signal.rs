@@ -535,8 +535,8 @@ impl SignalHandler {
         sighandle.register_raw_signal(
             FetchableSignal::Interrupt,
             match is_signal_registered {
-                true => handler as posix::sighandler_t,
-                false => capture_signal as posix::sighandler_t,
+                true => handler as *const () as posix::sighandler_t,
+                false => capture_signal as *const () as posix::sighandler_t,
             },
         );
     }
@@ -548,7 +548,10 @@ impl SignalHandler {
         };
 
         for signal in all::<NonFatalFetchableSignal>().collect::<Vec<_>>() {
-            sighandle.register_raw_signal(signal.into(), capture_signal as posix::sighandler_t);
+            sighandle.register_raw_signal(
+                signal.into(),
+                capture_signal as *const () as posix::sighandler_t,
+            );
         }
 
         sighandle
@@ -616,7 +619,8 @@ impl SignalHandler {
             fail!(from self, with SignalRegisterError::AlreadyRegistered, "The Signal::{:?} is already registered.", signal);
         }
 
-        let previous_action = self.register_raw_signal(signal, handler as posix::sighandler_t);
+        let previous_action =
+            self.register_raw_signal(signal, handler as *const () as posix::sighandler_t);
         self.registered_signals[signal as usize] = Some(callback);
 
         Ok(previous_action)

@@ -1,5 +1,5 @@
 {
-  "checksum": "b0096b803cd6cb884adc7c6149a73eeef4250e44e451b4427a257b44ff5da358",
+  "checksum": "4d4271608db70a6f87fd95451d754ae173cd7b46159f7e706a2fa7a71fabfa12",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -8651,6 +8651,7 @@
         "crate_features": {
           "common": [
             "default",
+            "iceoryx2-pal-print",
             "std"
           ],
           "selects": {}
@@ -9642,6 +9643,47 @@
           ],
           "selects": {}
         }
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-pal-print 0.8.999": {
+      "name": "iceoryx2-pal-print",
+      "version": "0.8.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_pal_print",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_pal_print",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -33507,6 +33549,7 @@
     "iceoryx2-pal-configuration 0.8.999": "iceoryx2-pal/configuration",
     "iceoryx2-pal-os-api 0.8.999": "iceoryx2-pal/os-api",
     "iceoryx2-pal-posix 0.8.999": "iceoryx2-pal/posix",
+    "iceoryx2-pal-print 0.8.999": "iceoryx2-pal/print",
     "iceoryx2-pal-testing 0.8.999": "iceoryx2-pal/testing",
     "iceoryx2-services-discovery 0.8.999": "iceoryx2-services/discovery",
     "iceoryx2-tunnel 0.8.999": "iceoryx2-tunnel/tunnel",

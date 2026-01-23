@@ -32,19 +32,19 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let server = service.server_builder().create()?;
 
-    cout!("Server ready to receive requests!");
+    coutln!("Server ready to receive requests!");
 
     let mut counter = 0;
     while node.wait(CYCLE_TIME).is_ok() {
         while let Some(active_request) = server.receive()? {
-            cout!("received request: {:?}", *active_request);
+            coutln!("received request: {:?}", *active_request);
 
             let response = TransmissionData {
                 x: 5 + counter,
                 y: 6 * counter,
                 funky: 7.77,
             };
-            cout!("  send response: {response:?}");
+            coutln!("  send response: {response:?}");
             // send first response by using the slower, non-zero-copy API
             active_request.send_copy(response)?;
 
@@ -56,7 +56,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
                     y: counter + n as i32,
                     funky: counter as f64 * 0.1234,
                 });
-                cout!("  send response: {:?}", *response);
+                coutln!("  send response: {:?}", *response);
                 response.send()?;
             }
 
@@ -69,7 +69,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         counter += 1;
     }
 
-    cout!("exit");
+    coutln!("exit");
 
     Ok(())
 }

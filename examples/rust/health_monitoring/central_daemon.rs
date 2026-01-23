@@ -78,7 +78,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
     let _cycle_guard = waitset.attach_interval(CYCLE_TIME);
 
-    cout!("Central daemon up and running.");
+    coutln!("Central daemon up and running.");
     waitset.wait_and_process(|_| {
         // The only task of our central daemon is it to monitor all running nodes and cleanup their
         // resources if a process has died.
@@ -96,7 +96,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 fn find_and_cleanup_dead_nodes() {
     Node::<ipc::Service>::list(Config::global_config(), |node_state| {
         if let NodeState::Dead(state) = node_state {
-            cout!(
+            coutln!(
                 "detected dead node: {:?}",
                 state.details().as_ref().map(|v| v.name())
             );

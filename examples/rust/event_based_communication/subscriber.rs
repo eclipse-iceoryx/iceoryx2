@@ -45,7 +45,9 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
             // If the subscriber did not receive an event until DEADLINE has
             // passed, we print out a warning.
         } else if attachment_id.has_missed_deadline(&subscriber_guard) {
-            cout!("Contract violation! The subscriber did not receive a message for {DEADLINE:?}.");
+            coutln!(
+                "Contract violation! The subscriber did not receive a message for {DEADLINE:?}."
+            );
         }
 
         CallbackProgression::Continue
@@ -53,7 +55,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     waitset.wait_and_process(on_event)?;
 
-    cout!("exit");
+    coutln!("exit");
 
     Ok(())
 }
@@ -113,18 +115,18 @@ impl CustomSubscriber {
             let event: PubSubEvent = event.into();
             match event {
                 PubSubEvent::SentHistory => {
-                    cout!("History delivered");
+                    coutln!("History delivered");
                     while let Ok(Some(sample)) = self.receive() {
-                        cout!("  history: {:?}", sample.x);
+                        coutln!("  history: {:?}", sample.x);
                     }
                 }
                 PubSubEvent::SentSample => {
                     while let Ok(Some(sample)) = self.receive() {
-                        cout!("received: {:?}", sample.x);
+                        coutln!("received: {:?}", sample.x);
                     }
                 }
-                PubSubEvent::PublisherConnected => cout!("new publisher connected"),
-                PubSubEvent::PublisherDisconnected => cout!("publisher disconnected"),
+                PubSubEvent::PublisherConnected => coutln!("new publisher connected"),
+                PubSubEvent::PublisherDisconnected => coutln!("publisher disconnected"),
                 _ => (),
             }
         }

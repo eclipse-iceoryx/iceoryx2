@@ -31,15 +31,15 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let listener = event.listener_builder().create()?;
 
-    cout!("Listener ready to receive events!");
+    coutln!("Listener ready to receive events!");
 
     while node.wait(Duration::ZERO).is_ok() {
         if let Ok(Some(event_id)) = listener.timed_wait_one(CYCLE_TIME) {
-            cout!("event was triggered with id: {event_id:?}");
+            coutln!("event was triggered with id: {event_id:?}");
         }
     }
 
-    cout!("exit");
+    coutln!("exit");
 
     Ok(())
 }

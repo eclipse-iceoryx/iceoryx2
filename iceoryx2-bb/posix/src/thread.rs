@@ -419,9 +419,8 @@ impl ThreadBuilder {
             v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg,v)
         );
 
-        if self.stack_size.is_some() {
+        if let Some(&stack_size) = self.stack_size.as_ref() {
             let msg = "Failed to set the threads stack size";
-            let stack_size = *self.stack_size.as_ref().unwrap();
             let min_stack_size = Limit::MinStackSizeOfThread.value();
 
             if stack_size < min_stack_size {
@@ -430,7 +429,7 @@ impl ThreadBuilder {
             }
 
             handle_errno!(ThreadSpawnError, from self,
-                errno_source unsafe { posix::pthread_attr_setstacksize(attributes.get_mut(), *self.stack_size.as_ref().unwrap() as usize)
+                errno_source unsafe { posix::pthread_attr_setstacksize(attributes.get_mut(), stack_size as usize)
                                                 .into() },
                 continue_on_success,
                 success Errno::ESUCCES => (),

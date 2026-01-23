@@ -52,21 +52,21 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
             while KEEP_RUNNING.load(Ordering::Relaxed) {
                 nanosleep(CYCLE_TIME).unwrap();
                 if let Some(sample) = in_thread_subscriber.receive().unwrap() {
-                    cout!("[thread] received: {}", sample.payload());
+                    coutln!("[thread] received: {}", sample.payload());
                 }
             }
         })?;
 
     while node.wait(CYCLE_TIME).is_ok() {
         if let Some(sample) = subscriber.receive()? {
-            cout!("[main] received: {}", sample.payload());
+            coutln!("[main] received: {}", sample.payload());
         }
     }
 
     KEEP_RUNNING.store(false, Ordering::Relaxed);
     drop(other_thread);
 
-    cout!("exit");
+    coutln!("exit");
 
     Ok(())
 }
