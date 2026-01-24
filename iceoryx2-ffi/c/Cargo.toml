@@ -22,6 +22,7 @@ crate-type = ["rlib", "cdylib", "staticlib"] # without "rlib" the doc examples a
 default = ["std"]
 std = [
   "iceoryx2/std",
+  "iceoryx2-bb-concurrency/std",
 ]
 
 [build-dependencies]

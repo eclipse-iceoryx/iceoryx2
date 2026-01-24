@@ -15,6 +15,13 @@ version = { workspace = true }
 name = "iceoryx2_services_discovery"
 path = "src/lib.rs"
 
+[features]
+default = ["std"]
+std = [
+  "iceoryx2/std",
+  "iceoryx2-bb-concurrency/std"
+]
+
 [dependencies]
 iceoryx2 = { workspace = true }
 iceoryx2-bb-concurrency = { workspace = true }
