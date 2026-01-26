@@ -230,7 +230,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     /// Enables the deadline property of the service. There must be a notification emitted by any
     /// [`Notifier`](crate::port::notifier::Notifier) after at least the provided `deadline`.
     pub fn deadline(mut self, deadline: Duration) -> Self {
-        self.config_details().deadline = RelocatableOption::some(Deadline {
+        self.config_details().deadline = RelocatableOption::Some(Deadline {
             value: deadline.into(),
             creation_time: Time::default(),
         });
@@ -241,7 +241,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     /// Disables the deadline property of the service. [`Notifier`](crate::port::notifier::Notifier)
     /// can signal notifications at any rate.
     pub fn disable_deadline(mut self) -> Self {
-        self.config_details().deadline = RelocatableOption::none();
+        self.config_details().deadline = RelocatableOption::None;
         self.verify_deadline = true;
         self
     }
@@ -285,7 +285,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     /// If the [`Service`] is created it defines the event that shall be emitted by every newly
     /// created [`Notifier`](crate::port::notifier::Notifier).
     pub fn notifier_created_event(mut self, value: EventId) -> Self {
-        self.config_details().notifier_created_event = RelocatableOption::some(value.as_value());
+        self.config_details().notifier_created_event = RelocatableOption::Some(value.as_value());
         self.verify_notifier_created_event = true;
         self
     }
@@ -293,7 +293,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     /// If the [`Service`] is created it disables the event that shall be emitted by every newly
     /// created [`Notifier`](crate::port::notifier::Notifier).
     pub fn disable_notifier_created_event(mut self) -> Self {
-        self.config_details().notifier_created_event = RelocatableOption::none();
+        self.config_details().notifier_created_event = RelocatableOption::None;
         self.verify_notifier_created_event = true;
         self
     }
@@ -301,7 +301,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     /// If the [`Service`] is created it defines the event that shall be emitted by every
     /// [`Notifier`](crate::port::notifier::Notifier) before it is dropped.
     pub fn notifier_dropped_event(mut self, value: EventId) -> Self {
-        self.config_details().notifier_dropped_event = RelocatableOption::some(value.as_value());
+        self.config_details().notifier_dropped_event = RelocatableOption::Some(value.as_value());
         self.verify_notifier_dropped_event = true;
         self
     }
@@ -309,7 +309,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     /// If the [`Service`] is created it disables the event that shall be emitted by every
     /// [`Notifier`](crate::port::notifier::Notifier) before it is dropped.
     pub fn disable_notifier_dropped_event(mut self) -> Self {
-        self.config_details().notifier_dropped_event = RelocatableOption::none();
+        self.config_details().notifier_dropped_event = RelocatableOption::None;
         self.verify_notifier_dropped_event = true;
         self
     }
@@ -317,7 +317,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     /// If the [`Service`] is created it defines the event that shall be emitted when a
     /// [`Notifier`](crate::port::notifier::Notifier) is identified as dead.
     pub fn notifier_dead_event(mut self, value: EventId) -> Self {
-        self.config_details().notifier_dead_event = RelocatableOption::some(value.as_value());
+        self.config_details().notifier_dead_event = RelocatableOption::Some(value.as_value());
         self.verify_notifier_dead_event = true;
         self
     }
@@ -325,7 +325,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     /// If the [`Service`] is created it disables the event that shall be emitted when a
     /// [`Notifier`](crate::port::notifier::Notifier) is identified as dead.
     pub fn disable_notifier_dead_event(mut self) -> Self {
-        self.config_details().notifier_dead_event = RelocatableOption::none();
+        self.config_details().notifier_dead_event = RelocatableOption::None;
         self.verify_notifier_dead_event = true;
         self
     }

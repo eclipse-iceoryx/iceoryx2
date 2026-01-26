@@ -11,7 +11,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::hash::Hash;
-use core::mem::MaybeUninit;
 use core::{
     fmt::Debug,
     marker::PhantomData,
@@ -36,7 +35,7 @@ use serde::{de::Visitor, Deserialize, Serialize};
 /// ## Construction Comparison
 ///
 /// ```
-/// use iceoryx2_bb_container::static_option::RelocatableOption;
+/// use iceoryx2_bb_container::relocatable_option::RelocatableOption;
 ///
 /// // rust Option
 /// fn do_stuff_1(value: i32) -> Option<i32> {
@@ -50,44 +49,42 @@ use serde::{de::Visitor, Deserialize, Serialize};
 /// // RelocatableOption
 /// fn do_stuff_2(value: i32) -> RelocatableOption<i32> {
 ///   if value > 0 {
-///     RelocatableOption::some(value)
+///     RelocatableOption::Some(value)
 ///   } else {
-///     RelocatableOption::none()
+///     RelocatableOption::None
 ///   }
 /// }
 /// ```
 ///
 /// ## Match Statements
 ///
-/// The [`RelocatableOption`] can be converted to the rust [`Option`] with
-/// * [`RelocatableOption::as_option_ref()`]
-/// * [`RelocatableOption::as_option_mut()`]
-///
-/// to enable the usage in match statements.
-///
 /// ```
-/// use iceoryx2_bb_container::static_option::RelocatableOption;
+/// use iceoryx2_bb_container::relocatable_option::RelocatableOption;
 ///
 /// fn do_stuff() -> RelocatableOption<i32> {
-///   RelocatableOption::none()
+///   RelocatableOption::None
 /// }
 ///
-/// match do_stuff().as_option_ref() {
-///   Some(v) => println!("{v}"),
-///   None => println!("none")
+/// match do_stuff() {
+///   RelocatableOption::Some(v) => println!("{v}"),
+///   RelocatableOption::None => println!("none")
 /// }
 /// ```
-#[repr(C)]
-pub struct RelocatableOption<T> {
-    data: MaybeUninit<T>,
-    has_contents: u8,
+#[repr(C, u8)]
+#[derive(Default, Clone, Copy, Hash, Debug, PartialEq, Eq)]
+pub enum RelocatableOption<T> {
+    /// Default value, defines an [`RelocatableOption`] that does contain nothing.
+    #[default]
+    None,
+    /// Defines an [`RelocatableOption`] that contains the provided type `T`.
+    Some(T),
 }
 
 impl<T> From<Option<T>> for RelocatableOption<T> {
     fn from(value: Option<T>) -> Self {
         match value {
-            Some(v) => RelocatableOption::some(v),
-            None => RelocatableOption::none(),
+            Some(v) => RelocatableOption::Some(v),
+            None => RelocatableOption::None,
         }
     }
 }
@@ -98,33 +95,14 @@ impl<T> From<RelocatableOption<T>> for Option<T> {
     }
 }
 
-impl<T: Hash> Hash for RelocatableOption<T> {
-    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
-        if self.is_some() {
-            unsafe { self.data.assume_init_ref() }.hash(state)
-        } else {
-            Option::<T>::None.hash(state)
-        }
-    }
-}
-
-impl<T> Drop for RelocatableOption<T> {
-    fn drop(&mut self) {
-        if self.is_some() {
-            unsafe { core::ptr::drop_in_place(self.data.as_mut_ptr()) };
-        }
-    }
-}
-
 impl<T: Serialize> Serialize for RelocatableOption<T> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
-        if self.is_some() {
-            serializer.serialize_some(unsafe { self.data.assume_init_ref() })
-        } else {
-            serializer.serialize_none()
+        match self {
+            Self::Some(v) => serializer.serialize_some(v),
+            Self::None => serializer.serialize_none(),
         }
     }
 }
@@ -148,14 +126,14 @@ impl<'de, T: Deserialize<'de>> Visitor<'de> for RelocatableOptionVisitor<T> {
     where
         D: serde::Deserializer<'de>,
     {
-        Ok(RelocatableOption::some(T::deserialize(deserializer)?))
+        Ok(RelocatableOption::Some(T::deserialize(deserializer)?))
     }
 
     fn visit_none<E>(self) -> Result<Self::Value, E>
     where
         E: serde::de::Error,
     {
-        Ok(RelocatableOption::none())
+        Ok(RelocatableOption::None)
     }
 }
 
@@ -168,93 +146,36 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for RelocatableOption<T> {
     }
 }
 
-impl<T> Default for RelocatableOption<T> {
-    fn default() -> Self {
-        Self::none()
-    }
-}
-
 unsafe impl<T: ZeroCopySend> ZeroCopySend for RelocatableOption<T> {}
 
 impl<T: PlacementDefault> PlacementDefault for RelocatableOption<T> {
     unsafe fn placement_default(ptr: *mut Self) {
-        ptr.write(RelocatableOption::none())
-    }
-}
-
-impl<T: PartialEq> PartialEq for RelocatableOption<T> {
-    fn eq(&self, other: &Self) -> bool {
-        if self.has_contents != other.has_contents {
-            return false;
-        }
-
-        if self.has_contents == false as u8 {
-            return true;
-        }
-
-        self.as_ref().unwrap() == other.as_ref().unwrap()
-    }
-}
-
-impl<T: Eq> Eq for RelocatableOption<T> {}
-
-impl<T: Clone> Clone for RelocatableOption<T> {
-    fn clone(&self) -> Self {
-        Self {
-            data: if self.is_some() {
-                MaybeUninit::new(unsafe { self.data.assume_init_ref() }.clone())
-            } else {
-                MaybeUninit::uninit()
-            },
-            has_contents: self.has_contents,
-        }
-    }
-}
-
-impl<T: Debug> core::fmt::Debug for RelocatableOption<T> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        if self.is_none() {
-            write!(
-                f,
-                "RelocatableOption<{}>::none()",
-                core::any::type_name::<T>()
-            )
-        } else {
-            write!(
-                f,
-                "RelocatableOption<{}>::some({:?})",
-                core::any::type_name::<T>(),
-                self.as_ref().unwrap()
-            )
-        }
+        ptr.write(RelocatableOption::None)
     }
 }
 
 impl<T> RelocatableOption<T> {
     /// Creates a new [`Option`] containing `T`.
     pub fn to_option(self) -> Option<T> {
-        if self.is_none() {
-            None
-        } else {
-            Some(self.unwrap())
+        match self {
+            Self::Some(v) => Some(v),
+            Self::None => None,
         }
     }
 
     /// Returns an [`Option`] with a reference to `T`
     pub fn as_option_ref(&self) -> Option<&T> {
-        if self.is_some() {
-            Some(unsafe { self.data.assume_init_ref() })
-        } else {
-            None
+        match self {
+            Self::Some(ref v) => Some(v),
+            Self::None => None,
         }
     }
 
     /// Returns an [`Option`] with a mutable reference to `T`
     pub fn as_option_mut(&mut self) -> Option<&mut T> {
-        if self.is_some() {
-            Some(unsafe { self.data.assume_init_mut() })
-        } else {
-            None
+        match self {
+            Self::Some(ref mut v) => Some(v),
+            Self::None => None,
         }
     }
 
@@ -263,10 +184,9 @@ impl<T> RelocatableOption<T> {
     where
         T: Deref,
     {
-        if self.is_some() {
-            RelocatableOption::some(unsafe { self.data.assume_init_ref().deref() })
-        } else {
-            RelocatableOption::none()
+        match self {
+            Self::Some(v) => RelocatableOption::Some(v.deref()),
+            Self::None => RelocatableOption::None,
         }
     }
 
@@ -275,30 +195,27 @@ impl<T> RelocatableOption<T> {
     where
         T: DerefMut,
     {
-        if self.is_some() {
-            RelocatableOption::some(unsafe { self.data.assume_init_mut().deref_mut() })
-        } else {
-            RelocatableOption::none()
+        match self {
+            Self::Some(v) => RelocatableOption::Some(v.deref_mut()),
+            Self::None => RelocatableOption::None,
         }
     }
 
     /// Returns a [`RelocatableOption`] that contains a mutable reference to `T` if
     /// it holds a value, otherwise it contains nothing.
     pub fn as_mut(&mut self) -> RelocatableOption<&mut T> {
-        if self.is_some() {
-            RelocatableOption::some(unsafe { self.data.assume_init_mut() })
-        } else {
-            RelocatableOption::none()
+        match self {
+            Self::Some(ref mut v) => RelocatableOption::Some(v),
+            Self::None => RelocatableOption::None,
         }
     }
 
     /// Returns a [`RelocatableOption`] that contains a reference to `T` if it holds
     /// a value, otherwise it contains nothing.
     pub fn as_ref(&self) -> RelocatableOption<&T> {
-        if self.is_some() {
-            RelocatableOption::some(unsafe { self.data.assume_init_ref() })
-        } else {
-            RelocatableOption::none()
+        match self {
+            Self::Some(ref v) => RelocatableOption::Some(v),
+            Self::None => RelocatableOption::None,
         }
     }
 
@@ -317,27 +234,11 @@ impl<T> RelocatableOption<T> {
         unsafe { self.unwrap_unchecked() }
     }
 
-    /// Creates a new [`RelocatableOption`] containing `none`.
-    pub fn none() -> Self {
-        Self {
-            data: MaybeUninit::uninit(),
-            has_contents: false as u8,
-        }
-    }
-
-    /// Creates a new [`RelocatableOption`] containing the provided value.
-    pub fn some(value: T) -> Self {
-        Self {
-            data: MaybeUninit::new(value),
-            has_contents: true as u8,
-        }
-    }
-
     /// If the [`RelocatableOption`] contains a value, the provided callback is
     /// called.
     pub fn inspect<F: FnOnce(&T)>(self, f: F) -> Self {
-        if self.is_some() {
-            f(unsafe { self.data.assume_init_ref() })
+        if let Self::Some(data) = &self {
+            f(data)
         }
 
         self
@@ -346,66 +247,52 @@ impl<T> RelocatableOption<T> {
     /// Returns [`true`] if the [`RelocatableOption`] does not contain a value, other
     /// it returns [`false`].
     pub fn is_none(&self) -> bool {
-        self.has_contents == false as u8
+        match self {
+            RelocatableOption::None => true,
+            RelocatableOption::Some(_v) => false,
+        }
     }
 
     /// Returns [`true`] if the [`RelocatableOption`] does contain a value, other
     /// it returns [`false`].
     pub fn is_some(&self) -> bool {
-        self.has_contents == true as u8
+        !self.is_none()
     }
 
     /// Maps a `RelocatableOption<T>` to a `RelocatableOption<U>`
     pub fn map<U, F: FnOnce(T) -> U>(self, f: F) -> RelocatableOption<U> {
-        if self.is_none() {
-            RelocatableOption::none()
-        } else {
-            RelocatableOption::some(f(self.unwrap()))
+        match self {
+            RelocatableOption::None => RelocatableOption::None,
+            RelocatableOption::Some(v) => RelocatableOption::Some(f(v)),
         }
     }
 
     /// Replaces the existing value of the [`RelocatableOption`] with the new value.
     /// The old value is returned.
     pub fn replace(&mut self, value: T) -> RelocatableOption<T> {
-        if self.is_none() {
-            self.data.write(value);
-            self.has_contents = true as u8;
-            RelocatableOption::none()
-        } else {
-            RelocatableOption::some(core::mem::replace(
-                unsafe { self.data.assume_init_mut() },
-                value,
-            ))
-        }
+        let mut new_value = RelocatableOption::Some(value);
+        core::mem::swap(self, &mut new_value);
+        new_value
     }
 
     /// Takes the value out of the [`RelocatableOption`] and returns it, leaving an
     /// empty [`RelocatableOption`].
     pub fn take(&mut self) -> RelocatableOption<T> {
-        if self.is_none() {
-            RelocatableOption::none()
-        } else {
-            self.has_contents = false as u8;
-            RelocatableOption {
-                data: core::mem::replace(&mut self.data, MaybeUninit::uninit()),
-                has_contents: true as u8,
-            }
-        }
+        core::mem::take(self)
     }
 
     /// Takes the value out of the [`RelocatableOption`] if it has a value and the
     /// predicate returns [`true`] leaving an empty [`RelocatableOption`].
     pub fn take_if<P: FnOnce(&mut T) -> bool>(&mut self, predicate: P) -> RelocatableOption<T> {
-        if self.is_none() {
-            RelocatableOption::none()
-        } else if predicate(unsafe { self.data.assume_init_mut() }) {
-            self.has_contents = false as u8;
-            RelocatableOption {
-                data: core::mem::replace(&mut self.data, MaybeUninit::uninit()),
-                has_contents: true as u8,
+        match self {
+            RelocatableOption::None => RelocatableOption::None,
+            RelocatableOption::Some(v) => {
+                if predicate(v) {
+                    core::mem::take(self)
+                } else {
+                    RelocatableOption::None
+                }
             }
-        } else {
-            RelocatableOption::none()
         }
     }
 
@@ -465,9 +352,11 @@ impl<T> RelocatableOption<T> {
     ///
     /// *  [`RelocatableOption::is_some()`] == [`true`]
     ///
-    pub unsafe fn unwrap_unchecked(mut self) -> T {
+    pub unsafe fn unwrap_unchecked(self) -> T {
         debug_assert!(self.is_some());
-        self.has_contents = false as u8;
-        self.data.assume_init_read()
+        match self {
+            RelocatableOption::Some(v) => v,
+            RelocatableOption::None => unsafe { core::hint::unreachable_unchecked() },
+        }
     }
 }
