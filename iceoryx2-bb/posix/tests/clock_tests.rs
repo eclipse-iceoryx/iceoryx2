@@ -95,4 +95,6 @@ fn clock_relocatable_duration_roundtrip_conversion() {
     let duration_2: Duration = sut.into();
 
     assert_that!(duration, eq duration_2);
+    assert_that!(sut.as_secs(), eq duration.as_secs());
+    assert_that!(sut.subsec_nanos(), eq duration.subsec_nanos());
 }

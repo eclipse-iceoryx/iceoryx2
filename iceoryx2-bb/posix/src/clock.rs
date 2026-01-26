@@ -196,6 +196,18 @@ pub struct RelocatableDuration {
     nanoseconds: u32,
 }
 
+impl RelocatableDuration {
+    /// Returns the [`RelocatableDuration`] in seconds
+    pub fn as_secs(&self) -> u64 {
+        self.seconds
+    }
+
+    /// Returns the fractional part of the seconds in nanoseconds.
+    pub fn subsec_nanos(&self) -> u32 {
+        self.nanoseconds
+    }
+}
+
 impl From<Duration> for RelocatableDuration {
     fn from(value: Duration) -> Self {
         Self {
