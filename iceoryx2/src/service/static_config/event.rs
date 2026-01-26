@@ -35,7 +35,7 @@
 use core::time::Duration;
 
 use crate::{config, prelude::EventId};
-use iceoryx2_bb_container::static_option::StaticOption;
+use iceoryx2_bb_container::relocatable_option::RelocatableOption;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_posix::clock::{RelocatableDuration, Time};
@@ -58,10 +58,10 @@ pub struct StaticConfig {
     pub(crate) max_listeners: usize,
     pub(crate) max_nodes: usize,
     pub(crate) event_id_max_value: usize,
-    pub(crate) deadline: StaticOption<Deadline>,
-    pub(crate) notifier_created_event: StaticOption<usize>,
-    pub(crate) notifier_dropped_event: StaticOption<usize>,
-    pub(crate) notifier_dead_event: StaticOption<usize>,
+    pub(crate) deadline: RelocatableOption<Deadline>,
+    pub(crate) notifier_created_event: RelocatableOption<usize>,
+    pub(crate) notifier_dropped_event: RelocatableOption<usize>,
+    pub(crate) notifier_dead_event: RelocatableOption<usize>,
 }
 
 impl StaticConfig {

@@ -112,7 +112,7 @@ pub mod string;
 
 /// Implementation of an [`Option`] that has a stable memory layout and is
 /// shared memory compatible.
-pub mod static_option;
+pub mod relocatable_option;
 
 #[doc(hidden)]
 pub(crate) mod vec;
