@@ -38,14 +38,14 @@ use crate::{config, prelude::EventId};
 use iceoryx2_bb_container::static_option::StaticOption;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_posix::clock::{StaticDuration, Time};
+use iceoryx2_bb_posix::clock::{RelocatableDuration, Time};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq, ZeroCopySend, Serialize, Deserialize)]
 #[repr(C)]
 pub(crate) struct Deadline {
     pub(crate) creation_time: Time,
-    pub(crate) value: StaticDuration,
+    pub(crate) value: RelocatableDuration,
 }
 
 /// The static configuration of an [`MessagingPattern::Event`](crate::service::messaging_pattern::MessagingPattern::Event)

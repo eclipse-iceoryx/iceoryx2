@@ -87,11 +87,11 @@ fn clock_time_as_timespec_works() {
 }
 
 #[test]
-fn clock_static_duration_roundtrip_conversion() {
+fn clock_relocatable_duration_roundtrip_conversion() {
     let secs = 123;
     let nsecs = 456;
     let duration = Duration::from_secs(secs) + Duration::from_nanos(nsecs);
-    let sut: StaticDuration = duration.into();
+    let sut: RelocatableDuration = duration.into();
     let duration_2: Duration = sut.into();
 
     assert_that!(duration, eq duration_2);
