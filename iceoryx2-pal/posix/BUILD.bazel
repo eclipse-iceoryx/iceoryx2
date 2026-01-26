@@ -57,7 +57,6 @@ rust_library(
     deps = [
         "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
         "//iceoryx2-pal/configuration:iceoryx2-pal-configuration",
-        "@crate_index//:lazy_static",
         ":iceoryx2-pal-posix-c-lib",
         ":bazel_bindgen_workaround",
     ],

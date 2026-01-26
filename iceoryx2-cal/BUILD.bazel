@@ -47,7 +47,6 @@ rust_library(
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
         "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
         "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
-        "@crate_index//:lazy_static",
         "@crate_index//:postcard",
         "@crate_index//:serde",
         "@crate_index//:sha1_smol",

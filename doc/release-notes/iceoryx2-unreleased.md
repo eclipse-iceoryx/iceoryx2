@@ -41,6 +41,9 @@
   [#1300](https://github.com/eclipse-iceoryx/iceoryx2/issues/1300)
 * Move `iceoryx2-loggers` crate into building blocks as `iceoryx2-bb-loggers`
   [#1300](https://github.com/eclipse-iceoryx/iceoryx2/issues/1300)
+* Replace `lazy_static` dependency with `LazyLock` from `std` in `std` builds or
+  a custom minimal spin-based implementation for `no_std` builds
+  [#1321](https://github.com/eclipse-iceoryx/iceoryx2/issues/1321)
 
 ### Workflow
 

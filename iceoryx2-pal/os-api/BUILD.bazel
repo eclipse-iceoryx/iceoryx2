@@ -44,7 +44,6 @@ rust_library(
     compile_data = [ "os_api_generated.rs" ],
     deps = [
         "//iceoryx2-pal/posix:iceoryx2-pal-posix",
-        "@crate_index//:lazy_static",
         ":bazel_bindgen_workaround",
     ],
     rustc_env = {

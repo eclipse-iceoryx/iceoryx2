@@ -51,11 +51,10 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
+use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_bb_posix::mutex::*;
 use iceoryx2_log::{fail, fatal_panic};
-
-use lazy_static::lazy_static;
 
 #[derive(Debug)]
 struct StorageContent {
@@ -68,21 +67,17 @@ struct StorageEntry {
     content: Arc<StorageContent>,
 }
 
-lazy_static! {
-    static ref PROCESS_LOCAL_MTX_HANDLE: MutexHandle<BTreeMap<FilePath, StorageEntry>> =
-        MutexHandle::new();
-    static ref PROCESS_LOCAL_STORAGE: Mutex<'static, 'static, BTreeMap<FilePath, StorageEntry>> = {
-        let result = MutexBuilder::new()
-            .is_interprocess_capable(false)
-            .create(BTreeMap::new(), &PROCESS_LOCAL_MTX_HANDLE);
+static PROCESS_LOCAL_MTX_HANDLE: LazyLock<MutexHandle<BTreeMap<FilePath, StorageEntry>>> =
+    LazyLock::new(MutexHandle::new);
 
-        if result.is_err() {
-            fatal_panic!(from "PROCESS_LOCAL_STORAGE", "Failed to create global static storage");
-        }
-
-        result.unwrap()
-    };
-}
+static PROCESS_LOCAL_STORAGE: LazyLock<Mutex<'static, 'static, BTreeMap<FilePath, StorageEntry>>> =
+    LazyLock::new(|| {
+        fatal_panic!(from "PROCESS_LOCAL_STORAGE",
+            when MutexBuilder::new()
+                .is_interprocess_capable(false)
+                .create(BTreeMap::new(), &PROCESS_LOCAL_MTX_HANDLE),
+            "Failed to create global static storage")
+    });
 
 #[derive(Clone, Debug)]
 pub struct Configuration {

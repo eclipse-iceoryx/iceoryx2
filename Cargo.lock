@@ -1486,7 +1486,6 @@ dependencies = [
  "iceoryx2-pal-configuration",
  "iceoryx2-pal-posix",
  "iceoryx2-pal-testing",
- "lazy_static",
  "serde",
  "tiny-fn",
 ]
@@ -1574,7 +1573,6 @@ dependencies = [
  "iceoryx2-bb-system-types",
  "iceoryx2-bb-testing",
  "iceoryx2-log",
- "lazy_static",
  "postcard",
  "serde",
  "sha1_smol",
@@ -1599,7 +1597,6 @@ dependencies = [
  "iceoryx2-cal",
  "iceoryx2-pal-posix",
  "iceoryx2-pal-testing",
- "lazy_static",
  "postcard",
  "serde",
  "toml 0.9.8",
@@ -1770,13 +1767,13 @@ version = "0.8.999"
 dependencies = [
  "generic-tests",
  "iceoryx2",
+ "iceoryx2-bb-concurrency",
  "iceoryx2-bb-container",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
  "iceoryx2-pal-testing",
- "lazy_static",
  "serde",
 ]
 

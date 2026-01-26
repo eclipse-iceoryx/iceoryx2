@@ -131,7 +131,6 @@ better-panic = { version = "0.3.0" }
 colored = { version = "2.1" }
 generic-tests = { version = "0.1.2" }
 human-panic = { version = "2.0.2" }
-lazy_static = { version = "1.4.0", default-features = false }
 libc = { version = "0.2.169", features = ['extra_traits'] }
 log = { version = "0.4.21" }
 loom = { version = "0.7.2" }

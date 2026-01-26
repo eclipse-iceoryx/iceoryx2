@@ -11,9 +11,7 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [features]
-default = [
-  "lazy_static/spin_no_std"
-]
+default = []
 std = [
   "iceoryx2-bb-concurrency/std"
 ]
@@ -43,7 +41,6 @@ iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-bb-memory = { workspace = true }
 iceoryx2-bb-lock-free = { workspace = true }
 
-lazy_static = { workspace = true }
 postcard = { workspace = true }
 serde = { workspace = true }
 toml = { workspace = true }

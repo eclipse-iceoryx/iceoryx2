@@ -76,11 +76,18 @@ use crate::{
 use enum_iterator::{all, Sequence};
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_concurrency::atomic::Ordering;
+use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_log::{fail, fatal_panic};
 use iceoryx2_pal_posix::posix::{Errno, MemZeroedStruct};
 use iceoryx2_pal_posix::*;
-use lazy_static::lazy_static;
+
+static HANDLE: LazyLock<MutexHandle<SignalHandler>> = LazyLock::new(MutexHandle::new);
+static MTX: LazyLock<Mutex<'static, 'static, SignalHandler>> = LazyLock::new(|| {
+    fatal_panic!(from "SignalHandler::instance",
+        when MutexBuilder::new().create(SignalHandler::new(), &HANDLE),
+        "Unable to create global signal handler")
+});
 
 macro_rules! define_signals {
     {fetchable: $($entry:ident = $nn:ident::$value:ident),*
@@ -558,13 +565,6 @@ impl SignalHandler {
     }
 
     fn instance() -> MutexGuard<'static, Self> {
-        lazy_static! {
-            static ref HANDLE: MutexHandle<SignalHandler> = MutexHandle::new();
-            static ref MTX: Mutex<'static, 'static, SignalHandler> = fatal_panic!(from "SignalHandler::instance",
-                when MutexBuilder::new().create(SignalHandler::new(), &HANDLE),
-                "Unable to create global signal handler");
-        }
-
         fatal_panic!(from "SignalHandler::instance", when MTX.lock(),
             "Unable to acquire global SignalHandler")
     }
