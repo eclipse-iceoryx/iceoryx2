@@ -137,7 +137,7 @@ pub struct Builder<S: Service> {
 impl<S: Service> Builder<S> {
     pub(crate) fn new(name: &ServiceName, shared_node: Arc<SharedNode<S>>) -> Self {
         Self {
-            name: name.clone(),
+            name: *name,
             shared_node,
             _phantom_s: PhantomData,
         }

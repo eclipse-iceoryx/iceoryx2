@@ -310,7 +310,6 @@ impl<Service: service::Service> Notifier<Service> {
         let static_config = service.static_config.event();
         new_self.on_drop_notification = static_config
             .notifier_dropped_event
-            .clone()
             .map(EventId::new)
             .into();
 
@@ -422,7 +421,6 @@ impl<Service: service::Service> Notifier<Service> {
             .static_config
             .event()
             .deadline
-            .clone()
             .map(|v| v.value.into())
             .into()
     }

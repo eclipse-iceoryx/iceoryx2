@@ -38,7 +38,7 @@ pub(crate) fn replay(options: ReplayOptions, _format: Format) -> Result<()> {
 
     let service_name = match options.service {
         Some(v) => ServiceName::new(&v)?,
-        None => replay.header().service_name.clone(),
+        None => replay.header().service_name,
     };
 
     let required_header = RecordHeaderDetails {

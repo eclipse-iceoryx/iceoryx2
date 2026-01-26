@@ -627,7 +627,7 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
                 service_builder.__internal_add(
                     key as *const u8,
                     value_ptr as *mut u8,
-                    type_details.clone(),
+                    type_details,
                     value_cleanup,
                 ),
             ));
@@ -641,7 +641,7 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
                 service_builder.__internal_add(
                     key as *const u8,
                     value_ptr as *mut u8,
-                    type_details.clone(),
+                    type_details,
                     value_cleanup,
                 ),
             ));

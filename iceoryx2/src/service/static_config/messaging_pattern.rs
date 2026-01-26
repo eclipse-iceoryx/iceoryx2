@@ -30,7 +30,7 @@ use super::request_response;
 ///
 /// This is a large struct (>1KB). Be cautious with where it is placed and how it is passed around.
 #[non_exhaustive]
-#[derive(Debug, Clone, Eq, Hash, PartialEq, ZeroCopySend, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq, ZeroCopySend, Serialize, Deserialize)]
 #[repr(C)]
 #[allow(clippy::large_enum_variant)]
 pub enum MessagingPattern {

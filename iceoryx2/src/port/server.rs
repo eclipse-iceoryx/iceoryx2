@@ -325,7 +325,7 @@ impl<
             .expect("Heap allocator provides memory."),
             receiver_port_id: server_id.value(),
             service_state: service.clone(),
-            message_type_details: static_config.request_message_type_details.clone(),
+            message_type_details: static_config.request_message_type_details,
             receiver_max_borrowed_samples: static_config.max_active_requests_per_client,
             enable_safe_overflow: static_config.enable_safe_overflow_for_requests,
             buffer_size: static_config.max_active_requests_per_client,
@@ -406,7 +406,7 @@ impl<
             tagger: CyclicTagger::new(),
             loan_counter: AtomicUsize::new(0),
             unable_to_deliver_strategy: server_factory.config.unable_to_deliver_strategy,
-            message_type_details: static_config.response_message_type_details.clone(),
+            message_type_details: static_config.response_message_type_details,
             number_of_channels: number_of_requests_per_client,
         };
 

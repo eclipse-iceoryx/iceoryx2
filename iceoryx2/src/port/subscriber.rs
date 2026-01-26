@@ -203,7 +203,7 @@ impl<
                 .expect("Heap allocator provides memory."),
                 receiver_port_id: subscriber_id.value(),
                 service_state: service.clone(),
-                message_type_details: static_config.message_type_details.clone(),
+                message_type_details: static_config.message_type_details,
                 receiver_max_borrowed_samples: static_config.subscriber_max_borrowed_samples,
                 enable_safe_overflow: static_config.enable_safe_overflow,
                 buffer_size,

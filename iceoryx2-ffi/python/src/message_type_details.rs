@@ -25,19 +25,19 @@ impl MessageTypeDetails {
     #[getter]
     /// The `TypeDetail` of the header of a message, the first iceoryx2 internal part.
     pub fn header(&self) -> TypeDetail {
-        TypeDetail(self.0.header.clone())
+        TypeDetail(self.0.header)
     }
 
     #[getter]
     /// The `TypeDetail` of the user_header or the custom header, is located directly after the
     /// header.
     pub fn user_header(&self) -> TypeDetail {
-        TypeDetail(self.0.user_header.clone())
+        TypeDetail(self.0.user_header)
     }
 
     #[getter]
     /// The `TypeDetail` of the payload of the message, the last part.
     pub fn payload(&self) -> TypeDetail {
-        TypeDetail(self.0.payload.clone())
+        TypeDetail(self.0.payload)
     }
 }

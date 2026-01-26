@@ -28,7 +28,8 @@ use serde::{de::Visitor, Deserialize, Serialize};
 /// communication.
 ///
 /// The usage is as close as possible to the original [`Option`], except for
-/// the construction via [`Some`] and [`None`].
+/// the construction via [`Some`] and [`None`], which needs to be
+/// [`RelocatableOption::Some`] and [`RelocatableOption::None`].
 ///
 /// # Examples
 ///
@@ -166,7 +167,7 @@ impl<T> RelocatableOption<T> {
     /// Returns an [`Option`] with a reference to `T`
     pub fn as_option_ref(&self) -> Option<&T> {
         match self {
-            Self::Some(ref v) => Some(v),
+            Self::Some(v) => Some(v),
             Self::None => None,
         }
     }
@@ -174,7 +175,7 @@ impl<T> RelocatableOption<T> {
     /// Returns an [`Option`] with a mutable reference to `T`
     pub fn as_option_mut(&mut self) -> Option<&mut T> {
         match self {
-            Self::Some(ref mut v) => Some(v),
+            Self::Some(v) => Some(v),
             Self::None => None,
         }
     }
@@ -223,15 +224,16 @@ impl<T> RelocatableOption<T> {
     /// it does not contain a value a panic is raised with the provided
     /// message.
     pub fn expect(self, msg: &str) -> T {
-        if self.is_none() {
-            let origin = alloc::format!(
-                "RelocatableOption::<{}>::expect()",
-                core::any::type_name::<T>()
-            );
-            fatal_panic!(from origin, "Expect: {msg}");
+        match self {
+            Self::Some(v) => v,
+            Self::None => {
+                let origin = alloc::format!(
+                    "RelocatableOption::<{}>::expect()",
+                    core::any::type_name::<T>()
+                );
+                fatal_panic!(from origin, "Expect: {msg}");
+            }
         }
-
-        unsafe { self.unwrap_unchecked() }
     }
 
     /// If the [`RelocatableOption`] contains a value, the provided callback is
@@ -270,9 +272,7 @@ impl<T> RelocatableOption<T> {
     /// Replaces the existing value of the [`RelocatableOption`] with the new value.
     /// The old value is returned.
     pub fn replace(&mut self, value: T) -> RelocatableOption<T> {
-        let mut new_value = RelocatableOption::Some(value);
-        core::mem::swap(self, &mut new_value);
-        new_value
+        core::mem::replace(self, Self::Some(value))
     }
 
     /// Takes the value out of the [`RelocatableOption`] and returns it, leaving an
@@ -299,28 +299,25 @@ impl<T> RelocatableOption<T> {
     /// Consumes the [`RelocatableOption`] and returns the value of `T`. If the
     /// [`RelocatableOption`] does not contain a value a panic is raised.
     pub fn unwrap(self) -> T {
-        if self.is_none() {
-            let origin = alloc::format!(
-                "RelocatableOption::<{}>::unwrap()",
-                core::any::type_name::<T>()
-            );
-            fatal_panic!(
-                from origin,
-                "This should never happen! Accessing the value of an empty RelocatableOption."
-            );
+        match self {
+            Self::Some(v) => v,
+            Self::None => {
+                let origin = alloc::format!(
+                    "RelocatableOption::<{}>::unwrap()",
+                    core::any::type_name::<T>()
+                );
+                fatal_panic!(
+                    from origin,
+                    "This should never happen! Accessing the value of an empty RelocatableOption."
+                );
+            }
         }
-
-        unsafe { self.unwrap_unchecked() }
     }
 
     /// Consumes the [`RelocatableOption`] and either returns the contained value,
     /// if there is one, otherwise `default` is returned.
-    pub fn unwrap_or(self, default: T) -> T {
-        if self.is_none() {
-            default
-        } else {
-            unsafe { self.unwrap_unchecked() }
-        }
+    pub fn unwrap_or(self, alternative: T) -> T {
+        self.unwrap_or_else(|| alternative)
     }
 
     /// Consumes the [`RelocatableOption`] and either returns the contained value,
@@ -329,20 +326,15 @@ impl<T> RelocatableOption<T> {
     where
         T: Default,
     {
-        if self.is_none() {
-            T::default()
-        } else {
-            unsafe { self.unwrap_unchecked() }
-        }
+        self.unwrap_or_else(|| T::default())
     }
 
     /// Consumes the [`RelocatableOption`] and either returns the contained value,
     /// if there is one or returns the return value of the provided callback.
     pub fn unwrap_or_else<F: FnOnce() -> T>(self, f: F) -> T {
-        if self.is_none() {
-            f()
-        } else {
-            unsafe { self.unwrap_unchecked() }
+        match self {
+            Self::Some(v) => v,
+            Self::None => f(),
         }
     }
 

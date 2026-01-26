@@ -42,8 +42,8 @@ impl PortFactoryEvent {
     /// Returns the `ServiceName` of the service
     pub fn name(&self) -> ServiceName {
         match &*self.0.lock() {
-            PortFactoryEventType::Ipc(v) => ServiceName(v.name().clone()),
-            PortFactoryEventType::Local(v) => ServiceName(v.name().clone()),
+            PortFactoryEventType::Ipc(v) => ServiceName(*v.name()),
+            PortFactoryEventType::Local(v) => ServiceName(*v.name()),
         }
     }
 
@@ -70,8 +70,8 @@ impl PortFactoryEvent {
     /// Contains all settings that never change during the lifetime of the service.
     pub fn static_config(&self) -> StaticConfigEvent {
         match &*self.0.lock() {
-            PortFactoryEventType::Ipc(v) => StaticConfigEvent(v.static_config().clone()),
-            PortFactoryEventType::Local(v) => StaticConfigEvent(v.static_config().clone()),
+            PortFactoryEventType::Ipc(v) => StaticConfigEvent(*v.static_config()),
+            PortFactoryEventType::Local(v) => StaticConfigEvent(*v.static_config()),
         }
     }
 

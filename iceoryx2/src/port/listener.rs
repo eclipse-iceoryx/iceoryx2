@@ -219,7 +219,6 @@ impl<Service: service::Service> Listener<Service> {
             .static_config
             .event()
             .deadline
-            .clone()
             .map(|v| v.value.into())
             .into()
     }

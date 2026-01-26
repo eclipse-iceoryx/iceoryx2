@@ -76,8 +76,8 @@ impl PortFactoryBlackboard {
     /// Returns the `ServiceName` of the service.
     pub fn name(&self) -> ServiceName {
         match &*self.value.lock() {
-            PortFactoryBlackboardType::Ipc(Some(v)) => ServiceName(v.name().clone()),
-            PortFactoryBlackboardType::Local(Some(v)) => ServiceName(v.name().clone()),
+            PortFactoryBlackboardType::Ipc(Some(v)) => ServiceName(*v.name()),
+            PortFactoryBlackboardType::Local(Some(v)) => ServiceName(*v.name()),
             _ => {
                 fatal_panic!(from "PortFactoryBlackboard::name()", "Accessing a deleted PortFactoryBlackboard.")
             }
@@ -113,12 +113,8 @@ impl PortFactoryBlackboard {
     /// the lifetime of the service.
     pub fn static_config(&self) -> StaticConfigBlackboard {
         match &*self.value.lock() {
-            PortFactoryBlackboardType::Ipc(Some(v)) => {
-                StaticConfigBlackboard(v.static_config().clone())
-            }
-            PortFactoryBlackboardType::Local(Some(v)) => {
-                StaticConfigBlackboard(v.static_config().clone())
-            }
+            PortFactoryBlackboardType::Ipc(Some(v)) => StaticConfigBlackboard(*v.static_config()),
+            PortFactoryBlackboardType::Local(Some(v)) => StaticConfigBlackboard(*v.static_config()),
             _ => {
                 fatal_panic!(from "PortFactoryBlackboard::static_config()", "Accessing a deleted PortFactoryBlackboard.")
             }

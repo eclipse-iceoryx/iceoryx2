@@ -84,7 +84,6 @@ pub(crate) fn get_pubsub_service_types(
             .publish_subscribe()
             .message_type_details()
             .user_header
-            .clone()
     };
 
     let payload = unsafe {
@@ -94,7 +93,6 @@ pub(crate) fn get_pubsub_service_types(
             .publish_subscribe()
             .message_type_details()
             .payload
-            .clone()
     };
 
     let system_header = TypeDetail::new::<Header>(TypeVariant::FixedSize);

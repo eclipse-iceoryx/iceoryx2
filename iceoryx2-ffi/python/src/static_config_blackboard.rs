@@ -38,6 +38,6 @@ impl StaticConfigBlackboard {
     #[getter]
     /// Returns the type details of the `Service`.
     pub fn type_details(&self) -> TypeDetail {
-        TypeDetail(self.0.type_details().clone())
+        TypeDetail(*self.0.type_details())
     }
 }

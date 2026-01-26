@@ -482,12 +482,8 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                     .base
                     .create_node_service_tag(msg, EventCreateError::InternalFailure)?;
 
-                if let Some(ref mut deadline) = self
-                    .base
-                    .service_config
-                    .event_mut()
-                    .deadline
-                    .as_option_mut()
+                if let RelocatableOption::Some(ref mut deadline) =
+                    self.base.service_config.event_mut().deadline
                 {
                     let now = fail!(from self, when Time::now(),
                                 with EventCreateError::InternalFailure,
@@ -669,14 +665,14 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         }
 
         if self.verify_deadline
-            && existing_settings.deadline.as_option_ref().map(|v| v.value)
-                != required_settings.deadline.as_option_ref().map(|v| v.value)
+            && existing_settings.deadline.map(|v| v.value)
+                != required_settings.deadline.map(|v| v.value)
         {
             fail!(from self, with EventOpenError::IncompatibleDeadline,
                 "{} since the deadline is {:?} but a deadline of {:?} is required.",
                 msg, existing_settings.deadline, required_settings.deadline);
         }
 
-        Ok(existing_settings.clone())
+        Ok(*existing_settings)
     }
 }

@@ -197,7 +197,7 @@ impl ServiceBuilderBlackboardCreator {
                     this.__internal_add(
                         key as *const u8,
                         value_buffer,
-                        value_details.0.clone(),
+                        value_details.0,
                         Box::new(move || {
                             std::alloc::dealloc(value_buffer, value_layout);
                         }),
@@ -211,7 +211,7 @@ impl ServiceBuilderBlackboardCreator {
                     this.__internal_add(
                         key as *const u8,
                         value_buffer,
-                        value_details.0.clone(),
+                        value_details.0,
                         Box::new(move || {
                             std::alloc::dealloc(value_buffer, value_layout);
                         }),

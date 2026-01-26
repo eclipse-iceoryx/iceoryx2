@@ -71,7 +71,7 @@ impl From<StringModificationError> for ServiceNameError {
 type ServiceNameString = StaticString<MAX_SERVICE_NAME_LENGTH>;
 
 /// The name of a [`Service`](crate::service::Service).
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ZeroCopySend)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ZeroCopySend)]
 #[repr(C)]
 pub struct ServiceName {
     value: ServiceNameString,

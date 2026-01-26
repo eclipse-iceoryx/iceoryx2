@@ -98,3 +98,12 @@ fn clock_relocatable_duration_roundtrip_conversion() {
     assert_that!(sut.as_secs(), eq duration.as_secs());
     assert_that!(sut.subsec_nanos(), eq duration.subsec_nanos());
 }
+
+#[test]
+fn clock_relocatable_duration_max_value() {
+    let duration = Duration::MAX;
+    let sut: RelocatableDuration = duration.into();
+
+    assert_that!(sut.as_secs(), eq sut.as_secs());
+    assert_that!(sut.subsec_nanos(), eq sut.subsec_nanos());
+}

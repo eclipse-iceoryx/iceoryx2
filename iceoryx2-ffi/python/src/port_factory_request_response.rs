@@ -67,8 +67,8 @@ impl PortFactoryRequestResponse {
     /// Returns the `ServiceName` of the service
     pub fn name(&self) -> ServiceName {
         match &*self.value.lock() {
-            PortFactoryRequestResponseType::Ipc(v) => ServiceName(v.name().clone()),
-            PortFactoryRequestResponseType::Local(v) => ServiceName(v.name().clone()),
+            PortFactoryRequestResponseType::Ipc(v) => ServiceName(*v.name()),
+            PortFactoryRequestResponseType::Local(v) => ServiceName(*v.name()),
         }
     }
 
@@ -96,10 +96,10 @@ impl PortFactoryRequestResponse {
     pub fn static_config(&self) -> StaticConfigRequestResponse {
         match &*self.value.lock() {
             PortFactoryRequestResponseType::Ipc(v) => {
-                StaticConfigRequestResponse(v.static_config().clone())
+                StaticConfigRequestResponse(*v.static_config())
             }
             PortFactoryRequestResponseType::Local(v) => {
-                StaticConfigRequestResponse(v.static_config().clone())
+                StaticConfigRequestResponse(*v.static_config())
             }
         }
     }
