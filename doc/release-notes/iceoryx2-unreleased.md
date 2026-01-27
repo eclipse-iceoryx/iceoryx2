@@ -18,7 +18,7 @@
   [#1289](https://github.com/eclipse-iceoryx/iceoryx2/issues/1289)
 * Add source `NodeId` to request and response header
   [#1308](https://github.com/eclipse-iceoryx/iceoryx2/issues/1308)
-* Introduce `RelocatableOption` and `RelocatableDuration` which are 
+* Introduce `RelocatableOption` and `RelocatableDuration` which are
   `ZeroCopySend`
   [#1312](https://github.com/eclipse-iceoryx/iceoryx2/issues/1312)
 
