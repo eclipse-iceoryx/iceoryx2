@@ -18,6 +18,10 @@
   [#1289](https://github.com/eclipse-iceoryx/iceoryx2/issues/1289)
 * Add source `NodeId` to request and response header
   [#1308](https://github.com/eclipse-iceoryx/iceoryx2/issues/1308)
+* Add source `NodeId` to request and response header
+  [#1308](https://github.com/eclipse-iceoryx/iceoryx2/issues/1308)
+* Add support for platforms that do not support 64-bit atomics
+  [#1324](https://github.com/eclipse-iceoryx/iceoryx2/issues/1324)
 
 ### Bugfixes
 
