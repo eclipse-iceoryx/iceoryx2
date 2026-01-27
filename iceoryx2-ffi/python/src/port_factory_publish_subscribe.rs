@@ -74,8 +74,8 @@ impl PortFactoryPublishSubscribe {
     /// Returns the `ServiceName` of the service
     pub fn name(&self) -> ServiceName {
         match &*self.value.lock() {
-            PortFactoryPublishSubscribeType::Ipc(v) => ServiceName(v.name().clone()),
-            PortFactoryPublishSubscribeType::Local(v) => ServiceName(v.name().clone()),
+            PortFactoryPublishSubscribeType::Ipc(v) => ServiceName(*v.name()),
+            PortFactoryPublishSubscribeType::Local(v) => ServiceName(*v.name()),
         }
     }
 
@@ -103,10 +103,10 @@ impl PortFactoryPublishSubscribe {
     pub fn static_config(&self) -> StaticConfigPublishSubscribe {
         match &*self.value.lock() {
             PortFactoryPublishSubscribeType::Ipc(v) => {
-                StaticConfigPublishSubscribe(v.static_config().clone())
+                StaticConfigPublishSubscribe(*v.static_config())
             }
             PortFactoryPublishSubscribeType::Local(v) => {
-                StaticConfigPublishSubscribe(v.static_config().clone())
+                StaticConfigPublishSubscribe(*v.static_config())
             }
         }
     }

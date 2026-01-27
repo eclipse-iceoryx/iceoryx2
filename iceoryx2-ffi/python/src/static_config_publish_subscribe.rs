@@ -71,6 +71,6 @@ impl StaticConfigPublishSubscribe {
     #[getter]
     /// Returns the type details of the `Service`.
     pub fn message_type_details(&self) -> MessageTypeDetails {
-        MessageTypeDetails(self.0.message_type_details().clone())
+        MessageTypeDetails(*self.0.message_type_details())
     }
 }

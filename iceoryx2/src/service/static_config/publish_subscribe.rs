@@ -43,7 +43,7 @@ use serde::{Deserialize, Serialize};
 /// [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe)
 /// based service. Contains all parameters that do not change during the lifetime of a
 /// [`Service`](crate::service::Service).
-#[derive(Debug, Clone, Eq, Hash, PartialEq, ZeroCopySend, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq, ZeroCopySend, Serialize, Deserialize)]
 #[repr(C)]
 pub struct StaticConfig {
     pub(crate) max_subscribers: usize,

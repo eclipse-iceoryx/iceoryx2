@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let node = NodeBuilder::new().create::<ipc::Service>()?;
 
     let service = node
-        .service_builder(service_name().try_into()?)
+        .service_builder(service_name())
         .request_response::<(), [StaticConfig]>()
         .open_or_create()?;
 

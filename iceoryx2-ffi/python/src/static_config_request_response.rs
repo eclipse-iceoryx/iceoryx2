@@ -26,13 +26,13 @@ impl StaticConfigRequestResponse {
     #[getter]
     /// Returns the request type details of the `Service`.
     pub fn request_message_type_details(&self) -> MessageTypeDetails {
-        MessageTypeDetails(self.0.request_message_type_details().clone())
+        MessageTypeDetails(*self.0.request_message_type_details())
     }
 
     #[getter]
     /// Returns the response type details of the `Service`.
     pub fn response_message_type_details(&self) -> MessageTypeDetails {
-        MessageTypeDetails(self.0.response_message_type_details().clone())
+        MessageTypeDetails(*self.0.response_message_type_details())
     }
 
     #[getter]

@@ -54,7 +54,9 @@ pub enum TypeVariant {
 pub type TypeName = StaticString<MAX_TYPE_NAME_LENGTH>;
 
 /// Contains all type details required to connect to a [`crate::service::Service`]
-#[derive(Default, Debug, Clone, Eq, Hash, PartialEq, ZeroCopySend, Serialize, Deserialize)]
+#[derive(
+    Default, Debug, Clone, Copy, Eq, Hash, PartialEq, ZeroCopySend, Serialize, Deserialize,
+)]
 #[repr(C)]
 pub struct TypeDetail {
     pub(crate) variant: TypeVariant,
@@ -104,7 +106,9 @@ impl TypeDetail {
 }
 
 /// Contains all type information to the header and payload type.
-#[derive(Default, Debug, Clone, Eq, Hash, PartialEq, ZeroCopySend, Serialize, Deserialize)]
+#[derive(
+    Default, Debug, Clone, Copy, Eq, Hash, PartialEq, ZeroCopySend, Serialize, Deserialize,
+)]
 #[repr(C)]
 pub struct MessageTypeDetails {
     /// The [`TypeDetail`] of the header of a message, the first iceoryx2 internal part.

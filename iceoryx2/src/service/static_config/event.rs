@@ -35,16 +35,17 @@
 use core::time::Duration;
 
 use crate::{config, prelude::EventId};
+use iceoryx2_bb_container::relocatable_option::RelocatableOption;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_posix::clock::Time;
+use iceoryx2_bb_posix::clock::{RelocatableDuration, Time};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq, ZeroCopySend, Serialize, Deserialize)]
 #[repr(C)]
 pub(crate) struct Deadline {
     pub(crate) creation_time: Time,
-    pub(crate) value: Duration,
+    pub(crate) value: RelocatableDuration,
 }
 
 /// The static configuration of an [`MessagingPattern::Event`](crate::service::messaging_pattern::MessagingPattern::Event)
@@ -57,10 +58,10 @@ pub struct StaticConfig {
     pub(crate) max_listeners: usize,
     pub(crate) max_nodes: usize,
     pub(crate) event_id_max_value: usize,
-    pub(crate) deadline: Option<Deadline>,
-    pub(crate) notifier_created_event: Option<usize>,
-    pub(crate) notifier_dropped_event: Option<usize>,
-    pub(crate) notifier_dead_event: Option<usize>,
+    pub(crate) deadline: RelocatableOption<Deadline>,
+    pub(crate) notifier_created_event: RelocatableOption<usize>,
+    pub(crate) notifier_dropped_event: RelocatableOption<usize>,
+    pub(crate) notifier_dead_event: RelocatableOption<usize>,
 }
 
 impl StaticConfig {
@@ -69,14 +70,19 @@ impl StaticConfig {
             max_notifiers: config.defaults.event.max_notifiers,
             max_listeners: config.defaults.event.max_listeners,
             max_nodes: config.defaults.event.max_nodes,
-            deadline: config.defaults.event.deadline.map(|v| Deadline {
-                creation_time: Time::default(),
-                value: v,
-            }),
+            deadline: config
+                .defaults
+                .event
+                .deadline
+                .map(|v| Deadline {
+                    creation_time: Time::default(),
+                    value: v.into(),
+                })
+                .into(),
             event_id_max_value: config.defaults.event.event_id_max_value,
-            notifier_created_event: config.defaults.event.notifier_created_event,
-            notifier_dropped_event: config.defaults.event.notifier_dropped_event,
-            notifier_dead_event: config.defaults.event.notifier_dead_event,
+            notifier_created_event: config.defaults.event.notifier_created_event.into(),
+            notifier_dropped_event: config.defaults.event.notifier_dropped_event.into(),
+            notifier_dead_event: config.defaults.event.notifier_dead_event.into(),
         }
     }
 
@@ -86,7 +92,7 @@ impl StaticConfig {
     /// to a [`WaitSet`](crate::waitset::WaitSet) are woken up and notified about the missed
     /// deadline.
     pub fn deadline(&self) -> Option<Duration> {
-        self.deadline.map(|v| v.value)
+        self.deadline.as_option_ref().map(|v| v.value.into())
     }
 
     /// Returns the maximum supported amount of [`Node`](crate::node::Node)s that can open the
@@ -112,16 +118,22 @@ impl StaticConfig {
 
     /// Returns the emitted [`EventId`] when a new notifier is created.
     pub fn notifier_created_event(&self) -> Option<EventId> {
-        self.notifier_created_event.map(EventId::new)
+        self.notifier_created_event
+            .as_option_ref()
+            .map(|v| EventId::new(*v))
     }
 
     /// Returns the emitted [`EventId`] when a notifier is dropped.
     pub fn notifier_dropped_event(&self) -> Option<EventId> {
-        self.notifier_dropped_event.map(EventId::new)
+        self.notifier_dropped_event
+            .as_option_ref()
+            .map(|v| EventId::new(*v))
     }
 
     /// Returns the emitted [`EventId`] when a notifier is identified as dead.
     pub fn notifier_dead_event(&self) -> Option<EventId> {
-        self.notifier_dead_event.map(EventId::new)
+        self.notifier_dead_event
+            .as_option_ref()
+            .map(|v| EventId::new(*v))
     }
 }

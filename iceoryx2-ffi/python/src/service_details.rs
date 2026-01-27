@@ -102,8 +102,8 @@ impl ServiceDetails {
     /// Returns the `ServiceName`
     pub fn name(&self) -> ServiceName {
         match &self.0 {
-            ServiceDetailsType::Ipc(v) => ServiceName(v.static_details.name().clone()),
-            ServiceDetailsType::Local(v) => ServiceName(v.static_details.name().clone()),
+            ServiceDetailsType::Ipc(v) => ServiceName(*v.static_details.name()),
+            ServiceDetailsType::Local(v) => ServiceName(*v.static_details.name()),
         }
     }
 

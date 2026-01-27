@@ -85,3 +85,25 @@ fn clock_time_as_timespec_works() {
     assert_that!(timespec.tv_sec, eq now.as_duration().as_secs() as _);
     assert_that!(timespec.tv_nsec, eq now.as_duration().subsec_nanos() as _);
 }
+
+#[test]
+fn clock_relocatable_duration_roundtrip_conversion() {
+    let secs = 123;
+    let nsecs = 456;
+    let duration = Duration::from_secs(secs) + Duration::from_nanos(nsecs);
+    let sut: RelocatableDuration = duration.into();
+    let duration_2: Duration = sut.into();
+
+    assert_that!(duration, eq duration_2);
+    assert_that!(sut.as_secs(), eq duration.as_secs());
+    assert_that!(sut.subsec_nanos(), eq duration.subsec_nanos());
+}
+
+#[test]
+fn clock_relocatable_duration_max_value() {
+    let duration = Duration::MAX;
+    let sut: RelocatableDuration = duration.into();
+
+    assert_that!(sut.as_secs(), eq sut.as_secs());
+    assert_that!(sut.subsec_nanos(), eq sut.subsec_nanos());
+}

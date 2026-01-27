@@ -429,7 +429,7 @@ impl<
             loan_counter: AtomicUsize::new(0),
             sender_max_borrowed_samples: static_config.max_loaned_requests,
             unable_to_deliver_strategy: client_factory.config.unable_to_deliver_strategy,
-            message_type_details: static_config.request_message_type_details.clone(),
+            message_type_details: static_config.request_message_type_details,
             // all requests are sent via one channel, only the responses require different
             // channels to guarantee that one response does not fill the buffer of another
             // response.
@@ -464,7 +464,7 @@ impl<
                     .expect("Heap allocator provides memory."),
             )),
             degradation_callback: client_factory.response_degradation_callback,
-            message_type_details: static_config.response_message_type_details.clone(),
+            message_type_details: static_config.response_message_type_details,
             receiver_max_borrowed_samples: static_config
                 .max_borrowed_responses_per_pending_response,
             enable_safe_overflow: static_config.enable_safe_overflow_for_responses,

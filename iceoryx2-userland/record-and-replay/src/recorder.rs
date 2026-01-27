@@ -183,7 +183,7 @@ impl RecorderBuilder {
         };
 
         let header = RecordHeader {
-            service_name: service_name.clone(),
+            service_name: *service_name,
             iceoryx2_version: PackageVersion::get().into(),
             details: RecordHeaderDetails {
                 file_format_version: match self.data_representation {

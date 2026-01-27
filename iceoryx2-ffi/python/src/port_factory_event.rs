@@ -42,8 +42,8 @@ impl PortFactoryEvent {
     /// Returns the `ServiceName` of the service
     pub fn name(&self) -> ServiceName {
         match &*self.0.lock() {
-            PortFactoryEventType::Ipc(v) => ServiceName(v.name().clone()),
-            PortFactoryEventType::Local(v) => ServiceName(v.name().clone()),
+            PortFactoryEventType::Ipc(v) => ServiceName(*v.name()),
+            PortFactoryEventType::Local(v) => ServiceName(*v.name()),
         }
     }
 

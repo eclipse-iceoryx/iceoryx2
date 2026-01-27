@@ -91,7 +91,7 @@ pub mod sample {
         let config = generate_isolated_config();
         let test_context = TestContext::<Sut>::new(&config);
 
-        let service_name = test_context.service_name.clone();
+        let service_name = test_context.service_name;
 
         assert_that!(test_context.publisher_1.send_copy(5), eq Ok(1));
         let sample = test_context.subscriber.receive().unwrap();

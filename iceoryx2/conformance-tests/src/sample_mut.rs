@@ -155,7 +155,7 @@ pub mod sample_mut {
     pub fn sample_of_dropped_service_does_block_new_service_creation<Sut: Service>() {
         let config = generate_isolated_config();
         let test_context = TestContext::<Sut>::new(&config);
-        let service_name = test_context.service_name.clone();
+        let service_name = test_context.service_name;
         let _sample = test_context.publisher.loan_uninit().unwrap();
 
         drop(test_context);
