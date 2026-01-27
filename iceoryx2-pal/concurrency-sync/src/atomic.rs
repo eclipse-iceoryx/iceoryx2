@@ -104,17 +104,31 @@ pub type AtomicI32 = core::sync::atomic::AtomicI32;
 pub type AtomicI32 = loom::sync::atomic::AtomicI32;
 
 /// Behaves like [`core::sync::atomic::AtomicI64`]
-#[cfg(not(all(test, loom, feature = "std")))]
+#[cfg(all(not(all(test, loom, feature = "std")), target_has_atomic = "64"))]
 #[allow(clippy::disallowed_types)]
 pub type AtomicI64 = core::sync::atomic::AtomicI64;
+
+#[cfg(all(not(all(test, loom, feature = "std")), not(target_has_atomic = "64")))]
+#[deprecated(
+    since = "0.0.1",
+    note = "This platform does not support native atomic 64-bit operations! iceoryx2 uses a 64-bit atomic based on spinlocks that cannot guarantee lock-free operations. A crash in one process may cause a deadlock in another process."
+)]
+pub type AtomicI64 = Atomic<i64>;
 
 #[cfg(all(test, loom, feature = "std"))]
 pub type AtomicI64 = loom::sync::atomic::AtomicI64;
 
 /// Behaves like [`core::sync::atomic::AtomicU64`]
-#[cfg(not(all(test, loom, feature = "std")))]
+#[cfg(all(not(all(test, loom, feature = "std")), target_has_atomic = "64"))]
 #[allow(clippy::disallowed_types)]
 pub type AtomicU64 = core::sync::atomic::AtomicU64;
+
+#[cfg(all(not(all(test, loom, feature = "std")), not(target_has_atomic = "64")))]
+#[deprecated(
+    since = "0.0.1",
+    note = "This platform does not support native atomic 64-bit operations! iceoryx2 uses a 64-bit atomic based on spinlocks that cannot guarantee lock-free operations. A crash in one process may cause a deadlock in another process."
+)]
+pub type AtomicU64 = Atomic<u64>;
 
 #[cfg(all(test, loom, feature = "std"))]
 pub type AtomicU64 = loom::sync::atomic::AtomicU64;
