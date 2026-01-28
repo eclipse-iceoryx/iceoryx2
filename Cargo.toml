@@ -123,14 +123,14 @@ iceoryx2-userland-record-and-replay = { version = "0.8.999", path = "iceoryx2-us
 anyhow = { version = "1.0.86" }
 bindgen = { version = "0.72.0" }
 cargo_metadata = { version = "0.18.1" }
-cbindgen = { version = "0.27.0" }
+cbindgen = { version = "0.29.0" }
 cc = { version = "1.0.98" }
 clap = { version = "4.5.4", features = ["derive"] }
 enum-iterator = { version = "2.1.0" }
 better-panic = { version = "0.3.0" }
 colored = { version = "2.1" }
 generic-tests = { version = "0.1.2" }
-human-panic = { version = "2.0.2" }
+human-panic = { version = "=2.0.2" }
 libc = { version = "0.2.169", features = ['extra_traits'] }
 log = { version = "0.4.21" }
 loom = { version = "0.7.2" }

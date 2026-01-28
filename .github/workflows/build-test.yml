@@ -380,7 +380,7 @@ jobs:
       matrix:
         os: [ubuntu-24.04]
         toolchain: [stable]
-        bazel-mode: ["--enable_bzlmod", "--noenable_bzlmod"]
+        bazel-version: ["7.4.1", "8.5.1"]
     timeout-minutes: 60
     runs-on: ${{ matrix.os }}
     steps:
@@ -402,13 +402,13 @@ jobs:
 
       - name: Run bazel build
         env:
-          USE_BAZEL_VERSION: "7.4.1"
-        run: bazel build //... ${{ matrix.bazel-mode }}
+          USE_BAZEL_VERSION: ${{matrix.bazel-version}}
+        run: bazel build //...
 
       - name: Run bazel test
         env:
-          USE_BAZEL_VERSION: "7.4.1"
-        run: bazel test //... ${{ matrix.bazel-mode }}
+          USE_BAZEL_VERSION: ${{matrix.bazel-version}}
+        run: bazel test //...
 
   cxx-vocabulary-types:
     needs: [preflight-check, static-code-analysis]

@@ -221,7 +221,7 @@ function scan() {
             fi
 
             EXTRA_ARG=""
-            if [[ "$FILE" == iceoryx2-pal/posix/* ]]; then
+            if [[ "$FILE" == iceoryx2-pal/posix/* || "$FILE" == iceoryx2-pal/os-api/* ]]; then
                 EXTRA_ARG="--extra-arg=-xc"
             fi
             SECONDS_START=${SECONDS}

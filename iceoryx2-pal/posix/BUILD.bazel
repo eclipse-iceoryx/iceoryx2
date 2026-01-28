@@ -13,8 +13,8 @@
 package(default_visibility = ["//visibility:public"])
 
 load("@rules_cc//cc:defs.bzl", "cc_library")
-load("@rules_rust//cargo:defs.bzl", "cargo_build_script")
 load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test_suite")
+load("@rules_rust_bindgen//:defs.bzl", "rust_bindgen_library")
 
 filegroup(
     name = "all_srcs",
@@ -33,40 +33,27 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 
-# Generate the Rust binding file
-genrule(
+rust_bindgen_library(
     name = "iceoryx2-pal-posix-bindgen",
-    srcs = [
-        "src/c/posix.h",
-        "@bindgen//:bindgen-cli",
+    header = "src/c/posix.h",
+    cc_lib = ":iceoryx2-pal-posix-c-lib",
+    bindgen_flags = [
+        "--use-core",
+        "--blocklist-type", "max_align_t"
     ],
-    outs = ["posix_generated.rs"],
-    cmd = "$(execpath @bindgen//:bindgen-cli) --use-core --blocklist-type max_align_t $(location src/c/posix.h) --output $(OUTS)",
-)
-
-cargo_build_script(
-    name = "bazel_bindgen_workaround",
-    srcs = ["bazel_bindgen_workaround.rs"],
 )
 
 # Create the actual crate
 rust_library(
     name = "iceoryx2-pal-posix",
     srcs = glob(["src/**/*.rs"]),
-    compile_data = [ "posix_generated.rs" ],
+    rustc_flags = ["--cfg=bazel_build"],
     deps = [
         "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
         "//iceoryx2-pal/configuration:iceoryx2-pal-configuration",
-        ":iceoryx2-pal-posix-c-lib",
-        ":bazel_bindgen_workaround",
+        ":iceoryx2-pal-posix-bindgen",
+        "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
     ],
-    rustc_env = {
-        # - 'lib.rs' expects the location at 'env!("OUT_DIR")/posix_generated.rs'
-        # - 'OUT_DIR' is set by 'bazel_bindgen_workaround' and points to the same
-        #   folder where 'posix_generated.rs' is preset
-        # - therefore the path needs to be corrected
-        "BAZEL_BINDGEN_PATH_CORRECTION": "/.."
-    },
 )
 
 rust_test_suite(

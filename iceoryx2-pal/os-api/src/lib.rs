@@ -34,9 +34,9 @@ pub(crate) mod internal {
     #![allow(unknown_lints)]
     #![allow(unnecessary_transmutes)]
     #![allow(clippy::all)]
-    include!(concat!(
-        env!("OUT_DIR"),
-        env!("BAZEL_BINDGEN_PATH_CORRECTION"),
-        "/os_api_generated.rs"
-    ));
+    #[cfg(not(bazel_build))]
+    include!(concat!(env!("OUT_DIR"), "/os_api_generated.rs"));
+
+    #[cfg(bazel_build)]
+    pub use iceoryx2_pal_os_api_bindgen::*;
 }

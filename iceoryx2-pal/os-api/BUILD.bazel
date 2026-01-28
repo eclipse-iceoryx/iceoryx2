@@ -12,45 +12,40 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("@rules_cc//cc:defs.bzl", "cc_library")
-load("@rules_rust//cargo:defs.bzl", "cargo_build_script")
-load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test_suite")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_rust//rust:defs.bzl", "rust_library")
+load("@rules_rust_bindgen//:defs.bzl", "rust_bindgen_library")
 
 filegroup(
     name = "all_srcs",
     srcs = glob(["**"]),
 )
 
-# Generate the Rust binding file
-genrule(
-    name = "iceoryx2-pal-os-api-bindgen",
-    srcs = [
-        "src/c/linux.h",
-        "@bindgen//:bindgen-cli",
-    ],
-    outs = ["os_api_generated.rs"],
-    cmd = "$(execpath @bindgen//:bindgen-cli) --use-core $(location src/c/linux.h) --output $(OUTS)",
+cc_library(
+    name = "iceoryx2-pal-os-api-c-lib",
+    srcs = ["src/c/linux.c"],
+    hdrs = ["src/c/linux.h"],
+    linkstatic = True,
 )
 
-cargo_build_script(
-    name = "bazel_bindgen_workaround",
-    srcs = ["bazel_bindgen_workaround.rs"],
+# Generate the Rust binding file
+rust_bindgen_library(
+    name = "iceoryx2-pal-os-api-bindgen",
+    header = "src/c/linux.h",
+    cc_lib = ":iceoryx2-pal-os-api-c-lib",
+    bindgen_flags = [
+        "--use-core",
+    ],
 )
 
 # Create the actual crate
 rust_library(
     name = "iceoryx2-pal-os-api",
     srcs = glob(["src/**/*.rs"]),
-    compile_data = [ "os_api_generated.rs" ],
+    rustc_flags = ["--cfg=bazel_build"],
     deps = [
         "//iceoryx2-pal/posix:iceoryx2-pal-posix",
-        ":bazel_bindgen_workaround",
+        ":iceoryx2-pal-os-api-bindgen",
+        "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
     ],
-    rustc_env = {
-        # - 'lib.rs' expects the location at 'env!("OUT_DIR")/os_api_generated.rs'
-        # - 'OUT_DIR' is set by 'bazel_bindgen_workaround' and points to the same
-        #   folder where 'os_api_generated.rs' is preset
-        # - therefore the path needs to be corrected
-        "BAZEL_BINDGEN_PATH_CORRECTION": "/.."
-    },
 )

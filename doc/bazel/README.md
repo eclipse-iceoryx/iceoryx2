@@ -1,138 +1,53 @@
-# Use iceoryx2 with bazel
+# Use iceoryx2 with Bazel
 
-On Linux, iceoryx2 can be build with bazel. Other OSes are not yet supported.
+iceoryx2 supports Bazel as a build target, via both bazel workspaces and bazel
+modules. Other operating systems are not yet supported.
 
-## Instructions for iceoryx2 users
+## Setup with Bazel build system
 
-To use iceoryx2 as an external dependency, ensure the following setup is present
-in your `WORKSPACE` file:
+You can pull the iceoryx2 repo into your bazel project in two different manners.
+Full examples can be found under `examples/bazel`.
+
+### Setup via Bzlmod (Recommended)
+
+There's an example for using Bazel under `examples/bazel`. Alternatively, you
+can follow this abbreviated guide, and ensure the following is present in your
+`MODULE.bazel` or `MODULE` file:
 
 ```bazel
-# Load iceoryx2 rules
-ICEORYX2_VERSION = "0248ea57d0c405383ab099e14293ed8be2d23dac"
+bazel_dep(name = "iceoryx2", version = "0.8.1")
+bazel_dep(name = "rules_rust", version = "0.68.1")
 
-http_archive(
-    name = "iceoryx2",
-    sha256 = "8844b229d2ba23597dfe17df7a3baabd086a62944534aa804d482a6e46bdf5b8",
-    strip_prefix = "iceoryx2-{}".format(ICEORYX2_VERSION),
-    urls = [
-        "https://github.com/eclipse-iceoryx/iceoryx2/archive/{}.tar.gz".format(ICEORYX2_VERSION),
-    ],
+# ==============================================================================
+# Iceoryx2 Setup
+# ==============================================================================
+
+
+git_override(
+    module_name = iceoryx2,
+    remote = "https://github.com/eclipse-iceoryx/iceoryx2.git",
+    # Insert your git ref below. It can be a tag, commit, or branch
+    commit = "0.8.1"
 )
 
+# ==============================================================================
+# Rust Setup (Example)
+# ==============================================================================
 
-# Load Rust rules
-# Use v0.26 to support bazel v6.2
-maybe(
-    name = "rules_rust",
-    repo_rule = http_archive,
-    sha256 = "9d04e658878d23f4b00163a72da3db03ddb451273eb347df7d7c50838d698f49",
-    urls = ["https://github.com/bazelbuild/rules_rust/releases/download/0.26.0/rules_rust-v0.26.0.tar.gz"],
-)
-
-load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies", "rust_register_toolchains")
-
-rules_rust_dependencies()
-rust_register_toolchains(
+rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
+rust.toolchain(
     edition = "2021",
-    versions = [
-        "1.80.0"
-    ],
+    versions = ["1.87.0"],
 )
-
-
-# Load prebuilt bindgen
-maybe(
-    name = "bindgen",
-    repo_rule = http_archive,
-    sha256 = "b7e2321ee8c617f14ccc5b9f39b3a804db173ee217e924ad93ed16af6bc62b1d",
-    strip_prefix = "bindgen-cli-x86_64-unknown-linux-gnu",
-    urls = ["https://github.com/rust-lang/rust-bindgen/releases/download/v0.69.5/bindgen-cli-x86_64-unknown-linux-gnu.tar.xz"],
-    build_file_content = """
-filegroup(
-    name = "bindgen-cli",
-    srcs = ["bindgen"],
-    visibility = ["//visibility:public"],
-)
-    """,
-)
-
-# Load prebuilt cbindgen
-maybe(
-    name = "cbindgen",
-    repo_rule = http_file,
-    sha256 = "521836d00863cb129283054e5090eb17563614e6328b7a1610e30949a05feaea",
-    urls = ["https://github.com/mozilla/cbindgen/releases/download/0.26.0/cbindgen"],
-    executable = True,
-)
-
-# Load external crates
-load("@rules_rust//crate_universe:repositories.bzl", "crate_universe_dependencies")
-
-crate_universe_dependencies()
-
-load("@rules_rust//crate_universe:defs.bzl", "crates_repository")
-
-maybe(
-    name = "crate_index",
-    repo_rule = crates_repository,
-    cargo_lockfile = "@iceoryx2//:Cargo.lock",
-    lockfile = "@iceoryx2//:Cargo.Bazel.lock",
-    manifests = [
-        "@iceoryx2//:Cargo.toml",
-        "@iceoryx2//:benchmarks/event/Cargo.toml",
-        "@iceoryx2//:benchmarks/publish-subscribe/Cargo.toml",
-        "@iceoryx2//:benchmarks/queue/Cargo.toml",
-        "@iceoryx2//:examples/Cargo.toml",
-        "@iceoryx2//:iceoryx2-log/log/Cargo.toml",
-        "@iceoryx2//:iceoryx2-log/loggers/Cargo.toml",
-        "@iceoryx2//:iceoryx2-log/types/Cargo.toml",
-        "@iceoryx2//:iceoryx2/Cargo.toml",
-        "@iceoryx2//:iceoryx2-bb/container/Cargo.toml",
-        "@iceoryx2//:iceoryx2-bb/derive-macros/Cargo.toml",
-        "@iceoryx2//:iceoryx2-bb/elementary/Cargo.toml",
-        "@iceoryx2//:iceoryx2-bb/lock-free/Cargo.toml",
-        "@iceoryx2//:iceoryx2-bb/memory/Cargo.toml",
-        "@iceoryx2//:iceoryx2-bb/posix/Cargo.toml",
-        "@iceoryx2//:iceoryx2-bb/system-types/Cargo.toml",
-        "@iceoryx2//:iceoryx2-bb/testing/Cargo.toml",
-        "@iceoryx2//:iceoryx2-bb/threadsafe/Cargo.toml",
-        "@iceoryx2//:iceoryx2-bb/trait-tests/Cargo.toml",
-        "@iceoryx2//:iceoryx2-cal/Cargo.toml",
-        "@iceoryx2//:iceoryx2-cli/Cargo.toml",
-        "@iceoryx2//:iceoryx2-ffi/ffi-macros/Cargo.toml",
-        "@iceoryx2//:iceoryx2-ffi/c/Cargo.toml",
-        "@iceoryx2//:iceoryx2-pal/concurrency-sync/Cargo.toml",
-        "@iceoryx2//:iceoryx2-pal/configuration/Cargo.toml",
-        "@iceoryx2//:iceoryx2-pal/posix/Cargo.toml",
-    ],
-)
-
-load("@crate_index//:defs.bzl", "crate_repositories")
-
-crate_repositories()
-
-
-# Load skylib rules
-BAZEL_SKYLIB_VERSION = "1.7.1"
-
-# Load skylib for custom build config
-maybe(
-    name = "bazel_skylib",
-    repo_rule = http_archive,
-    sha256 = "bc283cdfcd526a52c3201279cda4bc298652efa898b10b4db0837dc51652756f",
-    urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/{version}/bazel-skylib-{version}.tar.gz".format(version = BAZEL_SKYLIB_VERSION),
-        "https://github.com/bazelbuild/bazel-skylib/releases/download/{version}/bazel-skylib-{version}.tar.gz".format(version = BAZEL_SKYLIB_VERSION),
-    ],
-)
-
-load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
-
-bazel_skylib_workspace()
 ```
 
-### Syncing Dependencies
+### Setup via Workspace (legacy)
+
+Using iceoryx2 via Bazel Workspace is no longer supported. If you are still using
+Bazel Workspaces, import iceoryx2 library with language-specific methods or
+migrate to Bazel Modules (see [Bazel Migration Guide](https://bazel.build/external/migration)).
+
+### Initial Build
 
 For the initial build, you must sync dependencies with crates.io.
 This can be done by running one of the following commands:
@@ -157,7 +72,7 @@ build --action_env=CARGO_BAZEL_REPIN=true
 For more details, refer to the
 [Crate Universe Repinning Guide](https://bazelbuild.github.io/rules_rust/crate_universe.html#repinning--updating-dependencies-1).
 
-### Linking iceoryx2 in Your `BUILD.bazel`
+## Linking iceoryx2 in Your `BUILD.bazel`
 
 To use iceoryx2 in your Bazel project, link the appropriate static or shared
 library. For example, in `BUILD.bazel`:
@@ -182,13 +97,19 @@ cc_binary(
 * **For C++**: Use `@iceoryx2//:iceoryx2-cxx-static` or
   `@iceoryx2//:iceoryx2-cxx-shared`
 
-### Feature Flags
+## Feature Flags
 
 iceoryx2 provides several feature flags that can be configured using bazel
 build options. These flags allow you to enable or disable specific features
 when building the project.
 
-#### Enabling a Feature Flag via Command Line
+| Feature Flag            | Valid Values                 | Crate Default      |
+| ----------------------- | ---------------------------- | ------------------ |
+| dev_permissions         | auto, on, off                | auto == off        |
+| logger_log              | auto, on, off                | auto == off        |
+| logger_tracing          | auto, on, off                | auto == off        |
+
+### Enabling a Feature Flag via Command Line
 
 To set a feature flag directly from the command line during the build, use the
 following format:
@@ -203,7 +124,7 @@ For example, to enable a feature flag called `foo`, you would run:
 bazel build --@iceoryx2//:foo //...
 ```
 
-#### Setting Feature Flags in .bazelrc
+### Setting Feature Flags in .bazelrc
 
 You can also persist feature flag configurations by specifying them in the
 `.bazelrc` file. This method is useful for keeping your build settings
@@ -219,15 +140,7 @@ For instance, to enable the `foo` feature by default in `.bazelrc`, you would ad
 build --@iceoryx2//:foo=on
 ```
 
-#### List of Available Features
-
-| Feature Flag            | Valid Values                 | Crate Default      |
-| ----------------------- | ---------------------------- | ------------------ |
-| dev_permissions         | auto, on, off                | auto == off        |
-| logger_log              | auto, on, off                | auto == off        |
-| logger_tracing          | auto, on, off                | auto == off        |
-
-### Running iceory2x Tests in External Project
+## Running iceoryx2 Tests in External Project
 
 In general, the iceoryx2 tests can be run in parallel. However, there are
 exceptions, as some tests deliberately try to bring the system into an

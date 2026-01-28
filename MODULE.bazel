@@ -21,17 +21,24 @@ module(
     version = "0.8.999",
 )
 
-bazel_dep(name = "bazel_features", version = "1.30.0")
-bazel_dep(name = "bazel_skylib", version = "1.7.1")
+bazel_dep(name = "bazel_features", version = "1.32.0")
+bazel_dep(name = "bazel_skylib", version = "1.8.2")
 
 bazel_dep(name = "googletest", version = "1.14.0.bcr.1", dev_dependency = True)
 
-bazel_dep(name = "platforms", version = "0.0.11")
-bazel_dep(name = "rules_cc", version = "0.1.1")
-bazel_dep(name = "rules_rust", version = "0.58.0")
+bazel_dep(name = "platforms", version = "1.0.0")
+bazel_dep(name = "rules_cc", version = "0.2.8")
+bazel_dep(name = "rules_rust", version = "0.68.1")
+bazel_dep(name = "rules_rust_bindgen", version = "0.68.1")
+bazel_dep(name = "toolchains_llvm", version = "1.5.0")
 
-extra_deps = use_extension("//bazel:iceoryx2_deps.bzl", "iceoryx2_extra_deps")
-use_repo(extra_deps, "bindgen", "cbindgen")
+# LLVM for bindgen
+# Note: When iceoryx2 is used as a dependency (not root module), the root module
+# must set up the llvm extension and provide a bindgen toolchain.
+# When building iceoryx2 directly (as root module), we set it up here.
+llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm", dev_dependency = True)
+llvm.toolchain(llvm_version = "17.0.6")
+use_repo(llvm, "llvm_toolchain_llvm")
 
 rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
 rust.toolchain(
@@ -40,9 +47,16 @@ rust.toolchain(
 )
 use_repo(rust, "rust_toolchains")
 
-register_toolchains("@rust_toolchains//:all")
+register_toolchains(
+    "@rust_toolchains//:all",
+    "//bazel/bindgen:toolchain",
+)
 
 crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
+crate.annotation(
+    crate = "cbindgen",
+    gen_binaries = ["cbindgen"],
+)
 crate.from_cargo(
     name = "crate_index",
     cargo_lockfile = "//:Cargo.lock",
