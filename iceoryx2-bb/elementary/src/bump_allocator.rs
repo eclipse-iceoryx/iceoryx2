@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::ptr::NonNull;
+
 use crate::math::align;
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_concurrency::atomic::Ordering;
@@ -17,17 +19,17 @@ use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
 
 /// A minimalistic [`BumpAllocator`].
 pub struct BumpAllocator {
-    start: *mut u8,
+    start: NonNull<u8>,
     pos: AtomicUsize,
 }
 
 impl BumpAllocator {
     /// Creates a new [`BumpAllocator`] that manages the memory starting at `start`.
-    pub fn new(start: *mut u8) -> Self {
-        Self {
+    pub fn new(start: NonNull<u8>) -> Option<BumpAllocator> {
+        Some(Self {
             start,
-            pos: AtomicUsize::new(start as usize),
-        }
+            pos: AtomicUsize::new(start.as_ptr() as usize),
+        })
     }
 }
 
@@ -42,7 +44,7 @@ impl BaseAllocator for BumpAllocator {
         unsafe {
             Ok(core::ptr::NonNull::new_unchecked(
                 core::ptr::slice_from_raw_parts_mut(
-                    self.start.add(mem - self.start as usize),
+                    self.start.add(mem - self.start.as_ptr() as usize).as_ptr(),
                     layout.size(),
                 ),
             ))
@@ -50,6 +52,7 @@ impl BaseAllocator for BumpAllocator {
     }
 
     unsafe fn deallocate(&self, _ptr: core::ptr::NonNull<u8>, _layout: core::alloc::Layout) {
-        self.pos.store(self.start as usize, Ordering::Relaxed);
+        self.pos
+            .store(self.start.as_ptr() as usize, Ordering::Relaxed);
     }
 }

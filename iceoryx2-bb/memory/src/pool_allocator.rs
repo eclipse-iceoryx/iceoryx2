@@ -344,7 +344,12 @@ impl<const MAX_NUMBER_OF_BUCKETS: usize> FixedSizePoolAllocator<MAX_NUMBER_OF_BU
             next_free_index_plus_one: UnsafeCell::new(MAX_NUMBER_OF_BUCKETS as u32 + 1),
         };
 
-        let allocator = BumpAllocator::new(new_self.next_free_index.as_mut_ptr().cast());
+        let allocator = BumpAllocator::new(
+            core::ptr::NonNull::<u8>::new(new_self.next_free_index.as_mut_ptr().cast()).expect(
+                "Precondition failed: Pointer to next_free_index in FixedSizePoolAllocator is null",
+            ),
+        )
+        .unwrap();
         unsafe {
             new_self
                 .state

@@ -27,7 +27,11 @@
 //!
 //! const CAPACITY: usize = 128;
 //! let mut memory = [0u8; UniqueIndexSet::const_memory_size(CAPACITY)];
-//! let allocator = BumpAllocator::new(memory.as_mut_ptr());
+//! let allocator = BumpAllocator::new(
+//!     core::ptr::NonNull::<u8>::new(memory.as_mut_ptr().cast()).expect(
+//!     "Precondition failed: Memory pointer is null"),
+//! )
+//! .unwrap();
 //!
 //! let mut index_set = unsafe { UniqueIndexSet::new_uninit(CAPACITY) };
 //! unsafe { index_set.init(&allocator) }.expect("failed to allocate enough memory");
@@ -190,7 +194,9 @@ impl Drop for UniqueIndex<'_> {
 ///
 /// const CAPACITY: usize = 128;
 /// let mut memory = [0u8; UniqueIndexSet::const_memory_size(CAPACITY)];
-/// let allocator = BumpAllocator::new(memory.as_mut_ptr());
+/// let allocator = BumpAllocator::new(core::ptr::NonNull::<u8>::new(memory.as_mut_ptr().cast())
+///     .expect("Precondition failed: Pointer to memory in UniqueIndexSet is null"))
+///     .unwrap();
 ///
 /// let mut index_set = unsafe { UniqueIndexSet::new_uninit(CAPACITY) };
 /// unsafe { index_set.init(&allocator) }.expect("failed to allocate enough memory");
@@ -227,7 +233,11 @@ impl Drop for UniqueIndex<'_> {
 ///             data: [MaybeUninit::uninit(); UniqueIndexSet::const_memory_size(CAPACITY)]
 ///         };
 ///
-///         let allocator = BumpAllocator::new(new_self.data.as_mut_ptr().cast());
+///         let allocator = BumpAllocator::new(
+///             core::ptr::NonNull::<u8>::new(new_self.data.as_mut_ptr().cast()).expect(
+///             "Precondition failed: Pointer to data in UniqueIndexSet is null"),
+///         )
+///         .unwrap();
 ///         unsafe {
 ///             new_self.set.init(&allocator).expect("Enough memory provided.")
 ///         };
@@ -564,7 +574,9 @@ impl<const CAPACITY: usize> FixedSizeUniqueIndexSet<CAPACITY> {
             next_free_index_plus_one: UnsafeCell::new(capacity as u32 + 1),
         };
 
-        let allocator = BumpAllocator::new(new_self.next_free_index.as_mut_ptr().cast());
+        let allocator = BumpAllocator::new(core::ptr::NonNull::<u8>::new(new_self.next_free_index.as_mut_ptr().cast()).expect(
+            "Precondition failed: Pointer to next_free_index in FixedSizeUniqueIndexSet is null",
+        )).unwrap();
         unsafe {
             new_self
                 .state

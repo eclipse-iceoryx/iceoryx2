@@ -38,7 +38,11 @@
 //!             str_memory: [const { MaybeUninit::uninit() }; STRING_CAPACITY + 1] ,
 //!         };
 //!
-//!         let allocator = BumpAllocator::new(new_self.str_memory.as_mut_ptr().cast());
+//!         let allocator = BumpAllocator::new(
+//!         core::ptr::NonNull::<u8>::new(new_self.str_memory.as_mut_ptr().cast())
+//!         .expect("Precondition failed: Pointer to memory is null"),)
+//!         .unwrap();
+//!
 //!         unsafe {
 //!             new_self.my_str.init(&allocator).expect("Enough memory provided.")
 //!         };
@@ -60,7 +64,10 @@
 //! const MEM_SIZE: usize = RelocatableString::const_memory_size(STRING_CAPACITY);
 //! let mut memory = [0u8; MEM_SIZE];
 //!
-//! let bump_allocator = BumpAllocator::new(memory.as_mut_ptr());
+//! let bump_allocator = BumpAllocator::new(
+//!     core::ptr::NonNull::<u8>::new(memory.as_mut_ptr().cast())
+//!     .expect("Precondition failed: Pointer to memory is null"),)
+//!     .unwrap();
 //!
 //! let mut my_str = unsafe { RelocatableString::new_uninit(STRING_CAPACITY) };
 //! unsafe { my_str.init(&bump_allocator).expect("string init failed") };

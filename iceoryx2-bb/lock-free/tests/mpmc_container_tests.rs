@@ -132,7 +132,9 @@ mod mpmc_container {
         // TestType is the largest test type so it is safe to acquire this memory for every test
         // case - hack required since `T` cannot be used in const operations
         let mut memory = [0u8; Container::<crate::TestType>::const_memory_size(129_usize)];
-        let allocator = BumpAllocator::new(memory.as_mut_ptr());
+        let allocator =
+            BumpAllocator::new(core::ptr::NonNull::<u8>::new(memory.as_mut_ptr().cast()).unwrap())
+                .unwrap();
         let mut sut = unsafe { Container::<T>::new_uninit(CAPACITY) };
         unsafe { assert_that!(sut.init(&allocator), is_ok) };
 

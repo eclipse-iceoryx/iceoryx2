@@ -59,8 +59,9 @@ mod string {
             unsafe {
                 if (*self.allocator.get()).is_none() {
                     *self.allocator.get() = Some(Box::new(BumpAllocator::new(
-                        (*self.raw_memory.get()).as_mut_ptr(),
-                    )))
+                        core::ptr::NonNull::<u8>::new((*self.raw_memory.get()).as_mut_ptr().cast())
+                            .expect("Precondition failed: Pointer to data in FixedSizeIndexQueue is null"),
+                    ).unwrap()))
                 }
             };
 
@@ -98,8 +99,9 @@ mod string {
             unsafe {
                 if (*self.allocator.get()).is_none() {
                     *self.allocator.get() = Some(Box::new(BumpAllocator::new(
-                        (*self.raw_memory.get()).as_mut_ptr(),
-                    )))
+                        core::ptr::NonNull::<u8>::new((*self.raw_memory.get()).as_mut_ptr().cast())
+                            .expect("Precondition failed: Pointer to data in FixedSizeIndexQueue is null"),
+                    ).unwrap()))
                 }
             };
 

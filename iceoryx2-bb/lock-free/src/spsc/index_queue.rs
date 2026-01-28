@@ -403,7 +403,11 @@ impl<const CAPACITY: usize> FixedSizeIndexQueue<CAPACITY> {
             data: [const { UnsafeCell::new(0) }; CAPACITY],
         };
 
-        let allocator = BumpAllocator::new(new_self.data.as_mut_ptr().cast());
+        let allocator = BumpAllocator::new(
+            core::ptr::NonNull::<u8>::new(new_self.data.as_mut_ptr().cast())
+                .expect("Precondition failed: Pointer to data in FixedSizeIndexQueue is null"),
+        )
+        .unwrap();
         unsafe {
             new_self
                 .state

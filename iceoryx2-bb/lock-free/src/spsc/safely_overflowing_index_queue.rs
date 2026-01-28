@@ -451,7 +451,9 @@ impl<const CAPACITY: usize> FixedSizeSafelyOverflowingIndexQueue<CAPACITY> {
             data_plus_one: UnsafeCell::new(0),
         };
 
-        let allocator = BumpAllocator::new(new_self.data.as_mut_ptr().cast());
+        let allocator = BumpAllocator::new(core::ptr::NonNull::<u8>::new(new_self.data.as_mut_ptr().cast()).expect(
+            "Precondition failed: Pointer to data in FixedSizeSafelyOverflowingIndexQueue is null",
+        )).unwrap();
         unsafe {
             new_self
                 .state

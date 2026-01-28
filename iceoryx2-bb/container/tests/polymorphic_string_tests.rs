@@ -38,9 +38,13 @@ impl Test {
     fn allocator<'a>(&'a self) -> &'a BumpAllocator {
         unsafe {
             if (*self.allocator.get()).is_none() {
-                *self.allocator.get() = Some(Box::new(BumpAllocator::new(
-                    (*self.raw_memory.get()).as_mut_ptr(),
-                )))
+                *self.allocator.get() = Some(Box::new(
+                    BumpAllocator::new(
+                        core::ptr::NonNull::<u8>::new((*self.raw_memory.get()).as_mut_ptr().cast())
+                            .expect("Precondition failed: Pointer to memory is null"),
+                    )
+                    .unwrap(),
+                ))
             }
         };
 

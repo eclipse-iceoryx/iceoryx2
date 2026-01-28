@@ -22,7 +22,11 @@ fn double_init_call_causes_panic() {
     const CAPACITY: usize = 12;
     const MEM_SIZE: usize = RelocatableVec::<u128>::const_memory_size(CAPACITY);
     let mut memory = [0u8; MEM_SIZE];
-    let bump_allocator = BumpAllocator::new(memory.as_mut_ptr());
+    let bump_allocator = BumpAllocator::new(
+        core::ptr::NonNull::<u8>::new(memory.as_mut_ptr().cast())
+            .expect("Precondition failed: Pointer to data in memory is null"),
+    )
+    .unwrap();
     let mut sut = unsafe { RelocatableVec::<u128>::new_uninit(CAPACITY) };
     unsafe { sut.init(&bump_allocator).expect("sut init failed") };
 
@@ -44,8 +48,16 @@ fn two_vectors_with_same_content_are_equal() {
     const MEM_SIZE: usize = RelocatableVec::<usize>::const_memory_size(SUT_CAPACITY);
     let mut memory_1 = [0u8; MEM_SIZE];
     let mut memory_2 = [0u8; MEM_SIZE];
-    let bump_allocator_1 = BumpAllocator::new(memory_1.as_mut_ptr());
-    let bump_allocator_2 = BumpAllocator::new(memory_2.as_mut_ptr());
+    let bump_allocator_1 = BumpAllocator::new(
+        core::ptr::NonNull::<u8>::new(memory_1.as_mut_ptr().cast())
+            .expect("Precondition failed: Pointer to data in memory is null"),
+    )
+    .unwrap();
+    let bump_allocator_2 = BumpAllocator::new(
+        core::ptr::NonNull::<u8>::new(memory_2.as_mut_ptr().cast())
+            .expect("Precondition failed: Pointer to data in memory is null"),
+    )
+    .unwrap();
     let mut sut_1 = unsafe { RelocatableVec::<usize>::new_uninit(SUT_CAPACITY) };
     unsafe { sut_1.init(&bump_allocator_1).unwrap() };
     let mut sut_2 = unsafe { RelocatableVec::<usize>::new_uninit(SUT_CAPACITY) };
@@ -65,8 +77,16 @@ fn two_vectors_with_different_content_are_not_equal() {
     const MEM_SIZE: usize = RelocatableVec::<usize>::const_memory_size(SUT_CAPACITY);
     let mut memory_1 = [0u8; MEM_SIZE];
     let mut memory_2 = [0u8; MEM_SIZE];
-    let bump_allocator_1 = BumpAllocator::new(memory_1.as_mut_ptr());
-    let bump_allocator_2 = BumpAllocator::new(memory_2.as_mut_ptr());
+    let bump_allocator_1 = BumpAllocator::new(
+        core::ptr::NonNull::<u8>::new(memory_1.as_mut_ptr().cast())
+            .expect("Precondition failed: Pointer to data in memory is null"),
+    )
+    .unwrap();
+    let bump_allocator_2 = BumpAllocator::new(
+        core::ptr::NonNull::<u8>::new(memory_2.as_mut_ptr().cast())
+            .expect("Precondition failed: Pointer to data in memory is null"),
+    )
+    .unwrap();
     let mut sut_1 = unsafe { RelocatableVec::<usize>::new_uninit(SUT_CAPACITY) };
     unsafe { sut_1.init(&bump_allocator_1).unwrap() };
     let mut sut_2 = unsafe { RelocatableVec::<usize>::new_uninit(SUT_CAPACITY) };
@@ -88,8 +108,16 @@ fn two_vectors_with_different_len_are_not_equal() {
     const MEM_SIZE: usize = RelocatableVec::<usize>::const_memory_size(SUT_CAPACITY);
     let mut memory_1 = [0u8; MEM_SIZE];
     let mut memory_2 = [0u8; MEM_SIZE];
-    let bump_allocator_1 = BumpAllocator::new(memory_1.as_mut_ptr());
-    let bump_allocator_2 = BumpAllocator::new(memory_2.as_mut_ptr());
+    let bump_allocator_1 = BumpAllocator::new(
+        core::ptr::NonNull::<u8>::new(memory_1.as_mut_ptr().cast())
+            .expect("Precondition failed: Pointer to data in memory is null"),
+    )
+    .unwrap();
+    let bump_allocator_2 = BumpAllocator::new(
+        core::ptr::NonNull::<u8>::new(memory_2.as_mut_ptr().cast())
+            .expect("Precondition failed: Pointer to data in memory is null"),
+    )
+    .unwrap();
     let mut sut_1 = unsafe { RelocatableVec::<usize>::new_uninit(SUT_CAPACITY) };
     unsafe { sut_1.init(&bump_allocator_1).unwrap() };
     let mut sut_2 = unsafe { RelocatableVec::<usize>::new_uninit(SUT_CAPACITY) };

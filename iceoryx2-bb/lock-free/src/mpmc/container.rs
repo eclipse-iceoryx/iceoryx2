@@ -466,7 +466,12 @@ impl<T: Copy + Debug, const CAPACITY: usize> Default for FixedSizeContainer<T, C
             data: [const { UnsafeCell::new(MaybeUninit::uninit()) }; CAPACITY],
         };
 
-        let allocator = BumpAllocator::new(new_self.next_free_index.as_mut_ptr().cast());
+        let allocator = BumpAllocator::new(
+            core::ptr::NonNull::<u8>::new(new_self.next_free_index.as_mut_ptr().cast()).expect(
+                "Precondition failed: Pointer to next_free_index in FixedSizeContainer is null",
+            ),
+        )
+        .unwrap();
         unsafe {
             new_self
                 .container

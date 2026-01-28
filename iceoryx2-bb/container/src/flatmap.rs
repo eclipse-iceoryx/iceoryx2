@@ -676,7 +676,11 @@ impl<K: Eq, V: Clone, const CAPACITY: usize> PlacementDefault for FixedSizeFlatM
     unsafe fn placement_default(ptr: *mut Self) {
         let map_ptr = core::ptr::addr_of_mut!((*ptr).map);
         map_ptr.write(unsafe { RelocatableFlatMap::new_uninit(CAPACITY) });
-        let allocator = BumpAllocator::new((*ptr)._idx_to_data.as_mut_ptr().cast());
+        let allocator = BumpAllocator::new(
+            core::ptr::NonNull::<u8>::new((*ptr)._idx_to_data.as_mut_ptr().cast())
+                .expect("Precondition failed: Pointer to data in FixedSizeFlatMap is null"),
+        )
+        .unwrap();
         (*ptr)
             .map
             .init(&allocator)
@@ -715,7 +719,11 @@ impl<K: Eq, V: Clone, const CAPACITY: usize> FixedSizeFlatMap<K, V, CAPACITY> {
             _data: MaybeUninit::uninit(),
             _data_next_free_index: MaybeUninit::uninit(),
         };
-        let allocator = BumpAllocator::new(new_self._idx_to_data.as_mut_ptr().cast());
+        let allocator = BumpAllocator::new(
+            core::ptr::NonNull::<u8>::new(new_self._idx_to_data.as_mut_ptr().cast())
+                .expect("Precondition failed: Pointer to data in FixedSizeFlatMap is null"),
+        )
+        .unwrap();
         unsafe {
             new_self
                 .map

@@ -216,7 +216,11 @@ mod flat_map {
     fn double_init_call_causes_panic() {
         const MEM_SIZE: usize = RelocatableFlatMap::<u8, u8>::const_memory_size(CAPACITY);
         let mut memory = [0u8; MEM_SIZE];
-        let bump_allocator = BumpAllocator::new(memory.as_mut_ptr());
+        let bump_allocator = BumpAllocator::new(
+            core::ptr::NonNull::<u8>::new(memory.as_mut_ptr().cast())
+                .expect("Precondition failed: Pointer to memory is null"),
+        )
+        .unwrap();
 
         let mut sut = unsafe { RelocatableFlatMap::<u8, u8>::new_uninit(CAPACITY) };
         unsafe { sut.init(&bump_allocator).expect("sut init failed") };

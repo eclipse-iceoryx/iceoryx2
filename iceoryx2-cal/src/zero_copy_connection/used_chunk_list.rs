@@ -169,7 +169,11 @@ impl<const CAPACITY: usize> Default for FixedSizeUsedChunkList<CAPACITY> {
             data: [const { AtomicBool::new(false) }; CAPACITY],
         };
 
-        let allocator = BumpAllocator::new(new_self.data.as_mut_ptr().cast());
+        let allocator = BumpAllocator::new(
+            core::ptr::NonNull::<u8>::new(new_self.data.as_mut_ptr().cast())
+                .expect("Precondition failed: Pointer to data in FixedSizeUsedChunkList is null"),
+        )
+        .unwrap();
         unsafe {
             new_self
                 .list

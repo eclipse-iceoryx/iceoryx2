@@ -243,7 +243,11 @@ mod slot_map {
     fn double_init_call_causes_panic() {
         const MEM_SIZE: usize = RelocatableSlotMap::<usize>::const_memory_size(SUT_CAPACITY);
         let mut memory = [0u8; MEM_SIZE];
-        let bump_allocator = BumpAllocator::new(memory.as_mut_ptr());
+        let bump_allocator = BumpAllocator::new(
+            core::ptr::NonNull::<u8>::new(memory.as_mut_ptr().cast())
+                .expect("Precondition failed: Pointer to memory is null"),
+        )
+        .unwrap();
 
         let mut sut = unsafe { RelocatableSlotMap::<usize>::new_uninit(SUT_CAPACITY) };
         unsafe { sut.init(&bump_allocator).expect("sut init failed") };

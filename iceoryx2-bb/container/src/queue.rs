@@ -80,7 +80,11 @@
 //!             queue_memory: [const { MaybeUninit::uninit() }; QUEUE_CAPACITY] ,
 //!         };
 //!
-//!         let allocator = BumpAllocator::new(new_self.queue_memory.as_mut_ptr().cast());
+//!         let allocator = BumpAllocator::new(
+//!         core::ptr::NonNull::<u8>::new(new_self.queue_memory.as_mut_ptr().cast())
+//!         .expect("Precondition failed: Pointer to memory is null"),)
+//!         .unwrap();
+//!
 //!         unsafe {
 //!             new_self.queue.init(&allocator).expect("Enough memory provided.")
 //!         };
@@ -103,7 +107,10 @@
 //! const MEM_SIZE: usize = RelocatableQueue::<u128>::const_memory_size(QUEUE_CAPACITY);
 //! let mut memory = [0u8; MEM_SIZE];
 //!
-//! let bump_allocator = BumpAllocator::new(memory.as_mut_ptr());
+//! let bump_allocator = BumpAllocator::new(
+//!     core::ptr::NonNull::<u8>::new(memory.as_mut_ptr().cast())
+//!     .expect("Precondition failed: Pointer to memory is null"),)
+//!     .unwrap();
 //!
 //! let mut queue = unsafe { RelocatableQueue::<u128>::new_uninit(QUEUE_CAPACITY) };
 //! unsafe { queue.init(&bump_allocator).expect("queue init failed") };
@@ -472,7 +479,9 @@ impl<T, const CAPACITY: usize> PlacementDefault for FixedSizeQueue<T, CAPACITY> 
         let state_ptr = core::ptr::addr_of_mut!((*ptr).state);
         state_ptr.write(RelocatableQueue::new_uninit(CAPACITY));
 
-        let allocator = BumpAllocator::new((*ptr)._data.as_mut_ptr().cast());
+        let allocator = BumpAllocator::new(core::ptr::NonNull::<u8>::new((*ptr)._data.as_mut_ptr().cast()).expect(
+            "Precondition failed: Pointer to data in FixedSizeQueue (placement_default) is null",
+        )).unwrap();
         (*ptr)
             .state
             .init(&allocator)
@@ -487,7 +496,11 @@ impl<T, const CAPACITY: usize> Default for FixedSizeQueue<T, CAPACITY> {
             _data: unsafe { MaybeUninit::uninit().assume_init() },
         };
 
-        let allocator = BumpAllocator::new(new_self._data.as_mut_ptr().cast());
+        let allocator = BumpAllocator::new(
+            core::ptr::NonNull::<u8>::new(new_self._data.as_mut_ptr().cast())
+                .expect("Precondition failed: Pointer to data in FixedSizeQueue (default) is null"),
+        )
+        .unwrap();
         unsafe {
             new_self
                 .state
