@@ -13,11 +13,7 @@ version = { workspace = true }
 [features]
 default = []
 
-# Use the std module
 std = ["iceoryx2-pal-print/std"]
-
-# Use POSIX APIs
-posix = ["iceoryx2-pal-print/posix"]
 
 [dependencies]
 iceoryx2-pal-print = { workspace = true }
