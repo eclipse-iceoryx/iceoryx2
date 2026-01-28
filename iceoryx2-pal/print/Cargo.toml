@@ -12,15 +12,15 @@ version = { workspace = true }
 
 [features]
 default = []
-
-# Use the std module
 std = []
 
-# Use POSIX APIs
-posix = ["iceoryx2-pal-posix"]
-
 [dependencies]
-iceoryx2-pal-posix = { workspace = true, optional = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+iceoryx2-pal-posix = { workspace = true }
+
+[target.'cfg(target_os = "nto")'.dependencies]
+iceoryx2-pal-posix = { workspace = true }
 
 [lints]
 workspace = true
