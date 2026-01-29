@@ -16,15 +16,9 @@ workspace = true
 [features]
 default = []
 
-# Use the std module
 std = [
   "iceoryx2-bb-print/std",
   "iceoryx2-pal-concurrency-sync/std"
-]
-# Use POSIX APIs
-posix = [
-  "iceoryx2-bb-print/posix",
-  "iceoryx2-pal-posix"
 ]
 
 # Enables logging to buffer
@@ -46,3 +40,9 @@ iceoryx2-pal-concurrency-sync = { workspace = true }
 
 log = { workspace = true, optional = true }
 tracing = { workspace = true, optional = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+iceoryx2-pal-posix = { workspace = true }
+
+[target.'cfg(target_os = "nto")'.dependencies]
+iceoryx2-pal-posix = { workspace = true }

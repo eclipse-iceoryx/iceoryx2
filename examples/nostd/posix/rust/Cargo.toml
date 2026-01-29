@@ -17,7 +17,7 @@ posix-nostd-publish-subscribe = { path = "publish-subscribe/" }
 posix-nostd-event = { path = "event/" }
 
 iceoryx2 = { path = "../../../../iceoryx2/", default-features = false }
-iceoryx2-bb-loggers = { path = "../../../../iceoryx2-bb/loggers", default-features = false, features = ["posix", "console"]}
+iceoryx2-bb-loggers = { path = "../../../../iceoryx2-bb/loggers", default-features = false, features = ["console"]}
 iceoryx2-bb-elementary-traits = { path = "../../../../iceoryx2-bb/elementary-traits" }
 iceoryx2-bb-memory = { path = "../../../../iceoryx2-bb/memory" }
 iceoryx2-bb-posix = { path = "../../../../iceoryx2-bb/posix" }
