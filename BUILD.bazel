@@ -74,7 +74,7 @@ selects.config_setting_group(
 
 string_flag(
     name = "feature_dev_permissions",
-    build_setting_default = "auto",
+    build_setting_default = "off",
     visibility = ["//visibility:public"],
 )
 
@@ -103,7 +103,7 @@ selects.config_setting_group(
 
 string_flag(
     name = "feature_logger_buffer",
-    build_setting_default = "auto",
+    build_setting_default = "off",
     visibility = ["//visibility:public"],
 )
 config_setting(
@@ -129,7 +129,7 @@ selects.config_setting_group(
 
 string_flag(
     name = "feature_logger_file",
-    build_setting_default = "auto",
+    build_setting_default = "off",
     visibility = ["//visibility:public"],
 )
 config_setting(
@@ -155,7 +155,7 @@ selects.config_setting_group(
 
 string_flag(
     name = "feature_logger_console",
-    build_setting_default = "auto",
+    build_setting_default = "no",
     visibility = ["//visibility:public"],
 )
 config_setting(
@@ -181,7 +181,7 @@ selects.config_setting_group(
 
 string_flag(
     name = "feature_logger_log",
-    build_setting_default = "auto",
+    build_setting_default = "off",
     visibility = ["//visibility:public"],
 )
 
@@ -210,7 +210,7 @@ selects.config_setting_group(
 
 string_flag(
     name = "feature_logger_tracing",
-    build_setting_default = "auto",
+    build_setting_default = "off",
     visibility = ["//visibility:public"],
 )
 
