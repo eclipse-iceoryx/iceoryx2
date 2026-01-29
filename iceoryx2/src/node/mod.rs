@@ -439,12 +439,13 @@ impl<Service: service::Service> NodeState<Service> {
 /// could not be cleaned up.
 /// This does not have to be an error, for instance when the current process does not
 /// have the permission to access the corresponding resources.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ZeroCopySend)]
+#[repr(C)]
 pub struct CleanupState {
     /// The number of successful dead node cleanups
-    pub cleanups: usize,
+    pub cleanups: u64,
     /// The number of failed dead node cleanups
-    pub failed_cleanups: usize,
+    pub failed_cleanups: u64,
 }
 
 /// Contains all available details of a [`Node`].
