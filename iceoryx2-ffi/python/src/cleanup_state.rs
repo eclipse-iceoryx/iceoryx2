@@ -24,13 +24,13 @@ pub struct CleanupState(pub(crate) iceoryx2::node::CleanupState);
 impl CleanupState {
     #[getter]
     /// The number of successful dead node cleanups
-    pub fn cleanups(&self) -> usize {
+    pub fn cleanups(&self) -> u64 {
         self.0.cleanups
     }
 
     #[getter]
     /// The number of failed dead node cleanups
-    pub fn failed_cleanups(&self) -> usize {
+    pub fn failed_cleanups(&self) -> u64 {
         self.0.failed_cleanups
     }
 }
