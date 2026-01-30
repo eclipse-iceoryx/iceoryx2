@@ -28,6 +28,8 @@ def _get_unsigned_int_type_name(t: Type[T]) -> Any:
         return "u32"
     if ctypes.sizeof(t) == 8:
         return "u64"
+    if ctypes.sizeof(t) == 16:
+        return "u128"
 
     return t.__name__
 
@@ -42,6 +44,8 @@ def _get_signed_int_type_name(t: Type[T]) -> Any:
         return "i32"
     if ctypes.sizeof(t) == 8:
         return "i64"
+    if ctypes.sizeof(t) == 16:
+        return "i128"
 
     return t.__name__
 
