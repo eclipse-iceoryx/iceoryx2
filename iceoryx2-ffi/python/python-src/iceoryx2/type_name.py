@@ -52,6 +52,8 @@ def get_float_type_name(t: Type[T]) -> Any:
         return "f32"
     if ctypes.sizeof(t) == 8:
         return "f64"
+    if ctypes.sizeof(t) == 16:
+        return "f128"
 
     return t.__name__
 
@@ -61,11 +63,11 @@ def get_type_name(t: Type[T]) -> Any:
     if hasattr(t, "type_name"):
         return t.type_name()
 
-    if t.__name__ in ("c_ubyte", "c_ushort", "c_uint", "c_ulong"):
+    if t.__name__ in ("c_ubyte", "c_ushort", "c_uint", "c_ulong", "c_ulonglong"):
         return get_unsigned_int_type_name(t)
-    if t.__name__ in ("c_byte", "c_short", "c_int", "c_long"):
+    if t.__name__ in ("c_byte", "c_short", "c_int", "c_long", "c_longlong"):
         return get_signed_int_type_name(t)
-    if t.__name__ in ("c_float", "c_double"):
+    if t.__name__ in ("c_float", "c_double", "c_longdouble"):
         return get_float_type_name(t)
     if t.__name__ == "c_bool":
         return "bool"
