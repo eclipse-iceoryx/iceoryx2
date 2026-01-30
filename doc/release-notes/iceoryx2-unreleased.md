@@ -55,6 +55,8 @@
   [#1321](https://github.com/eclipse-iceoryx/iceoryx2/issues/1321)
 * Remove `posix` feature and use `cfg` switch based on target instead
   [#1327](https://github.com/eclipse-iceoryx/iceoryx2/issues/1327)
+* `CleanupState` implements `ZeroCopySend`
+  [#1331](https://github.com/eclipse-iceoryx/iceoryx2/issues/1331)
 
 ### Workflow
 
