@@ -183,11 +183,19 @@ jobs:
   python-bindings:
     needs: [preflight-check, static-code-analysis, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest,windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
 
+      - name: Prepare Windows
+        if: ${{ runner.os == 'Windows' }}
+        run: internal\scripts\ci_prepare_windows.ps1
+
       - name: Prepare Linux
+        if: ${{ runner.os == 'Linux' }}
         run: |
           internal/scripts/ci_prepare_ubuntu.sh
           uname -a
@@ -198,6 +206,10 @@ jobs:
           python-version: "3.13"
       - run: pip install poetry==2.2.1
       - run: pip install poetry-plugin-shell==1.0.1
+
+      - name: Install Global Plugins # (needed for windows due to separate C:\ and D:\ drives)
+        if: runner.os == 'Windows'
+        run: poetry self add "poethepoet[poetry-plugin]>=0.35.0,<0.36.0"
 
       - name: Install Python Dependencies
         run: poetry --project iceoryx2-ffi/python install
