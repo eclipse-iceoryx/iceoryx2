@@ -63,9 +63,31 @@ def get_type_name(t: Type[T]) -> Any:
     if hasattr(t, "type_name"):
         return t.type_name()
 
-    if t.__name__ in ("c_ubyte", "c_ushort", "c_uint", "c_ulong", "c_ulonglong"):
+    if t.__name__ in (
+        "c_ubyte",
+        "c_ushort",
+        "c_uint",
+        "c_ulong",
+        "c_ulonglong",
+        "c_uint8",
+        "c_uint16",
+        "c_uint32",
+        "c_uint64",
+        "size_t",
+    ):
         return get_unsigned_int_type_name(t)
-    if t.__name__ in ("c_byte", "c_short", "c_int", "c_long", "c_longlong"):
+    if t.__name__ in (
+        "c_byte",
+        "c_short",
+        "c_int",
+        "c_long",
+        "c_longlong",
+        "c_int8",
+        "c_int16",
+        "c_int32",
+        "c_int64",
+        "ssize_t",
+    ):
         return get_signed_int_type_name(t)
     if t.__name__ in ("c_float", "c_double", "c_longdouble"):
         return get_float_type_name(t)
