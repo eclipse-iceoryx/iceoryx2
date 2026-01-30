@@ -24,6 +24,7 @@ def test_type_names_are_translated_correctly() -> None:
     if ctypes.sizeof(ctypes.c_longdouble) == 16:
         assert iox2.get_type_name(ctypes.c_longdouble) == "f128"
 
+
 def test_integer_type_names_are_translated_correctly() -> None:
     if ctypes.sizeof(ctypes.c_ubyte) == 1:
         assert iox2.get_type_name(ctypes.c_ubyte) == "u8"
@@ -62,6 +63,7 @@ def test_integer_type_names_are_translated_correctly() -> None:
         assert iox2.get_type_name(ctypes.c_longlong) == "i64"
     elif ctypes.sizeof(ctypes.c_longlong) == 16:
         assert iox2.get_type_name(ctypes.c_longlong) == "i128"
+
 
 def test_fixed_size_integer_type_names_are_translated_correctly() -> None:
     assert iox2.get_type_name(ctypes.c_uint8) == "u8"
