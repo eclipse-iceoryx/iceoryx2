@@ -207,6 +207,10 @@ jobs:
       - run: pip install poetry==2.2.1
       - run: pip install poetry-plugin-shell==1.0.1
 
+      - name: Install Global Plugins # (needed for windows due to separate C:\ and D:\ drives)
+        if: runner.os == 'Windows'
+        run: poetry self add "poethepoet[poetry-plugin]>=0.35.0,<0.36.0"
+
       - name: Install Python Dependencies
         run: poetry --project iceoryx2-ffi/python install
 
