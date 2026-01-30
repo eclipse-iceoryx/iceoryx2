@@ -18,7 +18,7 @@ from typing import Any, Type, TypeVar
 T = TypeVar("T")
 
 
-def get_unsigned_int_type_name(t: Type[T]) -> Any:
+def _get_unsigned_int_type_name(t: Type[T]) -> Any:
     """Generates a human readable type name from a given unsigned integer type."""
     if ctypes.sizeof(t) == 1:
         return "u8"
@@ -32,7 +32,7 @@ def get_unsigned_int_type_name(t: Type[T]) -> Any:
     return t.__name__
 
 
-def get_signed_int_type_name(t: Type[T]) -> Any:
+def _get_signed_int_type_name(t: Type[T]) -> Any:
     """Generates a human readable type name from a given signed integer type."""
     if ctypes.sizeof(t) == 1:
         return "i8"
@@ -46,7 +46,7 @@ def get_signed_int_type_name(t: Type[T]) -> Any:
     return t.__name__
 
 
-def get_float_type_name(t: Type[T]) -> Any:
+def _get_float_type_name(t: Type[T]) -> Any:
     """Generates a human readable type name from a given float type."""
     if ctypes.sizeof(t) == 4:
         return "f32"
@@ -75,7 +75,7 @@ def get_type_name(t: Type[T]) -> Any:
         "c_uint64",
         "size_t",
     ):
-        return get_unsigned_int_type_name(t)
+        return _get_unsigned_int_type_name(t)
     if t.__name__ in (
         "c_byte",
         "c_short",
@@ -88,9 +88,9 @@ def get_type_name(t: Type[T]) -> Any:
         "c_int64",
         "ssize_t",
     ):
-        return get_signed_int_type_name(t)
+        return _get_signed_int_type_name(t)
     if t.__name__ in ("c_float", "c_double", "c_longdouble"):
-        return get_float_type_name(t)
+        return _get_float_type_name(t)
     if t.__name__ == "c_bool":
         return "bool"
 
