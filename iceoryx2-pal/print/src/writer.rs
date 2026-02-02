@@ -71,7 +71,7 @@ impl IsTerminal for Stderr {
     }
 }
 
-#[cfg(feature = "posix")]
+#[cfg(all(not(feature = "std"), any(target_os = "linux", target_os = "nto",)))]
 impl Write for Stdout {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         use iceoryx2_pal_posix::*;
@@ -92,14 +92,14 @@ impl Write for Stdout {
     }
 }
 
-#[cfg(feature = "posix")]
+#[cfg(all(not(feature = "std"), any(target_os = "linux", target_os = "nto",)))]
 impl IsTerminal for Stdout {
     fn is_terminal(&self) -> bool {
         true
     }
 }
 
-#[cfg(feature = "posix")]
+#[cfg(all(not(feature = "std"), any(target_os = "linux", target_os = "nto",)))]
 impl Write for Stderr {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         use iceoryx2_pal_posix::*;
@@ -120,35 +120,47 @@ impl Write for Stderr {
     }
 }
 
-#[cfg(feature = "posix")]
+#[cfg(all(not(feature = "std"), any(target_os = "linux", target_os = "nto",)))]
 impl IsTerminal for Stderr {
     fn is_terminal(&self) -> bool {
         true
     }
 }
 
-#[cfg(not(any(feature = "std", feature = "posix")))]
+#[cfg(all(
+    not(feature = "std"),
+    not(any(target_os = "linux", target_os = "nto",))
+))]
 impl Write for Stdout {
     fn write_str(&mut self, _s: &str) -> fmt::Result {
         Ok(())
     }
 }
 
-#[cfg(not(any(feature = "std", feature = "posix")))]
+#[cfg(all(
+    not(feature = "std"),
+    not(any(target_os = "linux", target_os = "nto",))
+))]
 impl IsTerminal for Stdout {
     fn is_terminal(&self) -> bool {
         false
     }
 }
 
-#[cfg(not(any(feature = "std", feature = "posix")))]
+#[cfg(all(
+    not(feature = "std"),
+    not(any(target_os = "linux", target_os = "nto",))
+))]
 impl Write for Stderr {
     fn write_str(&mut self, _s: &str) -> fmt::Result {
         Ok(())
     }
 }
 
-#[cfg(not(any(feature = "std", feature = "posix")))]
+#[cfg(all(
+    not(feature = "std"),
+    not(any(target_os = "linux", target_os = "nto",))
+))]
 impl IsTerminal for Stderr {
     fn is_terminal(&self) -> bool {
         false

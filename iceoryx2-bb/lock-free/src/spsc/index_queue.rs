@@ -111,13 +111,13 @@ pub mod details {
     #[repr(C)]
     #[derive(Debug)]
     pub struct IndexQueue<PointerType: PointerTrait<UnsafeCell<u64>>> {
-        data_ptr: PointerType,
-        capacity: usize,
         write_position: AtomicU64,
         read_position: AtomicU64,
         pub(super) has_producer: AtomicBool,
         pub(super) has_consumer: AtomicBool,
         is_memory_initialized: AtomicBool,
+        capacity: usize,
+        data_ptr: PointerType,
     }
 
     unsafe impl<PointerType: PointerTrait<UnsafeCell<u64>>> Sync for IndexQueue<PointerType> {}

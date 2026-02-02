@@ -160,9 +160,9 @@ pub mod details {
     #[derive(Debug)]
     #[repr(C)]
     struct Channel {
-        submission_queue: RelocatableSafelyOverflowingIndexQueue,
-        completion_queue: RelocatableIndexQueue,
         state: AtomicU64,
+        completion_queue: RelocatableIndexQueue,
+        submission_queue: RelocatableSafelyOverflowingIndexQueue,
     }
 
     impl Channel {

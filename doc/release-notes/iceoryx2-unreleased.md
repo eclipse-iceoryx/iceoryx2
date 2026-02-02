@@ -35,6 +35,8 @@
   [#1312](https://github.com/eclipse-iceoryx/iceoryx2/issues/1312)
 * Bump wheel from 0.45.1 to 0.46.3 in /iceoryx2-ffi/python
   [#1316](https://github.com/eclipse-iceoryx/iceoryx2/issues/1316)
+* Fix Python type translation for integer types (32-bit)
+  [#1333](https://github.com/eclipse-iceoryx/iceoryx2/issues/1333)
 
 ### Refactoring
 
@@ -42,6 +44,8 @@
     NOTE: Add new entries sorted by issue number to minimize the possibility of
     conflicts when merging.
 -->
+* Remove support for Bazel Workspaces
+  [#1263](https://github.com/eclipse-iceoryx/iceoryx2/issues/1263)
 * Adjust test names to naming convention
   [#1273](https://github.com/eclipse-iceoryx/iceoryx2/issues/1273)
 * Move character output abstraction into their own crate
@@ -51,8 +55,10 @@
 * Replace `lazy_static` dependency with `LazyLock` from `std` in `std` builds or
   a custom minimal spin-based implementation for `no_std` builds
   [#1321](https://github.com/eclipse-iceoryx/iceoryx2/issues/1321)
-* Remove support for Bazel Workspaces
-  [#1263](https://github.com/eclipse-iceoryx/iceoryx2/issues/1263)
+* Remove `posix` feature and use `cfg` switch based on target instead
+  [#1327](https://github.com/eclipse-iceoryx/iceoryx2/issues/1327)
+* `CleanupState` implements `ZeroCopySend`
+  [#1331](https://github.com/eclipse-iceoryx/iceoryx2/issues/1331)
 
 ### Workflow
 
