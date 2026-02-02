@@ -1,0 +1,23 @@
+[package]
+name = "iceoryx2-bb-testing-nostd"
+description = "iceoryx2: [internal] utilities for no_std testing"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[features]
+default = []
+
+# Required to enable building the entire workspace with std enabled
+std = []
+
+[dependencies]
+iceoryx2-pal-print = { workspace = true }
+iceoryx2-pal-posix = { workspace = true }
+
+inventory = { workspace = true }
