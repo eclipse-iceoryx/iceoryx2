@@ -216,7 +216,7 @@ macro_rules! assert_that {
         {
             let lval = $lhs.as_secs_f32();
             let rval = $rhs.as_secs_f32();
-            let rval_adjusted = rval * (1.0 - iceoryx2_pal_testing::AT_LEAST_TIMING_VARIANCE).clamp(0.0, 1.0);
+            let rval_adjusted = rval * (1.0 - $crate::AT_LEAST_TIMING_VARIANCE).clamp(0.0, 1.0);
 
             if !(lval >= rval_adjusted) {
                 assert_that!(message_time_at_least $lhs, $rhs, lval, rval, rval_adjusted);
@@ -225,29 +225,40 @@ macro_rules! assert_that {
     };
     ($call:expr, block_until $rhs:expr) => {
         {
-            let watchdog = iceoryx2_pal_testing::watchdog::Watchdog::new();
+            #[cfg(feature = "std")]
+            {
+                let _watchdog = $crate::watchdog::Watchdog::new();
 
-            while $call() != $rhs {
-                std::thread::yield_now();
-                std::thread::sleep(core::time::Duration::from_millis(10));
-                std::thread::yield_now();
+                while $call() != $rhs {
+                    std::thread::yield_now();
+                    std::thread::sleep(core::time::Duration::from_millis(10));
+                    std::thread::yield_now();
+                }
+            }
+
+            #[cfg(not(feature = "std"))]
+            {
+                ::core::compile_error!(
+                    "Assertion 'block_until' requires std. Annotate this test with #[requires_std] \
+                     and ensure the \"std\" feature is enabled."
+                );
             }
         }
     };
     [color_start] => {
         {
-            use std::io::IsTerminal;
-            if std::io::stderr().is_terminal() {
+            use $crate::internal::IsTerminal;
+            if $crate::internal::stderr().is_terminal() {
                 "\x1b[1;4;33m"
             } else {
                 ""
             }
         }
-   };
+    };
     [color_end] => {
         {
-            use std::io::IsTerminal;
-            if std::io::stderr().is_terminal() {
+            use $crate::internal::IsTerminal;
+            if $crate::internal::stderr().is_terminal() {
                 "\x1b[0m"
             } else {
                 ""
