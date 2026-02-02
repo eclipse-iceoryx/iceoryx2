@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![cfg_attr(not(feature = "std"), no_std)]
 #![warn(clippy::alloc_instead_of_core)]
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
@@ -19,6 +20,7 @@ extern crate alloc;
 #[macro_use]
 pub mod assert;
 pub mod memory;
+#[cfg(feature = "std")]
 pub mod watchdog;
 
 #[macro_export(local_inner_macros)]
@@ -41,3 +43,8 @@ macro_rules! test_fail {
 }
 
 pub const AT_LEAST_TIMING_VARIANCE: f32 = iceoryx2_pal_configuration::AT_LEAST_TIMING_VARIANCE;
+
+pub mod internal {
+    pub use iceoryx2_pal_print::stderr;
+    pub use iceoryx2_pal_print::IsTerminal;
+}
