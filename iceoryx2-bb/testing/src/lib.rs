@@ -10,11 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![cfg_attr(not(feature = "std"), no_std)]
 #![warn(clippy::alloc_instead_of_core)]
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 
-pub use iceoryx2_pal_testing::*;
+extern crate alloc;
 
+pub use iceoryx2_pal_testing::*;
 pub mod instantiate_conformance_tests_macro;
 pub mod lifetime_tracker;
