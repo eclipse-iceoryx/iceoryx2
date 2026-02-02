@@ -1,4 +1,4 @@
-// Copyright (c) 2024 Contributors to the Eclipse Foundation
+// Copyright (c) 2026 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -11,77 +11,48 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use std::sync::{Mutex, MutexGuard};
 
-static CREATION_COUNTER: Mutex<usize> = Mutex::new(0);
-static DROP_COUNTER: Mutex<usize> = Mutex::new(0);
+#[cfg(feature = "std")]
+use std::sync::MutexGuard;
 
-static DROP_ORDER: Mutex<Vec<usize>> = Mutex::new(vec![]);
-static TRACKING_LOCK: Mutex<LifetimeTrackingState> = Mutex::new(LifetimeTrackingState {});
+#[cfg(not(feature = "std"))]
+use iceoryx2_bb_concurrency::spin_lock::SpinLockGuard as MutexGuard;
 
-pub struct LifetimeTrackingState {}
+#[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(transparent)]
+pub struct LifetimeTracker(internal::LifetimeTracker);
 
-impl LifetimeTrackingState {
-    pub fn number_of_living_instances(&self) -> usize {
-        *CREATION_COUNTER.lock().unwrap() - *DROP_COUNTER.lock().unwrap()
-    }
+impl core::ops::Deref for LifetimeTracker {
+    type Target = internal::LifetimeTracker;
 
-    pub fn drop_order(&self) -> Vec<usize> {
-        DROP_ORDER.lock().unwrap().clone()
-    }
-}
-
-#[repr(C)]
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct LifetimeTracker {
-    pub value: usize,
-}
-
-impl Default for LifetimeTracker {
-    fn default() -> Self {
-        *CREATION_COUNTER.lock().unwrap() += 1;
-
-        Self { value: 0 }
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
-#[doc(hidden)]
-// ZeroCopySend can be derived because LifetimeTracker is only used for process local test purposes
-unsafe impl ZeroCopySend for LifetimeTracker {}
+impl core::ops::DerefMut for LifetimeTracker {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
 
 impl LifetimeTracker {
     pub fn new() -> Self {
-        Self::default()
+        Self(internal::LifetimeTracker::new())
     }
 
     pub fn new_with_value(value: usize) -> Self {
-        let mut new_self = Self::new();
-        new_self.value = value;
-        new_self
+        Self(internal::LifetimeTracker::new_with_value(value))
     }
 
-    pub fn start_tracking() -> MutexGuard<'static, LifetimeTrackingState> {
-        let guard = TRACKING_LOCK.lock().unwrap();
-
-        *CREATION_COUNTER.lock().unwrap() = 0;
-        *DROP_COUNTER.lock().unwrap() = 0;
-        DROP_ORDER.lock().unwrap().clear();
-
-        guard
+    pub fn start_tracking() -> MutexGuard<'static, internal::LifetimeTrackingState> {
+        internal::LifetimeTracker::start_tracking()
     }
 }
 
-impl Clone for LifetimeTracker {
-    fn clone(&self) -> Self {
-        let mut new_self = Self::new();
-        new_self.value = self.value;
-        new_self
-    }
-}
+unsafe impl ZeroCopySend for LifetimeTracker {}
 
-impl Drop for LifetimeTracker {
-    fn drop(&mut self) {
-        *DROP_COUNTER.lock().unwrap() += 1;
-        DROP_ORDER.lock().unwrap().push(self.value);
-    }
+mod internal {
+    pub use iceoryx2_pal_testing::lifetime_tracker::LifetimeTracker;
+    pub use iceoryx2_pal_testing::lifetime_tracker::LifetimeTrackingState;
 }

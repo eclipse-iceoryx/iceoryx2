@@ -19,6 +19,7 @@ extern crate alloc;
 
 #[macro_use]
 pub mod assert;
+pub mod lifetime_tracker;
 pub mod memory;
 #[cfg(feature = "std")]
 pub mod watchdog;
@@ -36,7 +37,7 @@ macro_rules! test_fail {
         core::panic!(
             "test failed: {} {} {}",
             assert_that![color_start],
-            std::format_args!($($e),*).to_string(),
+            alloc::format!($($e),*),
             assert_that![color_end]
         )
     };
