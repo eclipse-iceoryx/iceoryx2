@@ -10,14 +10,22 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_elementary_tests_common::scope_guard_tests;
+#![allow(clippy::disallowed_types)]
 
-#[test]
-pub fn scope_guard_callbacks_are_called_correctly_success_case() {
-    scope_guard_tests::scope_guard_callbacks_are_called_correctly_success_case();
+use iceoryx2_bb_elementary_tests_common::cyclic_tagger_tests;
+use iceoryx2_bb_testing_nostd_macros::inventory_test;
+
+#[inventory_test]
+pub fn create_tag_works() {
+    cyclic_tagger_tests::create_tag_works();
 }
 
-#[test]
-pub fn scope_guard_callbacks_are_called_correctly_failure_case() {
-    scope_guard_tests::scope_guard_callbacks_are_called_correctly_failure_case();
+#[inventory_test]
+pub fn create_untagged_tag_works() {
+    cyclic_tagger_tests::create_untagged_tag_works();
+}
+
+#[inventory_test]
+pub fn tagging_after_new_cyclic_works() {
+    cyclic_tagger_tests::tagging_after_new_cyclic_works();
 }

@@ -10,14 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_elementary_tests_common::scope_guard_tests;
+#![no_std]
 
-#[test]
-pub fn scope_guard_callbacks_are_called_correctly_success_case() {
-    scope_guard_tests::scope_guard_callbacks_are_called_correctly_success_case();
-}
-
-#[test]
-pub fn scope_guard_callbacks_are_called_correctly_failure_case() {
-    scope_guard_tests::scope_guard_callbacks_are_called_correctly_failure_case();
-}
+pub mod alignment_tests;
+pub mod bump_allocator_tests;
+pub mod cyclic_tagger_tests;
+pub mod math_tests;
+pub mod package_version_tests;
+pub mod relocatable_ptr_tests;
+pub mod scope_guard_tests;
+pub mod unique_id_tests;

@@ -10,24 +10,27 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_elementary_tests_common::bump_allocator_tests;
+#![allow(clippy::disallowed_types)]
 
-#[test]
+use iceoryx2_bb_elementary_tests_common::bump_allocator_tests;
+use iceoryx2_bb_testing_nostd_macros::inventory_test;
+
+#[inventory_test]
 pub fn start_position_is_correctly_used() {
     bump_allocator_tests::start_position_is_correctly_used();
 }
 
-#[test]
+#[inventory_test]
 pub fn allocated_memory_is_correctly_aligned() {
     bump_allocator_tests::allocated_memory_is_correctly_aligned();
 }
 
-#[test]
+#[inventory_test]
 pub fn allocating_many_aligned_chunks_work() {
     bump_allocator_tests::allocating_many_aligned_chunks_work();
 }
 
-#[test]
+#[inventory_test]
 pub fn deallocating_releases_everything() {
     bump_allocator_tests::deallocating_releases_everything();
 }

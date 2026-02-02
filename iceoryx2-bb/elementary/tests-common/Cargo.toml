@@ -1,6 +1,6 @@
 [package]
-name = "iceoryx2-bb-elementary"
-description = "iceoryx2: [internal] elementary constructs that have (almost) no dependencies at all"
+name = "iceoryx2-bb-elementary-tests-common"
+description = "iceoryx2: [internal] common test definitions for iceoryx2-bb-elementary"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
@@ -14,22 +14,15 @@ version = { workspace = true }
 workspace = true
 
 [features]
-default = ["std"]
-
+default = []
 std = [
+  "iceoryx2-bb-elementary/std",
   "iceoryx2-bb-concurrency/std",
+  "iceoryx2-bb-testing/std",
 ]
 
 [dependencies]
+iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-concurrency = { workspace = true }
 iceoryx2-bb-elementary-traits = { workspace = true }
-
-[dev-dependencies]
-iceoryx2-bb-elementary-tests-common = { workspace = true }
-iceoryx2-bb-loggers = { workspace = true }
-iceoryx2-bb-memory = { workspace = true }
 iceoryx2-bb-testing = { workspace = true }
-iceoryx2-bb-testing-nostd-macros = { workspace = true }
-iceoryx2-bb-testing-nostd = { workspace = true }
-
-generic-tests = { workspace = true }

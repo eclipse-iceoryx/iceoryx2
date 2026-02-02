@@ -10,24 +10,27 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_elementary_tests_common::math_tests;
+#![allow(clippy::disallowed_types)]
 
-#[test]
+use iceoryx2_bb_elementary_tests_common::math_tests;
+use iceoryx2_bb_testing_nostd_macros::inventory_test;
+
+#[inventory_test]
 pub fn math_align_returns_input_when_already_aligned() {
     math_tests::math_align_returns_input_when_already_aligned();
 }
 
-#[test]
+#[inventory_test]
 pub fn math_align_returns_input_to_next_greater_value() {
     math_tests::math_align_returns_input_to_next_greater_value();
 }
 
-#[test]
+#[inventory_test]
 pub fn math_dec_to_64() {
     math_tests::math_dec_to_64();
 }
 
-#[test]
+#[inventory_test]
 pub fn const_max_works() {
     math_tests::const_max_works();
 }

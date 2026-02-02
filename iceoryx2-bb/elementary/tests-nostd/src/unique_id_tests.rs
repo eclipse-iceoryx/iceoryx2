@@ -10,14 +10,17 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_elementary_tests_common::scope_guard_tests;
+#![allow(clippy::disallowed_types)]
 
-#[test]
-pub fn scope_guard_callbacks_are_called_correctly_success_case() {
-    scope_guard_tests::scope_guard_callbacks_are_called_correctly_success_case();
+use iceoryx2_bb_elementary_tests_common::unique_id_tests;
+use iceoryx2_bb_testing_nostd_macros::inventory_test;
+
+#[inventory_test]
+pub fn unique_id_is_unique() {
+    unique_id_tests::unique_id_is_unique();
 }
 
-#[test]
-pub fn scope_guard_callbacks_are_called_correctly_failure_case() {
-    scope_guard_tests::scope_guard_callbacks_are_called_correctly_failure_case();
+#[inventory_test]
+pub fn typed_unique_id_is_unique() {
+    unique_id_tests::typed_unique_id_is_unique();
 }
