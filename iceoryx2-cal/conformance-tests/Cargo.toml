@@ -20,9 +20,9 @@ iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-bb-memory = { workspace = true }
 iceoryx2-bb-posix = { workspace = true }
 iceoryx2-bb-system-types = { workspace = true }
-iceoryx2-bb-testing = { workspace = true }
+iceoryx2-bb-testing = { workspace = true, features = ["std"] }
 iceoryx2-pal-posix = { workspace = true }
-iceoryx2-pal-testing = { workspace = true }
+iceoryx2-pal-testing = { workspace = true, features = ["std"] }
 
 serde = { workspace = true }
 

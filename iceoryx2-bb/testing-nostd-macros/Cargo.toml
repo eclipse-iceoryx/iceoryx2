@@ -1,0 +1,26 @@
+[package]
+name = "iceoryx2-bb-testing-nostd-macros"
+description = "iceoryx2: [internal] proc macros for no_std testing"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[lib]
+proc-macro = true
+
+[features]
+default = []
+std = []
+
+[dependencies]
+iceoryx2-bb-testing-nostd = { workspace = true }
+iceoryx2-pal-print = { workspace = true }
+
+syn = { workspace = true }
+quote = { workspace = true }
+proc-macro2 = { workspace = true }

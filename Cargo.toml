@@ -20,6 +20,8 @@ members = [
     "iceoryx2-bb/posix",
     "iceoryx2-bb/system-types",
     "iceoryx2-bb/testing",
+    "iceoryx2-bb/testing-nostd/",
+    "iceoryx2-bb/testing-nostd-macros/",
     "iceoryx2-bb/trait-tests",
 
     "iceoryx2-ffi/c",
@@ -98,9 +100,11 @@ iceoryx2-bb-posix = { version = "0.8.999", path = "iceoryx2-bb/posix/" }
 iceoryx2-bb-system-types = { version = "0.8.999", path = "iceoryx2-bb/system-types/" }
 iceoryx2-bb-trait-tests = { version = "0.8.999", path = "iceoryx2-bb/trait-tests/" }
 iceoryx2-bb-testing = { version = "0.8.999", path = "iceoryx2-bb/testing/" }
-iceoryx2-pal-concurrency-sync = { version = "0.8.999", path = "iceoryx2-pal/concurrency-sync/", default-features = false }
+iceoryx2-bb-testing-nostd = { version = "0.8.999", path = "iceoryx2-bb/testing-nostd/" }
+iceoryx2-bb-testing-nostd-macros = { version = "0.8.999", path = "iceoryx2-bb/testing-nostd-macros/" }
+iceoryx2-pal-concurrency-sync = { version = "0.8.999", path = "iceoryx2-pal/concurrency-sync/" }
 iceoryx2-pal-posix = { version = "0.8.999", path = "iceoryx2-pal/posix/" }
-iceoryx2-pal-print = { version = "0.8.999", path = "iceoryx2-pal/print/" }
+iceoryx2-pal-print = { version = "0.8.999", path = "iceoryx2-pal/print/", default-features = false }
 iceoryx2-pal-os-api = { version = "0.8.999", path = "iceoryx2-pal/os-api/" }
 iceoryx2-pal-configuration = { version = "0.8.999", path = "iceoryx2-pal/configuration/" }
 iceoryx2-pal-testing = { version = "0.8.999", path = "iceoryx2-pal/testing/" }
@@ -131,6 +135,7 @@ better-panic = { version = "0.3.0" }
 colored = { version = "2.1" }
 generic-tests = { version = "0.1.2" }
 human-panic = { version = "=2.0.2" }
+inventory = { version = "0.3", default-features = false }
 libc = { version = "0.2.169", features = ['extra_traits'] }
 log = { version = "0.4.21" }
 loom = { version = "0.7.2" }
