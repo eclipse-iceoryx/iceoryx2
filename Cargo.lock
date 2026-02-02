@@ -1587,6 +1587,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "iceoryx2-bb-testing-nostd"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2-pal-posix",
+ "iceoryx2-pal-print",
+ "inventory",
+]
+
+[[package]]
+name = "iceoryx2-bb-testing-nostd-macros"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2-bb-testing-nostd",
+ "iceoryx2-pal-print",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
+]
+
+[[package]]
 name = "iceoryx2-bb-threadsafe"
 version = "0.8.999"
 dependencies = [
@@ -2074,6 +2094,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "879f10e63c20629ecabbb64a8010319738c66a5cd0c29b02d63d272b03751d01"
 dependencies = [
  "generic-array",
+]
+
+[[package]]
+name = "inventory"
+version = "0.3.22"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "009ae045c87e7082cb72dab0ccd01ae075dd00141ddc108f43a0ea150a9e7227"
+dependencies = [
+ "rustversion",
 ]
 
 [[package]]
