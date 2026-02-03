@@ -1642,9 +1642,34 @@ dependencies = [
  "iceoryx2-bb-loggers",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
+ "iceoryx2-bb-threadsafe-tests-common",
  "iceoryx2-log",
  "iceoryx2-pal-posix",
  "iceoryx2-pal-testing",
+]
+
+[[package]]
+name = "iceoryx2-bb-threadsafe-tests-common"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2-bb-posix",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-nostd-macros",
+ "iceoryx2-bb-threadsafe",
+ "iceoryx2-pal-concurrency-sync",
+ "iceoryx2-pal-print",
+]
+
+[[package]]
+name = "iceoryx2-bb-threadsafe-tests-nostd"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-memory",
+ "iceoryx2-bb-testing-nostd",
+ "iceoryx2-bb-testing-nostd-macros",
+ "iceoryx2-bb-threadsafe-tests-common",
 ]
 
 [[package]]
