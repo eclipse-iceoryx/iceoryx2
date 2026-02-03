@@ -118,7 +118,7 @@ jobs:
 
   # Static Code Analysis on other variants
   static-code-analysis-rust-extended:
-    needs: [static-code-analysis-rust, cargo-nextest]
+    needs: [cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
       matrix:
@@ -131,16 +131,6 @@ jobs:
     with:
       os: ${{ matrix.os }}
       cargo-features-flag: ${{ matrix.cargo-features-flag }}
-
-  # just to have a sync point for the first C++ and Rust static code analysis
-  # once the first quick checks have passed we have the confidence to continue
-  # with the remaining CI jobs
-  static-code-analysis:
-    needs: [static-code-analysis-cpp, static-code-analysis-rust]
-    runs-on: ubuntu-slim
-    steps:
-      - name: Static code analysis sync point
-        run: echo "Nothing to see, move along!"
 
   # Build documentation and run code examples
   rust-doc-check:
@@ -182,7 +172,7 @@ jobs:
           artifact-upload-name: ${{ runner.os }}-cargo-nextest
 
   python-bindings:
-    needs: [preflight-check, static-code-analysis, cargo-nextest]
+    needs: [preflight-check, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
       matrix:
@@ -225,7 +215,7 @@ jobs:
         run: poetry --project iceoryx2-ffi/python static-analysis
 
   end-to-end-tests:
-    needs: [preflight-check, static-code-analysis]
+    needs: [preflight-check]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
       matrix:
@@ -275,7 +265,7 @@ jobs:
           internal/scripts/ci_build_and_run_end_to_end_tests.sh
 
   end-to-end-tests-tunnel:
-    needs: [preflight-check, static-code-analysis]
+    needs: [preflight-check]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
       matrix:
@@ -323,7 +313,7 @@ jobs:
             --exit-code-from pinger
 
   x86_32-debug:
-    needs: [preflight-check, static-code-analysis, cargo-nextest]
+    needs: [preflight-check, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
       matrix:
@@ -337,7 +327,7 @@ jobs:
       cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug"
 
   stable-debug:
-    needs: [preflight-check, static-code-analysis, cargo-nextest]
+    needs: [preflight-check, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
       matrix:
@@ -361,7 +351,7 @@ jobs:
       cargo-features-flag: ${{ matrix.cargo-features-flag }}
 
   stable-release:
-    needs: [preflight-check, static-code-analysis, cargo-nextest]
+    needs: [preflight-check, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     uses: ./.github/workflows/reuse_x86_64_stable.yml
     with:
@@ -374,7 +364,7 @@ jobs:
       cargo-features-flag: ""
 
   unstable:
-    needs: [preflight-check, static-code-analysis, cargo-nextest]
+    needs: [preflight-check, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' && github.ref != 'refs/heads/main' }}
     strategy:
       matrix:
@@ -387,7 +377,7 @@ jobs:
       profile: "debug"
 
   Bazel:
-    needs: [preflight-check, static-code-analysis]
+    needs: [preflight-check]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
       matrix:
@@ -424,17 +414,17 @@ jobs:
         run: bazel test //...
 
   cxx-vocabulary-types:
-    needs: [preflight-check, static-code-analysis]
+    needs: [preflight-check]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     uses: ./.github/workflows/reuse_cxx_vocabulary_types.yml
 
   no_std:
-    needs: [preflight-check, static-code-analysis]
+    needs: [preflight-check]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     uses: ./.github/workflows/reuse_no_std.yml
 
   cargo-publish-dry-run:
-    needs: [preflight-check, static-code-analysis]
+    needs: [preflight-check]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     timeout-minutes: 30
     runs-on: ubuntu-latest
@@ -454,7 +444,7 @@ jobs:
         run: ./internal/scripts/release/crates_io_publish_script.sh dry-run-allow-dirty
 
   grcov:
-    needs: [preflight-check, static-code-analysis]
+    needs: [preflight-check]
     timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
@@ -480,7 +470,8 @@ jobs:
       [
         preflight-check,
         rust-doc-check,
-        static-code-analysis,
+        static-code-analysis-rust,
+        static-code-analysis-cpp,
         static-code-analysis-rust-extended,
         stable-debug,
         Bazel,
