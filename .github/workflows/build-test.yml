@@ -324,7 +324,6 @@ jobs:
       os: ${{ matrix.os }}
       toolchain: ${{ matrix.toolchain }}
       profile: "debug"
-      cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug"
 
   stable-debug:
     needs: [preflight-check, cargo-nextest]
@@ -333,21 +332,25 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         toolchain: [stable, 1.83.0]
+        cargo-features-flag: ["", "--features iceoryx2/libc_platform"]
         include:
-          - cargo-features-flag: ""
+          # test feature propagation
+          - cargo-features-flag: "--features libc_platform"
             os: ubuntu-latest
             toolchain: stable
-          - cargo-features-flag: "--features iceoryx2/libc_platform"
-            os: ubuntu-latest
-            toolchain: stable
+        exclude:
+          - os: ubuntu-latest
+            toolchain: 1.83.0
+            cargo-features-flag: "--features iceoryx2/libc_platform"
+          - os: macos-latest
+            cargo-features-flag: "--features iceoryx2/libc_platform"
+          - os: windows-latest
+            cargo-features-flag: "--features iceoryx2/libc_platform"      
     uses: ./.github/workflows/reuse_x86_64_stable.yml
     with:
       os: ${{ matrix.os }}
       toolchain: ${{ matrix.toolchain }}
       profile: "debug"
-      cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug"
-      cmake-build-config: "--config Debug"
-      cmake-cxx-flags: ""
       cargo-features-flag: ${{ matrix.cargo-features-flag }}
 
   stable-release:
@@ -358,9 +361,6 @@ jobs:
       os: ubuntu-latest
       toolchain: stable
       profile: "release"
-      cmake-build-type: "-DCMAKE_BUILD_TYPE=Release"
-      cmake-build-config: "--config Release"
-      cmake-cxx-flags: ""
       cargo-features-flag: ""
 
   unstable:

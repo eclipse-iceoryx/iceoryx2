@@ -19,7 +19,6 @@ runs:
   steps:
       - name: Set Build Flags
         id: set-build-flags
-        if: ${{ inputs.profile == 'debug' }}
         shell: bash
         run: |
           CARGO_BUILD_MODE=""

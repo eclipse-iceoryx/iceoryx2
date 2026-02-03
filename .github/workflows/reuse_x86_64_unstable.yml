@@ -10,7 +10,7 @@ on:
         required: true
         type: string
       profile:
-        required: false
+        required: true
         type: string
 
 jobs:
@@ -67,29 +67,25 @@ jobs:
       - name: Save disk space
         uses: ./.github/actions/save-disk-space
         with:
-          mode: "pre"
+          mode: "remove-unneeded-software-from-runner"
+
+      - name: Set build flags
+        id: set-build-flags
+        uses: ./.github/actions/set-build-flags
+        with:
+          profile: ${{ inputs.profile }}
 
       - name: Run cargo build
         shell: bash
         run: |
-          BUILD_MODE=""
-          if [[ ${{ inputs.profile }} == 'release' ]]; then
-            BUILD_MODE="--release"
-          fi
-          echo "Cargo build mode: ${BUILD_MODE}"
-          cargo build --workspace --all-targets ${BUILD_MODE}
+          cargo build --workspace --all-targets ${{ steps.set-build-flags.outputs.cargo-build-mode }}
 
       - name: Run cargo nextest
         shell: bash
         run: |
-          BUILD_MODE=""
-          if [[ ${{ inputs.profile }} == 'release' ]]; then
-            BUILD_MODE="--release"
-          fi
-          echo "Cargo build mode: ${BUILD_MODE}"
-          cargo nextest run --workspace --all-targets --no-fail-fast ${BUILD_MODE}
+          cargo nextest run --workspace --all-targets --no-fail-fast ${{ steps.set-build-flags.outputs.cargo-build-mode }}
 
       - name: Cleanup build artifacts
         uses: ./.github/actions/save-disk-space
         with:
-          mode: "post"
+          mode: "cleanup-rust-build-files-from-cargo-target-folder"
