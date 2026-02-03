@@ -103,16 +103,19 @@ iceoryx2 provides several feature flags that can be configured using bazel
 build options. These flags allow you to enable or disable specific features
 when building the project.
 
-| Feature Flag     | Valid Values | Default |
-| ---------------- | ------------ | ------- |
-| std              | on, off      | on      |
-| dev_permissions  | on, off      | off     |
-| logger_buffer    | on, off      | off     |
-| logger_console   | on, off      | on      |
-| logger_file      | on, off      | off     |
-| logger_log       | on, off      | off     |
-| logger_tracing   | on, off      | off     |
-
+| Feature Flag       | Valid Values | Default |
+| ------------------ | ------------ | ------- |
+| std                | on, off      | on      |
+| dev_permissions    | on, off      | off     |
+| libc_platform      | on, off      | off     |
+| logger_std         | on, off      | on      |
+| logger_POSIX       | on, off      | off     |
+| logger_bare_metal  | on, off      | off     |
+| logger_buffer      | on, off      | off     |
+| logger_console     | on, off      | on      |
+| logger_file        | on, off      | off     |
+| logger_log         | on, off      | off     |
+| logger_tracing     | on, off      | off     |
 
 ### Enabling a Feature Flag via Command Line
 

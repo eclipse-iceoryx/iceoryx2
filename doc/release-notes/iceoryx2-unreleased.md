@@ -55,6 +55,8 @@
 * Replace `lazy_static` dependency with `LazyLock` from `std` in `std` builds or
   a custom minimal spin-based implementation for `no_std` builds
   [#1321](https://github.com/eclipse-iceoryx/iceoryx2/issues/1321)
+* Remove `auto` option from Bazel feature flags and align defaults with CMake
+  [#1326](https://github.com/eclipse-iceoryx/iceoryx2/issues/1326)
 * Remove `posix` feature and use `cfg` switch based on target instead
   [#1327](https://github.com/eclipse-iceoryx/iceoryx2/issues/1327)
 * `CleanupState` implements `ZeroCopySend`

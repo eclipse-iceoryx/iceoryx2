@@ -51,12 +51,7 @@ string_flag(
     build_setting_default = "on",
     visibility = ["//visibility:public"],
 )
-config_setting(
-    name = "std_auto",
-    flag_values = {
-        "//:feature_std": "auto",
-    },
-)
+
 config_setting(
     name = "std_enabled",
     flag_values = {
@@ -76,13 +71,6 @@ string_flag(
     name = "feature_dev_permissions",
     build_setting_default = "off",
     visibility = ["//visibility:public"],
-)
-
-config_setting(
-    name = "dev_permissions_auto",
-    flag_values = {
-        "//:feature_dev_permissions": "auto",
-    },
 )
 
 config_setting(
@@ -106,12 +94,7 @@ string_flag(
     build_setting_default = "off",
     visibility = ["//visibility:public"],
 )
-config_setting(
-    name = "logger_buffer_auto",
-    flag_values = {
-        "//:feature_logger_buffer": "on",
-    },
-)
+
 config_setting(
     name = "logger_buffer_enabled",
     flag_values = {
@@ -132,12 +115,7 @@ string_flag(
     build_setting_default = "off",
     visibility = ["//visibility:public"],
 )
-config_setting(
-    name = "logger_file_auto",
-    flag_values = {
-        "//:feature_logger_file": "auto",
-    },
-)
+
 config_setting(
     name = "logger_file_enabled",
     flag_values = {
@@ -155,15 +133,10 @@ selects.config_setting_group(
 
 string_flag(
     name = "feature_logger_console",
-    build_setting_default = "no",
+    build_setting_default = "on",
     visibility = ["//visibility:public"],
 )
-config_setting(
-    name = "logger_console_auto",
-    flag_values = {
-        "//:feature_logger_console": "auto",
-    },
-)
+
 config_setting(
     name = "logger_console_enabled",
     flag_values = {
@@ -183,13 +156,6 @@ string_flag(
     name = "feature_logger_log",
     build_setting_default = "off",
     visibility = ["//visibility:public"],
-)
-
-config_setting(
-    name = "logger_log_auto",
-    flag_values = {
-        "//:feature_logger_log": "auto",
-    },
 )
 
 config_setting(
@@ -215,13 +181,6 @@ string_flag(
 )
 
 config_setting(
-    name = "logger_tracing_auto",
-    flag_values = {
-        "//:feature_logger_tracing": "auto",
-    },
-)
-
-config_setting(
     name = "logger_tracing_enabled",
     flag_values = {
         "//:feature_logger_tracing": "on",
@@ -234,6 +193,94 @@ selects.config_setting_group(
     name = "cfg_feature_logger_tracing",
     match_any = [
         ":logger_tracing_enabled",
+    ],
+)
+
+string_flag(
+    name = "feature_libc_platform",
+    build_setting_default = "off",
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "libc_platform_enabled",
+    flag_values = {
+        "//:feature_libc_platform": "on",
+    },
+)
+
+# NOTE: while this seems superfluous, it is the pattern for cases where *_auto is on by default;
+#       therefore this target is introduced to keep all feature flags consistent
+selects.config_setting_group(
+    name = "cfg_feature_libc_platform",
+    match_any = [
+        ":libc_platform_enabled",
+    ],
+)
+
+string_flag(
+    name = "feature_logger_std",
+    build_setting_default = "on",
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "logger_std_enabled",
+    flag_values = {
+        "//:feature_logger_std": "on",
+    },
+)
+
+# NOTE: while this seems superfluous, it is the pattern for cases where *_auto is on by default;
+#       therefore this target is introduced to keep all feature flags consistent
+selects.config_setting_group(
+    name = "cfg_feature_logger_std",
+    match_any = [
+        ":logger_std_enabled",
+    ],
+)
+
+string_flag(
+    name = "feature_logger_posix",
+    build_setting_default = "off",
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "logger_posix_enabled",
+    flag_values = {
+        "//:feature_logger_posix": "on",
+    },
+)
+
+# NOTE: while this seems superfluous, it is the pattern for cases where *_auto is on by default;
+#       therefore this target is introduced to keep all feature flags consistent
+selects.config_setting_group(
+    name = "cfg_feature_logger_posix",
+    match_any = [
+        ":logger_posix_enabled",
+    ],
+)
+
+string_flag(
+    name = "feature_logger_bare_metal",
+    build_setting_default = "off",
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "logger_bare_metal_enabled",
+    flag_values = {
+        "//:feature_logger_bare_metal": "on",
+    },
+)
+
+# NOTE: while this seems superfluous, it is the pattern for cases where *_auto is on by default;
+#       therefore this target is introduced to keep all feature flags consistent
+selects.config_setting_group(
+    name = "cfg_feature_logger_bare_metal",
+    match_any = [
+        ":logger_bare_metal_enabled",
     ],
 )
 
