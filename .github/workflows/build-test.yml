@@ -6,6 +6,7 @@ on:
   pull_request:
     branches: [main, release*]
     types: [opened, ready_for_review, reopened, synchronize]
+  workflow_dispatch:
 
 jobs:
   changes:
