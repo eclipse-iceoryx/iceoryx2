@@ -10,20 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
-
-use core::{
-    sync::atomic::{AtomicBool, Ordering},
-    time::Duration,
-};
-use std::{collections::HashSet, sync::Barrier};
-
 use iceoryx2_bb_lock_free::mpmc::bit_set::*;
-use iceoryx2_bb_posix::system_configuration::SystemInfo;
-use iceoryx2_bb_testing::{assert_that, watchdog::Watchdog};
+use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_nostd_macros::requires_std;
 
-#[test]
-fn bit_set_create_fill_and_reset_works() {
+pub fn bit_set_create_fill_and_reset_works() {
     const CAPACITY: usize = 1234;
     let sut = BitSet::new(CAPACITY);
 
@@ -34,7 +25,7 @@ fn bit_set_create_fill_and_reset_works() {
         assert_that!(sut.set(id), eq false);
     }
 
-    let mut id_set = HashSet::new();
+    let mut id_set = alloc::collections::btree_set::BTreeSet::new();
     let mut counter = 0;
     sut.reset_all(|id| {
         assert_that!(id, lt CAPACITY);
@@ -52,8 +43,7 @@ fn bit_set_create_fill_and_reset_works() {
     assert_that!(counter, eq 0);
 }
 
-#[test]
-fn fixed_size_bit_set_create_fill_and_reset_works() {
+pub fn fixed_size_bit_set_create_fill_and_reset_works() {
     const CAPACITY: usize = 122;
     let sut = FixedSizeBitSet::<CAPACITY>::new();
 
@@ -64,7 +54,7 @@ fn fixed_size_bit_set_create_fill_and_reset_works() {
         assert_that!(sut.set(id * 2), eq false);
     }
 
-    let mut id_set = HashSet::new();
+    let mut id_set = alloc::collections::btree_set::BTreeSet::new();
     let mut counter = 0;
     sut.reset_all(|id| {
         assert_that!(id % 2 == 0, eq true);
@@ -83,8 +73,7 @@ fn fixed_size_bit_set_create_fill_and_reset_works() {
     assert_that!(counter, eq 0);
 }
 
-#[test]
-fn bit_set_set_single_bit_works() {
+pub fn bit_set_set_single_bit_works() {
     const CAPACITY: usize = 124;
     let sut = BitSet::new(CAPACITY);
 
@@ -103,18 +92,15 @@ fn bit_set_set_single_bit_works() {
     assert_that!(counter, eq 0);
 }
 
-#[test]
-#[should_panic]
-#[cfg(debug_assertions)]
-fn bit_set_set_bit_outside_of_bitset_leads_to_panic() {
+#[requires_std("panics")]
+pub fn bit_set_set_bit_outside_of_bitset_leads_to_panic() {
     const CAPACITY: usize = 1551;
     let sut = BitSet::new(CAPACITY);
 
     sut.set(CAPACITY);
 }
 
-#[test]
-fn bit_set_set_and_reset_next_works() {
+pub fn bit_set_set_and_reset_next_works() {
     const CAPACITY: usize = 1551;
     let sut = BitSet::new(CAPACITY);
 
@@ -126,8 +112,7 @@ fn bit_set_set_and_reset_next_works() {
     assert_that!(sut.reset_next(), eq None);
 }
 
-#[test]
-fn bit_set_reset_next_is_fair() {
+pub fn bit_set_reset_next_is_fair() {
     const CAPACITY: usize = 1551;
     let sut = BitSet::new(CAPACITY);
 
@@ -146,8 +131,18 @@ fn bit_set_reset_next_is_fair() {
     assert_that!(sut.reset_next(), eq None);
 }
 
-#[test]
-fn bit_set_concurrent_set_and_reset_works() {
+#[requires_std("threading", "watchdog", "synchronization")]
+pub fn bit_set_concurrent_set_and_reset_works() {
+    use alloc::vec;
+    use alloc::vec::Vec;
+    use core::{
+        sync::atomic::{AtomicBool, Ordering},
+        time::Duration,
+    };
+    use iceoryx2_bb_posix::system_configuration::SystemInfo;
+    use iceoryx2_bb_testing::watchdog::Watchdog;
+    use std::sync::Barrier;
+
     let _watchdog = Watchdog::new_with_timeout(Duration::from_secs(60));
 
     let number_of_set_threads = (SystemInfo::NumberOfCpuCores.value() / 2).clamp(2, usize::MAX);

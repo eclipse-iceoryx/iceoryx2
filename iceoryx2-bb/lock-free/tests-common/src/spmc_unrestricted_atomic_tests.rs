@@ -10,20 +10,18 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
+#[cfg(not(feature = "std"))]
+use iceoryx2_bb_concurrency::spin_lock::SpinLock as Mutex;
+#[cfg(feature = "std")]
+use std::sync::Mutex;
 
-use core::sync::atomic::{AtomicBool, Ordering};
-use std::{
-    alloc::{alloc, dealloc, Layout},
-    ptr::addr_of,
-    sync::Mutex,
-    thread,
-};
+use alloc::alloc::{alloc, dealloc, Layout};
+use core::ptr::addr_of;
 
 use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::*;
-use iceoryx2_bb_posix::{barrier::*, system_configuration::SystemInfo};
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_nostd_macros::requires_std;
 
 const NUMBER_OF_RUNS: usize = 100000;
 const DATA_SIZE: usize = 1024;
@@ -40,19 +38,7 @@ fn verify(value: u8, rhs: &[u8; DATA_SIZE]) -> bool {
     true
 }
 
-fn verify_no_data_race(rhs: &[u8; DATA_SIZE]) -> bool {
-    let value = rhs[0];
-    for i in 0..DATA_SIZE {
-        if value != rhs[i] {
-            return false;
-        }
-    }
-
-    true
-}
-
-#[test]
-fn spmc_unrestricted_atomic_acquire_multiple_producer_fails() {
+pub fn spmc_unrestricted_atomic_acquire_multiple_producer_fails() {
     let _test_lock = TEST_LOCK.lock().unwrap();
     let sut = UnrestrictedAtomic::<[u8; DATA_SIZE]>::new([0xff; DATA_SIZE]);
 
@@ -67,8 +53,7 @@ fn spmc_unrestricted_atomic_acquire_multiple_producer_fails() {
     assert_that!(p3, is_some);
 }
 
-#[test]
-fn spmc_unrestricted_atomic_load_store_works() {
+pub fn spmc_unrestricted_atomic_load_store_works() {
     let _test_lock = TEST_LOCK.lock().unwrap();
     let sut = UnrestrictedAtomic::<[u8; DATA_SIZE]>::new([0xff; DATA_SIZE]);
     assert_that!(verify(0xff, &sut.load()), eq true);
@@ -82,8 +67,12 @@ fn spmc_unrestricted_atomic_load_store_works() {
     }
 }
 
-#[test]
-fn spmc_unrestricted_atomic_load_store_works_concurrently() {
+#[requires_std("threading", "synchronization")]
+pub fn spmc_unrestricted_atomic_load_store_works_concurrently() {
+    use core::sync::atomic::{AtomicBool, Ordering};
+    use iceoryx2_bb_posix::{barrier::*, system_configuration::SystemInfo};
+    use std::thread;
+
     let _test_lock = TEST_LOCK.lock().unwrap();
     let number_of_threads = SystemInfo::NumberOfCpuCores.value();
     let store_finished = AtomicBool::new(false);
@@ -92,6 +81,17 @@ fn spmc_unrestricted_atomic_load_store_works_concurrently() {
     let barrier = BarrierBuilder::new(number_of_threads as u32 + 1)
         .create(&handle)
         .unwrap();
+
+    let verify_no_data_race = |rhs: &[u8; DATA_SIZE]| -> bool {
+        let value = rhs[0];
+        for i in 0..DATA_SIZE {
+            if value != rhs[i] {
+                return false;
+            }
+        }
+
+        true
+    };
 
     thread::scope(|s| {
         for _ in 0..number_of_threads {
@@ -117,8 +117,7 @@ fn spmc_unrestricted_atomic_load_store_works_concurrently() {
     });
 }
 
-#[test]
-fn spmc_unrestricted_atomic_get_ptr_write_and_update_works() {
+pub fn spmc_unrestricted_atomic_get_ptr_write_and_update_works() {
     let _test_lock = TEST_LOCK.lock().unwrap();
     let sut = UnrestrictedAtomic::<u32>::new(0);
 
@@ -133,8 +132,12 @@ fn spmc_unrestricted_atomic_get_ptr_write_and_update_works() {
     assert_that!(sut.load(), eq 1);
 }
 
-#[test]
-fn spmc_unrestricted_atomic_get_ptr_write_and_update_works_concurrently() {
+#[requires_std("threading", "synchronization")]
+pub fn spmc_unrestricted_atomic_get_ptr_write_and_update_works_concurrently() {
+    use core::sync::atomic::{AtomicBool, Ordering};
+    use iceoryx2_bb_posix::barrier::*;
+    use std::thread;
+
     let _test_lock = TEST_LOCK.lock().unwrap();
     let store_finished = AtomicBool::new(false);
     let sut = UnrestrictedAtomic::<u128>::new(0);
@@ -173,8 +176,7 @@ fn spmc_unrestricted_atomic_get_ptr_write_and_update_works_concurrently() {
     }
 }
 
-#[test]
-fn spmc_unrestricted_atomic_get_write_cell_works() {
+pub fn spmc_unrestricted_atomic_get_write_cell_works() {
     let _test_lock = TEST_LOCK.lock().unwrap();
     let sut = UnrestrictedAtomic::<u32>::new(0);
     let producer = sut.acquire_producer().unwrap();
@@ -195,8 +197,7 @@ fn spmc_unrestricted_atomic_get_write_cell_works() {
     }
 }
 
-#[test]
-fn spmc_unrestricted_atomic_mgmt_release_producer_allows_new_acquire() {
+pub fn spmc_unrestricted_atomic_mgmt_release_producer_allows_new_acquire() {
     let _test_lock = TEST_LOCK.lock().unwrap();
     let sut = UnrestrictedAtomicMgmt::new();
 
@@ -212,8 +213,7 @@ fn spmc_unrestricted_atomic_mgmt_release_producer_allows_new_acquire() {
     assert_that!(p2, is_ok);
 }
 
-#[test]
-fn spmc_unrestricted_atomic_mgmt_get_ptr_write_and_update_works() {
+pub fn spmc_unrestricted_atomic_mgmt_get_ptr_write_and_update_works() {
     let _test_lock = TEST_LOCK.lock().unwrap();
 
     const INITIAL_VALUE: u64 = 0;
@@ -286,8 +286,7 @@ fn internal_pointer_calculation_works<ValueType: Copy + Default>() {
     }
 }
 
-#[test]
-fn spmc_unrestricted_atomic_internal_ptr_calculation_works_with_integers() {
+pub fn spmc_unrestricted_atomic_internal_ptr_calculation_works_with_integers() {
     internal_pointer_calculation_works::<u8>();
     internal_pointer_calculation_works::<u16>();
     internal_pointer_calculation_works::<u32>();
@@ -353,8 +352,7 @@ fn internal_get_data_cell_calculation_works<ValueType: Copy + Default>() {
     }
 }
 
-#[test]
-fn spmc_unrestricted_atomic_internal_get_data_cell_with_integers() {
+pub fn spmc_unrestricted_atomic_internal_get_data_cell_with_integers() {
     internal_get_data_cell_calculation_works::<u8>();
     internal_get_data_cell_calculation_works::<u16>();
     internal_get_data_cell_calculation_works::<u32>();
@@ -385,8 +383,7 @@ fn mgmt_calculates_correct_size_and_alignment_of_unrestricted_atomic<ValueType: 
     assert_that!(sut_alignment, eq align_of_val(&atomic));
 }
 
-#[test]
-fn spmc_unrestricted_atomic_internal_size_and_alignment_calculation_with_integers() {
+pub fn spmc_unrestricted_atomic_internal_size_and_alignment_calculation_with_integers() {
     mgmt_calculates_correct_size_and_alignment_of_unrestricted_atomic::<u8>();
     mgmt_calculates_correct_size_and_alignment_of_unrestricted_atomic::<u16>();
     mgmt_calculates_correct_size_and_alignment_of_unrestricted_atomic::<u32>();
@@ -401,8 +398,7 @@ fn spmc_unrestricted_atomic_internal_size_and_alignment_calculation_with_integer
     mgmt_calculates_correct_size_and_alignment_of_unrestricted_atomic::<f64>();
 }
 
-#[test]
-fn spmc_unrestricted_atomic_mgmt_get_write_cell_works() {
+pub fn spmc_unrestricted_atomic_mgmt_get_write_cell_works() {
     let _test_lock = TEST_LOCK.lock().unwrap();
 
     const INITIAL_VALUE: u64 = 0;

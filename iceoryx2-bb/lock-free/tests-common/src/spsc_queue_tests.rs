@@ -10,15 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
-
 use iceoryx2_bb_lock_free::spsc::queue::*;
 use iceoryx2_bb_testing::assert_that;
-use std::sync::{Arc, Mutex};
-use std::thread;
+use iceoryx2_bb_testing_nostd_macros::requires_std;
 
-#[test]
-fn spsc_queue_push_works_until_full() {
+pub fn spsc_queue_push_works_until_full() {
     const CAPACITY: usize = 128;
     let sut = Queue::<i64, CAPACITY>::new();
 
@@ -41,8 +37,7 @@ fn spsc_queue_push_works_until_full() {
     assert_that!(sut, is_not_empty);
 }
 
-#[test]
-fn spsc_queue_pop_works_until_empty() {
+pub fn spsc_queue_pop_works_until_empty() {
     const CAPACITY: usize = 128;
     let sut = Queue::<i64, CAPACITY>::new();
     let mut sut_producer = sut.acquire_producer().unwrap();
@@ -70,8 +65,7 @@ fn spsc_queue_pop_works_until_empty() {
     assert_that!(sut, is_empty);
 }
 
-#[test]
-fn spsc_queue_push_pop_alteration_works() {
+pub fn spsc_queue_push_pop_alteration_works() {
     const CAPACITY: usize = 128;
     let sut = Queue::<i64, CAPACITY>::new();
     let mut sut_producer = sut.acquire_producer().unwrap();
@@ -85,15 +79,13 @@ fn spsc_queue_push_pop_alteration_works() {
     }
 }
 
-#[test]
-fn spsc_queue_get_consumer_twice_fails() {
+pub fn spsc_queue_get_consumer_twice_fails() {
     let sut = Queue::<i64, 1024>::new();
     let _consumer = sut.acquire_consumer().unwrap();
     assert_that!(sut.acquire_consumer(), is_none);
 }
 
-#[test]
-fn spsc_queue_get_consumer_after_release_succeeds() {
+pub fn spsc_queue_get_consumer_after_release_succeeds() {
     let sut = Queue::<i64, 1024>::new();
     {
         let _consumer = sut.acquire_consumer();
@@ -101,15 +93,13 @@ fn spsc_queue_get_consumer_after_release_succeeds() {
     assert_that!(sut.acquire_consumer(), is_some);
 }
 
-#[test]
-fn spsc_queue_get_producer_twice_fails() {
+pub fn spsc_queue_get_producer_twice_fails() {
     let sut = Queue::<i64, 1024>::new();
     let _producer = sut.acquire_producer().unwrap();
     assert_that!(sut.acquire_producer(), is_none);
 }
 
-#[test]
-fn spsc_queue_get_producer_after_release_succeeds() {
+pub fn spsc_queue_get_producer_after_release_succeeds() {
     let sut = Queue::<i64, 1024>::new();
     {
         let _producer = sut.acquire_producer();
@@ -117,8 +107,11 @@ fn spsc_queue_get_producer_after_release_succeeds() {
     assert_that!(sut.acquire_producer(), is_some);
 }
 
-#[test]
-fn spsc_queue_push_pop_works_concurrently() {
+#[requires_std("threading", "synchronization")]
+pub fn spsc_queue_push_pop_works_concurrently() {
+    use std::sync::{Arc, Mutex};
+    use std::thread;
+
     const LIMIT: i64 = 10000;
     const CAPACITY: usize = 1024;
 
