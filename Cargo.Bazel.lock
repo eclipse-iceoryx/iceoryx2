@@ -1,5 +1,5 @@
 {
-  "checksum": "2294447d63760449f293a07ca48ba89d64093498189e12811ecfe2b1734f686a",
+  "checksum": "cea5966664e9ec4fcdb3d49f0756262251ac55bedea225f160d67d1f45c47cf3",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -1869,14 +1869,14 @@
       ],
       "license_file": "LICENSE-MIT"
     },
-    "bytes 1.11.0": {
+    "bytes 1.11.1": {
       "name": "bytes",
-      "version": "1.11.0",
+      "version": "1.11.1",
       "package_url": "https://github.com/tokio-rs/bytes",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/bytes/1.11.0/download",
-          "sha256": "b35204fbdc0b3f4446b89fc1ac2cf84a8a68971995d0bf2e925ec7cd960f9cb3"
+          "url": "https://static.crates.io/crates/bytes/1.11.1/download",
+          "sha256": "1e748733b7cbc798e1434b6ac524f0c1ff2ab456fe201501e6497c8417a4fc33"
         }
       },
       "targets": [
@@ -1906,7 +1906,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "1.11.0"
+        "version": "1.11.1"
       },
       "license": "MIT",
       "license_ids": [
@@ -7636,7 +7636,7 @@
         "deps": {
           "common": [
             {
-              "id": "bytes 1.11.0",
+              "id": "bytes 1.11.1",
               "target": "bytes"
             },
             {
@@ -12363,7 +12363,7 @@
               "target": "tracing"
             },
             {
-              "id": "tracing-subscriber 0.3.18",
+              "id": "tracing-subscriber 0.3.22",
               "target": "tracing_subscriber"
             }
           ],
@@ -12435,14 +12435,14 @@
       ],
       "license_file": "LICENSE"
     },
-    "matchers 0.1.0": {
+    "matchers 0.2.0": {
       "name": "matchers",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "package_url": "https://github.com/hawkw/matchers",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/matchers/0.1.0/download",
-          "sha256": "8263075bb86c5a1b1427b5ae862e8889656f126e9f77c484496e8b47cf5c5558"
+          "url": "https://static.crates.io/crates/matchers/0.2.0/download",
+          "sha256": "d1525a2a28c7f4fa0fc98bb91ae755d1e2d1505079e05539e35bc876b5d65ae9"
         }
       },
       "targets": [
@@ -12467,14 +12467,14 @@
         "deps": {
           "common": [
             {
-              "id": "regex-automata 0.1.10",
+              "id": "regex-automata 0.4.8",
               "target": "regex_automata"
             }
           ],
           "selects": {}
         },
         "edition": "2018",
-        "version": "0.1.0"
+        "version": "0.2.0"
       },
       "license": "MIT",
       "license_ids": [
@@ -13113,14 +13113,14 @@
       ],
       "license_file": "LICENSE"
     },
-    "nu-ansi-term 0.46.0": {
+    "nu-ansi-term 0.50.3": {
       "name": "nu-ansi-term",
-      "version": "0.46.0",
+      "version": "0.50.3",
       "package_url": "https://github.com/nushell/nu-ansi-term",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/nu-ansi-term/0.46.0/download",
-          "sha256": "77a8165726e8236064dbb45459242600304b42a5ea24ee2948e18e023bf7ba84"
+          "url": "https://static.crates.io/crates/nu-ansi-term/0.50.3/download",
+          "sha256": "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
         }
       },
       "targets": [
@@ -13142,30 +13142,33 @@
         "compile_data_glob": [
           "**"
         ],
-        "deps": {
+        "crate_features": {
           "common": [
-            {
-              "id": "overload 0.1.1",
-              "target": "overload"
-            }
+            "default",
+            "std"
           ],
+          "selects": {}
+        },
+        "deps": {
+          "common": [],
           "selects": {
-            "cfg(target_os = \"windows\")": [
+            "cfg(windows)": [
               {
-                "id": "winapi 0.3.9",
-                "target": "winapi"
+                "id": "windows-sys 0.59.0",
+                "target": "windows_sys",
+                "alias": "windows"
               }
             ]
           }
         },
-        "edition": "2018",
-        "version": "0.46.0"
+        "edition": "2021",
+        "version": "0.50.3"
       },
       "license": "MIT",
       "license_ids": [
         "MIT"
       ],
-      "license_file": null
+      "license_file": "LICENSE"
     },
     "num-bigint 0.4.6": {
       "name": "num-bigint",
@@ -13969,44 +13972,6 @@
         },
         "edition": "2018",
         "version": "3.8.2"
-      },
-      "license": "MIT",
-      "license_ids": [
-        "MIT"
-      ],
-      "license_file": "LICENSE"
-    },
-    "overload 0.1.1": {
-      "name": "overload",
-      "version": "0.1.1",
-      "package_url": "https://github.com/danaugrs/overload",
-      "repository": {
-        "Http": {
-          "url": "https://static.crates.io/crates/overload/0.1.1/download",
-          "sha256": "b15813163c1d831bf4a13c3610c05c0d03b39feb07f7e09fa234dac9b15aaf39"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "overload",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "allow_empty": true,
-              "include": [
-                "**/*.rs"
-              ]
-            }
-          }
-        }
-      ],
-      "library_target_name": "overload",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "edition": "2018",
-        "version": "0.1.1"
       },
       "license": "MIT",
       "license_ids": [
@@ -16163,7 +16128,7 @@
         "deps": {
           "common": [
             {
-              "id": "bytes 1.11.0",
+              "id": "bytes 1.11.1",
               "target": "bytes"
             },
             {
@@ -16291,7 +16256,7 @@
         "deps": {
           "common": [
             {
-              "id": "bytes 1.11.0",
+              "id": "bytes 1.11.1",
               "target": "bytes"
             },
             {
@@ -17195,11 +17160,25 @@
         ],
         "crate_features": {
           "common": [
-            "std",
-            "unicode-case",
-            "unicode-perl"
+            "std"
           ],
-          "selects": {}
+          "selects": {
+            "aarch64-apple-darwin": [
+              "unicode-perl"
+            ],
+            "aarch64-unknown-linux-gnu": [
+              "unicode-perl"
+            ],
+            "x86_64-pc-windows-msvc": [
+              "unicode-perl"
+            ],
+            "x86_64-unknown-linux-gnu": [
+              "unicode-perl"
+            ],
+            "x86_64-unknown-nixos-gnu": [
+              "unicode-perl"
+            ]
+          }
         },
         "deps": {
           "common": [
@@ -17223,62 +17202,6 @@
         "MIT"
       ],
       "license_file": "LICENSE-APACHE"
-    },
-    "regex-automata 0.1.10": {
-      "name": "regex-automata",
-      "version": "0.1.10",
-      "package_url": "https://github.com/BurntSushi/regex-automata",
-      "repository": {
-        "Http": {
-          "url": "https://static.crates.io/crates/regex-automata/0.1.10/download",
-          "sha256": "6c230d73fb8d8c1b9c0b3135c5142a8acee3a0558fb8db5cf1cb65f8d7862132"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "regex_automata",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "allow_empty": true,
-              "include": [
-                "**/*.rs"
-              ]
-            }
-          }
-        }
-      ],
-      "library_target_name": "regex_automata",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "crate_features": {
-          "common": [
-            "default",
-            "regex-syntax",
-            "std"
-          ],
-          "selects": {}
-        },
-        "deps": {
-          "common": [
-            {
-              "id": "regex-syntax 0.6.29",
-              "target": "regex_syntax"
-            }
-          ],
-          "selects": {}
-        },
-        "edition": "2015",
-        "version": "0.1.10"
-      },
-      "license": "Unlicense/MIT",
-      "license_ids": [
-        "MIT",
-        "Unlicense"
-      ],
-      "license_file": "LICENSE-MIT"
     },
     "regex-automata 0.4.8": {
       "name": "regex-automata",
@@ -17312,16 +17235,36 @@
         "crate_features": {
           "common": [
             "alloc",
+            "dfa-build",
+            "dfa-search",
             "meta",
             "nfa-pikevm",
             "nfa-thompson",
             "std",
-            "syntax",
-            "unicode-case",
-            "unicode-perl",
-            "unicode-word-boundary"
+            "syntax"
           ],
-          "selects": {}
+          "selects": {
+            "aarch64-apple-darwin": [
+              "unicode-perl",
+              "unicode-word-boundary"
+            ],
+            "aarch64-unknown-linux-gnu": [
+              "unicode-perl",
+              "unicode-word-boundary"
+            ],
+            "x86_64-pc-windows-msvc": [
+              "unicode-perl",
+              "unicode-word-boundary"
+            ],
+            "x86_64-unknown-linux-gnu": [
+              "unicode-perl",
+              "unicode-word-boundary"
+            ],
+            "x86_64-unknown-nixos-gnu": [
+              "unicode-perl",
+              "unicode-word-boundary"
+            ]
+          }
         },
         "deps": {
           "common": [
@@ -17334,59 +17277,6 @@
         },
         "edition": "2021",
         "version": "0.4.8"
-      },
-      "license": "MIT OR Apache-2.0",
-      "license_ids": [
-        "Apache-2.0",
-        "MIT"
-      ],
-      "license_file": "LICENSE-APACHE"
-    },
-    "regex-syntax 0.6.29": {
-      "name": "regex-syntax",
-      "version": "0.6.29",
-      "package_url": "https://github.com/rust-lang/regex",
-      "repository": {
-        "Http": {
-          "url": "https://static.crates.io/crates/regex-syntax/0.6.29/download",
-          "sha256": "f162c6dd7b008981e4d40210aca20b4bd0f9b60ca9271061b07f78537722f2e1"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "regex_syntax",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "allow_empty": true,
-              "include": [
-                "**/*.rs"
-              ]
-            }
-          }
-        }
-      ],
-      "library_target_name": "regex_syntax",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "crate_features": {
-          "common": [
-            "default",
-            "unicode",
-            "unicode-age",
-            "unicode-bool",
-            "unicode-case",
-            "unicode-gencat",
-            "unicode-perl",
-            "unicode-script",
-            "unicode-segment"
-          ],
-          "selects": {}
-        },
-        "edition": "2018",
-        "version": "0.6.29"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -17426,11 +17316,25 @@
         ],
         "crate_features": {
           "common": [
-            "std",
-            "unicode-case",
-            "unicode-perl"
+            "std"
           ],
-          "selects": {}
+          "selects": {
+            "aarch64-apple-darwin": [
+              "unicode-perl"
+            ],
+            "aarch64-unknown-linux-gnu": [
+              "unicode-perl"
+            ],
+            "x86_64-pc-windows-msvc": [
+              "unicode-perl"
+            ],
+            "x86_64-unknown-linux-gnu": [
+              "unicode-perl"
+            ],
+            "x86_64-unknown-nixos-gnu": [
+              "unicode-perl"
+            ]
+          }
         },
         "edition": "2021",
         "version": "0.8.5"
@@ -22968,7 +22872,7 @@
         "deps": {
           "common": [
             {
-              "id": "bytes 1.11.0",
+              "id": "bytes 1.11.1",
               "target": "bytes"
             },
             {
@@ -23272,7 +23176,7 @@
         "deps": {
           "common": [
             {
-              "id": "bytes 1.11.0",
+              "id": "bytes 1.11.1",
               "target": "bytes"
             },
             {
@@ -24094,14 +23998,14 @@
       ],
       "license_file": "LICENSE"
     },
-    "tracing-serde 0.1.3": {
+    "tracing-serde 0.2.0": {
       "name": "tracing-serde",
-      "version": "0.1.3",
+      "version": "0.2.0",
       "package_url": "https://github.com/tokio-rs/tracing",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/tracing-serde/0.1.3/download",
-          "sha256": "bc6b213177105856957181934e4920de57730fc69bf42c37ee5bb664d406d9e1"
+          "url": "https://static.crates.io/crates/tracing-serde/0.2.0/download",
+          "sha256": "704b1aeb7be0d0a84fc9828cae51dab5970fee5088f83d1dd7ee6f6246fc6ff1"
         }
       },
       "targets": [
@@ -24137,7 +24041,7 @@
           "selects": {}
         },
         "edition": "2018",
-        "version": "0.1.3"
+        "version": "0.2.0"
       },
       "license": "MIT",
       "license_ids": [
@@ -24145,14 +24049,14 @@
       ],
       "license_file": "LICENSE"
     },
-    "tracing-subscriber 0.3.18": {
+    "tracing-subscriber 0.3.22": {
       "name": "tracing-subscriber",
-      "version": "0.3.18",
+      "version": "0.3.22",
       "package_url": "https://github.com/tokio-rs/tracing",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/tracing-subscriber/0.3.18/download",
-          "sha256": "ad0f048c97dbd9faa9b7df56362b8ebcaa52adb06b498c050d2f4e32f90a7a8b"
+          "url": "https://static.crates.io/crates/tracing-subscriber/0.3.22/download",
+          "sha256": "2f30143827ddab0d256fd843b7a66d164e9f271cfa0dde49142c5ca0ca291f1e"
         }
       },
       "targets": [
@@ -24185,7 +24089,6 @@
             "matchers",
             "nu-ansi-term",
             "once_cell",
-            "regex",
             "registry",
             "serde",
             "serde_json",
@@ -24202,11 +24105,11 @@
         "deps": {
           "common": [
             {
-              "id": "matchers 0.1.0",
+              "id": "matchers 0.2.0",
               "target": "matchers"
             },
             {
-              "id": "nu-ansi-term 0.46.0",
+              "id": "nu-ansi-term 0.50.3",
               "target": "nu_ansi_term"
             },
             {
@@ -24214,8 +24117,8 @@
               "target": "once_cell"
             },
             {
-              "id": "regex 1.11.0",
-              "target": "regex"
+              "id": "regex-automata 0.4.8",
+              "target": "regex_automata"
             },
             {
               "id": "serde 1.0.228",
@@ -24250,14 +24153,14 @@
               "target": "tracing_log"
             },
             {
-              "id": "tracing-serde 0.1.3",
+              "id": "tracing-serde 0.2.0",
               "target": "tracing_serde"
             }
           ],
           "selects": {}
         },
         "edition": "2018",
-        "version": "0.3.18"
+        "version": "0.3.22"
       },
       "license": "MIT",
       "license_ids": [
@@ -24311,7 +24214,7 @@
               "target": "byteorder"
             },
             {
-              "id": "bytes 1.11.0",
+              "id": "bytes 1.11.1",
               "target": "bytes"
             },
             {
@@ -26329,8 +26232,6 @@
         "crate_features": {
           "common": [
             "consoleapi",
-            "errhandlingapi",
-            "fileapi",
             "handleapi",
             "iphlpapi",
             "memoryapi",
@@ -30634,7 +30535,7 @@
               "target": "arc_swap"
             },
             {
-              "id": "bytes 1.11.0",
+              "id": "bytes 1.11.1",
               "target": "bytes"
             },
             {
@@ -33155,7 +33056,7 @@
               "target": "tracing"
             },
             {
-              "id": "tracing-subscriber 0.3.18",
+              "id": "tracing-subscriber 0.3.22",
               "target": "tracing_subscriber"
             },
             {

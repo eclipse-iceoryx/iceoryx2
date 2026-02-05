@@ -461,7 +461,7 @@ jobs:
       - name: Build and cache grcov
         uses: ./.github/actions/build-and-cache-rust-tool
         with:
-          rust-toolchain: 1.86.0
+          rust-toolchain: stable
           rust-components: llvm-tools
           check-and-install-cmd: grcov --version > /dev/null || cargo install grcov
           print-version-cmd: grcov --version

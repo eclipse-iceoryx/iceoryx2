@@ -97,3 +97,43 @@ pub fn new() -> Self { /* ... */ }
 
 This allows the codebase to maintain `const fn` for regular builds while
 providing a non-const version specifically for loom tests.
+
+## Updating dependencies in lock files
+
+The iceoryx2 repository contains lock files to pin dependencies
+to a specific version:
+
+Cargo: `Cargo.lock`
+Bazel: `MODULE.bazel.lock`, `examples/bazel/MODULE.bazel.lock`, and `Cargo.Bazel.lock`
+Python Poetry: `iceoryx2-ffi/python/poetry.lock` and `doc/api/python/poetry.lock`
+
+Reason to update dependencies in there could be security issues or bugs.
+Developers should create an issue for this based on the
+template `Update iceoryx2 Dependency`.
+To avoid conflicts with the supported minimum Rust version
+it is recommended to update only the dependency of interest
+instead of updating all of them and pin to a specific version.
+
+For Cargo the `cargo update` command is the right tool.
+Example with `tracing-subscriber` dep:
+
+```sh
+cargo update tracing-subscriber --precise 0.3.22
+```
+
+Bazel has a `Cargo.Bazel.lock` that contains the checksum
+of the ``Cargo.lock` so that this needs to be synced:
+
+```sh
+CARGO_BAZEL_REPIN=1 bazel build //...
+```
+
+Every update for a dependency in Cargo must be synced with
+the `Cargo.Bazel.lock` file.
+
+For python the poetry lock files can be updated:
+
+```sh
+poetry --project iceoryx2-ffi/python update urllib3
+poetry --project doc/api/python update urllib3
+```
