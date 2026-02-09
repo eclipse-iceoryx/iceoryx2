@@ -7,11 +7,11 @@ inputs:
   skip-remove-android-from-runner:
     description: "Defines if Android shall be removed in the pre step"
     required: false
-    default: "true"
+    default: "false"
   skip-remove-dotnet-from-runner:
     description: "Defines if the Dotnet Framework shall be removed in the pre step"
     required: false
-    default: "true"
+    default: "false"
 runs:
   using: "composite"
   steps:
@@ -27,11 +27,11 @@ runs:
           sudo rm -rf /opt/microsoft/msedge || true
           sudo rm -rf /opt/google/chrome || true
 
-          if [[ ${{ inputs.skip-remove-android-from-runner }} == 'true' ]]; then
+          if [[ ${{ inputs.skip-remove-android-from-runner }} == 'false' ]]; then
             sudo rm -rf /usr/local/lib/android || true
           fi
 
-          if [[ ${{ inputs.skip-remove-dotnet-from-runner }} == 'true' ]]; then
+          if [[ ${{ inputs.skip-remove-dotnet-from-runner }} == 'false' ]]; then
             sudo rm -rf /usr/share/dotnet || true
           fi
 
