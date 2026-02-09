@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Contributors to the Eclipse Foundation
+// Copyright (c) 2026 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -12,12 +12,14 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub mod atomic;
-pub mod cell;
-pub mod internal;
-pub mod lazy_lock;
-pub mod once;
-pub mod spin_lock;
+extern crate alloc;
 
-pub use iceoryx2_pal_concurrency_sync::WaitAction;
-pub use iceoryx2_pal_concurrency_sync::WaitResult;
+pub mod atomic_tests;
+pub mod lazy_lock_tests;
+pub mod once_tests;
+pub mod spin_lock_tests;
+pub mod strategy_barrier_tests;
+pub mod strategy_condition_variable_tests;
+pub mod strategy_mutex_tests;
+pub mod strategy_rwlock_tests;
+pub mod strategy_semaphore_tests;

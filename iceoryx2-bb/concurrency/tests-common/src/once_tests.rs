@@ -10,14 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::sync::atomic::{AtomicU32, Ordering};
+use iceoryx2_bb_concurrency::atomic::{AtomicU32, Ordering};
 
-use iceoryx2_pal_concurrency_sync::barrier::Barrier;
-use iceoryx2_pal_concurrency_sync::once::Once;
+use iceoryx2_bb_concurrency::once::Once;
 use iceoryx2_pal_testing::assert_that;
+use iceoryx2_pal_testing_nostd_macros::requires_std;
 
-#[test]
-fn once_executes_exactly_once() {
+pub fn once_executes_exactly_once() {
     let once = Once::new();
     let counter = AtomicU32::new(0);
 
@@ -37,8 +36,10 @@ fn once_executes_exactly_once() {
     assert_that!(once.is_completed(), eq true);
 }
 
-#[test]
-fn once_works_with_multiple_threads() {
+#[requires_std("threading")]
+pub fn once_works_with_multiple_threads() {
+    use iceoryx2_bb_concurrency::internal::strategy::barrier::Barrier;
+
     const NUMBER_OF_THREADS: u32 = 10;
 
     let once = Once::new();
@@ -62,8 +63,7 @@ fn once_works_with_multiple_threads() {
     assert_that!(once.is_completed(), eq true);
 }
 
-#[test]
-fn once_is_completed_returns_false_initially() {
+pub fn once_is_completed_returns_false_initially() {
     let once = Once::new();
     assert_that!(once.is_completed(), eq false);
 }

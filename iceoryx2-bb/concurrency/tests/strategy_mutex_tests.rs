@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Contributors to the Eclipse Foundation
+// Copyright (c) 2023 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -10,14 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![cfg_attr(not(feature = "std"), no_std)]
+use iceoryx2_bb_concurrency_tests_common::strategy_mutex_tests;
 
-pub mod atomic;
-pub mod cell;
-pub mod internal;
-pub mod lazy_lock;
-pub mod once;
-pub mod spin_lock;
+#[test]
+fn strategy_mutex_lock_blocks() {
+    strategy_mutex_tests::strategy_mutex_lock_blocks();
+}
 
-pub use iceoryx2_pal_concurrency_sync::WaitAction;
-pub use iceoryx2_pal_concurrency_sync::WaitResult;
+#[test]
+fn strategy_mutex_lock_with_timeout_and_fails_after_timeout() {
+    strategy_mutex_tests::strategy_mutex_lock_with_timeout_and_fails_after_timeout();
+}
