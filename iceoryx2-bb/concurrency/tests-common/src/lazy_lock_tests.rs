@@ -17,7 +17,7 @@ use alloc::vec::Vec;
 
 use iceoryx2_bb_concurrency::atomic::{AtomicUsize, Ordering};
 use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
-use iceoryx2_pal_testing_nostd_macros::requires_std;
+use iceoryx2_bb_testing_nostd_macros::requires_std;
 
 pub fn lazy_lock_primitive_type() {
     static VALUE: LazyLock<u32> = LazyLock::new(|| 42);

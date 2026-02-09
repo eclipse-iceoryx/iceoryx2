@@ -10,14 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_pal_testing_nostd_macros::requires_std;
+use iceoryx2_bb_testing_nostd_macros::requires_std;
 
 #[requires_std("threading")]
 pub fn strategy_barrier_with_multiple_waiter_works() {
     use core::sync::atomic::{AtomicI32, Ordering};
 
     use iceoryx2_bb_concurrency::internal::strategy::barrier::*;
-    use iceoryx2_pal_testing::assert_that;
+    use iceoryx2_bb_testing::assert_that;
 
     let counter = AtomicI32::new(0);
     let sut = Barrier::new(4);

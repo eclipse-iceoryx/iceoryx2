@@ -12,8 +12,8 @@
 
 use iceoryx2_bb_concurrency::internal::strategy::semaphore::*;
 use iceoryx2_bb_concurrency::{WaitAction, WaitResult};
-use iceoryx2_pal_testing::assert_that;
-use iceoryx2_pal_testing_nostd_macros::requires_std;
+use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_nostd_macros::requires_std;
 
 pub fn strategy_semaphore_post_and_try_wait_works() {
     let initial_value = 5;
