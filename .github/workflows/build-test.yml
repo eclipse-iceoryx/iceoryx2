@@ -87,15 +87,6 @@ jobs:
       - name: Check config key documentation
         run: ./internal/scripts/ci_check_description_vector_and_README.sh
 
-  # First rust code analysis with Ubuntu only
-  static-code-analysis-rust:
-    needs: changes
-    if: ${{ needs.changes.outputs.source-code == 'true' }}
-    uses: ./.github/workflows/reuse_static_code_analysis.yml
-    with:
-      os: ubuntu-latest
-      cargo-features-flag: ""
-
   static-code-analysis-cpp:
     needs: changes
     if: ${{ needs.changes.outputs.source-code == 'true' }}
@@ -117,15 +108,15 @@ jobs:
           internal/scripts/clang_tidy_scan.sh warning-as-error diff-to-main
 
   # Static Code Analysis on other variants
-  static-code-analysis-rust-extended:
-    needs: [cargo-nextest]
+  static-code-analysis-rust:
+    needs: changes
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
       matrix:
-        os: [macos-latest]
-        cargo-features-flag: [""]
-        include:
-          - os: ubuntu-latest
+        os: [ubuntu-latest, macos-latest]
+        cargo-features-flag: ["", "--features libc_platform"]
+        exclude:
+          - os: macos-latest
             cargo-features-flag: "--features libc_platform"
     uses: ./.github/workflows/reuse_static_code_analysis.yml
     with:
@@ -472,7 +463,6 @@ jobs:
         rust-doc-check,
         static-code-analysis-rust,
         static-code-analysis-cpp,
-        static-code-analysis-rust-extended,
         stable-debug,
         Bazel,
         x86_32-debug,
