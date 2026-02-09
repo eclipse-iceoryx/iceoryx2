@@ -16,6 +16,7 @@ use crate::atomic::AtomicU32;
 use crate::atomic::Ordering;
 use crate::{WaitAction, WaitResult};
 
+#[derive(Debug)]
 pub struct Mutex {
     // we use an AtomicU32 since it should be supported on nearly every platform
     state: AtomicU32,

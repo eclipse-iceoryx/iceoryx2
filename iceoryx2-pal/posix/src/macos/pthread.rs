@@ -19,10 +19,11 @@ use crate::posix::*;
 use iceoryx2_pal_concurrency_sync::atomic::Ordering;
 
 use iceoryx2_pal_concurrency_sync::atomic::AtomicU32;
-use iceoryx2_pal_concurrency_sync::barrier::Barrier;
 use iceoryx2_pal_concurrency_sync::cell::UnsafeCell;
-use iceoryx2_pal_concurrency_sync::mutex::Mutex;
-use iceoryx2_pal_concurrency_sync::{rwlock::*, WaitAction, WaitResult};
+use iceoryx2_pal_concurrency_sync::strategy::barrier::Barrier;
+use iceoryx2_pal_concurrency_sync::strategy::mutex::Mutex;
+use iceoryx2_pal_concurrency_sync::strategy::rwlock::*;
+use iceoryx2_pal_concurrency_sync::{WaitAction, WaitResult};
 
 #[derive(Clone, Copy)]
 struct ThreadState {

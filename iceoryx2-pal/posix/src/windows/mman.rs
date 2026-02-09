@@ -21,7 +21,7 @@ use crate::win32call;
 
 use iceoryx2_pal_concurrency_sync::atomic::AtomicU32;
 use iceoryx2_pal_concurrency_sync::cell::UnsafeCell;
-use iceoryx2_pal_concurrency_sync::mutex::Mutex;
+use iceoryx2_pal_concurrency_sync::strategy::mutex::Mutex;
 use iceoryx2_pal_concurrency_sync::WaitAction;
 use iceoryx2_pal_configuration::PATH_SEPARATOR;
 use windows_sys::Win32::Foundation::ERROR_FILE_EXISTS;

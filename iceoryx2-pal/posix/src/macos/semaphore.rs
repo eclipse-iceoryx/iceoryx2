@@ -14,7 +14,7 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(unused_variables)]
 
-use iceoryx2_pal_concurrency_sync::semaphore::Semaphore;
+use iceoryx2_pal_concurrency_sync::strategy::semaphore::Semaphore;
 use iceoryx2_pal_concurrency_sync::{WaitAction, WaitResult};
 
 use crate::posix::*;

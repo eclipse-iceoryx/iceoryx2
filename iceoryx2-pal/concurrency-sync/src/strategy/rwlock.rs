@@ -19,6 +19,7 @@ use crate::{WaitAction, WaitResult, SPIN_REPETITIONS};
 const WRITE_LOCKED: u32 = u32::MAX;
 const UNLOCKED: u32 = 0;
 
+#[derive(Debug)]
 pub struct RwLockReaderPreference {
     reader_count: AtomicU32,
 }
@@ -158,6 +159,7 @@ impl RwLockReaderPreference {
     }
 }
 
+#[derive(Debug)]
 pub struct RwLockWriterPreference {
     state: AtomicU32,
     writer_wake_counter: AtomicU32,
