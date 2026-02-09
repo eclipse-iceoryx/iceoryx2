@@ -109,6 +109,7 @@ when building the project.
 | dev_permissions    | on, off      | off     |
 | libc_platform      | on, off      | off     |
 | logger_std         | on, off      | on      |
+<!-- markdownlint-disable-next-line MD044 -->
 | logger_posix       | on, off      | off     |
 | logger_bare_metal  | on, off      | off     |
 | logger_buffer      | on, off      | off     |
