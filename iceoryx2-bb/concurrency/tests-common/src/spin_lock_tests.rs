@@ -11,9 +11,17 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2_bb_concurrency::spin_lock::SpinLock;
-use iceoryx2_pal_testing::assert_that;
-use iceoryx2_pal_testing::lifetime_tracker::LifetimeTracker;
-use iceoryx2_pal_testing_nostd_macros::requires_std;
+use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
+use iceoryx2_bb_testing_nostd_macros::requires_std;
+
+#[cfg(feature = "std")]
+pub use std_testing::*;
+
+#[cfg(feature = "std")]
+mod std_testing {
+    pub use iceoryx2_bb_testing::watchdog::Watchdog;
+}
 
 pub fn try_lock_locks() {
     let lk = SpinLock::new(0);
@@ -40,8 +48,6 @@ pub fn lock_guard_behaves_like_reference() {
 
 #[requires_std("threading", "watchdog", "barrier")]
 pub fn blocking_lock_locks_exclusively() {
-    use iceoryx2_pal_testing::watchdog::Watchdog;
-
     const NUMBER_OF_THREADS: usize = 2;
 
     let _watchdog = Watchdog::new();
@@ -62,8 +68,6 @@ pub fn blocking_lock_locks_exclusively() {
 
 #[requires_std("threading", "watchdog", "barrier")]
 pub fn try_lock_locks_exclusively() {
-    use iceoryx2_pal_testing::watchdog::Watchdog;
-
     const NUMBER_OF_THREADS: usize = 2;
 
     let _watchdog = Watchdog::new();
@@ -87,8 +91,6 @@ pub fn try_lock_locks_exclusively() {
 
 #[requires_std("threading", "watchdog")]
 pub fn lock_is_hold_until_guard_drops() {
-    use iceoryx2_pal_testing::watchdog::Watchdog;
-
     let _watchdog = Watchdog::new();
     let lk = SpinLock::new(Vec::new());
     std::thread::scope(|s| {

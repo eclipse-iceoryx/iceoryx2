@@ -10,13 +10,23 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_pal_testing_nostd_macros::requires_std;
+use iceoryx2_bb_testing_nostd_macros::requires_std;
 
 #[cfg(feature = "std")]
-mod internal {
+pub use std_testing::*;
 
-    use core::time::Duration;
-    use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU32, Ordering};
+#[cfg(feature = "std")]
+mod std_testing {
+
+    pub use core::time::Duration;
+
+    pub use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU32, Ordering};
+    pub use iceoryx2_bb_concurrency::internal::strategy::barrier::Barrier;
+    pub use iceoryx2_bb_concurrency::internal::strategy::condition_variable::ConditionVariable;
+    pub use iceoryx2_bb_concurrency::internal::strategy::mutex::Mutex;
+    pub use iceoryx2_bb_concurrency::{WaitAction, WaitResult};
+    pub use iceoryx2_bb_testing::assert_that;
+    pub use iceoryx2_bb_testing::watchdog::Watchdog;
 
     pub const TIMEOUT: Duration = Duration::from_millis(25);
 
@@ -61,21 +71,13 @@ mod internal {
 }
 
 #[cfg(feature = "std")]
-pub use internal::ThreadInWait;
+pub use std_testing::ThreadInWait;
 
 #[cfg(feature = "std")]
-pub use internal::TIMEOUT;
+pub use std_testing::TIMEOUT;
 
 #[requires_std("threading", "watchdog", "mutex")]
 pub fn strategy_condition_variable_notify_one_unblocks_one() {
-    use iceoryx2_bb_concurrency::atomic::{AtomicU32, Ordering};
-    use iceoryx2_bb_concurrency::internal::strategy::barrier::Barrier;
-    use iceoryx2_bb_concurrency::internal::strategy::condition_variable::ConditionVariable;
-    use iceoryx2_bb_concurrency::internal::strategy::mutex::Mutex;
-    use iceoryx2_bb_concurrency::{WaitAction, WaitResult};
-    use iceoryx2_pal_testing::assert_that;
-    use iceoryx2_pal_testing::watchdog::Watchdog;
-
     const NUMBER_OF_THREADS: usize = 3;
     let _watchdog = Watchdog::new();
     let barrier = Barrier::new(NUMBER_OF_THREADS as u32 + 1);
@@ -129,14 +131,6 @@ pub fn strategy_condition_variable_notify_one_unblocks_one() {
 
 #[requires_std("threading", "watchdog", "mutex")]
 pub fn strategy_condition_variable_notify_all_unblocks_all() {
-    use iceoryx2_bb_concurrency::atomic::{AtomicU32, Ordering};
-    use iceoryx2_bb_concurrency::internal::strategy::barrier::Barrier;
-    use iceoryx2_bb_concurrency::internal::strategy::condition_variable::ConditionVariable;
-    use iceoryx2_bb_concurrency::internal::strategy::mutex::Mutex;
-    use iceoryx2_bb_concurrency::{WaitAction, WaitResult};
-    use iceoryx2_pal_testing::assert_that;
-    use iceoryx2_pal_testing::watchdog::Watchdog;
-
     const NUMBER_OF_THREADS: usize = 5;
     let _watchdog = Watchdog::new();
     let barrier = Barrier::new(NUMBER_OF_THREADS as u32 + 1);
@@ -192,14 +186,6 @@ pub fn strategy_condition_variable_notify_all_unblocks_all() {
 
 #[requires_std("threading", "mutex")]
 pub fn strategy_condition_variable_mutex_is_locked_when_wait_returns() {
-    use iceoryx2_bb_concurrency::atomic::{AtomicU32, Ordering};
-    use iceoryx2_bb_concurrency::internal::strategy::barrier::Barrier;
-    use iceoryx2_bb_concurrency::internal::strategy::condition_variable::ConditionVariable;
-    use iceoryx2_bb_concurrency::internal::strategy::mutex::Mutex;
-    use iceoryx2_bb_concurrency::{WaitAction, WaitResult};
-    use iceoryx2_pal_testing::assert_that;
-    use iceoryx2_pal_testing::watchdog::Watchdog;
-
     const NUMBER_OF_THREADS: usize = 5;
     let _watchdog = Watchdog::new();
     let barrier = Barrier::new(NUMBER_OF_THREADS as u32 + 1);
@@ -252,11 +238,6 @@ pub fn strategy_condition_variable_mutex_is_locked_when_wait_returns() {
 
 #[requires_std("mutex")]
 pub fn strategy_condition_variable_wait_returns_false_when_functor_returns_false() {
-    use iceoryx2_bb_concurrency::internal::strategy::condition_variable::*;
-    use iceoryx2_bb_concurrency::internal::strategy::mutex::Mutex;
-    use iceoryx2_bb_concurrency::{WaitAction, WaitResult};
-    use iceoryx2_pal_testing::assert_that;
-
     let sut = ConditionVariable::new();
     let mtx = Mutex::new();
     mtx.lock(|_, _| WaitAction::Continue);
