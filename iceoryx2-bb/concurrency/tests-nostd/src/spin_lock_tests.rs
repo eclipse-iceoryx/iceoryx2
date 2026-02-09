@@ -10,63 +10,44 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 extern crate alloc;
-use alloc::alloc::Layout;
-use alloc::alloc::{alloc, dealloc};
 
-use iceoryx2_bb_concurrency::spin_lock::SpinLock;
 use iceoryx2_bb_concurrency_tests_common::spin_lock_tests;
-use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
-use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_nostd_macros::inventory_test;
 
-#[test]
+#[inventory_test]
 fn spin_lock_try_lock_locks() {
     spin_lock_tests::try_lock_locks();
 }
 
-#[test]
+#[inventory_test]
 fn spin_lock_lock_guard_unlocks_when_dropped() {
     spin_lock_tests::lock_guard_unlocks_when_dropped();
 }
 
-#[test]
+#[inventory_test]
 fn spin_lock_lock_guard_behaves_like_reference() {
     spin_lock_tests::lock_guard_behaves_like_reference();
 }
 
-#[test]
+#[inventory_test]
 fn spin_lock_blocking_lock_locks_exclusively() {
     spin_lock_tests::blocking_lock_locks_exclusively();
 }
 
-#[test]
+#[inventory_test]
 fn spin_lock_try_lock_locks_exclusively() {
     spin_lock_tests::try_lock_locks_exclusively();
 }
 
-#[test]
+#[inventory_test]
 fn spin_lock_lock_is_hold_until_guard_drops() {
     spin_lock_tests::lock_is_hold_until_guard_drops();
 }
 
-#[test]
+#[inventory_test]
 fn spin_lock_drop_called_for_underlying_value() {
     spin_lock_tests::drop_called_for_underlying_value();
-}
-
-#[test]
-fn spin_lock_placement_default_works() {
-    let layout = Layout::new::<SpinLock<Option<u8>>>();
-    let raw_memory = unsafe { alloc(layout) } as *mut SpinLock<Option<u8>>;
-    unsafe { SpinLock::placement_default(raw_memory) };
-
-    let lk = unsafe { &mut *raw_memory }.try_lock();
-    assert_that!(lk, is_some);
-    let mut guard = lk.unwrap();
-    assert_that!(guard, is_none);
-    *guard = Some(34);
-
-    drop(guard);
-    unsafe { core::ptr::drop_in_place(raw_memory) };
-    unsafe { dealloc(raw_memory.cast(), layout) };
 }

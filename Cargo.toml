@@ -13,6 +13,7 @@ members = [
     "iceoryx2-bb/threadsafe/tests-nostd",
     "iceoryx2-bb/concurrency",
     "iceoryx2-bb/concurrency/tests-common",
+    "iceoryx2-bb/concurrency/tests-nostd",
     "iceoryx2-bb/conformance-test-macros",
     "iceoryx2-bb/container",
     "iceoryx2-bb/derive-macros",
@@ -97,6 +98,7 @@ iceoryx2-bb-threadsafe-nostd = { version = "0.8.999", path = "iceoryx2-bb/thread
 iceoryx2-bb-lock-free = { version = "0.8.999", path = "iceoryx2-bb/lock-free/" }
 iceoryx2-bb-concurrency = { version = "0.8.999", path = "iceoryx2-bb/concurrency/" }
 iceoryx2-bb-concurrency-tests-common = { version = "0.8.999", path = "iceoryx2-bb/concurrency/tests-common/" }
+iceoryx2-bb-concurrency-tests-nostd = { version = "0.8.999", path = "iceoryx2-bb/concurrency/tests-nostd/" }
 iceoryx2-bb-conformance-test-macros = { version = "0.8.999", path = "iceoryx2-bb/conformance-test-macros"}
 iceoryx2-bb-container = { version = "0.8.999", path = "iceoryx2-bb/container/" }
 iceoryx2-bb-derive-macros = { version = "0.8.999", path = "iceoryx2-bb/derive-macros/" }

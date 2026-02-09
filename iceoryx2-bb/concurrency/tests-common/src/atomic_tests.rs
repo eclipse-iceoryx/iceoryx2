@@ -10,20 +10,20 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::alloc::Layout;
 use core::{
     fmt::Debug,
     ops::{AddAssign, BitAnd, BitOr},
 };
-use core::alloc::Layout;
 
 use alloc::alloc::alloc;
 
-use iceoryx2_bb_concurrency::atomic::Ordering;
-use iceoryx2_bb_concurrency::atomic::AtomicU32;
+use iceoryx2_bb_concurrency::atomic::internal::AtomicInteger;
 use iceoryx2_bb_concurrency::atomic::Atomic;
-use iceoryx2_bb_concurrency::atomic::{internal::AtomicInteger};
+use iceoryx2_bb_concurrency::atomic::AtomicU32;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
-use iceoryx2_pal_testing::assert_that;
+use iceoryx2_bb_testing::assert_that;
 
 static COUNTER: AtomicU32 = AtomicU32::new(0);
 

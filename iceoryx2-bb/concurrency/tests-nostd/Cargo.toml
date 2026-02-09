@@ -1,6 +1,6 @@
 [package]
-name = "iceoryx2-bb-concurrency-tests-common"
-description = "iceoryx2: [internal] common test definitions for iceoryx2-bb-concurrency"
+name = "iceoryx2-bb-concurrency-tests-nostd"
+description = "iceoryx2: [internal] nostd deployment of iceoryx2-bb-concurrency tests"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
@@ -10,21 +10,19 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 version = { workspace = true }
 
-[lints]
-workspace = true
-
 [features]
-default = []
+# Default to noop to support std workspace builds
+default = ["std"]
+
 std = [
-  "iceoryx2-bb-concurrency/std",
-  "iceoryx2-bb-testing/std",
   "iceoryx2-bb-testing-nostd-macros/std",
-  "iceoryx2-pal-print/std",
+  "iceoryx2-bb-testing-nostd/std"
 ]
 
 [dependencies]
 iceoryx2-bb-elementary-traits = { workspace = true }
-iceoryx2-bb-concurrency = { workspace = true }
-iceoryx2-bb-testing = { workspace = true }
+iceoryx2-bb-concurrency-tests-common = { workspace = true }
+iceoryx2-bb-loggers = { workspace = true }
+iceoryx2-bb-memory = { workspace = true }
 iceoryx2-bb-testing-nostd-macros = { workspace = true }
-iceoryx2-pal-print = { workspace = true }
+iceoryx2-bb-testing-nostd = { workspace = true }

@@ -13,8 +13,8 @@
 use iceoryx2_bb_concurrency::atomic::{AtomicU32, Ordering};
 
 use iceoryx2_bb_concurrency::once::Once;
-use iceoryx2_pal_testing::assert_that;
-use iceoryx2_pal_testing_nostd_macros::requires_std;
+use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_nostd_macros::requires_std;
 
 pub fn once_executes_exactly_once() {
     let once = Once::new();
