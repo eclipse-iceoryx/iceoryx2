@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Contributors to the Eclipse Foundation
+// Copyright (c) 2026 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -10,14 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![cfg_attr(not(feature = "std"), no_std)]
+//! Internal strategy-based synchronization primitives.
+//!
+//! This module is only re-exported for testing purposes on no_std platforms.
+//! The contents should not be used in upper software layers.
 
-pub mod atomic;
-pub mod cell;
-pub mod internal;
-pub mod lazy_lock;
-pub mod once;
-pub mod spin_lock;
-
-pub use iceoryx2_pal_concurrency_sync::WaitAction;
-pub use iceoryx2_pal_concurrency_sync::WaitResult;
+pub mod barrier;
+pub mod condition_variable;
+pub mod mutex;
+pub mod rwlock;
+pub mod semaphore;

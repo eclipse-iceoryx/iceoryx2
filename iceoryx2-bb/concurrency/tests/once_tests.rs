@@ -10,14 +10,19 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![cfg_attr(not(feature = "std"), no_std)]
+use iceoryx2_bb_concurrency_tests_common::once_tests;
 
-pub mod atomic;
-pub mod cell;
-pub mod internal;
-pub mod lazy_lock;
-pub mod once;
-pub mod spin_lock;
+#[test]
+fn once_executes_exactly_once() {
+    once_tests::once_executes_exactly_once();
+}
 
-pub use iceoryx2_pal_concurrency_sync::WaitAction;
-pub use iceoryx2_pal_concurrency_sync::WaitResult;
+#[test]
+fn once_works_with_multiple_threads() {
+    once_tests::once_works_with_multiple_threads();
+}
+
+#[test]
+fn once_is_completed_returns_false_initially() {
+    once_tests::once_is_completed_returns_false_initially();
+}

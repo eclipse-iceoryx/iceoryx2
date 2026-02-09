@@ -10,19 +10,19 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::{
-    sync::atomic::{AtomicU32, Ordering},
-    time::Duration,
-};
-use std::time::Instant;
+use iceoryx2_pal_testing_nostd_macros::requires_std;
 
-use iceoryx2_pal_concurrency_sync::{mutex::*, WaitAction, WaitResult};
-use iceoryx2_pal_testing::assert_that;
+#[requires_std("threading")]
+pub fn strategy_mutex_lock_blocks() {
+    use core::time::Duration;
 
-const TIMEOUT: Duration = Duration::from_millis(25);
+    use iceoryx2_bb_concurrency::atomic::{AtomicU32, Ordering};
+    use iceoryx2_bb_concurrency::internal::strategy::mutex::*;
+    use iceoryx2_bb_concurrency::{WaitAction, WaitResult};
+    use iceoryx2_pal_testing::assert_that;
 
-#[test]
-fn mutex_lock_blocks() {
+    const TIMEOUT: Duration = Duration::from_millis(25);
+
     let sut = Mutex::new();
     let counter = AtomicU32::new(0);
 
@@ -46,14 +46,23 @@ fn mutex_lock_blocks() {
     });
 }
 
-#[test]
-fn mutex_lock_with_timeout_and_fails_after_timeout() {
+#[requires_std("time")]
+pub fn strategy_mutex_lock_with_timeout_and_fails_after_timeout() {
+    use core::time::Duration;
+
+    use iceoryx2_bb_concurrency::atomic::Ordering;
+    use iceoryx2_bb_concurrency::internal::strategy::mutex::*;
+    use iceoryx2_bb_concurrency::{WaitAction, WaitResult};
+    use iceoryx2_pal_testing::assert_that;
+
+    const TIMEOUT: Duration = Duration::from_millis(25);
+
     let sut = Mutex::new();
 
     sut.try_lock();
 
     assert_that!(sut.lock(|atomic, value| {
-        let start = Instant::now();
+        let start = std::time::Instant::now();
         while atomic.load(Ordering::Relaxed) == *value {
             if start.elapsed() > TIMEOUT {
                 return WaitAction::Abort;

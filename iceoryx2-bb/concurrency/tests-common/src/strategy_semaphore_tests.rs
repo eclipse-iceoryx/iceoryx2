@@ -10,18 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::{
-    sync::atomic::{AtomicU32, Ordering},
-    time::Duration,
-};
-
-use iceoryx2_pal_concurrency_sync::{semaphore::*, WaitAction, WaitResult};
+use iceoryx2_bb_concurrency::internal::strategy::semaphore::*;
+use iceoryx2_bb_concurrency::{WaitAction, WaitResult};
 use iceoryx2_pal_testing::assert_that;
+use iceoryx2_pal_testing_nostd_macros::requires_std;
 
-const TIMEOUT: Duration = Duration::from_millis(25);
-
-#[test]
-fn semaphore_post_and_try_wait_works() {
+pub fn strategy_semaphore_post_and_try_wait_works() {
     let initial_value = 5;
     let sut = Semaphore::new(initial_value);
 
@@ -38,8 +32,7 @@ fn semaphore_post_and_try_wait_works() {
     assert_that!(sut.try_wait(), eq WaitResult::Interrupted);
 }
 
-#[test]
-fn semaphore_post_and_wait_works() {
+pub fn strategy_semaphore_post_and_wait_works() {
     let initial_value = 5;
     let sut = Semaphore::new(initial_value);
 
@@ -56,8 +49,15 @@ fn semaphore_post_and_wait_works() {
     assert_that!(sut.wait(|_, _| WaitAction::Abort), eq WaitResult::Interrupted);
 }
 
-#[test]
-fn semaphore_wait_blocks() {
+#[requires_std("threading")]
+pub fn strategy_semaphore_wait_blocks() {
+    use core::{
+        sync::atomic::{AtomicU32, Ordering},
+        time::Duration,
+    };
+
+    const TIMEOUT: Duration = Duration::from_millis(25);
+
     let initial_value = 0;
     let sut = Semaphore::new(initial_value);
     let counter = AtomicU32::new(0);

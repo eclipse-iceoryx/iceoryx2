@@ -10,18 +10,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::{
-    sync::atomic::{AtomicU32, Ordering},
-    time::Duration,
-};
-
-use iceoryx2_pal_concurrency_sync::{barrier::Barrier, rwlock::*, WaitAction, WaitResult};
+use iceoryx2_bb_concurrency::internal::strategy::rwlock::*;
+use iceoryx2_bb_concurrency::{WaitAction, WaitResult};
 use iceoryx2_pal_testing::assert_that;
+use iceoryx2_pal_testing_nostd_macros::requires_std;
 
-const TIMEOUT: Duration = Duration::from_millis(25);
+/////////////////////
+//  Reader Preference
+/////////////////////
 
-#[test]
-fn rwlock_reader_preference_try_write_lock_blocks_read_locks() {
+pub fn strategy_rwlock_reader_preference_try_write_lock_blocks_read_locks() {
     let sut = RwLockReaderPreference::new();
 
     assert_that!(sut.try_write_lock(), eq WaitResult::Success);
@@ -32,8 +30,7 @@ fn rwlock_reader_preference_try_write_lock_blocks_read_locks() {
     assert_that!(sut.read_lock(|_, _| WaitAction::Abort), eq WaitResult::Interrupted);
 }
 
-#[test]
-fn rwlock_reader_preference_multiple_read_locks_block_write_lock() {
+pub fn strategy_rwlock_reader_preference_multiple_read_locks_block_write_lock() {
     let sut = RwLockReaderPreference::new();
 
     assert_that!(sut.try_read_lock(), eq WaitResult::Success);
@@ -45,8 +42,7 @@ fn rwlock_reader_preference_multiple_read_locks_block_write_lock() {
     assert_that!(sut.write_lock(|_, _| WaitAction::Abort), eq WaitResult::Interrupted);
 }
 
-#[test]
-fn rwlock_reader_preference_write_lock_and_unlock_works() {
+pub fn strategy_rwlock_reader_preference_write_lock_and_unlock_works() {
     let sut = RwLockReaderPreference::new();
 
     assert_that!(sut.write_lock(|_, _| WaitAction::Abort), eq WaitResult::Success);
@@ -68,8 +64,7 @@ fn rwlock_reader_preference_write_lock_and_unlock_works() {
     assert_that!(sut.write_lock(|_, _| WaitAction::Abort), eq WaitResult::Success);
 }
 
-#[test]
-fn rwlock_reader_preference_try_read_lock_and_unlock_works() {
+pub fn strategy_rwlock_reader_preference_try_read_lock_and_unlock_works() {
     const NUMBER_OF_READ_LOCKS: usize = 123;
     let sut = RwLockReaderPreference::new();
 
@@ -86,8 +81,7 @@ fn rwlock_reader_preference_try_read_lock_and_unlock_works() {
     assert_that!(sut.try_write_lock(), eq WaitResult::Success);
 }
 
-#[test]
-fn rwlock_reader_preference_read_lock_and_unlock_works() {
+pub fn strategy_rwlock_reader_preference_read_lock_and_unlock_works() {
     const NUMBER_OF_READ_LOCKS: usize = 67;
     let sut = RwLockReaderPreference::new();
 
@@ -104,8 +98,12 @@ fn rwlock_reader_preference_read_lock_and_unlock_works() {
     assert_that!(sut.write_lock(|_, _| WaitAction::Abort), eq WaitResult::Success);
 }
 
-#[test]
-fn rwlock_reader_preference_read_lock_blocks_only_write_locks() {
+#[requires_std("threading")]
+pub fn strategy_rwlock_reader_preference_read_lock_blocks_only_write_locks() {
+    use iceoryx2_bb_concurrency::atomic::AtomicU32;
+    use iceoryx2_bb_concurrency::atomic::Ordering;
+    use iceoryx2_bb_concurrency::internal::strategy::barrier::Barrier;
+
     const READ_THREADS: u32 = 4;
     const WRITE_THREADS: u32 = 4;
 
@@ -158,8 +156,14 @@ fn rwlock_reader_preference_read_lock_blocks_only_write_locks() {
     });
 }
 
-#[test]
-fn rwlock_reader_preference_write_lock_blocks_everything() {
+#[requires_std("threading")]
+pub fn strategy_rwlock_reader_preference_write_lock_blocks_everything() {
+    use core::time::Duration;
+    use iceoryx2_bb_concurrency::atomic::{AtomicU32, Ordering};
+    use iceoryx2_bb_concurrency::internal::strategy::barrier::Barrier;
+
+    const TIMEOUT: Duration = Duration::from_millis(25);
+
     const READ_THREADS: u32 = 4;
     const WRITE_THREADS: u32 = 4;
 
@@ -218,12 +222,11 @@ fn rwlock_reader_preference_write_lock_blocks_everything() {
     });
 }
 
-//////////////////////
-/// Writer Preference
-//////////////////////
+/////////////////////
+// Writer Preference
+/////////////////////
 
-#[test]
-fn rwlock_writer_preference_try_write_lock_blocks_read_locks() {
+pub fn strategy_rwlock_writer_preference_try_write_lock_blocks_read_locks() {
     let sut = RwLockWriterPreference::new();
 
     assert_that!(sut.try_write_lock(), eq WaitResult::Success);
@@ -234,8 +237,7 @@ fn rwlock_writer_preference_try_write_lock_blocks_read_locks() {
     assert_that!(sut.read_lock(|_, _| WaitAction::Abort), eq WaitResult::Interrupted);
 }
 
-#[test]
-fn rwlock_writer_preference_multiple_read_locks_block_write_lock() {
+pub fn strategy_rwlock_writer_preference_multiple_read_locks_block_write_lock() {
     let sut = RwLockWriterPreference::new();
 
     assert_that!(sut.try_read_lock(), eq WaitResult::Success);
@@ -247,8 +249,7 @@ fn rwlock_writer_preference_multiple_read_locks_block_write_lock() {
     assert_that!(sut.write_lock(|_, _| WaitAction::Abort, |_| {}, |_| {}), eq WaitResult::Interrupted);
 }
 
-#[test]
-fn rwlock_writer_preference_write_lock_and_unlock_works() {
+pub fn strategy_rwlock_writer_preference_write_lock_and_unlock_works() {
     let sut = RwLockWriterPreference::new();
 
     assert_that!(sut.write_lock(|_, _| WaitAction::Abort, |_| {}, |_| {}), eq WaitResult::Success);
@@ -270,8 +271,7 @@ fn rwlock_writer_preference_write_lock_and_unlock_works() {
     assert_that!(sut.write_lock(|_, _| WaitAction::Abort, |_| {}, |_| {}), eq WaitResult::Success);
 }
 
-#[test]
-fn rwlock_writer_preference_try_read_lock_and_unlock_works() {
+pub fn strategy_rwlock_writer_preference_try_read_lock_and_unlock_works() {
     const NUMBER_OF_READ_LOCKS: usize = 123;
     let sut = RwLockWriterPreference::new();
 
@@ -288,8 +288,7 @@ fn rwlock_writer_preference_try_read_lock_and_unlock_works() {
     assert_that!(sut.try_write_lock(), eq WaitResult::Success);
 }
 
-#[test]
-fn rwlock_writer_preference_read_lock_and_unlock_works() {
+pub fn strategy_rwlock_writer_preference_read_lock_and_unlock_works() {
     const NUMBER_OF_READ_LOCKS: usize = 67;
     let sut = RwLockWriterPreference::new();
 
@@ -306,10 +305,16 @@ fn rwlock_writer_preference_read_lock_and_unlock_works() {
     assert_that!(sut.write_lock(|_, _| WaitAction::Abort, |_| {}, |_| {}), eq WaitResult::Success);
 }
 
-#[test]
-fn rwlock_writer_preference_write_lock_blocks_everything() {
+#[requires_std("threading")]
+pub fn strategy_rwlock_writer_preference_write_lock_blocks_everything() {
+    use core::time::Duration;
+    use iceoryx2_bb_concurrency::atomic::{AtomicU32, Ordering};
+    use iceoryx2_bb_concurrency::internal::strategy::barrier::Barrier;
+
     const READ_THREADS: u32 = 4;
     const WRITE_THREADS: u32 = 4;
+
+    const TIMEOUT: Duration = Duration::from_millis(25);
 
     let sut = RwLockWriterPreference::new();
     let barrier = Barrier::new(READ_THREADS + WRITE_THREADS + 1);

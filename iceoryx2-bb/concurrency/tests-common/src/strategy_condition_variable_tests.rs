@@ -10,60 +10,72 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::{
-    hint::spin_loop,
-    sync::atomic::{AtomicBool, AtomicU32, Ordering},
-    time::Duration,
-};
+use iceoryx2_pal_testing_nostd_macros::requires_std;
 
-use iceoryx2_pal_concurrency_sync::{
-    barrier::Barrier, condition_variable::*, WaitAction, WaitResult,
-};
-use iceoryx2_pal_testing::{assert_that, watchdog::Watchdog};
+#[cfg(feature = "std")]
+mod internal {
 
-const TIMEOUT: Duration = Duration::from_millis(25);
+    use core::time::Duration;
+    use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU32, Ordering};
 
-struct ThreadInWait<const NUMBER_OF_THREADS: usize> {
-    thread_id: AtomicU32,
-    thread_in_wait: [AtomicBool; NUMBER_OF_THREADS],
-}
+    pub const TIMEOUT: Duration = Duration::from_millis(25);
 
-impl<const NUMBER_OF_THREADS: usize> ThreadInWait<NUMBER_OF_THREADS> {
-    fn new() -> Self {
-        const FALSE: AtomicBool = AtomicBool::new(false);
-        Self {
-            thread_id: AtomicU32::new(0),
-            thread_in_wait: [FALSE; NUMBER_OF_THREADS],
+    pub struct ThreadInWait<const NUMBER_OF_THREADS: usize> {
+        thread_id: AtomicU32,
+        thread_in_wait: [AtomicBool; NUMBER_OF_THREADS],
+    }
+
+    impl<const NUMBER_OF_THREADS: usize> ThreadInWait<NUMBER_OF_THREADS> {
+        pub fn new() -> Self {
+            const FALSE: AtomicBool = AtomicBool::new(false);
+            Self {
+                thread_id: AtomicU32::new(0),
+                thread_in_wait: [FALSE; NUMBER_OF_THREADS],
+            }
         }
-    }
 
-    fn get_id(&self) -> usize {
-        self.thread_id.fetch_add(1, Ordering::Relaxed) as usize
-    }
+        pub fn get_id(&self) -> usize {
+            self.thread_id.fetch_add(1, Ordering::Relaxed) as usize
+        }
 
-    fn signal_is_in_wait(&self, id: usize) {
-        self.thread_in_wait[id].store(true, Ordering::Relaxed);
-    }
+        pub fn signal_is_in_wait(&self, id: usize) {
+            self.thread_in_wait[id].store(true, Ordering::Relaxed);
+        }
 
-    fn block_until_all_threads_are_waiting(&self) {
-        loop {
-            let mut wait_for_thread = false;
-            for v in &self.thread_in_wait {
-                if !v.load(Ordering::Relaxed) {
-                    wait_for_thread = true;
+        pub fn block_until_all_threads_are_waiting(&self) {
+            loop {
+                let mut wait_for_thread = false;
+                for v in &self.thread_in_wait {
+                    if !v.load(Ordering::Relaxed) {
+                        wait_for_thread = true;
+                        break;
+                    }
+                }
+
+                if !wait_for_thread {
                     break;
                 }
             }
-
-            if !wait_for_thread {
-                break;
-            }
         }
     }
 }
 
-#[test]
-fn condition_variable_notify_one_unblocks_one() {
+#[cfg(feature = "std")]
+pub use internal::ThreadInWait;
+
+#[cfg(feature = "std")]
+pub use internal::TIMEOUT;
+
+#[requires_std("threading", "watchdog", "mutex")]
+pub fn strategy_condition_variable_notify_one_unblocks_one() {
+    use iceoryx2_bb_concurrency::atomic::{AtomicU32, Ordering};
+    use iceoryx2_bb_concurrency::internal::strategy::barrier::Barrier;
+    use iceoryx2_bb_concurrency::internal::strategy::condition_variable::ConditionVariable;
+    use iceoryx2_bb_concurrency::internal::strategy::mutex::Mutex;
+    use iceoryx2_bb_concurrency::{WaitAction, WaitResult};
+    use iceoryx2_pal_testing::assert_that;
+    use iceoryx2_pal_testing::watchdog::Watchdog;
+
     const NUMBER_OF_THREADS: usize = 3;
     let _watchdog = Watchdog::new();
     let barrier = Barrier::new(NUMBER_OF_THREADS as u32 + 1);
@@ -85,7 +97,7 @@ fn condition_variable_notify_one_unblocks_one() {
                     |_, _| {
                         thread_in_wait.signal_is_in_wait(id);
                         while triggered_thread.load(Ordering::Relaxed) < 1 {
-                            spin_loop()
+                            core::hint::spin_loop()
                         }
                         WaitAction::Continue
                     },
@@ -115,8 +127,16 @@ fn condition_variable_notify_one_unblocks_one() {
     });
 }
 
-#[test]
-fn condition_variable_notify_all_unblocks_all() {
+#[requires_std("threading", "watchdog", "mutex")]
+pub fn strategy_condition_variable_notify_all_unblocks_all() {
+    use iceoryx2_bb_concurrency::atomic::{AtomicU32, Ordering};
+    use iceoryx2_bb_concurrency::internal::strategy::barrier::Barrier;
+    use iceoryx2_bb_concurrency::internal::strategy::condition_variable::ConditionVariable;
+    use iceoryx2_bb_concurrency::internal::strategy::mutex::Mutex;
+    use iceoryx2_bb_concurrency::{WaitAction, WaitResult};
+    use iceoryx2_pal_testing::assert_that;
+    use iceoryx2_pal_testing::watchdog::Watchdog;
+
     const NUMBER_OF_THREADS: usize = 5;
     let _watchdog = Watchdog::new();
     let barrier = Barrier::new(NUMBER_OF_THREADS as u32 + 1);
@@ -139,7 +159,7 @@ fn condition_variable_notify_all_unblocks_all() {
                     |_, _| {
                         thread_in_wait.signal_is_in_wait(id);
                         while triggered_thread.load(Ordering::Relaxed) < 1 {
-                            spin_loop()
+                            core::hint::spin_loop()
                         }
                         WaitAction::Continue
                     },
@@ -170,8 +190,16 @@ fn condition_variable_notify_all_unblocks_all() {
     });
 }
 
-#[test]
-fn condition_variable_mutex_is_locked_when_wait_returns() {
+#[requires_std("threading", "mutex")]
+pub fn strategy_condition_variable_mutex_is_locked_when_wait_returns() {
+    use iceoryx2_bb_concurrency::atomic::{AtomicU32, Ordering};
+    use iceoryx2_bb_concurrency::internal::strategy::barrier::Barrier;
+    use iceoryx2_bb_concurrency::internal::strategy::condition_variable::ConditionVariable;
+    use iceoryx2_bb_concurrency::internal::strategy::mutex::Mutex;
+    use iceoryx2_bb_concurrency::{WaitAction, WaitResult};
+    use iceoryx2_pal_testing::assert_that;
+    use iceoryx2_pal_testing::watchdog::Watchdog;
+
     const NUMBER_OF_THREADS: usize = 5;
     let _watchdog = Watchdog::new();
     let barrier = Barrier::new(NUMBER_OF_THREADS as u32 + 1);
@@ -193,7 +221,7 @@ fn condition_variable_mutex_is_locked_when_wait_returns() {
                     |_, _| {
                         thread_in_wait.signal_is_in_wait(id);
                         while triggered_thread.load(Ordering::Relaxed) < 1 {
-                            spin_loop()
+                            core::hint::spin_loop()
                         }
                         WaitAction::Continue
                     },
@@ -222,8 +250,13 @@ fn condition_variable_mutex_is_locked_when_wait_returns() {
     });
 }
 
-#[test]
-fn condition_variable_wait_returns_false_when_functor_returns_false() {
+#[requires_std("mutex")]
+pub fn strategy_condition_variable_wait_returns_false_when_functor_returns_false() {
+    use iceoryx2_bb_concurrency::internal::strategy::condition_variable::*;
+    use iceoryx2_bb_concurrency::internal::strategy::mutex::Mutex;
+    use iceoryx2_bb_concurrency::{WaitAction, WaitResult};
+    use iceoryx2_pal_testing::assert_that;
+
     let sut = ConditionVariable::new();
     let mtx = Mutex::new();
     mtx.lock(|_, _| WaitAction::Continue);
