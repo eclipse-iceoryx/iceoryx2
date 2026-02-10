@@ -50,7 +50,7 @@ auto UniquePublisherId::bytes() const -> const bb::Optional<RawIdType>& {
         m_raw_id.emplace(std::move(bytes));
     }
     return m_raw_id;
-};
+}
 
 void UniquePublisherId::drop() {
     if (m_handle != nullptr) {
@@ -96,7 +96,7 @@ auto UniqueSubscriberId::bytes() const -> const bb::Optional<RawIdType>& {
         m_raw_id.emplace(std::move(bytes));
     }
     return m_raw_id;
-};
+}
 
 void UniqueSubscriberId::drop() {
     if (m_handle != nullptr) {
@@ -142,7 +142,7 @@ auto UniqueNotifierId::bytes() const -> const bb::Optional<RawIdType>& {
         m_raw_id.emplace(std::move(bytes));
     }
     return m_raw_id;
-};
+}
 
 void UniqueNotifierId::drop() {
     if (m_handle != nullptr) {
@@ -188,7 +188,7 @@ auto UniqueListenerId::bytes() const -> const bb::Optional<RawIdType>& {
         m_raw_id.emplace(std::move(bytes));
     }
     return m_raw_id;
-};
+}
 
 void UniqueListenerId::drop() {
     if (m_handle != nullptr) {
@@ -234,7 +234,7 @@ auto UniqueClientId::bytes() const -> const bb::Optional<RawIdType>& {
         m_raw_id.emplace(std::move(bytes));
     }
     return m_raw_id;
-};
+}
 
 void UniqueClientId::drop() {
     if (m_handle != nullptr) {
@@ -280,7 +280,7 @@ auto UniqueServerId::bytes() const -> const bb::Optional<RawIdType>& {
         m_raw_id.emplace(std::move(bytes));
     }
     return m_raw_id;
-};
+}
 
 void UniqueServerId::drop() {
     if (m_handle != nullptr) {
@@ -326,7 +326,7 @@ auto UniqueReaderId::bytes() const -> const bb::Optional<RawIdType>& {
         m_raw_id.emplace(std::move(bytes));
     }
     return m_raw_id;
-};
+}
 
 void UniqueReaderId::drop() {
     if (m_handle != nullptr) {
@@ -372,7 +372,7 @@ auto UniqueWriterId::bytes() const -> const bb::Optional<RawIdType>& {
         m_raw_id.emplace(std::move(bytes));
     }
     return m_raw_id;
-};
+}
 
 void UniqueWriterId::drop() {
     if (m_handle != nullptr) {
