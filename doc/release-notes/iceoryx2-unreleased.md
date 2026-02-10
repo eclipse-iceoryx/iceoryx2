@@ -37,6 +37,8 @@
   [#1316](https://github.com/eclipse-iceoryx/iceoryx2/issues/1316)
 * Fix Python type translation for integer types (32-bit)
   [#1333](https://github.com/eclipse-iceoryx/iceoryx2/issues/1333)
+* Fix GCC 9 build failure
+  [#1342](https://github.com/eclipse-iceoryx/iceoryx2/issues/1342)
 
 ### Refactoring
 
