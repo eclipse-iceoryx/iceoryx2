@@ -113,10 +113,12 @@ jobs:
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         cargo-features-flag: ["", "--features libc_platform"]
         exclude:
           - os: macos-latest
+            cargo-features-flag: "--features libc_platform"
+          - os: windows-latest
             cargo-features-flag: "--features libc_platform"
     uses: ./.github/workflows/reuse_static_code_analysis.yml
     with:
