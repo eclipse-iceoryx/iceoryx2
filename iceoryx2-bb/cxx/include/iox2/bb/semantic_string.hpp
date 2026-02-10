@@ -28,12 +28,6 @@ enum class SemanticStringError : uint8_t {
     ExceedsMaximumLength
 };
 
-template <uint64_t Capacity>
-using DoesContainInvalidCharacter = bool (*)(const bb::StaticString<Capacity>& value);
-
-template <uint64_t Capacity>
-using DoesContainInvalidContent = bool (*)(const bb::StaticString<Capacity>& value);
-
 /// @brief The SemanticString is a string which has an inner syntax and restrictions
 ///         to valid content. Examples are for instance
 ///         * FileNames, no slashes etc.
