@@ -35,6 +35,9 @@ rust_bindgen_library(
     cc_lib = ":iceoryx2-pal-os-api-c-lib",
     bindgen_flags = [
         "--use-core",
+        # ignore warnings in the bindgen generated code
+        "--raw-line=#![allow(warnings)]",
+        "--raw-line=#![allow(clippy::all)]",
     ],
 )
 

@@ -39,7 +39,10 @@ rust_bindgen_library(
     cc_lib = ":iceoryx2-pal-posix-c-lib",
     bindgen_flags = [
         "--use-core",
-        "--blocklist-type", "max_align_t"
+        "--blocklist-type", "max_align_t",
+        # ignore warnings in the bindgen generated code
+        "--raw-line=#![allow(warnings)]",
+        "--raw-line=#![allow(clippy::all)]",
     ],
 )
 

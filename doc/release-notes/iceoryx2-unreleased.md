@@ -63,6 +63,8 @@
   [#1327](https://github.com/eclipse-iceoryx/iceoryx2/issues/1327)
 * `CleanupState` implements `ZeroCopySend`
   [#1331](https://github.com/eclipse-iceoryx/iceoryx2/issues/1331)
+* Ignore warnings from bindgen generated files with bazel build
+  [#1345](https://github.com/eclipse-iceoryx/iceoryx2/issues/1345)
 
 ### Workflow
 
