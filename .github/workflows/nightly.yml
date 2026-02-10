@@ -53,9 +53,10 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
         toolchain: [stable, 1.83.0]
         profile: ["release", "debug"]
+        # NOTE: using 'iceoryx2/libc_platform' to trigger the feature propagation check
+        # by explicitly setting the flag only in the iceoryx2 crate
         cargo-features-flag: ["", "--features iceoryx2/libc_platform"]
         include:
-          # test feature propagation
           - cargo-features-flag: "--features libc_platform"
             profile: release
             os: ubuntu-latest
