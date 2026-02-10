@@ -2,8 +2,8 @@ name: Nightly
 
 on:
   schedule:
-  # Runs at 1 AM UTC timezone
-  - cron: "0 1 * * *"
+  # Runs at 1 AM UTC timezone, Monday through Friday
+  - cron: "0 1 * * 1-5"
   workflow_dispatch:
 
 
