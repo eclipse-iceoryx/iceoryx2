@@ -47,6 +47,8 @@ REPORT=0
 OVERVIEW=0
 HTML=0
 LCOV=0
+COMPONENTS=()
+SHOW_BRANCHES=0
 
 dependency_check() {
     which $1 1> /dev/null || { echo -e "${COLOR_RED}'${1}' not found. Aborting!${COLOR_OFF}"; exit 1; }
@@ -65,7 +67,19 @@ generate_full_profile() {
 
 generate_rust_profile() {
     set_rustc_flags
-    cargo test --workspace --all-targets -- --test-threads=1
+    
+    if [[ ${#COMPONENTS[@]} -gt 0 ]]; then
+        # Test specific components
+        for COMPONENT in "${COMPONENTS[@]}"
+        do
+            echo -e "${COLOR_GREEN}Running tests for component: ${COMPONENT}${COLOR_OFF}"
+            cargo test -p "${COMPONENT}" --all-targets -- --test-threads=1
+        done
+    else
+        # Test entire workspace
+        echo -e "${COLOR_GREEN}Running tests for entire workspace${COLOR_OFF}"
+        cargo test --workspace --all-targets -- --test-threads=1
+    fi
 }
 
 generate_cmake_profile() {
@@ -110,6 +124,18 @@ show_overview() {
     local FILES=$(find ./target/debug/deps/ -type f -executable)
     CMD="llvm-cov report --use-color --ignore-filename-regex='/.cargo/registry' --instr-profile=./${RUST_COV_DIR}/json5format.profdata"
 
+    if [[ $SHOW_BRANCHES == "1" ]]; then
+        CMD="$CMD --show-branch-summary"
+    fi
+
+    # Filter by component if specified
+    if [[ ${#COMPONENTS[@]} -gt 0 ]]; then
+        for COMPONENT in "${COMPONENTS[@]}"
+        do
+            FILES=$(echo "$FILES" | grep "$COMPONENT")
+        done
+    fi
+
     for FILE in $FILES
     do
         CMD="$CMD --object $FILE"
@@ -125,7 +151,19 @@ show_report() {
     merge_report
 
     local FILES=$(find ./target/debug/deps/ -type f -executable)
-    CMD="llvm-cov report --use-color --ignore-filename-regex='/.cargo/registry' --instr-profile=./${RUST_COV_DIR}/json5format.profdata"
+    CMD="llvm-cov show --use-color --ignore-filename-regex='/.cargo/registry' --instr-profile=./${RUST_COV_DIR}/json5format.profdata"
+
+    if [[ $SHOW_BRANCHES == "1" ]]; then
+        CMD="$CMD --show-branches=count"
+    fi
+
+    # Filter by component if specified
+    if [[ ${#COMPONENTS[@]} -gt 0 ]]; then
+        for COMPONENT in "${COMPONENTS[@]}"
+        do
+            FILES=$(echo "$FILES" | grep "$COMPONENT")
+        done
+    fi
 
     for FILE in $FILES
     do
@@ -146,8 +184,24 @@ generate_report() {
 
     mkdir -p ./${COVERAGE_OUT_DIR}
 
+    # Build grcov ignore list based on components
+    local GRCOV_IGNORES="--ignore '*iceoryx2-cli*' --ignore '*iceoryx2-ffi*' --ignore '*build.rs' --ignore '*tests*' --ignore '*testing*' --ignore '*component-tests*' --ignore '*examples*' --ignore '*benchmarks*' --ignore '*target*' --ignore '*.cargo*'"
+    
+    # If specific components are requested, only include those
+    if [[ ${#COMPONENTS[@]} -gt 0 ]]; then
+        echo -e "${COLOR_GREEN}Generating coverage for components: ${COMPONENTS[*]}${COLOR_OFF}"
+        GRCOV_IGNORES=""
+        # Build a pattern to only include specified components
+        for COMPONENT in "${COMPONENTS[@]}"
+        do
+            # Don't ignore the specified component
+            GRCOV_IGNORES="$GRCOV_IGNORES --ignore '*iceoryx2*' --ignore '!*${COMPONENT}*'"
+        done
+        GRCOV_IGNORES="$GRCOV_IGNORES --ignore '*build.rs' --ignore '*tests*' --ignore '*testing*' --ignore '*component-tests*' --ignore '*examples*' --ignore '*benchmarks*' --ignore '*target*' --ignore '*.cargo*'"
+    fi
+
     # Generate Coverage files for Rust Code
-    grcov \
+    eval grcov \
         **/${LLVM_PROFILE_PATH} \
         **/**/${LLVM_PROFILE_PATH} \
         --binary-path target/debug \
@@ -155,36 +209,47 @@ generate_report() {
         --output-type ${OUTPUT_TYPE} \
         --branch \
         --ignore-not-existing \
-        --ignore "*iceoryx2-cli*" \
-        --ignore "*iceoryx2-ffi*" \
-        --ignore "*build.rs" \
-        --ignore "*tests*" \
-        --ignore "*testing*" \
-        --ignore "*component-tests*" \
-        --ignore "*examples*" \
-        --ignore "*benchmarks*" \
-        --ignore "*target*" \
-        --ignore "*.cargo*" \
+        ${GRCOV_IGNORES} \
         --llvm-path ${LLVM_PATH} \
         --output-path ${GRCOV_OUTPUT_PATH}
 
     # Generate Coverage files for C++ Code
     # We use here https://github.com/gcovr/gcovr to handle the generated files by gcov and can be installed with `pip install gcovr`
     # License: https://github.com/gcovr/gcovr/blob/main/LICENSE.txt
-    gcovr ${GCOVR_OUTPUT_PATH} ${CMAKE_COV_DIR} -e '/.*/_deps/' -e '/.*/tests/' -e '/.*/testing/' -e '/.*/component-tests/'
+    local GCOVR_BRANCH_FLAG=""
+    if [[ $SHOW_BRANCHES == "1" ]]; then
+        GCOVR_BRANCH_FLAG="--branches"
+    fi
+    
+    gcovr ${GCOVR_OUTPUT_PATH} ${GCOVR_BRANCH_FLAG} ${CMAKE_COV_DIR} -e '/.*/_deps/' -e '/.*/tests/' -e '/.*/testing/' -e '/.*/component-tests/'
 
 }
 
 show_help() {
     echo "$0 [OPTIONS]"
     echo
-    echo "-c|--clean                -   cleanup all reports"
-    echo "-g|--generate             -   generate coverage report"
-    echo "-o|--overview             -   show overview of coverage report"
-    echo "-r|--report               -   show detailed report"
-    echo "-l|--lcov                 -   creates lcov report"
-    echo "-t|--html                 -   creates html report"
-    echo "-f|--full                 -   generate coverage report and create html and lcov"
+    echo "OPTIONS:"
+    echo "  -c|--clean                -   cleanup all reports"
+    echo "  -g|--generate             -   generate coverage report"
+    echo "  -o|--overview             -   show overview of coverage report"
+    echo "  -r|--report               -   show detailed report"
+    echo "  -l|--lcov                 -   creates lcov report"
+    echo "  -t|--html                 -   creates html report"
+    echo "  -f|--full                 -   generate coverage report and create html and lcov"
+    echo "  -b|--branches             -   include branch coverage in reports"
+    echo "  --component <name>        -   generate coverage for specific component(s)"
+    echo "                                 (can be specified multiple times)"
+    echo "                                 Examples: iceoryx2, iceoryx2-cal, iceoryx2-bb-container"
+    echo
+    echo "EXAMPLES:"
+    echo "  Generate full coverage with branch information:"
+    echo "    $0 --full --branches"
+    echo
+    echo "  Generate coverage for specific component:"
+    echo "    $0 --generate --html --component iceoryx2-cal"
+    echo
+    echo "  Generate coverage for multiple components:"
+    echo "    $0 --generate --html --component iceoryx2 --component iceoryx2-cal"
     echo
     exit 1
 }
@@ -225,6 +290,18 @@ while [[ $# -gt 0 ]]; do
             HTML=1
             shift
             ;;
+        -b|--branches)
+            SHOW_BRANCHES=1
+            shift
+            ;;
+        --component)
+            if [[ -z "$2" ]] || [[ "$2" == -* ]]; then
+                echo -e "${COLOR_RED}Error: --component requires a component name${COLOR_OFF}"
+                exit 1
+            fi
+            COMPONENTS+=("$2")
+            shift 2
+            ;;
         *)
             show_help
             ;;
@@ -255,6 +332,11 @@ fi
 if [[ $HTML == "1" ]]; then
     mkdir -p $COVERAGE_OUT_DIR/html/cpp
     generate_report "html" "${COVERAGE_OUT_DIR}/html/rust" "--html-details ${COVERAGE_OUT_DIR}/html/cpp/index.html"
+    
+    if [[ ${#COMPONENTS[@]} -gt 0 ]]; then
+        echo -e "${COLOR_GREEN}Coverage report generated for components: ${COMPONENTS[*]}${COLOR_OFF}"
+    fi
+    
     echo "The Report for Rust Code in iceoryx2 is located at: ${COVERAGE_OUT_DIR}/html/rust/index.html"
     echo "The Report for C++ Code in iceoryx2 is located at: ${COVERAGE_OUT_DIR}/html/cpp/index.html"
 fi

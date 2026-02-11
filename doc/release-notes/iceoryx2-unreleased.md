@@ -71,7 +71,9 @@
     conflicts when merging.
 -->
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+* Enhance coverage script to generate branch coverage reports for workspace and
+  individual components
+  [#372](https://github.com/eclipse-iceoryx/iceoryx2/issues/372)
 
 ### New API features
 

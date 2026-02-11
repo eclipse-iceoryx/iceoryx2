@@ -53,10 +53,10 @@ jobs:
           mode: "pre"
 
       - name: Generate raw coverage results
-        run: ./internal/scripts/generate-cov-report.sh --generate
+        run: ./internal/scripts/generate-cov-report.sh --generate --branches
 
       - name: Generate coverage results for html artifacts
-        run: ./internal/scripts/generate-cov-report.sh --html
+        run: ./internal/scripts/generate-cov-report.sh --html --branches
 
       - name: Archive coverage-html artifacts
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # version: v6.0.0
@@ -66,7 +66,7 @@ jobs:
           retention-days: 90
 
       - name: Generate coverage reports for Codecov
-        run: ./internal/scripts/generate-cov-report.sh --lcov
+        run: ./internal/scripts/generate-cov-report.sh --lcov --branches
 
       - name: Upload Rust coverage to Codecov
         uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # version: v5.5.2
