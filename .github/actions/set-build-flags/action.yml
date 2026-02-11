@@ -1,0 +1,44 @@
+name: 'Set Build Flags'
+description: 'Sets flags for Cargo and CMake'
+inputs:
+  profile:
+    description: "Build profile {debug;release}"
+    required: true
+outputs:
+  cargo-build-mode:
+    description: "Cargo Build Mode"
+    value: ${{ steps.set-build-flags.outputs.cargo-build-mode}}
+  cmake-build-type:
+    description: "CMake Build Type"
+    value: ${{ steps.set-build-flags.outputs.cmake-build-type }}
+  cmake-build-config:
+    description: "CMake Build Config"
+    value: ${{ steps.set-build-flags.outputs.cmake-build-config }}
+runs:
+  using: "composite"
+  steps:
+      - name: Set Build Flags
+        id: set-build-flags
+        shell: bash
+        run: |
+          CARGO_BUILD_MODE=""
+          CMAKE_BUILD_TYPE=""
+          CMAKE_BUILD_CONFIG=""
+          if [[ ${{ inputs.profile }} == 'release' ]]; then
+            CARGO_BUILD_MODE="--release"
+            CMAKE_BUILD_TYPE="-DCMAKE_BUILD_TYPE=Release"
+            CMAKE_BUILD_CONFIG="--config Release"
+            echo "cargo-build-mode=$(echo $CARGO_BUILD_MODE)" >> $GITHUB_OUTPUT
+            echo "cmake-build-type=$(echo $CMAKE_BUILD_TYPE)" >> $GITHUB_OUTPUT
+            echo "cmake-build-config=$(echo $CMAKE_BUILD_CONFIG)" >> $GITHUB_OUTPUT
+          fi
+          if [[ ${{ inputs.profile }} == 'debug' ]]; then
+            CARGO_BUILD_MODE=""
+            CMAKE_BUILD_TYPE="-DCMAKE_BUILD_TYPE=Debug"
+            CMAKE_BUILD_CONFIG="--config Debug"
+            echo "cargo-build-mode=$(echo $CARGO_BUILD_MODE)" >> $GITHUB_OUTPUT
+            echo "cmake-build-type=$(echo $CMAKE_BUILD_TYPE)" >> $GITHUB_OUTPUT
+            echo "cmake-build-config=$(echo $CMAKE_BUILD_CONFIG)" >> $GITHUB_OUTPUT
+          fi
+          echo "Cargo build mode: ${CARGO_BUILD_MODE}"
+          echo "CMake build type: ${CMAKE_BUILD_TYPE}"

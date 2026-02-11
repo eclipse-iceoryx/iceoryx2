@@ -2,7 +2,8 @@ name: Nightly
 
 on:
   schedule:
-  - cron: "0 1 * * *" # Runs at 1 AM UTC timezone
+  # Runs at 1 AM UTC timezone, Monday through Friday
+  - cron: "0 1 * * 1-5"
   workflow_dispatch:
 
 
@@ -44,7 +45,6 @@ jobs:
       os: ${{ matrix.os }}
       toolchain: ${{ matrix.toolchain }}
       profile: "release"
-      cmake-build-type: "-DCMAKE_BUILD_TYPE=Release"
 
   stable-nightly:
     needs: [static-code-analysis-rust-nightly, cargo-nextest-nightly]
@@ -53,30 +53,31 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
         toolchain: [stable, 1.83.0]
         profile: ["release", "debug"]
+        # NOTE: using 'iceoryx2/libc_platform' to trigger the feature propagation check
+        # by explicitly setting the flag only in the iceoryx2 crate
+        cargo-features-flag: ["", "--features iceoryx2/libc_platform"]
         include:
-          - profile: "debug"
-            cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug" # required for Makefile Generators at config time
-            cmake-build-config: "--config Debug" # required for Visual Studio at build and install time
-          - profile: "release"
-            cmake-build-type: "-DCMAKE_BUILD_TYPE=Release" # required for Makefile Generators at config time
-            cmake-build-config: "--config Release" # required for Visual Studio at build and install time
-          - cargo-features-flag: "--features iceoryx2/libc_platform"
+          - cargo-features-flag: "--features libc_platform"
+            profile: release
             os: ubuntu-latest
-            profile: "release"
-            cmake-build-type: "-DCMAKE_BUILD_TYPE=Release" # required for Makefile Generators at config time
-            cmake-build-config: "--config Release" # required for Visual Studio at build and install time
+            toolchain: stable
         exclude:
           - os: ubuntu-latest # already tested in Pull-Requests and main branch
             toolchain: stable
-            profile: "debug"
+            profile: "release"
+          - cargo-features-flag: "--features iceoryx2/libc_platform"
+            toolchain: 1.83.0
+          - os: macos-latest
+            cargo-features-flag: "--features iceoryx2/libc_platform"
+            toolchain: stable
+          - os: windows-latest
+            cargo-features-flag: "--features iceoryx2/libc_platform"
+            toolchain: stable
     uses: ./.github/workflows/reuse_x86_64_stable.yml
     with:
       os: ${{ matrix.os }}
       toolchain: ${{ matrix.toolchain }}
       profile: ${{ matrix.profile }}
-      cmake-build-type: ${{ matrix.cmake-build-type }}
-      cmake-build-config: ${{ matrix.cmake-build-config }}
-      cmake-cxx-flags: ""
       cargo-features-flag: ${{ matrix.cargo-features-flag }}
 
   unstable-nightly:

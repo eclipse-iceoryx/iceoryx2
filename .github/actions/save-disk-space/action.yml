@@ -2,21 +2,21 @@ name: 'Save disk space'
 description: 'Removes software packages and build artifacts that are not needed by the CI'
 inputs:
   mode:
-    description: "Defines wether to execute the action before or after cargo build {pre,post}"
+    description: "Defines which action to execute"
     required: true
-  remove-android:
+  skip-remove-android-from-runner:
     description: "Defines if Android shall be removed in the pre step"
     required: false
-    default: "true"
-  remove-dotnet:
+    default: "false"
+  skip-remove-dotnet-from-runner:
     description: "Defines if the Dotnet Framework shall be removed in the pre step"
     required: false
-    default: "true"
+    default: "false"
 runs:
   using: "composite"
   steps:
-      - name: Remove unneeded software
-        if: ${{ inputs.mode == 'pre' }}
+      - name: Remove unneeded software from runner
+        if: ${{ inputs.mode == 'remove-unneeded-software-from-runner' }}
         shell: bash
         run: |
           sudo rm -rf /opt/ghc || true # Remove Haskell
@@ -27,17 +27,17 @@ runs:
           sudo rm -rf /opt/microsoft/msedge || true
           sudo rm -rf /opt/google/chrome || true
 
-          if [[ ${{ inputs.remove-android }} == 'true' ]]; then
+          if [[ ${{ inputs.skip-remove-android-from-runner }} == 'false' ]]; then
             sudo rm -rf /usr/local/lib/android || true
           fi
 
-          if [[ ${{ inputs.remove-dotnet }} == 'true' ]]; then
+          if [[ ${{ inputs.skip-remove-dotnet-from-runner }} == 'false' ]]; then
             sudo rm -rf /usr/share/dotnet || true
           fi
 
 
-      - name: Cleanup cargo target folder
-        if: ${{ inputs.mode == 'post' }}
+      - name: Cleanup build files from cargo target folder
+        if: ${{ inputs.mode == 'cleanup-rust-build-files-from-cargo-target-folder' }}
         shell: bash
         run: |
           rm -rf ${{ github.workspace }}/target/{debug,release}/{deps,incremental}

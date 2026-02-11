@@ -50,7 +50,7 @@ jobs:
       - name: Save disk space
         uses: ./.github/actions/save-disk-space
         with:
-          mode: "pre"
+          mode: "remove-unneeded-software-from-runner"
 
       - name: Generate raw coverage results
         run: ./internal/scripts/generate-cov-report.sh --generate

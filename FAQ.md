@@ -320,7 +320,7 @@ however if using a lower-level crate (such as `iceoryx2-cal` or one from
     ```
 1. Ensure the crate is linked to even if not used:
     ```rust
-    extern crate iceoryx2_loggers;
+    extern crate iceoryx2_bb_loggers;
     ```
 
 ### Encountered a SEGFAULT
