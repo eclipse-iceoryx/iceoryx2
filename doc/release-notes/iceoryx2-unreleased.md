@@ -39,6 +39,8 @@
   [#1333](https://github.com/eclipse-iceoryx/iceoryx2/issues/1333)
 * Fix GCC 9 build failure
   [#1342](https://github.com/eclipse-iceoryx/iceoryx2/issues/1342)
+* Bump cryptography from 45.0.7 to 46.0.5 in /iceoryx2-ffi/python
+  [#1316](https://github.com/eclipse-iceoryx/iceoryx2/issues/1348)
 
 ### Refactoring
 
