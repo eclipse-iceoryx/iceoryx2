@@ -403,7 +403,12 @@ impl<const CAPACITY: usize> FixedSizeIndexQueue<CAPACITY> {
             data: [const { UnsafeCell::new(0) }; CAPACITY],
         };
 
-        let allocator = BumpAllocator::new(new_self.data.as_mut_ptr().cast());
+        // SAFETY: Creating a pointer to an existing member is always not null
+        let data_ptr =
+            unsafe { core::ptr::NonNull::<u8>::new_unchecked(new_self.data.as_mut_ptr().cast()) };
+
+        let allocator =
+            BumpAllocator::new(data_ptr, core::mem::size_of_val(new_self.data.as_ref()));
         unsafe {
             new_self
                 .state
