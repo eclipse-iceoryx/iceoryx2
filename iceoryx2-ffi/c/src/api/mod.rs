@@ -295,3 +295,23 @@ pub unsafe extern "C" fn iox2_semantic_string_error_string(
 ) -> *const c_char {
     error.as_const_cstr().as_ptr() as *const c_char
 }
+
+/// Version number.
+#[repr(C)]
+pub struct iox2_package_version_t {
+    major: u16,
+    minor: u16,
+    patch: u16,
+}
+
+/// Returns the crates version acquired through the internal environment variables set by cargo,
+/// ("CARGO_PKG_VERSION_{MAJOR|MINOR|PATCH}").
+#[no_mangle]
+pub unsafe extern "C" fn iox2_package_version() -> iox2_package_version_t {
+    let package_version = PackageVersion::get();
+    iox2_package_version_t {
+        major: package_version.major(),
+        minor: package_version.minor(),
+        patch: package_version.patch(),
+    }
+}
