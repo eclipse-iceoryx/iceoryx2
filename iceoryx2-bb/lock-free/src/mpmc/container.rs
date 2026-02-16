@@ -466,7 +466,15 @@ impl<T: Copy + Debug, const CAPACITY: usize> Default for FixedSizeContainer<T, C
             data: [const { UnsafeCell::new(MaybeUninit::uninit()) }; CAPACITY],
         };
 
-        let allocator = BumpAllocator::new(new_self.next_free_index.as_mut_ptr().cast());
+        // SAFETY: Creating a pointer to an existing member is always not null
+        let data_ptr = unsafe {
+            core::ptr::NonNull::<u8>::new_unchecked(new_self.next_free_index.as_mut_ptr().cast())
+        };
+
+        let allocator = BumpAllocator::new(
+            data_ptr,
+            size_of::<Self>() - core::mem::offset_of!(Self, next_free_index),
+        );
         unsafe {
             new_self
                 .container
