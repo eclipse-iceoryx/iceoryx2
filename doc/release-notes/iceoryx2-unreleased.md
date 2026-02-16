@@ -71,8 +71,8 @@
     conflicts when merging.
 -->
 
-* Enhance coverage script to generate branch coverage reports for workspace and
-  individual components
+* Enable branch coverage by default and add support for per-component coverage
+  reports in coverage script
   [#372](https://github.com/eclipse-iceoryx/iceoryx2/issues/372)
 
 ### New API features

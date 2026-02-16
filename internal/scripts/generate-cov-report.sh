@@ -48,7 +48,6 @@ OVERVIEW=0
 HTML=0
 LCOV=0
 COMPONENTS=()
-SHOW_BRANCHES=0
 
 dependency_check() {
     which $1 1> /dev/null || { echo -e "${COLOR_RED}'${1}' not found. Aborting!${COLOR_OFF}"; exit 1; }
@@ -122,11 +121,7 @@ show_overview() {
     merge_report
 
     local FILES=$(find ./target/debug/deps/ -type f -executable)
-    CMD="llvm-cov report --use-color --ignore-filename-regex='/.cargo/registry' --instr-profile=./${RUST_COV_DIR}/json5format.profdata"
-
-    if [[ $SHOW_BRANCHES == "1" ]]; then
-        CMD="$CMD --show-branch-summary"
-    fi
+    CMD="llvm-cov report --use-color --ignore-filename-regex='/.cargo/registry' --show-branch-summary --instr-profile=./${RUST_COV_DIR}/json5format.profdata"
 
     # Filter by component if specified
     if [[ ${#COMPONENTS[@]} -gt 0 ]]; then
@@ -151,11 +146,7 @@ show_report() {
     merge_report
 
     local FILES=$(find ./target/debug/deps/ -type f -executable)
-    CMD="llvm-cov show --use-color --ignore-filename-regex='/.cargo/registry' --instr-profile=./${RUST_COV_DIR}/json5format.profdata"
-
-    if [[ $SHOW_BRANCHES == "1" ]]; then
-        CMD="$CMD --show-branches=count"
-    fi
+    CMD="llvm-cov show --use-color --ignore-filename-regex='/.cargo/registry' --show-branches=count --instr-profile=./${RUST_COV_DIR}/json5format.profdata"
 
     # Filter by component if specified
     if [[ ${#COMPONENTS[@]} -gt 0 ]]; then
@@ -184,44 +175,31 @@ generate_report() {
 
     mkdir -p ./${COVERAGE_OUT_DIR}
 
-    # Build grcov ignore list based on components
-    local GRCOV_IGNORES="--ignore '*iceoryx2-cli*' --ignore '*iceoryx2-ffi*' --ignore '*build.rs' --ignore '*tests*' --ignore '*testing*' --ignore '*component-tests*' --ignore '*examples*' --ignore '*benchmarks*' --ignore '*target*' --ignore '*.cargo*'"
+    # Build grcov command based on components
+    local GRCOV_CMD="grcov **/${LLVM_PROFILE_PATH} **/**/${LLVM_PROFILE_PATH} --binary-path target/debug --source-dir . --output-type ${OUTPUT_TYPE} --branch --ignore-not-existing"
     
-    # If specific components are requested, only include those
+    # If specific components are requested, use path filter
     if [[ ${#COMPONENTS[@]} -gt 0 ]]; then
         echo -e "${COLOR_GREEN}Generating coverage for components: ${COMPONENTS[*]}${COLOR_OFF}"
-        GRCOV_IGNORES=""
-        # Build a pattern to only include specified components
+        # Build path filter to only include specified components
         for COMPONENT in "${COMPONENTS[@]}"
         do
-            # Don't ignore the specified component
-            GRCOV_IGNORES="$GRCOV_IGNORES --ignore '*iceoryx2*' --ignore '!*${COMPONENT}*'"
+            GRCOV_CMD="$GRCOV_CMD --filter '${COMPONENT}/'"
         done
-        GRCOV_IGNORES="$GRCOV_IGNORES --ignore '*build.rs' --ignore '*tests*' --ignore '*testing*' --ignore '*component-tests*' --ignore '*examples*' --ignore '*benchmarks*' --ignore '*target*' --ignore '*.cargo*'"
     fi
+    
+    # Add common ignores
+    GRCOV_CMD="$GRCOV_CMD --ignore '*iceoryx2-cli*' --ignore '*iceoryx2-ffi*' --ignore '*build.rs' --ignore '*tests*' --ignore '*testing*' --ignore '*component-tests*' --ignore '*examples*' --ignore '*benchmarks*' --ignore '*target*' --ignore '*.cargo*'"
+    GRCOV_CMD="$GRCOV_CMD --llvm-path ${LLVM_PATH} --output-path ${GRCOV_OUTPUT_PATH}"
 
     # Generate Coverage files for Rust Code
-    eval grcov \
-        **/${LLVM_PROFILE_PATH} \
-        **/**/${LLVM_PROFILE_PATH} \
-        --binary-path target/debug \
-        --source-dir . \
-        --output-type ${OUTPUT_TYPE} \
-        --branch \
-        --ignore-not-existing \
-        ${GRCOV_IGNORES} \
-        --llvm-path ${LLVM_PATH} \
-        --output-path ${GRCOV_OUTPUT_PATH}
+    eval ${GRCOV_CMD}
 
     # Generate Coverage files for C++ Code
     # We use here https://github.com/gcovr/gcovr to handle the generated files by gcov and can be installed with `pip install gcovr`
     # License: https://github.com/gcovr/gcovr/blob/main/LICENSE.txt
-    local GCOVR_BRANCH_FLAG=""
-    if [[ $SHOW_BRANCHES == "1" ]]; then
-        GCOVR_BRANCH_FLAG="--branches"
-    fi
-    
-    gcovr ${GCOVR_OUTPUT_PATH} ${GCOVR_BRANCH_FLAG} ${CMAKE_COV_DIR} -e '/.*/_deps/' -e '/.*/tests/' -e '/.*/testing/' -e '/.*/component-tests/'
+    # Note: Branch coverage is enabled by default in gcovr HTML/XML reports
+    gcovr ${GCOVR_OUTPUT_PATH} ${CMAKE_COV_DIR} -e '/.*/_deps/' -e '/.*/tests/' -e '/.*/testing/' -e '/.*/component-tests/'
 
 }
 
@@ -236,20 +214,21 @@ show_help() {
     echo "  -l|--lcov                 -   creates lcov report"
     echo "  -t|--html                 -   creates html report"
     echo "  -f|--full                 -   generate coverage report and create html and lcov"
-    echo "  -b|--branches             -   include branch coverage in reports"
     echo "  --component <name>        -   generate coverage for specific component(s)"
     echo "                                 (can be specified multiple times)"
     echo "                                 Examples: iceoryx2, iceoryx2-cal, iceoryx2-bb-container"
     echo
     echo "EXAMPLES:"
-    echo "  Generate full coverage with branch information:"
-    echo "    $0 --full --branches"
+    echo "  Generate full coverage report:"
+    echo "    $0 --full"
     echo
     echo "  Generate coverage for specific component:"
     echo "    $0 --generate --html --component iceoryx2-cal"
     echo
     echo "  Generate coverage for multiple components:"
     echo "    $0 --generate --html --component iceoryx2 --component iceoryx2-cal"
+    echo
+    echo "NOTE: Branch coverage is enabled by default for all reports."
     echo
     exit 1
 }
@@ -288,10 +267,6 @@ while [[ $# -gt 0 ]]; do
             ;;
         -t|--html)
             HTML=1
-            shift
-            ;;
-        -b|--branches)
-            SHOW_BRANCHES=1
             shift
             ;;
         --component)
