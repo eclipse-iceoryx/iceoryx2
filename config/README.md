@@ -162,7 +162,7 @@ payload data segment
   [`true`|`false`]: Defines if the request buffer of the service safely
   overflows.
 * `defaults.request-response.enable-safe-overflow-for-responses` -
-  [`true`|`false`]: Defines if the request buffer of the service safely
+  [`true`|`false`]: Defines if the response buffer of the service safely
   overflows.
 * `defaults.request-response.max-active-requests-per-client` - [int]:
   The maximum of active requests a server can hold per client

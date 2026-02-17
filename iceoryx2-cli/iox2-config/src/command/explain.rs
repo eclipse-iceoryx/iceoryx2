@@ -328,7 +328,7 @@ pub(crate) fn describe_schema(config: &Config) -> Vec<Section> {
                     key: "defaults.request-response.enable-safe-overflow-for-responses",
                     value_type: "`true`|`false`",
                     default_value: config.defaults.request_response.enable_safe_overflow_for_responses.to_string(),
-                    description: "Defines if the request buffer of the service safely overflows.",
+                    description: "Defines if the response buffer of the service safely overflows.",
                 },
                 Field {
                     key: "defaults.request-response.max-active-requests-per-client",
