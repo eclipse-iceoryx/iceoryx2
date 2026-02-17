@@ -23,6 +23,8 @@
   [#1312](https://github.com/eclipse-iceoryx/iceoryx2/issues/1312)
 * Enable users to pull in iceoryx2 as a Bazel module/dependency
   [#1263](https://github.com/eclipse-iceoryx/iceoryx2/issues/1263)
+* Add missing C++ APIs to access messaging pattern specific static config
+  [#1353](https://github.com/eclipse-iceoryx/iceoryx2/issues/1353)
 
 ### Bugfixes
 
