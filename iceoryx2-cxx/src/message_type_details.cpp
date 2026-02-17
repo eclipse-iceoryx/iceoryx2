@@ -50,3 +50,15 @@ auto MessageTypeDetails::payload() const -> TypeDetail {
     return TypeDetail(m_value.payload);
 }
 } // namespace iox2
+
+auto operator<<(std::ostream& stream, const iox2::TypeDetail& value) -> std::ostream& {
+    stream << "TypeDetails { variant: " << value.variant() << ", type_name: " << value.type_name()
+           << ", size: " << value.size() << ", alignment: " << value.alignment();
+    return stream;
+}
+
+auto operator<<(std::ostream& stream, const iox2::MessageTypeDetails& value) -> std::ostream& {
+    stream << "MessageTypeDetails { header: " << value.header() << ", user_header: " << value.user_header()
+           << ", payload: " << value.payload() << " }";
+    return stream;
+}

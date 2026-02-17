@@ -66,4 +66,6 @@ class StaticConfigEvent {
 };
 } // namespace iox2
 
+auto operator<<(std::ostream& stream, const iox2::StaticConfigEvent& value) -> std::ostream&;
+
 #endif

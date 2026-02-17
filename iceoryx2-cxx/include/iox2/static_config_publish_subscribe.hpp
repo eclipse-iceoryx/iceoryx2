@@ -63,4 +63,6 @@ class StaticConfigPublishSubscribe {
 };
 } // namespace iox2
 
+auto operator<<(std::ostream& stream, const iox2::StaticConfigPublishSubscribe& value) -> std::ostream&;
+
 #endif

@@ -85,5 +85,4 @@ class StaticConfig {
 
 auto operator<<(std::ostream& stream, const iox2::StaticConfig& value) -> std::ostream&;
 
-
 #endif

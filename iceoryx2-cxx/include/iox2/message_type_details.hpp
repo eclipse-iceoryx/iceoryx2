@@ -66,4 +66,8 @@ class MessageTypeDetails {
 };
 } // namespace iox2
 
+auto operator<<(std::ostream& stream, const iox2::TypeDetail& value) -> std::ostream&;
+
+auto operator<<(std::ostream& stream, const iox2::MessageTypeDetails& value) -> std::ostream&;
+
 #endif

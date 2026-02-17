@@ -98,6 +98,25 @@ auto StaticConfig::request_response() const -> StaticConfigRequestResponse {
 
 auto operator<<(std::ostream& stream, const iox2::StaticConfig& value) -> std::ostream& {
     stream << "iox2::StaticConfig { id: " << value.id() << ", name: " << value.name()
-           << ", messaging_pattern: " << value.messaging_pattern() << " }";
+           << ", messaging_pattern: " << value.messaging_pattern() << ", ";
+
+    switch (value.messaging_pattern()) {
+    case iox2::MessagingPattern::Blackboard: {
+        stream << value.blackboard() << " }";
+        break;
+    }
+    case iox2::MessagingPattern::Event: {
+        stream << value.event() << " }";
+        break;
+    }
+    case iox2::MessagingPattern::PublishSubscribe: {
+        stream << value.publish_subscribe() << " }";
+        break;
+    }
+    case iox2::MessagingPattern::RequestResponse: {
+        stream << value.request_response() << " }";
+        break;
+    }
+    }
     return stream;
 }

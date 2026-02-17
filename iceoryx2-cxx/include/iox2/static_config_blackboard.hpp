@@ -43,4 +43,6 @@ class StaticConfigBlackboard {
 };
 } // namespace iox2
 
+auto operator<<(std::ostream& stream, const iox2::StaticConfigBlackboard& value) -> std::ostream&;
+
 #endif

@@ -74,4 +74,7 @@ class StaticConfigRequestResponse {
     iox2_static_config_request_response_t m_value;
 };
 } // namespace iox2
+
+auto operator<<(std::ostream& stream, const iox2::StaticConfigRequestResponse& value) -> std::ostream&;
+
 #endif

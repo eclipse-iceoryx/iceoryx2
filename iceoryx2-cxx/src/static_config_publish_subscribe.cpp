@@ -48,6 +48,15 @@ auto StaticConfigPublishSubscribe::has_safe_overflow() const -> bool {
 auto StaticConfigPublishSubscribe::message_type_details() const -> MessageTypeDetails {
     return MessageTypeDetails(m_value.message_type_details);
 }
-
-
 } // namespace iox2
+
+auto operator<<(std::ostream& stream, const iox2::StaticConfigPublishSubscribe& value) -> std::ostream& {
+    stream << "StaticConfigPublishSubscribe { max_nodes: " << value.max_nodes()
+           << ", max_publishers: " << value.max_publishers() << ", max_subscribers: " << value.max_subscribers()
+           << ", history_size: " << value.history_size()
+           << ", subscriber_max_buffer_size: " << value.subscriber_max_buffer_size()
+           << ", subscriber_max_borrowed_samples: " << value.subscriber_max_borrowed_samples()
+           << ", has_safe_overflow: " << value.has_safe_overflow()
+           << ", message_type_details: " << value.message_type_details() << " }";
+    return stream;
+}

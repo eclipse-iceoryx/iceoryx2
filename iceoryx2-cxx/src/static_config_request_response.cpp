@@ -65,3 +65,18 @@ StaticConfigRequestResponse::StaticConfigRequestResponse(iox2_static_config_requ
     : m_value { value } {
 }
 } // namespace iox2
+
+auto operator<<(std::ostream& stream, const iox2::StaticConfigRequestResponse& value) -> std::ostream& {
+    stream << "StaticConfigRequestResponse { request_message_type_details: " << value.request_message_type_details()
+           << ", response_message_type_details:" << value.response_message_type_details()
+           << ", has_safe_overflow_for_requests: " << value.has_safe_overflow_for_requests()
+           << ", has_safe_overflow_for_responses: " << value.has_safe_overflow_for_responses()
+           << ", max_borrowed_responses_per_pending_response: " << value.max_borrowed_responses_per_pending_responses()
+           << ", max_active_requests_per_client: " << value.max_active_requests_per_client()
+           << ", max_response_buffer_size: " << value.max_response_buffer_size()
+           << ", max_loaned_requests: " << value.max_loaned_requests()
+           << ", does_support_fire_and_forget_requests: " << value.does_support_fire_and_forget_requests()
+           << ", max_servers: " << value.max_servers() << ", max_clients: " << value.max_clients()
+           << ", max_nodes: " << value.max_nodes() << " }";
+    return stream;
+}

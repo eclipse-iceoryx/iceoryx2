@@ -14,6 +14,7 @@
 #define IOX2_TYPE_VARIANT_HPP
 
 #include <cstdint>
+#include <ostream>
 
 namespace iox2 {
 /// Defines if the type is a slice with a runtime-size
@@ -26,5 +27,7 @@ enum class TypeVariant : uint8_t {
     Dynamic,
 };
 } // namespace iox2
+
+auto operator<<(std::ostream& stream, const iox2::TypeVariant& value) -> std::ostream&;
 
 #endif

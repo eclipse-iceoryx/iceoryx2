@@ -13,7 +13,10 @@
 #ifndef IOX2_INCLUDE_GUARD_BB_OPTIONAL_HPP
 #define IOX2_INCLUDE_GUARD_BB_OPTIONAL_HPP
 
+#include "iox2/bb/duration.hpp"
 #include "iox2/bb/variation/optional_adaption.hpp"
+
+#include <ostream>
 
 namespace iox2 {
 namespace bb {
@@ -26,5 +29,21 @@ constexpr NulloptT NULLOPT = iox2::bb::variation::NULLOPT;
 
 } // namespace bb
 } // namespace iox2
+
+/// A custom stream operator implementation. The default operator<< cannot be used since the
+/// optional can be exchanged with a customer based implementation that may already come with
+/// a stream operator implementation.
+template <typename T>
+auto stream_operator(std::ostream& stream, const iox2::bb::Optional<T>& value) -> std::ostream& {
+    stream << "Optional { ";
+    if (value.has_value()) {
+        stream << "value: " << value.value();
+    } else {
+        stream << "NULLOPT";
+    }
+    stream << " }";
+
+    return stream;
+}
 
 #endif // IOX2_INCLUDE_GUARD_BB_OPTIONAL_HPP
