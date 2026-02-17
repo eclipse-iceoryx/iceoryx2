@@ -11,8 +11,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/static_config_event.hpp"
-#include "iox2/bb/duration.hpp"
-#include "iox2/bb/optional.hpp"
 
 namespace iox2 {
 StaticConfigEvent::StaticConfigEvent(iox2_static_config_event_t value)
