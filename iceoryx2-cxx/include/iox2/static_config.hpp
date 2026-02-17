@@ -15,6 +15,10 @@
 
 #include "iox2/attribute_set.hpp"
 #include "iox2/messaging_pattern.hpp"
+#include "iox2/static_config_blackboard.hpp"
+#include "iox2/static_config_event.hpp"
+#include "iox2/static_config_publish_subscribe.hpp"
+#include "iox2/static_config_request_response.hpp"
 
 namespace iox2 {
 /// Defines a common set of static service configuration details every service shares.
@@ -39,6 +43,34 @@ class StaticConfig {
     /// Returns the [`MessagingPattern`] of the [`Service`]
     auto messaging_pattern() const -> MessagingPattern;
 
+    /// Returns the [`StaticConfigBlackboard`].
+    ///
+    /// # Safety
+    ///
+    ///  * Ensure that [`StaticConfig::messaging_pattern()`] == [`MessagingPattern::Blackboard`].
+    auto blackboard() const -> StaticConfigBlackboard;
+
+    /// Returns the [`StaticConfigEvent`].
+    ///
+    /// # Safety
+    ///
+    ///  * Ensure that [`StaticConfig::messaging_pattern()`] == [`MessagingPattern::Event`].
+    auto event() const -> StaticConfigEvent;
+
+    /// Returns the [`StaticConfigPublishSubscribe`].
+    ///
+    /// # Safety
+    ///
+    ///  * Ensure that [`StaticConfig::messaging_pattern()`] == [`MessagingPattern::PublishSubscribe`].
+    auto publish_subscribe() const -> StaticConfigPublishSubscribe;
+
+    /// Returns the [`StaticConfigRequestResponse`].
+    ///
+    /// # Safety
+    ///
+    ///  * Ensure that [`StaticConfig::messaging_pattern()`] == [`MessagingPattern::RequestResponse`].
+    auto request_response() const -> StaticConfigRequestResponse;
+
   private:
     template <ServiceType>
     friend class Service;
@@ -52,6 +84,5 @@ class StaticConfig {
 } // namespace iox2
 
 auto operator<<(std::ostream& stream, const iox2::StaticConfig& value) -> std::ostream&;
-
 
 #endif

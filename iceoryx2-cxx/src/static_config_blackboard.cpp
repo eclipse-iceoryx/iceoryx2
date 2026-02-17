@@ -28,5 +28,10 @@ auto StaticConfigBlackboard::max_readers() const -> size_t {
 auto StaticConfigBlackboard::type_details() const -> TypeDetail {
     return TypeDetail(m_value.type_details);
 }
-
 } // namespace iox2
+
+auto operator<<(std::ostream& stream, const iox2::StaticConfigBlackboard& value) -> std::ostream& {
+    stream << "iox2::StaticConfigBlackboard { max_nodes: " << value.max_nodes()
+           << ", max_readers: " << value.max_readers() << ", type_details: " << value.type_details() << " }";
+    return stream;
+}

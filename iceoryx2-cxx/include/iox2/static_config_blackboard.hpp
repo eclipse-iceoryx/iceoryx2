@@ -35,11 +35,14 @@ class StaticConfigBlackboard {
   private:
     template <ServiceType, typename>
     friend class PortFactoryBlackboard;
+    friend class StaticConfig;
 
     explicit StaticConfigBlackboard(iox2_static_config_blackboard_t value);
 
     iox2_static_config_blackboard_t m_value;
 };
 } // namespace iox2
+
+auto operator<<(std::ostream& stream, const iox2::StaticConfigBlackboard& value) -> std::ostream&;
 
 #endif

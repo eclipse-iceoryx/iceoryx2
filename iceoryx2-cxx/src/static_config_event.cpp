@@ -67,3 +67,18 @@ auto StaticConfigEvent::deadline() const -> bb::Optional<iox2::bb::Duration> {
 }
 
 } // namespace iox2
+
+auto operator<<(std::ostream& stream, const iox2::StaticConfigEvent& value) -> std::ostream& {
+    stream << "StaticConfigEvent { max_nodes: " << value.max_nodes() << ", max_notifiers: " << value.max_notifiers()
+           << ", max_listeners: " << value.max_listeners() << ", event_id_max_value: " << value.event_id_max_value()
+           << ", notifier_created_event: ";
+    stream_operator(stream, value.notifier_created_event());
+    stream << ", notifier_dropped_event: ";
+    stream_operator(stream, value.notifier_dropped_event());
+    stream << ", notifier_dead_event: ";
+    stream_operator(stream, value.notifier_dead_event());
+    stream << ", deadline: ";
+    stream_operator(stream, value.deadline());
+    stream << " }";
+    return stream;
+}

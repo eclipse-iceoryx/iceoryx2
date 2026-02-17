@@ -55,11 +55,14 @@ class StaticConfigPublishSubscribe {
   private:
     template <ServiceType, typename, typename>
     friend class PortFactoryPublishSubscribe;
+    friend class StaticConfig;
 
     explicit StaticConfigPublishSubscribe(iox2_static_config_publish_subscribe_t value);
 
     iox2_static_config_publish_subscribe_t m_value;
 };
 } // namespace iox2
+
+auto operator<<(std::ostream& stream, const iox2::StaticConfigPublishSubscribe& value) -> std::ostream&;
 
 #endif

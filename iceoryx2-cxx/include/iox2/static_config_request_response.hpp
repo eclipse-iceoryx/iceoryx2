@@ -67,10 +67,14 @@ class StaticConfigRequestResponse {
   private:
     template <ServiceType, typename, typename, typename, typename>
     friend class PortFactoryRequestResponse;
+    friend class StaticConfig;
 
     explicit StaticConfigRequestResponse(iox2_static_config_request_response_t value);
 
     iox2_static_config_request_response_t m_value;
 };
 } // namespace iox2
+
+auto operator<<(std::ostream& stream, const iox2::StaticConfigRequestResponse& value) -> std::ostream&;
+
 #endif

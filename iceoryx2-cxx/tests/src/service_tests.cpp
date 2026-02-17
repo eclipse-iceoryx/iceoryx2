@@ -83,12 +83,18 @@ TYPED_TEST(ServiceTest, list_works) {
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
 
-    auto sut_1 = node.service_builder(service_name_1).template publish_subscribe<uint64_t>().create().value();
-    auto sut_2 = node.service_builder(service_name_2).event().create().value();
-    auto sut_3 = node.service_builder(service_name_3).template request_response<uint64_t, uint64_t>().create().value();
+    auto sut_1 =
+        node.service_builder(service_name_1).template publish_subscribe<uint64_t>().max_nodes(2).create().value();
+    auto sut_2 = node.service_builder(service_name_2).event().max_nodes(3).create().value();
+    auto sut_3 = node.service_builder(service_name_3)
+                     .template request_response<uint64_t, uint64_t>()
+                     .max_nodes(4)
+                     .create()
+                     .value();
     auto sut_4 = node.service_builder(service_name_4)
                      .template blackboard_creator<uint64_t>()
                      .template add_with_default<uint64_t>(0)
+                     .max_nodes(2)
                      .create()
                      .value();
 
@@ -98,18 +104,22 @@ TYPED_TEST(ServiceTest, list_works) {
         case MessagingPattern::PublishSubscribe:
             EXPECT_THAT(details.static_details.name(), StrEq(service_name_1.to_string().unchecked_access().c_str()));
             EXPECT_THAT(details.static_details.id(), StrEq(sut_1.service_id().c_str()));
+            EXPECT_THAT(details.static_details.publish_subscribe().max_nodes(), Eq(2));
             break;
         case MessagingPattern::Event:
             EXPECT_THAT(details.static_details.name(), StrEq(service_name_2.to_string().unchecked_access().c_str()));
             EXPECT_THAT(details.static_details.id(), StrEq(sut_2.service_id().c_str()));
+            EXPECT_THAT(details.static_details.event().max_nodes(), Eq(3));
             break;
         case MessagingPattern::RequestResponse:
             EXPECT_THAT(details.static_details.name(), StrEq(service_name_3.to_string().unchecked_access().c_str()));
             EXPECT_THAT(details.static_details.id(), StrEq(sut_3.service_id().c_str()));
+            EXPECT_THAT(details.static_details.request_response().max_nodes(), Eq(4));
             break;
         case MessagingPattern::Blackboard:
             EXPECT_THAT(details.static_details.name(), StrEq(service_name_4.to_string().unchecked_access().c_str()));
             EXPECT_THAT(details.static_details.id(), StrEq(sut_4.service_id().c_str()));
+            EXPECT_THAT(details.static_details.blackboard().max_nodes(), Eq(2));
             break;
         }
 

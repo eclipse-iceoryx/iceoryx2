@@ -58,11 +58,14 @@ class StaticConfigEvent {
   private:
     template <ServiceType>
     friend class PortFactoryEvent;
+    friend class StaticConfig;
 
     explicit StaticConfigEvent(iox2_static_config_event_t value);
 
     iox2_static_config_event_t m_value;
 };
 } // namespace iox2
+
+auto operator<<(std::ostream& stream, const iox2::StaticConfigEvent& value) -> std::ostream&;
 
 #endif
