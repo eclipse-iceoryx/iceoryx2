@@ -67,6 +67,7 @@ class StaticConfigRequestResponse {
   private:
     template <ServiceType, typename, typename, typename, typename>
     friend class PortFactoryRequestResponse;
+    friend class StaticConfig;
 
     explicit StaticConfigRequestResponse(iox2_static_config_request_response_t value);
 

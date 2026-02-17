@@ -55,6 +55,7 @@ class StaticConfigPublishSubscribe {
   private:
     template <ServiceType, typename, typename>
     friend class PortFactoryPublishSubscribe;
+    friend class StaticConfig;
 
     explicit StaticConfigPublishSubscribe(iox2_static_config_publish_subscribe_t value);
 

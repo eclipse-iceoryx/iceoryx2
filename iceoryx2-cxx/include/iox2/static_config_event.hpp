@@ -58,6 +58,7 @@ class StaticConfigEvent {
   private:
     template <ServiceType>
     friend class PortFactoryEvent;
+    friend class StaticConfig;
 
     explicit StaticConfigEvent(iox2_static_config_event_t value);
 
