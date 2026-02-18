@@ -40,7 +40,7 @@ impl RwLockReaderPreference {
     #[cfg(all(test, loom, feature = "std"))]
     pub fn new() -> Self {
         Self {
-            reader_count: IoxAtomicU32::new(UNLOCKED),
+            reader_count: AtomicU32::new(UNLOCKED),
         }
     }
 
@@ -180,8 +180,8 @@ impl RwLockWriterPreference {
     #[cfg(all(test, loom, feature = "std"))]
     pub fn new() -> Self {
         Self {
-            state: IoxAtomicU32::new(UNLOCKED),
-            writer_wake_counter: IoxAtomicU32::new(0),
+            state: AtomicU32::new(UNLOCKED),
+            writer_wake_counter: AtomicU32::new(0),
         }
     }
 
