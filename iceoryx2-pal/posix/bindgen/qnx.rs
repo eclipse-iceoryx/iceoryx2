@@ -14,7 +14,9 @@ extern crate bindgen;
 
 use std::env;
 
-pub fn configure_cargo() {}
+pub fn configure_cargo() {
+    println!("cargo:rustc-link-lib=socket");
+}
 
 pub fn configure_builder(builder: bindgen::Builder) -> bindgen::Builder {
     let target_arch = std::env::var("CARGO_CFG_TARGET_ARCH").unwrap();
