@@ -64,7 +64,7 @@ impl<T: Copy, const CAPACITY: usize> Producer<'_, T, CAPACITY> {
 
 impl<T: Copy, const CAPACITY: usize> Drop for Producer<'_, T, CAPACITY> {
     fn drop(&mut self) {
-        self.queue.has_producer.store(true, Ordering::Relaxed);
+        self.queue.has_producer.store(true, Ordering::SeqCst);
     }
 }
 
@@ -82,7 +82,7 @@ impl<T: Copy, const CAPACITY: usize> Consumer<'_, T, CAPACITY> {
 
 impl<T: Copy, const CAPACITY: usize> Drop for Consumer<'_, T, CAPACITY> {
     fn drop(&mut self) {
-        self.queue.has_consumer.store(true, Ordering::Relaxed);
+        self.queue.has_consumer.store(true, Ordering::SeqCst);
     }
 }
 
@@ -132,7 +132,7 @@ impl<T: Copy, const CAPACITY: usize> Queue<T, CAPACITY> {
     pub fn acquire_producer(&self) -> Option<Producer<'_, T, CAPACITY>> {
         match self
             .has_producer
-            .compare_exchange(true, false, Ordering::Relaxed, Ordering::Relaxed)
+            .compare_exchange(true, false, Ordering::SeqCst, Ordering::SeqCst)
         {
             Ok(_) => Some(Producer { queue: self }),
             Err(_) => None,
@@ -162,7 +162,7 @@ impl<T: Copy, const CAPACITY: usize> Queue<T, CAPACITY> {
     pub fn acquire_consumer(&self) -> Option<Consumer<'_, T, CAPACITY>> {
         match self
             .has_consumer
-            .compare_exchange(true, false, Ordering::Relaxed, Ordering::Relaxed)
+            .compare_exchange(true, false, Ordering::SeqCst, Ordering::SeqCst)
         {
             Ok(_) => Some(Consumer { queue: self }),
             Err(_) => None,

@@ -43,6 +43,8 @@
   [#1342](https://github.com/eclipse-iceoryx/iceoryx2/issues/1342)
 * Bump cryptography from 45.0.7 to 46.0.5 in /iceoryx2-ffi/python
   [#1316](https://github.com/eclipse-iceoryx/iceoryx2/issues/1348)
+* Fix memory order in queue guards and index queue
+  [#1356](https://github.com/eclipse-iceoryx/iceoryx2/issues/1356)
 
 ### Refactoring
 

@@ -76,7 +76,7 @@ impl<PointerType: PointerTrait<UnsafeCell<u64>> + Debug> Producer<'_, PointerTyp
 
 impl<PointerType: PointerTrait<UnsafeCell<u64>>> Drop for Producer<'_, PointerType> {
     fn drop(&mut self) {
-        self.queue.has_producer.store(true, Ordering::Relaxed);
+        self.queue.has_producer.store(true, Ordering::SeqCst);
     }
 }
 
@@ -97,7 +97,7 @@ impl<PointerType: PointerTrait<UnsafeCell<u64>> + Debug> Consumer<'_, PointerTyp
 
 impl<PointerType: PointerTrait<UnsafeCell<u64>>> Drop for Consumer<'_, PointerType> {
     fn drop(&mut self) {
-        self.queue.has_consumer.store(true, Ordering::Relaxed);
+        self.queue.has_consumer.store(true, Ordering::SeqCst);
     }
 }
 
@@ -249,8 +249,8 @@ pub mod details {
             match self.has_producer.compare_exchange(
                 true,
                 false,
-                Ordering::Relaxed,
-                Ordering::Relaxed,
+                Ordering::SeqCst,
+                Ordering::SeqCst,
             ) {
                 Ok(_) => Some(Producer { queue: self }),
                 Err(_) => None,
@@ -283,8 +283,8 @@ pub mod details {
             match self.has_consumer.compare_exchange(
                 true,
                 false,
-                Ordering::Relaxed,
-                Ordering::Relaxed,
+                Ordering::SeqCst,
+                Ordering::SeqCst,
             ) {
                 Ok(_) => Some(Consumer { queue: self }),
                 Err(_) => None,
