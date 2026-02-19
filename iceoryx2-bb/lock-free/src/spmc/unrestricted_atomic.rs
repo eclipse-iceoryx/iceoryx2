@@ -84,7 +84,7 @@ impl<T: Copy> Producer<'_, T> {
 
 impl<T: Copy> Drop for Producer<'_, T> {
     fn drop(&mut self) {
-        self.atomic.mgmt.has_producer.store(true, Ordering::Relaxed);
+        self.atomic.mgmt.has_producer.store(true, Ordering::SeqCst);
     }
 }
 
@@ -120,7 +120,7 @@ impl UnrestrictedAtomicMgmt {
     ///     [`UnrestrictedAtomicMgmt`] (used without [`UnrestrictedAtomic`]) is dropped
     pub unsafe fn __internal_acquire_producer(&self) -> Result<bool, bool> {
         self.has_producer
-            .compare_exchange(true, false, Ordering::Relaxed, Ordering::Relaxed)
+            .compare_exchange(true, false, Ordering::SeqCst, Ordering::SeqCst)
     }
 
     #[doc(hidden)]
@@ -130,7 +130,7 @@ impl UnrestrictedAtomicMgmt {
     ///   * [`UnrestrictedAtomicMgmt::__internal_acquire_producer()`] must have been
     ///     successfully called before
     pub unsafe fn __internal_release_producer(&self) {
-        self.has_producer.store(true, Ordering::Relaxed);
+        self.has_producer.store(true, Ordering::SeqCst);
     }
 
     #[doc(hidden)]
