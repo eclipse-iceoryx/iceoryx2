@@ -1645,7 +1645,6 @@ dependencies = [
  "iceoryx2-bb-threadsafe-tests-common",
  "iceoryx2-log",
  "iceoryx2-pal-posix",
- "iceoryx2-pal-testing",
 ]
 
 [[package]]

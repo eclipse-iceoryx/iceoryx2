@@ -12,7 +12,9 @@ version = { workspace = true }
 
 [features]
 default = []
-std = []
+std = [
+  "iceoryx2-pal-concurrency-sync/std"
+]
 
 [dependencies]
 iceoryx2-bb-elementary-traits = { workspace = true }
