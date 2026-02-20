@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![cfg_attr(not(test), no_std)]
+#![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;
 
@@ -37,3 +37,4 @@ pub enum WaitResult {
     Interrupted,
     Success,
 }
+pub mod spin_lock;

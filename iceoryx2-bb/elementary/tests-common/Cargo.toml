@@ -1,0 +1,28 @@
+[package]
+name = "iceoryx2-bb-elementary-tests-common"
+description = "iceoryx2: [internal] common test definitions for iceoryx2-bb-elementary"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[lints]
+workspace = true
+
+[features]
+default = []
+std = [
+  "iceoryx2-bb-elementary/std",
+  "iceoryx2-bb-concurrency/std",
+  "iceoryx2-bb-testing/std",
+]
+
+[dependencies]
+iceoryx2-bb-elementary = { workspace = true }
+iceoryx2-bb-concurrency = { workspace = true }
+iceoryx2-bb-elementary-traits = { workspace = true }
+iceoryx2-bb-testing = { workspace = true }
