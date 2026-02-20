@@ -34,7 +34,10 @@ jobs:
           uname -a
 
       - name: Build iceoryx2 (no_std)
-        run: cargo build --package iceoryx2 --no-default-features
+        run: just build iceoryx2 --no_std
+
+      - name: Test iceoryx2 (no_std)
+        run: just test workspace --no_std
 
       - name: Build bare-metal examples (no_std)
         run: cd examples/nostd/bare-metal/rust && cargo build --examples && cd -
