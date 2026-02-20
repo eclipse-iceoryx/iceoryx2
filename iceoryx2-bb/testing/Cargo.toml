@@ -14,6 +14,7 @@ version = { workspace = true }
 default = []
 
 std = [
+  "iceoryx2-bb-concurrency/std",
   "iceoryx2-pal-testing/std",
 ]
 

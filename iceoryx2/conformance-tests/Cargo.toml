@@ -26,6 +26,6 @@ iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-derive-macros = { workspace = true }
 iceoryx2-log = { workspace = true }
 iceoryx2-bb-posix = { workspace = true }
-iceoryx2-bb-testing = { workspace = true }
+iceoryx2-bb-testing = { workspace = true, features = ["std"] }
 iceoryx2-cal = { workspace = true }
 iceoryx2-pal-testing = { workspace = true }

@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate alloc;
+
 mod service_discovery_service {
 
     use iceoryx2::prelude::*;
