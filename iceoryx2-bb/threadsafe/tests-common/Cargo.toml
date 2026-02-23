@@ -22,8 +22,8 @@ std = [
 
 [dependencies]
 iceoryx2-bb-threadsafe = { workspace = true }
+iceoryx2-bb-concurrency = { workspace = true }
 iceoryx2-bb-posix = { workspace = true }
 iceoryx2-bb-testing = { workspace = true }
-iceoryx2-pal-concurrency-sync = { workspace = true }
 iceoryx2-bb-testing-nostd-macros = { workspace = true }
 iceoryx2-pal-print = { workspace = true }

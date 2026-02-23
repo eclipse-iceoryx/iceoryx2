@@ -28,10 +28,10 @@ use std_testing::*;
 
 #[cfg(feature = "std")]
 mod std_testing {
+    pub use iceoryx2_bb_concurrency::atomic::AtomicU64;
+    pub use iceoryx2_bb_concurrency::atomic::Ordering;
     pub use iceoryx2_bb_posix::clock::nanosleep;
     pub use iceoryx2_bb_testing::watchdog::Watchdog;
-    pub use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
-    pub use iceoryx2_pal_concurrency_sync::atomic::Ordering;
     pub use std::thread;
 }
 
@@ -215,11 +215,6 @@ pub fn trigger_queue_blocking_pop_blocks_until_there_is_something_pushed() {
 
 #[requires_std("threading")]
 pub fn trigger_queue_one_pop_notifies_exactly_one_blocking_push() {
-    use iceoryx2_bb_posix::clock::nanosleep;
-    use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
-    use iceoryx2_pal_concurrency_sync::atomic::Ordering;
-    use std::thread;
-
     let _watchdog = Watchdog::new();
     const NUMBER_OF_THREADS: u64 = 2;
     let mtx_handle = MutexHandle::new();
@@ -254,11 +249,6 @@ pub fn trigger_queue_one_pop_notifies_exactly_one_blocking_push() {
 
 #[requires_std("threading")]
 pub fn trigger_queue_one_pop_notifies_exactly_one_timed_push() {
-    use iceoryx2_bb_posix::clock::nanosleep;
-    use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
-    use iceoryx2_pal_concurrency_sync::atomic::Ordering;
-    use std::thread;
-
     const NUMBER_OF_THREADS: u64 = 2;
 
     let _watchdog = Watchdog::new();
