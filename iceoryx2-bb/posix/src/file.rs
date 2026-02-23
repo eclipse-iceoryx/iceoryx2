@@ -75,14 +75,6 @@ enum_gen! { FileRemoveError
     UnknownError(i32)
 }
 
-impl core::fmt::Display for FileRemoveError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "FileRemoveError::{self:?}")
-    }
-}
-
-impl core::error::Error for FileRemoveError {}
-
 enum_gen! { FileAccessError
   entry:
     LoopInSymbolicLinks,
@@ -90,14 +82,6 @@ enum_gen! { FileAccessError
     InsufficientPermissions,
     UnknownError(i32)
 }
-
-impl core::fmt::Display for FileAccessError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "FileAccessError::{self:?}")
-    }
-}
-
-impl core::error::Error for FileAccessError {}
 
 enum_gen! { FileCreationError
   entry:
@@ -127,14 +111,6 @@ enum_gen! { FileCreationError
     FileRemoveError
 }
 
-impl core::fmt::Display for FileCreationError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "FileCreationError::{self:?}")
-    }
-}
-
-impl core::error::Error for FileCreationError {}
-
 enum_gen! { FileOpenError
   entry:
     InsufficientPermissions,
@@ -150,14 +126,6 @@ enum_gen! { FileOpenError
     MaxFilePathLengthExceeded,
     UnknownError(i32)
 }
-
-impl core::fmt::Display for FileOpenError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "FileOpenError::{self:?}")
-    }
-}
-
-impl core::error::Error for FileOpenError {}
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum FileTruncateError {
@@ -245,14 +213,6 @@ enum_gen! { FileReadError
     FileStatError
 }
 
-impl core::fmt::Display for FileReadError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "FileReadError::{self:?}")
-    }
-}
-
-impl core::error::Error for FileReadError {}
-
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum FileOffsetError {
     InvalidFileDescriptor,
@@ -283,14 +243,6 @@ enum_gen! { FileWriteError
     FileOffsetError
 }
 
-impl core::fmt::Display for FileWriteError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "FileWriteError::{self:?}")
-    }
-}
-
-impl core::error::Error for FileWriteError {}
-
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum FileSyncError {
     Interrupt,
@@ -320,14 +272,6 @@ enum_gen! {
     Credentials <= FileSetOwnerError; FileSetPermissionError,
     Stat <= FileStatError
 }
-
-impl core::fmt::Display for FileError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "FileError::{self:?}")
-    }
-}
-
-impl core::error::Error for FileError {}
 
 impl From<()> for FileStatError {
     fn from(_: ()) -> Self {

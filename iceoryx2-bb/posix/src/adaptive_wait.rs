@@ -35,6 +35,7 @@
 //! ```
 
 use core::fmt::Debug;
+use core::fmt::Display;
 use core::time::Duration;
 
 use crate::clock::*;
@@ -85,6 +86,14 @@ impl<T: Debug> From<T> for AdaptiveTimedWaitWhileError<T> {
         AdaptiveTimedWaitWhileError::PredicateFailure(v)
     }
 }
+
+impl<T: Debug> Display for AdaptiveTimedWaitWhileError<T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "AdaptiveTimedWaitWhileError::{:?}", self)
+    }
+}
+
+impl<T: Debug> core::error::Error for AdaptiveTimedWaitWhileError<T> {}
 
 /// AdaptiveWait is a building block which can be integrated into busy loops to make
 /// them less CPU consuming. The strategy is that for [`ADAPTIVE_WAIT_YIELD_REPETITIONS`] the

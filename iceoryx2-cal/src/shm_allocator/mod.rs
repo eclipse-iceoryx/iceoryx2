@@ -33,14 +33,6 @@ enum_gen! {
     AllocationError
 }
 
-impl core::fmt::Display for ShmAllocationError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "ShmAllocationError::{self:?}")
-    }
-}
-
-impl core::error::Error for ShmAllocationError {}
-
 /// Describes generically an [`AllocationStrategy`], meaning how the memory is increased when the
 /// available memory is insufficient.
 #[derive(Clone, Copy, Eq, PartialEq, Debug, Default)]

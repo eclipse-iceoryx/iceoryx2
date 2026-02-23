@@ -40,6 +40,7 @@
 //! ```
 pub use crate::ipc_capable::{Handle, IpcCapable};
 
+use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary::scope_guard::ScopeGuardBuilder;
 use iceoryx2_log::{fail, fatal_panic, warn};
 use iceoryx2_pal_posix::posix::errno::Errno;
@@ -49,11 +50,11 @@ use iceoryx2_pal_posix::*;
 use crate::handle_errno;
 use crate::ipc_capable::internal::{Capability, HandleStorage, IpcConstructible};
 
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-pub enum BarrierCreationError {
+enum_gen! { BarrierCreationError
+  entry:
     InsufficientMemory,
     SystemWideBarrierLimitReached,
-    UnknownError(i32),
+    UnknownError(i32)
 }
 
 /// Builder for the [`Barrier`]. The default values for number_of_waiters is 1 and it is

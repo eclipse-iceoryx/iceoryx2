@@ -131,14 +131,6 @@ enum_gen! { ThreadSpawnError
     ThreadSetNameError
 }
 
-impl core::fmt::Display for ThreadSpawnError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "ThreadSpawnError::{self:?}")
-    }
-}
-
-impl core::error::Error for ThreadSpawnError {}
-
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum ThreadSignalError {
     ThreadNoLongerActive,
@@ -157,14 +149,6 @@ enum_gen! { ThreadSetNameError
   entry:
     UnknownError(i32)
 }
-
-impl core::fmt::Display for ThreadSetNameError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "ThreadSetNameError::{self:?}")
-    }
-}
-
-impl core::error::Error for ThreadSetNameError {}
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum ThreadSetAffinityError {
@@ -186,14 +170,6 @@ enum_gen! {
     ThreadNameLongerThanMaxSupportedSize,
     UnknownError(i32)
 }
-
-impl core::fmt::Display for ThreadGetNameError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "ThreadGetNameError::{self:?}")
-    }
-}
-
-impl core::error::Error for ThreadGetNameError {}
 
 enum_gen! {
     /// The ThreadError enum is a generalization when one doesn't require the fine-grained error
