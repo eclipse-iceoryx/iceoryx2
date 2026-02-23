@@ -64,7 +64,9 @@ impl<T: Copy, const CAPACITY: usize> Producer<'_, T, CAPACITY> {
 
 impl<T: Copy, const CAPACITY: usize> Drop for Producer<'_, T, CAPACITY> {
     fn drop(&mut self) {
-        self.queue.has_producer.store(true, Ordering::SeqCst);
+        // SYNC POINT: producer
+        // sync the internal state with the next producer in another thread
+        self.queue.has_producer.store(true, Ordering::Release);
     }
 }
 
@@ -82,7 +84,9 @@ impl<T: Copy, const CAPACITY: usize> Consumer<'_, T, CAPACITY> {
 
 impl<T: Copy, const CAPACITY: usize> Drop for Consumer<'_, T, CAPACITY> {
     fn drop(&mut self) {
-        self.queue.has_consumer.store(true, Ordering::SeqCst);
+        // SYNC POINT: consumer
+        // sync the internal state with the next consumer in another thread
+        self.queue.has_consumer.store(true, Ordering::Release);
     }
 }
 
@@ -130,10 +134,15 @@ impl<T: Copy, const CAPACITY: usize> Queue<T, CAPACITY> {
     /// }
     /// ```
     pub fn acquire_producer(&self) -> Option<Producer<'_, T, CAPACITY>> {
-        match self
-            .has_producer
-            .compare_exchange(true, false, Ordering::SeqCst, Ordering::SeqCst)
-        {
+        match self.has_producer.compare_exchange(
+            true,
+            false,
+            // SYNC POINT: producer
+            // sync the internal state with the next producer in another thread
+            Ordering::Acquire,
+            // the producer could not be acquired therefore we do not need to sync anything
+            Ordering::Relaxed,
+        ) {
             Ok(_) => Some(Producer { queue: self }),
             Err(_) => None,
         }
@@ -160,10 +169,15 @@ impl<T: Copy, const CAPACITY: usize> Queue<T, CAPACITY> {
     /// }
     /// ```
     pub fn acquire_consumer(&self) -> Option<Consumer<'_, T, CAPACITY>> {
-        match self
-            .has_consumer
-            .compare_exchange(true, false, Ordering::SeqCst, Ordering::SeqCst)
-        {
+        match self.has_consumer.compare_exchange(
+            true,
+            false,
+            // SYNC POINT: consumer
+            // sync the internal state with the next consumer in another thread
+            Ordering::Acquire,
+            // the consumer could not be acquired therefore we do not need to sync anything
+            Ordering::Relaxed,
+        ) {
             Ok(_) => Some(Consumer { queue: self }),
             Err(_) => None,
         }

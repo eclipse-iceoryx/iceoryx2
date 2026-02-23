@@ -76,7 +76,12 @@ impl<PointerType: PointerTrait<UnsafeCell<u64>> + Debug> Producer<'_, PointerTyp
 
 impl<PointerType: PointerTrait<UnsafeCell<u64>>> Drop for Producer<'_, PointerType> {
     fn drop(&mut self) {
-        self.queue.has_producer.store(true, Ordering::SeqCst);
+        self.queue.has_producer.store(
+            true,
+            // SYNC POINT: producer
+            // sync the internal state with the next producer in another thread
+            Ordering::Release,
+        );
     }
 }
 
@@ -97,7 +102,12 @@ impl<PointerType: PointerTrait<UnsafeCell<u64>> + Debug> Consumer<'_, PointerTyp
 
 impl<PointerType: PointerTrait<UnsafeCell<u64>>> Drop for Consumer<'_, PointerType> {
     fn drop(&mut self) {
-        self.queue.has_consumer.store(true, Ordering::SeqCst);
+        self.queue.has_consumer.store(
+            true,
+            // SYNC POINT: consumer
+            // sync the internal state with the next consumer in another thread
+            Ordering::Release,
+        );
     }
 }
 
@@ -249,8 +259,11 @@ pub mod details {
             match self.has_producer.compare_exchange(
                 true,
                 false,
-                Ordering::SeqCst,
-                Ordering::SeqCst,
+                // SYNC POINT: producer
+                // sync the internal state with the next producer in another thread
+                Ordering::Acquire,
+                // the consumer could not be acquired therefore we do not need to sync anything
+                Ordering::Relaxed,
             ) {
                 Ok(_) => Some(Producer { queue: self }),
                 Err(_) => None,
@@ -283,8 +296,11 @@ pub mod details {
             match self.has_consumer.compare_exchange(
                 true,
                 false,
-                Ordering::SeqCst,
-                Ordering::SeqCst,
+                // SYNC POINT: consumer
+                // sync the internal state with the next consumer in another thread
+                Ordering::Acquire,
+                // the consumer could not be acquired therefore we do not need to sync anything
+                Ordering::Relaxed,
             ) {
                 Ok(_) => Some(Consumer { queue: self }),
                 Err(_) => None,
