@@ -10,26 +10,32 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
-
-use core::sync::atomic::{AtomicU64, Ordering};
 use core::time::Duration;
-use std::sync::Barrier;
-use std::thread;
 
-use iceoryx2_bb_posix::clock::{nanosleep, Time};
+use iceoryx2_bb_posix::clock::Time;
 use iceoryx2_bb_posix::mutex::MutexHandle;
 use iceoryx2_bb_posix::semaphore::*;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing::watchdog::Watchdog;
+use iceoryx2_bb_testing_nostd_macros::requires_std;
 use iceoryx2_bb_threadsafe::trigger_queue::*;
 
 const TIMEOUT: Duration = Duration::from_millis(100);
 const SUT_CAPACITY: usize = 128;
 type Sut<'a> = TriggerQueue<'a, usize, SUT_CAPACITY>;
 
-#[test]
-fn trigger_queue_new_queue_is_empty() {
+#[cfg(feature = "std")]
+use std_testing::*;
+
+#[cfg(feature = "std")]
+mod std_testing {
+    pub use iceoryx2_bb_posix::clock::nanosleep;
+    pub use iceoryx2_bb_testing::watchdog::Watchdog;
+    pub use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
+    pub use iceoryx2_pal_concurrency_sync::atomic::Ordering;
+    pub use std::thread;
+}
+
+pub fn trigger_queue_new_queue_is_empty() {
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
     let used_handle = UnnamedSemaphoreHandle::new();
@@ -43,8 +49,7 @@ fn trigger_queue_new_queue_is_empty() {
     assert_that!(sut.try_pop(), eq None);
 }
 
-#[test]
-fn trigger_queue_try_push_pop_works() {
+pub fn trigger_queue_try_push_pop_works() {
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
     let used_handle = UnnamedSemaphoreHandle::new();
@@ -70,8 +75,7 @@ fn trigger_queue_try_push_pop_works() {
     assert_that!(value, is_none);
 }
 
-#[test]
-fn trigger_queue_timed_push_pop_works() {
+pub fn trigger_queue_timed_push_pop_works() {
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
     let used_handle = UnnamedSemaphoreHandle::new();
@@ -97,8 +101,7 @@ fn trigger_queue_timed_push_pop_works() {
     assert_that!(value, is_none);
 }
 
-#[test]
-fn trigger_queue_blocking_push_pop_works() {
+pub fn trigger_queue_blocking_push_pop_works() {
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
     let used_handle = UnnamedSemaphoreHandle::new();
@@ -123,8 +126,7 @@ fn trigger_queue_blocking_push_pop_works() {
     assert_that!(value, is_none);
 }
 
-#[test]
-fn trigger_queue_timed_push_blocks_at_least_until_timeout_has_passed() {
+pub fn trigger_queue_timed_push_blocks_at_least_until_timeout_has_passed() {
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
     let used_handle = UnnamedSemaphoreHandle::new();
@@ -140,8 +142,7 @@ fn trigger_queue_timed_push_blocks_at_least_until_timeout_has_passed() {
     assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT);
 }
 
-#[test]
-fn trigger_queue_timed_pop_blocks_at_least_until_timeout_has_passed() {
+pub fn trigger_queue_timed_pop_blocks_at_least_until_timeout_has_passed() {
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
     let used_handle = UnnamedSemaphoreHandle::new();
@@ -153,8 +154,8 @@ fn trigger_queue_timed_pop_blocks_at_least_until_timeout_has_passed() {
     assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT);
 }
 
-#[test]
-fn trigger_queue_blocking_push_blocks_until_there_is_space_again() {
+#[requires_std("threading")]
+pub fn trigger_queue_blocking_push_blocks_until_there_is_space_again() {
     let _watchdog = Watchdog::new();
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
@@ -184,8 +185,8 @@ fn trigger_queue_blocking_push_blocks_until_there_is_space_again() {
     });
 }
 
-#[test]
-fn trigger_queue_blocking_pop_blocks_until_there_is_something_pushed() {
+#[requires_std("threading")]
+pub fn trigger_queue_blocking_pop_blocks_until_there_is_something_pushed() {
     let _watchdog = Watchdog::new();
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
@@ -212,8 +213,13 @@ fn trigger_queue_blocking_pop_blocks_until_there_is_something_pushed() {
     });
 }
 
-#[test]
-fn trigger_queue_one_pop_notifies_exactly_one_blocking_push() {
+#[requires_std("threading")]
+pub fn trigger_queue_one_pop_notifies_exactly_one_blocking_push() {
+    use iceoryx2_bb_posix::clock::nanosleep;
+    use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
+    use iceoryx2_pal_concurrency_sync::atomic::Ordering;
+    use std::thread;
+
     let _watchdog = Watchdog::new();
     const NUMBER_OF_THREADS: u64 = 2;
     let mtx_handle = MutexHandle::new();
@@ -221,7 +227,7 @@ fn trigger_queue_one_pop_notifies_exactly_one_blocking_push() {
     let used_handle = UnnamedSemaphoreHandle::new();
 
     let sut = Sut::new(&mtx_handle, &free_handle, &used_handle);
-    let barrier = Barrier::new(NUMBER_OF_THREADS as usize + 1);
+    let barrier = std::sync::Barrier::new(NUMBER_OF_THREADS as usize + 1);
 
     let counter = AtomicU64::new(0);
     for _ in 0..SUT_CAPACITY {
@@ -246,15 +252,20 @@ fn trigger_queue_one_pop_notifies_exactly_one_blocking_push() {
     });
 }
 
-#[test]
-fn trigger_queue_one_pop_notifies_exactly_one_timed_push() {
+#[requires_std("threading")]
+pub fn trigger_queue_one_pop_notifies_exactly_one_timed_push() {
+    use iceoryx2_bb_posix::clock::nanosleep;
+    use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
+    use iceoryx2_pal_concurrency_sync::atomic::Ordering;
+    use std::thread;
+
     const NUMBER_OF_THREADS: u64 = 2;
 
     let _watchdog = Watchdog::new();
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
     let used_handle = UnnamedSemaphoreHandle::new();
-    let barrier = Barrier::new(NUMBER_OF_THREADS as usize + 1);
+    let barrier = std::sync::Barrier::new(NUMBER_OF_THREADS as usize + 1);
 
     let sut = Sut::new(&mtx_handle, &free_handle, &used_handle);
     let counter = AtomicU64::new(0);
@@ -280,8 +291,8 @@ fn trigger_queue_one_pop_notifies_exactly_one_timed_push() {
     });
 }
 
-#[test]
-fn trigger_queue_one_push_notifies_exactly_one_blocking_pop() {
+#[requires_std("threading")]
+pub fn trigger_queue_one_push_notifies_exactly_one_blocking_pop() {
     let _watchdog = Watchdog::new();
     const NUMBER_OF_THREADS: u64 = 2;
     let mtx_handle = MutexHandle::new();
@@ -290,7 +301,7 @@ fn trigger_queue_one_push_notifies_exactly_one_blocking_pop() {
 
     let sut = Sut::new(&mtx_handle, &free_handle, &used_handle);
     let counter = AtomicU64::new(0);
-    let barrier = Barrier::new(NUMBER_OF_THREADS as usize + 1);
+    let barrier = std::sync::Barrier::new(NUMBER_OF_THREADS as usize + 1);
 
     thread::scope(|s| {
         for _ in 0..NUMBER_OF_THREADS {
@@ -311,8 +322,8 @@ fn trigger_queue_one_push_notifies_exactly_one_blocking_pop() {
     });
 }
 
-#[test]
-fn trigger_queue_one_push_notifies_exactly_one_timed_pop() {
+#[requires_std("threading")]
+pub fn trigger_queue_one_push_notifies_exactly_one_timed_pop() {
     const NUMBER_OF_THREADS: u64 = 2;
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
@@ -320,7 +331,7 @@ fn trigger_queue_one_push_notifies_exactly_one_timed_pop() {
 
     let sut = Sut::new(&mtx_handle, &free_handle, &used_handle);
     let counter = AtomicU64::new(0);
-    let barrier = Barrier::new(NUMBER_OF_THREADS as usize + 1);
+    let barrier = std::sync::Barrier::new(NUMBER_OF_THREADS as usize + 1);
 
     thread::scope(|s| {
         for _ in 0..NUMBER_OF_THREADS {
