@@ -46,7 +46,6 @@
 
 use core::{alloc::Layout, fmt::Debug};
 
-use iceoryx2_bb_concurrency::atomic::fence;
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_concurrency::atomic::AtomicU64;
 use iceoryx2_bb_concurrency::atomic::Ordering;
@@ -75,7 +74,9 @@ impl<PointerType: PointerTrait<UnsafeCell<u64>> + Debug> Producer<'_, PointerTyp
 
 impl<PointerType: PointerTrait<UnsafeCell<u64>> + Debug> Drop for Producer<'_, PointerType> {
     fn drop(&mut self) {
-        self.queue.has_producer.store(true, Ordering::Relaxed);
+        // SYNC POINT: producer
+        // sync the internal state with the next producer in another thread
+        self.queue.has_producer.store(true, Ordering::Release);
     }
 }
 
@@ -95,7 +96,9 @@ impl<PointerType: PointerTrait<UnsafeCell<u64>> + Debug> Consumer<'_, PointerTyp
 
 impl<PointerType: PointerTrait<UnsafeCell<u64>> + Debug> Drop for Consumer<'_, PointerType> {
     fn drop(&mut self) {
-        self.queue.has_consumer.store(true, Ordering::Relaxed);
+        // SYNC POINT: consumer
+        // sync the internal state with the next consumer in another thread
+        self.queue.has_consumer.store(true, Ordering::Release);
     }
 }
 
@@ -241,7 +244,10 @@ pub mod details {
             match self.has_producer.compare_exchange(
                 true,
                 false,
-                Ordering::Relaxed,
+                // SYNC POINT: producer
+                // sync the internal state with the next producer in another thread
+                Ordering::Acquire,
+                // the producer could not be acquired therefore we do not need to sync anything
                 Ordering::Relaxed,
             ) {
                 Ok(_) => Some(Producer { queue: self }),
@@ -275,7 +281,10 @@ pub mod details {
             match self.has_consumer.compare_exchange(
                 true,
                 false,
-                Ordering::Relaxed,
+                // SYNC POINT: consumer
+                // sync the internal state with the next consumer in another thread
+                Ordering::Acquire,
+                // the consumer could not be acquired therefore we do not need to sync anything
                 Ordering::Relaxed,
             ) {
                 Ok(_) => Some(Consumer { queue: self }),
@@ -287,12 +296,15 @@ pub mod details {
         ///
         /// # Safety
         ///
-        ///   * Ensure that no concurrent push occurres. Only one thread at a time is allowed to call
+        ///   * Ensure that no concurrent push occurs. Only one thread at a time is allowed to call
         ///     push.
         pub unsafe fn push(&self, value: u64) -> bool {
             let write_position = self.write_position.load(Ordering::Relaxed);
             let is_full =
-                write_position == self.read_position.load(Ordering::Relaxed) + self.capacity as u64;
+                ////////////////
+                // SYNC POINT: reading value has finished
+                ////////////////
+                write_position == self.read_position.load(Ordering::Acquire) + self.capacity as u64;
 
             if is_full {
                 return false;
@@ -300,7 +312,7 @@ pub mod details {
 
             unsafe { self.at(write_position).write(value) };
             ////////////////
-            // SYNC POINT
+            // SYNC POINT: value content visible in pop
             ////////////////
             self.write_position
                 .store(write_position + 1, Ordering::Release);
@@ -312,11 +324,11 @@ pub mod details {
         ///
         /// # Safety
         ///
-        ///   * Ensure that no concurrent pop occurres. Only one thread at a time is allowed to call pop.
+        ///   * Ensure that no concurrent pop occurs. Only one thread at a time is allowed to call pop.
         pub unsafe fn pop(&self) -> Option<u64> {
             let read_position = self.read_position.load(Ordering::Relaxed);
             ////////////////
-            // SYNC POINT
+            // SYNC POINT: value content visible in pop
             ////////////////
             let is_empty = read_position == self.write_position.load(Ordering::Acquire);
 
@@ -325,11 +337,11 @@ pub mod details {
             }
 
             let value = unsafe { *self.at(read_position) };
-            // prevent that `out` and `read_position` statements are reordered according to
-            // the AS-IF rule.
-            fence(Ordering::AcqRel);
+            ////////////////
+            // SYNC POINT: reading value has finished
+            ////////////////
             self.read_position
-                .store(read_position + 1, Ordering::Relaxed);
+                .store(read_position + 1, Ordering::Release);
 
             Some(value)
         }

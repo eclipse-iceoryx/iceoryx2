@@ -84,7 +84,7 @@ impl<T: Copy> Producer<'_, T> {
 
 impl<T: Copy> Drop for Producer<'_, T> {
     fn drop(&mut self) {
-        self.atomic.mgmt.has_producer.store(true, Ordering::Relaxed);
+        unsafe { self.atomic.mgmt.__internal_release_producer() };
     }
 }
 
@@ -119,8 +119,16 @@ impl UnrestrictedAtomicMgmt {
     ///   * [`UnrestrictedAtomicMgmt::__internal_release_producer()`] must be called when the
     ///     [`UnrestrictedAtomicMgmt`] (used without [`UnrestrictedAtomic`]) is dropped
     pub unsafe fn __internal_acquire_producer(&self) -> Result<bool, bool> {
-        self.has_producer
-            .compare_exchange(true, false, Ordering::Relaxed, Ordering::Relaxed)
+        self.has_producer.compare_exchange(
+            true,
+            false,
+            // SYNC POINT: producer
+            // the internal atomic state is synced with the next thread that wants to
+            // produce data
+            Ordering::Acquire,
+            // producer couldn't be acquired, therefore we do not need to sync anything.
+            Ordering::Relaxed,
+        )
     }
 
     #[doc(hidden)]
@@ -130,7 +138,13 @@ impl UnrestrictedAtomicMgmt {
     ///   * [`UnrestrictedAtomicMgmt::__internal_acquire_producer()`] must have been
     ///     successfully called before
     pub unsafe fn __internal_release_producer(&self) {
-        self.has_producer.store(true, Ordering::Relaxed);
+        self.has_producer.store(
+            true,
+            // SYNC POINT: producer
+            // the internal atomic state is synced with the next thread that wants to
+            // produce data
+            Ordering::Release,
+        );
     }
 
     #[doc(hidden)]
