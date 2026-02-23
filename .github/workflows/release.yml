@@ -43,8 +43,45 @@ jobs:
           path: target/ff/python/dist
           retention-days: 7
 
+  build-python-wheels-freethreaded:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest          # aarch64
+          - windows-latest
+        python:
+          - "3.14t"
+    defaults:
+      run:
+        shell: bash               # required for windows
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
+
+      - name: Set Up Free-Threaded Python
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # version: v6.0.1
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Build Wheel
+        run: |
+          pip install "maturin>=1.8,<2.0"
+          cd iceoryx2-ffi/python
+          maturin build --release --target-dir ../../target/ff/python --out ../../target/ff/python/dist
+
+      - name: Upload Wheel
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # version: v6.0.0
+        with:
+          name: wheels-freethreaded-${{ runner.os }}-${{ runner.arch }}-py${{ matrix.python }}-${{ github.sha }}
+          path: target/ff/python/dist
+          retention-days: 7
+
   prepare-python-dist:
-    needs: [build-python-wheels]
+    needs: [build-python-wheels, build-python-wheels-freethreaded]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
