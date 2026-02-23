@@ -25,6 +25,8 @@
   [#1263](https://github.com/eclipse-iceoryx/iceoryx2/issues/1263)
 * Add missing C++ APIs to access messaging pattern specific static config
   [#1353](https://github.com/eclipse-iceoryx/iceoryx2/issues/1353)
+* Implement `core::error::Error` for `bb::posix` error enums
+  [#1362](https://github.com/eclipse-iceoryx/iceoryx2/issues/1362)
 
 ### Bugfixes
 
