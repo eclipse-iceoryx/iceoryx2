@@ -16,8 +16,7 @@ use iceoryx2_bb_elementary::{bump_allocator::*, math::align};
 use iceoryx2_bb_elementary_traits::allocator::BaseAllocator;
 use iceoryx2_bb_testing::assert_that;
 
-#[test]
-fn start_position_is_correctly_used() {
+pub fn start_position_is_correctly_used() {
     let mut memory = [0u8; 8192];
     let start_position: *mut u8 = memory.as_mut_ptr();
     const MEM_SIZE: usize = 91;
@@ -32,8 +31,7 @@ fn start_position_is_correctly_used() {
     assert_that!(unsafe { memory.as_ref() }.len(), eq MEM_SIZE);
 }
 
-#[test]
-fn allocated_memory_is_correctly_aligned() {
+pub fn allocated_memory_is_correctly_aligned() {
     let mut memory = [0u8; 8192];
     let start_position: *mut u8 = unsafe { memory.as_mut_ptr().add(1) };
     const MEM_SIZE: usize = 128;
@@ -48,8 +46,7 @@ fn allocated_memory_is_correctly_aligned() {
     assert_that!(unsafe { memory.as_ref() }.len(), eq MEM_SIZE);
 }
 
-#[test]
-fn allocating_many_aligned_chunks_work() {
+pub fn allocating_many_aligned_chunks_work() {
     let mut memory = [0u8; 8192];
     let start_position: *mut u8 = unsafe { memory.as_mut_ptr().add(1) };
     const ITERATIONS: u32 = 5;
@@ -74,8 +71,7 @@ fn allocating_many_aligned_chunks_work() {
     }
 }
 
-#[test]
-fn deallocating_releases_everything() {
+pub fn deallocating_releases_everything() {
     let mut memory = [0u8; 8192];
     let start_position: *mut u8 = unsafe { memory.as_mut_ptr().add(3) };
     const MEM_SIZE: usize = 128;
