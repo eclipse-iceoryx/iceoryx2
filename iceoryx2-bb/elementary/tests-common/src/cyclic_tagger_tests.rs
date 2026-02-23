@@ -13,24 +13,21 @@
 use iceoryx2_bb_elementary::cyclic_tagger::*;
 use iceoryx2_bb_testing::assert_that;
 
-#[test]
-fn create_tag_works() {
+pub fn create_tag_works() {
     let sut = CyclicTagger::new();
     let sut_tag = sut.create_tag();
 
     assert_that!(sut_tag.was_tagged_by(&sut), eq true);
 }
 
-#[test]
-fn create_untagged_tag_works() {
+pub fn create_untagged_tag_works() {
     let sut = CyclicTagger::new();
     let sut_tag = sut.create_untagged_tag();
 
     assert_that!(sut_tag.was_tagged_by(&sut), eq false);
 }
 
-#[test]
-fn tagging_after_new_cyclic_works() {
+pub fn tagging_after_new_cyclic_works() {
     let sut = CyclicTagger::new();
     let sut_tag_1 = sut.create_tag();
     let sut_tag_2 = sut.create_tag();

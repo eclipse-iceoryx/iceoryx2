@@ -14,6 +14,7 @@ members = [
     "iceoryx2-bb/container",
     "iceoryx2-bb/derive-macros",
     "iceoryx2-bb/elementary",
+    "iceoryx2-bb/elementary/tests-common",
     "iceoryx2-bb/elementary-traits",
     "iceoryx2-bb/linux",
     "iceoryx2-bb/memory",
@@ -93,6 +94,7 @@ iceoryx2-bb-conformance-test-macros = { version = "0.8.999", path = "iceoryx2-bb
 iceoryx2-bb-container = { version = "0.8.999", path = "iceoryx2-bb/container/" }
 iceoryx2-bb-derive-macros = { version = "0.8.999", path = "iceoryx2-bb/derive-macros/" }
 iceoryx2-bb-elementary = { version = "0.8.999", path = "iceoryx2-bb/elementary/" }
+iceoryx2-bb-elementary-tests-common = { version = "0.8.999", path = "iceoryx2-bb/elementary/tests-common", default-features = false }
 iceoryx2-bb-elementary-traits = { version = "0.8.999", path = "iceoryx2-bb/elementary-traits/" }
 iceoryx2-bb-linux = { version = "0.8.999", path = "iceoryx2-bb/linux/" }
 iceoryx2-bb-memory = { version = "0.8.999", path = "iceoryx2-bb/memory/" }
