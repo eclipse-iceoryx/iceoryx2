@@ -32,18 +32,18 @@ use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-pub enum TimeError {
+enum_gen! { TimeError
+  entry:
     ClockTypeIsNotSupported,
-    UnknownError(i32),
+    UnknownError(i32)
 }
 
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-pub enum NanosleepError {
+enum_gen! { NanosleepError
+  entry:
     InterruptedBySignal(Duration),
     DurationOutOfRange,
     ClockTypeIsNotSupported,
-    UnknownError(i32),
+    UnknownError(i32)
 }
 
 enum_gen! {

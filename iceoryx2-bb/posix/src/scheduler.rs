@@ -12,14 +12,15 @@
 
 //! Provides a POSIX [`Scheduler`] abstraction.
 
+use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_log::{fail, fatal_panic, warn};
 use iceoryx2_pal_posix::*;
 
 use crate::config::DEFAULT_SCHEDULER;
 
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-pub enum SchedulerConversionError {
-    UnknownScheduler,
+enum_gen! { SchedulerConversionError
+  entry:
+    UnknownScheduler
 }
 
 /// Represents the scheduler in a POSIX system.

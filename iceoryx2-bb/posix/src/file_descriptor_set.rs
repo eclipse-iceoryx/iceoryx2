@@ -50,6 +50,7 @@ use core::{fmt::Debug, time::Duration};
 
 use alloc::vec;
 use alloc::vec::Vec;
+use iceoryx2_bb_elementary::enum_gen;
 
 use crate::{
     clock::AsTimeval,
@@ -63,18 +64,18 @@ use iceoryx2_pal_posix::*;
 /// A trait which is implement by all objects which can be added to the [`FileDescriptorSet`].
 pub trait SynchronousMultiplexing: FileDescriptorBased {}
 
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-pub enum FileDescriptorSetWaitError {
+enum_gen! { FileDescriptorSetWaitError
+  entry:
     Interrupt,
     TooManyAttachedFileDescriptors,
     InsufficientPermissions,
-    UnknownError(i32),
+    UnknownError(i32)
 }
 
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-pub enum FileDescriptorSetAddError {
+enum_gen! { FileDescriptorSetAddError
+  entry:
     AlreadyAttached,
-    CapacityExceeded,
+    CapacityExceeded
 }
 
 /// Defines the event type one wants to wait on in

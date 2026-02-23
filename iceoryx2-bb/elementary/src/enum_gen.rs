@@ -180,6 +180,14 @@ macro_rules! enum_gen {
         pub enum $enum_name {
             $($entry$(($bla))?),*
         }
+
+        impl core::fmt::Display for $enum_name {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                core::write!(f, "{}::{:?}", core::stringify!($enum_name), self)
+            }
+        }
+
+        impl core::error::Error for $enum_name {}
     };
 
     { $(#[$documentation:meta])*
@@ -198,6 +206,14 @@ macro_rules! enum_gen {
                 $enum_name::$equivalent(v)
             }
         })*
+
+        impl core::fmt::Display for $enum_name {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                core::write!(f, "{}::{:?}", core::stringify!($enum_name), self)
+            }
+        }
+
+        impl core::error::Error for $enum_name {}
     };
 
     { $(#[$documentation:meta])*
@@ -216,6 +232,14 @@ macro_rules! enum_gen {
                 $enum_name::$value_name(v)
             }
         })*
+
+        impl core::fmt::Display for $enum_name {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                core::write!(f, "{}::{:?}", core::stringify!($enum_name), self)
+            }
+        }
+
+        impl core::error::Error for $enum_name {}
     };
 
     { $(#[$documentation:meta])*
@@ -237,6 +261,14 @@ macro_rules! enum_gen {
                 $enum_name::$equivalent(v)
             }
         })*
+
+        impl core::fmt::Display for $enum_name {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                core::write!(f, "{}::{:?}", core::stringify!($enum_name), self)
+            }
+        }
+
+        impl core::error::Error for $enum_name {}
     };
 
     { $(#[$documentation:meta])*
@@ -258,6 +290,14 @@ macro_rules! enum_gen {
                 $enum_name::$value_name(v)
             }
         })*
+
+        impl core::fmt::Display for $enum_name {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                core::write!(f, "{}::{:?}", core::stringify!($enum_name), self)
+            }
+        }
+
+        impl core::error::Error for $enum_name {}
     };
 
     { $(#[$documentation:meta])*
@@ -276,6 +316,14 @@ macro_rules! enum_gen {
                 $enum_name::$destination
             }
         })*)*
+
+        impl core::fmt::Display for $enum_name {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                core::write!(f, "{}::{:?}", core::stringify!($enum_name), self)
+            }
+        }
+
+        impl core::error::Error for $enum_name {}
     };
 
     { $(#[$documentation:meta])*
@@ -297,6 +345,14 @@ macro_rules! enum_gen {
                 $enum_name::$destination
             }
         })*)*
+
+        impl core::fmt::Display for $enum_name {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                core::write!(f, "{}::{:?}", core::stringify!($enum_name), self)
+            }
+        }
+
+        impl core::error::Error for $enum_name {}
     };
 
     { $(#[$documentation:meta])*
@@ -327,6 +383,14 @@ macro_rules! enum_gen {
                 $enum_name::$destination
             }
         })*)*
+
+        impl core::fmt::Display for $enum_name {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                core::write!(f, "{}::{:?}", core::stringify!($enum_name), self)
+            }
+        }
+
+        impl core::error::Error for $enum_name {}
     };
 
     { $(#[$documentation:meta])*
@@ -353,10 +417,12 @@ macro_rules! enum_gen {
           }
       }
 
-      impl Display for $name {
+      impl core::fmt::Display for $name {
           fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-              core::write!(f, "{}::{:?}", core::stringify!($name), self )
+              core::write!(f, "{}::{:?}", core::stringify!($name), self)
           }
       }
+
+      impl core::error::Error for $name {}
     };
 }

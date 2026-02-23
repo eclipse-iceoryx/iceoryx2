@@ -66,39 +66,39 @@ use iceoryx2_pal_posix::*;
 
 use crate::ipc_capable::internal::{Capability, HandleStorage, IpcConstructible};
 
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-pub enum ReadWriteMutexCreationError {
+enum_gen! { ReadWriteMutexCreationError
+  entry:
     InsufficientMemory,
     InsufficientResources,
     InsufficientPermissions,
     NoInterProcessSupport,
     NoMutexKindSupport,
-    UnknownError(i32),
+    UnknownError(i32)
 }
 
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-pub enum ReadWriteMutexReadLockError {
+enum_gen! { ReadWriteMutexReadLockError
+  entry:
     MaximumAmountOfReadLocksAcquired,
     DeadlockConditionDetected,
-    UnknownError(i32),
+    UnknownError(i32)
 }
 
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-pub enum ReadWriteMutexUnlockError {
+enum_gen! { ReadWriteMutexUnlockError
+  entry:
     OwnedByDifferentEntity,
-    UnknownError(i32),
+    UnknownError(i32)
 }
 
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-pub enum ReadWriteMutexWriteLockError {
+enum_gen! { ReadWriteMutexWriteLockError
+  entry:
     DeadlockConditionDetected,
-    UnknownError(i32),
+    UnknownError(i32)
 }
 
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-pub enum ReadWriteMutexOpenIpcHandleError {
+enum_gen! { ReadWriteMutexOpenIpcHandleError
+  entry:
     IsNotInterProcessCapable,
-    Uninitialized,
+    Uninitialized
 }
 
 enum_gen! {

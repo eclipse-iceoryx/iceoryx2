@@ -54,10 +54,10 @@ use crate::{
     signal::Signal,
 };
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum ProcessExecutablePathError {
+enum_gen! { ProcessExecutablePathError
+  entry:
     ContainsInvalidCharacters,
-    UnableToRead,
+    UnableToRead
 }
 
 enum_gen! { ProcessSendSignalError

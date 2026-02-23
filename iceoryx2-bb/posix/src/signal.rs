@@ -232,9 +232,9 @@ define_signals! {
     StopExecution = posix::SIGSTOP
 }
 
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-pub enum SignalRegisterError {
-    AlreadyRegistered,
+enum_gen! { SignalRegisterError
+  entry:
+    AlreadyRegistered
 }
 
 enum_gen! { SignalWaitError

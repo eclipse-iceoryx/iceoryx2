@@ -122,14 +122,6 @@ enum_gen! {
     DynamicStorageCreateError
 }
 
-impl core::fmt::Display for DynamicStorageOpenOrCreateError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "DynamicStorageOpenOrCreateError::{self:?}")
-    }
-}
-
-impl core::error::Error for DynamicStorageOpenOrCreateError {}
-
 /// Builder for the [`DynamicStorage`]. T is not allowed to implement the [`Drop`] trait.
 pub trait DynamicStorageBuilder<'builder, T: Send + Sync, D: DynamicStorage<T>>:
     Debug + Sized + NamedConceptBuilder<D>
