@@ -51,12 +51,13 @@ pub use crate::ipc_capable::{Handle, IpcCapable};
 use crate::ipc_capable::internal::{Capability, HandleStorage, IpcConstructible};
 
 use core::fmt::Debug;
+use core::fmt::Display;
 use core::marker::PhantomData;
 use core::ops::{Deref, DerefMut};
 use core::time::Duration;
 
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
-use iceoryx2_bb_elementary::scope_guard::*;
+use iceoryx2_bb_elementary::{enum_gen, scope_guard::*};
 use iceoryx2_log::{fail, fatal_panic, warn};
 use iceoryx2_pal_posix::posix::MemZeroedStruct;
 use iceoryx2_pal_posix::*;
@@ -65,8 +66,8 @@ use crate::adaptive_wait::*;
 use crate::clock::{AsTimespec, ClockType, NanosleepError, Time, TimeError};
 use iceoryx2_pal_posix::posix::errno::Errno;
 
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-pub enum MutexCreationError {
+enum_gen! { MutexCreationError
+  entry:
     InsufficientMemory,
     InsufficientResources,
     InsufficientPermissions,
@@ -74,7 +75,7 @@ pub enum MutexCreationError {
     UnableToSetType,
     UnableToSetProtocol,
     UnableToSetThreadTerminationBehavior,
-    UnknownError(i32),
+    UnknownError(i32)
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -85,6 +86,14 @@ pub enum MutexLockError<'handle, T: Sized + Debug> {
     UnrecoverableState,
     UnknownError(i32),
 }
+
+impl<T: Sized + Debug> Display for MutexLockError<'_, T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "MutexLockError::{:?}", self)
+    }
+}
+
+impl<T: Sized + Debug> core::error::Error for MutexLockError<'_, T> {}
 
 impl<T: Sized + Debug> PartialEq for MutexGuard<'_, T> {
     fn eq(&self, other: &Self) -> bool {
@@ -102,6 +111,14 @@ pub enum MutexTimedLockError<'handle, T: Sized + Debug> {
     AdaptiveWaitError(AdaptiveWaitError),
     FailureInInternalClockWhileWait(TimeError),
 }
+
+impl<T: Sized + Debug> Display for MutexTimedLockError<'_, T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "MutexTimedLockError::{:?}", self)
+    }
+}
+
+impl<T: Sized + Debug> core::error::Error for MutexTimedLockError<'_, T> {}
 
 impl<T: Debug> From<TimeError> for MutexTimedLockError<'_, T> {
     fn from(v: TimeError) -> Self {
@@ -121,21 +138,22 @@ impl<T: Debug> From<AdaptiveWaitError> for MutexTimedLockError<'_, T> {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-pub enum MutexUnlockError {
+enum_gen! { MutexUnlockError
+  entry:
     OwnedByDifferentEntity,
-    UnknownError(i32),
+    UnknownError(i32)
 }
 
-/// The MutexError enum is a generalization when one doesn't require the fine-grained error
-/// handling enums. One can forward MutexError as more generic return value when a method
-/// returns a Mutex***Error.
-/// On a higher level it is again convertable to [`crate::Error`].
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-pub enum MutexError {
+enum_gen! {
+    /// The MutexError enum is a generalization when one doesn't require the fine-grained error
+    /// handling enums. One can forward MutexError as more generic return value when a method
+    /// returns a Mutex***Error.
+    /// On a higher level it is again convertable to [`crate::Error`].
+    MutexError
+  entry:
     CreationFailed,
     LockFailed,
-    UnlockFailed,
+    UnlockFailed
 }
 
 impl<'handle, T: Debug> From<MutexLockError<'handle, T>> for MutexError {

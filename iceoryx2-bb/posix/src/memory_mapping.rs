@@ -95,86 +95,49 @@
 
 pub use crate::access_mode::AccessMode;
 pub use iceoryx2_bb_container::semantic_string::SemanticString;
+use iceoryx2_bb_elementary::enum_gen;
 pub use iceoryx2_bb_system_types::file_path::FilePath;
 
 use crate::{file_descriptor::FileDescriptor, system_configuration::SystemInfo};
 use iceoryx2_log::{fail, fatal_panic, trace};
 use iceoryx2_pal_posix::posix::{self, Errno, MAP_FAILED};
 
-/// Error that can occur when a new [`MemoryMapping`] is created with [`MemoryMappingBuilder::create()`].
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum MemoryMappingCreationError {
-    /// Insufficient permissions to open the file or map the mapping.
+enum_gen! {
+    /// Error that can occur when a new [`MemoryMapping`] is created with [`MemoryMappingBuilder::create()`].
+    MemoryMappingCreationError
+  entry:
     InsufficientPermissions,
-    /// The size was not set, or set to zero.
     MappingSizeIsZero,
-    /// Exceeds the limit of mapped regions.
     ExceedsTheMaximumNumberOfMappedRegions,
-    /// A [`FileDescriptor`] was provided that does not support `mmap`.
     FileDescriptorDoesNotSupportMemoryMappings,
-    /// Insufficient resources to map the memory into the process.
     InsufficientResources,
-    /// The provided size was larger than the corresponding file.
     MappingLargerThanCorrespondingFile,
-    /// An address hint was provided but it could not be enforced.
     FailedToEnforceAddressHint,
-    /// The corresponding device does not support synchronized IO
     SynchronizedIONotSupported,
-    /// An interrupt signal was raised.
     InterruptSignal,
-    /// The provided [`FilePath`] is actually a [`Directory`](crate::directory::Directory).
     FileIsADirectory,
-    /// There are too many symbolic links in the provided [`FilePath`].
     TooManySymbolicLinksInPath,
-    /// The process wide limit of [`FileDescriptor`]s was reached.
     PerProcessFileHandleLimitReached,
-    /// The system wide limit of [`FileDescriptor`]s was reached.
     SystemWideFileHandleLimitReached,
-    /// The file does not exist.
     FileDoesNotExist,
-    /// The file is larger than what `off_t` can represent.
     FileTooBig,
-    /// The POSIX `open` call returned a [`FileDescriptor`] that is not valid. Should never happen!
     OpenReturnedBrokedFileDescriptor,
-    /// An unknown failure occurred.
-    UnknownFailure(i32),
+    UnknownFailure(i32)
 }
 
-impl core::fmt::Display for MemoryMappingCreationError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "MemoryMappingCreationError::{self:?}")
-    }
-}
-
-impl core::error::Error for MemoryMappingCreationError {}
-
-/// Error that can occur when the [`MappingPermission`] is updated with
-/// [`MemoryMapping::set_permission()`].
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum MemoryMappingPermissionUpdateError {
-    /// The size was not a multiple of the [`SystemInfo::PageSize`]
+enum_gen! {
+    /// Error that can occur when the [`MappingPermission`] is updated with
+    /// [`MemoryMapping::set_permission()`].
+    MemoryMappingPermissionUpdateError
+  entry:
     SizeNotAlignedToPageSize,
-    /// The address offset was not a multiple of the [`SystemInfo::PageSize`]
     RegionOffsetNotAlignedToPageSize,
-    /// Insufficient permissions to update the [`MappingPermission`]
     InsufficientPermissions,
-    /// Insufficient memory to update the [`MappingPermission`]
     InsufficientMemory,
-    /// The size and address offset are larger than the mapped memory range
     InvalidAddressRange,
-    /// The size was either not set or set to zero.
     RegionSizeIsZero,
-    /// An unknown failure occurred.
-    UnknownFailure(i32),
+    UnknownFailure(i32)
 }
-
-impl core::fmt::Display for MemoryMappingPermissionUpdateError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "MemoryMappingPermissionUpdateError::{self:?}")
-    }
-}
-
-impl core::error::Error for MemoryMappingPermissionUpdateError {}
 
 /// Defines the access permission of the process to the [`MemoryMapping`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

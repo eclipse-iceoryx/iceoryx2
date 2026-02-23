@@ -56,32 +56,32 @@ enum_gen! { NamedSemaphoreCreationError
     UnknownError(i32)
 }
 
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-pub enum UnnamedSemaphoreCreationError {
+enum_gen! { UnnamedSemaphoreCreationError
+  entry:
     InitialValueTooLarge,
     ExceedsMaximumNumberOfSemaphores,
     InsufficientPermissions,
-    UnknownError(i32),
+    UnknownError(i32)
 }
 
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-pub enum SemaphorePostError {
+enum_gen! { SemaphorePostError
+  entry:
     Overflow,
-    UnknownError(i32),
+    UnknownError(i32)
 }
 
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-pub enum SemaphoreWaitError {
+enum_gen! { SemaphoreWaitError
+  entry:
     NotSupported,
     DeadlockConditionDetected,
     Interrupt,
-    UnknownError(i32),
+    UnknownError(i32)
 }
 
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-pub enum UnnamedSemaphoreOpenIpcHandleError {
+enum_gen! { UnnamedSemaphoreOpenIpcHandleError
+  entry:
     IsNotInterProcessCapable,
-    Uninitialized,
+    Uninitialized
 }
 
 enum_gen! {

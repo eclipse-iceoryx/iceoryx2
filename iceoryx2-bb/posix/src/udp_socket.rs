@@ -63,6 +63,7 @@ use alloc::format;
 
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_concurrency::atomic::Ordering;
+use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_system_types::ipv4_address::{self, Ipv4Address};
 use iceoryx2_bb_system_types::port::{self, Port};
 use iceoryx2_log::{fail, fatal_panic, trace};
@@ -75,9 +76,10 @@ use crate::file_descriptor_set::{
 };
 use crate::handle_errno;
 
-/// Describes errors when creating and [`UdpServer`].
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum UdpServerCreateError {
+enum_gen! {
+    /// Describes errors when creating and [`UdpServer`].
+    UdpServerCreateError
+  entry:
     InsufficientMemory,
     InsufficientResources,
     InsufficientPermissions,
@@ -88,12 +90,13 @@ pub enum UdpServerCreateError {
     AddressAlreadyInUse,
     AddressNotAvailable,
     AddressFamilyNotSupported,
-    UnknownError(i32),
+    UnknownError(i32)
 }
 
-/// Describes errors when creating and [`UdpClient`].
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum UdpClientCreateError {
+enum_gen! {
+    /// Describes errors when creating and [`UdpClient`].
+    UdpClientCreateError
+  entry:
     InsufficientResources,
     InsufficientPermissions,
     PerProcessFileHandleLimitReached,
@@ -108,24 +111,26 @@ pub enum UdpClientCreateError {
     HostUnreachable,
     NetworkInterfaceDown,
     AddressFamilyNotSupported,
-    UnknownError(i32),
+    UnknownError(i32)
 }
 
-/// Describes errors when receiving data.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum UdpReceiveError {
+enum_gen! {
+    /// Describes errors when receiving data.
+    UdpReceiveError
+  entry:
     ConnectionReset,
     Interrupt,
     NotConnected,
     IOerror,
     InsufficientResources,
     InsufficientMemory,
-    UnknownError(i32),
+    UnknownError(i32)
 }
 
-/// Describes errors when sending data.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum UdpSendError {
+enum_gen! {
+    /// Describes errors when sending data.
+    UdpSendError
+  entry:
     ConnectionReset,
     Interrupt,
     MessageTooLarge,
@@ -135,7 +140,7 @@ pub enum UdpSendError {
     NoRouteToHost,
     InsufficientResources,
     InsufficientMemory,
-    UnknownError(i32),
+    UnknownError(i32)
 }
 
 fn create_sockaddr(address: Ipv4Address, port: Port) -> posix::sockaddr_in {

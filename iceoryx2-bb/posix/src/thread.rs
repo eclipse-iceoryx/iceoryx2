@@ -131,38 +131,22 @@ enum_gen! { ThreadSpawnError
     ThreadSetNameError
 }
 
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-pub enum ThreadSignalError {
+enum_gen! { ThreadSignalError
+  entry:
     ThreadNoLongerActive,
-    UnknownError(i32),
+    UnknownError(i32)
 }
-
-impl core::fmt::Display for ThreadSignalError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "ThreadSignalError::{self:?}")
-    }
-}
-
-impl core::error::Error for ThreadSignalError {}
 
 enum_gen! { ThreadSetNameError
   entry:
     UnknownError(i32)
 }
 
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-pub enum ThreadSetAffinityError {
+enum_gen! { ThreadSetAffinityError
+  entry:
     InvalidCpuCores,
-    UnknownError(i32),
+    UnknownError(i32)
 }
-
-impl core::fmt::Display for ThreadSetAffinityError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "ThreadSetAffinityError::{self:?}")
-    }
-}
-
-impl core::error::Error for ThreadSetAffinityError {}
 
 enum_gen! {
     ThreadGetNameError

@@ -167,9 +167,10 @@ pub enum ProcessState {
     CleaningUp,
 }
 
-/// Defines all errors that can occur when a new [`ProcessGuard`] is created.
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum ProcessGuardCreateError {
+enum_gen! {
+    /// Defines all errors that can occur when a new [`ProcessGuard`] is created.
+    ProcessGuardCreateError
+  entry:
     InsufficientPermissions,
     IsDirectory,
     InvalidDirectory,
@@ -179,18 +180,18 @@ pub enum ProcessGuardCreateError {
     ContractViolation,
     Interrupt,
     InvalidCleanerPathName,
-    UnknownError(i32),
+    UnknownError(i32)
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
-enum ProcessGuardLockError {
+enum_gen! { ProcessGuardLockError
+  entry:
     OwnedByAnotherProcess,
     Interrupt,
-    UnknownError(i32),
+    UnknownError(i32)
 }
 
 enum_gen! {
-/// Defines all errors that can occur when a stale [`ProcessGuard`] is removed.
+    /// Defines all errors that can occur when a stale [`ProcessGuard`] is removed.
     ProcessGuardRemoveError
   entry:
     InsufficientPermissions,
@@ -202,18 +203,19 @@ enum_gen! {
     FileRemoveError
 }
 
-/// Defines all errors that can occur when a new [`ProcessMonitor`] is created.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
-pub enum ProcessMonitorCreateError {
+enum_gen! {
+    /// Defines all errors that can occur when a new [`ProcessMonitor`] is created.
+    ProcessMonitorCreateError
+  entry:
     InsufficientPermissions,
     Interrupt,
     IsDirectory,
     InvalidCleanerPathName,
-    UnknownError,
+    UnknownError
 }
 
 enum_gen! {
-/// Defines all errors that can occur in [`ProcessMonitor::state()`].
+    /// Defines all errors that can occur in [`ProcessMonitor::state()`].
     ProcessMonitorStateError
   entry:
     CorruptedState,
@@ -224,9 +226,10 @@ enum_gen! {
     ProcessMonitorCreateError
 }
 
-/// Defines all errors that can occur when a new [`ProcessCleaner`] is created.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
-pub enum ProcessCleanerCreateError {
+enum_gen! {
+    /// Defines all errors that can occur when a new [`ProcessCleaner`] is created.
+    ProcessCleanerCreateError
+  entry:
     ProcessIsStillAlive,
     OwnedByAnotherProcess,
     Interrupt,
@@ -235,7 +238,7 @@ pub enum ProcessCleanerCreateError {
     UnableToOpenCleanerFile,
     InvalidCleanerPathName,
     DoesNotExist,
-    UnknownError,
+    UnknownError
 }
 
 /// The builder of the [`ProcessGuard`]
