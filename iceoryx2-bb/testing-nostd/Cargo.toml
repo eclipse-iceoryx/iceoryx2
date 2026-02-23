@@ -21,3 +21,9 @@ iceoryx2-pal-print = { workspace = true }
 iceoryx2-pal-posix = { workspace = true }
 
 inventory = { workspace = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+iceoryx2-pal-posix = { workspace = true }
+
+[target.'cfg(target_os = "nto")'.dependencies]
+iceoryx2-pal-posix = { workspace = true }
