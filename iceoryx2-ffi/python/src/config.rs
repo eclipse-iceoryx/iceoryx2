@@ -1121,7 +1121,7 @@ pub fn default_config_file_name() -> FileName {
     FileName(iceoryx2::config::Config::default_config_file_name())
 }
 
-#[pymodule]
+#[pymodule(gil_used = false)]
 pub fn config(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::config::Global>()?;
     m.add_class::<crate::config::Config>()?;

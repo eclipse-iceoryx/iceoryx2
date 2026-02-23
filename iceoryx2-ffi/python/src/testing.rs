@@ -32,7 +32,7 @@ pub fn generate_isolated_config() -> Config {
     Config(Parc::new(iceoryx2::testing::generate_isolated_config()))
 }
 
-#[pymodule]
+#[pymodule(gil_used = false)]
 pub fn testing(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_wrapped(wrap_pyfunction!(generate_service_name))?;
     m.add_wrapped(wrap_pyfunction!(generate_node_name))?;

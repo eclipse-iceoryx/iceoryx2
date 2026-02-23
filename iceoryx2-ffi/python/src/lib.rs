@@ -115,7 +115,7 @@ pub(crate) use service_type::IpcService;
 pub(crate) use service_type::LocalService;
 
 /// iceoryx2 Python language bindings
-#[pymodule]
+#[pymodule(gil_used = false)]
 fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_wrapped(wrap_pymodule!(crate::config::config))?;
     m.add_wrapped(wrap_pymodule!(crate::testing::testing))?;
