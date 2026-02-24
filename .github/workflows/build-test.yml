@@ -207,6 +207,17 @@ jobs:
       - name: Run Static Analysis
         run: poetry --project iceoryx2-ffi/python static-analysis
 
+  go-bindings:
+    needs: [preflight-check]
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    uses: ./.github/workflows/reuse_go_bindings.yml
+    with:
+      os: ${{ matrix.os }}
+      profile: debug
+
   end-to-end-tests:
     needs: [preflight-check]
     if: ${{ needs.changes.outputs.source-code == 'true' }}

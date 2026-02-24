@@ -1,0 +1,104 @@
+name: Go Bindings Build and Test
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        required: true
+        type: string
+      profile:
+        required: false
+        type: string
+        default: "debug"
+
+jobs:
+  go-bindings:
+    timeout-minutes: 30
+    runs-on: ${{ inputs.os }}
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # version: v1
+        with:
+          toolchain: stable
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+          cache-dependency-path: iceoryx2-go/go.sum
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@bafd42bd91680affe190f697cac6ef3ad958ecba # version: v0.0.9
+
+      - name: Set caching env vars on non-Windows
+        if: ${{ runner.os != 'Windows' }}
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+
+      - name: Set caching env vars on Windows
+        if: ${{ runner.os == 'Windows' }}
+        run: |
+          Add-Content -Path $env:GITHUB_ENV -Value "SCCACHE_GHA_ENABLED=true"
+          Add-Content -Path $env:GITHUB_ENV -Value "RUSTC_WRAPPER=sccache"
+
+      - name: Prepare Linux
+        if: ${{ runner.os == 'Linux' }}
+        run: |
+          internal/scripts/ci_prepare_ubuntu.sh
+          uname -a
+
+      - name: Build iceoryx2-ffi-c
+        run: cargo build --package iceoryx2-ffi-c ${{ inputs.profile == 'release' && '--release' || '' }}
+
+      - name: Set library paths for Linux
+        if: ${{ runner.os == 'Linux' }}
+        shell: bash
+        run: |
+          echo "CGO_CFLAGS=-I${{ github.workspace }}/target/${{ inputs.profile == 'release' && 'release' || 'debug' }}/iceoryx2-ffi-c-cbindgen/include" >> $GITHUB_ENV
+          echo "CGO_LDFLAGS=-L${{ github.workspace }}/target/${{ inputs.profile == 'release' && 'release' || 'debug' }} -liceoryx2_ffi" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=${{ github.workspace }}/target/${{ inputs.profile == 'release' && 'release' || 'debug' }}:${LD_LIBRARY_PATH}" >> $GITHUB_ENV
+
+      - name: Set library paths for macOS
+        if: ${{ runner.os == 'macOS' }}
+        shell: bash
+        run: |
+          echo "CGO_CFLAGS=-I${{ github.workspace }}/target/${{ inputs.profile == 'release' && 'release' || 'debug' }}/iceoryx2-ffi-c-cbindgen/include" >> $GITHUB_ENV
+          echo "CGO_LDFLAGS=-L${{ github.workspace }}/target/${{ inputs.profile == 'release' && 'release' || 'debug' }} -liceoryx2_ffi" >> $GITHUB_ENV
+          echo "DYLD_LIBRARY_PATH=${{ github.workspace }}/target/${{ inputs.profile == 'release' && 'release' || 'debug' }}:${DYLD_LIBRARY_PATH}" >> $GITHUB_ENV
+
+      - name: Set library paths for Windows
+        if: ${{ runner.os == 'Windows' }}
+        shell: pwsh
+        run: |
+          $profile = "${{ inputs.profile == 'release' && 'release' || 'debug' }}"
+          Add-Content -Path $env:GITHUB_ENV -Value "CGO_CFLAGS=-I${{ github.workspace }}/target/$profile/iceoryx2-ffi-c-cbindgen/include"
+          Add-Content -Path $env:GITHUB_ENV -Value "CGO_LDFLAGS=-L${{ github.workspace }}/target/$profile -liceoryx2_ffi"
+          Add-Content -Path $env:GITHUB_ENV -Value "PATH=${{ github.workspace }}/target/$profile;$env:PATH"
+
+      - name: Build Go bindings
+        working-directory: iceoryx2-go
+        run: go build ./...
+
+      - name: Run Go tests
+        working-directory: iceoryx2-go
+        run: go test -v -race -timeout 5m ./...
+
+      - name: Run golangci-lint
+        if: ${{ runner.os == 'Linux' }}
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: v1.57
+          working-directory: iceoryx2-go
+          args: --timeout 5m
+
+      - name: Build Go examples
+        working-directory: examples/go
+        run: |
+          go build -o publisher ./publish_subscribe/publisher.go
+          go build -o subscriber ./publish_subscribe/subscriber.go
+          go build -o notifier ./event/notifier.go
+          go build -o listener ./event/listener.go
