@@ -83,7 +83,8 @@
     conflicts when merging.
 -->
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+* Add framework for `no_std` testing
+  [#1300](https://github.com/eclipse-iceoryx/iceoryx2/issues/1300)
 
 ### New API features
 
