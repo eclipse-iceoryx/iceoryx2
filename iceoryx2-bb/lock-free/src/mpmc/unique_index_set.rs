@@ -27,7 +27,11 @@
 //!
 //! const CAPACITY: usize = 128;
 //! let mut memory = [0u8; UniqueIndexSet::const_memory_size(CAPACITY)];
-//! let allocator = BumpAllocator::new(memory.as_mut_ptr());
+//! let allocator = BumpAllocator::new(
+//!     core::ptr::NonNull::<u8>::new(memory.as_mut_ptr().cast()).expect(
+//!     "Precondition failed: Memory pointer is null"),
+//!     core::mem::size_of_val(&memory),
+//! );
 //!
 //! let mut index_set = unsafe { UniqueIndexSet::new_uninit(CAPACITY) };
 //! unsafe { index_set.init(&allocator) }.expect("failed to allocate enough memory");
@@ -190,7 +194,10 @@ impl Drop for UniqueIndex<'_> {
 ///
 /// const CAPACITY: usize = 128;
 /// let mut memory = [0u8; UniqueIndexSet::const_memory_size(CAPACITY)];
-/// let allocator = BumpAllocator::new(memory.as_mut_ptr());
+/// let allocator = BumpAllocator::new(core::ptr::NonNull::<u8>::new(memory.as_mut_ptr().cast())
+///     .expect("Precondition failed: Pointer to memory in UniqueIndexSet is null"),
+///     core::mem::size_of_val(&memory),
+///     );
 ///
 /// let mut index_set = unsafe { UniqueIndexSet::new_uninit(CAPACITY) };
 /// unsafe { index_set.init(&allocator) }.expect("failed to allocate enough memory");
@@ -227,7 +234,11 @@ impl Drop for UniqueIndex<'_> {
 ///             data: [MaybeUninit::uninit(); UniqueIndexSet::const_memory_size(CAPACITY)]
 ///         };
 ///
-///         let allocator = BumpAllocator::new(new_self.data.as_mut_ptr().cast());
+///         let allocator = BumpAllocator::new(
+///             core::ptr::NonNull::<u8>::new(new_self.data.as_mut_ptr().cast()).expect(
+///             "Precondition failed: Pointer to data in UniqueIndexSet is null"),
+///             core::mem::size_of_val(&new_self.data),
+///         );
 ///         unsafe {
 ///             new_self.set.init(&allocator).expect("Enough memory provided.")
 ///         };
@@ -564,7 +575,15 @@ impl<const CAPACITY: usize> FixedSizeUniqueIndexSet<CAPACITY> {
             next_free_index_plus_one: UnsafeCell::new(capacity as u32 + 1),
         };
 
-        let allocator = BumpAllocator::new(new_self.next_free_index.as_mut_ptr().cast());
+        // SAFETY: Creating a pointer to an existing member is always not null
+        let data_ptr = unsafe {
+            core::ptr::NonNull::<u8>::new_unchecked(new_self.next_free_index.as_mut_ptr().cast())
+        };
+
+        let allocator = BumpAllocator::new(
+            data_ptr,
+            size_of::<Self>() - core::mem::offset_of!(Self, next_free_index),
+        );
         unsafe {
             new_self
                 .state

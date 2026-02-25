@@ -56,6 +56,10 @@
     NOTE: Add new entries sorted by issue number to minimize the possibility of
     conflicts when merging.
 -->
+
+* Use 'NonNull' in 'elementary/BumpAllocator'
+  [#996](https://github.com/eclipse-iceoryx/iceoryx2/issues/996)
+
 * Remove support for Bazel Workspaces
   [#1263](https://github.com/eclipse-iceoryx/iceoryx2/issues/1263)
 * Adjust test names to naming convention
@@ -115,4 +119,21 @@
 
    set_log_level(LogLevel::Info);
    info!("some log message")
+   ```
+
+1. Creating a BumpAllocator expects a `NonNull<u8>` instead of a mutable raw pointer.
+
+   ```rust
+   // old
+    let mut memory = [0u8; 8192];
+    let allocator = BumpAllocator::new(memory.as_mut_ptr());
+
+   // new
+   let mut memory = [0u8; 8192];
+   let allocator = BumpAllocator::new(
+       core::ptr::NonNull::<u8>::new(memory.as_mut_ptr().cast()).expect(
+           "Precondition failed: Memory pointer is null"),
+            core::mem::size_of_val(&memory)
+   )
+   .unwrap();
    ```

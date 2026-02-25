@@ -62,8 +62,11 @@ mod vector {
 
         fn create_sut(&self) -> Box<Self::Sut> {
             let mut sut = Box::new(unsafe { Self::Sut::new_uninit(SUT_CAPACITY) });
-            let bump_allocator =
-                BumpAllocator::new(unsafe { &mut *self.raw_memory.get() }.as_mut_ptr());
+            let bump_allocator = BumpAllocator::new(
+                core::ptr::NonNull::<u8>::new(unsafe { &mut *self.raw_memory.get() }.as_mut_ptr())
+                    .expect("Precondition failed: Pointer to memory is null"),
+                core::mem::size_of_val(unsafe { &*self.raw_memory.get() }.as_ref()),
+            );
             unsafe { sut.init(&bump_allocator).unwrap() };
 
             sut
@@ -91,7 +94,9 @@ mod vector {
             unsafe {
                 if (*self.allocator.get()).is_none() {
                     *self.allocator.get() = Some(Box::new(BumpAllocator::new(
-                        (*self.raw_memory.get()).as_mut_ptr(),
+                        core::ptr::NonNull::<u8>::new({ &mut *self.raw_memory.get() }.as_mut_ptr())
+                            .expect("Precondition failed: Pointer to memory is null"),
+                        core::mem::size_of_val((&*self.raw_memory.get()).as_ref()),
                     )))
                 }
             };

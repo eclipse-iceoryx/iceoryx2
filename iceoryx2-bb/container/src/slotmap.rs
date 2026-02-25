@@ -603,7 +603,16 @@ impl<T, const CAPACITY: usize> PlacementDefault for FixedSizeSlotMap<T, CAPACITY
     unsafe fn placement_default(ptr: *mut Self) {
         let state_ptr = core::ptr::addr_of_mut!((*ptr).state);
         state_ptr.write(unsafe { RelocatableSlotMap::new_uninit(CAPACITY) });
-        let allocator = BumpAllocator::new((*ptr)._idx_to_data.as_mut_ptr().cast());
+
+        // SAFETY: Creating a pointer to an existing member is always not null
+        let data_ptr = unsafe {
+            core::ptr::NonNull::<u8>::new_unchecked((*ptr)._idx_to_data.as_mut_ptr().cast())
+        };
+
+        let allocator = BumpAllocator::new(
+            data_ptr,
+            size_of::<Self>() - core::mem::offset_of!(Self, _idx_to_data),
+        );
         (*ptr)
             .state
             .init(&allocator)
@@ -621,7 +630,16 @@ impl<T, const CAPACITY: usize> Default for FixedSizeSlotMap<T, CAPACITY> {
             state: unsafe { RelocatableSlotMap::new_uninit(CAPACITY) },
         };
 
-        let allocator = BumpAllocator::new(new_self._idx_to_data.as_mut_ptr().cast());
+        // SAFETY: Creating a pointer to an existing member is always not null
+        let data_ptr = unsafe {
+            core::ptr::NonNull::<u8>::new_unchecked(new_self._idx_to_data.as_mut_ptr().cast())
+        };
+
+        let allocator = BumpAllocator::new(
+            data_ptr,
+            size_of::<Self>() - core::mem::offset_of!(Self, _idx_to_data),
+        );
+
         unsafe {
             new_self
                 .state
