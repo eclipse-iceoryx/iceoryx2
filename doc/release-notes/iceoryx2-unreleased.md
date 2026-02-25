@@ -83,7 +83,9 @@
     conflicts when merging.
 -->
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+* Enable branch coverage by default and add support for per-component coverage
+  reports in coverage script
+  [#372](https://github.com/eclipse-iceoryx/iceoryx2/issues/372)
 
 ### New API features
 
