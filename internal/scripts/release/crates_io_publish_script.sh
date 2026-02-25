@@ -156,7 +156,7 @@ sanity_check_cyclic_dependencies() {
     for CRATE in "${CRATES_TO_PUBLISH[@]}"; do
         ALLOWED_CRATE_DEPENDENCIES+=("${CRATE}")
 
-        local CRATE_DEPENDENCIES=$(cargo tree --package "${CRATE}" --depth 1 --prefix none | grep -v '(\*)' | grep -e '^iceoryx2' | awk '{print $1}' | sort | uniq)
+        local CRATE_DEPENDENCIES=$(cargo tree --package "${CRATE}" --depth 1 --prefix none --edges normal | grep -v '(\*)' | grep -e '^iceoryx2' | awk '{print $1}' | sort | uniq)
         for DEP in ${CRATE_DEPENDENCIES}; do
             if [[ " ${ALLOWED_CRATE_DEPENDENCIES[@]} " =~ " ${DEP} " ]]; then
                 continue
