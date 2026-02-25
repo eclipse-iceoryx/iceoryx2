@@ -247,8 +247,7 @@ macro_rules! assert_that {
     };
     [color_start] => {
         {
-            use $crate::internal::IsTerminal;
-            if $crate::internal::stderr().is_terminal() {
+            if $crate::is_terminal() {
                 "\x1b[1;4;33m"
             } else {
                 ""
@@ -257,8 +256,7 @@ macro_rules! assert_that {
     };
     [color_end] => {
         {
-            use $crate::internal::IsTerminal;
-            if $crate::internal::stderr().is_terminal() {
+            if $crate::is_terminal() {
                 "\x1b[0m"
             } else {
                 ""
