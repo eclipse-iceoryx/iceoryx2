@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Contributors to the Eclipse Foundation
+# Copyright (c) 2026 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
 # information regarding copyright ownership.
@@ -12,7 +12,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("@rules_rust//rust:defs.bzl", "rust_library")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test_suite")
 
 filegroup(
     name = "all_srcs",
@@ -20,17 +20,11 @@ filegroup(
 )
 
 rust_library(
-    name = "iceoryx2-pal-testing",
+    name = "iceoryx2-bb-testing-nostd",
     srcs = glob(["src/**/*.rs"]),
-    crate_features = select({
-        "//:cfg_feature_std": [
-            "std",
-        ],
-        "//conditions:default": [],
-    }),
     deps = [
-        "//iceoryx2-pal/configuration:iceoryx2-pal-configuration",
         "//iceoryx2-pal/print:iceoryx2-pal-print",
-        "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
+        "//iceoryx2-pal/posix:iceoryx2-pal-posix",
+        "@crate_index//:inventory",
     ],
 )

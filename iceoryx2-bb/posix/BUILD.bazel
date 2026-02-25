@@ -50,6 +50,7 @@ rust_library(
 rust_test_suite(
     name = "iceoryx2-bb-posix-tests",
     srcs = glob(["tests/**/*.rs"]),
+    crate_features = ["std"],
     deps = [
         ":iceoryx2-bb-posix",
         "//iceoryx2-log/log:iceoryx2-log",
