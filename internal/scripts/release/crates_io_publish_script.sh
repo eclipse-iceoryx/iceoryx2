@@ -28,8 +28,8 @@ DO_SANITY_CHECKS=false
 
 CRATES_TO_PUBLISH=(
     iceoryx2-pal-configuration
-    iceoryx2-pal-testing
     iceoryx2-pal-concurrency-sync
+    iceoryx2-pal-testing
     iceoryx2-pal-posix
     iceoryx2-pal-print
     iceoryx2-pal-os-api
@@ -39,8 +39,10 @@ CRATES_TO_PUBLISH=(
     iceoryx2-bb-loggers
     iceoryx2-bb-conformance-test-macros
     iceoryx2-bb-elementary-traits
-    iceoryx2-bb-testing
     iceoryx2-bb-concurrency
+    iceoryx2-bb-testing
+    iceoryx2-bb-testing-nostd
+    iceoryx2-bb-testing-nostd-macros
     iceoryx2-bb-elementary
     iceoryx2-bb-derive-macros
     iceoryx2-bb-container
@@ -74,6 +76,12 @@ CRATES_TO_IGNORE=(
     iceoryx2-ffi-macros
     iceoryx2-ffi-python
     iceoryx2-tunnel-end-to-end-tests
+    iceoryx2-bb-elementary-tests-common
+    iceoryx2-bb-elementary-tests-nostd
+    iceoryx2-bb-threadsafe-tests-common
+    iceoryx2-bb-threadsafe-tests-nostd
+    iceoryx2-bb-concurrency-tests-common
+    iceoryx2-bb-concurrency-tests-nostd
 )
 
 if [[ "$#" -eq 0 ]]; then
