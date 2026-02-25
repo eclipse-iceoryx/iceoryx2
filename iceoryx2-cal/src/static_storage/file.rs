@@ -216,9 +216,10 @@ impl crate::named_concept::NamedConceptMgmt for Storage {
             }
         };
 
-        fail!(from origin, when file.set_permission(Permission::OWNER_ALL),
-                with NamedConceptRemoveError::InternalError,
-                "{} since the permissions could not be adjusted.", msg);
+        if let Err(e) = file.set_permission(Permission::ALL) {
+            warn!(from origin,
+                  "Unable to adjust the files permission as preparation to remove the file ({e:?}).");
+        }
 
         match File::remove(&file_path) {
             Ok(v) => Ok(v),
