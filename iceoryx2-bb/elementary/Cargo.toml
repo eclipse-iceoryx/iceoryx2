@@ -27,7 +27,6 @@ iceoryx2-bb-elementary-traits = { workspace = true }
 [dev-dependencies]
 iceoryx2-bb-elementary-tests-common = { workspace = true }
 iceoryx2-bb-loggers = { workspace = true }
-iceoryx2-bb-memory = { workspace = true }
 iceoryx2-bb-testing = { workspace = true }
 iceoryx2-bb-testing-nostd-macros = { workspace = true }
 iceoryx2-bb-testing-nostd = { workspace = true }
