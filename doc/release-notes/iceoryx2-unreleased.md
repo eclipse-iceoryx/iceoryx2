@@ -47,6 +47,8 @@
   [#1316](https://github.com/eclipse-iceoryx/iceoryx2/issues/1348)
 * Fix memory order in queue guards and index queue
   [#1356](https://github.com/eclipse-iceoryx/iceoryx2/issues/1356)
+* Bump shellexpand from 3.1.1 to 3.1.2 in Rust and Bazel
+  [#1365](https://github.com/eclipse-iceoryx/iceoryx2/issues/1365)
 
 ### Refactoring
 
