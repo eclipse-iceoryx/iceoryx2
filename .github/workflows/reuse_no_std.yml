@@ -18,10 +18,14 @@ jobs:
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # version: v1
         with:
           toolchain: ${{ matrix.toolchain }}
-          targets: armv7r-none-eabihf
+          targets: armv7r-none-eabihf, x86_64-unknown-linux-gnu
+          components: rust-src
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@bafd42bd91680affe190f697cac6ef3ad958ecba # version: v0.0.9
+
+      - name: Install just
+        uses: extractions/setup-just@f8a3cce218d9f83db3a2ecd90e41ac3de6cdfd9b # version: v3.1.0
 
       - name: Set caching env vars on non-Windows
         run: |
@@ -34,7 +38,10 @@ jobs:
           uname -a
 
       - name: Build iceoryx2 (no_std)
-        run: cargo build --package iceoryx2 --no-default-features
+        run: just build iceoryx2 --no_std
+
+      - name: Test iceoryx2 (no_std)
+        run: just test workspace --no_std
 
       - name: Build bare-metal examples (no_std)
         run: cd examples/nostd/bare-metal/rust && cargo build --examples && cd -
