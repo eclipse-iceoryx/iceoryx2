@@ -21,8 +21,8 @@ iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-pal-concurrency-sync = { workspace = true }
 
 [dev-dependencies]
-iceoryx2-bb-concurrency-tests-common = { workspace = true, features = ["std"] }
+iceoryx2-bb-concurrency-tests-common = { path = "./tests-common", features = ["std"] }
 iceoryx2-bb-elementary-traits = { workspace = true }
-iceoryx2-bb-testing = { workspace = true, features = ["std"] }
+iceoryx2-bb-testing = { path = "../testing", features = ["std"] }
 
 generic-tests = { workspace = true }
