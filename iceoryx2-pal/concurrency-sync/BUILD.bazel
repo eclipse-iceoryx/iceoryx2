@@ -22,16 +22,10 @@ filegroup(
 rust_library(
     name = "iceoryx2-pal-concurrency-sync",
     srcs = glob(["src/**/*.rs"]),
-)
-
-rust_test_suite(
-    name = "iceoryx2-pal-concurrency-sync-tests",
-    srcs = glob(["tests/**/*.rs"]),
-    deps = [
-        ":iceoryx2-pal-concurrency-sync",
-        "//iceoryx2-pal/testing:iceoryx2-pal-testing",
-    ],
-    proc_macro_deps = [
-        "@crate_index//:generic-tests",
-    ],
+    crate_features = select({
+        "//:cfg_feature_std": [
+            "std",
+        ],
+        "//conditions:default": [],
+    }),
 )
