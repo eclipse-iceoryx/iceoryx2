@@ -25,7 +25,7 @@ use alloc::vec::Vec;
 use iceoryx2_bb_concurrency::atomic::AtomicU64;
 use iceoryx2_bb_container::flatmap::RelocatableFlatMap;
 use iceoryx2_bb_container::queue::RelocatableContainer;
-use iceoryx2_bb_container::string::*;
+use iceoryx2_bb_container::string::String;
 use iceoryx2_bb_container::vector::relocatable_vec::*;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::static_assert::static_assert_eq;

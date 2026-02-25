@@ -1,5 +1,5 @@
 {
-  "checksum": "cea5966664e9ec4fcdb3d49f0756262251ac55bedea225f160d67d1f45c47cf3",
+  "checksum": "d812fcc4951cb743807bbcf72a19c67240a70c9b1b3fd6bf3d9cfa8523a3639b",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -20481,14 +20481,14 @@
       ],
       "license_file": "LICENSE"
     },
-    "shellexpand 3.1.1": {
+    "shellexpand 3.1.2": {
       "name": "shellexpand",
-      "version": "3.1.1",
+      "version": "3.1.2",
       "package_url": "https://gitlab.com/ijackson/rust-shellexpand",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/shellexpand/3.1.1/download",
-          "sha256": "8b1fdf65dd6331831494dd616b30351c38e96e45921a27745cf98490458b90bb"
+          "url": "https://static.crates.io/crates/shellexpand/3.1.2/download",
+          "sha256": "32824fab5e16e6c4d86dc1ba84489390419a39f97699852b66480bb87d297ed8"
         }
       },
       "targets": [
@@ -20529,7 +20529,7 @@
           "selects": {}
         },
         "edition": "2018",
-        "version": "3.1.1"
+        "version": "3.1.2"
       },
       "license": "MIT/Apache-2.0",
       "license_ids": [
@@ -33044,7 +33044,7 @@
               "target": "serde_json"
             },
             {
-              "id": "shellexpand 3.1.1",
+              "id": "shellexpand 3.1.2",
               "target": "shellexpand"
             },
             {
