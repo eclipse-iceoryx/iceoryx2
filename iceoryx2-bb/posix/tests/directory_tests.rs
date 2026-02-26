@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate alloc;
 extern crate iceoryx2_bb_loggers;
 
 use std::sync::Barrier;

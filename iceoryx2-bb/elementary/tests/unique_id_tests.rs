@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Contributors to the Eclipse Foundation
+// Copyright (c) 2026 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -10,30 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_elementary::unique_id::*;
-use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_elementary_tests_common::unique_id_tests;
 
 #[test]
-fn unique_id_is_unique() {
-    let a = UniqueId::new();
-    let b = UniqueId::new();
-    let c = UniqueId::new();
-
-    assert_that!(a, ne b);
-    assert_that!(a, ne c);
-    assert_that!(b, ne c);
+pub fn unique_id_is_unique() {
+    unique_id_tests::unique_id_is_unique();
 }
 
 #[test]
-fn typed_unique_id_is_unique() {
-    let a = TypedUniqueId::<u64>::new();
-    let b = TypedUniqueId::<u64>::new();
-    let c = TypedUniqueId::<u64>::new();
-
-    assert_that!(a, ne b);
-    assert_that!(a, ne c);
-    assert_that!(b, ne c);
-
-    let d = TypedUniqueId::<u32>::new();
-    assert_that!(a.value(), ne d.value());
+pub fn typed_unique_id_is_unique() {
+    unique_id_tests::typed_unique_id_is_unique();
 }

@@ -20,7 +20,6 @@ std = []
 [dependencies]
 
 [dev-dependencies]
-iceoryx2-pal-testing = { workspace = true }
 generic-tests = { workspace = true }
 
 [target.'cfg(loom)'.dev-dependencies]

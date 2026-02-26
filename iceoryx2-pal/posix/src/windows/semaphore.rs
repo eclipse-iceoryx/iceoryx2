@@ -18,7 +18,7 @@ use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 
 use iceoryx2_pal_concurrency_sync::atomic::AtomicU32;
-use iceoryx2_pal_concurrency_sync::semaphore::Semaphore;
+use iceoryx2_pal_concurrency_sync::strategy::semaphore::Semaphore;
 use iceoryx2_pal_concurrency_sync::{WaitAction, WaitResult};
 use windows_sys::Win32::System::Threading::WaitOnAddress;
 use windows_sys::Win32::System::Threading::WakeByAddressSingle;

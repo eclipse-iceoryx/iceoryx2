@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![cfg_attr(not(feature = "std"), no_std)]
 #![warn(clippy::alloc_instead_of_core)]
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
@@ -18,7 +19,9 @@ extern crate alloc;
 
 #[macro_use]
 pub mod assert;
+pub mod lifetime_tracker;
 pub mod memory;
+#[cfg(feature = "std")]
 pub mod watchdog;
 
 #[macro_export(local_inner_macros)]
@@ -34,10 +37,29 @@ macro_rules! test_fail {
         core::panic!(
             "test failed: {} {} {}",
             assert_that![color_start],
-            std::format_args!($($e),*).to_string(),
+            alloc::format!($($e),*),
             assert_that![color_end]
         )
     };
 }
 
 pub const AT_LEAST_TIMING_VARIANCE: f32 = iceoryx2_pal_configuration::AT_LEAST_TIMING_VARIANCE;
+
+pub fn is_terminal() -> bool {
+    #[cfg(feature = "std")]
+    {
+        use std::io::IsTerminal;
+        std::io::stderr().is_terminal()
+    }
+    #[cfg(all(not(feature = "std"), any(target_os = "linux", target_os = "nto",)))]
+    {
+        true
+    }
+    #[cfg(all(
+        not(feature = "std"),
+        not(any(target_os = "linux", target_os = "nto",))
+    ))]
+    {
+        false
+    }
+}

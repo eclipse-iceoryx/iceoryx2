@@ -18,7 +18,7 @@ iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-bb-posix = { workspace = true }
 
 [dev-dependencies]
+iceoryx2-bb-threadsafe-tests-common = { path = "./tests-common", features = ["std"] }
 iceoryx2-bb-loggers = { workspace = true }
-iceoryx2-bb-testing = { workspace = true }
+iceoryx2-bb-testing = { workspace = true, features = ["std"] }
 iceoryx2-pal-posix = { workspace = true }
-iceoryx2-pal-testing = { workspace = true }

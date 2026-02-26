@@ -106,7 +106,50 @@ Impl!(AtomicI32, i32);
 Impl!(AtomicI64, i64);
 Impl!(AtomicIsize, isize);
 
-mod internal {
+#[derive(Debug, Default)]
+#[repr(transparent)]
+pub struct Atomic<T: internal::AtomicInteger>(internal::Atomic<T>);
+
+//
+// Implemented manually due to generic parameter
+
+impl<T: internal::AtomicInteger> Atomic<T> {}
+
+impl<T: internal::AtomicInteger> Atomic<T> {
+    #[inline]
+    pub const fn new(v: T) -> Self {
+        Self(internal::Atomic::new(v))
+    }
+
+    #[inline]
+    pub fn into_inner(self) -> T {
+        self.0.into_inner()
+    }
+}
+
+impl<T: internal::AtomicInteger> Deref for Atomic<T> {
+    type Target = internal::Atomic<T>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<T: internal::AtomicInteger> DerefMut for Atomic<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl<T: internal::AtomicInteger> PlacementDefault for Atomic<T> {
+    unsafe fn placement_default(ptr: *mut Self) {
+        ptr.write(<Atomic<T>>::default())
+    }
+}
+
+unsafe impl<T: internal::AtomicInteger> ZeroCopySend for Atomic<T> {}
+
+pub mod internal {
+    pub use iceoryx2_pal_concurrency_sync::atomic::Atomic;
     pub use iceoryx2_pal_concurrency_sync::atomic::AtomicBool;
     pub use iceoryx2_pal_concurrency_sync::atomic::AtomicI16;
     pub use iceoryx2_pal_concurrency_sync::atomic::AtomicI32;
@@ -118,4 +161,7 @@ mod internal {
     pub use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
     pub use iceoryx2_pal_concurrency_sync::atomic::AtomicU8;
     pub use iceoryx2_pal_concurrency_sync::atomic::AtomicUsize;
+
+    #[doc(hidden)]
+    pub use iceoryx2_pal_concurrency_sync::atomic::internal::AtomicInteger;
 }

@@ -9,17 +9,25 @@ members = [
     "iceoryx2-bb/loggers/",
     "iceoryx2-bb/lock-free/",
     "iceoryx2-bb/threadsafe/",
+    "iceoryx2-bb/threadsafe/tests-common",
+    "iceoryx2-bb/threadsafe/tests-nostd",
     "iceoryx2-bb/concurrency",
+    "iceoryx2-bb/concurrency/tests-common",
+    "iceoryx2-bb/concurrency/tests-nostd",
     "iceoryx2-bb/conformance-test-macros",
     "iceoryx2-bb/container",
     "iceoryx2-bb/derive-macros",
     "iceoryx2-bb/elementary",
+    "iceoryx2-bb/elementary/tests-common",
+    "iceoryx2-bb/elementary/tests-nostd",
     "iceoryx2-bb/elementary-traits",
     "iceoryx2-bb/linux",
     "iceoryx2-bb/memory",
     "iceoryx2-bb/posix",
     "iceoryx2-bb/system-types",
     "iceoryx2-bb/testing",
+    "iceoryx2-bb/testing-nostd/",
+    "iceoryx2-bb/testing-nostd-macros/",
     "iceoryx2-bb/trait-tests",
 
     "iceoryx2-ffi/c",
@@ -85,12 +93,18 @@ iceoryx2-log-types = { version = "0.8.999", path = "iceoryx2-log/types/" }
 iceoryx2-bb-print = { version = "0.8.999", path = "iceoryx2-bb/print" }
 iceoryx2-bb-loggers = { version = "0.8.999", path = "iceoryx2-bb/loggers/", default-features = false }
 iceoryx2-bb-threadsafe = { version = "0.8.999", path = "iceoryx2-bb/threadsafe/" }
+iceoryx2-bb-threadsafe-tests-common = { version = "0.8.999", path = "iceoryx2-bb/threadsafe/tests-common" }
+iceoryx2-bb-threadsafe-nostd = { version = "0.8.999", path = "iceoryx2-bb/threadsafe/tests-nostd" }
 iceoryx2-bb-lock-free = { version = "0.8.999", path = "iceoryx2-bb/lock-free/" }
 iceoryx2-bb-concurrency = { version = "0.8.999", path = "iceoryx2-bb/concurrency/" }
+iceoryx2-bb-concurrency-tests-common = { version = "0.8.999", path = "iceoryx2-bb/concurrency/tests-common/" }
+iceoryx2-bb-concurrency-tests-nostd = { version = "0.8.999", path = "iceoryx2-bb/concurrency/tests-nostd/" }
 iceoryx2-bb-conformance-test-macros = { version = "0.8.999", path = "iceoryx2-bb/conformance-test-macros"}
 iceoryx2-bb-container = { version = "0.8.999", path = "iceoryx2-bb/container/" }
 iceoryx2-bb-derive-macros = { version = "0.8.999", path = "iceoryx2-bb/derive-macros/" }
-iceoryx2-bb-elementary = { version = "0.8.999", path = "iceoryx2-bb/elementary/" }
+iceoryx2-bb-elementary = { version = "0.8.999", path = "iceoryx2-bb/elementary/", default-features = false }
+iceoryx2-bb-elementary-tests-common = { version = "0.8.999", path = "iceoryx2-bb/elementary/tests-common", default-features = false }
+iceoryx2-bb-elementary-tests-nostd = { version = "0.8.999", path = "iceoryx2-bb/elementary/tests-nostd" }
 iceoryx2-bb-elementary-traits = { version = "0.8.999", path = "iceoryx2-bb/elementary-traits/" }
 iceoryx2-bb-linux = { version = "0.8.999", path = "iceoryx2-bb/linux/" }
 iceoryx2-bb-memory = { version = "0.8.999", path = "iceoryx2-bb/memory/" }
@@ -98,9 +112,11 @@ iceoryx2-bb-posix = { version = "0.8.999", path = "iceoryx2-bb/posix/" }
 iceoryx2-bb-system-types = { version = "0.8.999", path = "iceoryx2-bb/system-types/" }
 iceoryx2-bb-trait-tests = { version = "0.8.999", path = "iceoryx2-bb/trait-tests/" }
 iceoryx2-bb-testing = { version = "0.8.999", path = "iceoryx2-bb/testing/" }
-iceoryx2-pal-concurrency-sync = { version = "0.8.999", path = "iceoryx2-pal/concurrency-sync/", default-features = false }
+iceoryx2-bb-testing-nostd = { version = "0.8.999", path = "iceoryx2-bb/testing-nostd/" }
+iceoryx2-bb-testing-nostd-macros = { version = "0.8.999", path = "iceoryx2-bb/testing-nostd-macros/" }
+iceoryx2-pal-concurrency-sync = { version = "0.8.999", path = "iceoryx2-pal/concurrency-sync/" }
 iceoryx2-pal-posix = { version = "0.8.999", path = "iceoryx2-pal/posix/" }
-iceoryx2-pal-print = { version = "0.8.999", path = "iceoryx2-pal/print/" }
+iceoryx2-pal-print = { version = "0.8.999", path = "iceoryx2-pal/print/", default-features = false }
 iceoryx2-pal-os-api = { version = "0.8.999", path = "iceoryx2-pal/os-api/" }
 iceoryx2-pal-configuration = { version = "0.8.999", path = "iceoryx2-pal/configuration/" }
 iceoryx2-pal-testing = { version = "0.8.999", path = "iceoryx2-pal/testing/" }
@@ -131,6 +147,7 @@ better-panic = { version = "0.3.0" }
 colored = { version = "2.1" }
 generic-tests = { version = "0.1.2" }
 human-panic = { version = "=2.0.2" }
+inventory = { version = "0.3", default-features = false }
 libc = { version = "0.2.169", features = ['extra_traits'] }
 log = { version = "0.4.21" }
 loom = { version = "0.7.2" }

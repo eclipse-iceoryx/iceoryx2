@@ -1,5 +1,5 @@
 {
-  "checksum": "d812fcc4951cb743807bbcf72a19c67240a70c9b1b3fd6bf3d9cfa8523a3639b",
+  "checksum": "1ec41ebb883ed87ebebefe40079a0263c8989f7a3c1a99e6dfe91d50132bd51b",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -8117,6 +8117,84 @@
           "selects": {}
         },
         "edition": "2021",
+        "proc_macro_deps_dev": {
+          "common": [
+            {
+              "id": "generic-tests 0.1.2",
+              "target": "generic_tests"
+            }
+          ],
+          "selects": {}
+        },
+        "version": "0.8.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-bb-concurrency-tests-common 0.8.999": {
+      "name": "iceoryx2-bb-concurrency-tests-common",
+      "version": "0.8.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_bb_concurrency_tests_common",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_bb_concurrency_tests_common",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "0.8.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-bb-concurrency-tests-nostd 0.8.999": {
+      "name": "iceoryx2-bb-concurrency-tests-nostd",
+      "version": "0.8.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [],
+      "library_target_name": null,
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -8313,6 +8391,13 @@
         "compile_data_glob": [
           "**"
         ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
         "edition": "2021",
         "proc_macro_deps_dev": {
           "common": [
@@ -8323,6 +8408,75 @@
           ],
           "selects": {}
         },
+        "version": "0.8.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-bb-elementary-tests-common 0.8.999": {
+      "name": "iceoryx2-bb-elementary-tests-common",
+      "version": "0.8.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_bb_elementary_tests_common",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_bb_elementary_tests_common",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "0.8.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-bb-elementary-tests-nostd 0.8.999": {
+      "name": "iceoryx2-bb-elementary-tests-nostd",
+      "version": "0.8.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [],
+      "library_target_name": null,
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -8737,6 +8891,121 @@
         "compile_data_glob": [
           "**"
         ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "0.8.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-bb-testing-nostd 0.8.999": {
+      "name": "iceoryx2-bb-testing-nostd",
+      "version": "0.8.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_bb_testing_nostd",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_bb_testing_nostd",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "deps": {
+          "common": [
+            {
+              "id": "inventory 0.3.22",
+              "target": "inventory"
+            }
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "0.8.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-bb-testing-nostd-macros 0.8.999": {
+      "name": "iceoryx2-bb-testing-nostd-macros",
+      "version": "0.8.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "ProcMacro": {
+            "crate_name": "iceoryx2_bb_testing_nostd_macros",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_bb_testing_nostd_macros",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "deps": {
+          "common": [
+            {
+              "id": "proc-macro2 1.0.105",
+              "target": "proc_macro2"
+            },
+            {
+              "id": "quote 1.0.43",
+              "target": "quote"
+            },
+            {
+              "id": "syn 2.0.114",
+              "target": "syn"
+            }
+          ],
+          "selects": {}
+        },
         "edition": "2021",
         "version": "0.8.999"
       },
@@ -8771,6 +9040,75 @@
         "compile_data_glob": [
           "**"
         ],
+        "edition": "2021",
+        "version": "0.8.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-bb-threadsafe-tests-common 0.8.999": {
+      "name": "iceoryx2-bb-threadsafe-tests-common",
+      "version": "0.8.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_bb_threadsafe_tests_common",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_bb_threadsafe_tests_common",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "0.8.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-bb-threadsafe-tests-nostd 0.8.999": {
+      "name": "iceoryx2-bb-threadsafe-tests-nostd",
+      "version": "0.8.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [],
+      "library_target_name": null,
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
         "edition": "2021",
         "version": "0.8.999"
       },
@@ -9731,6 +10069,13 @@
         "compile_data_glob": [
           "**"
         ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
         "edition": "2021",
         "version": "0.8.999"
       },
@@ -11187,6 +11532,56 @@
         },
         "edition": "2021",
         "version": "0.1.4"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": "LICENSE-APACHE"
+    },
+    "inventory 0.3.22": {
+      "name": "inventory",
+      "version": "0.3.22",
+      "package_url": "https://github.com/dtolnay/inventory",
+      "repository": {
+        "Http": {
+          "url": "https://static.crates.io/crates/inventory/0.3.22/download",
+          "sha256": "009ae045c87e7082cb72dab0ccd01ae075dd00141ddc108f43a0ea150a9e7227"
+        }
+      },
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "inventory",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "inventory",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "edition": "2021",
+        "proc_macro_deps": {
+          "common": [],
+          "selects": {
+            "cfg(target_family = \"wasm\")": [
+              {
+                "id": "rustversion 1.0.20",
+                "target": "rustversion"
+              }
+            ]
+          }
+        },
+        "version": "0.3.22"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -13154,7 +13549,7 @@
           "selects": {
             "cfg(windows)": [
               {
-                "id": "windows-sys 0.59.0",
+                "id": "windows-sys 0.61.2",
                 "target": "windows_sys",
                 "alias": "windows"
               }
@@ -27432,6 +27827,7 @@
             "Win32_Storage",
             "Win32_Storage_FileSystem",
             "Win32_System",
+            "Win32_System_Console",
             "Win32_System_IO",
             "Win32_System_Pipes",
             "Win32_System_SystemServices",
@@ -33616,10 +34012,14 @@
     "example 0.8.999": "examples",
     "iceoryx2 0.8.999": "iceoryx2",
     "iceoryx2-bb-concurrency 0.8.999": "iceoryx2-bb/concurrency",
+    "iceoryx2-bb-concurrency-tests-common 0.8.999": "iceoryx2-bb/concurrency/tests-common",
+    "iceoryx2-bb-concurrency-tests-nostd 0.8.999": "iceoryx2-bb/concurrency/tests-nostd",
     "iceoryx2-bb-conformance-test-macros 0.8.999": "iceoryx2-bb/conformance-test-macros",
     "iceoryx2-bb-container 0.8.999": "iceoryx2-bb/container",
     "iceoryx2-bb-derive-macros 0.8.999": "iceoryx2-bb/derive-macros",
     "iceoryx2-bb-elementary 0.8.999": "iceoryx2-bb/elementary",
+    "iceoryx2-bb-elementary-tests-common 0.8.999": "iceoryx2-bb/elementary/tests-common",
+    "iceoryx2-bb-elementary-tests-nostd 0.8.999": "iceoryx2-bb/elementary/tests-nostd",
     "iceoryx2-bb-elementary-traits 0.8.999": "iceoryx2-bb/elementary-traits",
     "iceoryx2-bb-linux 0.8.999": "iceoryx2-bb/linux",
     "iceoryx2-bb-lock-free 0.8.999": "iceoryx2-bb/lock-free",
@@ -33629,7 +34029,11 @@
     "iceoryx2-bb-print 0.8.999": "iceoryx2-bb/print",
     "iceoryx2-bb-system-types 0.8.999": "iceoryx2-bb/system-types",
     "iceoryx2-bb-testing 0.8.999": "iceoryx2-bb/testing",
+    "iceoryx2-bb-testing-nostd 0.8.999": "iceoryx2-bb/testing-nostd",
+    "iceoryx2-bb-testing-nostd-macros 0.8.999": "iceoryx2-bb/testing-nostd-macros",
     "iceoryx2-bb-threadsafe 0.8.999": "iceoryx2-bb/threadsafe",
+    "iceoryx2-bb-threadsafe-tests-common 0.8.999": "iceoryx2-bb/threadsafe/tests-common",
+    "iceoryx2-bb-threadsafe-tests-nostd 0.8.999": "iceoryx2-bb/threadsafe/tests-nostd",
     "iceoryx2-bb-trait-tests 0.8.999": "iceoryx2-bb/trait-tests",
     "iceoryx2-cal 0.8.999": "iceoryx2-cal",
     "iceoryx2-cal-conformance-tests 0.8.999": "iceoryx2-cal/conformance-tests",
@@ -33834,6 +34238,10 @@
       "x86_64-unknown-linux-gnu",
       "x86_64-unknown-nixos-gnu"
     ],
+    "cfg(target_family = \"wasm\")": [
+      "wasm32-unknown-unknown",
+      "wasm32-wasip1"
+    ],
     "cfg(target_family = \"windows\")": [
       "x86_64-pc-windows-msvc"
     ],
@@ -33906,6 +34314,7 @@
     "dirs 5.0.1",
     "enum-iterator 2.1.0",
     "human-panic 2.0.2",
+    "inventory 0.3.22",
     "libc 0.2.180",
     "postcard 1.1.3",
     "proc-macro2 1.0.105",

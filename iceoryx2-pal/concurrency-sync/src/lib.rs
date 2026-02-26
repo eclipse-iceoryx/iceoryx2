@@ -10,21 +10,17 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![cfg_attr(not(test), no_std)]
+#![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;
 
 const SPIN_REPETITIONS: u64 = 10000;
 
 pub mod atomic;
-pub mod barrier;
 pub mod cell;
-pub mod condition_variable;
 pub mod lazy_lock;
-pub mod mutex;
 pub mod once;
-pub mod rwlock;
-pub mod semaphore;
+pub mod strategy;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum WaitAction {
@@ -37,3 +33,4 @@ pub enum WaitResult {
     Interrupted,
     Success,
 }
+pub mod spin_lock;

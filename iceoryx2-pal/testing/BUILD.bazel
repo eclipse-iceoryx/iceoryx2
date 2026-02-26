@@ -22,7 +22,15 @@ filegroup(
 rust_library(
     name = "iceoryx2-pal-testing",
     srcs = glob(["src/**/*.rs"]),
+    crate_features = select({
+        "//:cfg_feature_std": [
+            "std",
+        ],
+        "//conditions:default": [],
+    }),
     deps = [
         "//iceoryx2-pal/configuration:iceoryx2-pal-configuration",
+        "//iceoryx2-pal/print:iceoryx2-pal-print",
+        "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
     ],
 )

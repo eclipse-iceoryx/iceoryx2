@@ -22,6 +22,12 @@ filegroup(
 rust_library(
     name = "iceoryx2-conformance-tests",
     srcs = glob(["src/**/*.rs"]),
+    crate_features = select({
+        "//:cfg_feature_std": [
+            "std",
+        ],
+        "//conditions:default": [],
+    }),
     deps = [
         "//iceoryx2:iceoryx2",
         "//iceoryx2-bb/container:iceoryx2-bb-container",
@@ -42,6 +48,7 @@ rust_library(
 rust_test_suite(
     name = "iceoryx2-conformance-tests-tests",
     srcs = glob(["tests/**/*.rs"]),
+    crate_features = ["std"],
     deps = [
         ":iceoryx2-conformance-tests",
         "//iceoryx2:iceoryx2",

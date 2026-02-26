@@ -14,10 +14,10 @@
 
 pub mod atomic;
 pub mod cell;
+pub mod internal;
 pub mod lazy_lock;
+pub mod once;
 pub mod spin_lock;
 
-#[cfg(not(feature = "std"))]
-pub use iceoryx2_pal_concurrency_sync::once::Once;
-#[cfg(feature = "std")]
-pub use std::sync::Once;
+pub use iceoryx2_pal_concurrency_sync::WaitAction;
+pub use iceoryx2_pal_concurrency_sync::WaitResult;

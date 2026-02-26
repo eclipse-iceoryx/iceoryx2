@@ -28,8 +28,8 @@ DO_SANITY_CHECKS=false
 
 CRATES_TO_PUBLISH=(
     iceoryx2-pal-configuration
-    iceoryx2-pal-testing
     iceoryx2-pal-concurrency-sync
+    iceoryx2-pal-testing
     iceoryx2-pal-posix
     iceoryx2-pal-print
     iceoryx2-pal-os-api
@@ -39,9 +39,13 @@ CRATES_TO_PUBLISH=(
     iceoryx2-bb-loggers
     iceoryx2-bb-conformance-test-macros
     iceoryx2-bb-elementary-traits
-    iceoryx2-bb-testing
     iceoryx2-bb-concurrency
+    iceoryx2-bb-testing
+    iceoryx2-bb-testing-nostd
+    iceoryx2-bb-testing-nostd-macros
+    iceoryx2-bb-concurrency-tests-common
     iceoryx2-bb-elementary
+    iceoryx2-bb-elementary-tests-common
     iceoryx2-bb-derive-macros
     iceoryx2-bb-container
     iceoryx2-bb-system-types
@@ -49,6 +53,7 @@ CRATES_TO_PUBLISH=(
     iceoryx2-bb-linux
     iceoryx2-bb-lock-free
     iceoryx2-bb-threadsafe
+    iceoryx2-bb-threadsafe-tests-common
     iceoryx2-bb-memory
     iceoryx2-cal
     iceoryx2-cal-conformance-tests
@@ -74,6 +79,9 @@ CRATES_TO_IGNORE=(
     iceoryx2-ffi-macros
     iceoryx2-ffi-python
     iceoryx2-tunnel-end-to-end-tests
+    iceoryx2-bb-elementary-tests-nostd
+    iceoryx2-bb-threadsafe-tests-nostd
+    iceoryx2-bb-concurrency-tests-nostd
 )
 
 if [[ "$#" -eq 0 ]]; then
@@ -156,7 +164,7 @@ sanity_check_cyclic_dependencies() {
     for CRATE in "${CRATES_TO_PUBLISH[@]}"; do
         ALLOWED_CRATE_DEPENDENCIES+=("${CRATE}")
 
-        local CRATE_DEPENDENCIES=$(cargo tree --package "${CRATE}" --depth 1 --prefix none | grep -v '(\*)' | grep -e '^iceoryx2' | awk '{print $1}' | sort | uniq)
+        local CRATE_DEPENDENCIES=$(cargo tree --package "${CRATE}" --depth 1 --prefix none --edges normal | grep -v '(\*)' | grep -e '^iceoryx2' | awk '{print $1}' | sort | uniq)
         for DEP in ${CRATE_DEPENDENCIES}; do
             if [[ " ${ALLOWED_CRATE_DEPENDENCIES[@]} " =~ " ${DEP} " ]]; then
                 continue

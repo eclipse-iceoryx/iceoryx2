@@ -14,15 +14,21 @@ version = { workspace = true }
 workspace = true
 
 [features]
-std = []
+default = ["std"]
+
+std = [
+  "iceoryx2-bb-concurrency/std",
+]
 
 [dependencies]
 iceoryx2-bb-concurrency = { workspace = true }
 iceoryx2-bb-elementary-traits = { workspace = true }
 
 [dev-dependencies]
+iceoryx2-bb-elementary-tests-common = { path = "./tests-common", features = ["std"] }
+iceoryx2-bb-loggers = { workspace = true }
 iceoryx2-bb-testing = { workspace = true }
-iceoryx2-pal-testing = { workspace = true }
+iceoryx2-bb-testing-nostd-macros = { workspace = true }
+iceoryx2-bb-testing-nostd = { workspace = true }
 
 generic-tests = { workspace = true }
-
