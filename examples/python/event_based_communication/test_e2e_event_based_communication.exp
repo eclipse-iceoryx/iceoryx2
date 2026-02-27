@@ -1,0 +1,38 @@
+#!/usr/bin/expect
+# Copyright (c) 2026 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache Software License 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+# which is available at https://opensource.org/licenses/MIT.
+#
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+#### Common Setup
+
+set REPO_ROOT [exec git rev-parse --show-toplevel]
+cd ${REPO_ROOT}
+
+source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
+
+#### Test Setup
+
+set timeout 15
+set SERVICE_NAME "My/Funk/ServiceName-e2e-[pid]"
+
+spawn env IOX2_SERVICE_NAME=${SERVICE_NAME} python examples/python/event_based_communication/subscriber.py
+set id_subscriber $spawn_id
+
+spawn env IOX2_SERVICE_NAME=${SERVICE_NAME} python examples/python/event_based_communication/publisher.py
+set id_publisher $spawn_id
+
+#### Test Assertion
+
+expect_output_from $id_publisher "send: 1"
+expect_output_from $id_publisher "subscriber consumed sample"
+expect_output_from $id_subscriber "received: TransmissionData { x: 1, y: 3, funky: 812.12 }*"
+
+show_test_passed
