@@ -89,12 +89,14 @@
 //! ```
 
 use core::{fmt::Debug, marker::PhantomData};
+use std::marker::PhantomPinned;
 
 use alloc::vec;
 use alloc::vec::Vec;
 
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::string::*;
+use iceoryx2_bb_container::vector::{StaticVec, Vector};
 use iceoryx2_bb_elementary::{enum_gen, scope_guard::ScopeGuardBuilder};
 use iceoryx2_log::{fail, fatal_panic, warn};
 use iceoryx2_pal_posix::posix::CPU_SETSIZE;
@@ -107,6 +109,8 @@ use crate::{
     signal::Signal,
     system_configuration::{Limit, SystemInfo},
 };
+
+pub const MAX_SCOPED_THREADS: usize = 128;
 
 /// Stores the name of a thread
 pub type ThreadName = StaticString<{ MAX_THREAD_NAME_LENGTH - 1 }>;
@@ -166,6 +170,13 @@ enum_gen! {
     NameSetupFailed <= ThreadSetNameError; ThreadGetNameError,
     FailedToSignal <= ThreadSignalError,
     FailedToSetAffinity <= ThreadSetAffinityError
+}
+
+enum_gen! {
+    ThreadJoinError
+  entry:
+    Deadlock,
+    Unknown(i32)
 }
 
 /// The builder for a [`Thread`] object.
@@ -704,6 +715,14 @@ impl Debug for Thread {
 
 impl Drop for Thread {
     fn drop(&mut self) {
+        warn!(from self,
+            when self.join(),
+            "Unable to join thread that went out-of-scope.");
+    }
+}
+
+impl Thread {
+    fn join(&self) -> Result<(), ThreadJoinError> {
         let msg = "Unable to join thread";
         match unsafe {
             posix::pthread_join(
@@ -712,24 +731,22 @@ impl Drop for Thread {
             )
             .into()
         } {
-            Errno::ESUCCES => (),
+            Errno::ESUCCES => Ok(()),
             Errno::EDEADLK => {
-                fatal_panic!(from self, "{} since a deadlock was detected.", msg);
+                fail!(from self, with ThreadJoinError::Deadlock,
+                    "{} since a deadlock was detected.", msg);
             }
             Errno::EINVAL => {
-                fatal_panic!(from self, "{} since someone else is already trying to join this thread.", msg);
+                fatal_panic!(from self, "This should never happen! {} since someone else is already trying to join this thread.", msg);
             }
-            Errno::ESRCH => {
-                fatal_panic!(from self, "This should never happen! Unable to join thread since its handle is invalid.");
-            }
+            Errno::ESRCH => Ok(()),
             v => {
-                fatal_panic!(from self, "{} since an unknown error occurred ({}).", msg, v);
+                fail!(from self, with ThreadJoinError::Unknown(v as _),
+                    "{} since an unknown error occurred ({}).", msg, v);
             }
         }
     }
-}
 
-impl Thread {
     fn new(handle: ThreadHandle) -> Self {
         Self { handle }
     }
@@ -758,4 +775,104 @@ impl ThreadProperties for Thread {
     fn set_affinity(&mut self, cpu_core_ids: &[usize]) -> Result<(), ThreadSetAffinityError> {
         self.handle.set_affinity(cpu_core_ids)
     }
+}
+
+pub struct ThreadScopeGuard<'scope> {
+    threads: StaticVec<Thread, MAX_SCOPED_THREADS>,
+    _scope: PhantomData<&'scope ()>,
+}
+
+impl<'scope> Drop for ThreadScopeGuard<'scope> {
+    fn drop(&mut self) {
+        for thread in self.threads.iter().rev() {
+            if let Err(e) = thread.join() {
+                warn!("Leaving scoped thread but but not all threads could be joined ({e:?}).");
+            }
+        }
+    }
+}
+
+impl<'scope> ThreadScopeGuard<'scope> {
+    fn new() -> Self {
+        Self {
+            threads: StaticVec::new(),
+            _scope: PhantomData,
+        }
+    }
+
+    pub fn thread_builder(&'scope mut self) -> ScopedThreadBuilder<'scope> {
+        ScopedThreadBuilder {
+            guard: self,
+            thread_builder: ThreadBuilder::new(),
+        }
+    }
+}
+
+pub struct ScopedThreadBuilder<'scope> {
+    guard: &'scope mut ThreadScopeGuard<'scope>,
+    thread_builder: ThreadBuilder,
+}
+
+impl<'scope> ScopedThreadBuilder<'scope> {
+    /// Sets the name of the thread. It is not allowed to be longer than
+    /// [`crate::config::MAX_THREAD_NAME_LENGTH`] and must consist of ASCII characters only.
+    pub fn name(mut self, value: &ThreadName) -> Self {
+        self.thread_builder = self.thread_builder.name(value);
+        self
+    }
+
+    /// Inherit the scheduling attributes of the calling thread.
+    pub fn inherit_scheduling_attributes(mut self, value: bool) -> Self {
+        self.thread_builder = self.thread_builder.inherit_scheduling_attributes(value);
+        self
+    }
+
+    /// Sets the threads CPU affinity to the provided list of `cpu_core_id`s.
+    /// The cpu cores must exist otherwise [`ThreadBuilder::spawn()`] will
+    /// fail with [`ThreadSpawnError::CpuCoreOutsideOfSupportedCpuRangeForAffinity`].
+    ///
+    /// The systems number of CPU cores can be acquired with:
+    /// ```
+    /// # extern crate iceoryx2_bb_loggers;
+    ///
+    /// use iceoryx2_bb_posix::system_configuration::*;
+    ///
+    /// let number_of_cores = SystemInfo::NumberOfCpuCores.value();
+    /// ```
+    pub fn affinity(mut self, cpu_core_ids: &[usize]) -> Self {
+        self.thread_builder = self.thread_builder.affinity(cpu_core_ids);
+        self
+    }
+
+    /// Sets the priority of the thread whereby `0` represents the lowest and `255` the highest
+    /// priority. Since the underlying scheduler priority varies in range the values are mapped
+    /// to the scheduler dependent priority.
+    /// For more details about scheduler priority granularity see:
+    /// [`Scheduler::priority_granularity()`]
+    pub fn priority(mut self, value: u8) -> Self {
+        self.thread_builder = self.thread_builder.priority(value);
+        self
+    }
+
+    /// Sets the [`Scheduler`] used by the thread.
+    pub fn scheduler(mut self, value: Scheduler) -> Self {
+        self.thread_builder = self.thread_builder.scheduler(value);
+        self
+    }
+
+    pub fn spawn<'thread, T, F>(self, f: F) -> Result<(), ThreadSpawnError>
+    where
+        T: Debug + Send + 'thread,
+        F: FnOnce() -> T + Send + 'thread,
+    {
+        let thread = self.thread_builder.spawn(f)?;
+        self.guard.threads.push(thread);
+        Ok(())
+    }
+}
+
+pub fn thread_scope<F: FnOnce(&mut ThreadScopeGuard)>(f: F) {
+    let mut guard = ThreadScopeGuard::new();
+    f(&mut guard);
+    drop(guard);
 }
