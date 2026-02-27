@@ -21,13 +21,6 @@ std = [
   "iceoryx2-bb-concurrency/std"
 ]
 
-# Use https://crates.io/crates/libc for the platform abstraction. This simplifies
-# cross-compilation since bindgen is not required anymore. Unfortunately, the libc crate
-# does not offer all the functionality iceoryx2 requires on all of the supported
-# platforms. Therefore, only a subset of the supported platforms will work with this
-# feature flag.
-libc_platform = ["iceoryx2-pal-posix/libc_platform"]
-
 [dependencies]
 iceoryx2-log = { workspace = true }
 iceoryx2-bb-print = { workspace = true }

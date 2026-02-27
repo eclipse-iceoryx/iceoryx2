@@ -6,14 +6,16 @@ on:
       os:
         required: true
         type: string
-      cargo-features-flag:
-        required: false
+      platform-binding:
+        required: true
         type: string
 
 jobs:
   static-code-analysis-rust:
     timeout-minutes: 40
     runs-on: ${{ inputs.os }}
+    env:
+      IOX2_PLATFORM_BINDING: ${{ inputs.platform-binding }}
     steps:
       - name: Checkout sources
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
@@ -37,7 +39,7 @@ jobs:
           echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
 
       - name: Run cargo clippy
-        run: cargo clippy ${{ inputs.cargo-features-flag }} -- -D warnings
+        run: cargo clippy -- -D warnings
 
       - name: Setup miri
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # version: v1

@@ -92,27 +92,39 @@
     conflicts when merging.
 -->
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+* Removed `libc_platform` feature in favor of `platform_binding` build
+  configuration which is set via environment variable
+  [#1374](https://github.com/eclipse-iceoryx/iceoryx2/issues/1374)
 
 ### API Breaking Changes
 
 1. Loggers have been moved into `iceoryx2-bb-loggers` thus manually linking
    to them needs to be adjusted accordingly.
 
-   ```rust
-   // old
-   extern crate iceoryx2_loggers;
+    ```rust
+    // old
+    extern crate iceoryx2_loggers;
 
-   use iceoryx2_log::*;
+    use iceoryx2_log::*;
 
-   set_log_level(LogLevel::Info);
-   info!("some log message")
+    set_log_level(LogLevel::Info);
+    info!("some log message")
 
-   // new
-   extern crate iceoryx2_bb_loggers;
+    // new
+    extern crate iceoryx2_bb_loggers;
 
-   use iceoryx2_log::*;
+    use iceoryx2_log::*;
 
-   set_log_level(LogLevel::Info);
-   info!("some log message")
-   ```
+    set_log_level(LogLevel::Info);
+    info!("some log message")
+    ```
+
+1. Building with `libc` is now enabled with an environment variable
+
+    ```console
+    # old
+    cargo build --features iceoryx2/libc_platform 
+
+    # new
+    IOX2_PLATFORM_BINDING=libc cargo build
+    ```

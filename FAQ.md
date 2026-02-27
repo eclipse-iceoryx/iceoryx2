@@ -26,7 +26,6 @@
         * [Maximum File-Descriptor Limit Exceeded](#maximum-file-descriptor-limit-exceeded)
     * [Losing Data](#losing-data)
     * [Losing Dynamic Data](#losing-dynamic-data)
-    * [`iceoryx2-ffi-c` does not contain this feature: libc_platform](#iceoryx2-ffi-c-does-not-contain-this-feature-libc_platform)
     * [Service In Corrupted state](#service-in-corrupted-state)
 
 ## Tips And Tricks
@@ -559,14 +558,6 @@ sender closes the data segment when going out of scope.
 
 To circumvent this, you could use the size of the last sent sample as
 `initial_max_slice_len` and use the `Static` allocation strategy.
-
-<!-- markdownlint-disable MD044 'c' needs to be lower-case -->
-### `iceoryx2-ffi-c` Does Not Contain This Feature: `libc_platform`
-<!-- markdownlint-enable MD044 -->
-
-In order to use the `iceoryx2` feature flags when building the `iceoryx2-ffi-c`
-crate standalone, you needs to prefix the feature with `iceoryx2/`,
-e.g. `--features iceoryx2/libc_platform.`.
 
 ### Service In Corrupted State
 

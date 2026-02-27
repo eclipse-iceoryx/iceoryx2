@@ -196,6 +196,40 @@ payload data segment
 * `defaults.blackboard.max-nodes` - [int]: The maximum amount of supported Nodes.
 Defines indirectly how many processes can open the service at the same time.
 
+## Platform Bindings with `libc`
+
+By default, `bindgen` is used to bind to platform headers such as `posix.h`
+and `linux.h`. For supported platforms, the `libc` crate may be utilized
+instead.
+
+To achieve this, the environment variable `IOX2_PLATFORM_BINDING` can
+be utilized.
+
+The build steps are as follows:
+
+1. Use the environment variable to specify `libc` as the binding mechanism:
+
+    ```cli
+    export IOX2_PLATFORM_BINDING=libc
+    ```
+
+    To make it persistent, the variable can be set in a `./cargo/config.toml`
+    file, either globally or locally within the project:
+
+    ```toml
+    [env]
+    IOX2_PLATFORM_BINDING = "libc"
+    ```
+
+1. Build `iceoryx2` like normal. The build will not generate the bindings with
+   `bindgen` and instead link against the `libc` crate. A warning message is
+   emitted to confirm the binding mechanism used:
+
+   ```console
+   warning: iceoryx2-pal-os-api@0.0.0: Using libc crate for platform binding
+   warning: iceoryx2-pal-posix@0.0.0: Using libc crate for platform binding
+   ```
+
 ## Custom Platform Configuration
 
 > [!WARNING]
@@ -242,7 +276,7 @@ pub mod settings {
 }
 ```
 
-To configure the build to use the custom settings, the following must be done:
+The build steps are as follows:
 
 1. Set environment variable with absolute path to the configuration file:
 
