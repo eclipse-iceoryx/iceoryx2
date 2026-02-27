@@ -49,6 +49,8 @@
   [#1356](https://github.com/eclipse-iceoryx/iceoryx2/issues/1356)
 * Bump shellexpand from 3.1.1 to 3.1.2 in Rust and Bazel
   [#1365](https://github.com/eclipse-iceoryx/iceoryx2/issues/1365)
+* Resources cannot always be cleaned up with `dev_permissions` feature flag
+  [#1365](https://github.com/eclipse-iceoryx/iceoryx2/issues/1370)
 
 ### Refactoring
 

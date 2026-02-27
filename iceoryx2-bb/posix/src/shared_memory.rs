@@ -79,7 +79,7 @@ use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_system_types::file_name::*;
 use iceoryx2_bb_system_types::file_path::*;
 use iceoryx2_bb_system_types::path::*;
-use iceoryx2_log::{error, fail, fatal_panic, trace};
+use iceoryx2_log::{error, fail, fatal_panic, trace, warn};
 use iceoryx2_pal_configuration::PATH_SEPARATOR;
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING;
@@ -420,17 +420,18 @@ pub struct SharedMemory {
 impl Drop for SharedMemory {
     fn drop(&mut self) {
         if self.has_ownership() {
-            match self.set_permission(Permission::OWNER_ALL) {
-                Ok(()) => match Self::shm_unlink(&self.name) {
-                    Ok(_) => {
-                        trace!(from self, "delete");
+            let set_permission_result = self.set_permission(Permission::OWNER_ALL);
+
+            match Self::shm_unlink(&self.name) {
+                Ok(_) => {
+                    trace!(from self, "delete");
+                }
+                Err(_) => {
+                    if let Err(e) = set_permission_result {
+                        warn!(from self,
+                              "Unable to adjust the files permission as preparation to remove the file ({e:?}).");
                     }
-                    Err(_) => {
-                        error!(from self, "Failed to cleanup shared memory.");
-                    }
-                },
-                Err(e) => {
-                    error!(from self, "Failed to cleanup shared memory since the permissions could not be adjusted ({:?}).", e);
+                    error!(from self, "Failed to cleanup shared memory.");
                 }
             }
         }
