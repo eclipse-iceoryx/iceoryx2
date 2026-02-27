@@ -420,16 +420,17 @@ pub struct SharedMemory {
 impl Drop for SharedMemory {
     fn drop(&mut self) {
         if self.has_ownership() {
-            if let Err(e) = self.set_permission(Permission::OWNER_ALL) {
-                warn!(from self,
-                      "Unable to adjust the files permission as preparation to remove the file ({e:?}).");
-            }
+            let set_permission_result = self.set_permission(Permission::OWNER_ALL);
 
             match Self::shm_unlink(&self.name) {
                 Ok(_) => {
                     trace!(from self, "delete");
                 }
                 Err(_) => {
+                    if let Err(e) = set_permission_result {
+                        warn!(from self,
+                              "Unable to adjust the files permission as preparation to remove the file ({e:?}).");
+                    }
                     error!(from self, "Failed to cleanup shared memory.");
                 }
             }
