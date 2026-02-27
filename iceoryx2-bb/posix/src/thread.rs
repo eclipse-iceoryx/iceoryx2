@@ -57,6 +57,8 @@
 //!             counter.fetch_add(3, Ordering::Relaxed);
 //!         }
 //!     })
+//!
+//!     Ok(())
 //! })?;
 //! # }
 //! ```
@@ -1008,6 +1010,8 @@ impl<'scope> ScopedThreadBuilder<'scope> {
 ///             counter.fetch_add(3, Ordering::Relaxed);
 ///         }
 ///     })
+///
+///     Ok(())
 /// })?;
 /// # }
 /// ```
