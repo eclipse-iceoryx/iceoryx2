@@ -114,16 +114,16 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        cargo-features-flag: ["", "--features libc_platform"]
+        platform-binding: ["bindgen", "libc"]
         exclude:
           - os: macos-latest
-            cargo-features-flag: "--features libc_platform"
+            platform-binding: "libc"
           - os: windows-latest
-            cargo-features-flag: "--features libc_platform"
+            platform-binding: "libc"
     uses: ./.github/workflows/reuse_static_code_analysis.yml
     with:
       os: ${{ matrix.os }}
-      cargo-features-flag: ${{ matrix.cargo-features-flag }}
+      platform-binding: ${{ matrix.platform-binding }}
 
   # Build documentation and run code examples
   rust-doc-check:
@@ -131,19 +131,24 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        include:
-          - os: ubuntu-latest
-            cargo-features-flag: "--features libc_platform"
+        platform-binding: ["bindgen", "libc"]
+        exclude:
+          - os: macos-latest
+            platform-binding: "libc"
+          - os: windows-latest
+            platform-binding: "libc"
     runs-on: ${{ matrix.os }}
+    env:
+      IOX2_PLATFORM_BINDING: ${{ matrix.platform-binding }}
     steps:
       - name: Checkout sources
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
-
+  
       - name: Run code examples in documentation
-        run: cargo test --workspace --doc ${{ matrix.cargo-features-flag }}
-
+        run: cargo test --workspace --doc
+  
       - name: Build documentation
-        run: cargo doc --no-deps ${{ matrix.cargo-features-flag }}
+        run: cargo doc --no-deps
 
   cargo-nextest:
     needs: preflight-check
@@ -169,7 +174,7 @@ jobs:
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest,windows-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
@@ -325,23 +330,21 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         toolchain: [stable, 1.83.0]
-        # NOTE: using 'iceoryx2/libc_platform' to trigger the feature propagation check
-        # by explicitly setting the flag only in the iceoryx2 crate
-        cargo-features-flag: ["", "--features iceoryx2/libc_platform"]
+        platform-binding: ["bindgen", "libc"]
         exclude:
           - os: ubuntu-latest
             toolchain: 1.83.0
-            cargo-features-flag: "--features iceoryx2/libc_platform"
+            platform-binding: "libc"
           - os: macos-latest
-            cargo-features-flag: "--features iceoryx2/libc_platform"
+            platform-binding: "libc"
           - os: windows-latest
-            cargo-features-flag: "--features iceoryx2/libc_platform"
+            platform-binding: "libc"
     uses: ./.github/workflows/reuse_x86_64_stable.yml
     with:
       os: ${{ matrix.os }}
       toolchain: ${{ matrix.toolchain }}
       profile: "debug"
-      cargo-features-flag: ${{ matrix.cargo-features-flag }}
+      platform-binding: ${{ matrix.platform-binding }}
 
   stable-release:
     needs: [preflight-check, cargo-nextest]
@@ -351,7 +354,7 @@ jobs:
       os: ubuntu-latest
       toolchain: stable
       profile: "release"
-      cargo-features-flag: ""
+      platform-binding: "bindgen"
 
   unstable:
     needs: [preflight-check, cargo-nextest]

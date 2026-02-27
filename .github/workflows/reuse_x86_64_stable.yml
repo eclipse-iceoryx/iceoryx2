@@ -12,14 +12,16 @@ on:
       profile:
         required: true
         type: string
-      cargo-features-flag:
-        required: false
+      platform-binding:
+        required: true
         type: string
 
 jobs:
   x86_64:
     timeout-minutes: 90
     runs-on: ${{ inputs.os }}
+    env:
+      IOX2_PLATFORM_BINDING: ${{ inputs.platform-binding }}
     steps:
       - name: Checkout sources
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
@@ -67,9 +69,9 @@ jobs:
           internal/scripts/ci_prepare_ubuntu.sh
           uname -a
 
-      - name: Additional setup for libc_platform
-        if: ${{ contains(inputs.cargo-features-flag, 'libc_platform') }}
-        run: sudo apt remove -y --purge '^libclang-.*-dev' # remove libclang to force a compile error if the feature is not propagated correctly and bindgen is used
+      - name: Additional setup for libc platform binding
+        if: ${{ inputs.platform-binding == 'libc' }}
+        run: sudo apt remove -y --purge '^libclang-.*-dev' # remove libclang to force a compile error if libc binding is not used correctly and bindgen is invoked
 
       - name: Save disk space
         uses: ./.github/actions/save-disk-space
@@ -85,12 +87,12 @@ jobs:
       - name: Run cargo build
         shell: bash
         run: |
-          cargo build --workspace --all-targets ${{ steps.set-build-flags.outputs.cargo-build-mode }} ${{ inputs.cargo-features-flag }}
+          cargo build --workspace --all-targets ${{ steps.set-build-flags.outputs.cargo-build-mode }}
 
       - name: Run cargo nextest
         shell: bash
         run: |
-          cargo nextest run --workspace --all-targets --no-fail-fast ${{ steps.set-build-flags.outputs.cargo-build-mode }} ${{ inputs.cargo-features-flag }}
+          cargo nextest run --workspace --all-targets --no-fail-fast ${{ steps.set-build-flags.outputs.cargo-build-mode }}
 
       - name: Cleanup build artifacts
         uses: ./.github/actions/save-disk-space
