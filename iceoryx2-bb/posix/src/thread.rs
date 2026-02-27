@@ -56,10 +56,11 @@
 //!         for _ in 0..100 {
 //!             counter.fetch_add(3, Ordering::Relaxed);
 //!         }
-//!     })
+//!     })?;
 //!
 //!     Ok(())
 //! })?;
+//! # Ok(())
 //! # }
 //! ```
 //!
@@ -1009,10 +1010,11 @@ impl<'scope> ScopedThreadBuilder<'scope> {
 ///         for _ in 0..100 {
 ///             counter.fetch_add(3, Ordering::Relaxed);
 ///         }
-///     })
+///     })?;
 ///
 ///     Ok(())
 /// })?;
+/// # Ok(())
 /// # }
 /// ```
 pub fn thread_scope<F: FnOnce(&mut ThreadScopeGuard) -> Result<(), ScopedThreadSpawnError>>(

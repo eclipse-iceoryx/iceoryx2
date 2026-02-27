@@ -11,13 +11,12 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::mem::MaybeUninit;
-use std::sync::atomic::AtomicU64;
 
 use clap::Parser;
 use iceoryx2::prelude::*;
 use iceoryx2_bb_posix::barrier::*;
 use iceoryx2_bb_posix::clock::Time;
-use iceoryx2_bb_posix::thread::{thread_scope, ThreadBuilder};
+use iceoryx2_bb_posix::thread::ThreadBuilder;
 
 const ITERATIONS: u64 = 10000000;
 
