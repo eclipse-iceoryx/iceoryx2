@@ -27,6 +27,8 @@
   [#1353](https://github.com/eclipse-iceoryx/iceoryx2/issues/1353)
 * Implement `core::error::Error` for `bb::posix` error enums
   [#1362](https://github.com/eclipse-iceoryx/iceoryx2/issues/1362)
+* Add minimal Python event-based communication example and end-to-end test
+  [#1376](https://github.com/eclipse-iceoryx/iceoryx2/issues/1376)
 
 ### Bugfixes
 
