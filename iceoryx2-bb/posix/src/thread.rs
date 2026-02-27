@@ -897,7 +897,7 @@ impl ThreadScopeGuard {
         }
     }
 
-    /// Creates a new [`ScopeThreadBuilder`] to configure and create a new scoped thread.
+    /// Creates a new [`ScopedThreadBuilder`] to configure and create a new scoped thread.
     pub fn thread_builder<'scope>(&'scope mut self) -> ScopedThreadBuilder<'scope> {
         ScopedThreadBuilder {
             guard: self,
