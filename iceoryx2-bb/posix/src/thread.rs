@@ -30,6 +30,37 @@
 //! println!("The thread {:?} was created.", thread);
 //! ```
 //!
+//! ## Create scoped thread
+//!
+//! ```
+//! # extern crate iceoryx2_bb_loggers;
+//!
+//! use iceoryx2_bb_posix::thread::*;
+//! use std::sync::atomic::{Ordering, AtomicU64};
+//!
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
+//! let counter = AtomicU64::new(0);
+//! thread_scope(|s| {
+//!     // customized thread that is pinned to CPU core 0 and as priority 0
+//!     s.thread_builder()
+//!      .affinity(&[0])
+//!      .priority(0)
+//!      .spawn(|| {
+//!          for _ in 0..100 {
+//!              counter.fetch_add(1, Ordering::Relaxed);
+//!          }
+//!      })?;
+//!
+//!     // spawn thread with default settings
+//!     s.thread_builder().spawn(|| {
+//!         for _ in 0..100 {
+//!             counter.fetch_add(3, Ordering::Relaxed);
+//!         }
+//!     })
+//! })?;
+//! # }
+//! ```
+//!
 //! ## Create a thread with user provided stack memory
 //!
 //! ```ignore
@@ -89,7 +120,6 @@
 //! ```
 
 use core::{fmt::Debug, marker::PhantomData};
-use std::marker::PhantomPinned;
 
 use alloc::vec;
 use alloc::vec::Vec;
@@ -133,6 +163,69 @@ enum_gen! { ThreadSpawnError
     UnknownError(i32)
   mapping:
     ThreadSetNameError
+}
+
+enum_gen! { ScopedThreadSpawnError
+  entry:
+    InsufficientMemory,
+    InsufficientResources,
+    InvalidSettings,
+    InsufficientPermissions,
+    InvalidGuardSize,
+    ContentionScopeNotSupported,
+    SchedulerPolicyNotSupported,
+    StackSizeTooSmall,
+    ProvidedStackSizeMemoryTooSmall,
+    ProvidedStackMemoryIsNotReadAndWritable,
+    SchedulerPriorityInheritanceNotSupported,
+    ThreadPrioritiesNotSupported,
+    CpuCoreOutsideOfSupportedCpuRangeForAffinity,
+    MaxNumberOfSupportedScopedThreadsExceeded,
+    UnknownError(i32)
+  mapping:
+    ThreadSetNameError
+}
+
+impl From<ThreadSpawnError> for ScopedThreadSpawnError {
+    fn from(value: ThreadSpawnError) -> Self {
+        match value {
+            ThreadSpawnError::InsufficientMemory => ScopedThreadSpawnError::InsufficientMemory,
+            ThreadSpawnError::InsufficientResources => {
+                ScopedThreadSpawnError::InsufficientResources
+            }
+            ThreadSpawnError::InvalidSettings => ScopedThreadSpawnError::InvalidSettings,
+            ThreadSpawnError::InsufficientPermissions => {
+                ScopedThreadSpawnError::InsufficientPermissions
+            }
+            ThreadSpawnError::InvalidGuardSize => ScopedThreadSpawnError::InvalidGuardSize,
+            ThreadSpawnError::ContentionScopeNotSupported => {
+                ScopedThreadSpawnError::ContentionScopeNotSupported
+            }
+            ThreadSpawnError::SchedulerPolicyNotSupported => {
+                ScopedThreadSpawnError::SchedulerPolicyNotSupported
+            }
+            ThreadSpawnError::StackSizeTooSmall => ScopedThreadSpawnError::StackSizeTooSmall,
+            ThreadSpawnError::ProvidedStackSizeMemoryTooSmall => {
+                ScopedThreadSpawnError::ProvidedStackSizeMemoryTooSmall
+            }
+            ThreadSpawnError::ProvidedStackMemoryIsNotReadAndWritable => {
+                ScopedThreadSpawnError::ProvidedStackMemoryIsNotReadAndWritable
+            }
+            ThreadSpawnError::SchedulerPriorityInheritanceNotSupported => {
+                ScopedThreadSpawnError::SchedulerPriorityInheritanceNotSupported
+            }
+            ThreadSpawnError::ThreadPrioritiesNotSupported => {
+                ScopedThreadSpawnError::ThreadPrioritiesNotSupported
+            }
+            ThreadSpawnError::CpuCoreOutsideOfSupportedCpuRangeForAffinity => {
+                ScopedThreadSpawnError::CpuCoreOutsideOfSupportedCpuRangeForAffinity
+            }
+            ThreadSpawnError::UnknownError(n) => ScopedThreadSpawnError::UnknownError(n),
+            ThreadSpawnError::ThreadSetNameError(v) => {
+                ScopedThreadSpawnError::ThreadSetNameError(v)
+            }
+        }
+    }
 }
 
 enum_gen! { ThreadSignalError
@@ -777,12 +870,14 @@ impl ThreadProperties for Thread {
     }
 }
 
-pub struct ThreadScopeGuard<'scope> {
+/// The scope guard that is living inside the [`thread_scope()`] call and which can be used
+/// to create scoped threads.
+#[derive(Debug)]
+pub struct ThreadScopeGuard {
     threads: StaticVec<Thread, MAX_SCOPED_THREADS>,
-    _scope: PhantomData<&'scope ()>,
 }
 
-impl<'scope> Drop for ThreadScopeGuard<'scope> {
+impl Drop for ThreadScopeGuard {
     fn drop(&mut self) {
         for thread in self.threads.iter().rev() {
             if let Err(e) = thread.join() {
@@ -792,15 +887,15 @@ impl<'scope> Drop for ThreadScopeGuard<'scope> {
     }
 }
 
-impl<'scope> ThreadScopeGuard<'scope> {
+impl ThreadScopeGuard {
     fn new() -> Self {
         Self {
             threads: StaticVec::new(),
-            _scope: PhantomData,
         }
     }
 
-    pub fn thread_builder(&'scope mut self) -> ScopedThreadBuilder<'scope> {
+    /// Creates a new [`ScopeThreadBuilder`] to configure and create a new scoped thread.
+    pub fn thread_builder<'scope>(&'scope mut self) -> ScopedThreadBuilder<'scope> {
         ScopedThreadBuilder {
             guard: self,
             thread_builder: ThreadBuilder::new(),
@@ -808,8 +903,10 @@ impl<'scope> ThreadScopeGuard<'scope> {
     }
 }
 
+/// The builder to configure and create a scoped thread.
+#[derive(Debug)]
 pub struct ScopedThreadBuilder<'scope> {
-    guard: &'scope mut ThreadScopeGuard<'scope>,
+    guard: &'scope mut ThreadScopeGuard,
     thread_builder: ThreadBuilder,
 }
 
@@ -860,19 +957,66 @@ impl<'scope> ScopedThreadBuilder<'scope> {
         self
     }
 
-    pub fn spawn<'thread, T, F>(self, f: F) -> Result<(), ThreadSpawnError>
+    /// Spawns a scoped thread.
+    pub fn spawn<'thread, T, F>(self, f: F) -> Result<(), ScopedThreadSpawnError>
     where
         T: Debug + Send + 'thread,
         F: FnOnce() -> T + Send + 'thread,
     {
+        if self.guard.threads.is_full() {
+            fail!(from self,
+                with ScopedThreadSpawnError::MaxNumberOfSupportedScopedThreadsExceeded,
+                "Unable to create another scoped thread since it would exceed the maximum supported number of scoped threads ({}).", self.guard.threads.capacity());
+        }
+
         let thread = self.thread_builder.spawn(f)?;
-        self.guard.threads.push(thread);
+        self.guard
+            .threads
+            .push(thread)
+            .expect("Thread container has space available.");
         Ok(())
     }
 }
 
-pub fn thread_scope<F: FnOnce(&mut ThreadScopeGuard)>(f: F) {
+/// Creates a scoped thread. In contrast to the [`std::thread::scope()`] variant this
+/// implementation allows the user to configure the thread properties in detail and set
+/// cpu affinity, priority and scheduler but the number of threads that can be spawned in
+/// the scope is limited to [`MAX_SCOPED_THREADS`].
+///
+/// ```
+/// # extern crate iceoryx2_bb_loggers;
+///
+/// use iceoryx2_bb_posix::thread::*;
+/// use std::sync::atomic::{Ordering, AtomicU64};
+///
+/// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+/// let counter = AtomicU64::new(0);
+/// thread_scope(|s| {
+///     // customized thread that is pinned to CPU core 0 and as priority 0
+///     s.thread_builder()
+///      .affinity(&[0])
+///      .priority(0)
+///      .spawn(|| {
+///          for _ in 0..100 {
+///              counter.fetch_add(1, Ordering::Relaxed);
+///          }
+///      })?;
+///
+///     // spawn thread with default settings
+///     s.thread_builder().spawn(|| {
+///         for _ in 0..100 {
+///             counter.fetch_add(3, Ordering::Relaxed);
+///         }
+///     })
+/// })?;
+/// # }
+/// ```
+pub fn thread_scope<F: FnOnce(&mut ThreadScopeGuard) -> Result<(), ScopedThreadSpawnError>>(
+    f: F,
+) -> Result<(), ScopedThreadSpawnError> {
     let mut guard = ThreadScopeGuard::new();
-    f(&mut guard);
+    f(&mut guard)?;
     drop(guard);
+
+    Ok(())
 }
