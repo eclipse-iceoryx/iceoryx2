@@ -497,8 +497,6 @@
 //!  * `dev_permissions` - The permissions of all resources will be set to read, write, execute
 //!    for everyone. This shall not be used in production and is meant to be enabled in a docker
 //!    environment with inconsistent user configuration.
-//!  * `libc_platform` - Uses the [libc crate](https://crates.io/crates/libc) for the platform
-//!    abstraction to simplify cross compilation. Works currently only for Linux based targets.
 //!
 //! # Custom Configuration
 //!

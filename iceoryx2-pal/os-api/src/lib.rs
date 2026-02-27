@@ -16,15 +16,15 @@
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 
-#[cfg(all(target_os = "linux", not(feature = "libc_platform")))]
+#[cfg(all(target_os = "linux", not(platform_binding = "libc")))]
 #[path = "linux-bindgen/mod.rs"]
 pub mod linux;
 
-#[cfg(all(target_os = "linux", feature = "libc_platform"))]
+#[cfg(all(target_os = "linux", platform_binding = "libc"))]
 #[path = "linux-libc/mod.rs"]
 pub mod linux;
 
-#[cfg(all(not(feature = "libc_platform"), target_os = "linux"))]
+#[cfg(all(not(platform_binding = "libc"), target_os = "linux"))]
 pub(crate) mod internal {
     #![allow(non_upper_case_globals)]
     #![allow(non_camel_case_types)]

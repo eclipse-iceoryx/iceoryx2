@@ -42,7 +42,7 @@ mod os {
 }
 
 #[cfg(not(platform_override))]
-#[cfg(all(target_os = "linux", feature = "libc_platform"))]
+#[cfg(all(target_os = "linux", platform_binding = "libc"))]
 #[path = "libc/os.rs"]
 mod os;
 
@@ -62,7 +62,7 @@ mod os;
 mod os;
 
 #[cfg(not(platform_override))]
-#[cfg(all(target_os = "linux", not(feature = "libc_platform")))]
+#[cfg(all(target_os = "linux", not(platform_binding = "libc")))]
 #[path = "linux/os.rs"]
 pub mod os;
 
@@ -77,11 +77,11 @@ mod os;
 mod os;
 
 #[cfg(not(platform_override))]
-#[cfg(all(target_os = "none", not(feature = "libc_platform")))]
+#[cfg(all(target_os = "none", not(platform_binding = "libc")))]
 #[path = "stub/os.rs"]
 mod os;
 
-#[cfg(all(not(feature = "libc_platform"), not(target_os = "none")))]
+#[cfg(all(not(platform_binding = "libc"), not(target_os = "none")))]
 pub(crate) mod internal {
     #![allow(non_upper_case_globals)]
     #![allow(non_camel_case_types)]
@@ -100,7 +100,7 @@ pub(crate) mod internal {
     pub const ESUCCES: u32 = 0;
 }
 
-#[cfg(feature = "libc_platform")]
+#[cfg(platform_binding = "libc")]
 pub(crate) mod internal {
     pub use libc::*;
 }

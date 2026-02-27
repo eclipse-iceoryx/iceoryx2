@@ -107,16 +107,6 @@ when building the project.
 | ------------------ | ------------ | ------- |
 | std                | on, off      | on      |
 | dev_permissions    | on, off      | off     |
-| libc_platform      | on, off      | off     |
-| logger_std         | on, off      | on      |
-<!-- markdownlint-disable-next-line MD044 -->
-| logger_posix       | on, off      | off     |
-| logger_bare_metal  | on, off      | off     |
-| logger_buffer      | on, off      | off     |
-| logger_console     | on, off      | on      |
-| logger_file        | on, off      | off     |
-| logger_log         | on, off      | off     |
-| logger_tracing     | on, off      | off     |
 
 ### Enabling a Feature Flag via Command Line
 
