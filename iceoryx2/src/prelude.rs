@@ -26,6 +26,7 @@ pub use iceoryx2_bb_container::semantic_string::SemanticStringError;
 pub use iceoryx2_bb_derive_macros::PlacementDefault;
 pub use iceoryx2_bb_derive_macros::ZeroCopySend;
 pub use iceoryx2_bb_elementary::alignment::Alignment;
+pub use iceoryx2_bb_elementary::package_version::PackageVersion;
 pub use iceoryx2_bb_elementary::CallbackProgression;
 pub use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 pub use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
