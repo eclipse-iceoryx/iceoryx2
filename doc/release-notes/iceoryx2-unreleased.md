@@ -51,6 +51,8 @@
   [#1365](https://github.com/eclipse-iceoryx/iceoryx2/issues/1365)
 * Resources cannot always be cleaned up with `dev_permissions` feature flag
   [#1365](https://github.com/eclipse-iceoryx/iceoryx2/issues/1370)
+* Add `update_connection` to Python bindings
+  [#1380](https://github.com/eclipse-iceoryx/iceoryx2/issues/1380)
 
 ### Refactoring
 

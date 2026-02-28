@@ -327,3 +327,39 @@ def test_non_slice_type_forbids_use_of_slice_api(
 
     with pytest.raises(AssertionError):
         publisher.loan_slice_uninit(1)
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_history_is_delivered_with_update_connections(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    number_of_samples = 4
+
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .publish_subscribe(Payload)
+        .history_size(number_of_samples)
+        .subscriber_max_buffer_size(number_of_samples)
+        .create()
+    )
+
+    publisher = service.publisher_builder().create()
+
+    for i in range(0, number_of_samples):
+        publisher.send_copy(Payload(data=85 + i))
+
+    subscriber = service.subscriber_builder().create()
+    assert not subscriber.has_samples()
+
+    publisher.update_connections()
+
+    assert subscriber.has_samples()
+
+    for i in range(0, number_of_samples):
+        received_sample = subscriber.receive()
+        assert received_sample.payload().contents.data == 85 + i
+
+    assert not subscriber.has_samples()

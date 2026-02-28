@@ -10,12 +10,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
+use iceoryx2::{
+    port::update_connections::UpdateConnections,
+    service::builder::{CustomHeaderMarker, CustomPayloadMarker},
+};
 use iceoryx2_log::fatal_panic;
 use pyo3::prelude::*;
 
 use crate::{
-    error::LoanError,
+    error::{ConnectionFailure, LoanError},
     parc::Parc,
     sample_mut_uninit::{SampleMutUninit, SampleMutUninitType},
     type_storage::TypeStorage,
@@ -133,6 +136,27 @@ impl Publisher {
             _ => fatal_panic!(from "Publisher::loan_slice_uninit()",
                 "Accessing a deleted publisher."),
         }
+    }
+
+    /// Explicitly updates all connections to the `Subscriber`s. This is
+    /// required to be called whenever a new `Subscriber` connected to
+    /// the service. It is done implicitly whenever `SampleMut::send()` or
+    /// `Publisher::send_copy()` is called. When a `Subscriber` is connected
+    /// that requires a history this call will deliver it.
+    pub fn update_connections(&self) -> PyResult<()> {
+        match &*self.value.lock() {
+            PublisherType::Ipc(Some(v)) => v
+                .update_connections()
+                .map_err(|e| ConnectionFailure::new_err(format!("{e:?}")))?,
+            PublisherType::Local(Some(v)) => v
+                .update_connections()
+                .map_err(|e| ConnectionFailure::new_err(format!("{e:?}")))?,
+            _ => {
+                fatal_panic!(from "Publisher::update_connections()", "Accessing a deleted publisher.");
+            }
+        }
+
+        Ok(())
     }
 
     /// Releases the `Publisher`.
