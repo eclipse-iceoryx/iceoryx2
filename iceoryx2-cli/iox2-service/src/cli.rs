@@ -375,6 +375,32 @@ pub struct RecordOptions {
 }
 
 #[derive(Parser)]
+pub struct HzOptions {
+    #[clap(help = "Name of the service to measure the message frequency of.")]
+    pub service: String,
+    #[clap(
+        short,
+        long,
+        default_value = "iox2-cli-service-hz",
+        help = "Defines the node name of the hz measurement endpoint."
+    )]
+    pub node_name: String,
+    #[clap(
+        short,
+        long,
+        default_value = "10000",
+        help = "Rolling window size, in # of messages, for calculating rate (default: 10000)."
+    )]
+    pub window: usize,
+    #[clap(
+        short,
+        long,
+        help = "Maximum runtime in seconds. When the timeout has passed the process stops."
+    )]
+    pub timeout: Option<u64>,
+}
+
+#[derive(Parser)]
 pub struct ReplayOptions {
     #[clap(help = "When provided, it overrides the service name of the record file.")]
     pub service: Option<String>,
@@ -470,4 +496,9 @@ pub enum Action {
         help_template = help_template(HelpOptions::DontPrintCommandSection)
     )]
     Replay(ReplayOptions),
+    #[clap(
+        about = "Measure the message frequency (Hz) of a publish-subscribe service.",
+        help_template = help_template(HelpOptions::DontPrintCommandSection)
+    )]
+    Hz(HzOptions),
 }
