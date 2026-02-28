@@ -20,6 +20,7 @@ use std::{
     os::windows::prelude::OsStrExt, os::windows::prelude::OsStringExt, time::SystemTime,
     time::UNIX_EPOCH,
 };
+use windows_sys::Win32::Foundation::ERROR_INVALID_HANDLE;
 
 use iceoryx2_pal_concurrency_sync::atomic::AtomicU32;
 use iceoryx2_pal_concurrency_sync::cell::UnsafeCell;
@@ -27,7 +28,7 @@ use iceoryx2_pal_concurrency_sync::rwlock::*;
 use iceoryx2_pal_concurrency_sync::{barrier::Barrier, mutex::Mutex};
 use iceoryx2_pal_concurrency_sync::{WaitAction, WaitResult};
 use windows_sys::Win32::{
-    Foundation::{CloseHandle, ERROR_TIMEOUT, FALSE, STILL_ACTIVE, WAIT_FAILED},
+    Foundation::{CloseHandle, ERROR_TIMEOUT, FALSE, STILL_ACTIVE},
     System::{
         Memory::LocalFree,
         Threading::{
@@ -331,13 +332,14 @@ pub unsafe fn pthread_create(
 
 pub unsafe fn pthread_join(thread: pthread_t, retval: *mut *mut void) -> int {
     let mut ret_val = Errno::ESUCCES;
-    let (wait_result, _) = win32call! { WaitForSingleObject(thread.handle, INFINITE) };
-    if wait_result == WAIT_FAILED {
-        ret_val = Errno::EINVAL;
-    }
-    let (has_closed, _) = win32call! { CloseHandle(thread.handle) };
+    win32call! { WaitForSingleObject(thread.handle, INFINITE) };
+    let (has_closed, error_code) = win32call! { CloseHandle(thread.handle) };
     if has_closed == FALSE {
-        ret_val = Errno::EINVAL;
+        if error_code == ERROR_INVALID_HANDLE {
+            ret_val = Errno::ESRCH;
+        } else {
+            ret_val = Errno::EINVAL;
+        }
     }
 
     ThreadStates::get_instance().remove(thread.index_to_state);

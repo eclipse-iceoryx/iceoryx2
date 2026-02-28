@@ -27,6 +27,8 @@
   [#1353](https://github.com/eclipse-iceoryx/iceoryx2/issues/1353)
 * Implement `core::error::Error` for `bb::posix` error enums
   [#1362](https://github.com/eclipse-iceoryx/iceoryx2/issues/1362)
+* Add `thread_scope` as `std::thread::scope` counterpart
+  [#1373](https://github.com/eclipse-iceoryx/iceoryx2/issues/1373)
 
 ### Bugfixes
 
