@@ -12,13 +12,11 @@
 
 """Event-based communication subscriber example."""
 
-import os
-
 import iceoryx2 as iox2
 from pubsub_event import PubSubEvent, from_event_id, to_event_id
 from transmission_data import TransmissionData
 
-SERVICE_NAME = os.environ.get("IOX2_SERVICE_NAME", "My/Funk/ServiceName")
+SERVICE_NAME = "My/Funk/ServiceName"
 DEADLINE = iox2.Duration.from_secs(2)
 HISTORY_SIZE = 20
 
@@ -27,6 +25,7 @@ class CustomSubscriber:
     """High-level subscriber with additional event channels."""
 
     def __init__(self, node: iox2.Node, service_name: str):
+        """Initializes the subscriber with publish-subscribe and event services."""
         pubsub = (
             node.service_builder(iox2.ServiceName.new(service_name))
             .publish_subscribe(TransmissionData)
@@ -118,9 +117,6 @@ try:
 except iox2.WaitSetRunError:
     print("waitset error")
 finally:
-    try:
-        subscriber.shutdown()
-    except Exception:
-        pass
+    subscriber.shutdown()
 
 print("exit")

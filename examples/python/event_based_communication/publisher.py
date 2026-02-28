@@ -12,13 +12,11 @@
 
 """Event-based communication publisher example."""
 
-import os
-
 import iceoryx2 as iox2
 from pubsub_event import PubSubEvent, from_event_id, to_event_id
 from transmission_data import TransmissionData
 
-SERVICE_NAME = os.environ.get("IOX2_SERVICE_NAME", "My/Funk/ServiceName")
+SERVICE_NAME = "My/Funk/ServiceName"
 CYCLE_TIME = iox2.Duration.from_secs(1)
 HISTORY_SIZE = 20
 
@@ -27,6 +25,7 @@ class CustomPublisher:
     """High-level publisher with additional event channels."""
 
     def __init__(self, node: iox2.Node, service_name: str):
+        """Initializes the publisher with publish-subscribe and event services."""
         pubsub = (
             node.service_builder(iox2.ServiceName.new(service_name))
             .publish_subscribe(TransmissionData)
@@ -53,8 +52,7 @@ class CustomPublisher:
             event = from_event_id(event_id)
             if event == PubSubEvent.SubscriberConnected:
                 print("new subscriber connected - delivering history")
-                # Python binding currently has no Publisher::update_connections().
-                # Still emit SentHistory for protocol compatibility with Rust/C++.
+                self._publisher.update_connections()
                 self._notifier.notify_with_custom_event_id(
                     to_event_id(PubSubEvent.SentHistory)
                 )
@@ -109,9 +107,6 @@ try:
 except iox2.WaitSetRunError:
     print("waitset error")
 finally:
-    try:
-        publisher.shutdown()
-    except Exception:
-        pass
+    publisher.shutdown()
 
 print("exit")
