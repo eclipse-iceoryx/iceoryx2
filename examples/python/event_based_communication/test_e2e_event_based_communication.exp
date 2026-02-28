@@ -1,4 +1,4 @@
-#!/usr/bin/expect
+[[[#1376](https://github.com/eclipse-iceoryx/iceoryx2/issues/1376)]update permissions for end-to-end test script#!/usr/bin/expect
 # Copyright (c) 2026 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
