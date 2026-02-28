@@ -63,14 +63,6 @@ poetry --project iceoryx2-ffi/python run python examples/python/event_based_comm
 poetry --project iceoryx2-ffi/python run python examples/python/event_based_communication/publisher.py
 ```
 
-Optional: for isolated runs, you can override the service name in both
-processes:
-
-```sh
-IOX2_SERVICE_NAME="My/Funk/ServiceName-Test" poetry --project iceoryx2-ffi/python run python examples/python/event_based_communication/subscriber.py
-IOX2_SERVICE_NAME="My/Funk/ServiceName-Test" poetry --project iceoryx2-ffi/python run python examples/python/event_based_communication/publisher.py
-```
-
 > [!TIP]
 > You may hit the maximum supported number of ports when too many publisher or
 > subscriber processes run. Take a look at the
