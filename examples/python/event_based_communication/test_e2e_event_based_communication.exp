@@ -21,12 +21,11 @@ source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 #### Test Setup
 
 set timeout 15
-set SERVICE_NAME "My/Funk/ServiceName-e2e-[pid]"
 
-spawn env IOX2_SERVICE_NAME=${SERVICE_NAME} python examples/python/event_based_communication/subscriber.py
+spawn python examples/python/event_based_communication/subscriber.py
 set id_subscriber $spawn_id
 
-spawn env IOX2_SERVICE_NAME=${SERVICE_NAME} python examples/python/event_based_communication/publisher.py
+spawn python examples/python/event_based_communication/publisher.py
 set id_publisher $spawn_id
 
 #### Test Assertion
