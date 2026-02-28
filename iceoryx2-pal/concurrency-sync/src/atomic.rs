@@ -230,6 +230,18 @@ impl<T: internal::AtomicInteger> Atomic<T> {
         }
     }
 
+    #[cfg(not(all(test, loom, feature = "std")))]
+    #[inline(always)]
+    fn get_ptr(&self) -> *mut T {
+        self.data.get()
+    }
+
+    #[cfg(all(test, loom, feature = "std"))]
+    #[inline(always)]
+    fn get_ptr(&self) -> *mut T {
+        unsafe { self.data.get().deref() as *const T as *mut T }
+    }
+
     fn read_lock(&self) {
         self.lock.read_lock(|_, _| WaitAction::Continue);
     }
@@ -244,8 +256,15 @@ impl<T: internal::AtomicInteger> Atomic<T> {
     }
 
     /// See [`core::sync::atomic::AtomicU64::as_ptr()`]
+    #[cfg(not(all(test, loom, feature = "std")))]
     pub const fn as_ptr(&self) -> *mut T {
         self.data.get()
+    }
+
+    /// See [`core::sync::atomic::AtomicU64::as_ptr()`]
+    #[cfg(all(test, loom, feature = "std"))]
+    pub fn as_ptr(&self) -> *mut T {
+        self.get_ptr()
     }
 
     /// See [`core::sync::atomic::AtomicU64::compare_exchange()`]
@@ -257,14 +276,14 @@ impl<T: internal::AtomicInteger> Atomic<T> {
         _failure: Ordering,
     ) -> Result<T, T> {
         self.write_lock();
-        let data = unsafe { *self.data.get() };
+        let data = unsafe { *self.get_ptr() };
         if data != current {
             fence(Ordering::SeqCst);
             self.unlock();
             return Err(data);
         }
 
-        unsafe { *self.data.get() = new };
+        unsafe { *self.get_ptr() = new };
         fence(Ordering::SeqCst);
         self.unlock();
         Ok(data)
@@ -293,8 +312,8 @@ impl<T: internal::AtomicInteger> Atomic<T> {
     pub fn fetch_add(&self, value: T, order: Ordering) -> T {
         self.fetch_op(
             || {
-                let old = unsafe { *self.data.get() };
-                unsafe { *self.data.get() = old.overflowing_add(value).0 };
+                let old = unsafe { *self.get_ptr() };
+                unsafe { *self.get_ptr() = old.overflowing_add(value).0 };
                 old
             },
             order,
@@ -305,8 +324,8 @@ impl<T: internal::AtomicInteger> Atomic<T> {
     pub fn fetch_and(&self, value: T, order: Ordering) -> T {
         self.fetch_op(
             || {
-                let old = unsafe { *self.data.get() };
-                unsafe { *self.data.get() &= value };
+                let old = unsafe { *self.get_ptr() };
+                unsafe { *self.get_ptr() &= value };
                 old
             },
             order,
@@ -317,8 +336,8 @@ impl<T: internal::AtomicInteger> Atomic<T> {
     pub fn fetch_max(&self, value: T, order: Ordering) -> T {
         self.fetch_op(
             || {
-                let old = unsafe { *self.data.get() };
-                unsafe { *self.data.get() = old.max(value) };
+                let old = unsafe { *self.get_ptr() };
+                unsafe { *self.get_ptr() = old.max(value) };
                 old
             },
             order,
@@ -329,8 +348,8 @@ impl<T: internal::AtomicInteger> Atomic<T> {
     pub fn fetch_min(&self, value: T, order: Ordering) -> T {
         self.fetch_op(
             || {
-                let old = unsafe { *self.data.get() };
-                unsafe { *self.data.get() = old.min(value) };
+                let old = unsafe { *self.get_ptr() };
+                unsafe { *self.get_ptr() = old.min(value) };
                 old
             },
             order,
@@ -341,8 +360,8 @@ impl<T: internal::AtomicInteger> Atomic<T> {
     pub fn fetch_nand(&self, value: T, order: Ordering) -> T {
         self.fetch_op(
             || {
-                let old = unsafe { *self.data.get() };
-                unsafe { *self.data.get() = !(old & value) };
+                let old = unsafe { *self.get_ptr() };
+                unsafe { *self.get_ptr() = !(old & value) };
                 old
             },
             order,
@@ -353,8 +372,8 @@ impl<T: internal::AtomicInteger> Atomic<T> {
     pub fn fetch_or(&self, value: T, order: Ordering) -> T {
         self.fetch_op(
             || {
-                let old = unsafe { *self.data.get() };
-                unsafe { *self.data.get() |= value };
+                let old = unsafe { *self.get_ptr() };
+                unsafe { *self.get_ptr() |= value };
                 old
             },
             order,
@@ -365,8 +384,8 @@ impl<T: internal::AtomicInteger> Atomic<T> {
     pub fn fetch_sub(&self, value: T, order: Ordering) -> T {
         self.fetch_op(
             || {
-                let old = unsafe { *self.data.get() };
-                unsafe { *self.data.get() = old.overflowing_sub(value).0 };
+                let old = unsafe { *self.get_ptr() };
+                unsafe { *self.get_ptr() = old.overflowing_sub(value).0 };
                 old
             },
             order,
@@ -381,11 +400,11 @@ impl<T: internal::AtomicInteger> Atomic<T> {
         mut f: F,
     ) -> Result<T, T> {
         self.write_lock();
-        let data = unsafe { *self.data.get() };
+        let data = unsafe { *self.get_ptr() };
 
         match f(data) {
             Some(v) => {
-                unsafe { *self.data.get() = v };
+                unsafe { *self.get_ptr() = v };
                 fence(Ordering::SeqCst);
                 self.unlock();
                 Ok(data)
@@ -402,8 +421,8 @@ impl<T: internal::AtomicInteger> Atomic<T> {
     pub fn fetch_xor(&self, value: T, order: Ordering) -> T {
         self.fetch_op(
             || {
-                let old = unsafe { *self.data.get() };
-                unsafe { *self.data.get() ^= value };
+                let old = unsafe { *self.get_ptr() };
+                unsafe { *self.get_ptr() ^= value };
                 old
             },
             order,
@@ -412,13 +431,13 @@ impl<T: internal::AtomicInteger> Atomic<T> {
 
     /// See [`core::sync::atomic::AtomicU64::into_inner()`]
     pub fn into_inner(self) -> T {
-        unsafe { *self.data.get() }
+        unsafe { *self.get_ptr() }
     }
 
     /// See [`core::sync::atomic::AtomicU64::load()`]
     pub fn load(&self, _order: Ordering) -> T {
         self.read_lock();
-        let data = unsafe { *self.data.get() };
+        let data = unsafe { *self.get_ptr() };
         fence(Ordering::SeqCst);
         self.unlock();
         data
@@ -427,7 +446,7 @@ impl<T: internal::AtomicInteger> Atomic<T> {
     /// See [`core::sync::atomic::AtomicU64::store()`]
     pub fn store(&self, value: T, _order: Ordering) {
         self.write_lock();
-        unsafe { *self.data.get() = value };
+        unsafe { *self.get_ptr() = value };
         fence(Ordering::SeqCst);
         self.unlock();
     }
@@ -435,8 +454,8 @@ impl<T: internal::AtomicInteger> Atomic<T> {
     /// See [`core::sync::atomic::AtomicU64::swap()`]
     pub fn swap(&self, value: T, _order: Ordering) -> T {
         self.write_lock();
-        let data = unsafe { *self.data.get() };
-        unsafe { *self.data.get() = value };
+        let data = unsafe { *self.get_ptr() };
+        unsafe { *self.get_ptr() = value };
         fence(Ordering::SeqCst);
         self.unlock();
         data

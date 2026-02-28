@@ -38,7 +38,7 @@ impl Mutex {
     #[cfg(all(test, loom, feature = "std"))]
     pub fn new() -> Self {
         Self {
-            state: IoxAtomicU32::new(0),
+            state: AtomicU32::new(0),
         }
     }
 
