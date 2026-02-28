@@ -85,6 +85,11 @@ fn main() -> Result<()> {
                     error!("failed to replay data: {}", e);
                 }
             }
+            Action::Hz(options) => {
+                if let Err(e) = command::hz(options, cli.format) {
+                    error!("failed to measure service frequency: {}", e);
+                }
+            }
             Action::Discovery(options) => {
                 let should_publish = !options.disable_publish;
                 let should_notify = !options.disable_notify;
