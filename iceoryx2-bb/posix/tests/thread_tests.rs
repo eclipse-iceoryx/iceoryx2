@@ -12,6 +12,7 @@
 
 extern crate iceoryx2_bb_loggers;
 
+use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
 use iceoryx2_bb_posix::system_configuration::SystemInfo;
 use iceoryx2_bb_posix::thread::*;
 use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -44,7 +45,7 @@ fn thread_set_name_works() {
     };
 
     barrier.wait();
-    let name = thread.get_name().unwrap().clone();
+    let name = *thread.get_name().unwrap();
     barrier.wait();
     drop(thread);
 
@@ -429,4 +430,33 @@ fn thread_destructor_does_block_on_busy_thread() {
     let start = Instant::now();
     drop(thread);
     assert_that!(start.elapsed(), time_at_least SLEEP_DURATION);
+}
+
+#[test]
+fn scoped_threads_work() {
+    let _watchdog = Watchdog::new();
+    let shared_counter = AtomicU64::new(0);
+
+    thread_scope(|s| {
+        s.thread_builder()
+            .spawn(|| {
+                for _ in 0..1000 {
+                    shared_counter.fetch_add(1, Ordering::Relaxed);
+                }
+            })
+            .unwrap();
+
+        s.thread_builder()
+            .spawn(|| {
+                for _ in 0..1000 {
+                    shared_counter.fetch_add(1, Ordering::Relaxed);
+                }
+            })
+            .unwrap();
+
+        Ok(())
+    })
+    .unwrap();
+
+    assert_that!(shared_counter.load(Ordering::Relaxed), eq 2000);
 }
