@@ -126,7 +126,7 @@ The support levels can be adjusted when required.
 | Linux (x86_64)   | done                     |        tier 2         |               tier 1 |
 | Linux (aarch64)  | done                     |        tier 2         |               tier 1 |
 | Linux (32-bit)   | done                     |        tier 2         |               tier 1 |
-| Mac OS           | done                     |        tier 2         |               tier 2 |
+| macOS            | done                     |        tier 2         |               tier 2 |
 | QNX 7.1          | done                     |        tier 3         |               tier 1 |
 | QNX 8.0          | done                     |        tier 3         |               tier 1 |
 | VxWorks          | proof-of-concept[^3]     |           -           |               tier 1 |
