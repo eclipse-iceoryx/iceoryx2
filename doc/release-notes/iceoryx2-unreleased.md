@@ -27,6 +27,8 @@
   [#1353](https://github.com/eclipse-iceoryx/iceoryx2/issues/1353)
 * Implement `core::error::Error` for `bb::posix` error enums
   [#1362](https://github.com/eclipse-iceoryx/iceoryx2/issues/1362)
+* Add `iox2 service hz` command with rolling-rate statistics and timeout support
+  [#1383](https://github.com/eclipse-iceoryx/iceoryx2/issues/1383)
 
 ### Bugfixes
 

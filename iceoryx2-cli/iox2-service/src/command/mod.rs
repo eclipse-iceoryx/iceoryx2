@@ -12,6 +12,7 @@
 
 mod details;
 mod discovery;
+mod hz;
 mod list;
 mod listen;
 mod notify;
@@ -22,6 +23,7 @@ mod subscribe;
 
 pub(crate) use details::*;
 pub(crate) use discovery::*;
+pub(crate) use hz::*;
 pub(crate) use list::*;
 pub(crate) use listen::*;
 pub(crate) use notify::*;
