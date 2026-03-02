@@ -36,7 +36,7 @@
 //! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_bb_posix::thread::*;
-//! use std::sync::atomic::{Ordering, AtomicU64};
+//! use iceoryx2_bb_concurrency::atomic::{Ordering, AtomicU64};
 //!
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let counter = AtomicU64::new(0);
@@ -990,7 +990,7 @@ impl<'scope> ScopedThreadBuilder<'scope> {
 /// # extern crate iceoryx2_bb_loggers;
 ///
 /// use iceoryx2_bb_posix::thread::*;
-/// use std::sync::atomic::{Ordering, AtomicU64};
+/// use iceoryx2_bb_concurrency::atomic::{Ordering, AtomicU64};
 ///
 /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
 /// let counter = AtomicU64::new(0);

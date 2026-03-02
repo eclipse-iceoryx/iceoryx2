@@ -12,7 +12,7 @@
 
 extern crate iceoryx2_bb_loggers;
 
-use iceoryx2_bb_concurrency::atomic::AtomicU64;
+use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
 use iceoryx2_bb_posix::system_configuration::SystemInfo;
 use iceoryx2_bb_posix::thread::*;
 use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -20,7 +20,6 @@ use iceoryx2_bb_testing::{assert_that, test_requires};
 use iceoryx2_pal_posix::posix::{self, POSIX_SUPPORT_CPU_AFFINITY};
 
 use core::time::Duration;
-use std::sync::atomic::Ordering;
 
 extern crate alloc;
 use alloc::sync::Arc;
