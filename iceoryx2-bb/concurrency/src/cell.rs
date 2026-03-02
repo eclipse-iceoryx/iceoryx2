@@ -66,6 +66,10 @@ impl<T> RefCell<T> {
     pub fn borrow_mut(&self) -> RefMut<'_, T> {
         self.0.borrow_mut()
     }
+
+    pub fn replace(&self, t: T) -> T {
+        self.0.replace(t)
+    }
 }
 
 impl<T: Default> PlacementDefault for RefCell<T> {
