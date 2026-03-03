@@ -587,7 +587,8 @@ types originating from two different binaries. Consequently, iceoryx2 will not
 establish a connection between them.
 
 The cleanest solution is to move all shared types into a dedicated library
-crate and let all communicating binaries depend on that library.
+crate and make all communicating binaries dependent on this library, as is the
+case in [Rust examples common](examples/rust/_examples_common).
 
 A hacky workaround is to use the `#[type_name("MyType")]` attribute provided by
 the `ZeroCopySend` derive macro:
