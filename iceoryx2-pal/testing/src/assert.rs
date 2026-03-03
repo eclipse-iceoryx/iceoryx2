@@ -72,6 +72,24 @@ macro_rules! assert_that {
             }
         }
     };
+    ($call:expr, eq $rhs:expr, before $guard:expr) => {
+        $crate::spin_until(|| $call() == $rhs, $guard);
+    };
+    ($call:expr, ne $rhs:expr, before $guard:expr) => {
+        $crate::spin_until(|| $call() != $rhs, $guard);
+    };
+    ($call:expr, lt $rhs:expr, before $guard:expr) => {
+        $crate::spin_until(|| $call() < $rhs, $guard);
+    };
+    ($call:expr, le $rhs:expr, before $guard:expr) => {
+        $crate::spin_until(|| $call() <= $rhs, $guard);
+    };
+    ($call:expr, gt $rhs:expr, before $guard:expr) => {
+        $crate::spin_until(|| $call() > $rhs, $guard);
+    };
+    ($call:expr, ge $rhs:expr, before $guard:expr) => {
+        $crate::spin_until(|| $call() >= $rhs, $guard);
+    };
     ($lhs:expr, aligned_to $rhs:expr) => {
         {
             let lval = $lhs as usize;
@@ -220,28 +238,6 @@ macro_rules! assert_that {
 
             if !(lval >= rval_adjusted) {
                 assert_that!(message_time_at_least $lhs, $rhs, lval, rval, rval_adjusted);
-            }
-        }
-    };
-    ($call:expr, block_until $rhs:expr) => {
-        {
-            #[cfg(feature = "std")]
-            {
-                let _watchdog = $crate::watchdog::Watchdog::new();
-
-                while $call() != $rhs {
-                    std::thread::yield_now();
-                    std::thread::sleep(core::time::Duration::from_millis(10));
-                    std::thread::yield_now();
-                }
-            }
-
-            #[cfg(not(feature = "std"))]
-            {
-                ::core::compile_error!(
-                    "Assertion 'block_until' requires std. Annotate this test with #[requires_std] \
-                     and ensure the \"std\" feature is enabled."
-                );
             }
         }
     };

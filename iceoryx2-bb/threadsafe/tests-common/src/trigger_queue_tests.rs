@@ -241,7 +241,7 @@ pub fn trigger_queue_one_pop_notifies_exactly_one_blocking_push() {
         barrier.wait();
         for i in 0..NUMBER_OF_THREADS {
             nanosleep(TIMEOUT).unwrap();
-            assert_that!(|| counter.load(Ordering::SeqCst), block_until i);
+            assert_that!(|| counter.load(Ordering::SeqCst), eq i, before Watchdog::default());
             sut.blocking_pop();
         }
     });
@@ -275,7 +275,7 @@ pub fn trigger_queue_one_pop_notifies_exactly_one_timed_push() {
         barrier.wait();
         for i in 0..NUMBER_OF_THREADS {
             nanosleep(TIMEOUT).unwrap();
-            assert_that!(|| counter.load(Ordering::SeqCst), block_until i);
+            assert_that!(|| counter.load(Ordering::SeqCst), eq i, before Watchdog::default());
             sut.blocking_pop();
         }
     });
@@ -306,7 +306,7 @@ pub fn trigger_queue_one_push_notifies_exactly_one_blocking_pop() {
 
         for i in 0..NUMBER_OF_THREADS {
             nanosleep(TIMEOUT).unwrap();
-            assert_that!(|| counter.load(Ordering::SeqCst), block_until i);
+            assert_that!(|| counter.load(Ordering::SeqCst), eq i, before Watchdog::default());
             sut.blocking_push(0);
         }
     });
@@ -336,7 +336,7 @@ pub fn trigger_queue_one_push_notifies_exactly_one_timed_pop() {
 
         for i in 0..NUMBER_OF_THREADS {
             nanosleep(TIMEOUT).unwrap();
-            assert_that!(|| counter.load(Ordering::SeqCst), block_until i);
+            assert_that!(|| counter.load(Ordering::SeqCst), eq i, before Watchdog::default());
             sut.blocking_push(0);
         }
     });

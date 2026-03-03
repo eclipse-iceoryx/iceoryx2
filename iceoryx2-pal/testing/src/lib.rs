@@ -43,6 +43,7 @@ macro_rules! test_fail {
 
 pub const AT_LEAST_TIMING_VARIANCE: f32 = iceoryx2_pal_configuration::AT_LEAST_TIMING_VARIANCE;
 
+#[doc(hidden)]
 pub fn is_terminal() -> bool {
     #[cfg(feature = "std")]
     {
@@ -59,5 +60,27 @@ pub fn is_terminal() -> bool {
     ))]
     {
         false
+    }
+}
+
+#[doc(hidden)]
+pub fn spin_until<F, G>(mut condition: F, _guard: G)
+where
+    F: FnMut() -> bool,
+{
+    loop {
+        if condition() {
+            break;
+        }
+
+        #[cfg(feature = "std")]
+        {
+            std::thread::yield_now();
+            std::thread::sleep(core::time::Duration::from_millis(10));
+            std::thread::yield_now();
+        }
+
+        #[cfg(not(feature = "std"))]
+        core::hint::spin_loop();
     }
 }
