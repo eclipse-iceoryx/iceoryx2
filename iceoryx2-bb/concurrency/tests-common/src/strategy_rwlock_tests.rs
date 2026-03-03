@@ -10,10 +10,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::time::Duration;
+
+use iceoryx2_bb_concurrency::atomic::AtomicU32;
+use iceoryx2_bb_concurrency::atomic::Ordering;
+use iceoryx2_bb_concurrency::internal::strategy::barrier::Barrier;
 use iceoryx2_bb_concurrency::internal::strategy::rwlock::*;
 use iceoryx2_bb_concurrency::{WaitAction, WaitResult};
+use iceoryx2_bb_posix::clock::nanosleep;
+use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_nostd_macros::requires_std;
 
 /////////////////////
 //  Reader Preference
@@ -98,12 +104,7 @@ pub fn strategy_rwlock_reader_preference_read_lock_and_unlock_works() {
     assert_that!(sut.write_lock(|_, _| WaitAction::Abort), eq WaitResult::Success);
 }
 
-#[requires_std("threading")]
 pub fn strategy_rwlock_reader_preference_read_lock_blocks_only_write_locks() {
-    use iceoryx2_bb_concurrency::atomic::AtomicU32;
-    use iceoryx2_bb_concurrency::atomic::Ordering;
-    use iceoryx2_bb_concurrency::internal::strategy::barrier::Barrier;
-
     const READ_THREADS: u32 = 4;
     const WRITE_THREADS: u32 = 4;
 
@@ -115,26 +116,30 @@ pub fn strategy_rwlock_reader_preference_read_lock_blocks_only_write_locks() {
     let read_counter = AtomicU32::new(0);
     let write_counter = AtomicU32::new(0);
 
-    std::thread::scope(|s| {
+    thread_scope(|s| {
         assert_that!(sut.try_read_lock(), eq WaitResult::Success);
         for _ in 0..WRITE_THREADS {
-            s.spawn(|| {
-                barrier.wait(|_, _| {}, |_| {});
-                sut.write_lock(|_, _| WaitAction::Continue);
-                write_counter.fetch_add(1, Ordering::Relaxed);
-                sut.unlock(|_| {});
-                barrier_write.wait(|_, _| {}, |_| {});
-            });
+            s.thread_builder()
+                .spawn(|| {
+                    barrier.wait(|_, _| {}, |_| {});
+                    sut.write_lock(|_, _| WaitAction::Continue);
+                    write_counter.fetch_add(1, Ordering::Relaxed);
+                    sut.unlock(|_| {});
+                    barrier_write.wait(|_, _| {}, |_| {});
+                })
+                .expect("failed to spawn thread");
         }
 
         for _ in 0..READ_THREADS {
-            s.spawn(|| {
-                barrier.wait(|_, _| {}, |_| {});
-                sut.read_lock(|_, _| WaitAction::Continue);
-                read_counter.fetch_add(1, Ordering::Relaxed);
-                barrier_read.wait(|_, _| {}, |_| {});
-                sut.unlock(|_| {});
-            });
+            s.thread_builder()
+                .spawn(|| {
+                    barrier.wait(|_, _| {}, |_| {});
+                    sut.read_lock(|_, _| WaitAction::Continue);
+                    read_counter.fetch_add(1, Ordering::Relaxed);
+                    barrier_read.wait(|_, _| {}, |_| {});
+                    sut.unlock(|_| {});
+                })
+                .expect("failed to spawn thread");
         }
 
         let read_counter_old_1 = read_counter.load(Ordering::Relaxed);
@@ -153,15 +158,13 @@ pub fn strategy_rwlock_reader_preference_read_lock_blocks_only_write_locks() {
         assert_that!(read_counter_old_2, eq READ_THREADS);
         assert_that!(write_counter_old_2, eq 0);
         assert_that!(write_counter.load(Ordering::Relaxed), eq WRITE_THREADS);
-    });
+
+        Ok(())
+    })
+    .expect("failed to spawn thread");
 }
 
-#[requires_std("threading")]
 pub fn strategy_rwlock_reader_preference_write_lock_blocks_everything() {
-    use core::time::Duration;
-    use iceoryx2_bb_concurrency::atomic::{AtomicU32, Ordering};
-    use iceoryx2_bb_concurrency::internal::strategy::barrier::Barrier;
-
     const TIMEOUT: Duration = Duration::from_millis(25);
 
     const READ_THREADS: u32 = 4;
@@ -174,39 +177,43 @@ pub fn strategy_rwlock_reader_preference_write_lock_blocks_everything() {
     let read_counter = AtomicU32::new(0);
     let write_counter = AtomicU32::new(0);
 
-    std::thread::scope(|s| {
+    thread_scope(|s| {
         assert_that!(sut.try_write_lock(), eq WaitResult::Success);
         for _ in 0..WRITE_THREADS {
-            s.spawn(|| {
-                barrier.wait(|_, _| {}, |_| {});
-                sut.write_lock(|_, _| WaitAction::Continue);
-                let current_read_counter = read_counter.load(Ordering::Relaxed);
-                write_counter.fetch_add(1, Ordering::Relaxed);
-                std::thread::sleep(TIMEOUT);
-                let test_result = current_read_counter == read_counter.load(Ordering::Relaxed);
-                sut.unlock(|_| {});
+            s.thread_builder()
+                .spawn(|| {
+                    barrier.wait(|_, _| {}, |_| {});
+                    sut.write_lock(|_, _| WaitAction::Continue);
+                    let current_read_counter = read_counter.load(Ordering::Relaxed);
+                    write_counter.fetch_add(1, Ordering::Relaxed);
+                    nanosleep(TIMEOUT).unwrap();
+                    let test_result = current_read_counter == read_counter.load(Ordering::Relaxed);
+                    sut.unlock(|_| {});
 
-                barrier_end.wait(|_, _| {}, |_| {});
-                assert_that!(test_result, eq true);
-            });
+                    barrier_end.wait(|_, _| {}, |_| {});
+                    assert_that!(test_result, eq true);
+                })
+                .expect("failed to spawn thread");
         }
 
         for _ in 0..READ_THREADS {
-            s.spawn(|| {
-                barrier.wait(|_, _| {}, |_| {});
-                sut.read_lock(|_, _| WaitAction::Continue);
-                read_counter.fetch_add(1, Ordering::Relaxed);
-                sut.unlock(|_| {});
+            s.thread_builder()
+                .spawn(|| {
+                    barrier.wait(|_, _| {}, |_| {});
+                    sut.read_lock(|_, _| WaitAction::Continue);
+                    read_counter.fetch_add(1, Ordering::Relaxed);
+                    sut.unlock(|_| {});
 
-                barrier_end.wait(|_, _| {}, |_| {});
-            });
+                    barrier_end.wait(|_, _| {}, |_| {});
+                })
+                .expect("failed to spawn thread");
         }
 
         let read_counter_old_1 = read_counter.load(Ordering::Relaxed);
         let write_counter_old_1 = write_counter.load(Ordering::Relaxed);
         barrier.wait(|_, _| {}, |_| {});
 
-        std::thread::sleep(TIMEOUT);
+        nanosleep(TIMEOUT).unwrap();
         let read_counter_old_2 = read_counter.load(Ordering::Relaxed);
         let write_counter_old_2 = write_counter.load(Ordering::Relaxed);
 
@@ -219,7 +226,10 @@ pub fn strategy_rwlock_reader_preference_write_lock_blocks_everything() {
         assert_that!(write_counter_old_2, eq 0);
         assert_that!(read_counter.load(Ordering::Relaxed), eq READ_THREADS);
         assert_that!(write_counter.load(Ordering::Relaxed), eq WRITE_THREADS);
-    });
+
+        Ok(())
+    })
+    .expect("failed to spawn thread");
 }
 
 /////////////////////
@@ -305,12 +315,7 @@ pub fn strategy_rwlock_writer_preference_read_lock_and_unlock_works() {
     assert_that!(sut.write_lock(|_, _| WaitAction::Abort, |_| {}, |_| {}), eq WaitResult::Success);
 }
 
-#[requires_std("threading")]
 pub fn strategy_rwlock_writer_preference_write_lock_blocks_everything() {
-    use core::time::Duration;
-    use iceoryx2_bb_concurrency::atomic::{AtomicU32, Ordering};
-    use iceoryx2_bb_concurrency::internal::strategy::barrier::Barrier;
-
     const READ_THREADS: u32 = 4;
     const WRITE_THREADS: u32 = 4;
 
@@ -323,39 +328,43 @@ pub fn strategy_rwlock_writer_preference_write_lock_blocks_everything() {
     let read_counter = AtomicU32::new(0);
     let write_counter = AtomicU32::new(0);
 
-    std::thread::scope(|s| {
+    thread_scope(|s| {
         assert_that!(sut.try_write_lock(), eq WaitResult::Success);
         for _ in 0..WRITE_THREADS {
-            s.spawn(|| {
-                barrier.wait(|_, _| {}, |_| {});
-                sut.write_lock(|_, _| WaitAction::Continue, |_| {}, |_| {});
-                let current_read_counter = read_counter.load(Ordering::Relaxed);
-                write_counter.fetch_add(1, Ordering::Relaxed);
-                std::thread::sleep(TIMEOUT);
-                let test_result = current_read_counter == read_counter.load(Ordering::Relaxed);
-                sut.unlock(|_| {}, |_| {});
+            s.thread_builder()
+                .spawn(|| {
+                    barrier.wait(|_, _| {}, |_| {});
+                    sut.write_lock(|_, _| WaitAction::Continue, |_| {}, |_| {});
+                    let current_read_counter = read_counter.load(Ordering::Relaxed);
+                    write_counter.fetch_add(1, Ordering::Relaxed);
+                    nanosleep(TIMEOUT).unwrap();
+                    let test_result = current_read_counter == read_counter.load(Ordering::Relaxed);
+                    sut.unlock(|_| {}, |_| {});
 
-                barrier_end.wait(|_, _| {}, |_| {});
-                assert_that!(test_result, eq true);
-            });
+                    barrier_end.wait(|_, _| {}, |_| {});
+                    assert_that!(test_result, eq true);
+                })
+                .expect("failed to spawn thread");
         }
 
         for _ in 0..READ_THREADS {
-            s.spawn(|| {
-                barrier.wait(|_, _| {}, |_| {});
-                sut.read_lock(|_, _| WaitAction::Continue);
-                read_counter.fetch_add(1, Ordering::Relaxed);
-                sut.unlock(|_| {}, |_| {});
+            s.thread_builder()
+                .spawn(|| {
+                    barrier.wait(|_, _| {}, |_| {});
+                    sut.read_lock(|_, _| WaitAction::Continue);
+                    read_counter.fetch_add(1, Ordering::Relaxed);
+                    sut.unlock(|_| {}, |_| {});
 
-                barrier_end.wait(|_, _| {}, |_| {});
-            });
+                    barrier_end.wait(|_, _| {}, |_| {});
+                })
+                .expect("failed to spawn thread");
         }
 
         let read_counter_old_1 = read_counter.load(Ordering::Relaxed);
         let write_counter_old_1 = write_counter.load(Ordering::Relaxed);
         barrier.wait(|_, _| {}, |_| {});
 
-        std::thread::sleep(TIMEOUT);
+        nanosleep(TIMEOUT).unwrap();
         let read_counter_old_2 = read_counter.load(Ordering::Relaxed);
         let write_counter_old_2 = write_counter.load(Ordering::Relaxed);
 
@@ -369,5 +378,8 @@ pub fn strategy_rwlock_writer_preference_write_lock_blocks_everything() {
         assert_that!(write_counter_old_2, eq 0);
         assert_that!(read_counter.load(Ordering::Relaxed), eq READ_THREADS);
         assert_that!(write_counter.load(Ordering::Relaxed), eq WRITE_THREADS);
-    });
+
+        Ok(())
+    })
+    .expect("failed to spawn thread");
 }

@@ -65,6 +65,6 @@ fn lazy_lock_dependent_initialization() {
 }
 
 #[test]
-fn lazy_lock_access_concurrent_access_from_multiple_threads() {
-    lazy_lock_tests::lazy_lock_access_concurrent_access_from_multiple_threads();
+fn lazy_lock_concurrent_access_from_multiple_threads() {
+    lazy_lock_tests::lazy_lock_concurrent_access_from_multiple_threads();
 }

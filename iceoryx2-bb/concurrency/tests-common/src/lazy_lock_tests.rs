@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::time::Duration;
+
 use alloc::string::String;
 use alloc::string::ToString;
 use alloc::vec;
@@ -17,7 +19,10 @@ use alloc::vec::Vec;
 
 use iceoryx2_bb_concurrency::atomic::{AtomicUsize, Ordering};
 use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
-use iceoryx2_bb_testing_nostd_macros::requires_std;
+use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle, Handle};
+use iceoryx2_bb_posix::clock::nanosleep;
+use iceoryx2_bb_posix::thread::thread_scope;
+use iceoryx2_bb_testing::assert_that;
 
 pub fn lazy_lock_primitive_type() {
     static VALUE: LazyLock<u32> = LazyLock::new(|| 42);
@@ -115,31 +120,37 @@ pub fn lazy_lock_dependent_initialization() {
     assert_eq!(*FIRST, 10);
 }
 
-#[requires_std("threading")]
-pub fn lazy_lock_access_concurrent_access_from_multiple_threads() {
-    use iceoryx2_bb_concurrency::internal::strategy::barrier::Barrier;
-
+pub fn lazy_lock_concurrent_access_from_multiple_threads() {
     const NUMBER_OF_THREADS: u32 = 10;
+    const TIMEOUT: Duration = Duration::from_millis(10);
 
     static CALL_COUNT: AtomicUsize = AtomicUsize::new(0);
     static VALUE: LazyLock<u32> = LazyLock::new(|| {
         CALL_COUNT.fetch_add(1, Ordering::Relaxed);
-        std::thread::sleep(std::time::Duration::from_millis(10));
+        nanosleep(TIMEOUT).unwrap();
         123
     });
 
-    let barrier = Barrier::new(NUMBER_OF_THREADS + 1);
+    let barrier_handle = BarrierHandle::new();
+    let barrier = BarrierBuilder::new(NUMBER_OF_THREADS + 1)
+        .create(&barrier_handle)
+        .unwrap();
 
-    std::thread::scope(|s| {
+    thread_scope(|s| {
         for _ in 0..NUMBER_OF_THREADS {
-            s.spawn(|| {
-                barrier.wait(|_, _| {}, |_| {});
-                assert_eq!(*VALUE, 123);
-            });
+            s.thread_builder()
+                .spawn(|| {
+                    barrier.wait();
+                    assert_that!(*VALUE, eq 123);
+                })
+                .expect("failed to spawn thread");
         }
 
-        barrier.wait(|_, _| {}, |_| {});
-    });
+        barrier.wait();
 
-    assert_eq!(CALL_COUNT.load(Ordering::Relaxed), 1);
+        Ok(())
+    })
+    .expect("failed to spawn thread");
+
+    assert_that!(CALL_COUNT.load(Ordering::Relaxed), eq 1);
 }
