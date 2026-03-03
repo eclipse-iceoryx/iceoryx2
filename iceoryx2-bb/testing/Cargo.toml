@@ -20,6 +20,8 @@ std = [
 
 [dependencies]
 iceoryx2-bb-elementary-traits = { workspace = true }
+iceoryx2-bb-posix = { workspace = true }
+iceoryx2-bb-print = { workspace = true }
 iceoryx2-bb-concurrency = { workspace = true }
 iceoryx2-pal-configuration = { workspace = true }
 iceoryx2-pal-testing = { workspace = true }
