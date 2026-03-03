@@ -56,7 +56,8 @@ impl TestFixture {
     pub fn verify(&self, signal: NonFatalFetchableSignal, counter_value: usize) {
         assert_that!(
             || { COUNTER.load(Ordering::SeqCst) },
-            block_until counter_value
+            eq counter_value,
+            before Watchdog::default()
         );
 
         assert_that!(SignalHandler::last_signal(), eq Some(signal));
@@ -200,7 +201,8 @@ fn signal_wait_for_signal_blocks() {
         assert_that!(counter_old, eq 0);
         assert_that!(
             || { counter.load(Ordering::Relaxed) },
-            block_until 1
+            eq 1,
+            before Watchdog::default()
         );
     });
 }
@@ -236,7 +238,8 @@ fn signal_wait_twice_for_same_signal_blocks() {
         assert_that!(counter_old_2, le 1);
         assert_that!(
             || { counter.load(Ordering::Relaxed) },
-            block_until 2
+            eq 2,
+            before Watchdog::default()
         );
     });
 }
@@ -278,7 +281,8 @@ fn signal_timed_wait_blocks_until_signal() {
         assert_that!(counter_old, eq 0);
         assert_that!(
             || { counter.load(Ordering::Relaxed) },
-            block_until 1
+            eq 1,
+            before Watchdog::default()
         );
     });
 }
@@ -294,7 +298,8 @@ fn signal_termination_requested_with_terminate_works() {
 
     assert_that!(
         || { SignalHandler::termination_requested() },
-        block_until true
+        eq true,
+        before Watchdog::default()
     );
     assert_that!(SignalHandler::termination_requested(), eq false);
 }
@@ -310,7 +315,8 @@ fn signal_termination_requested_with_interrupt_works() {
 
     assert_that!(
         || { SignalHandler::termination_requested() },
-        block_until true
+        eq true,
+        before Watchdog::default()
     );
     assert_that!(SignalHandler::termination_requested(), eq false);
 }

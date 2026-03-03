@@ -180,7 +180,7 @@ pub mod client {
             assert_that!(has_sent_request.load(Ordering::Relaxed), eq false);
             let data = server.receive();
             assert_that!(data, is_ok);
-            assert_that!(|| has_sent_request.load(Ordering::Relaxed), block_until true);
+            assert_that!(|| has_sent_request.load(Ordering::Relaxed), eq true, before Watchdog::default());
         });
     }
 
