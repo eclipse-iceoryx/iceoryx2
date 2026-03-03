@@ -17,10 +17,9 @@ workspace = true
 default = []
 
 std = [
+  "iceoryx2-bb-threadsafe/std",  
   "iceoryx2-bb-concurrency/std",  
   "iceoryx2-bb-posix/std",  
-  "iceoryx2-bb-threadsafe/std",  
-  "iceoryx2-bb-testing-nostd-macros/std",
   "iceoryx2-bb-testing/std",
   "iceoryx2-pal-print/std",  
 ]
@@ -30,5 +29,4 @@ iceoryx2-bb-threadsafe = { workspace = true }
 iceoryx2-bb-concurrency = { workspace = true }
 iceoryx2-bb-posix = { workspace = true }
 iceoryx2-bb-testing = { workspace = true }
-iceoryx2-bb-testing-nostd-macros = { workspace = true }
 iceoryx2-pal-print = { workspace = true }

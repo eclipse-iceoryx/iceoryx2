@@ -1601,7 +1601,6 @@ dependencies = [
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
- "iceoryx2-bb-testing-nostd-macros",
  "iceoryx2-bb-threadsafe",
  "iceoryx2-pal-print",
 ]
