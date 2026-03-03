@@ -13,18 +13,25 @@
 use alloc::sync::Arc;
 use core::time::Duration;
 
-use std::{sync::Mutex, thread, time::Instant};
+use iceoryx2_bb_posix::clock::{nanosleep, Time};
+use iceoryx2_bb_posix::ipc_capable::Handle;
+use iceoryx2_bb_posix::mutex::{Mutex, MutexBuilder, MutexHandle};
+use iceoryx2_bb_posix::thread::{Thread, ThreadBuilder};
+use iceoryx2_bb_print::cerrln;
 
 pub struct Watchdog {
-    termination_thread: Option<thread::JoinHandle<()>>,
-    keep_running: Arc<Mutex<bool>>,
+    termination_thread: Option<Thread>,
+    keep_running: Arc<MutexHandle<bool>>,
 }
 
 impl Drop for Watchdog {
     fn drop(&mut self) {
-        *self.keep_running.lock().unwrap() = false;
-        let handle = self.termination_thread.take();
-        handle.unwrap().join().unwrap();
+        let mutex = unsafe { Mutex::from_handle(&self.keep_running) };
+        *mutex.lock().expect("mutex corrupted") = false;
+
+        // thread joins on drop
+        // thread exits gracefully due to keep_running = false
+        drop(self.termination_thread.take());
     }
 }
 
@@ -36,23 +43,39 @@ impl Default for Watchdog {
 
 impl Watchdog {
     pub fn new_with_timeout(timeout: Duration) -> Self {
-        let keep_running = Arc::new(Mutex::new(true));
+        let keep_running = Arc::new(MutexHandle::<bool>::new());
+        let keep_running_clone = keep_running.clone();
 
-        Self {
-            keep_running: keep_running.clone(),
-            termination_thread: Some(thread::spawn(move || {
-                let now = Instant::now();
-                while *keep_running.lock().unwrap() {
-                    std::thread::yield_now();
-                    std::thread::sleep(Duration::from_millis(10));
-                    std::thread::yield_now();
+        // initialize keep_running to true
+        MutexBuilder::new()
+            .is_interprocess_capable(false)
+            .create(true, &keep_running)
+            .expect("failed to create mutex");
 
-                    if now.elapsed() > timeout {
-                        eprintln!("Killing test since timeout of {timeout:?} was hit.");
-                        std::process::exit(1);
+        let thread = ThreadBuilder::new()
+            .spawn(move || {
+                let start = Time::now().expect("failure retrieving current time");
+
+                loop {
+                    nanosleep(Duration::from_millis(10)).expect("failure in nanosleep");
+
+                    let mutex = unsafe { Mutex::from_handle(&keep_running_clone) };
+
+                    if !*mutex.lock().expect("mutex corrupted") {
+                        break;
+                    }
+
+                    if start.elapsed().unwrap_or(Duration::ZERO) > timeout {
+                        cerrln!("Killing test since timeout of {timeout:?} was hit.");
+                        core::panic!("Watchdog timeout exceeded");
                     }
                 }
-            })),
+            })
+            .expect("failed to spawn watchdog thread");
+
+        Self {
+            keep_running,
+            termination_thread: Some(thread),
         }
     }
 
