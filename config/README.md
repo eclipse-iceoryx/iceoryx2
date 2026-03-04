@@ -242,7 +242,7 @@ pub mod settings {
 }
 ```
 
-To configure the build to use the custom settings, the following must be done:
+The build steps are as follows:
 
 1. Set environment variable with absolute path to the configuration file:
 

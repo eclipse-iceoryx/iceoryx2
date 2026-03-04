@@ -197,28 +197,6 @@ selects.config_setting_group(
 )
 
 string_flag(
-    name = "feature_libc_platform",
-    build_setting_default = "off",
-    visibility = ["//visibility:public"],
-)
-
-config_setting(
-    name = "libc_platform_enabled",
-    flag_values = {
-        "//:feature_libc_platform": "on",
-    },
-)
-
-# NOTE: while this seems superfluous, it is the pattern for cases where *_auto is on by default;
-#       therefore this target is introduced to keep all feature flags consistent
-selects.config_setting_group(
-    name = "cfg_feature_libc_platform",
-    match_any = [
-        ":libc_platform_enabled",
-    ],
-)
-
-string_flag(
     name = "feature_logger_std",
     build_setting_default = "on",
     visibility = ["//visibility:public"],

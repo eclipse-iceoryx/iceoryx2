@@ -107,7 +107,6 @@ when building the project.
 | ------------------ | ------------ | ------- |
 | std                | on, off      | on      |
 | dev_permissions    | on, off      | off     |
-| libc_platform      | on, off      | off     |
 | logger_std         | on, off      | on      |
 <!-- markdownlint-disable-next-line MD044 -->
 | logger_posix       | on, off      | off     |

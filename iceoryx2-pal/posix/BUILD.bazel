@@ -15,6 +15,7 @@ package(default_visibility = ["//visibility:public"])
 load("@rules_cc//cc:defs.bzl", "cc_library")
 load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test_suite")
 load("@rules_rust_bindgen//:defs.bzl", "rust_bindgen_library")
+load("@bazel_skylib//lib:selects.bzl", "selects")
 
 filegroup(
     name = "all_srcs",
@@ -50,13 +51,28 @@ rust_bindgen_library(
 rust_library(
     name = "iceoryx2-pal-posix",
     srcs = glob(["src/**/*.rs"]),
-    rustc_flags = ["--cfg=bazel_build"],
+    rustc_flags = select({
+        "@platforms//os:linux":   ["--cfg=bazel_build", "--cfg=platform_binding=\"libc\""],
+        "@platforms//os:android": ["--cfg=bazel_build", "--cfg=platform_binding=\"libc\""],
+        "@platforms//os:vxworks": ["--cfg=bazel_build", "--cfg=platform_binding=\"libc\""],
+        "@platforms//os:macos":   ["--cfg=bazel_build", "--cfg=platform_binding=\"bindgen\""],
+        "@platforms//os:windows": ["--cfg=bazel_build", "--cfg=platform_binding=\"bindgen\""],
+        "@platforms//os:freebsd": ["--cfg=bazel_build", "--cfg=platform_binding=\"bindgen\""],
+        "@platforms//os:qnx":     ["--cfg=bazel_build", "--cfg=platform_binding=\"bindgen\""],
+    }),
     deps = [
         "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
         "//iceoryx2-pal/configuration:iceoryx2-pal-configuration",
-        ":iceoryx2-pal-posix-bindgen",
         "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
-    ],
+    ] + select({
+        "@platforms//os:linux":   ["@crate_index//:libc"],
+        "@platforms//os:android": ["@crate_index//:libc"],
+        "@platforms//os:vxworks": ["@crate_index//:libc"],
+        "@platforms//os:macos":   [":iceoryx2-pal-posix-bindgen"],
+        "@platforms//os:windows": [":iceoryx2-pal-posix-bindgen"],
+        "@platforms//os:freebsd": [":iceoryx2-pal-posix-bindgen"],
+        "@platforms//os:qnx":     [":iceoryx2-pal-posix-bindgen"],
+    }),
 )
 
 rust_test_suite(

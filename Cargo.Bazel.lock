@@ -1,5 +1,5 @@
 {
-  "checksum": "d812fcc4951cb743807bbcf72a19c67240a70c9b1b3fd6bf3d9cfa8523a3639b",
+  "checksum": "b4910fb55ff245cb45c163b96d52bf047a1fbddfe094de0f19d238b9426850c2",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -9506,18 +9506,6 @@
               ]
             }
           }
-        },
-        {
-          "BuildScript": {
-            "crate_name": "build_script_build",
-            "crate_root": "build.rs",
-            "srcs": {
-              "allow_empty": true,
-              "include": [
-                "**/*.rs"
-              ]
-            }
-          }
         }
       ],
       "library_target_name": "iceoryx2_pal_os_api",
@@ -9528,38 +9516,14 @@
         "deps": {
           "common": [
             {
-              "id": "iceoryx2-pal-os-api 0.8.999",
-              "target": "build_script_build"
+              "id": "libc 0.2.180",
+              "target": "libc"
             }
           ],
           "selects": {}
         },
         "edition": "2021",
         "version": "0.8.999"
-      },
-      "build_script_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "compile_data_glob_excludes": [
-          "**/*.rs"
-        ],
-        "data_glob": [
-          "**"
-        ],
-        "deps": {
-          "common": [
-            {
-              "id": "bindgen 0.72.0",
-              "target": "bindgen"
-            },
-            {
-              "id": "cc 1.2.21",
-              "target": "cc"
-            }
-          ],
-          "selects": {}
-        }
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -9604,6 +9568,12 @@
         "compile_data_glob": [
           "**"
         ],
+        "crate_features": {
+          "common": [
+            "std"
+          ],
+          "selects": {}
+        },
         "deps": {
           "common": [
             {
@@ -9612,7 +9582,13 @@
             }
           ],
           "selects": {
-            "aarch64-linux-android": [
+            "cfg(target_os = \"android\")": [
+              {
+                "id": "libc 0.2.180",
+                "target": "libc"
+              }
+            ],
+            "cfg(target_os = \"linux\")": [
               {
                 "id": "libc 0.2.180",
                 "target": "libc"
@@ -9622,12 +9598,6 @@
               {
                 "id": "windows-sys 0.48.0",
                 "target": "windows_sys"
-              }
-            ],
-            "x86_64-linux-android": [
-              {
-                "id": "libc 0.2.180",
-                "target": "libc"
               }
             ]
           }
@@ -33840,6 +33810,11 @@
     "cfg(target_os = \"android\")": [],
     "cfg(target_os = \"haiku\")": [],
     "cfg(target_os = \"hermit\")": [],
+    "cfg(target_os = \"linux\")": [
+      "aarch64-unknown-linux-gnu",
+      "x86_64-unknown-linux-gnu",
+      "x86_64-unknown-nixos-gnu"
+    ],
     "cfg(target_os = \"macos\")": [
       "aarch64-apple-darwin"
     ],
@@ -33877,7 +33852,6 @@
     "wasm32-wasip1": [
       "wasm32-wasip1"
     ],
-    "x86_64-linux-android": [],
     "x86_64-pc-windows-gnu": [],
     "x86_64-pc-windows-gnullvm": [],
     "x86_64-pc-windows-msvc": [

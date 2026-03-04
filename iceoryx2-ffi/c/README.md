@@ -98,7 +98,7 @@ The opaque types additionally need to be manually forward-declared in
 <!-- markdownlint-enable MD044 -->
 
 To pass `iceoryx2` feature flags to the `iceoryx2-ffi-c` crate, one needs to
-prefix the feature with `iceoryx2/`, e.g. `--features iceoryx2/libc_platform.`.
+prefix the feature with `iceoryx2/`, e.g. `--features iceoryx2/dev_permissions`.
 
 ## Why the folder structure with 'api' and 'test'
 

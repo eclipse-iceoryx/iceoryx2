@@ -6,9 +6,6 @@ on:
       os:
         required: true
         type: string
-      cargo-features-flag:
-        required: false
-        type: string
 
 jobs:
   static-code-analysis-rust:
@@ -37,7 +34,7 @@ jobs:
           echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
 
       - name: Run cargo clippy
-        run: cargo clippy ${{ inputs.cargo-features-flag }} -- -D warnings
+        run: cargo clippy -- -D warnings
 
       - name: Setup miri
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # version: v1

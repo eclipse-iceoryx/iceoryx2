@@ -10,15 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![cfg_attr(
-    not(any(
-        target_os = "android",
-        target_os = "windows",
-        target_os = "macos",
-        target_os = "freebsd"
-    )),
-    no_std
-)]
+#![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::missing_safety_doc)]
 #![warn(clippy::alloc_instead_of_core)]
 #![warn(clippy::std_instead_of_alloc)]
@@ -42,11 +34,6 @@ mod os {
 }
 
 #[cfg(not(platform_override))]
-#[cfg(all(target_os = "linux", feature = "libc_platform"))]
-#[path = "libc/os.rs"]
-mod os;
-
-#[cfg(not(platform_override))]
 #[cfg(target_os = "android")]
 #[path = "android/os.rs"]
 mod os;
@@ -62,7 +49,7 @@ mod os;
 mod os;
 
 #[cfg(not(platform_override))]
-#[cfg(all(target_os = "linux", not(feature = "libc_platform")))]
+#[cfg(target_os = "linux")]
 #[path = "linux/os.rs"]
 pub mod os;
 
@@ -77,11 +64,11 @@ mod os;
 mod os;
 
 #[cfg(not(platform_override))]
-#[cfg(all(target_os = "none", not(feature = "libc_platform")))]
+#[cfg(target_os = "none")]
 #[path = "stub/os.rs"]
 mod os;
 
-#[cfg(all(not(feature = "libc_platform"), not(target_os = "none")))]
+#[cfg(platform_binding = "bindgen")]
 pub(crate) mod internal {
     #![allow(non_upper_case_globals)]
     #![allow(non_camel_case_types)]
@@ -100,7 +87,7 @@ pub(crate) mod internal {
     pub const ESUCCES: u32 = 0;
 }
 
-#[cfg(feature = "libc_platform")]
+#[cfg(platform_binding = "libc")]
 pub(crate) mod internal {
     pub use libc::*;
 }
