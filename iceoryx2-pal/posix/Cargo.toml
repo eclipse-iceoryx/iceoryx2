@@ -15,6 +15,7 @@ workspace = true
 
 [features]
 std = [
+  "iceoryx2-pal-concurrency-sync/std",
   "libc/std"
 ]
 
