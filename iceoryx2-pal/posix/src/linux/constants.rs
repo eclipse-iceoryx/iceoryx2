@@ -20,11 +20,7 @@ pub const FD_SETSIZE: usize = libc::FD_SETSIZE as _;
 pub const NULL_TERMINATOR: c_char = 0;
 pub const NAME_MAX: usize = 255;
 
-#[cfg(target_os = "linux")]
 pub const USER_NAME_LENGTH: usize = 255;
-#[cfg(not(target_os = "linux"))]
-pub const USER_NAME_LENGTH: usize = 31;
-
 pub const GROUP_NAME_LENGTH: usize = 31;
 
 pub const STDOUT_FILENO: u32 = libc::STDOUT_FILENO as _;
