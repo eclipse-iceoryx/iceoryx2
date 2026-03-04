@@ -28,6 +28,7 @@
     * [Losing Dynamic Data](#losing-dynamic-data)
     * [`iceoryx2-ffi-c` does not contain this feature: libc_platform](#iceoryx2-ffi-c-does-not-contain-this-feature-libc_platform)
     * [Service In Corrupted state](#service-in-corrupted-state)
+    * [Unable To Connect Due To `IncompatibleTypes`](#unable-to-connect-due-to-incompatibletypes)
 
 ## Tips And Tricks
 
@@ -575,3 +576,25 @@ This error can have multiple causes.
 1. Crashed processes cleaned up resources incompletely, see: [Remove Stale Resources](#remove-stale-resources)
 2. The processes are compiled with two incompatible iceoryx2 versions.
 3. Two service variants were used that are not compatible.
+
+### Unable To Connect Due To `IncompatibleTypes`
+
+In Rust, payload data types must be defined in a separate library. If they are
+only placed in a separate file and imported in each binary with
+`use crate::my_type::MyType`, their fully qualified type name includes the
+binary crate itself. As a result, Rust and iceoryx2 treat them as two distinct
+types originating from two different binaries. Consequently, iceoryx2 will not
+establish a connection between them.
+
+The cleanest solution is to move all shared types into a dedicated library
+crate and make all communicating binaries dependent on this library, as is the
+case in [Rust examples common](examples/rust/_examples_common).
+
+A hacky workaround is to use the `#[type_name("MyType")]` attribute provided by
+the `ZeroCopySend` derive macro:
+
+```rust
+#[derive(Debug, ZeroCopySend)]
+#[type_name("MyType")]
+pub struct MyType {}
+```
