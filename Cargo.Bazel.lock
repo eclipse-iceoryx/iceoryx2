@@ -1,5 +1,5 @@
 {
-  "checksum": "349bd96a85d8bcc718ac44c4b379f02ceb99ad1849e42d1580806cef71e75317",
+  "checksum": "b4910fb55ff245cb45c163b96d52bf047a1fbddfe094de0f19d238b9426850c2",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -9506,18 +9506,6 @@
               ]
             }
           }
-        },
-        {
-          "BuildScript": {
-            "crate_name": "build_script_build",
-            "crate_root": "build.rs",
-            "srcs": {
-              "allow_empty": true,
-              "include": [
-                "**/*.rs"
-              ]
-            }
-          }
         }
       ],
       "library_target_name": "iceoryx2_pal_os_api",
@@ -9528,10 +9516,6 @@
         "deps": {
           "common": [
             {
-              "id": "iceoryx2-pal-os-api 0.8.999",
-              "target": "build_script_build"
-            },
-            {
               "id": "libc 0.2.180",
               "target": "libc"
             }
@@ -9540,30 +9524,6 @@
         },
         "edition": "2021",
         "version": "0.8.999"
-      },
-      "build_script_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "compile_data_glob_excludes": [
-          "**/*.rs"
-        ],
-        "data_glob": [
-          "**"
-        ],
-        "deps": {
-          "common": [
-            {
-              "id": "bindgen 0.72.0",
-              "target": "bindgen"
-            },
-            {
-              "id": "cc 1.2.21",
-              "target": "cc"
-            }
-          ],
-          "selects": {}
-        }
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -9608,6 +9568,12 @@
         "compile_data_glob": [
           "**"
         ],
+        "crate_features": {
+          "common": [
+            "std"
+          ],
+          "selects": {}
+        },
         "deps": {
           "common": [
             {

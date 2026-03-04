@@ -21,14 +21,6 @@ filegroup(
     srcs = glob(["**"]),
 )
 
-cc_library(
-    name = "iceoryx2-pal-os-api-c-lib",
-    srcs = ["src/c/linux.c"],
-    hdrs = ["src/c/linux.h"],
-    linkstatic = True,
-)
-
-# Create the actual crate
 rust_library(
     name = "iceoryx2-pal-os-api",
     srcs = glob(["src/**/*.rs"]),
