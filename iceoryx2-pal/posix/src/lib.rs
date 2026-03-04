@@ -76,12 +76,7 @@ mod os;
 #[path = "stub/os.rs"]
 mod os;
 
-#[cfg(any(
-    target_os = "windows",
-    target_os = "macos",
-    target_os = "freebsd",
-    target_os = "nto"
-))]
+#[cfg(platform_binding = "bindgen")]
 pub(crate) mod internal {
     #![allow(non_upper_case_globals)]
     #![allow(non_camel_case_types)]
@@ -100,7 +95,7 @@ pub(crate) mod internal {
     pub const ESUCCES: u32 = 0;
 }
 
-#[cfg(any(target_os = "linux", target_os = "android"))]
+#[cfg(platform_binding = "libc")]
 pub(crate) mod internal {
     pub use libc::*;
 }

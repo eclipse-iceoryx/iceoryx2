@@ -11,36 +11,40 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 const ENV_PLATFORM_PATH: &str = "IOX2_CUSTOM_POSIX_PLATFORM_PATH";
+const BINDGEN_PLATFORMS: &[&str] = &["windows", "macos", "freebsd", "nto"];
+const LIBC_PLATFORMS: &[&str] = &["android", "linux", "vxworks"];
 
 fn main() {
-    // #[cfg(any(...))] does not work when cross-compiling
-    // when cross compiling, 'target_os' is set to the environment the build script
-    // is executed; to get the actual target OS, use the cargo 'CARGO_CFG_TARGET_OS' env variable
+    // when cross compiling, 'CARGO_CFG_TARGET_OS' is set to the compilation
+    // target in the environment of the build script
+    //
+    // #[cfg(any(...))] cannot be used for this purpose as it refers to the
+    // (cross-) compilation host
     let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap();
     if target_os == "none" {
         return;
     }
 
-    // needed for bazel but can be empty for cargo builds
-    println!("cargo:rustc-env=BAZEL_BINDGEN_PATH_CORRECTION=");
-
     // define bazel_build as a valid cfg to avoid errors/warnings, but not used for cargo builds
     println!("cargo:rustc-check-cfg=cfg(bazel_build)");
 
     configure_platform_override();
+    configure_platform_binding(&target_os);
 
-    // the cfg guard below refers to native compilation and prevents bindgen
-    // from being pulled in as a dependency when building using the libc crate
+    // the cfg guard below refers to native compilation of build.rs and prevents
+    // bindgen from being pulled in as a dependency when a (cross-) compilation
+    // host does not support it
     //
     // the target_os check refers for the target compilation which could be
     // a different platform
     #[cfg(any(
+        target_os = "linux",
         target_os = "windows",
         target_os = "macos",
         target_os = "freebsd",
         target_os = "nto"
     ))]
-    if target_os != "android" {
+    if BINDGEN_PLATFORMS.contains(&target_os.as_str()) {
         bindgen::run(target_os.as_str());
     }
 }
@@ -66,10 +70,22 @@ fn configure_platform_override() {
     }
 }
 
-// #[cfg(any(...))] does not work when cross-compiling
-// when cross compiling, 'target_os' is set to the environment the build script
-// is executed; to get the actual target OS, use the cargo 'TARGET' env variable
+fn configure_platform_binding(target_os: &str) {
+    println!("cargo:rustc-check-cfg=cfg(platform_binding, values(\"libc\", \"bindgen\"))");
+    if BINDGEN_PLATFORMS.contains(&target_os) {
+        println!("cargo:rustc-cfg=platform_binding=\"bindgen\"");
+    } else if LIBC_PLATFORMS.contains(&target_os) {
+        println!("cargo:rustc-cfg=platform_binding=\"libc\"");
+    } else {
+        panic!("Unsupported target OS: {}", target_os);
+    }
+}
+
+// the cfg guard below refers to native compilation of build.rs and prevents
+// bindgen from being pulled in as a dependency when a (cross-) compilation
+// host does not support it
 #[cfg(any(
+    target_os = "linux",
     target_os = "windows",
     target_os = "macos",
     target_os = "freebsd",
