@@ -33,28 +33,15 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 
-rust_bindgen_library(
-    name = "iceoryx2-pal-posix-bindgen",
-    header = "src/c/posix.h",
-    cc_lib = ":iceoryx2-pal-posix-c-lib",
-    bindgen_flags = [
-        "--use-core",
-        "--blocklist-type", "max_align_t",
-        # ignore warnings in the bindgen generated code
-        "--raw-line=#![allow(warnings)]",
-        "--raw-line=#![allow(clippy::all)]",
-    ],
-)
-
 # Create the actual crate
 rust_library(
     name = "iceoryx2-pal-posix",
     srcs = glob(["src/**/*.rs"]),
     rustc_flags = ["--cfg=bazel_build"],
     deps = [
+        "@crate_index//:libc",
         "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
         "//iceoryx2-pal/configuration:iceoryx2-pal-configuration",
-        ":iceoryx2-pal-posix-bindgen",
         "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
     ],
 )

@@ -6,16 +6,11 @@ on:
       os:
         required: true
         type: string
-      platform-binding:
-        required: true
-        type: string
 
 jobs:
   static-code-analysis-rust:
     timeout-minutes: 40
     runs-on: ${{ inputs.os }}
-    env:
-      IOX2_PLATFORM_BINDING: ${{ inputs.platform-binding }}
     steps:
       - name: Checkout sources
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1

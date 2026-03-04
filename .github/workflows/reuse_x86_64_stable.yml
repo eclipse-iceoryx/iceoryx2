@@ -12,16 +12,11 @@ on:
       profile:
         required: true
         type: string
-      platform-binding:
-        required: true
-        type: string
 
 jobs:
   x86_64:
     timeout-minutes: 90
     runs-on: ${{ inputs.os }}
-    env:
-      IOX2_PLATFORM_BINDING: ${{ inputs.platform-binding }}
     steps:
       - name: Checkout sources
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
@@ -70,7 +65,7 @@ jobs:
           uname -a
 
       - name: Additional setup for libc platform binding
-        if: ${{ inputs.platform-binding == 'libc' }}
+        if: ${{ runner.os == 'Linux' }}
         run: sudo apt remove -y --purge '^libclang-.*-dev' # remove libclang to force a compile error if libc binding is not used correctly and bindgen is invoked
 
       - name: Save disk space

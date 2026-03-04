@@ -16,27 +16,6 @@
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 
-#[cfg(all(target_os = "linux", not(platform_binding = "libc")))]
-#[path = "linux-bindgen/mod.rs"]
+#[cfg(target_os = "linux")]
+#[path = "linux/mod.rs"]
 pub mod linux;
-
-#[cfg(all(target_os = "linux", platform_binding = "libc"))]
-#[path = "linux-libc/mod.rs"]
-pub mod linux;
-
-#[cfg(all(not(platform_binding = "libc"), target_os = "linux"))]
-pub(crate) mod internal {
-    #![allow(non_upper_case_globals)]
-    #![allow(non_camel_case_types)]
-    #![allow(non_snake_case)]
-    #![allow(unused)]
-    #![allow(improper_ctypes)]
-    #![allow(unknown_lints)]
-    #![allow(unnecessary_transmutes)]
-    #![allow(clippy::all)]
-    #[cfg(not(bazel_build))]
-    include!(concat!(env!("OUT_DIR"), "/os_api_generated.rs"));
-
-    #[cfg(bazel_build)]
-    pub use iceoryx2_pal_os_api_bindgen::*;
-}

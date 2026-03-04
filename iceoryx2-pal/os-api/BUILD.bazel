@@ -28,27 +28,14 @@ cc_library(
     linkstatic = True,
 )
 
-# Generate the Rust binding file
-rust_bindgen_library(
-    name = "iceoryx2-pal-os-api-bindgen",
-    header = "src/c/linux.h",
-    cc_lib = ":iceoryx2-pal-os-api-c-lib",
-    bindgen_flags = [
-        "--use-core",
-        # ignore warnings in the bindgen generated code
-        "--raw-line=#![allow(warnings)]",
-        "--raw-line=#![allow(clippy::all)]",
-    ],
-)
-
 # Create the actual crate
 rust_library(
     name = "iceoryx2-pal-os-api",
     srcs = glob(["src/**/*.rs"]),
     rustc_flags = ["--cfg=bazel_build"],
     deps = [
+        "@crate_index//:libc",
         "//iceoryx2-pal/posix:iceoryx2-pal-posix",
-        ":iceoryx2-pal-os-api-bindgen",
         "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
     ],
 )

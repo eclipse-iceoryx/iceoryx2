@@ -42,11 +42,6 @@ mod os {
 }
 
 #[cfg(not(platform_override))]
-#[cfg(all(target_os = "linux", platform_binding = "libc"))]
-#[path = "libc/os.rs"]
-mod os;
-
-#[cfg(not(platform_override))]
 #[cfg(target_os = "android")]
 #[path = "android/os.rs"]
 mod os;
@@ -62,7 +57,7 @@ mod os;
 mod os;
 
 #[cfg(not(platform_override))]
-#[cfg(all(target_os = "linux", not(platform_binding = "libc")))]
+#[cfg(target_os = "linux")]
 #[path = "linux/os.rs"]
 pub mod os;
 
@@ -77,11 +72,16 @@ mod os;
 mod os;
 
 #[cfg(not(platform_override))]
-#[cfg(all(target_os = "none", not(platform_binding = "libc")))]
+#[cfg(target_os = "none")]
 #[path = "stub/os.rs"]
 mod os;
 
-#[cfg(all(not(platform_binding = "libc"), not(target_os = "none")))]
+#[cfg(any(
+    target_os = "windows",
+    target_os = "macos",
+    target_os = "freebsd",
+    target_os = "nto"
+))]
 pub(crate) mod internal {
     #![allow(non_upper_case_globals)]
     #![allow(non_camel_case_types)]
@@ -100,7 +100,7 @@ pub(crate) mod internal {
     pub const ESUCCES: u32 = 0;
 }
 
-#[cfg(platform_binding = "libc")]
+#[cfg(any(target_os = "linux", target_os = "android"))]
 pub(crate) mod internal {
     pub use libc::*;
 }

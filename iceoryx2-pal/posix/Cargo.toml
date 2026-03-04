@@ -14,7 +14,9 @@ version = { workspace = true }
 workspace = true
 
 [features]
-std = []
+std = [
+  "libc/std"
+]
 
 [build-dependencies]
 cc = { workspace = true }
@@ -24,9 +26,10 @@ bindgen = { workspace = true }
 iceoryx2-pal-concurrency-sync = { workspace = true }
 iceoryx2-pal-configuration = { workspace = true }
 
-# libc is always listed as a dependency but unused symbols are stripped by the linker,
-# so it has no impact on binary size when IOX2_PLATFORM_BINDING is set to 'bindgen'.
-# It is actively used only when IOX2_PLATFORM_BINDING=libc.
+[target.'cfg(target_os = "linux")'.dependencies]
+libc = { workspace = true }
+
+[target.'cfg(target_os = "android")'.dependencies]
 libc = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]

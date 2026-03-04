@@ -12,12 +12,12 @@
 
 #![allow(clippy::missing_safety_doc)]
 
+use crate::posix::types::*;
+use crate::ErrnoEnumGenerator;
+
 use core::{ffi::CStr, fmt::Display};
 
 use alloc::string::ToString;
-
-use crate::posix::types::*;
-use crate::ErrnoEnumGenerator;
 
 ErrnoEnumGenerator!(
   assign
@@ -142,28 +142,22 @@ ErrnoEnumGenerator!(
 
 impl Errno {
     pub fn get() -> Errno {
-        unsafe { *crate::internal::__errno_location() }.into()
+        unsafe { *libc::__errno_location() }.into()
     }
 
     pub fn set(value: Errno) {
-        unsafe { *crate::internal::__errno_location() = value as i32 };
+        unsafe { *libc::__errno_location() = value as i32 };
     }
 
     pub fn reset() {
-        unsafe { *crate::internal::__errno_location() = 0 };
+        unsafe { *libc::__errno_location() = 0 };
     }
 }
 
 pub unsafe fn strerror_r(errnum: int, buf: *mut c_char, buflen: size_t) -> int {
     use iceoryx2_pal_concurrency_sync::atomic::AtomicBool;
     use iceoryx2_pal_concurrency_sync::atomic::Ordering;
-
-    #[cfg(not(all(test, loom, feature = "std")))]
     static IS_LOCKED: AtomicBool = AtomicBool::new(false);
-    #[cfg(all(test, loom, feature = "std"))]
-    static IS_LOCKED: std::sync::LazyLock<AtomicBool> = std::sync::LazyLock::new(|| {
-        unimplemented!("loom does not provide const-initialization for atomic variables.")
-    });
 
     while IS_LOCKED
         .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
@@ -179,5 +173,5 @@ pub unsafe fn strerror_r(errnum: int, buf: *mut c_char, buflen: size_t) -> int {
 }
 
 pub unsafe fn strerror(errnum: int) -> *const c_char {
-    crate::internal::strerror(errnum)
+    libc::strerror(errnum)
 }

@@ -92,8 +92,8 @@
     conflicts when merging.
 -->
 
-* Removed `libc_platform` feature in favor of `platform_binding` build
-  configuration which is set via environment variable
+* Removed `libc_platform` feature, platforms that support the crate `libc` will
+  now automatically use it
   [#1374](https://github.com/eclipse-iceoryx/iceoryx2/issues/1374)
 
 ### API Breaking Changes
@@ -119,12 +119,12 @@
     info!("some log message")
     ```
 
-1. Building with `libc` is now enabled with an environment variable
+1. Building with `libc` is now default on platforms that support it
 
     ```console
     # old
     cargo build --features iceoryx2/libc_platform 
 
     # new
-    IOX2_PLATFORM_BINDING=libc cargo build
+    cargo build
     ```
