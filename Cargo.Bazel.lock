@@ -1,5 +1,5 @@
 {
-  "checksum": "096c98c0fd962cfe9e515ef295bf4277007de74b2879d7e297d19b6e32c38f7b",
+  "checksum": "c4ab971bf21e3ae45fa6ee3cf37dd425853e7f009d0357770957030185da1eb9",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -8544,6 +8544,12 @@
         "compile_data_glob": [
           "**"
         ],
+        "crate_features": {
+          "common": [
+            "default"
+          ],
+          "selects": {}
+        },
         "edition": "2021",
         "version": "0.8.999"
       },
@@ -8578,6 +8584,13 @@
         "compile_data_glob": [
           "**"
         ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
         "deps_dev": {
           "common": [],
           "selects": {
@@ -8706,6 +8719,13 @@
         "compile_data_glob": [
           "**"
         ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
         "edition": "2021",
         "version": "0.8.999"
       },
@@ -8848,6 +8868,13 @@
         "compile_data_glob": [
           "**"
         ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
         "deps": {
           "common": [
             {
@@ -9040,6 +9067,12 @@
         "compile_data_glob": [
           "**"
         ],
+        "crate_features": {
+          "common": [
+            "default"
+          ],
+          "selects": {}
+        },
         "edition": "2021",
         "version": "0.8.999"
       },
@@ -10189,6 +10222,13 @@
         "compile_data_glob": [
           "**"
         ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
         "edition": "2021",
         "version": "0.8.999"
       },
@@ -10223,6 +10263,13 @@
         "compile_data_glob": [
           "**"
         ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
         "edition": "2021",
         "version": "0.8.999"
       },

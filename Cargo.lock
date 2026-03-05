@@ -1403,6 +1403,7 @@ version = "0.8.999"
 dependencies = [
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
  "iceoryx2-bb-testing",
  "proc-macro2",
  "quote",

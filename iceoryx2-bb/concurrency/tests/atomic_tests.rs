@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate iceoryx2_bb_loggers;
+
 #[generic_tests::define]
 mod atomic {
     use iceoryx2_bb_concurrency_tests_common::atomic_tests;
