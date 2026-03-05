@@ -1393,7 +1393,6 @@ dependencies = [
  "iceoryx2-bb-loggers",
  "iceoryx2-bb-testing",
  "iceoryx2-log",
- "iceoryx2-pal-testing",
  "serde",
  "serde_test",
 ]
@@ -1599,7 +1598,6 @@ dependencies = [
  "iceoryx2-bb-testing",
  "iceoryx2-bb-threadsafe-tests-common",
  "iceoryx2-log",
- "iceoryx2-pal-posix",
 ]
 
 [[package]]
