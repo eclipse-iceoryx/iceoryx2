@@ -84,7 +84,7 @@ jobs:
           retention-days: 7
 
   prepare-python-dist:
-    needs: [build-python-wheels]
+    needs: [build-python-wheels, build-python-freethreaded-wheels]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
