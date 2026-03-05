@@ -19,7 +19,7 @@ mod recorder_replayer {
     };
     use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_posix::file::File;
-    use iceoryx2_pal_testing::assert_that;
+    use iceoryx2_bb_testing::assert_that;
     use iceoryx2_userland_record_and_replay::{
         record::{DataRepresentation, RawRecord},
         recorder::{RecorderBuilder, RecorderWriteError, ServiceTypes},

@@ -37,7 +37,6 @@ rust_library(
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
         "//iceoryx2-cal:iceoryx2-cal",
         "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
-        "//iceoryx2-pal/testing:iceoryx2-pal-testing",
     ],
     proc_macro_deps = [
         "//iceoryx2-bb/conformance-test-macros:iceoryx2-bb-conformance-test-macros",

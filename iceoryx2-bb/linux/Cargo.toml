@@ -22,4 +22,3 @@ iceoryx2-pal-posix = { workspace = true }
 [dev-dependencies]
 iceoryx2-bb-loggers = { workspace = true }
 iceoryx2-bb-testing = { workspace = true }
-iceoryx2-pal-testing = { workspace = true }
