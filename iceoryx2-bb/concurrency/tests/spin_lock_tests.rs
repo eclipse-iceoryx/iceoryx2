@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate iceoryx2_bb_loggers;
+
 extern crate alloc;
 use alloc::alloc::Layout;
 use alloc::alloc::{alloc, dealloc};
