@@ -11,7 +11,7 @@ jobs:
   cargo-nextest-nightly:
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [windows-latest, ubuntu-latest, macos-latest, ubuntu-24.04-arm]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
@@ -22,9 +22,9 @@ jobs:
           check-and-install-cmd: cargo-nextest --version > /dev/null || cargo install cargo-nextest --locked
           print-version-cmd: cargo-nextest --version
           # increment cache-N-${{}} if a new nextest version is required
-          cache-key: cache-2-${{ runner.os }}-cargo-nextest
+          cache-key: cache-2-${{ matrix.os }}-cargo-nextest
           artifact-bin-name: cargo-nextest
-          artifact-upload-name: ${{ runner.os }}-cargo-nextest
+          artifact-upload-name: ${{ matrix.os }}-cargo-nextest
 
   static-code-analysis-rust-nightly:
     strategy:
@@ -53,11 +53,15 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
         toolchain: [stable, 1.83.0]
         profile: ["release", "debug"]
+        include:
+          - toolchain: stable
+            profile: "debug"
+            os: ubuntu-24.04-arm
         exclude:
           - os: ubuntu-latest # already tested in Pull-Requests and main branch
             toolchain: stable
             profile: "release"
-    uses: ./.github/workflows/reuse_x86_64_stable.yml
+    uses: ./.github/workflows/reuse_stable.yml
     with:
       os: ${{ matrix.os }}
       toolchain: ${{ matrix.toolchain }}
@@ -70,6 +74,10 @@ jobs:
         os: [windows-latest, ubuntu-latest, macos-latest]
         toolchain: [beta, nightly]
         profile: ["debug", "release"]
+        include:
+          - toolchain: nightly
+            profile: "debug"
+            os: ubuntu-24.04-arm
         exclude:
           - os: ubuntu-latest # Already run in Pull-Requests
             toolchain: beta
@@ -77,7 +85,7 @@ jobs:
           - os: ubuntu-latest # Already run in Pull-Requests
             toolchain: nightly
             profile: "debug"
-    uses: ./.github/workflows/reuse_x86_64_unstable.yml
+    uses: ./.github/workflows/reuse_unstable.yml
     with:
       os: ${{ matrix.os }}
       toolchain: ${{ matrix.toolchain }}

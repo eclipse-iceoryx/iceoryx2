@@ -39,7 +39,7 @@ jobs:
         uses: ./.github/actions/download-cached-rust-tool
         with:
           artifact-bin-name: cargo-nextest
-          artifact-upload-name: ${{ runner.os }}-cargo-nextest
+          artifact-upload-name: ${{ inputs.os }}-cargo-nextest
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@bafd42bd91680affe190f697cac6ef3ad958ecba # version: v0.0.9
@@ -84,7 +84,7 @@ jobs:
 
       - name: Run cargo nextest
         shell: bash
-        run: | 
+        run: |
           cargo nextest run --workspace --exclude iceoryx2-ffi-python --all-targets --no-fail-fast ${{ steps.set-build-flags.outputs.cargo-build-mode }} --target i686-unknown-linux-gnu
 
       - name: Cleanup build artifacts

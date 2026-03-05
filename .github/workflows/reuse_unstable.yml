@@ -1,4 +1,4 @@
-name: Reusable workflow for x86_64_unstable
+name: Reusable workflow for unstable
 
 on:
   workflow_call:
@@ -14,7 +14,7 @@ on:
         type: string
 
 jobs:
-  x86_64:
+  unstable:
     continue-on-error: true
     timeout-minutes: 90
     runs-on: ${{ inputs.os }}
@@ -38,7 +38,7 @@ jobs:
         uses: ./.github/actions/download-cached-rust-tool
         with:
           artifact-bin-name: cargo-nextest
-          artifact-upload-name: ${{ runner.os }}-cargo-nextest
+          artifact-upload-name: ${{ inputs.os }}-cargo-nextest
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@bafd42bd91680affe190f697cac6ef3ad958ecba # version: v0.0.9

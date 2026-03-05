@@ -13,29 +13,38 @@
 
 set -e
 
-dpkg --add-architecture i386
+arch=$(uname -m)
+packages=(
+    binutils-dev
+    build-essential
+    libclang-dev
+    clang
+    cmake
+    curl
+    doxygen
+    expect
+    flex
+    gcc
+    g++
+    git
+    libc6-dev
+    libpython3-all-dev
+    libdwarf-dev
+    libelf-dev
+    libunwind-dev
+    qemu-system-arm
+)
+
+if [[ "$arch" == "i686" ]]; then
+    dpkg --add-architecture i386
+    packages+=(
+        gcc-multilib
+        g++-multilib
+        libc6-dev-i386
+        libc6-dev-i386-cross
+        libstdc++6-i386-cross
+    )
+fi
+
 apt-get update
-apt-get install -y \
-     binutils-dev \
-     build-essential \
-     libclang-dev \
-     clang \
-     cmake \
-     curl \
-     doxygen \
-     expect \
-     flex \
-     gcc \
-     gcc-multilib \
-     g++ \
-     g++-multilib \
-     git \
-     libc6-dev \
-     libc6-dev-i386 \
-     libc6-dev-i386-cross \
-     libpython3-all-dev \
-     libstdc++6-i386-cross \
-     libdwarf-dev \
-     libelf-dev \
-     libunwind-dev \
-     qemu-system-arm
+apt-get install -y "${packages[@]}"
