@@ -1345,6 +1345,7 @@ dependencies = [
  "generic-tests",
  "iceoryx2-bb-concurrency-tests-common",
  "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
  "iceoryx2-bb-testing",
  "iceoryx2-pal-concurrency-sync",
 ]
