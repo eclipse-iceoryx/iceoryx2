@@ -15,12 +15,12 @@ version = { workspace = true }
 proc-macro = true
 
 [dependencies]
-proc-macro2 = { workspace = true }
-quote = { workspace = true }
-syn = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-elementary-traits = { workspace = true }
 
+proc-macro2 = { workspace = true }
+quote = { workspace = true }
+syn = { workspace = true }
+
 [dev-dependencies]
 iceoryx2-bb-testing = { workspace = true }
-iceoryx2-pal-testing = { workspace = true }
