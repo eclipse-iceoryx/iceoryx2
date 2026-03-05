@@ -23,4 +23,5 @@ quote = { workspace = true }
 syn = { workspace = true }
 
 [dev-dependencies]
+iceoryx2-bb-loggers = { workspace = true }
 iceoryx2-bb-testing = { workspace = true }

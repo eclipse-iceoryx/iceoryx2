@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate iceoryx2_bb_loggers;
+
 use iceoryx2_bb_elementary_tests_common::scope_guard_tests;
 
 #[test]
