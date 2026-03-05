@@ -20,7 +20,7 @@ mod recorder_tests {
         service::static_config::message_type_details::{TypeDetail, TypeVariant},
         testing,
     };
-    use iceoryx2_pal_testing::assert_that;
+    use iceoryx2_bb_testing::assert_that;
     use iceoryx2_userland_record_and_replay::{
         record::{DataRepresentation, RawRecord},
         recorder::{RecorderBuilder, RecorderCreateError, ServiceTypes},
