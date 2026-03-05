@@ -134,7 +134,7 @@ iceoryx2-bb-threadsafe-tests-common = { path = "iceoryx2-bb/threadsafe/tests-com
 iceoryx2-bb-threadsafe-tests-nostd = { path = "iceoryx2-bb/threadsafe/tests-nostd" }
 iceoryx2-bb-concurrency-tests-common = { path = "iceoryx2-bb/concurrency/tests-common/" }
 iceoryx2-bb-concurrency-tests-nostd = { path = "iceoryx2-bb/concurrency/tests-nostd/" }
-iceoryx2-bb-elementary-tests-common = { path = "iceoryx2-bb/elementary/tests-common", default-features = false }
+iceoryx2-bb-elementary-tests-common = { path = "iceoryx2-bb/elementary/tests-common" }
 iceoryx2-bb-elementary-tests-nostd = { path = "iceoryx2-bb/elementary/tests-nostd" }
 
 anyhow = { version = "1.0.86" }
