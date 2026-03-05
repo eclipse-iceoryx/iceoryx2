@@ -81,7 +81,13 @@ shell = "maturin develop --manifest-path Cargo.toml --target-dir ../../target/ff
 shell = "python -m build --sdist --outdir ../../target/ff/python/dist"
 
 [tool.poe.tasks.build-wheel]
-shell = "maturin build --release --target-dir ../../target/ff/python --out ../../target/ff/python/dist"
+shell = "maturin build --release ${interpreter:+-i $interpreter} --target-dir ../../target/ff/python --out ../../target/ff/python/dist"
+
+  [[tool.poe.tasks.build-wheel.args]]
+  name = "interpreter"
+  help = "Python interpreter to build for (e.g. python3.14t)"
+  default = ""
+  options = ["-i", "--interpreter"]
 
 [tool.poe.tasks.upload-dist]
 shell = "twine upload ${dist}/* -r ${repo}"
