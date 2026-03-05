@@ -12,12 +12,11 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [features]
-default = ["std"]
+default = ["std", "console"]
 std = [
   "iceoryx2-log/std",
   "iceoryx2-cal/std",
   "iceoryx2-bb-loggers/std",
-  "iceoryx2-bb-loggers/console",
   "iceoryx2-bb-concurrency/std",
   "iceoryx2-bb-container/std",
   "iceoryx2-bb-elementary/std",
@@ -28,6 +27,10 @@ std = [
   "iceoryx2-bb-posix/std",
   "iceoryx2-bb-print/std",
 ]
+# Logger backend selection - choose at most one; defaults to console
+console = ["iceoryx2-bb-loggers/console"]
+log = ["iceoryx2-bb-loggers/log"]
+tracing = ["iceoryx2-bb-loggers/tracing"]
 
 # The permissions of all resources will be set to read, write, execute for everyone.
 # This shall not be used in production and is meant to be enabled in a docker environment

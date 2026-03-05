@@ -62,6 +62,10 @@
   [#1356](https://github.com/eclipse-iceoryx/iceoryx2/issues/1356)
 * Bump shellexpand from 3.1.1 to 3.1.2 in Rust and Bazel
   [#1365](https://github.com/eclipse-iceoryx/iceoryx2/issues/1365)
+* Feature flags `tracing` and `log` were broken because `std` unconditionally
+  enabled `console`; `console`, `log` and `tracing` are now exposed as top-level
+  feature aliases in the `iceoryx2` crate
+  [#1369](https://github.com/eclipse-iceoryx/iceoryx2/issues/1369)
 * Resources cannot always be cleaned up with `dev_permissions` feature flag
   [#1365](https://github.com/eclipse-iceoryx/iceoryx2/issues/1370)
 * Add `update_connection` to Python bindings
