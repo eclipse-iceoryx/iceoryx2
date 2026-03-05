@@ -12,7 +12,7 @@
 
 use pyo3::prelude::*;
 
-#[pyclass(eq, eq_int)]
+#[pyclass(eq, eq_int, from_py_object)]
 #[derive(PartialEq, Clone, Debug)]
 /// Describes the log level.
 pub enum LogLevel {

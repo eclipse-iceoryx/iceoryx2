@@ -21,5 +21,5 @@ iceoryx2 = { workspace = true, features = ["std"] }
 iceoryx2-log = { workspace = true }
 
 [dependencies.pyo3]
-version = "0.25.0"
+version = "0.28.2"
 features = ["abi3-py38"]

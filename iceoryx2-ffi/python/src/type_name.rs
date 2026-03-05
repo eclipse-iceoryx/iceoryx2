@@ -13,7 +13,7 @@
 use crate::error::SemanticStringError;
 use pyo3::prelude::*;
 
-#[pyclass(str = "{0:?}", eq)]
+#[pyclass(str = "{0:?}", eq, skip_from_py_object)]
 #[derive(PartialEq, Clone)]
 /// Represents the string name of a type. The name shall uniquely identify the type in the
 /// communication system.

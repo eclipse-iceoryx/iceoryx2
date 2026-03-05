@@ -89,7 +89,7 @@ impl ServiceBuilderBlackboardCreator {
         self.key_type_storage.clone().value
     }
 
-    pub fn __set_key_type(&mut self, value: PyObject) {
+    pub fn __set_key_type(&mut self, value: Py<PyAny>) {
         self.key_type_storage.value = Some(value)
     }
 
@@ -112,12 +112,12 @@ impl ServiceBuilderBlackboardCreator {
 
     /// Defines the key eq comparison function needed to store and retrieve keys in the
     /// blackboard.
-    pub fn __set_key_eq_cmp_func(&mut self, key_eq_func: PyObject) -> Self {
+    pub fn __set_key_eq_cmp_func(&mut self, key_eq_func: Py<PyAny>) -> Self {
         match &mut *self.value.lock() {
             ServiceBuilderBlackboardCreatorType::Ipc(ref mut v) => {
                 let this = v.take().unwrap();
                 let eq_func = Box::new(move |lhs: *const u8, rhs: *const u8| -> bool {
-                    Python::with_gil(|py| {
+                    Python::attach(|py| {
                         let result = key_eq_func.call1(py, (lhs as usize, rhs as usize)).unwrap();
                         result
                             .extract::<bool>(py)
@@ -134,7 +134,7 @@ impl ServiceBuilderBlackboardCreator {
             ServiceBuilderBlackboardCreatorType::Local(ref mut v) => {
                 let this = v.take().unwrap();
                 let eq_func = Box::new(move |lhs: *const u8, rhs: *const u8| -> bool {
-                    Python::with_gil(|py| {
+                    Python::attach(|py| {
                         let result = key_eq_func.call1(py, (lhs as usize, rhs as usize)).unwrap();
                         result
                             .extract::<bool>(py)
@@ -315,7 +315,7 @@ impl ServiceBuilderBlackboardOpener {
         self.key_type_details.clone().value
     }
 
-    pub fn __set_key_type(&mut self, value: PyObject) {
+    pub fn __set_key_type(&mut self, value: Py<PyAny>) {
         self.key_type_details.value = Some(value)
     }
 

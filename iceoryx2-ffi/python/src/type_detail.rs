@@ -15,7 +15,7 @@ use pyo3::prelude::*;
 use crate::{type_name::TypeName, type_variant::TypeVariant};
 use iceoryx2::testing;
 
-#[pyclass(str = "{0:?}", eq)]
+#[pyclass(str = "{0:?}", eq, from_py_object)]
 /// Contains all type details required to connect to a `Service`
 #[derive(PartialEq, Clone)]
 pub struct TypeDetail(

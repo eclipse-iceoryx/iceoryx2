@@ -12,7 +12,7 @@
 
 use pyo3::prelude::*;
 
-#[pyclass(eq, eq_int)]
+#[pyclass(eq, eq_int, skip_from_py_object)]
 #[derive(PartialEq, Clone, Debug)]
 /// Defines the strategy a sender shall pursue when the buffer of the receiver is full
 /// and the service does not overflow.
