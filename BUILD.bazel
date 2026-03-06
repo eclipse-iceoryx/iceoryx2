@@ -53,18 +53,10 @@ string_flag(
 )
 
 config_setting(
-    name = "std_enabled",
+    name = "cfg_feature_std",
     flag_values = {
         "//:feature_std": "on",
     },
-)
-# NOTE: while this seems superfluous, it is the pattern for cases where *_auto is on by default;
-#       therefore this target is introduced to keep all feature flags consistent
-selects.config_setting_group(
-    name = "cfg_feature_std",
-    match_any = [
-        "//:std_enabled",
-    ],
 )
 
 string_flag(
@@ -74,19 +66,10 @@ string_flag(
 )
 
 config_setting(
-    name = "dev_permissions_enabled",
+    name = "cfg_feature_dev_permissions",
     flag_values = {
         "//:feature_dev_permissions": "on",
     },
-)
-
-# NOTE: while this seems superfluous, it is the pattern for cases where *_auto is on by default;
-#       therefore this target is introduced to keep all feature flags consistent
-selects.config_setting_group(
-    name = "cfg_feature_dev_permissions",
-    match_any = [
-        "//:dev_permissions_enabled",
-    ],
 )
 
 string_flag(
@@ -96,18 +79,10 @@ string_flag(
 )
 
 config_setting(
-    name = "logger_buffer_enabled",
+    name = "cfg_feature_logger_buffer",
     flag_values = {
         "//:feature_logger_buffer": "on",
     },
-)
-# NOTE: while this seems superfluous, it is the pattern for cases where *_auto is on by default;
-#       therefore this target is introduced to keep all feature flags consistent
-selects.config_setting_group(
-    name = "cfg_feature_logger_buffer",
-    match_any = [
-        "//:logger_buffer_enabled",
-    ],
 )
 
 string_flag(
@@ -117,18 +92,10 @@ string_flag(
 )
 
 config_setting(
-    name = "logger_file_enabled",
+    name = "cfg_feature_logger_file",
     flag_values = {
         "//:feature_logger_file": "on",
     },
-)
-# NOTE: while this seems superfluous, it is the pattern for cases where *_auto is on by default;
-#       therefore this target is introduced to keep all feature flags consistent
-selects.config_setting_group(
-    name = "cfg_feature_logger_file",
-    match_any = [
-        "//:logger_file_enabled",
-    ],
 )
 
 string_flag(
@@ -138,18 +105,10 @@ string_flag(
 )
 
 config_setting(
-    name = "logger_console_enabled",
+    name = "cfg_feature_logger_console",
     flag_values = {
         "//:feature_logger_console": "on",
     },
-)
-# NOTE: while this seems superfluous, it is the pattern for cases where *_auto is on by default;
-#       therefore this target is introduced to keep all feature flags consistent
-selects.config_setting_group(
-    name = "cfg_feature_logger_console",
-    match_any = [
-        "//:logger_console_enabled",
-    ],
 )
 
 string_flag(
@@ -159,19 +118,10 @@ string_flag(
 )
 
 config_setting(
-    name = "logger_log_enabled",
+    name = "cfg_feature_logger_log",
     flag_values = {
         "//:feature_logger_log": "on",
     },
-)
-
-# NOTE: while this seems superfluous, it is the pattern for cases where *_auto is on by default;
-#       therefore this target is introduced to keep all feature flags consistent
-selects.config_setting_group(
-    name = "cfg_feature_logger_log",
-    match_any = [
-        ":logger_log_enabled",
-    ],
 )
 
 string_flag(
@@ -181,19 +131,10 @@ string_flag(
 )
 
 config_setting(
-    name = "logger_tracing_enabled",
+    name = "cfg_feature_logger_tracing",
     flag_values = {
         "//:feature_logger_tracing": "on",
     },
-)
-
-# NOTE: while this seems superfluous, it is the pattern for cases where *_auto is on by default;
-#       therefore this target is introduced to keep all feature flags consistent
-selects.config_setting_group(
-    name = "cfg_feature_logger_tracing",
-    match_any = [
-        ":logger_tracing_enabled",
-    ],
 )
 
 string_flag(
@@ -203,19 +144,10 @@ string_flag(
 )
 
 config_setting(
-    name = "logger_std_enabled",
+    name = "cfg_feature_logger_std",
     flag_values = {
         "//:feature_logger_std": "on",
     },
-)
-
-# NOTE: while this seems superfluous, it is the pattern for cases where *_auto is on by default;
-#       therefore this target is introduced to keep all feature flags consistent
-selects.config_setting_group(
-    name = "cfg_feature_logger_std",
-    match_any = [
-        ":logger_std_enabled",
-    ],
 )
 
 string_flag(
@@ -225,19 +157,10 @@ string_flag(
 )
 
 config_setting(
-    name = "logger_posix_enabled",
+    name = "cfg_feature_logger_posix",
     flag_values = {
         "//:feature_logger_posix": "on",
     },
-)
-
-# NOTE: while this seems superfluous, it is the pattern for cases where *_auto is on by default;
-#       therefore this target is introduced to keep all feature flags consistent
-selects.config_setting_group(
-    name = "cfg_feature_logger_posix",
-    match_any = [
-        ":logger_posix_enabled",
-    ],
 )
 
 string_flag(
@@ -247,22 +170,13 @@ string_flag(
 )
 
 config_setting(
-    name = "logger_bare_metal_enabled",
+    name = "cfg_feature_logger_bare_metal",
     flag_values = {
         "//:feature_logger_bare_metal": "on",
     },
 )
 
-# NOTE: while this seems superfluous, it is the pattern for cases where *_auto is on by default;
-#       therefore this target is introduced to keep all feature flags consistent
-selects.config_setting_group(
-    name = "cfg_feature_logger_bare_metal",
-    match_any = [
-        ":logger_bare_metal_enabled",
-    ],
-)
-
-use_std_expected = string_flag(
+string_flag(
     name = "use_std_expected",
     build_setting_default = "off",
     visibility = ["//visibility:public"],
@@ -287,28 +201,6 @@ config_setting(
         "//:use_std_optional": "on",
     },
 )
-
-# string_flag(
-#     name = "config_use_std_optional",
-#     build_setting_default = "off",
-#     visibility = ["//visibility:public"],
-# )
-#
-# config_setting(
-#     name = "use_std_optional_enabled",
-#     flag_values = {
-#         "//:config_use_std_optional": "on",
-#     },
-# )
-#
-# # NOTE: while this seems superfluous, it is the pattern for cases where *_auto is on by default;
-# #       therefore this target is introduced to keep all feature flags consistent
-# selects.config_setting_group(
-#     name = "cfg_config_use_std_optional",
-#     match_any = [
-#         ":use_std_optional_enabled",
-#     ],
-# )
 
 #
 # Alias
