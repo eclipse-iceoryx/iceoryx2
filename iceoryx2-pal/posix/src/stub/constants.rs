@@ -139,8 +139,8 @@ pub const SIGVTALRM: int = 24;
 pub const SIGXCPU: int = 25;
 pub const SIGXFSZ: int = 26;
 pub const SIG_ERR: sighandler_t = sighandler_t::MAX;
-pub const SIG_DFL: int = 0;
-pub const SIG_IGN: int = 1;
+pub const SIG_DFL: sighandler_t = 0;
+pub const SIG_IGN: sighandler_t = 1;
 pub const SA_RESTART: int = 1;
 
 pub const AF_LOCAL: sa_family_t = 1;

@@ -165,9 +165,9 @@ pub const SIGURG: int = libc::SIGURG as _;
 pub const SIGVTALRM: int = libc::SIGVTALRM as _;
 pub const SIGXCPU: int = libc::SIGXCPU as _;
 pub const SIGXFSZ: int = libc::SIGXFSZ as _;
-pub const SIG_ERR: sighandler_t = sighandler_t::MAX;
-pub const SIG_DFL: int = 0;
-pub const SIG_IGN: int = 1;
+pub const SIG_ERR: sighandler_t = libc::SIG_ERR as _;
+pub const SIG_DFL: sighandler_t = libc::SIG_DFL as _;
+pub const SIG_IGN: sighandler_t = libc::SIG_IGN as _;
 pub const SA_RESTART: int = libc::SA_RESTART as _;
 
 pub const AF_LOCAL: sa_family_t = libc::AF_UNIX as _;
