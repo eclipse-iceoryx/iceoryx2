@@ -21,6 +21,5 @@ test --action_env=RUST_TEST_THREADS=1
 # feature flags
 #
 
-# value [auto, on, off]
-# 'auto' is defined by the crate owner ('off' for this feature) and the default value if the flag is not set
+# value [on, off]
 #build --//:feature_dev_permissions=on

@@ -24,7 +24,6 @@ filegroup(
 rust_library(
     name = "iceoryx2-pal-os-api",
     srcs = glob(["src/**/*.rs"]),
-    rustc_flags = ["--cfg=bazel_build"],
     deps = [
         "@crate_index//:libc",
         "//iceoryx2-pal/posix:iceoryx2-pal-posix",
