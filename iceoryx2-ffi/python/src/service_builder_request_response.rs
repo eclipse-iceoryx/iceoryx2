@@ -92,19 +92,19 @@ impl ServiceBuilderRequestResponse {
 
 #[pymethods]
 impl ServiceBuilderRequestResponse {
-    pub fn __set_request_payload_type(&mut self, value: PyObject) {
+    pub fn __set_request_payload_type(&mut self, value: Py<PyAny>) {
         self.request_payload_type_details.value = Some(value)
     }
 
-    pub fn __set_response_payload_type(&mut self, value: PyObject) {
+    pub fn __set_response_payload_type(&mut self, value: Py<PyAny>) {
         self.response_payload_type_details.value = Some(value)
     }
 
-    pub fn __set_request_header_type(&mut self, value: PyObject) {
+    pub fn __set_request_header_type(&mut self, value: Py<PyAny>) {
         self.request_header_type_details.value = Some(value)
     }
 
-    pub fn __set_response_header_type(&mut self, value: PyObject) {
+    pub fn __set_response_header_type(&mut self, value: Py<PyAny>) {
         self.response_header_type_details.value = Some(value)
     }
 

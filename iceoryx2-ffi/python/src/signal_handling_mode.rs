@@ -12,7 +12,7 @@
 
 use pyo3::prelude::*;
 
-#[pyclass(eq, eq_int)]
+#[pyclass(eq, eq_int, skip_from_py_object)]
 #[derive(PartialEq, Clone, Debug)]
 /// Defines how signals are handled by constructs that might register a custom
 /// `SignalHandler`

@@ -12,7 +12,7 @@
 
 use pyo3::prelude::*;
 
-#[pyclass(eq, eq_int)]
+#[pyclass(eq, eq_int, skip_from_py_object)]
 #[derive(PartialEq, Clone, Debug)]
 /// Describes generically an `AllocationStrategy`, meaning how the memory is increased when the
 /// available memory is insufficient.

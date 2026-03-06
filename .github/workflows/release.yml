@@ -8,7 +8,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: 
+        os:
           - ubuntu-latest
           - macos-latest          # aarch64
           - windows-latest
@@ -17,7 +17,7 @@ jobs:
         shell: bash               # required for windows
 
     runs-on: ${{ matrix.os }}
-    
+
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
 
@@ -43,8 +43,48 @@ jobs:
           path: target/ff/python/dist
           retention-days: 7
 
+  build-python-freethreaded-wheels:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest          # aarch64
+          - windows-latest
+        python:
+          - "3.14t"  # needs to be later updated with future python versions which have freethread support
+    defaults:
+      run:
+        shell: bash               # required for windows
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
+
+      - name: Set Up Python & Install Poetry
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # version: v6.0.1
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install poetry==2.2.1
+
+      - name: Install Global Plugins # (needed for windows due to separate C:\ and D:\ drives)
+        if: runner.os == 'Windows'
+        run: poetry self add "poethepoet[poetry-plugin]>=0.35.0,<0.36.0"
+
+      - name: Build Wheel
+        run: |
+          poetry --project iceoryx2-ffi/python install
+          poetry --project iceoryx2-ffi/python build-wheel -i python${{ matrix.python }}
+      - name: Upload Wheel
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # version: v6.0.0
+        with:
+          name: wheels-${{ runner.os }}-${{ runner.arch }}-${{ github.sha }}
+          path: target/ff/python/dist
+          retention-days: 7
+
   prepare-python-dist:
-    needs: [build-python-wheels]
+    needs: [build-python-wheels, build-python-freethreaded-wheels]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
@@ -69,7 +109,7 @@ jobs:
           poetry --project iceoryx2-ffi/python build-sdist
 
           cp target/ff/python/dist/*.tar.gz dist/
-          
+
           # Validate
           echo "Validating wheels..."
           if ls dist/*.whl 1> /dev/null 2>&1; then

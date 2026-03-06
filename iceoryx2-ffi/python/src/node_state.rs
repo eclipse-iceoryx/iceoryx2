@@ -30,7 +30,7 @@ pub(crate) enum DeadNodeViewType {
     Local(iceoryx2::node::DeadNodeView<crate::LocalService>),
 }
 
-#[pyclass]
+#[pyclass(skip_from_py_object)]
 #[derive(Clone)]
 /// Contains details of a `Node`.
 pub struct NodeDetails(pub(crate) iceoryx2::node::NodeDetails);
@@ -56,7 +56,7 @@ impl NodeDetails {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone)]
 /// Contains all details of a `Node` that is alive.
 pub struct AliveNodeView(pub(crate) AliveNodeViewType);
@@ -83,7 +83,7 @@ impl AliveNodeView {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone)]
 /// Contains all details of a `Node` that is dead.
 pub struct DeadNodeView(pub(crate) DeadNodeViewType);
@@ -127,7 +127,7 @@ impl DeadNodeView {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone)]
 /// Describes the state of a `Node`.
 pub enum NodeState {

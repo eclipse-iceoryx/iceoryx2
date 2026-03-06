@@ -12,7 +12,7 @@
 
 use pyo3::prelude::*;
 
-#[pyclass(eq, eq_int)]
+#[pyclass(eq, eq_int, from_py_object)]
 #[derive(PartialEq, Clone, Debug)]
 /// Defines the type of the `Service` and what kind of resources and operating system mechanisms
 /// it shall use.

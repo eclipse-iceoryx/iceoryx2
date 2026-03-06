@@ -12,7 +12,7 @@
 
 use pyo3::prelude::*;
 
-#[pyclass(str = "{0:?}")]
+#[pyclass(str = "{0:?}", from_py_object)]
 #[derive(Clone, PartialEq)]
 /// The system-wide unique id of a `Node`
 pub struct NodeId(pub(crate) iceoryx2::node::NodeId);

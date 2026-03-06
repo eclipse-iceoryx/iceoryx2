@@ -12,7 +12,7 @@
 
 use pyo3::prelude::*;
 
-#[pyclass]
+#[pyclass(skip_from_py_object)]
 #[derive(PartialEq, Clone, Debug)]
 /// Defines if the type is a slice with a runtime-size (`TypeVariant::Dynamic`)
 /// or if its a type that satisfies `Sized` (`TypeVariant::FixedSize`).

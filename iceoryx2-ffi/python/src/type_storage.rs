@@ -12,9 +12,9 @@
 
 use pyo3::prelude::*;
 
-#[pyclass]
+#[pyclass(from_py_object)]
 pub struct TypeStorage {
-    pub value: Option<PyObject>,
+    pub value: Option<Py<PyAny>>,
 }
 
 impl Default for TypeStorage {
@@ -29,7 +29,7 @@ impl Clone for TypeStorage {
             value: self
                 .value
                 .as_ref()
-                .map(|v| Python::with_gil(|py| v.clone_ref(py))),
+                .map(|v| Python::attach(|py| v.clone_ref(py))),
         }
     }
 }

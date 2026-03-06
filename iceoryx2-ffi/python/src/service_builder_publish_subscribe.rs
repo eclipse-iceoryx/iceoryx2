@@ -78,11 +78,11 @@ impl ServiceBuilderPublishSubscribe {
 
 #[pymethods]
 impl ServiceBuilderPublishSubscribe {
-    pub fn __set_payload_type(&mut self, value: PyObject) {
+    pub fn __set_payload_type(&mut self, value: Py<PyAny>) {
         self.payload_type_details.value = Some(value)
     }
 
-    pub fn __set_user_header_type(&mut self, value: PyObject) {
+    pub fn __set_user_header_type(&mut self, value: Py<PyAny>) {
         self.user_header_type_details.value = Some(value)
     }
 

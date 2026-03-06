@@ -38,7 +38,7 @@ impl EntryHandleMut {
         self.value_type_storage.clone().value
     }
 
-    pub fn __set_value_type(&mut self, value: PyObject) {
+    pub fn __set_value_type(&mut self, value: Py<PyAny>) {
         self.value_type_storage.value = Some(value)
     }
 
