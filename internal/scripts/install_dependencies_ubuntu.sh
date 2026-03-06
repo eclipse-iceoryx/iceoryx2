@@ -13,7 +13,7 @@
 
 set -e
 
-arch=$(uname -m)
+arch="${1:-x86_64}"
 packages=(
     binutils-dev
     build-essential
@@ -35,6 +35,7 @@ packages=(
     qemu-system-arm
 )
 
+echo "Detected arch:$arch"
 if [[ "$arch" == "i686" ]]; then
     dpkg --add-architecture i386
     packages+=(

@@ -63,7 +63,7 @@ jobs:
       - name: Prepare Linux
         if: ${{ runner.os == 'Linux' }}
         run: |
-          internal/scripts/ci_prepare_ubuntu.sh
+          internal/scripts/ci_prepare_ubuntu.sh i686
           uname -a
 
       - name: Save disk space
