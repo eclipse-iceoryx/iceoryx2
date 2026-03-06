@@ -14,7 +14,7 @@ version = { workspace = true }
 workspace = true
 
 [features]
-default = ["std"]
+default = []
 
 std = [
   "iceoryx2-bb-concurrency/std",

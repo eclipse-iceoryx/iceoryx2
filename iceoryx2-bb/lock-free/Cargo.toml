@@ -14,7 +14,10 @@ version = { workspace = true }
 workspace = true
 
 [features]
-std = []
+default = []
+std = [
+  "iceoryx2-bb-concurrency/std"
+]
 
 [dependencies]
 iceoryx2-log = { workspace = true }

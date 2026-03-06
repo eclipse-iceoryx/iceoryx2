@@ -15,7 +15,9 @@ proc-macro = true
 
 [features]
 default = []
-std = []
+std = [
+  "iceoryx2-pal-print/std"
+]
 
 [dependencies]
 iceoryx2-bb-testing-nostd = { workspace = true }

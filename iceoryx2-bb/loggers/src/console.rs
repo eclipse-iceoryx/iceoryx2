@@ -14,14 +14,14 @@
 
 use alloc::string::ToString;
 
+use iceoryx2_bb_concurrency::atomic::AtomicU64;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_print::cerr;
 use iceoryx2_bb_print::cerrln;
 use iceoryx2_bb_print::stderr;
 use iceoryx2_bb_print::IsTerminal;
 use iceoryx2_log_types::Log;
 use iceoryx2_log_types::LogLevel;
-use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
-use iceoryx2_pal_concurrency_sync::atomic::Ordering;
 
 #[allow(dead_code)]
 enum ConsoleLogOrder {

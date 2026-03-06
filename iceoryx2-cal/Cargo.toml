@@ -13,7 +13,8 @@ version = { workspace = true }
 [features]
 default = []
 std = [
-  "iceoryx2-bb-concurrency/std"
+  "iceoryx2-bb-concurrency/std",
+  "iceoryx2-bb-posix/std"
 ]
 
 # The permissions of all resources will be set to read, write, execute for everyone.
