@@ -10,7 +10,17 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![cfg_attr(not(feature = "std"), no_std)]
+// Need to use target instead of `std` flag to support commands that build
+// crates in isolation, such as:
+//   cargo build --workspace --all-targets
+//
+// While depending purely on the `std` feature flag here would be more
+// consistent, such commands seem to only build with default features,
+// and crates do not have `std` enabled by default to simplify `no_std` builds.
+#![cfg_attr(
+    any(target_os = "linux", target_os = "nto", target_os = "none"),
+    no_std
+)]
 #![allow(clippy::missing_safety_doc)]
 #![warn(clippy::alloc_instead_of_core)]
 #![warn(clippy::std_instead_of_alloc)]
