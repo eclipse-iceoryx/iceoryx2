@@ -13,7 +13,9 @@ version = { workspace = true }
 [features]
 default = []
 
-std = ["iceoryx2-pal-print/std"]
+std = [
+  "iceoryx2-pal-print/std"
+]
 
 [dependencies]
 iceoryx2-pal-print = { workspace = true }

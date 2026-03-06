@@ -23,6 +23,7 @@ default = ["std"]
 std = [
   "iceoryx2/std",
   "iceoryx2-bb-concurrency/std",
+  "iceoryx2-bb-posix/std",
 ]
 
 [build-dependencies]

@@ -14,7 +14,10 @@ version = { workspace = true }
 default = []
 
 # Required to enable building the entire workspace with std enabled
-std = []
+std = [
+  "iceoryx2-pal-print/std",
+  "iceoryx2-pal-posix/std"
+]
 
 [dependencies]
 iceoryx2-pal-print = { workspace = true }

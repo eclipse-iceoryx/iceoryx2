@@ -20,6 +20,7 @@ pub mod atomic;
 pub mod cell;
 pub mod lazy_lock;
 pub mod once;
+pub mod spin_lock;
 pub mod strategy;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -33,4 +34,3 @@ pub enum WaitResult {
     Interrupted,
     Success,
 }
-pub mod spin_lock;
