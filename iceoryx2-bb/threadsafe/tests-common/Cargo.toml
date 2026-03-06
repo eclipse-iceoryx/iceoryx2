@@ -1,0 +1,29 @@
+[package]
+name = "iceoryx2-bb-threadsafe-tests-common"
+description = "iceoryx2: [internal] common test definitions for iceoryx2-bb-threadsafe"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[lints]
+workspace = true
+
+[features]
+default = []
+std = [
+  "iceoryx2-bb-testing/std",
+  "iceoryx2-bb-testing-nostd-macros/std",
+]
+
+[dependencies]
+iceoryx2-bb-threadsafe = { workspace = true }
+iceoryx2-bb-concurrency = { workspace = true }
+iceoryx2-bb-posix = { workspace = true }
+iceoryx2-bb-testing = { workspace = true }
+iceoryx2-bb-testing-nostd-macros = { workspace = true }
+iceoryx2-pal-print = { workspace = true }

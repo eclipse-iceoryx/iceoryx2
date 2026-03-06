@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate iceoryx2_bb_loggers;
+
 #[cfg(test)]
 mod zero_copy_send {
     use iceoryx2_bb_derive_macros::ZeroCopySend;

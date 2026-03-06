@@ -12,7 +12,7 @@
 
 #[cfg(test)]
 mod hex_conversion_tests {
-    use iceoryx2_pal_testing::assert_that;
+    use iceoryx2_bb_testing::assert_that;
     use iceoryx2_userland_record_and_replay::hex_conversion::{
         bytes_to_hex_string, hex_string_to_bytes, HexToBytesConversionError,
     };

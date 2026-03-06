@@ -42,7 +42,6 @@ rust_test_suite(
         "@crate_index//:enum-iterator",
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
-        "//iceoryx2-pal/testing:iceoryx2-pal-testing",
         "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
         "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
     ],

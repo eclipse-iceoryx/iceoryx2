@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate iceoryx2_bb_loggers;
+
 #[cfg(test)]
 mod placement_new {
     use core::sync::atomic::{AtomicU64, AtomicUsize, Ordering};

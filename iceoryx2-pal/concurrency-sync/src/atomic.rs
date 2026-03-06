@@ -28,7 +28,7 @@ pub use core::sync::atomic::fence;
 pub use loom::sync::atomic::fence;
 
 use crate::cell::UnsafeCell;
-use crate::rwlock::RwLockWriterPreference;
+use crate::strategy::rwlock::RwLockWriterPreference;
 use crate::WaitAction;
 
 /// Behaves like [`core::sync::atomic::AtomicBool`]

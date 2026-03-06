@@ -48,12 +48,12 @@ iceoryx2-userland-record-and-replay = { workspace = true }
 iceoryx2-services-discovery = { workspace = true }
 iceoryx2 = { workspace = true, features = ["std"] }
 iceoryx2-cal = { workspace = true, features = ["std"] }
-iceoryx2-bb-loggers = { workspace = true, features = ["std", "console"]}
+iceoryx2-bb-loggers = { workspace = true, features = ["std", "console"] }
 iceoryx2-bb-posix = { workspace = true, features = ["std"] }
 iceoryx2-bb-system-types = { workspace = true }
 iceoryx2-bb-container = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }
-iceoryx2-pal-posix = { workspace = true }
+iceoryx2-pal-posix = { workspace = true, features = ["std"] }
 
 anyhow = { workspace = true }
 better-panic = { workspace = true }
@@ -78,5 +78,5 @@ zenoh = { workspace = true }
 
 [dev-dependencies]
 iceoryx2-bb-testing = { workspace = true }
-iceoryx2-pal-testing = { workspace = true }
+
 tempfile = { workspace = true }

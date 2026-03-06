@@ -117,8 +117,7 @@
 * Test at least runtimes with
   `assert_that!(start.elapsed(), time_at_least TIMEOUT)`
 * Do not wait for events (indefinitely), use
-  `assert_that!(|| { some_condition }, block_until_true)`
-    * It starts a `iceoryx2_bb_testing::watchdog::Watchdog` in the background that
-    terminates the test when it deadlocks.
+  `assert_that!(|| { some_condition }, eq true, before Watchdog::default())`
+    * The watchdog will terminate the test in case of deadlock
 * If the test can deadlock, instantiate a
   `iceoryx2_bb_testing::watchdog::Watchdog` in the beginning of the test.

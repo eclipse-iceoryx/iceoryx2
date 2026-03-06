@@ -343,7 +343,7 @@ pub mod server {
             assert_that!(has_sent_response.load(Ordering::Relaxed), eq false);
             let response = pending_response.receive().unwrap().unwrap();
             assert_that!(*response, eq 321);
-            assert_that!(|| has_sent_response.load(Ordering::Relaxed), block_until true);
+            assert_that!(|| has_sent_response.load(Ordering::Relaxed), eq true, before Watchdog::default());
 
             let response = pending_response.receive().unwrap().unwrap();
             assert_that!(*response, eq 654);

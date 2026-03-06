@@ -23,5 +23,5 @@ anyhow = { workspace = true }
 serde = { workspace = true }
 
 [dev-dependencies]
-iceoryx2-pal-testing = { workspace = true }
+iceoryx2-bb-testing = { workspace = true }
 iceoryx2-bb-concurrency = { workspace = true, features = ["std"] }

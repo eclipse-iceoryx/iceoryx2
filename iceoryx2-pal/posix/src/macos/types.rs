@@ -15,10 +15,10 @@
 
 use crate::posix::*;
 use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
-use iceoryx2_pal_concurrency_sync::barrier::Barrier;
-use iceoryx2_pal_concurrency_sync::condition_variable::*;
-use iceoryx2_pal_concurrency_sync::rwlock::*;
-use iceoryx2_pal_concurrency_sync::semaphore::*;
+use iceoryx2_pal_concurrency_sync::strategy::barrier::Barrier;
+use iceoryx2_pal_concurrency_sync::strategy::condition_variable::*;
+use iceoryx2_pal_concurrency_sync::strategy::rwlock::*;
+use iceoryx2_pal_concurrency_sync::strategy::semaphore::*;
 
 pub type ulong = usize;
 

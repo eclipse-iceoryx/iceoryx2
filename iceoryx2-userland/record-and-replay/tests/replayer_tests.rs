@@ -18,7 +18,7 @@ mod replayer_tests {
         file::{CreationMode, FileBuilder},
         testing::generate_file_name,
     };
-    use iceoryx2_pal_testing::assert_that;
+    use iceoryx2_bb_testing::assert_that;
     use iceoryx2_userland_record_and_replay::{
         recorder::{RecorderBuilder, ServiceTypes},
         replayer::{ReplayerOpenError, ReplayerOpener},
