@@ -127,6 +127,7 @@ use core::{fmt::Debug, marker::PhantomData};
 use alloc::vec;
 use alloc::vec::Vec;
 
+use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::string::*;
 use iceoryx2_bb_container::vector::{StaticVec, Vector};
@@ -593,6 +594,7 @@ impl ThreadBuilder {
         Ok(Thread::new(ThreadHandle {
             handle,
             name: UnsafeCell::new(self.name),
+            is_joined: AtomicBool::new(false),
         }))
     }
 }
@@ -666,6 +668,7 @@ pub trait ThreadProperties {
 pub struct ThreadHandle {
     handle: posix::pthread_t,
     name: UnsafeCell<ThreadName>,
+    is_joined: AtomicBool,
 }
 
 impl ThreadHandle {
@@ -674,6 +677,36 @@ impl ThreadHandle {
         ThreadHandle {
             handle: unsafe { posix::pthread_self() },
             name: UnsafeCell::new(ThreadName::new()),
+            is_joined: AtomicBool::new(false),
+        }
+    }
+
+    fn join(&self) -> Result<(), ThreadJoinError> {
+        if self.is_joined.load(core::sync::atomic::Ordering::Relaxed) {
+            return Ok(());
+        }
+
+        let msg = "Unable to join thread";
+        match unsafe {
+            posix::pthread_join(self.handle, core::ptr::null_mut::<*mut posix::void>()).into()
+        } {
+            Errno::ESUCCES => {
+                self.is_joined
+                    .store(true, core::sync::atomic::Ordering::Relaxed);
+                Ok(())
+            }
+            Errno::EDEADLK => {
+                fail!(from self, with ThreadJoinError::Deadlock,
+                    "{} since a deadlock was detected.", msg);
+            }
+            Errno::EINVAL => {
+                fatal_panic!(from self, "This should never happen! {} since someone else is already trying to join this thread.", msg);
+            }
+            Errno::ESRCH => Ok(()),
+            v => {
+                fail!(from self, with ThreadJoinError::Unknown(v as _),
+                    "{} since an unknown error occurred ({}).", msg, v);
+            }
         }
     }
 }
@@ -812,37 +845,12 @@ impl Debug for Thread {
 impl Drop for Thread {
     fn drop(&mut self) {
         warn!(from self,
-            when self.join(),
+            when self.handle.join(),
             "Unable to join thread that went out-of-scope.");
     }
 }
 
 impl Thread {
-    fn join(&self) -> Result<(), ThreadJoinError> {
-        let msg = "Unable to join thread";
-        match unsafe {
-            posix::pthread_join(
-                self.handle.handle,
-                core::ptr::null_mut::<*mut posix::void>(),
-            )
-            .into()
-        } {
-            Errno::ESUCCES => Ok(()),
-            Errno::EDEADLK => {
-                fail!(from self, with ThreadJoinError::Deadlock,
-                    "{} since a deadlock was detected.", msg);
-            }
-            Errno::EINVAL => {
-                fatal_panic!(from self, "This should never happen! {} since someone else is already trying to join this thread.", msg);
-            }
-            Errno::ESRCH => Ok(()),
-            v => {
-                fail!(from self, with ThreadJoinError::Unknown(v as _),
-                    "{} since an unknown error occurred ({}).", msg, v);
-            }
-        }
-    }
-
     fn new(handle: ThreadHandle) -> Self {
         Self { handle }
     }
@@ -878,16 +886,6 @@ impl ThreadProperties for Thread {
 #[derive(Debug)]
 pub struct ThreadScopeGuard {
     threads: StaticVec<Thread, MAX_SCOPED_THREADS>,
-}
-
-impl Drop for ThreadScopeGuard {
-    fn drop(&mut self) {
-        for thread in self.threads.iter().rev() {
-            if let Err(e) = thread.join() {
-                warn!("Leaving scoped thread but but not all threads could be joined ({e:?}).");
-            }
-        }
-    }
 }
 
 impl ThreadScopeGuard {
