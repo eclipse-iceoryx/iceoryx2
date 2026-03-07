@@ -30,4 +30,4 @@ pub type RefMut<'a, T> = core::cell::RefMut<'a, T>;
 pub type UnsafeCell<T> = core::cell::UnsafeCell<T>;
 
 #[cfg(all(test, loom, feature = "std"))]
-use loom::cell::UnsafeCell;
+pub(crate) type UnsafeCell<T> = loom::cell::UnsafeCell<T>;
