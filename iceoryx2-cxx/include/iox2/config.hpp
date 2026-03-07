@@ -441,6 +441,10 @@ class Config {
     /// [`ConfigCreationError`] describing the failure.
     static auto from_file(const iox2::bb::FilePath& file) -> iox2::bb::Expected<Config, ConfigCreationError>;
 
+    /// Sets the global configuration from a file. On success it returns the global config as [`ConfigView`]
+    /// object otherwise a [`ConfigCreationError`] describing the failure.
+    static auto setup_global_config_from_file(const iox2::bb::FilePath& file) -> iox2::bb::Expected<ConfigView, ConfigCreationError>;
+
     /// Returns the [`config::Global`] part of the config
     auto global() -> config::Global;
     /// Returns the [`config::Defaults`] part of the config
