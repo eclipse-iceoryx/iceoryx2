@@ -91,6 +91,16 @@ auto Config::from_file(const iox2::bb::FilePath& file) -> iox2::bb::Expected<Con
     return iox2::bb::err(iox2::bb::into<ConfigCreationError>(result));
 }
 
+auto Config::setup_global_config_from_file(const iox2::bb::FilePath& file) -> iox2::bb::Expected<ConfigView, ConfigCreationError> {
+    iox2_config_ptr handle = nullptr;
+    auto result = iox2_config_setup_global_config_from_file(&handle, file.as_string().unchecked_access().c_str());
+    if (result == IOX2_OK) {
+        return ConfigView { handle };
+    }
+
+    return iox2::bb::err(iox2::bb::into<ConfigCreationError>(result));
+}
+
 auto Config::global() -> config::Global {
     return config::Global(&this->m_handle);
 }

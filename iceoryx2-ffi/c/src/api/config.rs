@@ -269,6 +269,38 @@ pub unsafe extern "C" fn iox2_config_from_file(
     IOX2_OK
 }
 
+/// Creates an iceoryx2 config, populated values from the provided file and sets it as global default.
+///
+/// # Safety
+///
+/// * `handle_ptr` - An uninitialized or dangling [`iox2_config_ptr`] handle which will be initialized
+///   by this function call.
+/// * `config_file` - Must be a valid file path to an existing config file.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_setup_global_config_from_file(
+    handle_ptr: *mut iox2_config_ptr,
+    config_file: *const c_char,
+) -> c_int {
+    debug_assert!(!handle_ptr.is_null());
+    debug_assert!(!config_file.is_null());
+
+    let file = match FilePath::from_c_str(config_file) {
+        Ok(file) => file,
+        Err(_) => return iox2_config_creation_error_e::INVALID_FILE_PATH as c_int,
+    };
+
+    let config = match Config::setup_global_config_from_file(&file) {
+        Ok(config) => config,
+        Err(e) => {
+            return e.into_c_int();
+        }
+    };
+
+    *handle_ptr = config;
+
+    IOX2_OK
+}
+
 /// Clones a config from the provided [`iox2_config_ptr`].
 ///
 /// # Safety
