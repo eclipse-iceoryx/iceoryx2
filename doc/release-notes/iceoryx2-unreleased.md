@@ -59,6 +59,8 @@
   [#1365](https://github.com/eclipse-iceoryx/iceoryx2/issues/1370)
 * Add `update_connection` to Python bindings
   [#1380](https://github.com/eclipse-iceoryx/iceoryx2/issues/1380)
+* Add `Config::setup_global_config_from_file` to C++ bindings
+  [#1395](https://github.com/eclipse-iceoryx/iceoryx2/issues/1395)
 
 ### Refactoring
 
