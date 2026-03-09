@@ -1837,6 +1837,7 @@ version = "0.8.999"
 dependencies = [
  "iceoryx2-pal-concurrency-sync",
  "iceoryx2-pal-configuration",
+ "iceoryx2-pal-posix",
 ]
 
 [[package]]

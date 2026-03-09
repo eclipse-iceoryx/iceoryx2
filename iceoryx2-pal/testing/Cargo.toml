@@ -20,3 +20,4 @@ std = [
 [dependencies]
 iceoryx2-pal-configuration = { workspace = true }
 iceoryx2-pal-concurrency-sync = { workspace = true }
+iceoryx2-pal-posix = { workspace = true }

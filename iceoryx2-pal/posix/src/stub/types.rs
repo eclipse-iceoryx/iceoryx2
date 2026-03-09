@@ -299,3 +299,44 @@ impl SockAddrIn for sockaddr_in {
         unimplemented!("get_s_addr")
     }
 }
+
+#[repr(C)]
+pub struct itimerspec {
+    pub it_interval: timespec,
+    pub it_value: timespec,
+}
+impl MemZeroedStruct for itimerspec {}
+
+#[repr(C)]
+pub struct siginfo_t {
+    pub si_signo: int,
+    pub si_errno: int,
+    pub si_code: int,
+    pub si_pid: pid_t,
+    pub si_uid: uid_t,
+    pub si_addr: *mut void,
+    pub si_status: int,
+    pub si_band: long,
+    pub si_value: sigval,
+}
+impl MemZeroedStruct for siginfo_t {}
+
+#[repr(C)]
+pub union sigval {
+    pub sival_int: int,
+    pub sival_ptr: *mut void,
+}
+impl MemZeroedStruct for sigval {}
+
+#[repr(C)]
+pub struct timer_t {
+    pub(crate) id: u64,
+}
+impl MemZeroedStruct for timer_t {}
+
+#[repr(C)]
+pub struct sigevent {
+    pub sigev_notify: int,
+    pub sigev_signo: int,
+}
+impl MemZeroedStruct for sigevent {}

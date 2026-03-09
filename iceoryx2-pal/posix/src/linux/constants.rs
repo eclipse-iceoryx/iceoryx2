@@ -63,6 +63,8 @@ pub const PTHREAD_BARRIER_SERIAL_THREAD: int = libc::PTHREAD_BARRIER_SERIAL_THRE
 pub const PTHREAD_EXPLICIT_SCHED: int = libc::PTHREAD_EXPLICIT_SCHED as _;
 pub const PTHREAD_INHERIT_SCHED: int = libc::PTHREAD_INHERIT_SCHED as _;
 
+pub const SIGEV_SIGNAL: int = libc::SIGEV_SIGNAL;
+
 pub const MAX_SIGNAL_VALUE: usize = 32;
 
 pub const SO_PASSCRED: int = libc::SO_PASSCRED as _;
