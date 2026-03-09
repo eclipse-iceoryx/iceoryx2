@@ -20,4 +20,3 @@ extern crate alloc;
 pub use iceoryx2_pal_testing::*;
 pub mod instantiate_conformance_tests_macro;
 pub mod lifetime_tracker;
-pub mod watchdog;
