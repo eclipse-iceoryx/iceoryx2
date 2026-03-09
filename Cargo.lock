@@ -1415,13 +1415,13 @@ name = "iceoryx2-bb-elementary"
 version = "0.8.999"
 dependencies = [
  "generic-tests",
- "iceoryx2-bb-concurrency",
  "iceoryx2-bb-elementary-tests-common",
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-loggers",
  "iceoryx2-bb-testing",
  "iceoryx2-bb-testing-nostd",
  "iceoryx2-bb-testing-nostd-macros",
+ "iceoryx2-pal-concurrency-sync",
 ]
 
 [[package]]
@@ -1484,9 +1484,9 @@ dependencies = [
 name = "iceoryx2-bb-loggers"
 version = "0.8.999"
 dependencies = [
- "iceoryx2-bb-concurrency",
  "iceoryx2-bb-print",
  "iceoryx2-log-types",
+ "iceoryx2-pal-concurrency-sync",
  "iceoryx2-pal-posix",
  "log",
  "tracing",
@@ -1555,11 +1555,8 @@ dependencies = [
 name = "iceoryx2-bb-testing"
 version = "0.8.999"
 dependencies = [
- "iceoryx2-bb-concurrency",
  "iceoryx2-bb-elementary-traits",
- "iceoryx2-bb-posix",
- "iceoryx2-bb-print",
- "iceoryx2-pal-configuration",
+ "iceoryx2-pal-concurrency-sync",
  "iceoryx2-pal-testing",
 ]
 
@@ -1819,7 +1816,6 @@ dependencies = [
  "cc",
  "iceoryx2-pal-concurrency-sync",
  "iceoryx2-pal-configuration",
- "iceoryx2-pal-testing",
  "libc",
  "windows-sys 0.48.0",
 ]

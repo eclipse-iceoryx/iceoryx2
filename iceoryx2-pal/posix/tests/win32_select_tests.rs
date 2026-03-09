@@ -13,13 +13,12 @@
 #[cfg(target_os = "windows")]
 mod win32_select {
     use iceoryx2_pal_posix::posix::{settings::FD_SET_CAPACITY, *};
-    use iceoryx2_pal_testing::assert_that;
     use win32_handle_translator::*;
 
     #[test]
     fn fd_set_capacity_correct() {
         let sut = fd_set::new_zeroed();
-        assert_that!(FD_SET_CAPACITY, eq sut.fd_array.len());
+        assert_eq!(FD_SET_CAPACITY, sut.fd_array.len());
     }
 
     #[test]
@@ -38,9 +37,9 @@ mod win32_select {
         }
 
         for fd in socket_fd {
-            assert_that!(unsafe {FD_ISSET(fd, &sut)}, eq false);
+            assert_eq!(unsafe { FD_ISSET(fd, &sut) }, false);
             unsafe { FD_SET(fd, &mut sut) }
-            assert_that!(unsafe {FD_ISSET(fd, &sut)}, eq true);
+            assert_eq!(unsafe { FD_ISSET(fd, &sut) }, true);
         }
     }
 
@@ -66,7 +65,7 @@ mod win32_select {
         unsafe { FD_ZERO(&mut sut) };
 
         for fd in &socket_fd {
-            assert_that!(unsafe {FD_ISSET(*fd, &sut)}, eq false);
+            assert_eq!(unsafe { FD_ISSET(*fd, &sut) }, false);
         }
     }
 
@@ -90,9 +89,9 @@ mod win32_select {
         }
 
         for fd in &socket_fd {
-            assert_that!(unsafe {FD_ISSET(*fd, &sut)}, eq true);
+            assert_eq!(unsafe { FD_ISSET(*fd, &sut) }, true);
             unsafe { FD_CLR(*fd, &mut sut) }
-            assert_that!(unsafe {FD_ISSET(*fd, &sut)}, eq false);
+            assert_eq!(unsafe { FD_ISSET(*fd, &sut) }, false);
         }
     }
 
@@ -116,9 +115,9 @@ mod win32_select {
         }
 
         for fd in socket_fd.iter().rev() {
-            assert_that!(unsafe {FD_ISSET(*fd, &sut)}, eq true);
+            assert_eq!(unsafe { FD_ISSET(*fd, &sut) }, true);
             unsafe { FD_CLR(*fd, &mut sut) }
-            assert_that!(unsafe {FD_ISSET(*fd, &sut)}, eq false);
+            assert_eq!(unsafe { FD_ISSET(*fd, &sut) }, false);
         }
     }
 }

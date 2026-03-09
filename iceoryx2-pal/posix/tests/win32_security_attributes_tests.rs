@@ -19,14 +19,13 @@ mod win32_security_attributes {
         },
         *,
     };
-    use iceoryx2_pal_testing::assert_that;
     use windows_sys::Win32::Foundation::INVALID_HANDLE_VALUE;
 
     fn roundtrip(orig_mode: posix::mode_t) {
         let attr = from_mode_to_security_attributes(INVALID_HANDLE_VALUE, orig_mode);
         let mode = from_security_attributes_to_mode(&attr);
 
-        assert_that!(orig_mode, eq mode);
+        assert_eq!(orig_mode, mode);
     }
 
     #[test]

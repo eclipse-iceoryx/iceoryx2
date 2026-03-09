@@ -16,7 +16,7 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use std::sync::MutexGuard;
 
 #[cfg(not(feature = "std"))]
-use iceoryx2_bb_concurrency::spin_lock::SpinLockGuard as MutexGuard;
+use iceoryx2_pal_concurrency_sync::spin_lock::SpinLockGuard as MutexGuard;
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]

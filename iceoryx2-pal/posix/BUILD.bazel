@@ -80,7 +80,6 @@ rust_test_suite(
     srcs = glob(["tests/**/*.rs"]),
     deps = [
         ":iceoryx2-pal-posix",
-        "//iceoryx2-pal/testing:iceoryx2-pal-testing",
     ],
     proc_macro_deps = [
         "@crate_index//:generic-tests",
