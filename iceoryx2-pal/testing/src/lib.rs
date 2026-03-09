@@ -10,6 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! Low-level testing utilities and helpers.
+//!
+//! These utilities may only leverage the platform abstraction
+//! [`iceoryx2_pal_posix`] in their implementation. The `std` module may be
+//! used in `std` builds, however a `no_std` equivalent must be included for
+//! all usages.
+
 #![cfg_attr(not(feature = "std"), no_std)]
 #![warn(clippy::alloc_instead_of_core)]
 #![warn(clippy::std_instead_of_alloc)]
