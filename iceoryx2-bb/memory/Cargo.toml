@@ -31,4 +31,4 @@ iceoryx2-bb-posix = { workspace = true }
 
 [dev-dependencies]
 iceoryx2-bb-loggers = { workspace = true }
-iceoryx2-bb-testing = { workspace = true }
+iceoryx2-bb-memory-tests-common = { workspace = true, features = ["std"] }
