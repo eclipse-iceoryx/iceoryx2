@@ -30,8 +30,8 @@ CRATES_TO_PUBLISH=(
     iceoryx2-pal-configuration
     iceoryx2-pal-concurrency-sync
     iceoryx2-pal-posix
-    iceoryx2-pal-testing
     iceoryx2-pal-print
+    iceoryx2-pal-testing
     iceoryx2-pal-os-api
     iceoryx2-log-types
     iceoryx2-log

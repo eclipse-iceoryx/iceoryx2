@@ -14,6 +14,7 @@ version = { workspace = true }
 default = []
 
 std = [
+  "iceoryx2-pal-print/std",
   "iceoryx2-pal-concurrency-sync/std"
 ]
 
@@ -21,3 +22,4 @@ std = [
 iceoryx2-pal-configuration = { workspace = true }
 iceoryx2-pal-concurrency-sync = { workspace = true }
 iceoryx2-pal-posix = { workspace = true }
+iceoryx2-pal-print = { workspace = true }

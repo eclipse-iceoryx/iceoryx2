@@ -25,6 +25,7 @@ mod posix_platform {
         types::{int, itimerspec, sigevent, time_t, timer_t, timespec},
         Errno, MemZeroedStruct, CLOCK_REALTIME, SIGALRM, SIGEV_SIGNAL,
     };
+    use iceoryx2_pal_print::cerrln;
 
     /// Fires `SIGALRM` after a configurable timeout, terminating the process via
     /// [`posix::abort()`] in the signal handler. Intended for use in tests to
@@ -64,6 +65,8 @@ mod posix_platform {
     /// `panic!` is not async-signal-safe (it may allocate and unwind), so
     /// [`posix::abort()`] is used instead to terminate immediately.
     unsafe extern "C" fn handler(_sig: int) {
+        // write() syscall is permitted
+        cerrln!("Watchdog expired. Aborting.");
         posix::abort();
     }
 
