@@ -64,7 +64,7 @@
 //! }
 //! ```
 
-use core::{fmt::Debug, marker::PhantomData, ptr::NonNull};
+use core::{fmt::Debug, marker::PhantomData, ptr::NonNull, sync::atomic::Ordering};
 
 pub use iceoryx2_bb_elementary_traits::pointer_trait::PointerTrait;
 
@@ -136,12 +136,15 @@ impl<T> RelocatablePointer<T> {
 
 impl<T> PointerTrait<T> for RelocatablePointer<T> {
     unsafe fn as_ptr(&self) -> *const T {
-        ((self as *const Self) as isize + self.distance.load(core::sync::atomic::Ordering::Relaxed))
-            as *const T
+        let base = (self as *const Self).expose_provenance();
+        let dist = self.distance.load(Ordering::Relaxed);
+        core::ptr::with_exposed_provenance(base.wrapping_add_signed(dist))
     }
 
     unsafe fn as_mut_ptr(&mut self) -> *mut T {
-        self.as_ptr() as *mut T
+        let base = (self as *mut Self).expose_provenance();
+        let dist = self.distance.load(Ordering::Relaxed);
+        core::ptr::with_exposed_provenance_mut(base.wrapping_add_signed(dist))
     }
 
     fn is_initialized(&self) -> bool {
