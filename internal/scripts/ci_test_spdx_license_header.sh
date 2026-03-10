@@ -13,7 +13,7 @@
 
 set -e
 
-FILE_FILTER="(\.(rs|h|h.in|hh|hh.in|hpp|hpp.in|hxx|hxx.in|inl|c|cc|cpp|cxx|cmake|cmake.in|bazel|py|sh|exp)|CMakeLists.txt)$"
+FILE_FILTER="(\.(rs|h|h.in|hh|hh.in|hpp|hpp.in|hxx|hxx.in|inl|c|cc|cpp|cxx|cmake|cmake.in|bazel|py|sh|exp|just)|CMakeLists.txt|justfile)$"
 
 COLOR_RESET='\033[0m'
 COLOR_GREEN='\033[1;32m'
@@ -23,7 +23,7 @@ cd $(git rev-parse --show-toplevel)
 
 RET_VAL=0
 
-FILES=$(find . -type f -not -path "./git/*" -not -path "./target/*" -not -path "./.env/*" | grep -E ${FILE_FILTER})
+FILES=$(find . -type f -not -path "./git/*" -not -path "*/target/*" -not -path "*/.env/*" -not -path "*/.poetry/*" | grep -E ${FILE_FILTER})
 
 for FILE in $FILES
 do
