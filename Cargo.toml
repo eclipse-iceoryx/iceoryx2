@@ -96,7 +96,6 @@ iceoryx2-bb-print = { version = "0.8.999", path = "iceoryx2-bb/print" }
 iceoryx2-bb-loggers = { version = "0.8.999", path = "iceoryx2-bb/loggers/" }
 iceoryx2-bb-threadsafe = { version = "0.8.999", path = "iceoryx2-bb/threadsafe/" }
 iceoryx2-bb-lock-free = { version = "0.8.999", path = "iceoryx2-bb/lock-free/" }
-iceoryx2-bb-lock-free-tests-nostd = { version = "0.8.999", path = "iceoryx2-bb/lock-free/tests-nostd" }
 iceoryx2-bb-concurrency = { version = "0.8.999", path = "iceoryx2-bb/concurrency/" }
 iceoryx2-bb-conformance-test-macros = { version = "0.8.999", path = "iceoryx2-bb/conformance-test-macros"}
 iceoryx2-bb-container = { version = "0.8.999", path = "iceoryx2-bb/container/" }
@@ -144,6 +143,7 @@ iceoryx2-bb-concurrency-tests-nostd = { path = "iceoryx2-bb/concurrency/tests-no
 iceoryx2-bb-elementary-tests-common = { path = "iceoryx2-bb/elementary/tests-common" }
 iceoryx2-bb-elementary-tests-nostd = { path = "iceoryx2-bb/elementary/tests-nostd" }
 iceoryx2-bb-lock-free-tests-common = { path = "iceoryx2-bb/lock-free/tests-common" }
+iceoryx2-bb-lock-free-tests-nostd = { path = "iceoryx2-bb/lock-free/tests-nostd" }
 
 ################################################################################
 
