@@ -13,6 +13,8 @@
 extern crate iceoryx2_bb_loggers;
 
 use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
+use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle};
+use iceoryx2_bb_posix::mutex::Handle;
 use iceoryx2_bb_posix::system_configuration::SystemInfo;
 use iceoryx2_bb_posix::thread::*;
 use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -435,28 +437,33 @@ fn thread_destructor_does_block_on_busy_thread() {
 #[test]
 fn scoped_threads_work() {
     let _watchdog = Watchdog::new();
+    let number_of_threads = MAX_SCOPED_THREADS;
+    let handle = BarrierHandle::new();
+    let barrier = BarrierBuilder::new((number_of_threads + 1) as _)
+        .create(&handle)
+        .unwrap();
     let shared_counter = AtomicU64::new(0);
 
     thread_scope(|s| {
-        s.thread_builder()
-            .spawn(|| {
-                for _ in 0..1000 {
-                    shared_counter.fetch_add(1, Ordering::Relaxed);
-                }
-            })
-            .unwrap();
+        for _ in 0..number_of_threads {
+            s.thread_builder()
+                .spawn(|| {
+                    barrier.wait();
+                    for _ in 0..1000 {
+                        shared_counter.fetch_add(1, Ordering::Relaxed);
+                    }
+                })
+                .unwrap();
+        }
 
-        s.thread_builder()
-            .spawn(|| {
-                for _ in 0..1000 {
-                    shared_counter.fetch_add(1, Ordering::Relaxed);
-                }
-            })
-            .unwrap();
+        barrier.wait();
 
         Ok(())
     })
     .unwrap();
 
-    assert_that!(shared_counter.load(Ordering::Relaxed), eq 2000);
+    assert_that!(
+        shared_counter.load(Ordering::Relaxed),
+        eq(number_of_threads * 1000) as u64
+    );
 }

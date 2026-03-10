@@ -268,13 +268,6 @@ enum_gen! {
     FailedToSetAffinity <= ThreadSetAffinityError
 }
 
-enum_gen! {
-    ThreadJoinError
-  entry:
-    Deadlock,
-    Unknown(i32)
-}
-
 /// The builder for a [`Thread`] object.
 #[derive(Debug)]
 pub struct ThreadBuilder {
@@ -811,14 +804,6 @@ impl Debug for Thread {
 
 impl Drop for Thread {
     fn drop(&mut self) {
-        warn!(from self,
-            when self.join(),
-            "Unable to join thread that went out-of-scope.");
-    }
-}
-
-impl Thread {
-    fn join(&self) -> Result<(), ThreadJoinError> {
         let msg = "Unable to join thread";
         match unsafe {
             posix::pthread_join(
@@ -827,22 +812,21 @@ impl Thread {
             )
             .into()
         } {
-            Errno::ESUCCES => Ok(()),
+            Errno::ESUCCES | Errno::ESRCH => (),
             Errno::EDEADLK => {
-                fail!(from self, with ThreadJoinError::Deadlock,
-                    "{} since a deadlock was detected.", msg);
+                warn!(from self, "{} since a deadlock was detected.", msg);
             }
             Errno::EINVAL => {
                 fatal_panic!(from self, "This should never happen! {} since someone else is already trying to join this thread.", msg);
             }
-            Errno::ESRCH => Ok(()),
             v => {
-                fail!(from self, with ThreadJoinError::Unknown(v as _),
-                    "{} since an unknown error occurred ({}).", msg, v);
+                warn!(from self, "{} since an unknown error occurred ({}).", msg, v);
             }
         }
     }
+}
 
+impl Thread {
     fn new(handle: ThreadHandle) -> Self {
         Self { handle }
     }
@@ -878,16 +862,6 @@ impl ThreadProperties for Thread {
 #[derive(Debug)]
 pub struct ThreadScopeGuard {
     threads: StaticVec<Thread, MAX_SCOPED_THREADS>,
-}
-
-impl Drop for ThreadScopeGuard {
-    fn drop(&mut self) {
-        for thread in self.threads.iter().rev() {
-            if let Err(e) = thread.join() {
-                warn!("Leaving scoped thread but but not all threads could be joined ({e:?}).");
-            }
-        }
-    }
 }
 
 impl ThreadScopeGuard {
