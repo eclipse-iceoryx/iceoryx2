@@ -10,13 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
+use alloc::boxed::Box;
 
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::vector::polymorphic_vec::*;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary_traits::allocator::AllocationError;
-use iceoryx2_bb_testing::{assert_that, lifetime_tracker::LifetimeTracker};
+use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
 
 const SUT_CAPACITY: usize = 10;
 
@@ -55,8 +56,7 @@ impl Test {
     }
 }
 
-#[test]
-fn try_clone_clones_empty_vec() {
+pub fn try_clone_clones_empty_vec() {
     let test = Test::new();
     let sut = test.create_sut(3).unwrap();
     let sut_clone = sut.try_clone().unwrap();
@@ -66,8 +66,7 @@ fn try_clone_clones_empty_vec() {
     assert_that!(sut_clone.len(), eq 0);
 }
 
-#[test]
-fn try_clone_clones_filled_vec() {
+pub fn try_clone_clones_filled_vec() {
     let test = Test::new();
     let mut sut = test.create_sut(3).unwrap();
 
@@ -86,8 +85,9 @@ fn try_clone_clones_filled_vec() {
     }
 }
 
-#[test]
-fn two_vectors_with_same_content_are_equal() {
+pub fn two_vectors_with_same_content_are_equal() {
+    use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
+
     let test = Test::new();
     let mut sut1 = test.create_sut(4).unwrap();
 
@@ -99,8 +99,9 @@ fn two_vectors_with_same_content_are_equal() {
     assert_that!(sut1, eq sut2);
 }
 
-#[test]
-fn two_vectors_with_different_content_are_not_equal() {
+pub fn two_vectors_with_different_content_are_not_equal() {
+    use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
+
     let test = Test::new();
     let mut sut1 = test.create_sut(4).unwrap();
 
@@ -114,8 +115,9 @@ fn two_vectors_with_different_content_are_not_equal() {
     assert_that!(sut1, ne sut2);
 }
 
-#[test]
-fn two_vectors_with_different_len_are_not_equal() {
+pub fn two_vectors_with_different_len_are_not_equal() {
+    use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
+
     let test = Test::new();
     let mut sut1 = test.create_sut(4).unwrap();
 
@@ -128,8 +130,9 @@ fn two_vectors_with_different_len_are_not_equal() {
     assert_that!(sut1, ne sut2);
 }
 
-#[test]
-fn from_fn_initializes_vector() {
+pub fn from_fn_initializes_vector() {
+    use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
+
     let test = Test::new();
     let mut counter = 0;
     let sut = PolymorphicVec::from_fn(test.allocator(), SUT_CAPACITY, |n| {

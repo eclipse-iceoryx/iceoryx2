@@ -10,18 +10,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
-
 use core::mem::MaybeUninit;
 use iceoryx2_bb_container::vector::{static_vec::*, VectorModificationError};
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
-use iceoryx2_bb_testing::{assert_that, lifetime_tracker::LifetimeTracker};
-use serde_test::{assert_tokens, Token};
+use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
+use iceoryx2_bb_testing_nostd_macros::requires_std;
 
 const SUT_CAPACITY: usize = 10;
 
-#[test]
-fn default_created_vec_is_empty() {
+pub fn default_created_vec_is_empty() {
     let sut = StaticVec::<LifetimeTracker, SUT_CAPACITY>::default();
 
     assert_that!(sut.is_empty(), eq true);
@@ -29,8 +27,7 @@ fn default_created_vec_is_empty() {
     assert_that!(sut.is_full(), eq false);
 }
 
-#[test]
-fn two_vectors_with_same_content_are_equal() {
+pub fn two_vectors_with_same_content_are_equal() {
     let mut sut1 = StaticVec::<usize, SUT_CAPACITY>::new();
     let mut sut2 = StaticVec::<usize, SUT_CAPACITY>::new();
 
@@ -42,8 +39,7 @@ fn two_vectors_with_same_content_are_equal() {
     assert_that!(sut1, eq sut2);
 }
 
-#[test]
-fn two_vectors_with_different_content_are_not_equal() {
+pub fn two_vectors_with_different_content_are_not_equal() {
     let mut sut1 = StaticVec::<usize, SUT_CAPACITY>::new();
     let mut sut2 = StaticVec::<usize, SUT_CAPACITY>::new();
 
@@ -57,8 +53,7 @@ fn two_vectors_with_different_content_are_not_equal() {
     assert_that!(sut1, ne sut2);
 }
 
-#[test]
-fn two_vectors_with_different_len_are_not_equal() {
+pub fn two_vectors_with_different_len_are_not_equal() {
     let mut sut1 = StaticVec::<usize, SUT_CAPACITY>::new();
     let mut sut2 = StaticVec::<usize, SUT_CAPACITY>::new();
 
@@ -72,8 +67,7 @@ fn two_vectors_with_different_len_are_not_equal() {
     assert_that!(sut1, ne sut2);
 }
 
-#[test]
-fn placement_default_works() {
+pub fn placement_default_works() {
     let mut sut = MaybeUninit::<StaticVec<usize, SUT_CAPACITY>>::uninit();
 
     unsafe { PlacementDefault::placement_default(sut.as_mut_ptr()) };
@@ -83,8 +77,10 @@ fn placement_default_works() {
     assert_that!(sut.is_empty(), eq true);
 }
 
-#[test]
-fn serialization_works() {
+#[requires_std("serde_test")]
+pub fn serialization_works() {
+    use serde_test::{assert_tokens, Token};
+
     let mut sut = StaticVec::<usize, SUT_CAPACITY>::new();
     assert_that!(sut.push(44617), is_ok);
     assert_that!(sut.push(123123), is_ok);
@@ -104,8 +100,7 @@ fn serialization_works() {
     );
 }
 
-#[test]
-fn valid_after_move() {
+pub fn valid_after_move() {
     let mut sut = StaticVec::<usize, SUT_CAPACITY>::new();
 
     for i in 0..sut.capacity() {
@@ -121,8 +116,7 @@ fn valid_after_move() {
     }
 }
 
-#[test]
-fn clone_clones_empty_vec() {
+pub fn clone_clones_empty_vec() {
     let sut1 = StaticVec::<usize, SUT_CAPACITY>::new();
 
     let sut2 = sut1.clone();
@@ -131,8 +125,7 @@ fn clone_clones_empty_vec() {
     assert_that!(sut2.len(), eq 0);
 }
 
-#[test]
-fn clone_clones_filled_vec() {
+pub fn clone_clones_filled_vec() {
     let mut sut1 = StaticVec::<usize, SUT_CAPACITY>::new();
     for i in 0..sut1.capacity() {
         let element = i * 2 + 3;
@@ -151,8 +144,7 @@ fn clone_clones_filled_vec() {
     }
 }
 
-#[test]
-fn try_from_succeeds_when_slice_len_is_smaller_or_equal_capacity() {
+pub fn try_from_succeeds_when_slice_len_is_smaller_or_equal_capacity() {
     let sut = StaticVec::<u64, SUT_CAPACITY>::try_from([123u64; SUT_CAPACITY].as_slice()).unwrap();
 
     assert_that!(sut.is_empty(), eq false);
@@ -164,8 +156,7 @@ fn try_from_succeeds_when_slice_len_is_smaller_or_equal_capacity() {
     }
 }
 
-#[test]
-fn try_from_fails_when_slice_len_is_greater_than_capacity() {
+pub fn try_from_fails_when_slice_len_is_greater_than_capacity() {
     let sut = StaticVec::<u64, SUT_CAPACITY>::try_from([123u64; SUT_CAPACITY + 1].as_slice());
 
     assert_that!(sut, eq Err(VectorModificationError::InsertWouldExceedCapacity));

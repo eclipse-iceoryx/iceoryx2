@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
+use alloc::boxed::Box;
 
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::string::*;
@@ -55,8 +55,7 @@ impl Test {
     }
 }
 
-#[test]
-fn try_clone_clones_empty_string() {
+pub fn try_clone_clones_empty_string() {
     let test = Test::new();
     let sut = test.create_sut(3).unwrap();
     let sut_clone = sut.try_clone().unwrap();
@@ -68,8 +67,7 @@ fn try_clone_clones_empty_string() {
     assert_that!(sut_clone.capacity(), eq 3);
 }
 
-#[test]
-fn try_clone_clones_filled_string() {
+pub fn try_clone_clones_filled_string() {
     let test = Test::new();
     let mut sut = test.create_sut(99).unwrap();
     assert_that!(sut.push_bytes(b"all glory to hypnofrog!"), is_ok);
