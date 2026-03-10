@@ -10,14 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
-
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_system_types::user_name::*;
 use iceoryx2_bb_testing::assert_that;
 
-#[test]
-fn user_name_new_with_illegal_name_fails() {
+pub fn user_name_new_with_illegal_name_fails() {
     let sut = UserName::new(b"");
     assert_that!(sut, is_err);
 
@@ -31,8 +28,7 @@ fn user_name_new_with_illegal_name_fails() {
     assert_that!(sut, is_err);
 }
 
-#[test]
-fn user_name_new_with_legal_name_works() {
+pub fn user_name_new_with_legal_name_works() {
     let sut = UserName::new(b"abcdefghijklmnopqrstuvwxyz-0123");
     assert_that!(sut, is_ok);
 

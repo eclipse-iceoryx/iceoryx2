@@ -10,13 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
-
 use iceoryx2_bb_system_types::base64url::*;
 use iceoryx2_bb_testing::assert_that;
 
-#[test]
-fn base64url_new_with_legal_content_works() {
+pub fn base64url_new_with_legal_content_works() {
     let sut = Base64Url::new(b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_");
     assert_that!(sut, is_ok);
 
@@ -30,8 +27,7 @@ fn base64url_new_with_legal_content_works() {
     assert_that!(sut, is_ok);
 }
 
-#[test]
-fn base64url_new_with_illegal_content_fails() {
+pub fn base64url_new_with_illegal_content_fails() {
     let sut = Base64Url::new(b"");
     assert_that!(sut, is_err);
 
@@ -51,8 +47,7 @@ fn base64url_new_with_illegal_content_fails() {
     assert_that!(sut, is_err);
 }
 
-#[test]
-fn base64url_as_file_name_works() {
+pub fn base64url_as_file_name_works() {
     let sut =
         Base64Url::new(b"abcdefghijklmnopqrstuvwDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_").unwrap();
     let sut_file = sut.as_file_name();

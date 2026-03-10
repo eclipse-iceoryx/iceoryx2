@@ -10,14 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
-
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_system_types::file_name::*;
 use iceoryx2_bb_testing::assert_that;
 
-#[test]
-fn file_name_new_with_illegal_name_fails() {
+pub fn file_name_new_with_illegal_name_fails() {
     let sut = FileName::new(b"");
     assert_that!(sut, is_err);
 
@@ -28,14 +25,12 @@ fn file_name_new_with_illegal_name_fails() {
     assert_that!(sut, is_err);
 }
 
-#[test]
-fn file_name_new_name_with_slash_is_illegal() {
+pub fn file_name_new_name_with_slash_is_illegal() {
     let sut = FileName::new(b"hell/.txt");
     assert_that!(sut, is_err);
 }
 
-#[test]
-fn file_name_pop_fails_when_it_results_in_illegal_name() {
+pub fn file_name_pop_fails_when_it_results_in_illegal_name() {
     let sut = FileName::new(b"..f");
     assert_that!(sut, is_ok);
     let mut sut = sut.unwrap();
@@ -46,8 +41,7 @@ fn file_name_pop_fails_when_it_results_in_illegal_name() {
     assert_that!(sut.as_bytes(), eq b"..f");
 }
 
-#[test]
-fn file_name_remove_fails_when_it_results_in_illegal_name() {
+pub fn file_name_remove_fails_when_it_results_in_illegal_name() {
     let sut = FileName::new(b".f.");
     assert_that!(sut, is_ok);
     let mut sut = sut.unwrap();
@@ -58,8 +52,7 @@ fn file_name_remove_fails_when_it_results_in_illegal_name() {
     assert_that!(sut.as_bytes(), eq b".f.");
 }
 
-#[test]
-fn file_name_remove_range_fails_when_it_results_in_illegal_name() {
+pub fn file_name_remove_range_fails_when_it_results_in_illegal_name() {
     let sut = FileName::new(b".fuu");
     assert_that!(sut, is_ok);
     let mut sut = sut.unwrap();
@@ -70,8 +63,7 @@ fn file_name_remove_range_fails_when_it_results_in_illegal_name() {
     assert_that!(sut.as_bytes(), eq b".fuu");
 }
 
-#[test]
-fn file_name_retain_fails_when_it_results_in_illegal_name() {
+pub fn file_name_retain_fails_when_it_results_in_illegal_name() {
     let sut = FileName::new(b".fuu");
     assert_that!(sut, is_ok);
     let mut sut = sut.unwrap();

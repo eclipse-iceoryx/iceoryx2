@@ -10,8 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
-
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_system_types::path::*;
 use iceoryx2_bb_testing::assert_that;
@@ -20,8 +18,7 @@ use iceoryx2_bb_testing::assert_that;
 mod windows {
     use super::*;
 
-    #[test]
-    fn path_new_with_illegal_name_fails() {
+    pub fn path_new_with_illegal_name_fails() {
         let sut = Path::new(b"\0a");
         assert_that!(sut, is_err);
 
@@ -32,8 +29,7 @@ mod windows {
         assert_that!(sut, is_err);
     }
 
-    #[test]
-    fn path_new_with_legal_name_works() {
+    pub fn path_new_with_legal_name_works() {
         let sut = Path::new(b"C:\\some\\file\\path");
         assert_that!(sut, is_ok);
 
@@ -50,8 +46,7 @@ mod windows {
         assert_that!(sut, is_ok);
     }
 
-    #[test]
-    fn path_add_works() {
+    pub fn path_add_works() {
         let mut sut = Path::new(b"C:\\some").unwrap();
         sut.add_path_entry(&Path::new(b"file").unwrap()).unwrap();
         sut.add_path_entry(&Path::new(b"path").unwrap()).unwrap();
@@ -68,8 +63,7 @@ mod windows {
         assert_that!(sut, eq b"fuu\\blaaaha\\blub.ma");
     }
 
-    #[test]
-    fn path_is_absolute_works() {
+    pub fn path_is_absolute_works() {
         let sut = Path::new(b"D:\\bla").unwrap();
         assert_that!(sut.is_absolute(), eq true);
 
@@ -91,8 +85,7 @@ mod windows {
 mod unix {
     use super::*;
 
-    #[test]
-    fn path_new_with_illegal_name_fails() {
+    pub fn path_new_with_illegal_name_fails() {
         let sut = Path::new(b"\0a");
         assert_that!(sut, is_err);
 
@@ -103,8 +96,7 @@ mod unix {
         assert_that!(sut, is_err);
     }
 
-    #[test]
-    fn path_new_with_legal_name_works() {
+    pub fn path_new_with_legal_name_works() {
         let sut = Path::new(b"/some/file/path");
         assert_that!(sut, is_ok);
 
@@ -121,8 +113,7 @@ mod unix {
         assert_that!(sut, is_ok);
     }
 
-    #[test]
-    fn path_add_works() {
+    pub fn path_add_works() {
         let mut sut = Path::new(b"/some").unwrap();
         sut.add_path_entry(&Path::new(b"file").unwrap()).unwrap();
         sut.add_path_entry(&Path::new(b"path").unwrap()).unwrap();
@@ -139,8 +130,7 @@ mod unix {
         assert_that!(sut, eq b"fuu/blaaaha/blub.ma");
     }
 
-    #[test]
-    fn path_list_all_entries_works() {
+    pub fn path_list_all_entries_works() {
         let sut = Path::new(b"/some/file/path/").unwrap();
         let entries = sut.entries();
 
@@ -206,8 +196,7 @@ mod unix {
         assert_that!(entries[2], eq b"oh_no");
     }
 
-    #[test]
-    fn path_is_absolute_works() {
+    pub fn path_is_absolute_works() {
         let sut = Path::new(b"/").unwrap();
         assert_that!(sut.is_absolute(), eq true);
 
@@ -224,3 +213,9 @@ mod unix {
         assert_that!(sut.is_absolute(), eq false);
     }
 }
+
+#[cfg(target_os = "windows")]
+pub use windows::*;
+
+#[cfg(not(target_os = "windows"))]
+pub use unix::*;
