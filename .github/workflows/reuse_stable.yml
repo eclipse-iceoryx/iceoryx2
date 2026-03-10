@@ -1,4 +1,4 @@
-name: Reusable workflow for x86_64_unstable
+name: Reusable workflow for stable
 
 on:
   workflow_call:
@@ -14,7 +14,7 @@ on:
         type: string
 
 jobs:
-  x86_64:
+  stable:
     timeout-minutes: 90
     runs-on: ${{ inputs.os }}
     steps:
@@ -22,7 +22,7 @@ jobs:
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
 
       - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@802fa1a2c4e212495c05bf94dba2704a92a472be # version: v2.0.2
+        uses: jwlawson/actions-setup-cmake@3a6cbe35ba64df7ca70c51365c4aff65db9a9037 # version: v2.1.1
         with:
           cmake-version: "3.31.x"
       - name: Use cmake
@@ -37,7 +37,7 @@ jobs:
         uses: ./.github/actions/download-cached-rust-tool
         with:
           artifact-bin-name: cargo-nextest
-          artifact-upload-name: ${{ runner.os }}-cargo-nextest
+          artifact-upload-name: ${{ inputs.os }}-cargo-nextest
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@bafd42bd91680affe190f697cac6ef3ad958ecba # version: v0.0.9

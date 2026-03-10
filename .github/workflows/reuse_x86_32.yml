@@ -22,7 +22,7 @@ jobs:
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
 
       - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@802fa1a2c4e212495c05bf94dba2704a92a472be # version: v2.0.2
+        uses: jwlawson/actions-setup-cmake@3a6cbe35ba64df7ca70c51365c4aff65db9a9037 # version: v2.1.1
         with:
           cmake-version: "3.31.x"
 
@@ -39,7 +39,7 @@ jobs:
         uses: ./.github/actions/download-cached-rust-tool
         with:
           artifact-bin-name: cargo-nextest
-          artifact-upload-name: ${{ runner.os }}-cargo-nextest
+          artifact-upload-name: ${{ inputs.os }}-cargo-nextest
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@bafd42bd91680affe190f697cac6ef3ad958ecba # version: v0.0.9
@@ -63,7 +63,7 @@ jobs:
       - name: Prepare Linux
         if: ${{ runner.os == 'Linux' }}
         run: |
-          internal/scripts/ci_prepare_ubuntu.sh
+          internal/scripts/ci_prepare_ubuntu.sh i686
           uname -a
 
       - name: Save disk space
@@ -84,7 +84,7 @@ jobs:
 
       - name: Run cargo nextest
         shell: bash
-        run: | 
+        run: |
           cargo nextest run --workspace --exclude iceoryx2-ffi-python --all-targets --no-fail-fast ${{ steps.set-build-flags.outputs.cargo-build-mode }} --target i686-unknown-linux-gnu
 
       - name: Cleanup build artifacts

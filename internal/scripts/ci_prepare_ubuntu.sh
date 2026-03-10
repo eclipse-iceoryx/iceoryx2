@@ -12,10 +12,11 @@
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
 set -e
+arch="${1:-x86_64}"
 
 cd $(git rev-parse --show-toplevel)
 
-sudo ./internal/scripts/install_dependencies_ubuntu.sh
+sudo ./internal/scripts/install_dependencies_ubuntu.sh "${arch}"
 
 sudo useradd testuser1
 sudo useradd testuser2
