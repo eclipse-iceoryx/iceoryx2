@@ -1,0 +1,102 @@
+// Copyright (c) 2023 Contributors to the Eclipse Foundation
+//
+// See the NOTICE file(s) distributed with this work for additional
+// information regarding copyright ownership.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Apache Software License 2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+// which is available at https://opensource.org/licenses/MIT.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+extern crate iceoryx2_bb_loggers;
+
+use iceoryx2_bb_system_types_tests_common::ipv4_address_tests;
+
+#[test]
+fn ipv4_address_is_created_correctly() {
+    ipv4_address_tests::ipv4_address_is_created_correctly();
+}
+
+#[test]
+fn ipv4_address_is_unspecified_works() {
+    ipv4_address_tests::ipv4_address_is_unspecified_works();
+}
+
+#[test]
+fn ipv4_address_is_loopback_works() {
+    ipv4_address_tests::ipv4_address_is_loopback_works();
+}
+
+#[test]
+fn ipv4_address_is_private_works() {
+    ipv4_address_tests::ipv4_address_is_private_works();
+}
+
+#[test]
+fn ipv4_address_is_link_local_works() {
+    ipv4_address_tests::ipv4_address_is_link_local_works();
+}
+
+#[test]
+fn ipv4_address_is_shared_works() {
+    ipv4_address_tests::ipv4_address_is_shared_works();
+}
+
+#[test]
+fn ipv4_address_is_benchmarking_works() {
+    ipv4_address_tests::ipv4_address_is_benchmarking_works();
+}
+
+#[test]
+fn ipv4_address_is_reserved_works() {
+    ipv4_address_tests::ipv4_address_is_reserved_works();
+}
+
+#[test]
+fn ipv4_address_is_multicast_works() {
+    ipv4_address_tests::ipv4_address_is_multicast_works();
+}
+
+#[test]
+fn ipv4_address_is_broadcast_works() {
+    ipv4_address_tests::ipv4_address_is_broadcast_works();
+}
+
+#[test]
+fn ipv4_address_is_documentation_works() {
+    ipv4_address_tests::ipv4_address_is_documentation_works();
+}
+
+#[test]
+fn ipv4_address_is_global_works() {
+    ipv4_address_tests::ipv4_address_is_global_works();
+}
+
+#[test]
+fn ipv4_address_try_from_str_works() {
+    ipv4_address_tests::ipv4_address_try_from_str_works();
+}
+
+#[test]
+fn ipv4_address_try_from_fails_with_wrong_format_when_too_few_parts_are_given() {
+    ipv4_address_tests::ipv4_address_try_from_fails_with_wrong_format_when_too_few_parts_are_given(
+    );
+}
+
+#[test]
+fn ipv4_address_try_from_fails_with_wrong_format_when_too_many_parts_are_given() {
+    ipv4_address_tests::ipv4_address_try_from_fails_with_wrong_format_when_too_many_parts_are_given(
+    );
+}
+
+#[test]
+fn ipv4_address_try_from_fails_with_wrong_format_when_it_ends_with_a_dot() {
+    ipv4_address_tests::ipv4_address_try_from_fails_with_wrong_format_when_it_ends_with_a_dot();
+}
+
+#[test]
+fn ipv4_address_try_from_fails_when_part_is_not_an_u8_number() {
+    ipv4_address_tests::ipv4_address_try_from_fails_when_part_is_not_an_u8_number();
+}
