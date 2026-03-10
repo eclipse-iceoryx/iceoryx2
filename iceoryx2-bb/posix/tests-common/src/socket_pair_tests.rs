@@ -10,21 +10,30 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
+use iceoryx2_bb_testing_nostd_macros::requires_std;
 
-use core::time::Duration;
-use iceoryx2_bb_concurrency::atomic::AtomicUsize;
-use iceoryx2_bb_posix::socket_pair::*;
-use iceoryx2_bb_testing::{assert_that, watchdog::Watchdog};
-use std::{
-    sync::{atomic::Ordering, Barrier},
-    time::Instant,
-};
+#[cfg(feature = "std")]
+use std_testing::*;
 
-const TIMEOUT: Duration = Duration::from_millis(50);
+#[cfg(feature = "std")]
+mod std_testing {
+    pub use core::time::Duration;
+    pub use std::time::Instant;
 
-#[test]
-fn try_receive_never_blocks() {
+    pub use alloc::vec;
+    pub use alloc::vec::Vec;
+
+    pub use iceoryx2_bb_concurrency::atomic::AtomicUsize;
+    pub use iceoryx2_bb_posix::socket_pair::*;
+    pub use iceoryx2_bb_testing::assert_that;
+    pub use iceoryx2_bb_testing::watchdog::Watchdog;
+    pub use std::sync::{atomic::Ordering, Barrier};
+
+    pub const TIMEOUT: Duration = Duration::from_millis(50);
+}
+
+#[requires_std("watchdog")]
+pub fn try_receive_never_blocks() {
     let _watchdog = Watchdog::new();
 
     let (sut_lhs, sut_rhs) = StreamingSocket::create_pair().unwrap();
@@ -40,8 +49,8 @@ fn try_receive_never_blocks() {
     assert_that!(received_data, eq zeros);
 }
 
-#[test]
-fn send_receive_works() {
+#[requires_std("watchdog")]
+pub fn send_receive_works() {
     let _watchdog = Watchdog::new();
 
     let (sut_lhs, sut_rhs) = StreamingSocket::create_pair().unwrap();
@@ -59,8 +68,8 @@ fn send_receive_works() {
     assert_that!(send_data, eq received_data);
 }
 
-#[test]
-fn bidirectional_send_receive_works() {
+#[requires_std("watchdog")]
+pub fn bidirectional_send_receive_works() {
     let _watchdog = Watchdog::new();
 
     let (sut_lhs, sut_rhs) = StreamingSocket::create_pair().unwrap();
@@ -91,8 +100,8 @@ fn bidirectional_send_receive_works() {
     assert_that!(send_data, eq received_data);
 }
 
-#[test]
-fn cannot_receive_my_own_data() {
+#[requires_std("watchdog")]
+pub fn cannot_receive_my_own_data() {
     let _watchdog = Watchdog::new();
 
     let (sut_lhs, sut_rhs) = StreamingSocket::create_pair().unwrap();
@@ -118,8 +127,8 @@ fn cannot_receive_my_own_data() {
     assert_that!(result, eq 0);
 }
 
-#[test]
-fn timed_receive_blocks_for_at_least_timeout() {
+#[requires_std("watchdog", "time")]
+pub fn timed_receive_blocks_for_at_least_timeout() {
     let _watchdog = Watchdog::new();
 
     let (sut_lhs, sut_rhs) = StreamingSocket::create_pair().unwrap();
@@ -137,8 +146,8 @@ fn timed_receive_blocks_for_at_least_timeout() {
     assert_that!(result, eq 0);
 }
 
-#[test]
-fn timed_receive_blocks_until_message_arrives() {
+#[requires_std("threading", "synchronization", "watchdog")]
+pub fn timed_receive_blocks_until_message_arrives() {
     let _watchdog = Watchdog::new();
 
     let counter = AtomicUsize::new(0);
@@ -163,8 +172,8 @@ fn timed_receive_blocks_until_message_arrives() {
     });
 }
 
-#[test]
-fn blocking_receive_blocks_until_message_arrives() {
+#[requires_std("threading", "synchronization", "watchdog")]
+pub fn blocking_receive_blocks_until_message_arrives() {
     let _watchdog = Watchdog::new();
 
     let counter = AtomicUsize::new(0);
@@ -189,8 +198,8 @@ fn blocking_receive_blocks_until_message_arrives() {
     });
 }
 
-#[test]
-fn timed_send_blocks_for_at_least_timeout() {
+#[requires_std("watchdog", "time")]
+pub fn timed_send_blocks_for_at_least_timeout() {
     let _watchdog = Watchdog::new();
 
     let (sut_lhs, _sut_rhs) = StreamingSocket::create_pair().unwrap();
@@ -211,8 +220,8 @@ fn timed_send_blocks_for_at_least_timeout() {
     assert_that!(result, eq 0);
 }
 
-#[test]
-fn timed_send_blocks_until_message_buffer_is_free_again() {
+#[requires_std("threading", "synchronization", "watchdog")]
+pub fn timed_send_blocks_until_message_buffer_is_free_again() {
     let _watchdog = Watchdog::new();
 
     let (sut_lhs, sut_rhs) = StreamingSocket::create_pair().unwrap();
@@ -251,8 +260,8 @@ fn timed_send_blocks_until_message_buffer_is_free_again() {
     });
 }
 
-#[test]
-fn blocking_send_blocks_until_message_buffer_is_free_again() {
+#[requires_std("threading", "synchronization", "watchdog")]
+pub fn blocking_send_blocks_until_message_buffer_is_free_again() {
     let _watchdog = Watchdog::new();
 
     let (sut_lhs, sut_rhs) = StreamingSocket::create_pair().unwrap();
@@ -292,8 +301,8 @@ fn blocking_send_blocks_until_message_buffer_is_free_again() {
     });
 }
 
-#[test]
-fn peeking_message_does_not_remove_message() {
+#[requires_std("watchdog")]
+pub fn peeking_message_does_not_remove_message() {
     let _watchdog = Watchdog::new();
 
     let (sut_lhs, sut_rhs) = StreamingSocket::create_pair().unwrap();
@@ -319,8 +328,8 @@ fn peeking_message_does_not_remove_message() {
     assert_that!(send_data, eq received_data);
 }
 
-#[test]
-fn send_from_duplicated_socket_works() {
+#[requires_std("watchdog")]
+pub fn send_from_duplicated_socket_works() {
     let _watchdog = Watchdog::new();
 
     let (sut_lhs, sut_rhs) = StreamingSocket::create_pair().unwrap();
@@ -339,8 +348,8 @@ fn send_from_duplicated_socket_works() {
     assert_that!(send_data, eq received_data);
 }
 
-#[test]
-fn receive_from_duplicated_socket_works() {
+#[requires_std("watchdog")]
+pub fn receive_from_duplicated_socket_works() {
     let _watchdog = Watchdog::new();
 
     let (sut_lhs, sut_rhs) = StreamingSocket::create_pair().unwrap();
@@ -359,8 +368,8 @@ fn receive_from_duplicated_socket_works() {
     assert_that!(send_data, eq received_data);
 }
 
-#[test]
-fn multiple_duplicated_sockets_can_send() {
+#[requires_std("watchdog")]
+pub fn multiple_duplicated_sockets_can_send() {
     let _watchdog = Watchdog::new();
 
     let (sut_lhs, sut_rhs) = StreamingSocket::create_pair().unwrap();

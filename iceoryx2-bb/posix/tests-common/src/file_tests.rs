@@ -10,7 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
+use alloc::string::String;
+use alloc::string::ToString;
 
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_posix::config::*;
@@ -78,8 +79,7 @@ impl Drop for TestFixture {
     }
 }
 
-#[test]
-fn file_opening_non_existing_file_fails() {
+pub fn file_opening_non_existing_file_fails() {
     let test = TestFixture::new();
     let result = FileBuilder::new(test.file()).open_existing(AccessMode::ReadWrite);
 
@@ -87,8 +87,7 @@ fn file_opening_non_existing_file_fails() {
     assert_that!(result.err().unwrap(), eq FileOpenError::FileDoesNotExist);
 }
 
-#[test]
-fn file_creating_non_existing_file_succeeds() {
+pub fn file_creating_non_existing_file_succeeds() {
     let test = TestFixture::new();
     let result = FileBuilder::new(test.file())
         .creation_mode(CreationMode::CreateExclusive)
@@ -97,8 +96,7 @@ fn file_creating_non_existing_file_succeeds() {
     assert_that!(result, is_ok);
 }
 
-#[test]
-fn file_creating_existing_file_fails() {
+pub fn file_creating_existing_file_fails() {
     let test = TestFixture::new();
 
     test.create_file(test.file());
@@ -111,8 +109,7 @@ fn file_creating_existing_file_fails() {
     assert_that!(result.err().unwrap(), eq FileCreationError::FileAlreadyExists);
 }
 
-#[test]
-fn file_purge_and_create_non_existing_file_succeeds() {
+pub fn file_purge_and_create_non_existing_file_succeeds() {
     let test = TestFixture::new();
 
     let result = FileBuilder::new(test.file())
@@ -122,8 +119,7 @@ fn file_purge_and_create_non_existing_file_succeeds() {
     assert_that!(result, is_ok);
 }
 
-#[test]
-fn file_purge_and_create_existing_file_succeeds() {
+pub fn file_purge_and_create_existing_file_succeeds() {
     let test = TestFixture::new();
     test.create_file(test.file());
 
@@ -134,8 +130,7 @@ fn file_purge_and_create_existing_file_succeeds() {
     assert_that!(result, is_ok);
 }
 
-#[test]
-fn file_open_or_create_with_existing_file_succeeds() {
+pub fn file_open_or_create_with_existing_file_succeeds() {
     let test = TestFixture::new();
 
     test.create_file(test.file());
@@ -147,8 +142,7 @@ fn file_open_or_create_with_existing_file_succeeds() {
     assert_that!(result, is_ok);
 }
 
-#[test]
-fn file_open_or_create_with_non_existing_file_succeeds() {
+pub fn file_open_or_create_with_non_existing_file_succeeds() {
     let test = TestFixture::new();
 
     let result = FileBuilder::new(&test.file)
@@ -158,8 +152,7 @@ fn file_open_or_create_with_non_existing_file_succeeds() {
     assert_that!(result, is_ok);
 }
 
-#[test]
-fn file_creating_file_applies_additional_settings() {
+pub fn file_creating_file_applies_additional_settings() {
     test_requires!(POSIX_SUPPORT_PERMISSIONS && POSIX_SUPPORT_USERS_AND_GROUPS);
 
     let test = TestFixture::new();
@@ -178,8 +171,7 @@ fn file_creating_file_applies_additional_settings() {
     );
 }
 
-#[test]
-fn file_simple_read_write_works() {
+pub fn file_simple_read_write_works() {
     let test = TestFixture::new();
     let mut file = test.create_file(&test.file);
 
@@ -199,8 +191,7 @@ fn file_simple_read_write_works() {
     assert_that!(content, eq read_content);
 }
 
-#[test]
-fn file_write_appends_content_to_file() {
+pub fn file_write_appends_content_to_file() {
     let test = TestFixture::new();
     let mut file = test.create_file(&test.file);
 
@@ -218,8 +209,7 @@ fn file_write_appends_content_to_file() {
     assert_that!(read_content.as_bytes(), eq b"another file bytes the dust\na horse with a blanket does not require shoes");
 }
 
-#[test]
-fn file_multiple_read_calls_move_file_cursor() {
+pub fn file_multiple_read_calls_move_file_cursor() {
     let test = TestFixture::new();
     let mut file = test.create_file(&test.file);
 
@@ -238,8 +228,7 @@ fn file_multiple_read_calls_move_file_cursor() {
     assert_that!(buffer[0], eq b'k');
 }
 
-#[test]
-fn file_read_line_works() {
+pub fn file_read_line_works() {
     let test = TestFixture::new();
     let mut file = test.create_file(&test.file);
 
@@ -263,8 +252,7 @@ fn file_read_line_works() {
     assert_that!(buffer, eq "do not forget your towel!");
 }
 
-#[test]
-fn file_two_file_objects_read_work_with_ranges_in_same_file() {
+pub fn file_two_file_objects_read_work_with_ranges_in_same_file() {
     let test = TestFixture::new();
     let mut file_a = test.create_file(&test.file);
     let mut file_b = test.open_file(&test.file);
@@ -287,8 +275,7 @@ fn file_two_file_objects_read_work_with_ranges_in_same_file() {
     assert_that!("eworld", eq read_content);
 }
 
-#[test]
-fn file_created_file_does_exist() -> Result<(), FileError> {
+pub fn file_created_file_does_exist() -> Result<(), FileError> {
     let test = TestFixture::new();
     test.create_file(&test.file);
 
@@ -296,8 +283,7 @@ fn file_created_file_does_exist() -> Result<(), FileError> {
     Ok(())
 }
 
-#[test]
-fn file_truncate_works() -> Result<(), FileError> {
+pub fn file_truncate_works() -> Result<(), FileError> {
     const NEW_SIZE: usize = 192;
     let test = TestFixture::new();
     let mut sut = test.create_file(&test.file);
@@ -307,16 +293,14 @@ fn file_truncate_works() -> Result<(), FileError> {
     Ok(())
 }
 
-#[test]
-fn file_non_existing_file_does_not_exist() -> Result<(), FileError> {
+pub fn file_non_existing_file_does_not_exist() -> Result<(), FileError> {
     let test = TestFixture::new();
 
     assert_that!(!File::does_exist(&test.file)?, eq true);
     Ok(())
 }
 
-#[test]
-fn file_remove_returns_true_when_file_exists() -> Result<(), FileError> {
+pub fn file_remove_returns_true_when_file_exists() -> Result<(), FileError> {
     let test = TestFixture::new();
     test.create_file(&test.file);
 
@@ -324,16 +308,14 @@ fn file_remove_returns_true_when_file_exists() -> Result<(), FileError> {
     Ok(())
 }
 
-#[test]
-fn file_remove_returns_false_when_file_not_exists() -> Result<(), FileError> {
+pub fn file_remove_returns_false_when_file_not_exists() -> Result<(), FileError> {
     let test = TestFixture::new();
 
     assert_that!(!File::remove(&test.file)?, eq true);
     Ok(())
 }
 
-#[test]
-fn file_newly_created_file_is_removed_when_it_has_ownership() -> Result<(), FileError> {
+pub fn file_newly_created_file_is_removed_when_it_has_ownership() -> Result<(), FileError> {
     create_test_directory();
     let file_name = generate_file_name();
 
@@ -350,8 +332,7 @@ fn file_newly_created_file_is_removed_when_it_has_ownership() -> Result<(), File
     Ok(())
 }
 
-#[test]
-fn file_newly_created_file_has_not_ownership_by_default() -> Result<(), FileError> {
+pub fn file_newly_created_file_has_not_ownership_by_default() -> Result<(), FileError> {
     create_test_directory();
     let file_name = generate_file_name();
 
@@ -369,8 +350,7 @@ fn file_newly_created_file_has_not_ownership_by_default() -> Result<(), FileErro
     Ok(())
 }
 
-#[test]
-fn file_opened_file_is_removed_when_it_has_ownership() -> Result<(), FileError> {
+pub fn file_opened_file_is_removed_when_it_has_ownership() -> Result<(), FileError> {
     create_test_directory();
     let file_name = generate_file_name();
 
@@ -391,8 +371,7 @@ fn file_opened_file_is_removed_when_it_has_ownership() -> Result<(), FileError> 
     Ok(())
 }
 
-#[test]
-fn file_opened_file_has_not_ownership_by_default() -> Result<(), FileError> {
+pub fn file_opened_file_has_not_ownership_by_default() -> Result<(), FileError> {
     create_test_directory();
     let file_name = generate_file_name();
 
@@ -414,8 +393,7 @@ fn file_opened_file_has_not_ownership_by_default() -> Result<(), FileError> {
     Ok(())
 }
 
-#[test]
-fn file_acquire_ownership_works() -> Result<(), FileError> {
+pub fn file_acquire_ownership_works() -> Result<(), FileError> {
     create_test_directory();
     let file_name = generate_file_name();
 
@@ -433,8 +411,7 @@ fn file_acquire_ownership_works() -> Result<(), FileError> {
     Ok(())
 }
 
-#[test]
-fn file_release_ownership_works() -> Result<(), FileError> {
+pub fn file_release_ownership_works() -> Result<(), FileError> {
     create_test_directory();
     let file_name = generate_file_name();
 

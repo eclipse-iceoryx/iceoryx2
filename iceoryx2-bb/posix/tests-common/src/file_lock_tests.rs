@@ -10,7 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
+use alloc::string::ToString;
+use alloc::vec;
 
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_posix::config::TEST_DIRECTORY;
@@ -24,9 +25,7 @@ use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_FILE_LOCK;
-
-use core::sync::atomic::{AtomicU64, Ordering};
-use std::thread;
+use iceoryx2_bb_testing_nostd_macros::requires_std;
 
 fn generate_file_name() -> FilePath {
     let mut file = FileName::new(b"file_lock_tests_").unwrap();
@@ -70,8 +69,7 @@ impl<'a> Drop for TestFixture<'a> {
     }
 }
 
-#[test]
-fn file_lock_unlocked_by_default() {
+pub fn file_lock_unlocked_by_default() {
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 
     let handle = ReadWriteMutexHandle::new();
@@ -82,8 +80,7 @@ fn file_lock_unlocked_by_default() {
     assert_that!(result.pid_of_owner().value(), eq 0);
 }
 
-#[test]
-fn file_lock_write_lock_blocks_other_write_locks() {
+pub fn file_lock_write_lock_blocks_other_write_locks() {
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 
     let handle = ReadWriteMutexHandle::new();
@@ -101,8 +98,7 @@ fn file_lock_write_lock_blocks_other_write_locks() {
     assert_that!(result.pid_of_owner().value(), eq 0);
 }
 
-#[test]
-fn file_lock_write_try_lock_denies_other_try_locks() {
+pub fn file_lock_write_try_lock_denies_other_try_locks() {
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 
     let handle = ReadWriteMutexHandle::new();
@@ -124,8 +120,7 @@ fn file_lock_write_try_lock_denies_other_try_locks() {
     assert_that!(test.sut.write_try_lock().unwrap(), is_some);
 }
 
-#[test]
-fn file_lock_read_lock_allows_other_read_locks() {
+pub fn file_lock_read_lock_allows_other_read_locks() {
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 
     let handle = ReadWriteMutexHandle::new();
@@ -154,8 +149,7 @@ fn file_lock_read_lock_allows_other_read_locks() {
     assert_that!(result.pid_of_owner().value(), eq 0);
 }
 
-#[test]
-fn file_lock_read_try_lock_allows_other_read_try_locks() {
+pub fn file_lock_read_try_lock_allows_other_read_try_locks() {
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 
     let handle = ReadWriteMutexHandle::new();
@@ -184,8 +178,7 @@ fn file_lock_read_try_lock_allows_other_read_try_locks() {
     assert_that!(result.pid_of_owner().value(), eq 0);
 }
 
-#[test]
-fn file_lock_one_read_blocks_write() {
+pub fn file_lock_one_read_blocks_write() {
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 
     let handle = ReadWriteMutexHandle::new();
@@ -197,8 +190,7 @@ fn file_lock_one_read_blocks_write() {
     assert_that!(test.sut.write_try_lock().unwrap(), is_some);
 }
 
-#[test]
-fn file_lock_multiple_readers_blocks_write() {
+pub fn file_lock_multiple_readers_blocks_write() {
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 
     let handle = ReadWriteMutexHandle::new();
@@ -213,14 +205,16 @@ fn file_lock_multiple_readers_blocks_write() {
     assert_that!(test.sut.write_try_lock().unwrap(), is_some);
 }
 
-#[test]
-fn file_lock_write_lock_blocks() {
+#[requires_std("threading")]
+pub fn file_lock_write_lock_blocks() {
+    use core::sync::atomic::{AtomicU64, Ordering};
+
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 
     let handle = ReadWriteMutexHandle::new();
     let test = TestFixture::new(&handle);
     let counter = AtomicU64::new(0);
-    thread::scope(|s| {
+    std::thread::scope(|s| {
         let guard = test.sut.write_lock().expect("");
 
         s.spawn(|| {
@@ -233,24 +227,26 @@ fn file_lock_write_lock_blocks() {
             counter.fetch_add(1, Ordering::Relaxed);
         });
 
-        thread::sleep(core::time::Duration::from_millis(10));
+        std::thread::sleep(core::time::Duration::from_millis(10));
         let counter_old = counter.load(Ordering::Relaxed);
         drop(guard);
-        thread::sleep(core::time::Duration::from_millis(10));
+        std::thread::sleep(core::time::Duration::from_millis(10));
 
         assert_that!(counter_old, eq 0);
         assert_that!(counter.load(Ordering::Relaxed), eq 2);
     });
 }
 
-#[test]
-fn file_lock_read_lock_blocks_write_locks() {
+#[requires_std("threading")]
+pub fn file_lock_read_lock_blocks_write_locks() {
+    use core::sync::atomic::{AtomicU64, Ordering};
+
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 
     let handle = ReadWriteMutexHandle::new();
     let test = TestFixture::new(&handle);
     let counter = AtomicU64::new(0);
-    thread::scope(|s| {
+    std::thread::scope(|s| {
         let guard = test.sut.read_lock().expect("");
 
         s.spawn(|| {
@@ -263,25 +259,27 @@ fn file_lock_read_lock_blocks_write_locks() {
             counter.fetch_add(2, Ordering::Relaxed);
         });
 
-        thread::sleep(core::time::Duration::from_millis(10));
+        std::thread::sleep(core::time::Duration::from_millis(10));
         let counter_old = counter.load(Ordering::Relaxed);
         drop(guard);
-        thread::sleep(core::time::Duration::from_millis(10));
+        std::thread::sleep(core::time::Duration::from_millis(10));
 
         assert_that!(counter_old, eq 1);
         assert_that!(counter.load(Ordering::Relaxed), eq 3);
     });
 }
 
-#[test]
-fn file_lock_read_try_lock_does_not_block() {
+#[requires_std("threading")]
+pub fn file_lock_read_try_lock_does_not_block() {
+    use core::sync::atomic::{AtomicU64, Ordering};
+
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 
     let handle = ReadWriteMutexHandle::new();
     let test = TestFixture::new(&handle);
     let counter = AtomicU64::new(0);
 
-    thread::scope(|s| {
+    std::thread::scope(|s| {
         let _guard = test.sut.write_lock().expect("");
 
         s.spawn(|| {
@@ -289,20 +287,22 @@ fn file_lock_read_try_lock_does_not_block() {
             counter.fetch_add(1, Ordering::Relaxed);
         });
 
-        thread::sleep(core::time::Duration::from_millis(10));
+        std::thread::sleep(core::time::Duration::from_millis(10));
         assert_that!(counter.load(Ordering::Relaxed), eq 1);
     });
 }
 
-#[test]
-fn file_lock_write_try_lock_does_not_block() {
+#[requires_std("threading")]
+pub fn file_lock_write_try_lock_does_not_block() {
+    use core::sync::atomic::{AtomicU64, Ordering};
+
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 
     let handle = ReadWriteMutexHandle::new();
     let test = TestFixture::new(&handle);
     let counter = AtomicU64::new(0);
 
-    thread::scope(|s| {
+    std::thread::scope(|s| {
         let _guard = test.sut.write_lock().expect("");
 
         s.spawn(|| {
@@ -310,13 +310,12 @@ fn file_lock_write_try_lock_does_not_block() {
             counter.fetch_add(1, Ordering::Relaxed);
         });
 
-        thread::sleep(core::time::Duration::from_millis(10));
+        std::thread::sleep(core::time::Duration::from_millis(10));
         assert_that!(counter.load(Ordering::Relaxed), eq 1);
     });
 }
 
-#[test]
-fn file_lock_read_write_works() {
+pub fn file_lock_read_write_works() {
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 
     let handle = ReadWriteMutexHandle::new();
@@ -343,8 +342,7 @@ fn file_lock_read_write_works() {
     assert_that!(content, eq b"hello");
 }
 
-#[test]
-fn file_lock_try_lock_fails_when_locked() {
+pub fn file_lock_try_lock_fails_when_locked() {
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 
     let handle = ReadWriteMutexHandle::new();

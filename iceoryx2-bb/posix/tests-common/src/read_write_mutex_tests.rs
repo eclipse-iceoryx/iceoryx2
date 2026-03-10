@@ -10,21 +10,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
-
-use core::sync::atomic::{AtomicUsize, Ordering};
-use core::time::Duration;
-use iceoryx2_bb_posix::clock::*;
 use iceoryx2_bb_posix::read_write_mutex::*;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing::watchdog::Watchdog;
-use std::sync::Barrier;
-use std::thread;
+use iceoryx2_bb_testing_nostd_macros::requires_std;
 
+#[cfg(feature = "std")]
+use core::time::Duration;
+#[cfg(feature = "std")]
 const TIMEOUT: Duration = Duration::from_millis(50);
 
-#[test]
-fn read_write_mutex_lock_works() {
+pub fn read_write_mutex_lock_works() {
     let handle = ReadWriteMutexHandle::<i32>::new();
     let sut = ReadWriteMutexBuilder::new().create(456, &handle).unwrap();
     {
@@ -37,8 +32,7 @@ fn read_write_mutex_lock_works() {
     assert_that!(*value, eq 123);
 }
 
-#[test]
-fn read_write_mutex_try_lock_works() {
+pub fn read_write_mutex_try_lock_works() {
     let handle = ReadWriteMutexHandle::<i32>::new();
     let sut = ReadWriteMutexBuilder::new().create(7890, &handle).unwrap();
     {
@@ -51,15 +45,19 @@ fn read_write_mutex_try_lock_works() {
     assert_that!(*value.unwrap(), eq 551);
 }
 
-#[test]
-fn read_write_mutex_write_lock_blocks_read_and_write_locks() {
+#[requires_std("threading", "watchdog")]
+pub fn read_write_mutex_write_lock_blocks_read_and_write_locks() {
+    use core::sync::atomic::{AtomicUsize, Ordering};
+    use iceoryx2_bb_posix::clock::*;
+    use iceoryx2_bb_testing::watchdog::Watchdog;
+
     let _watchdog = Watchdog::new();
     let handle = ReadWriteMutexHandle::<i32>::new();
     let sut = ReadWriteMutexBuilder::new().create(781, &handle).unwrap();
     let counter = AtomicUsize::new(0);
-    let barrier = Barrier::new(3);
+    let barrier = std::sync::Barrier::new(3);
 
-    thread::scope(|s| {
+    std::thread::scope(|s| {
         let _guard = sut.write_blocking_lock().unwrap();
 
         let t1 = s.spawn(|| {
@@ -87,13 +85,16 @@ fn read_write_mutex_write_lock_blocks_read_and_write_locks() {
     });
 }
 
-#[test]
-fn read_write_mutex_read_lock_blocks_only_write_locks() {
+#[requires_std("threading")]
+pub fn read_write_mutex_read_lock_blocks_only_write_locks() {
+    use core::sync::atomic::{AtomicUsize, Ordering};
+    use iceoryx2_bb_posix::clock::*;
+
     let handle = ReadWriteMutexHandle::<i32>::new();
     let sut = ReadWriteMutexBuilder::new().create(781, &handle).unwrap();
     let counter = AtomicUsize::new(5);
 
-    thread::scope(|s| {
+    std::thread::scope(|s| {
         let _guard = sut.read_blocking_lock().unwrap();
         let _guard2 = sut.read_blocking_lock().unwrap();
 
@@ -112,8 +113,7 @@ fn read_write_mutex_read_lock_blocks_only_write_locks() {
     });
 }
 
-#[test]
-fn read_write_mutex_try_lock_fails_when_lock_was_acquired() {
+pub fn read_write_mutex_try_lock_fails_when_lock_was_acquired() {
     let handle = ReadWriteMutexHandle::<i32>::new();
     let sut = ReadWriteMutexBuilder::new().create(781, &handle).unwrap();
     let _guard = sut.write_blocking_lock().unwrap();
@@ -125,8 +125,10 @@ fn read_write_mutex_try_lock_fails_when_lock_was_acquired() {
     assert_that!(sut.write_try_lock().unwrap(), is_none);
 }
 
-#[test]
-fn read_write_mutex_multiple_ipc_mutex_are_working() {
+#[requires_std("threading")]
+pub fn read_write_mutex_multiple_ipc_mutex_are_working() {
+    use iceoryx2_bb_posix::clock::*;
+
     let handle = ReadWriteMutexHandle::<i32>::new();
     let sut1 = ReadWriteMutexBuilder::new()
         .is_interprocess_capable(true)
@@ -135,7 +137,7 @@ fn read_write_mutex_multiple_ipc_mutex_are_working() {
 
     let sut2 = unsafe { ReadWriteMutex::from_ipc_handle(&handle) };
 
-    thread::scope(|s| {
+    std::thread::scope(|s| {
         s.spawn(|| {
             let mut guard = sut2.write_blocking_lock().unwrap();
             *guard = 99501;

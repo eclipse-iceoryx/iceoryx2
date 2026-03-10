@@ -10,19 +10,25 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
-
-use core::time::Duration;
 use iceoryx2_bb_posix::adaptive_wait::*;
 use iceoryx2_bb_posix::clock::*;
-use iceoryx2_bb_posix::config::*;
 use iceoryx2_bb_testing::assert_that;
-use std::time::Instant;
+use iceoryx2_bb_testing_nostd_macros::requires_std;
 
-const TIMEOUT: Duration = Duration::from_millis(50);
+#[cfg(feature = "std")]
+pub use std_testing::*;
 
-#[test]
-fn adaptive_wait_wait_at_different_time_depends_on_repetition_times() {
+#[cfg(feature = "std")]
+mod std_testing {
+    use core::time::Duration;
+    pub const TIMEOUT: Duration = Duration::from_millis(50);
+}
+
+#[requires_std("time")]
+pub fn adaptive_wait_wait_at_different_time_depends_on_repetition_times() {
+    use iceoryx2_bb_posix::config::*;
+    use std::time::Instant;
+
     let mut counter: u64 = 0;
 
     let mut waiter = AdaptiveWaitBuilder::new().create().unwrap();
@@ -68,14 +74,12 @@ fn adaptive_wait_wait_at_different_time_depends_on_repetition_times() {
     assert_that!(start.elapsed(), time_at_least ADAPTIVE_WAIT_FINAL_WAITING_TIME);
 }
 
-#[test]
-fn adaptive_wait_on_default_builder_uses_default_clock() {
+pub fn adaptive_wait_on_default_builder_uses_default_clock() {
     let sut = AdaptiveWaitBuilder::new().create().unwrap();
     assert_that!(sut.clock_type(), eq ClockType::default());
 }
 
-#[test]
-fn adaptive_wait_custom_clock_is_set_correctly() {
+pub fn adaptive_wait_custom_clock_is_set_correctly() {
     let sut = AdaptiveWaitBuilder::new()
         .clock_type(ClockType::Realtime)
         .create()
@@ -83,8 +87,7 @@ fn adaptive_wait_custom_clock_is_set_correctly() {
     assert_that!(sut.clock_type(), eq ClockType::Realtime);
 }
 
-#[test]
-fn adaptive_wait_wait_increases_yield_counter() {
+pub fn adaptive_wait_wait_increases_yield_counter() {
     let mut sut = AdaptiveWaitBuilder::new().create().unwrap();
     assert_that!(sut.wait(), is_ok);
     assert_that!(sut.wait(), is_ok);
@@ -92,8 +95,10 @@ fn adaptive_wait_wait_increases_yield_counter() {
     assert_that!(sut.yield_count(), eq 3);
 }
 
-#[test]
-fn adaptive_wait_timed_wait_while_wait_at_least_for_timeout() {
+#[requires_std("time")]
+pub fn adaptive_wait_timed_wait_while_wait_at_least_for_timeout() {
+    use std::time::Instant;
+
     let mut sut = AdaptiveWaitBuilder::new().create().unwrap();
     let start = Instant::now();
 
@@ -105,8 +110,10 @@ fn adaptive_wait_timed_wait_while_wait_at_least_for_timeout() {
     assert_that!(result, eq false);
 }
 
-#[test]
-fn adaptive_wait_timed_wait_does_not_wait_when_predicate_returns_false() {
+#[requires_std("time")]
+pub fn adaptive_wait_timed_wait_does_not_wait_when_predicate_returns_false() {
+    use std::time::Instant;
+
     let mut sut = AdaptiveWaitBuilder::new().create().unwrap();
     let start = Instant::now();
 
@@ -118,8 +125,10 @@ fn adaptive_wait_timed_wait_does_not_wait_when_predicate_returns_false() {
     assert_that!(result, eq true);
 }
 
-#[test]
-fn adaptive_wait_timed_wait_does_not_wait_when_predicate_returns_error() {
+#[requires_std("time")]
+pub fn adaptive_wait_timed_wait_does_not_wait_when_predicate_returns_error() {
+    use std::time::Instant;
+
     let mut sut = AdaptiveWaitBuilder::new().create().unwrap();
     let start = Instant::now();
 

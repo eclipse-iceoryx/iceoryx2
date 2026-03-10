@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
+use alloc::string::ToString;
 
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_posix::{
@@ -40,8 +40,7 @@ fn generate_file_name() -> FilePath {
     FilePath::from_path_and_file(&TEST_DIRECTORY, &file).unwrap()
 }
 
-#[test]
-fn mapping_anonymous_memory_works() {
+pub fn memory_mapping_mapping_anonymous_memory_works() {
     let memory_size: usize = SystemInfo::PageSize.value() * 2;
     let mut sut = MemoryMappingBuilder::from_anonymous()
         .initial_mapping_permission(MappingPermission::ReadWrite)
@@ -60,8 +59,7 @@ fn mapping_anonymous_memory_works() {
     assert_that!(sut.file_path(), is_none);
 }
 
-#[test]
-fn setting_permission_to_read_works() {
+pub fn memory_mapping_setting_permission_to_read_works() {
     let memory_size: usize = SystemInfo::PageSize.value() * 2;
     let mut sut = MemoryMappingBuilder::from_anonymous()
         .initial_mapping_permission(MappingPermission::ReadWrite)
@@ -90,8 +88,7 @@ fn setting_permission_to_read_works() {
     }
 }
 
-#[test]
-fn mapping_file_works() {
+pub fn memory_mapping_mapping_file_works() {
     let memory_size: usize = SystemInfo::PageSize.value() * 2;
     let file_path = generate_file_name();
     let mut file = FileBuilder::new(&file_path)
@@ -123,8 +120,7 @@ fn mapping_file_works() {
     assert_that!(*sut.file_path(), eq Some(file_path));
 }
 
-#[test]
-fn mapping_file_descriptor_works() {
+pub fn memory_mapping_mapping_file_descriptor_works() {
     let memory_size: usize = SystemInfo::PageSize.value() * 2;
     let file_path = generate_file_name();
     let mut file = FileBuilder::new(&file_path)
@@ -158,8 +154,7 @@ fn mapping_file_descriptor_works() {
     assert_that!(sut.file_path(), is_none);
 }
 
-#[test]
-fn mapping_size_of_zero_fails() {
+pub fn memory_mapping_mapping_size_of_zero_fails() {
     let sut = MemoryMappingBuilder::from_anonymous()
         .initial_mapping_permission(MappingPermission::ReadWrite)
         .create();
@@ -167,8 +162,7 @@ fn mapping_size_of_zero_fails() {
     assert_that!(sut.err(), eq Some(MemoryMappingCreationError::MappingSizeIsZero));
 }
 
-#[test]
-fn update_permissions_offset_fails_when_offset_is_not_multiple_of_page_size() {
+pub fn memory_mapping_update_permissions_offset_fails_when_offset_is_not_multiple_of_page_size() {
     let memory_size: usize = SystemInfo::PageSize.value() * 2;
     let mut sut = MemoryMappingBuilder::from_anonymous()
         .initial_mapping_permission(MappingPermission::ReadWrite)
@@ -184,8 +178,7 @@ fn update_permissions_offset_fails_when_offset_is_not_multiple_of_page_size() {
     assert_that!(result.err(), eq Some(MemoryMappingPermissionUpdateError::RegionOffsetNotAlignedToPageSize));
 }
 
-#[test]
-fn update_permissions_offset_fails_when_size_is_not_multiple_of_page_size() {
+pub fn memory_mapping_update_permissions_offset_fails_when_size_is_not_multiple_of_page_size() {
     let memory_size: usize = SystemInfo::PageSize.value() * 2;
     let mut sut = MemoryMappingBuilder::from_anonymous()
         .initial_mapping_permission(MappingPermission::ReadWrite)
@@ -201,8 +194,7 @@ fn update_permissions_offset_fails_when_size_is_not_multiple_of_page_size() {
     assert_that!(result.err(), eq Some(MemoryMappingPermissionUpdateError::SizeNotAlignedToPageSize));
 }
 
-#[test]
-fn update_permissions_offset_fails_when_size_is_zero() {
+pub fn memory_mapping_update_permissions_offset_fails_when_size_is_zero() {
     let memory_size: usize = SystemInfo::PageSize.value() * 2;
     let mut sut = MemoryMappingBuilder::from_anonymous()
         .initial_mapping_permission(MappingPermission::ReadWrite)
@@ -215,8 +207,7 @@ fn update_permissions_offset_fails_when_size_is_zero() {
     assert_that!(result.err(), eq Some(MemoryMappingPermissionUpdateError::RegionSizeIsZero));
 }
 
-#[test]
-fn update_permissions_offset_fails_when_range_is_greater_than_mapped_range() {
+pub fn memory_mapping_update_permissions_offset_fails_when_range_is_greater_than_mapped_range() {
     let memory_size: usize = SystemInfo::PageSize.value() * 2;
     let mut sut = MemoryMappingBuilder::from_anonymous()
         .initial_mapping_permission(MappingPermission::ReadWrite)
@@ -232,8 +223,7 @@ fn update_permissions_offset_fails_when_range_is_greater_than_mapped_range() {
     assert_that!(result.err(), eq Some(MemoryMappingPermissionUpdateError::InvalidAddressRange));
 }
 
-#[test]
-fn fails_when_it_is_not_mapped_to_address_hint() {
+pub fn memory_mapping_fails_when_it_is_not_mapped_to_address_hint() {
     let memory_size: usize = SystemInfo::PageSize.value() * 2;
     let sut = MemoryMappingBuilder::from_anonymous()
         .initial_mapping_permission(MappingPermission::ReadWrite)

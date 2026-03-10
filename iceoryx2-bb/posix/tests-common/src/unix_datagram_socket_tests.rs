@@ -10,12 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
+use alloc::string::String;
+use alloc::string::ToString;
+use alloc::vec;
+use alloc::vec::Vec;
 
-use core::sync::atomic::{AtomicBool, Ordering};
-use core::time::Duration;
 use iceoryx2_bb_container::semantic_string::SemanticString;
-use iceoryx2_bb_posix::barrier::*;
 use iceoryx2_bb_posix::config::*;
 use iceoryx2_bb_posix::creation_mode::*;
 use iceoryx2_bb_posix::file::*;
@@ -29,10 +29,15 @@ use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA;
-use std::thread;
-use std::time::Instant;
+use iceoryx2_bb_testing_nostd_macros::requires_std;
 
-const TIMEOUT: Duration = Duration::from_millis(100);
+#[cfg(feature = "std")]
+pub use std_testing::*;
+
+#[cfg(feature = "std")]
+mod std_testing {
+    pub const TIMEOUT: core::time::Duration = core::time::Duration::from_millis(100);
+}
 
 fn generate_socket_name() -> FilePath {
     let mut file = FileName::new(b"unix_datagram_socket_tests").unwrap();
@@ -92,8 +97,7 @@ impl Drop for TestFixture {
     }
 }
 
-#[test]
-fn unix_datagram_socket_send_receive_works() {
+pub fn unix_datagram_socket_send_receive_works() {
     create_test_directory();
     let socket_name = generate_socket_name();
     let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
@@ -117,8 +121,7 @@ fn unix_datagram_socket_send_receive_works() {
     assert_that!(send_data, eq receive_data);
 }
 
-#[test]
-fn unix_datagram_socket_adjust_buffer_size_works() {
+pub fn unix_datagram_socket_adjust_buffer_size_works() {
     create_test_directory();
     let socket_name = generate_socket_name();
     let mut sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
@@ -138,8 +141,7 @@ fn unix_datagram_socket_adjust_buffer_size_works() {
     assert_that!(sut_sender.get_send_buffer_size().unwrap(), ge 4096);
 }
 
-#[test]
-fn unix_datagram_socket_non_blocking_mode_returns_zero_when_nothing_was_received() {
+pub fn unix_datagram_socket_non_blocking_mode_returns_zero_when_nothing_was_received() {
     create_test_directory();
     let socket_name = generate_socket_name();
     let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
@@ -158,8 +160,11 @@ fn unix_datagram_socket_non_blocking_mode_returns_zero_when_nothing_was_received
     assert_that!(result, eq Ok(0));
 }
 
-#[test]
-fn unix_datagram_socket_blocking_mode_blocks() {
+#[requires_std("threading")]
+pub fn unix_datagram_socket_blocking_mode_blocks() {
+    use core::sync::atomic::{AtomicBool, Ordering};
+    use iceoryx2_bb_posix::barrier::*;
+
     create_test_directory();
     let socket_name = generate_socket_name();
     let received_message = AtomicBool::new(false);
@@ -167,7 +172,7 @@ fn unix_datagram_socket_blocking_mode_blocks() {
     let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
     let send_data: Vec<u8> = vec![1u8, 3u8, 3u8, 7u8, 13u8, 37u8];
 
-    thread::scope(|s| {
+    std::thread::scope(|s| {
         let t = s.spawn(|| {
             let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
                 .permission(Permission::OWNER_ALL)
@@ -188,7 +193,7 @@ fn unix_datagram_socket_blocking_mode_blocks() {
             .create()
             .unwrap();
 
-        thread::sleep(TIMEOUT);
+        std::thread::sleep(TIMEOUT);
         let received_message_old = received_message.load(Ordering::Relaxed);
         sut_sender.blocking_send(send_data.as_slice()).unwrap();
         t.join().ok();
@@ -198,8 +203,10 @@ fn unix_datagram_socket_blocking_mode_blocks() {
     });
 }
 
-#[test]
-fn unix_datagram_socket_timeout_blocks_at_least() {
+#[requires_std("threading")]
+pub fn unix_datagram_socket_timeout_blocks_at_least() {
+    use iceoryx2_bb_posix::barrier::*;
+
     create_test_directory();
     let socket_name = generate_socket_name();
     let handle = BarrierHandle::new();
@@ -207,7 +214,7 @@ fn unix_datagram_socket_timeout_blocks_at_least() {
     let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
     let barrier_2 = BarrierBuilder::new(2).create(&handle_2).unwrap();
 
-    thread::scope(|s| {
+    std::thread::scope(|s| {
         let t = s.spawn(|| {
             let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
                 .permission(Permission::OWNER_ALL)
@@ -224,7 +231,7 @@ fn unix_datagram_socket_timeout_blocks_at_least() {
         });
 
         barrier.wait();
-        let start = Instant::now();
+        let start = std::time::Instant::now();
         barrier_2.wait();
 
         t.join().ok();
@@ -233,10 +240,7 @@ fn unix_datagram_socket_timeout_blocks_at_least() {
     });
 }
 
-// TODO iox2-#320
-#[ignore]
-#[test]
-fn unix_datagram_socket_sending_receiving_with_single_fd_works() {
+pub fn unix_datagram_socket_sending_receiving_with_single_fd_works() {
     test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA);
 
     let mut test = TestFixture::new();
@@ -284,9 +288,7 @@ fn unix_datagram_socket_sending_receiving_with_single_fd_works() {
     assert_that!(file_recv_content, eq file_send_content);
 }
 
-#[ignore]
-#[test]
-fn unix_datagram_socket_sending_receiving_credentials_works() {
+pub fn unix_datagram_socket_sending_receiving_credentials_works() {
     test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA);
 
     create_test_directory();
@@ -314,10 +316,7 @@ fn unix_datagram_socket_sending_receiving_credentials_works() {
     assert_that!(recv_credentials, eq Some(send_credentials));
 }
 
-// TODO iox2-#320
-#[ignore]
-#[test]
-fn unix_datagram_socket_sending_receiving_with_max_supported_fd_and_credentials_works() {
+pub fn unix_datagram_socket_sending_receiving_with_max_supported_fd_and_credentials_works() {
     test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA);
 
     let mut test = TestFixture::new();

@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
+use alloc::vec;
 
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_elementary::math::ToB64;
@@ -27,8 +27,7 @@ fn generate_shm_name() -> FileName {
     file_name
 }
 
-#[test]
-fn shared_memory_create_and_open_works() {
+pub fn shared_memory_create_and_open_works() {
     let shm_name = generate_shm_name();
     let mut sut_create = SharedMemoryBuilder::new(&shm_name)
         .creation_mode(CreationMode::PurgeAndCreate)
@@ -59,8 +58,7 @@ fn shared_memory_create_and_open_works() {
     }
 }
 
-#[test]
-fn shared_memory_create_and_modify_open_works() {
+pub fn shared_memory_create_and_modify_open_works() {
     let shm_name = generate_shm_name();
     let sut_create = SharedMemoryBuilder::new(&shm_name)
         .creation_mode(CreationMode::PurgeAndCreate)
@@ -91,8 +89,7 @@ fn shared_memory_create_and_modify_open_works() {
     }
 }
 
-#[test]
-fn shared_memory_opening_with_non_fitting_size_fails() {
+pub fn shared_memory_opening_with_non_fitting_size_fails() {
     let shm_name = generate_shm_name();
     let sut_create = SharedMemoryBuilder::new(&shm_name)
         .creation_mode(CreationMode::PurgeAndCreate)
@@ -129,8 +126,7 @@ fn shared_memory_opening_with_non_fitting_size_fails() {
     );
 }
 
-#[test]
-fn shared_memory_release_ownership_works() {
+pub fn shared_memory_release_ownership_works() {
     test_requires!(POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY);
 
     let shm_name = generate_shm_name();
@@ -173,8 +169,7 @@ fn shared_memory_release_ownership_works() {
     );
 }
 
-#[test]
-fn shared_memory_create_without_ownership_works() {
+pub fn shared_memory_create_without_ownership_works() {
     test_requires!(POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY);
 
     let shm_name = generate_shm_name();
@@ -216,8 +211,7 @@ fn shared_memory_create_without_ownership_works() {
     );
 }
 
-#[test]
-fn shared_memory_acquire_ownership_works() {
+pub fn shared_memory_acquire_ownership_works() {
     test_requires!(POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY);
 
     let shm_name = generate_shm_name();
@@ -237,8 +231,7 @@ fn shared_memory_acquire_ownership_works() {
     assert_that!(SharedMemory::does_exist(&shm_name), eq false);
 }
 
-#[test]
-fn shared_memory_existing_shm_can_be_listed() {
+pub fn shared_memory_existing_shm_can_be_listed() {
     const NUMBER_OF_SHM: usize = 32;
 
     let mut shms = vec![];
@@ -263,8 +256,7 @@ fn shared_memory_existing_shm_can_be_listed() {
     }
 }
 
-#[test]
-fn shared_memory_can_be_mapped_with_a_custom_offset() {
+pub fn shared_memory_can_be_mapped_with_a_custom_offset() {
     const MAPPING_OFFSET: isize = 0; // only zero works reliably
     let shm_name = generate_shm_name();
     let sut = SharedMemoryBuilder::new(&shm_name)

@@ -10,27 +10,18 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
-
-use iceoryx2_bb_posix::clock::*;
-use iceoryx2_bb_posix::mutex::*;
-use iceoryx2_bb_posix::system_configuration::Feature;
-use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing::test_requires;
-use iceoryx2_bb_testing::watchdog::Watchdog;
+extern crate alloc;
 
 use core::time::Duration;
 
-extern crate alloc;
-use alloc::sync::Arc;
-
-use std::sync::Barrier;
-use std::thread;
+use iceoryx2_bb_posix::clock::*;
+use iceoryx2_bb_posix::mutex::*;
+use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_nostd_macros::requires_std;
 
 const TIMEOUT: Duration = Duration::from_millis(100);
 
-#[test]
-fn mutex_lock_works() {
+pub fn mutex_lock_works() {
     let handle = MutexHandle::<i32>::new();
     let sut = MutexBuilder::new().create(123, &handle).unwrap();
     {
@@ -43,8 +34,7 @@ fn mutex_lock_works() {
     assert_that!(*value, eq 456);
 }
 
-#[test]
-fn mutex_try_lock_works() {
+pub fn mutex_try_lock_works() {
     let handle = MutexHandle::<i32>::new();
     let sut = MutexBuilder::new().create(789, &handle).unwrap();
     {
@@ -57,20 +47,20 @@ fn mutex_try_lock_works() {
     assert_that!(*value, eq 321);
 }
 
-#[test]
-fn mutex_try_lock_leads_to_blocked_mutex() {
+#[requires_std("threading")]
+pub fn mutex_try_lock_leads_to_blocked_mutex() {
     let handle = MutexHandle::<i32>::new();
     let sut = MutexBuilder::new().create(111, &handle).unwrap();
     let mut value = sut.try_lock().unwrap().unwrap();
 
-    thread::scope(|s| {
+    std::thread::scope(|s| {
         let t1 = s.spawn(|| {
             let mut value = sut.lock().unwrap();
             assert_that!(*value, eq 444);
             *value = 555;
         });
 
-        thread::sleep(core::time::Duration::from_millis(10));
+        std::thread::sleep(core::time::Duration::from_millis(10));
         let value_old = *value;
         *value = 444;
         drop(value);
@@ -81,10 +71,10 @@ fn mutex_try_lock_leads_to_blocked_mutex() {
     });
 }
 
-#[test]
-fn mutex_timed_lock_leads_to_blocked_mutex_realtime() {
+#[requires_std("threading")]
+pub fn mutex_timed_lock_leads_to_blocked_mutex_realtime() {
     let handle = MutexHandle::<i32>::new();
-    let sut = Arc::new(
+    let sut = alloc::sync::Arc::new(
         MutexBuilder::new()
             .clock_type(ClockType::Realtime)
             .create(111, &handle)
@@ -92,13 +82,13 @@ fn mutex_timed_lock_leads_to_blocked_mutex_realtime() {
     );
     let mut value = sut.timed_lock(Duration::from_millis(100)).unwrap().unwrap();
 
-    thread::scope(|s| {
+    std::thread::scope(|s| {
         let t1 = s.spawn(|| {
             let mut value = sut.lock().unwrap();
             *value = 555;
         });
 
-        thread::sleep(core::time::Duration::from_millis(10));
+        std::thread::sleep(core::time::Duration::from_millis(10));
         let value_old = *value;
         *value = 444;
         drop(value);
@@ -109,12 +99,15 @@ fn mutex_timed_lock_leads_to_blocked_mutex_realtime() {
     });
 }
 
-#[test]
-fn mutex_timed_lock_leads_to_blocked_mutex_monotonic() {
+#[requires_std("threading")]
+pub fn mutex_timed_lock_leads_to_blocked_mutex_monotonic() {
+    use iceoryx2_bb_posix::system_configuration::Feature;
+    use iceoryx2_bb_testing::test_requires;
+
     test_requires!(Feature::MonotonicClock.is_available());
 
     let handle = MutexHandle::<i32>::new();
-    let sut = Arc::new(
+    let sut = alloc::sync::Arc::new(
         MutexBuilder::new()
             .clock_type(ClockType::Monotonic)
             .create(111, &handle)
@@ -122,13 +115,13 @@ fn mutex_timed_lock_leads_to_blocked_mutex_monotonic() {
     );
     let mut value = sut.timed_lock(Duration::from_millis(100)).unwrap().unwrap();
 
-    thread::scope(|s| {
+    std::thread::scope(|s| {
         let t1 = s.spawn(|| {
             let mut value = sut.lock().unwrap();
             *value = 555;
         });
 
-        thread::sleep(core::time::Duration::from_millis(10));
+        std::thread::sleep(core::time::Duration::from_millis(10));
         let value_old = *value;
         *value = 444;
         drop(value);
@@ -139,13 +132,13 @@ fn mutex_timed_lock_leads_to_blocked_mutex_monotonic() {
     });
 }
 
-#[test]
-fn mutex_try_lock_fails_when_already_locked() {
+#[requires_std("threading")]
+pub fn mutex_try_lock_fails_when_already_locked() {
     let handle = MutexHandle::<i32>::new();
-    let sut = Arc::new(MutexBuilder::new().create(111, &handle).unwrap());
+    let sut = alloc::sync::Arc::new(MutexBuilder::new().create(111, &handle).unwrap());
     let value = sut.lock().unwrap();
 
-    thread::scope(|s| {
+    std::thread::scope(|s| {
         let t1 = s.spawn(|| {
             let value = sut.try_lock().unwrap();
             assert_that!(value, is_none);
@@ -156,16 +149,16 @@ fn mutex_try_lock_fails_when_already_locked() {
     });
 }
 
-#[test]
-fn mutex_timed_lock_blocks_at_least_for_timeout_realtime_clock() {
-    let barrier = Barrier::new(2);
+#[requires_std("threading", "synchronization")]
+pub fn mutex_timed_lock_blocks_at_least_for_timeout_realtime_clock() {
+    let barrier = std::sync::Barrier::new(2);
     let handle = MutexHandle::<i32>::new();
     let sut = MutexBuilder::new()
         .clock_type(ClockType::Realtime)
         .create(111, &handle)
         .unwrap();
 
-    thread::scope(|s| {
+    std::thread::scope(|s| {
         s.spawn(|| {
             barrier.wait();
             let _guard = sut.lock().unwrap();
@@ -182,8 +175,11 @@ fn mutex_timed_lock_blocks_at_least_for_timeout_realtime_clock() {
     });
 }
 
-#[test]
-fn mutex_timed_lock_blocks_at_least_for_timeout_monotonic_clock() {
+#[requires_std("threading")]
+pub fn mutex_timed_lock_blocks_at_least_for_timeout_monotonic_clock() {
+    use iceoryx2_bb_posix::system_configuration::Feature;
+    use iceoryx2_bb_testing::test_requires;
+
     test_requires!(Feature::MonotonicClock.is_available());
 
     let handle = MutexHandle::<i32>::new();
@@ -192,7 +188,7 @@ fn mutex_timed_lock_blocks_at_least_for_timeout_monotonic_clock() {
         .create(111, &handle)
         .unwrap();
 
-    thread::scope(|s| {
+    std::thread::scope(|s| {
         s.spawn(|| {
             let _guard = sut.lock().unwrap();
             nanosleep(TIMEOUT * 4).unwrap();
@@ -207,8 +203,7 @@ fn mutex_timed_lock_blocks_at_least_for_timeout_monotonic_clock() {
     });
 }
 
-#[test]
-fn mutex_multiple_ipc_mutex_are_working() {
+pub fn mutex_multiple_ipc_mutex_are_working() {
     let handle = MutexHandle::new();
     let sut1 = MutexBuilder::new()
         .is_interprocess_capable(true)
@@ -232,8 +227,7 @@ fn mutex_multiple_ipc_mutex_are_working() {
     assert_that!(guard1, is_none);
 }
 
-#[test]
-fn mutex_recursive_mutex_can_be_locked_multiple_times_by_same_thread() {
+pub fn mutex_recursive_mutex_can_be_locked_multiple_times_by_same_thread() {
     let handle = MutexHandle::new();
     let sut = MutexBuilder::new()
         .mutex_type(MutexType::Recursive)
@@ -262,8 +256,10 @@ fn mutex_recursive_mutex_can_be_locked_multiple_times_by_same_thread() {
     assert_that!(guard2, is_some);
 }
 
-#[test]
-fn mutex_recursive_does_not_unlock_in_the_first_unlock_call() {
+#[requires_std("threading", "synchronization", "watchdog")]
+pub fn mutex_recursive_does_not_unlock_in_the_first_unlock_call() {
+    use iceoryx2_bb_testing::watchdog::Watchdog;
+
     let _watchdog = Watchdog::new();
     let handle = MutexHandle::new();
     let sut = MutexBuilder::new()
@@ -271,7 +267,7 @@ fn mutex_recursive_does_not_unlock_in_the_first_unlock_call() {
         .create(5123, &handle)
         .unwrap();
 
-    let barrier = Barrier::new(2);
+    let barrier = std::sync::Barrier::new(2);
     std::thread::scope(|s| {
         let guard1 = sut.try_lock().unwrap();
         assert_that!(guard1, is_some);
@@ -295,8 +291,7 @@ fn mutex_recursive_does_not_unlock_in_the_first_unlock_call() {
     });
 }
 
-#[test]
-fn mutex_deadlock_detection_works() {
+pub fn mutex_deadlock_detection_works() {
     for clock_type in ClockType::all_supported_clocks() {
         let handle = MutexHandle::new();
         let sut = MutexBuilder::new()
@@ -329,8 +324,8 @@ fn mutex_deadlock_detection_works() {
     }
 }
 
-#[test]
-fn mutex_recursive_mutex_blocks() {
+#[requires_std("threading")]
+pub fn mutex_recursive_mutex_blocks() {
     let handle = MutexHandle::<i32>::new();
     let sut = MutexBuilder::new()
         .mutex_type(MutexType::Recursive)
@@ -338,14 +333,14 @@ fn mutex_recursive_mutex_blocks() {
         .unwrap();
     let mut value = sut.try_lock().unwrap().unwrap();
 
-    thread::scope(|s| {
+    std::thread::scope(|s| {
         let t1 = s.spawn(|| {
             let mut value = sut.lock().unwrap();
             assert_that!(*value, eq 444);
             *value = 555;
         });
 
-        thread::sleep(core::time::Duration::from_millis(10));
+        std::thread::sleep(core::time::Duration::from_millis(10));
         let old_value = *value;
         *value = 444;
         drop(value);
@@ -356,8 +351,8 @@ fn mutex_recursive_mutex_blocks() {
     });
 }
 
-#[test]
-fn mutex_with_deadlock_detection_blocks() {
+#[requires_std("threading")]
+pub fn mutex_with_deadlock_detection_blocks() {
     let handle = MutexHandle::<i32>::new();
     let sut = MutexBuilder::new()
         .mutex_type(MutexType::WithDeadlockDetection)
@@ -365,14 +360,14 @@ fn mutex_with_deadlock_detection_blocks() {
         .unwrap();
     let mut value = sut.try_lock().unwrap().unwrap();
 
-    thread::scope(|s| {
+    std::thread::scope(|s| {
         let t1 = s.spawn(|| {
             let mut value = sut.lock().unwrap();
             assert_that!(*value, eq 444);
             *value = 555;
         });
 
-        thread::sleep(core::time::Duration::from_millis(10));
+        std::thread::sleep(core::time::Duration::from_millis(10));
         let old_value = *value;
         *value = 444;
         drop(value);
@@ -383,11 +378,10 @@ fn mutex_with_deadlock_detection_blocks() {
     });
 }
 
-// This test fails on QNX due to the mutex created in the separate thread being cleaned up
-// before the clean-up code is executed. Needs investigation (#978).
-#[cfg(not(target_os = "nto"))]
-#[test]
-fn mutex_can_be_recovered_when_thread_died() {
+#[requires_std("threading")]
+pub fn mutex_can_be_recovered_when_thread_died() {
+    use iceoryx2_bb_testing::watchdog::Watchdog;
+
     let _watchdog = Watchdog::new();
     let handle = MutexHandle::<i32>::new();
     let sut = MutexBuilder::new()
@@ -395,7 +389,7 @@ fn mutex_can_be_recovered_when_thread_died() {
         .create(111, &handle)
         .unwrap();
 
-    thread::scope(|s| {
+    std::thread::scope(|s| {
         s.spawn(|| {
             let guard = sut.lock();
             assert_that!(guard, is_ok);
@@ -429,12 +423,10 @@ fn mutex_can_be_recovered_when_thread_died() {
     drop(guard);
 }
 
-// This test fails on QNX due to the mutex created in the separate thread from being cleaned up
-// before the clean-up code is added. Needs investigation.
-#[test]
-#[cfg(not(any(target_os = "macos", target_os = "nto")))]
-fn mutex_in_unrecoverable_state_if_state_of_leaked_mutex_is_not_repaired() {
-    iceoryx2_log::set_log_level(iceoryx2_log::LogLevel::Trace);
+#[requires_std("threading", "watchdog")]
+pub fn mutex_in_unrecoverable_state_if_state_of_leaked_mutex_is_not_repaired() {
+    use iceoryx2_bb_testing::watchdog::Watchdog;
+
     let _watchdog = Watchdog::new();
     let handle = MutexHandle::<i32>::new();
     let sut = MutexBuilder::new()
@@ -443,7 +435,7 @@ fn mutex_in_unrecoverable_state_if_state_of_leaked_mutex_is_not_repaired() {
         .create(111, &handle)
         .unwrap();
 
-    thread::scope(|s| {
+    std::thread::scope(|s| {
         let t = s.spawn(|| {
             let guard = sut.lock();
             core::mem::forget(guard);

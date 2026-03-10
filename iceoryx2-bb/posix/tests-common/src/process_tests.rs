@@ -10,13 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
-
 use iceoryx2_bb_posix::process::*;
 use iceoryx2_bb_testing::{assert_that, test_requires};
 use iceoryx2_pal_posix::posix::{self, POSIX_SUPPORT_SCHEDULER};
 
-#[test]
 pub fn process_can_acquire_from_self() {
     let process = Process::from_self();
     assert_that!(process.id().value(), ne 0);
@@ -25,7 +22,6 @@ pub fn process_can_acquire_from_self() {
     assert_that!(process.id().value(), eq process2.id().value());
 }
 
-#[test]
 pub fn process_can_acquire_scheduler_information() {
     test_requires!(POSIX_SUPPORT_SCHEDULER);
 
@@ -39,7 +35,6 @@ pub fn process_can_acquire_scheduler_information() {
     assert_that!(process.get_scheduler(), is_ok);
 }
 
-#[test]
 pub fn process_is_alive_works() {
     let process = Process::from_self();
     assert_that!(process.is_alive(), eq true);
@@ -48,14 +43,9 @@ pub fn process_is_alive_works() {
     assert_that!(process2.is_alive(), eq false);
 }
 
-#[test]
 pub fn process_executable_path_works() {
     let process = Process::from_self();
     let executable_path = process.executable();
 
     assert_that!(executable_path, is_ok);
-    let file_name = executable_path.as_ref().unwrap().file_name();
-    let executable_file = core::str::from_utf8(&file_name).unwrap();
-    println!("{executable_file}");
-    assert_that!(executable_file.starts_with("process_tests"), eq true);
 }

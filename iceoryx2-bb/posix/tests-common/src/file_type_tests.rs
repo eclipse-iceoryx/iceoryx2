@@ -10,14 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
-
 use iceoryx2_bb_posix::file_type::*;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_pal_posix::*;
 
-#[test]
-fn file_type_mode_t_conversion_works() {
+pub fn file_type_mode_t_conversion_works() {
     assert_that!(FileType::File, eq FileType::from_mode_t(posix::S_IFREG));
     assert_that!(FileType::Character, eq FileType::from_mode_t(posix::S_IFCHR));
     assert_that!(FileType::Block, eq FileType::from_mode_t(posix::S_IFBLK));

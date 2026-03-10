@@ -10,16 +10,25 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
+use iceoryx2_bb_testing_nostd_macros::requires_std;
 
-use core::time::Duration;
-use std::{collections::HashSet, sync::Barrier};
+#[cfg(feature = "std")]
+pub use internal::*;
 
-use iceoryx2_bb_posix::{process::Process, system_configuration::SystemInfo, unique_system_id::*};
-use iceoryx2_bb_testing::{assert_that, watchdog::Watchdog};
+#[cfg(feature = "std")]
+mod internal {
 
-#[test]
-fn unique_system_id_is_unique() {
+    pub use core::time::Duration;
+    pub use std::{collections::HashSet, sync::Barrier};
+
+    pub use iceoryx2_bb_posix::{
+        process::Process, system_configuration::SystemInfo, unique_system_id::*,
+    };
+    pub use iceoryx2_bb_testing::{assert_that, watchdog::Watchdog};
+}
+
+#[requires_std("threading")]
+pub fn unique_system_id_is_unique() {
     let sut1 = UniqueSystemId::new().unwrap();
     std::thread::sleep(Duration::from_secs(1));
     let sut2 = UniqueSystemId::new().unwrap();
@@ -39,8 +48,8 @@ fn unique_system_id_is_unique() {
     assert_that!(sut1.creation_time().seconds() + 3, ge sut3.creation_time().seconds());
 }
 
-#[test]
-fn unique_system_id_concurrently_created_ids_are_unique() {
+#[requires_std("threading")]
+pub fn unique_system_id_concurrently_created_ids_are_unique() {
     let _watchdog = Watchdog::new();
     const NUMBER_OF_ITERATIONS: usize = 1000;
     let number_of_threads = SystemInfo::NumberOfCpuCores.value() * 2;

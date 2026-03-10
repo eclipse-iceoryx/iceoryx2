@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
+use alloc::string::ToString;
 
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_posix::user::*;
@@ -18,8 +18,7 @@ use iceoryx2_bb_system_types::user_name::UserName;
 use iceoryx2_bb_testing::{assert_that, test_requires};
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_USERS_AND_GROUPS;
 
-#[test]
-fn user_works() {
+pub fn user_works() {
     test_requires!(POSIX_SUPPORT_USERS_AND_GROUPS);
 
     let root = User::from_name(&UserName::new(b"root").unwrap()).unwrap();

@@ -10,15 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
-
 use iceoryx2_bb_posix::memory_lock::*;
 use iceoryx2_bb_testing::{assert_that, test_requires};
 use iceoryx2_pal_posix::posix;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_MEMORY_LOCK;
 
-#[test]
-fn memory_lock_works() {
+pub fn memory_lock_works() {
     test_requires!(POSIX_SUPPORT_MEMORY_LOCK);
 
     let some_memory = [0u8; 1024];
@@ -34,8 +31,7 @@ fn memory_lock_works() {
     }
 }
 
-#[test]
-fn memory_lock_all_works() {
+pub fn memory_lock_all_works() {
     test_requires!(POSIX_SUPPORT_MEMORY_LOCK);
 
     assert_that!(

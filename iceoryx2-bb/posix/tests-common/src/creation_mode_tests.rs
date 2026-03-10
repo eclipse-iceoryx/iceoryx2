@@ -10,14 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
+use alloc::format;
 
 use iceoryx2_bb_posix::creation_mode::*;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_pal_posix::*;
 
-#[test]
-fn creation_mode_o_flag_conversion_works() {
+pub fn creation_mode_o_flag_conversion_works() {
     assert_that!(
         CreationMode::CreateExclusive.as_oflag(), eq
         posix::O_CREAT | posix::O_EXCL
@@ -29,8 +28,7 @@ fn creation_mode_o_flag_conversion_works() {
     assert_that!(CreationMode::OpenOrCreate.as_oflag(), eq posix::O_CREAT);
 }
 
-#[test]
-fn creation_mode_display_works() {
+pub fn creation_mode_display_works() {
     assert_that!(
         format!("{}", CreationMode::PurgeAndCreate),
         eq "CreationMode::PurgeAndCreate"

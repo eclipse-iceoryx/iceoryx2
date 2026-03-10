@@ -10,16 +10,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
-
 use iceoryx2_bb_posix::barrier::*;
-use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_nostd_macros::requires_std;
 
-use core::{sync::atomic::AtomicU64, sync::atomic::Ordering};
-use std::thread;
+#[requires_std("threading")]
+pub fn barrier_blocks() -> Result<(), BarrierCreationError> {
+    use core::{sync::atomic::AtomicU64, sync::atomic::Ordering};
 
-#[test]
-fn barrier_blocks() -> Result<(), BarrierCreationError> {
+    use iceoryx2_bb_testing::assert_that;
+    use std::thread;
+
     let handle = BarrierHandle::new();
     let handle2 = BarrierHandle::new();
     let handle3 = BarrierHandle::new();

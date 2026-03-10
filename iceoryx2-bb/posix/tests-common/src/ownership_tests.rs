@@ -10,8 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
-
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_posix::group::*;
 use iceoryx2_bb_posix::ownership::*;
@@ -21,8 +19,7 @@ use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_USERS_AND_GROUPS;
 
-#[test]
-fn ownership_builder_works() {
+pub fn ownership_builder_works() {
     test_requires!(POSIX_SUPPORT_USERS_AND_GROUPS);
 
     let root = GroupName::new(b"root").unwrap();

@@ -10,7 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
+use alloc::string::ToString;
+use alloc::vec;
+use alloc::vec::Vec;
 
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::unique_id::*;
@@ -64,8 +66,7 @@ impl Drop for TestFixture {
     }
 }
 
-#[test]
-fn socket_ancillary_is_empty_when_created() {
+pub fn socket_ancillary_is_empty_when_created() {
     test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA);
 
     let sut = SocketAncillary::new();
@@ -73,8 +74,7 @@ fn socket_ancillary_is_empty_when_created() {
     assert_that!(sut, is_empty);
 }
 
-#[test]
-fn socket_ancillary_credentials_work() {
+pub fn socket_ancillary_credentials_work() {
     test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA);
 
     let mut sut = SocketAncillary::new();
@@ -100,8 +100,7 @@ fn socket_ancillary_credentials_work() {
     assert_that!(sut.get_creds(), eq None);
 }
 
-#[test]
-fn socket_ancillary_add_file_descriptors_work() {
+pub fn socket_ancillary_add_file_descriptors_work() {
     test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA);
 
     let mut test = TestFixture::new();

@@ -10,8 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
-
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::math::ToB64;
 use iceoryx2_bb_posix::config::*;
@@ -28,13 +26,11 @@ use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_pal_posix::posix::{POSIX_SUPPORT_PERMISSIONS, POSIX_SUPPORT_USERS_AND_GROUPS};
 
-#[test]
-fn file_descriptor_smaller_zero_is_invalid() {
+pub fn file_descriptor_smaller_zero_is_invalid() {
     assert_that!(FileDescriptor::new(-12), eq None);
 }
 
-#[test]
-fn file_descriptor_with_arbitrary_number_greater_equal_zero_is_invalid() {
+pub fn file_descriptor_with_arbitrary_number_greater_equal_zero_is_invalid() {
     assert_that!(FileDescriptor::new(431), is_none);
     assert_that!(FileDescriptor::new(981), is_none);
 }
@@ -46,7 +42,7 @@ fn generate_name() -> FileName {
     dir
 }
 
-trait GenericTestBuilder {
+pub trait GenericTestBuilder {
     fn sut() -> Self;
 }
 
@@ -77,94 +73,83 @@ impl GenericTestBuilder for SharedMemory {
     }
 }
 
-#[cfg(test)]
-#[::generic_tests::define]
-mod file_descriptor_management {
-    use super::*;
+pub fn file_descriptor_owner_handling_works<Sut: GenericTestBuilder + FileDescriptorManagement>() {
+    test_requires!(POSIX_SUPPORT_USERS_AND_GROUPS);
 
-    #[test]
-    fn owner_handling_works<Sut: GenericTestBuilder + FileDescriptorManagement>() {
-        test_requires!(POSIX_SUPPORT_USERS_AND_GROUPS);
+    create_test_directory();
 
-        create_test_directory();
+    let mut sut = Sut::sut();
 
-        let mut sut = Sut::sut();
+    let me = User::from_self().unwrap();
+    let uid = me.uid();
+    let gid = me.details().unwrap().gid();
 
-        let me = User::from_self().unwrap();
-        let uid = me.uid();
-        let gid = me.details().unwrap().gid();
+    assert_that!(
+        sut.set_ownership(OwnershipBuilder::new().uid(uid).gid(gid).create()),
+        is_ok
+    );
 
-        assert_that!(
-            sut.set_ownership(OwnershipBuilder::new().uid(uid).gid(gid).create()),
-            is_ok
-        );
+    let ownership = sut.ownership().unwrap();
+    assert_that!(ownership.uid(), eq uid);
+    assert_that!(ownership.gid(), eq gid);
+}
 
-        let ownership = sut.ownership().unwrap();
-        assert_that!(ownership.uid(), eq uid);
-        assert_that!(ownership.gid(), eq gid);
-    }
+pub fn file_descriptor_permission_handling_works<
+    Sut: GenericTestBuilder + FileDescriptorManagement,
+>() {
+    test_requires!(POSIX_SUPPORT_PERMISSIONS);
 
-    #[test]
-    fn permission_handling_works<Sut: GenericTestBuilder + FileDescriptorManagement>() {
-        test_requires!(POSIX_SUPPORT_PERMISSIONS);
+    create_test_directory();
 
-        create_test_directory();
+    let mut sut = Sut::sut();
 
-        let mut sut = Sut::sut();
+    let rw_all = Permission::OWNER_READ
+        | Permission::OWNER_WRITE
+        | Permission::GROUP_READ
+        | Permission::GROUP_WRITE
+        | Permission::OTHERS_READ
+        | Permission::OTHERS_WRITE;
 
-        let rw_all = Permission::OWNER_READ
+    assert_that!(sut.set_permission(rw_all), is_ok);
+    let permission = sut.permission().unwrap();
+    assert_that!(permission, eq rw_all);
+}
+
+pub fn file_descriptor_metadata_handling_works<
+    Sut: GenericTestBuilder + FileDescriptorManagement,
+>() {
+    test_requires!(POSIX_SUPPORT_PERMISSIONS);
+
+    create_test_directory();
+
+    let mut sut = Sut::sut();
+
+    let mut test = |perms| {
+        sut.set_permission(perms).unwrap();
+        let metadata = sut.metadata().unwrap();
+
+        assert_that!(metadata.size(), eq 2048);
+        assert_that!(metadata.permission(), eq perms);
+    };
+
+    test(Permission::OWNER_READ | Permission::OWNER_WRITE);
+    test(Permission::OWNER_READ);
+    test(Permission::OWNER_WRITE);
+
+    test(Permission::GROUP_READ | Permission::GROUP_WRITE);
+    test(Permission::GROUP_READ);
+    test(Permission::GROUP_WRITE);
+
+    test(Permission::OTHERS_READ | Permission::OTHERS_WRITE);
+    test(Permission::OTHERS_READ);
+    test(Permission::OTHERS_WRITE);
+
+    test(
+        Permission::OWNER_READ
             | Permission::OWNER_WRITE
             | Permission::GROUP_READ
             | Permission::GROUP_WRITE
             | Permission::OTHERS_READ
-            | Permission::OTHERS_WRITE;
-
-        assert_that!(sut.set_permission(rw_all), is_ok);
-        let permission = sut.permission().unwrap();
-        assert_that!(permission, eq rw_all);
-    }
-
-    #[test]
-    fn metadata_handling_works<Sut: GenericTestBuilder + FileDescriptorManagement>() {
-        test_requires!(POSIX_SUPPORT_PERMISSIONS);
-
-        create_test_directory();
-
-        let mut sut = Sut::sut();
-
-        let mut test = |perms| {
-            sut.set_permission(perms).unwrap();
-            let metadata = sut.metadata().unwrap();
-
-            assert_that!(metadata.size(), eq 2048);
-            assert_that!(metadata.permission(), eq perms);
-        };
-
-        test(Permission::OWNER_READ | Permission::OWNER_WRITE);
-        test(Permission::OWNER_READ);
-        test(Permission::OWNER_WRITE);
-
-        test(Permission::GROUP_READ | Permission::GROUP_WRITE);
-        test(Permission::GROUP_READ);
-        test(Permission::GROUP_WRITE);
-
-        test(Permission::OTHERS_READ | Permission::OTHERS_WRITE);
-        test(Permission::OTHERS_READ);
-        test(Permission::OTHERS_WRITE);
-
-        test(
-            Permission::OWNER_READ
-                | Permission::OWNER_WRITE
-                | Permission::GROUP_READ
-                | Permission::GROUP_WRITE
-                | Permission::OTHERS_READ
-                | Permission::OTHERS_WRITE,
-        );
-    }
-
-    #[instantiate_tests(<File>)]
-    mod file {}
-
-    #[instantiate_tests(<SharedMemory>)]
-    mod shared_memory {}
+            | Permission::OTHERS_WRITE,
+    );
 }

@@ -10,9 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
-
-use core::time::Duration;
+use alloc::string::ToString;
 
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_posix::config::*;
@@ -25,6 +23,7 @@ use iceoryx2_bb_posix::unix_datagram_socket::CreationMode;
 use iceoryx2_bb_posix::{process_state::*, unique_system_id::UniqueSystemId};
 use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath};
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_nostd_macros::requires_std;
 
 fn generate_file_path() -> FilePath {
     let mut file = FileName::new(b"process_state_tests").unwrap();
@@ -41,7 +40,6 @@ fn generate_file_path() -> FilePath {
     FilePath::from_path_and_file(&TEST_DIRECTORY, &file).unwrap()
 }
 
-#[test]
 pub fn process_state_guard_can_be_created() {
     create_test_directory();
     let path = generate_file_path();
@@ -52,7 +50,6 @@ pub fn process_state_guard_can_be_created() {
     assert_that!(File::does_exist(&path).unwrap(), eq true);
 }
 
-#[test]
 pub fn process_state_guard_removes_file_when_dropped() {
     create_test_directory();
     let path = generate_file_path();
@@ -63,7 +60,6 @@ pub fn process_state_guard_removes_file_when_dropped() {
     assert_that!(File::does_exist(&path).unwrap(), eq false);
 }
 
-#[test]
 pub fn process_state_guard_cannot_use_already_existing_file() {
     create_test_directory();
     let path = generate_file_path();
@@ -80,7 +76,6 @@ pub fn process_state_guard_cannot_use_already_existing_file() {
     file.remove_self().unwrap();
 }
 
-#[test]
 pub fn process_state_monitor_detects_dead_state() {
     create_test_directory();
     let path = generate_file_path();
@@ -96,7 +91,6 @@ pub fn process_state_monitor_detects_dead_state() {
     assert_that!(monitor.state().unwrap(), eq ProcessState::DoesNotExist);
 }
 
-#[test]
 pub fn process_state_monitor_detects_non_existing_state() {
     create_test_directory();
     let path = generate_file_path();
@@ -105,7 +99,6 @@ pub fn process_state_monitor_detects_non_existing_state() {
     assert_that!(monitor.state().unwrap(), eq ProcessState::DoesNotExist);
 }
 
-#[test]
 pub fn process_state_monitor_transitions_work_starting_from_non_existing_process() {
     create_test_directory();
     let path = generate_file_path();
@@ -131,7 +124,6 @@ pub fn process_state_monitor_transitions_work_starting_from_non_existing_process
     assert_that!(monitor.state().unwrap(), eq ProcessState::DoesNotExist);
 }
 
-#[test]
 pub fn process_state_monitor_transitions_work_starting_from_existing_process() {
     create_test_directory();
     let path = generate_file_path();
@@ -162,7 +154,6 @@ pub fn process_state_monitor_transitions_work_starting_from_existing_process() {
     owner_lock_file.remove_self().unwrap();
 }
 
-#[test]
 pub fn process_state_monitor_detects_initialized_state() {
     create_test_directory();
     let path = generate_file_path();
@@ -180,7 +171,7 @@ pub fn process_state_monitor_detects_initialized_state() {
     assert_that!(monitor.state().unwrap(), eq ProcessState::DoesNotExist);
 }
 
-#[test]
+#[requires_std("threading")]
 pub fn process_state_owner_lock_cannot_be_created_when_process_does_not_exist() {
     create_test_directory();
     let path = generate_file_path();
@@ -207,7 +198,7 @@ pub fn process_state_owner_lock_cannot_be_created_when_process_does_not_exist() 
         ProcessCleanerCreateError::DoesNotExist
     );
     drop(file);
-    std::thread::sleep(Duration::from_millis(100));
+    std::thread::sleep(core::time::Duration::from_millis(100));
 
     let _file = FileBuilder::new(&owner_lock_path)
         .has_ownership(true)
@@ -223,7 +214,6 @@ pub fn process_state_owner_lock_cannot_be_created_when_process_does_not_exist() 
     );
 }
 
-#[test]
 pub fn process_state_cleaner_removes_state_files_on_drop() {
     create_test_directory();
     let path = generate_file_path();
@@ -251,7 +241,6 @@ pub fn process_state_cleaner_removes_state_files_on_drop() {
     assert_that!(File::does_exist(&owner_lock_path).unwrap(), eq false);
 }
 
-#[test]
 pub fn process_state_cleaner_keeps_state_files_when_abandoned() {
     create_test_directory();
     let path = generate_file_path();
@@ -283,7 +272,7 @@ pub fn process_state_cleaner_keeps_state_files_when_abandoned() {
 // In the process local context the lock is not detected when the fcntl GETLK call is originating
 // from the same thread os the fcntl SETLK call. If it is called from a different thread GETLK
 // blocks despite it should be non-blocking.
-#[test]
+
 #[cfg(not(any(
     target_os = "linux",
     target_os = "freebsd",
@@ -302,7 +291,6 @@ pub fn process_state_monitor_detects_alive_state_from_existing_process() {
     assert_that!(monitor.state().unwrap(), eq ProcessState::DoesNotExist);
 }
 
-#[test]
 #[cfg(not(any(
     target_os = "linux",
     target_os = "freebsd",
@@ -322,7 +310,6 @@ pub fn process_state_owner_lock_cannot_be_acquired_from_living_process() {
     );
 }
 
-#[test]
 #[cfg(not(any(
     target_os = "linux",
     target_os = "freebsd",

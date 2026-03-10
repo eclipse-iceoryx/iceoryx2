@@ -10,8 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
-
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_posix::config::*;
 use iceoryx2_bb_posix::creation_mode::*;
@@ -28,8 +26,7 @@ use iceoryx2_bb_testing::test_requires;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERMISSIONS;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_USERS_AND_GROUPS;
 
-#[test]
-fn metadata_reads_basic_stats_correctly() {
+pub fn metadata_reads_basic_stats_correctly() {
     create_test_directory();
     let file_name =
         FilePath::from_path_and_file(&TEST_DIRECTORY, &FileName::new(b"meta_test").unwrap())
@@ -49,8 +46,7 @@ fn metadata_reads_basic_stats_correctly() {
     File::remove_self(file).unwrap();
 }
 
-#[test]
-fn metadata_reads_owner_and_permission_stats_correctly() {
+pub fn metadata_reads_owner_and_permission_stats_correctly() {
     test_requires!(POSIX_SUPPORT_USERS_AND_GROUPS && POSIX_SUPPORT_PERMISSIONS);
 
     create_test_directory();
