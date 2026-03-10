@@ -2,19 +2,9 @@
 
 ## Main Focus
 
-The list is sorted by priority
-
-### Planned For v0.7
-
-* [x] Python Language Bindings
-* [x] Basic Host2Host Communication based on zenoh
-* [ ] `iox2` cli service debugging
-* [ ] Detailed getting started documentation for all supported languages
-
-### After v0.7
-
-* [ ] Embedded Platforms: QNX 7.1 & QNX 8.0
-* [ ] Blackboard Messaging Pattern
+iceoryx2 is developed by an independent group of developers. The main focus,
+therefore, depends on customer needs and the funding available for specific
+features.
 
 ## Backlog
 
@@ -35,8 +25,8 @@ The list is sorted by priority
 ### Moonshots
 
 * [ ] high performance d-bus alternative (thanks to true zero-copy)
-* [ ] `#![no_std]` on `nightly` on all tier 1 platforms
-* [ ] `#![no_std]` on `stable` on all tier 1 platforms
+* [x] `#![no_std]` on `nightly` on all tier 1 platforms
+* [x] `#![no_std]` on `stable` on all tier 1 platforms
 * [x] completely dynamic setup with dynamic shared memory
 * [ ] iceoryx2 on a rover on the moon
 * [ ] iceoryx2 can communicate with every SOA protocol transparently with
@@ -57,17 +47,7 @@ The list is sorted by priority
 
 ### Language Bindings
 
-* [x] C
-* [x] C++
-* [x] Python
-* [ ] C#
-* [ ] Dash/Flutter
-* [ ] Kotlin
-* [ ] Go
-* [ ] Lua
-* [ ] Swift
-* [ ] Typescript
-* [ ] Zig
+See also [Language Bindings in README.md](README.md#language-bindings).
 
 ### Building Blocks
 
@@ -79,7 +59,7 @@ The list is sorted by priority
 ### Gateways
 
 * [ ] Host2Host Communication based on <https://github.com/smoltcp-rs/smoltcp>
-* [ ] Host2Host Communication based on zenoh
+* [x] Host2Host Communication based on zenoh (currently MVP)
 * [ ] mqtt (rumqtt)
 * [ ] dds (rustdds or dustdds)
 * [ ] zenoh
@@ -111,8 +91,8 @@ The list is sorted by priority
 * [x] events
 * [ ] integrated serialization to send non-shm compatible types, see:
       <https://github.com/rkyv/rkyv>
-* [ ] Single Publisher Subscribe with history
-* [ ] Multi Publisher without history (except there is a brilliant idea on how
+* [x] Single Publisher Subscribe with history
+* [x] Multi Publisher without history (except there is a brilliant idea on how
       to realize it with history)
 * [x] Request Response Messaging Pattern
 * [x] Blackboard Messaging Pattern
@@ -143,7 +123,7 @@ The list is sorted by priority
 ### Robustness
 
 * [X] Node as basis for monitoring and resource cleanup
-* [ ] Add ability to recover samples when subscriber died
+* [x] Add ability to recover samples when subscriber died
     * add sample tracker into ZeroCopyConnection
     * add detection when subscriber returns non-received samples
 * [ ] Large Communication Setup Support
@@ -153,28 +133,14 @@ The list is sorted by priority
 
 ### Platform Support
 
-* [ ] Android
-* [ ] Android Automotive
-* [x] Linux
-* [x] Windows
-* [x] Mac Os
-* [ ] iOS
-* [ ] WatchOS
-* [x] FreeBSD
-* [ ] FreeRTOS
-* [x] QNX
-* [ ] VxWorks
-* [ ] BareMetal
-* [ ] Sandbox Mode (only process internal communication)
-* [ ] RTEMS
-* [ ] Redox OS
+See also [Supported Platforms in README.md](README.md#supported-platforms).
 
 ### Hardware Support
 
 * [x] x86_64
 * [x] aarch64
-* [ ] armv7
-* [ ] x32
+* [x] armv7
+* [x] x32
 * [ ] risc-v
 
 ### Framework Integration
