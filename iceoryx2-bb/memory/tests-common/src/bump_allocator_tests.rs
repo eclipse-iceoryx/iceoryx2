@@ -10,8 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
-
 use iceoryx2_bb_elementary_traits::allocator::*;
 use iceoryx2_bb_memory::bump_allocator::*;
 use iceoryx2_bb_testing::assert_that;
@@ -45,8 +43,7 @@ impl TestFixture {
     }
 }
 
-#[test]
-fn bump_allocator_allocating_too_much_fails_with_out_of_memory() {
+pub fn bump_allocator_allocating_too_much_fails_with_out_of_memory() {
     let mut test = TestFixture::new();
     let sut = test.create_bump_allocator();
 
@@ -57,8 +54,7 @@ fn bump_allocator_allocating_too_much_fails_with_out_of_memory() {
     assert_that!(sample.err().unwrap(), eq  AllocationError::OutOfMemory);
 }
 
-#[test]
-fn bump_allocator_allocating_all_memory_works() {
+pub fn bump_allocator_allocating_all_memory_works() {
     let mut test = TestFixture::new();
     let sut = test.create_bump_allocator();
 
@@ -78,8 +74,7 @@ fn bump_allocator_allocating_all_memory_works() {
     assert_that!(sample.err().unwrap(), eq AllocationError::OutOfMemory);
 }
 
-#[test]
-fn bump_allocator_after_deallocate_allocating_all_memory_works() {
+pub fn bump_allocator_after_deallocate_allocating_all_memory_works() {
     let mut test = TestFixture::new();
     let sut = test.create_bump_allocator();
 
@@ -103,8 +98,7 @@ fn bump_allocator_after_deallocate_allocating_all_memory_works() {
     }
 }
 
-#[test]
-fn bump_allocator_used_free_and_total_space_work() {
+pub fn bump_allocator_used_free_and_total_space_work() {
     let mut test = TestFixture::new();
     let sut = test.create_bump_allocator();
 
@@ -122,8 +116,7 @@ fn bump_allocator_used_free_and_total_space_work() {
     }
 }
 
-#[test]
-fn bump_allocator_allocating_with_different_alignments_works() {
+pub fn bump_allocator_allocating_with_different_alignments_works() {
     let mut test = TestFixture::new();
     let sut = test.create_bump_allocator();
 

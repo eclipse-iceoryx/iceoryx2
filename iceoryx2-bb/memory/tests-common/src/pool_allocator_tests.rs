@@ -10,12 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
+use alloc::vec;
+use alloc::vec::Vec;
 
 use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_elementary_traits::allocator::*;
 use iceoryx2_bb_memory::{bump_allocator::BumpAllocator, pool_allocator::*};
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_nostd_macros::requires_std;
 
 struct TestFixture {
     raw_memory: [u8; TestFixture::memory_size()],
@@ -59,8 +61,7 @@ impl TestFixture {
     }
 }
 
-#[test]
-fn pool_allocator_set_up_correctly() {
+pub fn pool_allocator_set_up_correctly() {
     let mut test = TestFixture::new();
     const BUCKET_SIZE: usize = 128;
     const BUCKET_ALIGNMENT: usize = 1;
@@ -72,8 +73,7 @@ fn pool_allocator_set_up_correctly() {
     assert_that!(sut.number_of_buckets() as usize, le TestFixture::memory_size() / BUCKET_SIZE);
 }
 
-#[test]
-fn pool_allocator_acquire_all_memory_works() {
+pub fn pool_allocator_acquire_all_memory_works() {
     let mut test = TestFixture::new();
     const BUCKET_SIZE: usize = 128;
     const BUCKET_ALIGNMENT: usize = 8;
@@ -102,8 +102,7 @@ fn pool_allocator_acquire_all_memory_works() {
     assert_that!(memory, is_err);
 }
 
-#[test]
-fn pool_allocator_allocate_more_than_bucket_size_fails() {
+pub fn pool_allocator_allocate_more_than_bucket_size_fails() {
     let mut test = TestFixture::new();
     const BUCKET_SIZE: usize = 128;
     const BUCKET_ALIGNMENT: usize = 8;
@@ -116,8 +115,7 @@ fn pool_allocator_allocate_more_than_bucket_size_fails() {
     );
 }
 
-#[test]
-fn pool_allocator_allocate_more_than_bucket_alignment_fails() {
+pub fn pool_allocator_allocate_more_than_bucket_alignment_fails() {
     let mut test = TestFixture::new();
     const BUCKET_SIZE: usize = 128;
     const BUCKET_ALIGNMENT: usize = 8;
@@ -132,10 +130,8 @@ fn pool_allocator_allocate_more_than_bucket_alignment_fails() {
     );
 }
 
-#[test]
-#[should_panic]
-#[cfg(debug_assertions)]
-fn pool_allocator_deallocate_non_allocated_chunk_fails() {
+#[requires_std("panics")]
+pub fn pool_allocator_deallocate_non_allocated_chunk_fails() {
     let mut test = TestFixture::new();
     const BUCKET_SIZE: usize = 128;
     const BUCKET_ALIGNMENT: usize = 8;
@@ -155,8 +151,7 @@ fn pool_allocator_deallocate_non_allocated_chunk_fails() {
     }
 }
 
-#[test]
-fn pool_allocator_acquire_and_release_works() {
+pub fn pool_allocator_acquire_and_release_works() {
     let mut test = TestFixture::new();
     const BUCKET_SIZE: usize = 8;
     const BUCKET_ALIGNMENT: usize = 128;
@@ -195,8 +190,7 @@ fn pool_allocator_acquire_and_release_works() {
     assert_that!(memory, is_err);
 }
 
-#[test]
-fn pool_allocator_acquire_too_large_sample_fails() {
+pub fn pool_allocator_acquire_too_large_sample_fails() {
     let mut test = TestFixture::new();
     const BUCKET_SIZE: usize = 128;
     const BUCKET_ALIGNMENT: usize = 1;
@@ -210,8 +204,7 @@ fn pool_allocator_acquire_too_large_sample_fails() {
     );
 }
 
-#[test]
-fn pool_allocator_acquire_sample_with_to_large_alignment_fails() {
+pub fn pool_allocator_acquire_sample_with_to_large_alignment_fails() {
     let mut test = TestFixture::new();
     const BUCKET_SIZE: usize = 128;
     const BUCKET_ALIGNMENT: usize = 1;
@@ -226,8 +219,7 @@ fn pool_allocator_acquire_sample_with_to_large_alignment_fails() {
     );
 }
 
-#[test]
-fn pool_allocator_allocate_zeroed_works() {
+pub fn pool_allocator_allocate_zeroed_works() {
     let mut test = TestFixture::new();
     const BUCKET_SIZE: usize = 128;
     const BUCKET_ALIGNMENT: usize = 1;
@@ -245,8 +237,7 @@ fn pool_allocator_allocate_zeroed_works() {
     }
 }
 
-#[test]
-fn pool_allocator_grow_works() {
+pub fn pool_allocator_grow_works() {
     let mut test = TestFixture::new();
     const BUCKET_SIZE: usize = 128;
     const BUCKET_ALIGNMENT: usize = 1;
@@ -269,8 +260,7 @@ fn pool_allocator_grow_works() {
     assert_that!(unsafe { memory.as_ref() }, len BUCKET_SIZE);
 }
 
-#[test]
-fn pool_allocator_grow_with_size_larger_bucket_fails() {
+pub fn pool_allocator_grow_with_size_larger_bucket_fails() {
     let mut test = TestFixture::new();
     const BUCKET_SIZE: usize = 128;
     const BUCKET_ALIGNMENT: usize = 1;
@@ -293,8 +283,7 @@ fn pool_allocator_grow_with_size_larger_bucket_fails() {
     );
 }
 
-#[test]
-fn pool_allocator_grow_with_size_decrease_fails() {
+pub fn pool_allocator_grow_with_size_decrease_fails() {
     let mut test = TestFixture::new();
     const BUCKET_SIZE: usize = 128;
     const BUCKET_ALIGNMENT: usize = 1;
@@ -317,10 +306,8 @@ fn pool_allocator_grow_with_size_decrease_fails() {
     );
 }
 
-#[test]
-#[should_panic]
-#[cfg(debug_assertions)]
-fn pool_allocator_grow_with_non_allocated_chunk_fails() {
+#[requires_std("panics")]
+pub fn pool_allocator_grow_with_non_allocated_chunk_fails() {
     let mut test = TestFixture::new();
     const BUCKET_SIZE: usize = 128;
     const BUCKET_ALIGNMENT: usize = 1;
@@ -336,8 +323,7 @@ fn pool_allocator_grow_with_non_allocated_chunk_fails() {
     }
 }
 
-#[test]
-fn pool_allocator_grow_with_too_alignment_larger_bucket_alignment_fails() {
+pub fn pool_allocator_grow_with_too_alignment_larger_bucket_alignment_fails() {
     let mut test = TestFixture::new();
     const BUCKET_SIZE: usize = 128;
     const BUCKET_ALIGNMENT: usize = 1;
@@ -360,8 +346,7 @@ fn pool_allocator_grow_with_too_alignment_larger_bucket_alignment_fails() {
     );
 }
 
-#[test]
-fn pool_allocator_grow_zeroed_works() {
+pub fn pool_allocator_grow_zeroed_works() {
     let mut test = TestFixture::new();
     const BUCKET_SIZE: usize = 128;
     const BUCKET_ALIGNMENT: usize = 1;
@@ -390,8 +375,7 @@ fn pool_allocator_grow_zeroed_works() {
     }
 }
 
-#[test]
-fn pool_allocator_shrink_works() {
+pub fn pool_allocator_shrink_works() {
     let mut test = TestFixture::new();
     const BUCKET_SIZE: usize = 128;
     const BUCKET_ALIGNMENT: usize = 1;
@@ -414,8 +398,7 @@ fn pool_allocator_shrink_works() {
     assert_that!(unsafe { memory.as_ref() }, len BUCKET_SIZE / 2);
 }
 
-#[test]
-fn pool_allocator_shrink_with_increased_size_fails() {
+pub fn pool_allocator_shrink_with_increased_size_fails() {
     let mut test = TestFixture::new();
     const BUCKET_SIZE: usize = 128;
     const BUCKET_ALIGNMENT: usize = 1;
@@ -438,8 +421,7 @@ fn pool_allocator_shrink_with_increased_size_fails() {
     );
 }
 
-#[test]
-fn pool_allocator_shrink_with_alignment_larger_than_bucket_alignment_fails() {
+pub fn pool_allocator_shrink_with_alignment_larger_than_bucket_alignment_fails() {
     let mut test = TestFixture::new();
     const BUCKET_SIZE: usize = 128;
     const BUCKET_ALIGNMENT: usize = 1;
@@ -462,10 +444,8 @@ fn pool_allocator_shrink_with_alignment_larger_than_bucket_alignment_fails() {
     );
 }
 
-#[test]
-#[should_panic]
-#[cfg(debug_assertions)]
-fn pool_allocator_shrink_non_allocated_chunk_fails() {
+#[requires_std("panics")]
+pub fn pool_allocator_shrink_non_allocated_chunk_fails() {
     let mut test = TestFixture::new();
     const BUCKET_SIZE: usize = 128;
     const BUCKET_ALIGNMENT: usize = 1;
@@ -481,8 +461,7 @@ fn pool_allocator_shrink_non_allocated_chunk_fails() {
     };
 }
 
-#[test]
-fn pool_allocator_relocatable_acquire_all_memory_works() {
+pub fn pool_allocator_relocatable_acquire_all_memory_works() {
     let mut test = TestFixture::new();
     const BUCKET_SIZE: usize = 128;
     const BUCKET_ALIGNMENT: usize = 8;
