@@ -22,6 +22,7 @@ members = [
     "iceoryx2-bb/container/tests-nostd",
     "iceoryx2-bb/derive-macros",
     "iceoryx2-bb/derive-macros/tests-common",
+    "iceoryx2-bb/derive-macros/tests-nostd",
     "iceoryx2-bb/elementary",
     "iceoryx2-bb/elementary/tests-common",
     "iceoryx2-bb/elementary/tests-nostd",
@@ -154,6 +155,7 @@ iceoryx2-bb-memory-tests-nostd = { path = "iceoryx2-bb/memory/tests-nostd" }
 iceoryx2-bb-container-tests-common = { path = "iceoryx2-bb/container/tests-common" }
 iceoryx2-bb-container-tests-nostd = { path = "iceoryx2-bb/container/tests-nostd" }
 iceoryx2-bb-derive-macros-tests-common = { path = "iceoryx2-bb/derive-macros/tests-common" }
+iceoryx2-bb-derive-macros-tests-nostd = { path = "iceoryx2-bb/derive-macros/tests-nostd" }
 
 ################################################################################
 
