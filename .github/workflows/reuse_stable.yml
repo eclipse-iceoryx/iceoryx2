@@ -1,4 +1,4 @@
-name: Reusable workflow for unstable
+name: Reusable workflow for stable
 
 on:
   workflow_call:
