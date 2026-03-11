@@ -35,7 +35,7 @@ impl<'session, S: Service> Factory<'session, S> {
     }
 }
 
-impl<'session, S: Service> RelayFactory<S> for Factory<'session, S> {
+impl<S: Service> RelayFactory<S> for Factory<'_, S> {
     type PublishSubscribeRelay = publish_subscribe::Relay<S>;
     type EventRelay = event::Relay<S>;
 

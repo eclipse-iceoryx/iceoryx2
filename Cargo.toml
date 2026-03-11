@@ -76,7 +76,7 @@ keywords = [
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/eclipse-iceoryx/iceoryx2"
-rust-version = "1.83"
+rust-version = "1.85"
 version = "0.8.999"
 
 [workspace.dependencies]

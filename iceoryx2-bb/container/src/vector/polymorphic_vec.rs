@@ -189,7 +189,7 @@ impl<'a, T, Allocator: BaseAllocator> PolymorphicVec<'a, T, Allocator> {
     }
 }
 
-impl<'a, T: Clone, Allocator: BaseAllocator> PolymorphicVec<'a, T, Allocator> {
+impl<T: Clone, Allocator: BaseAllocator> PolymorphicVec<'_, T, Allocator> {
     /// Same as clone but it can fail when the required memory could not be
     /// allocated from the [`BaseAllocator`].
     pub fn try_clone(&self) -> Result<Self, AllocationError> {
