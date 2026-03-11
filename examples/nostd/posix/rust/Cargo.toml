@@ -9,7 +9,7 @@ members = [
 edition = "2021"
 version = "0.8.999"
 license = "MIT OR Apache-2.0"
-rust-version = "1.83"
+rust-version = "1.85"
 
 [workspace.dependencies]
 posix-nostd-common = { path = "_common/" }
