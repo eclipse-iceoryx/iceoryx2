@@ -40,7 +40,7 @@ So if you want to communicate efficiently between multiple processes or
 applications iceoryx2 is for you. With iceoryx2, you can:
 
 * Send huge amounts of data using a publish/subscribe, request/response,
-  pipeline (planned) or blackboard pattern (planned), making it ideal
+  pipeline (planned) or blackboard pattern, making it ideal
   for scenarios where large datasets need to be shared.
 * Exchange signals through events, enabling quick and reliable signaling between
   processes.
@@ -129,6 +129,8 @@ The support levels can be adjusted when required.
 | Mac OS           | done                     |        tier 2         |               tier 2 |
 | QNX 7.1          | done                     |        tier 3         |               tier 1 |
 | QNX 8.0          | done                     |        tier 3         |               tier 1 |
+| RTEMS            | planned                  |           -           |               tier 2 |
+| Redox OS         | planned                  |           -           |               tier 2 |
 | VxWorks          | proof-of-concept[^3]     |           -           |               tier 1 |
 | WatchOS          | planned                  |           -           |               tier 2 |
 | Windows          | done                     |        tier 2         |               tier 2 |
@@ -158,17 +160,20 @@ The support levels can be adjusted when required.
 
 ## Language Bindings
 
-| Language |     State                                                         |
-| :------- | ----------------------------------------------------------------: |
-| C / C++  |     done                                                          |
-| Python   |     done                                                          |
-| Go       |  planned                                                          |
-| C#       |    [done](https://github.com/eclipse-iceoryx/iceoryx2-csharp)[^4] |
-| Java     |  planned                                                          |
-| Kotlin   |  planned                                                          |
-| Lua      |  planned                                                          |
-| Swift    |  planned                                                          |
-| Zig      |  planned                                                          |
+| Language   |     State                                                         |
+| :--------- | ----------------------------------------------------------------: |
+| C          |     done                                                          |
+| C++        |     done                                                          |
+| C#         |    [done](https://github.com/eclipse-iceoryx/iceoryx2-csharp)[^4] |
+| Dart       |  planned                                                          |
+| Go         |  planned                                                          |
+| Java       |  planned                                                          |
+| Kotlin     |  planned                                                          |
+| Lua        |  planned                                                          |
+| Python     |     done                                                          |
+| Swift      |  planned                                                          |
+| Typescript |  planned                                                          |
+| Zig        |  planned                                                          |
 
 [^4]: C# bindings are available in a separate repository. May not be up to date
       with `main`.
