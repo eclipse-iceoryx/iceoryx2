@@ -78,7 +78,7 @@ use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
 use iceoryx2_bb_elementary::enum_gen;
-use iceoryx2_log::{fail, fatal_panic};
+use iceoryx2_log::{fail, fatal_panic, trace};
 use iceoryx2_pal_posix::posix::{Errno, MemZeroedStruct};
 use iceoryx2_pal_posix::*;
 
@@ -333,6 +333,7 @@ extern "C" fn handler(signal: posix::int) {
 
 extern "C" fn capture_signal(signal: posix::int) {
     LAST_SIGNAL.store(signal as usize, Ordering::Relaxed);
+    trace!("received signal: {signal}");
 }
 
 impl Drop for SignalHandler {

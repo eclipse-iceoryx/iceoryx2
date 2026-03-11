@@ -224,6 +224,8 @@ impl Drop for Directory {
                 error!(from self, "Tried {} times to close the file but failed.", counter);
             }
         }
+
+        trace!(from self, "closed");
     }
 }
 
@@ -251,11 +253,15 @@ impl Directory {
                 "This should never happen! {} since 'dirfd' states that the acquired directory stream is invalid.", msg);
         }
 
-        Ok(Directory {
+        let new_self = Directory {
             path: *path,
             directory_stream,
             file_descriptor: file_descriptor.unwrap(),
-        })
+        };
+
+        trace!(from new_self, "opened");
+
+        Ok(new_self)
     }
 
     fn create_single_directory(
@@ -295,14 +301,14 @@ impl Directory {
             }
         };
 
-        match dir.set_permission(permission) {
-            Ok(()) => Ok(()),
-            Err(e) => {
-                let _ = Directory::remove(path);
-                fail!(from origin, with DirectoryCreateError::UnableToApplyPermissions,
+        if let Err(e) = dir.set_permission(permission) {
+            let _ = Directory::remove(path);
+            fail!(from origin, with DirectoryCreateError::UnableToApplyPermissions,
                     "{msg} since the permissions could not be applied due to {e:?}.");
-            }
-        }
+        };
+
+        trace!(from dir, "created with permissions \"{permission}\"");
+        Ok(())
     }
 
     /// Creates a new directory at the provided path.
@@ -348,10 +354,7 @@ impl Directory {
         }
 
         match Directory::new(path) {
-            Ok(d) => {
-                trace!(from d, "created with permissions \"{permission}\"");
-                Ok(d)
-            }
+            Ok(d) => Ok(d),
             Err(e) => {
                 fail!(from origin, with e.into(),
                     "Failed to open newly created directory \"{}\".", path);

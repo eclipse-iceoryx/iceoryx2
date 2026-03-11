@@ -471,6 +471,7 @@ impl Drop for File {
                 },
             };
         }
+        trace!(from self, "closed");
     }
 }
 
