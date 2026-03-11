@@ -18,8 +18,10 @@ path = "src/lib.rs"
 [features]
 default = ["std"]
 std = [
+  "iceoryx2-bb-concurrency/std",
+  "iceoryx2-bb-container/std",
+  "iceoryx2-bb-elementary/std",
   "iceoryx2/std",
-  "iceoryx2-bb-concurrency/std"
 ]
 
 [dependencies]

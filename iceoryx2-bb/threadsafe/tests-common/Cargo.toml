@@ -15,9 +15,14 @@ workspace = true
 
 [features]
 default = []
+
 std = [
-  "iceoryx2-bb-testing/std",
+  "iceoryx2-bb-concurrency/std",  
+  "iceoryx2-bb-posix/std",  
+  "iceoryx2-bb-threadsafe/std",  
   "iceoryx2-bb-testing-nostd-macros/std",
+  "iceoryx2-bb-testing/std",
+  "iceoryx2-pal-print/std",  
 ]
 
 [dependencies]

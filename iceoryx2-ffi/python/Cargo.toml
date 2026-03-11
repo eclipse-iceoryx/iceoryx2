@@ -18,7 +18,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 iceoryx2 = { workspace = true, features = ["std"] }
-iceoryx2-log = { workspace = true }
+iceoryx2-log = { workspace = true, features = ["std"] }
 
 [dependencies.pyo3]
 version = "0.28.2"

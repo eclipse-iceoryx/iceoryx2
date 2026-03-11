@@ -21,9 +21,18 @@ crate-type = ["rlib", "cdylib", "staticlib"] # without "rlib" the doc examples a
 [features]
 default = ["std"]
 std = [
-  "iceoryx2/std",
   "iceoryx2-bb-concurrency/std",
+  "iceoryx2-bb-container/std",
+  "iceoryx2-bb-elementary/std",  
+  "iceoryx2-bb-derive-macros/std",  
+  "iceoryx2-bb-lock-free/std",  
+  "iceoryx2-bb-loggers/std",  
   "iceoryx2-bb-posix/std",
+  "iceoryx2-bb-system-types/std",  
+  "iceoryx2-cal/std",  
+  "iceoryx2-ffi-macros/std",  
+  "iceoryx2-log/std",  
+  "iceoryx2/std",
 ]
 
 [build-dependencies]

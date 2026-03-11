@@ -11,11 +11,11 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [dependencies]
-iceoryx2-services-discovery = { workspace = true }
-iceoryx2 = { workspace = true }
-iceoryx2-bb-container = { workspace = true }
-iceoryx2-bb-derive-macros = { workspace = true }
-iceoryx2-bb-elementary = { workspace = true }
+iceoryx2-services-discovery = { workspace = true, features = ["std"] }
+iceoryx2 = { workspace = true, features = ["std"] }
+iceoryx2-bb-container = { workspace = true, features = ["std"] }
+iceoryx2-bb-derive-macros = { workspace = true, features = ["std"] }
+iceoryx2-bb-elementary = { workspace = true, features = ["std"] }
 iceoryx2-bb-elementary-traits = { workspace = true }
-iceoryx2-log = { workspace = true }
-iceoryx2-bb-system-types = { workspace = true }
+iceoryx2-log = { workspace = true, features = ["std"] }
+iceoryx2-bb-system-types = { workspace = true, features = ["std"] }

@@ -20,9 +20,9 @@ std = [
 ]
 
 [dependencies]
-iceoryx2-bb-threadsafe-tests-common = { workspace = true }
-iceoryx2-bb-loggers = { workspace = true }
+iceoryx2-bb-threadsafe-tests-common = { workspace = true, features = [] }
+iceoryx2-bb-loggers = { workspace = true, features = [] }
 iceoryx2-bb-elementary-traits = { workspace = true }
-iceoryx2-bb-memory = { workspace = true }
+iceoryx2-bb-memory = { workspace = true, features = [] }
 iceoryx2-bb-testing-nostd-macros = { workspace = true }
 iceoryx2-bb-testing-nostd = { workspace = true }

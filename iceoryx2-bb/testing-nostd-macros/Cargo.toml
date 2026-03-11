@@ -16,6 +16,7 @@ proc-macro = true
 [features]
 default = []
 std = [
+  "iceoryx2-bb-testing-nostd/std",
   "iceoryx2-pal-print/std"
 ]
 

@@ -15,8 +15,11 @@ workspace = true
 
 [features]
 default = []
+
 std = [
-  "iceoryx2-bb-concurrency/std"
+  "iceoryx2-log/std",  
+  "iceoryx2-bb-concurrency/std",
+  "iceoryx2-bb-elementary/std",  
 ]
 
 [dependencies]
