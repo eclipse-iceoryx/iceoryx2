@@ -127,6 +127,10 @@ iceoryx2-tunnel-conformance-tests = { version = "0.8.999", path = "iceoryx2-tunn
 iceoryx2-tunnel-zenoh = { version = "0.8.999", path = "iceoryx2-tunnel/zenoh" }
 iceoryx2-userland-record-and-replay = { version = "0.8.999", path = "iceoryx2-userland/record-and-replay" }
 
+################################################################################
+# Not Published, No Version Number
+################################################################################
+
 iceoryx2-bb-testing-nostd = { path = "iceoryx2-bb/testing-nostd/" }
 iceoryx2-bb-testing-nostd-macros = { path = "iceoryx2-bb/testing-nostd-macros/" }
 iceoryx2-bb-trait-tests = { path = "iceoryx2-bb/trait-tests/" }
@@ -136,6 +140,8 @@ iceoryx2-bb-concurrency-tests-common = { path = "iceoryx2-bb/concurrency/tests-c
 iceoryx2-bb-concurrency-tests-nostd = { path = "iceoryx2-bb/concurrency/tests-nostd/" }
 iceoryx2-bb-elementary-tests-common = { path = "iceoryx2-bb/elementary/tests-common" }
 iceoryx2-bb-elementary-tests-nostd = { path = "iceoryx2-bb/elementary/tests-nostd" }
+
+################################################################################
 
 anyhow = { version = "1.0.86" }
 bindgen = { version = "0.72.0" }
