@@ -61,6 +61,8 @@
   [#1380](https://github.com/eclipse-iceoryx/iceoryx2/issues/1380)
 * Add `Config::setup_global_config_from_file` to C++ bindings
   [#1395](https://github.com/eclipse-iceoryx/iceoryx2/issues/1395)
+* Bump keccak from 0.1.5 to 0.1.6 in Rust and Bazel
+  [#1416](https://github.com/eclipse-iceoryx/iceoryx2/issues/1416)
 
 ### Refactoring
 

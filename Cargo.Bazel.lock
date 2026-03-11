@@ -1,5 +1,5 @@
 {
-  "checksum": "e78c3362e9912711a68360c7b0bcab18856516b24a9a8569fcf8b73c5c564465",
+  "checksum": "62ccb1af15d7e9b7fd76edf48e2f8d457dced4e77ac1285bade99b0dc3872727",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -9271,7 +9271,7 @@
         "deps": {
           "common": [
             {
-              "id": "pyo3 0.25.0",
+              "id": "pyo3 0.28.2",
               "target": "pyo3"
             }
           ],
@@ -11078,45 +11078,6 @@
       ],
       "license_file": "LICENSE-APACHE"
     },
-    "indoc 2.0.6": {
-      "name": "indoc",
-      "version": "2.0.6",
-      "package_url": "https://github.com/dtolnay/indoc",
-      "repository": {
-        "Http": {
-          "url": "https://static.crates.io/crates/indoc/2.0.6/download",
-          "sha256": "f4c7245a08504955605670dbf141fceab975f15ca21570696aebe9d2e71576bd"
-        }
-      },
-      "targets": [
-        {
-          "ProcMacro": {
-            "crate_name": "indoc",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "allow_empty": true,
-              "include": [
-                "**/*.rs"
-              ]
-            }
-          }
-        }
-      ],
-      "library_target_name": "indoc",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "edition": "2021",
-        "version": "2.0.6"
-      },
-      "license": "MIT OR Apache-2.0",
-      "license_ids": [
-        "Apache-2.0",
-        "MIT"
-      ],
-      "license_file": "LICENSE-APACHE"
-    },
     "inout 0.1.4": {
       "name": "inout",
       "version": "0.1.4",
@@ -11641,14 +11602,14 @@
       ],
       "license_file": null
     },
-    "keccak 0.1.5": {
+    "keccak 0.1.6": {
       "name": "keccak",
-      "version": "0.1.5",
+      "version": "0.1.6",
       "package_url": "https://github.com/RustCrypto/sponges/tree/master/keccak",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/keccak/0.1.5/download",
-          "sha256": "ecc2af9a1119c51f12a14607e783cb977bde58bc069ff0c3da1095e635d70654"
+          "url": "https://static.crates.io/crates/keccak/0.1.6/download",
+          "sha256": "cb26cec98cce3a3d96cbb7bced3c4b16e3d13f27ec56dbd62cbc8f39cfb9d653"
         }
       },
       "targets": [
@@ -11682,7 +11643,7 @@
           }
         },
         "edition": "2018",
-        "version": "0.1.5"
+        "version": "0.1.6"
       },
       "license": "Apache-2.0 OR MIT",
       "license_ids": [
@@ -12499,91 +12460,6 @@
       ],
       "license_file": "LICENSE-MIT"
     },
-    "memoffset 0.9.1": {
-      "name": "memoffset",
-      "version": "0.9.1",
-      "package_url": "https://github.com/Gilnaa/memoffset",
-      "repository": {
-        "Http": {
-          "url": "https://static.crates.io/crates/memoffset/0.9.1/download",
-          "sha256": "488016bfae457b036d996092f6cb448677611ce4449e970ceaf42695203f218a"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "memoffset",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "allow_empty": true,
-              "include": [
-                "**/*.rs"
-              ]
-            }
-          }
-        },
-        {
-          "BuildScript": {
-            "crate_name": "build_script_build",
-            "crate_root": "build.rs",
-            "srcs": {
-              "allow_empty": true,
-              "include": [
-                "**/*.rs"
-              ]
-            }
-          }
-        }
-      ],
-      "library_target_name": "memoffset",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "crate_features": {
-          "common": [
-            "default"
-          ],
-          "selects": {}
-        },
-        "deps": {
-          "common": [
-            {
-              "id": "memoffset 0.9.1",
-              "target": "build_script_build"
-            }
-          ],
-          "selects": {}
-        },
-        "edition": "2015",
-        "version": "0.9.1"
-      },
-      "build_script_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "compile_data_glob_excludes": [
-          "**/*.rs"
-        ],
-        "data_glob": [
-          "**"
-        ],
-        "deps": {
-          "common": [
-            {
-              "id": "autocfg 1.4.0",
-              "target": "autocfg"
-            }
-          ],
-          "selects": {}
-        }
-      },
-      "license": "MIT",
-      "license_ids": [
-        "MIT"
-      ],
-      "license_file": "LICENSE"
-    },
     "minimal-lexical 0.2.1": {
       "name": "minimal-lexical",
       "version": "0.2.1",
@@ -13124,7 +13000,7 @@
           "selects": {
             "cfg(windows)": [
               {
-                "id": "windows-sys 0.59.0",
+                "id": "windows-sys 0.61.2",
                 "target": "windows_sys",
                 "alias": "windows"
               }
@@ -15534,14 +15410,14 @@
       ],
       "license_file": "LICENSE-APACHE"
     },
-    "pyo3 0.25.0": {
+    "pyo3 0.28.2": {
       "name": "pyo3",
-      "version": "0.25.0",
+      "version": "0.28.2",
       "package_url": "https://github.com/pyo3/pyo3",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/pyo3/0.25.0/download",
-          "sha256": "f239d656363bcee73afef85277f1b281e8ac6212a1d42aa90e55b90ed43c47a4"
+          "url": "https://static.crates.io/crates/pyo3/0.28.2/download",
+          "sha256": "cf85e27e86080aafd5a22eae58a162e133a589551542b3e5cee4beb27e54f8e1"
         }
       },
       "targets": [
@@ -15586,10 +15462,8 @@
             "abi3-py38",
             "abi3-py39",
             "default",
-            "indoc",
             "macros",
-            "pyo3-macros",
-            "unindent"
+            "pyo3-macros"
           ],
           "selects": {}
         },
@@ -15600,24 +15474,16 @@
               "target": "libc"
             },
             {
-              "id": "memoffset 0.9.1",
-              "target": "memoffset"
-            },
-            {
               "id": "once_cell 1.21.3",
               "target": "once_cell"
             },
             {
-              "id": "pyo3 0.25.0",
+              "id": "pyo3 0.28.2",
               "target": "build_script_build"
             },
             {
-              "id": "pyo3-ffi 0.25.0",
+              "id": "pyo3-ffi 0.28.2",
               "target": "pyo3_ffi"
-            },
-            {
-              "id": "unindent 0.2.4",
-              "target": "unindent"
             }
           ],
           "selects": {
@@ -15633,17 +15499,13 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "indoc 2.0.6",
-              "target": "indoc"
-            },
-            {
-              "id": "pyo3-macros 0.25.0",
+              "id": "pyo3-macros 0.28.2",
               "target": "pyo3_macros"
             }
           ],
           "selects": {}
         },
-        "version": "0.25.0"
+        "version": "0.28.2"
       },
       "build_script_attrs": {
         "compile_data_glob": [
@@ -15658,7 +15520,7 @@
         "deps": {
           "common": [
             {
-              "id": "pyo3-build-config 0.25.0",
+              "id": "pyo3-build-config 0.28.2",
               "target": "pyo3_build_config"
             }
           ],
@@ -15667,7 +15529,7 @@
         "link_deps": {
           "common": [
             {
-              "id": "pyo3-ffi 0.25.0",
+              "id": "pyo3-ffi 0.28.2",
               "target": "pyo3_ffi"
             }
           ],
@@ -15681,14 +15543,14 @@
       ],
       "license_file": "LICENSE-APACHE"
     },
-    "pyo3-build-config 0.25.0": {
+    "pyo3-build-config 0.28.2": {
       "name": "pyo3-build-config",
-      "version": "0.25.0",
+      "version": "0.28.2",
       "package_url": "https://github.com/pyo3/pyo3",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/pyo3-build-config/0.25.0/download",
-          "sha256": "755ea671a1c34044fa165247aaf6f419ca39caa6003aee791a0df2713d8f1b6d"
+          "url": "https://static.crates.io/crates/pyo3-build-config/0.28.2/download",
+          "sha256": "8bf94ee265674bf76c09fa430b0e99c26e319c945d96ca0d5a8215f31bf81cf7"
         }
       },
       "targets": [
@@ -15740,22 +15602,18 @@
         "deps": {
           "common": [
             {
-              "id": "once_cell 1.21.3",
-              "target": "once_cell"
-            },
-            {
-              "id": "pyo3-build-config 0.25.0",
+              "id": "pyo3-build-config 0.28.2",
               "target": "build_script_build"
             },
             {
-              "id": "target-lexicon 0.13.2",
+              "id": "target-lexicon 0.13.5",
               "target": "target_lexicon"
             }
           ],
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.25.0"
+        "version": "0.28.2"
       },
       "build_script_attrs": {
         "compile_data_glob": [
@@ -15770,7 +15628,7 @@
         "deps": {
           "common": [
             {
-              "id": "target-lexicon 0.13.2",
+              "id": "target-lexicon 0.13.5",
               "target": "target_lexicon"
             }
           ],
@@ -15784,14 +15642,14 @@
       ],
       "license_file": "LICENSE-APACHE"
     },
-    "pyo3-ffi 0.25.0": {
+    "pyo3-ffi 0.28.2": {
       "name": "pyo3-ffi",
-      "version": "0.25.0",
+      "version": "0.28.2",
       "package_url": "https://github.com/pyo3/pyo3",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/pyo3-ffi/0.25.0/download",
-          "sha256": "fc95a2e67091e44791d4ea300ff744be5293f394f1bafd9f78c080814d35956e"
+          "url": "https://static.crates.io/crates/pyo3-ffi/0.28.2/download",
+          "sha256": "491aa5fc66d8059dd44a75f4580a2962c1862a1c2945359db36f6c2818b748dc"
         }
       },
       "targets": [
@@ -15846,14 +15704,14 @@
               "target": "libc"
             },
             {
-              "id": "pyo3-ffi 0.25.0",
+              "id": "pyo3-ffi 0.28.2",
               "target": "build_script_build"
             }
           ],
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.25.0"
+        "version": "0.28.2"
       },
       "build_script_attrs": {
         "compile_data_glob": [
@@ -15868,7 +15726,7 @@
         "deps": {
           "common": [
             {
-              "id": "pyo3-build-config 0.25.0",
+              "id": "pyo3-build-config 0.28.2",
               "target": "pyo3_build_config"
             }
           ],
@@ -15883,14 +15741,14 @@
       ],
       "license_file": "LICENSE-APACHE"
     },
-    "pyo3-macros 0.25.0": {
+    "pyo3-macros 0.28.2": {
       "name": "pyo3-macros",
-      "version": "0.25.0",
+      "version": "0.28.2",
       "package_url": "https://github.com/pyo3/pyo3",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/pyo3-macros/0.25.0/download",
-          "sha256": "a179641d1b93920829a62f15e87c0ed791b6c8db2271ba0fd7c2686090510214"
+          "url": "https://static.crates.io/crates/pyo3-macros/0.28.2/download",
+          "sha256": "f5d671734e9d7a43449f8480f8b38115df67bef8d21f76837fa75ee7aaa5e52e"
         }
       },
       "targets": [
@@ -15919,7 +15777,7 @@
               "target": "proc_macro2"
             },
             {
-              "id": "pyo3-macros-backend 0.25.0",
+              "id": "pyo3-macros-backend 0.28.2",
               "target": "pyo3_macros_backend"
             },
             {
@@ -15934,7 +15792,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.25.0"
+        "version": "0.28.2"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -15943,14 +15801,14 @@
       ],
       "license_file": "LICENSE-APACHE"
     },
-    "pyo3-macros-backend 0.25.0": {
+    "pyo3-macros-backend 0.28.2": {
       "name": "pyo3-macros-backend",
-      "version": "0.25.0",
+      "version": "0.28.2",
       "package_url": "https://github.com/pyo3/pyo3",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/pyo3-macros-backend/0.25.0/download",
-          "sha256": "9dff85ebcaab8c441b0e3f7ae40a6963ecea8a9f5e74f647e33fcf5ec9a1e89e"
+          "url": "https://static.crates.io/crates/pyo3-macros-backend/0.28.2/download",
+          "sha256": "22faaa1ce6c430a1f71658760497291065e6450d7b5dc2bcf254d49f66ee700a"
         }
       },
       "targets": [
@@ -15995,11 +15853,11 @@
               "target": "proc_macro2"
             },
             {
-              "id": "pyo3-build-config 0.25.0",
+              "id": "pyo3-build-config 0.28.2",
               "target": "pyo3_build_config"
             },
             {
-              "id": "pyo3-macros-backend 0.25.0",
+              "id": "pyo3-macros-backend 0.28.2",
               "target": "build_script_build"
             },
             {
@@ -16014,7 +15872,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.25.0"
+        "version": "0.28.2"
       },
       "build_script_attrs": {
         "compile_data_glob": [
@@ -16029,7 +15887,7 @@
         "deps": {
           "common": [
             {
-              "id": "pyo3-build-config 0.25.0",
+              "id": "pyo3-build-config 0.28.2",
               "target": "pyo3_build_config"
             }
           ],
@@ -20388,7 +20246,7 @@
               "target": "digest"
             },
             {
-              "id": "keccak 0.1.5",
+              "id": "keccak 0.1.6",
               "target": "keccak"
             }
           ],
@@ -21752,14 +21610,14 @@
       ],
       "license_file": "LICENSE"
     },
-    "target-lexicon 0.13.2": {
+    "target-lexicon 0.13.5": {
       "name": "target-lexicon",
-      "version": "0.13.2",
+      "version": "0.13.5",
       "package_url": "https://github.com/bytecodealliance/target-lexicon",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/target-lexicon/0.13.2/download",
-          "sha256": "e502f78cdbb8ba4718f566c418c52bc729126ffd16baee5baa718cf25dd5a69a"
+          "url": "https://static.crates.io/crates/target-lexicon/0.13.5/download",
+          "sha256": "adb6935a6f5c20170eeceb1a3835a49e12e19d792f6dd344ccc76a985ca5a6ca"
         }
       },
       "targets": [
@@ -21802,14 +21660,14 @@
         "deps": {
           "common": [
             {
-              "id": "target-lexicon 0.13.2",
+              "id": "target-lexicon 0.13.5",
               "target": "build_script_build"
             }
           ],
           "selects": {}
         },
         "edition": "2018",
-        "version": "0.13.2"
+        "version": "0.13.5"
       },
       "build_script_attrs": {
         "compile_data_glob": [
@@ -24679,45 +24537,6 @@
       ],
       "license_file": "LICENSE-APACHE"
     },
-    "unindent 0.2.4": {
-      "name": "unindent",
-      "version": "0.2.4",
-      "package_url": "https://github.com/dtolnay/indoc",
-      "repository": {
-        "Http": {
-          "url": "https://static.crates.io/crates/unindent/0.2.4/download",
-          "sha256": "7264e107f553ccae879d21fbea1d6724ac785e8c3bfc762137959b5802826ef3"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "unindent",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "allow_empty": true,
-              "include": [
-                "**/*.rs"
-              ]
-            }
-          }
-        }
-      ],
-      "library_target_name": "unindent",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "edition": "2021",
-        "version": "0.2.4"
-      },
-      "license": "MIT OR Apache-2.0",
-      "license_ids": [
-        "Apache-2.0",
-        "MIT"
-      ],
-      "license_file": "LICENSE-APACHE"
-    },
     "unsafe-libyaml 0.2.11": {
       "name": "unsafe-libyaml",
       "version": "0.2.11",
@@ -27402,6 +27221,7 @@
             "Win32_Storage",
             "Win32_Storage_FileSystem",
             "Win32_System",
+            "Win32_System_Console",
             "Win32_System_IO",
             "Win32_System_Pipes",
             "Win32_System_SystemServices",
@@ -33883,7 +33703,7 @@
     "libc 0.2.180",
     "postcard 1.1.3",
     "proc-macro2 1.0.105",
-    "pyo3 0.25.0",
+    "pyo3 0.28.2",
     "quote 1.0.43",
     "ron 0.11.0",
     "serde 1.0.228",
