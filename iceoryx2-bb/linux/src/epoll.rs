@@ -222,7 +222,7 @@ pub struct EpollGuard<'epoll, 'file_descriptor> {
     fd: &'file_descriptor FileDescriptor,
 }
 
-impl<'epoll, 'file_descriptor> EpollGuard<'epoll, 'file_descriptor> {
+impl<'file_descriptor> EpollGuard<'_, 'file_descriptor> {
     /// Returns a reference of the attached [`FileDescriptor`]
     pub fn file_descriptor(&self) -> &'file_descriptor FileDescriptor {
         self.fd

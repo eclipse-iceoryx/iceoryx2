@@ -82,7 +82,7 @@ impl<'a, S: Service> Builder<'a, S> {
     }
 }
 
-impl<'a, S: Service> RelayBuilder for Builder<'a, S> {
+impl<S: Service> RelayBuilder for Builder<'_, S> {
     type CreationError = CreationError;
     type Relay = Relay<S>;
 

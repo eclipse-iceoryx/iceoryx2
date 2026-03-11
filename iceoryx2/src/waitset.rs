@@ -698,10 +698,10 @@ impl<Service: crate::service::Service> WaitSet<Service> {
 
     /// Attaches a tick event to the [`WaitSet`]. Whenever the timeout is reached the [`WaitSet`]
     /// informs the user in [`WaitSet::wait_and_process()`].
-    pub fn attach_interval<'waitset>(
-        &'waitset self,
+    pub fn attach_interval(
+        &self,
         interval: Duration,
-    ) -> Result<WaitSetGuard<'waitset, 'static, Service>, WaitSetAttachmentError> {
+    ) -> Result<WaitSetGuard<'_, 'static, Service>, WaitSetAttachmentError> {
         let deadline_queue_guard = self.attach_to_deadline_queue(interval)?;
         self.attach()?;
 

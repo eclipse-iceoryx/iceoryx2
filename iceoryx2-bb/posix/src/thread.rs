@@ -872,7 +872,7 @@ impl ThreadScopeGuard {
     }
 
     /// Creates a new [`ScopedThreadBuilder`] to configure and create a new scoped thread.
-    pub fn thread_builder<'scope>(&'scope mut self) -> ScopedThreadBuilder<'scope> {
+    pub fn thread_builder(&mut self) -> ScopedThreadBuilder<'_> {
         ScopedThreadBuilder {
             guard: self,
             thread_builder: ThreadBuilder::new(),
@@ -887,7 +887,7 @@ pub struct ScopedThreadBuilder<'scope> {
     thread_builder: ThreadBuilder,
 }
 
-impl<'scope> ScopedThreadBuilder<'scope> {
+impl ScopedThreadBuilder<'_> {
     /// Sets the name of the thread. It is not allowed to be longer than
     /// [`crate::config::MAX_THREAD_NAME_LENGTH`] and must consist of ASCII characters only.
     pub fn name(mut self, value: &ThreadName) -> Self {
