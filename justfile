@@ -14,6 +14,8 @@ import '.just/common.just'
 import '.just/build.just'
 import '.just/test.just'
 import '.just/bundle.just'
+import '.just/verify.just'
+import '.just/setup.just'
 
 # Show available commands and usage examples
 default:
@@ -21,6 +23,9 @@ default:
     @echo ""
 
     @echo "Usage:"
+    @echo "  just setup all                              # Setup all dependencies for the workspace"
+    @echo "  just setup script-dependencies              # Setup dependencies required for just scripts"
+    @echo ""
     @echo "  just build workspace                        # Build all crates in the workspace (default features)"
     @echo "  just build tests                            # Build all tests in the workspace (standard framework, default features)"
     @echo "  just build tests --no_std [+toolchain]      # Build all no_std tests in the workspace (custom framework, no_std)"
@@ -39,7 +44,11 @@ default:
     @echo "                                              # --strip: Strip debug symbols from binaries"
     @echo "                                              # --compress: Create a compressed tarball"
     @echo ""
+    @echo "  just verify std-propagation workspace       # Verify std feature propagation for all crates"
+    @echo "  just verify std-propagation <crate>         # Verify std feature propagation for a specific crate"
+    @echo ""
     @echo "Examples:"
+    @echo "  just setup all"
     @echo "  just build workspace"
     @echo "  just build tests"
     @echo "  just build tests --no_std +nightly"
@@ -50,6 +59,8 @@ default:
     @echo "  just bundle tests --no_std --strip --compress"
     @echo "  just bundle tests --no_std +nightly --target=aarch64-unknown-linux-gnu --strip"
     @echo "  just bundle tests --no_std --target=x86_64-pc-nto-qnx800 +qnx800 --compress"
+    @echo "  just verify std-propagation workspace"
+    @echo "  just verify std-propagation iceoryx2-bb-posix"
     @echo ""
     @echo "Run 'just list' to see all available recipes"
 
@@ -64,6 +75,14 @@ test target *flags="":
 # Bundle tests for deployment
 bundle target *flags="":
     @just _bundle-dispatch "{{target}}" {{flags}}
+
+# Run verification checks
+verify target *flags:
+    @just _verify-dispatch "{{target}}" {{flags}}
+
+# Setup tasks
+setup target:
+    @just _setup-dispatch "{{target}}"
 
 # List all available recipes
 list:
