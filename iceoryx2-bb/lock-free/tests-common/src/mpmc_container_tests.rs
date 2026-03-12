@@ -34,9 +34,9 @@ impl From<usize> for TestType {
         TestType {
             some_numbers: {
                 let mut n = [0usize; 32];
-                for i in 0..n.len() {
-                    n[i] = value + i;
-                }
+                n.iter_mut().enumerate().for_each(|(i, elem)| {
+                    *elem = value + i;
+                });
                 n
             },
         }
@@ -45,8 +45,8 @@ impl From<usize> for TestType {
 
 impl From<TestType> for usize {
     fn from(value: TestType) -> Self {
-        for i in 0..value.some_numbers.len() {
-            assert_that!(value.some_numbers[i], eq value.some_numbers[0] + i);
+        for (i, &num) in value.some_numbers.iter().enumerate() {
+            assert_that!(num, eq value.some_numbers[0] + i);
         }
         value.some_numbers[0]
     }
@@ -74,10 +74,13 @@ pub fn mpmc_container_add_elements_until_full_works<T: Debug + Copy + From<usize
         CallbackProgression::Continue
     });
 
-    for i in 0..CAPACITY {
-        assert_that!(contained_values[i].0, eq i as u32);
-        assert_that!(contained_values[i].1, eq i * 5 + 2);
-    }
+    contained_values
+        .iter()
+        .enumerate()
+        .for_each(|(i, &(index, value))| {
+            assert_that!(index, eq i as u32);
+            assert_that!(value, eq i * 5 + 2);
+        });
 }
 
 pub fn mpmc_container_add_and_remove_elements_works<T: Debug + Copy + From<usize> + Into<usize>>() {
@@ -109,9 +112,9 @@ pub fn mpmc_container_add_and_remove_elements_works<T: Debug + Copy + From<usize
         CallbackProgression::Continue
     });
 
-    for i in 0..CAPACITY - 1 {
-        assert_that!(contained_values[i], eq i * 7 + 5);
-    }
+    contained_values.iter().enumerate().for_each(|(i, &value)| {
+        assert_that!(value, eq i * 7 + 5);
+    });
 }
 
 pub fn mpmc_container_add_and_remove_elements_works_with_uninitialized_memory<
@@ -149,9 +152,9 @@ pub fn mpmc_container_add_and_remove_elements_works_with_uninitialized_memory<
         CallbackProgression::Continue
     });
 
-    for i in 0..CAPACITY - 1 {
-        assert_that!(contained_values[i], eq i * 7 + 5);
-    }
+    contained_values.iter().enumerate().for_each(|(i, &value)| {
+        assert_that!(value, eq i * 7 + 5);
+    });
 }
 
 pub fn mpmc_container_add_and_unsafe_remove_with_handle_works<
@@ -184,9 +187,9 @@ pub fn mpmc_container_add_and_unsafe_remove_with_handle_works<
         CallbackProgression::Continue
     });
 
-    for i in 0..CAPACITY - 1 {
-        assert_that!(contained_values[i], eq i * 7 + 5);
-    }
+    contained_values.iter().enumerate().for_each(|(i, &value)| {
+        assert_that!(value, eq i * 7 + 5);
+    });
 }
 
 pub fn mpmc_container_state_of_empty_container_is_empty<
@@ -299,8 +302,8 @@ pub fn mpmc_container_state_updated_when_contents_are_changed<
         CallbackProgression::Continue
     });
 
-    for i in 0..CAPACITY - 1 {
-        assert_that!(contained_values[i], eq * results.get(&(i as u32)).unwrap());
+    for (i, value) in contained_values.iter().enumerate() {
+        assert_that!(*value, eq * results.get(&(i as u32)).unwrap());
     }
 }
 

@@ -29,8 +29,8 @@ const DATA_SIZE: usize = 1024;
 static TEST_LOCK: Mutex<bool> = Mutex::new(false);
 
 fn verify(value: u8, rhs: &[u8; DATA_SIZE]) -> bool {
-    for i in 0..DATA_SIZE {
-        if value != rhs[i] {
+    for element in rhs.iter().take(DATA_SIZE) {
+        if value != *element {
             return false;
         }
     }
