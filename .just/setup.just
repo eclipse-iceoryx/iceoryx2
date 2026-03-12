@@ -51,6 +51,16 @@ _setup-script-dependencies:
         echo "✓ jq installed"
     }
 
+    _install_markdownlint() {
+        read -p "Install markdownlint-cli with sudo? [y/N] " use_sudo
+        if [[ "$use_sudo" == [yY] ]]; then
+            sudo npm install -g markdownlint-cli
+        else
+            npm install -g markdownlint-cli
+        fi
+        echo "✓ markdownlint-cli installed"
+    }
+
     _prompt_install() {
         local name=$1
 
@@ -74,6 +84,10 @@ _setup-script-dependencies:
 
     if _prompt_install "jq"; then
         _install_jq
+    fi
+
+    if _prompt_install "markdownlint"; then
+        _install_markdownlint
     fi
 
     echo "✓ Setup complete"

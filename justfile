@@ -15,6 +15,7 @@ import '.just/build.just'
 import '.just/test.just'
 import '.just/bundle.just'
 import '.just/verify.just'
+import '.just/lint.just'
 import '.just/setup.just'
 
 # Show available commands and usage examples
@@ -47,6 +48,9 @@ default:
     @echo "  just verify std-propagation workspace       # Verify std feature propagation for all crates"
     @echo "  just verify std-propagation <crate>         # Verify std feature propagation for a specific crate"
     @echo ""
+    @echo "  just lint markdown                          # Check markdown linting"
+    @echo "  just lint markdown --fix                    # Fix markdown linting issues"
+    @echo ""
     @echo "Examples:"
     @echo "  just setup all"
     @echo "  just build workspace"
@@ -61,6 +65,7 @@ default:
     @echo "  just bundle tests --no_std --target=x86_64-pc-nto-qnx800 +qnx800 --compress"
     @echo "  just verify std-propagation workspace"
     @echo "  just verify std-propagation iceoryx2-bb-posix"
+    @echo "  just lint markdown"
     @echo ""
     @echo "Run 'just list' to see all available recipes"
 
@@ -79,6 +84,10 @@ bundle target *flags="":
 # Run verification checks
 verify target *flags:
     @just _verify-dispatch "{{target}}" {{flags}}
+
+# Run linting checks
+lint target *flags:
+    @just _lint-dispatch "{{target}}" {{flags}}
 
 # Setup tasks
 setup target:
