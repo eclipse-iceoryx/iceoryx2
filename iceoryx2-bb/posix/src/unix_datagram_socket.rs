@@ -812,7 +812,7 @@ pub struct UnixDatagramReceiver {
 impl Drop for UnixDatagramReceiver {
     fn drop(&mut self) {
         fatal_panic!(from self, when File::remove(&self.socket.name), "Failed to remove socket file.");
-        trace!(from self, "stop listening and remove");
+        trace!(from self, "removed and stop listening");
     }
 }
 
@@ -838,7 +838,7 @@ impl UnixDatagramReceiver {
                 "{} since the credential support could not be activated.", msg);
         }
 
-        trace!(from new_socket, "create and listening");
+        trace!(from new_socket, "created and listening");
         Ok(new_socket)
     }
 

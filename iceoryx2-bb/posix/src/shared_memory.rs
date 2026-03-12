@@ -228,7 +228,7 @@ impl SharedMemoryBuilder {
             mapping_offset: self.mapping_offset,
         };
 
-        trace!(from shm, "open");
+        trace!(from shm, "opened");
         Ok(shm)
     }
 
@@ -343,7 +343,7 @@ impl SharedMemoryCreationBuilder {
                 mapping_offset: self.config.mapping_offset,
             };
 
-            trace!(from shm, "open");
+            trace!(from shm, "opened");
             return Ok(shm);
         }
 
@@ -402,7 +402,7 @@ impl SharedMemoryCreationBuilder {
             }
         }
 
-        trace!(from shm, "create");
+        trace!(from shm, "created");
         Ok(shm)
     }
 }
@@ -422,10 +422,8 @@ impl Drop for SharedMemory {
         if self.has_ownership() {
             let set_permission_result = self.set_permission(Permission::OWNER_ALL);
 
-            match Self::shm_unlink(&self.name) {
-                Ok(_) => {
-                    trace!(from self, "delete");
-                }
+            match Self::remove(&self.name) {
+                Ok(_) => {}
                 Err(_) => {
                     if let Err(e) = set_permission_result {
                         warn!(from self,
@@ -435,6 +433,8 @@ impl Drop for SharedMemory {
                 }
             }
         }
+
+        trace!(from self, "closed")
     }
 }
 
@@ -487,7 +487,7 @@ impl SharedMemory {
     pub fn remove(name: &FileName) -> Result<bool, SharedMemoryRemoveError> {
         match Self::shm_unlink(name) {
             Ok(true) => {
-                trace!(from "SharedMemory::remove", "\"{}\"", name);
+                trace!(from "SharedMemory::remove()", "\"{}\"", name);
                 Ok(true)
             }
             Ok(false) => Ok(false),

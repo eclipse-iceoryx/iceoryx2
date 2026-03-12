@@ -79,7 +79,7 @@ use crate::metadata::Metadata;
 use crate::ownership::*;
 use crate::permission::{Permission, PermissionExt};
 use crate::user::Uid;
-use iceoryx2_log::{error, fail, fatal_panic};
+use iceoryx2_log::{error, fail, fatal_panic, trace};
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::*;
 
@@ -283,6 +283,7 @@ pub trait FileDescriptorManagement: FileDescriptorBased + Debug + Sized {
     fn set_ownership(&mut self, ownership: Ownership) -> Result<(), FileSetOwnerError> {
         fail!(from self, when File::set_ownership(self, ownership.uid(), ownership.gid()),
             "Unable to set owner of the file.");
+        trace!(from self, "set ownership to: {ownership:?}");
         Ok(())
     }
 
@@ -299,6 +300,7 @@ pub trait FileDescriptorManagement: FileDescriptorBased + Debug + Sized {
     fn set_permission(&mut self, permission: Permission) -> Result<(), FileSetPermissionError> {
         fail!(from self, when File::set_permission(self, permission),
                     "Unable to update permission.");
+        trace!(from self, "set permission to: {permission}");
         Ok(())
     }
 
@@ -306,6 +308,7 @@ pub trait FileDescriptorManagement: FileDescriptorBased + Debug + Sized {
     fn truncate(&mut self, size: usize) -> Result<(), FileTruncateError> {
         fail!(from self, when File::truncate(self, size),
                     "Unable to truncate to {}.", size);
+        trace!(from self, "truncate to: {size}");
         Ok(())
     }
 

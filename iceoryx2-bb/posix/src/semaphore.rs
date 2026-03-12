@@ -24,6 +24,7 @@ use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::*;
 use iceoryx2_bb_system_types::path::*;
+use iceoryx2_log::trace;
 use iceoryx2_log::{debug, fail, fatal_panic, warn};
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::posix::MemZeroedStruct;
@@ -422,6 +423,8 @@ impl Drop for NamedSemaphore {
         {
             fatal_panic!(from self, "Failed to cleanup semaphore. Something else removed a managed semaphore which should never happen!");
         }
+
+        trace!(from self, "closed");
     }
 }
 
@@ -442,17 +445,22 @@ impl NamedSemaphore {
                 new_sem.has_ownership = true;
                 fail!(from new_sem, when new_sem.unlink(UnlinkMode::IgnoreNonExistingSemaphore), "Failed to remove semaphore before creating a new one.");
                 new_sem.open(config.permission, InitMode::Create, config.initial_value)?;
+                trace!(from new_sem, "created");
             }
             Some(CreationMode::CreateExclusive) => {
                 new_sem.has_ownership = true;
                 new_sem.open(config.permission, InitMode::Create, config.initial_value)?;
+                trace!(from new_sem, "created");
             }
             Some(CreationMode::OpenOrCreate) => {
                 match new_sem.open(Permission::none(), InitMode::TryOpen, 0) {
-                    Ok(()) => (),
+                    Ok(()) => {
+                        trace!(from new_sem, "opened");
+                    }
                     Err(NamedSemaphoreCreationError::DoesNotExist) => {
                         new_sem.has_ownership = true;
                         new_sem.open(config.permission, InitMode::Create, config.initial_value)?;
+                        trace!(from new_sem, "created");
                     }
                     Err(v) => return Err(v),
                 }
@@ -466,7 +474,7 @@ impl NamedSemaphore {
         let file_path =
             FilePath::from_path_and_file(&Path::new(b"/").unwrap(), &self.name).unwrap();
         if unsafe { posix::sem_unlink(file_path.as_c_str()) } == 0 {
-            debug!(from self, "semaphore removed.");
+            trace!(from self, "removed");
             return Ok(());
         }
 
@@ -674,10 +682,13 @@ unsafe impl Sync for UnnamedSemaphoreHandle {}
 
 impl Handle for UnnamedSemaphoreHandle {
     fn new() -> Self {
-        Self {
+        let new_self = Self {
             handle: HandleStorage::new(posix::sem_t::new_zeroed()),
             clock_type: UnsafeCell::new(ClockType::default()),
-        }
+        };
+
+        trace!(from new_self, "created");
+        new_self
     }
 
     fn is_inter_process_capable(&self) -> bool {
@@ -700,6 +711,8 @@ impl Drop for UnnamedSemaphoreHandle {
                     }
                 });
             };
+
+            trace!(from self, "removed");
         }
     }
 }
