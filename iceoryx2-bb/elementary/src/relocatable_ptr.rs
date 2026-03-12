@@ -64,12 +64,12 @@
 //! }
 //! ```
 
-use core::{fmt::Debug, marker::PhantomData, ptr::NonNull, sync::atomic::Ordering};
+use core::{fmt::Debug, marker::PhantomData, ptr::NonNull};
 
 pub use iceoryx2_bb_elementary_traits::pointer_trait::PointerTrait;
 
 use iceoryx2_bb_elementary_traits::generic_pointer::GenericPointer;
-use iceoryx2_pal_concurrency_sync::atomic::AtomicIsize;
+use iceoryx2_pal_concurrency_sync::atomic::{AtomicIsize, Ordering};
 
 #[derive(Debug)]
 pub struct GenericRelocatablePointer;
