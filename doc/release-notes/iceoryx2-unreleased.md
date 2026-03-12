@@ -103,6 +103,8 @@
 
 * Add framework for `no_std` testing
   [#1300](https://github.com/eclipse-iceoryx/iceoryx2/issues/1300)
+* Add CI check for `std` feature propagation
+  [#1300](https://github.com/eclipse-iceoryx/iceoryx2/issues/1300)
 
 ### New API features
 
