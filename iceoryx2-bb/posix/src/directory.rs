@@ -171,6 +171,7 @@ enum_gen! {
 /// }
 /// Directory::remove(&dir_name).unwrap();
 /// ```
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct DirectoryEntry {
     name: FileName,
     metadata: Metadata,
