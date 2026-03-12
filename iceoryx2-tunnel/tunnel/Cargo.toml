@@ -19,7 +19,8 @@ path = "src/lib.rs"
 default = ["std"]
 std = [
   "iceoryx2/std",
-  "iceoryx2-bb-concurrency/std"
+  "iceoryx2-bb-concurrency/std",
+  "iceoryx2-bb-posix/std"
 ]
 
 [dependencies]
@@ -32,5 +33,6 @@ iceoryx2-services-discovery = { workspace = true }
 
 [dev-dependencies]
 iceoryx2-bb-testing = { workspace = true }
-generic-tests = { workspace = true }
 iceoryx2-bb-posix = { workspace = true }
+
+generic-tests = { workspace = true }

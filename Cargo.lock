@@ -1332,7 +1332,6 @@ dependencies = [
  "iceoryx2-cal",
  "iceoryx2-log",
  "iceoryx2-pal-configuration",
- "iceoryx2-pal-testing",
  "serde",
  "tiny-fn",
  "toml 0.9.8",
@@ -1342,10 +1341,35 @@ dependencies = [
 name = "iceoryx2-bb-concurrency"
 version = "0.8.999"
 dependencies = [
+ "generic-tests",
+ "iceoryx2-bb-concurrency-tests-common",
  "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
  "iceoryx2-bb-testing",
  "iceoryx2-pal-concurrency-sync",
- "iceoryx2-pal-testing",
+]
+
+[[package]]
+name = "iceoryx2-bb-concurrency-tests-common"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-nostd-macros",
+ "iceoryx2-pal-print",
+]
+
+[[package]]
+name = "iceoryx2-bb-concurrency-tests-nostd"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2-bb-concurrency-tests-common",
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-memory",
+ "iceoryx2-bb-testing-nostd",
+ "iceoryx2-bb-testing-nostd-macros",
 ]
 
 [[package]]
@@ -1369,7 +1393,6 @@ dependencies = [
  "iceoryx2-bb-loggers",
  "iceoryx2-bb-testing",
  "iceoryx2-log",
- "iceoryx2-pal-testing",
  "serde",
  "serde_test",
 ]
@@ -1380,8 +1403,8 @@ version = "0.8.999"
 dependencies = [
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
  "iceoryx2-bb-testing",
- "iceoryx2-pal-testing",
  "proc-macro2",
  "quote",
  "syn 2.0.114",
@@ -1392,10 +1415,35 @@ name = "iceoryx2-bb-elementary"
 version = "0.8.999"
 dependencies = [
  "generic-tests",
+ "iceoryx2-bb-elementary-tests-common",
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-nostd",
+ "iceoryx2-bb-testing-nostd-macros",
+ "iceoryx2-pal-concurrency-sync",
+]
+
+[[package]]
+name = "iceoryx2-bb-elementary-tests-common"
+version = "0.8.999"
+dependencies = [
  "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-testing",
- "iceoryx2-pal-testing",
+]
+
+[[package]]
+name = "iceoryx2-bb-elementary-tests-nostd"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2-bb-elementary-tests-common",
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-memory",
+ "iceoryx2-bb-testing-nostd",
+ "iceoryx2-bb-testing-nostd-macros",
 ]
 
 [[package]]
@@ -1415,7 +1463,6 @@ dependencies = [
  "iceoryx2-log",
  "iceoryx2-pal-os-api",
  "iceoryx2-pal-posix",
- "iceoryx2-pal-testing",
 ]
 
 [[package]]
@@ -1430,7 +1477,6 @@ dependencies = [
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
  "iceoryx2-log",
- "iceoryx2-pal-testing",
  "loom",
 ]
 
@@ -1458,7 +1504,6 @@ dependencies = [
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
  "iceoryx2-log",
- "iceoryx2-pal-testing",
 ]
 
 [[package]]
@@ -1479,7 +1524,6 @@ dependencies = [
  "iceoryx2-log",
  "iceoryx2-pal-configuration",
  "iceoryx2-pal-posix",
- "iceoryx2-pal-testing",
  "serde",
  "tiny-fn",
 ]
@@ -1504,7 +1548,6 @@ dependencies = [
  "iceoryx2-log",
  "iceoryx2-pal-configuration",
  "iceoryx2-pal-posix",
- "iceoryx2-pal-testing",
  "serde",
 ]
 
@@ -1513,8 +1556,28 @@ name = "iceoryx2-bb-testing"
 version = "0.8.999"
 dependencies = [
  "iceoryx2-bb-elementary-traits",
- "iceoryx2-pal-configuration",
+ "iceoryx2-pal-concurrency-sync",
  "iceoryx2-pal-testing",
+]
+
+[[package]]
+name = "iceoryx2-bb-testing-nostd"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2-pal-posix",
+ "iceoryx2-pal-print",
+ "inventory",
+]
+
+[[package]]
+name = "iceoryx2-bb-testing-nostd-macros"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2-bb-testing-nostd",
+ "iceoryx2-pal-print",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.114",
 ]
 
 [[package]]
@@ -1527,9 +1590,32 @@ dependencies = [
  "iceoryx2-bb-loggers",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
+ "iceoryx2-bb-threadsafe-tests-common",
  "iceoryx2-log",
- "iceoryx2-pal-posix",
- "iceoryx2-pal-testing",
+]
+
+[[package]]
+name = "iceoryx2-bb-threadsafe-tests-common"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-posix",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-nostd-macros",
+ "iceoryx2-bb-threadsafe",
+ "iceoryx2-pal-print",
+]
+
+[[package]]
+name = "iceoryx2-bb-threadsafe-tests-nostd"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-memory",
+ "iceoryx2-bb-testing-nostd",
+ "iceoryx2-bb-testing-nostd-macros",
+ "iceoryx2-bb-threadsafe-tests-common",
 ]
 
 [[package]]
@@ -1546,7 +1632,6 @@ dependencies = [
  "iceoryx2-bb-system-types",
  "iceoryx2-bb-testing",
  "iceoryx2-cal",
- "iceoryx2-pal-testing",
 ]
 
 [[package]]
@@ -1590,7 +1675,6 @@ dependencies = [
  "iceoryx2-bb-testing",
  "iceoryx2-cal",
  "iceoryx2-pal-posix",
- "iceoryx2-pal-testing",
  "postcard",
  "serde",
  "toml 0.9.8",
@@ -1619,7 +1703,6 @@ dependencies = [
  "iceoryx2-cal",
  "iceoryx2-log",
  "iceoryx2-pal-posix",
- "iceoryx2-pal-testing",
  "iceoryx2-services-discovery",
  "iceoryx2-tunnel",
  "iceoryx2-tunnel-zenoh",
@@ -1647,7 +1730,6 @@ dependencies = [
  "iceoryx2-bb-testing",
  "iceoryx2-cal",
  "iceoryx2-log",
- "iceoryx2-pal-testing",
 ]
 
 [[package]]
@@ -1670,7 +1752,6 @@ dependencies = [
  "iceoryx2-cal",
  "iceoryx2-ffi-macros",
  "iceoryx2-log",
- "iceoryx2-pal-testing",
 ]
 
 [[package]]
@@ -1710,7 +1791,6 @@ name = "iceoryx2-pal-concurrency-sync"
 version = "0.8.999"
 dependencies = [
  "generic-tests",
- "iceoryx2-pal-testing",
  "loom",
 ]
 
@@ -1736,7 +1816,6 @@ dependencies = [
  "cc",
  "iceoryx2-pal-concurrency-sync",
  "iceoryx2-pal-configuration",
- "iceoryx2-pal-testing",
  "libc",
  "windows-sys 0.48.0",
 ]
@@ -1752,7 +1831,10 @@ dependencies = [
 name = "iceoryx2-pal-testing"
 version = "0.8.999"
 dependencies = [
+ "iceoryx2-pal-concurrency-sync",
  "iceoryx2-pal-configuration",
+ "iceoryx2-pal-posix",
+ "iceoryx2-pal-print",
 ]
 
 [[package]]
@@ -1767,7 +1849,6 @@ dependencies = [
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
- "iceoryx2-pal-testing",
  "serde",
 ]
 
@@ -1844,9 +1925,9 @@ dependencies = [
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-system-types",
+ "iceoryx2-bb-testing",
  "iceoryx2-cal",
  "iceoryx2-log",
- "iceoryx2-pal-testing",
  "serde",
 ]
 
@@ -2025,6 +2106,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "879f10e63c20629ecabbb64a8010319738c66a5cd0c29b02d63d272b03751d01"
 dependencies = [
  "generic-array",
+]
+
+[[package]]
+name = "inventory"
+version = "0.3.22"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "009ae045c87e7082cb72dab0ccd01ae075dd00141ddc108f43a0ea150a9e7227"
+dependencies = [
+ "rustversion",
 ]
 
 [[package]]

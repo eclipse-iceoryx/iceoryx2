@@ -24,8 +24,8 @@ use windows_sys::Win32::Foundation::ERROR_INVALID_HANDLE;
 
 use iceoryx2_pal_concurrency_sync::atomic::AtomicU32;
 use iceoryx2_pal_concurrency_sync::cell::UnsafeCell;
-use iceoryx2_pal_concurrency_sync::rwlock::*;
-use iceoryx2_pal_concurrency_sync::{barrier::Barrier, mutex::Mutex};
+use iceoryx2_pal_concurrency_sync::strategy::rwlock::*;
+use iceoryx2_pal_concurrency_sync::strategy::{barrier::Barrier, mutex::Mutex};
 use iceoryx2_pal_concurrency_sync::{WaitAction, WaitResult};
 use windows_sys::Win32::{
     Foundation::{CloseHandle, ERROR_TIMEOUT, FALSE, STILL_ACTIVE},

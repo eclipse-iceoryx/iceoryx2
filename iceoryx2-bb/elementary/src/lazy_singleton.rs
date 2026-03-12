@@ -33,9 +33,9 @@
 //! println!("{}", LAZY_GLOBAL.get());
 //! ```
 
-use iceoryx2_bb_concurrency::atomic::AtomicBool;
-use iceoryx2_bb_concurrency::atomic::Ordering;
-use iceoryx2_bb_concurrency::cell::UnsafeCell;
+use iceoryx2_pal_concurrency_sync::atomic::AtomicBool;
+use iceoryx2_pal_concurrency_sync::atomic::Ordering;
+use iceoryx2_pal_concurrency_sync::cell::UnsafeCell;
 
 /// The lazy initialized singleton building block of type T
 #[derive(Debug)]

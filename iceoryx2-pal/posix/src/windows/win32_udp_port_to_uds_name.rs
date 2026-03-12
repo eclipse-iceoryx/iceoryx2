@@ -347,8 +347,6 @@ impl PortToUds {
 
 #[cfg(test)]
 mod tests {
-    use iceoryx2_pal_testing::assert_that;
-
     use crate::os::posix::win32_udp_port_to_uds_name::PATH_LENGTH;
 
     use super::PortToUds;
@@ -357,21 +355,21 @@ mod tests {
     fn win32_udp_port_to_uds_name_set_and_get_works() {
         let sut = PortToUds::new().unwrap();
 
-        assert_that!(sut.contains(b"hello world"), eq false);
+        assert_eq!(sut.contains(b"hello world"), false);
         sut.set(12345, b"hello world");
-        assert_that!(sut.contains(b"hello world"), eq true);
-        assert_that!(sut.contains(b"some other test"), eq false);
+        assert_eq!(sut.contains(b"hello world"), true);
+        assert_eq!(sut.contains(b"some other test"), false);
         sut.set(54321, b"some other test");
-        assert_that!(sut.contains(b"some other test"), eq true);
-        assert_that!(sut.contains(b"fuuu"), eq false);
+        assert_eq!(sut.contains(b"some other test"), true);
+        assert_eq!(sut.contains(b"fuuu"), false);
         sut.set(819, b"fuuu");
-        assert_that!(sut.contains(b"fuuu"), eq true);
+        assert_eq!(sut.contains(b"fuuu"), true);
 
-        assert_that!(sut.get_port(b"hello world"), eq 12345);
-        assert_that!(sut.get_port(b"some other test"), eq 54321);
-        assert_that!(sut.get_port(b"fuuu"), eq 819);
-        assert_that!(sut.get_port(b""), eq 0);
-        assert_that!(sut.get_port(b"x"), eq 0);
+        assert_eq!(sut.get_port(b"hello world"), 12345);
+        assert_eq!(sut.get_port(b"some other test"), 54321);
+        assert_eq!(sut.get_port(b"fuuu"), 819);
+        assert_eq!(sut.get_port(b""), 0);
+        assert_eq!(sut.get_port(b"x"), 0);
     }
 
     #[test]
@@ -389,17 +387,17 @@ mod tests {
         sut2.set(456, b"to the one and only");
         sut2.set(789, b"hypnotoad");
 
-        assert_that!(sut2.contains(b"hello world"), eq true);
-        assert_that!(sut2.contains(b"some other test"), eq true);
-        assert_that!(sut2.contains(b"fuuu"), eq true);
+        assert_eq!(sut2.contains(b"hello world"), true);
+        assert_eq!(sut2.contains(b"some other test"), true);
+        assert_eq!(sut2.contains(b"fuuu"), true);
 
         sut2.reset(331);
 
-        assert_that!(sut2.get_port(b"some other test"), eq 54321);
-        assert_that!(sut2.get_port(b"fuuu"), eq 819);
+        assert_eq!(sut2.get_port(b"some other test"), 54321);
+        assert_eq!(sut2.get_port(b"fuuu"), 819);
 
-        assert_that!(sut.get_port(b"to the one and only"), eq 456);
-        assert_that!(sut.get_port(b"hypnotoad"), eq 789);
+        assert_eq!(sut.get_port(b"to the one and only"), 456);
+        assert_eq!(sut.get_port(b"hypnotoad"), 789);
     }
 
     fn contains(list: &Vec<[u8; PATH_LENGTH]>, value: &[u8]) -> bool {
@@ -430,32 +428,32 @@ mod tests {
         sut.set(1234, b"socket9");
 
         let result = sut.list(b"/some/");
-        assert_that!(result, len 2);
-        assert_that!(contains(&result, b"uds_1"), eq true);
-        assert_that!(contains(&result, b"uds_2"), eq true);
+        assert_eq!(result.len(), 2);
+        assert_eq!(contains(&result, b"uds_1"), true);
+        assert_eq!(contains(&result, b"uds_2"), true);
 
         let result = sut.list(b"/");
-        assert_that!(result, len 2);
-        assert_that!(contains(&result, b"socket4"), eq true);
-        assert_that!(contains(&result, b"socket5"), eq true);
+        assert_eq!(result.len(), 2);
+        assert_eq!(contains(&result, b"socket4"), true);
+        assert_eq!(contains(&result, b"socket5"), true);
 
         let result = sut.list(b"");
-        assert_that!(result, len 3);
-        assert_that!(contains(&result, b"socket6"), eq true);
-        assert_that!(contains(&result, b"socket8"), eq true);
-        assert_that!(contains(&result, b"socket9"), eq true);
+        assert_eq!(result.len(), 3);
+        assert_eq!(contains(&result, b"socket6"), true);
+        assert_eq!(contains(&result, b"socket8"), true);
+        assert_eq!(contains(&result, b"socket9"), true);
 
         let result = sut.list(b"/some/fuu");
-        assert_that!(result, len 3);
+        assert_eq!(result.len(), 3);
 
-        assert_that!(contains(&result, b"socket1"), eq true);
-        assert_that!(contains(&result, b"socket2"), eq true);
-        assert_that!(contains(&result, b"socket3"), eq true);
+        assert_eq!(contains(&result, b"socket1"), true);
+        assert_eq!(contains(&result, b"socket2"), true);
+        assert_eq!(contains(&result, b"socket3"), true);
 
         let result = sut.list(b"/other/fun");
 
-        assert_that!(result, len 2);
-        assert_that!(contains(&result, b"socket123"), eq true);
-        assert_that!(contains(&result, b"socket456"), eq true);
+        assert_eq!(result.len(), 2);
+        assert_eq!(contains(&result, b"socket123"), true);
+        assert_eq!(contains(&result, b"socket456"), true);
     }
 }

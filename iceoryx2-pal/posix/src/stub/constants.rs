@@ -110,6 +110,8 @@ pub const SEEK_END: int = 2;
 
 pub const SEM_FAILED: *mut sem_t = 0 as *mut sem_t;
 
+pub const SIGEV_SIGNAL: int = 0;
+
 pub const MAX_SIGNAL_VALUE: usize = 27;
 pub const SIGABRT: int = 0;
 pub const SIGALRM: int = 1;

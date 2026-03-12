@@ -35,6 +35,7 @@ pub type c_char = core::ffi::c_char;
 pub type clockid_t = crate::internal::clockid_t;
 pub type dev_t = crate::internal::dev_t;
 pub type gid_t = crate::internal::gid_t;
+pub type itimerspec = crate::internal::itimerspec;
 pub type ino_t = crate::internal::ino_t;
 pub type int = core::ffi::c_int;
 pub type in_port_t = u16;
@@ -49,11 +50,13 @@ pub type __rlim_t = internal::__rlim_t;
 pub type sa_family_t = crate::internal::sa_family_t;
 pub type short = core::ffi::c_short;
 pub type sighandler_t = size_t;
+pub type siginfo_t = crate::internal::siginfo_t;
 pub type size_t = usize;
 pub type socklen_t = crate::internal::socklen_t;
 pub type ssize_t = isize;
 pub type suseconds_t = crate::internal::suseconds_t;
 pub type time_t = crate::internal::time_t;
+pub type timer_t = crate::internal::timer_t;
 pub type uchar = core::ffi::c_uchar;
 pub type uid_t = crate::internal::uid_t;
 pub type uint = crate::internal::uint;
@@ -92,6 +95,36 @@ pub type pthread_mutex_t = crate::internal::pthread_mutex_t;
 impl MemZeroedStruct for pthread_mutex_t {}
 
 pub type pthread_mutexattr_t = sync_attr_t;
+
+pub type native_sigevent = crate::internal::sigevent;
+impl MemZeroedStruct for native_sigevent {}
+
+#[repr(C)]
+pub struct sigevent {
+    pub sigev_notify: int,
+    pub sigev_signo: int,
+}
+impl MemZeroedStruct for sigevent {}
+
+impl From<native_sigevent> for sigevent {
+    fn from(value: native_sigevent) -> Self {
+        sigevent {
+            sigev_notify: value.sigev_notify,
+            sigev_signo: unsafe { value.__sigev_un1.__sigev_signo },
+        }
+    }
+}
+
+impl From<*mut sigevent> for native_sigevent {
+    fn from(value: *mut sigevent) -> Self {
+        let mut os_specific_buffer = native_sigevent::new_zeroed();
+        unsafe {
+            os_specific_buffer.sigev_notify = (*value).sigev_notify;
+            os_specific_buffer.__sigev_un1.__sigev_signo = (*value).sigev_signo;
+        }
+        os_specific_buffer
+    }
+}
 
 pub type sem_t = crate::internal::sem_t;
 

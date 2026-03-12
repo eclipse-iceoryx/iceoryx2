@@ -17,10 +17,10 @@
 use core::fmt::Debug;
 
 use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
-use iceoryx2_pal_concurrency_sync::barrier::Barrier;
-use iceoryx2_pal_concurrency_sync::mutex::Mutex;
-use iceoryx2_pal_concurrency_sync::rwlock::*;
-use iceoryx2_pal_concurrency_sync::semaphore::Semaphore;
+use iceoryx2_pal_concurrency_sync::strategy::barrier::Barrier;
+use iceoryx2_pal_concurrency_sync::strategy::mutex::Mutex;
+use iceoryx2_pal_concurrency_sync::strategy::rwlock::*;
+use iceoryx2_pal_concurrency_sync::strategy::semaphore::Semaphore;
 use windows_sys::Win32::Foundation::{HANDLE, INVALID_HANDLE_VALUE};
 use windows_sys::Win32::Networking::WinSock::{SOCKADDR_IN, TIMEVAL};
 

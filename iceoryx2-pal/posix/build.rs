@@ -21,9 +21,6 @@ fn main() {
     // #[cfg(any(...))] cannot be used for this purpose as it refers to the
     // (cross-) compilation host
     let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap();
-    if target_os == "none" {
-        return;
-    }
 
     // define bazel_build as a valid cfg to avoid errors/warnings, but not used for cargo builds
     println!("cargo:rustc-check-cfg=cfg(bazel_build)");
@@ -74,10 +71,9 @@ fn configure_platform_binding(target_os: &str) {
     println!("cargo:rustc-check-cfg=cfg(platform_binding, values(\"libc\", \"bindgen\"))");
     if BINDGEN_PLATFORMS.contains(&target_os) {
         println!("cargo:rustc-cfg=platform_binding=\"bindgen\"");
-    } else if LIBC_PLATFORMS.contains(&target_os) {
+    }
+    if LIBC_PLATFORMS.contains(&target_os) {
         println!("cargo:rustc-cfg=platform_binding=\"libc\"");
-    } else {
-        panic!("Unsupported target OS: {}", target_os);
     }
 }
 

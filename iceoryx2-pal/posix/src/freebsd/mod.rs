@@ -30,6 +30,7 @@ pub mod stdlib;
 pub mod string;
 pub mod support;
 pub mod time;
+pub mod timer;
 pub mod types;
 pub mod unistd;
 
@@ -52,5 +53,6 @@ pub use crate::os::posix::stdlib::*;
 pub use crate::os::posix::string::*;
 pub use crate::os::posix::support::*;
 pub use crate::os::posix::time::*;
+pub use crate::os::posix::timer::*;
 pub use crate::os::posix::types::*;
 pub use crate::os::posix::unistd::*;

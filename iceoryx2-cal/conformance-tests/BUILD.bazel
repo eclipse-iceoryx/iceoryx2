@@ -35,7 +35,6 @@ rust_library(
         "//iceoryx2-cal",
         "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
         "//iceoryx2-pal/posix:iceoryx2-pal-posix",
-        "//iceoryx2-pal/testing:iceoryx2-pal-testing",
         "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
         "@crate_index//:serde",
     ],

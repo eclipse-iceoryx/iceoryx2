@@ -36,6 +36,7 @@ pub type c_char = core::ffi::c_char;
 pub type clockid_t = crate::internal::clockid_t;
 pub type dev_t = crate::internal::dev_t;
 pub type gid_t = crate::internal::gid_t;
+pub type itimerspec = crate::internal::itimerspec;
 pub type ino_t = crate::internal::ino_t;
 pub type int = core::ffi::c_int;
 pub type in_port_t = u16;
@@ -50,11 +51,13 @@ pub type __rlim_t = crate::internal::__rlim_t;
 pub type sa_family_t = crate::internal::sa_family_t;
 pub type short = core::ffi::c_short;
 pub type sighandler_t = size_t;
+pub type siginfo_t = crate::internal::siginfo_t;
 pub type size_t = usize;
 pub type socklen_t = crate::internal::socklen_t;
 pub type ssize_t = isize;
 pub type suseconds_t = crate::internal::suseconds_t;
 pub type time_t = crate::internal::time_t;
+pub type timer_t = crate::internal::timer_t;
 pub type uchar = core::ffi::c_uchar;
 pub type uid_t = crate::internal::uid_t;
 pub type uint = crate::internal::uint;
@@ -66,6 +69,9 @@ impl MemZeroedStruct for native_cpu_set_t {}
 
 pub type sigset_t = crate::internal::sigset_t;
 impl MemZeroedStruct for sigset_t {}
+
+pub type sigevent = crate::internal::sigevent;
+impl MemZeroedStruct for sigevent {}
 
 pub type pthread_barrier_t = crate::internal::pthread_barrier_t;
 impl MemZeroedStruct for pthread_barrier_t {}

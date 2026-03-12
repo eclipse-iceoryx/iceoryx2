@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate alloc;
+
 pub mod event_discovery;
 pub mod event_propagation;
 pub mod publish_subscribe_discovery;

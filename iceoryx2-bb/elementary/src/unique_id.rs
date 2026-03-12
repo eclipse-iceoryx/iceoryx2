@@ -63,8 +63,8 @@
 //! }
 //! ```
 
-use iceoryx2_bb_concurrency::atomic::AtomicU64;
-use iceoryx2_bb_concurrency::atomic::Ordering;
+use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
+use iceoryx2_pal_concurrency_sync::atomic::Ordering;
 
 use core::marker::PhantomData;
 

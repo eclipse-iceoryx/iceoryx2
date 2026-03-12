@@ -23,7 +23,7 @@ use core::panic;
 use iceoryx2_pal_concurrency_sync::atomic::Ordering;
 use iceoryx2_pal_concurrency_sync::atomic::{AtomicBool, AtomicU32, AtomicUsize};
 use iceoryx2_pal_concurrency_sync::cell::UnsafeCell;
-use iceoryx2_pal_concurrency_sync::mutex::Mutex;
+use iceoryx2_pal_concurrency_sync::strategy::mutex::Mutex;
 use iceoryx2_pal_concurrency_sync::WaitAction;
 
 use super::win32_udp_port_to_uds_name::PortToUds;

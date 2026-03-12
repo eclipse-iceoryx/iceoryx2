@@ -22,6 +22,5 @@ iceoryx2-bb-memory = { workspace = true }
 iceoryx2-bb-lock-free = { workspace = true }
 iceoryx2-bb-testing = { workspace = true }
 iceoryx2-bb-system-types = { workspace = true }
-iceoryx2-pal-testing = { workspace = true }
 
 generic-tests = { workspace = true }

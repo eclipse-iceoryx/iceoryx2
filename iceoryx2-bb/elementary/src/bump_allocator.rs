@@ -11,9 +11,9 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::math::align;
-use iceoryx2_bb_concurrency::atomic::AtomicUsize;
-use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
+use iceoryx2_pal_concurrency_sync::atomic::AtomicUsize;
+use iceoryx2_pal_concurrency_sync::atomic::Ordering;
 
 /// A minimalistic [`BumpAllocator`].
 pub struct BumpAllocator {

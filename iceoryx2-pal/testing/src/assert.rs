@@ -72,6 +72,24 @@ macro_rules! assert_that {
             }
         }
     };
+    ($call:expr, eq $rhs:expr, before $guard:expr) => {
+        $crate::spin_until(|| $call() == $rhs, $guard);
+    };
+    ($call:expr, ne $rhs:expr, before $guard:expr) => {
+        $crate::spin_until(|| $call() != $rhs, $guard);
+    };
+    ($call:expr, lt $rhs:expr, before $guard:expr) => {
+        $crate::spin_until(|| $call() < $rhs, $guard);
+    };
+    ($call:expr, le $rhs:expr, before $guard:expr) => {
+        $crate::spin_until(|| $call() <= $rhs, $guard);
+    };
+    ($call:expr, gt $rhs:expr, before $guard:expr) => {
+        $crate::spin_until(|| $call() > $rhs, $guard);
+    };
+    ($call:expr, ge $rhs:expr, before $guard:expr) => {
+        $crate::spin_until(|| $call() >= $rhs, $guard);
+    };
     ($lhs:expr, aligned_to $rhs:expr) => {
         {
             let lval = $lhs as usize;
@@ -216,38 +234,25 @@ macro_rules! assert_that {
         {
             let lval = $lhs.as_secs_f32();
             let rval = $rhs.as_secs_f32();
-            let rval_adjusted = rval * (1.0 - iceoryx2_pal_testing::AT_LEAST_TIMING_VARIANCE).clamp(0.0, 1.0);
+            let rval_adjusted = rval * (1.0 - $crate::AT_LEAST_TIMING_VARIANCE).clamp(0.0, 1.0);
 
             if !(lval >= rval_adjusted) {
                 assert_that!(message_time_at_least $lhs, $rhs, lval, rval, rval_adjusted);
             }
         }
     };
-    ($call:expr, block_until $rhs:expr) => {
-        {
-            let watchdog = iceoryx2_pal_testing::watchdog::Watchdog::new();
-
-            while $call() != $rhs {
-                std::thread::yield_now();
-                std::thread::sleep(core::time::Duration::from_millis(10));
-                std::thread::yield_now();
-            }
-        }
-    };
     [color_start] => {
         {
-            use std::io::IsTerminal;
-            if std::io::stderr().is_terminal() {
+            if $crate::is_terminal() {
                 "\x1b[1;4;33m"
             } else {
                 ""
             }
         }
-   };
+    };
     [color_end] => {
         {
-            use std::io::IsTerminal;
-            if std::io::stderr().is_terminal() {
+            if $crate::is_terminal() {
                 "\x1b[0m"
             } else {
                 ""

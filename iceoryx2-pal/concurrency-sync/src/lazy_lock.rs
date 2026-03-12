@@ -87,16 +87,16 @@ impl<T, F: FnOnce() -> T> LazyLock<T, F> {
     ///
     /// This method will block the calling thread if another initialization
     /// routine is currently running.
-    pub fn force(&self) -> &T {
+    pub fn force(this: &Self) -> &T {
         // Safety: call_once guarantees that the init function is only ever called once,
         // ensuring usage here is safe
-        self.once.call_once(|| unsafe {
-            self.init();
+        this.once.call_once(|| unsafe {
+            this.init();
         });
 
         // Safety: After call_once returns, initialization is guaranteed complete and
         // thus retrieving the value is safe.
-        unsafe { self.get() }
+        unsafe { this.get() }
     }
 }
 
@@ -104,6 +104,6 @@ impl<T, F: FnOnce() -> T> Deref for LazyLock<T, F> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
-        self.force()
+        Self::force(self)
     }
 }
