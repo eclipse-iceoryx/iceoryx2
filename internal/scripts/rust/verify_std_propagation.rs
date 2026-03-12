@@ -19,14 +19,17 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use serde::Deserialize;
-use std::{
-    collections::HashSet,
-    fs,
-    path::{Path, PathBuf},
-};
+use std::{collections::HashSet, fs, path::PathBuf};
 use toml::Value;
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
+
+struct PropagationAnalysis {
+    propagated: HashSet<String>,
+    enabled: HashSet<String>,
+    disabled: HashSet<String>,
+    missing: HashSet<String>,
+}
 
 #[derive(Deserialize, Debug)]
 struct CargoToml {
@@ -44,21 +47,10 @@ struct Package {
 #[derive(Deserialize, Debug)]
 struct Workspace {
     members: Option<Vec<String>>,
-    dependencies: Option<toml::Table>,
-}
-
-struct WorkspaceContext {
-    root: PathBuf,
-    dependencies: toml::Table,
-}
-
-struct Dependency<'a> {
-    name: &'a str,
-    value: &'a Value,
 }
 
 /// Parses the command-line argument and returns the canonicalized path to the target `Cargo.toml`.
-fn parse_crate_toml_path(args: &[String]) -> Result<PathBuf> {
+fn parse_manifest_path(args: &[String]) -> Result<PathBuf> {
     if args.len() != 2 {
         eprintln!("Usage: verify_std_propagation <path/to/Cargo.toml>");
         std::process::exit(1);
@@ -68,83 +60,73 @@ fn parse_crate_toml_path(args: &[String]) -> Result<PathBuf> {
 }
 
 /// Reads and deserializes a `Cargo.toml` file at the given path.
-fn load_toml(path: &Path) -> Result<CargoToml> {
+fn load_manifest(path: &PathBuf) -> Result<CargoToml> {
     let content = fs::read_to_string(path)?;
 
     Ok(toml::from_str::<CargoToml>(&content)?)
 }
 
-/// Walks up the directory tree from `start` to find the root directory containing a workspace `Cargo.toml`.
-fn find_workspace_root(start: &Path) -> Option<PathBuf> {
-    let mut current = start.to_path_buf();
+/// Walks up the directory tree from the crate manifest's parent to find and load the workspace `Cargo.toml`.
+fn load_workspace_manifest(crate_manifest_path: &PathBuf) -> Result<(PathBuf, CargoToml)> {
+    let mut current = crate_manifest_path
+        .parent()
+        .expect("Cargo.toml path has no parent directory")
+        .to_path_buf();
 
     loop {
         let candidate = current.join("Cargo.toml");
         if candidate.exists() {
-            if let Ok(cargo_toml) = load_toml(&candidate) {
+            if let Ok(cargo_toml) = load_manifest(&candidate) {
                 if cargo_toml.workspace.is_some() {
-                    return Some(current);
+                    return Ok((current, cargo_toml));
                 }
             }
         }
         if !current.pop() {
-            return None;
+            return Err("Could not find crate workspace manifest".into());
         }
     }
 }
 
-/// Locates the workspace root from the given crate directory and loads the workspace-level dependency table.
-fn load_workspace_context(crate_directory: &Path) -> Result<WorkspaceContext> {
-    let workspace_root =
-        find_workspace_root(crate_directory).expect("Could not find workspace root");
-
-    let workspace_toml = load_toml(&workspace_root.join("Cargo.toml"))?;
-    let workspace_dependencies = match workspace_toml
-        .workspace
-        .and_then(|workspace| workspace.dependencies)
-    {
-        Some(dependencies) => dependencies,
-        None => toml::Table::new(),
-    };
-
-    Ok(WorkspaceContext {
-        root: workspace_root,
-        dependencies: workspace_dependencies,
-    })
-}
-
-/// Locates the `Cargo.toml` for a named crate by checking workspace dependency paths then scanning workspace members.
-fn find_crate_toml(context: &WorkspaceContext, crate_name: &str) -> Option<PathBuf> {
-    // Try path from workspace.dependencies first
-    if let Some(Value::Table(workspace_dependency)) = context.dependencies.get(crate_name) {
-        if let Some(Value::String(rel_path)) = workspace_dependency.get("path") {
-            let candidate = context.root.join(rel_path).join("Cargo.toml");
-            if candidate.exists() {
-                return Some(candidate);
+/// Locates the `Cargo.toml` for a named crate by checking workspace dependency paths or scanning workspace members.
+fn find_crate_manifest_path(
+    workspace_manifest_path: &PathBuf,
+    workspace_manifest: &CargoToml,
+    crate_name: &str,
+) -> Option<PathBuf> {
+    // Check if dependency specifies a path
+    if let Some(dependencies) = &workspace_manifest.dependencies {
+        if let Some(Value::Table(workspace_dependency)) = dependencies.get(crate_name) {
+            if let Some(Value::String(rel_path)) = workspace_dependency.get("path") {
+                let candidate = workspace_manifest_path.join(rel_path).join("Cargo.toml");
+                if candidate.exists() {
+                    return Some(candidate);
+                }
             }
         }
     }
 
-    // Fallback: scan workspace members
-    let workspace_toml = load_toml(&context.root.join("Cargo.toml")).ok()?;
-    let members = match workspace_toml.workspace?.members {
-        Some(members) => members,
-        None => vec![],
-    };
+    // Otherwise, retrieve path from workspace members
+    let workspace_members = workspace_manifest
+        .workspace
+        .as_ref()
+        .and_then(|workspace| workspace.members.as_ref())
+        .map(|member| member.clone())
+        .unwrap_or_default();
 
-    for member in members {
+    for member in workspace_members {
         let paths: Vec<PathBuf> = if member.contains('*') {
-            let pattern = context.root.join(&member).join("Cargo.toml");
+            let pattern = workspace_manifest_path.join(&member).join("Cargo.toml");
             glob::glob(pattern.to_str()?)
                 .ok()?
                 .filter_map(|result| result.ok())
                 .collect()
         } else {
-            vec![context.root.join(&member).join("Cargo.toml")]
+            vec![workspace_manifest_path.join(&member).join("Cargo.toml")]
         };
 
         for path in paths {
-            if let Ok(data) = load_toml(&path) {
+            if let Ok(data) = load_manifest(&path) {
                 if data.package.as_ref().map(|package| package.name.as_str()) == Some(crate_name) {
                     return Some(path.to_path_buf());
                 }
@@ -155,149 +137,128 @@ fn find_crate_toml(context: &WorkspaceContext, crate_name: &str) -> Option<PathB
     None
 }
 
-/// Returns true if the crate corresponding to `dependency` declares a `std` feature.
-fn has_std_feature(context: &WorkspaceContext, dependency: &Dependency) -> bool {
-    let Some(path) = find_crate_toml(context, dependency.name) else {
+/// Returns true if the crate corresponding to `dependency_name` defines the `std` feature.
+fn dependency_defines_std_feature(
+    workspace_manifest_path: &PathBuf,
+    workspace_manifest: &CargoToml,
+    dependency_name: &str,
+) -> bool {
+    let Some(dependency_manifest_path) =
+        find_crate_manifest_path(workspace_manifest_path, workspace_manifest, dependency_name)
+    else {
+        // Ignore crates not in workspace
         return false;
     };
-    let Ok(data) = load_toml(&path) else {
+
+    let Ok(dependency_manifest) = load_manifest(&dependency_manifest_path) else {
+        // Ignore corrupted manifests
         return false;
     };
-    data.features
+
+    dependency_manifest
+        .features
         .is_some_and(|features| features.contains_key("std"))
 }
 
-/// Returns true if the dependency declaration hardcodes `features = ["std"]`, bypassing feature propagation.
-fn hardcodes_std_feature(context: &WorkspaceContext, dependency: &Dependency) -> bool {
-    let hardcodes = |value: &Value| -> bool {
-        value
-            .get("features")
-            .and_then(|features_value: &Value| features_value.as_array())
-            .is_some_and(|array| {
-                array
-                    .iter()
-                    .any(|feature_value: &Value| feature_value.as_str() == Some("std"))
-            })
-    };
-
-    // Check the inline declaration first
-    if hardcodes(dependency.value) {
-        return true;
-    }
-
-    // If it's a workspace dependency, also check the workspace-level declaration
-    if dependency
-        .value
-        .get("workspace")
-        .and_then(|value: &Value| value.as_bool())
-        == Some(true)
-    {
-        if let Some(workspace_dependency) = context.dependencies.get(dependency.name) {
-            return hardcodes(workspace_dependency);
-        }
-    }
-
-    false
-}
-
-/// Returns true if the dependency explicitly sets `features` without including `std`, indicating `std` is intentionally not enabled.
-fn explicitly_omits_std_feature(context: &WorkspaceContext, dependency: &Dependency) -> bool {
-    let omits = |value: &Value| -> bool {
-        value
-            .get("features")
-            .and_then(|features_value: &Value| features_value.as_array())
-            .is_some_and(|array| {
-                !array
-                    .iter()
-                    .any(|feature_value: &Value| feature_value.as_str() == Some("std"))
-            })
-    };
-
-    if omits(dependency.value) {
-        return true;
-    }
-
-    // If it's a workspace dependency, also check the workspace-level declaration
-    if dependency
-        .value
-        .get("workspace")
-        .and_then(|value: &Value| value.as_bool())
-        == Some(true)
-    {
-        if let Some(workspace_dependency) = context.dependencies.get(dependency.name) {
-            return omits(workspace_dependency);
-        }
-    }
-
-    false
-}
-
-/// Collects the names of dependencies already listed under the `std` feature of the crate.
-fn collect_already_propagated(crate_features: Option<&toml::Table>) -> HashSet<String> {
-    crate_features
-        .and_then(|features: &toml::Table| features.get("std"))
-        .and_then(|value: &Value| value.as_array())
-        .into_iter()
-        .flatten()
-        .filter_map(|value: &Value| value.as_str())
-        .filter_map(|feature_entry: &str| {
-            let (dependency, feature) = feature_entry.split_once('/')?;
-            (feature == "std").then(|| dependency.to_string())
+/// Returns true if the crate propagates the `std` feature to `dependency_name` via its own feature
+/// definition.
+fn propagates_std_feature(crate_manifest: &CargoToml, dependency_name: &str) -> bool {
+    crate_manifest
+        .features
+        .as_ref()
+        .and_then(|features| features.get("std"))
+        .and_then(|value| value.as_array())
+        .is_some_and(|array| {
+            array
+                .iter()
+                .any(|v| v.as_str() == Some(&format!("{dependency_name}/std")))
         })
-        .collect()
 }
 
-/// Returns the names of dependencies that have a `std` feature but explicitly omit it via `features = []`.
-fn collect_explicitly_omitted(
-    workspace_context: &WorkspaceContext,
-    crate_toml: &CargoToml,
-    already_propagated: &HashSet<String>,
-) -> HashSet<String> {
-    // Can be extended to include dev-dependencies etc.
-    let all_dependencies = [&crate_toml.dependencies];
+/// Returns true if the dependency declaration enables std via `features = ["std"]`, bypassing
+/// feature propagation.
+fn enables_std_feature(dependency_value: &Value) -> bool {
+    if dependency_value
+        .get("features")
+        .and_then(|features_value: &Value| features_value.as_array())
+        .is_some_and(|array| {
+            array
+                .iter()
+                .any(|feature_value: &Value| feature_value.as_str() == Some("std"))
+        })
+    {
+        return true;
+    }
 
-    let mut omitted: HashSet<String> = HashSet::new();
-    for dependencies in &all_dependencies {
-        if let Some(dependencies) = dependencies {
-            for (dependency_name, dependency_value) in dependencies.iter() {
-                if already_propagated.contains(dependency_name.as_str()) {
-                    continue;
-                }
-                if hardcodes_std_feature(
-                    workspace_context,
-                    &Dependency {
-                        name: dependency_name,
-                        value: dependency_value,
-                    },
-                ) {
-                    continue;
-                }
-                let dependency = Dependency {
-                    name: dependency_name,
-                    value: dependency_value,
-                };
-                if explicitly_omits_std_feature(workspace_context, &dependency)
-                    && has_std_feature(workspace_context, &dependency)
-                {
-                    omitted.insert(dependency_name.to_string());
-                }
-            }
+    false
+}
+
+/// Returns true if the dependency explicitly sets `features` without including `std`, indicating
+/// `std` is intentionally not enabled.
+fn disables_std_feature(dependency_value: &Value) -> bool {
+    if dependency_value
+        .get("features")
+        .and_then(|features_value: &Value| features_value.as_array())
+        .is_some_and(|array| {
+            !array
+                .iter()
+                .any(|feature_value: &Value| feature_value.as_str() == Some("std"))
+        })
+    {
+        return true;
+    }
+
+    false
+}
+
+/// Classifies each workspace dependency of the crate by how it handles the `std` feature:
+/// propagated via feature flag, explicitly enabled, explicitly disabled, or missing.
+fn analyse_propagation_of_std_feature(
+    workspace_manifest_path: &PathBuf,
+    workspace_manifest: &CargoToml,
+    crate_manifest: &CargoToml,
+) -> PropagationAnalysis {
+    let mut result = PropagationAnalysis {
+        propagated: HashSet::new(),
+        enabled: HashSet::new(),
+        disabled: HashSet::new(),
+        missing: HashSet::new(),
+    };
+
+    for (dependency_name, dependency_value) in crate_manifest.dependencies.iter().flatten() {
+        if !dependency_defines_std_feature(
+            workspace_manifest_path,
+            workspace_manifest,
+            dependency_name,
+        ) {
+            continue;
+        }
+
+        if propagates_std_feature(crate_manifest, dependency_name) {
+            result.propagated.insert(dependency_name.to_string());
+        } else if enables_std_feature(dependency_value) {
+            result.enabled.insert(dependency_name.to_string());
+        } else if disables_std_feature(dependency_value) {
+            result.disabled.insert(dependency_name.to_string());
+        } else {
+            result.missing.insert(dependency_name.to_string());
         }
     }
-    omitted
+
+    result
 }
 
-/// Prints a notice listing dependencies whose `std` feature is explicitly omitted.
+/// Prints a sorted list of dependencies under a given label.
 ///
 /// Example output:
 /// ```
-/// ~ std explicitly omitted for:
+/// propagated:
 ///   iceoryx2-log
 ///   iceoryx2-bb-print
 /// ```
-fn print_explicitly_omitted(omitted: &HashSet<String>) {
-    println!("~ std explicitly omitted for:");
-    let mut sorted: Vec<&String> = omitted.iter().collect();
+fn print_dependency_notice(label: &str, dependencies: &HashSet<String>) {
+    println!("{label}:");
+    let mut sorted: Vec<&String> = dependencies.iter().collect();
     sorted.sort();
     for dependency in sorted {
         println!("  {dependency}");
@@ -305,87 +266,37 @@ fn print_explicitly_omitted(omitted: &HashSet<String>) {
     println!();
 }
 
-/// Returns the name and dependency section of each dependency that has a `std` feature but is not propagated by the crate.
-fn collect_missing_propagations(
-    workspace_context: &WorkspaceContext,
-    crate_toml: &CargoToml,
-    already_propagated: &HashSet<String>,
-) -> Vec<(String, String)> {
-    // Can be extended to include dev-dependencies etc.
-    let all_dependencies = [("dependencies", &crate_toml.dependencies)];
-
-    let mut missing: Vec<(String, String)> = vec![];
-    for (section, dependencies) in &all_dependencies {
-        if let Some(dependencies) = dependencies {
-            for (dependency_name, dependency_value) in dependencies.iter() {
-                if already_propagated.contains(dependency_name.as_str()) {
-                    continue;
-                }
-                let dependency = Dependency {
-                    name: dependency_name,
-                    value: dependency_value,
-                };
-                if hardcodes_std_feature(workspace_context, &dependency) {
-                    continue;
-                }
-                if explicitly_omits_std_feature(workspace_context, &dependency) {
-                    continue;
-                }
-                if has_std_feature(workspace_context, &dependency) {
-                    missing.push((dependency_name.to_string(), section.to_string()));
-                }
-            }
-        }
-    }
-
-    missing
-}
-
-/// Prints the current and missing `std` feature entries as a suggested corrected `std = [...]` block.
+/// Prints a suggested `std = [...]` block containing already-propagated dependencies and those
+/// that are missing propagation (annotated with `# missing`).
 ///
 /// Example output:
 /// ```
-/// ✗ std not propagated to dependencies
+/// ✗ std not propagated to all dependencies
 ///
 /// std = [
-///   "iceoryx2-log/std",  # missing
 ///   "iceoryx2-bb-posix/std",
+///   "iceoryx2-log/std",  # missing
 /// ]
 /// ```
-fn print_missing_std_propagations(
-    missing: &[(String, String)],
-    crate_features: Option<&toml::Table>,
-) {
-    println!("✗ std not propagated to dependencies");
+fn print_missing_std_propagations(propagated: &HashSet<String>, missing: &HashSet<String>) {
+    println!("✗ std not propagated to all dependencies");
     println!();
 
-    println!("std = [");
-    let mut current: Vec<String> = crate_features
-        .and_then(|features: &toml::Table| features.get("std"))
-        .and_then(|value: &Value| value.as_array())
-        .into_iter()
-        .flatten()
-        .filter_map(|value: &Value| value.as_str().map(String::from))
+    let mut entries: Vec<(String, bool)> = propagated
+        .iter()
+        .map(|dependency| (format!("{dependency}/std"), false))
         .chain(
             missing
                 .iter()
-                .map(|(dependency, _)| format!("{dependency}/std")),
+                .map(|dependency| (format!("{dependency}/std"), true)),
         )
         .collect();
 
-    current.sort();
+    entries.sort_by(|a, b| a.0.cmp(&b.0));
 
-    let missing_set: HashSet<&str> = missing
-        .iter()
-        .map(|(dependency, _)| dependency.as_str())
-        .collect();
-
-    for entry in &current {
-        let dependency = match entry.split_once('/') {
-            Some((name, _)) => name,
-            None => entry,
-        };
-        if missing_set.contains(dependency) {
+    println!("std = [");
+    for (entry, is_missing) in &entries {
+        if *is_missing {
             println!("  \"{entry}\",  # missing");
         } else {
             println!("  \"{entry}\",");
@@ -396,30 +307,37 @@ fn print_missing_std_propagations(
 
 fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().collect();
-    let crate_toml_path = parse_crate_toml_path(&args)?;
-    let crate_directory = crate_toml_path
-        .parent()
-        .expect("Cargo.toml path has no parent directory");
 
-    let workspace_context = load_workspace_context(crate_directory)?;
-    let crate_toml = load_toml(&crate_toml_path)?;
-    let crate_features = crate_toml.features.as_ref();
+    let crate_manifest_path = parse_manifest_path(&args)?;
+    let crate_manifest = load_manifest(&crate_manifest_path)?;
+    let (workspace_manifest_path, workspace_manifest) =
+        load_workspace_manifest(&crate_manifest_path)
+            .expect("Could not load workspace of {crate_manifest}");
 
-    let already_propagated = collect_already_propagated(crate_features);
-    let omitted = collect_explicitly_omitted(&workspace_context, &crate_toml, &already_propagated);
-    let missing =
-        collect_missing_propagations(&workspace_context, &crate_toml, &already_propagated);
+    let analysis = analyse_propagation_of_std_feature(
+        &workspace_manifest_path,
+        &workspace_manifest,
+        &crate_manifest,
+    );
 
-    if !omitted.is_empty() {
-        print_explicitly_omitted(&omitted);
-    }
-
-    if missing.is_empty() {
-        println!("✓ std properly propagated");
-    } else {
-        print_missing_std_propagations(&missing, crate_features);
+    if !analysis.missing.is_empty() {
+        print_missing_std_propagations(&analysis.propagated, &analysis.missing);
         std::process::exit(1);
     }
+
+    if !analysis.propagated.is_empty() {
+        print_dependency_notice("propagated", &analysis.propagated);
+    }
+
+    if !analysis.enabled.is_empty() {
+        print_dependency_notice("enabled", &analysis.enabled);
+    }
+
+    if !analysis.disabled.is_empty() {
+        print_dependency_notice("disabled", &analysis.disabled);
+    }
+
+    println!("✓ check passed");
 
     Ok(())
 }
