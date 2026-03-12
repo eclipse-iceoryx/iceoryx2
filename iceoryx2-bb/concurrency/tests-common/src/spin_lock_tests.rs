@@ -87,8 +87,8 @@ pub fn try_lock_locks_exclusively() {
                 .spawn(|| {
                     barrier.wait();
                     let guard = lk.try_lock();
-                    if guard.is_some() {
-                        *guard.unwrap() += 1;
+                    if let Some(mut guard) = guard {
+                        *guard += 1;
                     }
                 })
                 .expect("failed to spawn thread");

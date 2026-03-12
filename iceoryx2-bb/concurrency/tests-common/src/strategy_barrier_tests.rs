@@ -10,8 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::sync::atomic::{AtomicI32, Ordering};
-
+use iceoryx2_bb_concurrency::atomic::{AtomicI32, Ordering};
 use iceoryx2_bb_concurrency::internal::strategy::barrier::*;
 use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;

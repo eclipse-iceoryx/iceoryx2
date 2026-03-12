@@ -12,8 +12,6 @@
 
 use core::time::Duration;
 
-use alloc::vec;
-
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU32, Ordering};
 use iceoryx2_bb_concurrency::internal::strategy::barrier::Barrier;
 use iceoryx2_bb_concurrency::internal::strategy::condition_variable::ConditionVariable;
@@ -33,10 +31,9 @@ pub struct ThreadInWait<const NUMBER_OF_THREADS: usize> {
 
 impl<const NUMBER_OF_THREADS: usize> ThreadInWait<NUMBER_OF_THREADS> {
     pub fn new() -> Self {
-        const FALSE: AtomicBool = AtomicBool::new(false);
         Self {
             thread_id: AtomicU32::new(0),
-            thread_in_wait: [FALSE; NUMBER_OF_THREADS],
+            thread_in_wait: [const { AtomicBool::new(false) }; NUMBER_OF_THREADS],
         }
     }
 
@@ -62,6 +59,12 @@ impl<const NUMBER_OF_THREADS: usize> ThreadInWait<NUMBER_OF_THREADS> {
                 break;
             }
         }
+    }
+}
+
+impl<const NUMBER_OF_THREADS: usize> Default for ThreadInWait<NUMBER_OF_THREADS> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -133,32 +136,29 @@ pub fn strategy_condition_variable_notify_all_unblocks_all() {
     let thread_in_wait = ThreadInWait::<NUMBER_OF_THREADS>::new();
 
     thread_scope(|s| {
-        let mut threads = vec![];
         for _ in 0..NUMBER_OF_THREADS {
-            threads.push(
-                s.thread_builder()
-                    .spawn(|| {
-                        barrier.wait(|_, _| {}, |_| {});
-                        mtx.lock(|_, _| WaitAction::Continue);
-                        let id = thread_in_wait.get_id();
-                        let wait_result = sut.wait(
-                            &mtx,
-                            |_| {},
-                            |_, _| {
-                                thread_in_wait.signal_is_in_wait(id);
-                                while triggered_thread.load(Ordering::Relaxed) < 1 {
-                                    core::hint::spin_loop()
-                                }
-                                WaitAction::Continue
-                            },
-                            |_, _| WaitAction::Continue,
-                        );
-                        counter.fetch_add(1, Ordering::Relaxed);
-                        mtx.unlock(|_| {});
-                        assert_that!(wait_result, eq WaitResult::Success);
-                    })
-                    .expect("failed to spawn thread"),
-            );
+            s.thread_builder()
+                .spawn(|| {
+                    barrier.wait(|_, _| {}, |_| {});
+                    mtx.lock(|_, _| WaitAction::Continue);
+                    let id = thread_in_wait.get_id();
+                    let wait_result = sut.wait(
+                        &mtx,
+                        |_| {},
+                        |_, _| {
+                            thread_in_wait.signal_is_in_wait(id);
+                            while triggered_thread.load(Ordering::Relaxed) < 1 {
+                                core::hint::spin_loop()
+                            }
+                            WaitAction::Continue
+                        },
+                        |_, _| WaitAction::Continue,
+                    );
+                    counter.fetch_add(1, Ordering::Relaxed);
+                    mtx.unlock(|_| {});
+                    assert_that!(wait_result, eq WaitResult::Success);
+                })
+                .expect("failed to spawn thread");
         }
 
         barrier.wait(|_, _| {}, |_| {});

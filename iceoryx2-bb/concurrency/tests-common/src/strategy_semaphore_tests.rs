@@ -10,11 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::{
-    sync::atomic::{AtomicU32, Ordering},
-    time::Duration,
-};
+use core::time::Duration;
 
+use iceoryx2_bb_concurrency::atomic::{AtomicU32, Ordering};
 use iceoryx2_bb_concurrency::internal::strategy::semaphore::*;
 use iceoryx2_bb_concurrency::{WaitAction, WaitResult};
 use iceoryx2_bb_posix::{clock::nanosleep, thread::thread_scope};
