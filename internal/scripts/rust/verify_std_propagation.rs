@@ -44,6 +44,7 @@ struct Package {
 #[derive(Deserialize, Debug)]
 struct Workspace {
     members: Option<Vec<String>>,
+    dependencies: Option<toml::Table>,
 }
 
 struct WorkspaceContext {
@@ -80,11 +81,9 @@ fn find_workspace_root(start: &Path) -> Option<PathBuf> {
     loop {
         let candidate = current.join("Cargo.toml");
         if candidate.exists() {
-            if let Ok(content) = fs::read_to_string(&candidate) {
-                if let Ok(value) = toml::from_str::<toml::Value>(&content) {
-                    if value.get("workspace").is_some() {
-                        return Some(current);
-                    }
+            if let Ok(cargo_toml) = load_toml(&candidate) {
+                if cargo_toml.workspace.is_some() {
+                    return Some(current);
                 }
             }
         }
@@ -99,13 +98,10 @@ fn load_workspace_context(crate_directory: &Path) -> Result<WorkspaceContext> {
     let workspace_root =
         find_workspace_root(crate_directory).expect("Could not find workspace root");
 
-    let content = fs::read_to_string(workspace_root.join("Cargo.toml"))?;
-    let value = toml::from_str::<toml::Value>(&content)?;
-    let workspace_dependencies = match value
-        .get("workspace")
-        .and_then(|workspace| workspace.get("dependencies"))
-        .and_then(|dependencies| dependencies.as_table())
-        .cloned()
+    let workspace_toml = load_toml(&workspace_root.join("Cargo.toml"))?;
+    let workspace_dependencies = match workspace_toml
+        .workspace
+        .and_then(|workspace| workspace.dependencies)
     {
         Some(dependencies) => dependencies,
         None => toml::Table::new(),
