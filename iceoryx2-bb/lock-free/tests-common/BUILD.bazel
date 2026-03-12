@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Contributors to the Eclipse Foundation
+# Copyright (c) 2026 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
 # information regarding copyright ownership.
@@ -20,25 +20,26 @@ filegroup(
 )
 
 rust_library(
-    name = "iceoryx2-bb-lock-free",
+    name = "iceoryx2-bb-lock-free-tests-common",
     srcs = glob(["src/**/*.rs"]),
+    crate_features = select({
+        "//:cfg_feature_std": [
+            "std",
+        ],
+        "//conditions:default": [
+        ],
+    }),
     deps = [
+        "//iceoryx2-bb/lock-free:iceoryx2-bb-lock-free",
         "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
         "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
-        "//iceoryx2-log/log:iceoryx2-log",
         "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
-    ],
-)
-
-rust_test_suite(
-    name = "iceoryx2-bb-lock-free-tests",
-    srcs = glob(["tests/**/*.rs"]),
-    deps = [
-        "//iceoryx2-bb/lock-free/tests-common:iceoryx2-bb-lock-free-tests-common",
-        "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
+        "//iceoryx2-bb/posix:iceoryx2-bb-posix",
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
+        "//iceoryx2-pal/print:iceoryx2-pal-print",
+        "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
     ],
     proc_macro_deps = [
-        "@crate_index//:generic-tests",
+        "//iceoryx2-bb/testing-nostd-macros:iceoryx2-bb-testing-nostd-macros",
     ],
 )
