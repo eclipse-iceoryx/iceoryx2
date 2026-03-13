@@ -82,6 +82,8 @@ CRATES_TO_IGNORE=(
     iceoryx2-bb-threadsafe-tests-nostd
     iceoryx2-bb-concurrency-tests-common
     iceoryx2-bb-concurrency-tests-nostd
+    iceoryx2-bb-trait-tests-common
+    iceoryx2-bb-trait-tests-nostd
 )
 
 if [[ "$#" -eq 0 ]]; then
