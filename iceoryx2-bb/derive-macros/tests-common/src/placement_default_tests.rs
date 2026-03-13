@@ -10,11 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
-
 use iceoryx2_bb_derive_macros::PlacementDefault;
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_testing::{assert_that, memory::RawMemory};
+use iceoryx2_pal_concurrency_sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 
 static DEFAULT_CTOR_COUNT: AtomicUsize = AtomicUsize::new(0);
 static FUU_VALUE: AtomicU64 = AtomicU64::new(0);

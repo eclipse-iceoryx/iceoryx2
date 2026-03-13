@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 use iceoryx2_bb_derive_macros_tests_common::zero_copy_send_tests;
 use iceoryx2_bb_testing_nostd_macros::inventory_test;
 
