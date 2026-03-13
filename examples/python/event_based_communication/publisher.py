@@ -90,7 +90,7 @@ print("Publisher ready to send and process events!")
 
 try:
     while True:
-        (notifications, result) = waitset.wait_and_process()
+        notifications, result = waitset.wait_and_process()
         if result in (
             iox2.WaitSetRunResult.TerminationRequest,
             iox2.WaitSetRunResult.Interrupt,

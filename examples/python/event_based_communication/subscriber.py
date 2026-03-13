@@ -99,7 +99,7 @@ print("Subscriber ready to receive data!")
 
 try:
     while True:
-        (notifications, result) = waitset.wait_and_process()
+        notifications, result = waitset.wait_and_process()
         if result in (
             iox2.WaitSetRunResult.TerminationRequest,
             iox2.WaitSetRunResult.Interrupt,

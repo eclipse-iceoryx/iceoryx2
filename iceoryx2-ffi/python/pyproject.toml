@@ -60,7 +60,7 @@ python = ">=3.10,<4.0"
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.4.1"
 prospector = {extras = ["with_mypy"], version = "^1.17.2"}
-black = "^25.1.0"
+black = "^26.3.1"
 isort = "^6.0.1"
 bandit = "^1.8.6"
 maturin = "^1.9.1"
