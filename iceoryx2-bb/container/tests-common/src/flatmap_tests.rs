@@ -231,7 +231,7 @@ pub fn list_keys_works_correctly() {
     });
     assert_that!(listed_keys, len CAPA);
     for k in &keys {
-        assert_that!(listed_keys.contains(&k), eq true);
+        assert_that!(listed_keys.contains(k), eq true);
     }
 
     listed_keys.clear();

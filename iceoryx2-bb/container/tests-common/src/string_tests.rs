@@ -53,7 +53,7 @@ pub struct RelocatableStringFactory {
 }
 
 impl RelocatableStringFactory {
-    fn allocator<'a>(&'a self) -> &'a BumpAllocator {
+    fn allocator(&self) -> &BumpAllocator {
         unsafe {
             if (*self.allocator.get()).is_none() {
                 *self.allocator.get() = Some(Box::new(BumpAllocator::new(
@@ -459,13 +459,13 @@ pub fn insert_bytes_at_the_start_works<Factory: StringTestFactory>() {
 pub fn insert_bytes_in_the_middle_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
-    let mut temp = vec![];
     const BYTES: [u8; 4] = [33, 44, 55, 66];
 
-    for _ in 0..SUT_CAPACITY - 4 {
+    const SIZE: usize = SUT_CAPACITY - 4;
+    for _ in 0..SIZE {
         assert_that!(sut.push(34), is_ok);
-        temp.push(34u8);
     }
+    let mut temp = vec![34u8; SIZE];
 
     temp.insert(SUT_CAPACITY / 2, 66);
     temp.insert(SUT_CAPACITY / 2, 55);
@@ -1019,17 +1019,19 @@ pub fn deref_mut_works<Factory: StringTestFactory>() {
 
 pub fn equality_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
-    let mut sut_1 = factory.create_sut();
+    let mut sut_1a = factory.create_sut();
+    let mut sut_1b = factory.create_sut();
     let mut sut_2 = factory.create_sut();
 
-    assert_that!(sut_1.push_bytes(b"funzel"), is_ok);
+    assert_that!(sut_1a.push_bytes(b"funzel"), is_ok);
+    assert_that!(sut_1b.push_bytes(b"funzel"), is_ok);
     assert_that!(sut_2.push_bytes(b"rafunzel"), is_ok);
 
-    assert_that!(sut_1 == sut_1, eq true);
-    assert_that!(sut_1 == sut_2, eq false);
+    assert_that!(sut_1a == sut_1b, eq true);
+    assert_that!(sut_1a == sut_2, eq false);
 
-    assert_that!(*sut_1 == *sut_1, eq true);
-    assert_that!(*sut_1 == *sut_2, eq false);
+    assert_that!(*sut_1a == *sut_1b, eq true);
+    assert_that!(*sut_1a == *sut_2, eq false);
 }
 
 pub fn error_display_works() {
