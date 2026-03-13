@@ -33,7 +33,9 @@
   [#1376](https://github.com/eclipse-iceoryx/iceoryx2/issues/1376)
 * Add `iox2 service hz` command with rolling-rate statistics and timeout support
   [#1383](https://github.com/eclipse-iceoryx/iceoryx2/issues/1383)
-
+* Add missing Publisher getters
+  [#1425](https://github.com/eclipse-iceoryx/iceoryx2/issues/1425)
+  
 ### Bugfixes
 
 <!--

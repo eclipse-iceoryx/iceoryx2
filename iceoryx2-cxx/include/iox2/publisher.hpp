@@ -53,6 +53,14 @@ class Publisher {
     template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto initial_max_slice_len() const -> uint64_t;
 
+    /// Returns the maximum number of [`SampleMut`] that can be loaned in parallel.
+    auto max_loaned_samples() const -> uint64_t;
+
+    /// Returns the [`AllocationStrategy`] that is used when the provided [`Publisher`] loans a slice bigger than the
+    /// initial maximum slice length.
+    template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
+    auto allocation_strategy() const -> AllocationStrategy;
+
     /// Copies the input `value` into a [`SampleMut`] and delivers it.
     /// On success it returns the number of [`Subscriber`]s that received
     /// the data, otherwise a [`SendError`] describing the failure.
@@ -156,6 +164,18 @@ template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
 inline auto Publisher<S, Payload, UserHeader>::initial_max_slice_len() const -> uint64_t {
     return iox2_publisher_initial_max_slice_len(&m_handle);
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto Publisher<S, Payload, UserHeader>::max_loaned_samples() const -> uint64_t{
+    return iox2_publisher_max_loaned_samples(&m_handle);
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+template <typename T, typename>
+inline auto Publisher<S, Payload, UserHeader>::allocation_strategy() const -> AllocationStrategy {
+    return iox2::bb::into<AllocationStrategy>(
+        static_cast<int>(iox2_publisher_allocation_strategy(&m_handle)));
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
