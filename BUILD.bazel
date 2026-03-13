@@ -274,6 +274,7 @@ filegroup(
         "//iceoryx2-bb/container:all_srcs",
         "//iceoryx2-bb/container/tests-common:all_srcs",
         "//iceoryx2-bb/derive-macros:all_srcs",
+        "//iceoryx2-bb/derive-macros/tests-common:all_srcs",
         "//iceoryx2-bb/elementary:all_srcs",
         "//iceoryx2-bb/elementary/tests-common:all_srcs",
         "//iceoryx2-bb/elementary-traits:all_srcs",

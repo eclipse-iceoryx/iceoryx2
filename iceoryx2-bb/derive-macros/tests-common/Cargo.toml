@@ -1,0 +1,28 @@
+[package]
+name = "iceoryx2-bb-derive-macros-tests-common"
+description = "iceoryx2: [internal] common test definitions for iceoryx2-bb-derive-macros"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[lints]
+workspace = true
+
+[features]
+default = []
+std = [
+  "iceoryx2-bb-derive-macros/std",
+  "iceoryx2-bb-testing/std",
+  "iceoryx2-pal-concurrency-sync/std",
+]
+
+[dependencies]
+iceoryx2-bb-derive-macros = { workspace = true }
+iceoryx2-bb-elementary-traits = { workspace = true }
+iceoryx2-bb-testing = { workspace = true }
+iceoryx2-pal-concurrency-sync = { workspace = true }

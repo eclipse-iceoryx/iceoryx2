@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Contributors to the Eclipse Foundation
+# Copyright (c) 2026 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
 # information regarding copyright ownership.
@@ -12,29 +12,29 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("@rules_rust//rust:defs.bzl", "rust_proc_macro", "rust_test_suite")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test_suite")
 
 filegroup(
     name = "all_srcs",
     srcs = glob(["**"]),
 )
 
-rust_proc_macro(
-    name = "iceoryx2-bb-derive-macros",
+rust_library(
+    name = "iceoryx2-bb-derive-macros-tests-common",
     srcs = glob(["src/**/*.rs"]),
+    crate_features = select({
+        "//:cfg_feature_std": [
+            "std",
+        ],
+        "//conditions:default": [
+        ],
+    }),
     deps = [
-        "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
         "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
-        "@crate_index//:proc-macro2",
-        "@crate_index//:quote",
-        "@crate_index//:syn",
+        "//iceoryx2-bb/testing:iceoryx2-bb-testing",
+        "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
     ],
-)
-
-rust_test_suite(
-    name = "iceoryx2-bb-derive-macros-tests",
-    srcs = glob(["tests/**/*.rs"]),
-    deps = [
-        "//iceoryx2-bb/derive-macros/tests-common:iceoryx2-bb-derive-macros-tests-common",
+    proc_macro_deps = [
+        "//iceoryx2-bb/derive-macros:iceoryx2-bb-derive-macros",
     ],
 )

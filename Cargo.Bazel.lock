@@ -1,5 +1,5 @@
 {
-  "checksum": "4d58d6186eb8bd85b0d608d29e07387ca6b532ad361fba3f560fd49797bacf31",
+  "checksum": "9484b3e022573c7c96ac257c9c155e2aa51fa2552c651df10bc7dcf3ef01385c",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -8447,6 +8447,75 @@
               "id": "syn 2.0.114",
               "target": "syn"
             }
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "0.8.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-bb-derive-macros-tests-common 0.8.999": {
+      "name": "iceoryx2-bb-derive-macros-tests-common",
+      "version": "0.8.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_bb_derive_macros_tests_common",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_bb_derive_macros_tests_common",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "0.8.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-bb-derive-macros-tests-nostd 0.8.999": {
+      "name": "iceoryx2-bb-derive-macros-tests-nostd",
+      "version": "0.8.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [],
+      "library_target_name": null,
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
           ],
           "selects": {}
         },
@@ -34111,6 +34180,8 @@
     "iceoryx2-bb-container-tests-common 0.8.999": "iceoryx2-bb/container/tests-common",
     "iceoryx2-bb-container-tests-nostd 0.8.999": "iceoryx2-bb/container/tests-nostd",
     "iceoryx2-bb-derive-macros 0.8.999": "iceoryx2-bb/derive-macros",
+    "iceoryx2-bb-derive-macros-tests-common 0.8.999": "iceoryx2-bb/derive-macros/tests-common",
+    "iceoryx2-bb-derive-macros-tests-nostd 0.8.999": "iceoryx2-bb/derive-macros/tests-nostd",
     "iceoryx2-bb-elementary 0.8.999": "iceoryx2-bb/elementary",
     "iceoryx2-bb-elementary-tests-common 0.8.999": "iceoryx2-bb/elementary/tests-common",
     "iceoryx2-bb-elementary-tests-nostd 0.8.999": "iceoryx2-bb/elementary/tests-nostd",

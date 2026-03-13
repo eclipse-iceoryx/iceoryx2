@@ -10,51 +10,54 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_derive_macros_tests_common::zero_copy_send_tests;
+#![allow(clippy::disallowed_types)]
 
-#[test]
+use iceoryx2_bb_derive_macros_tests_common::zero_copy_send_tests;
+use iceoryx2_bb_testing_nostd_macros::inventory_test;
+
+#[inventory_test]
 fn zero_copy_send_derive_works_for_named_struct() {
     zero_copy_send_tests::zero_copy_send_derive_works_for_named_struct();
 }
 
-#[test]
+#[inventory_test]
 fn zero_copy_send_derive_works_for_unnamed_struct() {
     zero_copy_send_tests::zero_copy_send_derive_works_for_unnamed_struct();
 }
 
-#[test]
+#[inventory_test]
 fn zero_copy_send_derive_works_for_generic_named_struct() {
     zero_copy_send_tests::zero_copy_send_derive_works_for_generic_named_struct();
 }
 
-#[test]
+#[inventory_test]
 fn zero_copy_send_derive_works_for_generic_unnamed_struct() {
     zero_copy_send_tests::zero_copy_send_derive_works_for_generic_unnamed_struct();
 }
 
-#[test]
+#[inventory_test]
 fn zero_copy_send_derive_sets_type_name_correctly_for_named_structs() {
     zero_copy_send_tests::zero_copy_send_derive_sets_type_name_correctly_for_named_structs();
 }
 
-#[test]
+#[inventory_test]
 fn zero_copy_send_derive_sets_type_name_correctly_for_unnamed_structs() {
     zero_copy_send_tests::zero_copy_send_derive_sets_type_name_correctly_for_unnamed_structs();
 }
 
-#[test]
+#[inventory_test]
 fn zero_copy_send_derive_sets_type_name_correctly_for_generic_named_structs() {
     zero_copy_send_tests::zero_copy_send_derive_sets_type_name_correctly_for_generic_named_structs(
     );
 }
 
-#[test]
+#[inventory_test]
 fn zero_copy_send_derive_sets_type_name_correctly_for_generic_unnamed_struct() {
     zero_copy_send_tests::zero_copy_send_derive_sets_type_name_correctly_for_generic_unnamed_struct(
     );
 }
 
-#[test]
+#[inventory_test]
 fn zero_copy_send_derive_for_unions() {
     zero_copy_send_tests::zero_copy_send_derive_for_unions();
 }
