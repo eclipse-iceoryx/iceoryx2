@@ -23,6 +23,10 @@ pub trait IsTerminal {
     fn is_terminal(&self) -> bool;
 }
 
+/// Writes to STDOUT without a trailing newline.
+///
+/// Each macro invocation maps to a single `write()` syscall. Whether that
+/// write is atomic is platform-specific.
 #[macro_export]
 macro_rules! cout {
     ($($arg:tt)*) => {{
@@ -31,6 +35,10 @@ macro_rules! cout {
     }};
 }
 
+/// Writes to STDOUT with a trailing newline.
+///
+/// Each macro invocation maps to a single `write()` syscall. Whether that
+/// write is atomic is platform-specific.
 #[macro_export]
 macro_rules! coutln {
     ($($arg:tt)*) => {{
@@ -39,6 +47,10 @@ macro_rules! coutln {
     }};
 }
 
+/// Writes to STDOUT without a newline.
+///
+/// Each macro invocation maps to a single `write()` syscall. Whether that
+/// write is atomic is platform-specific.
 #[macro_export]
 macro_rules! cerr {
     ($($arg:tt)*) => {{
@@ -47,10 +59,14 @@ macro_rules! cerr {
     }};
 }
 
+/// Writes to STDERR with a trailing newline.
+///
+/// Each macro invocation maps to a single `write()` syscall. Whether that
+/// write is atomic is platform-specific.
 #[macro_export]
 macro_rules! cerrln {
-    ($($arg:tt)*) => {
+    ($($arg:tt)*) => {{
         use core::fmt::Write as _;
         let _ = core::writeln!($crate::writer::stderr(), $($arg)*);
-    };
+    }};
 }
