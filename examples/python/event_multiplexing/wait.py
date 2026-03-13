@@ -45,7 +45,7 @@ print("Waiting on the following services: ", sys.argv[1:None])
 
 try:
     while True:
-        (notifications, result) = waitset.wait_and_process()
+        notifications, result = waitset.wait_and_process()
         if result in (
             iox2.WaitSetRunResult.TerminationRequest,
             iox2.WaitSetRunResult.Interrupt,
@@ -53,7 +53,7 @@ try:
             break
 
         for attachment in notifications:
-            (service_name, listener) = listener_attachments[attachment]
+            service_name, listener = listener_attachments[attachment]
             print('Received trigger from "', service_name, '"')
 
             event_ids = listener.try_wait_all()

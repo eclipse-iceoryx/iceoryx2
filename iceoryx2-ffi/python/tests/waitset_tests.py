@@ -144,7 +144,7 @@ def test_wait_and_process_returns_when_timeout_has_passed(
 ) -> None:
     sut = iox2.WaitSetBuilder.new().create(service_type)
     guard = sut.attach_interval(iox2.Duration.from_secs(123))
-    (triggers, result) = sut.wait_and_process_with_timeout(iox2.Duration.from_millis(1))
+    triggers, result = sut.wait_and_process_with_timeout(iox2.Duration.from_millis(1))
     assert len(triggers) == 0
     assert result == iox2.WaitSetRunResult.AllEventsHandled
 
@@ -187,7 +187,7 @@ def test_wait_and_process_returns_triggered_listeners(
     notifiers[0].notify()
     notifiers[1].notify()
 
-    (triggers, result) = sut.wait_and_process()
+    triggers, result = sut.wait_and_process()
     assert len(triggers) == 2
     assert result == iox2.WaitSetRunResult.AllEventsHandled
 
@@ -222,7 +222,7 @@ def test_reports_missed_deadline(
     sut = iox2.WaitSetBuilder.new().create(service_type)
     guard = sut.attach_deadline(listener, iox2.Duration.from_nanos(1))
 
-    (triggers, result) = sut.wait_and_process()
+    triggers, result = sut.wait_and_process()
     assert len(triggers) == 1
     assert result == iox2.WaitSetRunResult.AllEventsHandled
 
@@ -246,7 +246,7 @@ def test_create_attachment_id_from_guard(
     guard = sut.attach_deadline(listener, iox2.Duration.from_nanos(1))
     attachment_id = iox2.WaitSetAttachmentId.from_guard(guard)
 
-    (triggers, result) = sut.wait_and_process()
+    triggers, result = sut.wait_and_process()
     assert len(triggers) == 1
     assert result == iox2.WaitSetRunResult.AllEventsHandled
 
