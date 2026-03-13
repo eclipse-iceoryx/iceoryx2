@@ -15,24 +15,15 @@ use core::fmt::{self, Write};
 use crate::IsTerminal;
 
 pub struct Stdout;
+
 pub struct Stderr;
 
-pub fn stdout() -> &'static mut Stdout {
-    static mut STDOUT: Stdout = Stdout;
-
-    unsafe {
-        #[allow(static_mut_refs)]
-        &mut STDOUT
-    }
+pub fn stdout() -> Stdout {
+    Stdout
 }
 
-pub fn stderr() -> &'static mut Stderr {
-    static mut STDERR: Stderr = Stderr;
-
-    unsafe {
-        #[allow(static_mut_refs)]
-        &mut STDERR
-    }
+pub fn stderr() -> Stderr {
+    Stderr
 }
 
 #[cfg(feature = "std")]
