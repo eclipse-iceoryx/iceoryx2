@@ -99,3 +99,15 @@ _detect-host-target toolchain:
     else
         rustc -vV | sed -n 's|host: ||p'
     fi
+
+[private]
+_resolve-manifest-path package:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    MANIFEST=$(cargo metadata --format-version=1 --no-deps \
+        | jq -r --arg pkg "{{package}}" \
+          '.packages[] | select(.name == $pkg) | .manifest_path')
+    if [[ -z "$MANIFEST" ]]; then
+        echo "Error: crate '{{package}}' not found in workspace" >&2; exit 1
+    fi
+    echo "$MANIFEST"

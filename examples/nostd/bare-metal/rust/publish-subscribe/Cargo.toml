@@ -15,6 +15,6 @@ name = "bare_metal_nostd_publish_subscribe"
 path = "src/publish-subscribe.rs"
 
 [dependencies]
-iceoryx2 = { workspace = true }
-iceoryx2-bb-loggers = { workspace = true }
-bare-metal-nostd-common = { workspace = true }
+iceoryx2 = { workspace = true, features = [] }
+iceoryx2-bb-loggers = { workspace = true, features = [] }
+bare-metal-nostd-common = { workspace = true, features = [] }

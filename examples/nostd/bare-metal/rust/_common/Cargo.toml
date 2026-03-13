@@ -9,5 +9,5 @@ default = []
 semihosting = []
 
 [dependencies]
-iceoryx2-bb-memory = { workspace = true }
-iceoryx2-bb-concurrency = { workspace = true }
+iceoryx2-bb-memory = { workspace = true, features = [] }
+iceoryx2-bb-concurrency = { workspace = true, features = [] }

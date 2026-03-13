@@ -15,6 +15,7 @@ default = []
 
 std = [
   "iceoryx2-pal-print/std",
+  "iceoryx2-pal-posix/std",
   "iceoryx2-pal-concurrency-sync/std"
 ]
 

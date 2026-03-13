@@ -7,6 +7,6 @@ version = { workspace = true }
 rust-version = { workspace = true }
 
 [dependencies]
-iceoryx2 = { workspace = true }
-iceoryx2-bb-elementary-traits = { workspace = true }
-iceoryx2-bb-memory = { workspace = true }
+iceoryx2 = { workspace = true, features = [] }
+iceoryx2-bb-elementary-traits = { workspace = true, features = [] }
+iceoryx2-bb-memory = { workspace = true, features = [] }

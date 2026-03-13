@@ -18,9 +18,13 @@ path = "src/lib.rs"
 [features]
 default = ["std"]
 std = [
+  "iceoryx2-log/std",
+  "iceoryx2-services-discovery/std",
+  "iceoryx2-tunnel-backend/std",
   "iceoryx2/std",
+  "iceoryx2-bb-container/std",
   "iceoryx2-bb-concurrency/std",
-  "iceoryx2-bb-posix/std"
+  "iceoryx2-bb-posix/std",
 ]
 
 [dependencies]
