@@ -55,6 +55,21 @@ impl From<iox2_allocation_strategy_e> for AllocationStrategy {
     }
 }
 
+impl From<AllocationStrategy> for iox2_allocation_strategy_e {
+    fn from(value: AllocationStrategy) -> Self {
+        match value {
+            AllocationStrategy::Static => iox2_allocation_strategy_e::STATIC,
+            AllocationStrategy::BestFit => iox2_allocation_strategy_e::BEST_FIT,
+            AllocationStrategy::PowerOfTwo => iox2_allocation_strategy_e::POWER_OF_TWO,
+        }
+    }
+}
+
+impl IntoCInt for AllocationStrategy {
+    fn into_c_int(self) -> c_int {
+        Into::<iox2_allocation_strategy_e>::into(self) as c_int
+    }
+}
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub enum iox2_unable_to_deliver_strategy_e {
