@@ -52,6 +52,12 @@ unsafe impl GlobalAlloc for GlobalHeapAllocator {
     }
 }
 
+impl Default for GlobalHeapAllocator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[global_allocator]
 static GLOBAL: GlobalHeapAllocator = GlobalHeapAllocator::new();
 

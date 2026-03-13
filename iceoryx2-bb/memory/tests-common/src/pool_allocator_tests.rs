@@ -482,8 +482,8 @@ pub fn pool_allocator_relocatable_acquire_all_memory_works() {
         mgmt_memory_slice.len(),
     );
 
-    for i in mgmt_memory_size..mgmt_memory_size + 100 {
-        assert_that!(mgmt_memory[i], eq 137u8);
+    for byte in mgmt_memory.iter().skip(mgmt_memory_size).take(100) {
+        assert_that!(byte, eq & 137u8);
     }
 
     assert_that!(unsafe { sut.init(&bump_allocator) }, is_ok);
