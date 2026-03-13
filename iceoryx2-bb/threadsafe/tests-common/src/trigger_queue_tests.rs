@@ -12,28 +12,21 @@
 
 use core::time::Duration;
 
+use iceoryx2_bb_concurrency::atomic::AtomicU64;
+use iceoryx2_bb_concurrency::atomic::Ordering;
+use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle};
+use iceoryx2_bb_posix::clock::nanosleep;
 use iceoryx2_bb_posix::clock::Time;
 use iceoryx2_bb_posix::mutex::MutexHandle;
 use iceoryx2_bb_posix::semaphore::*;
+use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_nostd_macros::requires_std;
+use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_threadsafe::trigger_queue::*;
 
 const TIMEOUT: Duration = Duration::from_millis(100);
 const SUT_CAPACITY: usize = 128;
 type Sut<'a> = TriggerQueue<'a, usize, SUT_CAPACITY>;
-
-#[cfg(feature = "std")]
-use std_testing::*;
-
-#[cfg(feature = "std")]
-mod std_testing {
-    pub use iceoryx2_bb_concurrency::atomic::AtomicU64;
-    pub use iceoryx2_bb_concurrency::atomic::Ordering;
-    pub use iceoryx2_bb_posix::clock::nanosleep;
-    pub use iceoryx2_bb_testing::watchdog::Watchdog;
-    pub use std::thread;
-}
 
 pub fn trigger_queue_new_queue_is_empty() {
     let mtx_handle = MutexHandle::new();
@@ -154,7 +147,6 @@ pub fn trigger_queue_timed_pop_blocks_at_least_until_timeout_has_passed() {
     assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT);
 }
 
-#[requires_std("threading")]
 pub fn trigger_queue_blocking_push_blocks_until_there_is_space_again() {
     let _watchdog = Watchdog::new();
     let mtx_handle = MutexHandle::new();
@@ -168,11 +160,13 @@ pub fn trigger_queue_blocking_push_blocks_until_there_is_space_again() {
         sut.blocking_push(0);
     }
 
-    thread::scope(|s| {
-        s.spawn(|| {
-            sut.blocking_push(0);
-            counter.store(1, Ordering::SeqCst);
-        });
+    thread_scope(|s| {
+        s.thread_builder()
+            .spawn(|| {
+                sut.blocking_push(0);
+                counter.store(1, Ordering::SeqCst);
+            })
+            .expect("failed to spawn thread");
 
         nanosleep(TIMEOUT).unwrap();
         let counter_old = counter.load(Ordering::SeqCst);
@@ -182,10 +176,12 @@ pub fn trigger_queue_blocking_push_blocks_until_there_is_space_again() {
 
         // if the thread is not unblocked the counter stays zero until the watchdog intervenes
         while counter.load(Ordering::SeqCst) == 0 {}
-    });
+
+        Ok(())
+    })
+    .expect("failed to spawn thread");
 }
 
-#[requires_std("threading")]
 pub fn trigger_queue_blocking_pop_blocks_until_there_is_something_pushed() {
     let _watchdog = Watchdog::new();
     let mtx_handle = MutexHandle::new();
@@ -196,11 +192,13 @@ pub fn trigger_queue_blocking_pop_blocks_until_there_is_something_pushed() {
 
     let counter = AtomicU64::new(0);
 
-    thread::scope(|s| {
-        s.spawn(|| {
-            sut.blocking_pop();
-            counter.store(1, Ordering::SeqCst);
-        });
+    thread_scope(|s| {
+        s.thread_builder()
+            .spawn(|| {
+                sut.blocking_pop();
+                counter.store(1, Ordering::SeqCst);
+            })
+            .expect("failed to spawn thread");
 
         nanosleep(TIMEOUT).unwrap();
         let counter_old = counter.load(Ordering::SeqCst);
@@ -210,52 +208,64 @@ pub fn trigger_queue_blocking_pop_blocks_until_there_is_something_pushed() {
 
         // if the thread is not unblocked the counter stays zero until the watchdog intervenes
         while counter.load(Ordering::SeqCst) == 0 {}
-    });
+
+        Ok(())
+    })
+    .expect("failed to spawn thread");
 }
 
-#[requires_std("threading")]
 pub fn trigger_queue_one_pop_notifies_exactly_one_blocking_push() {
     let _watchdog = Watchdog::new();
-    const NUMBER_OF_THREADS: u64 = 2;
+    const NUMBER_OF_THREADS: u32 = 2;
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
     let used_handle = UnnamedSemaphoreHandle::new();
+    let barrier_handle = BarrierHandle::new();
+    let barrier = BarrierBuilder::new(NUMBER_OF_THREADS + 1)
+        .create(&barrier_handle)
+        .unwrap();
 
     let sut = Sut::new(&mtx_handle, &free_handle, &used_handle);
-    let barrier = std::sync::Barrier::new(NUMBER_OF_THREADS as usize + 1);
 
     let counter = AtomicU64::new(0);
     for _ in 0..SUT_CAPACITY {
         sut.blocking_push(0);
     }
 
-    thread::scope(|s| {
+    thread_scope(|s| {
         for _ in 0..NUMBER_OF_THREADS {
-            s.spawn(|| {
-                barrier.wait();
-                sut.blocking_push(0);
-                counter.fetch_add(1, Ordering::SeqCst);
-            });
+            s.thread_builder()
+                .spawn(|| {
+                    barrier.wait();
+                    sut.blocking_push(0);
+                    counter.fetch_add(1, Ordering::SeqCst);
+                })
+                .expect("failed to spawn thread");
         }
 
         barrier.wait();
         for i in 0..NUMBER_OF_THREADS {
             nanosleep(TIMEOUT).unwrap();
-            assert_that!(|| counter.load(Ordering::SeqCst), eq i, before Watchdog::default());
+            assert_that!(|| counter.load(Ordering::SeqCst), eq i.into(), before Watchdog::default());
             sut.blocking_pop();
         }
-    });
+
+        Ok(())
+    })
+    .expect("failed to spawn thread");
 }
 
-#[requires_std("threading")]
 pub fn trigger_queue_one_pop_notifies_exactly_one_timed_push() {
-    const NUMBER_OF_THREADS: u64 = 2;
+    const NUMBER_OF_THREADS: u32 = 2;
 
     let _watchdog = Watchdog::new();
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
     let used_handle = UnnamedSemaphoreHandle::new();
-    let barrier = std::sync::Barrier::new(NUMBER_OF_THREADS as usize + 1);
+    let barrier_handle = BarrierHandle::new();
+    let barrier = BarrierBuilder::new(NUMBER_OF_THREADS + 1)
+        .create(&barrier_handle)
+        .unwrap();
 
     let sut = Sut::new(&mtx_handle, &free_handle, &used_handle);
     let counter = AtomicU64::new(0);
@@ -263,81 +273,100 @@ pub fn trigger_queue_one_pop_notifies_exactly_one_timed_push() {
         sut.blocking_push(0);
     }
 
-    thread::scope(|s| {
+    thread_scope(|s| {
         for _ in 0..NUMBER_OF_THREADS {
-            s.spawn(|| {
-                barrier.wait();
-                assert_that!(sut.timed_push(0, TIMEOUT * 1000), eq true);
-                counter.fetch_add(1, Ordering::SeqCst);
-            });
+            s.thread_builder()
+                .spawn(|| {
+                    barrier.wait();
+                    assert_that!(sut.timed_push(0, TIMEOUT * 1000), eq true);
+                    counter.fetch_add(1, Ordering::SeqCst);
+                })
+                .expect("failed to spawn thread");
         }
 
         barrier.wait();
         for i in 0..NUMBER_OF_THREADS {
             nanosleep(TIMEOUT).unwrap();
-            assert_that!(|| counter.load(Ordering::SeqCst), eq i, before Watchdog::default());
+            assert_that!(|| counter.load(Ordering::SeqCst), eq i.into(), before Watchdog::default());
             sut.blocking_pop();
         }
-    });
+
+        Ok(())
+    })
+    .expect("failed to spawn thread");
 }
 
-#[requires_std("threading")]
 pub fn trigger_queue_one_push_notifies_exactly_one_blocking_pop() {
     let _watchdog = Watchdog::new();
-    const NUMBER_OF_THREADS: u64 = 2;
+    const NUMBER_OF_THREADS: u32 = 2;
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
     let used_handle = UnnamedSemaphoreHandle::new();
+    let barrier_handle = BarrierHandle::new();
+    let barrier = BarrierBuilder::new(NUMBER_OF_THREADS + 1)
+        .create(&barrier_handle)
+        .unwrap();
 
     let sut = Sut::new(&mtx_handle, &free_handle, &used_handle);
     let counter = AtomicU64::new(0);
-    let barrier = std::sync::Barrier::new(NUMBER_OF_THREADS as usize + 1);
 
-    thread::scope(|s| {
+    thread_scope(|s| {
         for _ in 0..NUMBER_OF_THREADS {
-            s.spawn(|| {
-                barrier.wait();
-                sut.blocking_pop();
-                counter.fetch_add(1, Ordering::SeqCst);
-            });
+            s.thread_builder()
+                .spawn(|| {
+                    barrier.wait();
+                    sut.blocking_pop();
+                    counter.fetch_add(1, Ordering::SeqCst);
+                })
+                .expect("failed to spawn thread");
         }
 
         barrier.wait();
 
         for i in 0..NUMBER_OF_THREADS {
             nanosleep(TIMEOUT).unwrap();
-            assert_that!(|| counter.load(Ordering::SeqCst), eq i, before Watchdog::default());
+            assert_that!(|| counter.load(Ordering::SeqCst), eq i.into(), before Watchdog::default());
             sut.blocking_push(0);
         }
-    });
+
+        Ok(())
+    })
+    .expect("failed to spawn thread");
 }
 
-#[requires_std("threading")]
 pub fn trigger_queue_one_push_notifies_exactly_one_timed_pop() {
-    const NUMBER_OF_THREADS: u64 = 2;
+    const NUMBER_OF_THREADS: u32 = 2;
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
     let used_handle = UnnamedSemaphoreHandle::new();
+    let barrier_handle = BarrierHandle::new();
+    let barrier = BarrierBuilder::new(NUMBER_OF_THREADS + 1)
+        .create(&barrier_handle)
+        .unwrap();
 
     let sut = Sut::new(&mtx_handle, &free_handle, &used_handle);
     let counter = AtomicU64::new(0);
-    let barrier = std::sync::Barrier::new(NUMBER_OF_THREADS as usize + 1);
 
-    thread::scope(|s| {
+    thread_scope(|s| {
         for _ in 0..NUMBER_OF_THREADS {
-            s.spawn(|| {
-                barrier.wait();
-                sut.timed_pop(TIMEOUT * 1000);
-                counter.fetch_add(1, Ordering::SeqCst);
-            });
+            s.thread_builder()
+                .spawn(|| {
+                    barrier.wait();
+                    sut.timed_pop(TIMEOUT * 1000);
+                    counter.fetch_add(1, Ordering::SeqCst);
+                })
+                .expect("failed to spawn thread");
         }
 
         barrier.wait();
 
         for i in 0..NUMBER_OF_THREADS {
             nanosleep(TIMEOUT).unwrap();
-            assert_that!(|| counter.load(Ordering::SeqCst), eq i, before Watchdog::default());
+            assert_that!(|| counter.load(Ordering::SeqCst), eq i.into(), before Watchdog::default());
             sut.blocking_push(0);
         }
-    });
+
+        Ok(())
+    })
+    .expect("failed to spawn thread");
 }
