@@ -1,5 +1,5 @@
 {
-  "checksum": "1e8ee65a061d6205f4ecb03d9bde44370405c1a266e06274af82eccbbcfdebae",
+  "checksum": "4d58d6186eb8bd85b0d608d29e07387ca6b532ad361fba3f560fd49797bacf31",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -8314,6 +8314,85 @@
           ],
           "selects": {}
         },
+        "version": "0.8.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-bb-container-tests-common 0.8.999": {
+      "name": "iceoryx2-bb-container-tests-common",
+      "version": "0.8.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_bb_container_tests_common",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_bb_container_tests_common",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "serde_test",
+            "std"
+          ],
+          "selects": {}
+        },
+        "deps": {
+          "common": [
+            {
+              "id": "serde_test 1.0.177",
+              "target": "serde_test"
+            }
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "0.8.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-bb-container-tests-nostd 0.8.999": {
+      "name": "iceoryx2-bb-container-tests-nostd",
+      "version": "0.8.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [],
+      "library_target_name": null,
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -34029,6 +34108,8 @@
     "iceoryx2-bb-concurrency-tests-nostd 0.8.999": "iceoryx2-bb/concurrency/tests-nostd",
     "iceoryx2-bb-conformance-test-macros 0.8.999": "iceoryx2-bb/conformance-test-macros",
     "iceoryx2-bb-container 0.8.999": "iceoryx2-bb/container",
+    "iceoryx2-bb-container-tests-common 0.8.999": "iceoryx2-bb/container/tests-common",
+    "iceoryx2-bb-container-tests-nostd 0.8.999": "iceoryx2-bb/container/tests-nostd",
     "iceoryx2-bb-derive-macros 0.8.999": "iceoryx2-bb/derive-macros",
     "iceoryx2-bb-elementary 0.8.999": "iceoryx2-bb/elementary",
     "iceoryx2-bb-elementary-tests-common 0.8.999": "iceoryx2-bb/elementary/tests-common",
@@ -34345,6 +34426,7 @@
     "ron 0.11.0",
     "serde 1.0.228",
     "serde_json 1.0.149",
+    "serde_test 1.0.177",
     "serde_yaml 0.9.34+deprecated",
     "sha1_smol 1.0.1",
     "syn 2.0.114",
@@ -34355,7 +34437,6 @@
   ],
   "direct_dev_deps": [
     "loom 0.7.2",
-    "serde_test 1.0.177",
     "tempfile 3.13.0"
   ],
   "unused_patches": []
