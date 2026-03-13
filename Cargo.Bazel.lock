@@ -1,5 +1,5 @@
 {
-  "checksum": "7b246e28b68d1e5904debc3b6be2111ea8861baa315c375381240939492fd7ba",
+  "checksum": "071f352c366c9d5f0a5ca726f8cb6182f6fa55965e89a53ddb7299d10e12dd30",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -8604,6 +8604,84 @@
         },
         "edition": "2021",
         "proc_macro_deps_dev": {
+          "common": [
+            {
+              "id": "generic-tests 0.1.2",
+              "target": "generic_tests"
+            }
+          ],
+          "selects": {}
+        },
+        "version": "0.8.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-bb-lock-free-tests-common 0.8.999": {
+      "name": "iceoryx2-bb-lock-free-tests-common",
+      "version": "0.8.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_bb_lock_free_tests_common",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_bb_lock_free_tests_common",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "0.8.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-bb-lock-free-tests-nostd 0.8.999": {
+      "name": "iceoryx2-bb-lock-free-tests-nostd",
+      "version": "0.8.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [],
+      "library_target_name": null,
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "proc_macro_deps": {
           "common": [
             {
               "id": "generic-tests 0.1.2",
@@ -33859,6 +33937,8 @@
     "iceoryx2-bb-elementary-traits 0.8.999": "iceoryx2-bb/elementary-traits",
     "iceoryx2-bb-linux 0.8.999": "iceoryx2-bb/linux",
     "iceoryx2-bb-lock-free 0.8.999": "iceoryx2-bb/lock-free",
+    "iceoryx2-bb-lock-free-tests-common 0.8.999": "iceoryx2-bb/lock-free/tests-common",
+    "iceoryx2-bb-lock-free-tests-nostd 0.8.999": "iceoryx2-bb/lock-free/tests-nostd",
     "iceoryx2-bb-loggers 0.8.999": "iceoryx2-bb/loggers",
     "iceoryx2-bb-memory 0.8.999": "iceoryx2-bb/memory",
     "iceoryx2-bb-posix 0.8.999": "iceoryx2-bb/posix",
@@ -34153,6 +34233,7 @@
     "dialoguer 0.8.0",
     "dirs 5.0.1",
     "enum-iterator 2.1.0",
+    "generic-tests 0.1.2",
     "human-panic 2.0.2",
     "inventory 0.3.22",
     "libc 0.2.180",
@@ -34172,7 +34253,6 @@
     "zenoh 1.7.2"
   ],
   "direct_dev_deps": [
-    "generic-tests 0.1.2",
     "loom 0.7.2",
     "serde_test 1.0.177",
     "tempfile 3.13.0"

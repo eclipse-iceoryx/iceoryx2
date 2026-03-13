@@ -1474,11 +1474,39 @@ dependencies = [
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-lock-free-tests-common",
  "iceoryx2-bb-loggers",
- "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
  "iceoryx2-log",
  "loom",
+]
+
+[[package]]
+name = "iceoryx2-bb-lock-free-tests-common"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-lock-free",
+ "iceoryx2-bb-posix",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-nostd-macros",
+ "iceoryx2-pal-concurrency-sync",
+ "iceoryx2-pal-print",
+]
+
+[[package]]
+name = "iceoryx2-bb-lock-free-tests-nostd"
+version = "0.8.999"
+dependencies = [
+ "generic-tests",
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-lock-free-tests-common",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-memory",
+ "iceoryx2-bb-testing-nostd",
+ "iceoryx2-bb-testing-nostd-macros",
 ]
 
 [[package]]

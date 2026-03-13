@@ -10,51 +10,54 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 extern crate iceoryx2_bb_loggers;
 
 use iceoryx2_bb_lock_free_tests_common::spsc_safely_overflowing_index_queue_tests;
+use iceoryx2_bb_testing_nostd_macros::inventory_test;
 
-#[test]
+#[inventory_test]
 fn spsc_safely_overflowing_index_queue_push_works_until_full() {
     spsc_safely_overflowing_index_queue_tests::spsc_safely_overflowing_index_queue_push_works_until_full();
 }
 
-#[test]
+#[inventory_test]
 fn spsc_safely_overflowing_index_queue_pop_works_until_empty() {
     spsc_safely_overflowing_index_queue_tests::spsc_safely_overflowing_index_queue_pop_works_until_empty();
 }
 
-#[test]
+#[inventory_test]
 fn spsc_safely_overflowing_index_queue_push_pop_alteration_works() {
     spsc_safely_overflowing_index_queue_tests::spsc_safely_overflowing_index_queue_push_pop_alteration_works();
 }
 
-#[test]
+#[inventory_test]
 fn spsc_safely_overflowing_index_queue_get_consumer_twice_fails() {
     spsc_safely_overflowing_index_queue_tests::spsc_safely_overflowing_index_queue_get_consumer_twice_fails();
 }
 
-#[test]
+#[inventory_test]
 fn spsc_safely_overflowing_index_queue_get_consumer_after_release_succeeds() {
     spsc_safely_overflowing_index_queue_tests::spsc_safely_overflowing_index_queue_get_consumer_after_release_succeeds();
 }
 
-#[test]
+#[inventory_test]
 fn spsc_safely_overflowing_index_queue_get_producer_twice_fails() {
     spsc_safely_overflowing_index_queue_tests::spsc_safely_overflowing_index_queue_get_producer_twice_fails();
 }
 
-#[test]
+#[inventory_test]
 fn spsc_safely_overflowing_index_queue_get_producer_after_release_succeeds() {
     spsc_safely_overflowing_index_queue_tests::spsc_safely_overflowing_index_queue_get_producer_after_release_succeeds();
 }
 
-#[test]
+#[inventory_test]
 fn spsc_safely_overflowing_index_queue_push_pop_works_concurrently() {
     spsc_safely_overflowing_index_queue_tests::spsc_safely_overflowing_index_queue_push_pop_works_concurrently();
 }
 
-#[test]
+#[inventory_test]
 fn spsc_safely_overflowing_index_queue_push_pop_works_concurrently_with_full_queue() {
     spsc_safely_overflowing_index_queue_tests::spsc_safely_overflowing_index_queue_push_pop_works_concurrently_with_full_queue();
 }

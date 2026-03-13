@@ -10,43 +10,44 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 extern crate iceoryx2_bb_loggers;
 
 use iceoryx2_bb_lock_free_tests_common::bitset_tests;
+use iceoryx2_bb_testing_nostd_macros::inventory_test;
 
-#[test]
+#[inventory_test]
 fn bit_set_create_fill_and_reset_works() {
     bitset_tests::bit_set_create_fill_and_reset_works();
 }
 
-#[test]
+#[inventory_test]
 fn fixed_size_bit_set_create_fill_and_reset_works() {
     bitset_tests::fixed_size_bit_set_create_fill_and_reset_works();
 }
 
-#[test]
+#[inventory_test]
 fn bit_set_set_single_bit_works() {
     bitset_tests::bit_set_set_single_bit_works();
 }
 
-#[test]
-#[should_panic]
-#[cfg(debug_assertions)]
+#[inventory_test]
 fn bit_set_set_bit_outside_of_bitset_leads_to_panic() {
     bitset_tests::bit_set_set_bit_outside_of_bitset_leads_to_panic();
 }
 
-#[test]
+#[inventory_test]
 fn bit_set_set_and_reset_next_works() {
     bitset_tests::bit_set_set_and_reset_next_works();
 }
 
-#[test]
+#[inventory_test]
 fn bit_set_reset_next_is_fair() {
     bitset_tests::bit_set_reset_next_is_fair();
 }
 
-#[test]
+#[inventory_test]
 fn bit_set_concurrent_set_and_reset_works() {
     bitset_tests::bit_set_concurrent_set_and_reset_works();
 }
