@@ -63,6 +63,8 @@
   [#1395](https://github.com/eclipse-iceoryx/iceoryx2/issues/1395)
 * Bump keccak from 0.1.5 to 0.1.6 in Rust and Bazel
   [#1416](https://github.com/eclipse-iceoryx/iceoryx2/issues/1416)
+* Output log entries with single write in console logger
+  [#1432](https://github.com/eclipse-iceoryx/iceoryx2/issues/1432)
 
 ### Refactoring
 
