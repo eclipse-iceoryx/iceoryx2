@@ -14,14 +14,18 @@ use core::fmt::{self, Write};
 
 use crate::IsTerminal;
 
+/// Zero-sized stateless handle to STDOUT.
 pub struct Stdout;
 
+/// Zero-sized stateless handle to STDERR.
 pub struct Stderr;
 
+/// Convenience function to retrieve a handle to stdout.
 pub fn stdout() -> Stdout {
     Stdout
 }
 
+/// Convenience function to retrieve a handle to stderr.
 pub fn stderr() -> Stderr {
     Stderr
 }
