@@ -60,7 +60,7 @@ pub fn strategy_mutex_lock_with_timeout_and_fails_after_timeout() {
     assert_that!(sut.lock(|atomic, value| {
         let start = Time::now().expect("failure retrieving current time");
         while atomic.load(Ordering::Relaxed) == *value {
-            if start.elapsed().unwrap_or(Duration::ZERO) > TIMEOUT {
+            if start.elapsed().expect("failed to get elapsed time") > TIMEOUT {
                 return WaitAction::Abort;
             }
         }
