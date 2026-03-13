@@ -1,5 +1,5 @@
 {
-  "checksum": "071f352c366c9d5f0a5ca726f8cb6182f6fa55965e89a53ddb7299d10e12dd30",
+  "checksum": "1e8ee65a061d6205f4ecb03d9bde44370405c1a266e06274af82eccbbcfdebae",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -8279,6 +8279,13 @@
         "compile_data_glob": [
           "**"
         ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
         "deps": {
           "common": [
             {
@@ -8340,6 +8347,13 @@
         "compile_data_glob": [
           "**"
         ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
         "deps": {
           "common": [
             {
@@ -8546,7 +8560,8 @@
         ],
         "crate_features": {
           "common": [
-            "default"
+            "default",
+            "std"
           ],
           "selects": {}
         },
@@ -8793,6 +8808,75 @@
         }
       ],
       "library_target_name": "iceoryx2_bb_memory",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "0.8.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-bb-memory-tests-common 0.8.999": {
+      "name": "iceoryx2-bb-memory-tests-common",
+      "version": "0.8.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_bb_memory_tests_common",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_bb_memory_tests_common",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "0.8.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-bb-memory-tests-nostd 0.8.999": {
+      "name": "iceoryx2-bb-memory-tests-nostd",
+      "version": "0.8.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [],
+      "library_target_name": null,
       "common_attrs": {
         "compile_data_glob": [
           "**"
@@ -9147,7 +9231,8 @@
         ],
         "crate_features": {
           "common": [
-            "default"
+            "default",
+            "std"
           ],
           "selects": {}
         },
@@ -9679,6 +9764,13 @@
         "compile_data_glob": [
           "**"
         ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
         "deps": {
           "common": [
             {
@@ -9962,6 +10054,13 @@
         "compile_data_glob": [
           "**"
         ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
         "deps": {
           "common": [
             {
@@ -33941,6 +34040,8 @@
     "iceoryx2-bb-lock-free-tests-nostd 0.8.999": "iceoryx2-bb/lock-free/tests-nostd",
     "iceoryx2-bb-loggers 0.8.999": "iceoryx2-bb/loggers",
     "iceoryx2-bb-memory 0.8.999": "iceoryx2-bb/memory",
+    "iceoryx2-bb-memory-tests-common 0.8.999": "iceoryx2-bb/memory/tests-common",
+    "iceoryx2-bb-memory-tests-nostd 0.8.999": "iceoryx2-bb/memory/tests-nostd",
     "iceoryx2-bb-posix 0.8.999": "iceoryx2-bb/posix",
     "iceoryx2-bb-print 0.8.999": "iceoryx2-bb/print",
     "iceoryx2-bb-system-types 0.8.999": "iceoryx2-bb/system-types",

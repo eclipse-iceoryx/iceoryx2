@@ -10,112 +10,109 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 extern crate iceoryx2_bb_loggers;
 
 use iceoryx2_bb_memory_tests_common::pool_allocator_tests;
+use iceoryx2_bb_testing_nostd_macros::inventory_test;
 
-#[test]
+#[inventory_test]
 fn pool_allocator_set_up_correctly() {
     pool_allocator_tests::pool_allocator_set_up_correctly();
 }
 
-#[test]
+#[inventory_test]
 fn pool_allocator_acquire_all_memory_works() {
     pool_allocator_tests::pool_allocator_acquire_all_memory_works();
 }
 
-#[test]
+#[inventory_test]
 fn pool_allocator_allocate_more_than_bucket_size_fails() {
     pool_allocator_tests::pool_allocator_allocate_more_than_bucket_size_fails();
 }
 
-#[test]
+#[inventory_test]
 fn pool_allocator_allocate_more_than_bucket_alignment_fails() {
     pool_allocator_tests::pool_allocator_allocate_more_than_bucket_alignment_fails();
 }
 
-#[test]
-#[should_panic]
-#[cfg(debug_assertions)]
+#[inventory_test]
 fn pool_allocator_deallocate_non_allocated_chunk_fails() {
     pool_allocator_tests::pool_allocator_deallocate_non_allocated_chunk_fails();
 }
 
-#[test]
+#[inventory_test]
 fn pool_allocator_acquire_and_release_works() {
     pool_allocator_tests::pool_allocator_acquire_and_release_works();
 }
 
-#[test]
+#[inventory_test]
 fn pool_allocator_acquire_too_large_sample_fails() {
     pool_allocator_tests::pool_allocator_acquire_too_large_sample_fails();
 }
 
-#[test]
+#[inventory_test]
 fn pool_allocator_acquire_sample_with_to_large_alignment_fails() {
     pool_allocator_tests::pool_allocator_acquire_sample_with_to_large_alignment_fails();
 }
 
-#[test]
+#[inventory_test]
 fn pool_allocator_allocate_zeroed_works() {
     pool_allocator_tests::pool_allocator_allocate_zeroed_works();
 }
 
-#[test]
+#[inventory_test]
 fn pool_allocator_grow_works() {
     pool_allocator_tests::pool_allocator_grow_works();
 }
 
-#[test]
+#[inventory_test]
 fn pool_allocator_grow_with_size_larger_bucket_fails() {
     pool_allocator_tests::pool_allocator_grow_with_size_larger_bucket_fails();
 }
 
-#[test]
+#[inventory_test]
 fn pool_allocator_grow_with_size_decrease_fails() {
     pool_allocator_tests::pool_allocator_grow_with_size_decrease_fails();
 }
 
-#[test]
-#[should_panic]
-#[cfg(debug_assertions)]
+#[inventory_test]
 fn pool_allocator_grow_with_non_allocated_chunk_fails() {
     pool_allocator_tests::pool_allocator_grow_with_non_allocated_chunk_fails();
 }
 
-#[test]
+#[inventory_test]
 fn pool_allocator_grow_with_too_alignment_larger_bucket_alignment_fails() {
     pool_allocator_tests::pool_allocator_grow_with_too_alignment_larger_bucket_alignment_fails();
 }
 
-#[test]
+#[inventory_test]
 fn pool_allocator_grow_zeroed_works() {
     pool_allocator_tests::pool_allocator_grow_zeroed_works();
 }
 
-#[test]
+#[inventory_test]
 fn pool_allocator_shrink_works() {
     pool_allocator_tests::pool_allocator_shrink_works();
 }
 
-#[test]
+#[inventory_test]
 fn pool_allocator_shrink_with_increased_size_fails() {
     pool_allocator_tests::pool_allocator_shrink_with_increased_size_fails();
 }
 
-#[test]
+#[inventory_test]
 fn pool_allocator_shrink_with_alignment_larger_than_bucket_alignment_fails() {
     pool_allocator_tests::pool_allocator_shrink_with_alignment_larger_than_bucket_alignment_fails();
 }
 
-#[test]
-#[should_panic]
-#[cfg(debug_assertions)]
+#[inventory_test]
 fn pool_allocator_shrink_non_allocated_chunk_fails() {
     pool_allocator_tests::pool_allocator_shrink_non_allocated_chunk_fails();
 }
 
-#[test]
+#[inventory_test]
 fn pool_allocator_relocatable_acquire_all_memory_works() {
     pool_allocator_tests::pool_allocator_relocatable_acquire_all_memory_works();
 }

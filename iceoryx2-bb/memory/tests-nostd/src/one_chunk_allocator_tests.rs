@@ -10,77 +10,74 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 extern crate iceoryx2_bb_loggers;
 
 use iceoryx2_bb_memory_tests_common::one_chunk_allocator_tests;
+use iceoryx2_bb_testing_nostd_macros::inventory_test;
 
-#[test]
+#[inventory_test]
 fn one_chunk_allocator_acquire_works() {
     one_chunk_allocator_tests::one_chunk_allocator_acquire_works();
 }
 
-#[test]
+#[inventory_test]
 fn one_chunk_allocator_acquire_with_alignment_works() {
     one_chunk_allocator_tests::one_chunk_allocator_acquire_with_alignment_works();
 }
 
-#[test]
+#[inventory_test]
 fn one_chunk_allocator_allocate_zeroed_works() {
     one_chunk_allocator_tests::one_chunk_allocator_allocate_zeroed_works();
 }
 
-#[test]
+#[inventory_test]
 fn one_chunk_allocator_shrink_works() {
     one_chunk_allocator_tests::one_chunk_allocator_shrink_works();
 }
 
-#[test]
+#[inventory_test]
 fn one_chunk_allocator_shrink_fails_when_size_increases() {
     one_chunk_allocator_tests::one_chunk_allocator_shrink_fails_when_size_increases();
 }
 
-#[test]
+#[inventory_test]
 fn one_chunk_allocator_shrink_fails_when_alignment_increases() {
     one_chunk_allocator_tests::one_chunk_allocator_shrink_fails_when_alignment_increases();
 }
 
-#[test]
-#[should_panic]
-#[cfg(debug_assertions)]
+#[inventory_test]
 fn one_chunk_allocator_shrink_non_allocated_chunk_fails() {
     one_chunk_allocator_tests::one_chunk_allocator_shrink_non_allocated_chunk_fails();
 }
 
-#[test]
+#[inventory_test]
 fn one_chunk_allocator_grow_works() {
     one_chunk_allocator_tests::one_chunk_allocator_grow_works();
 }
 
-#[test]
+#[inventory_test]
 fn one_chunk_allocator_grow_zeroed_works() {
     one_chunk_allocator_tests::one_chunk_allocator_grow_zeroed_works();
 }
 
-#[test]
+#[inventory_test]
 fn one_chunk_allocator_grow_with_decreased_size_fails() {
     one_chunk_allocator_tests::one_chunk_allocator_grow_with_decreased_size_fails();
 }
 
-#[test]
+#[inventory_test]
 fn one_chunk_allocator_grow_with_increased_alignment_fails() {
     one_chunk_allocator_tests::one_chunk_allocator_grow_with_increased_alignment_fails();
 }
 
-#[test]
-#[should_panic]
-#[cfg(debug_assertions)]
+#[inventory_test]
 fn one_chunk_allocator_grow_with_non_allocated_chunk_fails() {
     one_chunk_allocator_tests::one_chunk_allocator_grow_with_non_allocated_chunk_fails();
 }
 
-#[test]
-#[should_panic]
-#[cfg(debug_assertions)]
+#[inventory_test]
 fn one_chunk_allocator_deallocate_non_allocated_chunk_fails() {
     one_chunk_allocator_tests::one_chunk_allocator_deallocate_non_allocated_chunk_fails();
 }
