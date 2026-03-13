@@ -1917,6 +1917,35 @@ constexpr auto from<iox2::UnableToDeliverStrategy, int>(const iox2::UnableToDeli
 }
 
 template <>
+constexpr auto from<int, iox2::AllocationStrategy>(const int value) noexcept -> iox2::AllocationStrategy {
+    const auto variant = static_cast<iox2_allocation_strategy_e>(value);
+    switch (variant) {
+    case iox2_allocation_strategy_e_STATIC:
+        return iox2::AllocationStrategy::Static;
+    case iox2_allocation_strategy_e_BEST_FIT:
+        return iox2::AllocationStrategy::BestFit;
+    case iox2_allocation_strategy_e_POWER_OF_TWO:
+        return iox2::AllocationStrategy::PowerOfTwo;
+    }
+
+    IOX2_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<iox2::AllocationStrategy, int>(const iox2::AllocationStrategy value) noexcept -> int {
+    switch (value) {
+    case iox2::AllocationStrategy::Static:
+        return iox2_allocation_strategy_e_STATIC;
+    case iox2::AllocationStrategy::BestFit:
+        return iox2_allocation_strategy_e_BEST_FIT;
+    case iox2::AllocationStrategy::PowerOfTwo:
+        return iox2_allocation_strategy_e_POWER_OF_TWO;
+    }
+
+    IOX2_UNREACHABLE();
+}
+
+template <>
 constexpr auto from<int, iox2::ConnectionFailure>(const int value) noexcept -> iox2::ConnectionFailure {
     const auto variant = static_cast<iox2_connection_failure_e>(value);
     switch (variant) {
