@@ -16,9 +16,12 @@ workspace = true
 [features]
 default = []
 std = [
+  "iceoryx2-bb-container/std",  
+  "iceoryx2-bb-loggers/std",  
+  "iceoryx2-bb-memory/std",  
   "iceoryx2-bb-testing/std",
-  "iceoryx2-pal-print/std",
   "iceoryx2-bb-testing-nostd-macros/std",
+  "iceoryx2-pal-print/std",
 ]
 
 [dependencies]
