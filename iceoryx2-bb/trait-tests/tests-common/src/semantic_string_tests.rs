@@ -220,8 +220,8 @@ pub fn pop_until_empty_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY
 
     let mut do_pop = || {
         let result = sut.pop();
-        if result.is_ok() {
-            assert_that!(result.unwrap().unwrap(), eq b'a');
+        if let Ok(value) = result {
+            assert_that!(value.unwrap(), eq b'a');
         } else {
             assert_that!(result.err().unwrap(), eq SemanticStringError::InvalidContent);
         }
