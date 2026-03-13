@@ -18,6 +18,7 @@ default = []
 std = [
   "iceoryx2-bb-concurrency/std",
   "iceoryx2-bb-loggers/std",
+  "iceoryx2-bb-posix/std",
   "iceoryx2-bb-testing/std",
   "iceoryx2-pal-print/std",
 ]
