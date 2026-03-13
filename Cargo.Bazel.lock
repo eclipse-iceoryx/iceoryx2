@@ -1,5 +1,5 @@
 {
-  "checksum": "7b246e28b68d1e5904debc3b6be2111ea8861baa315c375381240939492fd7ba",
+  "checksum": "3afeaf7bf17d3eaa4136bba9e48fd85664b8e1363221180a3b205e335c64e580",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -8279,6 +8279,13 @@
         "compile_data_glob": [
           "**"
         ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
         "deps": {
           "common": [
             {
@@ -8340,6 +8347,13 @@
         "compile_data_glob": [
           "**"
         ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
         "deps": {
           "common": [
             {
@@ -8546,7 +8560,8 @@
         ],
         "crate_features": {
           "common": [
-            "default"
+            "default",
+            "std"
           ],
           "selects": {}
         },
@@ -9069,7 +9084,8 @@
         ],
         "crate_features": {
           "common": [
-            "default"
+            "default",
+            "std"
           ],
           "selects": {}
         },
@@ -9186,6 +9202,75 @@
           ],
           "selects": {}
         },
+        "version": "0.8.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-bb-trait-tests-common 0.8.999": {
+      "name": "iceoryx2-bb-trait-tests-common",
+      "version": "0.8.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_bb_trait_tests_common",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_bb_trait_tests_common",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "0.8.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-bb-trait-tests-nostd 0.8.999": {
+      "name": "iceoryx2-bb-trait-tests-nostd",
+      "version": "0.8.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [],
+      "library_target_name": null,
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -9601,6 +9686,13 @@
         "compile_data_glob": [
           "**"
         ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
         "deps": {
           "common": [
             {
@@ -9884,6 +9976,13 @@
         "compile_data_glob": [
           "**"
         ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
         "deps": {
           "common": [
             {
@@ -33871,6 +33970,8 @@
     "iceoryx2-bb-threadsafe-tests-common 0.8.999": "iceoryx2-bb/threadsafe/tests-common",
     "iceoryx2-bb-threadsafe-tests-nostd 0.8.999": "iceoryx2-bb/threadsafe/tests-nostd",
     "iceoryx2-bb-trait-tests 0.8.999": "iceoryx2-bb/trait-tests",
+    "iceoryx2-bb-trait-tests-common 0.8.999": "iceoryx2-bb/trait-tests/tests-common",
+    "iceoryx2-bb-trait-tests-nostd 0.8.999": "iceoryx2-bb/trait-tests/tests-nostd",
     "iceoryx2-cal 0.8.999": "iceoryx2-cal",
     "iceoryx2-cal-conformance-tests 0.8.999": "iceoryx2-cal/conformance-tests",
     "iceoryx2-cli 0.8.999": "iceoryx2-cli",
