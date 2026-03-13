@@ -16,6 +16,7 @@ workspace = true
 [features]
 default = []
 std = [
+  "iceoryx2-bb-derive-macros/std",
   "iceoryx2-bb-testing/std",
 ]
 
