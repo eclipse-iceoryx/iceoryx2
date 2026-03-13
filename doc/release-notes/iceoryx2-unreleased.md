@@ -61,6 +61,8 @@
   [#1380](https://github.com/eclipse-iceoryx/iceoryx2/issues/1380)
 * Add `Config::setup_global_config_from_file` to C++ bindings
   [#1395](https://github.com/eclipse-iceoryx/iceoryx2/issues/1395)
+* Fix pointer provenance in `RelocatablePtr`
+  [#1405](https://github.com/eclipse-iceoryx/iceoryx2/issues/1405)
 * Bump keccak from 0.1.5 to 0.1.6 in Rust and Bazel
   [#1416](https://github.com/eclipse-iceoryx/iceoryx2/issues/1416)
 
@@ -144,7 +146,7 @@
 
     ```console
     # old
-    cargo build --features iceoryx2/libc_platform 
+    cargo build --features iceoryx2/libc_platform
 
     # new
     cargo build
