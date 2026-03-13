@@ -88,6 +88,8 @@ CRATES_TO_IGNORE=(
     iceoryx2-bb-memory-tests-nostd
     iceoryx2-bb-container-tests-common
     iceoryx2-bb-container-tests-nostd
+    iceoryx2-bb-derive-macros-tests-common
+    iceoryx2-bb-derive-macros-tests-nostd
 )
 
 if [[ "$#" -eq 0 ]]; then
