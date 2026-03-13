@@ -30,5 +30,5 @@ iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-bb-loggers = { workspace = true }
 iceoryx2-bb-memory = { workspace = true }
 iceoryx2-bb-testing = { workspace = true }
-iceoryx2-pal-print = { workspace = true }
 iceoryx2-bb-testing-nostd-macros = { workspace = true }
+iceoryx2-pal-print = { workspace = true }
