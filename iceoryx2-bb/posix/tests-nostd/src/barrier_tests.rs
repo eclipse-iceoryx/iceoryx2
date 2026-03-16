@@ -16,7 +16,7 @@ extern crate iceoryx2_bb_loggers;
 
 use iceoryx2_bb_posix::barrier::BarrierCreationError;
 use iceoryx2_bb_posix_tests_common::barrier_tests;
-use iceoryx2_bb_testing_nostd_macros::inventory_test;
+use iceoryx2_bb_testing_macros::inventory_test;
 
 #[inventory_test]
 fn barrier_blocks() -> Result<(), BarrierCreationError> {

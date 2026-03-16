@@ -16,7 +16,7 @@ extern crate iceoryx2_bb_loggers;
 
 use iceoryx2_bb_memory::pool_allocator::AllocationError;
 use iceoryx2_bb_memory_tests_common::heap_allocator_tests;
-use iceoryx2_bb_testing_nostd_macros::inventory_test;
+use iceoryx2_bb_testing_macros::inventory_test;
 
 #[inventory_test]
 fn heap_allocator_allocate_deallocate_works() {

@@ -21,7 +21,7 @@ use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
-use iceoryx2_bb_testing_nostd_macros::requires_std;
+use iceoryx2_bb_testing_macros::requires_std;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_NAMED_SEMAPHORE;
 
 pub struct NamedSemaphoreTest {

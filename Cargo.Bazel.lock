@@ -1,5 +1,5 @@
 {
-  "checksum": "b207d684200e62d847ab8cf43fcaef12c74eced11cd615c1d90032ce29e8f2d3",
+  "checksum": "3789b7fbd0dc016872123d626c218b1712d5126d72383d7bb5306014c10e7873",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -8844,15 +8844,6 @@
           "selects": {}
         },
         "edition": "2021",
-        "proc_macro_deps": {
-          "common": [
-            {
-              "id": "generic-tests 0.1.2",
-              "target": "generic_tests"
-            }
-          ],
-          "selects": {}
-        },
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -9382,47 +9373,6 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
-        "version": "0.8.999"
-      },
-      "license": "MIT OR Apache-2.0",
-      "license_ids": [
-        "Apache-2.0",
-        "MIT"
-      ],
-      "license_file": null
-    },
-    "iceoryx2-bb-testing-nostd 0.8.999": {
-      "name": "iceoryx2-bb-testing-nostd",
-      "version": "0.8.999",
-      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
-      "repository": null,
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "iceoryx2_bb_testing_nostd",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "allow_empty": true,
-              "include": [
-                "**/*.rs"
-              ]
-            }
-          }
-        }
-      ],
-      "library_target_name": "iceoryx2_bb_testing_nostd",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "crate_features": {
-          "common": [
-            "default",
-            "std"
-          ],
-          "selects": {}
-        },
         "deps": {
           "common": [
             {
@@ -9442,15 +9392,15 @@
       ],
       "license_file": null
     },
-    "iceoryx2-bb-testing-nostd-macros 0.8.999": {
-      "name": "iceoryx2-bb-testing-nostd-macros",
+    "iceoryx2-bb-testing-macros 0.8.999": {
+      "name": "iceoryx2-bb-testing-macros",
       "version": "0.8.999",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
         {
           "ProcMacro": {
-            "crate_name": "iceoryx2_bb_testing_nostd_macros",
+            "crate_name": "iceoryx2_bb_testing_macros",
             "crate_root": "src/lib.rs",
             "srcs": {
               "allow_empty": true,
@@ -9461,7 +9411,7 @@
           }
         }
       ],
-      "library_target_name": "iceoryx2_bb_testing_nostd_macros",
+      "library_target_name": "iceoryx2_bb_testing_macros",
       "common_attrs": {
         "compile_data_glob": [
           "**"
@@ -34373,8 +34323,7 @@
     "iceoryx2-bb-system-types-tests-common 0.8.999": "iceoryx2-bb/system-types/tests-common",
     "iceoryx2-bb-system-types-tests-nostd 0.8.999": "iceoryx2-bb/system-types/tests-nostd",
     "iceoryx2-bb-testing 0.8.999": "iceoryx2-bb/testing",
-    "iceoryx2-bb-testing-nostd 0.8.999": "iceoryx2-bb/testing-nostd",
-    "iceoryx2-bb-testing-nostd-macros 0.8.999": "iceoryx2-bb/testing-nostd-macros",
+    "iceoryx2-bb-testing-macros 0.8.999": "iceoryx2-bb/testing-macros",
     "iceoryx2-bb-threadsafe 0.8.999": "iceoryx2-bb/threadsafe",
     "iceoryx2-bb-threadsafe-tests-common 0.8.999": "iceoryx2-bb/threadsafe/tests-common",
     "iceoryx2-bb-threadsafe-tests-nostd 0.8.999": "iceoryx2-bb/threadsafe/tests-nostd",
@@ -34663,7 +34612,6 @@
     "dialoguer 0.8.0",
     "dirs 5.0.1",
     "enum-iterator 2.1.0",
-    "generic-tests 0.1.2",
     "human-panic 2.0.2",
     "inventory 0.3.22",
     "libc 0.2.183",
@@ -34684,6 +34632,7 @@
     "zenoh 1.7.2"
   ],
   "direct_dev_deps": [
+    "generic-tests 0.1.2",
     "loom 0.7.2",
     "tempfile 3.13.0"
   ],

@@ -25,7 +25,7 @@ use iceoryx2_bb_lock_free::{
 };
 use iceoryx2_cal::zero_copy_connection::used_chunk_list::RelocatableUsedChunkList;
 
-use iceoryx2_bb_testing_nostd_macros::inventory_test_generic;
+use iceoryx2_bb_testing_macros::inventory_test_generic;
 use iceoryx2_bb_trait_tests_common::relocatable_container_tests;
 
 #[inventory_test_generic(

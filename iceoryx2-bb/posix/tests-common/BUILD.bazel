@@ -41,6 +41,6 @@ rust_library(
         "@crate_index//:enum-iterator",
     ],
     proc_macro_deps = [
-        "//iceoryx2-bb/testing-nostd-macros:iceoryx2-bb-testing-nostd-macros",
+        "//iceoryx2-bb/testing-macros:iceoryx2-bb-testing-macros",
     ],
 )

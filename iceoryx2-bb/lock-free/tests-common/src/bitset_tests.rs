@@ -12,7 +12,7 @@
 
 use iceoryx2_bb_lock_free::mpmc::bit_set::*;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_nostd_macros::requires_std;
+use iceoryx2_bb_testing_macros::requires_std;
 
 pub fn bit_set_create_fill_and_reset_works() {
     const CAPACITY: usize = 1234;

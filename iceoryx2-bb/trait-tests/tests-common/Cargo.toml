@@ -20,7 +20,7 @@ std = [
   "iceoryx2-bb-loggers/std",  
   "iceoryx2-bb-memory/std",  
   "iceoryx2-bb-testing/std",
-  "iceoryx2-bb-testing-nostd-macros/std",
+  "iceoryx2-bb-testing-macros/std",
   "iceoryx2-pal-print/std",
 ]
 
@@ -30,5 +30,5 @@ iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-bb-loggers = { workspace = true }
 iceoryx2-bb-memory = { workspace = true }
 iceoryx2-bb-testing = { workspace = true }
-iceoryx2-bb-testing-nostd-macros = { workspace = true }
+iceoryx2-bb-testing-macros = { workspace = true }
 iceoryx2-pal-print = { workspace = true }

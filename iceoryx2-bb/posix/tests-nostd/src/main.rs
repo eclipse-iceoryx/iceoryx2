@@ -93,4 +93,4 @@ impl Default for GlobalHeapAllocator {
 #[global_allocator]
 static GLOBAL: GlobalHeapAllocator = GlobalHeapAllocator::new();
 
-iceoryx2_bb_testing_nostd::bootstrap!();
+iceoryx2_bb_testing::bootstrap!();

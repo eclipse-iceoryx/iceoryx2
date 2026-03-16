@@ -19,8 +19,8 @@ use iceoryx2_bb_container_tests_common::string_tests::PolymorphicStringFactory;
 use iceoryx2_bb_container_tests_common::string_tests::RelocatableStringFactory;
 use iceoryx2_bb_container_tests_common::string_tests::StaticStringFactory;
 use iceoryx2_bb_container_tests_common::string_tests::StringTestFactory;
-use iceoryx2_bb_testing_nostd_macros::inventory_test;
-use iceoryx2_bb_testing_nostd_macros::inventory_test_generic;
+use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::inventory_test_generic;
 
 #[inventory_test_generic(
     PolymorphicStringFactory,

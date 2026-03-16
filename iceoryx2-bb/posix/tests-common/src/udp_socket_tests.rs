@@ -13,7 +13,7 @@
 use iceoryx2_bb_posix::udp_socket::*;
 use iceoryx2_bb_system_types::ipv4_address::{self, Ipv4Address};
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_nostd_macros::requires_std;
+use iceoryx2_bb_testing_macros::requires_std;
 
 #[cfg(feature = "std")]
 const TIMEOUT: core::time::Duration = core::time::Duration::from_millis(25);

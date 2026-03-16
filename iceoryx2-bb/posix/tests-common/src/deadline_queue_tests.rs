@@ -16,7 +16,7 @@ use core::time::Duration;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_posix::deadline_queue::*;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_nostd_macros::requires_std;
+use iceoryx2_bb_testing_macros::requires_std;
 
 pub fn deadline_queue_attach_detach_works() {
     const NUMBER_OF_ATTACHMENTS: usize = 16;

@@ -19,7 +19,7 @@ use iceoryx2_bb_container_tests_common::vector_tests::PolymorphicVecFactory;
 use iceoryx2_bb_container_tests_common::vector_tests::RelocatableVecFactory;
 use iceoryx2_bb_container_tests_common::vector_tests::StaticVecFactory;
 use iceoryx2_bb_container_tests_common::vector_tests::VectorTestFactory;
-use iceoryx2_bb_testing_nostd_macros::inventory_test_generic;
+use iceoryx2_bb_testing_macros::inventory_test_generic;
 
 #[inventory_test_generic(PolymorphicVecFactory, RelocatableVecFactory, StaticVecFactory)]
 fn new_created_vec_is_empty<Factory: VectorTestFactory>() {

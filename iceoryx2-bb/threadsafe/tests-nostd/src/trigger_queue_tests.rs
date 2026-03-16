@@ -12,7 +12,7 @@
 
 #![allow(clippy::disallowed_types)]
 
-use iceoryx2_bb_testing_nostd_macros::inventory_test;
+use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_bb_threadsafe_tests_common::trigger_queue_tests;
 
 #[inventory_test]

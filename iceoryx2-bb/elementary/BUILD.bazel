@@ -35,10 +35,9 @@ rust_test_suite(
         "//iceoryx2-bb/elementary/tests-common:iceoryx2-bb-elementary-tests-common",
         "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
-        "//iceoryx2-bb/testing-nostd:iceoryx2-bb-testing-nostd",
     ],
     proc_macro_deps = [
-        "//iceoryx2-bb/testing-nostd-macros:iceoryx2-bb-testing-nostd-macros",
+        "//iceoryx2-bb/testing-macros:iceoryx2-bb-testing-macros",
         "@crate_index//:generic-tests",
     ],
 )

@@ -22,7 +22,7 @@ use iceoryx2_bb_system_types::group_name::*;
 use iceoryx2_bb_system_types::path::*;
 use iceoryx2_bb_system_types::user_name::*;
 
-use iceoryx2_bb_testing_nostd_macros::inventory_test_generic;
+use iceoryx2_bb_testing_macros::inventory_test_generic;
 use iceoryx2_bb_trait_tests_common::semantic_string_tests;
 
 #[inventory_test_generic(

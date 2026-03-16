@@ -28,7 +28,7 @@ use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_fail;
-use iceoryx2_bb_testing_nostd_macros::requires_std;
+use iceoryx2_bb_testing_macros::requires_std;
 use iceoryx2_pal_configuration::PATH_SEPARATOR;
 
 struct TestFixture {
