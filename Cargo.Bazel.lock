@@ -1,5 +1,5 @@
 {
-  "checksum": "8f077a1f5abfdb642a34369e1c614f5fddb674bed9ba4dc93e15bb073d68418c",
+  "checksum": "666d42a7230a155ee5eb2c6119deef295b13458c47faaa44991b5fc3a5baf9a6",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -5392,6 +5392,44 @@
       ],
       "license_file": "LICENSE-APACHE"
     },
+    "escape8259 0.5.3": {
+      "name": "escape8259",
+      "version": "0.5.3",
+      "package_url": "https://github.com/ericseppanen/escape8259",
+      "repository": {
+        "Http": {
+          "url": "https://static.crates.io/crates/escape8259/0.5.3/download",
+          "sha256": "5692dd7b5a1978a5aeb0ce83b7655c58ca8efdcb79d21036ea249da95afec2c6"
+        }
+      },
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "escape8259",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "escape8259",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "edition": "2018",
+        "version": "0.5.3"
+      },
+      "license": "MIT",
+      "license_ids": [
+        "MIT"
+      ],
+      "license_file": "LICENSE"
+    },
     "event-listener 5.4.1": {
       "name": "event-listener",
       "version": "5.4.1",
@@ -8766,15 +8804,6 @@
           }
         },
         "edition": "2021",
-        "proc_macro_deps_dev": {
-          "common": [
-            {
-              "id": "generic-tests 0.1.2",
-              "target": "generic_tests"
-            }
-          ],
-          "selects": {}
-        },
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -8844,15 +8873,6 @@
           "selects": {}
         },
         "edition": "2021",
-        "proc_macro_deps": {
-          "common": [
-            {
-              "id": "generic-tests 0.1.2",
-              "target": "generic_tests"
-            }
-          ],
-          "selects": {}
-        },
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -9235,52 +9255,15 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
-        "version": "0.8.999"
-      },
-      "license": "MIT OR Apache-2.0",
-      "license_ids": [
-        "Apache-2.0",
-        "MIT"
-      ],
-      "license_file": null
-    },
-    "iceoryx2-bb-testing-nostd 0.8.999": {
-      "name": "iceoryx2-bb-testing-nostd",
-      "version": "0.8.999",
-      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
-      "repository": null,
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "iceoryx2_bb_testing_nostd",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "allow_empty": true,
-              "include": [
-                "**/*.rs"
-              ]
-            }
-          }
-        }
-      ],
-      "library_target_name": "iceoryx2_bb_testing_nostd",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "crate_features": {
-          "common": [
-            "default",
-            "std"
-          ],
-          "selects": {}
-        },
         "deps": {
           "common": [
             {
               "id": "inventory 0.3.22",
               "target": "inventory"
+            },
+            {
+              "id": "libtest-mimic 0.8.1",
+              "target": "libtest_mimic"
             }
           ],
           "selects": {}
@@ -9295,15 +9278,15 @@
       ],
       "license_file": null
     },
-    "iceoryx2-bb-testing-nostd-macros 0.8.999": {
-      "name": "iceoryx2-bb-testing-nostd-macros",
+    "iceoryx2-bb-testing-macros 0.8.999": {
+      "name": "iceoryx2-bb-testing-macros",
       "version": "0.8.999",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
         {
           "ProcMacro": {
-            "crate_name": "iceoryx2_bb_testing_nostd_macros",
+            "crate_name": "iceoryx2_bb_testing_macros",
             "crate_root": "src/lib.rs",
             "srcs": {
               "allow_empty": true,
@@ -9314,7 +9297,7 @@
           }
         }
       ],
-      "library_target_name": "iceoryx2_bb_testing_nostd_macros",
+      "library_target_name": "iceoryx2_bb_testing_macros",
       "common_attrs": {
         "compile_data_glob": [
           "**"
@@ -12852,6 +12835,66 @@
         "MIT"
       ],
       "license_file": "LICENSE"
+    },
+    "libtest-mimic 0.8.1": {
+      "name": "libtest-mimic",
+      "version": "0.8.1",
+      "package_url": "https://github.com/LukasKalbertodt/libtest-mimic",
+      "repository": {
+        "Http": {
+          "url": "https://static.crates.io/crates/libtest-mimic/0.8.1/download",
+          "sha256": "5297962ef19edda4ce33aaa484386e0a5b3d7f2f4e037cbeee00503ef6b29d33"
+        }
+      },
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "libtest_mimic",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "libtest_mimic",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "deps": {
+          "common": [
+            {
+              "id": "anstream 0.6.15",
+              "target": "anstream"
+            },
+            {
+              "id": "anstyle 1.0.8",
+              "target": "anstyle"
+            },
+            {
+              "id": "clap 4.5.19",
+              "target": "clap"
+            },
+            {
+              "id": "escape8259 0.5.3",
+              "target": "escape8259"
+            }
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "0.8.1"
+      },
+      "license": "MIT/Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": "LICENSE-APACHE"
     },
     "linux-raw-sys 0.4.14": {
       "name": "linux-raw-sys",
@@ -34267,8 +34310,7 @@
     "iceoryx2-bb-print 0.8.999": "iceoryx2-bb/print",
     "iceoryx2-bb-system-types 0.8.999": "iceoryx2-bb/system-types",
     "iceoryx2-bb-testing 0.8.999": "iceoryx2-bb/testing",
-    "iceoryx2-bb-testing-nostd 0.8.999": "iceoryx2-bb/testing-nostd",
-    "iceoryx2-bb-testing-nostd-macros 0.8.999": "iceoryx2-bb/testing-nostd-macros",
+    "iceoryx2-bb-testing-macros 0.8.999": "iceoryx2-bb/testing-macros",
     "iceoryx2-bb-threadsafe 0.8.999": "iceoryx2-bb/threadsafe",
     "iceoryx2-bb-threadsafe-tests-common 0.8.999": "iceoryx2-bb/threadsafe/tests-common",
     "iceoryx2-bb-threadsafe-tests-nostd 0.8.999": "iceoryx2-bb/threadsafe/tests-nostd",
@@ -34557,10 +34599,10 @@
     "dialoguer 0.8.0",
     "dirs 5.0.1",
     "enum-iterator 2.1.0",
-    "generic-tests 0.1.2",
     "human-panic 2.0.2",
     "inventory 0.3.22",
     "libc 0.2.180",
+    "libtest-mimic 0.8.1",
     "postcard 1.1.3",
     "proc-macro2 1.0.105",
     "pyo3 0.28.2",
@@ -34578,6 +34620,7 @@
     "zenoh 1.7.2"
   ],
   "direct_dev_deps": [
+    "generic-tests 0.1.2",
     "loom 0.7.2",
     "tempfile 3.13.0"
   ],
