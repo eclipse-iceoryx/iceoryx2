@@ -15,8 +15,13 @@ version = { workspace = true }
 default = ["std"]
 
 std = [
+  "iceoryx2-bb-loggers/std",  
+  "iceoryx2-bb-memory/std",  
+  "iceoryx2-bb-posix-tests-common/std",  
+  "iceoryx2-bb-posix/std",  
   "iceoryx2-bb-testing-nostd-macros/std",
-  "iceoryx2-bb-testing-nostd/std"
+  "iceoryx2-bb-testing-nostd/std",
+  "iceoryx2-pal-print/std",  
 ]
 
 [dependencies]
