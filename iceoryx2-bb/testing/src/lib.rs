@@ -28,9 +28,9 @@ extern crate alloc;
 pub use iceoryx2_pal_testing::*;
 pub mod instantiate_conformance_tests_macro;
 pub mod lifetime_tracker;
+pub mod test_harness;
 
 pub use inventory;
-
 #[cfg(feature = "std")]
 pub use libtest_mimic;
 
@@ -40,7 +40,6 @@ pub struct TestCase {
     pub should_panic: bool,
     pub should_panic_message: Option<&'static str>,
 }
-
 inventory::collect!(TestCase);
 
 pub mod internal {
@@ -48,123 +47,4 @@ pub mod internal {
     pub use iceoryx2_pal_posix::posix::abort;
     pub use iceoryx2_pal_print::cout;
     pub use iceoryx2_pal_print::coutln;
-}
-
-#[macro_export]
-macro_rules! bootstrap {
-    () => {
-        #[cfg(feature = "std")]
-        pub fn main() {
-            let args = $crate::libtest_mimic::Arguments::from_args();
-            let tests = $crate::inventory::iter::<$crate::TestCase>()
-                .map(|tc| {
-                    let test_fn = tc.test_fn;
-                    let should_panic = tc.should_panic;
-                    let should_panic_message = tc.should_panic_message;
-                    $crate::libtest_mimic::Trial::test(tc.name, move || {
-                        if should_panic {
-                            match std::panic::catch_unwind(test_fn) {
-                                Err(e) => {
-                                    if let Some(expected) = should_panic_message {
-                                        let matches = e.downcast_ref::<&str>()
-                                            .map(|s| s.contains(expected))
-                                            .or_else(|| e.downcast_ref::<String>().map(|s| s.contains(expected)))
-                                            .unwrap_or(false);
-                                        if !matches {
-                                            return Err($crate::libtest_mimic::Failed::from(
-                                                format!("panic did not contain expected message \"{}\"", expected)
-                                            ));
-                                        }
-                                    }
-                                    Ok(())
-                                }
-                                Ok(_) => Err($crate::libtest_mimic::Failed::from(
-                                    "expected panic but test succeeded"
-                                )),
-                            }
-                        } else {
-                            test_fn();
-                            Ok(())
-                        }
-                    })
-                })
-                .collect::<std::vec::Vec<_>>();
-            $crate::libtest_mimic::run(&args, tests).exit();
-        }
-
-        #[cfg(not(feature = "std"))]
-        #[no_mangle]
-        pub extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
-            run_tests()
-        }
-
-        #[cfg(all(any(target_os = "linux", target_os = "nto"), not(feature = "std")))]
-        #[panic_handler]
-        fn panic(info: &core::panic::PanicInfo) -> ! {
-            $crate::internal::coutln!("");
-            $crate::internal::coutln!("");
-            $crate::internal::cout!("Failed: {}", info);
-            $crate::internal::coutln!("");
-            $crate::internal::coutln!("");
-
-            unsafe {
-                $crate::internal::abort();
-                core::hint::unreachable_unchecked()
-            }
-        }
-
-        #[cfg(all(not(any(target_os = "linux", target_os = "nto")), not(feature = "std")))]
-        #[panic_handler]
-        fn panic(_info: &core::panic::PanicInfo) -> ! {
-            loop {}
-        }
-
-        #[cfg(not(feature = "std"))]
-        #[no_mangle]
-        extern "C" fn rust_eh_personality() {}
-
-        #[cfg(not(feature = "std"))]
-        fn run_tests() -> isize {
-            let tests = $crate::inventory::iter::<$crate::TestCase>();
-
-            let mut passed = 0;
-            let mut failed = 0;
-
-            $crate::internal::coutln!("");
-            $crate::internal::cout!("running tests:");
-            $crate::internal::coutln!("");
-            $crate::internal::coutln!("");
-
-            for test in tests {
-                $crate::internal::cout!("test ");
-                $crate::internal::cout!("{}", test.name);
-                $crate::internal::cout!(" ... ");
-
-                (test.test_fn)();
-
-                $crate::internal::coutln!("ok");
-                passed += 1;
-            }
-
-            $crate::internal::coutln!("");
-            $crate::internal::cout!("test result: ");
-            if failed == 0 {
-                $crate::internal::cout!("ok. ");
-            } else {
-                $crate::internal::cout!("FAILED. ");
-            }
-
-            $crate::internal::cout!("{}", passed);
-            $crate::internal::cout!(" passed; ");
-            $crate::internal::cout!("{}", failed);
-            $crate::internal::cout!(" failed");
-            $crate::internal::coutln!("");
-
-            if failed > 0 {
-                1
-            } else {
-                0
-            }
-        }
-    };
 }
