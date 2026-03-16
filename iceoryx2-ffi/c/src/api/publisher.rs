@@ -331,7 +331,6 @@ pub unsafe extern "C" fn iox2_publisher_unable_to_deliver_strategy(
 /// # Safety
 ///
 /// * `publisher_handle` is valid and non-null
-
 #[no_mangle]
 pub unsafe extern "C" fn iox2_publisher_allocation_strategy(
     publisher_handle: iox2_publisher_h_ref,
@@ -390,6 +389,7 @@ pub unsafe extern "C" fn iox2_publisher_initial_max_slice_len(
 ///
 /// # Arguments
 /// * `publisher_handle` obtained by [`iox2_port_factory_publisher_builder_create`](crate::iox2_port_factory_publisher_builder_create)
+///
 /// Returns the maximum number of loaned samples as a [`c_size_t`].
 ///
 /// # Safety

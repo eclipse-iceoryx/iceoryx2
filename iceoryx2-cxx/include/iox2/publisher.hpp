@@ -167,15 +167,14 @@ inline auto Publisher<S, Payload, UserHeader>::initial_max_slice_len() const -> 
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
-inline auto Publisher<S, Payload, UserHeader>::max_loaned_samples() const -> uint64_t{
+inline auto Publisher<S, Payload, UserHeader>::max_loaned_samples() const -> uint64_t {
     return iox2_publisher_max_loaned_samples(&m_handle);
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
 inline auto Publisher<S, Payload, UserHeader>::allocation_strategy() const -> AllocationStrategy {
-    return iox2::bb::into<AllocationStrategy>(
-        static_cast<int>(iox2_publisher_allocation_strategy(&m_handle)));
+    return iox2::bb::into<AllocationStrategy>(static_cast<int>(iox2_publisher_allocation_strategy(&m_handle)));
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
