@@ -15,7 +15,7 @@
 extern crate iceoryx2_bb_loggers;
 
 use iceoryx2_bb_lock_free_tests_common::spsc_index_queue_tests;
-use iceoryx2_bb_testing_nostd_macros::inventory_test;
+use iceoryx2_bb_testing_macros::inventory_test;
 
 #[inventory_test]
 fn spsc_index_queue_push_works_until_full() {

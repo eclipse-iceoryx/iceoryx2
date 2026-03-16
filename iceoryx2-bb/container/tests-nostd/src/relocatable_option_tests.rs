@@ -15,7 +15,7 @@
 extern crate iceoryx2_bb_loggers;
 
 use iceoryx2_bb_container_tests_common::relocatable_option_tests;
-use iceoryx2_bb_testing_nostd_macros::inventory_test;
+use iceoryx2_bb_testing_macros::inventory_test;
 
 #[inventory_test]
 fn default_created_option_is_empty() {

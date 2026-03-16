@@ -13,7 +13,7 @@
 use iceoryx2_bb_container::vector::relocatable_vec::*;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_nostd_macros::requires_std;
+use iceoryx2_bb_testing_macros::requires_std;
 
 #[requires_std("panics")]
 pub fn double_init_call_causes_panic() {

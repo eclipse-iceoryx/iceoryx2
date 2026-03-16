@@ -19,7 +19,7 @@ use iceoryx2_bb_container::relocatable_option::RelocatableOption;
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
-use iceoryx2_bb_testing_nostd_macros::requires_std;
+use iceoryx2_bb_testing_macros::requires_std;
 
 pub fn default_created_option_is_empty() {
     let sut = RelocatableOption::<i32>::default();

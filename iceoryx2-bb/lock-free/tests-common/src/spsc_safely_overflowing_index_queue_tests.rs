@@ -12,7 +12,7 @@
 
 use iceoryx2_bb_lock_free::spsc::safely_overflowing_index_queue::*;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_nostd_macros::requires_std;
+use iceoryx2_bb_testing_macros::requires_std;
 
 pub fn spsc_safely_overflowing_index_queue_push_works_until_full() {
     const CAPACITY: usize = 128;

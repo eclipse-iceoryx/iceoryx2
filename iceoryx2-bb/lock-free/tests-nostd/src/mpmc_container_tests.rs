@@ -13,7 +13,7 @@
 #![allow(clippy::disallowed_types)]
 
 use iceoryx2_bb_lock_free_tests_common::mpmc_container_tests;
-use iceoryx2_bb_testing_nostd_macros::inventory_test_generic;
+use iceoryx2_bb_testing_macros::inventory_test_generic;
 
 #[inventory_test_generic(usize, mpmc_container_tests::TestType)]
 fn mpmc_container_add_elements_until_full_works<

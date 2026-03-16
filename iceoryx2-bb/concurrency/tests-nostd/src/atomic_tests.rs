@@ -13,7 +13,7 @@
 #![allow(clippy::disallowed_types)]
 
 use iceoryx2_bb_concurrency_tests_common::atomic_tests;
-use iceoryx2_bb_testing_nostd_macros::inventory_test_generic;
+use iceoryx2_bb_testing_macros::inventory_test_generic;
 
 #[inventory_test_generic(u64, u128, i64, i128)]
 fn atomic_new_works<T: atomic_tests::Req>() {

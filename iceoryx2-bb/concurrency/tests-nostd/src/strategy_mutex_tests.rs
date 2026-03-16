@@ -13,7 +13,7 @@
 #![allow(clippy::disallowed_types)]
 
 use iceoryx2_bb_concurrency_tests_common::strategy_mutex_tests;
-use iceoryx2_bb_testing_nostd_macros::inventory_test;
+use iceoryx2_bb_testing_macros::inventory_test;
 
 #[inventory_test]
 fn strategy_mutex_lock_blocks() {
