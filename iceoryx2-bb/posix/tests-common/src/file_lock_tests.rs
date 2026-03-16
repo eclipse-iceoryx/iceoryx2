@@ -24,8 +24,8 @@ use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
-use iceoryx2_pal_posix::posix::POSIX_SUPPORT_FILE_LOCK;
 use iceoryx2_bb_testing_nostd_macros::requires_std;
+use iceoryx2_pal_posix::posix::POSIX_SUPPORT_FILE_LOCK;
 
 fn generate_file_name() -> FilePath {
     let mut file = FileName::new(b"file_lock_tests_").unwrap();
@@ -207,7 +207,7 @@ pub fn file_lock_multiple_readers_blocks_write() {
 
 #[requires_std("threading")]
 pub fn file_lock_write_lock_blocks() {
-    use core::sync::atomic::{AtomicU64, Ordering};
+    use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
 
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 
@@ -239,7 +239,7 @@ pub fn file_lock_write_lock_blocks() {
 
 #[requires_std("threading")]
 pub fn file_lock_read_lock_blocks_write_locks() {
-    use core::sync::atomic::{AtomicU64, Ordering};
+    use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
 
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 
@@ -271,7 +271,7 @@ pub fn file_lock_read_lock_blocks_write_locks() {
 
 #[requires_std("threading")]
 pub fn file_lock_read_try_lock_does_not_block() {
-    use core::sync::atomic::{AtomicU64, Ordering};
+    use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
 
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 
@@ -294,7 +294,7 @@ pub fn file_lock_read_try_lock_does_not_block() {
 
 #[requires_std("threading")]
 pub fn file_lock_write_try_lock_does_not_block() {
-    use core::sync::atomic::{AtomicU64, Ordering};
+    use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
 
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 

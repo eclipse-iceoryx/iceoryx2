@@ -17,13 +17,13 @@ use std_testing::*;
 
 #[cfg(feature = "std")]
 mod std_testing {
-    use core::sync::atomic::AtomicUsize;
     use core::time::Duration;
+    use iceoryx2_bb_concurrency::atomic::AtomicUsize;
     use std::sync::Mutex;
 
     pub use alloc::vec;
-    pub use core::sync::atomic::AtomicI32;
-    pub use core::sync::atomic::Ordering;
+
+    pub use iceoryx2_bb_concurrency::atomic::{AtomicI32, Ordering};
     pub use iceoryx2_bb_posix::clock::nanosleep;
     pub use iceoryx2_bb_posix::clock::ClockType;
     pub use iceoryx2_bb_posix::clock::Time;

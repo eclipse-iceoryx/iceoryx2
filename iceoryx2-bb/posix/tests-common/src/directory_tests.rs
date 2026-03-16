@@ -28,8 +28,8 @@ use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_fail;
-use iceoryx2_pal_configuration::PATH_SEPARATOR;
 use iceoryx2_bb_testing_nostd_macros::requires_std;
+use iceoryx2_pal_configuration::PATH_SEPARATOR;
 
 struct TestFixture {
     files: Vec<FilePath>,
@@ -68,7 +68,7 @@ impl TestFixture {
 
         let file = FilePath::from_path_and_file(directory, &file).unwrap();
 
-        self.files.push(file.clone());
+        self.files.push(file);
 
         FileBuilder::new(&file)
             .creation_mode(CreationMode::PurgeAndCreate)
@@ -77,7 +77,7 @@ impl TestFixture {
     }
 
     fn create_test_directory_at_path(&mut self, directory: &Path) -> Directory {
-        let mut directory = directory.clone();
+        let mut directory = *directory;
         let mut file = FileName::new(b"dir_tests_").unwrap();
         file.push_bytes(
             UniqueSystemId::new()
@@ -89,7 +89,7 @@ impl TestFixture {
         .unwrap();
         directory.add_path_entry(&file.into()).unwrap();
 
-        self.directories.push(directory.clone());
+        self.directories.push(directory);
 
         Directory::create(&directory, Permission::OWNER_ALL).unwrap()
     }
@@ -107,7 +107,7 @@ impl TestFixture {
                     .as_bytes(),
             )
             .unwrap();
-        self.directories.push(directory.clone());
+        self.directories.push(directory);
 
         directory
     }
@@ -136,7 +136,7 @@ pub fn directory_file_is_not_a_directory() {
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
         .unwrap();
-    assert_that!(Directory::does_exist(&not_a_directory_path.clone().into()).unwrap(), eq false);
+    assert_that!(Directory::does_exist(&not_a_directory_path.into()).unwrap(), eq false);
     File::remove(&not_a_directory_path).unwrap();
 }
 

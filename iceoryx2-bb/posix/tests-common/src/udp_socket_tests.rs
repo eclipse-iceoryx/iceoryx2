@@ -232,8 +232,7 @@ pub fn udp_socket_server_timed_receive_from_does_block_for_at_least_timeout() {
 
 #[requires_std("threading")]
 pub fn udp_socket_client_blocking_receive_does_block() {
-    use core::sync::atomic::AtomicU64;
-    use core::sync::atomic::Ordering;
+    use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
     use iceoryx2_bb_posix::barrier::*;
 
     let sut_server = UdpServerBuilder::new()
@@ -282,8 +281,7 @@ pub fn udp_socket_client_blocking_receive_does_block() {
 
 #[requires_std("threading")]
 pub fn udp_socket_server_blocking_receive_from_does_block() {
-    use core::sync::atomic::AtomicU64;
-    use core::sync::atomic::Ordering;
+    use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
     use iceoryx2_bb_posix::barrier::*;
 
     let sut_server = UdpServerBuilder::new()
@@ -323,8 +321,7 @@ pub fn udp_socket_server_blocking_receive_from_does_block() {
 
 #[requires_std("threading")]
 pub fn udp_socket_client_timed_receive_does_blocks() {
-    use core::sync::atomic::AtomicU64;
-    use core::sync::atomic::Ordering;
+    use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
     use iceoryx2_bb_posix::barrier::*;
 
     let sut_server = UdpServerBuilder::new()
@@ -373,8 +370,7 @@ pub fn udp_socket_client_timed_receive_does_blocks() {
 
 #[requires_std("threading")]
 pub fn udp_socket_server_timed_receive_from_does_block() {
-    use core::sync::atomic::AtomicU64;
-    use core::sync::atomic::Ordering;
+    use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
     use iceoryx2_bb_posix::barrier::*;
 
     let sut_server = UdpServerBuilder::new()

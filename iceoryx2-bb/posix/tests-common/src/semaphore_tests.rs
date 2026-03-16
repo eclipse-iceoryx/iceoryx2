@@ -21,8 +21,8 @@ use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
-use iceoryx2_pal_posix::posix::POSIX_SUPPORT_NAMED_SEMAPHORE;
 use iceoryx2_bb_testing_nostd_macros::requires_std;
+use iceoryx2_pal_posix::posix::POSIX_SUPPORT_NAMED_SEMAPHORE;
 
 pub struct NamedSemaphoreTest {
     monotonic_named_sut1: NamedSemaphore,
@@ -284,7 +284,7 @@ pub fn semaphore_unnamed_semaphore_post_and_timed_wait_work() {
 
 #[requires_std("threading", "synchronization", "watchdog")]
 pub fn wait_blocks<T: SemaphoreInterface + Send + Sync>(sut1: &T, sut2: &T) {
-    use core::sync::atomic::{AtomicUsize, Ordering};
+    use iceoryx2_bb_concurrency::atomic::{AtomicUsize, Ordering};
     use iceoryx2_bb_testing::watchdog::Watchdog;
 
     use std::sync::Barrier;
@@ -332,7 +332,7 @@ pub fn semaphore_unnamed_semaphore_wait_blocks() {
 
 #[requires_std("threading")]
 pub fn timed_wait_blocks<T: SemaphoreInterface + Send + Sync>(sut1: &T, sut2: &T) {
-    use core::sync::atomic::{AtomicUsize, Ordering};
+    use iceoryx2_bb_concurrency::atomic::{AtomicUsize, Ordering};
 
     use std::thread;
 

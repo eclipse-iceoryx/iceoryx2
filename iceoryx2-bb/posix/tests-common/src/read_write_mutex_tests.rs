@@ -47,7 +47,7 @@ pub fn read_write_mutex_try_lock_works() {
 
 #[requires_std("threading", "watchdog")]
 pub fn read_write_mutex_write_lock_blocks_read_and_write_locks() {
-    use core::sync::atomic::{AtomicUsize, Ordering};
+    use iceoryx2_bb_concurrency::atomic::{AtomicUsize, Ordering};
     use iceoryx2_bb_posix::clock::*;
     use iceoryx2_bb_testing::watchdog::Watchdog;
 
@@ -87,7 +87,7 @@ pub fn read_write_mutex_write_lock_blocks_read_and_write_locks() {
 
 #[requires_std("threading")]
 pub fn read_write_mutex_read_lock_blocks_only_write_locks() {
-    use core::sync::atomic::{AtomicUsize, Ordering};
+    use iceoryx2_bb_concurrency::atomic::{AtomicUsize, Ordering};
     use iceoryx2_bb_posix::clock::*;
 
     let handle = ReadWriteMutexHandle::<i32>::new();

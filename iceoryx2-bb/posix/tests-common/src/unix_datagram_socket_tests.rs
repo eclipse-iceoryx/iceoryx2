@@ -28,8 +28,8 @@ use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
-use iceoryx2_pal_posix::posix::POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA;
 use iceoryx2_bb_testing_nostd_macros::requires_std;
+use iceoryx2_pal_posix::posix::POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA;
 
 #[cfg(feature = "std")]
 pub use std_testing::*;
@@ -162,7 +162,7 @@ pub fn unix_datagram_socket_non_blocking_mode_returns_zero_when_nothing_was_rece
 
 #[requires_std("threading")]
 pub fn unix_datagram_socket_blocking_mode_blocks() {
-    use core::sync::atomic::{AtomicBool, Ordering};
+    use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};
     use iceoryx2_bb_posix::barrier::*;
 
     create_test_directory();
@@ -358,13 +358,13 @@ pub fn unix_datagram_socket_sending_receiving_with_max_supported_fd_and_credenti
     let mut fd_vec = received_msg.extract_fds();
     assert_that!(fd_vec, len NUMBER_OF_FILES);
 
-    for i in 0..NUMBER_OF_FILES {
+    for send_content in file_send_content.iter().take(NUMBER_OF_FILES) {
         let file_receiver = File::from_file_descriptor(fd_vec.remove(0));
         let mut file_recv_content = String::new();
         file_receiver
             .read_to_string(&mut file_recv_content)
             .unwrap();
 
-        assert_that!(file_recv_content, eq file_send_content[i]);
+        assert_that!(file_recv_content, eq(*send_content));
     }
 }

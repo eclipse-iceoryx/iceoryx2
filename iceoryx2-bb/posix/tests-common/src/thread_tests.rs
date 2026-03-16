@@ -63,7 +63,7 @@ pub fn thread_set_name_works() {
     };
 
     barrier.wait();
-    let name = thread.get_name().unwrap().clone();
+    let name = *thread.get_name().unwrap();
     barrier.wait();
     drop(thread);
 
@@ -326,7 +326,7 @@ pub fn thread_set_affinity_to_one_core_from_thread_works() {
 
         if let Err(error) = spawn_result {
             println!("Expected value but got error: {error:?}");
-            assert!(false);
+            assert_that!(spawn_result.is_err(), eq false);
         }
 
         spawn_result.unwrap()
@@ -440,7 +440,7 @@ pub fn thread_destructor_does_block_on_busy_thread() {
 
         if let Err(error) = spawn_result {
             println!("Expected value but got error: {error:?}");
-            assert!(false);
+            assert_that!(spawn_result.is_err(), eq false);
         }
 
         spawn_result.unwrap()

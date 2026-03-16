@@ -23,11 +23,11 @@ mod std_testing {
     pub use alloc::vec;
     pub use alloc::vec::Vec;
 
-    pub use iceoryx2_bb_concurrency::atomic::AtomicUsize;
+    pub use iceoryx2_bb_concurrency::atomic::{AtomicUsize, Ordering};
     pub use iceoryx2_bb_posix::socket_pair::*;
     pub use iceoryx2_bb_testing::assert_that;
     pub use iceoryx2_bb_testing::watchdog::Watchdog;
-    pub use std::sync::{atomic::Ordering, Barrier};
+    pub use std::sync::Barrier;
 
     pub const TIMEOUT: Duration = Duration::from_millis(50);
 }

@@ -59,8 +59,7 @@ pub fn unique_system_id_concurrently_created_ids_are_unique() {
         let mut threads = vec![];
         for _ in 0..number_of_threads {
             threads.push(s.spawn(|| {
-                let mut ids = Vec::new();
-                ids.reserve(NUMBER_OF_ITERATIONS);
+                let mut ids = Vec::with_capacity(NUMBER_OF_ITERATIONS);
 
                 barrier.wait();
                 for _ in 0..NUMBER_OF_ITERATIONS {

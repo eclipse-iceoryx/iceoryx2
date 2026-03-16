@@ -15,7 +15,7 @@ use iceoryx2_bb_testing_nostd_macros::requires_std;
 
 #[requires_std("threading")]
 pub fn barrier_blocks() -> Result<(), BarrierCreationError> {
-    use core::{sync::atomic::AtomicU64, sync::atomic::Ordering};
+    use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
 
     use iceoryx2_bb_testing::assert_that;
     use std::thread;

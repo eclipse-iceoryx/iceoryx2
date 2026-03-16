@@ -319,7 +319,7 @@ pub fn process_state_owner_lock_cannot_be_acquired_from_living_process() {
 pub fn process_state_owner_lock_cannot_be_acquired_twice() {
     create_test_directory();
     let path = generate_file_path();
-    let mut owner_lock_path = path.clone();
+    let mut owner_lock_path = path;
     owner_lock_path.push_bytes(b"_owner_lock").unwrap();
 
     let _file = FileBuilder::new(&path)
