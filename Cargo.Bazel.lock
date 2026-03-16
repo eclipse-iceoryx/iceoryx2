@@ -1,5 +1,5 @@
 {
-  "checksum": "9484b3e022573c7c96ac257c9c155e2aa51fa2552c651df10bc7dcf3ef01385c",
+  "checksum": "8f077a1f5abfdb642a34369e1c614f5fddb674bed9ba4dc93e15bb073d68418c",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -9497,6 +9497,75 @@
           ],
           "selects": {}
         },
+        "version": "0.8.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-bb-trait-tests-common 0.8.999": {
+      "name": "iceoryx2-bb-trait-tests-common",
+      "version": "0.8.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_bb_trait_tests_common",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_bb_trait_tests_common",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "0.8.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-bb-trait-tests-nostd 0.8.999": {
+      "name": "iceoryx2-bb-trait-tests-nostd",
+      "version": "0.8.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [],
+      "library_target_name": null,
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -34204,6 +34273,8 @@
     "iceoryx2-bb-threadsafe-tests-common 0.8.999": "iceoryx2-bb/threadsafe/tests-common",
     "iceoryx2-bb-threadsafe-tests-nostd 0.8.999": "iceoryx2-bb/threadsafe/tests-nostd",
     "iceoryx2-bb-trait-tests 0.8.999": "iceoryx2-bb/trait-tests",
+    "iceoryx2-bb-trait-tests-common 0.8.999": "iceoryx2-bb/trait-tests/tests-common",
+    "iceoryx2-bb-trait-tests-nostd 0.8.999": "iceoryx2-bb/trait-tests/tests-nostd",
     "iceoryx2-cal 0.8.999": "iceoryx2-cal",
     "iceoryx2-cal-conformance-tests 0.8.999": "iceoryx2-cal/conformance-tests",
     "iceoryx2-cli 0.8.999": "iceoryx2-cli",

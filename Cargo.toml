@@ -37,6 +37,8 @@ members = [
     "iceoryx2-bb/testing-nostd/",
     "iceoryx2-bb/testing-nostd-macros/",
     "iceoryx2-bb/trait-tests",
+    "iceoryx2-bb/trait-tests/tests-common",
+    "iceoryx2-bb/trait-tests/tests-nostd",
 
     "iceoryx2-ffi/c",
     "iceoryx2-ffi/python",
@@ -156,6 +158,8 @@ iceoryx2-bb-container-tests-common = { path = "iceoryx2-bb/container/tests-commo
 iceoryx2-bb-container-tests-nostd = { path = "iceoryx2-bb/container/tests-nostd" }
 iceoryx2-bb-derive-macros-tests-common = { path = "iceoryx2-bb/derive-macros/tests-common" }
 iceoryx2-bb-derive-macros-tests-nostd = { path = "iceoryx2-bb/derive-macros/tests-nostd" }
+iceoryx2-bb-trait-tests-common = { path = "iceoryx2-bb/trait-tests/tests-common" }
+iceoryx2-bb-trait-tests-nostd = { path = "iceoryx2-bb/trait-tests/tests-nostd" }
 
 ################################################################################
 

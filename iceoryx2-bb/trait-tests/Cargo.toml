@@ -13,14 +13,14 @@ version = { workspace = true }
 [dependencies]
 
 [dev-dependencies]
-iceoryx2-cal = { workspace = true }
-iceoryx2-bb-loggers = { workspace = true }
+iceoryx2-bb-trait-tests-common = { workspace = true, features = ["std"] }
+iceoryx2-cal = { workspace = true, features = ["std"] }
+iceoryx2-bb-loggers = { workspace = true, features = ["std"] }
+iceoryx2-bb-lock-free = { workspace = true, features = ["std"] }
 iceoryx2-bb-container = { workspace = true }
-iceoryx2-bb-elementary = { workspace = true }
+iceoryx2-bb-elementary = { workspace = true, features = ["std"] }
 iceoryx2-bb-elementary-traits = { workspace = true }
-iceoryx2-bb-memory = { workspace = true }
-iceoryx2-bb-lock-free = { workspace = true }
-iceoryx2-bb-testing = { workspace = true }
-iceoryx2-bb-system-types = { workspace = true }
+iceoryx2-bb-memory = { workspace = true, features = ["std"] }
+iceoryx2-bb-system-types = { workspace = true, features = ["std"] }
 
 generic-tests = { workspace = true }

@@ -291,6 +291,7 @@ filegroup(
         "//iceoryx2-bb/threadsafe:all_srcs",
         "//iceoryx2-bb/threadsafe/tests-common:all_srcs",
         "//iceoryx2-bb/trait-tests:all_srcs",
+        "//iceoryx2-bb/trait-tests/tests-common:all_srcs",
         "//iceoryx2-c:all_srcs",
         "//iceoryx2-cal:all_srcs",
         "//iceoryx2-cal/conformance-tests:all_srcs",
