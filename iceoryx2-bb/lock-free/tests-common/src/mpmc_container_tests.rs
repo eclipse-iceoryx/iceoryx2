@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 use alloc::collections::btree_map::BTreeMap;
 use alloc::vec;
 use alloc::vec::Vec;
@@ -22,7 +24,7 @@ use iceoryx2_bb_lock_free::mpmc::container::*;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set::ReleaseMode;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set::ReleaseState;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::requires_std;
+use iceoryx2_bb_testing_macros::{inventory_test_generic, requires_std};
 
 #[derive(Clone, Copy, Debug)]
 pub struct TestType {
@@ -56,6 +58,7 @@ unsafe impl Send for TestType {}
 
 const CAPACITY: usize = 129;
 
+#[inventory_test_generic(usize, TestType)]
 pub fn mpmc_container_add_elements_until_full_works<T: Debug + Copy + From<usize> + Into<usize>>() {
     let sut = FixedSizeContainer::<T, CAPACITY>::new();
     assert_that!(sut.capacity(), eq CAPACITY);
@@ -83,6 +86,7 @@ pub fn mpmc_container_add_elements_until_full_works<T: Debug + Copy + From<usize
         });
 }
 
+#[inventory_test_generic(usize, TestType)]
 pub fn mpmc_container_add_and_remove_elements_works<T: Debug + Copy + From<usize> + Into<usize>>() {
     let sut = FixedSizeContainer::<T, CAPACITY>::new();
     assert_that!(sut.is_empty(), eq true);
@@ -117,6 +121,7 @@ pub fn mpmc_container_add_and_remove_elements_works<T: Debug + Copy + From<usize
     });
 }
 
+#[inventory_test_generic(usize, TestType)]
 pub fn mpmc_container_add_and_remove_elements_works_with_uninitialized_memory<
     T: Debug + Copy + From<usize> + Into<usize>,
 >() {
@@ -157,6 +162,7 @@ pub fn mpmc_container_add_and_remove_elements_works_with_uninitialized_memory<
     });
 }
 
+#[inventory_test_generic(usize, TestType)]
 pub fn mpmc_container_add_and_unsafe_remove_with_handle_works<
     T: Debug + Copy + From<usize> + Into<usize>,
 >() {
@@ -192,6 +198,7 @@ pub fn mpmc_container_add_and_unsafe_remove_with_handle_works<
     });
 }
 
+#[inventory_test_generic(usize, TestType)]
 pub fn mpmc_container_state_of_empty_container_is_empty<
     T: Debug + Copy + From<usize> + Into<usize>,
 >() {
@@ -213,6 +220,7 @@ pub fn mpmc_container_state_of_empty_container_is_empty<
     assert_that!(counter, eq 0);
 }
 
+#[inventory_test_generic(usize, TestType)]
 pub fn mpmc_container_state_not_updated_when_contents_do_not_change<
     T: Debug + Copy + From<usize> + Into<usize>,
 >() {
@@ -243,6 +251,7 @@ pub fn mpmc_container_state_not_updated_when_contents_do_not_change<
     }
 }
 
+#[inventory_test_generic(usize, TestType)]
 pub fn mpmc_container_state_updated_when_contents_are_removed<
     T: Debug + Copy + From<usize> + Into<usize>,
 >() {
@@ -271,6 +280,7 @@ pub fn mpmc_container_state_updated_when_contents_are_removed<
     assert_that!(contained_values, is_empty);
 }
 
+#[inventory_test_generic(usize, TestType)]
 pub fn mpmc_container_state_updated_when_contents_are_changed<
     T: Debug + Copy + From<usize> + Into<usize>,
 >() {
@@ -307,6 +317,7 @@ pub fn mpmc_container_state_updated_when_contents_are_changed<
     }
 }
 
+#[inventory_test_generic(usize, TestType)]
 pub fn mpmc_container_state_updated_works_for_new_and_removed_elements<
     T: Debug + Copy + From<usize> + Into<usize>,
 >() {
@@ -353,6 +364,7 @@ pub fn mpmc_container_state_updated_works_for_new_and_removed_elements<
     }
 }
 
+#[inventory_test_generic(usize, TestType)]
 pub fn mpmc_container_state_updated_works_when_same_element_is_added_and_removed<
     T: Debug + Copy + From<usize> + Into<usize>,
 >() {
@@ -364,6 +376,7 @@ pub fn mpmc_container_state_updated_works_when_same_element_is_added_and_removed
     assert_that!(unsafe { sut.update_state(&mut state) }, eq true);
 }
 
+#[inventory_test_generic(usize, TestType)]
 #[requires_std("threading", "synchronization")]
 pub fn mpmc_container_concurrent_add_release_for_each<
     T: Debug + Copy + From<usize> + Into<usize> + Send,

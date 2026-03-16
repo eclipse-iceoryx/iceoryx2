@@ -13,15 +13,7 @@
 #![no_std]
 #![no_main]
 
-extern crate iceoryx2_bb_loggers;
-
-mod bitset_tests;
-mod mpmc_container_tests;
-mod mpmc_unique_index_set_tests;
-mod spmc_unrestricted_atomic_tests;
-mod spsc_index_queue_tests;
-mod spsc_queue_tests;
-mod spsc_safely_overflowing_index_queue_tests;
+extern crate iceoryx2_bb_lock_free_tests_common;
 
 use core::{
     alloc::{GlobalAlloc, Layout},
@@ -64,4 +56,4 @@ impl Default for GlobalHeapAllocator {
 #[global_allocator]
 static GLOBAL: GlobalHeapAllocator = GlobalHeapAllocator::new();
 
-iceoryx2_bb_testing::custom_harness!();
+iceoryx2_bb_testing::test_harness!();

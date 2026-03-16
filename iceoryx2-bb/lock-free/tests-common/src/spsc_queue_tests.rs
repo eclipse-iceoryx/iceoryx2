@@ -10,10 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 use iceoryx2_bb_lock_free::spsc::queue::*;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::requires_std;
+use iceoryx2_bb_testing_macros::{inventory_test, requires_std};
 
+#[inventory_test]
 pub fn spsc_queue_push_works_until_full() {
     const CAPACITY: usize = 128;
     let sut = Queue::<i64, CAPACITY>::new();
@@ -37,6 +40,7 @@ pub fn spsc_queue_push_works_until_full() {
     assert_that!(sut, is_not_empty);
 }
 
+#[inventory_test]
 pub fn spsc_queue_pop_works_until_empty() {
     const CAPACITY: usize = 128;
     let sut = Queue::<i64, CAPACITY>::new();
@@ -65,6 +69,7 @@ pub fn spsc_queue_pop_works_until_empty() {
     assert_that!(sut, is_empty);
 }
 
+#[inventory_test]
 pub fn spsc_queue_push_pop_alteration_works() {
     const CAPACITY: usize = 128;
     let sut = Queue::<i64, CAPACITY>::new();
@@ -79,12 +84,14 @@ pub fn spsc_queue_push_pop_alteration_works() {
     }
 }
 
+#[inventory_test]
 pub fn spsc_queue_get_consumer_twice_fails() {
     let sut = Queue::<i64, 1024>::new();
     let _consumer = sut.acquire_consumer().unwrap();
     assert_that!(sut.acquire_consumer(), is_none);
 }
 
+#[inventory_test]
 pub fn spsc_queue_get_consumer_after_release_succeeds() {
     let sut = Queue::<i64, 1024>::new();
     {
@@ -93,12 +100,14 @@ pub fn spsc_queue_get_consumer_after_release_succeeds() {
     assert_that!(sut.acquire_consumer(), is_some);
 }
 
+#[inventory_test]
 pub fn spsc_queue_get_producer_twice_fails() {
     let sut = Queue::<i64, 1024>::new();
     let _producer = sut.acquire_producer().unwrap();
     assert_that!(sut.acquire_producer(), is_none);
 }
 
+#[inventory_test]
 pub fn spsc_queue_get_producer_after_release_succeeds() {
     let sut = Queue::<i64, 1024>::new();
     {
@@ -107,6 +116,7 @@ pub fn spsc_queue_get_producer_after_release_succeeds() {
     assert_that!(sut.acquire_producer(), is_some);
 }
 
+#[inventory_test]
 #[requires_std("threading", "synchronization")]
 pub fn spsc_queue_push_pop_works_concurrently() {
     use std::sync::{Arc, Mutex};

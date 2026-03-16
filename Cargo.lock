@@ -1522,7 +1522,6 @@ dependencies = [
 name = "iceoryx2-bb-lock-free"
 version = "0.8.999"
 dependencies = [
- "generic-tests",
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
@@ -1541,6 +1540,7 @@ dependencies = [
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-lock-free",
+ "iceoryx2-bb-loggers",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
  "iceoryx2-bb-testing-macros",
@@ -1554,7 +1554,6 @@ version = "0.8.999"
 dependencies = [
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-lock-free-tests-common",
- "iceoryx2-bb-loggers",
  "iceoryx2-bb-memory",
  "iceoryx2-bb-testing",
  "iceoryx2-bb-testing-macros",
