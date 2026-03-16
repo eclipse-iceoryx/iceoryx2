@@ -38,7 +38,6 @@ members = [
     "iceoryx2-bb/system-types/tests-common",
     "iceoryx2-bb/system-types/tests-nostd",
     "iceoryx2-bb/testing",
-    "iceoryx2-bb/testing-nostd/",
     "iceoryx2-bb/testing-macros/",
     "iceoryx2-bb/trait-tests",
     "iceoryx2-bb/trait-tests/tests-common",
@@ -145,7 +144,6 @@ iceoryx2-userland-record-and-replay = { version = "0.8.999", path = "iceoryx2-us
 # Not Published, No Version Number
 ################################################################################
 
-iceoryx2-bb-testing-nostd = { path = "iceoryx2-bb/testing-nostd/" }
 iceoryx2-bb-testing-macros = { path = "iceoryx2-bb/testing-macros/" }
 iceoryx2-bb-trait-tests = { path = "iceoryx2-bb/trait-tests/" }
 iceoryx2-bb-threadsafe-tests-common = { path = "iceoryx2-bb/threadsafe/tests-common" }
