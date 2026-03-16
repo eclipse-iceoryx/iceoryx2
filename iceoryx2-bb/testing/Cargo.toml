@@ -18,6 +18,7 @@ std = [
   "iceoryx2-pal-testing/std",
   "iceoryx2-pal-print/std",
   "iceoryx2-pal-posix/std",
+  "dep:libtest-mimic",
 ]
 
 [dependencies]
@@ -28,3 +29,4 @@ iceoryx2-pal-print = { workspace = true }
 iceoryx2-pal-posix = { workspace = true }
 
 inventory = { workspace = true }
+libtest-mimic = { workspace = true, optional = true }

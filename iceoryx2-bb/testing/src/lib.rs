@@ -31,6 +31,9 @@ pub mod lifetime_tracker;
 
 pub use inventory;
 
+#[cfg(feature = "std")]
+pub use libtest_mimic;
+
 pub struct TestCase {
     pub name: &'static str,
     pub test_fn: fn(),
@@ -49,9 +52,18 @@ pub mod internal {
 macro_rules! bootstrap {
     () => {
         #[cfg(feature = "std")]
-        #[no_mangle]
-        pub extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
-            0
+        pub fn main() {
+            let args = $crate::libtest_mimic::Arguments::from_args();
+            let tests = $crate::inventory::iter::<$crate::TestCase>()
+                .map(|tc| {
+                    let test_fn = tc.test_fn;
+                    $crate::libtest_mimic::Trial::test(tc.name, move || {
+                        test_fn();
+                        Ok(())
+                    })
+                })
+                .collect::<std::vec::Vec<_>>();
+            $crate::libtest_mimic::run(&args, tests).exit();
         }
 
         #[cfg(not(feature = "std"))]
