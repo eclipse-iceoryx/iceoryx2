@@ -15,8 +15,8 @@ use quote::quote;
 use syn::{parse_macro_input, ItemFn};
 
 use crate::inventory_test_common::{
-    generate_inventory_submission, generate_wrapper_body, generate_wrapper_identifier,
-    prepend_attributes,
+    extract_should_panic, generate_inventory_submission, generate_wrapper_body,
+    generate_wrapper_identifier, prepend_attributes,
 };
 
 /// Registers the annotated function to the inventory to be executed by the
@@ -34,6 +34,7 @@ pub fn proc_macro(attr: TokenStream, item: TokenStream) -> TokenStream {
     let fn_name = &original_fn.sig.ident;
 
     let ignored = attr.to_string().split(',').any(|s| s.trim() == "ignore");
+    let (should_panic, should_panic_message) = extract_should_panic(&original_fn.attrs);
 
     let mut generated = vec![prepend_attributes(&original_fn)];
 
@@ -42,7 +43,13 @@ pub fn proc_macro(attr: TokenStream, item: TokenStream) -> TokenStream {
     let wrapper_body = generate_wrapper_body(fn_name, &original_fn.sig, None, ignored);
 
     // Generate inventory submission
-    let submission = generate_inventory_submission(fn_name.to_string(), wrapper_name, wrapper_body);
+    let submission = generate_inventory_submission(
+        fn_name.to_string(),
+        wrapper_name,
+        wrapper_body,
+        should_panic,
+        should_panic_message,
+    );
     generated.push(submission);
 
     TokenStream::from(quote! { #(#generated)* })

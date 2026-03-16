@@ -15,8 +15,8 @@ use quote::quote;
 use syn::{parse_macro_input, ItemFn};
 
 use crate::inventory_test_common::{
-    generate_inventory_submission, generate_wrapper_body, generate_wrapper_identifier,
-    make_pretty_type_string, parse_tokens, prepend_attributes,
+    extract_should_panic, generate_inventory_submission, generate_wrapper_body,
+    generate_wrapper_identifier, make_pretty_type_string, parse_tokens, prepend_attributes,
 };
 
 /// Registers the annotated generic function to the inventory for each provided
@@ -50,13 +50,30 @@ pub fn proc_macro(attr: TokenStream, item: TokenStream) -> TokenStream {
     let attr_str = attr_str.trim();
 
     let is_pair = attr_str.trim_start().starts_with('(');
+    let (should_panic, should_panic_message) = extract_should_panic(&original_fn.attrs);
 
     let mut generated = vec![prepend_attributes(&original_fn)];
 
     if is_pair {
-        generate_tests_for_pairs(&mut generated, fn_name, &original_fn.sig, attr_str, ignored);
+        generate_tests_for_pairs(
+            &mut generated,
+            fn_name,
+            &original_fn.sig,
+            attr_str,
+            ignored,
+            should_panic,
+            should_panic_message,
+        );
     } else {
-        generate_tests_for_types(&mut generated, fn_name, &original_fn.sig, attr_str, ignored);
+        generate_tests_for_types(
+            &mut generated,
+            fn_name,
+            &original_fn.sig,
+            attr_str,
+            ignored,
+            should_panic,
+            should_panic_message,
+        );
     }
 
     TokenStream::from(quote! { #(#generated)* })
@@ -68,6 +85,8 @@ fn generate_tests_for_types(
     sig: &syn::Signature,
     attr_str: &str,
     ignored: bool,
+    should_panic: bool,
+    should_panic_message: Option<String>,
 ) {
     for type_str in attr_str.split(',').map(|s| s.trim()) {
         let type_tokens = parse_tokens(type_str);
@@ -79,7 +98,13 @@ fn generate_tests_for_types(
         let wrapper_body = generate_wrapper_body(fn_name, sig, Some(vec![type_tokens]), ignored);
 
         // Generate inventory submission
-        let submission = generate_inventory_submission(test_name, wrapper_name, wrapper_body);
+        let submission = generate_inventory_submission(
+            test_name,
+            wrapper_name,
+            wrapper_body,
+            should_panic,
+            should_panic_message.clone(),
+        );
         generated.push(submission);
     }
 }
@@ -90,6 +115,8 @@ fn generate_tests_for_pairs(
     sig: &syn::Signature,
     attr_str: &str,
     ignored: bool,
+    should_panic: bool,
+    should_panic_message: Option<String>,
 ) {
     let pairs = parse_pairs(attr_str);
 
@@ -118,7 +145,13 @@ fn generate_tests_for_pairs(
         let wrapper_body = generate_wrapper_body(fn_name, sig, Some(generics), ignored);
 
         // Generate inventory submission
-        let submission = generate_inventory_submission(test_name, wrapper_name, wrapper_body);
+        let submission = generate_inventory_submission(
+            test_name,
+            wrapper_name,
+            wrapper_body,
+            should_panic,
+            should_panic_message.clone(),
+        );
         generated.push(submission);
     }
 }
