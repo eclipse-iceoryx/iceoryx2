@@ -1,6 +1,6 @@
 [package]
-name = "iceoryx2-bb-testing-nostd-macros"
-description = "iceoryx2: [internal] proc macros for no_std testing"
+name = "iceoryx2-bb-testing-macros"
+description = "iceoryx2: [internal] proc macros for testing"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
@@ -16,12 +16,12 @@ proc-macro = true
 [features]
 default = []
 std = [
-  "iceoryx2-bb-testing-nostd/std",
+  "iceoryx2-bb-testing/std",
   "iceoryx2-pal-print/std"
 ]
 
 [dependencies]
-iceoryx2-bb-testing-nostd = { workspace = true }
+iceoryx2-bb-testing = { workspace = true }
 iceoryx2-pal-print = { workspace = true }
 
 syn = { workspace = true }
