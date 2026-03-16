@@ -31,14 +31,39 @@ pub fn make_pretty_type_string(type_spec: &str) -> String {
         .replace(';', "_")
 }
 
-/// Prepends attributes to the provided test function.
-///
-/// Allows for attributes to be transparently applied to test function so the
-/// user does not need to consider if and when they should be applied.
+/// Extracts `#[should_panic]` and its optional `expected` message from
+/// function attributes.
+pub fn extract_should_panic(attrs: &[syn::Attribute]) -> (bool, Option<String>) {
+    for attr in attrs {
+        if attr.path().is_ident("should_panic") {
+            let message = attr.parse_args::<syn::MetaNameValue>().ok().and_then(|nv| {
+                if nv.path.is_ident("expected") {
+                    if let syn::Expr::Lit(syn::ExprLit {
+                        lit: syn::Lit::Str(s),
+                        ..
+                    }) = nv.value
+                    {
+                        return Some(s.value());
+                    }
+                }
+                None
+            });
+            return (true, message);
+        }
+    }
+    (false, None)
+}
+
+/// Prepends attributes to the provided test function, stripping any attributes
+/// that are only meaningful in a standard test harness context (e.g. `should_panic`).
 pub fn prepend_attributes(test_fn: &syn::ItemFn) -> proc_macro2::TokenStream {
+    let mut fn_clone = test_fn.clone();
+    fn_clone
+        .attrs
+        .retain(|attr| !attr.path().is_ident("should_panic"));
     quote! {
         #[allow(dead_code)]
-        #test_fn
+        #fn_clone
     }
 }
 
@@ -96,7 +121,14 @@ pub fn generate_inventory_submission(
     test_name: String,
     wrapper_name: syn::Ident,
     wrapper_body: proc_macro2::TokenStream,
+    should_panic: bool,
+    should_panic_message: Option<String>,
 ) -> proc_macro2::TokenStream {
+    let should_panic_message_tokens = match should_panic_message {
+        Some(msg) => quote! { Some(#msg) },
+        None => quote! { None },
+    };
+
     quote! {
         #[allow(non_snake_case, dead_code)]
         fn #wrapper_name() {
@@ -107,6 +139,8 @@ pub fn generate_inventory_submission(
             ::iceoryx2_bb_testing::TestCase {
                 name: #test_name,
                 test_fn: #wrapper_name,
+                should_panic: #should_panic,
+                should_panic_message: #should_panic_message_tokens,
             }
         }
     }

@@ -37,6 +37,8 @@ pub use libtest_mimic;
 pub struct TestCase {
     pub name: &'static str,
     pub test_fn: fn(),
+    pub should_panic: bool,
+    pub should_panic_message: Option<&'static str>,
 }
 
 inventory::collect!(TestCase);
@@ -57,9 +59,33 @@ macro_rules! bootstrap {
             let tests = $crate::inventory::iter::<$crate::TestCase>()
                 .map(|tc| {
                     let test_fn = tc.test_fn;
+                    let should_panic = tc.should_panic;
+                    let should_panic_message = tc.should_panic_message;
                     $crate::libtest_mimic::Trial::test(tc.name, move || {
-                        test_fn();
-                        Ok(())
+                        if should_panic {
+                            match std::panic::catch_unwind(test_fn) {
+                                Err(e) => {
+                                    if let Some(expected) = should_panic_message {
+                                        let matches = e.downcast_ref::<&str>()
+                                            .map(|s| s.contains(expected))
+                                            .or_else(|| e.downcast_ref::<String>().map(|s| s.contains(expected)))
+                                            .unwrap_or(false);
+                                        if !matches {
+                                            return Err($crate::libtest_mimic::Failed::from(
+                                                format!("panic did not contain expected message \"{}\"", expected)
+                                            ));
+                                        }
+                                    }
+                                    Ok(())
+                                }
+                                Ok(_) => Err($crate::libtest_mimic::Failed::from(
+                                    "expected panic but test succeeded"
+                                )),
+                            }
+                        } else {
+                            test_fn();
+                            Ok(())
+                        }
                     })
                 })
                 .collect::<std::vec::Vec<_>>();
