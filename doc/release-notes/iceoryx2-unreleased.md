@@ -69,6 +69,8 @@
   [#1431](https://github.com/eclipse-iceoryx/iceoryx2/issues/1431)
 * Bump lz4_flex from 0.11.3 to 0.11.6 in Rust and Bazel
   [#1444](https://github.com/eclipse-iceoryx/iceoryx2/issues/1444)
+* Fix libc dependency version
+  [#1447](https://github.com/eclipse-iceoryx/iceoryx2/issues/1447)
 
 ### Refactoring
 
