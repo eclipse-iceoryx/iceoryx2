@@ -435,7 +435,7 @@ fn thread_destructor_does_block_on_busy_thread() {
 }
 
 #[test]
-fn scoped_threads_work() {
+fn thread_scoped_threads_work() {
     let _watchdog = Watchdog::new();
     let number_of_threads = MAX_SCOPED_THREADS;
     let handle = BarrierHandle::new();
