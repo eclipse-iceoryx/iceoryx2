@@ -111,6 +111,8 @@
   [#1300](https://github.com/eclipse-iceoryx/iceoryx2/issues/1300)
 * Add CI check for `std` feature propagation
   [#1300](https://github.com/eclipse-iceoryx/iceoryx2/issues/1300)
+* Add `just` scripts for some common maintenance tasks
+  [#1408](https://github.com/eclipse-iceoryx/iceoryx2/issues/1408)
 
 ### New API features
 
