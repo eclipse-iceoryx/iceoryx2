@@ -101,7 +101,7 @@ _detect-host-target toolchain:
     fi
 
 [private]
-_resolve-manifest-path package:
+_find-crate-dir package:
     #!/usr/bin/env bash
     set -euo pipefail
     MANIFEST=$(cargo metadata --format-version=1 --no-deps \
@@ -110,4 +110,12 @@ _resolve-manifest-path package:
     if [[ -z "$MANIFEST" ]]; then
         echo "Error: crate '{{package}}' not found in workspace" >&2; exit 1
     fi
-    echo "$MANIFEST"
+    dirname "$MANIFEST"
+
+[private]
+_find-crate-manifest package:
+    @echo "$(just _find-crate-dir '{{package}}')/Cargo.toml"
+
+[private]
+_find-crate-src package:
+    @echo "$(just _find-crate-dir '{{package}}')/src"

@@ -40,7 +40,7 @@ _verify-std-propagation-package target:
     elif [[ -d "{{target}}" ]]; then
         rust-script {{VERIFY_STD_PROPAGATION_SCRIPT}} "{{target}}/Cargo.toml"
     else
-        MANIFEST=$(just _resolve-manifest-path "{{target}}")
+        MANIFEST=$(just _find-crate-manifest "{{target}}")
         rust-script {{VERIFY_STD_PROPAGATION_SCRIPT}} "$MANIFEST"
     fi
 
