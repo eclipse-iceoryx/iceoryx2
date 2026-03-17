@@ -17,11 +17,20 @@
 MARKDOWN_LINT_SCRIPT := justfile_directory() / "internal/scripts/ci_check_markdown_linting.sh"
 
 [private]
-_lint-dispatch target *flags:
+_lint-dispatch what *flags:
     #!/usr/bin/env bash
-    case "{{target}}" in
+    case "{{what}}" in
+        "")
+            echo "Usage: just lint <what> [flags]"
+            echo ""
+            echo "  markdown               lint markdown files"
+            echo ""
+            echo "Flags:"
+            echo "  --fix                  fix linting issues"
+            exit 1
+            ;;
         markdown) just _lint-markdown {{flags}} ;;
-        *) echo "Unknown lint target: {{target}}"; exit 1 ;;
+        *) echo "Unknown lint target: {{what}}"; exit 1 ;;
     esac
 
 [private]

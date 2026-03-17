@@ -38,13 +38,26 @@ _parse-build-args *flags:
     echo "TARGET_TRIPLET='$TARGET_TRIPLET'"
 
 [private]
-_build-dispatch target *flags:
+_build-dispatch what *flags:
     #!/usr/bin/env bash
     set -euo pipefail
 
     eval $(just _parse-build-args {{flags}})
 
-    case "{{target}}" in
+    case "{{what}}" in
+        "")
+            echo "Usage: just build <what> [flags]"
+            echo ""
+            echo "  workspace              build all crates"
+            echo "  tests                  build all tests"
+            echo "  <package>              build a specific package"
+            echo ""
+            echo "Flags:"
+            echo "  --no_std               build without std"
+            echo "  +<toolchain>           use a specific toolchain"
+            echo "  --target=<triplet>     cross-compile for target"
+            exit 1
+            ;;
         workspace)
             just _build-workspace "$TOOLCHAIN" "$HAS_NOSTD"
             ;;
@@ -52,7 +65,7 @@ _build-dispatch target *flags:
             just _build-tests "$TOOLCHAIN" "$HAS_NOSTD" "$TARGET_TRIPLET"
             ;;
         *)
-            just _build-package "{{target}}" "$TOOLCHAIN" "$HAS_NOSTD" "$TARGET_TRIPLET"
+            just _build-package "{{what}}" "$TOOLCHAIN" "$HAS_NOSTD" "$TARGET_TRIPLET"
             ;;
     esac
 

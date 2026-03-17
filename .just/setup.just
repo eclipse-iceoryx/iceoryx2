@@ -15,12 +15,19 @@
 # =============================================================================
 
 [private]
-_setup-dispatch target:
+_setup-dispatch what:
     #!/usr/bin/env bash
-    case "{{target}}" in
-        all ) just _setup-all ;;
+    case "{{what}}" in
+        "")
+            echo "Usage: just setup <what>"
+            echo ""
+            echo "  all                    setup all dependencies"
+            echo "  script-dependencies    setup just script dependencies"
+            exit 1
+            ;;
+        all) just _setup-all ;;
         script-dependencies) just _setup-script-dependencies ;;
-        *) echo "Unknown setup task: {{target}}"; exit 1 ;;
+        *) echo "Unknown setup task: {{what}}"; exit 1 ;;
     esac
 
 [private]

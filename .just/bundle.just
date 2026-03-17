@@ -44,14 +44,30 @@ _parse-bundle-args *flags:
     echo "HAS_NOSTD='$HAS_NOSTD'"
 
 [private]
-_bundle-dispatch target *flags:
+_bundle-dispatch what *flags:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    if [ "{{target}}" != "tests" ]; then
-        echo "Error: bundle command currently only supports 'tests' as target" >&2
-        exit 1
-    fi
+    case "{{what}}" in
+        "")
+            echo "Usage: just bundle <what> [flags]"
+            echo ""
+            echo "  tests                  bundle no_std tests for deployment"
+            echo ""
+            echo "Flags:"
+            echo "  --no_std               bundle without std"
+            echo "  --strip                strip debug symbols"
+            echo "  --compress             create compressed tarball"
+            echo "  +<toolchain>           use a specific toolchain"
+            echo "  --target=<triplet>     bundle for target"
+            exit 1
+            ;;
+        tests) ;;
+        *)
+            echo "error: unknown bundle target '{{what}}'" >&2
+            exit 1
+            ;;
+    esac
 
     eval $(just _parse-bundle-args {{flags}})
 

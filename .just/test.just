@@ -38,18 +38,30 @@ _parse-test-args *flags:
     echo "TARGET_TRIPLET='$TARGET_TRIPLET'"
 
 [private]
-_test-dispatch target *flags:
+_test-dispatch what *flags:
     #!/usr/bin/env bash
     set -euo pipefail
 
     eval $(just _parse-test-args {{flags}})
 
-    case "{{target}}" in
+    case "{{what}}" in
+        "")
+            echo "Usage: just test <what> [flags]"
+            echo ""
+            echo "  workspace              run all tests"
+            echo "  <package>              run tests for a specific package"
+            echo ""
+            echo "Flags:"
+            echo "  --no_std               test without std"
+            echo "  +<toolchain>           use a specific toolchain"
+            echo "  --target=<triplet>     cross-compile for target"
+            exit 1
+            ;;
         workspace)
             just _test-workspace "$TOOLCHAIN" "$HAS_NOSTD" "$TARGET_TRIPLET"
             ;;
         *)
-            just _test-package "{{target}}" "$TOOLCHAIN" "$HAS_NOSTD" "$TARGET_TRIPLET"
+            just _test-package "{{what}}" "$TOOLCHAIN" "$HAS_NOSTD" "$TARGET_TRIPLET"
             ;;
     esac
 
