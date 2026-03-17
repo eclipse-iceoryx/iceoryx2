@@ -23,6 +23,19 @@ RUST_COV_DIR      := "target/debug/rust_cov_build"
 CMAKE_COV_DIR     := "target/ff/cc/cmake_cov_build"
 COVERAGE_OUT_DIR  := "target/ff/coverage"
 
+# Paths excluded from all coverage reports
+COVERAGE_IGNORE := `echo \
+    "_deps"           \
+    "benchmarks"      \
+    "component-tests" \
+    "examples"        \
+    "iceoryx2-cli"    \
+    "iceoryx2-ffi"    \
+    "tests"           \
+    "tests-nostd"     \
+    "testing"         \
+    "build.rs"`
+
 [private]
 _parse-coverage-args *flags:
     #!/usr/bin/env bash
@@ -177,6 +190,12 @@ _coverage-generate-report-impl output_type grcov_output gcovr_flag gcovr_output:
     LLVM_PATH=$(just _find-llvm-path)
 
     echo "Generating Rust coverage report ..."
+
+    GRCOV_IGNORE_FLAGS=(--ignore "*target*" --ignore "*.cargo*")
+    for pattern in {{COVERAGE_IGNORE}}; do
+        GRCOV_IGNORE_FLAGS+=(--ignore "*${pattern}*")
+    done
+
     grcov \
         **/{{LLVM_PROFILE_PATH}} \
         **/**/{{LLVM_PROFILE_PATH}} \
@@ -185,25 +204,21 @@ _coverage-generate-report-impl output_type grcov_output gcovr_flag gcovr_output:
         --output-type {{output_type}} \
         --branch \
         --ignore-not-existing \
-        --ignore "*iceoryx2-cli*" \
-        --ignore "*iceoryx2-ffi*" \
-        --ignore "*build.rs" \
-        --ignore "*tests*" \
-        --ignore "*testing*" \
-        --ignore "*component-tests*" \
-        --ignore "*examples*" \
-        --ignore "*benchmarks*" \
-        --ignore "*target*" \
-        --ignore "*.cargo*" \
+        "${GRCOV_IGNORE_FLAGS[@]}" \
         --llvm-path "$LLVM_PATH" \
         --output-path "{{grcov_output}}"
 
     echo "Generating C++ coverage report ..."
+
+    GCOVR_IGNORE_FLAGS=(-e '/target/' -e '/\.cargo/')
+    for pattern in {{COVERAGE_IGNORE}}; do
+        GCOVR_IGNORE_FLAGS+=(-e "${pattern}")
+    done
+
+    # We use here https://github.com/gcovr/gcovr to handle the generated files by gcov
+    # License: https://github.com/gcovr/gcovr/blob/main/LICENSE.txt
     gcovr "{{gcovr_flag}}" "{{gcovr_output}}" "{{CMAKE_COV_DIR}}" \
-        -e '/.*/_deps/' \
-        -e '/.*/tests/' \
-        -e '/.*/testing/' \
-        -e '/.*/component-tests/'
+        "${GCOVR_IGNORE_FLAGS[@]}"
 
 # --- show --------------------------------------------------------------------
 
@@ -221,7 +236,14 @@ _coverage-show detailed *packages:
     just _coverage-merge-profiles
 
     FILES=$(find ./target/debug/deps/ -type f -executable)
-    CMD="$LLVM_PATH/llvm-cov report --use-color --ignore-filename-regex='/.cargo/registry' --instr-profile=./{{RUST_COV_DIR}}/json5format.profdata"
+
+    IGNORE_PATTERNS=('/\.cargo/registry' '/target/')
+    for pattern in {{COVERAGE_IGNORE}}; do
+        IGNORE_PATTERNS+=("$pattern")
+    done
+    IGNORE_REGEX=$(IFS='|'; echo "${IGNORE_PATTERNS[*]}")
+
+    CMD="$LLVM_PATH/llvm-cov report --use-color --ignore-filename-regex='$IGNORE_REGEX' --instr-profile=./{{RUST_COV_DIR}}/json5format.profdata"
     for FILE in $FILES; do
         CMD="$CMD --object $FILE"
     done
