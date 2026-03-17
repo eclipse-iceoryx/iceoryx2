@@ -17,6 +17,7 @@ import '.just/bundle.just'
 import '.just/verify.just'
 import '.just/lint.just'
 import '.just/setup.just'
+import '.just/coverage.just'
 
 # Show available commands
 default:
@@ -49,3 +50,7 @@ lint what="" *flags:
 # Setup tasks
 setup what="":
     @just _setup-dispatch "{{what}}"
+
+# Profile test coverage, view coverage in terminal, generate reports
+coverage action="" *flags:
+    @just _coverage-dispatch "{{action}}" {{flags}}

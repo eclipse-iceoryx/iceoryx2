@@ -58,6 +58,31 @@ _setup-script-dependencies:
         echo "✓ jq installed"
     }
 
+    _install_rustfilt() {
+        cargo install rustfilt
+        echo "✓ rustfilt installed"
+    }
+
+    _install_grcov() {
+        cargo install grcov
+        echo "✓ grcov installed"
+    }
+
+    _install_gcovr() {
+        if ! which pip &> /dev/null; then
+            echo "✗ could not install gcovr: pip not found"
+            echo "  Please install pip or gcovr manually: https://gcovr.com/en/stable/installation.html"
+            exit 1
+        fi
+        read -p "Install gcovr with sudo? [y/N] " use_sudo
+        if [[ "$use_sudo" == [yY] ]]; then
+            sudo pip install gcovr
+        else
+            pip install gcovr
+        fi
+        echo "✓ gcovr installed"
+    }
+
     _install_markdownlint() {
         read -p "Install markdownlint-cli with sudo? [y/N] " use_sudo
         if [[ "$use_sudo" == [yY] ]]; then
@@ -91,6 +116,18 @@ _setup-script-dependencies:
 
     if _prompt_install "jq"; then
         _install_jq
+    fi
+
+    if _prompt_install "rustfilt"; then
+        _install_rustfilt
+    fi
+
+    if _prompt_install "grcov"; then
+        _install_grcov
+    fi
+
+    if _prompt_install "gcovr"; then
+        _install_gcovr
     fi
 
     if _prompt_install "markdownlint"; then

@@ -1,0 +1,285 @@
+# Copyright (c) 2026 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache Software License 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+# which is available at https://opensource.org/licenses/MIT.
+#
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+# =============================================================================
+# Coverage Recipes
+# =============================================================================
+
+COLOR_OFF    := "\\033[0m"
+COLOR_GREEN  := "\\033[1;32m"
+COLOR_YELLOW := "\\033[1;33m"
+
+LLVM_PROFILE_PATH := "target/debug/llvm-profile-files"
+RUST_COV_DIR      := "target/debug/rust_cov_build"
+CMAKE_COV_DIR     := "target/ff/cc/cmake_cov_build"
+COVERAGE_OUT_DIR  := "target/ff/coverage"
+
+[private]
+_parse-coverage-args *flags:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    HAS_HTML="false"
+    HAS_LCOV="false"
+    HAS_DETAILED="false"
+    PACKAGES=()
+
+    set -- {{flags}}
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --html)      HAS_HTML="true";        shift ;;
+            --lcov)      HAS_LCOV="true";        shift ;;
+            --detailed)  HAS_DETAILED="true";    shift ;;
+            --package)   PACKAGES+=("$2");       shift 2 ;;
+            *)           shift ;;
+        esac
+    done
+
+    echo "HAS_HTML='$HAS_HTML'"
+    echo "HAS_LCOV='$HAS_LCOV'"
+    echo "HAS_DETAILED='$HAS_DETAILED'"
+    echo "PACKAGES=(${PACKAGES[*]@Q})"
+
+[private]
+_coverage-dispatch action *flags:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    eval "$(just _parse-coverage-args {{flags}})"
+
+    case "{{action}}" in
+        "")
+            echo "Usage: just coverage <command> [flags]"
+            echo ""
+            echo "Commands:"
+            echo "  profile                          collect coverage profiles"
+            echo "  generate-report --html|--lcov    generate report"
+            echo "  show [--detailed] [--package X]  show coverage summary"
+            echo "  clean                            remove all coverage data"
+            exit 1
+            ;;
+        profile)
+            if [ "${#PACKAGES[@]}" -gt 0 ]; then
+                echo "error: '--package' is not supported for 'just coverage profile'" >&2; exit 1
+            fi
+            just _coverage-profile
+            ;;
+        generate-report)
+            if [ "${#PACKAGES[@]}" -gt 0 ]; then
+                echo "error: '--package' is not supported for 'just coverage generate-report'" >&2; exit 1
+            fi
+            if [ "$HAS_HTML" = "false" ] && [ "$HAS_LCOV" = "false" ]; then
+                echo "error: 'just coverage report' requires --html, --lcov, or both" >&2
+                exit 1
+            fi
+            [ "$HAS_HTML" = "true" ] && just _coverage-generate-report-html
+            [ "$HAS_LCOV" = "true" ] && just _coverage-generate-report-lcov
+            ;;
+        show)
+            just _coverage-show "$HAS_DETAILED" "${PACKAGES[@]}"
+            ;;
+        clean)
+            just _coverage-clean
+            ;;
+        *)
+            echo "error: unknown coverage action '{{action}}'" >&2; exit 1
+            ;;
+    esac
+
+# --- profile -----------------------------------------------------------------
+
+[private]
+_coverage-profile:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    mkdir -p "{{CMAKE_COV_DIR}}"
+    just _coverage-profile-cmake
+    just _coverage-profile-rust
+
+[private]
+_coverage-profile-cmake:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    cmake . -B"{{CMAKE_COV_DIR}}" -DCOVERAGE=ON -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug
+    cmake --build "{{CMAKE_COV_DIR}}" -j
+    ctest --test-dir "{{CMAKE_COV_DIR}}" --output-on-failure
+
+[private]
+_coverage-profile-rust:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    export LLVM_PROFILE_FILE="{{LLVM_PROFILE_PATH}}/iceoryx2-%p-%m.profraw"
+    export DEBUGINFOD_URLS=/dev/null
+
+    if [[ "$(rustc --version | grep nightly | wc -l)" == "1" ]]; then
+        echo -e "{{COLOR_GREEN}}rust nightly compiler found, activating MC/DC coverage check{{COLOR_OFF}}"
+        export RUSTFLAGS="-C instrument-coverage -Z coverage-options=condition"
+    else
+        echo -e "{{COLOR_YELLOW}}no rust nightly compiler found, MC/DC coverage is not available only line coverage{{COLOR_OFF}}"
+        export RUSTFLAGS="-C instrument-coverage"
+    fi
+    cargo test --workspace --all-targets -- --test-threads=1
+
+# --- generate-report ---------------------------------------------------------
+
+[private]
+_coverage-generate-report-html:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    mkdir -p "{{COVERAGE_OUT_DIR}}/html/cpp"
+
+    just _coverage-generate-report-impl \
+        "html" \
+        "{{COVERAGE_OUT_DIR}}/html/rust" \
+        "--html-details" \
+        "{{COVERAGE_OUT_DIR}}/html/cpp/index.html"
+    echo "Rust HTML report: {{COVERAGE_OUT_DIR}}/html/rust/index.html"
+    echo "C++ HTML report:  {{COVERAGE_OUT_DIR}}/html/cpp/index.html"
+
+[private]
+_coverage-generate-report-lcov:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    mkdir -p "{{COVERAGE_OUT_DIR}}/lcov"
+
+    just _coverage-generate-report-impl \
+        "lcov" \
+        "{{COVERAGE_OUT_DIR}}/lcov/iceoryx2_lcov_rust.info" \
+        "--lcov" \
+        "{{COVERAGE_OUT_DIR}}/lcov/iceoryx2_lcov_cpp.info"
+
+[private]
+_coverage-generate-report-impl output_type grcov_output gcovr_flag gcovr_output:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if ! which grcov &>/dev/null; then
+        echo "error: 'grcov' not found. Aborting!" >&2; exit 1
+    fi
+    if ! which gcovr &>/dev/null; then
+        echo "error: 'gcovr' not found. Aborting!" >&2; exit 1
+    fi
+
+    LLVM_PATH=$(just _find-llvm-path)
+
+    echo "Generating Rust coverage report ..."
+    grcov \
+        **/{{LLVM_PROFILE_PATH}} \
+        **/**/{{LLVM_PROFILE_PATH}} \
+        --binary-path target/debug \
+        --source-dir . \
+        --output-type {{output_type}} \
+        --branch \
+        --ignore-not-existing \
+        --ignore "*iceoryx2-cli*" \
+        --ignore "*iceoryx2-ffi*" \
+        --ignore "*build.rs" \
+        --ignore "*tests*" \
+        --ignore "*testing*" \
+        --ignore "*component-tests*" \
+        --ignore "*examples*" \
+        --ignore "*benchmarks*" \
+        --ignore "*target*" \
+        --ignore "*.cargo*" \
+        --llvm-path "$LLVM_PATH" \
+        --output-path "{{grcov_output}}"
+
+    echo "Generating C++ coverage report ..."
+    gcovr "{{gcovr_flag}}" "{{gcovr_output}}" "{{CMAKE_COV_DIR}}" \
+        -e '/.*/_deps/' \
+        -e '/.*/tests/' \
+        -e '/.*/testing/' \
+        -e '/.*/component-tests/'
+
+# --- show --------------------------------------------------------------------
+
+[private]
+_coverage-show detailed *packages:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [ "{{detailed}}" = "true" ] && ! which rustfilt &>/dev/null; then
+        echo "error: 'rustfilt' not found. Aborting!" >&2; exit 1
+    fi
+
+    LLVM_PATH=$(just _find-llvm-path)
+
+    just _coverage-merge-profiles
+
+    FILES=$(find ./target/debug/deps/ -type f -executable)
+    CMD="$LLVM_PATH/llvm-cov report --use-color --ignore-filename-regex='/.cargo/registry' --instr-profile=./{{RUST_COV_DIR}}/json5format.profdata"
+    for FILE in $FILES; do
+        CMD="$CMD --object $FILE"
+    done
+    for pkg in {{packages}}; do
+        PKG_SRC_DIR=$(just _find-crate-src "$pkg")
+        CMD="$CMD --sources $PKG_SRC_DIR"
+    done
+    if [ "{{detailed}}" = "true" ]; then
+        CMD="$CMD --show-instantiation-summary --Xdemangler=rustfilt | less -R"
+    fi
+    eval $CMD
+
+[private]
+_coverage-merge-profiles:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [[ ! -f "./{{RUST_COV_DIR}}/json5format.profdata" ]]; then
+        LLVM_PATH=$(just _find-llvm-path)
+        mkdir -p "./{{RUST_COV_DIR}}/"
+        FILES=$(find . -name "*profraw")
+        "$LLVM_PATH/llvm-profdata" merge --sparse $FILES -o "./{{RUST_COV_DIR}}/json5format.profdata"
+    fi
+
+# --- clean -------------------------------------------------------------------
+
+[private]
+_coverage-clean:
+    find . -name "*profraw" -exec rm {} \;
+    cargo clean
+
+
+# --- helpers --------------------------------------------------------------
+
+[private]
+_find-llvm-path:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    RUSTC_LLVM_VERSION=$(rustc --version --verbose | grep -oP 'LLVM version: \K[0-9]+')
+
+    if which "llvm-profdata-${RUSTC_LLVM_VERSION}" &>/dev/null; then
+        dirname "$(which "llvm-profdata-${RUSTC_LLVM_VERSION}")"
+    elif which llvm-profdata &>/dev/null; then
+        LLVM_PROFDATA_VERSION_OUTPUT=$(llvm-profdata merge --version)
+        LLVM_VERSION=$(echo "$LLVM_PROFDATA_VERSION_OUTPUT" | grep -oP 'LLVM version \K[0-9]+')
+
+        RUSTC_VERSION_OUTPUT=$(rustc --version --verbose)
+        RUSTC_LLVM_VERSION=$(echo "$RUSTC_VERSION_OUTPUT" | grep -oP 'LLVM version: \K[0-9]+')
+
+        if [[ "$LLVM_VERSION" -ne "$RUSTC_LLVM_VERSION" ]]; then
+            echo "llvm-profdata LLVM version: $LLVM_VERSION" >&2
+            echo "rustc LLVM version: $RUSTC_LLVM_VERSION" >&2
+            echo "error: LLVM major versions do not match" >&2
+            exit 1
+        fi
+        dirname "$(which llvm-profdata)"
+    else
+        echo "error: 'llvm-profdata' not found. Aborting!" >&2; exit 1
+    fi
+
