@@ -19,7 +19,7 @@ _discover-nostd-test-crates:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    if ! command -v jq &> /dev/null; then
+    if ! which jq &> /dev/null; then
         echo "Error: jq is required but not found on your system" >&2
         echo "" >&2
         echo "Please install jq to use no_std test commands:" >&2

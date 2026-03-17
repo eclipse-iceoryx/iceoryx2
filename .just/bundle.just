@@ -196,7 +196,7 @@ _strip-binaries bundle_dir:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    if command -v strip &> /dev/null; then
+    if which strip &> /dev/null; then
         echo ""
         echo "Stripping binaries..."
         strip "{{bundle_dir}}"/*-tests-nostd 2>/dev/null || true
