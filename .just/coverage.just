@@ -76,7 +76,7 @@ _coverage-dispatch action *flags:
             echo "Commands:"
             echo "  profile                          collect coverage profiles"
             echo "  generate-report --html|--lcov    generate report"
-            echo "  show [--detailed] [--package X]  show coverage summary"
+            echo "  summarize [--detailed] [--package X]  show coverage summary"
             echo "  clean                            remove all coverage data"
             exit 1
             ;;
@@ -97,8 +97,8 @@ _coverage-dispatch action *flags:
             [ "$HAS_HTML" = "true" ] && just _coverage-generate-report-html
             [ "$HAS_LCOV" = "true" ] && just _coverage-generate-report-lcov
             ;;
-        show)
-            just _coverage-show "$HAS_DETAILED" "${PACKAGES[@]}"
+        summarize)
+            just _coverage-summarize "$HAS_DETAILED" "${PACKAGES[@]}"
             ;;
         clean)
             just _coverage-clean
@@ -220,10 +220,10 @@ _coverage-generate-report-impl output_type grcov_output gcovr_flag gcovr_output:
     gcovr "{{gcovr_flag}}" "{{gcovr_output}}" "{{CMAKE_COV_DIR}}" \
         "${GCOVR_IGNORE_FLAGS[@]}"
 
-# --- show --------------------------------------------------------------------
+# --- summarize ---------------------------------------------------------------
 
 [private]
-_coverage-show detailed *packages:
+_coverage-summarize detailed *packages:
     #!/usr/bin/env bash
     set -euo pipefail
 
