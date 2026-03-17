@@ -12,11 +12,9 @@
 
 extern crate iceoryx2_bb_loggers;
 
-use iceoryx2_bb_posix::config::DEFAULT_SCHEDULER;
-use iceoryx2_bb_posix::scheduler::*;
-use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_posix_tests_common::scheduler_tests;
 
 #[test]
 fn scheduler_default_scheduler_set_correctly() {
-    assert_that!(Scheduler::default(), eq DEFAULT_SCHEDULER)
+    scheduler_tests::scheduler_default_scheduler_set_correctly();
 }

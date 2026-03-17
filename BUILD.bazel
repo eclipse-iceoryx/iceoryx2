@@ -284,6 +284,7 @@ filegroup(
         "//iceoryx2-bb/memory:all_srcs",
         "//iceoryx2-bb/memory/tests-common:all_srcs",
         "//iceoryx2-bb/posix:all_srcs",
+        "//iceoryx2-bb/posix/tests-common:all_srcs",
         "//iceoryx2-bb/system-types:all_srcs",
         "//iceoryx2-bb/system-types/tests-common:all_srcs",
         "//iceoryx2-bb/testing:all_srcs",

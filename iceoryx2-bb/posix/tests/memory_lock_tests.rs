@@ -12,36 +12,14 @@
 
 extern crate iceoryx2_bb_loggers;
 
-use iceoryx2_bb_posix::memory_lock::*;
-use iceoryx2_bb_testing::{assert_that, test_requires};
-use iceoryx2_pal_posix::posix;
-use iceoryx2_pal_posix::posix::POSIX_SUPPORT_MEMORY_LOCK;
+use iceoryx2_bb_posix_tests_common::memory_lock_tests;
 
 #[test]
 fn memory_lock_works() {
-    test_requires!(POSIX_SUPPORT_MEMORY_LOCK);
-
-    let some_memory = [0u8; 1024];
-
-    {
-        let mem_lock = unsafe {
-            MemoryLock::new(
-                some_memory.as_ptr() as *const posix::void,
-                some_memory.len(),
-            )
-        };
-        assert_that!(mem_lock, is_ok);
-    }
+    memory_lock_tests::memory_lock_works();
 }
 
 #[test]
 fn memory_lock_all_works() {
-    test_requires!(POSIX_SUPPORT_MEMORY_LOCK);
-
-    assert_that!(
-        MemoryLock::lock_all(LockMode::LockAllPagesThatBecomeMapped),
-        is_ok
-    );
-
-    MemoryLock::unlock_all();
+    memory_lock_tests::memory_lock_all_works();
 }

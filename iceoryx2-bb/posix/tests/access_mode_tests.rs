@@ -12,33 +12,19 @@
 
 extern crate iceoryx2_bb_loggers;
 
-use iceoryx2_bb_posix::access_mode::*;
-use iceoryx2_bb_testing::assert_that;
-use iceoryx2_pal_posix::*;
+use iceoryx2_bb_posix_tests_common::access_mode_tests;
 
 #[test]
 fn access_mode_prot_flag_conversion_works() {
-    assert_that!(AccessMode::None.as_protflag(), eq posix::PROT_NONE);
-    assert_that!(AccessMode::Read.as_protflag(), eq posix::PROT_READ);
-    assert_that!(AccessMode::Write.as_protflag(), eq posix::PROT_WRITE);
-    assert_that!(
-        AccessMode::ReadWrite.as_protflag(), eq
-        posix::PROT_READ | posix::PROT_WRITE
-    );
+    access_mode_tests::access_mode_prot_flag_conversion_works();
 }
 
 #[test]
 fn access_mode_o_flag_conversion_works() {
-    assert_that!(AccessMode::None.as_oflag(), eq 0);
-    assert_that!(AccessMode::Read.as_oflag(), eq posix::O_RDONLY);
-    assert_that!(AccessMode::Write.as_oflag(), eq posix::O_WRONLY);
-    assert_that!(AccessMode::ReadWrite.as_oflag(), eq posix::O_RDWR);
+    access_mode_tests::access_mode_o_flag_conversion_works();
 }
 
 #[test]
 fn access_mode_display_works() {
-    assert_that!(format!("{}", AccessMode::None), eq "AccessMode::None");
-    assert_that!(format!("{}", AccessMode::Read), eq "AccessMode::Read");
-    assert_that!(format!("{}", AccessMode::Write), eq "AccessMode::Write");
-    assert_that!(format!("{}", AccessMode::ReadWrite), eq "AccessMode::ReadWrite");
+    access_mode_tests::access_mode_display_works();
 }

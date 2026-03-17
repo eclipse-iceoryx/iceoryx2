@@ -12,35 +12,14 @@
 
 extern crate iceoryx2_bb_loggers;
 
-use iceoryx2_bb_posix::creation_mode::*;
-use iceoryx2_bb_testing::assert_that;
-use iceoryx2_pal_posix::*;
+use iceoryx2_bb_posix_tests_common::creation_mode_tests;
 
 #[test]
 fn creation_mode_o_flag_conversion_works() {
-    assert_that!(
-        CreationMode::CreateExclusive.as_oflag(), eq
-        posix::O_CREAT | posix::O_EXCL
-    );
-    assert_that!(
-        CreationMode::PurgeAndCreate.as_oflag(), eq
-        posix::O_CREAT | posix::O_EXCL
-    );
-    assert_that!(CreationMode::OpenOrCreate.as_oflag(), eq posix::O_CREAT);
+    creation_mode_tests::creation_mode_o_flag_conversion_works();
 }
 
 #[test]
 fn creation_mode_display_works() {
-    assert_that!(
-        format!("{}", CreationMode::PurgeAndCreate),
-        eq "CreationMode::PurgeAndCreate"
-    );
-    assert_that!(
-        format!("{}", CreationMode::CreateExclusive),
-        eq "CreationMode::CreateExclusive"
-    );
-    assert_that!(
-        format!("{}", CreationMode::OpenOrCreate),
-        eq "CreationMode::OpenOrCreate"
-    );
+    creation_mode_tests::creation_mode_display_works();
 }

@@ -12,21 +12,9 @@
 
 extern crate iceoryx2_bb_loggers;
 
-use iceoryx2_bb_posix::file_type::*;
-use iceoryx2_bb_testing::assert_that;
-use iceoryx2_pal_posix::*;
+use iceoryx2_bb_posix_tests_common::file_type_tests;
 
 #[test]
 fn file_type_mode_t_conversion_works() {
-    assert_that!(FileType::File, eq FileType::from_mode_t(posix::S_IFREG));
-    assert_that!(FileType::Character, eq FileType::from_mode_t(posix::S_IFCHR));
-    assert_that!(FileType::Block, eq FileType::from_mode_t(posix::S_IFBLK));
-    assert_that!(FileType::Directory, eq FileType::from_mode_t(posix::S_IFDIR));
-    assert_that!(
-        FileType::SymbolicLink, eq
-        FileType::from_mode_t(posix::S_IFLNK)
-    );
-    assert_that!(FileType::Socket, eq FileType::from_mode_t(posix::S_IFSOCK));
-    assert_that!(FileType::FiFo, eq FileType::from_mode_t(posix::S_IFIFO));
-    assert_that!(FileType::Unknown, eq FileType::from_mode_t(337));
+    file_type_tests::file_type_mode_t_conversion_works();
 }

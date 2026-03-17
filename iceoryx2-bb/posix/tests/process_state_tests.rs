@@ -12,269 +12,62 @@
 
 extern crate iceoryx2_bb_loggers;
 
-use core::time::Duration;
-
-use iceoryx2_bb_container::semantic_string::SemanticString;
-use iceoryx2_bb_posix::config::*;
-use iceoryx2_bb_posix::file::{File, FileBuilder};
-use iceoryx2_bb_posix::file_descriptor::FileDescriptorManagement;
-use iceoryx2_bb_posix::shared_memory::Permission;
-use iceoryx2_bb_posix::testing::__internal_process_guard_staged_death;
-use iceoryx2_bb_posix::testing::create_test_directory;
-use iceoryx2_bb_posix::unix_datagram_socket::CreationMode;
-use iceoryx2_bb_posix::{process_state::*, unique_system_id::UniqueSystemId};
-use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath};
-use iceoryx2_bb_testing::assert_that;
-
-fn generate_file_path() -> FilePath {
-    let mut file = FileName::new(b"process_state_tests").unwrap();
-    file.push_bytes(
-        UniqueSystemId::new()
-            .unwrap()
-            .value()
-            .to_string()
-            .as_bytes(),
-    )
-    .unwrap();
-
-    create_test_directory();
-    FilePath::from_path_and_file(&TEST_DIRECTORY, &file).unwrap()
-}
+use iceoryx2_bb_posix_tests_common::process_state_tests;
 
 #[test]
 pub fn process_state_guard_can_be_created() {
-    create_test_directory();
-    let path = generate_file_path();
-
-    let guard = ProcessGuardBuilder::new().create(&path).unwrap();
-
-    assert_that!(*guard.path(), eq path);
-    assert_that!(File::does_exist(&path).unwrap(), eq true);
+    process_state_tests::process_state_guard_can_be_created();
 }
 
 #[test]
 pub fn process_state_guard_removes_file_when_dropped() {
-    create_test_directory();
-    let path = generate_file_path();
-
-    let guard = ProcessGuardBuilder::new().create(&path).unwrap();
-    assert_that!(File::does_exist(&path).unwrap(), eq true);
-    drop(guard);
-    assert_that!(File::does_exist(&path).unwrap(), eq false);
+    process_state_tests::process_state_guard_removes_file_when_dropped();
 }
 
 #[test]
 pub fn process_state_guard_cannot_use_already_existing_file() {
-    create_test_directory();
-    let path = generate_file_path();
-
-    let file = FileBuilder::new(&path)
-        .creation_mode(CreationMode::PurgeAndCreate)
-        .create()
-        .unwrap();
-
-    let guard = ProcessGuardBuilder::new().create(&path);
-    assert_that!(guard.is_err(), eq true);
-    assert_that!(guard.err().unwrap(), eq ProcessGuardCreateError::AlreadyExists);
-
-    file.remove_self().unwrap();
+    process_state_tests::process_state_guard_cannot_use_already_existing_file();
 }
 
 #[test]
 pub fn process_state_monitor_detects_dead_state() {
-    create_test_directory();
-    let path = generate_file_path();
-    let mut cleaner_path = path;
-    cleaner_path.push_bytes(b"_owner_lock").unwrap();
-
-    let guard = ProcessGuardBuilder::new().create(&path).unwrap();
-    __internal_process_guard_staged_death(guard);
-
-    let monitor = ProcessMonitor::new(&path).unwrap();
-    assert_that!(monitor.state().unwrap(), eq ProcessState::Dead);
-    ProcessCleaner::new(&path).unwrap();
-    assert_that!(monitor.state().unwrap(), eq ProcessState::DoesNotExist);
+    process_state_tests::process_state_monitor_detects_dead_state();
 }
 
 #[test]
 pub fn process_state_monitor_detects_non_existing_state() {
-    create_test_directory();
-    let path = generate_file_path();
-
-    let monitor = ProcessMonitor::new(&path).unwrap();
-    assert_that!(monitor.state().unwrap(), eq ProcessState::DoesNotExist);
+    process_state_tests::process_state_monitor_detects_non_existing_state();
 }
 
 #[test]
 pub fn process_state_monitor_transitions_work_starting_from_non_existing_process() {
-    create_test_directory();
-    let path = generate_file_path();
-    let mut cleaner_path = path;
-    cleaner_path.push_bytes(b"_owner_lock").unwrap();
-
-    let monitor = ProcessMonitor::new(&path).unwrap();
-    assert_that!(monitor.state().unwrap(), eq ProcessState::DoesNotExist);
-    let file = FileBuilder::new(&path)
-        .creation_mode(CreationMode::PurgeAndCreate)
-        .create()
-        .unwrap();
-
-    let cleaner_file = FileBuilder::new(&cleaner_path)
-        .creation_mode(CreationMode::PurgeAndCreate)
-        .create()
-        .unwrap();
-
-    assert_that!(monitor.state().unwrap(), eq ProcessState::Dead);
-    cleaner_file.remove_self().unwrap();
-    assert_that!(monitor.state().err().unwrap(), eq ProcessMonitorStateError::CorruptedState);
-    file.remove_self().unwrap();
-    assert_that!(monitor.state().unwrap(), eq ProcessState::DoesNotExist);
+    process_state_tests::process_state_monitor_transitions_work_starting_from_non_existing_process(
+    );
 }
 
 #[test]
 pub fn process_state_monitor_transitions_work_starting_from_existing_process() {
-    create_test_directory();
-    let path = generate_file_path();
-    let mut owner_lock_path = path;
-    owner_lock_path.push_bytes(b"_owner_lock").unwrap();
-
-    let file = FileBuilder::new(&path)
-        .creation_mode(CreationMode::PurgeAndCreate)
-        .create()
-        .unwrap();
-    let owner_lock_file = FileBuilder::new(&owner_lock_path)
-        .creation_mode(CreationMode::PurgeAndCreate)
-        .create()
-        .unwrap();
-
-    let monitor = ProcessMonitor::new(&path).unwrap();
-    assert_that!(monitor.state().unwrap(), eq ProcessState::Dead);
-    file.remove_self().unwrap();
-    assert_that!(monitor.state().unwrap(), eq ProcessState::DoesNotExist);
-
-    let file = FileBuilder::new(&path)
-        .creation_mode(CreationMode::PurgeAndCreate)
-        .create()
-        .unwrap();
-    assert_that!(monitor.state().unwrap(), eq ProcessState::Dead);
-
-    file.remove_self().unwrap();
-    owner_lock_file.remove_self().unwrap();
+    process_state_tests::process_state_monitor_transitions_work_starting_from_existing_process();
 }
 
 #[test]
 pub fn process_state_monitor_detects_initialized_state() {
-    create_test_directory();
-    let path = generate_file_path();
-
-    let mut file = FileBuilder::new(&path)
-        .creation_mode(CreationMode::PurgeAndCreate)
-        .permission(Permission::OWNER_WRITE)
-        .create()
-        .unwrap();
-
-    let monitor = ProcessMonitor::new(&path).unwrap();
-    assert_that!(monitor.state().unwrap(), eq ProcessState::Starting);
-    file.set_permission(Permission::OWNER_ALL).unwrap();
-    file.remove_self().unwrap();
-    assert_that!(monitor.state().unwrap(), eq ProcessState::DoesNotExist);
+    process_state_tests::process_state_monitor_detects_initialized_state();
 }
 
 #[test]
 pub fn process_state_owner_lock_cannot_be_created_when_process_does_not_exist() {
-    create_test_directory();
-    let path = generate_file_path();
-    let mut owner_lock_path = path;
-    owner_lock_path.push_bytes(b"_owner_lock").unwrap();
-
-    let owner_lock = ProcessCleaner::new(&path);
-    assert_that!(owner_lock, is_err);
-    assert_that!(
-        owner_lock.err().unwrap(), eq
-        ProcessCleanerCreateError::DoesNotExist
-    );
-
-    let file = FileBuilder::new(&path)
-        .has_ownership(true)
-        .creation_mode(CreationMode::PurgeAndCreate)
-        .create()
-        .unwrap();
-
-    let owner_lock = ProcessCleaner::new(&path);
-    assert_that!(owner_lock, is_err);
-    assert_that!(
-        owner_lock.err().unwrap(), eq
-        ProcessCleanerCreateError::DoesNotExist
-    );
-    drop(file);
-    std::thread::sleep(Duration::from_millis(100));
-
-    let _file = FileBuilder::new(&owner_lock_path)
-        .has_ownership(true)
-        .creation_mode(CreationMode::PurgeAndCreate)
-        .create()
-        .unwrap();
-
-    let owner_lock = ProcessCleaner::new(&path);
-    assert_that!(owner_lock, is_err);
-    assert_that!(
-        owner_lock.err().unwrap(), eq
-        ProcessCleanerCreateError::DoesNotExist
-    );
+    process_state_tests::process_state_owner_lock_cannot_be_created_when_process_does_not_exist();
 }
 
 #[test]
 pub fn process_state_cleaner_removes_state_files_on_drop() {
-    create_test_directory();
-    let path = generate_file_path();
-    let mut owner_lock_path = path;
-    owner_lock_path.push_bytes(b"_owner_lock").unwrap();
-
-    let _file = FileBuilder::new(&path)
-        .has_ownership(false)
-        .creation_mode(CreationMode::PurgeAndCreate)
-        .create()
-        .unwrap();
-
-    let _owner_lock_file = FileBuilder::new(&owner_lock_path)
-        .has_ownership(false)
-        .creation_mode(CreationMode::PurgeAndCreate)
-        .create()
-        .unwrap();
-
-    let owner_lock = ProcessCleaner::new(&path);
-    assert_that!(owner_lock, is_ok);
-
-    drop(owner_lock);
-
-    assert_that!(File::does_exist(&path).unwrap(), eq false);
-    assert_that!(File::does_exist(&owner_lock_path).unwrap(), eq false);
+    process_state_tests::process_state_cleaner_removes_state_files_on_drop();
 }
 
 #[test]
 pub fn process_state_cleaner_keeps_state_files_when_abandoned() {
-    create_test_directory();
-    let path = generate_file_path();
-    let mut owner_lock_path = path;
-    owner_lock_path.push_bytes(b"_owner_lock").unwrap();
-
-    let _file = FileBuilder::new(&path)
-        .has_ownership(true)
-        .creation_mode(CreationMode::PurgeAndCreate)
-        .create()
-        .unwrap();
-
-    let _owner_lock_file = FileBuilder::new(&owner_lock_path)
-        .has_ownership(true)
-        .creation_mode(CreationMode::PurgeAndCreate)
-        .create()
-        .unwrap();
-
-    let owner_lock = ProcessCleaner::new(&path).unwrap();
-    owner_lock.abandon();
-
-    assert_that!(File::does_exist(&path).unwrap(), eq true);
-    assert_that!(File::does_exist(&owner_lock_path).unwrap(), eq true);
+    process_state_tests::process_state_cleaner_keeps_state_files_when_abandoned();
 }
 
 // START: OS with IPC only lock detection
@@ -291,15 +84,7 @@ pub fn process_state_cleaner_keeps_state_files_when_abandoned() {
     target_os = "nto"
 )))]
 pub fn process_state_monitor_detects_alive_state_from_existing_process() {
-    create_test_directory();
-    let path = generate_file_path();
-
-    let guard = ProcessGuardBuilder::new().create(&path).unwrap();
-    let monitor = ProcessMonitor::new(&path).unwrap();
-
-    assert_that!(monitor.state().unwrap(), eq ProcessState::Alive);
-    drop(guard);
-    assert_that!(monitor.state().unwrap(), eq ProcessState::DoesNotExist);
+    process_state_tests::process_state_monitor_detects_alive_state_from_existing_process();
 }
 
 #[test]
@@ -310,16 +95,7 @@ pub fn process_state_monitor_detects_alive_state_from_existing_process() {
     target_os = "nto"
 )))]
 pub fn process_state_owner_lock_cannot_be_acquired_from_living_process() {
-    create_test_directory();
-    let path = generate_file_path();
-
-    let _guard = ProcessGuardBuilder::new().create(&path).unwrap();
-    let owner_lock = ProcessCleaner::new(&path);
-    assert_that!(owner_lock, is_err);
-    assert_that!(
-        owner_lock.err().unwrap(), eq
-        ProcessCleanerCreateError::ProcessIsStillAlive
-    );
+    process_state_tests::process_state_owner_lock_cannot_be_acquired_from_living_process();
 }
 
 #[test]
@@ -330,30 +106,7 @@ pub fn process_state_owner_lock_cannot_be_acquired_from_living_process() {
     target_os = "nto"
 )))]
 pub fn process_state_owner_lock_cannot_be_acquired_twice() {
-    create_test_directory();
-    let path = generate_file_path();
-    let mut owner_lock_path = path.clone();
-    owner_lock_path.push_bytes(b"_owner_lock").unwrap();
-
-    let _file = FileBuilder::new(&path)
-        .has_ownership(true)
-        .creation_mode(CreationMode::PurgeAndCreate)
-        .create()
-        .unwrap();
-
-    let _owner_lock_file = FileBuilder::new(&owner_lock_path)
-        .has_ownership(true)
-        .creation_mode(CreationMode::PurgeAndCreate)
-        .create()
-        .unwrap();
-
-    let _owner_lock = ProcessCleaner::new(&path).unwrap();
-    let owner_lock = ProcessCleaner::new(&path);
-    assert_that!(owner_lock, is_err);
-    assert_that!(
-        owner_lock.err().unwrap(), eq
-        ProcessCleanerCreateError::OwnedByAnotherProcess
-    );
+    process_state_tests::process_state_owner_lock_cannot_be_acquired_twice();
 }
 
 // END: OS with IPC only lock detection

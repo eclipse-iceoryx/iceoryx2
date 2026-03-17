@@ -12,35 +12,9 @@
 
 extern crate iceoryx2_bb_loggers;
 
-use iceoryx2_bb_container::semantic_string::*;
-use iceoryx2_bb_posix::group::*;
-use iceoryx2_bb_posix::ownership::*;
-use iceoryx2_bb_posix::user::*;
-use iceoryx2_bb_system_types::group_name::GroupName;
-use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing::test_requires;
-use iceoryx2_pal_posix::posix::POSIX_SUPPORT_USERS_AND_GROUPS;
+use iceoryx2_bb_posix_tests_common::ownership_tests;
 
 #[test]
 fn ownership_builder_works() {
-    test_requires!(POSIX_SUPPORT_USERS_AND_GROUPS);
-
-    let root = GroupName::new(b"root").unwrap();
-    let wheel = GroupName::new(b"wheel").unwrap();
-
-    let group = if let Ok(group) = Group::from_name(&root) {
-        group
-    } else if let Ok(group) = Group::from_name(&wheel) {
-        group
-    } else {
-        unreachable!("Neither group 'root' not group 'wheel' is found!")
-    };
-
-    let ownership = OwnershipBuilder::new()
-        .uid("root".as_user().expect("no such user").uid())
-        .gid(group.gid())
-        .create();
-
-    assert_that!(ownership.uid().value(), eq 0);
-    assert_that!(ownership.gid().value(), eq 0);
+    ownership_tests::ownership_builder_works();
 }

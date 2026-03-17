@@ -94,6 +94,8 @@ CRATES_TO_IGNORE=(
     iceoryx2-bb-trait-tests-nostd
     iceoryx2-bb-system-types-tests-common
     iceoryx2-bb-system-types-tests-nostd
+    iceoryx2-bb-posix-tests-common
+    iceoryx2-bb-posix-tests-nostd
 )
 
 if [[ "$#" -eq 0 ]]; then
