@@ -73,8 +73,7 @@ CRATES_TO_IGNORE=(
     iceoryx2-ffi-macros
     iceoryx2-ffi-python
     iceoryx2-tunnel-end-to-end-tests
-    iceoryx2-bb-testing-nostd
-    iceoryx2-bb-testing-nostd-macros
+    iceoryx2-bb-testing-macros
     iceoryx2-bb-trait-tests
     iceoryx2-bb-elementary-tests-common
     iceoryx2-bb-elementary-tests-nostd

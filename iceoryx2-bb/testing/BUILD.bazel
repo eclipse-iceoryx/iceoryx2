@@ -32,5 +32,8 @@ rust_library(
         "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
         "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
         "//iceoryx2-pal/testing:iceoryx2-pal-testing",
+        "//iceoryx2-pal/posix:iceoryx2-pal-posix",
+        "//iceoryx2-pal/print:iceoryx2-pal-print",
+        "@crate_index//:inventory",
     ],
 )

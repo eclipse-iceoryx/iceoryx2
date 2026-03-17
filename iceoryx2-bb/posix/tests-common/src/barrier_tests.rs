@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2_bb_posix::barrier::*;
-use iceoryx2_bb_testing_nostd_macros::requires_std;
+use iceoryx2_bb_testing_macros::requires_std;
 
 #[requires_std("threading")]
 pub fn barrier_blocks() -> Result<(), BarrierCreationError> {

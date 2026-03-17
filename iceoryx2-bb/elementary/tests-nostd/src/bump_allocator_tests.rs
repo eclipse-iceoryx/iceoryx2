@@ -13,7 +13,7 @@
 #![allow(clippy::disallowed_types)]
 
 use iceoryx2_bb_elementary_tests_common::bump_allocator_tests;
-use iceoryx2_bb_testing_nostd_macros::inventory_test;
+use iceoryx2_bb_testing_macros::inventory_test;
 
 #[inventory_test]
 pub fn start_position_is_correctly_used() {

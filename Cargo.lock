@@ -1369,8 +1369,8 @@ dependencies = [
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-loggers",
  "iceoryx2-bb-memory",
- "iceoryx2-bb-testing-nostd",
- "iceoryx2-bb-testing-nostd-macros",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
 ]
 
 [[package]]
@@ -1407,7 +1407,7 @@ dependencies = [
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-testing",
- "iceoryx2-bb-testing-nostd-macros",
+ "iceoryx2-bb-testing-macros",
  "iceoryx2-pal-print",
  "serde_test",
 ]
@@ -1420,8 +1420,8 @@ dependencies = [
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-loggers",
  "iceoryx2-bb-memory",
- "iceoryx2-bb-testing-nostd",
- "iceoryx2-bb-testing-nostd-macros",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
 ]
 
 [[package]]
@@ -1454,8 +1454,8 @@ dependencies = [
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-loggers",
  "iceoryx2-bb-memory",
- "iceoryx2-bb-testing-nostd",
- "iceoryx2-bb-testing-nostd-macros",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
 ]
 
 [[package]]
@@ -1467,8 +1467,7 @@ dependencies = [
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-loggers",
  "iceoryx2-bb-testing",
- "iceoryx2-bb-testing-nostd",
- "iceoryx2-bb-testing-nostd-macros",
+ "iceoryx2-bb-testing-macros",
  "iceoryx2-pal-concurrency-sync",
 ]
 
@@ -1490,8 +1489,8 @@ dependencies = [
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-loggers",
  "iceoryx2-bb-memory",
- "iceoryx2-bb-testing-nostd",
- "iceoryx2-bb-testing-nostd-macros",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
 ]
 
 [[package]]
@@ -1538,7 +1537,7 @@ dependencies = [
  "iceoryx2-bb-lock-free",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
- "iceoryx2-bb-testing-nostd-macros",
+ "iceoryx2-bb-testing-macros",
  "iceoryx2-pal-concurrency-sync",
  "iceoryx2-pal-print",
 ]
@@ -1547,13 +1546,12 @@ dependencies = [
 name = "iceoryx2-bb-lock-free-tests-nostd"
 version = "0.8.999"
 dependencies = [
- "generic-tests",
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-lock-free-tests-common",
  "iceoryx2-bb-loggers",
  "iceoryx2-bb-memory",
- "iceoryx2-bb-testing-nostd",
- "iceoryx2-bb-testing-nostd-macros",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
 ]
 
 [[package]]
@@ -1590,7 +1588,7 @@ dependencies = [
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-memory",
  "iceoryx2-bb-testing",
- "iceoryx2-bb-testing-nostd-macros",
+ "iceoryx2-bb-testing-macros",
  "iceoryx2-pal-print",
 ]
 
@@ -1602,8 +1600,8 @@ dependencies = [
  "iceoryx2-bb-loggers",
  "iceoryx2-bb-memory",
  "iceoryx2-bb-memory-tests-common",
- "iceoryx2-bb-testing-nostd",
- "iceoryx2-bb-testing-nostd-macros",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
 ]
 
 [[package]]
@@ -1640,7 +1638,7 @@ dependencies = [
  "iceoryx2-bb-posix",
  "iceoryx2-bb-system-types",
  "iceoryx2-bb-testing",
- "iceoryx2-bb-testing-nostd-macros",
+ "iceoryx2-bb-testing-macros",
  "iceoryx2-pal-configuration",
  "iceoryx2-pal-posix",
  "iceoryx2-pal-print",
@@ -1655,8 +1653,8 @@ dependencies = [
  "iceoryx2-bb-memory",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-posix-tests-common",
- "iceoryx2-bb-testing-nostd",
- "iceoryx2-bb-testing-nostd-macros",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
  "iceoryx2-pal-print",
 ]
 
@@ -1700,8 +1698,8 @@ dependencies = [
  "iceoryx2-bb-loggers",
  "iceoryx2-bb-memory",
  "iceoryx2-bb-system-types-tests-common",
- "iceoryx2-bb-testing-nostd",
- "iceoryx2-bb-testing-nostd-macros",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
 ]
 
 [[package]]
@@ -1710,23 +1708,17 @@ version = "0.8.999"
 dependencies = [
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-pal-concurrency-sync",
- "iceoryx2-pal-testing",
-]
-
-[[package]]
-name = "iceoryx2-bb-testing-nostd"
-version = "0.8.999"
-dependencies = [
  "iceoryx2-pal-posix",
  "iceoryx2-pal-print",
+ "iceoryx2-pal-testing",
  "inventory",
 ]
 
 [[package]]
-name = "iceoryx2-bb-testing-nostd-macros"
+name = "iceoryx2-bb-testing-macros"
 version = "0.8.999"
 dependencies = [
- "iceoryx2-bb-testing-nostd",
+ "iceoryx2-bb-testing",
  "iceoryx2-pal-print",
  "proc-macro2",
  "quote",
@@ -1765,8 +1757,8 @@ dependencies = [
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-loggers",
  "iceoryx2-bb-memory",
- "iceoryx2-bb-testing-nostd",
- "iceoryx2-bb-testing-nostd-macros",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
  "iceoryx2-bb-threadsafe-tests-common",
 ]
 
@@ -1795,7 +1787,7 @@ dependencies = [
  "iceoryx2-bb-loggers",
  "iceoryx2-bb-memory",
  "iceoryx2-bb-testing",
- "iceoryx2-bb-testing-nostd-macros",
+ "iceoryx2-bb-testing-macros",
  "iceoryx2-pal-print",
 ]
 
@@ -1810,8 +1802,8 @@ dependencies = [
  "iceoryx2-bb-loggers",
  "iceoryx2-bb-memory",
  "iceoryx2-bb-system-types",
- "iceoryx2-bb-testing-nostd",
- "iceoryx2-bb-testing-nostd-macros",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
  "iceoryx2-bb-trait-tests-common",
  "iceoryx2-cal",
 ]

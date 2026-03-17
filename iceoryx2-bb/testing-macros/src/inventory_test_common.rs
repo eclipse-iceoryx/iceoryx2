@@ -103,8 +103,8 @@ pub fn generate_inventory_submission(
             #wrapper_body
         }
 
-        ::iceoryx2_bb_testing_nostd::inventory::submit! {
-            ::iceoryx2_bb_testing_nostd::TestCase {
+        ::iceoryx2_bb_testing::inventory::submit! {
+            ::iceoryx2_bb_testing::TestCase {
                 name: #test_name,
                 test_fn: #wrapper_name,
             }

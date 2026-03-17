@@ -13,7 +13,7 @@
 #![allow(clippy::disallowed_types)]
 
 use iceoryx2_bb_derive_macros_tests_common::zero_copy_send_tests;
-use iceoryx2_bb_testing_nostd_macros::inventory_test;
+use iceoryx2_bb_testing_macros::inventory_test;
 
 #[inventory_test]
 fn zero_copy_send_derive_works_for_named_struct() {

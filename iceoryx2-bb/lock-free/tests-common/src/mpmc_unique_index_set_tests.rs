@@ -15,7 +15,7 @@ use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_nostd_macros::requires_std;
+use iceoryx2_bb_testing_macros::requires_std;
 
 const CAPACITY: usize = 128;
 

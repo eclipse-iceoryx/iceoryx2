@@ -22,7 +22,7 @@ std = [
   "iceoryx2-bb-system-types/std",
   "iceoryx2-bb-posix/std",
   "iceoryx2-bb-testing/std",
-  "iceoryx2-bb-testing-nostd-macros/std",
+  "iceoryx2-bb-testing-macros/std",
   "iceoryx2-pal-posix/std",
   "iceoryx2-pal-print/std",
 ]
@@ -34,7 +34,7 @@ iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-system-types = { workspace = true }
 iceoryx2-bb-posix = { workspace = true }
 iceoryx2-bb-testing = { workspace = true }
-iceoryx2-bb-testing-nostd-macros = { workspace = true }
+iceoryx2-bb-testing-macros = { workspace = true }
 iceoryx2-pal-configuration = { workspace = true }
 iceoryx2-pal-posix = { workspace = true }
 iceoryx2-pal-print = { workspace = true }

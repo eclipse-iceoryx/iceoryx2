@@ -15,7 +15,7 @@
 extern crate iceoryx2_bb_loggers;
 
 use iceoryx2_bb_posix_tests_common::directory_tests;
-use iceoryx2_bb_testing_nostd_macros::inventory_test;
+use iceoryx2_bb_testing_macros::inventory_test;
 
 #[inventory_test]
 fn directory_test_directory_does_exist() {

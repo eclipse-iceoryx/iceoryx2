@@ -19,8 +19,8 @@ use iceoryx2_bb_posix::file_descriptor::FileDescriptorManagement;
 use iceoryx2_bb_posix::shared_memory::SharedMemory;
 use iceoryx2_bb_posix_tests_common::file_descriptor_tests;
 use iceoryx2_bb_posix_tests_common::file_descriptor_tests::GenericTestBuilder;
-use iceoryx2_bb_testing_nostd_macros::inventory_test;
-use iceoryx2_bb_testing_nostd_macros::inventory_test_generic;
+use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::inventory_test_generic;
 
 #[inventory_test]
 fn file_descriptor_smaller_zero_is_invalid() {

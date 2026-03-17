@@ -22,7 +22,7 @@ use iceoryx2_bb_lock_free::mpmc::container::*;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set::ReleaseMode;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set::ReleaseState;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_nostd_macros::requires_std;
+use iceoryx2_bb_testing_macros::requires_std;
 
 #[derive(Clone, Copy, Debug)]
 pub struct TestType {

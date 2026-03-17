@@ -15,7 +15,7 @@
 extern crate iceoryx2_bb_loggers;
 
 use iceoryx2_bb_posix_tests_common::file_descriptor_set_tests;
-use iceoryx2_bb_testing_nostd_macros::inventory_test;
+use iceoryx2_bb_testing_macros::inventory_test;
 
 #[inventory_test]
 fn file_descriptor_set_timed_wait_blocks_at_least_timeout() {

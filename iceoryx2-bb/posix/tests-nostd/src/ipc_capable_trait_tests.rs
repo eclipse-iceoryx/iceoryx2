@@ -20,7 +20,7 @@ use iceoryx2_bb_posix_tests_common::ipc_capable_trait_tests::MutexTest;
 use iceoryx2_bb_posix_tests_common::ipc_capable_trait_tests::ReadWriteMutexTest;
 use iceoryx2_bb_posix_tests_common::ipc_capable_trait_tests::TestSut;
 use iceoryx2_bb_posix_tests_common::ipc_capable_trait_tests::UnnamedSemaphoreTest;
-use iceoryx2_bb_testing_nostd_macros::inventory_test_generic;
+use iceoryx2_bb_testing_macros::inventory_test_generic;
 
 #[inventory_test_generic(BarrierTest, UnnamedSemaphoreTest, MutexTest, ReadWriteMutexTest)]
 fn ipc_capable_trait_new_handle_is_not_initialized<Sut: TestSut>() {

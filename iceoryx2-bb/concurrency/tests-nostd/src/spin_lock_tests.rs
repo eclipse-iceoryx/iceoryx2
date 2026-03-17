@@ -15,7 +15,7 @@
 extern crate alloc;
 
 use iceoryx2_bb_concurrency_tests_common::spin_lock_tests;
-use iceoryx2_bb_testing_nostd_macros::inventory_test;
+use iceoryx2_bb_testing_macros::inventory_test;
 
 #[inventory_test]
 fn spin_lock_try_lock_locks() {

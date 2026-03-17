@@ -15,8 +15,8 @@ version = { workspace = true }
 default = ["std"]
 
 std = [
-  "iceoryx2-bb-testing-nostd-macros/std",
-  "iceoryx2-bb-testing-nostd/std"
+  "iceoryx2-bb-testing-macros/std",
+  "iceoryx2-bb-testing/std"
 ]
 
 [dependencies]
@@ -24,5 +24,5 @@ iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-bb-concurrency-tests-common = { workspace = true, features = [] }
 iceoryx2-bb-loggers = { workspace = true, features = [] }
 iceoryx2-bb-memory = { workspace = true, features = [] }
-iceoryx2-bb-testing-nostd-macros = { workspace = true }
-iceoryx2-bb-testing-nostd = { workspace = true }
+iceoryx2-bb-testing-macros = { workspace = true }
+iceoryx2-bb-testing = { workspace = true }

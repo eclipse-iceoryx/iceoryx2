@@ -12,7 +12,7 @@
 
 use iceoryx2_bb_posix::read_write_mutex::*;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_nostd_macros::requires_std;
+use iceoryx2_bb_testing_macros::requires_std;
 
 #[cfg(feature = "std")]
 use core::time::Duration;

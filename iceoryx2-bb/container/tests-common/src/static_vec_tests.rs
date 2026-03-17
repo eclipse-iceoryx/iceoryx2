@@ -15,7 +15,7 @@ use iceoryx2_bb_container::vector::{static_vec::*, VectorModificationError};
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
-use iceoryx2_bb_testing_nostd_macros::requires_std;
+use iceoryx2_bb_testing_macros::requires_std;
 
 const SUT_CAPACITY: usize = 10;
 

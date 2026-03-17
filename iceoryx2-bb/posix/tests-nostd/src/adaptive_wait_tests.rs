@@ -15,7 +15,7 @@
 extern crate iceoryx2_bb_loggers;
 
 use iceoryx2_bb_posix_tests_common::adaptive_wait_tests;
-use iceoryx2_bb_testing_nostd_macros::inventory_test;
+use iceoryx2_bb_testing_macros::inventory_test;
 
 #[inventory_test]
 fn adaptive_wait_wait_at_different_time_depends_on_repetition_times() {

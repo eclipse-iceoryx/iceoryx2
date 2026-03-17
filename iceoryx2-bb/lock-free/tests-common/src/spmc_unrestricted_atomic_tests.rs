@@ -21,7 +21,7 @@ use core::ptr::addr_of;
 use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::*;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_nostd_macros::requires_std;
+use iceoryx2_bb_testing_macros::requires_std;
 
 const NUMBER_OF_RUNS: usize = 100000;
 const DATA_SIZE: usize = 1024;

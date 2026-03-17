@@ -19,7 +19,7 @@ use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_posix::thread::MAX_SCOPED_THREADS;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::watchdog::Watchdog;
-use iceoryx2_bb_testing_nostd_macros::requires_std;
+use iceoryx2_bb_testing_macros::requires_std;
 
 #[cfg(feature = "std")]
 pub use std_testing::*;
