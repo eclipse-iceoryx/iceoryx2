@@ -15,6 +15,35 @@
 # =============================================================================
 
 [private]
+_parse-bundle-args *flags:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    TOOLCHAIN=""
+    TARGET_TRIPLET=""
+    DO_STRIP="false"
+    DO_COMPRESS="false"
+    HAS_NOSTD="false"
+
+    set -- {{flags}}
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            +*)         TOOLCHAIN="$1";                    shift ;;
+            --no_std)   HAS_NOSTD="true";                  shift ;;
+            --target=*) TARGET_TRIPLET="${1#--target=}";   shift ;;
+            --strip)    DO_STRIP="true";                   shift ;;
+            --compress) DO_COMPRESS="true";                shift ;;
+            *)          shift ;;
+        esac
+    done
+
+    echo "TOOLCHAIN='$TOOLCHAIN'"
+    echo "TARGET_TRIPLET='$TARGET_TRIPLET'"
+    echo "DO_STRIP='$DO_STRIP'"
+    echo "DO_COMPRESS='$DO_COMPRESS'"
+    echo "HAS_NOSTD='$HAS_NOSTD'"
+
+[private]
 _bundle-dispatch target *flags:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -24,7 +53,7 @@ _bundle-dispatch target *flags:
         exit 1
     fi
 
-    eval $(just _parse-bundle-flags {{flags}})
+    eval $(just _parse-bundle-args {{flags}})
 
     if [ "$HAS_NOSTD" != "true" ]; then
         echo "Error: bundle command currently only supports 'tests --no_std'" >&2

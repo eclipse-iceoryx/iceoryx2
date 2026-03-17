@@ -15,11 +15,34 @@
 # =============================================================================
 
 [private]
+_parse-build-args *flags:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    TOOLCHAIN=""
+    HAS_NOSTD="false"
+    TARGET_TRIPLET=""
+
+    set -- {{flags}}
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            +*)         TOOLCHAIN="$1";                    shift ;;
+            --no_std)   HAS_NOSTD="true";                  shift ;;
+            --target=*) TARGET_TRIPLET="${1#--target=}";   shift ;;
+            *)          shift ;;
+        esac
+    done
+
+    echo "TOOLCHAIN='$TOOLCHAIN'"
+    echo "HAS_NOSTD='$HAS_NOSTD'"
+    echo "TARGET_TRIPLET='$TARGET_TRIPLET'"
+
+[private]
 _build-dispatch target *flags:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    eval $(just _parse-build-flags {{flags}})
+    eval $(just _parse-build-args {{flags}})
 
     case "{{target}}" in
         workspace)
