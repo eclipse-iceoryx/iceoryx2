@@ -94,8 +94,8 @@ _coverage-dispatch action *flags:
                 echo "error: 'just coverage report' requires --html, --lcov, or both" >&2
                 exit 1
             fi
-            [ "$HAS_HTML" = "true" ] && just _coverage-generate-report-html
-            [ "$HAS_LCOV" = "true" ] && just _coverage-generate-report-lcov
+            if [ "$HAS_HTML" = "true" ]; then just _coverage-generate-report-html; fi
+            if [ "$HAS_LCOV" = "true" ]; then just _coverage-generate-report-lcov; fi
             ;;
         summarize)
             just _coverage-summarize "$HAS_DETAILED" "${PACKAGES[@]}"
@@ -187,7 +187,7 @@ _coverage-generate-report-impl output_type grcov_output gcovr_flag gcovr_output:
         echo "error: 'gcovr' not found. Aborting!" >&2; exit 1
     fi
 
-    LLVM_PATH=$(just _find-llvm-path)
+    LLVM_PATH=$(dirname "$(just _find-llvm-tool llvm-profdata)")
 
     echo "Generating Rust coverage report ..."
 
@@ -231,7 +231,7 @@ _coverage-summarize detailed *packages:
         echo "error: 'rustfilt' not found. Aborting!" >&2; exit 1
     fi
 
-    LLVM_PATH=$(just _find-llvm-path)
+    LLVM_COV=$(just _find-llvm-tool llvm-cov)
 
     just _coverage-merge-profiles
 
@@ -243,7 +243,7 @@ _coverage-summarize detailed *packages:
     done
     IGNORE_REGEX=$(IFS='|'; echo "${IGNORE_PATTERNS[*]}")
 
-    CMD="$LLVM_PATH/llvm-cov report --use-color --ignore-filename-regex='$IGNORE_REGEX' --instr-profile=./{{RUST_COV_DIR}}/json5format.profdata"
+    CMD="$LLVM_COV report --use-color --ignore-filename-regex='$IGNORE_REGEX' --instr-profile=./{{RUST_COV_DIR}}/json5format.profdata"
     for FILE in $FILES; do
         CMD="$CMD --object $FILE"
     done
@@ -262,10 +262,10 @@ _coverage-merge-profiles:
     set -euo pipefail
 
     if [[ ! -f "./{{RUST_COV_DIR}}/json5format.profdata" ]]; then
-        LLVM_PATH=$(just _find-llvm-path)
+        LLVM_PROFDATA=$(just _find-llvm-tool llvm-profdata)
         mkdir -p "./{{RUST_COV_DIR}}/"
         FILES=$(find . -name "*profraw")
-        "$LLVM_PATH/llvm-profdata" merge --sparse $FILES -o "./{{RUST_COV_DIR}}/json5format.profdata"
+        "$LLVM_PROFDATA" merge --sparse $FILES -o "./{{RUST_COV_DIR}}/json5format.profdata"
     fi
 
 # --- clean -------------------------------------------------------------------
@@ -279,29 +279,32 @@ _coverage-clean:
 # --- helpers --------------------------------------------------------------
 
 [private]
-_find-llvm-path:
+_find-llvm-tool tool:
     #!/usr/bin/env bash
     set -euo pipefail
 
     RUSTC_LLVM_VERSION=$(rustc --version --verbose | grep -oP 'LLVM version: \K[0-9]+')
+    RUST_SYSROOT=$(rustc --print sysroot)
+    HOST=$(rustc -vV | sed -n 's|host: ||p')
 
-    if which "llvm-profdata-${RUSTC_LLVM_VERSION}" &>/dev/null; then
-        dirname "$(which "llvm-profdata-${RUSTC_LLVM_VERSION}")"
-    elif which llvm-profdata &>/dev/null; then
-        LLVM_PROFDATA_VERSION_OUTPUT=$(llvm-profdata merge --version)
-        LLVM_VERSION=$(echo "$LLVM_PROFDATA_VERSION_OUTPUT" | grep -oP 'LLVM version \K[0-9]+')
+    # Check for llvm-tools in the rust sysroot
+    if [ -f "${RUST_SYSROOT}/lib/rustlib/${HOST}/bin/{{tool}}" ]; then
+        echo "${RUST_SYSROOT}/lib/rustlib/${HOST}/bin/{{tool}}"
 
-        RUSTC_VERSION_OUTPUT=$(rustc --version --verbose)
-        RUSTC_LLVM_VERSION=$(echo "$RUSTC_VERSION_OUTPUT" | grep -oP 'LLVM version: \K[0-9]+')
+    # Check for versioned system binary matching rustc llvm version
+    elif which "{{tool}}-${RUSTC_LLVM_VERSION}" &>/dev/null; then
+        which "{{tool}}-${RUSTC_LLVM_VERSION}"
 
+    # Check for unversioned system binary, validate version matches before using
+    elif which "{{tool}}" &>/dev/null; then
+        LLVM_VERSION=$({{tool}} --version | grep -oP 'LLVM version \K[0-9]+')
         if [[ "$LLVM_VERSION" -ne "$RUSTC_LLVM_VERSION" ]]; then
-            echo "llvm-profdata LLVM version: $LLVM_VERSION" >&2
+            echo "{{tool}} LLVM version: $LLVM_VERSION" >&2
             echo "rustc LLVM version: $RUSTC_LLVM_VERSION" >&2
-            echo "error: LLVM major versions do not match" >&2
-            exit 1
+            echo "error: LLVM major versions do not match" >&2; exit 1
         fi
-        dirname "$(which llvm-profdata)"
+        which "{{tool}}"
     else
-        echo "error: 'llvm-profdata' not found. Aborting!" >&2; exit 1
+        echo "error: '{{tool}}' not found. Aborting!" >&2; exit 1
     fi
 
