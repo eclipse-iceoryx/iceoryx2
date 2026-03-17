@@ -330,26 +330,31 @@ impl WaitSet {
     /// If an interrupt- (`SIGINT`) or a termination-signal (`SIGTERM`) was received, it will exit
     /// the loop and inform the user with [`WaitSetRunResult::Interrupt`] or
     /// [`WaitSetRunResult::TerminationRequest`].
-    pub fn wait_and_process(&self) -> PyResult<(Vec<WaitSetAttachmentId>, WaitSetRunResult)> {
-        let mut ret_val = vec![];
-        let result = match &*self.0.lock() {
-            WaitSetType::Ipc(Some(v)) => v
-                .wait_and_process_once(|v| {
-                    ret_val.push(WaitSetAttachmentId(WaitSetAttachmentIdType::Ipc(v)));
-                    iceoryx2::prelude::CallbackProgression::Continue
-                })
-                .map_err(|e| WaitSetRunError::new_err(format!("{e:?}")))?,
-            WaitSetType::Local(Some(v)) => v
-                .wait_and_process_once(|v| {
-                    ret_val.push(WaitSetAttachmentId(WaitSetAttachmentIdType::Local(v)));
-                    iceoryx2::prelude::CallbackProgression::Continue
-                })
-                .map_err(|e| WaitSetRunError::new_err(format!("{e:?}")))?,
-            _ => fatal_panic!(from "WaitSet::wait_and_process()",
+    pub fn wait_and_process(
+        &self,
+        py: Python<'_>,
+    ) -> PyResult<(Vec<WaitSetAttachmentId>, WaitSetRunResult)> {
+        py.detach(move || {
+            let mut ret_val = vec![];
+            let result = match &*self.0.lock() {
+                WaitSetType::Ipc(Some(v)) => v
+                    .wait_and_process_once(|v| {
+                        ret_val.push(WaitSetAttachmentId(WaitSetAttachmentIdType::Ipc(v)));
+                        iceoryx2::prelude::CallbackProgression::Continue
+                    })
+                    .map_err(|e| WaitSetRunError::new_err(format!("{e:?}")))?,
+                WaitSetType::Local(Some(v)) => v
+                    .wait_and_process_once(|v| {
+                        ret_val.push(WaitSetAttachmentId(WaitSetAttachmentIdType::Local(v)));
+                        iceoryx2::prelude::CallbackProgression::Continue
+                    })
+                    .map_err(|e| WaitSetRunError::new_err(format!("{e:?}")))?,
+                _ => fatal_panic!(from "WaitSet::wait_and_process()",
                 "Accessing a deleted WaitSet."),
-        };
+            };
 
-        Ok((ret_val, result.into()))
+            Ok((ret_val, result.into()))
+        })
     }
 
     /// Waits until an event arrives on the `WaitSet` or the provided timeout has passed, then
@@ -361,32 +366,35 @@ impl WaitSet {
     pub fn wait_and_process_with_timeout(
         &self,
         timeout: &Duration,
+        py: Python<'_>,
     ) -> PyResult<(Vec<WaitSetAttachmentId>, WaitSetRunResult)> {
-        let mut ret_val = vec![];
-        let result = match &*self.0.lock() {
-            WaitSetType::Ipc(Some(v)) => v
-                .wait_and_process_once_with_timeout(
-                    |v| {
-                        ret_val.push(WaitSetAttachmentId(WaitSetAttachmentIdType::Ipc(v)));
-                        iceoryx2::prelude::CallbackProgression::Continue
-                    },
-                    timeout.0,
-                )
-                .map_err(|e| WaitSetRunError::new_err(format!("{e:?}")))?,
-            WaitSetType::Local(Some(v)) => v
-                .wait_and_process_once_with_timeout(
-                    |v| {
-                        ret_val.push(WaitSetAttachmentId(WaitSetAttachmentIdType::Local(v)));
-                        iceoryx2::prelude::CallbackProgression::Continue
-                    },
-                    timeout.0,
-                )
-                .map_err(|e| WaitSetRunError::new_err(format!("{e:?}")))?,
-            _ => fatal_panic!(from "WaitSet::wait_and_process_with_timeout()",
+        py.detach(move || {
+            let mut ret_val = vec![];
+            let result = match &*self.0.lock() {
+                WaitSetType::Ipc(Some(v)) => v
+                    .wait_and_process_once_with_timeout(
+                        |v| {
+                            ret_val.push(WaitSetAttachmentId(WaitSetAttachmentIdType::Ipc(v)));
+                            iceoryx2::prelude::CallbackProgression::Continue
+                        },
+                        timeout.0,
+                    )
+                    .map_err(|e| WaitSetRunError::new_err(format!("{e:?}")))?,
+                WaitSetType::Local(Some(v)) => v
+                    .wait_and_process_once_with_timeout(
+                        |v| {
+                            ret_val.push(WaitSetAttachmentId(WaitSetAttachmentIdType::Local(v)));
+                            iceoryx2::prelude::CallbackProgression::Continue
+                        },
+                        timeout.0,
+                    )
+                    .map_err(|e| WaitSetRunError::new_err(format!("{e:?}")))?,
+                _ => fatal_panic!(from "WaitSet::wait_and_process_with_timeout()",
                 "Accessing a deleted WaitSet."),
-        };
+            };
 
-        Ok((ret_val, result.into()))
+            Ok((ret_val, result.into()))
+        })
     }
 
     #[getter]
