@@ -17,8 +17,6 @@
     * Keep in mind to use the same email that was used to sign the [Eclipse Contributor Agreement][eca]
 * [ ] Tests follow the [best practice for testing][testing]
 * [ ] Changelog updated [in the unreleased section][changelog] including API breaking changes
-* [ ] Assign PR to reviewer
-* [ ] All checks have passed (except `task-list-completed`)
 
 [commit-guidelines]: https://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html
 [eca]: http://www.eclipse.org/legal/ECA.php
