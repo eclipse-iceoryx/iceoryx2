@@ -1,5 +1,5 @@
 {
-  "checksum": "68a9277a2fe93d6de4148ac99dd4261de5b6fffb082d5204640a8659fd0dbb6a",
+  "checksum": "54de06020303d7b922d77e3fe07c2c856e1ae39bacd6c3d2f23d6f8b7ca5ad7f",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -13292,14 +13292,14 @@
       ],
       "license_file": "LICENSE"
     },
-    "lz4_flex 0.11.3": {
+    "lz4_flex 0.11.6": {
       "name": "lz4_flex",
-      "version": "0.11.3",
+      "version": "0.11.6",
       "package_url": "https://github.com/pseitz/lz4_flex",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/lz4_flex/0.11.3/download",
-          "sha256": "75761162ae2b0e580d7e7c390558127e5f01b4194debd6221fd8c207fc80e3f5"
+          "url": "https://static.crates.io/crates/lz4_flex/0.11.6/download",
+          "sha256": "373f5eceeeab7925e0c1098212f2fbc4d416adec9d35051a6ab251e824c1854a"
         }
       },
       "targets": [
@@ -13323,6 +13323,7 @@
         ],
         "crate_features": {
           "common": [
+            "checked-decode",
             "default",
             "frame",
             "safe-decode",
@@ -13334,14 +13335,14 @@
         "deps": {
           "common": [
             {
-              "id": "twox-hash 1.6.3",
+              "id": "twox-hash 2.1.2",
               "target": "twox_hash"
             }
           ],
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.11.3"
+        "version": "0.11.6"
       },
       "license": "MIT",
       "license_ids": [
@@ -22245,45 +22246,6 @@
       ],
       "license_file": "LICENSE-APACHE"
     },
-    "static_assertions 1.1.0": {
-      "name": "static_assertions",
-      "version": "1.1.0",
-      "package_url": "https://github.com/nvzqz/static-assertions-rs",
-      "repository": {
-        "Http": {
-          "url": "https://static.crates.io/crates/static_assertions/1.1.0/download",
-          "sha256": "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "static_assertions",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "allow_empty": true,
-              "include": [
-                "**/*.rs"
-              ]
-            }
-          }
-        }
-      ],
-      "library_target_name": "static_assertions",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "edition": "2015",
-        "version": "1.1.0"
-      },
-      "license": "MIT OR Apache-2.0",
-      "license_ids": [
-        "Apache-2.0",
-        "MIT"
-      ],
-      "license_file": "LICENSE-APACHE"
-    },
     "strsim 0.11.1": {
       "name": "strsim",
       "version": "0.11.1",
@@ -25073,14 +25035,14 @@
       ],
       "license_file": "LICENSE-APACHE"
     },
-    "twox-hash 1.6.3": {
+    "twox-hash 2.1.2": {
       "name": "twox-hash",
-      "version": "1.6.3",
+      "version": "2.1.2",
       "package_url": "https://github.com/shepmaster/twox-hash",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/twox-hash/1.6.3/download",
-          "sha256": "97fee6b57c6a41524a810daee9286c02d7752c4253064d0b05472833a438f675"
+          "url": "https://static.crates.io/crates/twox-hash/2.1.2/download",
+          "sha256": "9ea3136b675547379c4bd395ca6b938e5ad3c3d20fad76e7fe85f9e0d011419c"
         }
       },
       "targets": [
@@ -25102,21 +25064,14 @@
         "compile_data_glob": [
           "**"
         ],
-        "deps": {
+        "crate_features": {
           "common": [
-            {
-              "id": "cfg-if 1.0.0",
-              "target": "cfg_if"
-            },
-            {
-              "id": "static_assertions 1.1.0",
-              "target": "static_assertions"
-            }
+            "xxhash32"
           ],
           "selects": {}
         },
-        "edition": "2018",
-        "version": "1.6.3"
+        "edition": "2021",
+        "version": "2.1.2"
       },
       "license": "MIT",
       "license_ids": [
@@ -33640,7 +33595,7 @@
               "target": "lazy_static"
             },
             {
-              "id": "lz4_flex 0.11.3",
+              "id": "lz4_flex 0.11.6",
               "target": "lz4_flex"
             },
             {
