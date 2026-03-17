@@ -10,16 +10,19 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 extern crate iceoryx2_bb_loggers;
 
 use iceoryx2_bb_system_types_tests_common::user_name_tests;
+use iceoryx2_bb_testing_nostd_macros::inventory_test;
 
-#[test]
+#[inventory_test]
 fn user_name_new_with_illegal_name_fails() {
     user_name_tests::user_name_new_with_illegal_name_fails();
 }
 
-#[test]
+#[inventory_test]
 fn user_name_new_with_legal_name_works() {
     user_name_tests::user_name_new_with_legal_name_works();
 }

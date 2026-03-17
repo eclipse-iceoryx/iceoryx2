@@ -10,41 +10,44 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 extern crate iceoryx2_bb_loggers;
 
 use iceoryx2_bb_system_types_tests_common::port_tests;
+use iceoryx2_bb_testing_nostd_macros::inventory_test;
 
-#[test]
+#[inventory_test]
 fn port_set_works() {
     port_tests::port_set_works();
 }
 
-#[test]
+#[inventory_test]
 fn port_is_unspecified_works() {
     port_tests::port_is_unspecified_works();
 }
 
-#[test]
+#[inventory_test]
 fn port_is_system_works() {
     port_tests::port_is_system_works();
 }
 
-#[test]
+#[inventory_test]
 fn port_is_registered_works() {
     port_tests::port_is_registered_works();
 }
 
-#[test]
+#[inventory_test]
 fn port_is_dynamic_works() {
     port_tests::port_is_dynamic_works();
 }
 
-#[test]
+#[inventory_test]
 fn port_try_from_str_work() {
     port_tests::port_try_from_str_work();
 }
 
-#[test]
+#[inventory_test]
 fn port_try_from_str_with_invalid_integer_fails() {
     port_tests::port_try_from_str_with_invalid_integer_fails();
 }

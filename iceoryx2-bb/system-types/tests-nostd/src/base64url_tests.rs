@@ -10,21 +10,24 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 extern crate iceoryx2_bb_loggers;
 
 use iceoryx2_bb_system_types_tests_common::base64url_tests;
+use iceoryx2_bb_testing_nostd_macros::inventory_test;
 
-#[test]
+#[inventory_test]
 fn base64url_new_with_legal_content_works() {
     base64url_tests::base64url_new_with_legal_content_works();
 }
 
-#[test]
+#[inventory_test]
 fn base64url_new_with_illegal_content_fails() {
     base64url_tests::base64url_new_with_illegal_content_fails();
 }
 
-#[test]
+#[inventory_test]
 fn base64url_as_file_name_works() {
     base64url_tests::base64url_as_file_name_works();
 }

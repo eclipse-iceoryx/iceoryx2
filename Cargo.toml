@@ -33,6 +33,8 @@ members = [
     "iceoryx2-bb/memory/tests-nostd",
     "iceoryx2-bb/posix",
     "iceoryx2-bb/system-types",
+    "iceoryx2-bb/system-types/tests-common",
+    "iceoryx2-bb/system-types/tests-nostd",
     "iceoryx2-bb/testing",
     "iceoryx2-bb/testing-nostd/",
     "iceoryx2-bb/testing-nostd-macros/",
@@ -160,6 +162,8 @@ iceoryx2-bb-derive-macros-tests-common = { path = "iceoryx2-bb/derive-macros/tes
 iceoryx2-bb-derive-macros-tests-nostd = { path = "iceoryx2-bb/derive-macros/tests-nostd" }
 iceoryx2-bb-trait-tests-common = { path = "iceoryx2-bb/trait-tests/tests-common" }
 iceoryx2-bb-trait-tests-nostd = { path = "iceoryx2-bb/trait-tests/tests-nostd" }
+iceoryx2-bb-system-types-tests-common = { path = "iceoryx2-bb/system-types/tests-common" }
+iceoryx2-bb-system-types-tests-nostd = { path = "iceoryx2-bb/system-types/tests-nostd" }
 
 ################################################################################
 

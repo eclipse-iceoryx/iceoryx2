@@ -12,36 +12,14 @@
 
 extern crate iceoryx2_bb_loggers;
 
-use iceoryx2_bb_container::semantic_string::*;
-use iceoryx2_bb_system_types::group_name::*;
-use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_system_types_tests_common::group_name_tests;
 
 #[test]
 fn group_name_new_with_illegal_name_fails() {
-    let sut = GroupName::new(b"");
-    assert_that!(sut, is_err);
-
-    let sut = GroupName::new(b"-asdf");
-    assert_that!(sut, is_err);
-
-    let sut = GroupName::new(b"0asdf");
-    assert_that!(sut, is_err);
-
-    let sut = GroupName::new(b"as\0df");
-    assert_that!(sut, is_err);
+    group_name_tests::group_name_new_with_illegal_name_fails();
 }
 
 #[test]
 fn group_name_new_with_legal_name_works() {
-    let sut = GroupName::new(b"abcdefghijklmnopqrstuvwxyz-0123");
-    assert_that!(sut, is_ok);
-
-    let sut = GroupName::new(b"a456789-");
-    assert_that!(sut, is_ok);
-
-    let sut = GroupName::new(b"Abc-Def");
-    assert_that!(sut, is_ok);
-
-    let sut = GroupName::new(b"_fuu_bar_");
-    assert_that!(sut, is_ok);
+    group_name_tests::group_name_new_with_legal_name_works();
 }

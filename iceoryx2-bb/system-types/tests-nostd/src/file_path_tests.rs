@@ -10,35 +10,38 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 extern crate iceoryx2_bb_loggers;
 
 use iceoryx2_bb_system_types_tests_common::file_path_tests;
+use iceoryx2_bb_testing_nostd_macros::inventory_test;
 
 #[cfg(target_os = "windows")]
 mod windows {
     use super::*;
 
-    #[test]
+    #[inventory_test]
     fn file_path_new_with_illegal_name_fails() {
         file_path_tests::file_path_new_with_illegal_name_fails();
     }
 
-    #[test]
+    #[inventory_test]
     fn file_path_new_with_legal_name_works() {
         file_path_tests::file_path_new_with_legal_name_works();
     }
 
-    #[test]
+    #[inventory_test]
     fn file_path_from_legal_path_and_file_works() {
         file_path_tests::file_path_from_legal_path_and_file_works();
     }
 
-    #[test]
+    #[inventory_test]
     fn file_path_extract_file_name_works() {
         file_path_tests::file_path_extract_file_name_works();
     }
 
-    #[test]
+    #[inventory_test]
     fn file_path_extract_path_works() {
         file_path_tests::file_path_extract_path_works();
     }
@@ -48,48 +51,48 @@ mod windows {
 mod unix {
     use super::*;
 
-    #[test]
+    #[inventory_test]
     fn file_path_new_with_illegal_name_fails() {
         file_path_tests::file_path_new_with_illegal_name_fails();
     }
 
-    #[test]
+    #[inventory_test]
     fn file_path_new_with_legal_name_works() {
         file_path_tests::file_path_new_with_legal_name_works();
     }
 
-    #[test]
+    #[inventory_test]
     fn file_path_from_legal_path_and_file_works() {
         file_path_tests::file_path_from_legal_path_and_file_works();
     }
 
-    #[test]
+    #[inventory_test]
     fn file_path_extract_file_name_works() {
         file_path_tests::file_path_extract_file_name_works();
     }
 
-    #[test]
+    #[inventory_test]
     fn file_path_extract_path_works() {
         file_path_tests::file_path_extract_path_works();
     }
 }
 
-#[test]
+#[inventory_test]
 fn file_path_new_with_illegal_relative_name_fails() {
     file_path_tests::file_path_new_with_illegal_relative_name_fails();
 }
 
-#[test]
+#[inventory_test]
 fn file_path_from_empty_path_and_legal_file_works() {
     file_path_tests::file_path_from_empty_path_and_legal_file_works();
 }
 
-#[test]
+#[inventory_test]
 fn file_path_extract_file_name_from_path_consisting_only_of_a_file_works() {
     file_path_tests::file_path_extract_file_name_from_path_consisting_only_of_a_file_works();
 }
 
-#[test]
+#[inventory_test]
 fn file_path_extract_path_from_path_consisting_only_of_a_file_works() {
     file_path_tests::file_path_extract_path_from_path_consisting_only_of_a_file_works();
 }
