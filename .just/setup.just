@@ -15,12 +15,19 @@
 # =============================================================================
 
 [private]
-_setup-dispatch target:
+_setup-dispatch what:
     #!/usr/bin/env bash
-    case "{{target}}" in
-        all ) just _setup-all ;;
+    case "{{what}}" in
+        "")
+            echo "Usage: just setup <what>"
+            echo ""
+            echo "  all                    setup all dependencies"
+            echo "  script-dependencies    setup just script dependencies"
+            exit 1
+            ;;
+        all) just _setup-all ;;
         script-dependencies) just _setup-script-dependencies ;;
-        *) echo "Unknown setup task: {{target}}"; exit 1 ;;
+        *) echo "Unknown setup task: {{what}}"; exit 1 ;;
     esac
 
 [private]
@@ -37,11 +44,11 @@ _setup-script-dependencies:
     }
 
     _install_jq() {
-        if command -v apt &> /dev/null; then
+        if which apt &> /dev/null; then
             sudo apt install -y jq
-        elif command -v pacman &> /dev/null; then
+        elif which pacman &> /dev/null; then
             sudo pacman -S --noconfirm jq
-        elif command -v brew &> /dev/null; then
+        elif which brew &> /dev/null; then
             brew install jq
         else
             echo "✗ could not install jq: no supported package manager found"
@@ -64,7 +71,7 @@ _setup-script-dependencies:
     _prompt_install() {
         local name=$1
 
-        if command -v "$name" &> /dev/null; then
+        if which "$name" &> /dev/null; then
             echo "✓ $name already installed, skipping"
             return 1
         fi

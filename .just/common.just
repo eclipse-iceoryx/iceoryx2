@@ -15,65 +15,11 @@
 # =============================================================================
 
 [private]
-_parse-build-flags *flags:
-    #!/usr/bin/env bash
-    set -euo pipefail
-
-    TOOLCHAIN=""
-    HAS_NOSTD="false"
-    TARGET_TRIPLET=""
-
-    for arg in {{flags}}; do
-        if [[ "$arg" == +* ]]; then
-            TOOLCHAIN="$arg"
-        elif [[ "$arg" == "--no_std" ]]; then
-            HAS_NOSTD="true"
-        elif [[ "$arg" == --target=* ]]; then
-            TARGET_TRIPLET="${arg#--target=}"
-        fi
-    done
-
-    echo "TOOLCHAIN='$TOOLCHAIN'"
-    echo "HAS_NOSTD='$HAS_NOSTD'"
-    echo "TARGET_TRIPLET='$TARGET_TRIPLET'"
-
-[private]
-_parse-bundle-flags *flags:
-    #!/usr/bin/env bash
-    set -euo pipefail
-
-    TOOLCHAIN=""
-    TARGET_TRIPLET=""
-    DO_STRIP="false"
-    DO_COMPRESS="false"
-    HAS_NOSTD="false"
-
-    for arg in {{flags}}; do
-        if [[ "$arg" == +* ]]; then
-            TOOLCHAIN="$arg"
-        elif [[ "$arg" == --target=* ]]; then
-            TARGET_TRIPLET="${arg#--target=}"
-        elif [[ "$arg" == "--strip" ]]; then
-            DO_STRIP="true"
-        elif [[ "$arg" == "--compress" ]]; then
-            DO_COMPRESS="true"
-        elif [[ "$arg" == "--no_std" ]]; then
-            HAS_NOSTD="true"
-        fi
-    done
-
-    echo "TOOLCHAIN='$TOOLCHAIN'"
-    echo "TARGET_TRIPLET='$TARGET_TRIPLET'"
-    echo "DO_STRIP='$DO_STRIP'"
-    echo "DO_COMPRESS='$DO_COMPRESS'"
-    echo "HAS_NOSTD='$HAS_NOSTD'"
-
-[private]
 _discover-nostd-test-crates:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    if ! command -v jq &> /dev/null; then
+    if ! which jq &> /dev/null; then
         echo "Error: jq is required but not found on your system" >&2
         echo "" >&2
         echo "Please install jq to use no_std test commands:" >&2
@@ -101,7 +47,7 @@ _detect-host-target toolchain:
     fi
 
 [private]
-_resolve-manifest-path package:
+_find-crate-dir package:
     #!/usr/bin/env bash
     set -euo pipefail
     MANIFEST=$(cargo metadata --format-version=1 --no-deps \
@@ -110,4 +56,12 @@ _resolve-manifest-path package:
     if [[ -z "$MANIFEST" ]]; then
         echo "Error: crate '{{package}}' not found in workspace" >&2; exit 1
     fi
-    echo "$MANIFEST"
+    dirname "$MANIFEST"
+
+[private]
+_find-crate-manifest package:
+    @echo "$(just _find-crate-dir '{{package}}')/Cargo.toml"
+
+[private]
+_find-crate-src package:
+    @echo "$(just _find-crate-dir '{{package}}')/src"

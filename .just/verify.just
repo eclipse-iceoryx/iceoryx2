@@ -17,11 +17,18 @@
 VERIFY_STD_PROPAGATION_SCRIPT := justfile_directory() / "internal/scripts/rust/verify_std_propagation.rs"
 
 [private]
-_verify-dispatch target *flags:
+_verify-dispatch what *flags:
     #!/usr/bin/env bash
-    case "{{target}}" in
+    case "{{what}}" in
+        "")
+            echo "Usage: just verify <what> [flags]"
+            echo ""
+            echo "  std-propagation workspace    verify std feature propagation for all crates"
+            echo "  std-propagation <crate>      verify std feature propagation for a specific crate"
+            exit 1
+            ;;
         std-propagation) just _verify-std-propagation-dispatch {{flags}} ;;
-        *) echo "Unknown verify target: {{target}}"; exit 1 ;;
+        *) echo "Unknown verify check: {{what}}"; exit 1 ;;
     esac
 
 [private]
@@ -40,7 +47,7 @@ _verify-std-propagation-package target:
     elif [[ -d "{{target}}" ]]; then
         rust-script {{VERIFY_STD_PROPAGATION_SCRIPT}} "{{target}}/Cargo.toml"
     else
-        MANIFEST=$(just _resolve-manifest-path "{{target}}")
+        MANIFEST=$(just _find-crate-manifest "{{target}}")
         rust-script {{VERIFY_STD_PROPAGATION_SCRIPT}} "$MANIFEST"
     fi
 
