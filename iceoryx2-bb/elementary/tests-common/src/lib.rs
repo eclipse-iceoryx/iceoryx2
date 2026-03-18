@@ -12,6 +12,8 @@
 
 #![no_std]
 
+extern crate iceoryx2_bb_loggers;
+
 pub mod alignment_tests;
 pub mod bump_allocator_tests;
 pub mod cyclic_tagger_tests;

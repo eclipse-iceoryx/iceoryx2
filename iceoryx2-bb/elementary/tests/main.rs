@@ -10,16 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
+extern crate iceoryx2_bb_elementary_tests_common;
 
-use iceoryx2_bb_elementary_tests_common::scope_guard_tests;
-
-#[test]
-pub fn scope_guard_callbacks_are_called_correctly_success_case() {
-    scope_guard_tests::scope_guard_callbacks_are_called_correctly_success_case();
-}
-
-#[test]
-pub fn scope_guard_callbacks_are_called_correctly_failure_case() {
-    scope_guard_tests::scope_guard_callbacks_are_called_correctly_failure_case();
-}
+iceoryx2_bb_testing::test_harness!();

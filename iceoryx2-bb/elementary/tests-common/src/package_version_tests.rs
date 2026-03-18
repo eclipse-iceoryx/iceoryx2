@@ -12,7 +12,9 @@
 
 use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_bb_testing::{assert_that, test_requires};
+use iceoryx2_bb_testing_macros::inventory_test;
 
+#[inventory_test]
 pub fn package_version_works() {
     // NOTE: The test is skipped when not run with cargo but with bazel
     //       The CI which runs with cargo ensures that the constants defined

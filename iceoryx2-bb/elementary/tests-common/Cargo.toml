@@ -16,13 +16,17 @@ workspace = true
 [features]
 default = []
 std = [
+  "iceoryx2-bb-loggers/std",
   "iceoryx2-bb-elementary/std",
   "iceoryx2-bb-concurrency/std",
   "iceoryx2-bb-testing/std",
+  "iceoryx2-bb-testing-macros/std",
 ]
 
 [dependencies]
+iceoryx2-bb-loggers = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-concurrency = { workspace = true }
 iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-bb-testing = { workspace = true }
+iceoryx2-bb-testing-macros = { workspace = true }
