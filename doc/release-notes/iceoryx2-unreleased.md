@@ -71,6 +71,8 @@
   [#1444](https://github.com/eclipse-iceoryx/iceoryx2/issues/1444)
 * Fix libc dependency version
   [#1447](https://github.com/eclipse-iceoryx/iceoryx2/issues/1447)
+* Fix FreeBSD build
+  [#1455](https://github.com/eclipse-iceoryx/iceoryx2/issues/1455)
 
 ### Refactoring
 
