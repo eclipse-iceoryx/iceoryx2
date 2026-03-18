@@ -10,10 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![no_std]
+extern crate iceoryx2_bb_trait_tests_common;
 
-extern crate alloc;
-extern crate iceoryx2_bb_loggers;
-
-pub mod relocatable_container_tests;
-pub mod semantic_string_tests;
+iceoryx2_bb_testing::test_harness!();

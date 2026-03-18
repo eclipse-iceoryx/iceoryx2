@@ -13,10 +13,19 @@
 use alloc::boxed::Box;
 
 use core::ptr::NonNull;
+use iceoryx2_bb_container::{queue::RelocatableQueue, vector::relocatable_vec::RelocatableVec};
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
+use iceoryx2_bb_lock_free::{
+    mpmc::{container::Container, unique_index_set::UniqueIndexSet},
+    spsc::{
+        index_queue::RelocatableIndexQueue,
+        safely_overflowing_index_queue::RelocatableSafelyOverflowingIndexQueue,
+    },
+};
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::requires_std;
+use iceoryx2_bb_testing_macros::{inventory_test_generic, requires_std};
+use iceoryx2_cal::zero_copy_connection::used_chunk_list::RelocatableUsedChunkList;
 
 const MEMORY_SIZE: usize = 1024 * 128;
 
@@ -28,6 +37,21 @@ fn allocator(memory: &mut [u8]) -> BumpAllocator {
     BumpAllocator::new(NonNull::new(memory.as_mut_ptr()).unwrap(), memory.len())
 }
 
+#[inventory_test_generic(
+    RelocatableVec<u64>,
+    RelocatableVec<u128>,
+    RelocatableVec<[u8; 123]>,
+    RelocatableQueue<u64>,
+    RelocatableQueue<u128>,
+    RelocatableQueue<[u8; 123]>,
+    Container<u64>,
+    Container<u128>,
+    Container<[u8; 123]>,
+    UniqueIndexSet,
+    RelocatableIndexQueue,
+    RelocatableSafelyOverflowingIndexQueue,
+    RelocatableUsedChunkList
+)]
 pub fn init_acquires_less_or_equal_the_required_size_of_bytes<T: RelocatableContainer>() {
     const MAX_CAPACITY: usize = 128;
 
@@ -43,6 +67,21 @@ pub fn init_acquires_less_or_equal_the_required_size_of_bytes<T: RelocatableCont
     }
 }
 
+#[inventory_test_generic(
+    RelocatableVec<u64>,
+    RelocatableVec<u128>,
+    RelocatableVec<[u8; 123]>,
+    RelocatableQueue<u64>,
+    RelocatableQueue<u128>,
+    RelocatableQueue<[u8; 123]>,
+    Container<u64>,
+    Container<u128>,
+    Container<[u8; 123]>,
+    UniqueIndexSet,
+    RelocatableIndexQueue,
+    RelocatableSafelyOverflowingIndexQueue,
+    RelocatableUsedChunkList
+)]
 pub fn init_acquires_less_or_equal_the_required_size_of_bytes_multiple_allocations<
     T: RelocatableContainer,
 >() {
@@ -62,7 +101,23 @@ pub fn init_acquires_less_or_equal_the_required_size_of_bytes_multiple_allocatio
     }
 }
 
+#[inventory_test_generic(
+    RelocatableVec<u64>,
+    RelocatableVec<u128>,
+    RelocatableVec<[u8; 123]>,
+    RelocatableQueue<u64>,
+    RelocatableQueue<u128>,
+    RelocatableQueue<[u8; 123]>,
+    Container<u64>,
+    Container<u128>,
+    Container<[u8; 123]>,
+    UniqueIndexSet,
+    RelocatableIndexQueue,
+    RelocatableSafelyOverflowingIndexQueue,
+    RelocatableUsedChunkList
+)]
 #[requires_std("panics")]
+#[should_panic]
 pub fn init_twice_causes_panic<T: RelocatableContainer>() {
     const MAX_CAPACITY: usize = 18;
 

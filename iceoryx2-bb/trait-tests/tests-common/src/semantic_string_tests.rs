@@ -16,13 +16,30 @@ use alloc::format;
 use alloc::vec;
 
 use iceoryx2_bb_container::semantic_string::*;
+use iceoryx2_bb_system_types::base64url::*;
+use iceoryx2_bb_system_types::file_name::*;
+use iceoryx2_bb_system_types::file_path::*;
+use iceoryx2_bb_system_types::group_name::*;
+use iceoryx2_bb_system_types::path::*;
+use iceoryx2_bb_system_types::user_name::*;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::{inventory_test, inventory_test_generic};
 
+#[inventory_test]
 pub fn display_error_enum_works() {
     assert_that!(format!("{}", SemanticStringError::InvalidContent), eq "SemanticStringError::InvalidContent");
     assert_that!(format!("{}", SemanticStringError::ExceedsMaximumLength), eq "SemanticStringError::ExceedsMaximumLength");
 }
 
+#[inventory_test_generic(
+    ({FileName::max_len()}, FileName),
+    (64, RestrictedFileName::<64>),
+    ({Path::max_len()}, Path),
+    ({FilePath::max_len()}, FilePath),
+    ({UserName::max_len()}, UserName),
+    ({GroupName::max_len()}, GroupName),
+    ({Base64Url::max_len()}, Base64Url)
+)]
 pub fn new_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
     let sut = Sut::new(b"hello-txt");
     assert_that!(sut, is_ok);
@@ -32,6 +49,15 @@ pub fn new_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
     assert_that!(sut.as_bytes(), eq b"hello-txt");
 }
 
+#[inventory_test_generic(
+    ({FileName::max_len()}, FileName),
+    (64, RestrictedFileName::<64>),
+    ({Path::max_len()}, Path),
+    ({FilePath::max_len()}, FilePath),
+    ({UserName::max_len()}, UserName),
+    ({GroupName::max_len()}, GroupName),
+    ({Base64Url::max_len()}, Base64Url)
+)]
 pub fn new_name_with_illegal_char_is_illegal<
     const CAPACITY: usize,
     Sut: SemanticString<CAPACITY>,
@@ -40,6 +66,15 @@ pub fn new_name_with_illegal_char_is_illegal<
     assert_that!(sut, is_err);
 }
 
+#[inventory_test_generic(
+    ({FileName::max_len()}, FileName),
+    (64, RestrictedFileName::<64>),
+    ({Path::max_len()}, Path),
+    ({FilePath::max_len()}, FilePath),
+    ({UserName::max_len()}, UserName),
+    ({GroupName::max_len()}, GroupName),
+    ({Base64Url::max_len()}, Base64Url)
+)]
 pub fn try_from_legal_str_succeeds<
     const CAPACITY: usize,
     Sut: SemanticString<CAPACITY> + TryFrom<&'static str>,
@@ -52,6 +87,15 @@ pub fn try_from_legal_str_succeeds<
     assert_that!(sut.as_bytes(), eq b"woohoo-md");
 }
 
+#[inventory_test_generic(
+    ({FileName::max_len()}, FileName),
+    (64, RestrictedFileName::<64>),
+    ({Path::max_len()}, Path),
+    ({FilePath::max_len()}, FilePath),
+    ({UserName::max_len()}, UserName),
+    ({GroupName::max_len()}, GroupName),
+    ({Base64Url::max_len()}, Base64Url)
+)]
 pub fn try_from_illegal_str_fails<
     const CAPACITY: usize,
     Sut: SemanticString<CAPACITY> + TryFrom<&'static str>,
@@ -60,6 +104,15 @@ pub fn try_from_illegal_str_fails<
     assert_that!(sut, is_err);
 }
 
+#[inventory_test_generic(
+    ({FileName::max_len()}, FileName),
+    (64, RestrictedFileName::<64>),
+    ({Path::max_len()}, Path),
+    ({FilePath::max_len()}, FilePath),
+    ({UserName::max_len()}, UserName),
+    ({GroupName::max_len()}, GroupName),
+    ({Base64Url::max_len()}, Base64Url)
+)]
 pub fn insert_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
     let mut sut = Sut::new(b"hello").unwrap();
     assert_that!(sut.insert(1, b't'), is_ok);
@@ -68,6 +121,15 @@ pub fn insert_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
     assert_that!(sut.as_bytes(), eq b"htello");
 }
 
+#[inventory_test_generic(
+    ({FileName::max_len()}, FileName),
+    (64, RestrictedFileName::<64>),
+    ({Path::max_len()}, Path),
+    ({FilePath::max_len()}, FilePath),
+    ({UserName::max_len()}, UserName),
+    ({GroupName::max_len()}, GroupName),
+    ({Base64Url::max_len()}, Base64Url)
+)]
 pub fn insert_illegal_character_fails<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
     let mut sut = Sut::new(b"hello").unwrap();
     assert_that!(sut.insert(1, b'*'), is_err);
@@ -76,6 +138,15 @@ pub fn insert_illegal_character_fails<const CAPACITY: usize, Sut: SemanticString
     assert_that!(sut.as_bytes(), eq b"hello");
 }
 
+#[inventory_test_generic(
+    ({FileName::max_len()}, FileName),
+    (64, RestrictedFileName::<64>),
+    ({Path::max_len()}, Path),
+    ({FilePath::max_len()}, FilePath),
+    ({UserName::max_len()}, UserName),
+    ({GroupName::max_len()}, GroupName),
+    ({Base64Url::max_len()}, Base64Url)
+)]
 pub fn insert_bytes_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
     let mut sut = Sut::new(b"wld").unwrap();
     assert_that!(sut.insert_bytes(1, b"or"), is_ok);
@@ -84,6 +155,15 @@ pub fn insert_bytes_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>(
     assert_that!(sut.as_bytes(), eq b"world");
 }
 
+#[inventory_test_generic(
+    ({FileName::max_len()}, FileName),
+    (64, RestrictedFileName::<64>),
+    ({Path::max_len()}, Path),
+    ({FilePath::max_len()}, FilePath),
+    ({UserName::max_len()}, UserName),
+    ({GroupName::max_len()}, GroupName),
+    ({Base64Url::max_len()}, Base64Url)
+)]
 pub fn insert_bytes_with_illegal_character_fails<
     const CAPACITY: usize,
     Sut: SemanticString<CAPACITY>,
@@ -95,6 +175,15 @@ pub fn insert_bytes_with_illegal_character_fails<
     assert_that!(sut.as_bytes(), eq b"wld");
 }
 
+#[inventory_test_generic(
+    ({FileName::max_len()}, FileName),
+    (64, RestrictedFileName::<64>),
+    ({Path::max_len()}, Path),
+    ({FilePath::max_len()}, FilePath),
+    ({UserName::max_len()}, UserName),
+    ({GroupName::max_len()}, GroupName),
+    ({Base64Url::max_len()}, Base64Url)
+)]
 pub fn pop_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
     let mut sut = Sut::new(b"fuu-blaa-fuu").unwrap();
     let result = sut.pop();
@@ -104,6 +193,15 @@ pub fn pop_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
     assert_that!(sut.as_bytes(), eq b"fuu-blaa-fu");
 }
 
+#[inventory_test_generic(
+    ({FileName::max_len()}, FileName),
+    (64, RestrictedFileName::<64>),
+    ({Path::max_len()}, Path),
+    ({FilePath::max_len()}, FilePath),
+    ({UserName::max_len()}, UserName),
+    ({GroupName::max_len()}, GroupName),
+    ({Base64Url::max_len()}, Base64Url)
+)]
 pub fn remove_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
     let mut sut = Sut::new(b"a01234").unwrap();
     let result = sut.remove(2);
@@ -113,6 +211,15 @@ pub fn remove_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
     assert_that!(sut.as_bytes(), eq b"a0234");
 }
 
+#[inventory_test_generic(
+    ({FileName::max_len()}, FileName),
+    (64, RestrictedFileName::<64>),
+    ({Path::max_len()}, Path),
+    ({FilePath::max_len()}, FilePath),
+    ({UserName::max_len()}, UserName),
+    ({GroupName::max_len()}, GroupName),
+    ({Base64Url::max_len()}, Base64Url)
+)]
 pub fn remove_range_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
     let mut sut = Sut::new(b"a01234567").unwrap();
     let result = sut.remove_range(3, 3);
@@ -122,6 +229,15 @@ pub fn remove_range_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>(
     assert_that!(sut.as_bytes(), eq b"a01567");
 }
 
+#[inventory_test_generic(
+    ({FileName::max_len()}, FileName),
+    (64, RestrictedFileName::<64>),
+    ({Path::max_len()}, Path),
+    ({FilePath::max_len()}, FilePath),
+    ({UserName::max_len()}, UserName),
+    ({GroupName::max_len()}, GroupName),
+    ({Base64Url::max_len()}, Base64Url)
+)]
 pub fn retain_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
     let mut sut = Sut::new(b"a01234567").unwrap();
     let result = sut.retain(|c| c == b'4');
@@ -131,6 +247,15 @@ pub fn retain_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
     assert_that!(sut.as_bytes(), eq b"a0123567");
 }
 
+#[inventory_test_generic(
+    ({FileName::max_len()}, FileName),
+    (64, RestrictedFileName::<64>),
+    ({Path::max_len()}, Path),
+    ({FilePath::max_len()}, FilePath),
+    ({UserName::max_len()}, UserName),
+    ({GroupName::max_len()}, GroupName),
+    ({Base64Url::max_len()}, Base64Url)
+)]
 pub fn strip_prefix_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
     let mut sut = Sut::new(b"a0123a4567").unwrap();
     assert_that!(sut.strip_prefix(b"a0123"), eq Ok(true));
@@ -147,6 +272,15 @@ pub fn strip_prefix_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>(
     }
 }
 
+#[inventory_test_generic(
+    ({FileName::max_len()}, FileName),
+    (64, RestrictedFileName::<64>),
+    ({Path::max_len()}, Path),
+    ({FilePath::max_len()}, FilePath),
+    ({UserName::max_len()}, UserName),
+    ({GroupName::max_len()}, GroupName),
+    ({Base64Url::max_len()}, Base64Url)
+)]
 pub fn strip_suffix_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
     let mut sut = Sut::new(b"a0123a4567").unwrap();
     assert_that!(sut.strip_suffix(b"a4567"), eq Ok(true));
@@ -163,6 +297,15 @@ pub fn strip_suffix_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>(
     }
 }
 
+#[inventory_test_generic(
+    ({FileName::max_len()}, FileName),
+    (64, RestrictedFileName::<64>),
+    ({Path::max_len()}, Path),
+    ({FilePath::max_len()}, FilePath),
+    ({UserName::max_len()}, UserName),
+    ({GroupName::max_len()}, GroupName),
+    ({Base64Url::max_len()}, Base64Url)
+)]
 pub fn truncate_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
     let mut sut = Sut::new(b"a01234567").unwrap();
     assert_that!(sut.truncate(4), is_ok);
@@ -182,6 +325,15 @@ pub fn truncate_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
     }
 }
 
+#[inventory_test_generic(
+    ({FileName::max_len()}, FileName),
+    (64, RestrictedFileName::<64>),
+    ({Path::max_len()}, Path),
+    ({FilePath::max_len()}, FilePath),
+    ({UserName::max_len()}, UserName),
+    ({GroupName::max_len()}, GroupName),
+    ({Base64Url::max_len()}, Base64Url)
+)]
 pub fn invalid_utf8_characters_fail<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
     let sut = Sut::new(&[b'a', b'b', 0xdf, 0xff]);
     assert_that!(sut, is_err);
@@ -190,16 +342,43 @@ pub fn invalid_utf8_characters_fail<const CAPACITY: usize, Sut: SemanticString<C
     assert_that!(sut, is_err);
 }
 
+#[inventory_test_generic(
+    ({FileName::max_len()}, FileName),
+    (64, RestrictedFileName::<64>),
+    ({Path::max_len()}, Path),
+    ({FilePath::max_len()}, FilePath),
+    ({UserName::max_len()}, UserName),
+    ({GroupName::max_len()}, GroupName),
+    ({Base64Url::max_len()}, Base64Url)
+)]
 pub fn is_full_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
     let sut = Sut::new(b"a01234567").unwrap();
     assert_that!(sut.is_full(), eq false);
 }
 
+#[inventory_test_generic(
+    ({FileName::max_len()}, FileName),
+    (64, RestrictedFileName::<64>),
+    ({Path::max_len()}, Path),
+    ({FilePath::max_len()}, FilePath),
+    ({UserName::max_len()}, UserName),
+    ({GroupName::max_len()}, GroupName),
+    ({Base64Url::max_len()}, Base64Url)
+)]
 pub fn capacity_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
     let sut = Sut::new(b"a01234567").unwrap();
     assert_that!(sut.capacity(), eq CAPACITY);
 }
 
+#[inventory_test_generic(
+    ({FileName::max_len()}, FileName),
+    (64, RestrictedFileName::<64>),
+    ({Path::max_len()}, Path),
+    ({FilePath::max_len()}, FilePath),
+    ({UserName::max_len()}, UserName),
+    ({GroupName::max_len()}, GroupName),
+    ({Base64Url::max_len()}, Base64Url)
+)]
 pub fn insert_too_much_bytes_fails<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
     let mut sut = Sut::new(b"a01234567").unwrap();
     let mut bytes = vec![];
@@ -215,6 +394,15 @@ pub fn insert_too_much_bytes_fails<const CAPACITY: usize, Sut: SemanticString<CA
     );
 }
 
+#[inventory_test_generic(
+    ({FileName::max_len()}, FileName),
+    (64, RestrictedFileName::<64>),
+    ({Path::max_len()}, Path),
+    ({FilePath::max_len()}, FilePath),
+    ({UserName::max_len()}, UserName),
+    ({GroupName::max_len()}, GroupName),
+    ({Base64Url::max_len()}, Base64Url)
+)]
 pub fn pop_until_empty_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
     let mut sut = Sut::new(b"aaa").unwrap();
 
