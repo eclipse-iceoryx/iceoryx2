@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Contributors to the Eclipse Foundation
+// Copyright (c) 2026 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -10,11 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
+extern crate iceoryx2_bb_concurrency_tests_common;
 
-use iceoryx2_bb_concurrency_tests_common::strategy_barrier_tests;
-
-#[test]
-fn strategy_barrier_with_multiple_waiter_works() {
-    strategy_barrier_tests::strategy_barrier_with_multiple_waiter_works();
-}
+iceoryx2_bb_testing::test_harness!();

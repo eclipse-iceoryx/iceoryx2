@@ -24,6 +24,7 @@ use iceoryx2_bb_concurrency::atomic::AtomicU32;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::inventory_test_generic;
 
 static COUNTER: AtomicU32 = AtomicU32::new(0);
 
@@ -91,6 +92,7 @@ impl Req for i128 {
     }
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_new_works<T: Req>() {
     let n = T::generate_value();
     let sut = Atomic::<T>::new(n);
@@ -98,6 +100,7 @@ pub fn atomic_new_works<T: Req>() {
     assert_that!(sut.load(Ordering::Relaxed), eq n);
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_as_ptr_works<T: Req>() {
     let n1 = T::generate_value();
     let n2 = T::generate_value();
@@ -111,6 +114,7 @@ pub fn atomic_as_ptr_works<T: Req>() {
     assert_that!(sut.load(Ordering::Relaxed), eq n2);
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_compare_exchange_success_works<T: Req>() {
     let n_old = T::generate_value();
     let n_new = T::generate_value();
@@ -122,6 +126,7 @@ pub fn atomic_compare_exchange_success_works<T: Req>() {
     assert_that!(result.unwrap(), eq n_old);
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_compare_exchange_weak_success_works<T: Req>() {
     let n_old = T::generate_value();
     let n_new = T::generate_value();
@@ -133,6 +138,7 @@ pub fn atomic_compare_exchange_weak_success_works<T: Req>() {
     assert_that!(result.unwrap(), eq n_old);
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_compare_exchange_failure_works<T: Req>() {
     let n_outdated = T::generate_value();
     let n_old = T::generate_value();
@@ -145,6 +151,7 @@ pub fn atomic_compare_exchange_failure_works<T: Req>() {
     assert_that!(result.err().unwrap(), eq n_old);
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_compare_exchange_weak_failure_works<T: Req>() {
     let n_outdated = T::generate_value();
     let n_old = T::generate_value();
@@ -157,6 +164,7 @@ pub fn atomic_compare_exchange_weak_failure_works<T: Req>() {
     assert_that!(result.err().unwrap(), eq n_old);
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_fetch_add_works<T: Req>() {
     let n = T::generate_value();
     let sut = Atomic::<T>::new(n);
@@ -167,6 +175,7 @@ pub fn atomic_fetch_add_works<T: Req>() {
     assert_that!(sut.load(Ordering::Relaxed), eq n.overflowing_add(n).0);
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_fetch_and_works<T: Req>() {
     let n1 = T::generate_value();
     let n2 = T::generate_value();
@@ -181,6 +190,7 @@ pub fn atomic_fetch_and_works<T: Req>() {
     assert_that!(sut.load(Ordering::Relaxed), eq bit_and);
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_fetch_max_works<T: Req>() {
     let n1 = T::generate_value();
     let n2 = T::generate_value();
@@ -197,6 +207,7 @@ pub fn atomic_fetch_max_works<T: Req>() {
     assert_that!(sut_2.load(Ordering::Relaxed), eq n1.max(n2));
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_fetch_min_works<T: Req>() {
     let n1 = T::generate_value();
     let n2 = T::generate_value();
@@ -213,6 +224,7 @@ pub fn atomic_fetch_min_works<T: Req>() {
     assert_that!(sut_2.load(Ordering::Relaxed), eq n1.min(n2));
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_fetch_nand_works<T: Req>() {
     let n1 = T::generate_value();
     let n2 = T::generate_value();
@@ -226,6 +238,7 @@ pub fn atomic_fetch_nand_works<T: Req>() {
     assert_that!(sut.load(Ordering::Relaxed), eq bit_nand);
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_fetch_or_works<T: Req>() {
     let n1 = T::generate_value();
     let n2 = T::generate_value();
@@ -240,6 +253,7 @@ pub fn atomic_fetch_or_works<T: Req>() {
     assert_that!(sut.load(Ordering::Relaxed), eq bit_or);
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_fetch_sub_works<T: Req>() {
     let n1 = T::generate_value();
     let n2 = T::generate_value();
@@ -262,6 +276,7 @@ fn err_fetch_update<T: AddAssign + Copy>(_value: T) -> Option<T> {
     None
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_fetch_update_success_works<T: Req>() {
     let n1 = T::generate_value();
 
@@ -276,6 +291,7 @@ pub fn atomic_fetch_update_success_works<T: Req>() {
     assert_that!(sut.load(Ordering::Relaxed), eq n);
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_fetch_update_failure_works<T: Req>() {
     let n1 = T::generate_value();
 
@@ -288,6 +304,7 @@ pub fn atomic_fetch_update_failure_works<T: Req>() {
     assert_that!(sut.load(Ordering::Relaxed), eq n1);
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_fetch_xor_works<T: Req>() {
     let n1 = T::generate_value();
     let n2 = T::generate_value();
@@ -302,6 +319,7 @@ pub fn atomic_fetch_xor_works<T: Req>() {
     assert_that!(sut.load(Ordering::Relaxed), eq bit_xor);
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_into_inner_works<T: Req>() {
     let n = T::generate_value();
     let sut = Atomic::<T>::new(n);
@@ -309,6 +327,7 @@ pub fn atomic_into_inner_works<T: Req>() {
     assert_that!(Atomic::<T>::into_inner(sut), eq n);
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_load_store_works<T: Req>() {
     let n1 = T::generate_value();
     let n2 = T::generate_value();
@@ -319,6 +338,7 @@ pub fn atomic_load_store_works<T: Req>() {
     assert_that!(sut.load(Ordering::Relaxed), eq n2);
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_swap_works<T: Req>() {
     let n1 = T::generate_value();
     let n2 = T::generate_value();
@@ -330,6 +350,7 @@ pub fn atomic_swap_works<T: Req>() {
     assert_that!(sut.load(Ordering::Relaxed), eq n2);
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_compatibility_new_works<T: Req>() {
     let n = T::generate_compatibility_value();
     let sut = Atomic::<T>::new(n);
@@ -338,6 +359,7 @@ pub fn atomic_compatibility_new_works<T: Req>() {
     assert_that!(compat.load(Ordering::Relaxed), eq sut.load(Ordering::Relaxed).to_u32());
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_compatibility_as_ptr_works<T: Req>() {
     let n1 = T::generate_compatibility_value();
     let n2 = T::generate_compatibility_value();
@@ -354,6 +376,7 @@ pub fn atomic_compatibility_as_ptr_works<T: Req>() {
     assert_that!(unsafe {*compat.as_ptr()}, eq n2.to_u32() );
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_compatibility_compare_exchange_success_works<T: Req>() {
     let n1 = T::generate_compatibility_value();
     let n2 = T::generate_compatibility_value();
@@ -376,6 +399,7 @@ pub fn atomic_compatibility_compare_exchange_success_works<T: Req>() {
     assert_that!(result_compat.unwrap(), eq n1.to_u32());
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_compatibility_compare_exchange_weak_success_works<T: Req>() {
     let n1 = T::generate_compatibility_value();
     let n2 = T::generate_compatibility_value();
@@ -398,6 +422,7 @@ pub fn atomic_compatibility_compare_exchange_weak_success_works<T: Req>() {
     assert_that!(result_compat.unwrap(), eq n1.to_u32());
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_compatibility_compare_exchange_failure_works<T: Req>() {
     let n1 = T::generate_compatibility_value();
     let n2 = T::generate_compatibility_value();
@@ -420,6 +445,7 @@ pub fn atomic_compatibility_compare_exchange_failure_works<T: Req>() {
     assert_that!(result_compat.err().unwrap(), eq n1.to_u32());
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_compatibility_compare_exchange_weak_failure_works<T: Req>() {
     let n1 = T::generate_compatibility_value();
     let n2 = T::generate_compatibility_value();
@@ -442,6 +468,7 @@ pub fn atomic_compatibility_compare_exchange_weak_failure_works<T: Req>() {
     assert_that!(result_compat.err().unwrap(), eq n1.to_u32());
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_compatibility_fetch_add_works<T: Req>() {
     let n1 = T::generate_compatibility_value();
     let n2 = T::generate_compatibility_value();
@@ -453,6 +480,7 @@ pub fn atomic_compatibility_fetch_add_works<T: Req>() {
     assert_that!(sut.load(Ordering::Relaxed).to_u32(), eq compat.load(Ordering::Relaxed));
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_compatibility_fetch_and_works<T: Req>() {
     let n1 = T::generate_compatibility_value();
     let n2 = T::generate_compatibility_value();
@@ -464,6 +492,7 @@ pub fn atomic_compatibility_fetch_and_works<T: Req>() {
     assert_that!(sut.load(Ordering::Relaxed).to_u32(), eq compat.load(Ordering::Relaxed));
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_compatibility_fetch_max_works<T: Req>() {
     let n1 = T::generate_compatibility_value();
     let n2 = T::generate_compatibility_value();
@@ -475,6 +504,7 @@ pub fn atomic_compatibility_fetch_max_works<T: Req>() {
     assert_that!(sut.load(Ordering::Relaxed).to_u32(), eq compat.load(Ordering::Relaxed));
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_compatibility_fetch_min_works<T: Req>() {
     let n1 = T::generate_compatibility_value();
     let n2 = T::generate_compatibility_value();
@@ -486,6 +516,7 @@ pub fn atomic_compatibility_fetch_min_works<T: Req>() {
     assert_that!(sut.load(Ordering::Relaxed).to_u32(), eq compat.load(Ordering::Relaxed));
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_compatibility_fetch_nand_works<T: Req>() {
     let n1 = T::generate_compatibility_value();
     let n2 = T::generate_compatibility_value();
@@ -497,6 +528,7 @@ pub fn atomic_compatibility_fetch_nand_works<T: Req>() {
     assert_that!(sut.load(Ordering::Relaxed).to_u32(), eq compat.load(Ordering::Relaxed));
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_compatibility_fetch_or_works<T: Req>() {
     let n1 = T::generate_compatibility_value();
     let n2 = T::generate_compatibility_value();
@@ -508,6 +540,7 @@ pub fn atomic_compatibility_fetch_or_works<T: Req>() {
     assert_that!(sut.load(Ordering::Relaxed).to_u32(), eq compat.load(Ordering::Relaxed));
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_compatibility_fetch_sub_works<T: Req>() {
     let n1 = T::generate_compatibility_value();
     let n2 = T::generate_compatibility_value();
@@ -519,6 +552,7 @@ pub fn atomic_compatibility_fetch_sub_works<T: Req>() {
     assert_that!(sut.load(Ordering::Relaxed).to_u32(), eq compat.load(Ordering::Relaxed));
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_compatibility_fetch_update_success_works<T: Req>() {
     let n1 = T::generate_compatibility_value();
 
@@ -536,6 +570,7 @@ pub fn atomic_compatibility_fetch_update_success_works<T: Req>() {
     assert_that!(sut.load(Ordering::Relaxed).to_u32(), eq compat.load(Ordering::Relaxed));
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_compatibility_fetch_update_failure_works<T: Req>() {
     let n1 = T::generate_compatibility_value();
 
@@ -556,6 +591,7 @@ pub fn atomic_compatibility_fetch_update_failure_works<T: Req>() {
     assert_that!(sut.load(Ordering::Relaxed).to_u32(), eq compat.load(Ordering::Relaxed));
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_compatibility_fetch_xor_works<T: Req>() {
     let n1 = T::generate_compatibility_value();
     let n2 = T::generate_compatibility_value();
@@ -567,6 +603,7 @@ pub fn atomic_compatibility_fetch_xor_works<T: Req>() {
     assert_that!(sut.load(Ordering::Relaxed).to_u32(), eq compat.load(Ordering::Relaxed));
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_compatibility_swap_works<T: Req>() {
     let n1 = T::generate_compatibility_value();
     let n2 = T::generate_compatibility_value();
@@ -578,6 +615,7 @@ pub fn atomic_compatibility_swap_works<T: Req>() {
     assert_that!(sut.load(Ordering::Relaxed).to_u32(), eq compat.load(Ordering::Relaxed));
 }
 
+#[inventory_test_generic(u64, u128, i64, i128)]
 pub fn atomic_placement_default_works<T: Req>() {
     let layout = Layout::new::<Atomic<T>>();
     let raw_memory = unsafe { alloc(layout) } as *mut Atomic<T>;

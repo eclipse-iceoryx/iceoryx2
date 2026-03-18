@@ -18,7 +18,9 @@ use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
 use iceoryx2_bb_testing::watchdog::Watchdog;
+use iceoryx2_bb_testing_macros::inventory_test;
 
+#[inventory_test]
 pub fn try_lock_locks() {
     let lk = SpinLock::new(0);
     let guard = lk.try_lock();
@@ -26,6 +28,7 @@ pub fn try_lock_locks() {
     assert_that!(lk.try_lock(), is_none);
 }
 
+#[inventory_test]
 pub fn lock_guard_unlocks_when_dropped() {
     let lk = SpinLock::new(0);
     let guard = lk.try_lock();
@@ -35,6 +38,7 @@ pub fn lock_guard_unlocks_when_dropped() {
     assert_that!(lk.try_lock(), is_some);
 }
 
+#[inventory_test]
 pub fn lock_guard_behaves_like_reference() {
     let lk = SpinLock::new(0);
     let mut guard = lk.try_lock().unwrap();
@@ -42,6 +46,7 @@ pub fn lock_guard_behaves_like_reference() {
     assert_that!(*guard, eq 1984);
 }
 
+#[inventory_test]
 pub fn blocking_lock_locks_exclusively() {
     const NUMBER_OF_THREADS: u32 = 2;
 
@@ -71,6 +76,7 @@ pub fn blocking_lock_locks_exclusively() {
     assert_that!(*guard, eq NUMBER_OF_THREADS);
 }
 
+#[inventory_test]
 pub fn try_lock_locks_exclusively() {
     const NUMBER_OF_THREADS: u32 = 2;
 
@@ -102,6 +108,7 @@ pub fn try_lock_locks_exclusively() {
     assert_that!(*guard, le NUMBER_OF_THREADS);
 }
 
+#[inventory_test]
 pub fn lock_is_hold_until_guard_drops() {
     let _watchdog = Watchdog::new();
     let lk = SpinLock::new(Vec::new());
@@ -125,6 +132,7 @@ pub fn lock_is_hold_until_guard_drops() {
     assert_that!(guard.as_slice(), any_of [[1990, 4, 6], [4, 6, 1990]]);
 }
 
+#[inventory_test]
 pub fn drop_called_for_underlying_value() {
     let state = LifetimeTracker::start_tracking();
     let lk = SpinLock::<LifetimeTracker>::new(LifetimeTracker::default());
