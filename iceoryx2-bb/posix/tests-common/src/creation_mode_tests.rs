@@ -14,8 +14,10 @@ use alloc::format;
 
 use iceoryx2_bb_posix::creation_mode::*;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_pal_posix::*;
 
+#[inventory_test]
 pub fn creation_mode_o_flag_conversion_works() {
     assert_that!(
         CreationMode::CreateExclusive.as_oflag(), eq
@@ -28,6 +30,7 @@ pub fn creation_mode_o_flag_conversion_works() {
     assert_that!(CreationMode::OpenOrCreate.as_oflag(), eq posix::O_CREAT);
 }
 
+#[inventory_test]
 pub fn creation_mode_display_works() {
     assert_that!(
         format!("{}", CreationMode::PurgeAndCreate),

@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Contributors to the Eclipse Foundation
+// Copyright (c) 2026 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -10,15 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![allow(clippy::disallowed_types)]
+extern crate iceoryx2_bb_posix_tests_common;
 
-extern crate iceoryx2_bb_loggers;
-
-use iceoryx2_bb_posix::barrier::BarrierCreationError;
-use iceoryx2_bb_posix_tests_common::barrier_tests;
-use iceoryx2_bb_testing_macros::inventory_test;
-
-#[inventory_test]
-fn barrier_blocks() -> Result<(), BarrierCreationError> {
-    barrier_tests::barrier_blocks()
-}
+iceoryx2_bb_testing::test_harness!();

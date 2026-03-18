@@ -17,8 +17,10 @@ use iceoryx2_bb_posix::user::*;
 use iceoryx2_bb_system_types::group_name::GroupName;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
+use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_USERS_AND_GROUPS;
 
+#[inventory_test]
 pub fn ownership_builder_works() {
     test_requires!(POSIX_SUPPORT_USERS_AND_GROUPS);
 

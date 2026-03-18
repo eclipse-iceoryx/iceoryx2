@@ -28,6 +28,7 @@ use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
+use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_bb_testing_macros::requires_std;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA;
 
@@ -97,6 +98,7 @@ impl Drop for TestFixture {
     }
 }
 
+#[inventory_test]
 pub fn unix_datagram_socket_send_receive_works() {
     create_test_directory();
     let socket_name = generate_socket_name();
@@ -121,6 +123,7 @@ pub fn unix_datagram_socket_send_receive_works() {
     assert_that!(send_data, eq receive_data);
 }
 
+#[inventory_test]
 pub fn unix_datagram_socket_adjust_buffer_size_works() {
     create_test_directory();
     let socket_name = generate_socket_name();
@@ -141,6 +144,7 @@ pub fn unix_datagram_socket_adjust_buffer_size_works() {
     assert_that!(sut_sender.get_send_buffer_size().unwrap(), ge 4096);
 }
 
+#[inventory_test]
 pub fn unix_datagram_socket_non_blocking_mode_returns_zero_when_nothing_was_received() {
     create_test_directory();
     let socket_name = generate_socket_name();
@@ -160,6 +164,7 @@ pub fn unix_datagram_socket_non_blocking_mode_returns_zero_when_nothing_was_rece
     assert_that!(result, eq Ok(0));
 }
 
+#[inventory_test]
 #[requires_std("threading")]
 pub fn unix_datagram_socket_blocking_mode_blocks() {
     use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};
@@ -203,6 +208,7 @@ pub fn unix_datagram_socket_blocking_mode_blocks() {
     });
 }
 
+#[inventory_test]
 #[requires_std("threading")]
 pub fn unix_datagram_socket_timeout_blocks_at_least() {
     use iceoryx2_bb_posix::barrier::*;
@@ -240,6 +246,8 @@ pub fn unix_datagram_socket_timeout_blocks_at_least() {
     });
 }
 
+#[ignore]
+#[inventory_test]
 pub fn unix_datagram_socket_sending_receiving_with_single_fd_works() {
     test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA);
 
@@ -287,7 +295,9 @@ pub fn unix_datagram_socket_sending_receiving_with_single_fd_works() {
 
     assert_that!(file_recv_content, eq file_send_content);
 }
-
+// TODO iox2-#320
+#[ignore]
+#[inventory_test]
 pub fn unix_datagram_socket_sending_receiving_credentials_works() {
     test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA);
 
@@ -315,7 +325,9 @@ pub fn unix_datagram_socket_sending_receiving_credentials_works() {
     let recv_credentials = received_msg.get_creds();
     assert_that!(recv_credentials, eq Some(send_credentials));
 }
-
+// TODO iox2-#320
+#[ignore]
+#[inventory_test]
 pub fn unix_datagram_socket_sending_receiving_with_max_supported_fd_and_credentials_works() {
     test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA);
 

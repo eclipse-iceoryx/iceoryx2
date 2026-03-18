@@ -21,7 +21,9 @@ use iceoryx2_bb_testing::test_requires;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING;
 
 use enum_iterator::all;
+use iceoryx2_bb_testing_macros::inventory_test;
 
+#[inventory_test]
 pub fn signal_set_new_empty_signal_set_does_not_contain_a_signal() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
     let sut = SignalSet::new_empty();
@@ -31,6 +33,7 @@ pub fn signal_set_new_empty_signal_set_does_not_contain_a_signal() {
     }
 }
 
+#[inventory_test]
 pub fn signal_set_new_filled_signal_set_does_contain_all_signals() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
     let sut = SignalSet::new_filled();
@@ -40,6 +43,7 @@ pub fn signal_set_new_filled_signal_set_does_contain_all_signals() {
     }
 }
 
+#[inventory_test]
 pub fn signal_set_adding_new_signals_works() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
     let mut sut = SignalSet::new_empty();
@@ -51,6 +55,7 @@ pub fn signal_set_adding_new_signals_works() {
     }
 }
 
+#[inventory_test]
 pub fn signal_set_removing_signals_works() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
     let mut sut = SignalSet::new_filled();
@@ -62,6 +67,7 @@ pub fn signal_set_removing_signals_works() {
     }
 }
 
+#[inventory_test]
 pub fn signal_set_create_from_pending_signals_with_no_pending_signals_is_empty() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
     let sut = SignalSet::from_pending();
@@ -71,6 +77,7 @@ pub fn signal_set_create_from_pending_signals_with_no_pending_signals_is_empty()
     }
 }
 
+#[inventory_test]
 pub fn signal_set_new_empty_fetchable_signal_set_does_not_contain_a_signal() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
     let sut = FetchableSignalSet::new_empty();
@@ -80,6 +87,7 @@ pub fn signal_set_new_empty_fetchable_signal_set_does_not_contain_a_signal() {
     }
 }
 
+#[inventory_test]
 pub fn signal_set_new_filled_fetchable_signal_set_does_contain_all_signals() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
     let sut = FetchableSignalSet::new_filled();
@@ -89,6 +97,7 @@ pub fn signal_set_new_filled_fetchable_signal_set_does_contain_all_signals() {
     }
 }
 
+#[inventory_test]
 pub fn signal_set_adding_new_fetchable_signals_works() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
     let mut sut = FetchableSignalSet::new_empty();
@@ -100,6 +109,7 @@ pub fn signal_set_adding_new_fetchable_signals_works() {
     }
 }
 
+#[inventory_test]
 pub fn signal_set_removing_fetchable_signals_works() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
     let mut sut = FetchableSignalSet::new_filled();
@@ -111,6 +121,7 @@ pub fn signal_set_removing_fetchable_signals_works() {
     }
 }
 
+#[inventory_test]
 pub fn signal_set_create_from_pending_fetchable_signals_works() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
     let sut = FetchableSignalSet::from_pending();

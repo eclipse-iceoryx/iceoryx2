@@ -19,6 +19,7 @@ use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_posix::thread::MAX_SCOPED_THREADS;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::watchdog::Watchdog;
+use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_bb_testing_macros::requires_std;
 
 #[cfg(feature = "std")]
@@ -43,6 +44,7 @@ mod std_testing {
     pub use iceoryx2_pal_posix::posix::{self, POSIX_SUPPORT_CPU_AFFINITY};
 }
 
+#[inventory_test]
 #[requires_std("threading", "synchronization")]
 pub fn thread_set_name_works() {
     use std::sync::Barrier;
@@ -70,6 +72,7 @@ pub fn thread_set_name_works() {
     assert_that!(name, eq b"oh-a-thread");
 }
 
+#[inventory_test]
 #[requires_std("threading", "synchronization")]
 pub fn thread_creation_does_not_block() {
     use std::sync::Barrier;
@@ -87,6 +90,7 @@ pub fn thread_creation_does_not_block() {
     drop(thread);
 }
 
+#[inventory_test]
 #[requires_std("threading", "synchronization", "watchdog")]
 pub fn thread_affinity_is_set_to_all_existing_cores_when_nothing_was_configured() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
@@ -120,6 +124,7 @@ pub fn thread_affinity_is_set_to_all_existing_cores_when_nothing_was_configured(
     }
 }
 
+#[inventory_test]
 #[requires_std("threading", "synchronization", "watchdog")]
 pub fn thread_set_affinity_to_one_cpu_core_on_creation_works() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
@@ -147,6 +152,7 @@ pub fn thread_set_affinity_to_one_cpu_core_on_creation_works() {
     assert_that!(affinity[0], eq 0);
 }
 
+#[inventory_test]
 #[requires_std("threading", "synchronization", "watchdog")]
 pub fn thread_set_affinity_to_two_cpu_cores_on_creation_works() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
@@ -178,6 +184,7 @@ pub fn thread_set_affinity_to_two_cpu_cores_on_creation_works() {
     assert_that!(affinity, contains 1);
 }
 
+#[inventory_test]
 #[requires_std("threading", "watchdog")]
 pub fn thread_set_affinity_to_non_existing_cpu_cores_on_creation_fails() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
@@ -191,6 +198,7 @@ pub fn thread_set_affinity_to_non_existing_cpu_cores_on_creation_fails() {
     assert_that!(thread.err(), eq Some(ThreadSpawnError::CpuCoreOutsideOfSupportedCpuRangeForAffinity));
 }
 
+#[inventory_test]
 #[requires_std("threading", "watchdog")]
 pub fn thread_set_affinity_to_cores_greater_than_cpu_set_size_fails() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
@@ -203,6 +211,7 @@ pub fn thread_set_affinity_to_cores_greater_than_cpu_set_size_fails() {
     assert_that!(thread.err(), eq Some(ThreadSpawnError::CpuCoreOutsideOfSupportedCpuRangeForAffinity));
 }
 
+#[inventory_test]
 #[requires_std("threading", "synchronization", "watchdog")]
 pub fn thread_set_affinity_to_one_core_from_handle_works() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
@@ -230,6 +239,7 @@ pub fn thread_set_affinity_to_one_core_from_handle_works() {
     assert_that!(affinity[0], eq 0);
 }
 
+#[inventory_test]
 #[requires_std("threading", "synchronization", "watchdog")]
 pub fn thread_set_affinity_to_two_cores_from_handle_works() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
@@ -261,6 +271,7 @@ pub fn thread_set_affinity_to_two_cores_from_handle_works() {
     assert_that!(affinity, contains 1);
 }
 
+#[inventory_test]
 #[requires_std("threading", "synchronization", "watchdog")]
 pub fn thread_set_affinity_to_non_existing_cores_from_handle_fails() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
@@ -304,6 +315,7 @@ pub fn thread_set_affinity_to_non_existing_cores_from_handle_fails() {
     assert_that!(affinity, eq original_affinity);
 }
 
+#[inventory_test]
 #[requires_std("threading", "synchronization", "watchdog")]
 pub fn thread_set_affinity_to_one_core_from_thread_works() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
@@ -340,6 +352,7 @@ pub fn thread_set_affinity_to_one_core_from_thread_works() {
     assert_that!(affinity[0], eq 0);
 }
 
+#[inventory_test]
 #[requires_std("threading", "synchronization", "watchdog")]
 pub fn thread_set_affinity_to_two_cores_from_thread_works() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
@@ -370,6 +383,7 @@ pub fn thread_set_affinity_to_two_cores_from_thread_works() {
     assert_that!(affinity, contains 1);
 }
 
+#[inventory_test]
 #[requires_std("threading", "synchronization", "watchdog")]
 pub fn thread_set_affinity_to_non_existing_cores_from_thread_fails() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
@@ -403,6 +417,7 @@ pub fn thread_set_affinity_to_non_existing_cores_from_thread_fails() {
     assert_that!(affinity, eq original_affinity);
 }
 
+#[inventory_test]
 #[requires_std("threading", "synchronization", "watchdog", "time")]
 pub fn thread_destructor_does_not_block_on_empty_thread() {
     let _watchdog = Watchdog::new();
@@ -423,6 +438,7 @@ pub fn thread_destructor_does_not_block_on_empty_thread() {
     assert_that!(start.elapsed(), lt(Duration::from_millis(10)));
 }
 
+#[inventory_test]
 #[requires_std("threading", "synchronization", "watchdog", "time")]
 pub fn thread_destructor_does_block_on_busy_thread() {
     let _watchdog = Watchdog::new();
@@ -452,6 +468,7 @@ pub fn thread_destructor_does_block_on_busy_thread() {
     assert_that!(start.elapsed(), time_at_least SLEEP_DURATION);
 }
 
+#[inventory_test]
 pub fn thread_scoped_threads_work() {
     let _watchdog = Watchdog::new();
     let number_of_threads = MAX_SCOPED_THREADS;

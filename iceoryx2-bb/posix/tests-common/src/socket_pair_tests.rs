@@ -12,6 +12,7 @@
 
 use iceoryx2_bb_testing_macros::requires_std;
 
+use iceoryx2_bb_testing_macros::inventory_test;
 #[cfg(feature = "std")]
 use std_testing::*;
 
@@ -32,6 +33,7 @@ mod std_testing {
     pub const TIMEOUT: Duration = Duration::from_millis(50);
 }
 
+#[inventory_test]
 #[requires_std("watchdog")]
 pub fn try_receive_never_blocks() {
     let _watchdog = Watchdog::new();
@@ -49,6 +51,7 @@ pub fn try_receive_never_blocks() {
     assert_that!(received_data, eq zeros);
 }
 
+#[inventory_test]
 #[requires_std("watchdog")]
 pub fn send_receive_works() {
     let _watchdog = Watchdog::new();
@@ -68,6 +71,7 @@ pub fn send_receive_works() {
     assert_that!(send_data, eq received_data);
 }
 
+#[inventory_test]
 #[requires_std("watchdog")]
 pub fn bidirectional_send_receive_works() {
     let _watchdog = Watchdog::new();
@@ -100,6 +104,7 @@ pub fn bidirectional_send_receive_works() {
     assert_that!(send_data, eq received_data);
 }
 
+#[inventory_test]
 #[requires_std("watchdog")]
 pub fn cannot_receive_my_own_data() {
     let _watchdog = Watchdog::new();
@@ -127,6 +132,7 @@ pub fn cannot_receive_my_own_data() {
     assert_that!(result, eq 0);
 }
 
+#[inventory_test]
 #[requires_std("watchdog", "time")]
 pub fn timed_receive_blocks_for_at_least_timeout() {
     let _watchdog = Watchdog::new();
@@ -146,6 +152,7 @@ pub fn timed_receive_blocks_for_at_least_timeout() {
     assert_that!(result, eq 0);
 }
 
+#[inventory_test]
 #[requires_std("threading", "synchronization", "watchdog")]
 pub fn timed_receive_blocks_until_message_arrives() {
     let _watchdog = Watchdog::new();
@@ -172,6 +179,7 @@ pub fn timed_receive_blocks_until_message_arrives() {
     });
 }
 
+#[inventory_test]
 #[requires_std("threading", "synchronization", "watchdog")]
 pub fn blocking_receive_blocks_until_message_arrives() {
     let _watchdog = Watchdog::new();
@@ -198,6 +206,7 @@ pub fn blocking_receive_blocks_until_message_arrives() {
     });
 }
 
+#[inventory_test]
 #[requires_std("watchdog", "time")]
 pub fn timed_send_blocks_for_at_least_timeout() {
     let _watchdog = Watchdog::new();
@@ -220,6 +229,7 @@ pub fn timed_send_blocks_for_at_least_timeout() {
     assert_that!(result, eq 0);
 }
 
+#[inventory_test]
 #[requires_std("threading", "synchronization", "watchdog")]
 pub fn timed_send_blocks_until_message_buffer_is_free_again() {
     let _watchdog = Watchdog::new();
@@ -260,6 +270,7 @@ pub fn timed_send_blocks_until_message_buffer_is_free_again() {
     });
 }
 
+#[inventory_test]
 #[requires_std("threading", "synchronization", "watchdog")]
 pub fn blocking_send_blocks_until_message_buffer_is_free_again() {
     let _watchdog = Watchdog::new();
@@ -301,6 +312,7 @@ pub fn blocking_send_blocks_until_message_buffer_is_free_again() {
     });
 }
 
+#[inventory_test]
 #[requires_std("watchdog")]
 pub fn peeking_message_does_not_remove_message() {
     let _watchdog = Watchdog::new();
@@ -328,6 +340,7 @@ pub fn peeking_message_does_not_remove_message() {
     assert_that!(send_data, eq received_data);
 }
 
+#[inventory_test]
 #[requires_std("watchdog")]
 pub fn send_from_duplicated_socket_works() {
     let _watchdog = Watchdog::new();
@@ -348,6 +361,7 @@ pub fn send_from_duplicated_socket_works() {
     assert_that!(send_data, eq received_data);
 }
 
+#[inventory_test]
 #[requires_std("watchdog")]
 pub fn receive_from_duplicated_socket_works() {
     let _watchdog = Watchdog::new();
@@ -368,6 +382,7 @@ pub fn receive_from_duplicated_socket_works() {
     assert_that!(send_data, eq received_data);
 }
 
+#[inventory_test]
 #[requires_std("watchdog")]
 pub fn multiple_duplicated_sockets_can_send() {
     let _watchdog = Watchdog::new();

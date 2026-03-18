@@ -13,11 +13,13 @@
 use iceoryx2_bb_posix::udp_socket::*;
 use iceoryx2_bb_system_types::ipv4_address::{self, Ipv4Address};
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_bb_testing_macros::requires_std;
 
 #[cfg(feature = "std")]
 const TIMEOUT: core::time::Duration = core::time::Duration::from_millis(25);
 
+#[inventory_test]
 pub fn udp_socket_send_receive_works() {
     let sut_server = UdpServerBuilder::new().listen().unwrap();
     let sut_client_1 = UdpClientBuilder::new(ipv4_address::LOCALHOST)
@@ -59,6 +61,7 @@ pub fn udp_socket_send_receive_works() {
     }
 }
 
+#[inventory_test]
 pub fn udp_socket_server_with_same_address_and_port_fails() {
     let sut_server_1 = UdpServerBuilder::new()
         .address(Ipv4Address::new(127, 0, 0, 1))
@@ -73,6 +76,7 @@ pub fn udp_socket_server_with_same_address_and_port_fails() {
     assert_that!(sut_server_2.err().unwrap(), eq UdpServerCreateError::AddressAlreadyInUse);
 }
 
+#[inventory_test]
 pub fn udp_socket_when_socket_goes_out_of_scope_address_is_free_again() {
     let port;
     {
@@ -91,6 +95,7 @@ pub fn udp_socket_when_socket_goes_out_of_scope_address_is_free_again() {
     assert_that!(sut_server_2, is_ok);
 }
 
+#[inventory_test]
 pub fn udp_socket_server_has_correct_address() {
     let port = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
@@ -108,6 +113,7 @@ pub fn udp_socket_server_has_correct_address() {
     assert_that!(sut_server.port(), eq port);
 }
 
+#[inventory_test]
 pub fn udp_socket_client_returns_address_of_server() {
     let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
@@ -122,6 +128,7 @@ pub fn udp_socket_client_returns_address_of_server() {
     assert_that!(sut_client.port(), eq sut_server.port());
 }
 
+#[inventory_test]
 pub fn udp_socket_client_can_send_data_to_server() {
     let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
@@ -139,6 +146,7 @@ pub fn udp_socket_client_can_send_data_to_server() {
     assert_that!(sut_server.blocking_receive_from(&mut recv_buffer).unwrap().unwrap().number_of_bytes, eq send_buffer.len());
 }
 
+#[inventory_test]
 pub fn udp_socket_server_can_send_data_to_client() {
     let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
@@ -164,6 +172,7 @@ pub fn udp_socket_server_can_send_data_to_client() {
     assert_that!(sut_client.blocking_receive(&mut recv_buffer).unwrap(), eq send_buffer.len());
 }
 
+#[inventory_test]
 pub fn udp_socket_client_try_receive_does_not_block() {
     let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
@@ -178,6 +187,7 @@ pub fn udp_socket_client_try_receive_does_not_block() {
     assert_that!(sut_client.try_receive(&mut recv_buffer).unwrap(), eq 0);
 }
 
+#[inventory_test]
 pub fn udp_socket_server_try_receive_from_does_not_block() {
     let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
@@ -191,6 +201,7 @@ pub fn udp_socket_server_try_receive_from_does_not_block() {
     );
 }
 
+#[inventory_test]
 #[requires_std("time")]
 pub fn udp_socket_client_timed_receive_does_block_for_at_least_timeout() {
     use std::time::Instant;
@@ -210,6 +221,7 @@ pub fn udp_socket_client_timed_receive_does_block_for_at_least_timeout() {
     assert_that!(start.elapsed(), time_at_least TIMEOUT);
 }
 
+#[inventory_test]
 #[requires_std("time")]
 pub fn udp_socket_server_timed_receive_from_does_block_for_at_least_timeout() {
     use std::time::Instant;
@@ -230,6 +242,7 @@ pub fn udp_socket_server_timed_receive_from_does_block_for_at_least_timeout() {
     assert_that!(start.elapsed(), time_at_least TIMEOUT);
 }
 
+#[inventory_test]
 #[requires_std("threading")]
 pub fn udp_socket_client_blocking_receive_does_block() {
     use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
@@ -279,6 +292,7 @@ pub fn udp_socket_client_blocking_receive_does_block() {
     });
 }
 
+#[inventory_test]
 #[requires_std("threading")]
 pub fn udp_socket_server_blocking_receive_from_does_block() {
     use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
@@ -319,6 +333,7 @@ pub fn udp_socket_server_blocking_receive_from_does_block() {
     });
 }
 
+#[inventory_test]
 #[requires_std("threading")]
 pub fn udp_socket_client_timed_receive_does_blocks() {
     use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
@@ -368,6 +383,7 @@ pub fn udp_socket_client_timed_receive_does_blocks() {
     });
 }
 
+#[inventory_test]
 #[requires_std("threading")]
 pub fn udp_socket_server_timed_receive_from_does_block() {
     use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};

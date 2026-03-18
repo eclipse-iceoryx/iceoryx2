@@ -27,6 +27,7 @@ use iceoryx2_bb_posix::unix_datagram_socket::*;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_bb_testing_macros::requires_std;
 use iceoryx2_pal_posix::posix;
 
@@ -46,6 +47,7 @@ pub fn generate_socket_name() -> FilePath {
     FilePath::from_path_and_file(&TEST_DIRECTORY, &file).unwrap()
 }
 
+#[inventory_test]
 #[requires_std("time")]
 pub fn file_descriptor_set_timed_wait_blocks_at_least_timeout() {
     use std::time::Instant;
@@ -81,6 +83,7 @@ pub fn file_descriptor_set_timed_wait_blocks_at_least_timeout() {
     assert_that!(result, len 0);
 }
 
+#[inventory_test]
 pub fn file_descriptor_set_add_and_remove_works() {
     let fd_set = FileDescriptorSet::new();
     let mut sockets = vec![];
@@ -119,6 +122,7 @@ pub fn file_descriptor_set_add_and_remove_works() {
     }
 }
 
+#[inventory_test]
 pub fn file_descriptor_set_add_same_fd_twice_fails() {
     let fd_set = FileDescriptorSet::new();
 
@@ -135,6 +139,7 @@ pub fn file_descriptor_set_add_same_fd_twice_fails() {
     assert_that!(result.err(), eq Some(FileDescriptorSetAddError::AlreadyAttached));
 }
 
+#[inventory_test]
 pub fn file_descriptor_set_timed_wait_works() {
     create_test_directory();
     let socket_name = generate_socket_name();
@@ -165,6 +170,7 @@ pub fn file_descriptor_set_timed_wait_works() {
     assert_that!(result[0], eq unsafe{sut_receiver.file_descriptor().native_handle()});
 }
 
+#[inventory_test]
 pub fn file_descriptor_set_blocking_wait_immediately_returns_notifications() {
     create_test_directory();
     let socket_name = generate_socket_name();
@@ -195,6 +201,7 @@ pub fn file_descriptor_set_blocking_wait_immediately_returns_notifications() {
     assert_that!(result[0], eq unsafe{sut_receiver.file_descriptor().native_handle()});
 }
 
+#[inventory_test]
 pub fn file_descriptor_guard_has_access_to_underlying_fd() {
     create_test_directory();
     let socket_name = generate_socket_name();
@@ -212,11 +219,13 @@ pub fn file_descriptor_guard_has_access_to_underlying_fd() {
     }
 }
 
+#[inventory_test]
 pub fn file_descriptor_debug_works() {
     let sut = FileDescriptorSet::new();
     assert_that!(format!("{sut:?}").starts_with("FileDescriptorSet"), eq true);
 }
 
+#[inventory_test]
 pub fn file_descriptor_triggering_many_returns_correct_number_of_notifications() {
     let fd_set = FileDescriptorSet::new();
     let mut sockets = vec![];

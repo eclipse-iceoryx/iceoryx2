@@ -28,6 +28,7 @@ use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
+use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA;
 
 fn generate_file_name() -> FilePath {
@@ -66,6 +67,7 @@ impl Drop for TestFixture {
     }
 }
 
+#[inventory_test]
 pub fn socket_ancillary_is_empty_when_created() {
     test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA);
 
@@ -74,6 +76,7 @@ pub fn socket_ancillary_is_empty_when_created() {
     assert_that!(sut, is_empty);
 }
 
+#[inventory_test]
 pub fn socket_ancillary_credentials_work() {
     test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA);
 
@@ -100,6 +103,7 @@ pub fn socket_ancillary_credentials_work() {
     assert_that!(sut.get_creds(), eq None);
 }
 
+#[inventory_test]
 pub fn socket_ancillary_add_file_descriptors_work() {
     test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA);
 

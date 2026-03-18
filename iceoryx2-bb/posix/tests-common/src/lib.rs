@@ -13,6 +13,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;
+extern crate iceoryx2_bb_loggers;
 
 pub mod access_mode_tests;
 pub mod adaptive_wait_tests;
