@@ -13,6 +13,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;
+extern crate iceoryx2_bb_loggers;
 
 pub mod flatmap_tests;
 pub mod polymorphic_string_tests;

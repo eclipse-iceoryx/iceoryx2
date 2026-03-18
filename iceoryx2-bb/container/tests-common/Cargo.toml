@@ -17,6 +17,7 @@ workspace = true
 default = []
 std = [
   "serde_test",
+  "iceoryx2-bb-loggers/std",
   "iceoryx2-bb-concurrency/std",
   "iceoryx2-bb-container/std",
   "iceoryx2-bb-elementary/std",
@@ -26,6 +27,7 @@ std = [
 ]
 
 [dependencies]
+iceoryx2-bb-loggers = { workspace = true }
 iceoryx2-bb-container = { workspace = true }
 iceoryx2-bb-concurrency = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }

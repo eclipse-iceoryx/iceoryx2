@@ -15,6 +15,7 @@ use alloc::str::FromStr;
 use iceoryx2_bb_container::string::*;
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_testing::{assert_that, memory::RawMemory};
+use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_bb_testing_macros::requires_std;
 
 const SMALL_SUT_CAPACITY: usize = 4;
@@ -22,12 +23,14 @@ const SUT_CAPACITY: usize = 129;
 type Sut = StaticString<SUT_CAPACITY>;
 type SmallSut = StaticString<SMALL_SUT_CAPACITY>;
 
+#[inventory_test]
 pub fn default_is_empty() {
     let sut = Sut::default();
 
     assert_that!(sut.is_empty(), eq true);
 }
 
+#[inventory_test]
 pub fn placement_default_works() {
     let mut sut = RawMemory::<Sut>::new_filled(0xff);
     unsafe { Sut::placement_default(sut.as_mut_ptr()) };
@@ -37,6 +40,7 @@ pub fn placement_default_works() {
     assert_that!(unsafe {sut.assume_init()}.as_bytes(), eq b"hello");
 }
 
+#[inventory_test]
 pub fn from_bytes_unchecked_works() {
     let mut sut = unsafe { Sut::from_bytes_unchecked(b"let me be your toad") };
 
@@ -51,6 +55,7 @@ pub fn from_bytes_unchecked_works() {
     assert_that!(sut.pop(), eq Some(b'd'));
 }
 
+#[inventory_test]
 pub fn from_bytes_unchecked_with_empty_slice_works() {
     let mut sut = unsafe { Sut::from_bytes_unchecked(b"") };
 
@@ -64,6 +69,7 @@ pub fn from_bytes_unchecked_with_empty_slice_works() {
     assert_that!(sut.pop(), is_none);
 }
 
+#[inventory_test]
 pub fn from_bytes_with_len_smaller_capacity_works() {
     let sut = Sut::from_bytes(b"bonjour world");
     assert_that!(sut, is_ok);
@@ -80,6 +86,7 @@ pub fn from_bytes_with_len_smaller_capacity_works() {
     assert_that!(sut.pop(), eq Some(b'd'));
 }
 
+#[inventory_test]
 pub fn from_bytes_with_empty_slice_works() {
     let sut = Sut::from_bytes(b"");
     assert_that!(sut, is_ok);
@@ -95,11 +102,13 @@ pub fn from_bytes_with_empty_slice_works() {
     assert_that!(sut.pop(), is_none);
 }
 
+#[inventory_test]
 pub fn from_bytes_fails_when_len_exceeds_capacity() {
     let sut = SmallSut::from_bytes(b"oooh nooo I am toooo looong");
     assert_that!(sut, eq Err(StringModificationError::InsertWouldExceedCapacity));
 }
 
+#[inventory_test]
 pub fn from_bytes_truncated_works_with_empty_bytes() {
     let mut sut = Sut::from_bytes_truncated(b"").unwrap();
 
@@ -114,6 +123,7 @@ pub fn from_bytes_truncated_works_with_empty_bytes() {
     assert_that!(sut.pop(), is_none);
 }
 
+#[inventory_test]
 pub fn from_bytes_truncated_works_with_len_smaller_than_capacity() {
     let sut = Sut::from_bytes_truncated(b"bonjour world");
     assert_that!(sut, is_ok);
@@ -130,6 +140,7 @@ pub fn from_bytes_truncated_works_with_len_smaller_than_capacity() {
     assert_that!(sut.pop(), eq Some(b'd'));
 }
 
+#[inventory_test]
 pub fn from_bytes_truncated_works_with_len_greater_than_capacity() {
     let mut sut = SmallSut::from_bytes_truncated(b"peek a boo").unwrap();
 
@@ -144,11 +155,13 @@ pub fn from_bytes_truncated_works_with_len_greater_than_capacity() {
     assert_that!(sut.pop(), eq Some(b'k'));
 }
 
+#[inventory_test]
 pub fn from_bytes_truncated_fails_with_invalid_characters() {
     let sut = SmallSut::from_bytes_truncated(&[12, 0, 43]);
     assert_that!(sut, eq Err(StringModificationError::InvalidCharacter));
 }
 
+#[inventory_test]
 pub fn from_str_with_len_smaller_capacity_works() {
     let mut sut = Sut::from_str("a frog sits on nalas head").unwrap();
 
@@ -163,6 +176,7 @@ pub fn from_str_with_len_smaller_capacity_works() {
     assert_that!(sut.pop(), eq Some(b'd'));
 }
 
+#[inventory_test]
 pub fn from_str_with_len_zero_works() {
     let mut sut = Sut::from_str("").unwrap();
 
@@ -177,11 +191,13 @@ pub fn from_str_with_len_zero_works() {
     assert_that!(sut.pop(), is_none);
 }
 
+#[inventory_test]
 pub fn from_str_with_len_greater_than_capacity_fails() {
     let sut = SmallSut::from_str("the frog jumped into oblivion");
     assert_that!(sut, eq Err(StringModificationError::InsertWouldExceedCapacity));
 }
 
+#[inventory_test]
 pub fn from_str_truncated_with_len_smaller_capacity_works() {
     let mut sut = Sut::from_str_truncated("a butterfly sits on nalas nose").unwrap();
 
@@ -196,6 +212,7 @@ pub fn from_str_truncated_with_len_smaller_capacity_works() {
     assert_that!(sut.pop(), eq Some(b'e'));
 }
 
+#[inventory_test]
 pub fn from_str_truncated_with_len_greater_than_capacity_truncates() {
     let mut sut = SmallSut::from_str_truncated("the butterfly has a plan").unwrap();
 
@@ -210,11 +227,13 @@ pub fn from_str_truncated_with_len_greater_than_capacity_truncates() {
     assert_that!(sut.pop(), eq Some(b' '));
 }
 
+#[inventory_test]
 pub fn from_str_truncated_fails_with_invalid_characters() {
     let sut = SmallSut::from_str_truncated("💩 ");
     assert_that!(sut, eq Err(StringModificationError::InvalidCharacter));
 }
 
+#[inventory_test]
 pub fn from_c_str_works_for_empty_string() {
     let value = Sut::try_from(b"").unwrap();
     let sut = unsafe { Sut::from_c_str(value.as_ptr() as *mut core::ffi::c_char).unwrap() };
@@ -223,6 +242,7 @@ pub fn from_c_str_works_for_empty_string() {
     assert_that!(sut, eq b"");
 }
 
+#[inventory_test]
 pub fn from_c_str_works_when_len_is_smaller_than_capacity() {
     let value = Sut::try_from(b"foo baha").unwrap();
     let sut = unsafe { Sut::from_c_str(value.as_ptr() as *mut core::ffi::c_char).unwrap() };
@@ -231,18 +251,21 @@ pub fn from_c_str_works_when_len_is_smaller_than_capacity() {
     assert_that!(sut, eq b"foo baha");
 }
 
+#[inventory_test]
 pub fn from_c_str_fails_when_len_is_greater_than_capacity() {
     let value = Sut::try_from(b"I am toooo looong again").unwrap();
     let sut = unsafe { SmallSut::from_c_str(value.as_ptr() as *mut core::ffi::c_char) };
     assert_that!(sut, eq Err(StringModificationError::InsertWouldExceedCapacity));
 }
 
+#[inventory_test]
 pub fn eq_with_slice_works() {
     let sut = Sut::try_from(b"roky").unwrap();
     assert_that!(sut == b"roky", eq true);
     assert_that!(sut == b"rokyf", eq false);
 }
 
+#[inventory_test]
 #[requires_std("serde_test")]
 pub fn serialization_works() {
     use serde_test::{assert_tokens, Token};
@@ -252,27 +275,33 @@ pub fn serialization_works() {
     assert_tokens(&sut, &[Token::Str("bee")]);
 }
 
+#[inventory_test]
 pub fn try_from_str_fails_when_too_long() {
     assert_that!(SmallSut::try_from("a very loooong string"), eq Err(StringModificationError::InsertWouldExceedCapacity));
 }
 
+#[inventory_test]
 pub fn try_from_str_fails_when_it_contains_invalid_characters() {
     assert_that!(Sut::try_from("i am illegal - 😅"), eq Err(StringModificationError::InvalidCharacter));
 }
 
+#[inventory_test]
 pub fn try_from_str_with_valid_content_works() {
     let sut = Sut::try_from("i am a bee").unwrap();
     assert_that!(sut.as_bytes(), eq b"i am a bee");
 }
 
+#[inventory_test]
 pub fn try_from_u8_array_fails_when_too_long() {
     assert_that!(SmallSut::try_from(b"a very loooong string"), eq Err(StringModificationError::InsertWouldExceedCapacity));
 }
 
+#[inventory_test]
 pub fn try_from_u8_array_fails_when_it_contains_invalid_characters() {
     assert_that!(Sut::try_from(&[33,44,0,200]), eq Err(StringModificationError::InvalidCharacter));
 }
 
+#[inventory_test]
 pub fn try_from_u8_array_with_valid_content_works() {
     let sut = Sut::try_from(b"i am a bee").unwrap();
     assert_that!(sut.as_bytes(), eq b"i am a bee");

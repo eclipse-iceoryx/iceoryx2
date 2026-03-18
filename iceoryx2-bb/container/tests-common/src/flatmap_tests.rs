@@ -18,10 +18,12 @@ use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
 use iceoryx2_bb_testing::memory::RawMemory;
+use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_bb_testing_macros::requires_std;
 
 const CAPACITY: usize = 100;
 
+#[inventory_test]
 pub fn new_creates_empty_flat_map() {
     let map_diff_key = FlatMap::<u8, i32>::new(CAPACITY);
     assert_that!(map_diff_key, is_empty);
@@ -33,6 +35,7 @@ pub fn new_creates_empty_flat_map() {
     assert_that!(map_same_key, len 0);
 }
 
+#[inventory_test]
 pub fn new_creates_empty_fixed_size_flat_map() {
     let map_diff_key = FixedSizeFlatMap::<u8, i32, CAPACITY>::new();
     assert_that!(map_diff_key, is_empty);
@@ -42,12 +45,14 @@ pub fn new_creates_empty_fixed_size_flat_map() {
     assert_that!(map_same_key, len 0);
 }
 
+#[inventory_test]
 pub fn default_creates_empty_flat_map() {
     let map = FixedSizeFlatMap::<u8, u8, CAPACITY>::default();
     assert_that!(map, is_empty);
     assert_that!(map, len 0);
 }
 
+#[inventory_test]
 pub fn placement_default_works() {
     type Sut = FixedSizeFlatMap<u8, u8, CAPACITY>;
     let mut sut = RawMemory::<Sut>::new_zeroed();
@@ -57,6 +62,7 @@ pub fn placement_default_works() {
     assert_that!(res, is_ok);
 }
 
+#[inventory_test]
 pub fn drop_called_for_keys_and_values() {
     let state = LifetimeTracker::start_tracking();
     let mut map = FixedSizeFlatMap::<LifetimeTracker, LifetimeTracker, CAPACITY>::new();
@@ -75,6 +81,7 @@ pub fn drop_called_for_keys_and_values() {
     assert_that!(state.number_of_living_instances(), eq 0);
 }
 
+#[inventory_test]
 pub fn insert_into_empty_flat_map_works() {
     let mut map = FixedSizeFlatMap::<u8, i8, CAPACITY>::new();
 
@@ -85,6 +92,7 @@ pub fn insert_into_empty_flat_map_works() {
     assert_that!(map.contains(&3), eq true);
 }
 
+#[inventory_test]
 pub fn insert_the_same_key_fails() {
     let mut map = FixedSizeFlatMap::<i16, i16, CAPACITY>::new();
     let key = -2023;
@@ -100,6 +108,7 @@ pub fn insert_the_same_key_fails() {
     assert_that!(map.contains(&key), eq true);
 }
 
+#[inventory_test]
 pub fn insert_until_full_works() {
     let mut map = FixedSizeFlatMap::<u32, u32, CAPACITY>::new();
     for i in 0..CAPACITY as u32 {
@@ -114,6 +123,7 @@ pub fn insert_until_full_works() {
     assert_that!(map, len CAPACITY);
 }
 
+#[inventory_test]
 pub fn get_value_from_flat_map_works() {
     let mut map = FixedSizeFlatMap::<u8, u8, CAPACITY>::new();
     let key = 34;
@@ -127,6 +137,7 @@ pub fn get_value_from_flat_map_works() {
     assert_that!(res, is_none);
 }
 
+#[inventory_test]
 pub fn get_ref_value_from_flat_map_works() {
     let mut map = FixedSizeFlatMap::<u8, u8, CAPACITY>::new();
     let key = 34;
@@ -140,6 +151,7 @@ pub fn get_ref_value_from_flat_map_works() {
     assert_that!(res, is_none);
 }
 
+#[inventory_test]
 pub fn get_mut_ref_value_from_flat_map_works() {
     let mut map = FixedSizeFlatMap::<u8, u8, CAPACITY>::new();
     let key = 34;
@@ -157,6 +169,7 @@ pub fn get_mut_ref_value_from_flat_map_works() {
     assert_that!(res, is_none);
 }
 
+#[inventory_test]
 pub fn remove_keys_from_flat_map_works() {
     let mut map = FixedSizeFlatMap::<u8, u8, CAPACITY>::new();
     assert_that!(map, is_empty);
@@ -174,6 +187,7 @@ pub fn remove_keys_from_flat_map_works() {
     assert_that!(map.contains(&1), eq false);
 }
 
+#[inventory_test]
 pub fn remove_until_empty_and_reinsert_works() {
     let mut map = FixedSizeFlatMap::<u32, u32, CAPACITY>::new();
     // insert until full
@@ -195,7 +209,9 @@ pub fn remove_until_empty_and_reinsert_works() {
     assert_that!(map.is_full(), eq true);
 }
 
+#[inventory_test]
 #[requires_std("panics")]
+#[should_panic]
 pub fn double_init_call_causes_panic() {
     use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 
@@ -209,12 +225,16 @@ pub fn double_init_call_causes_panic() {
     unsafe { sut.init(&bump_allocator).expect("sut init failed") };
 }
 
+#[inventory_test]
 #[requires_std("panics")]
+#[cfg(debug_assertions)]
+#[should_panic]
 pub fn panic_is_called_in_debug_mode_if_map_is_not_initialized() {
     let mut sut = unsafe { RelocatableFlatMap::<u8, u8>::new_uninit(CAPACITY) };
     unsafe { sut.remove(&1) };
 }
 
+#[inventory_test]
 pub fn list_keys_works_correctly() {
     const CAPA: usize = 10;
     let mut keys = vec![];
@@ -243,6 +263,7 @@ pub fn list_keys_works_correctly() {
     assert_that!(keys.contains(&listed_keys[0]), eq true);
 }
 
+#[inventory_test]
 pub fn list_keys_works_correctly_on_empty_map() {
     let map = FixedSizeFlatMap::<u32, u32, CAPACITY>::new();
 
@@ -264,6 +285,7 @@ fn cmp_for_foo(lhs: *const u8, rhs: *const u8) -> bool {
     unsafe { (*lhs.cast::<Foo>()).a == (*rhs.cast::<Foo>()).a }
 }
 
+#[inventory_test]
 pub fn insert_the_same_key_fails_with_custom_cmp_func() {
     let mut map = FixedSizeFlatMap::<Foo, i16, CAPACITY>::new();
     let key = Foo { a: 2023 };
@@ -283,6 +305,7 @@ pub fn insert_the_same_key_fails_with_custom_cmp_func() {
     assert_that!(map, len 1);
 }
 
+#[inventory_test]
 pub fn insert_until_full_works_with_custom_cmp_func() {
     let mut map = FixedSizeFlatMap::<Foo, u32, CAPACITY>::new();
     for i in 0..CAPACITY as u32 {
@@ -302,6 +325,7 @@ pub fn insert_until_full_works_with_custom_cmp_func() {
     assert_that!(map, len CAPACITY);
 }
 
+#[inventory_test]
 pub fn get_value_from_flat_map_works_with_custom_cmp_func() {
     let mut map = FixedSizeFlatMap::<Foo, u8, CAPACITY>::new();
     let key = Foo { a: 34 };
@@ -318,6 +342,7 @@ pub fn get_value_from_flat_map_works_with_custom_cmp_func() {
     }
 }
 
+#[inventory_test]
 pub fn get_ref_value_from_flat_map_works_with_custom_cmp_func() {
     let mut map = FixedSizeFlatMap::<Foo, u8, CAPACITY>::new();
     let key = Foo { a: 34 };
@@ -334,6 +359,7 @@ pub fn get_ref_value_from_flat_map_works_with_custom_cmp_func() {
     }
 }
 
+#[inventory_test]
 pub fn get_mut_ref_value_from_flat_map_works_with_custom_cmp_func() {
     let mut map = FixedSizeFlatMap::<Foo, u8, CAPACITY>::new();
     let key = Foo { a: 34 };
@@ -354,6 +380,7 @@ pub fn get_mut_ref_value_from_flat_map_works_with_custom_cmp_func() {
     }
 }
 
+#[inventory_test]
 pub fn remove_keys_from_flat_map_works_with_custom_cmp_func() {
     let mut map = FixedSizeFlatMap::<Foo, u8, CAPACITY>::new();
     assert_that!(map, is_empty);
@@ -376,6 +403,7 @@ pub fn remove_keys_from_flat_map_works_with_custom_cmp_func() {
     }
 }
 
+#[inventory_test]
 pub fn remove_until_empty_and_reinsert_works_with_custom_cmp_func() {
     let mut map = FixedSizeFlatMap::<Foo, u32, CAPACITY>::new();
     // insert until full

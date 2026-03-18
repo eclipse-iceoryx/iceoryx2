@@ -15,10 +15,12 @@ use iceoryx2_bb_container::vector::{static_vec::*, VectorModificationError};
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
+use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_bb_testing_macros::requires_std;
 
 const SUT_CAPACITY: usize = 10;
 
+#[inventory_test]
 pub fn default_created_vec_is_empty() {
     let sut = StaticVec::<LifetimeTracker, SUT_CAPACITY>::default();
 
@@ -27,6 +29,7 @@ pub fn default_created_vec_is_empty() {
     assert_that!(sut.is_full(), eq false);
 }
 
+#[inventory_test]
 pub fn two_vectors_with_same_content_are_equal() {
     let mut sut1 = StaticVec::<usize, SUT_CAPACITY>::new();
     let mut sut2 = StaticVec::<usize, SUT_CAPACITY>::new();
@@ -39,6 +42,7 @@ pub fn two_vectors_with_same_content_are_equal() {
     assert_that!(sut1, eq sut2);
 }
 
+#[inventory_test]
 pub fn two_vectors_with_different_content_are_not_equal() {
     let mut sut1 = StaticVec::<usize, SUT_CAPACITY>::new();
     let mut sut2 = StaticVec::<usize, SUT_CAPACITY>::new();
@@ -53,6 +57,7 @@ pub fn two_vectors_with_different_content_are_not_equal() {
     assert_that!(sut1, ne sut2);
 }
 
+#[inventory_test]
 pub fn two_vectors_with_different_len_are_not_equal() {
     let mut sut1 = StaticVec::<usize, SUT_CAPACITY>::new();
     let mut sut2 = StaticVec::<usize, SUT_CAPACITY>::new();
@@ -67,6 +72,7 @@ pub fn two_vectors_with_different_len_are_not_equal() {
     assert_that!(sut1, ne sut2);
 }
 
+#[inventory_test]
 pub fn placement_default_works() {
     let mut sut = MaybeUninit::<StaticVec<usize, SUT_CAPACITY>>::uninit();
 
@@ -77,6 +83,7 @@ pub fn placement_default_works() {
     assert_that!(sut.is_empty(), eq true);
 }
 
+#[inventory_test]
 #[requires_std("serde_test")]
 pub fn serialization_works() {
     use serde_test::{assert_tokens, Token};
@@ -100,6 +107,7 @@ pub fn serialization_works() {
     );
 }
 
+#[inventory_test]
 pub fn valid_after_move() {
     let mut sut = StaticVec::<usize, SUT_CAPACITY>::new();
 
@@ -116,6 +124,7 @@ pub fn valid_after_move() {
     }
 }
 
+#[inventory_test]
 pub fn clone_clones_empty_vec() {
     let sut1 = StaticVec::<usize, SUT_CAPACITY>::new();
 
@@ -125,6 +134,7 @@ pub fn clone_clones_empty_vec() {
     assert_that!(sut2.len(), eq 0);
 }
 
+#[inventory_test]
 pub fn clone_clones_filled_vec() {
     let mut sut1 = StaticVec::<usize, SUT_CAPACITY>::new();
     for i in 0..sut1.capacity() {
@@ -144,6 +154,7 @@ pub fn clone_clones_filled_vec() {
     }
 }
 
+#[inventory_test]
 pub fn try_from_succeeds_when_slice_len_is_smaller_or_equal_capacity() {
     let sut = StaticVec::<u64, SUT_CAPACITY>::try_from([123u64; SUT_CAPACITY].as_slice()).unwrap();
 
@@ -156,6 +167,7 @@ pub fn try_from_succeeds_when_slice_len_is_smaller_or_equal_capacity() {
     }
 }
 
+#[inventory_test]
 pub fn try_from_fails_when_slice_len_is_greater_than_capacity() {
     let sut = StaticVec::<u64, SUT_CAPACITY>::try_from([123u64; SUT_CAPACITY + 1].as_slice());
 

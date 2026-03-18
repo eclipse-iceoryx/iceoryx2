@@ -13,20 +13,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(not(feature = "std"), no_main)]
 
+extern crate iceoryx2_bb_container_tests_common;
 extern crate iceoryx2_bb_loggers;
-
-mod flatmap_tests;
-mod polymorphic_string_tests;
-mod polymorphic_vec_tests;
-mod queue_tests;
-mod relocatable_option_tests;
-mod relocatable_vec_tests;
-mod slotmap_tests;
-mod static_string_tests;
-mod static_vec_tests;
-mod string_tests;
-mod string_utils_tests;
-mod vector_tests;
 
 use core::{
     alloc::{GlobalAlloc, Layout},

@@ -22,6 +22,8 @@ use iceoryx2_bb_container::string::{RelocatableString, *};
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::inventory_test_generic;
 use iceoryx2_bb_testing_macros::requires_std;
 
 const SUT_CAPACITY: usize = 129;
@@ -122,6 +124,11 @@ impl StringTestFactory for PolymorphicStringFactory {
     }
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn new_string_is_empty<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -135,6 +142,11 @@ pub fn new_string_is_empty<Factory: StringTestFactory>() {
     assert_that!(sut.as_bytes_with_nul(), eq b"\0");
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn capacity_is_correct<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let sut = factory.create_sut();
@@ -142,6 +154,11 @@ pub fn capacity_is_correct<Factory: StringTestFactory>() {
     assert_that!(sut.capacity(), eq SUT_CAPACITY);
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn push_valid_bytes_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -157,6 +174,11 @@ pub fn push_valid_bytes_works<Factory: StringTestFactory>() {
     }
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn push_invalid_byte_fails<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -167,6 +189,11 @@ pub fn push_invalid_byte_fails<Factory: StringTestFactory>() {
     }
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn push_into_full_string_fails<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -179,6 +206,11 @@ pub fn push_into_full_string_fails<Factory: StringTestFactory>() {
     assert_that!(sut.push(12), eq Err(StringModificationError::InsertWouldExceedCapacity));
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn as_bytes_or_str_returns_push_content<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -202,6 +234,11 @@ pub fn as_bytes_or_str_returns_push_content<Factory: StringTestFactory>() {
     }
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn clear_of_empty_string_does_nothing<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -211,6 +248,11 @@ pub fn clear_of_empty_string_does_nothing<Factory: StringTestFactory>() {
     assert_that!(sut, len 0);
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn clear_removes_all_contents<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -227,6 +269,11 @@ pub fn clear_removes_all_contents<Factory: StringTestFactory>() {
     assert_that!(sut.as_bytes(), len 0);
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn find_of_character_in_empty_string_returns_none<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let sut = factory.create_sut();
@@ -236,6 +283,11 @@ pub fn find_of_character_in_empty_string_returns_none<Factory: StringTestFactory
     }
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn find_of_range_in_empty_string_returns_none<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let sut = factory.create_sut();
@@ -245,6 +297,11 @@ pub fn find_of_range_in_empty_string_returns_none<Factory: StringTestFactory>() 
     }
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn find_of_non_existing_char_returns_none<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -257,6 +314,11 @@ pub fn find_of_non_existing_char_returns_none<Factory: StringTestFactory>() {
     assert_that!(sut.find(&[CHAR_TO_FIND]), is_none);
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn find_returns_first_char_match_from_start<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -272,6 +334,11 @@ pub fn find_returns_first_char_match_from_start<Factory: StringTestFactory>() {
     assert_that!(sut.find(&[CHAR_TO_FIND]), eq Some(1));
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn find_of_char_located_at_the_beginning_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -285,6 +352,11 @@ pub fn find_of_char_located_at_the_beginning_works<Factory: StringTestFactory>()
     assert_that!(sut.find(&[CHAR_TO_FIND]), eq Some(0));
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn find_of_char_located_in_the_middle_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -301,6 +373,11 @@ pub fn find_of_char_located_in_the_middle_works<Factory: StringTestFactory>() {
     assert_that!(sut.find(&[CHAR_TO_FIND]), eq Some((SUT_CAPACITY - 2)/2));
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn find_of_char_located_at_the_end_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -314,6 +391,11 @@ pub fn find_of_char_located_at_the_end_works<Factory: StringTestFactory>() {
     assert_that!(sut.find(&[CHAR_TO_FIND]), eq Some((SUT_CAPACITY - 2)/2));
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn find_of_range_located_at_the_beginning_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -327,6 +409,11 @@ pub fn find_of_range_located_at_the_beginning_works<Factory: StringTestFactory>(
     assert_that!(sut.find(&RANGE_TO_FIND), eq Some(0));
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn find_of_range_located_in_the_middle_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -343,6 +430,11 @@ pub fn find_of_range_located_in_the_middle_works<Factory: StringTestFactory>() {
     assert_that!(sut.find(&RANGE_TO_FIND), eq Some((SUT_CAPACITY - 4)/2));
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn find_of_range_located_at_the_end_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -356,6 +448,11 @@ pub fn find_of_range_located_at_the_end_works<Factory: StringTestFactory>() {
     assert_that!(sut.find(&RANGE_TO_FIND), eq Some((SUT_CAPACITY - 1)/2));
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn find_where_range_is_equal_to_sut_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -366,6 +463,11 @@ pub fn find_where_range_is_equal_to_sut_works<Factory: StringTestFactory>() {
     assert_that!(sut.find(&RANGE_TO_FIND), eq Some(0));
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn insert_of_valid_character_at_the_beginning_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -380,6 +482,11 @@ pub fn insert_of_valid_character_at_the_beginning_works<Factory: StringTestFacto
     }
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn insert_of_invalid_character_fails<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -390,6 +497,11 @@ pub fn insert_of_invalid_character_fails<Factory: StringTestFactory>() {
     }
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn insert_into_full_string_fails<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -403,6 +515,11 @@ pub fn insert_into_full_string_fails<Factory: StringTestFactory>() {
     }
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn insert_of_valid_character_in_the_middle_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -424,6 +541,11 @@ pub fn insert_of_valid_character_in_the_middle_works<Factory: StringTestFactory>
     }
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn insert_of_valid_character_at_the_end_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -438,6 +560,11 @@ pub fn insert_of_valid_character_at_the_end_works<Factory: StringTestFactory>() 
     }
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn insert_bytes_at_the_start_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -456,6 +583,11 @@ pub fn insert_bytes_at_the_start_works<Factory: StringTestFactory>() {
     }
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn insert_bytes_in_the_middle_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -477,6 +609,11 @@ pub fn insert_bytes_in_the_middle_works<Factory: StringTestFactory>() {
     assert_that!(sut.as_bytes(), eq temp.as_slice());
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn insert_bytes_at_the_end_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -492,6 +629,11 @@ pub fn insert_bytes_at_the_end_works<Factory: StringTestFactory>() {
     }
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn insert_bytes_when_it_would_exceed_capacity_fails<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -503,6 +645,11 @@ pub fn insert_bytes_when_it_would_exceed_capacity_fails<Factory: StringTestFacto
     assert_that!(sut.insert_bytes(0, &[1, 2, 3, 4]), eq Err(StringModificationError::InsertWouldExceedCapacity));
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn insert_bytes_with_invalid_characters_fails<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -513,6 +660,11 @@ pub fn insert_bytes_with_invalid_characters_fails<Factory: StringTestFactory>() 
     }
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn insert_bytes_with_valid_characters_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -523,7 +675,13 @@ pub fn insert_bytes_with_valid_characters_works<Factory: StringTestFactory>() {
     }
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 #[requires_std("panics")]
+#[should_panic]
 pub fn insert_bytes_out_of_bounds_panics<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -531,6 +689,11 @@ pub fn insert_bytes_out_of_bounds_panics<Factory: StringTestFactory>() {
     sut.insert_bytes(4, &[2]).unwrap();
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn pop_removes_the_last_element<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -547,6 +710,11 @@ pub fn pop_removes_the_last_element<Factory: StringTestFactory>() {
     assert_that!(sut.pop(), is_none);
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn push_bytes_with_invalid_characters_fails<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -557,6 +725,11 @@ pub fn push_bytes_with_invalid_characters_fails<Factory: StringTestFactory>() {
     }
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn push_bytes_with_valid_characters_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -570,6 +743,11 @@ pub fn push_bytes_with_valid_characters_works<Factory: StringTestFactory>() {
     }
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn push_bytes_fails_when_it_exceeds_the_capacity<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -581,6 +759,11 @@ pub fn push_bytes_fails_when_it_exceeds_the_capacity<Factory: StringTestFactory>
     assert_that!(sut.push_bytes(&[33,44,55,66]), eq Err(StringModificationError::InsertWouldExceedCapacity));
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn push_multiple_valid_bytes_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -590,6 +773,11 @@ pub fn push_multiple_valid_bytes_works<Factory: StringTestFactory>() {
     assert_that!(sut.as_bytes(), eq & [33, 44, 55, 66]);
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn remove_first_character_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -606,6 +794,11 @@ pub fn remove_first_character_works<Factory: StringTestFactory>() {
     }
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn remove_last_character_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -621,6 +814,11 @@ pub fn remove_last_character_works<Factory: StringTestFactory>() {
     }
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn remove_non_existing_entry_returns_none<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -628,6 +826,11 @@ pub fn remove_non_existing_entry_returns_none<Factory: StringTestFactory>() {
     assert_that!(sut.remove(7), is_none);
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn remove_non_existing_range_returns_false<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -635,6 +838,11 @@ pub fn remove_non_existing_range_returns_false<Factory: StringTestFactory>() {
     assert_that!(sut.remove_range(2, 4), eq false);
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn remove_non_existing_range_from_non_empty_string_returns_false<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -643,6 +851,11 @@ pub fn remove_non_existing_range_from_non_empty_string_returns_false<Factory: St
     assert_that!(sut.remove_range(1, 5), eq false);
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn remove_full_range_ends_up_in_empty_string<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -656,6 +869,11 @@ pub fn remove_full_range_ends_up_in_empty_string<Factory: StringTestFactory>() {
     assert_that!(sut.is_empty(), eq true);
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn remove_range_from_start_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -675,6 +893,11 @@ pub fn remove_range_from_start_works<Factory: StringTestFactory>() {
     }
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn remove_range_from_center_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -699,6 +922,11 @@ pub fn remove_range_from_center_works<Factory: StringTestFactory>() {
     }
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn retain_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -710,6 +938,11 @@ pub fn retain_works<Factory: StringTestFactory>() {
     assert_that!(sut.as_bytes_with_nul(), eq b"livelongandnibble\0");
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn rfind_of_character_in_empty_string_returns_none<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let sut = factory.create_sut();
@@ -719,6 +952,11 @@ pub fn rfind_of_character_in_empty_string_returns_none<Factory: StringTestFactor
     }
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn rfind_of_range_in_empty_string_returns_none<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let sut = factory.create_sut();
@@ -728,6 +966,11 @@ pub fn rfind_of_range_in_empty_string_returns_none<Factory: StringTestFactory>()
     }
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn rfind_of_char_located_at_the_beginning_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -741,6 +984,11 @@ pub fn rfind_of_char_located_at_the_beginning_works<Factory: StringTestFactory>(
     assert_that!(sut.rfind(&[CHAR_TO_FIND]), eq Some(0));
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn rfind_of_non_existing_char_returns_none<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -753,6 +1001,11 @@ pub fn rfind_of_non_existing_char_returns_none<Factory: StringTestFactory>() {
     assert_that!(sut.rfind(&[CHAR_TO_FIND]), is_none);
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn rfind_returns_first_char_match_from_end<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -768,6 +1021,11 @@ pub fn rfind_returns_first_char_match_from_end<Factory: StringTestFactory>() {
     assert_that!(sut.rfind(&[CHAR_TO_FIND]), eq Some(SUT_CAPACITY - 2));
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn rfind_of_char_located_in_the_middle_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -784,6 +1042,11 @@ pub fn rfind_of_char_located_in_the_middle_works<Factory: StringTestFactory>() {
     assert_that!(sut.rfind(&[CHAR_TO_FIND]), eq Some((SUT_CAPACITY - 2)/2));
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn rfind_of_char_located_at_the_end_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -797,6 +1060,11 @@ pub fn rfind_of_char_located_at_the_end_works<Factory: StringTestFactory>() {
     assert_that!(sut.rfind(&[CHAR_TO_FIND]), eq Some((SUT_CAPACITY - 2)/2));
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn rfind_of_range_located_at_the_beginning_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -810,6 +1078,11 @@ pub fn rfind_of_range_located_at_the_beginning_works<Factory: StringTestFactory>
     assert_that!(sut.rfind(&RANGE_TO_FIND), eq Some(0));
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn rfind_of_range_located_in_the_middle_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -826,6 +1099,11 @@ pub fn rfind_of_range_located_in_the_middle_works<Factory: StringTestFactory>() 
     assert_that!(sut.rfind(&RANGE_TO_FIND), eq Some((SUT_CAPACITY - 4)/2));
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn rfind_of_range_located_at_the_end_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -839,6 +1117,11 @@ pub fn rfind_of_range_located_at_the_end_works<Factory: StringTestFactory>() {
     assert_that!(sut.rfind(&RANGE_TO_FIND), eq Some((SUT_CAPACITY - 1)/2));
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn rfind_where_range_is_equal_to_sut_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -849,6 +1132,11 @@ pub fn rfind_where_range_is_equal_to_sut_works<Factory: StringTestFactory>() {
     assert_that!(sut.rfind(&RANGE_TO_FIND), eq Some(0));
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn truncate_to_larger_string_does_nothing<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -859,6 +1147,11 @@ pub fn truncate_to_larger_string_does_nothing<Factory: StringTestFactory>() {
     assert_that!(sut.as_bytes_with_nul(), eq b"blumbadix\0");
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn truncate_to_smaller_string_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -869,6 +1162,11 @@ pub fn truncate_to_smaller_string_works<Factory: StringTestFactory>() {
     assert_that!(sut.as_bytes_with_nul(), eq b"drou\0");
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn truncate_to_string_len_does_nothing<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -881,6 +1179,11 @@ pub fn truncate_to_string_len_does_nothing<Factory: StringTestFactory>() {
     }
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn strip_prefix_from_empty_string_does_nothing<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -889,6 +1192,11 @@ pub fn strip_prefix_from_empty_string_does_nothing<Factory: StringTestFactory>()
     assert_that!(sut.as_bytes(), eq b"");
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn strip_non_existing_prefix_does_nothing<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -898,6 +1206,11 @@ pub fn strip_non_existing_prefix_does_nothing<Factory: StringTestFactory>() {
     assert_that!(sut.as_bytes(), eq b"funny little moo");
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn strip_existing_prefix_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -907,6 +1220,11 @@ pub fn strip_existing_prefix_works<Factory: StringTestFactory>() {
     assert_that!(sut.as_bytes(), eq b" meee mario");
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn strip_existing_range_that_is_not_a_prefix_does_nothing<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -916,6 +1234,11 @@ pub fn strip_existing_range_that_is_not_a_prefix_does_nothing<Factory: StringTes
     assert_that!(sut.as_bytes(), eq b"what does a hypnotoad sound like?");
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn strip_non_existing_suffix_does_nothing<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -925,6 +1248,11 @@ pub fn strip_non_existing_suffix_does_nothing<Factory: StringTestFactory>() {
     assert_that!(sut.as_bytes(), eq b"all glory to the hypnotoad");
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn strip_existing_suffix_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -934,6 +1262,11 @@ pub fn strip_existing_suffix_works<Factory: StringTestFactory>() {
     assert_that!(sut.as_bytes(), eq b"all glory to the ");
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn strip_existing_range_that_is_not_a_suffix_does_nothing<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -943,6 +1276,11 @@ pub fn strip_existing_range_that_is_not_a_suffix_does_nothing<Factory: StringTes
     assert_that!(sut.as_bytes(), eq b"all glory to mario");
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn strip_suffix_from_empty_string_does_nothing<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -951,6 +1289,11 @@ pub fn strip_suffix_from_empty_string_does_nothing<Factory: StringTestFactory>()
     assert_that!(sut.as_bytes(), eq b"");
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn ordering_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut_small = factory.create_sut();
@@ -964,6 +1307,11 @@ pub fn ordering_works<Factory: StringTestFactory>() {
     assert_that!(sut_greater.cmp(&sut_small), eq Ordering::Greater);
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn partial_ordering_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut_small = factory.create_sut();
@@ -977,6 +1325,11 @@ pub fn partial_ordering_works<Factory: StringTestFactory>() {
     assert_that!(sut_greater.partial_cmp(&sut_small), eq Some(Ordering::Greater));
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 #[requires_std("hashing")]
 pub fn hash_works<Factory: StringTestFactory>() {
     use core::hash::{Hash, Hasher};
@@ -1006,6 +1359,11 @@ pub fn hash_works<Factory: StringTestFactory>() {
     assert_that!(hash_1, ne hash_2);
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn deref_mut_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut = factory.create_sut();
@@ -1017,6 +1375,11 @@ pub fn deref_mut_works<Factory: StringTestFactory>() {
     assert_that!(sut.as_bytes(), eq b"bello");
 }
 
+#[inventory_test_generic(
+    PolymorphicStringFactory,
+    RelocatableStringFactory,
+    StaticStringFactory
+)]
 pub fn equality_works<Factory: StringTestFactory>() {
     let factory = Factory::new();
     let mut sut_1a = factory.create_sut();
@@ -1034,6 +1397,7 @@ pub fn equality_works<Factory: StringTestFactory>() {
     assert_that!(*sut_1a == *sut_2, eq false);
 }
 
+#[inventory_test]
 pub fn error_display_works() {
     assert_that!(format!("{}", StringModificationError::InsertWouldExceedCapacity), eq "StringModificationError::InsertWouldExceedCapacity");
     assert_that!(format!("{}", StringModificationError::InvalidCharacter), eq "StringModificationError::InvalidCharacter");
