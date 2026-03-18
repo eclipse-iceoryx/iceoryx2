@@ -10,12 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![cfg_attr(not(feature = "std"), no_std)]
+extern crate iceoryx2_bb_memory_tests_common;
 
-extern crate alloc;
-extern crate iceoryx2_bb_loggers;
-
-pub mod bump_allocator_tests;
-pub mod heap_allocator_tests;
-pub mod one_chunk_allocator_tests;
-pub mod pool_allocator_tests;
+iceoryx2_bb_testing::test_harness!();

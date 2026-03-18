@@ -14,11 +14,7 @@
 #![cfg_attr(not(feature = "std"), no_main)]
 
 extern crate iceoryx2_bb_loggers;
-
-mod bump_allocator_tests;
-mod heap_allocator_tests;
-mod one_chunk_allocator_tests;
-mod pool_allocator_tests;
+extern crate iceoryx2_bb_memory_tests_common;
 
 use core::{
     alloc::{GlobalAlloc, Layout},
