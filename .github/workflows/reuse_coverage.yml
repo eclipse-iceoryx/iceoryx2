@@ -55,8 +55,8 @@ jobs:
         with:
           mode: "remove-unneeded-software-from-runner"
 
-      - name: Generate raw coverage profile
-        run: just coverage profile
+      - name: Generate coverage profile
+        run: just coverage generate-profile
 
       - name: Generate coverage report for html artifacts
         run: just coverage generate-report --html

@@ -74,15 +74,15 @@ _coverage-dispatch action *flags:
             echo "Usage: just coverage <command> [flags]"
             echo ""
             echo "Commands:"
-            echo "  profile                          collect coverage profiles"
-            echo "  generate-report --html|--lcov    generate report"
+            echo "  generate-profile                      generate coverage profile"
+            echo "  generate-report --html|--lcov         generate rendered report"
             echo "  summarize [--detailed] [--package X]  show coverage summary"
-            echo "  clean                            remove all coverage data"
+            echo "  clean                                 remove all coverage data"
             exit 1
             ;;
-        profile)
+        generate-profile)
             if [ "${#PACKAGES[@]}" -gt 0 ]; then
-                echo "error: '--package' is not supported for 'just coverage profile'" >&2; exit 1
+                echo "error: '--package' is not supported for 'just coverage generate-profile'" >&2; exit 1
             fi
             just _coverage-profile
             ;;
