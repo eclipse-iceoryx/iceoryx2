@@ -10,13 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, ItemFn};
 
 use crate::inventory_test_common::{
-    extract_should_panic, generate_inventory_submission, generate_wrapper_body,
-    generate_wrapper_identifier, prepend_attributes,
+    extract_should_ignore, extract_should_panic, generate_inventory_submission,
+    generate_wrapper_body, generate_wrapper_identifier, strip_attributes,
 };
 
 /// Registers the annotated function to the inventory to be executed by the
@@ -29,28 +28,40 @@ use crate::inventory_test_common::{
 /// fn my_test() { ... }
 /// ```
 #[allow(clippy::disallowed_types)]
-pub fn proc_macro(attr: TokenStream, item: TokenStream) -> TokenStream {
-    let original_fn = parse_macro_input!(item as ItemFn);
-    let fn_name = &original_fn.sig.ident;
+pub fn proc_macro(
+    macro_parameters: proc_macro::TokenStream,
+    test_function: proc_macro::TokenStream,
+) -> proc_macro::TokenStream {
+    let test_function = parse_macro_input!(test_function as ItemFn);
+    let test_function_name = &test_function.sig.ident;
+    let test_function_signature = &test_function.sig;
 
-    let ignored = attr.to_string().split(',').any(|s| s.trim() == "ignore");
-    let (should_panic, should_panic_message) = extract_should_panic(&original_fn.attrs);
+    let should_ignore = extract_should_ignore(&macro_parameters.into());
+    let should_panic = extract_should_panic(&test_function.attrs);
 
-    let mut generated = vec![prepend_attributes(&original_fn)];
+    let mut generated = vec![];
+    // Include the original function to be called by the wrapper
+    generated.push(strip_attributes(&test_function));
 
-    // Generate wrapper function
-    let wrapper_name = generate_wrapper_identifier(fn_name, "");
-    let wrapper_body = generate_wrapper_body(fn_name, &original_fn.sig, None, ignored);
+    // Generate wrapper around the test function
+    // This is required to handle test functions that e.g. return Result
+    // so they can be handled by the test runner
+    let wrapper_function_name = generate_wrapper_identifier(test_function_name, "");
+    let wrapper_function_body = generate_wrapper_body(
+        test_function_name,
+        test_function_signature,
+        None,
+        should_ignore,
+    );
 
     // Generate inventory submission
-    let submission = generate_inventory_submission(
-        fn_name.to_string(),
-        wrapper_name,
-        wrapper_body,
+    let wrapper_function = generate_inventory_submission(
+        test_function_name.to_string(),
         should_panic,
-        should_panic_message,
+        wrapper_function_name,
+        wrapper_function_body,
     );
-    generated.push(submission);
+    generated.push(wrapper_function);
 
-    TokenStream::from(quote! { #(#generated)* })
+    proc_macro::TokenStream::from(quote! { #(#generated)* })
 }
