@@ -13,10 +13,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(not(feature = "std"), no_main)]
 
+extern crate iceoryx2_bb_derive_macros_tests_common;
 extern crate iceoryx2_bb_loggers;
-
-mod placement_default_tests;
-mod zero_copy_send_tests;
 
 use core::{
     alloc::{GlobalAlloc, Layout},

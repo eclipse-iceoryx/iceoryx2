@@ -10,9 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![no_std]
+extern crate iceoryx2_bb_derive_macros_tests_common;
 
-extern crate iceoryx2_bb_loggers;
-
-pub mod placement_default_tests;
-pub mod zero_copy_send_tests;
+iceoryx2_bb_testing::test_harness!();
