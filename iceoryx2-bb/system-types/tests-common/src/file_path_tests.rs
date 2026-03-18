@@ -15,6 +15,7 @@ use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::*;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::inventory_test;
 
 #[cfg(target_os = "windows")]
 mod windows {
@@ -172,6 +173,7 @@ mod unix {
     }
 }
 
+#[inventory_test]
 pub fn file_path_new_with_illegal_relative_name_fails() {
     let sut = FilePath::new(b"");
     assert_that!(sut, is_err);
@@ -183,6 +185,7 @@ pub fn file_path_new_with_illegal_relative_name_fails() {
     assert_that!(sut, is_err);
 }
 
+#[inventory_test]
 pub fn file_path_from_empty_path_and_legal_file_works() {
     unsafe {
         let sut = FilePath::from_path_and_file(
@@ -194,6 +197,7 @@ pub fn file_path_from_empty_path_and_legal_file_works() {
     }
 }
 
+#[inventory_test]
 pub fn file_path_extract_file_name_from_path_consisting_only_of_a_file_works() {
     let sut = FilePath::new(b"barbe").unwrap();
     assert_that!(sut.file_name(), eq b"barbe");
@@ -202,6 +206,7 @@ pub fn file_path_extract_file_name_from_path_consisting_only_of_a_file_works() {
     assert_that!(sut.file_name(), eq b"b");
 }
 
+#[inventory_test]
 pub fn file_path_extract_path_from_path_consisting_only_of_a_file_works() {
     let sut = FilePath::new(b"barbe").unwrap();
     assert_that!(sut.path(), eq b"");

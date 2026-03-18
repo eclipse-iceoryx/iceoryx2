@@ -14,7 +14,9 @@ use iceoryx2_bb_system_types::ipv4_address::{
     Ipv4Address, Ipv4AddressParseError, BROADCAST, LOCALHOST, UNSPECIFIED,
 };
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::inventory_test;
 
+#[inventory_test]
 pub fn ipv4_address_is_created_correctly() {
     let sut = Ipv4Address::new(1, 2, 3, 4).octets();
 
@@ -24,17 +26,20 @@ pub fn ipv4_address_is_created_correctly() {
     assert_that!(sut[3], eq  4);
 }
 
+#[inventory_test]
 pub fn ipv4_address_is_unspecified_works() {
     assert_that!(UNSPECIFIED.is_unspecified(), eq true);
     assert_that!(LOCALHOST.is_unspecified(), eq false);
 }
 
+#[inventory_test]
 pub fn ipv4_address_is_loopback_works() {
     assert_that!(Ipv4Address::new(127,0,0,0).is_loopback(), eq true);
     assert_that!(Ipv4Address::new(127, 255, 255, 255).is_loopback(), eq true);
     assert_that!(UNSPECIFIED.is_loopback(), eq false);
 }
 
+#[inventory_test]
 pub fn ipv4_address_is_private_works() {
     assert_that!(Ipv4Address::new(10,1,2,3).is_private(), eq true);
     assert_that!(Ipv4Address::new(192, 168, 1, 2).is_private(), eq true);
@@ -42,41 +47,49 @@ pub fn ipv4_address_is_private_works() {
     assert_that!(BROADCAST.is_private(), eq false);
 }
 
+#[inventory_test]
 pub fn ipv4_address_is_link_local_works() {
     assert_that!(Ipv4Address::new(169,254,2,3).is_link_local(), eq true);
     assert_that!(BROADCAST.is_link_local(), eq false);
 }
 
+#[inventory_test]
 pub fn ipv4_address_is_shared_works() {
     assert_that!(Ipv4Address::new(100,64,1,2).is_shared(), eq true);
     assert_that!(UNSPECIFIED.is_shared(), eq false);
 }
 
+#[inventory_test]
 pub fn ipv4_address_is_benchmarking_works() {
     assert_that!(Ipv4Address::new(198,18,1,2).is_benchmarking(), eq true);
     assert_that!(LOCALHOST.is_benchmarking(), eq false);
 }
 
+#[inventory_test]
 pub fn ipv4_address_is_reserved_works() {
     assert_that!(Ipv4Address::new(244,18,1,2).is_reserved(), eq true);
     assert_that!(BROADCAST.is_reserved(), eq false);
 }
 
+#[inventory_test]
 pub fn ipv4_address_is_multicast_works() {
     assert_that!(Ipv4Address::new(224,18,1,2).is_multicast(), eq true);
     assert_that!(BROADCAST.is_multicast(), eq false);
 }
 
+#[inventory_test]
 pub fn ipv4_address_is_broadcast_works() {
     assert_that!(BROADCAST.is_broadcast(), eq true);
     assert_that!(Ipv4Address::new(224,18,1,2).is_broadcast(), eq false);
 }
 
+#[inventory_test]
 pub fn ipv4_address_is_documentation_works() {
     assert_that!(Ipv4Address::new(192,0,2,2).is_documentation(), eq true);
     assert_that!(BROADCAST.is_documentation(), eq false);
 }
 
+#[inventory_test]
 pub fn ipv4_address_is_global_works() {
     assert_that!(Ipv4Address::new(92,0,2,2).is_global(), eq true);
     assert_that!(BROADCAST.is_global(), eq false);
@@ -84,22 +97,27 @@ pub fn ipv4_address_is_global_works() {
     assert_that!(UNSPECIFIED.is_global(), eq false);
 }
 
+#[inventory_test]
 pub fn ipv4_address_try_from_str_works() {
     assert_that!(Ipv4Address::try_from("51.52.53.54"), eq Ok(Ipv4Address::new(51,52,53,54)));
 }
 
+#[inventory_test]
 pub fn ipv4_address_try_from_fails_with_wrong_format_when_too_few_parts_are_given() {
     assert_that!(Ipv4Address::try_from("61.62.63"), eq Err(Ipv4AddressParseError::WrongFormat));
 }
 
+#[inventory_test]
 pub fn ipv4_address_try_from_fails_with_wrong_format_when_too_many_parts_are_given() {
     assert_that!(Ipv4Address::try_from("61.62.63.71.72"), eq Err(Ipv4AddressParseError::WrongFormat));
 }
 
+#[inventory_test]
 pub fn ipv4_address_try_from_fails_with_wrong_format_when_it_ends_with_a_dot() {
     assert_that!(Ipv4Address::try_from("61.62.63.71."), eq Err(Ipv4AddressParseError::WrongFormat));
 }
 
+#[inventory_test]
 pub fn ipv4_address_try_from_fails_when_part_is_not_an_u8_number() {
     assert_that!(Ipv4Address::try_from("61.62.aa.71"), is_err);
 }

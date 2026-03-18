@@ -14,15 +14,7 @@
 #![cfg_attr(not(feature = "std"), no_main)]
 
 extern crate iceoryx2_bb_loggers;
-
-mod base64url_tests;
-mod file_name_tests;
-mod file_path_tests;
-mod group_name_tests;
-mod ipv4_address_tests;
-mod path_tests;
-mod port_tests;
-mod user_name_tests;
+extern crate iceoryx2_bb_system_types_tests_common;
 
 use core::{
     alloc::{GlobalAlloc, Layout},

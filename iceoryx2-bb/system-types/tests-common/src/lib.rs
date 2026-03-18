@@ -12,6 +12,8 @@
 
 #![no_std]
 
+extern crate iceoryx2_bb_loggers;
+
 pub mod base64url_tests;
 pub mod file_name_tests;
 pub mod file_path_tests;

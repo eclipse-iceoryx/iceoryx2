@@ -13,7 +13,9 @@
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_system_types::group_name::*;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::inventory_test;
 
+#[inventory_test]
 pub fn group_name_new_with_illegal_name_fails() {
     let sut = GroupName::new(b"");
     assert_that!(sut, is_err);
@@ -28,6 +30,7 @@ pub fn group_name_new_with_illegal_name_fails() {
     assert_that!(sut, is_err);
 }
 
+#[inventory_test]
 pub fn group_name_new_with_legal_name_works() {
     let sut = GroupName::new(b"abcdefghijklmnopqrstuvwxyz-0123");
     assert_that!(sut, is_ok);
