@@ -10,15 +10,18 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 use alloc::vec;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::requires_std;
+use iceoryx2_bb_testing_macros::{inventory_test, requires_std};
 
 const CAPACITY: usize = 128;
 
+#[inventory_test]
 pub fn mpmc_unique_index_set_capacity_is_set_correctly() {
     let sut = FixedSizeUniqueIndexSet::<CAPACITY>::new();
     assert_that!(sut.capacity(), eq CAPACITY as u32);
@@ -34,6 +37,7 @@ pub fn mpmc_unique_index_set_capacity_is_set_correctly() {
     assert_that!(sut, is_err);
 }
 
+#[inventory_test]
 pub fn mpmc_unique_index_set_when_created_contains_indices() {
     let sut = FixedSizeUniqueIndexSet::<CAPACITY>::new();
     let mut ids = vec![];
@@ -50,6 +54,7 @@ pub fn mpmc_unique_index_set_when_created_contains_indices() {
     assert_that!(e.err().unwrap(), eq UniqueIndexSetAcquireFailure::OutOfIndices);
 }
 
+#[inventory_test]
 pub fn mpmc_unique_index_release_mode_default_does_not_lock() {
     let sut = FixedSizeUniqueIndexSet::<CAPACITY>::new();
 
@@ -61,6 +66,7 @@ pub fn mpmc_unique_index_release_mode_default_does_not_lock() {
     assert_that!(idx, is_ok);
 }
 
+#[inventory_test]
 pub fn mpmc_unique_index_release_mode_lock_if_last_index_works() {
     let sut = FixedSizeUniqueIndexSet::<CAPACITY>::new();
 
@@ -83,6 +89,7 @@ pub fn mpmc_unique_index_release_mode_lock_if_last_index_works() {
     assert_that!(idx_4.err().unwrap(), eq UniqueIndexSetAcquireFailure::IsLocked);
 }
 
+#[inventory_test]
 pub fn mpmc_unique_index_set_acquire_and_release_works() {
     let sut = FixedSizeUniqueIndexSet::<CAPACITY>::new();
     let mut ids = vec![];
@@ -108,6 +115,7 @@ pub fn mpmc_unique_index_set_acquire_and_release_works() {
     }
 }
 
+#[inventory_test]
 pub fn mpmc_unique_index_set_borrowed_indices_works() {
     let sut = FixedSizeUniqueIndexSet::<CAPACITY>::new();
     let mut ids = vec![];
@@ -125,6 +133,7 @@ pub fn mpmc_unique_index_set_borrowed_indices_works() {
     }
 }
 
+#[inventory_test]
 pub fn mpmc_unique_index_set_acquire_and_release_works_with_uninitialized_memory() {
     let mut memory = [0u8; UniqueIndexSet::const_memory_size(128)];
     let allocator = BumpAllocator::new(memory.as_mut_ptr());
@@ -156,6 +165,7 @@ pub fn mpmc_unique_index_set_acquire_and_release_works_with_uninitialized_memory
     }
 }
 
+#[inventory_test]
 pub fn mpmc_unique_index_set_acquire_release_as_lifo_behavior() {
     let sut = FixedSizeUniqueIndexSet::<CAPACITY>::new();
     let mut ids = vec![];
@@ -178,6 +188,7 @@ pub fn mpmc_unique_index_set_acquire_release_as_lifo_behavior() {
     }
 }
 
+#[inventory_test]
 #[requires_std("threading", "synchronization")]
 pub fn mpmc_unique_index_set_concurrent_acquire_release() {
     use alloc::vec::Vec;

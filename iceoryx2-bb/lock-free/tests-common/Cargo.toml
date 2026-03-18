@@ -27,6 +27,7 @@ std = [
 ]
 
 [dependencies]
+iceoryx2-bb-loggers = { workspace = true, features = [] }
 iceoryx2-bb-lock-free = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-elementary-traits = { workspace = true }

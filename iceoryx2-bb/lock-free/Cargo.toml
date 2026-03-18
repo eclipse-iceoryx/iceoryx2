@@ -33,7 +33,9 @@ iceoryx2-bb-lock-free-tests-common = { workspace = true, features = ["std"] }
 iceoryx2-bb-loggers = { workspace = true, features = ["std"] }
 iceoryx2-bb-testing = { workspace = true, features = ["std"] }
 
-generic-tests = { workspace = true }
+[[test]]
+name = "main"
+harness = false
 
 [target.'cfg(loom)'.dev-dependencies]
 loom = { workspace = true }
