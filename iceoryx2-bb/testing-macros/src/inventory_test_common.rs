@@ -93,21 +93,49 @@ pub fn strip_attributes(test_function: &ItemFn) -> TokenStream {
     }
 }
 
-/// Create a wrapper function identifier.
-///
-/// A wrapper function is used to enable instantiating generic tests multiple
-/// times with different parameters.
-pub fn generate_wrapper_identifier(
-    test_function_name: &Ident,
-    test_function_name_suffix: &str,
-) -> Ident {
-    Ident::new(
-        &format!(
-            "__inventory_test_{}_{}",
-            test_function_name, test_function_name_suffix
-        ),
-        test_function_name.span(),
-    )
+/// Generate the test display name for a generic test instantiation.
+pub fn test_name(test_function_name: &Ident, constexprs: &[&str], type_name: &str) -> String {
+    if constexprs.is_empty() {
+        format!("{}<{}>", test_function_name, type_name)
+    } else {
+        let constexpr_display: Vec<String> = constexprs
+            .iter()
+            .map(|c| c.replace(['{', '}'], "").trim().to_string())
+            .collect();
+        format!(
+            "{}<{}, {}>",
+            test_function_name,
+            constexpr_display.join(", "),
+            type_name
+        )
+    }
+}
+
+/// Generate the wrapper function identifier for a generic instantiation.
+pub fn wrapper_name(test_function_name: &Ident, constexprs: &[&str], type_name: &str) -> Ident {
+    let suffix = if constexprs.is_empty() {
+        type_string(type_name)
+    } else {
+        let constexpr_id = constexprs
+            .iter()
+            .map(|c| {
+                let stripped = c.replace(['{', '}', '(', ')'], "").replace(' ', "");
+                stripped.split("::").last().unwrap_or(&stripped).to_string()
+            })
+            .collect::<Vec<_>>()
+            .join("_")
+            .split('_')
+            .filter(|s| !s.is_empty())
+            .collect::<Vec<_>>()
+            .join("_");
+        format!("__{}__{}", constexpr_id, type_string(type_name))
+    };
+    let ident_str = if suffix.is_empty() {
+        format!("__inventory_test_{}", test_function_name)
+    } else {
+        format!("__inventory_test_{}_{}", test_function_name, suffix)
+    };
+    Ident::new(&ident_str, test_function_name.span())
 }
 
 /// Generate the body of a test wrapper function.

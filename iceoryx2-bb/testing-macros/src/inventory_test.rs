@@ -15,7 +15,7 @@ use syn::{parse_macro_input, ItemFn};
 
 use crate::inventory_test_common::{
     extract_should_ignore, extract_should_panic, generate_inventory_submission,
-    generate_wrapper_body, generate_wrapper_identifier, strip_attributes,
+    generate_wrapper_body, strip_attributes, wrapper_name,
 };
 
 /// Registers the annotated function to the inventory to be executed by the
@@ -52,7 +52,7 @@ pub fn proc_macro(
     // Generate wrapper around the test function
     // This is required to handle test functions that e.g. return Result
     // so they can be handled by the test runner
-    let wrapper_function_name = generate_wrapper_identifier(test_function_name, "");
+    let wrapper_function_name = wrapper_name(test_function_name, &[], "");
     let wrapper_function_body =
         generate_wrapper_body(test_function_name, test_function_signature, None);
 

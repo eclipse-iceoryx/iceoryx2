@@ -15,8 +15,7 @@ use syn::{parse_macro_input, ItemFn};
 
 use crate::inventory_test_common::{
     extract_should_ignore, extract_should_panic, generate_inventory_submission,
-    generate_wrapper_body, generate_wrapper_identifier, parse_tokens, strip_attributes,
-    type_string, ShouldPanic,
+    generate_wrapper_body, parse_tokens, strip_attributes, test_name, wrapper_name, ShouldPanic,
 };
 
 /// Registers the annotated generic function to the inventory for each provided
@@ -81,16 +80,15 @@ fn tests_for_types(
 
     let tests: Vec<proc_macro2::TokenStream> = extract_types(macro_parameters)
         .iter()
-        .map(|ty| {
-            let type_tokens = parse_tokens(ty);
-            let type_name = type_string(ty);
+        .map(|type_name| {
+            let constexprs: &[&str] = &[];
 
-            let test_name = format!("{}_{}", test_function_name, type_name);
-            let wrapper_name = generate_wrapper_identifier(test_function_name, &type_name);
+            let test_name = test_name(test_function_name, constexprs, type_name);
+            let wrapper_name = wrapper_name(test_function_name, constexprs, type_name);
             let wrapper_body = generate_wrapper_body(
                 test_function_name,
                 test_function_signature,
-                Some(vec![type_tokens]),
+                Some(vec![parse_tokens(type_name)]),
             );
 
             generate_inventory_submission(
@@ -119,24 +117,16 @@ fn tests_for_pairs(
         .into_iter()
         .filter(|pair| !pair.is_empty())
         .map(|pair| {
-            let (constexprs, ty) = split_constexpr_and_type(&pair);
+            let (constexprs, type_name) = split_constexpr_and_type(&pair);
 
-            let constexpr_tokens: Vec<_> = constexprs.iter().map(|c| parse_tokens(c)).collect();
-            let type_tokens = parse_tokens(ty);
+            let test_name = test_name(test_function_name, &constexprs, type_name);
+            let wrapper_name = wrapper_name(test_function_name, &constexprs, type_name);
 
-            let constexpr_string = constexpr_string(&constexprs);
-            let type_string = type_string(ty);
-            let test_function_name_suffix = suffix_string(&constexpr_string, &type_string);
-
-            // Name printed in test output, different from actual test function name
-            let test_name = format!("{}_{}", test_function_name, test_function_name_suffix);
-            let wrapper_name =
-                generate_wrapper_identifier(test_function_name, &test_function_name_suffix);
-
-            let mut generics = constexpr_tokens;
-            generics.push(type_tokens);
-            let wrapper_body =
-                generate_wrapper_body(test_function_name, test_function_signature, Some(generics));
+            let wrapper_body = generate_wrapper_body(
+                test_function_name,
+                test_function_signature,
+                Some(generic_tokens(&constexprs, type_name)),
+            );
 
             generate_inventory_submission(
                 test_name,
@@ -222,37 +212,13 @@ fn split_constexpr_and_type(pair: &str) -> (Vec<&str>, &str) {
     (generic_parts, type_part)
 }
 
-/// Convert constexpr parts to readable name
-/// E.g., ["{FileName::max_len()}"] -> "max_len"
-/// E.g., ["{Path::capacity()}"] -> "capacity"
-/// E.g., ["64"] -> "64"
-fn constexpr_string(constexpr_parts: &[&str]) -> String {
-    constexpr_parts
-        .iter()
-        .map(|p| {
-            let stripped = p.replace(['{', '}', '(', ')'], "").replace(' ', "");
-
-            if let Some(last_part) = stripped.split("::").last() {
-                last_part.to_string()
-            } else {
-                stripped
-            }
-        })
-        .collect::<Vec<_>>()
-        .join("_")
-        .split('_')
-        .filter(|s| !s.is_empty())
-        .collect::<Vec<_>>()
-        .join("_")
-}
-
-/// Combine constexpr and type names with double underscores around const
-/// E.g., ("max_len", "FileName") -> "__max_len__FileName"
-/// E.g., ("", "FileName") -> "FileName"
-fn suffix_string(constexpr: &str, ty: &str) -> String {
-    if constexpr.is_empty() {
-        ty.to_string()
-    } else {
-        format!("__{}__{}", constexpr, ty)
+/// Collect constexpr and type strings into a list of token streams for code generation.
+fn generic_tokens(constexprs: &[&str], type_name: &str) -> Vec<proc_macro2::TokenStream> {
+    let mut tokens = Vec::new();
+    for c in constexprs {
+        tokens.push(parse_tokens(c));
     }
+    tokens.push(parse_tokens(type_name));
+    tokens
 }
+
