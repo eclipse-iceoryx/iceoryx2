@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 use iceoryx2_bb_posix::barrier::*;
 use iceoryx2_bb_posix::ipc_capable::{Handle, IpcCapable};
 use iceoryx2_bb_posix::mutex::{Mutex, MutexBuilder, MutexHandle};

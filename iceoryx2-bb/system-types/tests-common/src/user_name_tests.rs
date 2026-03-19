@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_system_types::user_name::*;
 use iceoryx2_bb_testing::assert_that;

@@ -44,8 +44,8 @@ pub fn proc_macro(
     let test_function_attributes = &test_function.attrs;
     let macro_parameters: proc_macro2::TokenStream = macro_parameters.into();
 
-    let should_ignore = extract_should_ignore(&test_function_attributes);
-    let should_panic = extract_should_panic(&test_function_attributes);
+    let should_ignore = extract_should_ignore(test_function_attributes);
+    let should_panic = extract_should_panic(test_function_attributes);
 
     let mut generated = vec![];
     // Include the original function to be called by the wrapper

@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 use alloc::format;
 
 use iceoryx2_bb_posix::creation_mode::*;
