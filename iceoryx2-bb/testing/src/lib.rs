@@ -36,7 +36,7 @@ pub use libtest_mimic;
 
 /// Default number of test threads for the custom test harness.
 ///
-/// Tests using [`LifetimeTracker`] rely on global mutable state that is not
+/// Tests using [`iceoryx2_pal_testing::lifetime_tracker::LifetimeTracker`] rely on global mutable state that is not
 /// safe to access concurrently. Serial execution is required unless the caller
 /// explicitly overrides this via `--test-threads`.
 #[cfg(feature = "std")]
