@@ -20,7 +20,7 @@ pub unsafe fn timer_create(
     sevp: *mut sigevent,
     timer_id: *mut timer_t,
 ) -> int {
-    crate::internal::timer_create(clock_id, &mut os_specific_buffer, timer_id)
+    crate::internal::timer_create(clock_id, sevp, timer_id)
 }
 
 pub unsafe fn timer_delete(timer_id: timer_t) -> int {
