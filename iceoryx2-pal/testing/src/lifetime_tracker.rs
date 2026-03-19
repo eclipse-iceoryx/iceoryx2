@@ -34,11 +34,12 @@ pub struct LifetimeTrackingState {}
 
 impl LifetimeTrackingState {
     pub fn number_of_living_instances(&self) -> usize {
-        *CREATION_COUNTER.lock().unwrap() - *DROP_COUNTER.lock().unwrap()
+        *CREATION_COUNTER.lock().unwrap_or_else(|e| e.into_inner())
+            - *DROP_COUNTER.lock().unwrap_or_else(|e| e.into_inner())
     }
 
     pub fn drop_order(&self) -> Vec<usize> {
-        DROP_ORDER.lock().unwrap().clone()
+        DROP_ORDER.lock().unwrap_or_else(|e| e.into_inner()).clone()
     }
 }
 
@@ -50,7 +51,7 @@ pub struct LifetimeTracker {
 
 impl Default for LifetimeTracker {
     fn default() -> Self {
-        *CREATION_COUNTER.lock().unwrap() += 1;
+        *CREATION_COUNTER.lock().unwrap_or_else(|e| e.into_inner()) += 1;
 
         Self { value: 0 }
     }
@@ -68,11 +69,11 @@ impl LifetimeTracker {
     }
 
     pub fn start_tracking() -> MutexGuard<'static, LifetimeTrackingState> {
-        let guard = TRACKING_LOCK.lock().unwrap();
+        let guard = TRACKING_LOCK.lock().unwrap_or_else(|e| e.into_inner());
 
-        *CREATION_COUNTER.lock().unwrap() = 0;
-        *DROP_COUNTER.lock().unwrap() = 0;
-        DROP_ORDER.lock().unwrap().clear();
+        *CREATION_COUNTER.lock().unwrap_or_else(|e| e.into_inner()) = 0;
+        *DROP_COUNTER.lock().unwrap_or_else(|e| e.into_inner()) = 0;
+        DROP_ORDER.lock().unwrap_or_else(|e| e.into_inner()).clear();
 
         guard
     }
@@ -88,7 +89,10 @@ impl Clone for LifetimeTracker {
 
 impl Drop for LifetimeTracker {
     fn drop(&mut self) {
-        *DROP_COUNTER.lock().unwrap() += 1;
-        DROP_ORDER.lock().unwrap().push(self.value);
+        *DROP_COUNTER.lock().unwrap_or_else(|e| e.into_inner()) += 1;
+        DROP_ORDER
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .push(self.value);
     }
 }
