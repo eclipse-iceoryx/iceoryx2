@@ -26,6 +26,12 @@ jobs:
           toolchain: 1.92.0
           components: llvm-tools
 
+      - name: Download artifact cargo-nextest
+        uses: ./.github/actions/download-cached-rust-tool
+        with:
+          artifact-bin-name: cargo-nextest
+          artifact-upload-name: ubuntu-latest-cargo-nextest
+
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@bafd42bd91680affe190f697cac6ef3ad958ecba # version: v0.0.9
 
