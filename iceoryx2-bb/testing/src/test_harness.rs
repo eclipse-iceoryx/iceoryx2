@@ -92,6 +92,7 @@ macro_rules! test_harness {
                             Ok(())
                         }
                     })
+                    .with_ignored_flag(test_case.should_ignore)
                 })
                 .collect::<Vec<_>>();
             $crate::libtest_mimic::run(&args, tests).exit();
@@ -147,6 +148,11 @@ macro_rules! test_harness {
                 $crate::internal::cout!("test ");
                 $crate::internal::cout!("{}", test.name);
                 $crate::internal::cout!(" ... ");
+
+                if test.should_ignore {
+                    $crate::internal::coutln!("ignored");
+                    continue;
+                }
 
                 (test.test_fn)();
 

@@ -22,14 +22,15 @@ use crate::inventory_test_common::{
 /// Registers the annotated generic function to the inventory for each provided
 /// type, to be executed by the test runner.
 ///
-/// Accepts a comma-separated list of types or constexpr/type pairs, and an
-/// optional `ignore` parameter to skip all instantiations at runtime:
+/// Accepts a comma-separated list of types or constexpr/type pairs.
+/// Combine with `#[ignore]` to skip all instantiations at runtime:
 ///
 /// ```ignore
 /// #[inventory_test_generic(u32, u64)]
 /// fn my_test<T>() { ... }
 ///
-/// #[inventory_test_generic(ignore, u32, u64)]
+/// #[ignore]
+/// #[inventory_test_generic(u32, u64)]
 /// fn my_ignored_test<T>() { ... }
 ///
 /// #[inventory_test_generic((64, MyType), (128, MyType))]
@@ -40,10 +41,11 @@ pub fn proc_macro(
     test_function: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
     let test_function = parse_macro_input!(test_function as ItemFn);
+    let test_function_attributes = &test_function.attrs;
     let macro_parameters: proc_macro2::TokenStream = macro_parameters.into();
 
-    let should_ignore = extract_should_ignore(&macro_parameters);
-    let should_panic = extract_should_panic(&test_function.attrs);
+    let should_ignore = extract_should_ignore(&test_function_attributes);
+    let should_panic = extract_should_panic(&test_function_attributes);
 
     let mut generated = vec![];
     // Include the original function to be called by the wrapper
@@ -89,12 +91,12 @@ fn tests_for_types(
                 test_function_name,
                 test_function_signature,
                 Some(vec![type_tokens]),
-                should_ignore,
             );
 
             generate_inventory_submission(
                 test_name,
                 should_panic.clone(),
+                should_ignore,
                 wrapper_name,
                 wrapper_body,
             )
@@ -133,16 +135,13 @@ fn tests_for_pairs(
 
             let mut generics = constexpr_tokens;
             generics.push(type_tokens);
-            let wrapper_body = generate_wrapper_body(
-                test_function_name,
-                test_function_signature,
-                Some(generics),
-                should_ignore,
-            );
+            let wrapper_body =
+                generate_wrapper_body(test_function_name, test_function_signature, Some(generics));
 
             generate_inventory_submission(
                 test_name,
                 should_panic.clone(),
+                should_ignore,
                 wrapper_name,
                 wrapper_body,
             )
@@ -206,7 +205,6 @@ fn extract_types(macro_parameters: &proc_macro2::TokenStream) -> Vec<String> {
         .to_string()
         .split(',')
         .map(|s| s.trim().to_owned())
-        .filter(|s| s != "ignore")
         .collect()
 }
 
