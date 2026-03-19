@@ -116,11 +116,11 @@ fn generate_for_constexpr_type_pairs(
             .into_iter()
             .map(|pair| {
                 let (constexprs, type_name) = split_constexpr_and_type(pair);
-                let generic_params: Vec<_> = constexprs
-                    .iter()
-                    .cloned()
-                    .chain(std::iter::once(type_name.clone()))
-                    .collect();
+                let mut generic_params = Vec::new();
+                for constexpr in &constexprs {
+                    generic_params.push(constexpr.clone());
+                }
+                generic_params.push(type_name.clone());
 
                 let (wrapper_function_name, wrapper_function) = generate_wrapper_function(
                     &test_function.sig,

@@ -197,7 +197,7 @@ pub fn generate_inventory_submission(
     test_name: String,
     should_panic: ShouldPanic,
     should_ignore: bool,
-    wrapper_name: &Ident,
+    wrapper_identifier: &Ident,
 ) -> TokenStream {
     let (should_panic, should_panic_message) = match should_panic {
         ShouldPanic::No => (quote! { false }, quote! { None }),
@@ -209,7 +209,7 @@ pub fn generate_inventory_submission(
         ::iceoryx2_bb_testing::inventory::submit! {
             ::iceoryx2_bb_testing::TestCase {
                 name: #test_name,
-                test_fn: #wrapper_name,
+                test_fn: #wrapper_identifier,
                 should_ignore: #should_ignore,
                 should_panic: #should_panic,
                 should_panic_message: #should_panic_message,
