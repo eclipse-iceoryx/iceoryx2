@@ -18,9 +18,9 @@
 
 * [Introduction](#introduction)
 * [Performance](#performance)
-    * [Comparision Of Mechanisms](#comparision-of-mechanisms)
+    * [Comparison Of Mechanisms](#comparison-of-mechanisms)
         * [Benchmark-System](#benchmark-system)
-    * [Comparision Of Architectures](#comparision-of-architectures)
+    * [Comparison Of Architectures](#comparison-of-architectures)
 * [Documentation](#documentation)
     * [User Documentation](#user-documentation)
     * [Contributor Documentation](#contributor-documentation)
@@ -75,7 +75,7 @@ if you want to have a chat with the developers of iceoryx.
 
 ## Performance
 
-### Comparision Of Mechanisms
+### Comparison Of Mechanisms
 
 ![benchmark of different mechanism](https://raw.githubusercontent.com/eclipse-iceoryx/iceoryx2/refs/heads/main/internal/plots/benchmark_mechanism.svg)
 
@@ -87,7 +87,7 @@ if you want to have a chat with the developers of iceoryx.
     * rustc 1.81.0
     * gcc 14.2.1 20240910
 
-### Comparision Of Architectures
+### Comparison Of Architectures
 
 ![benchmark on different systems](https://raw.githubusercontent.com/eclipse-iceoryx/iceoryx2/refs/heads/main/internal/plots/benchmark_architecture.svg)
 

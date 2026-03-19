@@ -217,7 +217,7 @@
 	<path stroke='black'  d='M209.75,90.01 L209.75,560.00 L1358.04,560.00 L1358.04,90.01 L209.75,90.01 Z  '/></g>
 <g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
 </g>
-	<g id="gnuplot_plot_1" ><title>'benchmark_architecture_os_comparision.dat' using (0.5*$3):0:(0.5*$3):((myBoxWidth)/2.):ytic(sprintf("%s\n{/*0.8 %s}", stringcolumn(1), stringcolumn(2)))</title>
+	<g id="gnuplot_plot_1" ><title>'benchmark_architecture_os_comparison.dat' using (0.5*$3):0:(0.5*$3):((myBoxWidth)/2.):ytic(sprintf("%s\n{/*0.8 %s}", stringcolumn(1), stringcolumn(2)))</title>
 <g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
 	<g stroke='none' shape-rendering='crispEdges'>
 		<polygon fill = 'rgb( 82, 140,  25)' points = '209.75,549.93 1320.73,549.93 1320.73,502.92 209.75,502.92 '/>
