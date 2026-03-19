@@ -10,9 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 use iceoryx2_bb_posix::adaptive_wait::*;
 use iceoryx2_bb_posix::clock::*;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_bb_testing_macros::requires_std;
 
 #[cfg(feature = "std")]
@@ -24,6 +27,7 @@ mod std_testing {
     pub const TIMEOUT: Duration = Duration::from_millis(50);
 }
 
+#[inventory_test]
 #[requires_std("time")]
 pub fn adaptive_wait_wait_at_different_time_depends_on_repetition_times() {
     use iceoryx2_bb_posix::config::*;
@@ -74,11 +78,13 @@ pub fn adaptive_wait_wait_at_different_time_depends_on_repetition_times() {
     assert_that!(start.elapsed(), time_at_least ADAPTIVE_WAIT_FINAL_WAITING_TIME);
 }
 
+#[inventory_test]
 pub fn adaptive_wait_on_default_builder_uses_default_clock() {
     let sut = AdaptiveWaitBuilder::new().create().unwrap();
     assert_that!(sut.clock_type(), eq ClockType::default());
 }
 
+#[inventory_test]
 pub fn adaptive_wait_custom_clock_is_set_correctly() {
     let sut = AdaptiveWaitBuilder::new()
         .clock_type(ClockType::Realtime)
@@ -87,6 +93,7 @@ pub fn adaptive_wait_custom_clock_is_set_correctly() {
     assert_that!(sut.clock_type(), eq ClockType::Realtime);
 }
 
+#[inventory_test]
 pub fn adaptive_wait_wait_increases_yield_counter() {
     let mut sut = AdaptiveWaitBuilder::new().create().unwrap();
     assert_that!(sut.wait(), is_ok);
@@ -95,6 +102,7 @@ pub fn adaptive_wait_wait_increases_yield_counter() {
     assert_that!(sut.yield_count(), eq 3);
 }
 
+#[inventory_test]
 #[requires_std("time")]
 pub fn adaptive_wait_timed_wait_while_wait_at_least_for_timeout() {
     use std::time::Instant;
@@ -110,6 +118,7 @@ pub fn adaptive_wait_timed_wait_while_wait_at_least_for_timeout() {
     assert_that!(result, eq false);
 }
 
+#[inventory_test]
 #[requires_std("time")]
 pub fn adaptive_wait_timed_wait_does_not_wait_when_predicate_returns_false() {
     use std::time::Instant;
@@ -125,6 +134,7 @@ pub fn adaptive_wait_timed_wait_does_not_wait_when_predicate_returns_false() {
     assert_that!(result, eq true);
 }
 
+#[inventory_test]
 #[requires_std("time")]
 pub fn adaptive_wait_timed_wait_does_not_wait_when_predicate_returns_error() {
     use std::time::Instant;

@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 use alloc::string::ToString;
 use alloc::vec;
 
@@ -24,6 +26,7 @@ use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
+use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_bb_testing_macros::requires_std;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_FILE_LOCK;
 
@@ -69,6 +72,7 @@ impl<'a> Drop for TestFixture<'a> {
     }
 }
 
+#[inventory_test]
 pub fn file_lock_unlocked_by_default() {
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 
@@ -80,6 +84,7 @@ pub fn file_lock_unlocked_by_default() {
     assert_that!(result.pid_of_owner().value(), eq 0);
 }
 
+#[inventory_test]
 pub fn file_lock_write_lock_blocks_other_write_locks() {
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 
@@ -98,6 +103,7 @@ pub fn file_lock_write_lock_blocks_other_write_locks() {
     assert_that!(result.pid_of_owner().value(), eq 0);
 }
 
+#[inventory_test]
 pub fn file_lock_write_try_lock_denies_other_try_locks() {
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 
@@ -120,6 +126,7 @@ pub fn file_lock_write_try_lock_denies_other_try_locks() {
     assert_that!(test.sut.write_try_lock().unwrap(), is_some);
 }
 
+#[inventory_test]
 pub fn file_lock_read_lock_allows_other_read_locks() {
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 
@@ -149,6 +156,7 @@ pub fn file_lock_read_lock_allows_other_read_locks() {
     assert_that!(result.pid_of_owner().value(), eq 0);
 }
 
+#[inventory_test]
 pub fn file_lock_read_try_lock_allows_other_read_try_locks() {
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 
@@ -178,6 +186,7 @@ pub fn file_lock_read_try_lock_allows_other_read_try_locks() {
     assert_that!(result.pid_of_owner().value(), eq 0);
 }
 
+#[inventory_test]
 pub fn file_lock_one_read_blocks_write() {
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 
@@ -190,6 +199,7 @@ pub fn file_lock_one_read_blocks_write() {
     assert_that!(test.sut.write_try_lock().unwrap(), is_some);
 }
 
+#[inventory_test]
 pub fn file_lock_multiple_readers_blocks_write() {
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 
@@ -205,6 +215,7 @@ pub fn file_lock_multiple_readers_blocks_write() {
     assert_that!(test.sut.write_try_lock().unwrap(), is_some);
 }
 
+#[inventory_test]
 #[requires_std("threading")]
 pub fn file_lock_write_lock_blocks() {
     use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
@@ -237,6 +248,7 @@ pub fn file_lock_write_lock_blocks() {
     });
 }
 
+#[inventory_test]
 #[requires_std("threading")]
 pub fn file_lock_read_lock_blocks_write_locks() {
     use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
@@ -269,6 +281,7 @@ pub fn file_lock_read_lock_blocks_write_locks() {
     });
 }
 
+#[inventory_test]
 #[requires_std("threading")]
 pub fn file_lock_read_try_lock_does_not_block() {
     use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
@@ -292,6 +305,7 @@ pub fn file_lock_read_try_lock_does_not_block() {
     });
 }
 
+#[inventory_test]
 #[requires_std("threading")]
 pub fn file_lock_write_try_lock_does_not_block() {
     use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
@@ -315,6 +329,7 @@ pub fn file_lock_write_try_lock_does_not_block() {
     });
 }
 
+#[inventory_test]
 pub fn file_lock_read_write_works() {
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 
@@ -342,6 +357,7 @@ pub fn file_lock_read_write_works() {
     assert_that!(content, eq b"hello");
 }
 
+#[inventory_test]
 pub fn file_lock_try_lock_fails_when_locked() {
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 

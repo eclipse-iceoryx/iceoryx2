@@ -10,10 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 use iceoryx2_bb_posix::file_type::*;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_pal_posix::*;
 
+#[inventory_test]
 pub fn file_type_mode_t_conversion_works() {
     assert_that!(FileType::File, eq FileType::from_mode_t(posix::S_IFREG));
     assert_that!(FileType::Character, eq FileType::from_mode_t(posix::S_IFCHR));

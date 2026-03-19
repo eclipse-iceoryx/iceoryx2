@@ -10,15 +10,19 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 use iceoryx2_bb_posix::read_write_mutex::*;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::requires_std;
 
 #[cfg(feature = "std")]
 use core::time::Duration;
+use iceoryx2_bb_testing_macros::inventory_test;
 #[cfg(feature = "std")]
 const TIMEOUT: Duration = Duration::from_millis(50);
 
+#[inventory_test]
 pub fn read_write_mutex_lock_works() {
     let handle = ReadWriteMutexHandle::<i32>::new();
     let sut = ReadWriteMutexBuilder::new().create(456, &handle).unwrap();
@@ -32,6 +36,7 @@ pub fn read_write_mutex_lock_works() {
     assert_that!(*value, eq 123);
 }
 
+#[inventory_test]
 pub fn read_write_mutex_try_lock_works() {
     let handle = ReadWriteMutexHandle::<i32>::new();
     let sut = ReadWriteMutexBuilder::new().create(7890, &handle).unwrap();
@@ -45,6 +50,7 @@ pub fn read_write_mutex_try_lock_works() {
     assert_that!(*value.unwrap(), eq 551);
 }
 
+#[inventory_test]
 #[requires_std("threading", "watchdog")]
 pub fn read_write_mutex_write_lock_blocks_read_and_write_locks() {
     use iceoryx2_bb_concurrency::atomic::{AtomicUsize, Ordering};
@@ -85,6 +91,7 @@ pub fn read_write_mutex_write_lock_blocks_read_and_write_locks() {
     });
 }
 
+#[inventory_test]
 #[requires_std("threading")]
 pub fn read_write_mutex_read_lock_blocks_only_write_locks() {
     use iceoryx2_bb_concurrency::atomic::{AtomicUsize, Ordering};
@@ -113,6 +120,7 @@ pub fn read_write_mutex_read_lock_blocks_only_write_locks() {
     });
 }
 
+#[inventory_test]
 pub fn read_write_mutex_try_lock_fails_when_lock_was_acquired() {
     let handle = ReadWriteMutexHandle::<i32>::new();
     let sut = ReadWriteMutexBuilder::new().create(781, &handle).unwrap();
@@ -125,6 +133,7 @@ pub fn read_write_mutex_try_lock_fails_when_lock_was_acquired() {
     assert_that!(sut.write_try_lock().unwrap(), is_none);
 }
 
+#[inventory_test]
 #[requires_std("threading")]
 pub fn read_write_mutex_multiple_ipc_mutex_are_working() {
     use iceoryx2_bb_posix::clock::*;

@@ -10,9 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 use iceoryx2_bb_posix::barrier::*;
+use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_bb_testing_macros::requires_std;
 
+#[inventory_test]
 #[requires_std("threading")]
 pub fn barrier_blocks() -> Result<(), BarrierCreationError> {
     use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};

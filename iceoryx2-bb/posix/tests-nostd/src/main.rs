@@ -14,43 +14,7 @@
 #![cfg_attr(not(feature = "std"), no_main)]
 
 extern crate iceoryx2_bb_loggers;
-
-mod access_mode_tests;
-mod adaptive_wait_tests;
-mod barrier_tests;
-mod clock_tests;
-mod creation_mode_tests;
-mod deadline_queue_tests;
-mod directory_tests;
-mod file_descriptor_set_tests;
-mod file_descriptor_tests;
-mod file_lock_tests;
-mod file_tests;
-mod file_type_tests;
-mod group_tests;
-mod ipc_capable_trait_tests;
-mod memory_lock_tests;
-mod memory_mapping_tests;
-mod memory_tests;
-mod metadata_tests;
-mod mutex_tests;
-mod ownership_tests;
-mod permission_tests;
-mod process_state_tests;
-mod process_tests;
-mod read_write_mutex_tests;
-mod scheduler_tests;
-mod semaphore_tests;
-mod shared_memory_tests;
-mod signal_set_tests;
-mod signal_tests;
-mod socket_ancillary_tests;
-mod socket_pair_tests;
-mod thread_tests;
-mod udp_socket_tests;
-mod unique_system_id_tests;
-mod unix_datagram_socket_tests;
-mod users_tests;
+extern crate iceoryx2_bb_posix_tests_common;
 
 use core::{
     alloc::{GlobalAlloc, Layout},

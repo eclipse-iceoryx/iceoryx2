@@ -10,14 +10,18 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_system_types::path::*;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::inventory_test;
 
 #[cfg(target_os = "windows")]
 mod windows {
     use super::*;
 
+    #[inventory_test]
     pub fn path_new_with_illegal_name_fails() {
         let sut = Path::new(b"\0a");
         assert_that!(sut, is_err);
@@ -29,6 +33,7 @@ mod windows {
         assert_that!(sut, is_err);
     }
 
+    #[inventory_test]
     pub fn path_new_with_legal_name_works() {
         let sut = Path::new(b"C:\\some\\file\\path");
         assert_that!(sut, is_ok);
@@ -46,6 +51,7 @@ mod windows {
         assert_that!(sut, is_ok);
     }
 
+    #[inventory_test]
     pub fn path_add_works() {
         let mut sut = Path::new(b"C:\\some").unwrap();
         sut.add_path_entry(&Path::new(b"file").unwrap()).unwrap();
@@ -63,6 +69,7 @@ mod windows {
         assert_that!(sut, eq b"fuu\\blaaaha\\blub.ma");
     }
 
+    #[inventory_test]
     pub fn path_is_absolute_works() {
         let sut = Path::new(b"D:\\bla").unwrap();
         assert_that!(sut.is_absolute(), eq true);
@@ -85,6 +92,7 @@ mod windows {
 mod unix {
     use super::*;
 
+    #[inventory_test]
     pub fn path_new_with_illegal_name_fails() {
         let sut = Path::new(b"\0a");
         assert_that!(sut, is_err);
@@ -96,6 +104,7 @@ mod unix {
         assert_that!(sut, is_err);
     }
 
+    #[inventory_test]
     pub fn path_new_with_legal_name_works() {
         let sut = Path::new(b"/some/file/path");
         assert_that!(sut, is_ok);
@@ -113,6 +122,7 @@ mod unix {
         assert_that!(sut, is_ok);
     }
 
+    #[inventory_test]
     pub fn path_add_works() {
         let mut sut = Path::new(b"/some").unwrap();
         sut.add_path_entry(&Path::new(b"file").unwrap()).unwrap();
@@ -130,6 +140,7 @@ mod unix {
         assert_that!(sut, eq b"fuu/blaaaha/blub.ma");
     }
 
+    #[inventory_test]
     pub fn path_list_all_entries_works() {
         let sut = Path::new(b"/some/file/path/").unwrap();
         let entries = sut.entries();
@@ -196,6 +207,7 @@ mod unix {
         assert_that!(entries[2], eq b"oh_no");
     }
 
+    #[inventory_test]
     pub fn path_is_absolute_works() {
         let sut = Path::new(b"/").unwrap();
         assert_that!(sut.is_absolute(), eq true);

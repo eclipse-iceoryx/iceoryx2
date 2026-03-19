@@ -14,8 +14,7 @@
 #![cfg_attr(not(feature = "std"), no_main)]
 
 extern crate iceoryx2_bb_loggers;
-
-mod trigger_queue_tests;
+extern crate iceoryx2_bb_threadsafe_tests_common;
 
 use core::{
     alloc::{GlobalAlloc, Layout},

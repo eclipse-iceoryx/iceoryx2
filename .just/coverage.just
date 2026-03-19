@@ -143,7 +143,7 @@ _coverage-profile-rust:
         echo -e "{{COLOR_YELLOW}}no rust nightly compiler found, MC/DC coverage is not available only line coverage{{COLOR_OFF}}"
         export RUSTFLAGS="-C instrument-coverage"
     fi
-    cargo test --workspace --all-targets -- --test-threads=1
+    just test workspace
 
 # --- generate-report ---------------------------------------------------------
 

@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 use alloc::string::String;
 use alloc::string::ToString;
 use alloc::vec;
@@ -28,6 +30,7 @@ use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_fail;
+use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_bb_testing_macros::requires_std;
 use iceoryx2_pal_configuration::PATH_SEPARATOR;
 
@@ -113,11 +116,13 @@ impl TestFixture {
     }
 }
 
+#[inventory_test]
 pub fn directory_test_directory_does_exist() {
     create_test_directory();
     assert_that!(Directory::does_exist(&TEST_DIRECTORY).unwrap(), eq true);
 }
 
+#[inventory_test]
 pub fn directory_non_existing_directory_does_not_exist() {
     create_test_directory();
     let mut non_existant_path = TEST_DIRECTORY;
@@ -125,6 +130,7 @@ pub fn directory_non_existing_directory_does_not_exist() {
     assert_that!(!Directory::does_exist(&non_existant_path).unwrap(), eq true);
 }
 
+#[inventory_test]
 pub fn directory_file_is_not_a_directory() {
     create_test_directory();
 
@@ -140,6 +146,7 @@ pub fn directory_file_is_not_a_directory() {
     File::remove(&not_a_directory_path).unwrap();
 }
 
+#[inventory_test]
 pub fn directory_create_from_path_works() {
     let mut test = TestFixture::new();
 
@@ -153,6 +160,7 @@ pub fn directory_create_from_path_works() {
     assert_that!(unsafe { sut_create.unwrap().file_descriptor().native_handle() }, ge 0);
 }
 
+#[inventory_test]
 pub fn directory_create_from_path_works_recursively() {
     let mut test = TestFixture::new();
 
@@ -178,6 +186,7 @@ pub fn directory_create_from_path_works_recursively() {
     assert_that!(Directory::does_exist(&sut_name).unwrap(), eq true);
 }
 
+#[inventory_test]
 #[requires_std("threading", "synchronization", "watchdog")]
 pub fn directory_create_from_path_is_thread_safe() {
     use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -219,6 +228,7 @@ pub fn directory_create_from_path_is_thread_safe() {
     assert_that!(Directory::does_exist(&sut_name).unwrap(), eq true);
 }
 
+#[inventory_test]
 pub fn directory_open_from_path_works() {
     let mut test = TestFixture::new();
 
@@ -231,6 +241,7 @@ pub fn directory_open_from_path_works() {
     assert_that!(sut_open, is_ok);
 }
 
+#[inventory_test]
 pub fn directory_list_contents_works() {
     let mut test = TestFixture::new();
 

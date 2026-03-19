@@ -10,10 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 use iceoryx2_bb_posix::config::DEFAULT_SCHEDULER;
 use iceoryx2_bb_posix::scheduler::*;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::inventory_test;
 
+#[inventory_test]
 pub fn scheduler_default_scheduler_set_correctly() {
     assert_that!(Scheduler::default(), eq DEFAULT_SCHEDULER)
 }

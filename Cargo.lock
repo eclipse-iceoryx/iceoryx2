@@ -1347,7 +1347,6 @@ dependencies = [
 name = "iceoryx2-bb-concurrency"
 version = "0.8.999"
 dependencies = [
- "generic-tests",
  "iceoryx2-bb-concurrency-tests-common",
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-loggers",
@@ -1364,6 +1363,7 @@ dependencies = [
  "iceoryx2-bb-loggers",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
  "iceoryx2-pal-print",
 ]
 
@@ -1392,13 +1392,13 @@ dependencies = [
 name = "iceoryx2-bb-container"
 version = "0.8.999"
 dependencies = [
- "generic-tests",
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-container-tests-common",
  "iceoryx2-bb-derive-macros",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-loggers",
+ "iceoryx2-bb-testing",
  "iceoryx2-log",
  "serde",
  "serde_test",
@@ -1412,6 +1412,7 @@ dependencies = [
  "iceoryx2-bb-container",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
  "iceoryx2-bb-testing",
  "iceoryx2-bb-testing-macros",
  "iceoryx2-pal-print",
@@ -1437,6 +1438,7 @@ dependencies = [
  "iceoryx2-bb-derive-macros-tests-common",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-testing",
  "proc-macro2",
  "quote",
  "syn 2.0.114",
@@ -1448,7 +1450,9 @@ version = "0.8.999"
 dependencies = [
  "iceoryx2-bb-derive-macros",
  "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
  "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
  "iceoryx2-pal-concurrency-sync",
 ]
 
@@ -1468,7 +1472,6 @@ dependencies = [
 name = "iceoryx2-bb-elementary"
 version = "0.8.999"
 dependencies = [
- "generic-tests",
  "iceoryx2-bb-elementary-tests-common",
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-loggers",
@@ -1484,7 +1487,9 @@ dependencies = [
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
  "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
 ]
 
 [[package]]
@@ -1582,6 +1587,7 @@ dependencies = [
  "iceoryx2-bb-loggers",
  "iceoryx2-bb-memory-tests-common",
  "iceoryx2-bb-posix",
+ "iceoryx2-bb-testing",
  "iceoryx2-log",
 ]
 
@@ -1591,6 +1597,7 @@ version = "0.8.999"
 dependencies = [
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
  "iceoryx2-bb-memory",
  "iceoryx2-bb-testing",
  "iceoryx2-bb-testing-macros",
@@ -1614,7 +1621,6 @@ name = "iceoryx2-bb-posix"
 version = "0.8.999"
 dependencies = [
  "enum-iterator",
- "generic-tests",
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-container",
  "iceoryx2-bb-derive-macros",
@@ -1640,6 +1646,7 @@ dependencies = [
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-container",
  "iceoryx2-bb-elementary",
+ "iceoryx2-bb-loggers",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-system-types",
  "iceoryx2-bb-testing",
@@ -1680,6 +1687,7 @@ dependencies = [
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-loggers",
  "iceoryx2-bb-system-types-tests-common",
+ "iceoryx2-bb-testing",
  "iceoryx2-log",
  "iceoryx2-pal-configuration",
  "iceoryx2-pal-posix",
@@ -1691,8 +1699,10 @@ name = "iceoryx2-bb-system-types-tests-common"
 version = "0.8.999"
 dependencies = [
  "iceoryx2-bb-container",
+ "iceoryx2-bb-loggers",
  "iceoryx2-bb-system-types",
  "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
 ]
 
 [[package]]
@@ -1750,8 +1760,10 @@ name = "iceoryx2-bb-threadsafe-tests-common"
 version = "0.8.999"
 dependencies = [
  "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-loggers",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
  "iceoryx2-bb-threadsafe",
  "iceoryx2-pal-print",
 ]
@@ -1772,16 +1784,9 @@ dependencies = [
 name = "iceoryx2-bb-trait-tests"
 version = "0.8.999"
 dependencies = [
- "generic-tests",
- "iceoryx2-bb-container",
- "iceoryx2-bb-elementary",
- "iceoryx2-bb-elementary-traits",
- "iceoryx2-bb-lock-free",
  "iceoryx2-bb-loggers",
- "iceoryx2-bb-memory",
- "iceoryx2-bb-system-types",
+ "iceoryx2-bb-testing",
  "iceoryx2-bb-trait-tests-common",
- "iceoryx2-cal",
 ]
 
 [[package]]
@@ -1790,10 +1795,13 @@ version = "0.8.999"
 dependencies = [
  "iceoryx2-bb-container",
  "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-lock-free",
  "iceoryx2-bb-loggers",
  "iceoryx2-bb-memory",
+ "iceoryx2-bb-system-types",
  "iceoryx2-bb-testing",
  "iceoryx2-bb-testing-macros",
+ "iceoryx2-cal",
  "iceoryx2-pal-print",
 ]
 

@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 use core::time::Duration;
 
 use iceoryx2_bb_concurrency::atomic::{AtomicU32, Ordering};
@@ -17,7 +19,9 @@ use iceoryx2_bb_concurrency::internal::strategy::semaphore::*;
 use iceoryx2_bb_concurrency::{WaitAction, WaitResult};
 use iceoryx2_bb_posix::{clock::nanosleep, thread::thread_scope};
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::inventory_test;
 
+#[inventory_test]
 pub fn strategy_semaphore_post_and_try_wait_works() {
     let initial_value = 5;
     let sut = Semaphore::new(initial_value);
@@ -35,6 +39,7 @@ pub fn strategy_semaphore_post_and_try_wait_works() {
     assert_that!(sut.try_wait(), eq WaitResult::Interrupted);
 }
 
+#[inventory_test]
 pub fn strategy_semaphore_post_and_wait_works() {
     let initial_value = 5;
     let sut = Semaphore::new(initial_value);
@@ -52,6 +57,7 @@ pub fn strategy_semaphore_post_and_wait_works() {
     assert_that!(sut.wait(|_, _| WaitAction::Abort), eq WaitResult::Interrupted);
 }
 
+#[inventory_test]
 pub fn strategy_semaphore_wait_blocks() {
     const TIMEOUT: Duration = Duration::from_millis(25);
 

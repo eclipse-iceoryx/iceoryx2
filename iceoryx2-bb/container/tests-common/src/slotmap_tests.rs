@@ -10,18 +10,22 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 use alloc::vec;
 
 use iceoryx2_bb_container::slotmap::*;
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::memory::RawMemory;
+use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_bb_testing_macros::requires_std;
 
 const SUT_CAPACITY: usize = 128;
 type Sut = SlotMap<usize>;
 type FixedSizeSut = FixedSizeSlotMap<usize, SUT_CAPACITY>;
 
+#[inventory_test]
 pub fn new_slotmap_is_empty() {
     let sut = Sut::new(SUT_CAPACITY);
 
@@ -31,6 +35,7 @@ pub fn new_slotmap_is_empty() {
     assert_that!(sut.capacity(), eq SUT_CAPACITY);
 }
 
+#[inventory_test]
 pub fn new_fixed_size_slotmap_is_empty() {
     let sut = FixedSizeSut::new();
 
@@ -40,6 +45,7 @@ pub fn new_fixed_size_slotmap_is_empty() {
     assert_that!(sut.capacity(), eq SUT_CAPACITY);
 }
 
+#[inventory_test]
 pub fn inserting_elements_works() {
     let mut sut = FixedSizeSut::new();
 
@@ -56,6 +62,7 @@ pub fn inserting_elements_works() {
     assert_that!(sut.insert(123), is_none);
 }
 
+#[inventory_test]
 pub fn insert_when_full_fails() {
     let mut sut = FixedSizeSut::new();
 
@@ -66,6 +73,7 @@ pub fn insert_when_full_fails() {
     assert_that!(sut.insert(34), is_none);
 }
 
+#[inventory_test]
 pub fn removing_elements_works() {
     let mut sut = FixedSizeSut::new();
     let mut keys = vec![];
@@ -90,12 +98,14 @@ pub fn removing_elements_works() {
     assert_that!(sut.is_empty(), eq true);
 }
 
+#[inventory_test]
 pub fn removing_out_of_bounds_key_returns_false() {
     let mut sut = FixedSizeSut::new();
 
     assert_that!(sut.remove(SlotMapKey::new(SUT_CAPACITY + 1)), eq None);
 }
 
+#[inventory_test]
 pub fn insert_at_works() {
     let mut sut = FixedSizeSut::new();
 
@@ -107,6 +117,7 @@ pub fn insert_at_works() {
     assert_that!(*sut.get(key).unwrap(), eq value);
 }
 
+#[inventory_test]
 pub fn insert_at_and_remove_adjust_map_len_correctly() {
     let mut sut = FixedSizeSut::new();
 
@@ -126,6 +137,7 @@ pub fn insert_at_and_remove_adjust_map_len_correctly() {
     assert_that!(sut.len(), eq 0);
 }
 
+#[inventory_test]
 pub fn insert_does_not_use_insert_at_indices() {
     let mut sut = FixedSizeSut::new();
 
@@ -143,12 +155,14 @@ pub fn insert_does_not_use_insert_at_indices() {
     assert_that!(sut.insert(0), is_none);
 }
 
+#[inventory_test]
 pub fn insert_at_out_of_bounds_key_returns_false() {
     let mut sut = FixedSizeSut::new();
     let key = SlotMapKey::new(SUT_CAPACITY + 1);
     assert_that!(sut.insert_at(key, 781), eq false);
 }
 
+#[inventory_test]
 pub fn iterating_works() {
     let mut sut = FixedSizeSut::new();
     let mut keys = vec![];
@@ -162,6 +176,7 @@ pub fn iterating_works() {
     }
 }
 
+#[inventory_test]
 pub fn insert_remove_and_insert_works() {
     let mut sut = FixedSizeSut::new();
 
@@ -187,6 +202,7 @@ pub fn insert_remove_and_insert_works() {
     }
 }
 
+#[inventory_test]
 pub fn next_free_key_returns_key_used_for_insert() {
     let mut sut = FixedSizeSut::new();
     let mut keys = vec![];
@@ -200,6 +216,7 @@ pub fn next_free_key_returns_key_used_for_insert() {
     assert_that!(sut.insert(0), eq next_key);
 }
 
+#[inventory_test]
 pub fn next_free_key_returns_none_when_full() {
     let mut sut = FixedSizeSut::new();
     let mut keys = vec![];
@@ -212,6 +229,7 @@ pub fn next_free_key_returns_none_when_full() {
     assert_that!(next_key, is_none);
 }
 
+#[inventory_test]
 pub fn placement_default_works() {
     let mut sut = RawMemory::<FixedSizeSut>::new_zeroed();
     unsafe { FixedSizeSut::placement_default(sut.as_mut_ptr()) };
@@ -220,7 +238,9 @@ pub fn placement_default_works() {
     assert_that!(res, is_some);
 }
 
+#[inventory_test]
 #[requires_std("panics")]
+#[should_panic]
 pub fn double_init_call_causes_panic() {
     use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 
@@ -234,7 +254,10 @@ pub fn double_init_call_causes_panic() {
     unsafe { sut.init(&bump_allocator).expect("sut init failed") };
 }
 
+#[inventory_test]
 #[requires_std("panics")]
+#[cfg(debug_assertions)]
+#[should_panic]
 pub fn panic_is_called_in_debug_mode_if_map_is_not_initialized() {
     let mut sut = unsafe { RelocatableSlotMap::<u8>::new_uninit(SUT_CAPACITY) };
     unsafe { sut.insert(1) };

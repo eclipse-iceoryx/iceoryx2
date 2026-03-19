@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 use alloc::string::ToString;
 
 use iceoryx2_bb_container::semantic_string::SemanticString;
@@ -24,6 +26,7 @@ use iceoryx2_bb_posix::{
 };
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::inventory_test;
 
 fn generate_file_name() -> FilePath {
     create_test_directory();
@@ -40,6 +43,7 @@ fn generate_file_name() -> FilePath {
     FilePath::from_path_and_file(&TEST_DIRECTORY, &file).unwrap()
 }
 
+#[inventory_test]
 pub fn memory_mapping_mapping_anonymous_memory_works() {
     let memory_size: usize = SystemInfo::PageSize.value() * 2;
     let mut sut = MemoryMappingBuilder::from_anonymous()
@@ -59,6 +63,7 @@ pub fn memory_mapping_mapping_anonymous_memory_works() {
     assert_that!(sut.file_path(), is_none);
 }
 
+#[inventory_test]
 pub fn memory_mapping_setting_permission_to_read_works() {
     let memory_size: usize = SystemInfo::PageSize.value() * 2;
     let mut sut = MemoryMappingBuilder::from_anonymous()
@@ -88,6 +93,7 @@ pub fn memory_mapping_setting_permission_to_read_works() {
     }
 }
 
+#[inventory_test]
 pub fn memory_mapping_mapping_file_works() {
     let memory_size: usize = SystemInfo::PageSize.value() * 2;
     let file_path = generate_file_name();
@@ -120,6 +126,7 @@ pub fn memory_mapping_mapping_file_works() {
     assert_that!(*sut.file_path(), eq Some(file_path));
 }
 
+#[inventory_test]
 pub fn memory_mapping_mapping_file_descriptor_works() {
     let memory_size: usize = SystemInfo::PageSize.value() * 2;
     let file_path = generate_file_name();
@@ -154,6 +161,7 @@ pub fn memory_mapping_mapping_file_descriptor_works() {
     assert_that!(sut.file_path(), is_none);
 }
 
+#[inventory_test]
 pub fn memory_mapping_mapping_size_of_zero_fails() {
     let sut = MemoryMappingBuilder::from_anonymous()
         .initial_mapping_permission(MappingPermission::ReadWrite)
@@ -162,6 +170,7 @@ pub fn memory_mapping_mapping_size_of_zero_fails() {
     assert_that!(sut.err(), eq Some(MemoryMappingCreationError::MappingSizeIsZero));
 }
 
+#[inventory_test]
 pub fn memory_mapping_update_permissions_offset_fails_when_offset_is_not_multiple_of_page_size() {
     let memory_size: usize = SystemInfo::PageSize.value() * 2;
     let mut sut = MemoryMappingBuilder::from_anonymous()
@@ -178,6 +187,7 @@ pub fn memory_mapping_update_permissions_offset_fails_when_offset_is_not_multipl
     assert_that!(result.err(), eq Some(MemoryMappingPermissionUpdateError::RegionOffsetNotAlignedToPageSize));
 }
 
+#[inventory_test]
 pub fn memory_mapping_update_permissions_offset_fails_when_size_is_not_multiple_of_page_size() {
     let memory_size: usize = SystemInfo::PageSize.value() * 2;
     let mut sut = MemoryMappingBuilder::from_anonymous()
@@ -194,6 +204,7 @@ pub fn memory_mapping_update_permissions_offset_fails_when_size_is_not_multiple_
     assert_that!(result.err(), eq Some(MemoryMappingPermissionUpdateError::SizeNotAlignedToPageSize));
 }
 
+#[inventory_test]
 pub fn memory_mapping_update_permissions_offset_fails_when_size_is_zero() {
     let memory_size: usize = SystemInfo::PageSize.value() * 2;
     let mut sut = MemoryMappingBuilder::from_anonymous()
@@ -207,6 +218,7 @@ pub fn memory_mapping_update_permissions_offset_fails_when_size_is_zero() {
     assert_that!(result.err(), eq Some(MemoryMappingPermissionUpdateError::RegionSizeIsZero));
 }
 
+#[inventory_test]
 pub fn memory_mapping_update_permissions_offset_fails_when_range_is_greater_than_mapped_range() {
     let memory_size: usize = SystemInfo::PageSize.value() * 2;
     let mut sut = MemoryMappingBuilder::from_anonymous()
@@ -223,6 +235,7 @@ pub fn memory_mapping_update_permissions_offset_fails_when_range_is_greater_than
     assert_that!(result.err(), eq Some(MemoryMappingPermissionUpdateError::InvalidAddressRange));
 }
 
+#[inventory_test]
 pub fn memory_mapping_fails_when_it_is_not_mapped_to_address_hint() {
     let memory_size: usize = SystemInfo::PageSize.value() * 2;
     let sut = MemoryMappingBuilder::from_anonymous()

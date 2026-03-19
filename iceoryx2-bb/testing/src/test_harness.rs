@@ -77,7 +77,10 @@ pub fn expect_panic(
 macro_rules! test_harness {
     () => {
         pub fn main() {
-            let args = $crate::libtest_mimic::Arguments::from_args();
+            let mut args = $crate::libtest_mimic::Arguments::from_args();
+            args.test_threads
+                .get_or_insert($crate::DEFAULT_TEST_THREADS);
+
             let tests = $crate::inventory::iter::<$crate::TestCase>()
                 .map(|test_case| {
                     let test_fn = test_case.test_fn;
@@ -92,6 +95,7 @@ macro_rules! test_harness {
                             Ok(())
                         }
                     })
+                    .with_ignored_flag(test_case.should_ignore)
                 })
                 .collect::<Vec<_>>();
             $crate::libtest_mimic::run(&args, tests).exit();
@@ -147,6 +151,11 @@ macro_rules! test_harness {
                 $crate::internal::cout!("test ");
                 $crate::internal::cout!("{}", test.name);
                 $crate::internal::cout!(" ... ");
+
+                if test.should_ignore {
+                    $crate::internal::coutln!("ignored");
+                    continue;
+                }
 
                 (test.test_fn)();
 

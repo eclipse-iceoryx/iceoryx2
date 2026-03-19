@@ -10,9 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 use iceoryx2_bb_posix::memory::*;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::inventory_test;
 
+#[inventory_test]
 pub fn memory_allocate_and_deallocate_works() -> Result<(), MemoryError> {
     const MEM_SIZE: usize = 1024;
     const MEM_ALIGN: usize = 256;
@@ -37,6 +41,7 @@ pub fn memory_allocate_and_deallocate_works() -> Result<(), MemoryError> {
     Ok(())
 }
 
+#[inventory_test]
 pub fn memory_allocating_memory_with_size_of_zero_fails() {
     const MEM_SIZE: usize = 0;
     const MEM_ALIGN: usize = 256;
@@ -44,6 +49,7 @@ pub fn memory_allocating_memory_with_size_of_zero_fails() {
     assert_that!(heap::allocate(layout), is_err);
 }
 
+#[inventory_test]
 pub fn memory_allocate_zeroed_and_free_works() -> Result<(), MemoryError> {
     const MEM_SIZE: usize = 1024;
     const MEM_ALIGN: usize = 256;
@@ -68,6 +74,7 @@ pub fn memory_allocate_zeroed_and_free_works() -> Result<(), MemoryError> {
     Ok(())
 }
 
+#[inventory_test]
 pub fn memory_allocating_zeroed_memory_with_size_of_zero_fails() {
     const MEM_SIZE: usize = 0;
     const MEM_ALIGN: usize = 8;
@@ -75,6 +82,7 @@ pub fn memory_allocating_zeroed_memory_with_size_of_zero_fails() {
     assert_that!(heap::allocate_zeroed(layout), is_err);
 }
 
+#[inventory_test]
 pub fn memory_increasing_memory_keeps_content() -> Result<(), MemoryError> {
     const MEM_SIZE: usize = 1024;
     const MEM_ALIGN: usize = 1;
@@ -115,6 +123,7 @@ pub fn memory_increasing_memory_keeps_content() -> Result<(), MemoryError> {
     Ok(())
 }
 
+#[inventory_test]
 pub fn memory_decreasing_memory_keeps_content() -> Result<(), MemoryError> {
     const MEM_SIZE: usize = 1024;
     const MEM_ALIGN: usize = 1;
@@ -155,6 +164,7 @@ pub fn memory_decreasing_memory_keeps_content() -> Result<(), MemoryError> {
     Ok(())
 }
 
+#[inventory_test]
 pub fn memory_decreasing_memory_to_zero_fails() -> Result<(), MemoryError> {
     const MEM_SIZE: usize = 1024;
     const MEM_ALIGN: usize = 1;
@@ -179,6 +189,7 @@ pub fn memory_decreasing_memory_to_zero_fails() -> Result<(), MemoryError> {
     Ok(())
 }
 
+#[inventory_test]
 pub fn memory_resize_memory_with_increased_alignment_fails() -> Result<(), MemoryError> {
     const MEM_SIZE: usize = 1024;
     const MEM_ALIGN: usize = 1;

@@ -31,8 +31,12 @@ iceoryx2-bb-concurrency = { workspace = true }
 serde = { workspace = true }
 
 [dev-dependencies]
-iceoryx2-bb-loggers = { workspace = true }
+iceoryx2-bb-loggers = { workspace = true, features = ["std"] }
 iceoryx2-bb-container-tests-common = { workspace = true, features = ["std"] }
+iceoryx2-bb-testing = { workspace = true, features = ["std"] }
 
-generic-tests = { workspace = true }
 serde_test = { workspace = true }
+
+[[test]]
+name = "main"
+harness = false

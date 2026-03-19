@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::math::ToB64;
 use iceoryx2_bb_posix::config::*;
@@ -24,12 +26,16 @@ use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
+use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::inventory_test_generic;
 use iceoryx2_pal_posix::posix::{POSIX_SUPPORT_PERMISSIONS, POSIX_SUPPORT_USERS_AND_GROUPS};
 
+#[inventory_test]
 pub fn file_descriptor_smaller_zero_is_invalid() {
     assert_that!(FileDescriptor::new(-12), eq None);
 }
 
+#[inventory_test]
 pub fn file_descriptor_with_arbitrary_number_greater_equal_zero_is_invalid() {
     assert_that!(FileDescriptor::new(431), is_none);
     assert_that!(FileDescriptor::new(981), is_none);
@@ -73,6 +79,7 @@ impl GenericTestBuilder for SharedMemory {
     }
 }
 
+#[inventory_test_generic(File, SharedMemory)]
 pub fn file_descriptor_owner_handling_works<Sut: GenericTestBuilder + FileDescriptorManagement>() {
     test_requires!(POSIX_SUPPORT_USERS_AND_GROUPS);
 
@@ -94,6 +101,7 @@ pub fn file_descriptor_owner_handling_works<Sut: GenericTestBuilder + FileDescri
     assert_that!(ownership.gid(), eq gid);
 }
 
+#[inventory_test_generic(File, SharedMemory)]
 pub fn file_descriptor_permission_handling_works<
     Sut: GenericTestBuilder + FileDescriptorManagement,
 >() {
@@ -115,6 +123,7 @@ pub fn file_descriptor_permission_handling_works<
     assert_that!(permission, eq rw_all);
 }
 
+#[inventory_test_generic(File, SharedMemory)]
 pub fn file_descriptor_metadata_handling_works<
     Sut: GenericTestBuilder + FileDescriptorManagement,
 >() {

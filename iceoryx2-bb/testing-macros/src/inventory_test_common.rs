@@ -35,11 +35,10 @@ pub fn type_string(type_spec: &str) -> String {
         .replace(';', "_")
 }
 
-pub fn extract_should_ignore(macro_parameters: &TokenStream) -> bool {
-    macro_parameters
-        .to_string()
-        .split(',')
-        .any(|s| s.trim() == "ignore")
+pub fn extract_should_ignore(test_function_attributes: &[Attribute]) -> bool {
+    test_function_attributes
+        .iter()
+        .any(|attr| attr.path().is_ident("ignore"))
 }
 
 #[derive(Clone)]
@@ -48,8 +47,8 @@ pub enum ShouldPanic {
     Yes(Option<String>),
 }
 
-pub fn extract_should_panic(attributes: &[Attribute]) -> ShouldPanic {
-    let found = attributes
+pub fn extract_should_panic(test_function_attributes: &[Attribute]) -> ShouldPanic {
+    let found = test_function_attributes
         .iter()
         .find(|attr| attr.path().is_ident("should_panic"));
 
@@ -87,7 +86,7 @@ pub fn strip_attributes(test_function: &ItemFn) -> TokenStream {
     let mut test_function_clone = test_function.clone();
     test_function_clone
         .attrs
-        .retain(|attr| !attr.path().is_ident("should_panic"));
+        .retain(|attr| !attr.path().is_ident("should_panic") && !attr.path().is_ident("ignore"));
     quote! {
         #[allow(dead_code)]
         #test_function_clone
@@ -100,12 +99,12 @@ pub fn strip_attributes(test_function: &ItemFn) -> TokenStream {
 /// times with different parameters.
 pub fn generate_wrapper_identifier(
     test_function_name: &Ident,
-    test_funtion_name_suffix: &str,
+    test_function_name_suffix: &str,
 ) -> Ident {
     Ident::new(
         &format!(
             "__inventory_test_{}_{}",
-            test_function_name, test_funtion_name_suffix
+            test_function_name, test_function_name_suffix
         ),
         test_function_name.span(),
     )
@@ -115,21 +114,11 @@ pub fn generate_wrapper_identifier(
 ///
 /// If the test is generic, instantiates the test function with the provided
 /// generic parameters. If not generic, the test function is called as-is.
-///
-/// When `ignored` is `true`, the body emits a skip message instead of calling
-/// the test function.
 pub fn generate_wrapper_body(
     test_function_name: &Ident,
     test_function_signature: &Signature,
     generic_parameters: Option<Vec<TokenStream>>,
-    ignored: bool,
 ) -> TokenStream {
-    if ignored {
-        return quote! {
-            iceoryx2_pal_print::cerr!("[IGNORED] ");
-        };
-    }
-
     let call = if let Some(generic) = generic_parameters {
         quote! { #test_function_name::<#(#generic),*>() }
     } else {
@@ -147,12 +136,14 @@ pub fn generate_wrapper_body(
     }
 }
 
+// TODO: Separate generation of wrapper and generation of inventory submission.
 /// Generate the inventory submission code for a test.
 ///
-/// Creates a wrapper function that calls the test and submits it to the inventory system.
+/// Creates a wrapper function that calls the test and submits it to the inventory.
 pub fn generate_inventory_submission(
     test_name: String,
     should_panic: ShouldPanic,
+    should_ignore: bool,
     wrapper_name: Ident,
     wrapper_body: TokenStream,
 ) -> TokenStream {
@@ -172,6 +163,7 @@ pub fn generate_inventory_submission(
             ::iceoryx2_bb_testing::TestCase {
                 name: #test_name,
                 test_fn: #wrapper_name,
+                should_ignore: #should_ignore,
                 should_panic: #should_panic,
                 should_panic_message: #should_panic_message,
             }

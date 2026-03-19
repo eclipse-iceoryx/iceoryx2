@@ -10,9 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 use iceoryx2_bb_elementary::cyclic_tagger::*;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::inventory_test;
 
+#[inventory_test]
 pub fn create_tag_works() {
     let sut = CyclicTagger::new();
     let sut_tag = sut.create_tag();
@@ -20,6 +24,7 @@ pub fn create_tag_works() {
     assert_that!(sut_tag.was_tagged_by(&sut), eq true);
 }
 
+#[inventory_test]
 pub fn create_untagged_tag_works() {
     let sut = CyclicTagger::new();
     let sut_tag = sut.create_untagged_tag();
@@ -27,6 +32,7 @@ pub fn create_untagged_tag_works() {
     assert_that!(sut_tag.was_tagged_by(&sut), eq false);
 }
 
+#[inventory_test]
 pub fn tagging_after_new_cyclic_works() {
     let sut = CyclicTagger::new();
     let sut_tag_1 = sut.create_tag();

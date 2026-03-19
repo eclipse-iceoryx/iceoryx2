@@ -14,9 +14,7 @@
 #![cfg_attr(not(feature = "std"), no_main)]
 
 extern crate iceoryx2_bb_loggers;
-
-mod relocatable_container_tests;
-mod semantic_string_tests;
+extern crate iceoryx2_bb_trait_tests_common;
 
 use core::{
     alloc::{GlobalAlloc, Layout},

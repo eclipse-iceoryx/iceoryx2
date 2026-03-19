@@ -17,16 +17,20 @@ workspace = true
 default = []
 
 std = [
-  "iceoryx2-bb-threadsafe/std",  
-  "iceoryx2-bb-concurrency/std",  
-  "iceoryx2-bb-posix/std",  
+  "iceoryx2-bb-loggers/std",
+  "iceoryx2-bb-concurrency/std",
+  "iceoryx2-bb-posix/std",
+  "iceoryx2-bb-testing-macros/std",
   "iceoryx2-bb-testing/std",
-  "iceoryx2-pal-print/std",  
+  "iceoryx2-bb-threadsafe/std",
+  "iceoryx2-pal-print/std",
 ]
 
 [dependencies]
+iceoryx2-bb-loggers = { workspace = true }
 iceoryx2-bb-threadsafe = { workspace = true }
 iceoryx2-bb-concurrency = { workspace = true }
 iceoryx2-bb-posix = { workspace = true }
 iceoryx2-bb-testing = { workspace = true }
 iceoryx2-pal-print = { workspace = true }
+iceoryx2-bb-testing-macros = { workspace = true }

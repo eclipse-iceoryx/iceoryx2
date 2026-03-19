@@ -10,9 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;
+extern crate iceoryx2_bb_loggers;
 
 pub mod flatmap_tests;
 pub mod polymorphic_string_tests;

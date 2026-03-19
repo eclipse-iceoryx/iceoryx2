@@ -10,11 +10,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 use core::{alloc::Layout, ptr::NonNull};
 
 use iceoryx2_bb_memory::heap_allocator::*;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::inventory_test;
 
+#[inventory_test]
 pub fn heap_allocator_allocate_deallocate_works() {
     const MEM_SIZE: usize = 1024;
     const MEM_ALIGN: usize = 256;
@@ -38,6 +42,7 @@ pub fn heap_allocator_allocate_deallocate_works() {
     };
 }
 
+#[inventory_test]
 pub fn heap_allocator_allocating_memory_with_size_of_zero_fails() {
     const MEM_SIZE: usize = 0;
     const MEM_ALIGN: usize = 256;
@@ -46,6 +51,7 @@ pub fn heap_allocator_allocating_memory_with_size_of_zero_fails() {
     assert_that!(sut.allocate(layout), is_err);
 }
 
+#[inventory_test]
 pub fn heap_allocator_allocate_zeroed_and_free_works() {
     const MEM_SIZE: usize = 1024;
     const MEM_ALIGN: usize = 256;
@@ -69,6 +75,7 @@ pub fn heap_allocator_allocate_zeroed_and_free_works() {
     };
 }
 
+#[inventory_test]
 pub fn heap_allocator_allocating_zeroed_memory_with_size_of_zero_fails() {
     const MEM_SIZE: usize = 0;
     const MEM_ALIGN: usize = 8;
@@ -77,6 +84,7 @@ pub fn heap_allocator_allocating_zeroed_memory_with_size_of_zero_fails() {
     assert_that!(sut.allocate_zeroed(layout), is_err);
 }
 
+#[inventory_test]
 pub fn heap_allocator_grow_memory_keeps_content() {
     const MEM_SIZE: usize = 1024;
     const MEM_ALIGN: usize = 1;
@@ -117,6 +125,7 @@ pub fn heap_allocator_grow_memory_keeps_content() {
     };
 }
 
+#[inventory_test]
 pub fn heap_allocator_shrink_memory_keeps_content() {
     const MEM_SIZE: usize = 1024;
     const MEM_ALIGN: usize = 1;
@@ -157,6 +166,7 @@ pub fn heap_allocator_shrink_memory_keeps_content() {
     };
 }
 
+#[inventory_test]
 pub fn heap_allocator_shrink_memory_to_zero_fails() -> Result<(), AllocationError> {
     const MEM_SIZE: usize = 1024;
     const MEM_ALIGN: usize = 1;
@@ -182,6 +192,7 @@ pub fn heap_allocator_shrink_memory_to_zero_fails() -> Result<(), AllocationErro
     Ok(())
 }
 
+#[inventory_test]
 pub fn heap_allocator_grow_memory_with_increased_alignment_fails() -> Result<(), AllocationError> {
     const MEM_SIZE: usize = 1024;
     const MEM_ALIGN: usize = 1;

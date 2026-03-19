@@ -21,23 +21,29 @@ use crate::inventory_test_common::{
 /// Registers the annotated function to the inventory to be executed by the
 /// test runner.
 ///
-/// Accepts an optional `ignore` parameter to skip the test at runtime:
+/// Combine with `#[ignore]` to skip the test at runtime:
 ///
 /// ```ignore
-/// #[inventory_test(ignore)]
+/// #[ignore]
+/// #[inventory_test]
 /// fn my_test() { ... }
+///
+/// #[ignore]
+/// #[inventory_test]
+/// fn my_ignored_test() { ... }
 /// ```
 #[allow(clippy::disallowed_types)]
 pub fn proc_macro(
-    macro_parameters: proc_macro::TokenStream,
+    _macro_parameters: proc_macro::TokenStream,
     test_function: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
     let test_function = parse_macro_input!(test_function as ItemFn);
+    let test_function_attributes = &test_function.attrs;
     let test_function_name = &test_function.sig.ident;
     let test_function_signature = &test_function.sig;
 
-    let should_ignore = extract_should_ignore(&macro_parameters.into());
-    let should_panic = extract_should_panic(&test_function.attrs);
+    let should_ignore = extract_should_ignore(test_function_attributes);
+    let should_panic = extract_should_panic(test_function_attributes);
 
     let mut generated = vec![];
     // Include the original function to be called by the wrapper
@@ -47,17 +53,14 @@ pub fn proc_macro(
     // This is required to handle test functions that e.g. return Result
     // so they can be handled by the test runner
     let wrapper_function_name = generate_wrapper_identifier(test_function_name, "");
-    let wrapper_function_body = generate_wrapper_body(
-        test_function_name,
-        test_function_signature,
-        None,
-        should_ignore,
-    );
+    let wrapper_function_body =
+        generate_wrapper_body(test_function_name, test_function_signature, None);
 
     // Generate inventory submission
     let wrapper_function = generate_inventory_submission(
         test_function_name.to_string(),
         should_panic,
+        should_ignore,
         wrapper_function_name,
         wrapper_function_body,
     );

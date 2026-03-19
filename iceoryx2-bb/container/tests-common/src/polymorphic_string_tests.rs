@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 use alloc::boxed::Box;
 
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
@@ -17,6 +19,7 @@ use iceoryx2_bb_container::string::*;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary_traits::allocator::AllocationError;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::inventory_test;
 
 const SUT_CAPACITY: usize = 256;
 
@@ -55,6 +58,7 @@ impl Test {
     }
 }
 
+#[inventory_test]
 pub fn try_clone_clones_empty_string() {
     let test = Test::new();
     let sut = test.create_sut(3).unwrap();
@@ -67,6 +71,7 @@ pub fn try_clone_clones_empty_string() {
     assert_that!(sut_clone.capacity(), eq 3);
 }
 
+#[inventory_test]
 pub fn try_clone_clones_filled_string() {
     let test = Test::new();
     let mut sut = test.create_sut(99).unwrap();

@@ -10,6 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
+use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_bb_testing_macros::requires_std;
 
 #[cfg(feature = "std")]
@@ -27,6 +30,7 @@ mod internal {
     pub use iceoryx2_bb_testing::{assert_that, watchdog::Watchdog};
 }
 
+#[inventory_test]
 #[requires_std("threading")]
 pub fn unique_system_id_is_unique() {
     let sut1 = UniqueSystemId::new().unwrap();
@@ -48,6 +52,7 @@ pub fn unique_system_id_is_unique() {
     assert_that!(sut1.creation_time().seconds() + 3, ge sut3.creation_time().seconds());
 }
 
+#[inventory_test]
 #[requires_std("threading")]
 pub fn unique_system_id_concurrently_created_ids_are_unique() {
     let _watchdog = Watchdog::new();

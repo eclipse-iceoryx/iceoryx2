@@ -10,19 +10,25 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 use iceoryx2_bb_system_types::port::*;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::inventory_test;
 
+#[inventory_test]
 pub fn port_set_works() {
     assert_that!(Port::new(54321).as_u16(), eq 54321);
 }
 
+#[inventory_test]
 pub fn port_is_unspecified_works() {
     assert_that!(UNSPECIFIED.is_unspecified(), eq true);
     assert_that!(UNSPECIFIED, eq Port::new(0));
     assert_that!(Port::new(143).is_unspecified(), eq false);
 }
 
+#[inventory_test]
 pub fn port_is_system_works() {
     assert_that!(Port::new(1).is_system(), eq true);
     assert_that!(Port::new(1023).is_system(), eq true);
@@ -30,6 +36,7 @@ pub fn port_is_system_works() {
     assert_that!(Port::new(1493).is_system(), eq false);
 }
 
+#[inventory_test]
 pub fn port_is_registered_works() {
     assert_that!(Port::new(1024).is_registered(), eq true);
     assert_that!(Port::new(49151).is_registered(), eq true);
@@ -37,6 +44,7 @@ pub fn port_is_registered_works() {
     assert_that!(Port::new(51493).is_registered(), eq false);
 }
 
+#[inventory_test]
 pub fn port_is_dynamic_works() {
     assert_that!(Port::new(49152).is_dynamic(), eq true);
     assert_that!(Port::new(65535).is_dynamic(), eq true);
@@ -44,10 +52,12 @@ pub fn port_is_dynamic_works() {
     assert_that!(Port::new(5193).is_dynamic(), eq false);
 }
 
+#[inventory_test]
 pub fn port_try_from_str_work() {
     assert_that!(Port::try_from("1234"), eq Ok(Port::new(1234)));
 }
 
+#[inventory_test]
 pub fn port_try_from_str_with_invalid_integer_fails() {
     assert_that!(Port::try_from("12huh"), is_err);
 }

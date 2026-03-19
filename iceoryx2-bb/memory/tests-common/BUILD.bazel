@@ -12,7 +12,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test_suite")
+load("@rules_rust//rust:defs.bzl", "rust_library")
 
 filegroup(
     name = "all_srcs",
@@ -33,6 +33,7 @@ rust_library(
         "//iceoryx2-bb/memory:iceoryx2-bb-memory",
         "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
         "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
+        "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
         "//iceoryx2-pal/print:iceoryx2-pal-print",
     ],

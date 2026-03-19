@@ -10,10 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_system_types::user_name::*;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::inventory_test;
 
+#[inventory_test]
 pub fn user_name_new_with_illegal_name_fails() {
     let sut = UserName::new(b"");
     assert_that!(sut, is_err);
@@ -28,6 +32,7 @@ pub fn user_name_new_with_illegal_name_fails() {
     assert_that!(sut, is_err);
 }
 
+#[inventory_test]
 pub fn user_name_new_with_legal_name_works() {
     let sut = UserName::new(b"abcdefghijklmnopqrstuvwxyz-0123");
     assert_that!(sut, is_ok);

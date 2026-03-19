@@ -10,12 +10,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 use alloc::format;
 
 use iceoryx2_bb_posix::access_mode::*;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_pal_posix::*;
 
+#[inventory_test]
 pub fn access_mode_prot_flag_conversion_works() {
     assert_that!(AccessMode::None.as_protflag(), eq posix::PROT_NONE);
     assert_that!(AccessMode::Read.as_protflag(), eq posix::PROT_READ);
@@ -26,6 +30,7 @@ pub fn access_mode_prot_flag_conversion_works() {
     );
 }
 
+#[inventory_test]
 pub fn access_mode_o_flag_conversion_works() {
     assert_that!(AccessMode::None.as_oflag(), eq 0);
     assert_that!(AccessMode::Read.as_oflag(), eq posix::O_RDONLY);
@@ -33,6 +38,7 @@ pub fn access_mode_o_flag_conversion_works() {
     assert_that!(AccessMode::ReadWrite.as_oflag(), eq posix::O_RDWR);
 }
 
+#[inventory_test]
 pub fn access_mode_display_works() {
     assert_that!(format!("{}", AccessMode::None), eq "AccessMode::None");
     assert_that!(format!("{}", AccessMode::Read), eq "AccessMode::Read");

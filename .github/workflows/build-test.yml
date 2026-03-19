@@ -440,7 +440,7 @@ jobs:
           artifact-upload-name: ${{ runner.os }}-grcov
 
   coverage:
-    needs: grcov
+    needs: [grcov, cargo-nextest]
     uses: ./.github/workflows/reuse_coverage.yml
 
   # Have a sync point for all CI jobs that need to pass, will be enforced by Otterdog

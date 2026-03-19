@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 extern crate alloc;
 
 use core::time::Duration;
@@ -17,10 +19,12 @@ use core::time::Duration;
 use iceoryx2_bb_posix::clock::*;
 use iceoryx2_bb_posix::mutex::*;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_bb_testing_macros::requires_std;
 
 const TIMEOUT: Duration = Duration::from_millis(100);
 
+#[inventory_test]
 pub fn mutex_lock_works() {
     let handle = MutexHandle::<i32>::new();
     let sut = MutexBuilder::new().create(123, &handle).unwrap();
@@ -34,6 +38,7 @@ pub fn mutex_lock_works() {
     assert_that!(*value, eq 456);
 }
 
+#[inventory_test]
 pub fn mutex_try_lock_works() {
     let handle = MutexHandle::<i32>::new();
     let sut = MutexBuilder::new().create(789, &handle).unwrap();
@@ -47,6 +52,7 @@ pub fn mutex_try_lock_works() {
     assert_that!(*value, eq 321);
 }
 
+#[inventory_test]
 #[requires_std("threading")]
 pub fn mutex_try_lock_leads_to_blocked_mutex() {
     let handle = MutexHandle::<i32>::new();
@@ -71,6 +77,7 @@ pub fn mutex_try_lock_leads_to_blocked_mutex() {
     });
 }
 
+#[inventory_test]
 #[requires_std("threading")]
 pub fn mutex_timed_lock_leads_to_blocked_mutex_realtime() {
     let handle = MutexHandle::<i32>::new();
@@ -99,6 +106,7 @@ pub fn mutex_timed_lock_leads_to_blocked_mutex_realtime() {
     });
 }
 
+#[inventory_test]
 #[requires_std("threading")]
 pub fn mutex_timed_lock_leads_to_blocked_mutex_monotonic() {
     use iceoryx2_bb_posix::system_configuration::Feature;
@@ -132,6 +140,7 @@ pub fn mutex_timed_lock_leads_to_blocked_mutex_monotonic() {
     });
 }
 
+#[inventory_test]
 #[requires_std("threading")]
 pub fn mutex_try_lock_fails_when_already_locked() {
     let handle = MutexHandle::<i32>::new();
@@ -149,6 +158,7 @@ pub fn mutex_try_lock_fails_when_already_locked() {
     });
 }
 
+#[inventory_test]
 #[requires_std("threading", "synchronization")]
 pub fn mutex_timed_lock_blocks_at_least_for_timeout_realtime_clock() {
     let barrier = std::sync::Barrier::new(2);
@@ -175,6 +185,7 @@ pub fn mutex_timed_lock_blocks_at_least_for_timeout_realtime_clock() {
     });
 }
 
+#[inventory_test]
 #[requires_std("threading")]
 pub fn mutex_timed_lock_blocks_at_least_for_timeout_monotonic_clock() {
     use iceoryx2_bb_posix::system_configuration::Feature;
@@ -203,6 +214,7 @@ pub fn mutex_timed_lock_blocks_at_least_for_timeout_monotonic_clock() {
     });
 }
 
+#[inventory_test]
 pub fn mutex_multiple_ipc_mutex_are_working() {
     let handle = MutexHandle::new();
     let sut1 = MutexBuilder::new()
@@ -227,6 +239,7 @@ pub fn mutex_multiple_ipc_mutex_are_working() {
     assert_that!(guard1, is_none);
 }
 
+#[inventory_test]
 pub fn mutex_recursive_mutex_can_be_locked_multiple_times_by_same_thread() {
     let handle = MutexHandle::new();
     let sut = MutexBuilder::new()
@@ -256,6 +269,7 @@ pub fn mutex_recursive_mutex_can_be_locked_multiple_times_by_same_thread() {
     assert_that!(guard2, is_some);
 }
 
+#[inventory_test]
 #[requires_std("threading", "synchronization", "watchdog")]
 pub fn mutex_recursive_does_not_unlock_in_the_first_unlock_call() {
     use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -291,6 +305,7 @@ pub fn mutex_recursive_does_not_unlock_in_the_first_unlock_call() {
     });
 }
 
+#[inventory_test]
 pub fn mutex_deadlock_detection_works() {
     for clock_type in ClockType::all_supported_clocks() {
         let handle = MutexHandle::new();
@@ -324,6 +339,7 @@ pub fn mutex_deadlock_detection_works() {
     }
 }
 
+#[inventory_test]
 #[requires_std("threading")]
 pub fn mutex_recursive_mutex_blocks() {
     let handle = MutexHandle::<i32>::new();
@@ -351,6 +367,7 @@ pub fn mutex_recursive_mutex_blocks() {
     });
 }
 
+#[inventory_test]
 #[requires_std("threading")]
 pub fn mutex_with_deadlock_detection_blocks() {
     let handle = MutexHandle::<i32>::new();
@@ -378,7 +395,9 @@ pub fn mutex_with_deadlock_detection_blocks() {
     });
 }
 
+#[inventory_test]
 #[requires_std("threading")]
+#[cfg(not(target_os = "nto"))]
 pub fn mutex_can_be_recovered_when_thread_died() {
     use iceoryx2_bb_testing::watchdog::Watchdog;
 
@@ -423,7 +442,9 @@ pub fn mutex_can_be_recovered_when_thread_died() {
     drop(guard);
 }
 
+#[inventory_test]
 #[requires_std("threading", "watchdog")]
+#[cfg(not(any(target_os = "macos", target_os = "nto")))]
 pub fn mutex_in_unrecoverable_state_if_state_of_leaked_mutex_is_not_repaired() {
     use iceoryx2_bb_testing::watchdog::Watchdog;
 

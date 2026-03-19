@@ -10,9 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
 #![no_std]
 
 extern crate alloc;
+extern crate iceoryx2_bb_loggers;
 
 pub mod relocatable_container_tests;
 pub mod semantic_string_tests;

@@ -13,17 +13,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(not(feature = "std"), no_main)]
 
+extern crate iceoryx2_bb_concurrency_tests_common;
 extern crate iceoryx2_bb_loggers;
-
-mod atomic_tests;
-mod lazy_lock_tests;
-mod once_tests;
-mod spin_lock_tests;
-mod strategy_barrier_tests;
-mod strategy_condition_variable_tests;
-mod strategy_mutex_tests;
-mod strategy_rwlock_tests;
-mod strategy_semaphore_tests;
 
 use core::{
     alloc::{GlobalAlloc, Layout},

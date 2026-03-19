@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 use core::time::Duration;
 
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU32, Ordering};
@@ -21,6 +23,7 @@ use iceoryx2_bb_posix::clock::nanosleep;
 use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::watchdog::Watchdog;
+use iceoryx2_bb_testing_macros::inventory_test;
 
 pub const TIMEOUT: Duration = Duration::from_millis(25);
 
@@ -68,6 +71,7 @@ impl<const NUMBER_OF_THREADS: usize> Default for ThreadInWait<NUMBER_OF_THREADS>
     }
 }
 
+#[inventory_test]
 pub fn strategy_condition_variable_notify_one_unblocks_one() {
     const NUMBER_OF_THREADS: usize = 3;
     let _watchdog = Watchdog::new();
@@ -125,6 +129,7 @@ pub fn strategy_condition_variable_notify_one_unblocks_one() {
     .expect("failed to spawn thread");
 }
 
+#[inventory_test]
 pub fn strategy_condition_variable_notify_all_unblocks_all() {
     const NUMBER_OF_THREADS: usize = 5;
     let _watchdog = Watchdog::new();
@@ -177,6 +182,7 @@ pub fn strategy_condition_variable_notify_all_unblocks_all() {
     assert_that!(counter.load(Ordering::Relaxed), eq NUMBER_OF_THREADS as u32);
 }
 
+#[inventory_test]
 pub fn strategy_condition_variable_mutex_is_locked_when_wait_returns() {
     const NUMBER_OF_THREADS: usize = 5;
 
@@ -234,6 +240,7 @@ pub fn strategy_condition_variable_mutex_is_locked_when_wait_returns() {
     .expect("failed to spawn thread");
 }
 
+#[inventory_test]
 pub fn strategy_condition_variable_wait_returns_false_when_functor_returns_false() {
     let sut = ConditionVariable::new();
     let mtx = Mutex::new();
