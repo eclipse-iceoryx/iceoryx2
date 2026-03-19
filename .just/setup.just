@@ -22,17 +22,20 @@ _setup-dispatch what:
             echo "Usage: just setup <what>"
             echo ""
             echo "  all                    setup all dependencies"
+            echo "  dev-tools              setup development tools (nextest, ...)"
             echo "  script-dependencies    setup just script dependencies"
             exit 1
             ;;
         all) just _setup-all ;;
         script-dependencies) just _setup-script-dependencies ;;
+        testing-dependencies) just _setup-testing-dependencies ;;
         *) echo "Unknown setup task: {{what}}"; exit 1 ;;
     esac
 
 [private]
 _setup-all:
     just _setup-script-dependencies
+    just _setup-testing-dependencies
 
 [private]
 _setup-script-dependencies:
@@ -110,28 +113,37 @@ _setup-script-dependencies:
         fi
     }
 
-    if _prompt_install "rust-script"; then
-        _install_rust_script
-    fi
+    for tool in rust-script jq rustfilt grcov gcovr markdownlint; do
+        install_fn="_install_${tool//-/_}"
+        if _prompt_install "$tool"; then "$install_fn"; fi
+    done
 
-    if _prompt_install "jq"; then
-        _install_jq
-    fi
+[private]
+_setup-testing-dependencies:
+    #!/usr/bin/env bash
 
-    if _prompt_install "rustfilt"; then
-        _install_rustfilt
-    fi
+    _install_cargo_nextest() {
+        cargo install cargo-nextest
+        echo "✓ cargo-nextest installed"
+    }
 
-    if _prompt_install "grcov"; then
-        _install_grcov
-    fi
+    _prompt_install() {
+        local name=$1
 
-    if _prompt_install "gcovr"; then
-        _install_gcovr
-    fi
+        if which "$name" &> /dev/null; then
+            echo "✓ $name already installed, skipping"
+            return 1
+        fi
 
-    if _prompt_install "markdownlint"; then
-        _install_markdownlint
-    fi
+        read -p "Install $name? [y/N] " confirm
+        if [[ "$confirm" == [yY] ]]; then
+            return 0
+        else
+            echo "  Skipping $name"
+            return 1
+        fi
+    }
 
-    echo "✓ Setup complete"
+    if _prompt_install "cargo-nextest"; then
+        _install_cargo_nextest
+    fi
