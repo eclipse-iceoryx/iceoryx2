@@ -247,7 +247,7 @@
 </g>
 <g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
 </g>
-	<g id="gnuplot_plot_1" ><title>'archive/benchmark_architecture_os_comparision-v0.3.dat' using (0.5*$3):0:(0.5*$3):((myBoxWidth)/2.):ytic(sprintf("%s\n{/*0.8 %s}", stringcolumn(1), stringcolumn(2)))</title>
+	<g id="gnuplot_plot_1" ><title>'archive/benchmark_architecture_os_comparison-v0.3.dat' using (0.5*$3):0:(0.5*$3):((myBoxWidth)/2.):ytic(sprintf("%s\n{/*0.8 %s}", stringcolumn(1), stringcolumn(2)))</title>
 <g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
 	<g stroke='none' shape-rendering='crispEdges'>
 		<polygon fill = 'rgb(  0,   0,   0)' fill-opacity='0.27'  points = '209.75,549.93 1025.65,549.93 1025.65,502.92 209.75,502.92 '/>
@@ -272,7 +272,7 @@
 	</g>
 	<path stroke='rgb(  0,   0,   0)' opacity='0.27'  d='M209.75,147.08 L209.75,100.08 L1267.39,100.08 L1267.39,147.08 L209.75,147.08 Z  '/></g>
 	</g>
-	<g id="gnuplot_plot_2" ><title>'benchmark_architecture_os_comparision.dat' using (0.5*$3):0:(0.5*$3):((myBoxWidth)/2.):ytic(sprintf("%s\n{/*0.8 %s}", stringcolumn(1), stringcolumn(2)))</title>
+	<g id="gnuplot_plot_2" ><title>'benchmark_architecture_os_comparison.dat' using (0.5*$3):0:(0.5*$3):((myBoxWidth)/2.):ytic(sprintf("%s\n{/*0.8 %s}", stringcolumn(1), stringcolumn(2)))</title>
 <g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
 	<g stroke='none' shape-rendering='crispEdges'>
 		<polygon fill = 'rgb( 82, 140,  25)' fill-opacity='0.73'  points = '209.75,549.93 412.83,549.93 412.83,502.92 209.75,502.92 '/>

@@ -1,6 +1,6 @@
 #!/usr/bin/gnuplot -p
 
-data_file="benchmark_mechanism_comparision_i7_13700h.dat"
+data_file="benchmark_mechanism_comparison_i7_13700h.dat"
 system_type="Arch Linux on Intel i7 13700h"
 
 color_graph_caption='#595959'
