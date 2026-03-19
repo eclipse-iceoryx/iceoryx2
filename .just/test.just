@@ -128,7 +128,7 @@ _test-workspace toolchain has_nostd target_triplet:
             exit 1
         fi
     else
-        cargo {{toolchain}} test --workspace
+        cargo {{toolchain}} nextest run --workspace
     fi
 
 [private]
@@ -158,5 +158,5 @@ _test-package package toolchain has_nostd target_triplet:
                 -Zbuild-std=core,alloc \
                 $TARGET_ARG
     else
-        cargo {{toolchain}} test --package {{package}}
+        cargo {{toolchain}} nextest run --package {{package}}
     fi
