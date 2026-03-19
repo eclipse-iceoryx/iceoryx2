@@ -16,10 +16,11 @@ workspace = true
 [features]
 default = []
 std = [
+  "iceoryx2-bb-loggers/std",
   "iceoryx2-bb-container/std",
   "iceoryx2-bb-system-types/std",
-  "iceoryx2-bb-testing/std",
   "iceoryx2-bb-testing-macros/std",
+  "iceoryx2-bb-testing/std",
 ]
 
 [dependencies]
