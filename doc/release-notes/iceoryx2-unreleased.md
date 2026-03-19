@@ -33,6 +33,9 @@
   [#1376](https://github.com/eclipse-iceoryx/iceoryx2/issues/1376)
 * Add `iox2 service hz` command with rolling-rate statistics and timeout support
   [#1383](https://github.com/eclipse-iceoryx/iceoryx2/issues/1383)
+* Release Python GIL (detach thread from python runtime) in blocking functions
+  like `listener.blocking_wait_one()`
+  [#1421](https://github.com/eclipse-iceoryx/iceoryx2/issues/1421)
 
 ### Bugfixes
 
