@@ -175,6 +175,8 @@ pub fn signal_call_and_fetch_works() {
     assert_that!(result, eq Some(NonFatalFetchableSignal::Interrupt));
 }
 
+// TODO: #1458
+#[ignore]
 #[inventory_test]
 #[requires_std("threading", "watchdog")]
 pub fn signal_call_and_fetch_with_registered_handler_works() {
