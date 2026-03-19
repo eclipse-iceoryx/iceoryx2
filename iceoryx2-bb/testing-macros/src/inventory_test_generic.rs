@@ -82,7 +82,7 @@ fn generate_for_types(
         split_on_comma(macro_parameters.clone())
             .into_iter()
             .map(|type_name| {
-                let (wrapper_function_name, wrapper_function) = generate_wrapper_function(
+                let (wrapper_function_identifier, wrapper_function) = generate_wrapper_function(
                     &test_function.sig,
                     constexprs,
                     &type_name,
@@ -92,7 +92,7 @@ fn generate_for_types(
                     generate_test_name(&test_function.sig.ident, constexprs, &type_name),
                     should_panic.clone(),
                     should_ignore,
-                    &wrapper_function_name,
+                    &wrapper_function_identifier,
                 );
 
                 (wrapper_function, inventory_submission)
@@ -115,24 +115,24 @@ fn generate_for_constexpr_type_pairs(
         split_groups(macro_parameters)
             .into_iter()
             .map(|pair| {
-                let (constexprs, type_name) = split_constexpr_and_type(pair);
+                let (constexprs, ty) = split_constexpr_and_type(pair);
                 let mut generic_params = Vec::new();
                 for constexpr in &constexprs {
                     generic_params.push(constexpr.clone());
                 }
-                generic_params.push(type_name.clone());
+                generic_params.push(ty.clone());
 
-                let (wrapper_function_name, wrapper_function) = generate_wrapper_function(
+                let (wrapper_function_identifier, wrapper_function) = generate_wrapper_function(
                     &test_function.sig,
                     &constexprs,
-                    &type_name,
+                    &ty,
                     Some(generic_params),
                 );
                 let inventory_submission = generate_inventory_submission(
-                    generate_test_name(&test_function.sig.ident, &constexprs, &type_name),
+                    generate_test_name(&test_function.sig.ident, &constexprs, &ty),
                     should_panic.clone(),
                     should_ignore,
-                    &wrapper_function_name,
+                    &wrapper_function_identifier,
                 );
 
                 (wrapper_function, inventory_submission)

@@ -60,27 +60,6 @@ pub fn extract_should_panic(test_function_attributes: &[Attribute]) -> ShouldPan
     ShouldPanic::Yes(message)
 }
 
-/// `FileName::max_len()` -> `"max_len"`, `{ 64 }` -> `"64"`
-fn constexpr_identifier_string(constexpr: &TokenStream) -> String {
-    let s = constexpr.to_string().replace(['{', '}', '(', ')', ' '], "");
-    s.split("::").last().unwrap_or(&s).to_string()
-}
-
-/// "foo::Bar<u64>" -> "Bar_u64"
-pub fn type_identifier_string(type_identifier_string: &str) -> String {
-    type_identifier_string
-        .split("::")
-        .last()
-        .unwrap_or(type_identifier_string)
-        .chars()
-        .filter_map(|c| match c {
-            '<' | ';' => Some('_'),
-            '>' | ' ' | ',' | '[' | ']' => None,
-            c => Some(c),
-        })
-        .collect()
-}
-
 /// Strips attributes handled by the test framework from the provided test
 /// function.
 pub fn strip_attributes(test_function: &ItemFn) -> TokenStream {
@@ -98,11 +77,11 @@ pub fn strip_attributes(test_function: &ItemFn) -> TokenStream {
 pub fn generate_test_name(
     test_function_identifier: &Ident,
     constexprs: &[TokenStream],
-    type_name: &TokenStream,
+    type_identifier: &TokenStream,
 ) -> String {
-    let type_name = type_name.to_string().replace(' ', "");
+    let type_string = type_identifier.to_string().replace(' ', "");
     if constexprs.is_empty() {
-        format!("{}<{}>", test_function_identifier, type_name)
+        format!("{}<{}>", test_function_identifier, type_string)
     } else {
         let constexpr_names: Vec<String> = constexprs
             .iter()
@@ -112,60 +91,8 @@ pub fn generate_test_name(
             "{}<{}, {}>",
             test_function_identifier,
             constexpr_names.join(", "),
-            type_name
+            type_string
         )
-    }
-}
-
-/// Generate the identifier for the wrapper function that calls the test
-/// function.
-fn generate_wrapper_identifier(
-    test_function_name: &Ident,
-    constexprs: &[TokenStream],
-    type_name: &TokenStream,
-) -> Ident {
-    let suffix = if constexprs.is_empty() {
-        type_identifier_string(&type_name.to_string())
-    } else {
-        let constexpr_id = constexprs
-            .iter()
-            .map(constexpr_identifier_string)
-            .collect::<Vec<_>>()
-            .join("_");
-        format!(
-            "__{}__{}",
-            constexpr_id,
-            type_identifier_string(&type_name.to_string())
-        )
-    };
-    let ident_str = if suffix.is_empty() {
-        format!("__inventory_test_{}", test_function_name)
-    } else {
-        format!("__inventory_test_{}_{}", test_function_name, suffix)
-    };
-    Ident::new(&ident_str, test_function_name.span())
-}
-
-// Generate the body of the wrapper function that calls the test function.
-fn generate_wrapper_body(
-    test_function_signature: &Signature,
-    generic_parameters: Option<Vec<TokenStream>>,
-) -> TokenStream {
-    let identifier = &test_function_signature.ident;
-    let f = if let Some(generic) = generic_parameters {
-        quote! { #identifier::<#(#generic),*>() }
-    } else {
-        quote! { #identifier() }
-    };
-
-    if returns_result(test_function_signature) {
-        quote! {
-            if let Err(e) = #f {
-                panic!("Test failed: {:?}", e);
-            }
-        }
-    } else {
-        f
     }
 }
 
@@ -175,12 +102,15 @@ fn generate_wrapper_body(
 /// it may be used in an inventory submission.
 pub fn generate_wrapper_function(
     test_function_signature: &Signature,
-    constexprs: &[TokenStream],
-    type_name: &TokenStream,
+    constexpr_identifiers: &[TokenStream],
+    type_identifier: &TokenStream,
     generic_parameters: Option<Vec<TokenStream>>,
 ) -> (Ident, TokenStream) {
-    let identifier =
-        generate_wrapper_identifier(&test_function_signature.ident, constexprs, type_name);
+    let identifier = generate_wrapper_identifier(
+        &test_function_signature.ident,
+        constexpr_identifiers,
+        type_identifier,
+    );
     let body = generate_wrapper_body(test_function_signature, generic_parameters);
     let function = quote! {
         #[allow(non_snake_case, dead_code)]
@@ -215,6 +145,79 @@ pub fn generate_inventory_submission(
                 should_panic_message: #should_panic_message,
             }
         }
+    }
+}
+
+/// `FileName::max_len()` -> `"max_len"`, `{ 64 }` -> `"64"`
+fn constexpr_identifier_string(constexpr: &TokenStream) -> String {
+    let s = constexpr.to_string().replace(['{', '}', '(', ')', ' '], "");
+    s.split("::").last().unwrap_or(&s).to_string()
+}
+
+/// "foo::Bar<u64>" -> "Bar_u64"
+fn type_identifier_string(type_identifier_string: &str) -> String {
+    type_identifier_string
+        .split("::")
+        .last()
+        .unwrap_or(type_identifier_string)
+        .chars()
+        .filter_map(|c| match c {
+            '<' | ';' => Some('_'),
+            '>' | ' ' | ',' | '[' | ']' => None,
+            c => Some(c),
+        })
+        .collect()
+}
+
+/// Generate the identifier for the wrapper function that calls the test
+/// function.
+fn generate_wrapper_identifier(
+    test_function_name: &Ident,
+    constexprs: &[TokenStream],
+    type_identifier: &TokenStream,
+) -> Ident {
+    let suffix = if constexprs.is_empty() {
+        type_identifier_string(&type_identifier.to_string())
+    } else {
+        let constexpr_id = constexprs
+            .iter()
+            .map(constexpr_identifier_string)
+            .collect::<Vec<_>>()
+            .join("_");
+        format!(
+            "__{}__{}",
+            constexpr_id,
+            type_identifier_string(&type_identifier.to_string())
+        )
+    };
+    let ident_str = if suffix.is_empty() {
+        format!("__inventory_test_{}", test_function_name)
+    } else {
+        format!("__inventory_test_{}_{}", test_function_name, suffix)
+    };
+    Ident::new(&ident_str, test_function_name.span())
+}
+
+// Generate the body of the wrapper function that calls the test function.
+fn generate_wrapper_body(
+    test_function_signature: &Signature,
+    generic_parameters: Option<Vec<TokenStream>>,
+) -> TokenStream {
+    let identifier = &test_function_signature.ident;
+    let f = if let Some(generic) = generic_parameters {
+        quote! { #identifier::<#(#generic),*>() }
+    } else {
+        quote! { #identifier() }
+    };
+
+    if returns_result(test_function_signature) {
+        quote! {
+            if let Err(e) = #f {
+                panic!("Test failed: {:?}", e);
+            }
+        }
+    } else {
+        f
     }
 }
 
