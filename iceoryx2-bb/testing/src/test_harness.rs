@@ -77,7 +77,10 @@ pub fn expect_panic(
 macro_rules! test_harness {
     () => {
         pub fn main() {
-            let args = $crate::libtest_mimic::Arguments::from_args();
+            let mut args = $crate::libtest_mimic::Arguments::from_args();
+            args.test_threads
+                .get_or_insert($crate::DEFAULT_TEST_THREADS);
+
             let tests = $crate::inventory::iter::<$crate::TestCase>()
                 .map(|test_case| {
                     let test_fn = test_case.test_fn;
