@@ -10,12 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, ItemFn};
 
 use crate::inventory_test_common::{
     extract_should_ignore, extract_should_panic, generate_inventory_submission,
-    generate_wrapper_body, generate_wrapper_identifier, strip_attributes,
+    generate_wrapper_function, strip_attributes,
 };
 
 /// Registers the annotated function to the inventory to be executed by the
@@ -38,33 +39,27 @@ pub fn proc_macro(
     test_function: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
     let test_function = parse_macro_input!(test_function as ItemFn);
-    let test_function_attributes = &test_function.attrs;
-    let test_function_name = &test_function.sig.ident;
-    let test_function_signature = &test_function.sig;
 
-    let should_ignore = extract_should_ignore(test_function_attributes);
-    let should_panic = extract_should_panic(test_function_attributes);
-
-    let mut generated = vec![];
-    // Include the original function to be called by the wrapper
-    generated.push(strip_attributes(&test_function));
+    let should_ignore = extract_should_ignore(&test_function.attrs);
+    let should_panic = extract_should_panic(&test_function.attrs);
 
     // Generate wrapper around the test function
     // This is required to handle test functions that e.g. return Result
     // so they can be handled by the test runner
-    let wrapper_function_name = generate_wrapper_identifier(test_function_name, "");
-    let wrapper_function_body =
-        generate_wrapper_body(test_function_name, test_function_signature, None);
+    let (wrapper_identifier, wrapper_function) =
+        generate_wrapper_function(&test_function.sig, &[], &TokenStream::new(), None);
 
-    // Generate inventory submission
-    let wrapper_function = generate_inventory_submission(
-        test_function_name.to_string(),
+    let inventory_submission = generate_inventory_submission(
+        test_function.sig.ident.to_string(),
         should_panic,
         should_ignore,
-        wrapper_function_name,
-        wrapper_function_body,
+        &wrapper_identifier,
     );
+
+    let mut generated = vec![];
+    generated.push(strip_attributes(&test_function));
     generated.push(wrapper_function);
+    generated.push(inventory_submission);
 
     proc_macro::TokenStream::from(quote! { #(#generated)* })
 }
