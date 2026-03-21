@@ -22,7 +22,7 @@ use iceoryx2_log::fail;
 
 use crate::config;
 use crate::service;
-use crate::service::config_scheme::data_segment_config;
+use crate::service::config_scheme::{data_segment_config, resizable_data_segment_config};
 use crate::service::naming_scheme::data_segment_name;
 
 use super::config_scheme::connection_config;
@@ -51,6 +51,12 @@ pub(crate) unsafe fn remove_data_segment_of_port<Service: service::Service>(
             &data_segment_name(port_id),
             &data_segment_config::<Service>(config),
         ), "Unable to remove the ports ({port_id}) data segment."
+    );
+
+    fail!(from origin, when <Service::ResizableSharedMemory as NamedConceptMgmt>::remove_cfg(
+            &data_segment_name(port_id),
+            &resizable_data_segment_config::<Service>(config),
+        ), "Unable to remove the ports ({port_id}) resizable data segment."
     );
 
     Ok(())

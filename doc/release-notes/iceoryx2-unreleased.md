@@ -76,6 +76,8 @@
   [#1447](https://github.com/eclipse-iceoryx/iceoryx2/issues/1447)
 * Fix FreeBSD build
   [#1455](https://github.com/eclipse-iceoryx/iceoryx2/issues/1455)
+* Fix cleanup of resizable data segments
+  [#1463](https://github.com/eclipse-iceoryx/iceoryx2/issues/1463)
 
 ### Refactoring
 
