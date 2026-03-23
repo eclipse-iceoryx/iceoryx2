@@ -76,25 +76,35 @@ pub fn expect_panic(
 #[macro_export]
 macro_rules! test_harness {
     () => {
+        use std::collections::BTreeMap;
+
         pub fn main() {
             let mut args = $crate::libtest_mimic::Arguments::from_args();
             args.test_threads
                 .get_or_insert($crate::DEFAULT_TEST_THREADS);
 
+            let mut test_case_names: BTreeMap<&'static str, u64> = BTreeMap::new();
             let tests = $crate::inventory::iter::<$crate::TestCase>()
                 .map(|test_case| {
+                    let count = test_case_names
+                        .entry(test_case.name)
+                        .and_modify(|count| *count += 1)
+                        .or_insert(1);
                     let test_fn = test_case.test_fn;
-                    $crate::libtest_mimic::Trial::test(test_case.name, move || {
-                        if test_case.should_panic {
-                            $crate::test_harness::expect_panic(
-                                test_fn,
-                                test_case.should_panic_message,
-                            )
-                        } else {
-                            test_fn();
-                            Ok(())
-                        }
-                    })
+                    $crate::libtest_mimic::Trial::test(
+                        std::format!("{}-{}", *count, test_case.name),
+                        move || {
+                            if test_case.should_panic {
+                                $crate::test_harness::expect_panic(
+                                    test_fn,
+                                    test_case.should_panic_message,
+                                )
+                            } else {
+                                test_fn();
+                                Ok(())
+                            }
+                        },
+                    )
                     .with_ignored_flag(test_case.should_ignore)
                 })
                 .collect::<Vec<_>>();
