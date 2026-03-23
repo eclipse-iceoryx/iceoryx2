@@ -13,8 +13,9 @@
 #![allow(clippy::disallowed_types)]
 
 use iceoryx2_bb_lock_free::spsc::queue::*;
+use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::{inventory_test, requires_std};
+use iceoryx2_bb_testing_macros::inventory_test;
 
 #[inventory_test]
 pub fn spsc_queue_push_works_until_full() {
@@ -117,11 +118,7 @@ pub fn spsc_queue_get_producer_after_release_succeeds() {
 }
 
 #[inventory_test]
-#[requires_std("threading", "synchronization")]
 pub fn spsc_queue_push_pop_works_concurrently() {
-    use std::sync::{Arc, Mutex};
-    use std::thread;
-
     const LIMIT: i64 = 10000;
     const CAPACITY: usize = 1024;
 
@@ -129,34 +126,34 @@ pub fn spsc_queue_push_pop_works_concurrently() {
     let mut sut_producer = sut.acquire_producer().unwrap();
     let mut sut_consumer = sut.acquire_consumer().unwrap();
 
-    let storage = Arc::new(Mutex::<Vec<i64>>::new(vec![]));
-    let storage_pop = Arc::clone(&storage);
-
-    thread::scope(|s| {
-        s.spawn(|| {
-            let mut counter: i64 = 0;
-            while counter <= LIMIT {
-                if sut_producer.push(&counter) {
-                    counter += 1;
-                }
-            }
-        });
-
-        s.spawn(|| {
-            let mut guard = storage_pop.lock().unwrap();
-            loop {
-                if let Some(v) = sut_consumer.pop() {
-                    guard.push(v);
-                    if v == LIMIT {
-                        return;
+    thread_scope(|s| {
+        s.thread_builder()
+            .spawn(|| {
+                let mut counter: i64 = 0;
+                while counter <= LIMIT {
+                    if sut_producer.push(&counter) {
+                        counter += 1;
                     }
                 }
-            }
-        });
-    });
+            })
+            .expect("failed to spawn thread");
 
-    let guard = storage.lock().unwrap();
-    for i in 0..LIMIT {
-        assert_that!(guard[i as usize], eq i);
-    }
+        s.thread_builder()
+            .spawn(|| {
+                let mut expected: i64 = 0;
+                loop {
+                    if let Some(value) = sut_consumer.pop() {
+                        assert_that!(value, eq expected);
+                        expected += 1;
+                        if value == LIMIT {
+                            return;
+                        }
+                    }
+                }
+            })
+            .expect("failed to spawn thread");
+
+        Ok(())
+    })
+    .expect("failed to run thread scope");
 }

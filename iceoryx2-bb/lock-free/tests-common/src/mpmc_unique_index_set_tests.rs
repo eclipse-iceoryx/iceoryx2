@@ -16,8 +16,11 @@ use alloc::vec;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
+use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle, Handle};
+use iceoryx2_bb_posix::system_configuration::SystemInfo;
+use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::{inventory_test, requires_std};
+use iceoryx2_bb_testing_macros::inventory_test;
 
 const CAPACITY: usize = 128;
 
@@ -189,72 +192,62 @@ pub fn mpmc_unique_index_set_acquire_release_as_lifo_behavior() {
 }
 
 #[inventory_test]
-#[requires_std("threading", "synchronization")]
 pub fn mpmc_unique_index_set_concurrent_acquire_release() {
-    use alloc::vec::Vec;
-    use core::sync::atomic::{AtomicUsize, Ordering};
-    use iceoryx2_bb_posix::system_configuration::SystemInfo;
-    use std::sync::Barrier;
-    use std::sync::Mutex;
-    use std::thread;
-
     const REPETITIONS: i64 = 10000;
     let number_of_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, usize::MAX);
 
     let sut = FixedSizeUniqueIndexSet::<CAPACITY>::new();
-    let barrier = Barrier::new(number_of_threads);
-    let mut result: Vec<Mutex<Vec<u64>>> = vec![];
-    let thread_counter = AtomicUsize::new(0);
+    let barrier_handle = BarrierHandle::new();
+    let barrier = BarrierBuilder::new(number_of_threads as u32)
+        .create(&barrier_handle)
+        .unwrap();
 
-    for _ in 0..number_of_threads {
-        result.push(Mutex::new(vec![0; CAPACITY]));
-    }
-
-    thread::scope(|s| {
+    thread_scope(|s| {
         for _ in 0..number_of_threads {
-            s.spawn(|| {
-                let mut ids = vec![];
-                let mut guard = result[thread_counter.fetch_add(1, Ordering::Relaxed)]
-                    .lock()
-                    .unwrap();
-                let mut repetition = 0;
+            s.thread_builder()
+                .spawn(|| {
+                    let mut ids = vec![];
+                    let mut repetition = 0;
 
-                barrier.wait();
-                loop {
-                    match sut.acquire() {
-                        Ok(e) => {
-                            guard[e.value() as usize] += 1;
-                            ids.push(e);
-                        }
-                        Err(UniqueIndexSetAcquireFailure::OutOfIndices) => {
-                            repetition += 1;
-                            ids.clear();
-                            if repetition == REPETITIONS {
-                                break;
+                    barrier.wait();
+                    loop {
+                        match sut.acquire() {
+                            Ok(e) => {
+                                ids.push(e);
+                            }
+                            Err(UniqueIndexSetAcquireFailure::OutOfIndices) => {
+                                repetition += 1;
+                                ids.clear();
+                                if repetition == REPETITIONS {
+                                    break;
+                                }
+                            }
+                            Err(UniqueIndexSetAcquireFailure::IsLocked) => {
+                                assert_that!(true, eq false);
                             }
                         }
-                        Err(UniqueIndexSetAcquireFailure::IsLocked) => {
-                            assert_that!(true, eq false);
-                        }
                     }
-                }
-            });
+                })
+                .expect("failed to spawn thread");
         }
-    });
+
+        Ok(())
+    })
+    .expect("failed to run thread scope");
 
     // check if the sut is still in an consistent state
     let mut ids = vec![];
     let mut id_counter = [0u64; CAPACITY];
 
-    for i in 0..CAPACITY {
+    for id in id_counter.iter_mut().take(CAPACITY) {
         let e = sut.acquire();
         assert_that!(e, is_ok);
-        id_counter[i] += 1;
+        *id += 1;
         ids.push(e.unwrap());
     }
 
-    for i in 0..CAPACITY {
-        assert_that!(id_counter[i], eq 1);
+    for id in id_counter.iter_mut().take(CAPACITY) {
+        assert_that!(*id, eq 1);
     }
 
     let e = sut.acquire();

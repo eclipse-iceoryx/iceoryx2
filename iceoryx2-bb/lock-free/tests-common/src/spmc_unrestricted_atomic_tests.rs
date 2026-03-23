@@ -19,11 +19,15 @@ use std::sync::Mutex;
 
 use alloc::alloc::{alloc, dealloc, Layout};
 use core::ptr::addr_of;
+use core::sync::atomic::{AtomicBool, Ordering};
 
 use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::*;
+use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle, Handle};
+use iceoryx2_bb_posix::system_configuration::SystemInfo;
+use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::{inventory_test, requires_std};
+use iceoryx2_bb_testing_macros::inventory_test;
 
 const NUMBER_OF_RUNS: usize = 100000;
 const DATA_SIZE: usize = 1024;
@@ -72,12 +76,7 @@ pub fn spmc_unrestricted_atomic_load_store_works() {
 }
 
 #[inventory_test]
-#[requires_std("threading", "synchronization")]
 pub fn spmc_unrestricted_atomic_load_store_works_concurrently() {
-    use core::sync::atomic::{AtomicBool, Ordering};
-    use iceoryx2_bb_posix::{barrier::*, system_configuration::SystemInfo};
-    use std::thread;
-
     let _test_lock = TEST_LOCK.lock().unwrap();
     let number_of_threads = SystemInfo::NumberOfCpuCores.value();
     let store_finished = AtomicBool::new(false);
@@ -89,37 +88,42 @@ pub fn spmc_unrestricted_atomic_load_store_works_concurrently() {
 
     let verify_no_data_race = |rhs: &[u8; DATA_SIZE]| -> bool {
         let value = rhs[0];
-        for i in 0..DATA_SIZE {
-            if value != rhs[i] {
+        for other in rhs.iter().take(DATA_SIZE) {
+            if value != *other {
                 return false;
             }
         }
-
         true
     };
 
-    thread::scope(|s| {
+    thread_scope(|s| {
         for _ in 0..number_of_threads {
-            s.spawn(|| {
-                barrier.wait();
-
-                while !store_finished.load(Ordering::Relaxed) {
-                    assert_that!(verify_no_data_race(&sut.load()), eq true);
-                }
-            });
+            s.thread_builder()
+                .spawn(|| {
+                    barrier.wait();
+                    while !store_finished.load(Ordering::Relaxed) {
+                        assert_that!(verify_no_data_race(&sut.load()), eq true);
+                    }
+                })
+                .expect("failed to spawn thread");
         }
 
-        s.spawn(|| {
-            barrier.wait();
-            let producer = sut.acquire_producer().unwrap();
+        s.thread_builder()
+            .spawn(|| {
+                barrier.wait();
+                let producer = sut.acquire_producer().unwrap();
 
-            for i in 0..NUMBER_OF_RUNS {
-                producer.store([(i % 255) as u8; DATA_SIZE]);
-            }
+                for i in 0..NUMBER_OF_RUNS {
+                    producer.store([(i % 255) as u8; DATA_SIZE]);
+                }
 
-            store_finished.store(true, Ordering::Relaxed);
-        });
-    });
+                store_finished.store(true, Ordering::Relaxed);
+            })
+            .expect("failed to spawn thread");
+
+        Ok(())
+    })
+    .expect("failed to run thread scope");
 }
 
 #[inventory_test]
@@ -139,48 +143,54 @@ pub fn spmc_unrestricted_atomic_get_ptr_write_and_update_works() {
 }
 
 #[inventory_test]
-#[requires_std("threading", "synchronization")]
 pub fn spmc_unrestricted_atomic_get_ptr_write_and_update_works_concurrently() {
-    use core::sync::atomic::{AtomicBool, Ordering};
-    use iceoryx2_bb_posix::barrier::*;
-    use std::thread;
-
     let _test_lock = TEST_LOCK.lock().unwrap();
     let store_finished = AtomicBool::new(false);
     let sut = UnrestrictedAtomic::<u128>::new(0);
     let handle = BarrierHandle::new();
     let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
 
-    let mut values = vec![];
-    thread::scope(|s| {
-        s.spawn(|| {
-            barrier.wait();
+    let out_of_order = AtomicBool::new(false);
+    let number_of_runs_exceeded = AtomicBool::new(false);
 
-            while !store_finished.load(Ordering::Relaxed) {
-                values.push(sut.load());
-            }
-        });
+    thread_scope(|s| {
+        s.thread_builder()
+            .spawn(|| {
+                let mut pred: u128 = 0;
+                barrier.wait();
 
-        s.spawn(|| {
-            let producer = sut.acquire_producer().unwrap();
-            barrier.wait();
+                while !store_finished.load(Ordering::Relaxed) {
+                    let current = sut.load();
+                    if current > NUMBER_OF_RUNS as u128 {
+                        number_of_runs_exceeded.store(true, Ordering::Relaxed);
+                    }
+                    if current < pred {
+                        out_of_order.store(true, Ordering::Relaxed);
+                    }
+                    pred = current;
+                }
+            })
+            .expect("failed to spawn thread");
 
-            for i in 0..NUMBER_OF_RUNS as u128 {
-                let entry = unsafe { producer.__internal_get_ptr_to_write_cell() };
-                unsafe { *entry = i };
-                unsafe { producer.__internal_update_write_cell() };
-            }
+        s.thread_builder()
+            .spawn(|| {
+                let producer = sut.acquire_producer().unwrap();
+                barrier.wait();
+                for i in 0..NUMBER_OF_RUNS as u128 {
+                    let entry = unsafe { producer.__internal_get_ptr_to_write_cell() };
+                    unsafe { *entry = i };
+                    unsafe { producer.__internal_update_write_cell() };
+                }
+                store_finished.store(true, Ordering::Relaxed);
+            })
+            .expect("failed to spawn thread");
 
-            store_finished.store(true, Ordering::Relaxed);
-        });
-    });
+        Ok(())
+    })
+    .expect("failed to run thread scope");
 
-    let mut pred = 0;
-    for v in values {
-        assert_that!(v, le NUMBER_OF_RUNS as u128);
-        assert_that!(v, ge pred);
-        pred = v;
-    }
+    assert_that!(number_of_runs_exceeded.load(Ordering::Relaxed), eq false);
+    assert_that!(out_of_order.load(Ordering::Relaxed), eq false);
 }
 
 #[inventory_test]
