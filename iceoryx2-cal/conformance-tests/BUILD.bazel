@@ -10,7 +10,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test_suite")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -40,9 +40,10 @@ rust_library(
     ],
 )
 
-rust_test_suite(
+rust_test(
     name = "iceoryx2-cal-conformance-tests-tests",
     srcs = glob(["tests/**/*.rs"]),
+    use_libtest_harness = False,
     crate_features = ["std"],
     deps = [
         ":iceoryx2-cal-conformance-tests",
@@ -52,5 +53,8 @@ rust_test_suite(
         "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
         "@crate_index//:postcard",
         "@crate_index//:toml",
-    ],
+        ],
+    proc_macro_deps = [
+        "//iceoryx2-bb/testing-macros:iceoryx2-bb-testing-macros",
+        ],
 )

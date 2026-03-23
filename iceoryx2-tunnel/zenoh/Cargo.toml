@@ -14,6 +14,10 @@ version = { workspace = true }
 name = "iceoryx2_tunnel_zenoh"
 path = "src/lib.rs"
 
+[[test]]
+name = "main"
+harness = false
+
 [dependencies]
 iceoryx2 = { workspace = true, features = ["std"] }
 iceoryx2-tunnel-backend = { workspace = true, features = ["std"] }
@@ -26,4 +30,5 @@ zenoh = { workspace = true }
 [dev-dependencies]
 iceoryx2-bb-posix = { workspace = true }
 iceoryx2-bb-testing = { workspace = true }
+iceoryx2-bb-testing-macros = { workspace = true }
 iceoryx2-tunnel-conformance-tests = { workspace = true }
