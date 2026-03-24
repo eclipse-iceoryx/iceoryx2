@@ -12,8 +12,16 @@
 
 #![allow(clippy::disallowed_types)]
 
+use core::time::Duration;
+
+use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicUsize, Ordering};
 use iceoryx2_bb_lock_free::mpmc::bit_set::*;
+use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle, Handle};
+use iceoryx2_bb_posix::clock::nanosleep;
+use iceoryx2_bb_posix::system_configuration::SystemInfo;
+use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_testing_macros::{inventory_test, requires_std};
 
 #[inventory_test]
@@ -141,18 +149,7 @@ pub fn bit_set_reset_next_is_fair() {
 }
 
 #[inventory_test]
-#[requires_std("threading", "watchdog", "synchronization")]
 pub fn bit_set_concurrent_set_and_reset_works() {
-    use alloc::vec;
-    use alloc::vec::Vec;
-    use core::{
-        sync::atomic::{AtomicBool, Ordering},
-        time::Duration,
-    };
-    use iceoryx2_bb_posix::system_configuration::SystemInfo;
-    use iceoryx2_bb_testing::watchdog::Watchdog;
-    use std::sync::Barrier;
-
     let _watchdog = Watchdog::new_with_timeout(Duration::from_secs(60));
 
     let number_of_set_threads = (SystemInfo::NumberOfCpuCores.value() / 2).clamp(2, usize::MAX);
@@ -161,70 +158,79 @@ pub fn bit_set_concurrent_set_and_reset_works() {
     const SUCCESS_LIMIT: usize = 10000;
 
     let sut = BitSet::new(CAPACITY);
-    let barrier = Barrier::new(number_of_set_threads + number_of_reset_threads + 1);
+    let start_barrier_handle = BarrierHandle::new();
+    let start_barrier =
+        BarrierBuilder::new((number_of_set_threads + number_of_reset_threads + 1) as u32)
+            .create(&start_barrier_handle)
+            .unwrap();
+
+    let set_count = [const { AtomicUsize::new(0) }; CAPACITY];
+    let reset_count = [const { AtomicUsize::new(0) }; CAPACITY];
+
     let keep_running = AtomicBool::new(true);
+    let number_of_completed_set_threads = AtomicUsize::new(0);
 
-    std::thread::scope(|s| {
-        let mut set_threads = vec![];
+    thread_scope(|s| {
         for _ in 0..number_of_set_threads {
-            set_threads.push(s.spawn(|| -> Vec<usize> {
-                let mut counter = 0usize;
-                let mut success_counter = 0;
-                let mut id_counter = vec![0usize; CAPACITY];
+            s.thread_builder()
+                .spawn(|| {
+                    let mut counter = 0usize;
+                    let mut success_counter = 0;
+                    let mut id_counter = [0usize; CAPACITY];
 
-                barrier.wait();
-                while success_counter < SUCCESS_LIMIT {
-                    if sut.set(counter % CAPACITY) {
-                        id_counter[counter % CAPACITY] += 1;
-                        success_counter += 1;
+                    start_barrier.wait();
+                    while success_counter < SUCCESS_LIMIT {
+                        if sut.set(counter % CAPACITY) {
+                            id_counter[counter % CAPACITY] += 1;
+                            success_counter += 1;
+                        }
+                        counter += 1;
                     }
-                    counter += 1;
-                }
 
-                id_counter
-            }));
+                    // Count the sets after the loop to keep contention high
+                    for (idx, count) in id_counter.iter().enumerate() {
+                        set_count[idx].fetch_add(*count, Ordering::Relaxed);
+                    }
+
+                    number_of_completed_set_threads.fetch_add(1, Ordering::SeqCst);
+                })
+                .expect("failed to spawn thread");
         }
 
-        let mut reset_threads = vec![];
         for _ in 0..number_of_reset_threads {
-            reset_threads.push(s.spawn(|| -> Vec<usize> {
-                let mut id_counter = vec![0usize; CAPACITY];
+            s.thread_builder()
+                .spawn(|| {
+                    let mut id_counter = [0usize; CAPACITY];
 
-                barrier.wait();
-                while keep_running.load(Ordering::Relaxed) {
+                    start_barrier.wait();
+                    while keep_running.load(Ordering::SeqCst) {
+                        sut.reset_all(|id| {
+                            id_counter[id] += 1;
+                        });
+                    }
                     sut.reset_all(|id| {
                         id_counter[id] += 1;
                     });
-                }
 
-                sut.reset_all(|id| {
-                    id_counter[id] += 1;
-                });
-
-                id_counter
-            }));
+                    // Count the sets after the loop to keep contention high
+                    for (idx, count) in id_counter.iter().enumerate() {
+                        reset_count[idx].fetch_add(*count, Ordering::Relaxed);
+                    }
+                })
+                .expect("failed to spawn thread");
         }
 
-        barrier.wait();
-
-        let mut total_set_count = vec![0usize; CAPACITY];
-        for t in set_threads {
-            let id_count = t.join().unwrap();
-            for (n, count) in id_count.iter().enumerate() {
-                total_set_count[n] += count;
-            }
+        start_barrier.wait();
+        while number_of_completed_set_threads.load(Ordering::Relaxed) < number_of_set_threads {
+            nanosleep(Duration::from_millis(1)).expect("sleep failed");
         }
+        keep_running.store(false, Ordering::SeqCst);
 
-        keep_running.store(false, Ordering::Relaxed);
+        Ok(())
+    })
+    .expect("failed to run thread scope");
 
-        let mut total_reset_count = vec![0usize; CAPACITY];
-        for t in reset_threads {
-            let id_count = t.join().unwrap();
-            for (n, count) in id_count.iter().enumerate() {
-                total_reset_count[n] += count;
-            }
-        }
-
-        assert_that!(total_set_count, eq total_reset_count);
-    });
+    for i in 0..CAPACITY {
+        assert_that!(set_count[i].load(Ordering::Relaxed), eq reset_count[i].load(Ordering::Relaxed));
+    }
 }

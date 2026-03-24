@@ -38,6 +38,7 @@ rust_library(
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
         "//iceoryx2-pal/print:iceoryx2-pal-print",
         "@crate_index//:serde_test",
+        "@crate_index//:sha1_smol",
     ],
     proc_macro_deps = [
         "//iceoryx2-bb/testing-macros:iceoryx2-bb-testing-macros",

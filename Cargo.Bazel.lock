@@ -1,5 +1,5 @@
 {
-  "checksum": "0054147ad314c6a73a937abe7b5e99303f3102ce9217d542c1f69cbcff2ea3ca",
+  "checksum": "74bedf45de085c648e500b448062e29551a77c9319a157f65d0db0248f0a1ab4",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -8380,6 +8380,10 @@
             {
               "id": "serde_test 1.0.177",
               "target": "serde_test"
+            },
+            {
+              "id": "sha1_smol 1.0.1",
+              "target": "sha1_smol"
             }
           ],
           "selects": {}

@@ -1417,6 +1417,7 @@ dependencies = [
  "iceoryx2-bb-testing-macros",
  "iceoryx2-pal-print",
  "serde_test",
+ "sha1_smol",
 ]
 
 [[package]]

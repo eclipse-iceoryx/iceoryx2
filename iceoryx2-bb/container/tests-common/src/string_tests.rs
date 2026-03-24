@@ -1332,10 +1332,21 @@ pub fn partial_ordering_works<Factory: StringTestFactory>() {
     RelocatableStringFactory,
     StaticStringFactory
 )]
-#[requires_std("hashing")]
 pub fn hash_works<Factory: StringTestFactory>() {
     use core::hash::{Hash, Hasher};
-    use std::collections::hash_map::DefaultHasher;
+
+    struct Sha1Hasher(sha1_smol::Sha1);
+
+    impl Hasher for Sha1Hasher {
+        fn write(&mut self, bytes: &[u8]) {
+            self.0.update(bytes);
+        }
+
+        fn finish(&self) -> u64 {
+            let bytes = self.0.digest().bytes();
+            u64::from_ne_bytes(bytes[..8].try_into().unwrap())
+        }
+    }
 
     let factory = Factory::new();
     let mut sut_1 = factory.create_sut();
@@ -1346,9 +1357,9 @@ pub fn hash_works<Factory: StringTestFactory>() {
     assert_that!(sut_1_1.push_bytes(b"hypnotoad forever"), is_ok);
     assert_that!(sut_2.push_bytes(b"the hoff rocks"), is_ok);
 
-    let mut hasher_1 = DefaultHasher::new();
-    let mut hasher_1_1 = DefaultHasher::new();
-    let mut hasher_2 = DefaultHasher::new();
+    let mut hasher_1 = Sha1Hasher(sha1_smol::Sha1::new());
+    let mut hasher_1_1 = Sha1Hasher(sha1_smol::Sha1::new());
+    let mut hasher_2 = Sha1Hasher(sha1_smol::Sha1::new());
 
     sut_1.hash(&mut hasher_1);
     let hash_1 = hasher_1.finish();

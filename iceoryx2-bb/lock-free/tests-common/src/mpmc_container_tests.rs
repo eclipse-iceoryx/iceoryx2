@@ -13,9 +13,12 @@
 #![allow(clippy::disallowed_types)]
 
 use alloc::collections::btree_map::BTreeMap;
+use alloc::collections::btree_set::BTreeSet;
 use alloc::vec;
 use alloc::vec::Vec;
 use core::fmt::Debug;
+use core::sync::atomic::{AtomicU32, Ordering};
+
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
@@ -23,8 +26,12 @@ use iceoryx2_bb_lock_free::mpmc::container::ContainerAddFailure;
 use iceoryx2_bb_lock_free::mpmc::container::*;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set::ReleaseMode;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set::ReleaseState;
+use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle, Handle};
+use iceoryx2_bb_posix::mutex::{MutexBuilder, MutexHandle};
+use iceoryx2_bb_posix::system_configuration::SystemInfo;
+use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::{inventory_test_generic, requires_std};
+use iceoryx2_bb_testing_macros::inventory_test_generic;
 
 #[derive(Clone, Copy, Debug)]
 pub struct TestType {
@@ -377,112 +384,105 @@ pub fn mpmc_container_state_updated_works_when_same_element_is_added_and_removed
 }
 
 #[inventory_test_generic(usize, TestType)]
-#[requires_std("threading", "synchronization")]
 pub fn mpmc_container_concurrent_add_release_for_each<
     T: Debug + Copy + From<usize> + Into<usize> + Send,
 >() {
-    use alloc::collections::btree_set::BTreeSet;
-    use core::sync::atomic::AtomicU32;
-    use iceoryx2_bb_concurrency::atomic::Ordering;
-    use iceoryx2_bb_posix::system_configuration::SystemInfo;
-    use std::sync::Barrier;
-    use std::sync::Mutex;
-    use std::thread;
-
     const REPETITIONS: i64 = 1000;
     let number_of_threads_per_op = (SystemInfo::NumberOfCpuCores.value() / 2).clamp(2, usize::MAX);
 
     let sut = FixedSizeContainer::<T, CAPACITY>::new();
-    let barrier = Barrier::new(number_of_threads_per_op * 2);
-    let mut added_content: Vec<Mutex<Vec<(u32, T)>>> = vec![];
-    let mut extracted_content: Vec<Mutex<Vec<(u32, T)>>> = vec![];
+    let barrier_handle = BarrierHandle::new();
+    let barrier = BarrierBuilder::new((number_of_threads_per_op * 2) as u32)
+        .create(&barrier_handle)
+        .unwrap();
 
-    for _ in 0..number_of_threads_per_op {
-        added_content.push(Mutex::new(vec![]));
-        extracted_content.push(Mutex::new(vec![]));
-    }
+    let added_handle = MutexHandle::<Vec<(u32, usize)>>::new();
+    let added = MutexBuilder::new()
+        .create(vec![], &added_handle)
+        .expect("failed to create mutex");
+    let extracted_handle = MutexHandle::<Vec<(u32, usize)>>::new();
+    let extracted = MutexBuilder::new()
+        .create(vec![], &extracted_handle)
+        .expect("failed to create mutex");
 
     let finished_threads_counter = AtomicU32::new(0);
-    thread::scope(|s| {
+
+    thread_scope(|s| {
         for thread_number in 0..number_of_threads_per_op {
-            let barrier = &barrier;
-            let sut = &sut;
-            let added_content = &added_content;
-            let finished_threads_counter = &finished_threads_counter;
-            s.spawn(move || {
-                let mut repetition = 0;
-                let mut ids = vec![];
-                let mut counter = 0;
+            s.thread_builder()
+                .spawn(|| {
+                    let mut repetition = 0;
+                    let mut ids = vec![];
+                    let mut counter = 0;
 
-                barrier.wait();
-                while repetition < REPETITIONS {
-                    counter += 1;
-                    let value = counter * number_of_threads_per_op + thread_number;
+                    barrier.wait();
+                    while repetition < REPETITIONS {
+                        counter += 1;
+                        let value = counter * number_of_threads_per_op + thread_number;
 
-                    match unsafe { sut.add(value.into()) } {
-                        Ok(index) => {
-                            let index_value = index.index();
-                            ids.push(index);
-                            added_content[thread_number]
-                                .lock()
-                                .unwrap()
-                                .push((index_value, value.into()));
-                        }
-                        Err(ContainerAddFailure::OutOfSpace) => {
-                            repetition += 1;
-                            for id in &ids {
-                                unsafe { sut.remove(*id, ReleaseMode::Default) };
+                        match unsafe { sut.add(value.into()) } {
+                            Ok(index) => {
+                                let index_value = index.index();
+                                ids.push(index);
+                                added
+                                    .lock()
+                                    .expect("failed to lock mutex")
+                                    .push((index_value, value));
                             }
-                            ids.clear();
-                        }
-                        Err(ContainerAddFailure::IsLocked) => {
-                            assert_that!(true, eq false);
+                            Err(ContainerAddFailure::OutOfSpace) => {
+                                repetition += 1;
+                                for id in &ids {
+                                    unsafe { sut.remove(*id, ReleaseMode::Default) };
+                                }
+                                ids.clear();
+                            }
+                            Err(ContainerAddFailure::IsLocked) => {
+                                assert_that!(true, eq false);
+                            }
                         }
                     }
-                }
 
-                finished_threads_counter.fetch_add(1, Ordering::Relaxed);
-            });
+                    finished_threads_counter.fetch_add(1, Ordering::Relaxed);
+                })
+                .expect("failed to spawn thread");
         }
 
-        for thread_number in 0..number_of_threads_per_op {
-            let sut = &sut;
-            let barrier = &barrier;
-            let finished_threads_counter = &finished_threads_counter;
-            let extracted_content = &extracted_content;
-            s.spawn(move || {
-                barrier.wait();
+        for _ in 0..number_of_threads_per_op {
+            s.thread_builder()
+                .spawn(|| {
+                    barrier.wait();
 
-                let mut state = sut.get_state();
-                while finished_threads_counter.load(Ordering::Relaxed)
-                    != number_of_threads_per_op as u32
-                {
-                    if unsafe { sut.update_state(&mut state) } {
-                        state.for_each(|h: ContainerHandle, value: &T| {
-                            extracted_content[thread_number]
-                                .lock()
-                                .unwrap()
-                                .push((h.index(), *value));
-                            CallbackProgression::Continue
-                        })
+                    let mut state = sut.get_state();
+                    while finished_threads_counter.load(Ordering::Relaxed)
+                        != number_of_threads_per_op as u32
+                    {
+                        if unsafe { sut.update_state(&mut state) } {
+                            state.for_each(|h: ContainerHandle, value: &T| {
+                                extracted
+                                    .lock()
+                                    .expect("failed to lock mutex")
+                                    .push((h.index(), (*value).into()));
+                                CallbackProgression::Continue
+                            })
+                        }
                     }
-                }
-            });
+                })
+                .expect("failed to spawn thread");
         }
-    });
 
-    let mut added_contents_set = BTreeSet::<(u32, usize)>::new();
+        Ok(())
+    })
+    .expect("failed to run thread scope");
 
-    for thread_number in 0..number_of_threads_per_op {
-        for entry in &*added_content[thread_number].lock().unwrap() {
-            added_contents_set.insert((entry.0, entry.1.into()));
-        }
-    }
+    let added_set: BTreeSet<(u32, usize)> = added
+        .lock()
+        .expect("failed to lock mutex")
+        .iter()
+        .copied()
+        .collect();
 
-    for thread_number in 0..number_of_threads_per_op {
-        for entry in &*extracted_content[thread_number].lock().unwrap() {
-            assert_that!(added_contents_set.get(&(entry.0, entry.1.into())), is_some);
-        }
+    for entry in extracted.lock().expect("failed to lock mutex").iter() {
+        assert_that!(added_set.get(entry), is_some);
     }
 
     // check if it is still in a consistent state
