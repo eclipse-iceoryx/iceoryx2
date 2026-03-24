@@ -17,6 +17,7 @@ use core::time::Duration;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicUsize, Ordering};
 use iceoryx2_bb_lock_free::mpmc::bit_set::*;
 use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle, Handle};
+use iceoryx2_bb_posix::clock::nanosleep;
 use iceoryx2_bb_posix::system_configuration::SystemInfo;
 use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
@@ -220,7 +221,9 @@ pub fn bit_set_concurrent_set_and_reset_works() {
         }
 
         start_barrier.wait();
-        while number_of_completed_set_threads.load(Ordering::Relaxed) < number_of_set_threads {}
+        while number_of_completed_set_threads.load(Ordering::Relaxed) < number_of_set_threads {
+            nanosleep(Duration::from_millis(1)).expect("sleep failed");
+        }
         keep_running.store(false, Ordering::SeqCst);
 
         Ok(())
