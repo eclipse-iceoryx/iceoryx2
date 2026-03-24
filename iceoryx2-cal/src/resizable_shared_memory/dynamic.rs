@@ -536,7 +536,7 @@ where
 
             // check nymber of digits
             for byte in raw_segment_id.as_bytes() {
-                if byte.is_ascii_digit() {
+                if !byte.is_ascii_digit() {
                     return None;
                 }
             }
