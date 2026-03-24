@@ -18,12 +18,17 @@ pub mod static_storage_trait {
     use alloc::string::{String, ToString};
     use alloc::vec;
     use core::time::Duration;
-
+    use iceoryx2_bb_concurrency::atomic::AtomicU64;
+    use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_container::semantic_string::*;
+    use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle};
+    use iceoryx2_bb_posix::ipc_capable::Handle;
+    use iceoryx2_bb_posix::thread::thread_scope;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing_macros::requires_std;
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::static_storage::StaticStorageCreateError;
@@ -273,25 +278,24 @@ pub mod static_storage_trait {
     pub fn concurrent_create_same_locked_storage_multiple_times_fails_for_all_but_one<
         Sut: StaticStorage,
     >() {
-        use std::sync::Barrier;
-
-        use iceoryx2_bb_concurrency::atomic::AtomicU64;
-        use iceoryx2_bb_concurrency::atomic::Ordering;
-        use iceoryx2_bb_testing::watchdog::Watchdog;
-
         let _watch_dog = Watchdog::new();
         const NUMBER_OF_THREADS: usize = 4;
         const NUMBER_OF_ITERATIONS: usize = 1000;
 
         let success_counter = AtomicU64::new(0);
-        let barrier_enter = Barrier::new(NUMBER_OF_THREADS);
-        let barrier_exit = Barrier::new(NUMBER_OF_THREADS);
+        let handle_enter = BarrierHandle::new();
+        let handle_exit = BarrierHandle::new();
+        let barrier_enter = BarrierBuilder::new(NUMBER_OF_THREADS as _)
+            .create(&handle_enter)
+            .unwrap();
+        let barrier_exit = BarrierBuilder::new(NUMBER_OF_THREADS as _)
+            .create(&handle_exit)
+            .unwrap();
         let storage_name = generate_name();
 
-        std::thread::scope(|s| {
-            let mut threads = vec![];
+        thread_scope(|s| {
             for _ in 0..NUMBER_OF_THREADS {
-                threads.push(s.spawn(|| {
+                s.thread_builder().spawn(|| {
                     for _ in 0..NUMBER_OF_ITERATIONS {
                         barrier_enter.wait();
 
@@ -307,14 +311,14 @@ pub mod static_storage_trait {
 
                         barrier_exit.wait();
                     }
-                }));
+                })?;
             }
 
-            for thread in threads {
-                thread.join().unwrap();
-            }
-            assert_that!(success_counter.load(Ordering::Relaxed), eq NUMBER_OF_ITERATIONS as u64)
-        });
+            Ok(())
+        })
+        .unwrap();
+
+        assert_that!(success_counter.load(Ordering::Relaxed), eq NUMBER_OF_ITERATIONS as u64);
     }
 
     #[conformance_test]
