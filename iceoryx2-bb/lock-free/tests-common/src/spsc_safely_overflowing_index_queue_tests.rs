@@ -152,13 +152,12 @@ pub fn spsc_safely_overflowing_index_queue_push_pop_works_concurrently() {
         s.thread_builder()
             .spawn(|| {
                 let mut counter: u64 = 0;
+                let mut guard = pushed_indexes.lock().expect("failed to acquire mutex");
+
                 barrier.wait();
                 while counter <= LIMIT {
                     if let Some(idx) = sut_producer.push(counter) {
-                        pushed_indexes
-                            .lock()
-                            .expect("failed to acquire mutex")
-                            .push(idx);
+                        guard.push(idx);
                     }
                     counter += 1;
                 }
@@ -167,13 +166,12 @@ pub fn spsc_safely_overflowing_index_queue_push_pop_works_concurrently() {
 
         s.thread_builder()
             .spawn(|| {
+                let mut guard = popped_indexes.lock().expect("failed to acquire mutex");
+
                 barrier.wait();
                 loop {
                     if let Some(idx) = sut_consumer.pop() {
-                        popped_indexes
-                            .lock()
-                            .expect("failed to acquire mutex")
-                            .push(idx);
+                        guard.push(idx);
                         if idx == LIMIT {
                             return;
                         }
@@ -188,11 +186,13 @@ pub fn spsc_safely_overflowing_index_queue_push_pop_works_concurrently() {
 
     let mut element_counter = vec![0; LIMIT as usize + 1];
 
-    for i in &*pushed_indexes.lock().expect("failed to acquire mutex") {
-        element_counter[*i as usize] += 1;
+    let guard = &*pushed_indexes.lock().expect("failed to acquire mutex");
+    for idx in guard {
+        element_counter[*idx as usize] += 1;
     }
-    for i in &*popped_indexes.lock().expect("failed to acquire mutex") {
-        element_counter[*i as usize] += 1;
+    let guard = &*popped_indexes.lock().expect("failed to acquire mutex");
+    for idx in guard {
+        element_counter[*idx as usize] += 1;
     }
 
     for element in element_counter {
@@ -233,13 +233,12 @@ pub fn spsc_safely_overflowing_index_queue_push_pop_works_concurrently_with_full
         s.thread_builder()
             .spawn(|| {
                 let mut counter: u64 = 1024;
+                let mut guard = pushed_indexes.lock().expect("failed to acquire mutex");
+
                 barrier.wait();
                 while counter <= LIMIT {
                     if let Some(idx) = sut_producer.push(counter) {
-                        pushed_indexes
-                            .lock()
-                            .expect("failed to acquire mutex")
-                            .push(idx);
+                        guard.push(idx);
                     }
                     counter += 1;
                 }
@@ -248,13 +247,12 @@ pub fn spsc_safely_overflowing_index_queue_push_pop_works_concurrently_with_full
 
         s.thread_builder()
             .spawn(|| {
+                let mut guard = popped_indexes.lock().expect("failed to acquire mutex");
+
                 barrier.wait();
                 loop {
                     if let Some(idx) = sut_consumer.pop() {
-                        popped_indexes
-                            .lock()
-                            .expect("failed to acquire mutex")
-                            .push(idx);
+                        guard.push(idx);
                         if idx == LIMIT {
                             return;
                         }
@@ -269,11 +267,13 @@ pub fn spsc_safely_overflowing_index_queue_push_pop_works_concurrently_with_full
 
     let mut element_counter = vec![0; LIMIT as usize + 1];
 
-    for i in &*pushed_indexes.lock().expect("failed to acquire mutex") {
-        element_counter[*i as usize] += 1;
+    let guard = &*pushed_indexes.lock().expect("failed to acquire mutex");
+    for idx in guard {
+        element_counter[*idx as usize] += 1;
     }
-    for i in &*popped_indexes.lock().expect("failed to acquire mutex") {
-        element_counter[*i as usize] += 1;
+    let guard = &*popped_indexes.lock().expect("failed to acquire mutex");
+    for idx in guard {
+        element_counter[*idx as usize] += 1;
     }
 
     for element in element_counter {
