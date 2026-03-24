@@ -87,37 +87,27 @@ pub fn barrier_resets_when_the_one_and_only_waiter_has_woken_up() -> Result<(), 
 pub fn barrier_resets_when_all_waiters_have_woken_up() -> Result<(), BarrierCreationError> {
     let _watchdog = Watchdog::new();
     const ITERATIONS: u64 = 10;
+    const NUMBER_OF_THREADS: usize = 8;
 
-    let handle = BarrierHandle::new();
-    let handle2 = BarrierHandle::new();
-    let handle3 = BarrierHandle::new();
-    let sut = BarrierBuilder::new(2).create(&handle)?;
-    let sut2 = BarrierBuilder::new(2).create(&handle2)?;
-    let sut3 = BarrierBuilder::new(2).create(&handle3)?;
-    let counter = AtomicU64::new(0);
+    for n in 1..NUMBER_OF_THREADS {
+        let handle = BarrierHandle::new();
+        let sut = BarrierBuilder::new(n as _).create(&handle)?;
+        let counter = AtomicU64::new(0);
 
-    thread_scope(|s| {
-        s.thread_builder().spawn(|| {
-            for i in 0..ITERATIONS {
-                sut.wait();
-                sut2.wait();
-                counter.fetch_add(1, Ordering::Relaxed);
-                sut3.wait();
+        thread_scope(|s| {
+            for _ in 0..n {
+                s.thread_builder().spawn(|| {
+                    for i in 0..ITERATIONS {
+                        sut.wait();
+                        counter.fetch_add(1, Ordering::Relaxed);
+                    }
+                })?;
             }
-        })?;
-        s.thread_builder().spawn(|| {
-            for i in 0..ITERATIONS {
-                sut.wait();
-                sut2.wait();
-                counter.fetch_add(1, Ordering::Relaxed);
-                sut3.wait();
-            }
-        })?;
-
-        Ok(())
-    })
-    .unwrap();
-    assert_that!(counter.load(Ordering::Relaxed), eq 2 * ITERATIONS);
+            Ok(())
+        })
+        .unwrap();
+        assert_that!(counter.load(Ordering::Relaxed), eq n as u64 * ITERATIONS);
+    }
 
     Ok(())
 }

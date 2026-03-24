@@ -19,21 +19,30 @@ use crate::SPIN_REPETITIONS;
 #[derive(Debug)]
 pub struct Barrier {
     waiters: AtomicU32,
-    number_of_waiters: u32,
+    number_of_waiters: u16,
+}
+
+fn pack(epoch: u16, count: u16) -> u32 {
+    ((epoch as u32) << 16) | (count as u32)
+}
+
+fn unpack(value: u32) -> (u16, u16) {
+    ((value >> 16) as u16, value as u16)
 }
 
 impl Barrier {
-    pub fn new(number_of_waiters: u32) -> Self {
+    pub fn new(number_of_waiters: u16) -> Self {
         Self {
             number_of_waiters,
-            waiters: AtomicU32::new(number_of_waiters),
+            waiters: AtomicU32::new(number_of_waiters as u32),
         }
     }
 
-    fn reset_barrier(&self) {
+    fn reset_barrier(&self, epoch: u16) {
+        let expected = pack(epoch, 0);
         let _ = self.waiters.compare_exchange(
-            0,
-            self.number_of_waiters,
+            expected,
+            pack(epoch.wrapping_add(1), self.number_of_waiters),
             Ordering::Relaxed,
             Ordering::Relaxed,
         );
@@ -44,32 +53,28 @@ impl Barrier {
         wait: Wait,
         wake_all: WakeAll,
     ) {
-        if self.waiters.fetch_sub(1, Ordering::AcqRel) == 1 {
-            if self.number_of_waiters == 1 {
-                self.reset_barrier();
-            }
-            wake_all(&self.waiters);
-            return;
-        }
+        let (current_epoch, _) = unpack(
+            self.waiters
+                .fetch_sub(1, std::sync::atomic::Ordering::Relaxed),
+        );
 
         let mut retry_counter = 0;
-        while self.waiters.load(Ordering::Acquire) > 0 {
-            spin_loop();
-            retry_counter += 1;
-
-            if SPIN_REPETITIONS == retry_counter {
-                break;
-            }
-        }
-
         loop {
             let current_value = self.waiters.load(Ordering::Acquire);
-            if current_value == 0 {
-                self.reset_barrier();
+            let (epoch, count) = unpack(current_value);
+
+            if epoch != current_epoch || count == 0 {
+                self.reset_barrier(current_epoch);
+                wake_all(&self.waiters);
                 return;
             }
 
-            wait(&self.waiters, &current_value);
+            if retry_counter < SPIN_REPETITIONS {
+                spin_loop();
+                retry_counter += 1;
+            } else {
+                wait(&self.waiters, &current_value);
+            }
         }
     }
 }

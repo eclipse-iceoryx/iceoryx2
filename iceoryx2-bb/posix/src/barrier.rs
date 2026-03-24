@@ -61,13 +61,13 @@ enum_gen! { BarrierCreationError
 /// interprocess capable unless it is configured otherwise.
 #[derive(Debug)]
 pub struct BarrierBuilder {
-    number_of_waiters: u32,
+    number_of_waiters: u16,
     is_interprocess_capable: bool,
 }
 
 impl BarrierBuilder {
     /// Creates a new [`BarrierBuilder`] for a [`Barrier`] which is waiting for the provided number of waiters
-    pub fn new(number_of_waiters: u32) -> BarrierBuilder {
+    pub fn new(number_of_waiters: u16) -> BarrierBuilder {
         BarrierBuilder {
             number_of_waiters,
             is_interprocess_capable: false,
@@ -118,8 +118,10 @@ impl BarrierBuilder {
             }
         }
 
-        match unsafe { posix::pthread_barrier_init(barrier, attr.get(), self.number_of_waiters) }
-            .into()
+        match unsafe {
+            posix::pthread_barrier_init(barrier, attr.get(), self.number_of_waiters as _)
+        }
+        .into()
         {
             Errno::ESUCCES => (),
             Errno::ENOMEM => {
