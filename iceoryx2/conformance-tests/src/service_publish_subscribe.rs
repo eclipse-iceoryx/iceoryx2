@@ -15,9 +15,6 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod service_publish_subscribe {
-    use std::sync::{Barrier, Mutex};
-    use std::thread;
-
     use iceoryx2::config::Config;
     use iceoryx2::port::publisher::PublisherCreateError;
     use iceoryx2::port::subscriber::SubscriberCreateError;
@@ -37,6 +34,10 @@ pub mod service_publish_subscribe {
     use iceoryx2_bb_derive_macros::ZeroCopySend;
     use iceoryx2_bb_elementary::alignment::Alignment;
     use iceoryx2_bb_elementary::CallbackProgression;
+    use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle};
+    use iceoryx2_bb_posix::ipc_capable::Handle;
+    use iceoryx2_bb_posix::mutex::{MutexBuilder, MutexHandle};
+    use iceoryx2_bb_posix::thread::thread_scope;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -1238,14 +1239,29 @@ pub mod service_publish_subscribe {
         const NUMBER_OF_SUBSCRIBER_THREADS: usize = 2;
         const NUMBER_OF_RECONNECTIONS: usize = 50;
 
-        let create_service_barrier = Barrier::new(2);
+        let barrier_create_handle = BarrierHandle::new();
+        let create_service_barrier = BarrierBuilder::new(2)
+            .create(&barrier_create_handle)
+            .unwrap();
+
+        let barrier_finish_handle = BarrierHandle::new();
+        let finish_subscriber_barrier =
+            BarrierBuilder::new((NUMBER_OF_SUBSCRIBER_THREADS + 1) as _)
+                .create(&barrier_finish_handle)
+                .unwrap();
         let service_name = generate_name();
         let keep_running = AtomicBool::new(true);
         let config = testing::generate_isolated_config();
-        let node = Mutex::new(NodeBuilder::new().config(&config).create::<Sut>().unwrap());
+        let mutex_handle = MutexHandle::new();
+        let node = MutexBuilder::new()
+            .create(
+                NodeBuilder::new().config(&config).create::<Sut>().unwrap(),
+                &mutex_handle,
+            )
+            .unwrap();
 
-        thread::scope(|s| {
-            s.spawn(|| {
+        thread_scope(|s| {
+            s.thread_builder().spawn(|| {
                 let sut2 = node
                     .lock()
                     .unwrap()
@@ -1262,12 +1278,11 @@ pub mod service_publish_subscribe {
                     assert_that!(publisher.send_copy(counter), is_ok);
                     counter += 1;
                 }
-            });
+            })?;
 
             create_service_barrier.wait();
-            let mut threads = vec![];
             for _ in 0..NUMBER_OF_SUBSCRIBER_THREADS {
-                threads.push(s.spawn(|| {
+                s.thread_builder().spawn(|| {
                     let sut = node
                         .lock()
                         .unwrap()
@@ -1288,14 +1303,17 @@ pub mod service_publish_subscribe {
                             }
                         }
                     }
-                }));
+
+                    finish_subscriber_barrier.wait();
+                })?;
             }
 
-            for t in threads {
-                t.join().unwrap();
-            }
+            finish_subscriber_barrier.wait();
             keep_running.store(false, Ordering::Relaxed);
-        });
+
+            Ok(())
+        })
+        .unwrap();
     }
 
     #[conformance_test]
@@ -1305,15 +1323,24 @@ pub mod service_publish_subscribe {
         const NUMBER_OF_PUBLISHER_THREADS: usize = 2;
         const NUMBER_OF_RECONNECTIONS: usize = 50;
 
-        let create_service_barrier = Barrier::new(1 + NUMBER_OF_PUBLISHER_THREADS);
+        let barrier_handle = BarrierHandle::new();
+        let create_service_barrier = BarrierBuilder::new((1 + NUMBER_OF_PUBLISHER_THREADS) as _)
+            .create(&barrier_handle)
+            .unwrap();
         let service_name = generate_name();
         let keep_running = AtomicBool::new(true);
         let reconnection_cycle = AtomicUsize::new(0);
         let config = testing::generate_isolated_config();
-        let node = Mutex::new(NodeBuilder::new().config(&config).create::<Sut>().unwrap());
+        let mutex_handle = MutexHandle::new();
+        let node = MutexBuilder::new()
+            .create(
+                NodeBuilder::new().config(&config).create::<Sut>().unwrap(),
+                &mutex_handle,
+            )
+            .unwrap();
 
-        thread::scope(|s| {
-            s.spawn(|| {
+        thread_scope(|s| {
+            s.thread_builder().spawn(|| {
                 let sut = node
                     .lock()
                     .unwrap()
@@ -1334,10 +1361,10 @@ pub mod service_publish_subscribe {
                         keep_running.store(false, Ordering::Relaxed);
                     }
                 }
-            });
+            })?;
 
             for _ in 0..NUMBER_OF_PUBLISHER_THREADS {
-                s.spawn(|| {
+                s.thread_builder().spawn(|| {
                     let sut2 = node
                         .lock()
                         .unwrap()
@@ -1361,9 +1388,12 @@ pub mod service_publish_subscribe {
                             counter += 1;
                         }
                     }
-                });
+                })?;
             }
-        });
+
+            Ok(())
+        })
+        .unwrap();
     }
 
     #[conformance_test]
@@ -3233,12 +3263,15 @@ pub mod service_publish_subscribe {
         let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
-        let finish_setup = Barrier::new(2);
-        let start = Barrier::new(2);
-        let end = Barrier::new(2);
+        let finish_handle = BarrierHandle::new();
+        let start_handle = BarrierHandle::new();
+        let end_handle = BarrierHandle::new();
+        let finish_setup = BarrierBuilder::new(2).create(&finish_handle).unwrap();
+        let start = BarrierBuilder::new(2).create(&start_handle).unwrap();
+        let end = BarrierBuilder::new(2).create(&end_handle).unwrap();
 
-        std::thread::scope(|s| {
-            let update_connection_thread = s.spawn(|| {
+        thread_scope(|s| {
+            s.thread_builder().spawn(|| {
                 let service = node
                     .service_builder(&service_name)
                     .publish_subscribe::<usize>()
@@ -3269,9 +3302,9 @@ pub mod service_publish_subscribe {
 
                     end.wait();
                 }
-            });
+            })?;
 
-            let new_subscriber_thread = s.spawn(|| {
+            s.thread_builder().spawn(|| {
                 finish_setup.wait();
 
                 let service = node
@@ -3299,11 +3332,11 @@ pub mod service_publish_subscribe {
 
                     end.wait();
                 }
-            });
+            })?;
 
-            update_connection_thread.join().unwrap();
-            new_subscriber_thread.join().unwrap();
-        });
+            Ok(())
+        })
+        .unwrap();
     }
 
     #[conformance_test]
