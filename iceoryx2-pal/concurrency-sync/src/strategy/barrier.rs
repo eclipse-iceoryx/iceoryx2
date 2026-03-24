@@ -30,12 +30,24 @@ impl Barrier {
         }
     }
 
+    fn reset_barrier(&self) {
+        let _ = self.waiters.compare_exchange(
+            0,
+            self.number_of_waiters,
+            Ordering::Relaxed,
+            Ordering::Relaxed,
+        );
+    }
+
     pub fn wait<Wait: Fn(&AtomicU32, &u32), WakeAll: Fn(&AtomicU32)>(
         &self,
         wait: Wait,
         wake_all: WakeAll,
     ) {
         if self.waiters.fetch_sub(1, Ordering::AcqRel) == 1 {
+            if self.number_of_waiters == 1 {
+                self.reset_barrier();
+            }
             wake_all(&self.waiters);
             return;
         }
@@ -53,12 +65,7 @@ impl Barrier {
         loop {
             let current_value = self.waiters.load(Ordering::Acquire);
             if current_value == 0 {
-                let _ = self.waiters.compare_exchange(
-                    0,
-                    self.number_of_waiters,
-                    Ordering::Relaxed,
-                    Ordering::Relaxed,
-                );
+                self.reset_barrier();
                 return;
             }
 

@@ -12,18 +12,18 @@
 
 #![allow(clippy::disallowed_types)]
 
+use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
 use iceoryx2_bb_posix::barrier::*;
+use iceoryx2_bb_posix::thread::thread_scope;
+use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_bb_testing_macros::requires_std;
 
 #[inventory_test]
 #[requires_std("threading")]
 pub fn barrier_blocks() -> Result<(), BarrierCreationError> {
-    use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
-
-    use iceoryx2_bb_testing::assert_that;
-    use std::thread;
-
+    let _watchdog = Watchdog::new();
     let handle = BarrierHandle::new();
     let handle2 = BarrierHandle::new();
     let handle3 = BarrierHandle::new();
@@ -32,19 +32,19 @@ pub fn barrier_blocks() -> Result<(), BarrierCreationError> {
     let sut3 = BarrierBuilder::new(3).create(&handle3)?;
     let counter = AtomicU64::new(0);
 
-    thread::scope(|s| {
-        s.spawn(|| {
+    thread_scope(|s| {
+        s.thread_builder().spawn(|| {
             sut.wait();
             sut2.wait();
             counter.fetch_add(10, Ordering::Relaxed);
             sut3.wait();
-        });
-        s.spawn(|| {
+        })?;
+        s.thread_builder().spawn(|| {
             sut.wait();
             sut2.wait();
             counter.fetch_add(10, Ordering::Relaxed);
             sut3.wait();
-        });
+        })?;
 
         sut.wait();
         let counter_old = counter.load(Ordering::Relaxed);
@@ -53,7 +53,31 @@ pub fn barrier_blocks() -> Result<(), BarrierCreationError> {
 
         assert_that!(counter_old, eq 0);
         assert_that!(counter.load(Ordering::Relaxed), eq 20);
-    });
+
+        Ok(())
+    })
+    .unwrap();
+
+    Ok(())
+}
+
+#[inventory_test]
+#[requires_std("threading")]
+pub fn barrier_resets_when_the_one_and_only_waiter_has_woken_up() -> Result<(), BarrierCreationError>
+{
+    let _watchdog = Watchdog::new();
+    const ITERATIONS: u64 = 10;
+
+    let handle = BarrierHandle::new();
+    let sut = BarrierBuilder::new(1).create(&handle)?;
+    let mut counter = 0;
+
+    for i in 0..ITERATIONS {
+        sut.wait();
+        counter += 1;
+    }
+
+    assert_that!(counter, eq ITERATIONS);
 
     Ok(())
 }
@@ -61,11 +85,7 @@ pub fn barrier_blocks() -> Result<(), BarrierCreationError> {
 #[inventory_test]
 #[requires_std("threading")]
 pub fn barrier_resets_when_all_waiters_have_woken_up() -> Result<(), BarrierCreationError> {
-    use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
-
-    use iceoryx2_bb_testing::assert_that;
-    use std::thread;
-
+    let _watchdog = Watchdog::new();
     const ITERATIONS: u64 = 10;
 
     let handle = BarrierHandle::new();
@@ -76,24 +96,27 @@ pub fn barrier_resets_when_all_waiters_have_woken_up() -> Result<(), BarrierCrea
     let sut3 = BarrierBuilder::new(2).create(&handle3)?;
     let counter = AtomicU64::new(0);
 
-    thread::scope(|s| {
-        s.spawn(|| {
+    thread_scope(|s| {
+        s.thread_builder().spawn(|| {
             for i in 0..ITERATIONS {
                 sut.wait();
                 sut2.wait();
                 counter.fetch_add(1, Ordering::Relaxed);
                 sut3.wait();
             }
-        });
-        s.spawn(|| {
+        })?;
+        s.thread_builder().spawn(|| {
             for i in 0..ITERATIONS {
                 sut.wait();
                 sut2.wait();
                 counter.fetch_add(1, Ordering::Relaxed);
                 sut3.wait();
             }
-        });
-    });
+        })?;
+
+        Ok(())
+    })
+    .unwrap();
     assert_that!(counter.load(Ordering::Relaxed), eq 2 * ITERATIONS);
 
     Ok(())
