@@ -1860,9 +1860,11 @@ dependencies = [
  "iceoryx2-bb-posix",
  "iceoryx2-bb-system-types",
  "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
  "iceoryx2-cal",
  "iceoryx2-cal-conformance-tests-common",
  "iceoryx2-pal-posix",
+ "iceoryx2-pal-print",
  "postcard",
  "serde",
  "toml 0.9.8",
@@ -1879,6 +1881,23 @@ dependencies = [
  "iceoryx2-bb-testing-macros",
  "iceoryx2-cal",
  "iceoryx2-cal-conformance-tests",
+ "iceoryx2-pal-print",
+]
+
+[[package]]
+name = "iceoryx2-cal-conformance-tests-nostd"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-memory",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+ "iceoryx2-cal",
+ "iceoryx2-cal-conformance-tests",
+ "iceoryx2-cal-conformance-tests-common",
+ "iceoryx2-pal-print",
 ]
 
 [[package]]

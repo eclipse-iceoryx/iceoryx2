@@ -15,21 +15,18 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod reactor_trait {
-    use iceoryx2_bb_concurrency::atomic::AtomicU64;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_posix::file_descriptor::FileDescriptorBased;
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing_macros::requires_std;
     use iceoryx2_cal::event::unix_datagram_socket::*;
     use iceoryx2_cal::event::{Listener, ListenerBuilder, Notifier, NotifierBuilder};
     use iceoryx2_cal::reactor::{Reactor, *};
     use iceoryx2_cal::testing::{generate_isolated_config, generate_name};
 
+    use alloc::vec;
     use core::time::Duration;
-    use iceoryx2_bb_concurrency::atomic::Ordering;
-    use std::sync::{Barrier, Mutex};
-    use std::time::Instant;
 
-    const TIMEOUT: Duration = Duration::from_millis(50);
     const INFINITE_TIMEOUT: Duration = Duration::from_secs(3600 * 24);
     const NUMBER_OF_ATTACHMENTS: usize = 32;
 
@@ -345,8 +342,13 @@ pub mod reactor_trait {
         }
     }
 
+    #[requires_std("time")]
     #[conformance_test]
     pub fn timed_wait_blocks_for_at_least_timeout<Sut: Reactor>() {
+        use std::time::Instant;
+
+        const TIMEOUT: Duration = Duration::from_millis(50);
+
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
 
         let attachment = NotifierListenerPair::new();
@@ -490,8 +492,16 @@ pub mod reactor_trait {
         assert_that!(triggered_fds, len 0);
     }
 
+    #[requires_std("threading")]
     #[conformance_test]
     pub fn timed_wait_blocks_until_triggered<Sut: Reactor>() {
+        use std::sync::{Barrier, Mutex};
+
+        use iceoryx2_bb_concurrency::atomic::AtomicU64;
+        use iceoryx2_bb_concurrency::atomic::Ordering;
+
+        const TIMEOUT: Duration = Duration::from_millis(50);
+
         let name = generate_name();
         let barrier = Barrier::new(2);
         let counter = AtomicU64::new(0);
@@ -534,8 +544,16 @@ pub mod reactor_trait {
         });
     }
 
+    #[requires_std("threading")]
     #[conformance_test]
     pub fn blocking_wait_blocks_until_triggered<Sut: Reactor>() {
+        use std::sync::{Barrier, Mutex};
+
+        use iceoryx2_bb_concurrency::atomic::AtomicU64;
+        use iceoryx2_bb_concurrency::atomic::Ordering;
+
+        const TIMEOUT: Duration = Duration::from_millis(50);
+
         let name = generate_name();
         let barrier = Barrier::new(2);
         let counter = AtomicU64::new(0);

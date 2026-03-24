@@ -13,7 +13,6 @@
 use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
 use iceoryx2_cal_conformance_tests::dynamic_storage_trait::TestData;
 
-use iceoryx2_cal::dynamic_storage::file::Storage as FileStorage;
 use iceoryx2_cal::dynamic_storage::posix_shared_memory::Storage as PosixStorage;
 use iceoryx2_cal::dynamic_storage::process_local::Storage as LocalStorage;
 
@@ -31,6 +30,8 @@ instantiate_conformance_tests_with_module!(
     super::LocalStorage<u64>
 );
 
+#[cfg(not(target_os = "windows"))]
+use iceoryx2_cal::dynamic_storage::file::Storage as FileStorage;
 // disabled on windows since windows 2022 (not windows 10 or 11)
 // has some weird file remove issue which cause unit test failures that are
 // non-reproducible on windows 10 or 11

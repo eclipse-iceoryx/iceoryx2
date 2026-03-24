@@ -15,25 +15,19 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod static_storage_trait {
+    use alloc::string::{String, ToString};
+    use alloc::vec;
     use core::time::Duration;
 
-    use iceoryx2_bb_concurrency::atomic::AtomicU64;
-    use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::assert_that;
-    use iceoryx2_bb_testing::watchdog::Watchdog;
+    use iceoryx2_bb_testing_macros::requires_std;
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::static_storage::StaticStorageCreateError;
     use iceoryx2_cal::static_storage::*;
-    use std::sync::Barrier;
-    use std::sync::Mutex;
-
-    /// The list all storage tests requires that all other tests are not interfering and therefore
-    /// we cannot let them run concurrently.
-    static TEST_MUTEX: Mutex<u8> = Mutex::new(0);
 
     fn generate_name() -> FileName {
         let mut file = FileName::new(b"static_storage_tests_").unwrap();
@@ -50,7 +44,6 @@ pub mod static_storage_trait {
 
     #[conformance_test]
     pub fn create_and_read_works<Sut: StaticStorage>() {
-        let _test_guard = TEST_MUTEX.lock();
         let storage_name = generate_name();
 
         let mut content = "some storage content".to_string();
@@ -80,7 +73,6 @@ pub mod static_storage_trait {
     pub fn open_non_existing_fails<Sut: StaticStorage>() {
         let storage_name = generate_name();
 
-        let _test_guard = TEST_MUTEX.lock();
         let storage_reader = Sut::Builder::new(&storage_name).open(Duration::ZERO);
 
         assert_that!(storage_reader, is_err);
@@ -92,7 +84,6 @@ pub mod static_storage_trait {
 
     #[conformance_test]
     pub fn when_storage_guard_goes_out_of_scope_storage_is_removed<Sut: StaticStorage>() {
-        let _test_guard = TEST_MUTEX.lock();
         let storage_name = generate_name();
 
         let mut content = "some storage content".to_string();
@@ -107,7 +98,6 @@ pub mod static_storage_trait {
 
     #[conformance_test]
     pub fn cannot_create_same_storage_twice<Sut: StaticStorage>() {
-        let _test_guard = TEST_MUTEX.lock();
         let storage_name = generate_name();
 
         let mut content = "some storage content".to_string();
@@ -125,7 +115,6 @@ pub mod static_storage_trait {
 
     #[conformance_test]
     pub fn after_reader_is_created_guard_can_be_dropped<Sut: StaticStorage>() {
-        let _test_guard = TEST_MUTEX.lock();
         let storage_name = generate_name();
 
         let mut content = "another\nfunky\nstorage".to_string();
@@ -160,7 +149,6 @@ pub mod static_storage_trait {
 
     #[conformance_test]
     pub fn last_open_reader_drops_storage<Sut: StaticStorage>() {
-        let _test_guard = TEST_MUTEX.lock();
         let storage_name = generate_name();
 
         let mut content = "another\nfunky\nstorage".to_string();
@@ -183,7 +171,6 @@ pub mod static_storage_trait {
 
     #[conformance_test]
     pub fn read_same_storage_multiple_times_works<Sut: StaticStorage>() {
-        let _test_guard = TEST_MUTEX.lock();
         let storage_name = generate_name();
 
         let mut content = "another\nfunky\nstorage".to_string();
@@ -216,7 +203,6 @@ pub mod static_storage_trait {
 
     #[conformance_test]
     pub fn read_with_insufficient_buffer_fails<Sut: StaticStorage>() {
-        let _test_guard = TEST_MUTEX.lock();
         let storage_name = generate_name();
 
         let mut content = "some \nfuu\n cont\tent".to_string();
@@ -241,7 +227,6 @@ pub mod static_storage_trait {
 
     #[conformance_test]
     pub fn list_all_storages_works<Sut: StaticStorage>() {
-        let _test_guard = TEST_MUTEX.lock();
         const NUMBER_OF_STORAGES: u64 = 12;
 
         let mut storages = vec![];
@@ -283,10 +268,17 @@ pub mod static_storage_trait {
         assert_that!(<Sut as NamedConceptMgmt>::list().unwrap(), len 0);
     }
 
+    #[requires_std("threading")]
     #[conformance_test]
     pub fn concurrent_create_same_locked_storage_multiple_times_fails_for_all_but_one<
         Sut: StaticStorage,
     >() {
+        use std::sync::Barrier;
+
+        use iceoryx2_bb_concurrency::atomic::AtomicU64;
+        use iceoryx2_bb_concurrency::atomic::Ordering;
+        use iceoryx2_bb_testing::watchdog::Watchdog;
+
         let _watch_dog = Watchdog::new();
         const NUMBER_OF_THREADS: usize = 4;
         const NUMBER_OF_ITERATIONS: usize = 1000;
@@ -327,7 +319,6 @@ pub mod static_storage_trait {
 
     #[conformance_test]
     pub fn does_exist_works<Sut: StaticStorage>() {
-        let _test_guard = TEST_MUTEX.lock();
         const NUMBER_OF_STORAGES: u64 = 12;
         const NUMBER_OF_LOCKED_STORAGES: u64 = 12;
 
@@ -376,7 +367,6 @@ pub mod static_storage_trait {
 
     #[conformance_test]
     pub fn create_locked_works<Sut: StaticStorage>() {
-        let _test_guard = TEST_MUTEX.lock();
         let storage_name = generate_name();
 
         let content = "whooo hoo hoo".to_string();
@@ -413,10 +403,10 @@ pub mod static_storage_trait {
         assert_that!(read_content, eq content);
     }
 
+    #[requires_std("time")]
     #[conformance_test]
     pub fn open_locked_with_timeout_works<Sut: StaticStorage>() {
         const TIMEOUT: Duration = Duration::from_millis(100);
-        let _test_guard = TEST_MUTEX.lock();
         let storage_name = generate_name();
 
         let _storage_guard = Sut::Builder::new(&storage_name).create_locked();
@@ -434,7 +424,6 @@ pub mod static_storage_trait {
 
     #[conformance_test]
     pub fn releasing_ownership_works<Sut: StaticStorage>() {
-        let _test_guard = TEST_MUTEX.lock();
         let storage_name = generate_name();
 
         let content = "whooo hoo hoo".to_string();
@@ -453,7 +442,6 @@ pub mod static_storage_trait {
 
     #[conformance_test]
     pub fn create_without_ownership_works<Sut: StaticStorage>() {
-        let _test_guard = TEST_MUTEX.lock();
         let storage_name = generate_name();
 
         let content = "whooo hoo hoo".to_string();
@@ -472,7 +460,6 @@ pub mod static_storage_trait {
 
     #[conformance_test]
     pub fn acquire_ownership_works<Sut: StaticStorage>() {
-        let _test_guard = TEST_MUTEX.lock();
         let storage_name = generate_name();
 
         let content = "whooo hoo hoo".to_string();
@@ -490,8 +477,6 @@ pub mod static_storage_trait {
 
     #[conformance_test]
     pub fn custom_suffix_keeps_storages_separated<Sut: StaticStorage>() {
-        let _test_guard = TEST_MUTEX.lock();
-
         let config_1 = <Sut as NamedConceptMgmt>::Configuration::default()
             .suffix(unsafe { &FileName::new_unchecked(b".static_storage_1") });
         let config_2 = <Sut as NamedConceptMgmt>::Configuration::default()

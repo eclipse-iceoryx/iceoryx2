@@ -15,25 +15,21 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod zero_copy_connection_trait {
-    use core::time::Duration;
-    use std::collections::HashSet;
-    use std::sync::{Arc, Barrier, Mutex};
-    use std::time::Instant;
+    use alloc::collections::btree_set::BTreeSet;
+    use alloc::vec;
 
     use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_container::semantic_string::*;
-    use iceoryx2_bb_posix::barrier::*;
     use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::assert_that;
-    use iceoryx2_bb_testing::watchdog::Watchdog;
+    use iceoryx2_bb_testing_macros::requires_std;
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::named_concept::{NamedConceptBuilder, NamedConceptMgmt};
     use iceoryx2_cal::shm_allocator::{PointerOffset, SegmentId};
     use iceoryx2_cal::testing::{generate_isolated_config, generate_name};
     use iceoryx2_cal::zero_copy_connection::{ChannelId, *};
 
-    const TIMEOUT: Duration = Duration::from_millis(25);
     const SAMPLE_SIZE: usize = 123;
     const NUMBER_OF_SAMPLES: usize = 2345;
 
@@ -781,8 +777,18 @@ pub mod zero_copy_connection_trait {
         }
     }
 
+    #[requires_std("threading", "time")]
     #[conformance_test]
     pub fn blocking_send_blocks<Sut: ZeroCopyConnection>() {
+        use core::time::Duration;
+        use std::sync::Mutex;
+        use std::time::Instant;
+
+        use iceoryx2_bb_posix::barrier::*;
+        use iceoryx2_bb_testing::watchdog::Watchdog;
+
+        const TIMEOUT: Duration = Duration::from_millis(25);
+
         let id = ChannelId::new(0);
         let _watchdog = Watchdog::new();
         let name = generate_name();
@@ -863,7 +869,7 @@ pub mod zero_copy_connection_trait {
             .create_receiver()
             .unwrap();
 
-        let mut offsets = HashSet::new();
+        let mut offsets = BTreeSet::new();
 
         let mut counter = 1;
         for _ in 0..BUFFER_SIZE {
@@ -921,7 +927,7 @@ pub mod zero_copy_connection_trait {
             );
         }
 
-        let mut offsets = HashSet::new();
+        let mut offsets = BTreeSet::new();
         for i in 0..BUFFER_SIZE {
             let sample_offset = SAMPLE_SIZE * (i + BUFFER_SIZE);
             offsets.insert(sample_offset);
@@ -1010,7 +1016,7 @@ pub mod zero_copy_connection_trait {
             .create_receiver()
             .unwrap();
 
-        let mut offsets = HashSet::new();
+        let mut offsets = BTreeSet::new();
         for i in 0..BUFFER_SIZE {
             let sample_offset = SAMPLE_SIZE * (i + BUFFER_SIZE);
             offsets.insert(sample_offset);
@@ -1179,6 +1185,7 @@ pub mod zero_copy_connection_trait {
     }
 
     #[cfg(debug_assertions)]
+    #[requires_std("panics")]
     #[should_panic]
     #[conformance_test]
     pub fn send_pointer_offset_with_out_of_bounds_segment_id_fails<Sut: ZeroCopyConnection>() {
@@ -1212,6 +1219,7 @@ pub mod zero_copy_connection_trait {
     }
 
     #[cfg(debug_assertions)]
+    #[requires_std("panics")]
     #[should_panic]
     #[conformance_test]
     pub fn release_pointer_offset_with_out_of_bounds_segment_id_fails<Sut: ZeroCopyConnection>() {
@@ -1535,6 +1543,7 @@ pub mod zero_copy_connection_trait {
     }
 
     #[cfg(debug_assertions)]
+    #[requires_std("panics")]
     #[should_panic]
     #[conformance_test]
     pub fn panic_when_same_offset_is_sent_twice_over_same_channel<Sut: ZeroCopyConnection>() {
@@ -1673,6 +1682,7 @@ pub mod zero_copy_connection_trait {
     }
 
     #[cfg(debug_assertions)]
+    #[requires_std("panics")]
     #[should_panic]
     #[conformance_test]
     pub fn panics_on_out_of_bounds_channel_id_in_try_send<Sut: ZeroCopyConnection>() {
@@ -1691,6 +1701,7 @@ pub mod zero_copy_connection_trait {
     }
 
     #[cfg(debug_assertions)]
+    #[requires_std("panics")]
     #[should_panic]
     #[conformance_test]
     pub fn panics_on_out_of_bounds_channel_id_in_blocking_send<Sut: ZeroCopyConnection>() {
@@ -1709,6 +1720,7 @@ pub mod zero_copy_connection_trait {
     }
 
     #[cfg(debug_assertions)]
+    #[requires_std("panics")]
     #[should_panic]
     #[conformance_test]
     pub fn panics_on_out_of_bounds_channel_id_in_reclaim<Sut: ZeroCopyConnection>() {
@@ -1727,6 +1739,7 @@ pub mod zero_copy_connection_trait {
     }
 
     #[cfg(debug_assertions)]
+    #[requires_std("panics")]
     #[should_panic]
     #[conformance_test]
     pub fn panics_on_out_of_bounds_channel_id_in_receive<Sut: ZeroCopyConnection>() {
@@ -1745,6 +1758,7 @@ pub mod zero_copy_connection_trait {
     }
 
     #[cfg(debug_assertions)]
+    #[requires_std("panics")]
     #[should_panic]
     #[conformance_test]
     pub fn panics_on_out_of_bounds_channel_id_in_release<Sut: ZeroCopyConnection>() {
@@ -1763,6 +1777,7 @@ pub mod zero_copy_connection_trait {
     }
 
     #[cfg(debug_assertions)]
+    #[requires_std("panics")]
     #[should_panic]
     #[conformance_test]
     pub fn panics_on_out_of_bounds_channel_id_in_has_data<Sut: ZeroCopyConnection>() {
@@ -1790,8 +1805,12 @@ pub mod zero_copy_connection_trait {
     }
 
     #[ignore] // TODO: iox2-671 enable this test when the concurrency issue is fixed.
+    #[requires_std("threading")]
     #[conformance_test]
     pub fn concurrent_creation_and_destruction_works<Sut: ZeroCopyConnection>() {
+        use alloc::sync::Arc;
+        use std::sync::Barrier;
+
         const ITERATIONS: usize = 1000;
         let barrier_1 = Arc::new(Barrier::new(2));
         let barrier_2 = barrier_1.clone();
