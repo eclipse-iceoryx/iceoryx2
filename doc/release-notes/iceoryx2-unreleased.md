@@ -80,6 +80,8 @@
   [#1463](https://github.com/eclipse-iceoryx/iceoryx2/issues/1463)
 * Bump rustls-webpki from 0.103.8 to 0.103.10 in Rust and Bazel
   [#1471](https://github.com/eclipse-iceoryx/iceoryx2/issues/1471)
+* Fix deadlock in POSIX barrier in macOS
+  [#1474](https://github.com/eclipse-iceoryx/iceoryx2/issues/1474)
 * Fix `SIGPIPE` in `local::Service` events triggered by the `socketpair`
   [#1477](https://github.com/eclipse-iceoryx/iceoryx2/issues/1463)
 

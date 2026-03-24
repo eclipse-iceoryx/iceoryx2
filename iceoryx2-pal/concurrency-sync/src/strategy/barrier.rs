@@ -19,11 +19,13 @@ use crate::SPIN_REPETITIONS;
 #[derive(Debug)]
 pub struct Barrier {
     waiters: AtomicU32,
+    number_of_waiters: u32,
 }
 
 impl Barrier {
     pub fn new(number_of_waiters: u32) -> Self {
         Self {
+            number_of_waiters,
             waiters: AtomicU32::new(number_of_waiters),
         }
     }
@@ -51,6 +53,12 @@ impl Barrier {
         loop {
             let current_value = self.waiters.load(Ordering::Acquire);
             if current_value == 0 {
+                let _ = self.waiters.compare_exchange(
+                    0,
+                    self.number_of_waiters,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                );
                 return;
             }
 
