@@ -15,6 +15,7 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod service_blackboard {
+    use alloc::sync::Arc;
     use core::alloc::Layout;
     use core::ptr::copy_nonoverlapping;
     use iceoryx2::constants::MAX_BLACKBOARD_KEY_SIZE;
@@ -32,12 +33,14 @@ pub mod service_blackboard {
     use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64};
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_container::string::*;
+    use iceoryx2_bb_posix::barrier::BarrierBuilder;
+    use iceoryx2_bb_posix::barrier::BarrierHandle;
+    use iceoryx2_bb_posix::ipc_capable::Handle;
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
+    use iceoryx2_bb_posix::thread::thread_scope;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
-    use std::sync::Arc;
-    use std::sync::Barrier;
 
     fn generate_name() -> ServiceName {
         ServiceName::new(&format!(
@@ -1537,7 +1540,10 @@ pub mod service_blackboard {
         let _watch_dog = Watchdog::new();
         let number_of_entry_handles = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
 
-        let barrier = Barrier::new(number_of_entry_handles + 1);
+        let handle = BarrierHandle::new();
+        let barrier = BarrierBuilder::new((number_of_entry_handles + 1) as _)
+            .create(&handle)
+            .unwrap();
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
@@ -1551,8 +1557,8 @@ pub mod service_blackboard {
         let counter = AtomicU64::new(0);
         let keep_running = AtomicBool::new(true);
 
-        std::thread::scope(|s| {
-            let t = s.spawn(|| {
+        thread_scope(|s| {
+            s.thread_builder().spawn(|| {
                 let sut = node
                     .service_builder(&service_name)
                     .blackboard_opener::<u64>()
@@ -1567,10 +1573,9 @@ pub mod service_blackboard {
                     counter.fetch_add(1, Ordering::Relaxed);
                     entry_handle_mut.update_with_copy(counter.load(Ordering::Relaxed));
                 }
-            });
-            let mut threads = vec![];
+            })?;
             for _ in 0..number_of_entry_handles {
-                threads.push(s.spawn(|| {
+                s.thread_builder().spawn(|| {
                     let sut = node
                         .service_builder(&service_name)
                         .blackboard_opener::<u64>()
@@ -1581,14 +1586,14 @@ pub mod service_blackboard {
                     let read_value = reader.entry::<u64>(&0).unwrap().get();
                     assert_that!(*read_value, ge 0);
                     assert_that!(*read_value, le counter.load(Ordering::Relaxed));
-                }));
+                })?;
             }
-            for t in threads {
-                t.join().unwrap();
-            }
+
             keep_running.store(false, Ordering::Relaxed);
-            t.join().unwrap();
-        });
+
+            Ok(())
+        })
+        .unwrap();
     }
 
     #[conformance_test]
@@ -1596,7 +1601,12 @@ pub mod service_blackboard {
         let _watch_dog = Watchdog::new();
         let number_of_entry_handle_muts: u64 = 8;
 
-        let barrier = Arc::new(Barrier::new(number_of_entry_handle_muts as usize));
+        let handle = BarrierHandle::new();
+        let barrier = Arc::new(
+            BarrierBuilder::new(number_of_entry_handle_muts as _)
+                .create(&handle)
+                .unwrap(),
+        );
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
@@ -1615,20 +1625,18 @@ pub mod service_blackboard {
             .unwrap();
         let writer = sut.writer_builder().create().unwrap();
 
-        std::thread::scope(|s| {
-            let mut threads = vec![];
+        thread_scope(|s| {
             for i in 0..number_of_entry_handle_muts {
                 let entry_handle_mut = writer.entry::<u64>(&i).unwrap();
                 let barrier_thread = barrier.clone();
-                threads.push(s.spawn(move || {
+                s.thread_builder().spawn(move || {
                     barrier_thread.wait();
                     entry_handle_mut.update_with_copy(i);
-                }));
+                })?;
             }
-            for t in threads {
-                t.join().unwrap();
-            }
-        });
+            Ok(())
+        })
+        .unwrap();
 
         let reader = sut.reader_builder().create().unwrap();
         for i in 0..number_of_entry_handle_muts {
