@@ -24,7 +24,7 @@ pub mod event_id_tracker_trait {
     use core::ptr::NonNull;
     use iceoryx2_bb_memory::bump_allocator::*;
 
-    const MEMORY_SIZE: usize = 1024 * 1024;
+    const MEMORY_SIZE: usize = 1024 * 64;
 
     fn memory() -> Box<[u8; MEMORY_SIZE]> {
         Box::new([0u8; MEMORY_SIZE])
