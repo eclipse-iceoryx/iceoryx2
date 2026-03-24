@@ -53,10 +53,7 @@ impl Barrier {
         wait: Wait,
         wake_all: WakeAll,
     ) {
-        let (current_epoch, _) = unpack(
-            self.waiters
-                .fetch_sub(1, std::sync::atomic::Ordering::Relaxed),
-        );
+        let (current_epoch, _) = unpack(self.waiters.fetch_sub(1, Ordering::Relaxed));
 
         let mut retry_counter = 0;
         loop {
