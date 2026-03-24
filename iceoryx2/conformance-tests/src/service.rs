@@ -17,7 +17,6 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 pub mod service {
     use core::marker::PhantomData;
     use core::time::Duration;
-    use std::sync::Barrier;
 
     use iceoryx2::node::NodeView;
     use iceoryx2::prelude::*;
@@ -36,7 +35,10 @@ pub mod service {
     use iceoryx2_bb_concurrency::atomic::AtomicU64;
     use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
+    use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle};
+    use iceoryx2_bb_posix::ipc_capable::Handle;
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
+    use iceoryx2_bb_posix::thread::thread_scope;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -414,14 +416,19 @@ pub mod service {
         const NUMBER_OF_ITERATIONS: usize = 25;
         let test = Factory::new();
 
-        let barrier_enter = Barrier::new(number_of_threads);
-        let barrier_exit = Barrier::new(number_of_threads);
+        let handle_enter = BarrierHandle::new();
+        let handle_exit = BarrierHandle::new();
+        let barrier_enter = BarrierBuilder::new(number_of_threads as _)
+            .create(&handle_enter)
+            .unwrap();
+        let barrier_exit = BarrierBuilder::new(number_of_threads as _)
+            .create(&handle_exit)
+            .unwrap();
 
         let config = generate_isolated_config();
-        std::thread::scope(|s| {
-            let mut threads = vec![];
+        thread_scope(|s| {
             for _ in 0..number_of_threads {
-                threads.push(s.spawn(|| {
+                s.thread_builder().spawn(|| {
                     let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
                     for _ in 0..NUMBER_OF_ITERATIONS {
                         let service_name = generate_name();
@@ -433,13 +440,12 @@ pub mod service {
 
                         barrier_exit.wait();
                     }
-                }));
+                })?;
             }
 
-            for thread in threads {
-                thread.join().unwrap();
-            }
-        });
+            Ok(())
+        })
+        .unwrap();
     }
 
     #[conformance_test]
@@ -453,15 +459,20 @@ pub mod service {
         let test = Factory::new();
 
         let success_counter = AtomicU64::new(0);
-        let barrier_enter = Barrier::new(number_of_threads);
-        let barrier_exit = Barrier::new(number_of_threads);
+        let handle_enter = BarrierHandle::new();
+        let handle_exit = BarrierHandle::new();
+        let barrier_enter = BarrierBuilder::new(number_of_threads as _)
+            .create(&handle_enter)
+            .unwrap();
+        let barrier_exit = BarrierBuilder::new(number_of_threads as _)
+            .create(&handle_exit)
+            .unwrap();
         let service_name = generate_name();
 
         let config = generate_isolated_config();
-        std::thread::scope(|s| {
-            let mut threads = vec![];
+        thread_scope(|s| {
             for _ in 0..number_of_threads {
-                threads.push(s.spawn(|| {
+                s.thread_builder().spawn(|| {
                     let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
                     for _ in 0..NUMBER_OF_ITERATIONS {
                         barrier_enter.wait();
@@ -478,18 +489,17 @@ pub mod service {
 
                         barrier_exit.wait();
                     }
-                }));
+                })?;
             }
 
-            for thread in threads {
-                thread.join().unwrap();
-            }
+            Ok(())
+        })
+        .unwrap();
 
-            assert_that!(
-                success_counter.load(Ordering::Relaxed),
-                eq(NUMBER_OF_ITERATIONS as u64)
-            );
-        });
+        assert_that!(
+            success_counter.load(Ordering::Relaxed),
+            eq(NUMBER_OF_ITERATIONS as u64)
+        );
     }
 
     #[conformance_test]
@@ -504,17 +514,22 @@ pub mod service {
         let number_of_threads = NUMBER_OF_CLOSE_THREADS + number_of_open_threads;
         let test = Factory::new();
 
-        let barrier_enter = Barrier::new(number_of_threads);
-        let barrier_exit = Barrier::new(number_of_threads);
+        let handle_enter = BarrierHandle::new();
+        let handle_exit = BarrierHandle::new();
+        let barrier_enter = BarrierBuilder::new(number_of_threads as _)
+            .create(&handle_enter)
+            .unwrap();
+        let barrier_exit = BarrierBuilder::new(number_of_threads as _)
+            .create(&handle_exit)
+            .unwrap();
 
         const NUMBER_OF_ITERATIONS: usize = 100;
         let service_names: Vec<_> = (0..NUMBER_OF_ITERATIONS).map(|_| generate_name()).collect();
         let service_names = &service_names;
 
         let config = generate_isolated_config();
-        std::thread::scope(|s| {
-            let mut threads = vec![];
-            threads.push(s.spawn(|| {
+        thread_scope(|s| {
+            s.thread_builder().spawn(|| {
                 let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
                 for service_name in service_names {
                     let sut = test
@@ -525,10 +540,10 @@ pub mod service {
                     drop(sut);
                     barrier_exit.wait();
                 }
-            }));
+            })?;
 
             for _ in 0..number_of_open_threads {
-                threads.push(s.spawn(|| {
+                s.thread_builder().spawn(|| {
                     let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
                     for service_name in service_names {
                         barrier_enter.wait();
@@ -543,13 +558,12 @@ pub mod service {
 
                         barrier_exit.wait();
                     }
-                }));
+                })?;
             }
 
-            for thread in threads {
-                thread.join().unwrap();
-            }
-        });
+            Ok(())
+        })
+        .unwrap();
     }
 
     #[conformance_test]
@@ -955,13 +969,15 @@ pub mod service {
         let test = Factory::new();
         let number_of_creators = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
         const NUMBER_OF_ITERATIONS: usize = 40;
-        let barrier = Barrier::new(number_of_creators);
+        let handle = BarrierHandle::new();
+        let barrier = BarrierBuilder::new(number_of_creators as _)
+            .create(&handle)
+            .unwrap();
 
         let config = generate_isolated_config();
-        std::thread::scope(|s| {
-            let mut threads = vec![];
+        thread_scope(|s| {
             for _ in 0..number_of_creators {
-                threads.push(s.spawn(|| {
+                s.thread_builder().spawn(|| {
                     let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
                     barrier.wait();
 
@@ -982,13 +998,12 @@ pub mod service {
                         assert_that!(result, is_ok);
                         assert_that!(found_me, eq true);
                     }
-                }));
+                })?;
             }
 
-            for t in threads {
-                t.join().unwrap();
-            }
-        });
+            Ok(())
+        })
+        .unwrap();
     }
 
     #[conformance_test]
@@ -1000,7 +1015,10 @@ pub mod service {
         let test = Factory::new();
         let number_of_creators = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
         const NUMBER_OF_ITERATIONS: usize = 30;
-        let barrier = Barrier::new(number_of_creators);
+        let handle = BarrierHandle::new();
+        let barrier = BarrierBuilder::new(number_of_creators as _)
+            .create(&handle)
+            .unwrap();
 
         let config = generate_isolated_config();
         let main_node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -1008,10 +1026,9 @@ pub mod service {
         let attributes = AttributeVerifier::new();
         let _service = test.create(&main_node, &service_name, &AttributeSpecifier::new());
 
-        std::thread::scope(|s| {
-            let mut threads = vec![];
+        thread_scope(|s| {
             for _ in 0..number_of_creators {
-                threads.push(s.spawn(|| {
+                s.thread_builder().spawn(|| {
                     barrier.wait();
 
                     for _ in 0..NUMBER_OF_ITERATIONS {
@@ -1046,13 +1063,12 @@ pub mod service {
                         assert_that!(result, is_ok);
                         assert_that!(found_me, eq true);
                     }
-                }));
+                })?;
             }
 
-            for thread in threads {
-                thread.join().unwrap();
-            }
-        });
+            Ok(())
+        })
+        .unwrap();
     }
 
     #[conformance_test]
@@ -1064,7 +1080,10 @@ pub mod service {
         let test = Factory::new();
         let number_of_creators = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
         const NUMBER_OF_ITERATIONS: usize = 30;
-        let barrier = Barrier::new(number_of_creators);
+        let handle = BarrierHandle::new();
+        let barrier = BarrierBuilder::new(number_of_creators as _)
+            .create(&handle)
+            .unwrap();
 
         let config = generate_isolated_config();
         let main_node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -1072,10 +1091,9 @@ pub mod service {
         let attributes = AttributeVerifier::new();
         let _service = test.create(&main_node, &service_name, &AttributeSpecifier::new());
 
-        std::thread::scope(|s| {
-            let mut threads = vec![];
+        thread_scope(|s| {
             for _ in 0..number_of_creators {
-                threads.push(s.spawn(|| {
+                s.thread_builder().spawn(|| {
                     barrier.wait();
 
                     for _ in 0..NUMBER_OF_ITERATIONS {
@@ -1115,13 +1133,12 @@ pub mod service {
                         }
                         assert_that!(found_me, eq true);
                     }
-                }));
+                })?;
             }
 
-            for thread in threads {
-                thread.join().unwrap();
-            }
-        });
+            Ok(())
+        })
+        .unwrap();
     }
 
     #[conformance_test]

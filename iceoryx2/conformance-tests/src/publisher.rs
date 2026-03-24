@@ -15,10 +15,11 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod publisher {
+    use alloc::collections::BTreeSet;
     use core::time::Duration;
-    use std::collections::HashSet;
-    use std::sync::Mutex;
-    use std::time::Instant;
+    use iceoryx2_bb_posix::clock::{nanosleep, Time};
+    use iceoryx2_bb_posix::mutex::{MutexBuilder, MutexHandle};
+    use iceoryx2_bb_posix::thread::thread_scope;
 
     use iceoryx2::port::{publisher::PublisherCreateError, LoanError};
     use iceoryx2::prelude::*;
@@ -458,7 +459,13 @@ pub mod publisher {
         let _watchdog = Watchdog::new();
         let service_name = generate_name()?;
         let config = testing::generate_isolated_config();
-        let node = Mutex::new(NodeBuilder::new().config(&config).create::<Sut>().unwrap());
+        let handle = MutexHandle::new();
+        let node = MutexBuilder::new()
+            .create(
+                NodeBuilder::new().config(&config).create::<Sut>().unwrap(),
+                &handle,
+            )
+            .unwrap();
         let service = node
             .lock()
             .unwrap()
@@ -477,8 +484,8 @@ pub mod publisher {
         let handle = BarrierHandle::new();
         let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
 
-        std::thread::scope(|s| {
-            s.spawn(|| {
+        thread_scope(|s| {
+            s.thread_builder().spawn(|| {
                 let service = node
                     .lock()
                     .unwrap()
@@ -496,21 +503,24 @@ pub mod publisher {
                 };
 
                 barrier.wait();
-                std::thread::sleep(TIMEOUT);
+                nanosleep(TIMEOUT).unwrap();
                 let sample_1 = receive_sample();
-                std::thread::sleep(TIMEOUT);
+                nanosleep(TIMEOUT).unwrap();
                 let sample_2 = receive_sample();
 
                 assert_that!(*sample_1, eq 8192);
                 assert_that!(*sample_2, eq 2);
-            });
+            })?;
 
             barrier.wait();
-            let now = Instant::now();
+            let now = Time::now().unwrap();
             sut.send_copy(8192).unwrap();
             sut.send_copy(2).unwrap();
-            assert_that!(now.elapsed(), time_at_least TIMEOUT);
-        });
+            assert_that!(now.elapsed().unwrap(), time_at_least TIMEOUT);
+
+            Ok(())
+        })
+        .unwrap();
 
         Ok(())
     }
@@ -550,7 +560,7 @@ pub mod publisher {
             .unwrap();
 
         let mut publishers = vec![];
-        let mut publisher_id_set = HashSet::new();
+        let mut publisher_id_set = BTreeSet::new();
 
         for _ in 0..MAX_PUBLISHERS {
             let publisher = sut.publisher_builder().create().unwrap();

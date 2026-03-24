@@ -15,6 +15,7 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod reader {
+    use alloc::collections::BTreeSet;
     use iceoryx2::constants::MAX_BLACKBOARD_KEY_SIZE;
     use iceoryx2::port::reader::*;
     use iceoryx2::prelude::*;
@@ -26,7 +27,6 @@ pub mod reader {
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
-    use std::collections::HashSet;
 
     fn generate_name() -> ServiceName {
         ServiceName::new(&format!(
@@ -52,7 +52,7 @@ pub mod reader {
             .unwrap();
 
         let mut readers = vec![];
-        let mut reader_id_set = HashSet::new();
+        let mut reader_id_set = BTreeSet::new();
 
         for _ in 0..MAX_READERS {
             let reader = sut.reader_builder().create().unwrap();
