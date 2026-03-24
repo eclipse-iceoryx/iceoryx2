@@ -20,9 +20,14 @@ pub mod event_trait {
     use alloc::collections::btree_set::BTreeSet;
     use alloc::{vec, vec::Vec};
     use core::time::Duration;
-
+    use iceoryx2_bb_concurrency::atomic::AtomicU64;
+    use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_container::semantic_string::*;
+    use iceoryx2_bb_posix::barrier::*;
+    use iceoryx2_bb_posix::clock::{nanosleep, Time};
+    use iceoryx2_bb_posix::mutex::{MutexBuilder, MutexHandle};
+    use iceoryx2_bb_posix::thread::thread_scope;
     use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing::{assert_that, test_requires};
@@ -96,8 +101,6 @@ pub mod event_trait {
     #[requires_std("time")]
     #[conformance_test]
     pub fn notify_with_same_id_does_not_lead_to_non_blocking_timed_wait<Sut: Event>() {
-        use std::time::Instant;
-
         let _watchdog = Watchdog::new();
         const REPETITIONS: u64 = 8;
         let name = generate_name();
@@ -120,13 +123,13 @@ pub mod event_trait {
 
         assert_that!(sut_listener.try_wait_one().unwrap(), is_some);
 
-        let now = Instant::now();
+        let now = Time::now().unwrap();
         let result = sut_listener.timed_wait_one(TIMEOUT).unwrap();
 
         if result.is_some() {
             assert_that!(result, eq Some(trigger_id));
         } else {
-            assert_that!(now.elapsed(), time_at_least TIMEOUT );
+            assert_that!(now.elapsed().unwrap(), time_at_least TIMEOUT );
         }
     }
 
@@ -313,8 +316,6 @@ pub mod event_trait {
     #[requires_std("time")]
     #[conformance_test]
     pub fn timed_wait_does_block_for_at_least_timeout<Sut: Event>() {
-        use std::time::Instant;
-
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -327,31 +328,29 @@ pub mod event_trait {
             .open()
             .unwrap();
 
-        let start = Instant::now();
+        let start = Time::now().unwrap();
         let result = sut_listener.timed_wait_one(TIMEOUT).unwrap();
         assert_that!(result, is_none);
-        assert_that!(start.elapsed(), time_at_least TIMEOUT);
+        assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT);
     }
 
     #[requires_std("threading")]
     #[conformance_test]
     pub fn blocking_wait_blocks_until_notification_arrives<Sut: Event>() {
-        use std::sync::Mutex;
-
-        use iceoryx2_bb_concurrency::atomic::AtomicU64;
-        use iceoryx2_bb_concurrency::atomic::Ordering;
-        use iceoryx2_bb_posix::barrier::*;
-
         let _watchdog = Watchdog::new();
         let name = generate_name();
-        let config = Mutex::new(generate_isolated_config::<Sut>());
+        let handle = MutexHandle::new();
+        let config = MutexBuilder::new()
+            .create(generate_isolated_config::<Sut>(), &handle)
+            .unwrap();
 
         let counter = AtomicU64::new(0);
+        let counter_old = AtomicU64::new(0);
         let handle = BarrierHandle::new();
         let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
 
-        std::thread::scope(|s| {
-            let t = s.spawn(|| {
+        thread_scope(|s| {
+            s.thread_builder().spawn(|| {
                 let sut_listener = Sut::ListenerBuilder::new(&name)
                     .config(&config.lock().unwrap())
                     .create()
@@ -361,21 +360,22 @@ pub mod event_trait {
                 counter.store(1, Ordering::SeqCst);
                 assert_that!(result, is_some);
                 assert_that!(result.unwrap(), eq TriggerId::new(89));
-            });
+            })?;
 
             barrier.wait();
             let sut_notifier = Sut::NotifierBuilder::new(&name)
                 .config(&config.lock().unwrap())
                 .open()
                 .unwrap();
-            std::thread::sleep(TIMEOUT);
-            let counter_old = counter.load(Ordering::SeqCst);
+            nanosleep(TIMEOUT).unwrap();
+            counter_old.store(counter.load(Ordering::SeqCst), Ordering::SeqCst);
             sut_notifier.notify(TriggerId::new(89)).unwrap();
-            t.join().unwrap();
 
-            assert_that!(counter_old, eq 0);
-            assert_that!(counter.load(Ordering::SeqCst), eq 1);
-        });
+            Ok(())
+        })
+        .unwrap();
+        assert_that!(counter_old.load(Ordering::SeqCst), eq 0);
+        assert_that!(counter.load(Ordering::SeqCst), eq 1);
     }
 
     /// windows sporadically instantly wakes up in a timed receive operation
@@ -383,22 +383,20 @@ pub mod event_trait {
     #[requires_std("threading")]
     #[conformance_test]
     pub fn timed_wait_blocks_until_notification_arrives<Sut: Event>() {
-        use std::sync::Mutex;
-
-        use iceoryx2_bb_concurrency::atomic::AtomicU64;
-        use iceoryx2_bb_concurrency::atomic::Ordering;
-        use iceoryx2_bb_posix::barrier::*;
-
         let _watchdog = Watchdog::new();
         let name = generate_name();
-        let config = Mutex::new(generate_isolated_config::<Sut>());
+        let handle = MutexHandle::new();
+        let config = MutexBuilder::new()
+            .create(generate_isolated_config::<Sut>(), &handle)
+            .unwrap();
 
         let counter = AtomicU64::new(0);
+        let counter_old = AtomicU64::new(0);
         let handle = BarrierHandle::new();
         let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
 
-        std::thread::scope(|s| {
-            let t = s.spawn(|| {
+        thread_scope(|s| {
+            s.thread_builder().spawn(|| {
                 let sut_listener = Sut::ListenerBuilder::new(&name)
                     .config(&config.lock().unwrap())
                     .create()
@@ -408,21 +406,22 @@ pub mod event_trait {
                 counter.store(1, Ordering::SeqCst);
                 assert_that!(result, is_some);
                 assert_that!(result.unwrap(), eq TriggerId::new(82));
-            });
+            })?;
 
             barrier.wait();
             let sut_notifier = Sut::NotifierBuilder::new(&name)
                 .config(&config.lock().unwrap())
                 .open()
                 .unwrap();
-            std::thread::sleep(TIMEOUT);
-            let counter_old = counter.load(Ordering::SeqCst);
+            nanosleep(TIMEOUT).unwrap();
+            counter_old.store(counter.load(Ordering::SeqCst), Ordering::SeqCst);
             sut_notifier.notify(TriggerId::new(82)).unwrap();
-            t.join().unwrap();
 
-            assert_that!(counter_old, eq 0);
-            assert_that!(counter.load(Ordering::SeqCst), eq 1);
-        });
+            Ok(())
+        })
+        .unwrap();
+        assert_that!(counter_old.load(Ordering::SeqCst), eq 0);
+        assert_that!(counter.load(Ordering::SeqCst), eq 1);
     }
 
     #[conformance_test]
@@ -677,12 +676,12 @@ pub mod event_trait {
             .unwrap();
 
         let mut callback_called = false;
-        let now = Instant::now();
+        let now = Time::now().unwrap();
         sut_listener
             .timed_wait_all(|_| callback_called = true, TIMEOUT)
             .unwrap();
         assert_that!(callback_called, eq false);
-        assert_that!(now.elapsed(), time_at_least TIMEOUT);
+        assert_that!(now.elapsed().unwrap(), time_at_least TIMEOUT);
     }
 
     #[requires_std("threading")]
@@ -692,21 +691,20 @@ pub mod event_trait {
     >(
         wait_call: F,
     ) {
-        use std::sync::{Barrier, Mutex};
-
-        use iceoryx2_bb_concurrency::atomic::AtomicU64;
-        use iceoryx2_bb_concurrency::atomic::Ordering;
-
         let mut wait_call = wait_call;
         let _watchdog = Watchdog::new();
         let name = generate_name();
-        let barrier = Barrier::new(2);
+        let barrier_handle = BarrierHandle::new();
+        let barrier = BarrierBuilder::new(2).create(&barrier_handle).unwrap();
         let counter = AtomicU64::new(0);
         let id = TriggerId::new(5);
-        let config = Mutex::new(generate_isolated_config::<Sut>());
+        let mutex_handle = MutexHandle::new();
+        let config = MutexBuilder::new()
+            .create(generate_isolated_config::<Sut>(), &mutex_handle)
+            .unwrap();
 
-        std::thread::scope(|s| {
-            let t1 = s.spawn(|| {
+        thread_scope(|s| {
+            s.thread_builder().spawn(|| {
                 let sut_listener = Sut::ListenerBuilder::new(&name)
                     .config(&config.lock().unwrap())
                     .create()
@@ -719,19 +717,21 @@ pub mod event_trait {
 
                 assert_that!(id_vec, len 1);
                 assert_that!(id_vec[0], eq id);
-            });
+            })?;
 
             barrier.wait();
             let sut_notifier = Sut::NotifierBuilder::new(&name)
                 .config(&config.lock().unwrap())
                 .open()
                 .unwrap();
-            std::thread::sleep(TIMEOUT);
+            nanosleep(TIMEOUT).unwrap();
             assert_that!(counter.load(Ordering::Relaxed), eq 0);
             sut_notifier.notify(id).unwrap();
-            t1.join().unwrap();
-            assert_that!(counter.load(Ordering::Relaxed), eq 1);
-        });
+
+            Ok(())
+        })
+        .unwrap();
+        assert_that!(counter.load(Ordering::Relaxed), eq 1);
     }
 
     #[requires_std("threading")]
