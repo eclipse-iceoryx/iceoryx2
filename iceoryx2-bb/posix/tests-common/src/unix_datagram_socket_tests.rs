@@ -17,13 +17,17 @@ use alloc::string::ToString;
 use alloc::vec;
 use alloc::vec::Vec;
 
+use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};
 use iceoryx2_bb_container::semantic_string::SemanticString;
+use iceoryx2_bb_posix::barrier::*;
+use iceoryx2_bb_posix::clock::{nanosleep, Time};
 use iceoryx2_bb_posix::config::*;
 use iceoryx2_bb_posix::creation_mode::*;
 use iceoryx2_bb_posix::file::*;
 use iceoryx2_bb_posix::file_descriptor::*;
 use iceoryx2_bb_posix::socket_ancillary::*;
 use iceoryx2_bb_posix::testing::create_test_directory;
+use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_posix::unix_datagram_socket::*;
 use iceoryx2_bb_system_types::file_name::FileName;
@@ -31,16 +35,9 @@ use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_bb_testing_macros::inventory_test;
-use iceoryx2_bb_testing_macros::requires_std;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA;
 
-#[cfg(feature = "std")]
-pub use std_testing::*;
-
-#[cfg(feature = "std")]
-mod std_testing {
-    pub const TIMEOUT: core::time::Duration = core::time::Duration::from_millis(100);
-}
+pub const TIMEOUT: core::time::Duration = core::time::Duration::from_millis(100);
 
 fn generate_socket_name() -> FilePath {
     let mut file = FileName::new(b"unix_datagram_socket_tests").unwrap();
@@ -167,11 +164,7 @@ pub fn unix_datagram_socket_non_blocking_mode_returns_zero_when_nothing_was_rece
 }
 
 #[inventory_test]
-#[requires_std("threading")]
 pub fn unix_datagram_socket_blocking_mode_blocks() {
-    use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};
-    use iceoryx2_bb_posix::barrier::*;
-
     create_test_directory();
     let socket_name = generate_socket_name();
     let received_message = AtomicBool::new(false);
@@ -179,42 +172,44 @@ pub fn unix_datagram_socket_blocking_mode_blocks() {
     let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
     let send_data: Vec<u8> = vec![1u8, 3u8, 3u8, 7u8, 13u8, 37u8];
 
-    std::thread::scope(|s| {
-        let t = s.spawn(|| {
-            let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
-                .permission(Permission::OWNER_ALL)
-                .creation_mode(CreationMode::PurgeAndCreate)
-                .create()
-                .unwrap();
-            barrier.wait();
+    thread_scope(|s| {
+        s.thread_builder()
+            .spawn(|| {
+                let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
+                    .permission(Permission::OWNER_ALL)
+                    .creation_mode(CreationMode::PurgeAndCreate)
+                    .create()
+                    .unwrap();
+                barrier.wait();
 
-            let mut receive_data: Vec<u8> = vec![0, 0, 0, 0, 0, 0];
-            let result = sut_receiver.blocking_receive(receive_data.as_mut_slice());
-            assert_that!(result, is_ok);
-            assert_that!(result.unwrap(), eq send_data.len() as _);
-            received_message.store(true, Ordering::Relaxed);
-        });
+                let mut receive_data: Vec<u8> = vec![0, 0, 0, 0, 0, 0];
+                let result = sut_receiver.blocking_receive(receive_data.as_mut_slice());
+                assert_that!(result, is_ok);
+                assert_that!(result.unwrap(), eq send_data.len() as _);
+                received_message.store(true, Ordering::Relaxed);
+            })
+            .expect("failed to spawn thread");
 
         barrier.wait();
         let sut_sender = UnixDatagramSenderBuilder::new(&socket_name)
             .create()
             .unwrap();
 
-        std::thread::sleep(TIMEOUT);
+        nanosleep(TIMEOUT).unwrap();
         let received_message_old = received_message.load(Ordering::Relaxed);
         sut_sender.blocking_send(send_data.as_slice()).unwrap();
-        t.join().ok();
 
         assert_that!(received_message_old, eq false);
-        assert_that!(received_message.load(Ordering::Relaxed), eq true);
-    });
+
+        Ok(())
+    })
+    .expect("failed to spawn thread");
+
+    assert_that!(received_message.load(Ordering::Relaxed), eq true);
 }
 
 #[inventory_test]
-#[requires_std("threading")]
 pub fn unix_datagram_socket_timeout_blocks_at_least() {
-    use iceoryx2_bb_posix::barrier::*;
-
     create_test_directory();
     let socket_name = generate_socket_name();
     let handle = BarrierHandle::new();
@@ -222,30 +217,34 @@ pub fn unix_datagram_socket_timeout_blocks_at_least() {
     let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
     let barrier_2 = BarrierBuilder::new(2).create(&handle_2).unwrap();
 
-    std::thread::scope(|s| {
-        let t = s.spawn(|| {
-            let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
-                .permission(Permission::OWNER_ALL)
-                .creation_mode(CreationMode::PurgeAndCreate)
-                .create()
-                .unwrap();
-            barrier.wait();
-            barrier_2.wait();
+    let mut start = Time::default();
+    thread_scope(|s| {
+        s.thread_builder()
+            .spawn(|| {
+                let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
+                    .permission(Permission::OWNER_ALL)
+                    .creation_mode(CreationMode::PurgeAndCreate)
+                    .create()
+                    .unwrap();
+                barrier.wait();
+                barrier_2.wait();
 
-            let mut receive_data: Vec<u8> = vec![0, 0, 0, 0, 0, 0];
-            sut_receiver
-                .timed_receive(receive_data.as_mut_slice(), TIMEOUT)
-                .ok();
-        });
+                let mut receive_data: Vec<u8> = vec![0, 0, 0, 0, 0, 0];
+                sut_receiver
+                    .timed_receive(receive_data.as_mut_slice(), TIMEOUT)
+                    .ok();
+            })
+            .expect("failed to spawn thread");
 
         barrier.wait();
-        let start = std::time::Instant::now();
+        start = Time::now().expect("failed to acquire time");
         barrier_2.wait();
 
-        t.join().ok();
+        Ok(())
+    })
+    .expect("failed to spawn thread");
 
-        assert_that!(start.elapsed(), time_at_least TIMEOUT);
-    });
+    assert_that!(start.elapsed().expect("failed to get elapsed time"), time_at_least TIMEOUT);
 }
 
 #[ignore]

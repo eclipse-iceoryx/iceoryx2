@@ -12,15 +12,17 @@
 
 #![allow(clippy::disallowed_types)]
 
-extern crate alloc;
-
 use core::time::Duration;
 
+use iceoryx2_bb_posix::barrier::*;
 use iceoryx2_bb_posix::clock::*;
 use iceoryx2_bb_posix::mutex::*;
+use iceoryx2_bb_posix::system_configuration::Feature;
+use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing::test_requires;
+use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_testing_macros::inventory_test;
-use iceoryx2_bb_testing_macros::requires_std;
 
 const TIMEOUT: Duration = Duration::from_millis(100);
 
@@ -53,144 +55,153 @@ pub fn mutex_try_lock_works() {
 }
 
 #[inventory_test]
-#[requires_std("threading")]
 pub fn mutex_try_lock_leads_to_blocked_mutex() {
     let handle = MutexHandle::<i32>::new();
     let sut = MutexBuilder::new().create(111, &handle).unwrap();
     let mut value = sut.try_lock().unwrap().unwrap();
 
-    std::thread::scope(|s| {
-        let t1 = s.spawn(|| {
-            let mut value = sut.lock().unwrap();
-            assert_that!(*value, eq 444);
-            *value = 555;
-        });
+    thread_scope(|s| {
+        s.thread_builder()
+            .spawn(|| {
+                let mut value = sut.lock().unwrap();
+                assert_that!(*value, eq 444);
+                *value = 555;
+            })
+            .expect("failed to spawn thread");
 
-        std::thread::sleep(core::time::Duration::from_millis(10));
+        nanosleep(Duration::from_millis(10)).expect("failed to sleep");
         let value_old = *value;
         *value = 444;
         drop(value);
 
-        t1.join().unwrap();
         assert_that!(value_old, eq 111);
-        assert_that!(*sut.lock().unwrap(), eq 555);
-    });
+
+        Ok(())
+    })
+    .expect("failed to execute thread scope");
+
+    assert_that!(*sut.lock().unwrap(), eq 555);
 }
 
 #[inventory_test]
-#[requires_std("threading")]
 pub fn mutex_timed_lock_leads_to_blocked_mutex_realtime() {
     let handle = MutexHandle::<i32>::new();
-    let sut = alloc::sync::Arc::new(
-        MutexBuilder::new()
-            .clock_type(ClockType::Realtime)
-            .create(111, &handle)
-            .unwrap(),
-    );
+    let sut = MutexBuilder::new()
+        .clock_type(ClockType::Realtime)
+        .create(111, &handle)
+        .unwrap();
     let mut value = sut.timed_lock(Duration::from_millis(100)).unwrap().unwrap();
 
-    std::thread::scope(|s| {
-        let t1 = s.spawn(|| {
-            let mut value = sut.lock().unwrap();
-            *value = 555;
-        });
+    thread_scope(|s| {
+        s.thread_builder()
+            .spawn(|| {
+                let mut value = sut.lock().unwrap();
+                *value = 555;
+            })
+            .expect("failed to spawn thread");
 
-        std::thread::sleep(core::time::Duration::from_millis(10));
+        nanosleep(Duration::from_millis(10)).expect("failed to sleep");
         let value_old = *value;
         *value = 444;
         drop(value);
 
-        t1.join().unwrap();
         assert_that!(value_old, eq 111);
-        assert_that!(*sut.lock().unwrap(), eq 555);
-    });
+
+        Ok(())
+    })
+    .expect("failed to execute thread scope");
+
+    assert_that!(*sut.lock().unwrap(), eq 555);
 }
 
 #[inventory_test]
-#[requires_std("threading")]
 pub fn mutex_timed_lock_leads_to_blocked_mutex_monotonic() {
-    use iceoryx2_bb_posix::system_configuration::Feature;
-    use iceoryx2_bb_testing::test_requires;
-
     test_requires!(Feature::MonotonicClock.is_available());
 
     let handle = MutexHandle::<i32>::new();
-    let sut = alloc::sync::Arc::new(
-        MutexBuilder::new()
-            .clock_type(ClockType::Monotonic)
-            .create(111, &handle)
-            .unwrap(),
-    );
+    let sut = MutexBuilder::new()
+        .clock_type(ClockType::Monotonic)
+        .create(111, &handle)
+        .unwrap();
     let mut value = sut.timed_lock(Duration::from_millis(100)).unwrap().unwrap();
 
-    std::thread::scope(|s| {
-        let t1 = s.spawn(|| {
-            let mut value = sut.lock().unwrap();
-            *value = 555;
-        });
+    thread_scope(|s| {
+        s.thread_builder()
+            .spawn(|| {
+                let mut value = sut.lock().unwrap();
+                *value = 555;
+            })
+            .expect("failed to spawn thread");
 
-        std::thread::sleep(core::time::Duration::from_millis(10));
+        nanosleep(Duration::from_millis(10)).expect("failed to sleep");
         let value_old = *value;
         *value = 444;
         drop(value);
 
-        t1.join().unwrap();
         assert_that!(value_old, eq 111);
-        assert_that!(*sut.lock().unwrap(), eq 555);
-    });
+
+        Ok(())
+    })
+    .expect("failed to execute thread scope");
+
+    assert_that!(*sut.lock().unwrap(), eq 555);
 }
 
 #[inventory_test]
-#[requires_std("threading")]
 pub fn mutex_try_lock_fails_when_already_locked() {
     let handle = MutexHandle::<i32>::new();
-    let sut = alloc::sync::Arc::new(MutexBuilder::new().create(111, &handle).unwrap());
+    let sut = MutexBuilder::new().create(111, &handle).unwrap();
     let value = sut.lock().unwrap();
 
-    std::thread::scope(|s| {
-        let t1 = s.spawn(|| {
-            let value = sut.try_lock().unwrap();
-            assert_that!(value, is_none);
-        });
+    thread_scope(|s| {
+        s.thread_builder()
+            .spawn(|| {
+                let value = sut.try_lock().unwrap();
+                assert_that!(value, is_none);
+            })
+            .expect("failed to spawn thread");
 
-        t1.join().unwrap();
-        drop(value);
-    });
+        Ok(())
+    })
+    .expect("failed to execute thread scope");
+
+    drop(value);
 }
 
 #[inventory_test]
-#[requires_std("threading", "synchronization")]
 pub fn mutex_timed_lock_blocks_at_least_for_timeout_realtime_clock() {
-    let barrier = std::sync::Barrier::new(2);
+    let barrier_handle = BarrierHandle::new();
+    let barrier = BarrierBuilder::new(2).create(&barrier_handle).unwrap();
     let handle = MutexHandle::<i32>::new();
     let sut = MutexBuilder::new()
         .clock_type(ClockType::Realtime)
         .create(111, &handle)
         .unwrap();
 
-    std::thread::scope(|s| {
-        s.spawn(|| {
-            barrier.wait();
-            let _guard = sut.lock().unwrap();
-            nanosleep(TIMEOUT * 4).unwrap();
-        });
+    thread_scope(|s| {
+        s.thread_builder()
+            .spawn(|| {
+                barrier.wait();
+                let _guard = sut.lock().unwrap();
+                nanosleep(TIMEOUT * 4).expect("failed to sleep");
+            })
+            .expect("failed to spawn thread");
 
         barrier.wait();
-        nanosleep(TIMEOUT).unwrap();
+        nanosleep(TIMEOUT).expect("failed to sleep");
         let start = Time::now_with_clock(ClockType::Realtime).unwrap();
         let value = sut.timed_lock(TIMEOUT).unwrap();
 
         assert_that!(value, is_none);
         assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT);
-    });
+
+        Ok(())
+    })
+    .expect("failed to execute thread scope");
 }
 
 #[inventory_test]
-#[requires_std("threading")]
 pub fn mutex_timed_lock_blocks_at_least_for_timeout_monotonic_clock() {
-    use iceoryx2_bb_posix::system_configuration::Feature;
-    use iceoryx2_bb_testing::test_requires;
-
     test_requires!(Feature::MonotonicClock.is_available());
 
     let handle = MutexHandle::<i32>::new();
@@ -199,19 +210,24 @@ pub fn mutex_timed_lock_blocks_at_least_for_timeout_monotonic_clock() {
         .create(111, &handle)
         .unwrap();
 
-    std::thread::scope(|s| {
-        s.spawn(|| {
-            let _guard = sut.lock().unwrap();
-            nanosleep(TIMEOUT * 4).unwrap();
-        });
+    thread_scope(|s| {
+        s.thread_builder()
+            .spawn(|| {
+                let _guard = sut.lock().unwrap();
+                nanosleep(TIMEOUT * 4).expect("failed to sleep");
+            })
+            .expect("failed to spawn thread");
 
-        nanosleep(TIMEOUT).unwrap();
+        nanosleep(TIMEOUT).expect("failed to sleep");
         let start = Time::now_with_clock(ClockType::Monotonic).unwrap();
         let value = sut.timed_lock(TIMEOUT).unwrap();
 
         assert_that!(value, is_none);
         assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT);
-    });
+
+        Ok(())
+    })
+    .expect("failed to execute thread scope");
 }
 
 #[inventory_test]
@@ -270,10 +286,7 @@ pub fn mutex_recursive_mutex_can_be_locked_multiple_times_by_same_thread() {
 }
 
 #[inventory_test]
-#[requires_std("threading", "synchronization", "watchdog")]
 pub fn mutex_recursive_does_not_unlock_in_the_first_unlock_call() {
-    use iceoryx2_bb_testing::watchdog::Watchdog;
-
     let _watchdog = Watchdog::new();
     let handle = MutexHandle::new();
     let sut = MutexBuilder::new()
@@ -281,28 +294,40 @@ pub fn mutex_recursive_does_not_unlock_in_the_first_unlock_call() {
         .create(5123, &handle)
         .unwrap();
 
-    let barrier = std::sync::Barrier::new(2);
-    std::thread::scope(|s| {
+    const NUMBER_OF_THREADS: u32 = 1;
+    let barrier_handle = BarrierHandle::new();
+    let barrier = BarrierBuilder::new(NUMBER_OF_THREADS + 1)
+        .create(&barrier_handle)
+        .unwrap();
+
+    thread_scope(|s| {
         let guard1 = sut.try_lock().unwrap();
         assert_that!(guard1, is_some);
         let guard2 = sut.try_lock().unwrap();
         assert_that!(guard2, is_some);
 
         drop(guard1);
-        s.spawn(|| {
-            let guard = sut.try_lock().unwrap();
-            assert_that!(guard, is_none);
-            barrier.wait();
-        });
+        s.thread_builder()
+            .spawn(|| {
+                let guard = sut.try_lock().unwrap();
+                assert_that!(guard, is_none);
+                barrier.wait();
+            })
+            .expect("failed to spawn thread");
 
         barrier.wait();
         drop(guard2);
 
-        s.spawn(|| {
-            let guard = sut.try_lock().unwrap();
-            assert_that!(guard, is_some);
-        });
-    });
+        s.thread_builder()
+            .spawn(|| {
+                let guard = sut.try_lock().unwrap();
+                assert_that!(guard, is_some);
+            })
+            .expect("failed to spawn thread");
+
+        Ok(())
+    })
+    .expect("failed to execute thread scope");
 }
 
 #[inventory_test]
@@ -340,7 +365,6 @@ pub fn mutex_deadlock_detection_works() {
 }
 
 #[inventory_test]
-#[requires_std("threading")]
 pub fn mutex_recursive_mutex_blocks() {
     let handle = MutexHandle::<i32>::new();
     let sut = MutexBuilder::new()
@@ -349,26 +373,30 @@ pub fn mutex_recursive_mutex_blocks() {
         .unwrap();
     let mut value = sut.try_lock().unwrap().unwrap();
 
-    std::thread::scope(|s| {
-        let t1 = s.spawn(|| {
-            let mut value = sut.lock().unwrap();
-            assert_that!(*value, eq 444);
-            *value = 555;
-        });
+    thread_scope(|s| {
+        s.thread_builder()
+            .spawn(|| {
+                let mut value = sut.lock().unwrap();
+                assert_that!(*value, eq 444);
+                *value = 555;
+            })
+            .expect("failed to spawn thread");
 
-        std::thread::sleep(core::time::Duration::from_millis(10));
+        nanosleep(Duration::from_millis(10)).expect("failed to sleep");
         let old_value = *value;
         *value = 444;
         drop(value);
 
-        t1.join().unwrap();
         assert_that!(old_value, eq 111);
-        assert_that!(*sut.lock().unwrap(), eq 555);
-    });
+
+        Ok(())
+    })
+    .expect("failed to execute thread scope");
+
+    assert_that!(*sut.lock().unwrap(), eq 555);
 }
 
 #[inventory_test]
-#[requires_std("threading")]
 pub fn mutex_with_deadlock_detection_blocks() {
     let handle = MutexHandle::<i32>::new();
     let sut = MutexBuilder::new()
@@ -377,30 +405,32 @@ pub fn mutex_with_deadlock_detection_blocks() {
         .unwrap();
     let mut value = sut.try_lock().unwrap().unwrap();
 
-    std::thread::scope(|s| {
-        let t1 = s.spawn(|| {
-            let mut value = sut.lock().unwrap();
-            assert_that!(*value, eq 444);
-            *value = 555;
-        });
+    thread_scope(|s| {
+        s.thread_builder()
+            .spawn(|| {
+                let mut value = sut.lock().unwrap();
+                assert_that!(*value, eq 444);
+                *value = 555;
+            })
+            .expect("failed to spawn thread");
 
-        std::thread::sleep(core::time::Duration::from_millis(10));
+        nanosleep(Duration::from_millis(10)).expect("failed to sleep");
         let old_value = *value;
         *value = 444;
         drop(value);
 
-        t1.join().unwrap();
         assert_that!(old_value, eq 111);
-        assert_that!(*sut.lock().unwrap(), eq 555);
-    });
+
+        Ok(())
+    })
+    .expect("failed to execute thread scope");
+
+    assert_that!(*sut.lock().unwrap(), eq 555);
 }
 
 #[inventory_test]
-#[requires_std("threading")]
 #[cfg(not(target_os = "nto"))]
 pub fn mutex_can_be_recovered_when_thread_died() {
-    use iceoryx2_bb_testing::watchdog::Watchdog;
-
     let _watchdog = Watchdog::new();
     let handle = MutexHandle::<i32>::new();
     let sut = MutexBuilder::new()
@@ -408,19 +438,24 @@ pub fn mutex_can_be_recovered_when_thread_died() {
         .create(111, &handle)
         .unwrap();
 
-    std::thread::scope(|s| {
-        s.spawn(|| {
-            let guard = sut.lock();
-            assert_that!(guard, is_ok);
-            core::mem::forget(guard);
-        });
-    });
+    thread_scope(|s| {
+        s.thread_builder()
+            .spawn(|| {
+                let guard = sut.lock();
+                assert_that!(guard, is_ok);
+                core::mem::forget(guard);
+            })
+            .expect("failed to spawn thread");
+
+        Ok(())
+    })
+    .expect("failed to execute thread scope");
 
     loop {
         let guard = sut.try_lock();
 
-        if guard.is_ok() {
-            assert_that!(guard.as_ref().unwrap(), is_none);
+        if let Ok(guard) = &guard {
+            assert_that!(guard, is_none);
         } else if let Err(MutexLockError::LockAcquiredButOwnerDied(_)) = guard {
             sut.make_consistent();
             break;
@@ -443,11 +478,8 @@ pub fn mutex_can_be_recovered_when_thread_died() {
 }
 
 #[inventory_test]
-#[requires_std("threading", "watchdog")]
 #[cfg(not(any(target_os = "macos", target_os = "nto")))]
 pub fn mutex_in_unrecoverable_state_if_state_of_leaked_mutex_is_not_repaired() {
-    use iceoryx2_bb_testing::watchdog::Watchdog;
-
     let _watchdog = Watchdog::new();
     let handle = MutexHandle::<i32>::new();
     let sut = MutexBuilder::new()
@@ -456,13 +488,17 @@ pub fn mutex_in_unrecoverable_state_if_state_of_leaked_mutex_is_not_repaired() {
         .create(111, &handle)
         .unwrap();
 
-    std::thread::scope(|s| {
-        let t = s.spawn(|| {
-            let guard = sut.lock();
-            core::mem::forget(guard);
-        });
-        let _ = t.join();
-    });
+    thread_scope(|s| {
+        s.thread_builder()
+            .spawn(|| {
+                let guard = sut.lock();
+                core::mem::forget(guard);
+            })
+            .expect("failed to spawn thread");
+
+        Ok(())
+    })
+    .expect("failed to execute thread scope");
 
     let guard = sut.lock();
     assert_that!(guard, is_err);

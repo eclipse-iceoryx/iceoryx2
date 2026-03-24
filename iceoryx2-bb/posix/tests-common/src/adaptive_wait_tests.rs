@@ -12,27 +12,19 @@
 
 #![allow(clippy::disallowed_types)]
 
+use core::time::Duration;
+
 use iceoryx2_bb_posix::adaptive_wait::*;
+use iceoryx2_bb_posix::clock::Time;
 use iceoryx2_bb_posix::clock::*;
+use iceoryx2_bb_posix::config::*;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::inventory_test;
-use iceoryx2_bb_testing_macros::requires_std;
 
-#[cfg(feature = "std")]
-pub use std_testing::*;
-
-#[cfg(feature = "std")]
-mod std_testing {
-    use core::time::Duration;
-    pub const TIMEOUT: Duration = Duration::from_millis(50);
-}
+pub const TIMEOUT: Duration = Duration::from_millis(50);
 
 #[inventory_test]
-#[requires_std("time")]
 pub fn adaptive_wait_wait_at_different_time_depends_on_repetition_times() {
-    use iceoryx2_bb_posix::config::*;
-    use std::time::Instant;
-
     let mut counter: u64 = 0;
 
     let mut waiter = AdaptiveWaitBuilder::new().create().unwrap();
@@ -47,14 +39,14 @@ pub fn adaptive_wait_wait_at_different_time_depends_on_repetition_times() {
     assert_that!(waiter.yield_count(), eq ADAPTIVE_WAIT_YIELD_REPETITIONS);
 
     // test sleep time ADAPTIVE_WAIT_INITIAL_WAITING_TIME
-    let start = Instant::now();
+    let start = Time::now().expect("failed to get current time");
     waiter
         .wait_while(move || -> bool {
             counter += 1;
             counter <= 1 // stop at the second turn
         })
         .expect("failed to test wait_loop");
-    assert_that!(start.elapsed(), time_at_least ADAPTIVE_WAIT_INITIAL_WAITING_TIME);
+    assert_that!(start.elapsed().expect("failed to get elapsed time"), time_at_least ADAPTIVE_WAIT_INITIAL_WAITING_TIME);
 
     waiter
         .wait_while(move || -> bool {
@@ -68,14 +60,14 @@ pub fn adaptive_wait_wait_at_different_time_depends_on_repetition_times() {
     // the waiter starts to sleep longer as ADAPTIVE_WAIT_FINAL_WAITING_TIME
     // instead of ADAPTIVE_WAIT_INITIAL_WAITING_TIME later.
     assert_that!(waiter.yield_count(), eq ADAPTIVE_WAIT_INITIAL_REPETITIONS);
-    let start = Instant::now();
+    let start = Time::now().expect("failed to get current time");
     waiter
         .wait_while(move || -> bool {
             counter += 1;
             counter <= 1 // stop at the second turn
         })
         .expect("failed to test wait_loop");
-    assert_that!(start.elapsed(), time_at_least ADAPTIVE_WAIT_FINAL_WAITING_TIME);
+    assert_that!(start.elapsed().expect("failed to get elapsed time"), time_at_least ADAPTIVE_WAIT_FINAL_WAITING_TIME);
 }
 
 #[inventory_test]
@@ -103,48 +95,39 @@ pub fn adaptive_wait_wait_increases_yield_counter() {
 }
 
 #[inventory_test]
-#[requires_std("time")]
 pub fn adaptive_wait_timed_wait_while_wait_at_least_for_timeout() {
-    use std::time::Instant;
-
     let mut sut = AdaptiveWaitBuilder::new().create().unwrap();
-    let start = Instant::now();
+    let start = Time::now().expect("failed to get current time");
 
     let result = sut
         .timed_wait_while(|| -> Result<bool, ()> { Ok(true) }, TIMEOUT)
         .unwrap();
 
-    assert_that!(start.elapsed(), time_at_least TIMEOUT);
+    assert_that!(start.elapsed().expect("failed to get elapsed time"), time_at_least TIMEOUT);
     assert_that!(result, eq false);
 }
 
 #[inventory_test]
-#[requires_std("time")]
 pub fn adaptive_wait_timed_wait_does_not_wait_when_predicate_returns_false() {
-    use std::time::Instant;
-
     let mut sut = AdaptiveWaitBuilder::new().create().unwrap();
-    let start = Instant::now();
+    let start = Time::now().expect("failed to get current time");
 
     let result = sut
         .timed_wait_while(|| -> Result<bool, ()> { Ok(false) }, TIMEOUT)
         .unwrap();
 
-    assert_that!(start.elapsed(), lt TIMEOUT);
+    assert_that!(start.elapsed().expect("failed to get elapsed time"), lt TIMEOUT);
     assert_that!(result, eq true);
 }
 
 #[inventory_test]
-#[requires_std("time")]
 pub fn adaptive_wait_timed_wait_does_not_wait_when_predicate_returns_error() {
-    use std::time::Instant;
-
     let mut sut = AdaptiveWaitBuilder::new().create().unwrap();
-    let start = Instant::now();
+    let start = Time::now().expect("failed to get current time");
 
     let result = sut.timed_wait_while(|| -> Result<bool, i32> { Err(5) }, TIMEOUT);
 
-    assert_that!(start.elapsed(), lt TIMEOUT);
+    assert_that!(start.elapsed().expect("failed to get elapsed time"), lt TIMEOUT);
     assert_that!(result, is_err);
     assert_that!(
         result.err().unwrap(), eq

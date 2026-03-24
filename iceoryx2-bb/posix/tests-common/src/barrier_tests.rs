@@ -18,12 +18,11 @@ use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_testing_macros::inventory_test;
-use iceoryx2_bb_testing_macros::requires_std;
 
 #[inventory_test]
-#[requires_std("threading")]
 pub fn barrier_blocks() -> Result<(), BarrierCreationError> {
     let _watchdog = Watchdog::new();
+
     let handle = BarrierHandle::new();
     let handle2 = BarrierHandle::new();
     let handle3 = BarrierHandle::new();
@@ -33,18 +32,22 @@ pub fn barrier_blocks() -> Result<(), BarrierCreationError> {
     let counter = AtomicU64::new(0);
 
     thread_scope(|s| {
-        s.thread_builder().spawn(|| {
-            sut.wait();
-            sut2.wait();
-            counter.fetch_add(10, Ordering::Relaxed);
-            sut3.wait();
-        })?;
-        s.thread_builder().spawn(|| {
-            sut.wait();
-            sut2.wait();
-            counter.fetch_add(10, Ordering::Relaxed);
-            sut3.wait();
-        })?;
+        s.thread_builder()
+            .spawn(|| {
+                sut.wait();
+                sut2.wait();
+                counter.fetch_add(10, Ordering::Relaxed);
+                sut3.wait();
+            })
+            .expect("failed to spawn thread");
+        s.thread_builder()
+            .spawn(|| {
+                sut.wait();
+                sut2.wait();
+                counter.fetch_add(10, Ordering::Relaxed);
+                sut3.wait();
+            })
+            .expect("failed to spawn thread");
 
         sut.wait();
         let counter_old = counter.load(Ordering::Relaxed);
@@ -56,13 +59,12 @@ pub fn barrier_blocks() -> Result<(), BarrierCreationError> {
 
         Ok(())
     })
-    .unwrap();
+    .expect("failed to spawn thread");
 
     Ok(())
 }
 
 #[inventory_test]
-#[requires_std("threading")]
 pub fn barrier_resets_when_the_one_and_only_waiter_has_woken_up() -> Result<(), BarrierCreationError>
 {
     let _watchdog = Watchdog::new();
@@ -72,7 +74,7 @@ pub fn barrier_resets_when_the_one_and_only_waiter_has_woken_up() -> Result<(), 
     let sut = BarrierBuilder::new(1).create(&handle)?;
     let mut counter = 0;
 
-    for i in 0..ITERATIONS {
+    for _ in 0..ITERATIONS {
         sut.wait();
         counter += 1;
     }
@@ -83,7 +85,6 @@ pub fn barrier_resets_when_the_one_and_only_waiter_has_woken_up() -> Result<(), 
 }
 
 #[inventory_test]
-#[requires_std("threading")]
 pub fn barrier_resets_when_all_waiters_have_woken_up() -> Result<(), BarrierCreationError> {
     let _watchdog = Watchdog::new();
     const ITERATIONS: u64 = 10;
@@ -97,7 +98,7 @@ pub fn barrier_resets_when_all_waiters_have_woken_up() -> Result<(), BarrierCrea
         thread_scope(|s| {
             for _ in 0..n {
                 s.thread_builder().spawn(|| {
-                    for i in 0..ITERATIONS {
+                    for _ in 0..ITERATIONS {
                         sut.wait();
                         counter.fetch_add(1, Ordering::Relaxed);
                     }

@@ -18,28 +18,21 @@ use iceoryx2_bb_posix::system_configuration::Feature;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_bb_testing_macros::inventory_test;
-use iceoryx2_bb_testing_macros::requires_std;
 
 const TIMEOUT: Duration = Duration::from_millis(100);
 
 #[inventory_test]
-#[requires_std("time")]
 pub fn clock_nanosleep_sleeps_at_least_given_amount_of_time() {
-    use std::time::Instant;
-
-    let start = Instant::now();
+    let start = Time::now().expect("failed to get current time");
     assert_that!(nanosleep(TIMEOUT), is_ok);
-    assert_that!(start.elapsed(), time_at_least TIMEOUT);
+    assert_that!(start.elapsed().expect("failed to get elapsed time"), time_at_least TIMEOUT);
 }
 
 #[inventory_test]
-#[requires_std("time")]
 pub fn clock_nanosleep_with_clock_sleeps_at_least_given_amount_of_time() {
-    use std::time::Instant;
-
-    let start = Instant::now();
+    let start = Time::now().expect("failed to get current time");
     assert_that!(nanosleep_with_clock(TIMEOUT, ClockType::Realtime), is_ok);
-    assert_that!(start.elapsed(), time_at_least TIMEOUT);
+    assert_that!(start.elapsed().expect("failed to get elapsed time"), time_at_least TIMEOUT);
 }
 
 #[inventory_test]

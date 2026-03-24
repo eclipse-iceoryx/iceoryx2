@@ -12,31 +12,27 @@
 
 #![allow(clippy::disallowed_types)]
 
+use alloc::collections::BTreeSet;
+use alloc::vec::Vec;
+use core::time::Duration;
+
+use iceoryx2_bb_posix::barrier::*;
+use iceoryx2_bb_posix::clock::nanosleep;
+use iceoryx2_bb_posix::mutex::{Handle, MutexBuilder, MutexHandle};
+use iceoryx2_bb_posix::process::Process;
+use iceoryx2_bb_posix::system_configuration::SystemInfo;
+use iceoryx2_bb_posix::thread::thread_scope;
+use iceoryx2_bb_posix::unique_system_id::*;
+use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_testing_macros::inventory_test;
-use iceoryx2_bb_testing_macros::requires_std;
-
-#[cfg(feature = "std")]
-pub use internal::*;
-
-#[cfg(feature = "std")]
-mod internal {
-
-    pub use core::time::Duration;
-    pub use std::{collections::HashSet, sync::Barrier};
-
-    pub use iceoryx2_bb_posix::{
-        process::Process, system_configuration::SystemInfo, unique_system_id::*,
-    };
-    pub use iceoryx2_bb_testing::{assert_that, watchdog::Watchdog};
-}
 
 #[inventory_test]
-#[requires_std("threading")]
 pub fn unique_system_id_is_unique() {
     let sut1 = UniqueSystemId::new().unwrap();
-    std::thread::sleep(Duration::from_secs(1));
+    nanosleep(Duration::from_secs(1)).unwrap();
     let sut2 = UniqueSystemId::new().unwrap();
-    std::thread::sleep(Duration::from_secs(1));
+    nanosleep(Duration::from_secs(1)).unwrap();
     let sut3 = UniqueSystemId::new().unwrap();
 
     assert_that!(sut1.value(), ne sut2.value());
@@ -53,35 +49,58 @@ pub fn unique_system_id_is_unique() {
 }
 
 #[inventory_test]
-#[requires_std("threading")]
 pub fn unique_system_id_concurrently_created_ids_are_unique() {
     let _watchdog = Watchdog::new();
+
     const NUMBER_OF_ITERATIONS: usize = 1000;
     let number_of_threads = SystemInfo::NumberOfCpuCores.value() * 2;
-    let barrier = Barrier::new(number_of_threads);
 
-    std::thread::scope(|s| {
-        let mut threads = vec![];
+    let barrier_handle = BarrierHandle::new();
+    let barrier = BarrierBuilder::new(number_of_threads as u32)
+        .create(&barrier_handle)
+        .unwrap();
+
+    let ids_per_thread_handle = MutexHandle::<Vec<Vec<u128>>>::new();
+    let ids_per_thread = MutexBuilder::new()
+        .create(
+            Vec::with_capacity(number_of_threads),
+            &ids_per_thread_handle,
+        )
+        .expect("failed to create mutex");
+
+    thread_scope(|s| {
         for _ in 0..number_of_threads {
-            threads.push(s.spawn(|| {
-                let mut ids = Vec::with_capacity(NUMBER_OF_ITERATIONS);
+            s.thread_builder()
+                .spawn(|| {
+                    let mut ids = Vec::with_capacity(NUMBER_OF_ITERATIONS);
 
-                barrier.wait();
-                for _ in 0..NUMBER_OF_ITERATIONS {
-                    ids.push(UniqueSystemId::new().unwrap().value());
-                }
+                    barrier.wait();
+                    for _ in 0..NUMBER_OF_ITERATIONS {
+                        ids.push(UniqueSystemId::new().unwrap().value());
+                    }
 
-                ids
-            }));
+                    ids_per_thread
+                        .lock()
+                        .expect("failed to lock mutex")
+                        .push(ids);
+                })
+                .expect("failed to spawn thread");
         }
 
-        let mut id_set = HashSet::new();
-        for t in threads {
-            let ids = t.join().unwrap();
-            assert_that!(ids, len NUMBER_OF_ITERATIONS);
-            for id in ids {
-                assert_that!(id_set.insert(id), eq true);
-            }
+        Ok(())
+    })
+    .expect("failed to spawn thread");
+
+    let mut all_ids = BTreeSet::new();
+    for collected_ids in ids_per_thread
+        .lock()
+        .expect("failed to lock mutex")
+        .iter()
+        .take(number_of_threads)
+    {
+        assert_that!(collected_ids, len NUMBER_OF_ITERATIONS);
+        for id in collected_ids.iter() {
+            assert_that!(all_ids.insert(*id), eq true);
         }
-    });
+    }
 }
