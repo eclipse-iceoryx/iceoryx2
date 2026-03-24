@@ -15,9 +15,9 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod subscriber {
+    use alloc::collections::BTreeSet;
     use iceoryx2::port::ReceiveError;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
-    use std::collections::HashSet;
 
     #[cfg(debug_assertions)]
     use iceoryx2::service::{
@@ -71,7 +71,7 @@ pub mod subscriber {
             .unwrap();
 
         let mut subscribers = vec![];
-        let mut subscriber_id_set = HashSet::new();
+        let mut subscriber_id_set = BTreeSet::new();
 
         for _ in 0..MAX_SUBSCRIBERS {
             let subscriber = sut.subscriber_builder().create().unwrap();
