@@ -48,21 +48,18 @@ unsafe impl Sync for TestData {}
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod dynamic_storage_trait {
+    use alloc::vec;
+
     use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_elementary_traits::allocator::*;
     use iceoryx2_bb_system_types::file_name::FileName;
-    use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing::{assert_that, test_requires};
+    use iceoryx2_bb_testing_macros::requires_std;
     use iceoryx2_cal::dynamic_storage::*;
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::testing::*;
-    use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
-    use std::sync::{Arc, Barrier};
-    use std::time::{Duration, Instant};
-
-    const TIMEOUT: Duration = Duration::from_millis(100);
 
     use super::*;
 
@@ -424,11 +421,21 @@ pub mod dynamic_storage_trait {
     }
 
     #[ignore] // TODO: iox2-671 enable this test when the concurrency issue is fixed.
+    #[requires_std("threading")]
     #[conformance_test]
     pub fn initialization_blocks_other_openers<
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
+        use alloc::sync::Arc;
+        use core::time::Duration;
+        use std::sync::Barrier;
+
+        use iceoryx2_bb_testing::watchdog::Watchdog;
+        use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
+
+        const TIMEOUT: Duration = Duration::from_millis(100);
+
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
         let _watchdog = Watchdog::new();
@@ -475,11 +482,21 @@ pub mod dynamic_storage_trait {
         }
     }
 
+    #[requires_std("threading", "time")]
     #[conformance_test]
     pub fn initialization_timeout_blocks_for_at_least_timeout<
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
+        use alloc::sync::Arc;
+        use core::time::Duration;
+        use std::sync::Barrier;
+        use std::time::Instant;
+
+        use iceoryx2_bb_testing::watchdog::Watchdog;
+
+        const TIMEOUT: Duration = Duration::from_millis(100);
+
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
         let barrier = Arc::new(Barrier::new(2));

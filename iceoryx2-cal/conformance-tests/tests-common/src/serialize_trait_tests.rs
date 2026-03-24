@@ -12,6 +12,7 @@
 
 use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
 
+#[cfg(feature = "std")]
 instantiate_conformance_tests_with_module!(
     toml,
     iceoryx2_cal_conformance_tests::serialize_trait,

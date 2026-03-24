@@ -16,9 +16,8 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[conformance_test_module]
 pub mod event_signal_mechanism_trait {
     use core::time::Duration;
-    use std::sync::Barrier;
+    use iceoryx2_bb_testing_macros::requires_std;
 
-    use iceoryx2_bb_concurrency::atomic::AtomicU64;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_posix::clock::Time;
     use iceoryx2_bb_testing::{assert_that, watchdog::Watchdog};
@@ -43,6 +42,7 @@ pub mod event_signal_mechanism_trait {
         }
     }
 
+    #[requires_std("threading")]
     #[conformance_test]
     pub fn try_wait_does_not_block_works<Sut: SignalMechanism>() {
         let mut sut = Sut::new();
@@ -56,7 +56,12 @@ pub mod event_signal_mechanism_trait {
         }
     }
 
+    #[requires_std("threading")]
     pub fn wait_blocks<Sut: SignalMechanism, F: FnOnce(&Sut) -> bool + Send>(wait_call: F) {
+        use std::sync::Barrier;
+
+        use iceoryx2_bb_concurrency::atomic::AtomicU64;
+
         let _watchdog = Watchdog::new();
         let mut sut = Sut::new();
         let barrier = Barrier::new(2);
@@ -83,11 +88,13 @@ pub mod event_signal_mechanism_trait {
         }
     }
 
+    #[requires_std("threading")]
     #[conformance_test]
     pub fn timed_wait_blocks<Sut: SignalMechanism>() {
         wait_blocks(|sut: &Sut| unsafe { sut.timed_wait(Duration::from_secs(999)).unwrap() });
     }
 
+    #[requires_std("threading")]
     #[conformance_test]
     pub fn blocking_wait_blocks<Sut: SignalMechanism>() {
         wait_blocks(|sut: &Sut| unsafe {

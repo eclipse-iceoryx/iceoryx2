@@ -63,6 +63,7 @@ pub fn conformance_test_module(_attr: TokenStream, item: TokenStream) -> TokenSt
             ($module_path:path, $($sut_type:ty),+) => {
                 mod #mod_ident {
                     use iceoryx2_bb_testing_macros::inventory_test;
+                    use iceoryx2_bb_testing_macros::requires_std;
                     use $module_path::*;
                     #(#conformance_test_fns)*
                 }

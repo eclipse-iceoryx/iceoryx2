@@ -1,5 +1,5 @@
 {
-  "checksum": "02bf3d87bc1638a567bc492fbc7d3c355d459c5151ffa43dd1e71dae34d2992e",
+  "checksum": "0054147ad314c6a73a937abe7b5e99303f3102ce9217d542c1f69cbcff2ea3ca",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -9759,6 +9759,13 @@
         "compile_data_glob": [
           "**"
         ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
         "deps": {
           "common": [
             {
@@ -9778,6 +9785,75 @@
               "id": "toml 0.9.8",
               "target": "toml"
             }
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "0.8.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-cal-conformance-tests-common 0.8.999": {
+      "name": "iceoryx2-cal-conformance-tests-common",
+      "version": "0.8.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_cal_conformance_tests_common",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_cal_conformance_tests_common",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "0.8.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-cal-conformance-tests-nostd 0.8.999": {
+      "name": "iceoryx2-cal-conformance-tests-nostd",
+      "version": "0.8.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [],
+      "library_target_name": null,
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
           ],
           "selects": {}
         },
@@ -34380,6 +34456,8 @@
     "iceoryx2-bb-trait-tests-nostd 0.8.999": "iceoryx2-bb/trait-tests/tests-nostd",
     "iceoryx2-cal 0.8.999": "iceoryx2-cal",
     "iceoryx2-cal-conformance-tests 0.8.999": "iceoryx2-cal/conformance-tests",
+    "iceoryx2-cal-conformance-tests-common 0.8.999": "iceoryx2-cal/conformance-tests/tests-common",
+    "iceoryx2-cal-conformance-tests-nostd 0.8.999": "iceoryx2-cal/conformance-tests/tests-nostd",
     "iceoryx2-cli 0.8.999": "iceoryx2-cli",
     "iceoryx2-conformance-tests 0.8.999": "iceoryx2/conformance-tests",
     "iceoryx2-ffi-c 0.8.999": "iceoryx2-ffi/c",

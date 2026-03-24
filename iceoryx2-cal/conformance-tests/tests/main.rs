@@ -10,19 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-mod arc_sync_policy_trait_tests;
-mod communication_channel_trait_tests;
-mod dynamic_storage_trait_tests;
-mod event_id_tracker_trait_tests;
-mod event_signal_mechanism_trait_tests;
-mod event_trait_tests;
-mod monitoring_trait_tests;
-mod reactor_trait_tests;
-mod resizable_shared_memory_trait_tests;
-mod serialize_trait_tests;
-mod shared_memory_trait_tests;
-mod shm_allocator_trait_tests;
-mod static_storage_trait_tests;
-mod zero_copy_connection_trait_tests;
+extern crate iceoryx2_cal_conformance_tests_common;
 
 iceoryx2_bb_testing::test_harness!();

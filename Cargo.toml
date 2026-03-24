@@ -49,6 +49,8 @@ members = [
 
     "iceoryx2-cal",
     "iceoryx2-cal/conformance-tests",
+    "iceoryx2-cal/conformance-tests/tests-common",
+    "iceoryx2-cal/conformance-tests/tests-nostd",
 
     "iceoryx2",
     "iceoryx2/conformance-tests",
@@ -118,6 +120,7 @@ iceoryx2-bb-memory = { version = "0.8.999", path = "iceoryx2-bb/memory/" }
 iceoryx2-bb-posix = { version = "0.8.999", path = "iceoryx2-bb/posix/" }
 iceoryx2-bb-system-types = { version = "0.8.999", path = "iceoryx2-bb/system-types/" }
 iceoryx2-bb-testing = { version = "0.8.999", path = "iceoryx2-bb/testing/" }
+iceoryx2-bb-testing-macros = { version = "0.8.999", path = "iceoryx2-bb/testing-macros/" }
 iceoryx2-pal-concurrency-sync = { version = "0.8.999", path = "iceoryx2-pal/concurrency-sync/" }
 iceoryx2-pal-posix = { version = "0.8.999", path = "iceoryx2-pal/posix/" }
 iceoryx2-pal-print = { version = "0.8.999", path = "iceoryx2-pal/print/" }
@@ -144,7 +147,6 @@ iceoryx2-userland-record-and-replay = { version = "0.8.999", path = "iceoryx2-us
 # Not Published, No Version Number
 ################################################################################
 
-iceoryx2-bb-testing-macros = { path = "iceoryx2-bb/testing-macros/" }
 iceoryx2-bb-trait-tests = { path = "iceoryx2-bb/trait-tests/" }
 iceoryx2-bb-threadsafe-tests-common = { path = "iceoryx2-bb/threadsafe/tests-common" }
 iceoryx2-bb-threadsafe-tests-nostd = { path = "iceoryx2-bb/threadsafe/tests-nostd" }
@@ -166,6 +168,8 @@ iceoryx2-bb-system-types-tests-common = { path = "iceoryx2-bb/system-types/tests
 iceoryx2-bb-system-types-tests-nostd = { path = "iceoryx2-bb/system-types/tests-nostd" }
 iceoryx2-bb-posix-tests-common = { path = "iceoryx2-bb/posix/tests-common" }
 iceoryx2-bb-posix-tests-nostd = { path = "iceoryx2-bb/posix/tests-nostd" }
+iceoryx2-cal-conformance-tests-common = { path = "iceoryx2-cal/conformance-tests/tests-common"}
+iceoryx2-cal-conformance-tests-nostd = { path = "iceoryx2-cal/conformance-tests/tests-nostd"}
 
 ################################################################################
 

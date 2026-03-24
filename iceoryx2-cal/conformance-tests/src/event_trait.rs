@@ -17,19 +17,16 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod event_trait {
+    use alloc::collections::btree_set::BTreeSet;
+    use alloc::{vec, vec::Vec};
     use core::time::Duration;
-    use iceoryx2_bb_concurrency::atomic::Ordering;
-    use std::collections::HashSet;
-    use std::sync::{Barrier, Mutex};
-    use std::time::Instant;
 
-    use iceoryx2_bb_concurrency::atomic::AtomicU64;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_container::semantic_string::*;
-    use iceoryx2_bb_posix::barrier::*;
     use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing::{assert_that, test_requires};
+    use iceoryx2_bb_testing_macros::requires_std;
     use iceoryx2_cal::event::{TriggerId, *};
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::testing::*;
@@ -96,8 +93,11 @@ pub mod event_trait {
         assert_that!(sut.err().unwrap(), eq NotifierCreateError::DoesNotExist);
     }
 
+    #[requires_std("time")]
     #[conformance_test]
     pub fn notify_with_same_id_does_not_lead_to_non_blocking_timed_wait<Sut: Event>() {
+        use std::time::Instant;
+
         let _watchdog = Watchdog::new();
         const REPETITIONS: u64 = 8;
         let name = generate_name();
@@ -195,7 +195,7 @@ pub mod event_trait {
             sut_notifier.notify(TriggerId::new(i)).unwrap();
         }
 
-        let mut ids = HashSet::new();
+        let mut ids = BTreeSet::new();
         for _ in 0..REPETITIONS {
             let result = wait_call(&sut_listener).unwrap();
             assert_that!(result, is_some);
@@ -310,8 +310,11 @@ pub mod event_trait {
         assert_that!(result, is_none);
     }
 
+    #[requires_std("time")]
     #[conformance_test]
     pub fn timed_wait_does_block_for_at_least_timeout<Sut: Event>() {
+        use std::time::Instant;
+
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -330,8 +333,15 @@ pub mod event_trait {
         assert_that!(start.elapsed(), time_at_least TIMEOUT);
     }
 
+    #[requires_std("threading")]
     #[conformance_test]
     pub fn blocking_wait_blocks_until_notification_arrives<Sut: Event>() {
+        use std::sync::Mutex;
+
+        use iceoryx2_bb_concurrency::atomic::AtomicU64;
+        use iceoryx2_bb_concurrency::atomic::Ordering;
+        use iceoryx2_bb_posix::barrier::*;
+
         let _watchdog = Watchdog::new();
         let name = generate_name();
         let config = Mutex::new(generate_isolated_config::<Sut>());
@@ -370,8 +380,15 @@ pub mod event_trait {
 
     /// windows sporadically instantly wakes up in a timed receive operation
     #[cfg(not(target_os = "windows"))]
+    #[requires_std("threading")]
     #[conformance_test]
     pub fn timed_wait_blocks_until_notification_arrives<Sut: Event>() {
+        use std::sync::Mutex;
+
+        use iceoryx2_bb_concurrency::atomic::AtomicU64;
+        use iceoryx2_bb_concurrency::atomic::Ordering;
+        use iceoryx2_bb_posix::barrier::*;
+
         let _watchdog = Watchdog::new();
         let name = generate_name();
         let config = Mutex::new(generate_isolated_config::<Sut>());
@@ -561,7 +578,7 @@ pub mod event_trait {
             NotifierNotifyError::TriggerIdOutOfBounds
         );
 
-        let mut ids = HashSet::new();
+        let mut ids = BTreeSet::new();
         for _ in 0..TRIGGER_ID_MAX.as_value() {
             let event_id = sut_listener.try_wait_one().unwrap().unwrap();
 
@@ -645,8 +662,11 @@ pub mod event_trait {
         assert_that!(callback_called, eq false);
     }
 
+    #[requires_std("time")]
     #[conformance_test]
     pub fn timed_wait_all_does_block_for_at_least_timeout<Sut: Event>() {
+        use std::time::Instant;
+
         let _watchdog = Watchdog::new();
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
@@ -665,12 +685,19 @@ pub mod event_trait {
         assert_that!(now.elapsed(), time_at_least TIMEOUT);
     }
 
+    #[requires_std("threading")]
     fn wait_all_wakes_up_on_notify<
         Sut: Event,
         F: FnMut(&mut Vec<TriggerId>, &Sut::Listener) + Send,
     >(
-        mut wait_call: F,
+        wait_call: F,
     ) {
+        use std::sync::{Barrier, Mutex};
+
+        use iceoryx2_bb_concurrency::atomic::AtomicU64;
+        use iceoryx2_bb_concurrency::atomic::Ordering;
+
+        let mut wait_call = wait_call;
         let _watchdog = Watchdog::new();
         let name = generate_name();
         let barrier = Barrier::new(2);
@@ -707,6 +734,7 @@ pub mod event_trait {
         });
     }
 
+    #[requires_std("threading")]
     #[conformance_test]
     pub fn timed_wait_all_wakes_up_on_notify<Sut: Event>() {
         wait_all_wakes_up_on_notify::<Sut, _>(|v, sut: &Sut::Listener| {
@@ -714,6 +742,7 @@ pub mod event_trait {
         });
     }
 
+    #[requires_std("threading")]
     #[conformance_test]
     pub fn blocking_wait_all_wakes_up_on_notify<Sut: Event>() {
         wait_all_wakes_up_on_notify::<Sut, _>(|v, sut: &Sut::Listener| {
@@ -721,6 +750,7 @@ pub mod event_trait {
         });
     }
 
+    #[requires_std("for whatever reason, 'sem_bitset_posix_shared_memory' makes 'notify' panic with 'SIGPIPE' for no_std")]
     #[conformance_test]
     pub fn out_of_scope_listener_shall_not_corrupt_notifier<Sut: Event>() {
         let name = generate_name();

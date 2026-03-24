@@ -15,6 +15,8 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod monitoring_trait {
+    use alloc::vec;
+
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_system_types::file_name::*;
     use iceoryx2_bb_testing::assert_that;

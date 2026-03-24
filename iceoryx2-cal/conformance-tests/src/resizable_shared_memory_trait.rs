@@ -18,6 +18,7 @@ pub type DefaultAllocator = PoolAllocator;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod resizable_shared_memory_trait {
+    use alloc::vec;
     use core::alloc::Layout;
 
     use iceoryx2_bb_conformance_test_macros::conformance_test;
