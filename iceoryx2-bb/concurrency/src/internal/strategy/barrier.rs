@@ -15,7 +15,7 @@
 pub struct Barrier(internal::Barrier);
 
 impl Barrier {
-    pub fn new(n: u16) -> Self {
+    pub fn new(n: u32) -> Self {
         Self(internal::Barrier::new(n))
     }
 }

@@ -61,13 +61,13 @@ enum_gen! { BarrierCreationError
 /// interprocess capable unless it is configured otherwise.
 #[derive(Debug)]
 pub struct BarrierBuilder {
-    number_of_waiters: u16,
+    number_of_waiters: u32,
     is_interprocess_capable: bool,
 }
 
 impl BarrierBuilder {
     /// Creates a new [`BarrierBuilder`] for a [`Barrier`] which is waiting for the provided number of waiters
-    pub fn new(number_of_waiters: u16) -> BarrierBuilder {
+    pub fn new(number_of_waiters: u32) -> BarrierBuilder {
         BarrierBuilder {
             number_of_waiters,
             is_interprocess_capable: false,

@@ -18,7 +18,7 @@ use crate::posix::*;
 
 use iceoryx2_pal_concurrency_sync::atomic::Ordering;
 
-use iceoryx2_pal_concurrency_sync::atomic::AtomicU32;
+use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
 use iceoryx2_pal_concurrency_sync::cell::UnsafeCell;
 use iceoryx2_pal_concurrency_sync::strategy::barrier::Barrier;
 use iceoryx2_pal_concurrency_sync::strategy::mutex::Mutex;
@@ -163,8 +163,8 @@ extern "C" {
     fn __cxx_atomic_notify_all(ptr: *const void);
 }
 
-pub fn wait(atomic: &AtomicU32, expected: &u32) {
-    let ptr = (atomic as *const AtomicU32) as *const void;
+pub fn wait(atomic: &AtomicU64, expected: &u64) {
+    let ptr = (atomic as *const AtomicU64) as *const void;
     let monitor = unsafe { __libcpp_atomic_monitor(ptr) };
     if atomic.load(Ordering::Relaxed) != *expected {
         return;
@@ -172,7 +172,7 @@ pub fn wait(atomic: &AtomicU32, expected: &u32) {
     unsafe { __libcpp_atomic_wait(ptr, monitor) };
 }
 
-pub fn timed_wait(atomic: &AtomicU32, expected: &u32, timeout: timespec) {
+pub fn timed_wait(atomic: &AtomicU64, expected: &u64, timeout: timespec) {
     let sleep_time = timespec {
         tv_sec: 0,
         tv_nsec: 1000000,
@@ -201,13 +201,13 @@ pub fn timed_wait(atomic: &AtomicU32, expected: &u32, timeout: timespec) {
     }
 }
 
-pub fn wake_one(atomic: &AtomicU32) {
-    let ptr = (atomic as *const AtomicU32) as *const void;
+pub fn wake_one(atomic: &AtomicU64) {
+    let ptr = (atomic as *const AtomicU64) as *const void;
     unsafe { __cxx_atomic_notify_one(ptr) };
 }
 
-pub fn wake_all(atomic: &AtomicU32) {
-    let ptr = (atomic as *const AtomicU32) as *const void;
+pub fn wake_all(atomic: &AtomicU64) {
+    let ptr = (atomic as *const AtomicU64) as *const void;
     unsafe { __cxx_atomic_notify_all(ptr) };
 }
 

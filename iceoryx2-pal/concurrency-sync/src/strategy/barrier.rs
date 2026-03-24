@@ -12,33 +12,33 @@
 
 use core::hint::spin_loop;
 
-use crate::atomic::AtomicU32;
+use crate::atomic::AtomicU64;
 use crate::atomic::Ordering;
 use crate::SPIN_REPETITIONS;
 
 #[derive(Debug)]
 pub struct Barrier {
-    waiters: AtomicU32,
-    number_of_waiters: u16,
+    waiters: AtomicU64,
+    number_of_waiters: u32,
 }
 
-fn pack(epoch: u16, count: u16) -> u32 {
-    ((epoch as u32) << 16) | (count as u32)
+fn pack(epoch: u32, count: u32) -> u64 {
+    ((epoch as u64) << 32) | (count as u64)
 }
 
-fn unpack(value: u32) -> (u16, u16) {
-    ((value >> 16) as u16, value as u16)
+fn unpack(value: u64) -> (u32, u32) {
+    ((value >> 32) as u32, value as u32)
 }
 
 impl Barrier {
-    pub fn new(number_of_waiters: u16) -> Self {
+    pub fn new(number_of_waiters: u32) -> Self {
         Self {
             number_of_waiters,
-            waiters: AtomicU32::new(number_of_waiters as u32),
+            waiters: AtomicU64::new(pack(0, number_of_waiters)),
         }
     }
 
-    fn reset_barrier(&self, epoch: u16) {
+    fn reset_barrier(&self, epoch: u32) {
         let expected = pack(epoch, 0);
         let _ = self.waiters.compare_exchange(
             expected,
@@ -48,7 +48,7 @@ impl Barrier {
         );
     }
 
-    pub fn wait<Wait: Fn(&AtomicU32, &u32), WakeAll: Fn(&AtomicU32)>(
+    pub fn wait<Wait: Fn(&AtomicU64, &u64), WakeAll: Fn(&AtomicU64)>(
         &self,
         wait: Wait,
         wake_all: WakeAll,
