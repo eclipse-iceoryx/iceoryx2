@@ -10,26 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-mod active_request_tests;
-mod client_tests;
-mod listener_tests;
-mod node_death_tests;
-mod node_tests;
-mod notifier_tests;
-mod pending_response_tests;
-mod publisher_tests;
-mod reader_tests;
-mod sample_mut_tests;
-mod sample_tests;
-mod server_tests;
-mod service_blackboard_tests;
-mod service_event_tests;
-mod service_publish_subscribe_tests;
-mod service_request_response_builder_tests;
-mod service_request_response_tests;
-mod service_tests;
-mod subscriber_tests;
-mod waitset_tests;
-mod writer_tests;
+extern crate iceoryx2_conformance_tests_common;
 
 iceoryx2_bb_testing::test_harness!();
