@@ -38,31 +38,28 @@ impl Barrier {
         }
     }
 
-    fn reset_barrier(&self, epoch: u32) {
-        let expected = pack(epoch, 0);
-        let _ = self.waiters.compare_exchange(
-            expected,
-            pack(epoch.wrapping_add(1), self.number_of_waiters),
-            Ordering::Relaxed,
-            Ordering::Relaxed,
-        );
-    }
-
     pub fn wait<Wait: Fn(&AtomicU64, &u64), WakeAll: Fn(&AtomicU64)>(
         &self,
         wait: Wait,
         wake_all: WakeAll,
     ) {
-        let (current_epoch, _) = unpack(self.waiters.fetch_sub(1, Ordering::Relaxed));
+        let (current_epoch, count) = unpack(self.waiters.fetch_sub(1, Ordering::Release));
+
+        if count == 1 {
+            self.waiters.store(
+                pack(current_epoch.wrapping_add(1), self.number_of_waiters),
+                Ordering::Release,
+            );
+            wake_all(&self.waiters);
+            return;
+        }
 
         let mut retry_counter = 0;
         loop {
             let current_value = self.waiters.load(Ordering::Acquire);
-            let (epoch, count) = unpack(current_value);
+            let (epoch, _) = unpack(current_value);
 
-            if epoch != current_epoch || count == 0 {
-                self.reset_barrier(current_epoch);
-                wake_all(&self.waiters);
+            if epoch != current_epoch {
                 return;
             }
 
