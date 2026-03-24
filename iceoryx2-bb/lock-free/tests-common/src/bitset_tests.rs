@@ -12,7 +12,6 @@
 
 #![allow(clippy::disallowed_types)]
 
-use alloc::vec::Vec;
 use core::time::Duration;
 
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicUsize, Ordering};
@@ -158,13 +157,14 @@ pub fn bit_set_concurrent_set_and_reset_works() {
     const SUCCESS_LIMIT: usize = 10000;
 
     let sut = BitSet::new(CAPACITY);
-    let barrier_handle = BarrierHandle::new();
-    let barrier = BarrierBuilder::new((number_of_set_threads + number_of_reset_threads + 1) as u32)
-        .create(&barrier_handle)
-        .unwrap();
+    let start_barrier_handle = BarrierHandle::new();
+    let start_barrier =
+        BarrierBuilder::new((number_of_set_threads + number_of_reset_threads + 1) as u32)
+            .create(&start_barrier_handle)
+            .unwrap();
 
-    let set_count: Vec<AtomicUsize> = (0..CAPACITY).map(|_| AtomicUsize::new(0)).collect();
-    let reset_count: Vec<AtomicUsize> = (0..CAPACITY).map(|_| AtomicUsize::new(0)).collect();
+    let set_count = [const { AtomicUsize::new(0) }; CAPACITY];
+    let reset_count = [const { AtomicUsize::new(0) }; CAPACITY];
 
     let keep_running = AtomicBool::new(true);
     let number_of_completed_set_threads = AtomicUsize::new(0);
@@ -175,16 +175,23 @@ pub fn bit_set_concurrent_set_and_reset_works() {
                 .spawn(|| {
                     let mut counter = 0usize;
                     let mut success_counter = 0;
+                    let mut id_counter = [0usize; CAPACITY];
 
-                    barrier.wait();
+                    start_barrier.wait();
                     while success_counter < SUCCESS_LIMIT {
                         if sut.set(counter % CAPACITY) {
-                            set_count[counter % CAPACITY].fetch_add(1, Ordering::Relaxed);
+                            id_counter[counter % CAPACITY] += 1;
                             success_counter += 1;
                         }
                         counter += 1;
                     }
-                    number_of_completed_set_threads.fetch_add(1, Ordering::Relaxed);
+
+                    // Count the sets after the loop to keep contention high
+                    for (idx, count) in id_counter.iter().enumerate() {
+                        set_count[idx].fetch_add(*count, Ordering::Relaxed);
+                    }
+
+                    number_of_completed_set_threads.fetch_add(1, Ordering::SeqCst);
                 })
                 .expect("failed to spawn thread");
         }
@@ -192,22 +199,29 @@ pub fn bit_set_concurrent_set_and_reset_works() {
         for _ in 0..number_of_reset_threads {
             s.thread_builder()
                 .spawn(|| {
-                    barrier.wait();
-                    while keep_running.load(Ordering::Relaxed) {
+                    let mut id_counter = [0usize; CAPACITY];
+
+                    start_barrier.wait();
+                    while keep_running.load(Ordering::SeqCst) {
                         sut.reset_all(|id| {
-                            reset_count[id].fetch_add(1, Ordering::Relaxed);
+                            id_counter[id] += 1;
                         });
                     }
                     sut.reset_all(|id| {
-                        reset_count[id].fetch_add(1, Ordering::Relaxed);
+                        id_counter[id] += 1;
                     });
+
+                    // Count the sets after the loop to keep contention high
+                    for (idx, count) in id_counter.iter().enumerate() {
+                        reset_count[idx].fetch_add(*count, Ordering::Relaxed);
+                    }
                 })
                 .expect("failed to spawn thread");
         }
 
-        barrier.wait();
+        start_barrier.wait();
         while number_of_completed_set_threads.load(Ordering::Relaxed) < number_of_set_threads {}
-        keep_running.store(false, Ordering::Relaxed);
+        keep_running.store(false, Ordering::SeqCst);
 
         Ok(())
     })
