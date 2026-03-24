@@ -15,7 +15,10 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod reader {
+    use alloc::boxed::Box;
     use alloc::collections::BTreeSet;
+    use alloc::{format, vec};
+
     use iceoryx2::constants::MAX_BLACKBOARD_KEY_SIZE;
     use iceoryx2::port::reader::*;
     use iceoryx2::prelude::*;

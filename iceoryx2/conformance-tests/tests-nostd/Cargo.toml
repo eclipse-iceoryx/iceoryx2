@@ -1,0 +1,32 @@
+[package]
+name = "iceoryx2-conformance-tests-nostd"
+description = "iceoryx2: [internal] nostd deployment of iceoryx2-conformance-tests"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[features]
+# Default to noop to support std workspace builds
+default = [ "std" ]
+
+std = [
+  "iceoryx2/std",
+  "iceoryx2-bb-concurrency/std",
+  "iceoryx2-bb-testing/std",
+]
+
+[dependencies]
+iceoryx2 = { workspace = true, features = [] }
+iceoryx2-conformance-tests = { workspace = true, features = [] }
+iceoryx2-conformance-tests-common = { workspace = true, features = [] }
+iceoryx2-bb-concurrency = { workspace = true, features = [] }
+iceoryx2-bb-loggers = { workspace = true, features = [] }
+iceoryx2-bb-elementary-traits = { workspace = true, features = [] }
+iceoryx2-bb-memory = { workspace = true, features = [] }
+
+iceoryx2-bb-testing = { workspace = true }

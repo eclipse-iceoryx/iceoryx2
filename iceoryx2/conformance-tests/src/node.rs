@@ -17,6 +17,8 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[conformance_test_module]
 pub mod node {
     use alloc::collections::{BTreeSet, VecDeque};
+    use alloc::string::ToString;
+    use alloc::{format, vec};
     use core::time::Duration;
 
     use iceoryx2::config::Config;

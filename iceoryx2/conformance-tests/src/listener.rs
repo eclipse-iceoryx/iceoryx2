@@ -16,6 +16,7 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[conformance_test_module]
 pub mod listener {
     use alloc::collections::BTreeSet;
+    use alloc::{format, vec};
 
     use iceoryx2::testing::*;
     use iceoryx2::{node::NodeBuilder, port::listener::ListenerCreateError, service::Service};

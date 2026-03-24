@@ -1,5 +1,5 @@
 {
-  "checksum": "0d503fad8a77e3a2e08345c3118c2565eeecbc0914effc4a1cf999ed5c426ec9",
+  "checksum": "427f89ad6d8991c794a94e8cfd5926f7083f879980b7a4ac5851aeb3034122c9",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -10111,6 +10111,34 @@
         }
       ],
       "library_target_name": "iceoryx2_conformance_tests_common",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "0.8.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-conformance-tests-nostd 0.8.999": {
+      "name": "iceoryx2-conformance-tests-nostd",
+      "version": "0.8.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [],
+      "library_target_name": null,
       "common_attrs": {
         "compile_data_glob": [
           "**"
@@ -34637,6 +34665,7 @@
     "iceoryx2-cli 0.8.999": "iceoryx2-cli",
     "iceoryx2-conformance-tests 0.8.999": "iceoryx2/conformance-tests",
     "iceoryx2-conformance-tests-common 0.8.999": "iceoryx2/conformance-tests/tests-common",
+    "iceoryx2-conformance-tests-nostd 0.8.999": "iceoryx2/conformance-tests/tests-nostd",
     "iceoryx2-ffi-c 0.8.999": "iceoryx2-ffi/c",
     "iceoryx2-ffi-macros 0.8.999": "iceoryx2-ffi/ffi-macros",
     "iceoryx2-ffi-python 0.8.999": "iceoryx2-ffi/python",

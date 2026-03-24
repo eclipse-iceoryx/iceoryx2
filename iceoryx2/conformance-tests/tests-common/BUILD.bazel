@@ -34,6 +34,7 @@ rust_library(
         "//iceoryx2/conformance-tests:iceoryx2-conformance-tests",
         "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
+        "//iceoryx2-pal/print:iceoryx2-pal-print",
     ],
     proc_macro_deps = [
         "//iceoryx2-bb/testing-macros:iceoryx2-bb-testing-macros",

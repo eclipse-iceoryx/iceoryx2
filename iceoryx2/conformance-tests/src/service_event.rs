@@ -17,8 +17,10 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[conformance_test_module]
 pub mod service_event {
     use alloc::collections::BTreeSet;
+    use alloc::{format, vec};
     use core::time::Duration;
     use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle};
+    use iceoryx2_bb_posix::clock::nanosleep;
     use iceoryx2_bb_posix::clock::Time;
     use iceoryx2_bb_posix::ipc_capable::Handle;
     use iceoryx2_bb_posix::thread::thread_scope;
@@ -1080,7 +1082,7 @@ pub mod service_event {
             })?;
 
             barrier.wait();
-            std::thread::sleep(TIMEOUT);
+            nanosleep(TIMEOUT).unwrap();
             assert_that!(counter.load(Ordering::Relaxed), eq 0);
 
             assert_that!(notifier.notify_with_custom_event_id(EventId::new(13)).unwrap(), eq 1);
@@ -1391,12 +1393,12 @@ pub mod service_event {
         let sut_open = node.service_builder(&service_name).event().open().unwrap();
         let notifier_open = sut_open.notifier_builder().create().unwrap();
 
-        std::thread::sleep(TIMEOUT);
+        nanosleep(TIMEOUT).unwrap();
         let result = notifier_create.notify();
         assert_that!(result.err(), eq Some(NotifierNotifyError::MissedDeadline));
         assert_that!(listener.try_wait_one().unwrap(), is_some);
 
-        std::thread::sleep(TIMEOUT);
+        nanosleep(TIMEOUT).unwrap();
         let result = notifier_open.notify();
         assert_that!(result.err(), eq Some(NotifierNotifyError::MissedDeadline));
         assert_that!(listener.try_wait_one().unwrap(), is_some);
@@ -1423,11 +1425,11 @@ pub mod service_event {
         let sut_open = node.service_builder(&service_name).event().open().unwrap();
         let notifier_open = sut_open.notifier_builder().create().unwrap();
 
-        std::thread::sleep(TIMEOUT);
+        nanosleep(TIMEOUT).unwrap();
         assert_that!(notifier_create.notify(), is_ok);
         assert_that!(listener.try_wait_one().unwrap(), is_some);
 
-        std::thread::sleep(TIMEOUT);
+        nanosleep(TIMEOUT).unwrap();
         assert_that!(notifier_open.notify(), is_ok);
         assert_that!(listener.try_wait_one().unwrap(), is_some);
     }
