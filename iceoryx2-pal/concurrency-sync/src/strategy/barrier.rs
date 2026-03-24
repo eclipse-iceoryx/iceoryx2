@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::hint::spin_loop;
+use core::panic;
 
 use crate::atomic::AtomicU64;
 use crate::atomic::Ordering;
@@ -34,7 +35,7 @@ impl Barrier {
     pub fn new(number_of_waiters: u32) -> Self {
         Self {
             number_of_waiters,
-            waiters: AtomicU64::new(pack(0, number_of_waiters)),
+            waiters: AtomicU64::new(0),
         }
     }
 
@@ -43,15 +44,16 @@ impl Barrier {
         wait: Wait,
         wake_all: WakeAll,
     ) {
-        let (current_epoch, count) = unpack(self.waiters.fetch_sub(1, Ordering::Release));
+        let (current_epoch, count) = unpack(self.waiters.fetch_add(1, Ordering::Release));
 
-        if count == 1 {
-            self.waiters.store(
-                pack(current_epoch.wrapping_add(1), self.number_of_waiters),
-                Ordering::Release,
-            );
+        let current_count = count + 1;
+        if current_count == self.number_of_waiters {
+            self.waiters
+                .store(pack(current_epoch.wrapping_add(1), 0), Ordering::Release);
             wake_all(&self.waiters);
             return;
+        } else if current_count > self.number_of_waiters {
+            panic!("Barrier::wait() contract violation! More threads than configured call Barrier::wait() concurrently.");
         }
 
         let mut retry_counter = 0;
