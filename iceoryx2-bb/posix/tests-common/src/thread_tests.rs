@@ -12,7 +12,6 @@
 
 #![allow(clippy::disallowed_types)]
 
-use alloc::sync::Arc;
 use core::time::Duration;
 
 use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
@@ -39,10 +38,8 @@ use iceoryx2_pal_posix::posix::{self, POSIX_SUPPORT_CPU_AFFINITY};
 struct SpinBarrier(iceoryx2_bb_concurrency::internal::strategy::barrier::Barrier);
 
 impl SpinBarrier {
-    fn new(number_of_waiters: u32) -> Arc<Self> {
-        Arc::new(Self(
-            iceoryx2_bb_concurrency::internal::strategy::barrier::Barrier::new(number_of_waiters),
-        ))
+    fn new(number_of_waiters: u32) -> Self {
+        Self(iceoryx2_bb_concurrency::internal::strategy::barrier::Barrier::new(number_of_waiters))
     }
 
     fn wait(&self) {
@@ -56,13 +53,12 @@ pub fn thread_set_name_works() {
 
     let name = ThreadName::try_from(b"oh-a-thread").unwrap();
     let barrier = SpinBarrier::new(NUMBER_OF_THREADS);
-    let barrier_clone = barrier.clone();
     let thread = ThreadBuilder::new()
         .name(&name)
-        .spawn(move || {
-            barrier_clone.wait();
+        .spawn(|| {
+            barrier.wait();
             let handle = ThreadHandle::from_self();
-            barrier_clone.wait();
+            barrier.wait();
             assert_that!(handle.get_name().unwrap(), eq b"oh-a-thread");
         })
         .unwrap();
@@ -80,10 +76,9 @@ pub fn thread_creation_does_not_block() {
     const NUMBER_OF_THREADS: u32 = 2;
 
     let barrier = SpinBarrier::new(NUMBER_OF_THREADS);
-    let barrier_clone = barrier.clone();
     let thread = ThreadBuilder::new()
-        .spawn(move || {
-            barrier_clone.wait();
+        .spawn(|| {
+            barrier.wait();
         })
         .unwrap();
     barrier.wait();
@@ -98,13 +93,12 @@ pub fn thread_affinity_is_set_to_all_existing_cores_when_nothing_was_configured(
 
     let number_of_cpu_cores = SystemInfo::NumberOfCpuCores.value();
     let barrier = SpinBarrier::new(NUMBER_OF_THREADS);
-    let barrier_clone = barrier.clone();
     let thread = ThreadBuilder::new()
-        .spawn(move || {
-            barrier_clone.wait();
+        .spawn(|| {
+            barrier.wait();
             let handle = ThreadHandle::from_self();
             let affinity = handle.get_affinity().unwrap();
-            barrier_clone.wait();
+            barrier.wait();
             for core in 0..number_of_cpu_cores {
                 assert_that!(affinity, contains core);
             }
@@ -127,14 +121,13 @@ pub fn thread_set_affinity_to_one_cpu_core_on_creation_works() {
     const NUMBER_OF_THREADS: u32 = 2;
 
     let barrier = SpinBarrier::new(NUMBER_OF_THREADS);
-    let barrier_clone = barrier.clone();
     let thread = ThreadBuilder::new()
         .affinity(&[0])
-        .spawn(move || {
-            barrier_clone.wait();
+        .spawn(|| {
+            barrier.wait();
             let handle = ThreadHandle::from_self();
             let affinity = handle.get_affinity().unwrap();
-            barrier_clone.wait();
+            barrier.wait();
             assert_that!(affinity, len 1);
             assert_that!(affinity[0], eq 0);
         })
@@ -155,14 +148,13 @@ pub fn thread_set_affinity_to_two_cpu_cores_on_creation_works() {
     const NUMBER_OF_THREADS: u32 = 2;
 
     let barrier = SpinBarrier::new(NUMBER_OF_THREADS);
-    let barrier_clone = barrier.clone();
     let thread = ThreadBuilder::new()
         .affinity(&[0, 1])
-        .spawn(move || {
-            barrier_clone.wait();
+        .spawn(|| {
+            barrier.wait();
             let handle = ThreadHandle::from_self();
             let affinity = handle.get_affinity().unwrap();
-            barrier_clone.wait();
+            barrier.wait();
             assert_that!(affinity, len 2);
             assert_that!(affinity, contains 0);
             assert_that!(affinity, contains 1);
@@ -212,14 +204,13 @@ pub fn thread_set_affinity_to_one_core_from_handle_works() {
     const NUMBER_OF_THREADS: u32 = 2;
 
     let barrier = SpinBarrier::new(NUMBER_OF_THREADS);
-    let barrier_clone = barrier.clone();
     let thread = ThreadBuilder::new()
-        .spawn(move || {
+        .spawn(|| {
             let mut handle = ThreadHandle::from_self();
             handle.set_affinity(&[0]).unwrap();
-            barrier_clone.wait();
+            barrier.wait();
             let affinity = handle.get_affinity().unwrap();
-            barrier_clone.wait();
+            barrier.wait();
             assert_that!(affinity, len 1);
             assert_that!(affinity[0], eq 0);
         })
@@ -240,14 +231,13 @@ pub fn thread_set_affinity_to_two_cores_from_handle_works() {
     const NUMBER_OF_THREADS: u32 = 2;
 
     let barrier = SpinBarrier::new(NUMBER_OF_THREADS);
-    let barrier_clone = barrier.clone();
     let thread = ThreadBuilder::new()
-        .spawn(move || {
+        .spawn(|| {
             let mut handle = ThreadHandle::from_self();
             handle.set_affinity(&[0, 1]).unwrap();
-            barrier_clone.wait();
+            barrier.wait();
             let affinity = handle.get_affinity().unwrap();
-            barrier_clone.wait();
+            barrier.wait();
             assert_that!(affinity, len 2);
             assert_that!(affinity, contains 0);
             assert_that!(affinity, contains 1);
@@ -271,23 +261,22 @@ pub fn thread_set_affinity_to_non_existing_cores_from_handle_fails() {
     const NUMBER_OF_THREADS: u32 = 2;
 
     let barrier = SpinBarrier::new(NUMBER_OF_THREADS);
-    let barrier_clone = barrier.clone();
     let thread = ThreadBuilder::new()
-        .spawn(move || {
+        .spawn(|| {
             // thread is started
-            barrier_clone.wait();
+            barrier.wait();
             let mut handle = ThreadHandle::from_self();
 
             let original_affinity = handle.get_affinity().unwrap();
-            barrier_clone.wait();
+            barrier.wait();
 
             let result = handle.set_affinity(&[number_of_cpu_cores + 1]);
             assert_that!(result, is_err);
             assert_that!(result.err(), eq Some(ThreadSetAffinityError::InvalidCpuCores));
 
-            barrier_clone.wait();
+            barrier.wait();
             let affinity = handle.get_affinity().unwrap();
-            barrier_clone.wait();
+            barrier.wait();
             assert_that!(original_affinity, eq affinity);
         })
         .unwrap();
@@ -313,13 +302,12 @@ pub fn thread_set_affinity_to_one_core_from_thread_works() {
     const NUMBER_OF_THREADS: u32 = 2;
 
     let barrier = SpinBarrier::new(NUMBER_OF_THREADS);
-    let barrier_clone = barrier.clone();
     let mut thread = ThreadBuilder::new()
-        .spawn(move || {
-            barrier_clone.wait();
+        .spawn(|| {
+            barrier.wait();
             let handle = ThreadHandle::from_self();
             let affinity = handle.get_affinity().unwrap();
-            barrier_clone.wait();
+            barrier.wait();
             assert_that!(affinity, len 1);
             assert_that!(affinity[0], eq 0);
         })
@@ -341,13 +329,12 @@ pub fn thread_set_affinity_to_two_cores_from_thread_works() {
     const NUMBER_OF_THREADS: u32 = 2;
 
     let barrier = SpinBarrier::new(NUMBER_OF_THREADS);
-    let barrier_clone = barrier.clone();
     let mut thread = ThreadBuilder::new()
-        .spawn(move || {
-            barrier_clone.wait();
+        .spawn(|| {
+            barrier.wait();
             let handle = ThreadHandle::from_self();
             let affinity = handle.get_affinity().unwrap();
-            barrier_clone.wait();
+            barrier.wait();
             assert_that!(affinity, len 2);
             assert_that!(affinity, contains 0);
             assert_that!(affinity, contains 1);
@@ -372,13 +359,12 @@ pub fn thread_set_affinity_to_non_existing_cores_from_thread_fails() {
     const NUMBER_OF_THREADS: u32 = 2;
 
     let barrier = SpinBarrier::new(NUMBER_OF_THREADS);
-    let barrier_clone = barrier.clone();
     let mut thread = ThreadBuilder::new()
-        .spawn(move || {
+        .spawn(|| {
             let handle = ThreadHandle::from_self();
             let original_affinity = handle.get_affinity().unwrap();
-            barrier_clone.wait();
-            barrier_clone.wait();
+            barrier.wait();
+            barrier.wait();
             let affinity = handle.get_affinity().unwrap();
             assert_that!(affinity, eq original_affinity);
         })
@@ -403,10 +389,9 @@ pub fn thread_destructor_does_not_block_on_empty_thread() {
     const NUMBER_OF_THREADS: u32 = 2;
 
     let barrier = SpinBarrier::new(NUMBER_OF_THREADS);
-    let barrier_clone = barrier.clone();
     let thread = ThreadBuilder::new()
-        .spawn(move || {
-            barrier_clone.wait();
+        .spawn(|| {
+            barrier.wait();
             // nothing to see, move along
         })
         .unwrap();
@@ -424,10 +409,9 @@ pub fn thread_destructor_does_block_on_busy_thread() {
     const NUMBER_OF_THREADS: u32 = 2;
 
     let barrier = SpinBarrier::new(NUMBER_OF_THREADS);
-    let barrier_clone = barrier.clone();
     let thread = ThreadBuilder::new()
-        .spawn(move || {
-            barrier_clone.wait();
+        .spawn(|| {
+            barrier.wait();
             nanosleep(SLEEP_DURATION).expect("failed to sleep");
         })
         .unwrap();
