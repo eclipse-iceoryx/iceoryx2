@@ -161,6 +161,7 @@ pub const SOCK_DGRAM: int = 2;
 pub const SOCK_NONBLOCK: int = O_NONBLOCK;
 pub const IPPROTO_UDP: int = 17;
 pub const MSG_PEEK: int = 2;
+pub const MSG_NOSIGNAL: int = 0x4000;
 pub const SCM_MAX_FD: u32 = 253;
 pub const SCM_RIGHTS: int = 128;
 pub const SCM_CREDENTIALS: int = 0x02;

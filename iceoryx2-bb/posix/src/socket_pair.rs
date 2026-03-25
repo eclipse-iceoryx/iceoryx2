@@ -361,7 +361,7 @@ impl StreamingSocket {
                 self.file_descriptor.native_handle(),
                 buf.as_ptr().cast(),
                 buf.len(),
-                0,
+                posix::MSG_NOSIGNAL,
             )
         };
 
