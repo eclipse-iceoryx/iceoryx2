@@ -15,7 +15,7 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod service_request_response {
-    use std::collections::HashSet;
+    use alloc::collections::BTreeSet;
 
     use iceoryx2::node::NodeBuilder;
     use iceoryx2::port::client::Client;
@@ -258,7 +258,7 @@ pub mod service_request_response {
 
         let pending_responses = test.clients[0].send_copy(0).unwrap();
 
-        let mut server_ids = HashSet::new();
+        let mut server_ids = BTreeSet::new();
         let mut active_requests = vec![];
         for n in 0..test_args.number_of_servers {
             active_requests.push(test.servers[n].receive().unwrap().unwrap());

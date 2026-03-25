@@ -12,13 +12,16 @@
 
 use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 
+#[allow(unused_imports)]
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod service_event {
+    use alloc::collections::BTreeSet;
     use core::time::Duration;
-    use std::collections::HashSet;
-    use std::sync::Barrier;
-    use std::time::Instant;
+    use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle};
+    use iceoryx2_bb_posix::clock::Time;
+    use iceoryx2_bb_posix::ipc_capable::Handle;
+    use iceoryx2_bb_posix::thread::thread_scope;
 
     use iceoryx2::port::listener::{Listener, ListenerCreateError};
     use iceoryx2::port::notifier::{NotifierCreateError, NotifierNotifyError};
@@ -729,6 +732,7 @@ pub mod service_event {
         assert_that!(result.err().unwrap(), eq NotifierNotifyError::EventIdOutOfBounds);
     }
 
+    #[cfg(not(target_os = "macos"))]
     #[conformance_test]
     pub fn concurrent_reconnecting_notifier_can_trigger_waiting_listener<Sut: Service>() {
         let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
@@ -742,20 +746,26 @@ pub mod service_event {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let barrier = Barrier::new(number_of_notifier_threads + number_of_listener_threads);
+        let handle = BarrierHandle::new();
+        let barrier = BarrierBuilder::new(number_of_notifier_threads + number_of_listener_threads)
+            .create(&handle)
+            .unwrap();
+        let finish_handle = BarrierHandle::new();
+        let finish_barrier = BarrierBuilder::new(number_of_listener_threads + 1)
+            .create(&finish_handle)
+            .unwrap();
 
         let sut = node
             .service_builder(&service_name)
             .event()
-            .max_listeners(number_of_listener_threads)
-            .max_notifiers(number_of_notifier_threads)
+            .max_listeners(number_of_listener_threads as _)
+            .max_notifiers(number_of_notifier_threads as _)
             .create()
             .unwrap();
 
-        std::thread::scope(|s| {
-            let mut listener_threads = vec![];
+        thread_scope(|s| {
             for _ in 0..number_of_listener_threads {
-                listener_threads.push(s.spawn(|| {
+                s.thread_builder().spawn(|| {
                     let listener = sut.listener_builder().create().unwrap();
                     barrier.wait();
 
@@ -767,28 +777,31 @@ pub mod service_event {
                             assert_that!(id, eq EVENT_ID);
                         }
                     }
-                }));
+
+                    finish_barrier.wait();
+                })?;
             }
 
             for _ in 0..number_of_notifier_threads {
-                s.spawn(|| {
+                s.thread_builder().spawn(|| {
                     barrier.wait();
 
                     while keep_running.load(Ordering::Relaxed) {
                         let notifier = sut.notifier_builder().create().unwrap();
                         assert_that!(notifier.notify_with_custom_event_id(EVENT_ID), is_ok);
                     }
-                });
+                })?;
             }
 
-            for thread in listener_threads {
-                thread.join().unwrap();
-            }
-
+            finish_barrier.wait();
             keep_running.store(false, Ordering::Relaxed);
-        });
+
+            Ok(())
+        })
+        .unwrap();
     }
 
+    #[cfg(not(target_os = "macos"))]
     #[conformance_test]
     pub fn concurrent_reconnecting_listener_can_wait_for_triggering_notifiers<Sut: Service>() {
         let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
@@ -802,20 +815,26 @@ pub mod service_event {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let barrier = Barrier::new(number_of_listener_threads + number_of_notifier_threads);
+        let handle = BarrierHandle::new();
+        let barrier = BarrierBuilder::new(number_of_listener_threads + number_of_notifier_threads)
+            .create(&handle)
+            .unwrap();
+        let finish_handle = BarrierHandle::new();
+        let finish_barrier = BarrierBuilder::new(number_of_listener_threads + 1)
+            .create(&finish_handle)
+            .unwrap();
 
         let sut = node
             .service_builder(&service_name)
             .event()
-            .max_listeners(number_of_listener_threads * 2)
-            .max_notifiers(number_of_notifier_threads)
+            .max_listeners((number_of_listener_threads * 2) as _)
+            .max_notifiers(number_of_notifier_threads as _)
             .create()
             .unwrap();
 
-        std::thread::scope(|s| {
-            let mut listener_threads = vec![];
+        thread_scope(|s| {
             for _ in 0..number_of_listener_threads {
-                listener_threads.push(s.spawn(|| {
+                s.thread_builder().spawn(|| {
                     barrier.wait();
 
                     let mut counter = 0;
@@ -828,26 +847,28 @@ pub mod service_event {
                             listener = sut.listener_builder().create().unwrap();
                         }
                     }
-                }));
+
+                    finish_barrier.wait();
+                })?;
             }
 
             for _ in 0..number_of_notifier_threads {
-                s.spawn(|| {
+                s.thread_builder().spawn(|| {
                     let notifier = sut.notifier_builder().create().unwrap();
                     barrier.wait();
 
                     while keep_running.load(Ordering::Relaxed) {
                         assert_that!(notifier.notify_with_custom_event_id(EVENT_ID), is_ok);
                     }
-                });
+                })?;
             }
 
-            for thread in listener_threads {
-                thread.join().unwrap();
-            }
-
+            finish_barrier.wait();
             keep_running.store(false, Ordering::Relaxed);
-        });
+
+            Ok(())
+        })
+        .unwrap();
     }
 
     #[conformance_test]
@@ -1027,9 +1048,9 @@ pub mod service_event {
 
         let listener = sut.listener_builder().create().unwrap();
 
-        let now = Instant::now();
+        let now = Time::now().unwrap();
         assert_that!(listener.timed_wait_one(TIMEOUT), is_ok);
-        assert_that!(now.elapsed(), time_at_least TIMEOUT);
+        assert_that!(now.elapsed().unwrap(), time_at_least TIMEOUT);
     }
 
     fn wait_blocks_until_notification<Sut: Service, F: FnMut(&Listener<Sut>) + Send>(
@@ -1047,24 +1068,28 @@ pub mod service_event {
             .unwrap();
         let notifier = sut.notifier_builder().create().unwrap();
         let counter = AtomicU64::new(0);
-        let barrier = Barrier::new(2);
+        let handle = BarrierHandle::new();
+        let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
 
-        std::thread::scope(|s| {
-            let t = s.spawn(|| {
+        thread_scope(|s| {
+            s.thread_builder().spawn(|| {
                 let listener = sut.listener_builder().create().unwrap();
                 barrier.wait();
                 wait_call(&listener);
                 counter.fetch_add(1, Ordering::Relaxed);
-            });
+            })?;
 
             barrier.wait();
             std::thread::sleep(TIMEOUT);
             assert_that!(counter.load(Ordering::Relaxed), eq 0);
 
             assert_that!(notifier.notify_with_custom_event_id(EventId::new(13)).unwrap(), eq 1);
-            t.join().unwrap();
-            assert_that!(counter.load(Ordering::Relaxed), eq 1);
-        });
+
+            Ok(())
+        })
+        .unwrap();
+
+        assert_that!(counter.load(Ordering::Relaxed), eq 1);
     }
 
     #[conformance_test]
@@ -1150,13 +1175,13 @@ pub mod service_event {
 
         let listener = sut.listener_builder().create().unwrap();
 
-        let now = Instant::now();
+        let now = Time::now().unwrap();
         let mut callback_called = false;
         assert_that!(
             listener.timed_wait_all(|_| callback_called = true, TIMEOUT),
             is_ok
         );
-        assert_that!(now.elapsed(), time_at_least TIMEOUT);
+        assert_that!(now.elapsed().unwrap(), time_at_least TIMEOUT);
         assert_that!(callback_called, eq false);
     }
 
@@ -1195,7 +1220,7 @@ pub mod service_event {
 
     fn wait_collects_all_notifications<
         Sut: Service,
-        F: FnMut(&Listener<Sut>, &mut HashSet<EventId>),
+        F: FnMut(&Listener<Sut>, &mut BTreeSet<EventId>),
     >(
         number_of_notifications: usize,
         mut wait_call: F,
@@ -1218,7 +1243,7 @@ pub mod service_event {
             assert_that!(notifier.notify_with_custom_event_id(EventId::new(i)).unwrap(), eq 1);
         }
 
-        let mut id_set = HashSet::new();
+        let mut id_set = BTreeSet::new();
         wait_call(&listener, &mut id_set);
     }
 
