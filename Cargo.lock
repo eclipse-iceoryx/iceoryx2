@@ -1338,6 +1338,7 @@ dependencies = [
  "iceoryx2-cal",
  "iceoryx2-log",
  "iceoryx2-pal-configuration",
+ "iceoryx2-tests-common",
  "serde",
  "tiny-fn",
  "toml 0.9.8",
