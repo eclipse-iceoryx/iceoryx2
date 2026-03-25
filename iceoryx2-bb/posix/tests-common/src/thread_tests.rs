@@ -15,7 +15,7 @@
 use alloc::sync::Arc;
 use core::time::Duration;
 
-use iceoryx2_bb_concurrency::atomic::{AtomicU32, AtomicU64, Ordering};
+use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
 use iceoryx2_bb_posix::barrier::BarrierBuilder;
 use iceoryx2_bb_posix::barrier::BarrierHandle;
 use iceoryx2_bb_posix::barrier::Handle;
@@ -36,31 +36,17 @@ use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_pal_posix::posix::{self, POSIX_SUPPORT_CPU_AFFINITY};
 
-struct SpinBarrier {
-    counter: AtomicU32,
-    number_of_waiters: u32,
-}
+struct SpinBarrier(iceoryx2_bb_concurrency::internal::strategy::barrier::Barrier);
 
 impl SpinBarrier {
     fn new(number_of_waiters: u32) -> Arc<Self> {
-        Arc::new(Self {
-            counter: AtomicU32::new(0),
-            number_of_waiters,
-        })
+        Arc::new(Self(
+            iceoryx2_bb_concurrency::internal::strategy::barrier::Barrier::new(number_of_waiters),
+        ))
     }
 
     fn wait(&self) {
-        let arrival = self.counter.fetch_add(1, Ordering::Relaxed);
-
-        // every `number_of_waiters` arrivals is a new round
-        let round = arrival / self.number_of_waiters;
-
-        // target counter value is the value of the first arrival in the round + `number_of_waiters`
-        let target = (round + 1) * self.number_of_waiters;
-
-        while self.counter.load(Ordering::Relaxed) < target {
-            core::hint::spin_loop();
-        }
+        self.0.wait(|_, _| {}, |_| {});
     }
 }
 
