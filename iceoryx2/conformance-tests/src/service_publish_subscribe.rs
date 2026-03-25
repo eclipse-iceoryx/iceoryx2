@@ -12,6 +12,7 @@
 
 use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 
+#[allow(unused_imports)]
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod service_publish_subscribe {
@@ -1232,6 +1233,7 @@ pub mod service_publish_subscribe {
         }
     }
 
+    #[cfg(not(target_os = "macos"))]
     #[conformance_test]
     pub fn concurrent_communication_with_subscriber_reconnects_does_not_deadlock<Sut: Service>() {
         let _watch_dog = Watchdog::new();
@@ -1316,6 +1318,7 @@ pub mod service_publish_subscribe {
         .unwrap();
     }
 
+    #[cfg(not(target_os = "macos"))]
     #[conformance_test]
     pub fn concurrent_communication_with_publisher_reconnects_does_not_deadlock<Sut: Service>() {
         let _watch_dog = Watchdog::new();

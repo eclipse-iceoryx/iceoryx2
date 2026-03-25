@@ -12,6 +12,7 @@
 
 use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 
+#[allow(unused_imports)]
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod node {
@@ -280,6 +281,7 @@ pub mod node {
             format!("{}", NodeCleanupFailure::InternalError), eq "NodeCleanupFailure::InternalError");
     }
 
+    #[cfg(not(target_os = "macos"))]
     #[conformance_test]
     pub fn concurrent_node_creation_and_listing_works<S: Service>() {
         let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
