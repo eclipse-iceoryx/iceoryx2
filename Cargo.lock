@@ -1827,7 +1827,6 @@ dependencies = [
 name = "iceoryx2-cal"
 version = "0.8.999"
 dependencies = [
- "generic-tests",
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-container",
  "iceoryx2-bb-derive-macros",
@@ -1840,6 +1839,7 @@ dependencies = [
  "iceoryx2-bb-posix",
  "iceoryx2-bb-system-types",
  "iceoryx2-bb-testing",
+ "iceoryx2-cal-tests-common",
  "iceoryx2-log",
  "postcard",
  "serde",
