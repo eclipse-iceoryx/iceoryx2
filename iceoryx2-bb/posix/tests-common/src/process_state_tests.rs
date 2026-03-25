@@ -15,6 +15,7 @@
 use alloc::string::ToString;
 
 use iceoryx2_bb_container::semantic_string::SemanticString;
+use iceoryx2_bb_posix::clock::nanosleep;
 use iceoryx2_bb_posix::config::*;
 use iceoryx2_bb_posix::file::{File, FileBuilder};
 use iceoryx2_bb_posix::file_descriptor::FileDescriptorManagement;
@@ -26,7 +27,6 @@ use iceoryx2_bb_posix::{process_state::*, unique_system_id::UniqueSystemId};
 use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath};
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::inventory_test;
-use iceoryx2_bb_testing_macros::requires_std;
 
 fn generate_file_path() -> FilePath {
     let mut file = FileName::new(b"process_state_tests").unwrap();
@@ -183,7 +183,6 @@ pub fn process_state_monitor_detects_initialized_state() {
 }
 
 #[inventory_test]
-#[requires_std("threading")]
 pub fn process_state_owner_lock_cannot_be_created_when_process_does_not_exist() {
     create_test_directory();
     let path = generate_file_path();
@@ -210,7 +209,7 @@ pub fn process_state_owner_lock_cannot_be_created_when_process_does_not_exist() 
         ProcessCleanerCreateError::DoesNotExist
     );
     drop(file);
-    std::thread::sleep(core::time::Duration::from_millis(100));
+    nanosleep(core::time::Duration::from_millis(100)).expect("failed to sleep");
 
     let _file = FileBuilder::new(&owner_lock_path)
         .has_ownership(true)

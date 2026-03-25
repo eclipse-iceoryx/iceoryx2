@@ -20,6 +20,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 use iceoryx2_bb_container::semantic_string::SemanticString;
+use iceoryx2_bb_posix::clock::Time;
 use iceoryx2_bb_posix::config::*;
 use iceoryx2_bb_posix::file_descriptor::FileDescriptorBased;
 use iceoryx2_bb_posix::file_descriptor_set::*;
@@ -30,7 +31,6 @@ use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::inventory_test;
-use iceoryx2_bb_testing_macros::requires_std;
 use iceoryx2_pal_posix::posix;
 
 static TIMEOUT: Duration = Duration::from_millis(10);
@@ -50,10 +50,7 @@ pub fn generate_socket_name() -> FilePath {
 }
 
 #[inventory_test]
-#[requires_std("time")]
 pub fn file_descriptor_set_timed_wait_blocks_at_least_timeout() {
-    use std::time::Instant;
-
     create_test_directory();
     let socket_name = generate_socket_name();
 
@@ -72,7 +69,7 @@ pub fn file_descriptor_set_timed_wait_blocks_at_least_timeout() {
     assert_that!(fd_set.contains(&sut_receiver), eq true);
     assert_that!(fd_set.contains(&sut_sender),  eq false);
 
-    let start = Instant::now();
+    let start = Time::now().expect("failed to get current time");
 
     let mut result = vec![];
     fd_set
@@ -81,7 +78,7 @@ pub fn file_descriptor_set_timed_wait_blocks_at_least_timeout() {
         })
         .unwrap();
 
-    assert_that!(start.elapsed(), time_at_least TIMEOUT);
+    assert_that!(start.elapsed().expect("failed to get elapsed time"), time_at_least TIMEOUT);
     assert_that!(result, len 0);
 }
 

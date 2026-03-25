@@ -12,14 +12,16 @@
 
 #![allow(clippy::disallowed_types)]
 
-use iceoryx2_bb_posix::read_write_mutex::*;
-use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::requires_std;
-
-#[cfg(feature = "std")]
 use core::time::Duration;
+use iceoryx2_bb_concurrency::atomic::{AtomicUsize, Ordering};
+use iceoryx2_bb_posix::barrier::*;
+use iceoryx2_bb_posix::clock::{nanosleep, Time};
+use iceoryx2_bb_posix::read_write_mutex::*;
+use iceoryx2_bb_posix::thread::thread_scope;
+use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_testing_macros::inventory_test;
-#[cfg(feature = "std")]
+
 const TIMEOUT: Duration = Duration::from_millis(50);
 
 #[inventory_test]
@@ -51,73 +53,77 @@ pub fn read_write_mutex_try_lock_works() {
 }
 
 #[inventory_test]
-#[requires_std("threading", "watchdog")]
 pub fn read_write_mutex_write_lock_blocks_read_and_write_locks() {
-    use iceoryx2_bb_concurrency::atomic::{AtomicUsize, Ordering};
-    use iceoryx2_bb_posix::clock::*;
-    use iceoryx2_bb_testing::watchdog::Watchdog;
+    const NUMBER_OF_THREADS: u32 = 2;
 
     let _watchdog = Watchdog::new();
     let handle = ReadWriteMutexHandle::<i32>::new();
     let sut = ReadWriteMutexBuilder::new().create(781, &handle).unwrap();
     let counter = AtomicUsize::new(0);
-    let barrier = std::sync::Barrier::new(3);
+    let barrier_handle = BarrierHandle::new();
+    let barrier = BarrierBuilder::new(NUMBER_OF_THREADS + 1)
+        .create(&barrier_handle)
+        .unwrap();
 
-    std::thread::scope(|s| {
+    thread_scope(|s| {
         let _guard = sut.write_blocking_lock().unwrap();
 
-        let t1 = s.spawn(|| {
-            barrier.wait();
-            let _guard = sut.write_blocking_lock().unwrap();
-            counter.fetch_add(1, Ordering::Relaxed);
-        });
+        s.thread_builder()
+            .spawn(|| {
+                barrier.wait();
+                let _guard = sut.write_blocking_lock().unwrap();
+                counter.fetch_add(1, Ordering::Relaxed);
+            })
+            .expect("failed to spawn thread");
 
-        let t2 = s.spawn(|| {
-            barrier.wait();
-            let _guard = sut.read_blocking_lock().unwrap();
-            counter.fetch_add(1, Ordering::Relaxed);
-        });
+        s.thread_builder()
+            .spawn(|| {
+                barrier.wait();
+                let _guard = sut.read_blocking_lock().unwrap();
+                counter.fetch_add(1, Ordering::Relaxed);
+            })
+            .expect("failed to spawn thread");
 
         barrier.wait();
-        nanosleep(TIMEOUT).unwrap();
+        nanosleep(TIMEOUT).expect("failed to sleep");
         let counter_old = counter.load(Ordering::Relaxed);
         drop(_guard);
 
-        t1.join().unwrap();
-        t2.join().unwrap();
-
         assert_that!(counter_old, eq 0);
-        assert_that!(counter.load(Ordering::Relaxed), eq 2);
-    });
+
+        Ok(())
+    })
+    .expect("failed to execute thread scope");
+
+    assert_that!(counter.load(Ordering::Relaxed), eq NUMBER_OF_THREADS as usize);
 }
 
 #[inventory_test]
-#[requires_std("threading")]
 pub fn read_write_mutex_read_lock_blocks_only_write_locks() {
-    use iceoryx2_bb_concurrency::atomic::{AtomicUsize, Ordering};
-    use iceoryx2_bb_posix::clock::*;
-
     let handle = ReadWriteMutexHandle::<i32>::new();
     let sut = ReadWriteMutexBuilder::new().create(781, &handle).unwrap();
     let counter = AtomicUsize::new(5);
 
-    std::thread::scope(|s| {
+    thread_scope(|s| {
         let _guard = sut.read_blocking_lock().unwrap();
         let _guard2 = sut.read_blocking_lock().unwrap();
 
-        let t1 = s.spawn(|| {
-            let _guard = sut.write_blocking_lock().unwrap();
-            counter.fetch_add(1, Ordering::Relaxed);
-        });
+        s.thread_builder()
+            .spawn(|| {
+                let _guard = sut.write_blocking_lock().unwrap();
+                counter.fetch_add(1, Ordering::Relaxed);
+            })
+            .expect("failed to spawn thread");
 
-        nanosleep(TIMEOUT * 4).unwrap();
+        nanosleep(TIMEOUT * 4).expect("failed to sleep");
         let counter_old = counter.load(Ordering::Relaxed);
-        drop(_guard);
-        drop(_guard2);
-        assert_that!(t1.join(), is_ok);
         assert_that!(counter_old, eq 5);
-        assert_that!(counter.load(Ordering::Relaxed), eq 6);
-    });
+
+        Ok(())
+    })
+    .expect("failed to execute thread scope");
+
+    assert_that!(counter.load(Ordering::Relaxed), eq 6);
 }
 
 #[inventory_test]
@@ -134,10 +140,7 @@ pub fn read_write_mutex_try_lock_fails_when_lock_was_acquired() {
 }
 
 #[inventory_test]
-#[requires_std("threading")]
 pub fn read_write_mutex_multiple_ipc_mutex_are_working() {
-    use iceoryx2_bb_posix::clock::*;
-
     let handle = ReadWriteMutexHandle::<i32>::new();
     let sut1 = ReadWriteMutexBuilder::new()
         .is_interprocess_capable(true)
@@ -146,18 +149,23 @@ pub fn read_write_mutex_multiple_ipc_mutex_are_working() {
 
     let sut2 = unsafe { ReadWriteMutex::from_ipc_handle(&handle) };
 
-    std::thread::scope(|s| {
-        s.spawn(|| {
-            let mut guard = sut2.write_blocking_lock().unwrap();
-            *guard = 99501;
-            nanosleep(TIMEOUT * 4).unwrap();
-        });
+    thread_scope(|s| {
+        s.thread_builder()
+            .spawn(|| {
+                let mut guard = sut2.write_blocking_lock().unwrap();
+                *guard = 99501;
+                nanosleep(TIMEOUT * 4).expect("failed to sleep");
+            })
+            .expect("failed to spawn thread");
 
-        nanosleep(TIMEOUT).unwrap();
+        nanosleep(TIMEOUT).expect("failed to sleep");
         let start = Time::now().unwrap();
         sut1.write_blocking_lock().unwrap();
         assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT);
-    });
+
+        Ok(())
+    })
+    .expect("failed to execute thread scope");
 
     assert_that!(*sut2.read_blocking_lock().unwrap(), eq 99501);
 }

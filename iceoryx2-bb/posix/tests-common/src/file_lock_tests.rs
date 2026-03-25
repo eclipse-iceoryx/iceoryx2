@@ -16,18 +16,19 @@ use alloc::string::ToString;
 use alloc::vec;
 
 use iceoryx2_bb_container::semantic_string::SemanticString;
+use iceoryx2_bb_posix::clock::nanosleep;
 use iceoryx2_bb_posix::config::TEST_DIRECTORY;
 use iceoryx2_bb_posix::file::*;
 use iceoryx2_bb_posix::file_lock::*;
 use iceoryx2_bb_posix::process::*;
 use iceoryx2_bb_posix::testing::create_test_directory;
+use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_bb_testing_macros::inventory_test;
-use iceoryx2_bb_testing_macros::requires_std;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_FILE_LOCK;
 
 fn generate_file_name() -> FilePath {
@@ -216,7 +217,6 @@ pub fn file_lock_multiple_readers_blocks_write() {
 }
 
 #[inventory_test]
-#[requires_std("threading")]
 pub fn file_lock_write_lock_blocks() {
     use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
 
@@ -225,31 +225,37 @@ pub fn file_lock_write_lock_blocks() {
     let handle = ReadWriteMutexHandle::new();
     let test = TestFixture::new(&handle);
     let counter = AtomicU64::new(0);
-    std::thread::scope(|s| {
+    thread_scope(|s| {
         let guard = test.sut.write_lock().expect("");
 
-        s.spawn(|| {
-            test.sut.read_lock().expect("");
-            counter.fetch_add(1, Ordering::Relaxed);
-        });
+        s.thread_builder()
+            .spawn(|| {
+                test.sut.read_lock().expect("");
+                counter.fetch_add(1, Ordering::Relaxed);
+            })
+            .expect("failed to spawn thread");
 
-        s.spawn(|| {
-            test.sut.write_lock().expect("");
-            counter.fetch_add(1, Ordering::Relaxed);
-        });
+        s.thread_builder()
+            .spawn(|| {
+                test.sut.write_lock().expect("");
+                counter.fetch_add(1, Ordering::Relaxed);
+            })
+            .expect("failed to spawn thread");
 
-        std::thread::sleep(core::time::Duration::from_millis(10));
+        nanosleep(core::time::Duration::from_millis(10)).expect("failed to sleep");
         let counter_old = counter.load(Ordering::Relaxed);
         drop(guard);
-        std::thread::sleep(core::time::Duration::from_millis(10));
+        nanosleep(core::time::Duration::from_millis(10)).expect("failed to sleep");
 
         assert_that!(counter_old, eq 0);
         assert_that!(counter.load(Ordering::Relaxed), eq 2);
-    });
+
+        Ok(())
+    })
+    .expect("failed to execute thread scope");
 }
 
 #[inventory_test]
-#[requires_std("threading")]
 pub fn file_lock_read_lock_blocks_write_locks() {
     use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
 
@@ -258,31 +264,37 @@ pub fn file_lock_read_lock_blocks_write_locks() {
     let handle = ReadWriteMutexHandle::new();
     let test = TestFixture::new(&handle);
     let counter = AtomicU64::new(0);
-    std::thread::scope(|s| {
+    thread_scope(|s| {
         let guard = test.sut.read_lock().expect("");
 
-        s.spawn(|| {
-            test.sut.read_lock().expect("");
-            counter.fetch_add(1, Ordering::Relaxed);
-        });
+        s.thread_builder()
+            .spawn(|| {
+                test.sut.read_lock().expect("");
+                counter.fetch_add(1, Ordering::Relaxed);
+            })
+            .expect("failed to spawn thread");
 
-        s.spawn(|| {
-            test.sut.write_lock().expect("");
-            counter.fetch_add(2, Ordering::Relaxed);
-        });
+        s.thread_builder()
+            .spawn(|| {
+                test.sut.write_lock().expect("");
+                counter.fetch_add(2, Ordering::Relaxed);
+            })
+            .expect("failed to spawn thread");
 
-        std::thread::sleep(core::time::Duration::from_millis(10));
+        nanosleep(core::time::Duration::from_millis(10)).expect("failed to sleep");
         let counter_old = counter.load(Ordering::Relaxed);
         drop(guard);
-        std::thread::sleep(core::time::Duration::from_millis(10));
+        nanosleep(core::time::Duration::from_millis(10)).expect("failed to sleep");
 
         assert_that!(counter_old, eq 1);
         assert_that!(counter.load(Ordering::Relaxed), eq 3);
-    });
+
+        Ok(())
+    })
+    .expect("failed to execute thread scope");
 }
 
 #[inventory_test]
-#[requires_std("threading")]
 pub fn file_lock_read_try_lock_does_not_block() {
     use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
 
@@ -292,21 +304,25 @@ pub fn file_lock_read_try_lock_does_not_block() {
     let test = TestFixture::new(&handle);
     let counter = AtomicU64::new(0);
 
-    std::thread::scope(|s| {
+    thread_scope(|s| {
         let _guard = test.sut.write_lock().expect("");
 
-        s.spawn(|| {
-            test.sut.read_try_lock().expect("");
-            counter.fetch_add(1, Ordering::Relaxed);
-        });
+        s.thread_builder()
+            .spawn(|| {
+                test.sut.read_try_lock().expect("");
+                counter.fetch_add(1, Ordering::Relaxed);
+            })
+            .expect("failed to spawn thread");
 
-        std::thread::sleep(core::time::Duration::from_millis(10));
+        nanosleep(core::time::Duration::from_millis(10)).expect("failed to sleep");
         assert_that!(counter.load(Ordering::Relaxed), eq 1);
-    });
+
+        Ok(())
+    })
+    .expect("failed to execute thread scope");
 }
 
 #[inventory_test]
-#[requires_std("threading")]
 pub fn file_lock_write_try_lock_does_not_block() {
     use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
 
@@ -316,17 +332,22 @@ pub fn file_lock_write_try_lock_does_not_block() {
     let test = TestFixture::new(&handle);
     let counter = AtomicU64::new(0);
 
-    std::thread::scope(|s| {
+    thread_scope(|s| {
         let _guard = test.sut.write_lock().expect("");
 
-        s.spawn(|| {
-            test.sut.write_try_lock().expect("");
-            counter.fetch_add(1, Ordering::Relaxed);
-        });
+        s.thread_builder()
+            .spawn(|| {
+                test.sut.write_try_lock().expect("");
+                counter.fetch_add(1, Ordering::Relaxed);
+            })
+            .expect("failed to spawn thread");
 
-        std::thread::sleep(core::time::Duration::from_millis(10));
+        nanosleep(core::time::Duration::from_millis(10)).expect("failed to sleep");
         assert_that!(counter.load(Ordering::Relaxed), eq 1);
-    });
+
+        Ok(())
+    })
+    .expect("failed to execute thread scope");
 }
 
 #[inventory_test]

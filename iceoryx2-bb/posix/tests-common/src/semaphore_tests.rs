@@ -15,14 +15,18 @@
 use alloc::string::ToString;
 
 use core::time::Duration;
+use iceoryx2_bb_concurrency::atomic::{AtomicUsize, Ordering};
 use iceoryx2_bb_container::semantic_string::*;
+use iceoryx2_bb_posix::barrier::*;
 use iceoryx2_bb_posix::clock::*;
 use iceoryx2_bb_posix::semaphore::*;
 use iceoryx2_bb_posix::system_configuration::Feature;
+use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
+use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_bb_testing_macros::requires_std;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_NAMED_SEMAPHORE;
@@ -294,34 +298,33 @@ pub fn semaphore_unnamed_semaphore_post_and_timed_wait_work() {
     post_and_timed_wait_work(19, &test.realtime_unnamed_sut);
 }
 
-#[requires_std("threading", "synchronization", "watchdog")]
 pub fn wait_blocks<T: SemaphoreInterface + Send + Sync>(sut1: &T, sut2: &T) {
-    use iceoryx2_bb_concurrency::atomic::{AtomicUsize, Ordering};
-    use iceoryx2_bb_testing::watchdog::Watchdog;
-
-    use std::sync::Barrier;
-    use std::thread;
-
     let _watchdog = Watchdog::new();
     let counter = AtomicUsize::new(0);
-    let barrier = Barrier::new(2);
+    let barrier_handle = BarrierHandle::new();
+    let barrier = BarrierBuilder::new(2).create(&barrier_handle).unwrap();
 
-    thread::scope(|s| {
-        let t = s.spawn(|| {
-            barrier.wait();
-            sut1.blocking_wait().unwrap();
-            counter.fetch_add(1, Ordering::Relaxed);
-        });
+    thread_scope(|s| {
+        s.thread_builder()
+            .spawn(|| {
+                barrier.wait();
+                sut1.blocking_wait().unwrap();
+                counter.fetch_add(1, Ordering::Relaxed);
+            })
+            .expect("failed to spawn thread");
 
         barrier.wait();
-        nanosleep(TIMEOUT).unwrap();
+        nanosleep(TIMEOUT).expect("failed to sleep");
         let counter_old = counter.load(Ordering::Relaxed);
         sut2.post().unwrap();
-        t.join().unwrap();
 
         assert_that!(counter_old, eq 0);
-        assert_that!(counter.load(Ordering::Relaxed), eq 1);
-    });
+
+        Ok(())
+    })
+    .expect("failed to execute thread scope");
+
+    assert_that!(counter.load(Ordering::Relaxed), eq 1);
 }
 
 #[inventory_test]
@@ -344,27 +347,28 @@ pub fn semaphore_unnamed_semaphore_wait_blocks() {
     wait_blocks(&test.realtime_unnamed_sut, &test.realtime_unnamed_sut);
 }
 
-#[requires_std("threading")]
 pub fn timed_wait_blocks<T: SemaphoreInterface + Send + Sync>(sut1: &T, sut2: &T) {
-    use iceoryx2_bb_concurrency::atomic::{AtomicUsize, Ordering};
-
-    use std::thread;
-
     let counter = AtomicUsize::new(0);
-    thread::scope(|s| {
-        s.spawn(|| {
-            sut1.timed_wait(TIMEOUT * 10).unwrap();
-            counter.fetch_add(1, Ordering::Relaxed);
-        });
 
-        nanosleep(TIMEOUT).unwrap();
+    thread_scope(|s| {
+        s.thread_builder()
+            .spawn(|| {
+                sut1.timed_wait(TIMEOUT * 10).unwrap();
+                counter.fetch_add(1, Ordering::Relaxed);
+            })
+            .expect("failed to spawn thread");
+
+        nanosleep(TIMEOUT).expect("failed to sleep");
         let counter_old = counter.load(Ordering::Relaxed);
         sut2.post().unwrap();
-        nanosleep(TIMEOUT).unwrap();
 
         assert_that!(counter_old, eq 0);
-        assert_that!(counter.load(Ordering::Relaxed), eq 1);
-    });
+
+        Ok(())
+    })
+    .expect("failed to execute thread scope");
+
+    assert_that!(counter.load(Ordering::Relaxed), eq 1);
 }
 
 #[inventory_test]

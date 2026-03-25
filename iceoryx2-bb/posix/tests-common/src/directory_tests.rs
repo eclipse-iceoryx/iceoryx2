@@ -18,20 +18,24 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 use iceoryx2_bb_container::semantic_string::SemanticString;
+use iceoryx2_bb_posix::barrier::BarrierBuilder;
+use iceoryx2_bb_posix::barrier::BarrierHandle;
 use iceoryx2_bb_posix::config::*;
 use iceoryx2_bb_posix::directory::*;
 use iceoryx2_bb_posix::file::*;
 use iceoryx2_bb_posix::file_descriptor::FileDescriptorBased;
 use iceoryx2_bb_posix::file_type::*;
+use iceoryx2_bb_posix::mutex::Handle;
 use iceoryx2_bb_posix::testing::create_test_directory;
+use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_fail;
+use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_testing_macros::inventory_test;
-use iceoryx2_bb_testing_macros::requires_std;
 use iceoryx2_pal_configuration::PATH_SEPARATOR;
 
 struct TestFixture {
@@ -187,12 +191,10 @@ pub fn directory_create_from_path_works_recursively() {
 }
 
 #[inventory_test]
-#[requires_std("threading", "synchronization", "watchdog")]
 pub fn directory_create_from_path_is_thread_safe() {
-    use iceoryx2_bb_testing::watchdog::Watchdog;
+    let _watchdog = Watchdog::new();
 
     const NUMBER_OF_THREADS: usize = 4;
-    let _watchdog = Watchdog::new();
     let mut test = TestFixture::new();
 
     create_test_directory();
@@ -211,19 +213,28 @@ pub fn directory_create_from_path_is_thread_safe() {
         .add_path_entry(&Path::new(b"hypnotoad").unwrap())
         .unwrap();
 
-    let barrier = std::sync::Barrier::new(NUMBER_OF_THREADS + 1);
-    std::thread::scope(|s| {
+    let barrier_handle = BarrierHandle::new();
+    let barrier = BarrierBuilder::new(NUMBER_OF_THREADS as u32 + 1)
+        .create(&barrier_handle)
+        .unwrap();
+
+    thread_scope(|s| {
         for _ in 0..NUMBER_OF_THREADS {
-            s.spawn(|| {
-                barrier.wait();
-                let sut_create = Directory::create(&sut_name, Permission::OWNER_ALL);
-                assert_that!(sut_create, is_ok);
-            });
+            s.thread_builder()
+                .spawn(|| {
+                    barrier.wait();
+                    let sut_create = Directory::create(&sut_name, Permission::OWNER_ALL);
+                    assert_that!(sut_create, is_ok);
+                })
+                .expect("failed to spawn thread");
         }
 
         assert_that!(Directory::does_exist(&sut_name).unwrap(), eq false);
         barrier.wait();
-    });
+
+        Ok(())
+    })
+    .expect("failed to spawn thread");
 
     assert_that!(Directory::does_exist(&sut_name).unwrap(), eq true);
 }

@@ -16,10 +16,10 @@ use alloc::vec;
 use core::time::Duration;
 
 use iceoryx2_bb_elementary::CallbackProgression;
+use iceoryx2_bb_posix::clock::nanosleep;
 use iceoryx2_bb_posix::deadline_queue::*;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::inventory_test;
-use iceoryx2_bb_testing_macros::requires_std;
 
 #[inventory_test]
 pub fn deadline_queue_attach_detach_works() {
@@ -117,7 +117,6 @@ pub fn deadline_queue_no_missed_deadline_works() {
 }
 
 #[inventory_test]
-#[requires_std("threading")]
 pub fn deadline_queue_one_missed_deadlines_works() {
     let sut = DeadlineQueueBuilder::new().create().unwrap();
 
@@ -127,7 +126,7 @@ pub fn deadline_queue_one_missed_deadlines_works() {
         .add_deadline_interval(Duration::from_secs(1000))
         .unwrap();
 
-    std::thread::sleep(Duration::from_millis(10));
+    nanosleep(Duration::from_millis(10)).expect("failed to sleep");
 
     let mut missed_deadlines = vec![];
     sut.missed_deadlines(|idx| {
@@ -141,7 +140,6 @@ pub fn deadline_queue_one_missed_deadlines_works() {
 }
 
 #[inventory_test]
-#[requires_std("threading")]
 pub fn deadline_queue_many_missed_deadlines_works() {
     let sut = DeadlineQueueBuilder::new().create().unwrap();
 
@@ -149,7 +147,7 @@ pub fn deadline_queue_many_missed_deadlines_works() {
     let guard_2 = sut.add_deadline_interval(Duration::from_nanos(10)).unwrap();
     let guard_3 = sut.add_deadline_interval(Duration::from_nanos(20)).unwrap();
 
-    std::thread::sleep(Duration::from_millis(10));
+    nanosleep(Duration::from_millis(10)).expect("failed to sleep");
 
     let mut missed_deadlines = vec![];
     sut.missed_deadlines(|idx| {
@@ -165,7 +163,6 @@ pub fn deadline_queue_many_missed_deadlines_works() {
 }
 
 #[inventory_test]
-#[requires_std("threading")]
 pub fn deadline_queue_missed_deadline_iteration_stops_when_requested() {
     let sut = DeadlineQueueBuilder::new().create().unwrap();
 
@@ -173,7 +170,7 @@ pub fn deadline_queue_missed_deadline_iteration_stops_when_requested() {
     let _guard_2 = sut.add_deadline_interval(Duration::from_nanos(10)).unwrap();
     let _guard_3 = sut.add_deadline_interval(Duration::from_nanos(20)).unwrap();
 
-    std::thread::sleep(Duration::from_millis(10));
+    nanosleep(Duration::from_millis(10)).expect("failed to sleep");
 
     let mut missed_deadlines = vec![];
     sut.missed_deadlines(|idx| {
@@ -186,7 +183,6 @@ pub fn deadline_queue_missed_deadline_iteration_stops_when_requested() {
 }
 
 #[inventory_test]
-#[requires_std("threading")]
 pub fn deadline_queue_duration_until_next_deadline_is_zero_if_deadline_is_already_missed() {
     let sut = DeadlineQueueBuilder::new().create().unwrap();
 
@@ -195,7 +191,7 @@ pub fn deadline_queue_duration_until_next_deadline_is_zero_if_deadline_is_alread
         .unwrap();
     let _guard_2 = sut.add_deadline_interval(Duration::from_secs(1)).unwrap();
 
-    std::thread::sleep(Duration::from_millis(110));
+    nanosleep(Duration::from_millis(110)).expect("failed to sleep");
 
     let next_deadline = sut.duration_until_next_deadline().unwrap();
     assert_that!(next_deadline, eq Duration::ZERO);
@@ -214,7 +210,6 @@ pub fn deadline_queue_duration_until_next_deadline_is_zero_if_deadline_is_alread
 }
 
 #[inventory_test]
-#[requires_std("threading")]
 pub fn deadline_queue_duration_until_next_deadline_is_not_zero_if_missed_deadline_have_been_handled(
 ) {
     let sut = DeadlineQueueBuilder::new().create().unwrap();
@@ -224,7 +219,7 @@ pub fn deadline_queue_duration_until_next_deadline_is_not_zero_if_missed_deadlin
         .unwrap();
     let _guard_2 = sut.add_deadline_interval(Duration::from_secs(1)).unwrap();
 
-    std::thread::sleep(Duration::from_millis(110));
+    nanosleep(Duration::from_millis(110)).expect("failed to sleep");
 
     let next_deadline = sut.duration_until_next_deadline().unwrap();
     assert_that!(next_deadline, eq Duration::ZERO);

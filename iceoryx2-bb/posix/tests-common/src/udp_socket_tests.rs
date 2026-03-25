@@ -12,13 +12,15 @@
 
 #![allow(clippy::disallowed_types)]
 
+use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
+use iceoryx2_bb_posix::barrier::*;
+use iceoryx2_bb_posix::clock::{nanosleep, Time};
+use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_posix::udp_socket::*;
 use iceoryx2_bb_system_types::ipv4_address::{self, Ipv4Address};
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::inventory_test;
-use iceoryx2_bb_testing_macros::requires_std;
 
-#[cfg(feature = "std")]
 const TIMEOUT: core::time::Duration = core::time::Duration::from_millis(25);
 
 #[inventory_test]
@@ -204,10 +206,7 @@ pub fn udp_socket_server_try_receive_from_does_not_block() {
 }
 
 #[inventory_test]
-#[requires_std("time")]
 pub fn udp_socket_client_timed_receive_does_block_for_at_least_timeout() {
-    use std::time::Instant;
-
     let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
         .listen()
@@ -218,38 +217,31 @@ pub fn udp_socket_client_timed_receive_does_block_for_at_least_timeout() {
         .unwrap();
 
     let mut recv_buffer = [0u8; 8];
-    let start = Instant::now();
+    let start = Time::now().expect("failed to get current time");
     assert_that!(sut_client.timed_receive(&mut recv_buffer, TIMEOUT).unwrap(), eq 0);
-    assert_that!(start.elapsed(), time_at_least TIMEOUT);
+    assert_that!(start.elapsed().expect("failed to get elapsed time"), time_at_least TIMEOUT);
 }
 
 #[inventory_test]
-#[requires_std("time")]
 pub fn udp_socket_server_timed_receive_from_does_block_for_at_least_timeout() {
-    use std::time::Instant;
-
     let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
         .listen()
         .unwrap();
 
     let mut recv_buffer = [0u8; 8];
-    let start = Instant::now();
+    let start = Time::now().expect("failed to get current time");
     assert_that!(
         sut_server
             .timed_receive_from(&mut recv_buffer, TIMEOUT)
             .unwrap(),
         is_none
     );
-    assert_that!(start.elapsed(), time_at_least TIMEOUT);
+    assert_that!(start.elapsed().expect("failed to get elapsed time"), time_at_least TIMEOUT);
 }
 
 #[inventory_test]
-#[requires_std("threading")]
 pub fn udp_socket_client_blocking_receive_does_block() {
-    use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
-    use iceoryx2_bb_posix::barrier::*;
-
     let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
         .listen()
@@ -272,34 +264,35 @@ pub fn udp_socket_client_blocking_receive_does_block() {
     let barrier = BarrierBuilder::new(2).create(&barrier_handle).unwrap();
     let counter = AtomicU64::new(0);
 
-    std::thread::scope(|s| {
-        let t1 = s.spawn(|| {
-            barrier.wait();
-            let mut recv_buffer = [0u8; 8];
-            let receive_result = sut_client.blocking_receive(&mut recv_buffer);
-            counter.store(1, Ordering::Relaxed);
-            assert_that!(receive_result.unwrap(), eq 3);
-        });
+    thread_scope(|s| {
+        s.thread_builder()
+            .spawn(|| {
+                barrier.wait();
+                let mut recv_buffer = [0u8; 8];
+                let receive_result = sut_client.blocking_receive(&mut recv_buffer);
+                counter.store(1, Ordering::Relaxed);
+                assert_that!(receive_result.unwrap(), eq 3);
+            })
+            .expect("failed to spawn thread");
 
         barrier.wait();
-        std::thread::sleep(TIMEOUT);
+        nanosleep(TIMEOUT).unwrap();
         let counter_old = counter.load(Ordering::Relaxed);
         let send_result =
             sut_server.send_to(&send_buffer, client_addr.source_ip, client_addr.source_port);
 
-        assert_that!(t1.join(), is_ok);
         assert_that!(counter_old, eq 0);
-        assert_that!(counter.load(Ordering::Relaxed), eq 1);
         assert_that!(send_result, is_ok);
-    });
+
+        Ok(())
+    })
+    .expect("failed to spawn thread");
+
+    assert_that!(counter.load(Ordering::Relaxed), eq 1);
 }
 
 #[inventory_test]
-#[requires_std("threading")]
 pub fn udp_socket_server_blocking_receive_from_does_block() {
-    use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
-    use iceoryx2_bb_posix::barrier::*;
-
     let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
         .listen()
@@ -313,34 +306,35 @@ pub fn udp_socket_server_blocking_receive_from_does_block() {
     let barrier = BarrierBuilder::new(2).create(&barrier_handle).unwrap();
     let counter = AtomicU64::new(0);
 
-    std::thread::scope(|s| {
-        let t1 = s.spawn(|| {
-            barrier.wait();
-            let mut recv_buffer = [0u8; 8];
-            let receive_result = sut_server.blocking_receive_from(&mut recv_buffer);
-            counter.store(1, Ordering::Relaxed);
-            assert_that!(receive_result.unwrap(), is_some);
-        });
+    thread_scope(|s| {
+        s.thread_builder()
+            .spawn(|| {
+                barrier.wait();
+                let mut recv_buffer = [0u8; 8];
+                let receive_result = sut_server.blocking_receive_from(&mut recv_buffer);
+                counter.store(1, Ordering::Relaxed);
+                assert_that!(receive_result.unwrap(), is_some);
+            })
+            .expect("failed to spawn thread");
 
         barrier.wait();
-        std::thread::sleep(TIMEOUT);
+        nanosleep(TIMEOUT).unwrap();
         let counter_old = counter.load(Ordering::Relaxed);
         let send_buffer = [12u8, 24u8, 36u8];
         let send_result = sut_client.send(&send_buffer);
 
-        assert_that!(t1.join(), is_ok);
         assert_that!(counter_old, eq 0);
-        assert_that!(counter.load(Ordering::Relaxed), eq 1);
         assert_that!(send_result, is_ok);
-    });
+
+        Ok(())
+    })
+    .expect("failed to spawn thread");
+
+    assert_that!(counter.load(Ordering::Relaxed), eq 1);
 }
 
 #[inventory_test]
-#[requires_std("threading")]
 pub fn udp_socket_client_timed_receive_does_blocks() {
-    use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
-    use iceoryx2_bb_posix::barrier::*;
-
     let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
         .listen()
@@ -363,34 +357,36 @@ pub fn udp_socket_client_timed_receive_does_blocks() {
     let barrier = BarrierBuilder::new(2).create(&barrier_handle).unwrap();
     let counter = AtomicU64::new(0);
 
-    std::thread::scope(|s| {
-        let t1 = s.spawn(|| {
-            barrier.wait();
-            let mut recv_buffer = [0u8; 8];
-            let timed_receive_result = sut_client.timed_receive(&mut recv_buffer, TIMEOUT * 100);
-            counter.store(1, Ordering::Relaxed);
-            assert_that!(timed_receive_result.unwrap(), eq 3);
-        });
+    thread_scope(|s| {
+        s.thread_builder()
+            .spawn(|| {
+                barrier.wait();
+                let mut recv_buffer = [0u8; 8];
+                let timed_receive_result =
+                    sut_client.timed_receive(&mut recv_buffer, TIMEOUT * 100);
+                counter.store(1, Ordering::Relaxed);
+                assert_that!(timed_receive_result.unwrap(), eq 3);
+            })
+            .expect("failed to spawn thread");
 
         barrier.wait();
-        std::thread::sleep(TIMEOUT);
+        nanosleep(TIMEOUT).unwrap();
         let counter_old = counter.load(Ordering::Relaxed);
         let send_result =
             sut_server.send_to(&send_buffer, client_addr.source_ip, client_addr.source_port);
 
-        assert_that!(t1.join(), is_ok);
         assert_that!(counter_old, eq 0);
-        assert_that!(counter.load(Ordering::Relaxed), eq 1);
         assert_that!(send_result, is_ok);
-    });
+
+        Ok(())
+    })
+    .expect("failed to spawn thread");
+
+    assert_that!(counter.load(Ordering::Relaxed), eq 1);
 }
 
 #[inventory_test]
-#[requires_std("threading")]
 pub fn udp_socket_server_timed_receive_from_does_block() {
-    use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
-    use iceoryx2_bb_posix::barrier::*;
-
     let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
         .listen()
@@ -404,25 +400,30 @@ pub fn udp_socket_server_timed_receive_from_does_block() {
     let barrier = BarrierBuilder::new(2).create(&barrier_handle).unwrap();
     let counter = AtomicU64::new(0);
 
-    std::thread::scope(|s| {
-        let t1 = s.spawn(|| {
-            barrier.wait();
-            let mut recv_buffer = [0u8; 8];
-            let timed_receive_result =
-                sut_server.timed_receive_from(&mut recv_buffer, TIMEOUT * 100);
-            counter.store(1, Ordering::Relaxed);
-            assert_that!(timed_receive_result.unwrap(), is_some)
-        });
+    thread_scope(|s| {
+        s.thread_builder()
+            .spawn(|| {
+                barrier.wait();
+                let mut recv_buffer = [0u8; 8];
+                let timed_receive_result =
+                    sut_server.timed_receive_from(&mut recv_buffer, TIMEOUT * 100);
+                counter.store(1, Ordering::Relaxed);
+                assert_that!(timed_receive_result.unwrap(), is_some)
+            })
+            .expect("failed to spawn thread");
 
         barrier.wait();
-        std::thread::sleep(TIMEOUT);
+        nanosleep(TIMEOUT).unwrap();
         let counter_old = counter.load(Ordering::Relaxed);
         let send_buffer = [12u8, 24u8, 36u8];
         let send_result = sut_client.send(&send_buffer);
 
-        assert_that!(t1.join(), is_ok);
-        assert_that!(counter.load(Ordering::Relaxed), eq 1);
         assert_that!(counter_old, eq 0);
         assert_that!(send_result, is_ok);
-    });
+
+        Ok(())
+    })
+    .expect("failed to spawn thread");
+
+    assert_that!(counter.load(Ordering::Relaxed), eq 1);
 }
