@@ -10,59 +10,45 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
+use alloc::vec;
 
-#[generic_tests::define]
-mod used_chunk_list {
-    use iceoryx2_bb_testing::assert_that;
-    use iceoryx2_cal::zero_copy_connection::used_chunk_list::FixedSizeUsedChunkList;
+use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::inventory_test_generic;
+use iceoryx2_cal::zero_copy_connection::used_chunk_list::FixedSizeUsedChunkList;
 
-    #[test]
-    fn used_chunk_list_insert_remove_all_works<const CAPACITY: usize>() {
-        let mut sut = FixedSizeUsedChunkList::<CAPACITY>::new();
+#[inventory_test_generic(1, 2, 3, 128)]
+fn used_chunk_list_insert_remove_all_works<const CAPACITY: usize>() {
+    let mut sut = FixedSizeUsedChunkList::<CAPACITY>::new();
 
-        for i in 0..sut.capacity() {
-            assert_that!(sut.insert(i), eq true);
-        }
-
-        let mut removed_indices = vec![false; sut.capacity()];
-        sut.remove_all(|index| {
-            removed_indices[index] = true;
-        });
-
-        for index in removed_indices {
-            assert_that!(index, eq true);
-        }
+    for i in 0..sut.capacity() {
+        assert_that!(sut.insert(i), eq true);
     }
 
-    #[test]
-    fn used_chunk_list_insert_remove_works<const CAPACITY: usize>() {
-        let sut = FixedSizeUsedChunkList::<CAPACITY>::new();
+    let mut removed_indices = vec![false; sut.capacity()];
+    sut.remove_all(|index| {
+        removed_indices[index] = true;
+    });
 
-        for i in 0..sut.capacity() {
-            assert_that!(sut.remove(i), eq false);
-            assert_that!(sut.insert(i), eq true);
-            assert_that!(sut.remove(i), eq true);
-            assert_that!(sut.remove(i), eq false);
+    for index in removed_indices {
+        assert_that!(index, eq true);
+    }
+}
 
-            assert_that!(sut.insert(i), eq true);
-        }
+#[inventory_test_generic(1, 2, 3, 128)]
+fn used_chunk_list_insert_remove_works<const CAPACITY: usize>() {
+    let sut = FixedSizeUsedChunkList::<CAPACITY>::new();
 
-        for i in (0..sut.capacity()).rev() {
-            assert_that!(sut.remove(i), eq true);
-            assert_that!(sut.remove(i), eq false);
-        }
+    for i in 0..sut.capacity() {
+        assert_that!(sut.remove(i), eq false);
+        assert_that!(sut.insert(i), eq true);
+        assert_that!(sut.remove(i), eq true);
+        assert_that!(sut.remove(i), eq false);
+
+        assert_that!(sut.insert(i), eq true);
     }
 
-    #[instantiate_tests(<1>)]
-    mod capacity_1 {}
-
-    #[instantiate_tests(<2>)]
-    mod capacity_2 {}
-
-    #[instantiate_tests(<3>)]
-    mod capacity_3 {}
-
-    #[instantiate_tests(<128>)]
-    mod capacity_128 {}
+    for i in (0..sut.capacity()).rev() {
+        assert_that!(sut.remove(i), eq true);
+        assert_that!(sut.remove(i), eq false);
+    }
 }

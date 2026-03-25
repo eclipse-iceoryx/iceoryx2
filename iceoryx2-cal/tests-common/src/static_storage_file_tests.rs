@@ -10,9 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
-
+use alloc::string::String;
+use alloc::string::ToString;
+use alloc::vec;
 use core::time::Duration;
+
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_posix::config::*;
 use iceoryx2_bb_posix::directory::Directory;
@@ -20,10 +22,11 @@ use iceoryx2_bb_posix::file::*;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_cal::static_storage::file::*;
 use iceoryx2_cal::testing::*;
 
-#[test]
+#[inventory_test]
 fn static_storage_file_custom_suffix_works() {
     let storage_name = generate_name();
     let config = generate_isolated_config::<Storage>()
@@ -53,16 +56,15 @@ fn static_storage_file_custom_suffix_works() {
     assert_that!(read_content, eq content);
 }
 
-#[test]
+#[inventory_test]
 fn static_storage_file_path_is_created_when_it_does_not_exist() {
     let storage_name = generate_name();
     let config = generate_isolated_config::<Storage>();
     let content = "some more funky content".to_string();
-    let non_existing_path = FilePath::from_path_and_file(&TEST_DIRECTORY, &generate_name())
-        .unwrap()
-        .clone();
+    let non_existing_path =
+        FilePath::from_path_and_file(&TEST_DIRECTORY, &generate_name()).unwrap();
 
-    Directory::remove(&non_existing_path.clone().into()).ok();
+    Directory::remove(&non_existing_path.into()).ok();
     let config = config.path_hint(&non_existing_path.into());
 
     let storage_guard = Builder::new(&storage_name)
@@ -86,7 +88,7 @@ fn static_storage_file_path_is_created_when_it_does_not_exist() {
     assert_that!(read_content, eq content);
 }
 
-#[test]
+#[inventory_test]
 fn static_storage_file_custom_path_and_suffix_list_storage_works() {
     const NUMBER_OF_STORAGES: u64 = 12;
     let config = generate_isolated_config::<Storage>()

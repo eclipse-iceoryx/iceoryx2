@@ -10,43 +10,40 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_bb_loggers;
+use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_cal::shm_allocator::{PointerOffset, SegmentId};
 
-mod pointer_offset {
-    use iceoryx2_bb_testing::assert_that;
-    use iceoryx2_cal::shm_allocator::{PointerOffset, SegmentId};
+#[inventory_test]
+fn pointer_offset_new_works() {
+    const TEST_OFFSET: usize = 123914;
+    let sut = PointerOffset::new(TEST_OFFSET);
 
-    #[test]
-    fn new_works() {
-        const TEST_OFFSET: usize = 123914;
-        let sut = PointerOffset::new(TEST_OFFSET);
+    assert_that!(sut.offset(), eq TEST_OFFSET);
+    assert_that!(sut.segment_id(), eq SegmentId::new(0));
+}
 
-        assert_that!(sut.offset(), eq TEST_OFFSET);
-        assert_that!(sut.segment_id(), eq SegmentId::new(0));
-    }
+#[inventory_test]
+fn pointer_offset_set_segment_id_works() {
+    const TEST_OFFSET: usize = 123914;
+    const SEGMENT_ID: SegmentId = SegmentId::new(7);
+    let mut sut = PointerOffset::new(TEST_OFFSET);
+    sut.set_segment_id(SEGMENT_ID);
 
-    #[test]
-    fn set_segment_id_works() {
-        const TEST_OFFSET: usize = 123914;
-        const SEGMENT_ID: SegmentId = SegmentId::new(7);
-        let mut sut = PointerOffset::new(TEST_OFFSET);
-        sut.set_segment_id(SEGMENT_ID);
+    assert_that!(sut.offset(), eq TEST_OFFSET);
+    assert_that!(sut.segment_id(), eq SEGMENT_ID);
+}
 
-        assert_that!(sut.offset(), eq TEST_OFFSET);
-        assert_that!(sut.segment_id(), eq SEGMENT_ID);
-    }
+#[inventory_test]
+fn pointer_offset_set_segment_id_multiple_times_works() {
+    const TEST_OFFSET: usize = 123914;
+    const SEGMENT_ID_1: SegmentId = SegmentId::new(7);
+    const SEGMENT_ID_2: SegmentId = SegmentId::new(8);
+    let mut sut = PointerOffset::new(TEST_OFFSET);
 
-    #[test]
-    fn set_segment_id_multiple_times_works() {
-        const TEST_OFFSET: usize = 123914;
-        const SEGMENT_ID_1: SegmentId = SegmentId::new(7);
-        const SEGMENT_ID_2: SegmentId = SegmentId::new(8);
-        let mut sut = PointerOffset::new(TEST_OFFSET);
+    sut.set_segment_id(SEGMENT_ID_1);
+    assert_that!(sut.segment_id(), eq SEGMENT_ID_1);
 
-        sut.set_segment_id(SEGMENT_ID_1);
-        assert_that!(sut.segment_id(), eq SEGMENT_ID_1);
-
-        sut.set_segment_id(SEGMENT_ID_2);
-        assert_that!(sut.segment_id(), eq SEGMENT_ID_2);
-    }
+    sut.set_segment_id(SEGMENT_ID_2);
+    assert_that!(sut.segment_id(), eq SEGMENT_ID_2);
 }
