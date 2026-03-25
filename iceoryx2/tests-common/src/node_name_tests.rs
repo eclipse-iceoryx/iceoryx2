@@ -10,33 +10,34 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-mod node_name {
-    use iceoryx2::prelude::*;
-    use iceoryx2_bb_testing::assert_that;
+use alloc::format;
 
-    #[test]
-    fn creating_works() {
-        let value = "tschi tschi bum bum";
-        let sut = NodeName::new(value).unwrap();
+use iceoryx2::prelude::*;
+use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::inventory_test;
 
-        assert_that!(sut, eq value);
-        assert_that!(&sut, eq value);
-    }
+#[inventory_test]
+fn node_name_creating_works() {
+    let value = "tschi tschi bum bum";
+    let sut = NodeName::new(value).unwrap();
 
-    #[test]
-    fn display_works() {
-        let value = "lakirski materialski";
-        let sut = NodeName::new(value).unwrap();
+    assert_that!(sut, eq value);
+    assert_that!(&sut, eq value);
+}
 
-        assert_that!(format!("{}", sut), eq value);
-    }
+#[inventory_test]
+fn node_name_display_works() {
+    let value = "lakirski materialski";
+    let sut = NodeName::new(value).unwrap();
 
-    #[test]
-    fn try_into_works() {
-        let value = "all glory to david hypnotoad";
-        let sut: NodeName = value.try_into().unwrap();
+    assert_that!(format!("{}", sut), eq value);
+}
 
-        assert_that!(sut, eq value);
-        assert_that!(&sut, eq value);
-    }
+#[inventory_test]
+fn node_name_try_into_works() {
+    let value = "all glory to david hypnotoad";
+    let sut: NodeName = value.try_into().unwrap();
+
+    assert_that!(sut, eq value);
+    assert_that!(&sut, eq value);
 }

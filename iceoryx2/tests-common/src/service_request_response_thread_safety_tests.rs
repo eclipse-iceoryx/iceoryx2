@@ -10,16 +10,24 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::sync::Barrier;
+use alloc::vec;
+use alloc::vec::Vec;
 
 use iceoryx2::prelude::*;
 use iceoryx2::testing::*;
+use iceoryx2_bb_posix::barrier::BarrierBuilder;
+use iceoryx2_bb_posix::barrier::BarrierHandle;
+use iceoryx2_bb_posix::mutex::Handle;
+use iceoryx2_bb_posix::mutex::MutexBuilder;
+use iceoryx2_bb_posix::mutex::MutexHandle;
 use iceoryx2_bb_posix::system_configuration::SystemInfo;
+use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::watchdog::Watchdog;
+use iceoryx2_bb_testing_macros::inventory_test;
 
-#[test]
-fn loaning_and_sending_requests_concurrently_works() {
+#[inventory_test]
+fn service_request_response_loaning_and_sending_requests_concurrently_works() {
     let _watchdog = Watchdog::new();
     type ServiceType = ipc_threadsafe::Service;
     let service_name = generate_service_name();
@@ -42,18 +50,24 @@ fn loaning_and_sending_requests_concurrently_works() {
         .unwrap();
     let client = service.client_builder().create().unwrap();
     let server = service.server_builder().create().unwrap();
-    let barrier = Barrier::new(number_of_client_threads + 1);
 
-    std::thread::scope(|s| {
+    let barrier_handle = BarrierHandle::new();
+    let barrier = BarrierBuilder::new((number_of_client_threads + 1) as u32)
+        .create(&barrier_handle)
+        .unwrap();
+
+    thread_scope(|s| {
         for _ in 0..number_of_client_threads {
-            s.spawn(|| {
-                barrier.wait();
-                for n in 0..NUMBER_OF_ITERATIONS {
-                    let mut request = client.loan().unwrap();
-                    *request = n;
-                    request.send().unwrap();
-                }
-            });
+            s.thread_builder()
+                .spawn(|| {
+                    barrier.wait();
+                    for n in 0..NUMBER_OF_ITERATIONS {
+                        let mut request = client.loan().unwrap();
+                        *request = n;
+                        request.send().unwrap();
+                    }
+                })
+                .expect("failed to spawn thread");
         }
         barrier.wait();
 
@@ -69,11 +83,14 @@ fn loaning_and_sending_requests_concurrently_works() {
         for n in received_request {
             assert_that!(n, eq number_of_client_threads);
         }
-    });
+
+        Ok(())
+    })
+    .expect("failed to spawn thread");
 }
 
-#[test]
-fn receiving_requests_concurrently_works() {
+#[inventory_test]
+fn service_request_response_receiving_requests_concurrently_works() {
     let _watchdog = Watchdog::new();
     type ServiceType = ipc_threadsafe::Service;
     let service_name = generate_service_name();
@@ -96,36 +113,47 @@ fn receiving_requests_concurrently_works() {
         .unwrap();
     let server = service.server_builder().create().unwrap();
     let client = service.client_builder().create().unwrap();
-    let barrier = Barrier::new(number_of_server_threads);
+
+    let barrier_handle = BarrierHandle::new();
+    let barrier = BarrierBuilder::new((number_of_server_threads + 1) as u32)
+        .create(&barrier_handle)
+        .unwrap();
 
     for n in 0..NUMBER_OF_ITERATIONS {
         client.send_copy(n).unwrap();
     }
 
-    std::thread::scope(|s| {
-        let mut server_threads = vec![];
+    let all_requests_handle = MutexHandle::<Vec<usize>>::new();
+    let all_requests = MutexBuilder::new()
+        .create(vec![0usize; NUMBER_OF_ITERATIONS], &all_requests_handle)
+        .expect("failed to create mutex");
+
+    thread_scope(|s| {
         for _ in 0..number_of_server_threads {
-            server_threads.push(s.spawn(|| {
-                let mut received_requests = [0; NUMBER_OF_ITERATIONS];
-                barrier.wait();
-                while let Ok(Some(request)) = server.receive() {
-                    received_requests[*request] += 1;
-                }
+            s.thread_builder()
+                .spawn(|| {
+                    let mut received_requests = vec![0usize; NUMBER_OF_ITERATIONS];
+                    barrier.wait();
+                    while let Ok(Some(request)) = server.receive() {
+                        received_requests[*request] += 1;
+                    }
 
-                received_requests
-            }));
+                    let mut guard = all_requests.lock().unwrap();
+                    for (i, count) in received_requests.iter().enumerate() {
+                        guard[i] += count;
+                    }
+                })
+                .expect("failed to spawn thread");
         }
 
-        let mut received_requests = [0; NUMBER_OF_ITERATIONS];
-        for t in server_threads {
-            let requests = t.join().unwrap();
-            for (n, count) in requests.iter().enumerate() {
-                received_requests[n] += count;
-            }
-        }
+        barrier.wait();
 
-        for n in received_requests {
-            assert_that!(n, eq 1);
-        }
-    });
+        Ok(())
+    })
+    .expect("failed to spawn thread");
+
+    let guard = all_requests.lock().unwrap();
+    for n in guard.iter() {
+        assert_that!(*n, eq 1);
+    }
 }

@@ -10,28 +10,26 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[cfg(test)]
-mod service_static_config_message_type_details {
-    use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
-    use iceoryx2_bb_derive_macros::ZeroCopySend;
-    use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-    use iceoryx2_bb_testing::assert_that;
+use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
+use iceoryx2_bb_derive_macros::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::inventory_test;
 
-    #[test]
-    fn test_internal_new() {
-        #[derive(ZeroCopySend)]
-        #[repr(C)]
-        struct Tmp;
-        let sut = TypeDetail::new::<Tmp>(TypeVariant::FixedSize);
-        assert_that!(*sut.type_name(), eq core::any::type_name::<Tmp>());
-        assert_that!(sut.variant(), eq TypeVariant::FixedSize);
-        assert_that!(sut.size(), eq core::mem::size_of::<Tmp>());
-        assert_that!(sut.alignment(), eq core::mem::align_of::<Tmp>());
+#[inventory_test]
+fn service_static_config_internal_new_works() {
+    #[derive(ZeroCopySend)]
+    #[repr(C)]
+    struct Tmp;
+    let sut = TypeDetail::new::<Tmp>(TypeVariant::FixedSize);
+    assert_that!(*sut.type_name(), eq core::any::type_name::<Tmp>());
+    assert_that!(sut.variant(), eq TypeVariant::FixedSize);
+    assert_that!(sut.size(), eq core::mem::size_of::<Tmp>());
+    assert_that!(sut.alignment(), eq core::mem::align_of::<Tmp>());
 
-        let sut = TypeDetail::new::<i64>(TypeVariant::FixedSize);
-        assert_that!(*sut.type_name(), eq core::any::type_name::<i64>());
-        assert_that!(sut.variant(), eq TypeVariant::FixedSize);
-        assert_that!(sut.size(), eq core::mem::size_of::<i64>());
-        assert_that!(sut.alignment(), eq core::mem::align_of::<i64>());
-    }
+    let sut = TypeDetail::new::<i64>(TypeVariant::FixedSize);
+    assert_that!(*sut.type_name(), eq core::any::type_name::<i64>());
+    assert_that!(sut.variant(), eq TypeVariant::FixedSize);
+    assert_that!(sut.size(), eq core::mem::size_of::<i64>());
+    assert_that!(sut.alignment(), eq core::mem::align_of::<i64>());
 }
