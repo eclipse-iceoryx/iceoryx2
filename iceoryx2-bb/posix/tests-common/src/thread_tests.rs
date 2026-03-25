@@ -412,7 +412,11 @@ pub fn thread_destructor_does_block_on_busy_thread() {
     let thread = ThreadBuilder::new()
         .spawn(|| {
             barrier.wait();
-            nanosleep(SLEEP_DURATION).expect("failed to sleep");
+            let start = Time::now().unwrap();
+            while start.elapsed().unwrap() < SLEEP_DURATION {
+                nanosleep(SLEEP_DURATION.saturating_sub(start.elapsed().unwrap()))
+                    .expect("failed to sleep");
+            }
         })
         .unwrap();
 
