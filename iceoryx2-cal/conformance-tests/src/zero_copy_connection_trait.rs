@@ -16,13 +16,20 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[conformance_test_module]
 pub mod zero_copy_connection_trait {
     use alloc::collections::btree_set::BTreeSet;
+    use alloc::sync::Arc;
     use alloc::vec;
-
+    use core::time::Duration;
     use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_container::semantic_string::*;
+    use iceoryx2_bb_posix::barrier::*;
+    use iceoryx2_bb_posix::clock::{nanosleep, Time};
+    use iceoryx2_bb_posix::ipc_capable::Handle;
+    use iceoryx2_bb_posix::mutex::{MutexBuilder, MutexHandle};
+    use iceoryx2_bb_posix::thread::thread_scope;
     use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing_macros::requires_std;
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::named_concept::{NamedConceptBuilder, NamedConceptMgmt};
@@ -777,22 +784,17 @@ pub mod zero_copy_connection_trait {
         }
     }
 
-    #[requires_std("threading", "time")]
     #[conformance_test]
     pub fn blocking_send_blocks<Sut: ZeroCopyConnection>() {
-        use core::time::Duration;
-        use std::sync::Mutex;
-        use std::time::Instant;
-
-        use iceoryx2_bb_posix::barrier::*;
-        use iceoryx2_bb_testing::watchdog::Watchdog;
-
         const TIMEOUT: Duration = Duration::from_millis(25);
 
         let id = ChannelId::new(0);
         let _watchdog = Watchdog::new();
         let name = generate_name();
-        let config = Mutex::new(generate_isolated_config::<Sut>());
+        let mutex_handle = MutexHandle::new();
+        let config = MutexBuilder::new()
+            .create(generate_isolated_config::<Sut>(), &mutex_handle)
+            .unwrap();
 
         let sut_sender = Sut::Builder::new(&name)
             .buffer_size(1)
@@ -807,8 +809,8 @@ pub mod zero_copy_connection_trait {
         let sample_offset_1 = SAMPLE_SIZE * 12;
         let sample_offset_2 = SAMPLE_SIZE * 234;
 
-        std::thread::scope(|s| {
-            s.spawn(|| {
+        thread_scope(|s| {
+            s.thread_builder().spawn(|| {
                 let sut_receiver = Sut::Builder::new(&name)
                     .buffer_size(1)
                     .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
@@ -823,17 +825,17 @@ pub mod zero_copy_connection_trait {
                 };
 
                 barrier.wait();
-                std::thread::sleep(TIMEOUT);
+                nanosleep(TIMEOUT).unwrap();
                 let sample_1 = receive_sample();
-                std::thread::sleep(TIMEOUT);
+                nanosleep(TIMEOUT).unwrap();
                 let sample_2 = receive_sample();
 
                 assert_that!(sample_1.offset(), eq sample_offset_1);
                 assert_that!(sample_2.offset(), eq sample_offset_2);
-            });
+            })?;
 
             barrier.wait();
-            let now = Instant::now();
+            let now = Time::now().unwrap();
 
             assert_that!(
                 sut_sender.blocking_send(PointerOffset::new(sample_offset_1), SAMPLE_SIZE, id),
@@ -843,8 +845,11 @@ pub mod zero_copy_connection_trait {
                 sut_sender.blocking_send(PointerOffset::new(sample_offset_2), SAMPLE_SIZE, id),
                 is_ok
             );
-            assert_that!(now.elapsed(), time_at_least TIMEOUT);
-        });
+            assert_that!(now.elapsed().unwrap(), time_at_least TIMEOUT);
+
+            Ok(())
+        })
+        .unwrap();
     }
 
     #[conformance_test]
@@ -1805,14 +1810,11 @@ pub mod zero_copy_connection_trait {
     }
 
     #[ignore] // TODO: iox2-671 enable this test when the concurrency issue is fixed.
-    #[requires_std("threading")]
     #[conformance_test]
     pub fn concurrent_creation_and_destruction_works<Sut: ZeroCopyConnection>() {
-        use alloc::sync::Arc;
-        use std::sync::Barrier;
-
         const ITERATIONS: usize = 1000;
-        let barrier_1 = Arc::new(Barrier::new(2));
+        let barrier_handle = BarrierHandle::new();
+        let barrier_1 = Arc::new(BarrierBuilder::new(2).create(&barrier_handle).unwrap());
         let barrier_2 = barrier_1.clone();
         let name_1 = generate_name();
         let name_2 = generate_name();
@@ -1823,10 +1825,10 @@ pub mod zero_copy_connection_trait {
             assert_that!(error == ZeroCopyCreationError::IsBeingCleanedUp || error == ZeroCopyCreationError::InitializationNotYetFinalized, eq true);
         };
 
-        std::thread::scope(|s| {
+        thread_scope(|s| {
             let tname_1 = name_1;
             let tname_2 = name_2;
-            s.spawn(move || {
+            s.thread_builder().spawn(move || {
                 barrier_1.wait();
                 for _ in 0..ITERATIONS {
                     let sut_sender = Sut::Builder::new(&tname_1)
@@ -1844,9 +1846,9 @@ pub mod zero_copy_connection_trait {
                         verify(e);
                     }
                 }
-            });
+            })?;
 
-            s.spawn(move || {
+            s.thread_builder().spawn(move || {
                 barrier_2.wait();
                 for _ in 0..ITERATIONS {
                     let sut_receiver = Sut::Builder::new(&name_1)
@@ -1862,8 +1864,11 @@ pub mod zero_copy_connection_trait {
                         verify(e);
                     }
                 }
-            });
-        });
+            })?;
+
+            Ok(())
+        })
+        .unwrap();
     }
 
     #[conformance_test]
