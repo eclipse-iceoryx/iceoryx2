@@ -1,5 +1,5 @@
 {
-  "checksum": "4cd8c1ce557ea9099eca11db4da63df904470db177ae92eb547140eb25aed57d",
+  "checksum": "e5d43e8360b606dc166a63613679c26b1818e0952e68a2fa67928a1a31cb5299",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -9721,15 +9721,6 @@
           "selects": {}
         },
         "edition": "2021",
-        "proc_macro_deps_dev": {
-          "common": [
-            {
-              "id": "generic-tests 0.1.2",
-              "target": "generic_tests"
-            }
-          ],
-          "selects": {}
-        },
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -9897,7 +9888,36 @@
         ],
         "crate_features": {
           "common": [
-            "default"
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "0.8.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-cal-tests-nostd 0.8.999": {
+      "name": "iceoryx2-cal-tests-nostd",
+      "version": "0.8.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [],
+      "library_target_name": null,
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
           ],
           "selects": {}
         },
@@ -34503,6 +34523,7 @@
     "iceoryx2-cal-conformance-tests-common 0.8.999": "iceoryx2-cal/conformance-tests/tests-common",
     "iceoryx2-cal-conformance-tests-nostd 0.8.999": "iceoryx2-cal/conformance-tests/tests-nostd",
     "iceoryx2-cal-tests-common 0.8.999": "iceoryx2-cal/tests-common",
+    "iceoryx2-cal-tests-nostd 0.8.999": "iceoryx2-cal/tests-nostd",
     "iceoryx2-cli 0.8.999": "iceoryx2-cli",
     "iceoryx2-conformance-tests 0.8.999": "iceoryx2/conformance-tests",
     "iceoryx2-ffi-c 0.8.999": "iceoryx2-ffi/c",
