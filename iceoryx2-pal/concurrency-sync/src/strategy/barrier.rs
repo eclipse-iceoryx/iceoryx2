@@ -44,24 +44,24 @@ impl Barrier {
         wait: Wait,
         wake_all: WakeAll,
     ) {
-        let (current_epoch, count) = unpack(self.waiters.fetch_add(1, Ordering::Release));
+        let (wait_epoch, previous_count) = unpack(self.waiters.fetch_add(1, Ordering::Release));
 
-        let current_count = count + 1;
-        if current_count == self.number_of_waiters {
+        let wait_count = previous_count + 1;
+        if wait_count == self.number_of_waiters {
             self.waiters
-                .store(pack(current_epoch.wrapping_add(1), 0), Ordering::Release);
+                .store(pack(wait_epoch.wrapping_add(1), 0), Ordering::Release);
             wake_all(&self.waiters);
             return;
-        } else if current_count > self.number_of_waiters {
+        } else if wait_count > self.number_of_waiters {
             panic!("Barrier::wait() contract violation! More threads than configured call Barrier::wait() concurrently.");
         }
 
         let mut retry_counter = 0;
         loop {
             let current_value = self.waiters.load(Ordering::Acquire);
-            let (epoch, _) = unpack(current_value);
+            let (current_epoch, _) = unpack(current_value);
 
-            if epoch != current_epoch {
+            if current_epoch != wait_epoch {
                 return;
             }
 
