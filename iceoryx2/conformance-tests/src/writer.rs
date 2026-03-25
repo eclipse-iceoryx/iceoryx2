@@ -12,7 +12,6 @@
 
 use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 
-#[allow(unused_imports)]
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod writer {
@@ -184,7 +183,6 @@ pub mod writer {
         let _entry_handle_mut = entry_value_uninit.update_with_copy(333);
     }
 
-    #[cfg(not(target_os = "macos"))]
     #[conformance_test]
     pub fn concurrent_writer_creation_succeeds_only_once<Sut: Service>() {
         let _watch_dog = Watchdog::new();
