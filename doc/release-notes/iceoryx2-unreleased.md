@@ -78,6 +78,8 @@
   [#1455](https://github.com/eclipse-iceoryx/iceoryx2/issues/1455)
 * Fix cleanup of resizable data segments
   [#1463](https://github.com/eclipse-iceoryx/iceoryx2/issues/1463)
+* Fix `SIGPIPE` in `local::Service` events triggered by the `socketpair`
+  [#1477](https://github.com/eclipse-iceoryx/iceoryx2/issues/1463)
 
 ### Refactoring
 

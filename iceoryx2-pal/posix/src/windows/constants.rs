@@ -155,6 +155,7 @@ pub const SOCK_DGRAM: int = windows_sys::Win32::Networking::WinSock::SOCK_DGRAM 
 pub const SOCK_NONBLOCK: int = O_NONBLOCK;
 pub const IPPROTO_UDP: int = windows_sys::Win32::Networking::WinSock::IPPROTO_UDP as _;
 pub const MSG_PEEK: int = windows_sys::Win32::Networking::WinSock::MSG_PEEK as _;
+pub const MSG_NOSIGNAL: int = 0; // this flag is not necessary on Windows since 'send' works as if it is already set
 pub const SCM_MAX_FD: u32 = 253;
 pub const SCM_RIGHTS: int = 128;
 pub const SCM_CREDENTIALS: int = 0x02;
