@@ -12,32 +12,32 @@
 
 use core::hint::spin_loop;
 
-use crate::atomic::AtomicU32;
+use crate::atomic::AtomicU64;
 use crate::atomic::Ordering;
 use crate::{WaitAction, WaitResult, SPIN_REPETITIONS};
 
 #[derive(Debug)]
 pub struct Semaphore {
-    value: AtomicU32,
+    value: AtomicU64,
 }
 
 impl Semaphore {
-    pub fn new(initial_value: u32) -> Self {
+    pub fn new(initial_value: u64) -> Self {
         Self {
-            value: AtomicU32::new(initial_value),
+            value: AtomicU64::new(initial_value),
         }
     }
 
-    pub fn value(&self) -> u32 {
-        self.value.load(Ordering::Relaxed)
+    pub fn value(&self) -> u64 {
+        self.value.load(Ordering::Relaxed) as _
     }
 
-    pub fn post<WakeUp: Fn(&AtomicU32)>(&self, wakeup: WakeUp, value: u32) {
+    pub fn post<WakeUp: Fn(&AtomicU64)>(&self, wakeup: WakeUp, value: u64) {
         self.value.fetch_add(value, Ordering::Acquire);
         wakeup(&self.value);
     }
 
-    pub fn wait<Wait: Fn(&AtomicU32, &u32) -> WaitAction>(&self, wait: Wait) -> WaitResult {
+    pub fn wait<Wait: Fn(&AtomicU64, &u64) -> WaitAction>(&self, wait: Wait) -> WaitResult {
         let mut retry_counter = 0;
         let mut current_value = self.value.load(Ordering::Relaxed);
 
