@@ -1,5 +1,5 @@
 {
-  "checksum": "74bedf45de085c648e500b448062e29551a77c9319a157f65d0db0248f0a1ab4",
+  "checksum": "f146a1167c4adccbfd1e0605c2a89b97c765086c9cee8d9880f44bdecc188d43",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -19069,7 +19069,7 @@
               "alias": "pki_types"
             },
             {
-              "id": "rustls-webpki 0.103.8",
+              "id": "rustls-webpki 0.103.10",
               "target": "webpki"
             },
             {
@@ -19359,7 +19359,7 @@
                 "target": "rustls_native_certs"
               },
               {
-                "id": "rustls-webpki 0.103.8",
+                "id": "rustls-webpki 0.103.10",
                 "target": "webpki"
               }
             ],
@@ -19383,7 +19383,7 @@
             ],
             "cfg(target_arch = \"wasm32\")": [
               {
-                "id": "rustls-webpki 0.103.8",
+                "id": "rustls-webpki 0.103.10",
                 "target": "webpki"
               },
               {
@@ -19401,7 +19401,7 @@
                 "target": "rustls_platform_verifier_android"
               },
               {
-                "id": "rustls-webpki 0.103.8",
+                "id": "rustls-webpki 0.103.10",
                 "target": "webpki"
               }
             ],
@@ -19462,14 +19462,14 @@
       ],
       "license_file": null
     },
-    "rustls-webpki 0.103.8": {
+    "rustls-webpki 0.103.10": {
       "name": "rustls-webpki",
-      "version": "0.103.8",
+      "version": "0.103.10",
       "package_url": "https://github.com/rustls/webpki",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/rustls-webpki/0.103.8/download",
-          "sha256": "2ffdfa2f5286e2247234e03f680868ac2815974dc39e00ea15adc445d0aafe52"
+          "url": "https://static.crates.io/crates/rustls-webpki/0.103.10/download",
+          "sha256": "df33b2b81ac578cabaf06b89b0631153a3f416b0a886e8a7a1707fb51abbd1ef"
         }
       },
       "targets": [
@@ -19519,7 +19519,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.103.8"
+        "version": "0.103.10"
       },
       "license": "ISC",
       "license_ids": [
@@ -32243,7 +32243,7 @@
               "target": "rustls_pki_types"
             },
             {
-              "id": "rustls-webpki 0.103.8",
+              "id": "rustls-webpki 0.103.10",
               "target": "webpki"
             },
             {
@@ -32384,7 +32384,7 @@
               "target": "rustls_pemfile"
             },
             {
-              "id": "rustls-webpki 0.103.8",
+              "id": "rustls-webpki 0.103.10",
               "target": "webpki"
             },
             {
@@ -32497,7 +32497,7 @@
               "target": "rustls"
             },
             {
-              "id": "rustls-webpki 0.103.8",
+              "id": "rustls-webpki 0.103.10",
               "target": "webpki"
             },
             {
@@ -32695,7 +32695,7 @@
               "target": "rustls_pki_types"
             },
             {
-              "id": "rustls-webpki 0.103.8",
+              "id": "rustls-webpki 0.103.10",
               "target": "webpki"
             },
             {
