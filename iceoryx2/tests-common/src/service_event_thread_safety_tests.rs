@@ -10,19 +10,28 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_concurrency::atomic::Ordering;
-use std::sync::Barrier;
+use alloc::vec;
+use alloc::vec::Vec;
+
+use iceoryx2_bb_posix::barrier::BarrierBuilder;
+use iceoryx2_bb_posix::barrier::BarrierHandle;
+use iceoryx2_bb_posix::mutex::Handle;
+use iceoryx2_bb_posix::mutex::MutexBuilder;
+use iceoryx2_bb_posix::mutex::MutexHandle;
 
 use iceoryx2::prelude::*;
 use iceoryx2::testing::*;
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_posix::system_configuration::SystemInfo;
+use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::watchdog::Watchdog;
+use iceoryx2_bb_testing_macros::inventory_test;
 
-#[test]
-fn notifying_events_concurrently_works() {
+#[inventory_test]
+fn service_event_notifying_events_concurrently_works() {
     let _watchdog = Watchdog::new();
     type ServiceType = ipc_threadsafe::Service;
     let service_name = generate_service_name();
@@ -44,22 +53,28 @@ fn notifying_events_concurrently_works() {
         .unwrap();
     let notifier = service.notifier_builder().create().unwrap();
     let listener = service.listener_builder().create().unwrap();
-    let barrier = Barrier::new(number_of_notifier_threads + 1);
+
+    let barrier_handle = BarrierHandle::new();
+    let barrier = BarrierBuilder::new((number_of_notifier_threads + 1) as u32)
+        .create(&barrier_handle)
+        .unwrap();
 
     let number_of_finished_notifier_threads = AtomicUsize::new(0);
-    std::thread::scope(|s| {
+    thread_scope(|s| {
         for _ in 0..number_of_notifier_threads {
-            s.spawn(|| {
-                barrier.wait();
-                for n in 0..NUMBER_OF_ITERATIONS {
-                    while notifier
-                        .notify_with_custom_event_id(EventId::new(n))
-                        .unwrap()
-                        == 0
-                    {}
-                }
-                number_of_finished_notifier_threads.fetch_add(1, Ordering::Relaxed);
-            });
+            s.thread_builder()
+                .spawn(|| {
+                    barrier.wait();
+                    for n in 0..NUMBER_OF_ITERATIONS {
+                        while notifier
+                            .notify_with_custom_event_id(EventId::new(n))
+                            .unwrap()
+                            == 0
+                        {}
+                    }
+                    number_of_finished_notifier_threads.fetch_add(1, Ordering::Relaxed);
+                })
+                .expect("failed to spawn thread");
         }
         barrier.wait();
 
@@ -85,11 +100,14 @@ fn notifying_events_concurrently_works() {
             assert_that!(n, ge 1);
             assert_that!(n, le number_of_notifier_threads);
         }
-    });
+
+        Ok(())
+    })
+    .expect("failed to spawn thread");
 }
 
-#[test]
-fn listening_on_events_concurrently_works() {
+#[inventory_test]
+fn service_event_listening_on_events_concurrently_works() {
     let _watchdog = Watchdog::new();
     type ServiceType = ipc_threadsafe::Service;
     let service_name = generate_service_name();
@@ -111,30 +129,43 @@ fn listening_on_events_concurrently_works() {
         .unwrap();
     let notifier = service.notifier_builder().create().unwrap();
     let listener = service.listener_builder().create().unwrap();
-    let barrier = Barrier::new(number_of_listener_threads + 1);
+
+    let barrier_handle = BarrierHandle::new();
+    let barrier = BarrierBuilder::new((number_of_listener_threads + 1) as u32)
+        .create(&barrier_handle)
+        .unwrap();
+
     let notification_finished = AtomicBool::new(false);
+    let all_events_handle = MutexHandle::<Vec<usize>>::new();
+    let all_events = MutexBuilder::new()
+        .create(vec![0usize; NUMBER_OF_ITERATIONS], &all_events_handle)
+        .expect("failed to create mutex");
 
-    std::thread::scope(|s| {
-        let mut listener_threads = vec![];
+    thread_scope(|s| {
         for _ in 0..number_of_listener_threads {
-            listener_threads.push(s.spawn(|| {
-                let mut received_events = [0; NUMBER_OF_ITERATIONS];
-                barrier.wait();
-                loop {
-                    if let Ok(Some(event)) = listener.try_wait_one() {
-                        received_events[event.as_value()] += 1;
-                    } else if notification_finished.load(Ordering::Relaxed) {
-                        break;
+            s.thread_builder()
+                .spawn(|| {
+                    let mut received_events = vec![0usize; NUMBER_OF_ITERATIONS];
+                    barrier.wait();
+                    loop {
+                        if let Ok(Some(event)) = listener.try_wait_one() {
+                            received_events[event.as_value()] += 1;
+                        } else if notification_finished.load(Ordering::Relaxed) {
+                            break;
+                        }
                     }
-                }
 
-                // ensure all events are received
-                while let Ok(Some(event)) = listener.try_wait_one() {
-                    received_events[event.as_value()] += 1;
-                }
+                    // ensure all events are received
+                    while let Ok(Some(event)) = listener.try_wait_one() {
+                        received_events[event.as_value()] += 1;
+                    }
 
-                received_events
-            }));
+                    let mut guard = all_events.lock().unwrap();
+                    for (i, count) in received_events.iter().enumerate() {
+                        guard[i] += count;
+                    }
+                })
+                .expect("failed to spawn thread");
         }
 
         barrier.wait();
@@ -147,16 +178,12 @@ fn listening_on_events_concurrently_works() {
         }
         notification_finished.store(true, Ordering::Relaxed);
 
-        let mut received_events = [0; NUMBER_OF_ITERATIONS];
-        for t in listener_threads {
-            let events = t.join().unwrap();
-            for (n, count) in events.iter().enumerate() {
-                received_events[n] += count;
-            }
-        }
+        Ok(())
+    })
+    .expect("failed to spawn thread");
 
-        for n in received_events {
-            assert_that!(n, eq 1);
-        }
-    });
+    let guard = all_events.lock().unwrap();
+    for n in guard.iter() {
+        assert_that!(*n, eq 1);
+    }
 }

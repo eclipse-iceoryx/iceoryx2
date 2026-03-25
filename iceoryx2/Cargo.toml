@@ -55,5 +55,10 @@ toml = { workspace = true }
 tiny-fn = { workspace = true }
 
 [dev-dependencies]
-iceoryx2-bb-loggers = { workspace = true }
-iceoryx2-bb-testing = { workspace = true }
+iceoryx2-tests-common = { workspace = true, features = ["std"] }
+iceoryx2-bb-loggers = { workspace = true, features = ["std"] }
+iceoryx2-bb-testing = { workspace = true, features = ["std"] }
+
+[[test]]
+name = "main"
+harness = false

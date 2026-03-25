@@ -55,6 +55,8 @@ members = [
     "iceoryx2-cal/conformance-tests/tests-nostd",
 
     "iceoryx2",
+    "iceoryx2/tests-common",
+    "iceoryx2/tests-nostd",
     "iceoryx2/conformance-tests",
 
     "iceoryx2-pal/concurrency-sync",
@@ -174,6 +176,8 @@ iceoryx2-cal-conformance-tests-common = { path = "iceoryx2-cal/conformance-tests
 iceoryx2-cal-conformance-tests-nostd = { path = "iceoryx2-cal/conformance-tests/tests-nostd" }
 iceoryx2-cal-tests-common = { path = "iceoryx2-cal/tests-common" }
 iceoryx2-cal-tests-nostd = { path = "iceoryx2-cal/tests-nostd" }
+iceoryx2-tests-common = { path = "iceoryx2/tests-common" }
+iceoryx2-tests-nostd = { path = "iceoryx2/tests-nostd" }
 
 ################################################################################
 

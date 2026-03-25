@@ -266,6 +266,7 @@ filegroup(
         "//iceoryx2-log/log:all_srcs",
         "//iceoryx2-log/types:all_srcs",
         "//iceoryx2:all_srcs",
+        "//iceoryx2/tests-common:all_srcs",
         "//iceoryx2-bb/print:all_srcs",
         "//iceoryx2-bb/loggers:all_srcs",
         "//iceoryx2-bb/conformance-test-macros:all_srcs",

@@ -1,5 +1,5 @@
 {
-  "checksum": "e5d43e8360b606dc166a63613679c26b1818e0952e68a2fa67928a1a31cb5299",
+  "checksum": "8f1b2df4a420e1f61381779d4843727761e45327be5e78699b2371b3a8d263f0",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -10758,6 +10758,75 @@
           ],
           "selects": {}
         },
+        "version": "0.8.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-tests-common 0.8.999": {
+      "name": "iceoryx2-tests-common",
+      "version": "0.8.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_tests_common",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_tests_common",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "0.8.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-tests-nostd 0.8.999": {
+      "name": "iceoryx2-tests-nostd",
+      "version": "0.8.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [],
+      "library_target_name": null,
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -34538,6 +34607,8 @@
     "iceoryx2-pal-print 0.8.999": "iceoryx2-pal/print",
     "iceoryx2-pal-testing 0.8.999": "iceoryx2-pal/testing",
     "iceoryx2-services-discovery 0.8.999": "iceoryx2-services/discovery",
+    "iceoryx2-tests-common 0.8.999": "iceoryx2/tests-common",
+    "iceoryx2-tests-nostd 0.8.999": "iceoryx2/tests-nostd",
     "iceoryx2-tunnel 0.8.999": "iceoryx2-tunnel/tunnel",
     "iceoryx2-tunnel-backend 0.8.999": "iceoryx2-tunnel/backend",
     "iceoryx2-tunnel-conformance-tests 0.8.999": "iceoryx2-tunnel/conformance-tests",
