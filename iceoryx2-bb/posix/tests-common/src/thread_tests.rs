@@ -38,20 +38,27 @@ use iceoryx2_pal_posix::posix::{self, POSIX_SUPPORT_CPU_AFFINITY};
 
 struct SpinBarrier {
     counter: AtomicU32,
+    number_of_waiters: u32,
 }
 
 impl SpinBarrier {
-    fn new() -> Arc<Self> {
+    fn new(number_of_waiters: u32) -> Arc<Self> {
         Arc::new(Self {
             counter: AtomicU32::new(0),
+            number_of_waiters,
         })
     }
 
     fn wait(&self) {
-        let before = self.counter.fetch_add(1, Ordering::SeqCst);
-        let round = before / 2;
-        let target = (round + 1) * 2;
-        while self.counter.load(Ordering::SeqCst) < target {
+        let arrival = self.counter.fetch_add(1, Ordering::Relaxed);
+
+        // every `number_of_waiters` arrivals is a new round
+        let round = arrival / self.number_of_waiters;
+
+        // target counter value is the value of the first arrival in the round + `number_of_waiters`
+        let target = (round + 1) * self.number_of_waiters;
+
+        while self.counter.load(Ordering::Relaxed) < target {
             core::hint::spin_loop();
         }
     }
@@ -59,8 +66,10 @@ impl SpinBarrier {
 
 #[inventory_test]
 pub fn thread_set_name_works() {
+    const NUMBER_OF_THREADS: u32 = 2;
+
     let name = ThreadName::try_from(b"oh-a-thread").unwrap();
-    let barrier = SpinBarrier::new();
+    let barrier = SpinBarrier::new(NUMBER_OF_THREADS);
     let barrier_clone = barrier.clone();
     let thread = ThreadBuilder::new()
         .name(&name)
@@ -82,7 +91,9 @@ pub fn thread_set_name_works() {
 
 #[inventory_test]
 pub fn thread_creation_does_not_block() {
-    let barrier = SpinBarrier::new();
+    const NUMBER_OF_THREADS: u32 = 2;
+
+    let barrier = SpinBarrier::new(NUMBER_OF_THREADS);
     let barrier_clone = barrier.clone();
     let thread = ThreadBuilder::new()
         .spawn(move || {
@@ -97,8 +108,10 @@ pub fn thread_creation_does_not_block() {
 pub fn thread_affinity_is_set_to_all_existing_cores_when_nothing_was_configured() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
     let _watchdog = Watchdog::new();
+    const NUMBER_OF_THREADS: u32 = 2;
+
     let number_of_cpu_cores = SystemInfo::NumberOfCpuCores.value();
-    let barrier = SpinBarrier::new();
+    let barrier = SpinBarrier::new(NUMBER_OF_THREADS);
     let barrier_clone = barrier.clone();
     let thread = ThreadBuilder::new()
         .spawn(move || {
@@ -125,7 +138,9 @@ pub fn thread_affinity_is_set_to_all_existing_cores_when_nothing_was_configured(
 pub fn thread_set_affinity_to_one_cpu_core_on_creation_works() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
     let _watchdog = Watchdog::new();
-    let barrier = SpinBarrier::new();
+    const NUMBER_OF_THREADS: u32 = 2;
+
+    let barrier = SpinBarrier::new(NUMBER_OF_THREADS);
     let barrier_clone = barrier.clone();
     let thread = ThreadBuilder::new()
         .affinity(&[0])
@@ -151,7 +166,9 @@ pub fn thread_set_affinity_to_two_cpu_cores_on_creation_works() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
     test_requires!(SystemInfo::NumberOfCpuCores.value() > 1);
     let _watchdog = Watchdog::new();
-    let barrier = SpinBarrier::new();
+    const NUMBER_OF_THREADS: u32 = 2;
+
+    let barrier = SpinBarrier::new(NUMBER_OF_THREADS);
     let barrier_clone = barrier.clone();
     let thread = ThreadBuilder::new()
         .affinity(&[0, 1])
@@ -179,6 +196,7 @@ pub fn thread_set_affinity_to_two_cpu_cores_on_creation_works() {
 pub fn thread_set_affinity_to_non_existing_cpu_cores_on_creation_fails() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
     let _watchdog = Watchdog::new();
+
     let number_of_cpu_cores = SystemInfo::NumberOfCpuCores.value();
     let thread = ThreadBuilder::new()
         .affinity(&[number_of_cpu_cores + 1])
@@ -192,6 +210,7 @@ pub fn thread_set_affinity_to_non_existing_cpu_cores_on_creation_fails() {
 pub fn thread_set_affinity_to_cores_greater_than_cpu_set_size_fails() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
     let _watchdog = Watchdog::new();
+
     let thread = ThreadBuilder::new()
         .affinity(&[posix::CPU_SETSIZE])
         .spawn(|| {});
@@ -204,7 +223,9 @@ pub fn thread_set_affinity_to_cores_greater_than_cpu_set_size_fails() {
 pub fn thread_set_affinity_to_one_core_from_handle_works() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
     let _watchdog = Watchdog::new();
-    let barrier = SpinBarrier::new();
+    const NUMBER_OF_THREADS: u32 = 2;
+
+    let barrier = SpinBarrier::new(NUMBER_OF_THREADS);
     let barrier_clone = barrier.clone();
     let thread = ThreadBuilder::new()
         .spawn(move || {
@@ -230,7 +251,9 @@ pub fn thread_set_affinity_to_two_cores_from_handle_works() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
     test_requires!(SystemInfo::NumberOfCpuCores.value() > 1);
     let _watchdog = Watchdog::new();
-    let barrier = SpinBarrier::new();
+    const NUMBER_OF_THREADS: u32 = 2;
+
+    let barrier = SpinBarrier::new(NUMBER_OF_THREADS);
     let barrier_clone = barrier.clone();
     let thread = ThreadBuilder::new()
         .spawn(move || {
@@ -259,7 +282,9 @@ pub fn thread_set_affinity_to_non_existing_cores_from_handle_fails() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
     let _watchdog = Watchdog::new();
     let number_of_cpu_cores = SystemInfo::NumberOfCpuCores.value();
-    let barrier = SpinBarrier::new();
+    const NUMBER_OF_THREADS: u32 = 2;
+
+    let barrier = SpinBarrier::new(NUMBER_OF_THREADS);
     let barrier_clone = barrier.clone();
     let thread = ThreadBuilder::new()
         .spawn(move || {
@@ -299,7 +324,9 @@ pub fn thread_set_affinity_to_non_existing_cores_from_handle_fails() {
 pub fn thread_set_affinity_to_one_core_from_thread_works() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
     let _watchdog = Watchdog::new();
-    let barrier = SpinBarrier::new();
+    const NUMBER_OF_THREADS: u32 = 2;
+
+    let barrier = SpinBarrier::new(NUMBER_OF_THREADS);
     let barrier_clone = barrier.clone();
     let mut thread = ThreadBuilder::new()
         .spawn(move || {
@@ -325,7 +352,9 @@ pub fn thread_set_affinity_to_two_cores_from_thread_works() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
     test_requires!(SystemInfo::NumberOfCpuCores.value() > 1);
     let _watchdog = Watchdog::new();
-    let barrier = SpinBarrier::new();
+    const NUMBER_OF_THREADS: u32 = 2;
+
+    let barrier = SpinBarrier::new(NUMBER_OF_THREADS);
     let barrier_clone = barrier.clone();
     let mut thread = ThreadBuilder::new()
         .spawn(move || {
@@ -354,7 +383,9 @@ pub fn thread_set_affinity_to_non_existing_cores_from_thread_fails() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
     let _watchdog = Watchdog::new();
     let number_of_cpu_cores = SystemInfo::NumberOfCpuCores.value();
-    let barrier = SpinBarrier::new();
+    const NUMBER_OF_THREADS: u32 = 2;
+
+    let barrier = SpinBarrier::new(NUMBER_OF_THREADS);
     let barrier_clone = barrier.clone();
     let mut thread = ThreadBuilder::new()
         .spawn(move || {
@@ -383,7 +414,9 @@ pub fn thread_set_affinity_to_non_existing_cores_from_thread_fails() {
 #[inventory_test]
 pub fn thread_destructor_does_not_block_on_empty_thread() {
     let _watchdog = Watchdog::new();
-    let barrier = SpinBarrier::new();
+    const NUMBER_OF_THREADS: u32 = 2;
+
+    let barrier = SpinBarrier::new(NUMBER_OF_THREADS);
     let barrier_clone = barrier.clone();
     let thread = ThreadBuilder::new()
         .spawn(move || {
@@ -402,7 +435,9 @@ pub fn thread_destructor_does_not_block_on_empty_thread() {
 pub fn thread_destructor_does_block_on_busy_thread() {
     let _watchdog = Watchdog::new();
     const SLEEP_DURATION: Duration = Duration::from_millis(100);
-    let barrier = SpinBarrier::new();
+    const NUMBER_OF_THREADS: u32 = 2;
+
+    let barrier = SpinBarrier::new(NUMBER_OF_THREADS);
     let barrier_clone = barrier.clone();
     let thread = ThreadBuilder::new()
         .spawn(move || {
@@ -420,6 +455,7 @@ pub fn thread_destructor_does_block_on_busy_thread() {
 #[inventory_test]
 pub fn thread_scoped_threads_work() {
     let _watchdog = Watchdog::new();
+
     let number_of_threads = MAX_SCOPED_THREADS;
     let handle = BarrierHandle::new();
     let barrier = BarrierBuilder::new((number_of_threads + 1) as _)
