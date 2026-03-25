@@ -30,7 +30,6 @@ pub mod reactor_trait {
     use iceoryx2_bb_posix::mutex::MutexHandle;
     use iceoryx2_bb_posix::thread::thread_scope;
     use iceoryx2_bb_testing::assert_that;
-    use iceoryx2_bb_testing_macros::requires_std;
     use iceoryx2_cal::event::unix_datagram_socket::*;
     use iceoryx2_cal::event::{Listener, ListenerBuilder, Notifier, NotifierBuilder};
     use iceoryx2_cal::reactor::{Reactor, *};
@@ -351,7 +350,6 @@ pub mod reactor_trait {
         }
     }
 
-    #[requires_std("time")]
     #[conformance_test]
     pub fn timed_wait_blocks_for_at_least_timeout<Sut: Reactor>() {
         const TIMEOUT: Duration = Duration::from_millis(50);
@@ -499,7 +497,6 @@ pub mod reactor_trait {
         assert_that!(triggered_fds, len 0);
     }
 
-    #[requires_std("threading")]
     #[conformance_test]
     pub fn timed_wait_blocks_until_triggered<Sut: Reactor>() {
         const TIMEOUT: Duration = Duration::from_millis(50);
@@ -556,7 +553,6 @@ pub mod reactor_trait {
         assert_that!(counter_old.load(Ordering::Relaxed), eq 0);
     }
 
-    #[requires_std("threading")]
     #[conformance_test]
     pub fn blocking_wait_blocks_until_triggered<Sut: Reactor>() {
         const TIMEOUT: Duration = Duration::from_millis(50);

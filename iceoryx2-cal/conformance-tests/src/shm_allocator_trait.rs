@@ -23,7 +23,6 @@ pub mod shm_allocator_trait {
     use iceoryx2_bb_posix::ipc_capable::Handle;
     use iceoryx2_bb_posix::mutex::{Mutex, MutexBuilder, MutexHandle};
     use iceoryx2_bb_testing::assert_that;
-    use iceoryx2_bb_testing_macros::requires_std;
     use iceoryx2_cal::shm_allocator::{ShmAllocator, *};
 
     const MEMORY_SIZE: usize = 4096;
@@ -174,7 +173,6 @@ pub mod shm_allocator_trait {
         );
     }
 
-    #[requires_std("mutex")]
     #[conformance_test]
     pub fn allocator_id_is_unique<Sut: ShmAllocator>() {
         static MTX_HANDLE: LazyLock<MutexHandle<BTreeSet<u8>>> = LazyLock::new(MutexHandle::new);

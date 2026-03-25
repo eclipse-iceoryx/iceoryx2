@@ -20,14 +20,13 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_elementary_traits::allocator::*;
 use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle};
-use iceoryx2_bb_posix::clock::Time;
+use iceoryx2_bb_posix::clock::{nanosleep, Time};
 use iceoryx2_bb_posix::ipc_capable::Handle;
 use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
 use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_testing::{assert_that, test_requires};
-use iceoryx2_bb_testing_macros::requires_std;
 use iceoryx2_cal::dynamic_storage::*;
 use iceoryx2_cal::named_concept::*;
 use iceoryx2_cal::testing::*;
@@ -427,7 +426,6 @@ pub mod dynamic_storage_trait {
     }
 
     #[ignore] // TODO: iox2-671 enable this test when the concurrency issue is fixed.
-    #[requires_std("threading")]
     #[conformance_test]
     pub fn initialization_blocks_other_openers<
         Sut: DynamicStorage<TestData>,
@@ -443,16 +441,15 @@ pub mod dynamic_storage_trait {
         let barrier_2 = barrier_1.clone();
 
         thread_scope(|s| {
-            let tstorage_name = storage_name;
             let config_1 = config.clone();
             s.thread_builder().spawn(move || {
                 barrier_1.wait();
-                let _sut = Sut::Builder::new(&tstorage_name)
+                let _sut = Sut::Builder::new(&storage_name)
                     .config(&config_1)
                     .supplementary_size(0)
                     .has_ownership(false)
                     .initializer(|value, _| {
-                        std::thread::sleep(TIMEOUT);
+                        nanosleep(TIMEOUT).unwrap();
                         value.value.store(789, Ordering::Relaxed);
                         true
                     })
@@ -460,12 +457,11 @@ pub mod dynamic_storage_trait {
                     .unwrap();
             })?;
 
-            let tstorage_name = storage_name;
             let config_2 = config.clone();
             s.thread_builder().spawn(move || {
                 barrier_2.wait();
                 loop {
-                let sut2 = Sut::Builder::new(&tstorage_name).config(&config_2).open();
+                let sut2 = Sut::Builder::new(&storage_name).config(&config_2).open();
                 if let Ok(res) = sut2 {
                     assert_that!(res.get().value.load(Ordering::Relaxed), eq 789);
                     break;
@@ -484,7 +480,6 @@ pub mod dynamic_storage_trait {
         }
     }
 
-    #[requires_std("threading", "time")]
     #[conformance_test]
     pub fn initialization_timeout_blocks_for_at_least_timeout<
         Sut: DynamicStorage<TestData>,
@@ -508,7 +503,7 @@ pub mod dynamic_storage_trait {
                     .supplementary_size(0)
                     .initializer(|_, _| {
                         barrier_1.wait();
-                        std::thread::sleep(TIMEOUT * 2);
+                        nanosleep(TIMEOUT * 2).unwrap();
                         true
                     })
                     .create(TestData::new(123))

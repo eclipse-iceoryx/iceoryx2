@@ -23,7 +23,7 @@ pub mod zero_copy_connection_trait {
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_posix::barrier::*;
-    use iceoryx2_bb_posix::clock::Time;
+    use iceoryx2_bb_posix::clock::{nanosleep, Time};
     use iceoryx2_bb_posix::ipc_capable::Handle;
     use iceoryx2_bb_posix::mutex::{MutexBuilder, MutexHandle};
     use iceoryx2_bb_posix::thread::thread_scope;
@@ -784,7 +784,6 @@ pub mod zero_copy_connection_trait {
         }
     }
 
-    #[requires_std("threading", "time")]
     #[conformance_test]
     pub fn blocking_send_blocks<Sut: ZeroCopyConnection>() {
         const TIMEOUT: Duration = Duration::from_millis(25);
@@ -826,9 +825,9 @@ pub mod zero_copy_connection_trait {
                 };
 
                 barrier.wait();
-                std::thread::sleep(TIMEOUT);
+                nanosleep(TIMEOUT).unwrap();
                 let sample_1 = receive_sample();
-                std::thread::sleep(TIMEOUT);
+                nanosleep(TIMEOUT).unwrap();
                 let sample_2 = receive_sample();
 
                 assert_that!(sample_1.offset(), eq sample_offset_1);
@@ -1811,7 +1810,6 @@ pub mod zero_copy_connection_trait {
     }
 
     #[ignore] // TODO: iox2-671 enable this test when the concurrency issue is fixed.
-    #[requires_std("threading")]
     #[conformance_test]
     pub fn concurrent_creation_and_destruction_works<Sut: ZeroCopyConnection>() {
         const ITERATIONS: usize = 1000;
