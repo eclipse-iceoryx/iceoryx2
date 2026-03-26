@@ -12,9 +12,9 @@
 
 #![allow(clippy::disallowed_types)]
 
-use iceoryx2_bb_testing_macros::test_module;
+use iceoryx2_bb_testing_macros::tests;
 
-#[test_module(usize, TestType)]
+#[tests(usize, TestType)]
 pub mod generic {
     use alloc::collections::btree_map::BTreeMap;
     use alloc::collections::btree_set::BTreeSet;

@@ -13,7 +13,7 @@
 mod internal;
 mod requires_std;
 mod test;
-mod test_module;
+mod tests;
 
 use proc_macro::TokenStream;
 
@@ -23,8 +23,8 @@ pub fn test(attr: TokenStream, item: TokenStream) -> TokenStream {
 }
 
 #[proc_macro_attribute]
-pub fn test_module(attr: TokenStream, item: TokenStream) -> TokenStream {
-    test_module::proc_macro(attr, item)
+pub fn tests(attr: TokenStream, item: TokenStream) -> TokenStream {
+    tests::proc_macro(attr, item)
 }
 
 #[proc_macro_attribute]

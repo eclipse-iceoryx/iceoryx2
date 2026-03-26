@@ -12,9 +12,9 @@
 
 #![allow(clippy::disallowed_types)]
 
-use iceoryx2_bb_testing_macros::test_module;
+use iceoryx2_bb_testing_macros::tests;
 
-#[test_module(u64, u128, i64, i128)]
+#[tests(u64, u128, i64, i128)]
 pub mod generic {
     use core::alloc::Layout;
     use core::{

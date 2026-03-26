@@ -14,7 +14,6 @@
 
 extern crate iceoryx2_bb_loggers;
 
-use alloc::format;
 use alloc::vec;
 
 use iceoryx2_bb_container::semantic_string::*;
@@ -25,8 +24,7 @@ use iceoryx2_bb_system_types::group_name::*;
 use iceoryx2_bb_system_types::path::*;
 use iceoryx2_bb_system_types::user_name::*;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::test;
-use iceoryx2_bb_testing_macros::test_module;
+use iceoryx2_bb_testing_macros::tests;
 
 #[test]
 pub fn display_error_enum_works() {
@@ -34,7 +32,7 @@ pub fn display_error_enum_works() {
     assert_that!(alloc::format!("{}", SemanticStringError::ExceedsMaximumLength), eq "SemanticStringError::ExceedsMaximumLength");
 }
 
-#[test_module(
+#[tests(
     ({FileName::max_len()}, FileName),
     (64, RestrictedFileName::<64>),
     ({Path::max_len()}, Path),

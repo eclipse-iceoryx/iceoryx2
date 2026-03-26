@@ -12,9 +12,9 @@
 
 #![allow(clippy::disallowed_types)]
 
-use iceoryx2_bb_testing_macros::test_module;
+use iceoryx2_bb_testing_macros::tests;
 
-#[test_module(File, SharedMemory)]
+#[tests(File, SharedMemory)]
 pub mod generic {
     use iceoryx2_bb_container::semantic_string::SemanticString;
     use iceoryx2_bb_elementary::math::ToB64;

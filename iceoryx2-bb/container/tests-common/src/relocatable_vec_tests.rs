@@ -15,8 +15,8 @@
 use iceoryx2_bb_container::vector::relocatable_vec::*;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::test;
 use iceoryx2_bb_testing_macros::requires_std;
+use iceoryx2_bb_testing_macros::test;
 
 #[test]
 #[requires_std("panics")]

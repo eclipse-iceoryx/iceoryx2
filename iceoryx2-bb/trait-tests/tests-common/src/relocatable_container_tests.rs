@@ -12,9 +12,9 @@
 
 #![allow(clippy::disallowed_types)]
 
-use iceoryx2_bb_testing_macros::test_module;
+use iceoryx2_bb_testing_macros::tests;
 
-#[test_module(
+#[tests(
     RelocatableVec<u64>,
     RelocatableVec<u128>,
     RelocatableVec<[u8; 123]>,

@@ -12,9 +12,9 @@
 
 #![allow(clippy::disallowed_types)]
 
-use iceoryx2_bb_testing_macros::test_module;
+use iceoryx2_bb_testing_macros::tests;
 
-#[test_module(
+#[tests(
     PolymorphicStringFactory,
     RelocatableStringFactory,
     StaticStringFactory
@@ -1137,4 +1137,3 @@ pub mod generic {
         assert_that!(format!("{}", StringModificationError::InvalidCharacter), eq "StringModificationError::InvalidCharacter");
     }
 }
-

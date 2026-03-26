@@ -17,21 +17,21 @@ use crate::internal::instantiate_tests;
 /// Registers the annotated function to the inventory to be executed by the
 /// test runner.
 ///
-/// Combine with `#[ignore]` to skip the test at runtime:
+/// ```no_run
+/// use iceoryx2_bb_testing_macros::test;
 ///
-/// ```ignore
 /// #[test]
-/// fn my_test() { ... }
+/// fn my_test() { /* ... */ }
 ///
 /// #[ignore]
 /// #[test]
-/// fn my_ignored_test() { ... }
+/// fn my_ignored_test() { /* ... */ }
 /// ```
 pub fn proc_macro(
     macro_parameters: proc_macro::TokenStream,
-    test_function: proc_macro::TokenStream,
+    item: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
-    let test_function = parse_macro_input!(test_function as ItemFn);
+    let test_function = parse_macro_input!(item as ItemFn);
     let macro_parameters: proc_macro2::TokenStream = macro_parameters.into();
     let params = (!macro_parameters.is_empty()).then_some(&macro_parameters);
 

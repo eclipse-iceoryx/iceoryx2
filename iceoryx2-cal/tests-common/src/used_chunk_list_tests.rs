@@ -10,9 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_testing_macros::test_module;
+use iceoryx2_bb_testing_macros::tests;
 
-#[test_module(1, 2, 3, 128)]
+#[tests(1, 2, 3, 128)]
 pub mod generic {
     use alloc::vec;
 

@@ -17,8 +17,8 @@ use alloc::str::FromStr;
 use iceoryx2_bb_container::string::*;
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_testing::{assert_that, memory::RawMemory};
-use iceoryx2_bb_testing_macros::test;
 use iceoryx2_bb_testing_macros::requires_std;
+use iceoryx2_bb_testing_macros::test;
 
 const SMALL_SUT_CAPACITY: usize = 4;
 const SUT_CAPACITY: usize = 129;
