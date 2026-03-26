@@ -29,7 +29,7 @@ use iceoryx2_bb_testing_macros::test_module;
     RelocatableSafelyOverflowingIndexQueue,
     RelocatableUsedChunkList
 )]
-pub mod tests {
+pub mod generic {
     use alloc::boxed::Box;
     use core::ptr::NonNull;
     use iceoryx2_bb_container::{queue::RelocatableQueue, vector::relocatable_vec::RelocatableVec};

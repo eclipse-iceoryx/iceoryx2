@@ -12,7 +12,27 @@
 
 #![allow(clippy::disallowed_types)]
 
+extern crate iceoryx2_bb_loggers;
+
+use alloc::format;
+use alloc::vec;
+
+use iceoryx2_bb_container::semantic_string::*;
+use iceoryx2_bb_system_types::base64url::*;
+use iceoryx2_bb_system_types::file_name::*;
+use iceoryx2_bb_system_types::file_path::*;
+use iceoryx2_bb_system_types::group_name::*;
+use iceoryx2_bb_system_types::path::*;
+use iceoryx2_bb_system_types::user_name::*;
+use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_bb_testing_macros::test_module;
+
+#[inventory_test]
+pub fn display_error_enum_works() {
+    assert_that!(alloc::format!("{}", SemanticStringError::InvalidContent), eq "SemanticStringError::InvalidContent");
+    assert_that!(alloc::format!("{}", SemanticStringError::ExceedsMaximumLength), eq "SemanticStringError::ExceedsMaximumLength");
+}
 
 #[test_module(
     ({FileName::max_len()}, FileName),
@@ -23,26 +43,8 @@ use iceoryx2_bb_testing_macros::test_module;
     ({GroupName::max_len()}, GroupName),
     ({Base64Url::max_len()}, Base64Url)
 )]
-pub mod tests {
-    extern crate iceoryx2_bb_loggers;
-
-    use alloc::format;
-    use alloc::vec;
-
-    use iceoryx2_bb_container::semantic_string::*;
-    use iceoryx2_bb_system_types::base64url::*;
-    use iceoryx2_bb_system_types::file_name::*;
-    use iceoryx2_bb_system_types::file_path::*;
-    use iceoryx2_bb_system_types::group_name::*;
-    use iceoryx2_bb_system_types::path::*;
-    use iceoryx2_bb_system_types::user_name::*;
-    use iceoryx2_bb_testing::assert_that;
-
-    #[inventory_test]
-    pub fn display_error_enum_works() {
-        assert_that!(format!("{}", SemanticStringError::InvalidContent), eq "SemanticStringError::InvalidContent");
-        assert_that!(format!("{}", SemanticStringError::ExceedsMaximumLength), eq "SemanticStringError::ExceedsMaximumLength");
-    }
+pub mod generic {
+    use super::*;
 
     #[inventory_test]
     pub fn new_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
