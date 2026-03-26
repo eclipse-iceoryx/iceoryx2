@@ -84,6 +84,8 @@
   [#1474](https://github.com/eclipse-iceoryx/iceoryx2/issues/1474)
 * Fix `SIGPIPE` in `local::Service` events triggered by the `socketpair`
   [#1477](https://github.com/eclipse-iceoryx/iceoryx2/issues/1463)
+* Bump requests from 2.32.5 to 2.33.0 in iceoryx2-ffi/python
+  [#1486](https://github.com/eclipse-iceoryx/iceoryx2/issues/1486)
 
 ### Refactoring
 
