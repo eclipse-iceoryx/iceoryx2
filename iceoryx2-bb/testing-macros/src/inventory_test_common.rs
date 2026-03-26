@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use proc_macro2::TokenStream;
+use proc_macro2::{Delimiter, TokenStream, TokenTree};
 use quote::quote;
 use syn::{
     Attribute, Expr, ExprLit, Ident, ItemFn, Lit, MetaNameValue, ReturnType, Signature, Type,
@@ -138,6 +138,7 @@ pub fn generate_inventory_submission(
     quote! {
         ::iceoryx2_bb_testing::inventory::submit! {
             ::iceoryx2_bb_testing::TestCase {
+                module: module_path!(),
                 name: #test_name,
                 test_fn: #wrapper_identifier,
                 should_ignore: #should_ignore,
@@ -235,4 +236,140 @@ fn returns_result(test_function_signature: &Signature) -> bool {
         },
         ReturnType::Default => false,
     }
+}
+
+/// Generate wrappers and inventory submissions for a test function instantiated
+/// for each type in a comma-separated list.
+pub fn generate_for_types(
+    test_function: &ItemFn,
+    macro_parameters: &TokenStream,
+    should_ignore: bool,
+    should_panic: &ShouldPanic,
+) -> (TokenStream, TokenStream) {
+    let constexprs: &[TokenStream] = &[];
+
+    let (wrapper_functions, inventory_submissions): (Vec<_>, Vec<_>) =
+        split_on_comma(macro_parameters.clone())
+            .into_iter()
+            .map(|type_name| {
+                let (wrapper_function_identifier, wrapper_function) = generate_wrapper_function(
+                    &test_function.sig,
+                    constexprs,
+                    &type_name,
+                    Some(vec![type_name.clone()]),
+                );
+                let inventory_submission = generate_inventory_submission(
+                    generate_test_name(&test_function.sig.ident, constexprs, &type_name),
+                    should_panic.clone(),
+                    should_ignore,
+                    &wrapper_function_identifier,
+                );
+
+                (wrapper_function, inventory_submission)
+            })
+            .unzip();
+
+    (
+        quote! { #(#wrapper_functions)* },
+        quote! { #(#inventory_submissions)* },
+    )
+}
+
+/// Generate wrappers and inventory submissions for a test function instantiated
+/// for each `(constexpr, ..., Type)` pair in the parameter list.
+pub fn generate_for_constexpr_type_pairs(
+    test_function: &ItemFn,
+    macro_parameters: &TokenStream,
+    should_ignore: bool,
+    should_panic: &ShouldPanic,
+) -> (TokenStream, TokenStream) {
+    let (wrapper_functions, inventory_submissions): (Vec<_>, Vec<_>) =
+        split_groups(macro_parameters)
+            .into_iter()
+            .map(|pair| {
+                let (constexprs, ty) = split_constexpr_and_type(pair);
+                let mut generic_params = Vec::new();
+                for constexpr in &constexprs {
+                    generic_params.push(constexpr.clone());
+                }
+                generic_params.push(ty.clone());
+
+                let (wrapper_function_identifier, wrapper_function) = generate_wrapper_function(
+                    &test_function.sig,
+                    &constexprs,
+                    &ty,
+                    Some(generic_params),
+                );
+                let inventory_submission = generate_inventory_submission(
+                    generate_test_name(&test_function.sig.ident, &constexprs, &ty),
+                    should_panic.clone(),
+                    should_ignore,
+                    &wrapper_function_identifier,
+                );
+
+                (wrapper_function, inventory_submission)
+            })
+            .unzip();
+
+    (
+        quote! { #(#wrapper_functions)* },
+        quote! { #(#inventory_submissions)* },
+    )
+}
+
+/// Returns true if the macro parameters are constexpr/type pairs, e.g.
+/// `(64, MyType), (128, MyType)`.
+pub fn is_pair(macro_parameters: &TokenStream) -> bool {
+    if let Some(TokenTree::Group(g)) = macro_parameters.clone().into_iter().next() {
+        g.delimiter() == Delimiter::Parenthesis
+    } else {
+        false
+    }
+}
+
+/// `(a, b), (c, d)` -> [TokenStream("a, b"), TokenStream("c, d")]
+pub fn split_groups(macro_parameters: &TokenStream) -> Vec<TokenStream> {
+    macro_parameters
+        .clone()
+        .into_iter()
+        .filter_map(|token| match token {
+            TokenTree::Group(g) if g.delimiter() == Delimiter::Parenthesis => Some(g.stream()),
+            _ => None,
+        })
+        .collect()
+}
+
+/// Split a token stream into parts at each top-level comma.
+pub fn split_on_comma(stream: TokenStream) -> Vec<TokenStream> {
+    let mut result = Vec::new();
+    let mut current: Vec<TokenTree> = Vec::new();
+
+    for token in stream {
+        match token {
+            TokenTree::Punct(ref p) if p.as_char() == ',' => {
+                result.push(current.drain(..).collect());
+            }
+            other => current.push(other),
+        }
+    }
+
+    if !current.is_empty() {
+        result.push(current.into_iter().collect());
+    }
+
+    result
+}
+
+/// `const1, const2, Type` -> `([const1, const2], Type)`
+pub fn split_constexpr_and_type(pair: TokenStream) -> (Vec<TokenStream>, TokenStream) {
+    let mut parts = split_on_comma(pair);
+
+    if parts.len() < 2 {
+        panic!("Expected format: (const_expr, Type); got fewer than 2 comma-separated items");
+    }
+
+    let ty = parts.pop().unwrap();
+    let constexprs = parts;
+
+    (constexprs, ty)
 }
