@@ -43,6 +43,7 @@ pub use libtest_mimic;
 pub const DEFAULT_TEST_THREADS: usize = 1;
 
 pub struct TestCase {
+    pub module: &'static str,
     pub name: &'static str,
     pub test_fn: fn(),
     pub should_ignore: bool,
