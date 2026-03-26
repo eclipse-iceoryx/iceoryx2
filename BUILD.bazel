@@ -318,6 +318,7 @@ filegroup(
         "//iceoryx2-tunnel/zenoh:all_srcs",
         "//iceoryx2-userland/record-and-replay:all_srcs",
         "//iceoryx2/conformance-tests:all_srcs",
+        "//iceoryx2/conformance-tests/tests-common:all_srcs",
     ],
     visibility = ["//visibility:public"],
 )

@@ -16,6 +16,8 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod service_publish_subscribe {
+    use alloc::{format, vec, vec::Vec};
+
     use iceoryx2::config::Config;
     use iceoryx2::port::publisher::PublisherCreateError;
     use iceoryx2::port::subscriber::SubscriberCreateError;

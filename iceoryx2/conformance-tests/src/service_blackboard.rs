@@ -16,7 +16,9 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod service_blackboard {
+    use alloc::boxed::Box;
     use alloc::sync::Arc;
+    use alloc::{format, vec, vec::Vec};
     use core::alloc::Layout;
     use core::ptr::copy_nonoverlapping;
     use iceoryx2::constants::MAX_BLACKBOARD_KEY_SIZE;
@@ -42,6 +44,7 @@ pub mod service_blackboard {
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
+    use iceoryx2_bb_testing_macros::requires_std;
 
     fn generate_name() -> ServiceName {
         ServiceName::new(&format!(
@@ -2362,6 +2365,7 @@ pub mod service_blackboard {
     }
 
     #[conformance_test]
+    #[requires_std("panics")]
     #[should_panic]
     pub fn creation_fails_when_key_type_layout_is_invalid<Sut: Service>() {
         let service_name = generate_name();

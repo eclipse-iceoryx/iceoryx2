@@ -1980,7 +1980,35 @@ dependencies = [
  "iceoryx2-bb-testing",
  "iceoryx2-bb-testing-macros",
  "iceoryx2-cal",
+ "iceoryx2-conformance-tests-common",
  "iceoryx2-log",
+ "iceoryx2-pal-print",
+]
+
+[[package]]
+name = "iceoryx2-conformance-tests-common"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+ "iceoryx2-conformance-tests",
+ "iceoryx2-pal-print",
+]
+
+[[package]]
+name = "iceoryx2-conformance-tests-nostd"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-memory",
+ "iceoryx2-bb-testing",
+ "iceoryx2-conformance-tests",
+ "iceoryx2-conformance-tests-common",
 ]
 
 [[package]]

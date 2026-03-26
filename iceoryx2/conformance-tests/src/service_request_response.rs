@@ -16,6 +16,7 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[conformance_test_module]
 pub mod service_request_response {
     use alloc::collections::BTreeSet;
+    use alloc::{vec, vec::Vec};
 
     use iceoryx2::node::NodeBuilder;
     use iceoryx2::port::client::Client;

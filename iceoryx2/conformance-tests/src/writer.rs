@@ -16,6 +16,9 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod writer {
+    use alloc::boxed::Box;
+    use alloc::format;
+
     use iceoryx2::constants::MAX_BLACKBOARD_KEY_SIZE;
     use iceoryx2::port::writer::*;
     use iceoryx2::prelude::*;

@@ -16,14 +16,10 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[conformance_test_module]
 pub mod subscriber {
     use alloc::collections::BTreeSet;
+    use alloc::{format, vec};
     use iceoryx2::port::ReceiveError;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
-
-    #[cfg(debug_assertions)]
-    use iceoryx2::service::{
-        builder::CustomPayloadMarker,
-        static_config::message_type_details::{TypeDetail, TypeVariant},
-    };
+    use iceoryx2_bb_testing_macros::requires_std;
 
     use iceoryx2::{
         node::NodeBuilder,
@@ -81,11 +77,18 @@ pub mod subscriber {
     }
 
     #[conformance_test]
+    #[requires_std("panics")]
     #[should_panic]
     #[cfg(debug_assertions)]
     pub fn subscriber_with_custom_payload_details_panics_when_calling_non_custom_receive<
         Sut: Service,
     >() {
+        #[cfg(debug_assertions)]
+        use iceoryx2::service::{
+            builder::CustomPayloadMarker,
+            static_config::message_type_details::{TypeDetail, TypeVariant},
+        };
+
         const TYPE_SIZE_OVERRIDE: usize = 128;
         let service_name = generate_name();
         let config = testing::generate_isolated_config();
