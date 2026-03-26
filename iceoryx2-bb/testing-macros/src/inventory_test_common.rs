@@ -63,10 +63,12 @@ pub fn extract_should_panic(test_function_attributes: &[Attribute]) -> ShouldPan
 /// Strips attributes handled by the test framework from the provided test
 /// function.
 pub fn strip_attributes(test_function: &ItemFn) -> TokenStream {
+    const STRIPPED_ATTRIBUTES: &[&str] = &["should_panic", "ignore", "inventory_test"];
+
     let mut test_function_clone = test_function.clone();
     test_function_clone
         .attrs
-        .retain(|attr| !attr.path().is_ident("should_panic") && !attr.path().is_ident("ignore"));
+        .retain(|attr| !STRIPPED_ATTRIBUTES.iter().any(|s| attr.path().is_ident(s)));
     quote! {
         #[allow(dead_code)]
         #test_function_clone
