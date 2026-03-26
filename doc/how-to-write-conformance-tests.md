@@ -95,7 +95,7 @@ boilerplate for the `instantiate_conformance_tests!` macro, the
 boilerplate:
 
 ```rs
-use iceoryx2_bb_testing::instantiate_conformance_tests;
+use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
 use my_impl::{SUT1, SUT2, SUT3};
 
 instantiate_conformance_tests_with_module!(sut1_imp, my_test_crate::my_module, super::SUT1);
@@ -104,7 +104,7 @@ instantiate_conformance_tests_with_module!(sut3_imp, my_test_crate::my_module, s
 ```
 
 If multiple conformance test modules shall be instantiated in the same file, the
-`instantiate_conformance_tests!` is recommended:
+`instantiate_conformance_tests!` macro is recommended:
 
 ```rs
 use iceoryx2_bb_testing::instantiate_conformance_tests;
