@@ -15,6 +15,8 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod publish_subscribe_propagation {
+    use alloc::format;
+    use alloc::string::{String, ToString};
     use core::fmt::Debug;
     use core::time::Duration;
 

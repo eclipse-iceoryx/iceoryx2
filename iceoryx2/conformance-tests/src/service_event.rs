@@ -12,7 +12,6 @@
 
 use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 
-#[allow(unused_imports)]
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod service_event {
@@ -734,7 +733,6 @@ pub mod service_event {
         assert_that!(result.err().unwrap(), eq NotifierNotifyError::EventIdOutOfBounds);
     }
 
-    #[cfg(not(target_os = "macos"))]
     #[conformance_test]
     pub fn concurrent_reconnecting_notifier_can_trigger_waiting_listener<Sut: Service>() {
         let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
@@ -803,7 +801,6 @@ pub mod service_event {
         .unwrap();
     }
 
-    #[cfg(not(target_os = "macos"))]
     #[conformance_test]
     pub fn concurrent_reconnecting_listener_can_wait_for_triggering_notifiers<Sut: Service>() {
         let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));

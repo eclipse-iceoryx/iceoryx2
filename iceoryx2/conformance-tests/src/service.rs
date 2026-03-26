@@ -12,7 +12,6 @@
 
 use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 
-#[allow(unused_imports)]
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod service {
@@ -408,7 +407,6 @@ pub mod service {
         assert_that!(received_event, eq Some(EVENT_ID));
     }
 
-    #[cfg(not(target_os = "macos"))]
     #[conformance_test]
     pub fn concurrent_creating_services_with_unique_names_is_successful<
         Sut: Service,
@@ -451,7 +449,6 @@ pub mod service {
         .unwrap();
     }
 
-    #[cfg(not(target_os = "macos"))]
     #[conformance_test]
     pub fn concurrent_creating_services_with_same_name_fails_for_all_but_one<
         Sut: Service,
@@ -506,7 +503,6 @@ pub mod service {
         );
     }
 
-    #[cfg(not(target_os = "macos"))]
     #[conformance_test]
     pub fn concurrent_opening_and_closing_services_with_same_name_is_handled_gracefully<
         Sut: Service,
@@ -968,7 +964,6 @@ pub mod service {
         assert_that!(service_counter, eq 1);
     }
 
-    #[cfg(not(target_os = "macos"))]
     #[conformance_test]
     pub fn concurrent_service_creation_and_listing_works<Sut: Service, Factory: SutFactory<Sut>>() {
         let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
@@ -1012,7 +1007,6 @@ pub mod service {
         .unwrap();
     }
 
-    #[cfg(not(target_os = "macos"))]
     #[conformance_test]
     pub fn concurrent_node_attaching_to_service_and_listing_works<
         Sut: Service,
@@ -1078,7 +1072,6 @@ pub mod service {
         .unwrap();
     }
 
-    #[cfg(not(target_os = "macos"))]
     #[conformance_test]
     pub fn concurrent_node_attaching_to_service_and_details_node_listing_works<
         Sut: Service,

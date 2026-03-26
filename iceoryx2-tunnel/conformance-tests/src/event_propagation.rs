@@ -15,6 +15,8 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod event_propagation {
+    use alloc::format;
+    use alloc::string::ToString;
     use core::fmt::Debug;
     use core::time::Duration;
 
@@ -22,6 +24,7 @@ pub mod event_propagation {
     use iceoryx2::testing::*;
 
     use iceoryx2_bb_conformance_test_macros::conformance_test;
+    use iceoryx2_bb_posix::clock::nanosleep;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_tunnel::Tunnel;
@@ -237,7 +240,7 @@ pub mod event_propagation {
         for _ in 0..5 {
             tunnel_a.propagate().unwrap();
             tunnel_b.propagate().unwrap();
-            std::thread::sleep(Duration::from_millis(100));
+            nanosleep(Duration::from_millis(100)).unwrap();
         }
 
         // Notification should not have looped back from b to a

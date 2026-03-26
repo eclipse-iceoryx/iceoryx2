@@ -12,7 +12,6 @@
 
 use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 
-#[allow(unused_imports)]
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod service_blackboard {
@@ -1539,7 +1538,6 @@ pub mod service_blackboard {
         assert_that!(counter, eq 1);
     }
 
-    #[cfg(not(target_os = "macos"))]
     #[conformance_test]
     pub fn concurrent_write_and_read_of_the_same_value_works<S: Service>() {
         let _watch_dog = Watchdog::new();
@@ -1601,7 +1599,6 @@ pub mod service_blackboard {
         .unwrap();
     }
 
-    #[cfg(not(target_os = "macos"))]
     #[conformance_test]
     pub fn concurrent_write_of_different_values_works<S: Service>() {
         let _watch_dog = Watchdog::new();
