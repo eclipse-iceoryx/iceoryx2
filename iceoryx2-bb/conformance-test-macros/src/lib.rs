@@ -62,7 +62,7 @@ pub fn conformance_test_module(_attr: TokenStream, item: TokenStream) -> TokenSt
         macro_rules! #macro_name {
             ($module_path:path, $($sut_type:ty),+) => {
                 mod #mod_ident {
-                    use iceoryx2_bb_testing_macros::inventory_test;
+                    use iceoryx2_bb_testing_macros::test;
                     use iceoryx2_bb_testing_macros::requires_std;
                     use $module_path::*;
                     #(#conformance_test_fns)*
@@ -114,7 +114,7 @@ fn collect_conformance_test_functions(
                     // generate the new test function
                     conformance_test_fns.push(quote! {
                         #(#test_attrs)*
-                        #[inventory_test]
+                        #[test]
                         fn #fn_ident() #fn_return {
                             #mod_ident::#fn_ident::<$($sut_type),+>()
                         }

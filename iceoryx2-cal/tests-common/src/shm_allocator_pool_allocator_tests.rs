@@ -17,7 +17,7 @@ use core::{alloc::Layout, ptr::NonNull};
 use iceoryx2_bb_elementary_traits::allocator::AllocationError;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 use iceoryx2_cal::{
     shm_allocator::{pool_allocator::*, AllocationStrategy, ShmAllocationError, ShmAllocator},
     zero_copy_connection::PointerOffset,
@@ -58,7 +58,7 @@ impl TestContext {
     }
 }
 
-#[inventory_test]
+#[test]
 fn shm_allocator_pool_allocator_is_setup_correctly() {
     let test_context = TestContext::new(Layout::from_size_align(2, 1).unwrap());
 
@@ -71,7 +71,7 @@ fn shm_allocator_pool_allocator_is_setup_correctly() {
     assert_that!(test_context.sut.max_alignment(), eq BUCKET_CONFIG.align());
 }
 
-#[inventory_test]
+#[test]
 fn shm_allocator_pool_allocator_initial_setup_hint_is_layout_times_number_of_chunks() {
     let layout = Layout::from_size_align(64, 2).unwrap();
     let max_number_of_chunks = 54;
@@ -94,7 +94,7 @@ fn no_new_resize_hint_when_layout_is_smaller_and_buckets_are_available(
     assert_that!(hint.payload_size, eq initial_layout.size() * test_context.sut.number_of_buckets() as usize);
 }
 
-#[inventory_test]
+#[test]
 fn shm_allocator_pool_allocator_no_new_resize_hint_with_power_of_two_when_layout_is_smaller_and_buckets_are_available(
 ) {
     no_new_resize_hint_when_layout_is_smaller_and_buckets_are_available(
@@ -102,13 +102,13 @@ fn shm_allocator_pool_allocator_no_new_resize_hint_with_power_of_two_when_layout
     )
 }
 
-#[inventory_test]
+#[test]
 fn shm_allocator_pool_allocator_no_new_resize_hint_with_best_fit_when_layout_is_smaller_and_buckets_are_available(
 ) {
     no_new_resize_hint_when_layout_is_smaller_and_buckets_are_available(AllocationStrategy::BestFit)
 }
 
-#[inventory_test]
+#[test]
 fn shm_allocator_pool_allocator_new_resize_hint_with_power_of_two_when_layout_is_greater() {
     let initial_layout = Layout::from_size_align(12, 4).unwrap();
     let increased_layout = Layout::from_size_align(28, 2).unwrap();
@@ -121,7 +121,7 @@ fn shm_allocator_pool_allocator_new_resize_hint_with_power_of_two_when_layout_is
     assert_that!(hint.payload_size, eq increased_layout.size().next_power_of_two() * test_context.sut.number_of_buckets() as usize);
 }
 
-#[inventory_test]
+#[test]
 fn shm_allocator_pool_allocator_new_resize_hint_with_best_fit_when_layout_is_greater() {
     let initial_layout = Layout::from_size_align(12, 4).unwrap();
     let increased_layout = Layout::from_size_align(28, 2).unwrap();
@@ -134,7 +134,7 @@ fn shm_allocator_pool_allocator_new_resize_hint_with_best_fit_when_layout_is_gre
     assert_that!(hint.payload_size, eq increased_layout.size() * test_context.sut.number_of_buckets() as usize);
 }
 
-#[inventory_test]
+#[test]
 fn shm_allocator_pool_allocator_new_resize_hint_with_power_of_two_when_buckets_are_exhausted() {
     let initial_layout = Layout::from_size_align(12, 4).unwrap();
     let increased_layout = Layout::from_size_align(14, 8).unwrap();
@@ -157,7 +157,7 @@ fn shm_allocator_pool_allocator_new_resize_hint_with_power_of_two_when_buckets_a
     assert_that!(hint.payload_size, eq increased_layout.size().next_power_of_two() * (test_context.sut.number_of_buckets() + 1).next_power_of_two() as usize);
 }
 
-#[inventory_test]
+#[test]
 fn shm_allocator_pool_allocator_new_resize_hint_with_best_fit_when_buckets_are_exhausted() {
     let initial_layout = Layout::from_size_align(12, 4).unwrap();
     let increased_layout = Layout::from_size_align(16, 8).unwrap();
@@ -180,7 +180,7 @@ fn shm_allocator_pool_allocator_new_resize_hint_with_best_fit_when_buckets_are_e
     assert_that!(hint.payload_size, eq increased_layout.size() * (test_context.sut.number_of_buckets() + 1) as usize);
 }
 
-#[inventory_test]
+#[test]
 fn shm_allocator_pool_allocator_allocate_and_release_all_buckets_works() {
     const REPETITIONS: usize = 10;
     let test_context = TestContext::new(BUCKET_CONFIG);
@@ -206,7 +206,7 @@ fn shm_allocator_pool_allocator_allocate_and_release_all_buckets_works() {
     }
 }
 
-#[inventory_test]
+#[test]
 fn shm_allocator_pool_allocator_allocate_twice_release_once_until_memory_is_exhausted_works() {
     const REPETITIONS: usize = 10;
     let test_context = TestContext::new(BUCKET_CONFIG);
@@ -245,7 +245,7 @@ fn shm_allocator_pool_allocator_allocate_twice_release_once_until_memory_is_exha
     }
 }
 
-#[inventory_test]
+#[test]
 fn shm_allocator_pool_allocator_allocated_memory_has_correct_alignment_uniform_alignment_case() {
     for i in 0..12 {
         for n in 0..=i {
@@ -266,7 +266,7 @@ fn shm_allocator_pool_allocator_allocated_memory_has_correct_alignment_uniform_a
     }
 }
 
-#[inventory_test]
+#[test]
 fn shm_allocator_pool_allocator_allocated_memory_has_correct_alignment_mixed_alignment_case() {
     for i in 0..12 {
         let layout = Layout::from_size_align(2_usize.pow(i), 2_usize.pow(i)).unwrap();
@@ -294,7 +294,7 @@ fn shm_allocator_pool_allocator_allocated_memory_has_correct_alignment_mixed_ali
     }
 }
 
-#[inventory_test]
+#[test]
 fn shm_allocator_pool_allocator_allocate_with_unsupported_alignment_fails() {
     let test_context = TestContext::new(Layout::from_size_align(BUCKET_CONFIG.size(), 1).unwrap());
     assert_that!(unsafe { test_context.sut.allocate(BUCKET_CONFIG) }, eq Err(ShmAllocationError::ExceedsMaxSupportedAlignment));

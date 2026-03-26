@@ -16,9 +16,9 @@ use iceoryx2_bb_concurrency::atomic::{AtomicI32, Ordering};
 use iceoryx2_bb_concurrency::internal::strategy::barrier::*;
 use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 
-#[inventory_test]
+#[test]
 pub fn strategy_barrier_with_multiple_waiter_works() {
     let counter = AtomicI32::new(0);
     let sut = Barrier::new(4);

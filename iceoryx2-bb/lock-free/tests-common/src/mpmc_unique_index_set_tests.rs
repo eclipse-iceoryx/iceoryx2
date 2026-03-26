@@ -20,11 +20,11 @@ use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle, Handle};
 use iceoryx2_bb_posix::system_configuration::SystemInfo;
 use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 
 const CAPACITY: usize = 128;
 
-#[inventory_test]
+#[test]
 pub fn mpmc_unique_index_set_capacity_is_set_correctly() {
     let sut = FixedSizeUniqueIndexSet::<CAPACITY>::new();
     assert_that!(sut.capacity(), eq CAPACITY as u32);
@@ -40,7 +40,7 @@ pub fn mpmc_unique_index_set_capacity_is_set_correctly() {
     assert_that!(sut, is_err);
 }
 
-#[inventory_test]
+#[test]
 pub fn mpmc_unique_index_set_when_created_contains_indices() {
     let sut = FixedSizeUniqueIndexSet::<CAPACITY>::new();
     let mut ids = vec![];
@@ -57,7 +57,7 @@ pub fn mpmc_unique_index_set_when_created_contains_indices() {
     assert_that!(e.err().unwrap(), eq UniqueIndexSetAcquireFailure::OutOfIndices);
 }
 
-#[inventory_test]
+#[test]
 pub fn mpmc_unique_index_release_mode_default_does_not_lock() {
     let sut = FixedSizeUniqueIndexSet::<CAPACITY>::new();
 
@@ -69,7 +69,7 @@ pub fn mpmc_unique_index_release_mode_default_does_not_lock() {
     assert_that!(idx, is_ok);
 }
 
-#[inventory_test]
+#[test]
 pub fn mpmc_unique_index_release_mode_lock_if_last_index_works() {
     let sut = FixedSizeUniqueIndexSet::<CAPACITY>::new();
 
@@ -92,7 +92,7 @@ pub fn mpmc_unique_index_release_mode_lock_if_last_index_works() {
     assert_that!(idx_4.err().unwrap(), eq UniqueIndexSetAcquireFailure::IsLocked);
 }
 
-#[inventory_test]
+#[test]
 pub fn mpmc_unique_index_set_acquire_and_release_works() {
     let sut = FixedSizeUniqueIndexSet::<CAPACITY>::new();
     let mut ids = vec![];
@@ -118,7 +118,7 @@ pub fn mpmc_unique_index_set_acquire_and_release_works() {
     }
 }
 
-#[inventory_test]
+#[test]
 pub fn mpmc_unique_index_set_borrowed_indices_works() {
     let sut = FixedSizeUniqueIndexSet::<CAPACITY>::new();
     let mut ids = vec![];
@@ -136,7 +136,7 @@ pub fn mpmc_unique_index_set_borrowed_indices_works() {
     }
 }
 
-#[inventory_test]
+#[test]
 pub fn mpmc_unique_index_set_acquire_and_release_works_with_uninitialized_memory() {
     let mut memory = [0u8; UniqueIndexSet::const_memory_size(128)];
     let allocator = BumpAllocator::new(memory.as_mut_ptr());
@@ -168,7 +168,7 @@ pub fn mpmc_unique_index_set_acquire_and_release_works_with_uninitialized_memory
     }
 }
 
-#[inventory_test]
+#[test]
 pub fn mpmc_unique_index_set_acquire_release_as_lifo_behavior() {
     let sut = FixedSizeUniqueIndexSet::<CAPACITY>::new();
     let mut ids = vec![];
@@ -191,7 +191,7 @@ pub fn mpmc_unique_index_set_acquire_release_as_lifo_behavior() {
     }
 }
 
-#[inventory_test]
+#[test]
 pub fn mpmc_unique_index_set_concurrent_acquire_release() {
     const REPETITIONS: i64 = 10000;
     let number_of_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, usize::MAX);

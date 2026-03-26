@@ -18,7 +18,7 @@ use iceoryx2_bb_posix::permission::Permission;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_system_types::file_name::*;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 use iceoryx2_cal::named_concept::*;
 use iceoryx2_cal::zero_copy_connection::*;
 
@@ -31,7 +31,7 @@ fn generate_name() -> FileName {
     file
 }
 
-#[inventory_test]
+#[test]
 fn zero_copy_connection_posix_shared_memory_waiting_for_initialization_works() {
     type Sut = iceoryx2_cal::zero_copy_connection::posix_shared_memory::Connection;
     let storage_name = generate_name();

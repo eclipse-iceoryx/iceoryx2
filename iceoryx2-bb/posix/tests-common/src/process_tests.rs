@@ -14,10 +14,10 @@
 
 use iceoryx2_bb_posix::process::*;
 use iceoryx2_bb_testing::{assert_that, test_requires};
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 use iceoryx2_pal_posix::posix::{self, POSIX_SUPPORT_SCHEDULER};
 
-#[inventory_test]
+#[test]
 pub fn process_can_acquire_from_self() {
     let process = Process::from_self();
     assert_that!(process.id().value(), ne 0);
@@ -26,7 +26,7 @@ pub fn process_can_acquire_from_self() {
     assert_that!(process.id().value(), eq process2.id().value());
 }
 
-#[inventory_test]
+#[test]
 pub fn process_can_acquire_scheduler_information() {
     test_requires!(POSIX_SUPPORT_SCHEDULER);
 
@@ -40,7 +40,7 @@ pub fn process_can_acquire_scheduler_information() {
     assert_that!(process.get_scheduler(), is_ok);
 }
 
-#[inventory_test]
+#[test]
 pub fn process_is_alive_works() {
     let process = Process::from_self();
     assert_that!(process.is_alive(), eq true);
@@ -49,7 +49,7 @@ pub fn process_is_alive_works() {
     assert_that!(process2.is_alive(), eq false);
 }
 
-#[inventory_test]
+#[test]
 pub fn process_executable_path_works() {
     let process = Process::from_self();
     let executable_path = process.executable();

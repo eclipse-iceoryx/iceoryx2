@@ -12,7 +12,7 @@
 
 use syn::{parse_macro_input, ItemFn};
 
-use crate::inventory_test_common::instantiate_inventory_test;
+use crate::internal::instantiate_tests;
 
 /// Registers the annotated function to the inventory to be executed by the
 /// test runner.
@@ -20,11 +20,11 @@ use crate::inventory_test_common::instantiate_inventory_test;
 /// Combine with `#[ignore]` to skip the test at runtime:
 ///
 /// ```ignore
-/// #[inventory_test]
+/// #[test]
 /// fn my_test() { ... }
 ///
 /// #[ignore]
-/// #[inventory_test]
+/// #[test]
 /// fn my_ignored_test() { ... }
 /// ```
 pub fn proc_macro(
@@ -34,5 +34,6 @@ pub fn proc_macro(
     let test_function = parse_macro_input!(test_function as ItemFn);
     let macro_parameters: proc_macro2::TokenStream = macro_parameters.into();
     let params = (!macro_parameters.is_empty()).then_some(&macro_parameters);
-    instantiate_inventory_test(&test_function, params).into()
+
+    instantiate_tests(&test_function, params).into()
 }

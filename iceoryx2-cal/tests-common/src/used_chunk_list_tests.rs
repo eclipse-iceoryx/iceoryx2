@@ -19,7 +19,7 @@ pub mod generic {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::zero_copy_connection::used_chunk_list::FixedSizeUsedChunkList;
 
-    #[inventory_test]
+    #[test]
     fn used_chunk_list_insert_remove_all_works<const CAPACITY: usize>() {
         let mut sut = FixedSizeUsedChunkList::<CAPACITY>::new();
 
@@ -37,7 +37,7 @@ pub mod generic {
         }
     }
 
-    #[inventory_test]
+    #[test]
     fn used_chunk_list_insert_remove_works<const CAPACITY: usize>() {
         let sut = FixedSizeUsedChunkList::<CAPACITY>::new();
 

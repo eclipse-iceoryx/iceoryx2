@@ -68,7 +68,7 @@ pub mod generic {
 
     const CAPACITY: usize = 129;
 
-    #[inventory_test]
+    #[test]
     pub fn mpmc_container_add_elements_until_full_works<
         T: Debug + Copy + From<usize> + Into<usize>,
     >() {
@@ -98,7 +98,7 @@ pub mod generic {
             });
     }
 
-    #[inventory_test]
+    #[test]
     pub fn mpmc_container_add_and_remove_elements_works<
         T: Debug + Copy + From<usize> + Into<usize>,
     >() {
@@ -135,7 +135,7 @@ pub mod generic {
         });
     }
 
-    #[inventory_test]
+    #[test]
     pub fn mpmc_container_add_and_remove_elements_works_with_uninitialized_memory<
         T: Debug + Copy + From<usize> + Into<usize>,
     >() {
@@ -176,7 +176,7 @@ pub mod generic {
         });
     }
 
-    #[inventory_test]
+    #[test]
     pub fn mpmc_container_add_and_unsafe_remove_with_handle_works<
         T: Debug + Copy + From<usize> + Into<usize>,
     >() {
@@ -212,7 +212,7 @@ pub mod generic {
         });
     }
 
-    #[inventory_test]
+    #[test]
     pub fn mpmc_container_state_of_empty_container_is_empty<
         T: Debug + Copy + From<usize> + Into<usize>,
     >() {
@@ -234,7 +234,7 @@ pub mod generic {
         assert_that!(counter, eq 0);
     }
 
-    #[inventory_test]
+    #[test]
     pub fn mpmc_container_state_not_updated_when_contents_do_not_change<
         T: Debug + Copy + From<usize> + Into<usize>,
     >() {
@@ -265,7 +265,7 @@ pub mod generic {
         }
     }
 
-    #[inventory_test]
+    #[test]
     pub fn mpmc_container_state_updated_when_contents_are_removed<
         T: Debug + Copy + From<usize> + Into<usize>,
     >() {
@@ -294,7 +294,7 @@ pub mod generic {
         assert_that!(contained_values, is_empty);
     }
 
-    #[inventory_test]
+    #[test]
     pub fn mpmc_container_state_updated_when_contents_are_changed<
         T: Debug + Copy + From<usize> + Into<usize>,
     >() {
@@ -331,7 +331,7 @@ pub mod generic {
         }
     }
 
-    #[inventory_test]
+    #[test]
     pub fn mpmc_container_state_updated_works_for_new_and_removed_elements<
         T: Debug + Copy + From<usize> + Into<usize>,
     >() {
@@ -378,7 +378,7 @@ pub mod generic {
         }
     }
 
-    #[inventory_test]
+    #[test]
     pub fn mpmc_container_state_updated_works_when_same_element_is_added_and_removed<
         T: Debug + Copy + From<usize> + Into<usize>,
     >() {
@@ -390,7 +390,7 @@ pub mod generic {
         assert_that!(unsafe { sut.update_state(&mut state) }, eq true);
     }
 
-    #[inventory_test]
+    #[test]
     pub fn mpmc_container_concurrent_add_release_for_each<
         T: Debug + Copy + From<usize> + Into<usize> + Send,
     >() {

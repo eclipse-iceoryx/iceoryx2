@@ -120,13 +120,13 @@ pub mod generic {
         }
     }
 
-    #[inventory_test]
+    #[test]
     pub fn ipc_capable_trait_new_handle_is_not_initialized<Sut: TestSut>() {
         let sut_handle = Sut::Handle::new();
         assert_that!(sut_handle.is_initialized(), eq false);
     }
 
-    #[inventory_test]
+    #[test]
     #[requires_std("panics")]
     #[should_panic]
     #[cfg(debug_assertions)]
@@ -138,7 +138,7 @@ pub mod generic {
         unsafe { Sut::Sut::from_ipc_handle(&sut_handle) };
     }
 
-    #[inventory_test]
+    #[test]
     #[requires_std("panics")]
     #[should_panic]
     #[cfg(debug_assertions)]
@@ -151,7 +151,7 @@ pub mod generic {
         unsafe { Sut::Sut::from_ipc_handle(&sut_handle) };
     }
 
-    #[inventory_test]
+    #[test]
     pub fn ipc_capable_trait_creating_ipc_construct_from_ipc_handle_works<Sut: TestSut>() {
         let sut_handle = Sut::Handle::new();
         Sut::init_inter_process_handle(&sut_handle);
@@ -160,7 +160,7 @@ pub mod generic {
         unsafe { Sut::Sut::from_ipc_handle(&sut_handle) };
     }
 
-    #[inventory_test]
+    #[test]
     #[requires_std("panics")]
     #[should_panic]
     #[cfg(debug_assertions)]
@@ -171,7 +171,7 @@ pub mod generic {
         Sut::init_inter_process_handle(&sut_handle);
     }
 
-    #[inventory_test]
+    #[test]
     pub fn ipc_capable_trait_initialized_handle_is_initialized<Sut: TestSut>() {
         let sut_handle_1 = Sut::Handle::new();
         let sut_handle_2 = Sut::Handle::new();
@@ -186,7 +186,7 @@ pub mod generic {
         assert_that!(sut_handle_2.is_initialized(), eq true);
     }
 
-    #[inventory_test]
+    #[test]
     pub fn ipc_capable_trait_inter_process_capability_is_set_correctly<Sut: TestSut>() {
         let sut_handle_1 = Sut::Handle::new();
         let sut_handle_2 = Sut::Handle::new();

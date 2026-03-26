@@ -14,9 +14,9 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, Item, ItemMod};
 
-use crate::inventory_test_common::instantiate_inventory_test;
+use crate::internal::{instantiate_tests, TEST_ATTRIBUTE};
 
-/// Generates inventory submissions for all `#[inventory_test]`-annotated
+/// Generates inventory submissions for all `#[test]`-annotated
 /// functions in the module.
 ///
 /// Generic type parameters can be optionally provided. In this case, an
@@ -33,7 +33,7 @@ use crate::inventory_test_common::instantiate_inventory_test;
 ///
 /// #[test_module]
 /// mod my_tests {
-///     #[inventory_test]
+///     #[test]
 ///     pub fn is_true() {
 ///         assert!(true);
 ///     }
@@ -47,12 +47,12 @@ use crate::inventory_test_common::instantiate_inventory_test;
 ///
 /// #[test_module(u32, u64)]
 /// mod my_tests {
-///     #[inventory_test]
+///     #[test]
 ///     pub fn size_is_nonzero<T: Sized>() {
 ///         assert!(core::mem::size_of::<T>() > 0);
 ///     }
 ///
-///     #[inventory_test]
+///     #[test]
 ///     pub fn non_generic_test() {}
 ///
 ///     fn helper() -> u32 { 42 }
@@ -69,7 +69,7 @@ use crate::inventory_test_common::instantiate_inventory_test;
 ///     (8, [u8; 8])
 /// )]
 /// mod my_const_tests {
-///     #[inventory_test]
+///     #[test]
 ///     pub fn size_matches_const<const N: usize, T: Sized>() {
 ///         assert_eq!(core::mem::size_of::<T>(), N);
 ///     }
@@ -103,11 +103,11 @@ pub fn proc_macro(
                 if test_function
                     .attrs
                     .iter()
-                    .any(|a| a.path().is_ident("inventory_test")) =>
+                    .any(|a| a.path().is_ident(TEST_ATTRIBUTE)) =>
             {
                 let params =
                     (!test_function.sig.generics.params.is_empty()).then_some(&macro_parameters);
-                instantiate_inventory_test(test_function, params)
+                instantiate_tests(test_function, params)
             }
             other => quote! { #other },
         })

@@ -56,7 +56,7 @@ pub mod generic {
         BumpAllocator::new(NonNull::new(memory.as_mut_ptr()).unwrap(), memory.len())
     }
 
-    #[inventory_test]
+    #[test]
     pub fn init_acquires_less_or_equal_the_required_size_of_bytes<T: RelocatableContainer>() {
         const MAX_CAPACITY: usize = 128;
 
@@ -72,7 +72,7 @@ pub mod generic {
         }
     }
 
-    #[inventory_test]
+    #[test]
     pub fn init_acquires_less_or_equal_the_required_size_of_bytes_multiple_allocations<
         T: RelocatableContainer,
     >() {
@@ -92,7 +92,7 @@ pub mod generic {
         }
     }
 
-    #[inventory_test]
+    #[test]
     #[requires_std("panics")]
     #[should_panic]
     pub fn init_twice_causes_panic<T: RelocatableContainer>() {

@@ -17,13 +17,13 @@ use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
 use iceoryx2_bb_testing::{assert_that, memory::RawMemory};
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 use iceoryx2_bb_testing_macros::requires_std;
 
 const SUT_CAPACITY: usize = 128;
 type Sut = FixedSizeQueue<usize, SUT_CAPACITY>;
 
-#[inventory_test]
+#[test]
 pub fn relocatable_push_pop_works_with_uninitialized_memory() {
     let mut memory = [0u8; 1024];
     let allocator = BumpAllocator::new(memory.as_mut_ptr());
@@ -52,7 +52,7 @@ pub fn relocatable_push_pop_works_with_uninitialized_memory() {
     assert_that!(sut, len 0);
 }
 
-#[inventory_test]
+#[test]
 pub fn relocatable_clear_empties_queue() {
     let mut memory = [0u8; 1024];
     let allocator = BumpAllocator::new(memory.as_mut_ptr());
@@ -73,13 +73,13 @@ pub fn relocatable_clear_empties_queue() {
     assert_that!(sut.is_empty(), eq true);
 }
 
-#[inventory_test]
+#[test]
 pub fn capacity_is_correct() {
     let sut = Sut::new();
     assert_that!(sut.capacity(), eq SUT_CAPACITY);
 }
 
-#[inventory_test]
+#[test]
 pub fn newly_created_buffer_is_empty() {
     let mut sut = Sut::new();
     assert_that!(sut, is_empty);
@@ -88,7 +88,7 @@ pub fn newly_created_buffer_is_empty() {
     assert_that!(sut.is_full(), eq false);
 }
 
-#[inventory_test]
+#[test]
 pub fn push_pop_works() {
     let mut sut = Sut::new();
 
@@ -113,7 +113,7 @@ pub fn push_pop_works() {
     assert_that!(sut, len 0);
 }
 
-#[inventory_test]
+#[test]
 pub fn valid_after_move() {
     let mut sut = Sut::new();
 
@@ -130,7 +130,7 @@ pub fn valid_after_move() {
     }
 }
 
-#[inventory_test]
+#[test]
 pub fn push_pop_alteration_works() {
     let mut sut = Sut::new();
 
@@ -151,7 +151,7 @@ pub fn push_pop_alteration_works() {
     }
 }
 
-#[inventory_test]
+#[test]
 pub fn clear_works() {
     let mut sut = Sut::new();
 
@@ -165,7 +165,7 @@ pub fn clear_works() {
     assert_that!(sut.pop(), is_none);
 }
 
-#[inventory_test]
+#[test]
 pub fn overflow_works() {
     let mut sut = Sut::new();
 
@@ -187,7 +187,7 @@ pub fn overflow_works() {
     }
 }
 
-#[inventory_test]
+#[test]
 pub fn iterate_with_get() {
     let mut sut = Sut::new();
 
@@ -204,7 +204,7 @@ pub fn iterate_with_get() {
     }
 }
 
-#[inventory_test]
+#[test]
 pub fn drops_all_objects_when_out_of_scope() {
     let state = LifetimeTracker::start_tracking();
     let mut sut = FixedSizeQueue::<LifetimeTracker, SUT_CAPACITY>::new();
@@ -218,7 +218,7 @@ pub fn drops_all_objects_when_out_of_scope() {
     assert_that!(state.number_of_living_instances(), eq 0);
 }
 
-#[inventory_test]
+#[test]
 pub fn drops_all_objects_with_clear() {
     let state = LifetimeTracker::start_tracking();
     let mut sut = FixedSizeQueue::<LifetimeTracker, SUT_CAPACITY>::new();
@@ -232,7 +232,7 @@ pub fn drops_all_objects_with_clear() {
     assert_that!(state.number_of_living_instances(), eq 0);
 }
 
-#[inventory_test]
+#[test]
 pub fn pop_releases_object() {
     let state = LifetimeTracker::start_tracking();
     let mut sut = FixedSizeQueue::<LifetimeTracker, SUT_CAPACITY>::new();
@@ -249,7 +249,7 @@ pub fn pop_releases_object() {
     }
 }
 
-#[inventory_test]
+#[test]
 pub fn queue_clear_drops_all_objects() {
     let state = LifetimeTracker::start_tracking();
     let mut sut = Queue::<LifetimeTracker>::new(SUT_CAPACITY);
@@ -262,7 +262,7 @@ pub fn queue_clear_drops_all_objects() {
     assert_that!(state.number_of_living_instances(), eq 0);
 }
 
-#[inventory_test]
+#[test]
 pub fn fixed_size_queue_clear_drops_all_objects() {
     let state = LifetimeTracker::start_tracking();
     let mut sut = FixedSizeQueue::<LifetimeTracker, SUT_CAPACITY>::new();
@@ -275,7 +275,7 @@ pub fn fixed_size_queue_clear_drops_all_objects() {
     assert_that!(state.number_of_living_instances(), eq 0);
 }
 
-#[inventory_test]
+#[test]
 #[requires_std("panics")]
 #[should_panic]
 pub fn get_invalid_index_panics() {
@@ -285,7 +285,7 @@ pub fn get_invalid_index_panics() {
     sut.get(2);
 }
 
-#[inventory_test]
+#[test]
 pub fn get_unchecked_works() {
     let mut sut = FixedSizeQueue::<usize, SUT_CAPACITY>::new();
 
@@ -298,7 +298,7 @@ pub fn get_unchecked_works() {
     }
 }
 
-#[inventory_test]
+#[test]
 pub fn placement_default_works() {
     type Sut = FixedSizeQueue<usize, SUT_CAPACITY>;
     let mut sut = RawMemory::<Sut>::new_filled(0xff);
@@ -312,7 +312,7 @@ pub fn placement_default_works() {
     assert_that!(unsafe {sut.assume_init_mut()}.pop(), eq Some(456));
 }
 
-#[inventory_test]
+#[test]
 pub fn peek_works() {
     let mut sut = Sut::new();
 
@@ -330,7 +330,7 @@ pub fn peek_works() {
     assert_that!(*sut.peek_mut().unwrap(), eq 99182);
 }
 
-#[inventory_test]
+#[test]
 #[requires_std("panics")]
 #[should_panic]
 pub fn double_init_call_causes_panic() {
@@ -344,7 +344,7 @@ pub fn double_init_call_causes_panic() {
     unsafe { sut.init(&bump_allocator).expect("sut init failed") };
 }
 
-#[inventory_test]
+#[test]
 #[requires_std("panics")]
 #[cfg(debug_assertions)]
 #[should_panic]

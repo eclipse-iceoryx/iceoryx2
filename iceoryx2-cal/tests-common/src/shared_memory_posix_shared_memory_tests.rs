@@ -15,7 +15,7 @@ use iceoryx2_bb_posix::clock::Time;
 use iceoryx2_bb_posix::creation_mode::CreationMode;
 use iceoryx2_bb_posix::permission::Permission;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 use iceoryx2_cal::named_concept::*;
 use iceoryx2_cal::shared_memory::*;
 use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;
@@ -23,7 +23,7 @@ use iceoryx2_cal::testing::generate_name;
 
 const TIMEOUT: Duration = Duration::from_millis(100);
 
-#[inventory_test]
+#[test]
 fn shared_memory_posix_shared_memory_waiting_for_initialization_works() {
     type Sut = iceoryx2_cal::shared_memory::posix::Memory<PoolAllocator>;
     let storage_name = generate_name();

@@ -110,7 +110,7 @@ pub mod generic {
         }
     }
 
-    #[inventory_test]
+    #[test]
     pub fn new_created_vec_is_empty<Factory: VectorTestFactory>() {
         let factory = Factory::new();
         let sut = factory.create_sut();
@@ -120,7 +120,7 @@ pub mod generic {
         assert_that!(sut.is_full(), eq false);
     }
 
-    #[inventory_test]
+    #[test]
     pub fn push_adds_element_at_the_end<Factory: VectorTestFactory>() {
         let factory = Factory::new();
         let mut sut = factory.create_sut();
@@ -134,7 +134,7 @@ pub mod generic {
         }
     }
 
-    #[inventory_test]
+    #[test]
     pub fn push_until_full_works<Factory: VectorTestFactory>() {
         let factory = Factory::new();
         let mut sut = factory.create_sut();
@@ -153,7 +153,7 @@ pub mod generic {
         assert_that!(sut.is_full(), eq true);
     }
 
-    #[inventory_test]
+    #[test]
     pub fn push_more_elements_than_capacity_fails<Factory: VectorTestFactory>() {
         let factory = Factory::new();
         let mut sut = factory.create_sut();
@@ -171,7 +171,7 @@ pub mod generic {
         }
     }
 
-    #[inventory_test]
+    #[test]
     pub fn push_pop_alteration_works<Factory: VectorTestFactory>() {
         let factory = Factory::new();
         let mut sut = factory.create_sut();
@@ -191,7 +191,7 @@ pub mod generic {
         }
     }
 
-    #[inventory_test]
+    #[test]
     pub fn pop_returns_none_when_empty<Factory: VectorTestFactory>() {
         let factory = Factory::new();
         let mut sut = factory.create_sut();
@@ -199,7 +199,7 @@ pub mod generic {
         assert_that!(sut.pop(), is_none);
     }
 
-    #[inventory_test]
+    #[test]
     pub fn pop_removes_last_element<Factory: VectorTestFactory>() {
         let factory = Factory::new();
         let mut sut = factory.create_sut();
@@ -221,7 +221,7 @@ pub mod generic {
         assert_that!(sut.pop(), is_none);
     }
 
-    #[inventory_test]
+    #[test]
     pub fn truncate_does_nothing_when_new_len_is_larger_than_current_len<
         Factory: VectorTestFactory,
     >() {
@@ -243,7 +243,7 @@ pub mod generic {
         }
     }
 
-    #[inventory_test]
+    #[test]
     pub fn truncate_drops_all_elements_right_of_new_len<Factory: VectorTestFactory>() {
         let half_capacity = SUT_CAPACITY / 2;
         let tracker = LifetimeTracker::start_tracking();
@@ -267,7 +267,7 @@ pub mod generic {
         }
     }
 
-    #[inventory_test]
+    #[test]
     pub fn truncate_drops_elements_in_reverse_order<Factory: VectorTestFactory>() {
         let half_capacity = SUT_CAPACITY / 2;
         let tracker = LifetimeTracker::start_tracking();
@@ -285,7 +285,7 @@ pub mod generic {
         }
     }
 
-    #[inventory_test]
+    #[test]
     pub fn resize_increases_len_with_provided_value<Factory: VectorTestFactory>() {
         let half_capacity = SUT_CAPACITY / 2;
         const TEST_VALUE: usize = 871828;
@@ -304,7 +304,7 @@ pub mod generic {
         }
     }
 
-    #[inventory_test]
+    #[test]
     pub fn resize_reduces_len_and_drops_element_in_reverse_order<Factory: VectorTestFactory>() {
         let half_capacity = SUT_CAPACITY / 2;
         let tracker = LifetimeTracker::start_tracking();
@@ -334,14 +334,14 @@ pub mod generic {
         }
     }
 
-    #[inventory_test]
+    #[test]
     pub fn resize_fails_if_len_greater_than_capacity<Factory: VectorTestFactory>() {
         let factory = Factory::new();
         let mut sut = factory.create_sut();
         assert_that!(sut.resize(SUT_CAPACITY + 1, LifetimeTracker::new()), eq Err(VectorModificationError::InsertWouldExceedCapacity));
     }
 
-    #[inventory_test]
+    #[test]
     pub fn resize_with_increases_len_with_provided_value<Factory: VectorTestFactory>() {
         let half_capacity = SUT_CAPACITY / 2;
         const TEST_VALUE: usize = 918293;
@@ -362,7 +362,7 @@ pub mod generic {
         }
     }
 
-    #[inventory_test]
+    #[test]
     pub fn resize_with_reduces_len_and_drops_element_in_reverse_order<
         Factory: VectorTestFactory,
     >() {
@@ -389,7 +389,7 @@ pub mod generic {
         }
     }
 
-    #[inventory_test]
+    #[test]
     pub fn resize_with_calls_callback_only_for_the_newly_inserted_elements<
         Factory: VectorTestFactory,
     >() {
@@ -409,21 +409,21 @@ pub mod generic {
         assert_that!(counter, eq half_capacity);
     }
 
-    #[inventory_test]
+    #[test]
     pub fn resize_with_fails_if_len_greater_than_capacity<Factory: VectorTestFactory>() {
         let factory = Factory::new();
         let mut sut = factory.create_sut();
         assert_that!(sut.resize_with(SUT_CAPACITY + 1, LifetimeTracker::new), eq Err(VectorModificationError::InsertWouldExceedCapacity));
     }
 
-    #[inventory_test]
+    #[test]
     pub fn remove_first_element_of_empty_vec_returns_none<Factory: VectorTestFactory>() {
         let factory = Factory::new();
         let mut sut = factory.create_sut();
         assert_that!(sut.remove(0), is_none);
     }
 
-    #[inventory_test]
+    #[test]
     pub fn remove_element_out_of_bounds_returns_none<Factory: VectorTestFactory>() {
         let half_capacity = SUT_CAPACITY / 2;
         let factory = Factory::new();
@@ -436,7 +436,7 @@ pub mod generic {
         assert_that!(sut.remove(half_capacity), is_none);
     }
 
-    #[inventory_test]
+    #[test]
     pub fn remove_first_element_until_empty_works<Factory: VectorTestFactory>() {
         let tracker = LifetimeTracker::start_tracking();
         let factory = Factory::new();
@@ -461,7 +461,7 @@ pub mod generic {
         assert_that!(tracker.number_of_living_instances(), eq 0);
     }
 
-    #[inventory_test]
+    #[test]
     pub fn remove_middle_element_works<Factory: VectorTestFactory>() {
         let half_capacity = SUT_CAPACITY / 2;
         let tracker = LifetimeTracker::start_tracking();
@@ -488,7 +488,7 @@ pub mod generic {
         }
     }
 
-    #[inventory_test]
+    #[test]
     pub fn insert_first_element_of_empty_vec_works<Factory: VectorTestFactory>() {
         const TEST_VALUE: usize = 91782389;
         let factory = Factory::new();
@@ -501,14 +501,14 @@ pub mod generic {
         assert_that!(sut[0].value, eq TEST_VALUE);
     }
 
-    #[inventory_test]
+    #[test]
     pub fn insert_second_element_of_empty_vec_fails<Factory: VectorTestFactory>() {
         let factory = Factory::new();
         let mut sut = factory.create_sut();
         assert_that!(sut.insert(1, LifetimeTracker::new()), eq Err(VectorModificationError::OutOfBounds));
     }
 
-    #[inventory_test]
+    #[test]
     pub fn insert_at_position_zero_fills_vector_in_reverse_order<Factory: VectorTestFactory>() {
         let factory = Factory::new();
         let mut sut = factory.create_sut();
@@ -526,7 +526,7 @@ pub mod generic {
         }
     }
 
-    #[inventory_test]
+    #[test]
     pub fn insert_at_end_fills_vector_in_order<Factory: VectorTestFactory>() {
         let factory = Factory::new();
         let mut sut = factory.create_sut();
@@ -544,7 +544,7 @@ pub mod generic {
         }
     }
 
-    #[inventory_test]
+    #[test]
     pub fn insert_at_center_move_elements_to_the_rights<Factory: VectorTestFactory>() {
         let half_capacity = SUT_CAPACITY / 2;
         const TEST_VALUE: usize = 565612334;
@@ -572,7 +572,7 @@ pub mod generic {
         }
     }
 
-    #[inventory_test]
+    #[test]
     pub fn insert_into_full_vec_fails<Factory: VectorTestFactory>() {
         let factory = Factory::new();
         let mut sut = factory.create_sut();
@@ -584,7 +584,7 @@ pub mod generic {
         assert_that!(sut.insert(0, LifetimeTracker::new()), eq Err(VectorModificationError::InsertWouldExceedCapacity));
     }
 
-    #[inventory_test]
+    #[test]
     pub fn clearing_empty_vector_does_nothing<Factory: VectorTestFactory>() {
         let factory = Factory::new();
         let mut sut = factory.create_sut();
@@ -593,7 +593,7 @@ pub mod generic {
         assert_that!(sut.is_empty(), eq true);
     }
 
-    #[inventory_test]
+    #[test]
     pub fn clear_drops_elements_in_reverse_order<Factory: VectorTestFactory>() {
         let tracker = LifetimeTracker::start_tracking();
         let factory = Factory::new();
@@ -614,7 +614,7 @@ pub mod generic {
         }
     }
 
-    #[inventory_test]
+    #[test]
     pub fn as_slice_contains_elements<Factory: VectorTestFactory>() {
         let factory = Factory::new();
         let mut sut = factory.create_sut();
@@ -628,7 +628,7 @@ pub mod generic {
         }
     }
 
-    #[inventory_test]
+    #[test]
     pub fn as_mut_slice_contains_mutable_elements<Factory: VectorTestFactory>() {
         let factory = Factory::new();
         let mut sut = factory.create_sut();
@@ -646,7 +646,7 @@ pub mod generic {
         }
     }
 
-    #[inventory_test]
+    #[test]
     pub fn adding_a_slice_to_empty_vec_that_exceeds_the_capacity_fails<
         Factory: VectorTestFactory,
     >() {
@@ -656,7 +656,7 @@ pub mod generic {
         assert_that!(sut.extend_from_slice(&core::array::from_fn::<LifetimeTracker, {SUT_CAPACITY + 1}, _>(|_| LifetimeTracker::new())), eq Err(VectorModificationError::InsertWouldExceedCapacity));
     }
 
-    #[inventory_test]
+    #[test]
     pub fn adding_a_slice_to_empty_vec_that_has_the_same_capacity_works<
         Factory: VectorTestFactory,
     >() {
@@ -675,7 +675,7 @@ pub mod generic {
         }
     }
 
-    #[inventory_test]
+    #[test]
     pub fn adding_a_slice_to_filled_vec_appends_elements<Factory: VectorTestFactory>() {
         const HALF_CAPACITY: usize = SUT_CAPACITY / 2;
         const TEST_VALUE: usize = 9102;
@@ -701,7 +701,7 @@ pub mod generic {
         }
     }
 
-    #[inventory_test]
+    #[test]
     pub fn when_vec_is_dropped_all_elements_are_dropped_in_reverse_order<
         Factory: VectorTestFactory,
     >() {

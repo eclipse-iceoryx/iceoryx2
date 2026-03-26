@@ -16,6 +16,9 @@ use syn::{
     Attribute, Expr, ExprLit, Ident, ItemFn, Lit, MetaNameValue, ReturnType, Signature, Type,
 };
 
+pub const TEST_ATTRIBUTE: &str = "test";
+pub const STRIPPED_ATTRIBUTES: &[&str] = &["should_panic", "ignore", TEST_ATTRIBUTE];
+
 #[derive(Clone)]
 pub enum ShouldPanic {
     No,
@@ -23,7 +26,7 @@ pub enum ShouldPanic {
 }
 
 /// Generate tokens to instantiate tests and associated submission to the inventory.
-pub fn instantiate_inventory_test(
+pub fn instantiate_tests(
     test_function: &ItemFn,
     macro_parameters: Option<&TokenStream>,
 ) -> TokenStream {
@@ -131,27 +134,6 @@ pub fn generate_inventory_submission(
     }
 }
 
-/// `FileName::max_len()` -> `"max_len"`, `{ 64 }` -> `"64"`
-fn constexpr_identifier_string(constexpr: &TokenStream) -> String {
-    let s = constexpr.to_string().replace(['{', '}', '(', ')', ' '], "");
-    s.split("::").last().unwrap_or(&s).to_string()
-}
-
-/// "foo::Bar<u64>" -> "Bar_u64"
-fn type_identifier_string(type_identifier_string: &str) -> String {
-    type_identifier_string
-        .split("::")
-        .last()
-        .unwrap_or(type_identifier_string)
-        .chars()
-        .filter_map(|c| match c {
-            '<' | ';' => Some('_'),
-            '>' | ' ' | ',' | '[' | ']' => None,
-            c => Some(c),
-        })
-        .collect()
-}
-
 /// Generate the identifier for the wrapper function that calls the test
 /// function.
 fn generate_wrapper_identifier(
@@ -174,9 +156,9 @@ fn generate_wrapper_identifier(
         )
     };
     let ident_str = if suffix.is_empty() {
-        format!("__inventory_test_{}", test_function_name)
+        format!("__iox2_test_{}", test_function_name)
     } else {
-        format!("__inventory_test_{}_{}", test_function_name, suffix)
+        format!("__iox2_test_{}_{}", test_function_name, suffix)
     };
     Ident::new(&ident_str, test_function_name.span())
 }
@@ -342,8 +324,6 @@ fn extract_should_panic(test_function_attributes: &[Attribute]) -> ShouldPanic {
 /// Strips attributes handled by the test framework from the provided test
 /// function.
 fn strip_attributes(test_function: &ItemFn) -> TokenStream {
-    const STRIPPED_ATTRIBUTES: &[&str] = &["should_panic", "ignore", "inventory_test"];
-
     let mut test_function_clone = test_function.clone();
     test_function_clone
         .attrs
@@ -352,6 +332,27 @@ fn strip_attributes(test_function: &ItemFn) -> TokenStream {
         #[allow(dead_code)]
         #test_function_clone
     }
+}
+
+/// `FileName::max_len()` -> `"max_len"`, `{ 64 }` -> `"64"`
+fn constexpr_identifier_string(constexpr: &TokenStream) -> String {
+    let s = constexpr.to_string().replace(['{', '}', '(', ')', ' '], "");
+    s.split("::").last().unwrap_or(&s).to_string()
+}
+
+/// "foo::Bar<u64>" -> "Bar_u64"
+fn type_identifier_string(type_identifier_string: &str) -> String {
+    type_identifier_string
+        .split("::")
+        .last()
+        .unwrap_or(type_identifier_string)
+        .chars()
+        .filter_map(|c| match c {
+            '<' | ';' => Some('_'),
+            '>' | ' ' | ',' | '[' | ']' => None,
+            c => Some(c),
+        })
+        .collect()
 }
 
 /// Returns true if the macro parameters are constexpr/type pairs, e.g.

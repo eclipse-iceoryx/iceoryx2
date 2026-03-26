@@ -25,10 +25,10 @@ use iceoryx2_bb_system_types::group_name::*;
 use iceoryx2_bb_system_types::path::*;
 use iceoryx2_bb_system_types::user_name::*;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 use iceoryx2_bb_testing_macros::test_module;
 
-#[inventory_test]
+#[test]
 pub fn display_error_enum_works() {
     assert_that!(alloc::format!("{}", SemanticStringError::InvalidContent), eq "SemanticStringError::InvalidContent");
     assert_that!(alloc::format!("{}", SemanticStringError::ExceedsMaximumLength), eq "SemanticStringError::ExceedsMaximumLength");
@@ -46,7 +46,7 @@ pub fn display_error_enum_works() {
 pub mod generic {
     use super::*;
 
-    #[inventory_test]
+    #[test]
     pub fn new_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
         let sut = Sut::new(b"hello-txt");
         assert_that!(sut, is_ok);
@@ -56,7 +56,7 @@ pub mod generic {
         assert_that!(sut.as_bytes(), eq b"hello-txt");
     }
 
-    #[inventory_test]
+    #[test]
     pub fn new_name_with_illegal_char_is_illegal<
         const CAPACITY: usize,
         Sut: SemanticString<CAPACITY>,
@@ -65,7 +65,7 @@ pub mod generic {
         assert_that!(sut, is_err);
     }
 
-    #[inventory_test]
+    #[test]
     pub fn try_from_legal_str_succeeds<
         const CAPACITY: usize,
         Sut: SemanticString<CAPACITY> + TryFrom<&'static str>,
@@ -78,7 +78,7 @@ pub mod generic {
         assert_that!(sut.as_bytes(), eq b"woohoo-md");
     }
 
-    #[inventory_test]
+    #[test]
     pub fn try_from_illegal_str_fails<
         const CAPACITY: usize,
         Sut: SemanticString<CAPACITY> + TryFrom<&'static str>,
@@ -87,7 +87,7 @@ pub mod generic {
         assert_that!(sut, is_err);
     }
 
-    #[inventory_test]
+    #[test]
     pub fn insert_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
         let mut sut = Sut::new(b"hello").unwrap();
         assert_that!(sut.insert(1, b't'), is_ok);
@@ -96,7 +96,7 @@ pub mod generic {
         assert_that!(sut.as_bytes(), eq b"htello");
     }
 
-    #[inventory_test]
+    #[test]
     pub fn insert_illegal_character_fails<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
         let mut sut = Sut::new(b"hello").unwrap();
         assert_that!(sut.insert(1, b'*'), is_err);
@@ -105,7 +105,7 @@ pub mod generic {
         assert_that!(sut.as_bytes(), eq b"hello");
     }
 
-    #[inventory_test]
+    #[test]
     pub fn insert_bytes_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
         let mut sut = Sut::new(b"wld").unwrap();
         assert_that!(sut.insert_bytes(1, b"or"), is_ok);
@@ -114,7 +114,7 @@ pub mod generic {
         assert_that!(sut.as_bytes(), eq b"world");
     }
 
-    #[inventory_test]
+    #[test]
     pub fn insert_bytes_with_illegal_character_fails<
         const CAPACITY: usize,
         Sut: SemanticString<CAPACITY>,
@@ -126,7 +126,7 @@ pub mod generic {
         assert_that!(sut.as_bytes(), eq b"wld");
     }
 
-    #[inventory_test]
+    #[test]
     pub fn pop_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
         let mut sut = Sut::new(b"fuu-blaa-fuu").unwrap();
         let result = sut.pop();
@@ -136,7 +136,7 @@ pub mod generic {
         assert_that!(sut.as_bytes(), eq b"fuu-blaa-fu");
     }
 
-    #[inventory_test]
+    #[test]
     pub fn remove_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
         let mut sut = Sut::new(b"a01234").unwrap();
         let result = sut.remove(2);
@@ -146,7 +146,7 @@ pub mod generic {
         assert_that!(sut.as_bytes(), eq b"a0234");
     }
 
-    #[inventory_test]
+    #[test]
     pub fn remove_range_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
         let mut sut = Sut::new(b"a01234567").unwrap();
         let result = sut.remove_range(3, 3);
@@ -156,7 +156,7 @@ pub mod generic {
         assert_that!(sut.as_bytes(), eq b"a01567");
     }
 
-    #[inventory_test]
+    #[test]
     pub fn retain_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
         let mut sut = Sut::new(b"a01234567").unwrap();
         let result = sut.retain(|c| c == b'4');
@@ -166,7 +166,7 @@ pub mod generic {
         assert_that!(sut.as_bytes(), eq b"a0123567");
     }
 
-    #[inventory_test]
+    #[test]
     pub fn strip_prefix_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
         let mut sut = Sut::new(b"a0123a4567").unwrap();
         assert_that!(sut.strip_prefix(b"a0123"), eq Ok(true));
@@ -183,7 +183,7 @@ pub mod generic {
         }
     }
 
-    #[inventory_test]
+    #[test]
     pub fn strip_suffix_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
         let mut sut = Sut::new(b"a0123a4567").unwrap();
         assert_that!(sut.strip_suffix(b"a4567"), eq Ok(true));
@@ -200,7 +200,7 @@ pub mod generic {
         }
     }
 
-    #[inventory_test]
+    #[test]
     pub fn truncate_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
         let mut sut = Sut::new(b"a01234567").unwrap();
         assert_that!(sut.truncate(4), is_ok);
@@ -220,7 +220,7 @@ pub mod generic {
         }
     }
 
-    #[inventory_test]
+    #[test]
     pub fn invalid_utf8_characters_fail<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
         let sut = Sut::new(&[b'a', b'b', 0xdf, 0xff]);
         assert_that!(sut, is_err);
@@ -229,19 +229,19 @@ pub mod generic {
         assert_that!(sut, is_err);
     }
 
-    #[inventory_test]
+    #[test]
     pub fn is_full_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
         let sut = Sut::new(b"a01234567").unwrap();
         assert_that!(sut.is_full(), eq false);
     }
 
-    #[inventory_test]
+    #[test]
     pub fn capacity_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
         let sut = Sut::new(b"a01234567").unwrap();
         assert_that!(sut.capacity(), eq CAPACITY);
     }
 
-    #[inventory_test]
+    #[test]
     pub fn insert_too_much_bytes_fails<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
         let mut sut = Sut::new(b"a01234567").unwrap();
         let mut bytes = vec![];
@@ -257,7 +257,7 @@ pub mod generic {
         );
     }
 
-    #[inventory_test]
+    #[test]
     pub fn pop_until_empty_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
         let mut sut = Sut::new(b"aaa").unwrap();
 

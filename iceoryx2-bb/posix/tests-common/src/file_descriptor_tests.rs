@@ -32,12 +32,12 @@ pub mod generic {
     use iceoryx2_bb_testing::test_requires;
     use iceoryx2_pal_posix::posix::{POSIX_SUPPORT_PERMISSIONS, POSIX_SUPPORT_USERS_AND_GROUPS};
 
-    #[inventory_test]
+    #[test]
     pub fn file_descriptor_smaller_zero_is_invalid() {
         assert_that!(FileDescriptor::new(-12), eq None);
     }
 
-    #[inventory_test]
+    #[test]
     pub fn file_descriptor_with_arbitrary_number_greater_equal_zero_is_invalid() {
         assert_that!(FileDescriptor::new(431), is_none);
         assert_that!(FileDescriptor::new(981), is_none);
@@ -81,7 +81,7 @@ pub mod generic {
         }
     }
 
-    #[inventory_test]
+    #[test]
     pub fn file_descriptor_owner_handling_works<
         Sut: GenericTestBuilder + FileDescriptorManagement,
     >() {
@@ -105,7 +105,7 @@ pub mod generic {
         assert_that!(ownership.gid(), eq gid);
     }
 
-    #[inventory_test]
+    #[test]
     pub fn file_descriptor_permission_handling_works<
         Sut: GenericTestBuilder + FileDescriptorManagement,
     >() {
@@ -127,7 +127,7 @@ pub mod generic {
         assert_that!(permission, eq rw_all);
     }
 
-    #[inventory_test]
+    #[test]
     pub fn file_descriptor_metadata_handling_works<
         Sut: GenericTestBuilder + FileDescriptorManagement,
     >() {
