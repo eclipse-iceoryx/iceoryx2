@@ -28,9 +28,11 @@ use crate::inventory_test_common::instantiate_inventory_test;
 /// fn my_ignored_test() { ... }
 /// ```
 pub fn proc_macro(
-    _macro_parameters: proc_macro::TokenStream,
+    macro_parameters: proc_macro::TokenStream,
     test_function: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
     let test_function = parse_macro_input!(test_function as ItemFn);
-    instantiate_inventory_test(&test_function, None).into()
+    let macro_parameters: proc_macro2::TokenStream = macro_parameters.into();
+    let params = (!macro_parameters.is_empty()).then_some(&macro_parameters);
+    instantiate_inventory_test(&test_function, params).into()
 }

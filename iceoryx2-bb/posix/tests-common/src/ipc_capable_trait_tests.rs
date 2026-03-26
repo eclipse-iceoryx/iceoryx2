@@ -22,7 +22,7 @@ use iceoryx2_bb_posix::semaphore::{
     UnnamedSemaphore, UnnamedSemaphoreBuilder, UnnamedSemaphoreHandle,
 };
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::inventory_test_generic;
+use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_bb_testing_macros::requires_std;
 
 pub trait TestSut {
@@ -117,13 +117,13 @@ impl TestSut for UnnamedSemaphoreTest {
     }
 }
 
-#[inventory_test_generic(BarrierTest, UnnamedSemaphoreTest, MutexTest, ReadWriteMutexTest)]
+#[inventory_test(BarrierTest, UnnamedSemaphoreTest, MutexTest, ReadWriteMutexTest)]
 pub fn ipc_capable_trait_new_handle_is_not_initialized<Sut: TestSut>() {
     let sut_handle = Sut::Handle::new();
     assert_that!(sut_handle.is_initialized(), eq false);
 }
 
-#[inventory_test_generic(BarrierTest, UnnamedSemaphoreTest, MutexTest, ReadWriteMutexTest)]
+#[inventory_test(BarrierTest, UnnamedSemaphoreTest, MutexTest, ReadWriteMutexTest)]
 #[requires_std("panics")]
 #[should_panic]
 #[cfg(debug_assertions)]
@@ -133,7 +133,7 @@ pub fn ipc_capable_trait_creating_ipc_construct_from_uninitialized_handle_panics
     unsafe { Sut::Sut::from_ipc_handle(&sut_handle) };
 }
 
-#[inventory_test_generic(BarrierTest, UnnamedSemaphoreTest, MutexTest, ReadWriteMutexTest)]
+#[inventory_test(BarrierTest, UnnamedSemaphoreTest, MutexTest, ReadWriteMutexTest)]
 #[requires_std("panics")]
 #[should_panic]
 #[cfg(debug_assertions)]
@@ -144,7 +144,7 @@ pub fn ipc_capable_trait_creating_ipc_construct_from_process_local_handle_panics
     unsafe { Sut::Sut::from_ipc_handle(&sut_handle) };
 }
 
-#[inventory_test_generic(BarrierTest, UnnamedSemaphoreTest, MutexTest, ReadWriteMutexTest)]
+#[inventory_test(BarrierTest, UnnamedSemaphoreTest, MutexTest, ReadWriteMutexTest)]
 pub fn ipc_capable_trait_creating_ipc_construct_from_ipc_handle_works<Sut: TestSut>() {
     let sut_handle = Sut::Handle::new();
     Sut::init_inter_process_handle(&sut_handle);
@@ -153,7 +153,7 @@ pub fn ipc_capable_trait_creating_ipc_construct_from_ipc_handle_works<Sut: TestS
     unsafe { Sut::Sut::from_ipc_handle(&sut_handle) };
 }
 
-#[inventory_test_generic(BarrierTest, UnnamedSemaphoreTest, MutexTest, ReadWriteMutexTest)]
+#[inventory_test(BarrierTest, UnnamedSemaphoreTest, MutexTest, ReadWriteMutexTest)]
 #[requires_std("panics")]
 #[should_panic]
 #[cfg(debug_assertions)]
@@ -164,7 +164,7 @@ pub fn ipc_capable_trait_init_handle_twice_panics<Sut: TestSut>() {
     Sut::init_inter_process_handle(&sut_handle);
 }
 
-#[inventory_test_generic(BarrierTest, UnnamedSemaphoreTest, MutexTest, ReadWriteMutexTest)]
+#[inventory_test(BarrierTest, UnnamedSemaphoreTest, MutexTest, ReadWriteMutexTest)]
 pub fn ipc_capable_trait_initialized_handle_is_initialized<Sut: TestSut>() {
     let sut_handle_1 = Sut::Handle::new();
     let sut_handle_2 = Sut::Handle::new();
@@ -179,7 +179,7 @@ pub fn ipc_capable_trait_initialized_handle_is_initialized<Sut: TestSut>() {
     assert_that!(sut_handle_2.is_initialized(), eq true);
 }
 
-#[inventory_test_generic(BarrierTest, UnnamedSemaphoreTest, MutexTest, ReadWriteMutexTest)]
+#[inventory_test(BarrierTest, UnnamedSemaphoreTest, MutexTest, ReadWriteMutexTest)]
 pub fn ipc_capable_trait_inter_process_capability_is_set_correctly<Sut: TestSut>() {
     let sut_handle_1 = Sut::Handle::new();
     let sut_handle_2 = Sut::Handle::new();

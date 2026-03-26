@@ -12,7 +12,6 @@
 
 mod inventory_test;
 mod inventory_test_common;
-mod inventory_test_generic;
 mod requires_std;
 mod test_module;
 
@@ -21,11 +20,6 @@ use proc_macro::TokenStream;
 #[proc_macro_attribute]
 pub fn inventory_test(attr: TokenStream, item: TokenStream) -> TokenStream {
     inventory_test::proc_macro(attr, item)
-}
-
-#[proc_macro_attribute]
-pub fn inventory_test_generic(attr: TokenStream, item: TokenStream) -> TokenStream {
-    inventory_test_generic::proc_macro(attr, item)
 }
 
 #[proc_macro_attribute]

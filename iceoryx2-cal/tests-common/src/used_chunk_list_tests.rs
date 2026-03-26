@@ -13,10 +13,10 @@
 use alloc::vec;
 
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::inventory_test_generic;
+use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_cal::zero_copy_connection::used_chunk_list::FixedSizeUsedChunkList;
 
-#[inventory_test_generic(1, 2, 3, 128)]
+#[inventory_test(1, 2, 3, 128)]
 fn used_chunk_list_insert_remove_all_works<const CAPACITY: usize>() {
     let mut sut = FixedSizeUsedChunkList::<CAPACITY>::new();
 
@@ -34,7 +34,7 @@ fn used_chunk_list_insert_remove_all_works<const CAPACITY: usize>() {
     }
 }
 
-#[inventory_test_generic(1, 2, 3, 128)]
+#[inventory_test(1, 2, 3, 128)]
 fn used_chunk_list_insert_remove_works<const CAPACITY: usize>() {
     let sut = FixedSizeUsedChunkList::<CAPACITY>::new();
 

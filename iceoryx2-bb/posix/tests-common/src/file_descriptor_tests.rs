@@ -27,7 +27,6 @@ use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_bb_testing_macros::inventory_test;
-use iceoryx2_bb_testing_macros::inventory_test_generic;
 use iceoryx2_pal_posix::posix::{POSIX_SUPPORT_PERMISSIONS, POSIX_SUPPORT_USERS_AND_GROUPS};
 
 #[inventory_test]
@@ -79,7 +78,7 @@ impl GenericTestBuilder for SharedMemory {
     }
 }
 
-#[inventory_test_generic(File, SharedMemory)]
+#[inventory_test(File, SharedMemory)]
 pub fn file_descriptor_owner_handling_works<Sut: GenericTestBuilder + FileDescriptorManagement>() {
     test_requires!(POSIX_SUPPORT_USERS_AND_GROUPS);
 
@@ -101,7 +100,7 @@ pub fn file_descriptor_owner_handling_works<Sut: GenericTestBuilder + FileDescri
     assert_that!(ownership.gid(), eq gid);
 }
 
-#[inventory_test_generic(File, SharedMemory)]
+#[inventory_test(File, SharedMemory)]
 pub fn file_descriptor_permission_handling_works<
     Sut: GenericTestBuilder + FileDescriptorManagement,
 >() {
@@ -123,7 +122,7 @@ pub fn file_descriptor_permission_handling_works<
     assert_that!(permission, eq rw_all);
 }
 
-#[inventory_test_generic(File, SharedMemory)]
+#[inventory_test(File, SharedMemory)]
 pub fn file_descriptor_metadata_handling_works<
     Sut: GenericTestBuilder + FileDescriptorManagement,
 >() {
