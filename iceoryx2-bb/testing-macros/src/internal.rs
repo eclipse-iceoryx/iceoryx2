@@ -66,17 +66,17 @@ pub fn generate_test_name(
 ) -> String {
     let type_string = type_identifier.to_string().replace(' ', "");
     if constexprs.is_empty() {
-        format!("{}<{}>", test_function_identifier, type_string)
+        format!("<{}>::{}", type_string, test_function_identifier)
     } else {
         let constexpr_names: Vec<String> = constexprs
             .iter()
             .map(|c| c.to_string().replace(['{', '}', ' '], ""))
             .collect();
         format!(
-            "{}<{}, {}>",
-            test_function_identifier,
+            "<{}, {}>::{}",
             constexpr_names.join(", "),
-            type_string
+            type_string,
+            test_function_identifier
         )
     }
 }
