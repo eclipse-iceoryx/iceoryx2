@@ -26,6 +26,7 @@ pub mod generic {
         UnnamedSemaphore, UnnamedSemaphoreBuilder, UnnamedSemaphoreHandle,
     };
     use iceoryx2_bb_testing::assert_that;
+    #[cfg(debug_assertions)]
     use iceoryx2_bb_testing_macros::requires_std;
 
     pub trait TestSut {

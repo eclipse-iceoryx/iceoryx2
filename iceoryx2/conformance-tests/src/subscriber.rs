@@ -19,6 +19,7 @@ pub mod subscriber {
     use alloc::{format, vec};
     use iceoryx2::port::ReceiveError;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
+    #[cfg(debug_assertions)]
     use iceoryx2_bb_testing_macros::requires_std;
 
     use iceoryx2::{

@@ -34,6 +34,7 @@ pub mod publisher {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
     use iceoryx2_bb_testing::watchdog::Watchdog;
+    #[cfg(debug_assertions)]
     use iceoryx2_bb_testing_macros::requires_std;
 
     const TIMEOUT: Duration = Duration::from_millis(25);
