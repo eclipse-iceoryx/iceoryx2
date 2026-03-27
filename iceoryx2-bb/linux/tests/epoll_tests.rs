@@ -15,12 +15,9 @@ extern crate iceoryx2_bb_loggers;
 #[cfg(target_os = "linux")]
 pub mod tests {
 
-    use std::{
-        sync::{atomic::Ordering, Barrier},
-        time::Instant,
-    };
+    use std::{sync::Barrier, time::Instant};
 
-    use iceoryx2_bb_concurrency::atomic::AtomicBool;
+    use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};
     use iceoryx2_bb_linux::epoll::*;
     use iceoryx2_bb_posix::{
         file_descriptor::FileDescriptorBased,

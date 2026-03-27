@@ -32,6 +32,7 @@ rust_binary(
     deps = [
         "//iceoryx2:iceoryx2",
         "//iceoryx2-log/log:iceoryx2-log",
+        "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
         "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
     ],
@@ -45,6 +46,7 @@ rust_binary(
     deps = [
         "//iceoryx2:iceoryx2",
         "//iceoryx2-log/log:iceoryx2-log",
+        "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
         "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
     ],
