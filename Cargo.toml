@@ -242,6 +242,10 @@ lto = true
 # opt-level = "z"
 panic = "abort"
 
+[profile.dev-nostd]
+inherits = "dev"
+panic = "abort"
+
 [workspace.lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [
   'cfg(loom)',

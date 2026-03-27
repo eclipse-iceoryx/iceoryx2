@@ -2027,11 +2027,13 @@ dependencies = [
  "iceoryx2-bb-lock-free",
  "iceoryx2-bb-loggers",
  "iceoryx2-bb-posix",
+ "iceoryx2-bb-print",
  "iceoryx2-bb-system-types",
  "iceoryx2-bb-testing",
  "iceoryx2-cal",
  "iceoryx2-ffi-macros",
  "iceoryx2-log",
+ "iceoryx2-pal-posix",
 ]
 
 [[package]]
