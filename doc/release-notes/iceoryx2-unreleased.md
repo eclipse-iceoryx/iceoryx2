@@ -95,6 +95,8 @@
     NOTE: Add new entries sorted by issue number to minimize the possibility of
     conflicts when merging.
 -->
+* Remove clippy workaround
+  [#223](https://github.com/eclipse-iceoryx/iceoryx2/issues/223)
 * Remove support for Bazel Workspaces
   [#1263](https://github.com/eclipse-iceoryx/iceoryx2/issues/1263)
 * Adjust test names to naming convention
