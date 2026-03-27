@@ -34,6 +34,7 @@ pub(crate) fn details(
                 }
                 Err(e) => {
                     error = Some(e);
+                    return CallbackProgression::Stop;
                 }
             }
         }
@@ -41,5 +42,8 @@ pub(crate) fn details(
     })
     .context("failed to retrieve nodes")?;
 
+    if let Some(err) = error {
+        return Err(err);
+    }
     Ok(())
 }

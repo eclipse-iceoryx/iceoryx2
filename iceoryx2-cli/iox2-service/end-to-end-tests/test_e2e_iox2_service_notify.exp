@@ -26,6 +26,8 @@ set timeout 10
 
 spawn cargo run --example event_listener
 set id_listener $spawn_id
+# Wait for the Listener to be ready before sending the event
+expect_output_from $id_listener "Listener ready to receive events!"
 
 spawn cargo run --bin iox2-service -- notify MyEventName
 set id_iox2_service_notify $spawn_id
