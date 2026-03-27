@@ -12,9 +12,9 @@
 
 #![allow(clippy::disallowed_types)]
 
-use iceoryx2_bb_testing_macros::test_module;
+use iceoryx2_bb_testing_macros::tests;
 
-#[test_module(
+#[tests(
     RelocatableVec<u64>,
     RelocatableVec<u128>,
     RelocatableVec<[u8; 123]>,
@@ -29,7 +29,7 @@ use iceoryx2_bb_testing_macros::test_module;
     RelocatableSafelyOverflowingIndexQueue,
     RelocatableUsedChunkList
 )]
-pub mod tests {
+pub mod generic {
     use alloc::boxed::Box;
     use core::ptr::NonNull;
     use iceoryx2_bb_container::{queue::RelocatableQueue, vector::relocatable_vec::RelocatableVec};
@@ -56,7 +56,7 @@ pub mod tests {
         BumpAllocator::new(NonNull::new(memory.as_mut_ptr()).unwrap(), memory.len())
     }
 
-    #[inventory_test]
+    #[test]
     pub fn init_acquires_less_or_equal_the_required_size_of_bytes<T: RelocatableContainer>() {
         const MAX_CAPACITY: usize = 128;
 
@@ -72,7 +72,7 @@ pub mod tests {
         }
     }
 
-    #[inventory_test]
+    #[test]
     pub fn init_acquires_less_or_equal_the_required_size_of_bytes_multiple_allocations<
         T: RelocatableContainer,
     >() {
@@ -92,7 +92,7 @@ pub mod tests {
         }
     }
 
-    #[inventory_test]
+    #[test]
     #[requires_std("panics")]
     #[should_panic]
     pub fn init_twice_causes_panic<T: RelocatableContainer>() {

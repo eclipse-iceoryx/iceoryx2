@@ -10,45 +10,49 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use alloc::vec;
+use iceoryx2_bb_testing_macros::tests;
 
-use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::inventory_test_generic;
-use iceoryx2_cal::zero_copy_connection::used_chunk_list::FixedSizeUsedChunkList;
+#[tests(1, 2, 3, 128)]
+pub mod generic {
+    use alloc::vec;
 
-#[inventory_test_generic(1, 2, 3, 128)]
-fn used_chunk_list_insert_remove_all_works<const CAPACITY: usize>() {
-    let mut sut = FixedSizeUsedChunkList::<CAPACITY>::new();
+    use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_cal::zero_copy_connection::used_chunk_list::FixedSizeUsedChunkList;
 
-    for i in 0..sut.capacity() {
-        assert_that!(sut.insert(i), eq true);
+    #[test]
+    fn used_chunk_list_insert_remove_all_works<const CAPACITY: usize>() {
+        let mut sut = FixedSizeUsedChunkList::<CAPACITY>::new();
+
+        for i in 0..sut.capacity() {
+            assert_that!(sut.insert(i), eq true);
+        }
+
+        let mut removed_indices = vec![false; sut.capacity()];
+        sut.remove_all(|index| {
+            removed_indices[index] = true;
+        });
+
+        for index in removed_indices {
+            assert_that!(index, eq true);
+        }
     }
 
-    let mut removed_indices = vec![false; sut.capacity()];
-    sut.remove_all(|index| {
-        removed_indices[index] = true;
-    });
+    #[test]
+    fn used_chunk_list_insert_remove_works<const CAPACITY: usize>() {
+        let sut = FixedSizeUsedChunkList::<CAPACITY>::new();
 
-    for index in removed_indices {
-        assert_that!(index, eq true);
-    }
-}
+        for i in 0..sut.capacity() {
+            assert_that!(sut.remove(i), eq false);
+            assert_that!(sut.insert(i), eq true);
+            assert_that!(sut.remove(i), eq true);
+            assert_that!(sut.remove(i), eq false);
 
-#[inventory_test_generic(1, 2, 3, 128)]
-fn used_chunk_list_insert_remove_works<const CAPACITY: usize>() {
-    let sut = FixedSizeUsedChunkList::<CAPACITY>::new();
+            assert_that!(sut.insert(i), eq true);
+        }
 
-    for i in 0..sut.capacity() {
-        assert_that!(sut.remove(i), eq false);
-        assert_that!(sut.insert(i), eq true);
-        assert_that!(sut.remove(i), eq true);
-        assert_that!(sut.remove(i), eq false);
-
-        assert_that!(sut.insert(i), eq true);
-    }
-
-    for i in (0..sut.capacity()).rev() {
-        assert_that!(sut.remove(i), eq true);
-        assert_that!(sut.remove(i), eq false);
+        for i in (0..sut.capacity()).rev() {
+            assert_that!(sut.remove(i), eq true);
+            assert_that!(sut.remove(i), eq false);
+        }
     }
 }

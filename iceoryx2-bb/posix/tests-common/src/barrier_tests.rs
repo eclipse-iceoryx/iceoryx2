@@ -17,9 +17,9 @@ use iceoryx2_bb_posix::barrier::*;
 use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::watchdog::Watchdog;
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 
-#[inventory_test]
+#[test]
 pub fn barrier_blocks() -> Result<(), BarrierCreationError> {
     let _watchdog = Watchdog::new();
 
@@ -64,7 +64,7 @@ pub fn barrier_blocks() -> Result<(), BarrierCreationError> {
     Ok(())
 }
 
-#[inventory_test]
+#[test]
 pub fn barrier_resets_when_the_one_and_only_waiter_has_woken_up() -> Result<(), BarrierCreationError>
 {
     let _watchdog = Watchdog::new();
@@ -84,7 +84,7 @@ pub fn barrier_resets_when_the_one_and_only_waiter_has_woken_up() -> Result<(), 
     Ok(())
 }
 
-#[inventory_test]
+#[test]
 pub fn barrier_resets_when_all_waiters_have_woken_up() -> Result<(), BarrierCreationError> {
     let _watchdog = Watchdog::new();
     const ITERATIONS: u64 = 10;

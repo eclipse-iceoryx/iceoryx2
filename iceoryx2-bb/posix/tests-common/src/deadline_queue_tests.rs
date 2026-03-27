@@ -19,9 +19,9 @@ use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_posix::clock::nanosleep;
 use iceoryx2_bb_posix::deadline_queue::*;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 
-#[inventory_test]
+#[test]
 pub fn deadline_queue_attach_detach_works() {
     const NUMBER_OF_ATTACHMENTS: usize = 16;
     let sut = DeadlineQueueBuilder::new().create().unwrap();
@@ -40,14 +40,14 @@ pub fn deadline_queue_attach_detach_works() {
     assert_that!(sut.len(), eq 0);
 }
 
-#[inventory_test]
+#[test]
 pub fn deadline_queue_duration_until_next_deadline_is_max_for_empty_queue() {
     let sut = DeadlineQueueBuilder::new().create().unwrap();
 
     assert_that!(sut.duration_until_next_deadline().unwrap(), eq Duration::MAX);
 }
 
-#[inventory_test]
+#[test]
 pub fn deadline_queue_next_iteration_works_zero_deadline() {
     let sut = DeadlineQueueBuilder::new().create().unwrap();
 
@@ -56,7 +56,7 @@ pub fn deadline_queue_next_iteration_works_zero_deadline() {
     assert_that!(sut.duration_until_next_deadline().unwrap(), eq Duration::from_secs(0));
 }
 
-#[inventory_test]
+#[test]
 pub fn deadline_queue_next_iteration_works_smallest_deadline_added_first() {
     let sut = DeadlineQueueBuilder::new().create().unwrap();
 
@@ -68,7 +68,7 @@ pub fn deadline_queue_next_iteration_works_smallest_deadline_added_first() {
     assert_that!(sut.duration_until_next_deadline().unwrap(), ge Duration::from_secs(1));
 }
 
-#[inventory_test]
+#[test]
 pub fn deadline_queue_next_iteration_works_smallest_deadline_added_last() {
     let sut = DeadlineQueueBuilder::new().create().unwrap();
 
@@ -80,7 +80,7 @@ pub fn deadline_queue_next_iteration_works_smallest_deadline_added_last() {
     assert_that!(sut.duration_until_next_deadline().unwrap(), ge Duration::from_secs(1));
 }
 
-#[inventory_test]
+#[test]
 pub fn deadline_queue_removing_deadline_works() {
     let sut = DeadlineQueueBuilder::new().create().unwrap();
 
@@ -96,7 +96,7 @@ pub fn deadline_queue_removing_deadline_works() {
     assert_that!(sut.duration_until_next_deadline().unwrap(), le Duration::from_secs(100));
 }
 
-#[inventory_test]
+#[test]
 pub fn deadline_queue_no_missed_deadline_works() {
     let sut = DeadlineQueueBuilder::new().create().unwrap();
 
@@ -116,7 +116,7 @@ pub fn deadline_queue_no_missed_deadline_works() {
     assert_that!(missed_deadline_queues, len 0);
 }
 
-#[inventory_test]
+#[test]
 pub fn deadline_queue_one_missed_deadlines_works() {
     let sut = DeadlineQueueBuilder::new().create().unwrap();
 
@@ -139,7 +139,7 @@ pub fn deadline_queue_one_missed_deadlines_works() {
     assert_that!(missed_deadlines, contains _guard_1.index());
 }
 
-#[inventory_test]
+#[test]
 pub fn deadline_queue_many_missed_deadlines_works() {
     let sut = DeadlineQueueBuilder::new().create().unwrap();
 
@@ -162,7 +162,7 @@ pub fn deadline_queue_many_missed_deadlines_works() {
     assert_that!(missed_deadlines, contains guard_3.index());
 }
 
-#[inventory_test]
+#[test]
 pub fn deadline_queue_missed_deadline_iteration_stops_when_requested() {
     let sut = DeadlineQueueBuilder::new().create().unwrap();
 
@@ -182,7 +182,7 @@ pub fn deadline_queue_missed_deadline_iteration_stops_when_requested() {
     assert_that!(missed_deadlines, len 1);
 }
 
-#[inventory_test]
+#[test]
 pub fn deadline_queue_duration_until_next_deadline_is_zero_if_deadline_is_already_missed() {
     let sut = DeadlineQueueBuilder::new().create().unwrap();
 
@@ -209,7 +209,7 @@ pub fn deadline_queue_duration_until_next_deadline_is_zero_if_deadline_is_alread
     assert_that!(deadline_idx, eq Some(guard_1.index()));
 }
 
-#[inventory_test]
+#[test]
 pub fn deadline_queue_duration_until_next_deadline_is_not_zero_if_missed_deadline_have_been_handled(
 ) {
     let sut = DeadlineQueueBuilder::new().create().unwrap();

@@ -14,45 +14,29 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, Item, ItemMod};
 
-use crate::inventory_test_common::instantiate_inventory_test;
+use crate::internal::{instantiate_tests, TEST_ATTRIBUTE};
 
-/// Generates inventory submissions for all `#[inventory_test]`-annotated
-/// functions in the module.
+/// Generates inventory submissions for all `#[test]`-annotated functions in
+/// the module.
 ///
 /// Generic type parameters can be optionally provided. In this case, an
-/// instantiation for every test in the module for each type is generated.
-///
-/// Non-annotated functions are passed through unchanged.
-///
-/// # Examples
+/// instantiation for every `#[test]`-annotated generic function in the module
+/// for each type is generated. Non-annotated functions are passed through
+/// unchanged.
 ///
 /// Stand-alone tests
 ///
 /// ```no_run
-/// use iceoryx2_bb_testing_macros::test_module;
+/// use iceoryx2_bb_testing_macros::tests;
 ///
-/// #[test_module]
+/// #[tests(u32, u64)]
 /// mod my_tests {
-///     #[inventory_test]
-///     pub fn is_true() {
-///         assert!(true);
-///     }
-/// }
-/// ```
-///
-/// Type list — each generic test is instantiated once per type
-///
-/// ```no_run
-/// use iceoryx2_bb_testing_macros::test_module;
-///
-/// #[test_module(u32, u64)]
-/// mod my_tests {
-///     #[inventory_test]
+///     #[test]
 ///     pub fn size_is_nonzero<T: Sized>() {
 ///         assert!(core::mem::size_of::<T>() > 0);
 ///     }
 ///
-///     #[inventory_test]
+///     #[test]
 ///     pub fn non_generic_test() {}
 ///
 ///     fn helper() -> u32 { 42 }
@@ -62,14 +46,14 @@ use crate::inventory_test_common::instantiate_inventory_test;
 /// Const+type pairs — each test is instantiated once per pair
 ///
 /// ```no_run
-/// use iceoryx2_bb_testing_macros::test_module;
+/// use iceoryx2_bb_testing_macros::tests;
 ///
-/// #[test_module(
+/// #[tests(
 ///     (4, [u8; 4]),
 ///     (8, [u8; 8])
 /// )]
 /// mod my_const_tests {
-///     #[inventory_test]
+///     #[test]
 ///     pub fn size_matches_const<const N: usize, T: Sized>() {
 ///         assert_eq!(core::mem::size_of::<T>(), N);
 ///     }
@@ -77,20 +61,20 @@ use crate::inventory_test_common::instantiate_inventory_test;
 /// ```
 pub fn proc_macro(
     macro_parameters: proc_macro::TokenStream,
-    module: proc_macro::TokenStream,
+    item: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
-    let module_item = parse_macro_input!(module as ItemMod);
+    let module = parse_macro_input!(item as ItemMod);
     let macro_parameters: proc_macro2::TokenStream = macro_parameters.into();
 
-    let vis = &module_item.vis;
-    let mod_token = &module_item.mod_token;
-    let ident = &module_item.ident;
-    let attrs = &module_item.attrs;
+    let vis = &module.vis;
+    let mod_token = &module.mod_token;
+    let ident = &module.ident;
+    let attrs = &module.attrs;
 
-    let Some((_, items)) = module_item.content else {
+    let Some((_, items)) = module.content else {
         return syn::Error::new_spanned(
-            &module_item.ident,
-            "#[test_module] requires a module with an inline body",
+            &module.ident,
+            "#[tests] requires a module with an inline body",
         )
         .to_compile_error()
         .into();
@@ -103,11 +87,11 @@ pub fn proc_macro(
                 if test_function
                     .attrs
                     .iter()
-                    .any(|a| a.path().is_ident("inventory_test")) =>
+                    .any(|a| a.path().is_ident(TEST_ATTRIBUTE)) =>
             {
                 let params =
                     (!test_function.sig.generics.params.is_empty()).then_some(&macro_parameters);
-                instantiate_inventory_test(test_function, params)
+                instantiate_tests(test_function, params)
             }
             other => quote! { #other },
         })

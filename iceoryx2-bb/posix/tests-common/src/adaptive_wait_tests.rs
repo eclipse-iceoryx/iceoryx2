@@ -19,11 +19,11 @@ use iceoryx2_bb_posix::clock::Time;
 use iceoryx2_bb_posix::clock::*;
 use iceoryx2_bb_posix::config::*;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 
 pub const TIMEOUT: Duration = Duration::from_millis(50);
 
-#[inventory_test]
+#[test]
 pub fn adaptive_wait_wait_at_different_time_depends_on_repetition_times() {
     let mut counter: u64 = 0;
 
@@ -70,13 +70,13 @@ pub fn adaptive_wait_wait_at_different_time_depends_on_repetition_times() {
     assert_that!(start.elapsed().expect("failed to get elapsed time"), time_at_least ADAPTIVE_WAIT_FINAL_WAITING_TIME);
 }
 
-#[inventory_test]
+#[test]
 pub fn adaptive_wait_on_default_builder_uses_default_clock() {
     let sut = AdaptiveWaitBuilder::new().create().unwrap();
     assert_that!(sut.clock_type(), eq ClockType::default());
 }
 
-#[inventory_test]
+#[test]
 pub fn adaptive_wait_custom_clock_is_set_correctly() {
     let sut = AdaptiveWaitBuilder::new()
         .clock_type(ClockType::Realtime)
@@ -85,7 +85,7 @@ pub fn adaptive_wait_custom_clock_is_set_correctly() {
     assert_that!(sut.clock_type(), eq ClockType::Realtime);
 }
 
-#[inventory_test]
+#[test]
 pub fn adaptive_wait_wait_increases_yield_counter() {
     let mut sut = AdaptiveWaitBuilder::new().create().unwrap();
     assert_that!(sut.wait(), is_ok);
@@ -94,7 +94,7 @@ pub fn adaptive_wait_wait_increases_yield_counter() {
     assert_that!(sut.yield_count(), eq 3);
 }
 
-#[inventory_test]
+#[test]
 pub fn adaptive_wait_timed_wait_while_wait_at_least_for_timeout() {
     let mut sut = AdaptiveWaitBuilder::new().create().unwrap();
     let start = Time::now().expect("failed to get current time");
@@ -107,7 +107,7 @@ pub fn adaptive_wait_timed_wait_while_wait_at_least_for_timeout() {
     assert_that!(result, eq false);
 }
 
-#[inventory_test]
+#[test]
 pub fn adaptive_wait_timed_wait_does_not_wait_when_predicate_returns_false() {
     let mut sut = AdaptiveWaitBuilder::new().create().unwrap();
     let start = Time::now().expect("failed to get current time");
@@ -120,7 +120,7 @@ pub fn adaptive_wait_timed_wait_does_not_wait_when_predicate_returns_false() {
     assert_that!(result, eq true);
 }
 
-#[inventory_test]
+#[test]
 pub fn adaptive_wait_timed_wait_does_not_wait_when_predicate_returns_error() {
     let mut sut = AdaptiveWaitBuilder::new().create().unwrap();
     let start = Time::now().expect("failed to get current time");

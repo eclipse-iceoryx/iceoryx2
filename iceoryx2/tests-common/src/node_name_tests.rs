@@ -14,9 +14,9 @@ use alloc::format;
 
 use iceoryx2::prelude::*;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 
-#[inventory_test]
+#[test]
 fn node_name_creating_works() {
     let value = "tschi tschi bum bum";
     let sut = NodeName::new(value).unwrap();
@@ -25,7 +25,7 @@ fn node_name_creating_works() {
     assert_that!(&sut, eq value);
 }
 
-#[inventory_test]
+#[test]
 fn node_name_display_works() {
     let value = "lakirski materialski";
     let sut = NodeName::new(value).unwrap();
@@ -33,7 +33,7 @@ fn node_name_display_works() {
     assert_that!(format!("{}", sut), eq value);
 }
 
-#[inventory_test]
+#[test]
 fn node_name_try_into_works() {
     let value = "all glory to david hypnotoad";
     let sut: NodeName = value.try_into().unwrap();

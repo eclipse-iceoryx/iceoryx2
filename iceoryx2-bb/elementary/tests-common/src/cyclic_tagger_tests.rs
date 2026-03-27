@@ -14,9 +14,9 @@
 
 use iceoryx2_bb_elementary::cyclic_tagger::*;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 
-#[inventory_test]
+#[test]
 pub fn create_tag_works() {
     let sut = CyclicTagger::new();
     let sut_tag = sut.create_tag();
@@ -24,7 +24,7 @@ pub fn create_tag_works() {
     assert_that!(sut_tag.was_tagged_by(&sut), eq true);
 }
 
-#[inventory_test]
+#[test]
 pub fn create_untagged_tag_works() {
     let sut = CyclicTagger::new();
     let sut_tag = sut.create_untagged_tag();
@@ -32,7 +32,7 @@ pub fn create_untagged_tag_works() {
     assert_that!(sut_tag.was_tagged_by(&sut), eq false);
 }
 
-#[inventory_test]
+#[test]
 pub fn tagging_after_new_cyclic_works() {
     let sut = CyclicTagger::new();
     let sut_tag_1 = sut.create_tag();

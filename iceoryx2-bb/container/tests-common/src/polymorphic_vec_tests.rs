@@ -20,7 +20,7 @@ use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary_traits::allocator::AllocationError;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 
 const SUT_CAPACITY: usize = 10;
 
@@ -59,7 +59,7 @@ impl Test {
     }
 }
 
-#[inventory_test]
+#[test]
 pub fn try_clone_clones_empty_vec() {
     let test = Test::new();
     let sut = test.create_sut(3).unwrap();
@@ -70,7 +70,7 @@ pub fn try_clone_clones_empty_vec() {
     assert_that!(sut_clone.len(), eq 0);
 }
 
-#[inventory_test]
+#[test]
 pub fn try_clone_clones_filled_vec() {
     let test = Test::new();
     let mut sut = test.create_sut(3).unwrap();
@@ -90,7 +90,7 @@ pub fn try_clone_clones_filled_vec() {
     }
 }
 
-#[inventory_test]
+#[test]
 pub fn two_vectors_with_same_content_are_equal() {
     use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
 
@@ -105,7 +105,7 @@ pub fn two_vectors_with_same_content_are_equal() {
     assert_that!(sut1, eq sut2);
 }
 
-#[inventory_test]
+#[test]
 pub fn two_vectors_with_different_content_are_not_equal() {
     use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
 
@@ -122,7 +122,7 @@ pub fn two_vectors_with_different_content_are_not_equal() {
     assert_that!(sut1, ne sut2);
 }
 
-#[inventory_test]
+#[test]
 pub fn two_vectors_with_different_len_are_not_equal() {
     use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
 
@@ -138,7 +138,7 @@ pub fn two_vectors_with_different_len_are_not_equal() {
     assert_that!(sut1, ne sut2);
 }
 
-#[inventory_test]
+#[test]
 pub fn from_fn_initializes_vector() {
     use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
 

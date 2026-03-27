@@ -18,9 +18,9 @@ use iceoryx2_bb_concurrency::once::Once;
 use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle, Handle};
 use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 
-#[inventory_test]
+#[test]
 pub fn once_executes_exactly_once() {
     let once = Once::new();
     let counter = AtomicU32::new(0);
@@ -41,7 +41,7 @@ pub fn once_executes_exactly_once() {
     assert_that!(once.is_completed(), eq true);
 }
 
-#[inventory_test]
+#[test]
 pub fn once_works_with_multiple_threads() {
     const NUMBER_OF_THREADS: u32 = 10;
 
@@ -74,7 +74,7 @@ pub fn once_works_with_multiple_threads() {
     assert_that!(once.is_completed(), eq true);
 }
 
-#[inventory_test]
+#[test]
 pub fn once_is_completed_returns_false_initially() {
     let once = Once::new();
     assert_that!(once.is_completed(), eq false);

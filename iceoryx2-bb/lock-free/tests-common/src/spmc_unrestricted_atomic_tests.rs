@@ -27,7 +27,7 @@ use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle, Handle};
 use iceoryx2_bb_posix::system_configuration::SystemInfo;
 use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 
 const NUMBER_OF_RUNS: usize = 100000;
 const DATA_SIZE: usize = 1024;
@@ -44,7 +44,7 @@ fn verify(value: u8, rhs: &[u8; DATA_SIZE]) -> bool {
     true
 }
 
-#[inventory_test]
+#[test]
 pub fn spmc_unrestricted_atomic_acquire_multiple_producer_fails() {
     let _test_lock = TEST_LOCK.lock().unwrap();
     let sut = UnrestrictedAtomic::<[u8; DATA_SIZE]>::new([0xff; DATA_SIZE]);
@@ -60,7 +60,7 @@ pub fn spmc_unrestricted_atomic_acquire_multiple_producer_fails() {
     assert_that!(p3, is_some);
 }
 
-#[inventory_test]
+#[test]
 pub fn spmc_unrestricted_atomic_load_store_works() {
     let _test_lock = TEST_LOCK.lock().unwrap();
     let sut = UnrestrictedAtomic::<[u8; DATA_SIZE]>::new([0xff; DATA_SIZE]);
@@ -75,7 +75,7 @@ pub fn spmc_unrestricted_atomic_load_store_works() {
     }
 }
 
-#[inventory_test]
+#[test]
 pub fn spmc_unrestricted_atomic_load_store_works_concurrently() {
     let _test_lock = TEST_LOCK.lock().unwrap();
     let number_of_threads = SystemInfo::NumberOfCpuCores.value();
@@ -126,7 +126,7 @@ pub fn spmc_unrestricted_atomic_load_store_works_concurrently() {
     .expect("failed to run thread scope");
 }
 
-#[inventory_test]
+#[test]
 pub fn spmc_unrestricted_atomic_get_ptr_write_and_update_works() {
     let _test_lock = TEST_LOCK.lock().unwrap();
     let sut = UnrestrictedAtomic::<u32>::new(0);
@@ -142,7 +142,7 @@ pub fn spmc_unrestricted_atomic_get_ptr_write_and_update_works() {
     assert_that!(sut.load(), eq 1);
 }
 
-#[inventory_test]
+#[test]
 pub fn spmc_unrestricted_atomic_get_ptr_write_and_update_works_concurrently() {
     let _test_lock = TEST_LOCK.lock().unwrap();
     let store_finished = AtomicBool::new(false);
@@ -193,7 +193,7 @@ pub fn spmc_unrestricted_atomic_get_ptr_write_and_update_works_concurrently() {
     assert_that!(out_of_order.load(Ordering::Relaxed), eq false);
 }
 
-#[inventory_test]
+#[test]
 pub fn spmc_unrestricted_atomic_get_write_cell_works() {
     let _test_lock = TEST_LOCK.lock().unwrap();
     let sut = UnrestrictedAtomic::<u32>::new(0);
@@ -215,7 +215,7 @@ pub fn spmc_unrestricted_atomic_get_write_cell_works() {
     }
 }
 
-#[inventory_test]
+#[test]
 pub fn spmc_unrestricted_atomic_mgmt_release_producer_allows_new_acquire() {
     let _test_lock = TEST_LOCK.lock().unwrap();
     let sut = UnrestrictedAtomicMgmt::new();
@@ -232,7 +232,7 @@ pub fn spmc_unrestricted_atomic_mgmt_release_producer_allows_new_acquire() {
     assert_that!(p2, is_ok);
 }
 
-#[inventory_test]
+#[test]
 pub fn spmc_unrestricted_atomic_mgmt_get_ptr_write_and_update_works() {
     let _test_lock = TEST_LOCK.lock().unwrap();
 
@@ -306,7 +306,7 @@ fn internal_pointer_calculation_works<ValueType: Copy + Default>() {
     }
 }
 
-#[inventory_test]
+#[test]
 pub fn spmc_unrestricted_atomic_internal_ptr_calculation_works_with_integers() {
     internal_pointer_calculation_works::<u8>();
     internal_pointer_calculation_works::<u16>();
@@ -373,7 +373,7 @@ fn internal_get_data_cell_calculation_works<ValueType: Copy + Default>() {
     }
 }
 
-#[inventory_test]
+#[test]
 pub fn spmc_unrestricted_atomic_internal_get_data_cell_with_integers() {
     internal_get_data_cell_calculation_works::<u8>();
     internal_get_data_cell_calculation_works::<u16>();
@@ -405,7 +405,7 @@ fn mgmt_calculates_correct_size_and_alignment_of_unrestricted_atomic<ValueType: 
     assert_that!(sut_alignment, eq align_of_val(&atomic));
 }
 
-#[inventory_test]
+#[test]
 pub fn spmc_unrestricted_atomic_internal_size_and_alignment_calculation_with_integers() {
     mgmt_calculates_correct_size_and_alignment_of_unrestricted_atomic::<u8>();
     mgmt_calculates_correct_size_and_alignment_of_unrestricted_atomic::<u16>();
@@ -421,7 +421,7 @@ pub fn spmc_unrestricted_atomic_internal_size_and_alignment_calculation_with_int
     mgmt_calculates_correct_size_and_alignment_of_unrestricted_atomic::<f64>();
 }
 
-#[inventory_test]
+#[test]
 pub fn spmc_unrestricted_atomic_mgmt_get_write_cell_works() {
     let _test_lock = TEST_LOCK.lock().unwrap();
 

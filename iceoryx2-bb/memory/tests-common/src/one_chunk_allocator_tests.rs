@@ -16,8 +16,8 @@ use iceoryx2_bb_elementary::math::*;
 use iceoryx2_bb_elementary_traits::allocator::*;
 use iceoryx2_bb_memory::one_chunk_allocator::*;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_bb_testing_macros::requires_std;
+use iceoryx2_bb_testing_macros::test;
 
 struct TestFixture {
     raw_memory: [u8; TestFixture::memory_size()],
@@ -56,7 +56,7 @@ impl TestFixture {
     }
 }
 
-#[inventory_test]
+#[test]
 pub fn one_chunk_allocator_acquire_works() {
     const CHUNK_SIZE: usize = 128;
     const CHUNK_ALIGNMENT: usize = 1;
@@ -74,7 +74,7 @@ pub fn one_chunk_allocator_acquire_works() {
     );
 }
 
-#[inventory_test]
+#[test]
 pub fn one_chunk_allocator_acquire_with_alignment_works() {
     const CHUNK_SIZE: usize = 128;
     const CHUNK_ALIGNMENT: usize = 256;
@@ -93,7 +93,7 @@ pub fn one_chunk_allocator_acquire_with_alignment_works() {
     assert_that!(unsafe { memory.as_ref() }.as_ptr() as usize, eq aligned_start);
 }
 
-#[inventory_test]
+#[test]
 pub fn one_chunk_allocator_allocate_zeroed_works() {
     const CHUNK_SIZE: usize = 128;
     const CHUNK_ALIGNMENT: usize = 1;
@@ -109,7 +109,7 @@ pub fn one_chunk_allocator_allocate_zeroed_works() {
     }
 }
 
-#[inventory_test]
+#[test]
 pub fn one_chunk_allocator_shrink_works() {
     const CHUNK_SIZE: usize = 128;
     const CHUNK_ALIGNMENT: usize = 1;
@@ -132,7 +132,7 @@ pub fn one_chunk_allocator_shrink_works() {
     assert_that!(unsafe { memory.as_ref() }, len CHUNK_SIZE / 2);
 }
 
-#[inventory_test]
+#[test]
 pub fn one_chunk_allocator_shrink_fails_when_size_increases() {
     const CHUNK_SIZE: usize = 128;
     const CHUNK_ALIGNMENT: usize = 1;
@@ -155,7 +155,7 @@ pub fn one_chunk_allocator_shrink_fails_when_size_increases() {
     );
 }
 
-#[inventory_test]
+#[test]
 pub fn one_chunk_allocator_shrink_fails_when_alignment_increases() {
     const CHUNK_SIZE: usize = 128;
     const CHUNK_ALIGNMENT: usize = 1;
@@ -178,7 +178,7 @@ pub fn one_chunk_allocator_shrink_fails_when_alignment_increases() {
     );
 }
 
-#[inventory_test]
+#[test]
 #[requires_std("panics")]
 #[should_panic]
 #[cfg(debug_assertions)]
@@ -197,7 +197,7 @@ pub fn one_chunk_allocator_shrink_non_allocated_chunk_fails() {
     }
 }
 
-#[inventory_test]
+#[test]
 pub fn one_chunk_allocator_grow_works() {
     const CHUNK_SIZE: usize = 128;
     const CHUNK_ALIGNMENT: usize = 1;
@@ -229,7 +229,7 @@ pub fn one_chunk_allocator_grow_works() {
     assert_that!(unsafe { memory.as_ref() }, len TestFixture::memory_size());
 }
 
-#[inventory_test]
+#[test]
 pub fn one_chunk_allocator_grow_zeroed_works() {
     const CHUNK_SIZE: usize = 128;
     const CHUNK_ALIGNMENT: usize = 1;
@@ -269,7 +269,7 @@ pub fn one_chunk_allocator_grow_zeroed_works() {
     assert_that!(unsafe { memory.as_ref() }, len TestFixture::memory_size());
 }
 
-#[inventory_test]
+#[test]
 pub fn one_chunk_allocator_grow_with_decreased_size_fails() {
     const CHUNK_SIZE: usize = 128;
     const CHUNK_ALIGNMENT: usize = 1;
@@ -301,7 +301,7 @@ pub fn one_chunk_allocator_grow_with_decreased_size_fails() {
     );
 }
 
-#[inventory_test]
+#[test]
 pub fn one_chunk_allocator_grow_with_increased_alignment_fails() {
     const CHUNK_SIZE: usize = 128;
     const CHUNK_ALIGNMENT: usize = 1;
@@ -333,7 +333,7 @@ pub fn one_chunk_allocator_grow_with_increased_alignment_fails() {
     );
 }
 
-#[inventory_test]
+#[test]
 #[requires_std("panics")]
 #[should_panic]
 #[cfg(debug_assertions)]
@@ -352,7 +352,7 @@ pub fn one_chunk_allocator_grow_with_non_allocated_chunk_fails() {
     }
 }
 
-#[inventory_test]
+#[test]
 #[requires_std("panics")]
 #[should_panic]
 #[cfg(debug_assertions)]
