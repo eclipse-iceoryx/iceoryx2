@@ -65,13 +65,10 @@ mod tests {
         std::fs::remove_file(&src_file).ok();
 
         if !output.status.success() {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                format!(
-                    "Failed to compile noop executable: {}",
-                    String::from_utf8_lossy(&output.stderr)
-                ),
-            ));
+            return Err(std::io::Error::other(format!(
+                "Failed to compile noop executable: {}",
+                String::from_utf8_lossy(&output.stderr)
+            )));
         }
 
         Ok(())
