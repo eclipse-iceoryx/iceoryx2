@@ -130,6 +130,8 @@
   [#1300](https://github.com/eclipse-iceoryx/iceoryx2/issues/1300)
 * Add CI check for `std` feature propagation
   [#1300](https://github.com/eclipse-iceoryx/iceoryx2/issues/1300)
+* Enable clippy for the whole workspace and all targets
+  [#1355](https://github.com/eclipse-iceoryx/iceoryx2/issues/1355)
 * Add `just` scripts for some common maintenance tasks
   [#1408](https://github.com/eclipse-iceoryx/iceoryx2/issues/1408)
 
