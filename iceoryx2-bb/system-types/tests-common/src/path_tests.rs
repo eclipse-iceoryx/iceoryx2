@@ -19,6 +19,7 @@ use iceoryx2_bb_testing::assert_that;
 #[cfg(target_os = "windows")]
 mod windows {
     use super::*;
+    use iceoryx2_bb_testing_macros::test;
 
     #[test]
     pub fn path_new_with_illegal_name_fails() {
