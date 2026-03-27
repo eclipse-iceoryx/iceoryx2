@@ -177,7 +177,7 @@ mod tests {
             panic!("Failed to extract CommandInfo of test files");
         };
 
-        let result = IceoryxCommandExecutor::execute(&foo_command, None);
+        let result = IceoryxCommandExecutor::execute(foo_command, None);
         if let Err(ref e) = result {
             println!("Error executing command: {}", e);
         }
@@ -185,7 +185,7 @@ mod tests {
         assert_that!(result, is_ok);
 
         let args = vec!["arg1".to_string(), "arg2".to_string()];
-        let result = IceoryxCommandExecutor::execute(&foo_command, Some(&args));
+        let result = IceoryxCommandExecutor::execute(foo_command, Some(&args));
         assert_that!(result, is_ok);
     }
 }
