@@ -10,7 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::sync::atomic::{AtomicBool, Ordering};
 use core::time::Duration;
 
 extern crate alloc;
@@ -18,6 +17,7 @@ use alloc::boxed::Box;
 use alloc::sync::Arc;
 
 use iceoryx2::prelude::*;
+use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};
 use iceoryx2_bb_posix::clock::nanosleep;
 use iceoryx2_bb_posix::thread::{ThreadBuilder, ThreadName};
 
