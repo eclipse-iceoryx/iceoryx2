@@ -44,9 +44,9 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
                     coutln!("Service ID: {:?}", service.service_id().as_str());
                     coutln!("Service Name: {:?}", service.name().as_str());
                 }
-                coutln!("exit");
-                return CallbackProgression::Stop;
             }
+            coutln!("exit");
+            return CallbackProgression::Stop;
         }
         CallbackProgression::Continue
     };
