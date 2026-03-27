@@ -60,6 +60,8 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     Ok(())
 }
 
+type SampleType = Sample<ipc::Service, TransmissionData, ()>;
+
 #[derive(Debug)]
 struct CustomSubscriber {
     subscriber: Subscriber<ipc::Service, TransmissionData, ()>,
@@ -134,10 +136,7 @@ impl CustomSubscriber {
         Ok(())
     }
 
-    fn receive(
-        &self,
-    ) -> Result<Option<Sample<ipc::Service, TransmissionData, ()>>, Box<dyn core::error::Error>>
-    {
+    fn receive(&self) -> Result<Option<SampleType>, Box<dyn core::error::Error>> {
         match self.subscriber.receive()? {
             Some(sample) => {
                 self.notifier
