@@ -274,9 +274,10 @@ mod recorder_replayer {
             .create(&file_name, &service_name)
             .unwrap();
 
-        let mut dataset = vec![];
-        dataset.push(generate_service_data(&types, Duration::from_millis(5)));
-        dataset.push(generate_service_data(&types, Duration::from_millis(2)));
+        let dataset = [
+            generate_service_data(&types, Duration::from_millis(5)),
+            generate_service_data(&types, Duration::from_millis(2)),
+        ];
 
         assert_that!(
             recorder.write(RawRecord {
@@ -846,9 +847,10 @@ mod recorder_replayer {
             .create(&file_name, &service_name)
             .unwrap();
 
-        let mut dataset = vec![];
-        dataset.push(generate_service_data(&types, Duration::from_millis(5)));
-        dataset.push(generate_service_data(&types, Duration::from_millis(2)));
+        let dataset = [
+            generate_service_data(&types, Duration::from_millis(5)),
+            generate_service_data(&types, Duration::from_millis(2)),
+        ];
 
         for data in dataset {
             assert_that!(
