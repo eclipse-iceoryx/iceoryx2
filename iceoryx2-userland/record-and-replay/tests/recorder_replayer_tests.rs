@@ -616,12 +616,12 @@ mod recorder_replayer {
 
         assert_that!(replayer.header(), eq recorder.header());
 
-        for n in 0..dataset.len() {
+        for data in &dataset {
             let record = replayer.next_record().unwrap().unwrap();
-            assert_that!(record.payload, eq dataset[n].payload);
-            assert_that!(record.user_header, eq dataset[n].user_header);
-            assert_that!(record.system_header, eq dataset[n].system_header);
-            assert_that!(record.timestamp, eq dataset[n].timestamp);
+            assert_that!(record.payload, eq data.payload);
+            assert_that!(record.user_header, eq data.user_header);
+            assert_that!(record.system_header, eq data.system_header);
+            assert_that!(record.timestamp, eq data.timestamp);
         }
 
         File::remove(&file_name).unwrap();
