@@ -118,3 +118,5 @@ pub mod relocatable_option;
 pub(crate) mod vec;
 /// A trait that defines the interface of a vector and several vector variants.
 pub mod vector;
+
+pub mod atomic_memcpy;
