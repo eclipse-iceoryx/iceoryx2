@@ -76,6 +76,11 @@ pub fn expect_panic(
 #[macro_export]
 macro_rules! test_harness {
     () => {
+        extern crate alloc;
+        use alloc::format;
+        use alloc::string::String;
+        use alloc::vec::Vec;
+
         pub fn main() {
             let mut args = $crate::libtest_mimic::Arguments::from_args();
             args.test_threads
@@ -90,9 +95,9 @@ macro_rules! test_harness {
                         .map(|i| &test_case.module[i + 2..])
                         .unwrap_or("");
                     let trial_name = if module.is_empty() {
-                        std::string::String::from(test_case.name)
+                        alloc::string::String::from(test_case.name)
                     } else {
-                        std::format!("{}::{}", module, test_case.name)
+                        alloc::format!("{}::{}", module, test_case.name)
                     };
                     $crate::libtest_mimic::Trial::test(trial_name, move || {
                         if test_case.should_panic {
