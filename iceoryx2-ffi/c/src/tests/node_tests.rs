@@ -37,7 +37,7 @@ mod node {
 
             let config = iox2_node_config(&node_handle);
 
-            assert_that!(*(config as *const Config), eq(*expected_config));
+            assert_that!(*config, eq(*expected_config));
 
             iox2_node_drop(node_handle);
         }
