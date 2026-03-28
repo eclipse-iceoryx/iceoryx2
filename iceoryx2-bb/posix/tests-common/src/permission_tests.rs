@@ -14,9 +14,9 @@
 
 use iceoryx2_bb_posix::permission::*;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 
-#[inventory_test]
+#[test]
 pub fn permission_setting_and_reading_works() {
     let mut v1 = Permission::OWNER_READ
         | Permission::OTHERS_WRITE

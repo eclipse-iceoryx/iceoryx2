@@ -14,7 +14,7 @@ use alloc::boxed::Box;
 use core::{alloc::Layout, ptr::NonNull};
 
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 use iceoryx2_cal::shm_allocator::{bump_allocator::*, AllocationStrategy, ShmAllocator};
 
 const MAX_SUPPORTED_ALIGNMENT: usize = 4096;
@@ -51,7 +51,7 @@ impl TestContext {
     }
 }
 
-#[inventory_test]
+#[test]
 fn shm_allocator_bump_allocator_initial_setup_hint_is_layout_times_number_of_chunks() {
     let layout = Layout::from_size_align(64, 2).unwrap();
     let max_number_of_chunks = 54;
@@ -69,18 +69,18 @@ fn no_new_resize_hint_when_there_is_memory_available(strategy: AllocationStrateg
     assert_that!(hint.payload_size, eq test_context.sut.total_space());
 }
 
-#[inventory_test]
+#[test]
 fn shm_allocator_bump_allocator_no_new_resize_hint_with_power_of_two_when_there_is_memory_available(
 ) {
     no_new_resize_hint_when_there_is_memory_available(AllocationStrategy::PowerOfTwo)
 }
 
-#[inventory_test]
+#[test]
 fn shm_allocator_bump_allocator_no_new_resize_hint_with_best_fit_when_there_is_memory_available() {
     no_new_resize_hint_when_there_is_memory_available(AllocationStrategy::BestFit)
 }
 
-#[inventory_test]
+#[test]
 fn shm_allocator_bump_allocator_new_resize_hint_with_power_of_two_when_there_is_not_enough_memory_available(
 ) {
     let test_context = TestContext::new();
@@ -94,7 +94,7 @@ fn shm_allocator_bump_allocator_new_resize_hint_with_power_of_two_when_there_is_
     );
 }
 
-#[inventory_test]
+#[test]
 fn shm_allocator_bump_allocator_new_resize_hint_with_best_fit_when_there_is_not_enough_memory_available(
 ) {
     let test_context = TestContext::new();

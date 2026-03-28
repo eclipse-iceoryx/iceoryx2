@@ -928,6 +928,7 @@ version = "0.8.999"
 dependencies = [
  "clap",
  "iceoryx2",
+ "iceoryx2-bb-concurrency",
  "iceoryx2-bb-container",
  "iceoryx2-bb-derive-macros",
  "iceoryx2-bb-elementary",

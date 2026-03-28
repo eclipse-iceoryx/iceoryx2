@@ -15,9 +15,9 @@
 use iceoryx2_bb_posix::config::DEFAULT_SCHEDULER;
 use iceoryx2_bb_posix::scheduler::*;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 
-#[inventory_test]
+#[test]
 pub fn scheduler_default_scheduler_set_correctly() {
     assert_that!(Scheduler::default(), eq DEFAULT_SCHEDULER)
 }

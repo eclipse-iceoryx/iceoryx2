@@ -25,15 +25,15 @@ use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle, Handle};
 use iceoryx2_bb_posix::clock::nanosleep;
 use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 
-#[inventory_test]
+#[test]
 pub fn lazy_lock_primitive_type() {
     static VALUE: LazyLock<u32> = LazyLock::new(|| 42);
     assert_eq!(*VALUE, 42);
 }
 
-#[inventory_test]
+#[test]
 pub fn lazy_lock_complex_type() {
     #[derive(Debug, PartialEq)]
     struct ComplexType {
@@ -51,7 +51,7 @@ pub fn lazy_lock_complex_type() {
     assert_eq!(COMPLEX.value[2], 3);
 }
 
-#[inventory_test]
+#[test]
 pub fn lazy_lock_zero_sized_type() {
     #[derive(Debug, PartialEq)]
     struct ZeroSized;
@@ -60,28 +60,28 @@ pub fn lazy_lock_zero_sized_type() {
     assert_eq!(*VALUE, ZeroSized);
 }
 
-#[inventory_test]
+#[test]
 pub fn lazy_lock_closure() {
     let multiplier = 10;
     let lazy = LazyLock::new(move || multiplier * 5);
     assert_eq!(*lazy, 50);
 }
 
-#[inventory_test]
+#[test]
 pub fn lazy_lock_non_static() {
     let lazy = LazyLock::new(|| vec![1, 2, 3]);
     assert_eq!(lazy.len(), 3);
     assert_eq!(lazy[1], 2);
 }
 
-#[inventory_test]
+#[test]
 pub fn lazy_lock_deref() {
     static VALUE: LazyLock<String> = LazyLock::new(|| "hello".to_string());
     assert_eq!(VALUE.len(), 5);
     assert_eq!(&*VALUE, "hello");
 }
 
-#[inventory_test]
+#[test]
 pub fn lazy_lock_initialization_occurs_once() {
     static CALL_COUNT: AtomicUsize = AtomicUsize::new(0);
     static VALUE: LazyLock<u32> = LazyLock::new(|| {
@@ -96,7 +96,7 @@ pub fn lazy_lock_initialization_occurs_once() {
     assert_eq!(CALL_COUNT.load(Ordering::SeqCst), 1);
 }
 
-#[inventory_test]
+#[test]
 pub fn lazy_lock_force_initialization() {
     static CALL_COUNT: AtomicUsize = AtomicUsize::new(0);
     static VALUE: LazyLock<u32> = LazyLock::new(|| {
@@ -114,7 +114,7 @@ pub fn lazy_lock_force_initialization() {
     assert_eq!(CALL_COUNT.load(Ordering::SeqCst), 1);
 }
 
-#[inventory_test]
+#[test]
 pub fn lazy_lock_returns_same_reference() {
     static VALUE: LazyLock<String> = LazyLock::new(|| "hello".to_string());
 
@@ -124,7 +124,7 @@ pub fn lazy_lock_returns_same_reference() {
     assert!(core::ptr::eq(ref1, ref2));
 }
 
-#[inventory_test]
+#[test]
 pub fn lazy_lock_dependent_initialization() {
     static FIRST: LazyLock<u32> = LazyLock::new(|| 10);
     static SECOND: LazyLock<u32> = LazyLock::new(|| *FIRST * 2);
@@ -133,7 +133,7 @@ pub fn lazy_lock_dependent_initialization() {
     assert_eq!(*FIRST, 10);
 }
 
-#[inventory_test]
+#[test]
 pub fn lazy_lock_concurrent_access_from_multiple_threads() {
     const NUMBER_OF_THREADS: u32 = 10;
     const TIMEOUT: Duration = Duration::from_millis(10);

@@ -16,9 +16,9 @@ use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
 
 use iceoryx2_bb_elementary::scope_guard::*;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 
-#[inventory_test]
+#[test]
 pub fn scope_guard_callbacks_are_called_correctly_success_case() {
     let startup_callback = AtomicU64::new(0);
     let cleanup_callback = AtomicU64::new(0);
@@ -49,7 +49,7 @@ pub fn scope_guard_callbacks_are_called_correctly_success_case() {
     assert_that!(cleanup_callback.load(Ordering::Relaxed), eq 991);
 }
 
-#[inventory_test]
+#[test]
 pub fn scope_guard_callbacks_are_called_correctly_failure_case() {
     let startup_callback = AtomicU64::new(0);
     let cleanup_callback = AtomicU64::new(0);

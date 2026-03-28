@@ -30,6 +30,7 @@ pub mod zero_copy_connection_trait {
     use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
+    #[cfg(debug_assertions)]
     use iceoryx2_bb_testing_macros::requires_std;
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::named_concept::{NamedConceptBuilder, NamedConceptMgmt};

@@ -15,7 +15,7 @@
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 
 fn is_zero_copy_send<T: ZeroCopySend>(_: &T) -> bool {
     true
@@ -96,7 +96,7 @@ union BasicUnionTest {
     _val2: u8,
 }
 
-#[inventory_test]
+#[test]
 pub fn zero_copy_send_derive_works_for_named_struct() {
     let sut = NamedTestStruct {
         _val1: 1990,
@@ -105,13 +105,13 @@ pub fn zero_copy_send_derive_works_for_named_struct() {
     assert_that!(is_zero_copy_send(&sut), eq true);
 }
 
-#[inventory_test]
+#[test]
 pub fn zero_copy_send_derive_works_for_unnamed_struct() {
     let sut = UnnamedTestStruct(4, 6, Foo(2));
     assert_that!(is_zero_copy_send(&sut), eq true);
 }
 
-#[inventory_test]
+#[test]
 pub fn zero_copy_send_derive_works_for_generic_named_struct() {
     let sut = GenericNamedTestStruct {
         _val1: 2.3,
@@ -120,13 +120,13 @@ pub fn zero_copy_send_derive_works_for_generic_named_struct() {
     assert_that!(is_zero_copy_send(&sut), eq true);
 }
 
-#[inventory_test]
+#[test]
 pub fn zero_copy_send_derive_works_for_generic_unnamed_struct() {
     let sut = GenericUnnamedTestStruct(23.4, 2023);
     assert_that!(is_zero_copy_send(&sut), eq true);
 }
 
-#[inventory_test]
+#[test]
 pub fn zero_copy_send_derive_sets_type_name_correctly_for_named_structs() {
     let sut = NamedTestStruct {
         _val1: 23,
@@ -143,7 +143,7 @@ pub fn zero_copy_send_derive_sets_type_name_correctly_for_named_structs() {
     assert_that!(unsafe { NamedTestStructWithAttr::type_name() }, eq "Nala");
 }
 
-#[inventory_test]
+#[test]
 pub fn zero_copy_send_derive_sets_type_name_correctly_for_unnamed_structs() {
     let sut = UnnamedTestStruct(1, 2, Foo(3));
     assert_that!(is_zero_copy_send(&sut), eq true);
@@ -154,7 +154,7 @@ pub fn zero_copy_send_derive_sets_type_name_correctly_for_unnamed_structs() {
     assert_that!(unsafe { UnnamedTestStructWithAttr::type_name() }, eq "Hypnotoad");
 }
 
-#[inventory_test]
+#[test]
 pub fn zero_copy_send_derive_sets_type_name_correctly_for_generic_named_structs() {
     let sut = GenericNamedTestStruct {
         _val1: 11,
@@ -171,7 +171,7 @@ pub fn zero_copy_send_derive_sets_type_name_correctly_for_generic_named_structs(
     assert_that!(unsafe { GenericNamedTestStructWithAttr::<f32, Foo>::type_name() }, eq "Wolf");
 }
 
-#[inventory_test]
+#[test]
 pub fn zero_copy_send_derive_sets_type_name_correctly_for_generic_unnamed_struct() {
     let sut = GenericUnnamedTestStruct(-13, 13);
     assert_that!(is_zero_copy_send(&sut), eq true);
@@ -182,7 +182,7 @@ pub fn zero_copy_send_derive_sets_type_name_correctly_for_generic_unnamed_struct
     assert_that!(unsafe { GenericUnnamedTestStructWithAttr::<i32, i32>::type_name() }, eq "Smeik");
 }
 
-#[inventory_test]
+#[test]
 pub fn zero_copy_send_derive_for_unions() {
     let sut = BasicUnionTest { _val1: 12 };
     assert_that!(is_zero_copy_send(&sut), eq true);

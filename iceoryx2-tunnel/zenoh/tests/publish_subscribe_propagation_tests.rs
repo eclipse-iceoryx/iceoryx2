@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::disallowed_types)]
+
 use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
 
 use iceoryx2::service::ipc::Service as Ipc;

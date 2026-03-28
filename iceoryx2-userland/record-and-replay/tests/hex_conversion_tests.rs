@@ -30,7 +30,7 @@ mod hex_conversion_tests {
     fn invalid_hex_characters_fail() {
         let hex_sut = "0a ab fe xf";
 
-        assert_that!(hex_string_to_bytes(&hex_sut).err(), eq Some(HexToBytesConversionError::InvalidHexCode));
+        assert_that!(hex_string_to_bytes(hex_sut).err(), eq Some(HexToBytesConversionError::InvalidHexCode));
     }
 
     #[test]
@@ -46,6 +46,6 @@ mod hex_conversion_tests {
     fn missing_spacing_fails() {
         let hex_sut = "0aabfe";
 
-        assert_that!(hex_string_to_bytes(&hex_sut).err(), eq Some(HexToBytesConversionError::InvalidHexCode));
+        assert_that!(hex_string_to_bytes(hex_sut).err(), eq Some(HexToBytesConversionError::InvalidHexCode));
     }
 }

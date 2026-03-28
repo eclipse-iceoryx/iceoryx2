@@ -20,11 +20,11 @@ use iceoryx2_bb_concurrency::{WaitAction, WaitResult};
 use iceoryx2_bb_posix::clock::{nanosleep, Time};
 use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 
 pub const TIMEOUT: Duration = Duration::from_millis(25);
 
-#[inventory_test]
+#[test]
 pub fn strategy_mutex_lock_blocks() {
     let sut = Mutex::new();
     let counter = AtomicU32::new(0);
@@ -54,7 +54,7 @@ pub fn strategy_mutex_lock_blocks() {
     assert_that!(counter.load(Ordering::Relaxed), eq 1);
 }
 
-#[inventory_test]
+#[test]
 pub fn strategy_mutex_lock_with_timeout_and_fails_after_timeout() {
     const TIMEOUT: Duration = Duration::from_millis(25);
 

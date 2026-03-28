@@ -33,8 +33,19 @@ jobs:
           echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
           echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
 
-      - name: Run cargo clippy
-        run: cargo clippy -- -D warnings
+      - name: Run cargo clippy with default features for 'std' in debug mode
+        run: cargo clippy --no-deps --workspace --all-targets -- -D warnings
+
+      - name: Run cargo clippy with default features for 'std' in release mode
+        run: cargo clippy --no-deps --workspace --all-targets --release -- -D warnings
+
+      - name: Run cargo clippy with no-default features for 'no_std' in debug mode
+        if: ${{ runner.os == 'Linux' }}
+        run: cargo clippy --no-deps --workspace --all-targets --no-default-features --exclude iceoryx2-tunnel-zenoh --exclude iceoryx2-cli -- -D warnings
+
+      - name: Run cargo clippy with no-default features for 'no_std' in release mode
+        if: ${{ runner.os == 'Linux' }}
+        run: cargo clippy --no-deps --workspace --all-targets --release --no-default-features --exclude iceoryx2-tunnel-zenoh --exclude iceoryx2-cli -- -D warnings
 
       - name: Setup miri
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # version: v1

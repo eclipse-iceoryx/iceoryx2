@@ -65,13 +65,10 @@ mod tests {
         std::fs::remove_file(&src_file).ok();
 
         if !output.status.success() {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                format!(
-                    "Failed to compile noop executable: {}",
-                    String::from_utf8_lossy(&output.stderr)
-                ),
-            ));
+            return Err(std::io::Error::other(format!(
+                "Failed to compile noop executable: {}",
+                String::from_utf8_lossy(&output.stderr)
+            )));
         }
 
         Ok(())
@@ -177,7 +174,7 @@ mod tests {
             panic!("Failed to extract CommandInfo of test files");
         };
 
-        let result = IceoryxCommandExecutor::execute(&foo_command, None);
+        let result = IceoryxCommandExecutor::execute(foo_command, None);
         if let Err(ref e) = result {
             println!("Error executing command: {}", e);
         }
@@ -185,7 +182,7 @@ mod tests {
         assert_that!(result, is_ok);
 
         let args = vec!["arg1".to_string(), "arg2".to_string()];
-        let result = IceoryxCommandExecutor::execute(&foo_command, Some(&args));
+        let result = IceoryxCommandExecutor::execute(foo_command, Some(&args));
         assert_that!(result, is_ok);
     }
 }

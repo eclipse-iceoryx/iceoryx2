@@ -14,9 +14,9 @@
 
 use iceoryx2_bb_elementary::alignment::*;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 
-#[inventory_test]
+#[test]
 pub fn alignment_of_invalid_values_returns_none() {
     assert_that!(Alignment::new(0), is_none);
     assert_that!(Alignment::new(3), is_none);
@@ -24,7 +24,7 @@ pub fn alignment_of_invalid_values_returns_none() {
     assert_that!(Alignment::new(331), is_none);
 }
 
-#[inventory_test]
+#[test]
 pub fn alignment_of_valid_values_works() {
     for n in 0..16 {
         let raw_alignment = 2usize.pow(n as u32);

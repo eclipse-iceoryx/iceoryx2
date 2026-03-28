@@ -76,9 +76,10 @@ int main(void) { // NOLINT
 
     // Create service
     iox2_port_factory_request_response_h service = NULL;
-    if (iox2_service_builder_request_response_open_or_create(service_builder_request_response, NULL, &service)
-        != IOX2_OK) {
-        printf("Unable to create service!\n");
+    int service_creation_result =
+        iox2_service_builder_request_response_open_or_create(service_builder_request_response, NULL, &service);
+    if (service_creation_result != IOX2_OK) {
+        printf("Unable to create service! Error: %i\n", service_creation_result);
         goto drop_service_name;
     }
 

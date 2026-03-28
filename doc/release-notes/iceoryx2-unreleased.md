@@ -93,6 +93,8 @@
     NOTE: Add new entries sorted by issue number to minimize the possibility of
     conflicts when merging.
 -->
+* Remove clippy workaround
+  [#223](https://github.com/eclipse-iceoryx/iceoryx2/issues/223)
 * Remove support for Bazel Workspaces
   [#1263](https://github.com/eclipse-iceoryx/iceoryx2/issues/1263)
 * Adjust test names to naming convention
@@ -124,10 +126,14 @@
     conflicts when merging.
 -->
 
-* Add framework for `no_std` testing
+* Add custom test framework that supports `no_std` testing
+  [#1300](https://github.com/eclipse-iceoryx/iceoryx2/issues/1300)
+* Add `no_std` tests for `iceoryx2` and crates below it in the architecture
   [#1300](https://github.com/eclipse-iceoryx/iceoryx2/issues/1300)
 * Add CI check for `std` feature propagation
   [#1300](https://github.com/eclipse-iceoryx/iceoryx2/issues/1300)
+* Enable clippy for the whole workspace and all targets
+  [#1355](https://github.com/eclipse-iceoryx/iceoryx2/issues/1355)
 * Add `just` scripts for some common maintenance tasks
   [#1408](https://github.com/eclipse-iceoryx/iceoryx2/issues/1408)
 

@@ -26,7 +26,7 @@ use iceoryx2_bb_posix::unix_datagram_socket::CreationMode;
 use iceoryx2_bb_posix::{process_state::*, unique_system_id::UniqueSystemId};
 use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath};
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 
 fn generate_file_path() -> FilePath {
     let mut file = FileName::new(b"process_state_tests").unwrap();
@@ -43,7 +43,7 @@ fn generate_file_path() -> FilePath {
     FilePath::from_path_and_file(&TEST_DIRECTORY, &file).unwrap()
 }
 
-#[inventory_test]
+#[test]
 pub fn process_state_guard_can_be_created() {
     create_test_directory();
     let path = generate_file_path();
@@ -54,7 +54,7 @@ pub fn process_state_guard_can_be_created() {
     assert_that!(File::does_exist(&path).unwrap(), eq true);
 }
 
-#[inventory_test]
+#[test]
 pub fn process_state_guard_removes_file_when_dropped() {
     create_test_directory();
     let path = generate_file_path();
@@ -65,7 +65,7 @@ pub fn process_state_guard_removes_file_when_dropped() {
     assert_that!(File::does_exist(&path).unwrap(), eq false);
 }
 
-#[inventory_test]
+#[test]
 pub fn process_state_guard_cannot_use_already_existing_file() {
     create_test_directory();
     let path = generate_file_path();
@@ -82,7 +82,7 @@ pub fn process_state_guard_cannot_use_already_existing_file() {
     file.remove_self().unwrap();
 }
 
-#[inventory_test]
+#[test]
 pub fn process_state_monitor_detects_dead_state() {
     create_test_directory();
     let path = generate_file_path();
@@ -98,7 +98,7 @@ pub fn process_state_monitor_detects_dead_state() {
     assert_that!(monitor.state().unwrap(), eq ProcessState::DoesNotExist);
 }
 
-#[inventory_test]
+#[test]
 pub fn process_state_monitor_detects_non_existing_state() {
     create_test_directory();
     let path = generate_file_path();
@@ -107,7 +107,7 @@ pub fn process_state_monitor_detects_non_existing_state() {
     assert_that!(monitor.state().unwrap(), eq ProcessState::DoesNotExist);
 }
 
-#[inventory_test]
+#[test]
 pub fn process_state_monitor_transitions_work_starting_from_non_existing_process() {
     create_test_directory();
     let path = generate_file_path();
@@ -133,7 +133,7 @@ pub fn process_state_monitor_transitions_work_starting_from_non_existing_process
     assert_that!(monitor.state().unwrap(), eq ProcessState::DoesNotExist);
 }
 
-#[inventory_test]
+#[test]
 pub fn process_state_monitor_transitions_work_starting_from_existing_process() {
     create_test_directory();
     let path = generate_file_path();
@@ -164,7 +164,7 @@ pub fn process_state_monitor_transitions_work_starting_from_existing_process() {
     owner_lock_file.remove_self().unwrap();
 }
 
-#[inventory_test]
+#[test]
 pub fn process_state_monitor_detects_initialized_state() {
     create_test_directory();
     let path = generate_file_path();
@@ -182,7 +182,7 @@ pub fn process_state_monitor_detects_initialized_state() {
     assert_that!(monitor.state().unwrap(), eq ProcessState::DoesNotExist);
 }
 
-#[inventory_test]
+#[test]
 pub fn process_state_owner_lock_cannot_be_created_when_process_does_not_exist() {
     create_test_directory();
     let path = generate_file_path();
@@ -225,7 +225,7 @@ pub fn process_state_owner_lock_cannot_be_created_when_process_does_not_exist() 
     );
 }
 
-#[inventory_test]
+#[test]
 pub fn process_state_cleaner_removes_state_files_on_drop() {
     create_test_directory();
     let path = generate_file_path();
@@ -253,7 +253,7 @@ pub fn process_state_cleaner_removes_state_files_on_drop() {
     assert_that!(File::does_exist(&owner_lock_path).unwrap(), eq false);
 }
 
-#[inventory_test]
+#[test]
 pub fn process_state_cleaner_keeps_state_files_when_abandoned() {
     create_test_directory();
     let path = generate_file_path();
@@ -292,7 +292,7 @@ pub fn process_state_cleaner_keeps_state_files_when_abandoned() {
     target_os = "macos",
     target_os = "nto"
 )))]
-#[inventory_test]
+#[test]
 pub fn process_state_monitor_detects_alive_state_from_existing_process() {
     create_test_directory();
     let path = generate_file_path();
@@ -330,7 +330,7 @@ pub fn process_state_owner_lock_cannot_be_acquired_from_living_process() {
     target_os = "macos",
     target_os = "nto"
 )))]
-#[inventory_test]
+#[test]
 pub fn process_state_owner_lock_cannot_be_acquired_twice() {
     create_test_directory();
     let path = generate_file_path();

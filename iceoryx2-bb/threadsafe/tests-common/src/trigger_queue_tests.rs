@@ -24,14 +24,14 @@ use iceoryx2_bb_posix::semaphore::*;
 use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::watchdog::Watchdog;
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 use iceoryx2_bb_threadsafe::trigger_queue::*;
 
 const TIMEOUT: Duration = Duration::from_millis(100);
 const SUT_CAPACITY: usize = 128;
 type Sut<'a> = TriggerQueue<'a, usize, SUT_CAPACITY>;
 
-#[inventory_test]
+#[test]
 pub fn trigger_queue_new_queue_is_empty() {
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
@@ -46,7 +46,7 @@ pub fn trigger_queue_new_queue_is_empty() {
     assert_that!(sut.try_pop(), eq None);
 }
 
-#[inventory_test]
+#[test]
 pub fn trigger_queue_try_push_pop_works() {
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
@@ -73,7 +73,7 @@ pub fn trigger_queue_try_push_pop_works() {
     assert_that!(value, is_none);
 }
 
-#[inventory_test]
+#[test]
 pub fn trigger_queue_timed_push_pop_works() {
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
@@ -100,7 +100,7 @@ pub fn trigger_queue_timed_push_pop_works() {
     assert_that!(value, is_none);
 }
 
-#[inventory_test]
+#[test]
 pub fn trigger_queue_blocking_push_pop_works() {
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
@@ -126,7 +126,7 @@ pub fn trigger_queue_blocking_push_pop_works() {
     assert_that!(value, is_none);
 }
 
-#[inventory_test]
+#[test]
 pub fn trigger_queue_timed_push_blocks_at_least_until_timeout_has_passed() {
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
@@ -143,7 +143,7 @@ pub fn trigger_queue_timed_push_blocks_at_least_until_timeout_has_passed() {
     assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT);
 }
 
-#[inventory_test]
+#[test]
 pub fn trigger_queue_timed_pop_blocks_at_least_until_timeout_has_passed() {
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
@@ -156,7 +156,7 @@ pub fn trigger_queue_timed_pop_blocks_at_least_until_timeout_has_passed() {
     assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT);
 }
 
-#[inventory_test]
+#[test]
 pub fn trigger_queue_blocking_push_blocks_until_there_is_space_again() {
     let _watchdog = Watchdog::new();
     let mtx_handle = MutexHandle::new();
@@ -192,7 +192,7 @@ pub fn trigger_queue_blocking_push_blocks_until_there_is_space_again() {
     .expect("failed to spawn thread");
 }
 
-#[inventory_test]
+#[test]
 pub fn trigger_queue_blocking_pop_blocks_until_there_is_something_pushed() {
     let _watchdog = Watchdog::new();
     let mtx_handle = MutexHandle::new();
@@ -225,7 +225,7 @@ pub fn trigger_queue_blocking_pop_blocks_until_there_is_something_pushed() {
     .expect("failed to spawn thread");
 }
 
-#[inventory_test]
+#[test]
 pub fn trigger_queue_one_pop_notifies_exactly_one_blocking_push() {
     let _watchdog = Watchdog::new();
     const NUMBER_OF_THREADS: u32 = 2;
@@ -267,7 +267,7 @@ pub fn trigger_queue_one_pop_notifies_exactly_one_blocking_push() {
     .expect("failed to spawn thread");
 }
 
-#[inventory_test]
+#[test]
 pub fn trigger_queue_one_pop_notifies_exactly_one_timed_push() {
     const NUMBER_OF_THREADS: u32 = 2;
 
@@ -309,7 +309,7 @@ pub fn trigger_queue_one_pop_notifies_exactly_one_timed_push() {
     .expect("failed to spawn thread");
 }
 
-#[inventory_test]
+#[test]
 pub fn trigger_queue_one_push_notifies_exactly_one_blocking_pop() {
     let _watchdog = Watchdog::new();
     const NUMBER_OF_THREADS: u32 = 2;
@@ -348,7 +348,7 @@ pub fn trigger_queue_one_push_notifies_exactly_one_blocking_pop() {
     .expect("failed to spawn thread");
 }
 
-#[inventory_test]
+#[test]
 pub fn trigger_queue_one_push_notifies_exactly_one_timed_pop() {
     const NUMBER_OF_THREADS: u32 = 2;
     let mtx_handle = MutexHandle::new();
