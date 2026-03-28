@@ -37,6 +37,10 @@ if {[regexp {id: \("([a-f0-9]+)"\)} $list_output -> node_id]} {
     handle_test_failure "Failed to extract node ID from output"
 }
 
+spawn cargo run --bin iox2-node -- list
+set node_list_debug $spawn_id
+expect_output_from $node_list_debug "details"
+
 # Use the node id to get details
 spawn cargo run --bin iox2-node -- details $node_id
 set id_iox2_node $spawn_id

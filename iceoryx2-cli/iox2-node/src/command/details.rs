@@ -31,15 +31,22 @@ pub(crate) fn details(
             match format.as_string(&NodeDescription::from(&node)) {
                 Ok(output) => {
                     println!("{output}");
+                    CallbackProgression::Continue
                 }
                 Err(e) => {
+                    println!("Failed to format output: {}\n{:?}", e, node);
                     error = Some(e);
+                    CallbackProgression::Stop
                 }
             }
+        } else {
+            CallbackProgression::Continue
         }
-        CallbackProgression::Continue
     })
     .context("failed to retrieve nodes")?;
 
+    if let Some(err) = error {
+        return Err(err);
+    }
     Ok(())
 }
