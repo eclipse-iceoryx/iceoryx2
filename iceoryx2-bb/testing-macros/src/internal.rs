@@ -11,12 +11,51 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use proc_macro2::{Delimiter, TokenStream, TokenTree};
-use quote::quote;
+use quote::{quote, ToTokens};
 use syn::{
     Attribute, Expr, ExprLit, Ident, ItemFn, Lit, MetaNameValue, ReturnType, Signature, Type,
 };
 
 pub const TEST_ATTRIBUTES: &[&str] = &["test", "should_panic", "ignore"];
+
+pub(crate) enum TestExecution {
+    Normal,
+    Ignore(Option<String>),
+    ExpectPanic(Option<String>),
+}
+
+pub(crate) enum RequiresStd {
+    No,
+    Yes(Option<String>),
+}
+
+impl ToTokens for TestExecution {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        tokens.extend(match self {
+            Self::Normal => quote! { ::iceoryx2_bb_testing::TestExecution::Normal },
+            Self::Ignore(None) => quote! { ::iceoryx2_bb_testing::TestExecution::Ignore(None) },
+            Self::Ignore(Some(r)) => {
+                quote! { ::iceoryx2_bb_testing::TestExecution::Ignore(Some(#r)) }
+            }
+            Self::ExpectPanic(None) => {
+                quote! { ::iceoryx2_bb_testing::TestExecution::ExpectPanic(None) }
+            }
+            Self::ExpectPanic(Some(m)) => {
+                quote! { ::iceoryx2_bb_testing::TestExecution::ExpectPanic(Some(#m)) }
+            }
+        });
+    }
+}
+
+impl ToTokens for RequiresStd {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        tokens.extend(match self {
+            Self::No => quote! { ::iceoryx2_bb_testing::RequiresStd::No },
+            Self::Yes(None) => quote! { ::iceoryx2_bb_testing::RequiresStd::Yes(None) },
+            Self::Yes(Some(r)) => quote! { ::iceoryx2_bb_testing::RequiresStd::Yes(Some(#r)) },
+        });
+    }
+}
 
 /// Generate tokens to instantiate tests and associated submission to the inventory.
 pub fn instantiate_tests(
@@ -55,8 +94,8 @@ pub fn instantiate_tests(
 /// function.
 fn generate_standalone(
     test_function: &ItemFn,
-    test_execution: &TokenStream,
-    requires_std: &TokenStream,
+    test_execution: &TestExecution,
+    requires_std: &RequiresStd,
 ) -> (TokenStream, TokenStream) {
     let (wrapper_identifier, wrapper_function) =
         generate_wrapper_function(test_function, &[], &TokenStream::new(), None);
@@ -64,8 +103,8 @@ fn generate_standalone(
     let inventory_submission = generate_inventory_submission(
         test_function.sig.ident.to_string(),
         test_function,
-        test_execution.clone(),
-        requires_std.clone(),
+        test_execution,
+        requires_std,
         &wrapper_identifier,
     );
     (wrapper_function, inventory_submission)
@@ -76,8 +115,8 @@ fn generate_standalone(
 fn generate_for_type(
     test_function: &ItemFn,
     macro_parameters: &TokenStream,
-    test_execution: &TokenStream,
-    requires_std: &TokenStream,
+    test_execution: &TestExecution,
+    requires_std: &RequiresStd,
 ) -> (TokenStream, TokenStream) {
     let constexprs: &[TokenStream] = &[];
 
@@ -94,8 +133,8 @@ fn generate_for_type(
                 let inventory_submission = generate_inventory_submission(
                     generate_test_name(&test_function.sig.ident, constexprs, &type_name),
                     test_function,
-                    test_execution.clone(),
-                    requires_std.clone(),
+                    test_execution,
+                    requires_std,
                     &wrapper_function_identifier,
                 );
 
@@ -114,8 +153,8 @@ fn generate_for_type(
 fn generate_for_constexpr_type_pair(
     test_function: &ItemFn,
     macro_parameters: &TokenStream,
-    test_execution: &TokenStream,
-    requires_std: &TokenStream,
+    test_execution: &TestExecution,
+    requires_std: &RequiresStd,
 ) -> (TokenStream, TokenStream) {
     let (wrapper_functions, inventory_submissions): (Vec<_>, Vec<_>) =
         split_groups(macro_parameters)
@@ -137,8 +176,8 @@ fn generate_for_constexpr_type_pair(
                 let inventory_submission = generate_inventory_submission(
                     generate_test_name(&test_function.sig.ident, &constexprs, &ty),
                     test_function,
-                    test_execution.clone(),
-                    requires_std.clone(),
+                    test_execution,
+                    requires_std,
                     &wrapper_function_identifier,
                 );
 
@@ -259,8 +298,8 @@ fn generate_wrapper_body(
 pub fn generate_inventory_submission(
     test_name: String,
     test_function: &ItemFn,
-    test_execution: TokenStream,
-    requires_std: TokenStream,
+    test_execution: &TestExecution,
+    requires_std: &RequiresStd,
     wrapper_identifier: &Ident,
 ) -> TokenStream {
     let attributes = strip_requires_std(&strip_test_attributes(&test_function.attrs));
@@ -278,7 +317,7 @@ pub fn generate_inventory_submission(
     }
 }
 
-fn extract_test_execution(attrs: &[Attribute]) -> TokenStream {
+fn extract_test_execution(attrs: &[Attribute]) -> TestExecution {
     let ignore = attrs.iter().find(|attr| attr.path().is_ident("ignore"));
     let should_panic = attrs
         .iter()
@@ -293,11 +332,7 @@ fn extract_test_execution(attrs: &[Attribute]) -> TokenStream {
                 None
             }
         });
-        let reason_tokens = match reason {
-            Some(r) => quote! { Some(#r) },
-            None => quote! { None },
-        };
-        return quote! { ::iceoryx2_bb_testing::TestExecution::Ignore(#reason_tokens) };
+        return TestExecution::Ignore(reason);
     }
 
     if let Some(attr) = should_panic {
@@ -318,22 +353,18 @@ fn extract_test_execution(attrs: &[Attribute]) -> TokenStream {
                     None
                 }
             });
-        let msg_tokens = match message {
-            Some(m) => quote! { Some(#m) },
-            None => quote! { None },
-        };
-        return quote! { ::iceoryx2_bb_testing::TestExecution::ExpectPanic(#msg_tokens) };
+        return TestExecution::ExpectPanic(message);
     }
 
-    quote! { ::iceoryx2_bb_testing::TestExecution::Normal }
+    TestExecution::Normal
 }
 
-fn extract_requires_std(attrs: &[Attribute]) -> TokenStream {
+fn extract_requires_std(attrs: &[Attribute]) -> RequiresStd {
     let Some(attr) = attrs
         .iter()
         .find(|attr| attr.path().is_ident("requires_std"))
     else {
-        return quote! { ::iceoryx2_bb_testing::RequiresStd::No };
+        return RequiresStd::No;
     };
     let reason = attr.parse_args::<Lit>().ok().and_then(|lit| {
         if let Lit::Str(s) = lit {
@@ -342,10 +373,7 @@ fn extract_requires_std(attrs: &[Attribute]) -> TokenStream {
             None
         }
     });
-    match reason {
-        Some(r) => quote! { ::iceoryx2_bb_testing::RequiresStd::Yes(Some(#r)) },
-        None => quote! { ::iceoryx2_bb_testing::RequiresStd::Yes(None) },
-    }
+    RequiresStd::Yes(reason)
 }
 
 /// Strips test framework attributes from an attribute list.
