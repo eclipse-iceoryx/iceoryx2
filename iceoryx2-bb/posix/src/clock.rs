@@ -314,6 +314,13 @@ impl Time {
             return Ok(*self);
         }
 
+        // Both clocks progress at the same pace but the ClockType::Monotonic has a
+        // different offset, usually the start time point of the machine.
+        // By acquiring the same time, at the same time, with both clocks, we can
+        // calculate the time difference to acquire the offset.
+        //
+        // Then we add the offset to our current time (self) and the result is
+        // the system time.
         let monotonic_now = Time::now_with_clock(ClockType::Monotonic)?;
         let realtime_now = Time::now_with_clock(ClockType::Realtime)?;
 
