@@ -83,7 +83,7 @@ When many tests share the same type list, annotate the containing module with
 use iceoryx2_bb_testing_macros::tests;
 
 #[tests(TypeA, TypeB)]
-pub mod my_tests {
+pub mod generic {
     #[test]
     pub fn my_generic_test<T>() {
         // ... test logic
