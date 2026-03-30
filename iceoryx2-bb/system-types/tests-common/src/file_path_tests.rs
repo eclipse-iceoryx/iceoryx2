@@ -23,7 +23,7 @@ use iceoryx2_bb_testing_macros::test;
 mod windows {
     use super::*;
 
-    pub fn file_path_new_with_illegal_name_fails() {
+    pub fn new_with_illegal_name_fails() {
         let sut = FilePath::new(b"C:\\some\\path\\to\\dir\\");
         assert_that!(sut, is_err);
 
@@ -34,7 +34,7 @@ mod windows {
         assert_that!(sut, is_err);
     }
 
-    pub fn file_path_new_with_legal_name_works() {
+    pub fn new_with_legal_name_works() {
         let sut = FilePath::new(b"C:\\some\\file\\path");
         assert_that!(sut, is_ok);
 
@@ -51,7 +51,7 @@ mod windows {
         assert_that!(sut, is_ok);
     }
 
-    pub fn file_path_from_legal_path_and_file_works() {
+    pub fn from_legal_path_and_file_works() {
         unsafe {
             let sut = FilePath::from_path_and_file(
                 &Path::new_unchecked(b"C:\\some\\file\\path"),
@@ -71,7 +71,7 @@ mod windows {
         }
     }
 
-    pub fn file_path_extract_file_name_works() {
+    pub fn extract_file_name_works() {
         let sut = FilePath::new(b"C:\\some\\file\\path").unwrap();
         assert_that!(sut.file_name(), eq b"path");
 
@@ -85,7 +85,7 @@ mod windows {
         assert_that!(sut.file_name(), eq b"a");
     }
 
-    pub fn file_path_extract_path_works() {
+    pub fn extract_path_works() {
         let sut = FilePath::new(b"C:\\some\\file\\path").unwrap();
         assert_that!(sut.path(), eq b"C:\\some\\file");
 
@@ -101,7 +101,7 @@ mod windows {
 mod unix {
     use super::*;
 
-    pub fn file_path_new_with_illegal_name_fails() {
+    pub fn new_with_illegal_name_fails() {
         let sut = FilePath::new(b"/some/path/to/dir/");
         assert_that!(sut, is_err);
 
@@ -112,7 +112,7 @@ mod unix {
         assert_that!(sut, is_err);
     }
 
-    pub fn file_path_new_with_legal_name_works() {
+    pub fn new_with_legal_name_works() {
         let sut = FilePath::new(b"/some/file/path");
         assert_that!(sut, is_ok);
 
@@ -129,7 +129,7 @@ mod unix {
         assert_that!(sut, is_ok);
     }
 
-    pub fn file_path_from_legal_path_and_file_works() {
+    pub fn from_legal_path_and_file_works() {
         unsafe {
             let sut = FilePath::from_path_and_file(
                 &Path::new_unchecked(b"/some/file/path"),
@@ -149,7 +149,7 @@ mod unix {
         }
     }
 
-    pub fn file_path_extract_file_name_works() {
+    pub fn extract_file_name_works() {
         let sut = FilePath::new(b"/some/file/path").unwrap();
         assert_that!(sut.file_name(), eq b"path");
 
@@ -163,7 +163,7 @@ mod unix {
         assert_that!(sut.file_name(), eq b"a");
     }
 
-    pub fn file_path_extract_path_works() {
+    pub fn extract_path_works() {
         let sut = FilePath::new(b"/some/file/path").unwrap();
         assert_that!(sut.path(), eq b"/some/file");
 
@@ -176,7 +176,7 @@ mod unix {
 }
 
 #[test]
-pub fn file_path_new_with_illegal_relative_name_fails() {
+pub fn new_with_illegal_relative_name_fails() {
     let sut = FilePath::new(b"");
     assert_that!(sut, is_err);
 
@@ -188,7 +188,7 @@ pub fn file_path_new_with_illegal_relative_name_fails() {
 }
 
 #[test]
-pub fn file_path_from_empty_path_and_legal_file_works() {
+pub fn from_empty_path_and_legal_file_works() {
     unsafe {
         let sut = FilePath::from_path_and_file(
             &Path::new_unchecked(b""),
@@ -200,7 +200,7 @@ pub fn file_path_from_empty_path_and_legal_file_works() {
 }
 
 #[test]
-pub fn file_path_extract_file_name_from_path_consisting_only_of_a_file_works() {
+pub fn extract_file_name_from_path_consisting_only_of_a_file_works() {
     let sut = FilePath::new(b"barbe").unwrap();
     assert_that!(sut.file_name(), eq b"barbe");
 
@@ -209,7 +209,7 @@ pub fn file_path_extract_file_name_from_path_consisting_only_of_a_file_works() {
 }
 
 #[test]
-pub fn file_path_extract_path_from_path_consisting_only_of_a_file_works() {
+pub fn extract_path_from_path_consisting_only_of_a_file_works() {
     let sut = FilePath::new(b"barbe").unwrap();
     assert_that!(sut.path(), eq b"");
 }

@@ -17,7 +17,7 @@ use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 
 #[test]
-fn service_static_config_internal_new_works() {
+fn internal_new_works() {
     #[derive(ZeroCopySend)]
     #[repr(C)]
     struct Tmp;

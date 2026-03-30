@@ -25,7 +25,7 @@ use iceoryx2_bb_testing_macros::test;
 const CAPACITY: usize = 128;
 
 #[test]
-pub fn mpmc_unique_index_set_capacity_is_set_correctly() {
+pub fn capacity_is_set_correctly() {
     let sut = FixedSizeUniqueIndexSet::<CAPACITY>::new();
     assert_that!(sut.capacity(), eq CAPACITY as u32);
 
@@ -41,7 +41,7 @@ pub fn mpmc_unique_index_set_capacity_is_set_correctly() {
 }
 
 #[test]
-pub fn mpmc_unique_index_set_when_created_contains_indices() {
+pub fn when_created_contains_indices() {
     let sut = FixedSizeUniqueIndexSet::<CAPACITY>::new();
     let mut ids = vec![];
 
@@ -93,7 +93,7 @@ pub fn mpmc_unique_index_release_mode_lock_if_last_index_works() {
 }
 
 #[test]
-pub fn mpmc_unique_index_set_acquire_and_release_works() {
+pub fn acquire_and_release_works() {
     let sut = FixedSizeUniqueIndexSet::<CAPACITY>::new();
     let mut ids = vec![];
 
@@ -119,7 +119,7 @@ pub fn mpmc_unique_index_set_acquire_and_release_works() {
 }
 
 #[test]
-pub fn mpmc_unique_index_set_borrowed_indices_works() {
+pub fn borrowed_indices_works() {
     let sut = FixedSizeUniqueIndexSet::<CAPACITY>::new();
     let mut ids = vec![];
 
@@ -137,7 +137,7 @@ pub fn mpmc_unique_index_set_borrowed_indices_works() {
 }
 
 #[test]
-pub fn mpmc_unique_index_set_acquire_and_release_works_with_uninitialized_memory() {
+pub fn acquire_and_release_works_with_uninitialized_memory() {
     let mut memory = [0u8; UniqueIndexSet::const_memory_size(128)];
     let allocator = BumpAllocator::new(memory.as_mut_ptr());
     let mut sut = unsafe { UniqueIndexSet::new_uninit(CAPACITY) };
@@ -169,7 +169,7 @@ pub fn mpmc_unique_index_set_acquire_and_release_works_with_uninitialized_memory
 }
 
 #[test]
-pub fn mpmc_unique_index_set_acquire_release_as_lifo_behavior() {
+pub fn acquire_release_as_lifo_behavior() {
     let sut = FixedSizeUniqueIndexSet::<CAPACITY>::new();
     let mut ids = vec![];
 
@@ -192,7 +192,7 @@ pub fn mpmc_unique_index_set_acquire_release_as_lifo_behavior() {
 }
 
 #[test]
-pub fn mpmc_unique_index_set_concurrent_acquire_release() {
+pub fn concurrent_acquire_release() {
     const REPETITIONS: i64 = 10000;
     let number_of_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, usize::MAX);
 

@@ -18,7 +18,7 @@ use iceoryx2_bb_testing_macros::test;
 use iceoryx2_pal_posix::*;
 
 #[test]
-pub fn file_type_mode_t_conversion_works() {
+pub fn mode_t_conversion_works() {
     assert_that!(FileType::File, eq FileType::from_mode_t(posix::S_IFREG));
     assert_that!(FileType::Character, eq FileType::from_mode_t(posix::S_IFCHR));
     assert_that!(FileType::Block, eq FileType::from_mode_t(posix::S_IFBLK));

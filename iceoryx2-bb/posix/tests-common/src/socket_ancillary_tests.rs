@@ -70,7 +70,7 @@ impl Drop for TestFixture {
 }
 
 #[test]
-pub fn socket_ancillary_is_empty_when_created() {
+pub fn is_empty_when_created() {
     test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA);
 
     let sut = SocketAncillary::new();
@@ -79,7 +79,7 @@ pub fn socket_ancillary_is_empty_when_created() {
 }
 
 #[test]
-pub fn socket_ancillary_credentials_work() {
+pub fn credentials_work() {
     test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA);
 
     let mut sut = SocketAncillary::new();
@@ -106,7 +106,7 @@ pub fn socket_ancillary_credentials_work() {
 }
 
 #[test]
-pub fn socket_ancillary_add_file_descriptors_work() {
+pub fn add_file_descriptors_work() {
     test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA);
 
     let mut test = TestFixture::new();

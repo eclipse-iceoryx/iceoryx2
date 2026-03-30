@@ -30,7 +30,7 @@ use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERMISSIONS;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_USERS_AND_GROUPS;
 
 #[test]
-pub fn metadata_reads_basic_stats_correctly() {
+pub fn reads_basic_stats_correctly() {
     create_test_directory();
     let file_name =
         FilePath::from_path_and_file(&TEST_DIRECTORY, &FileName::new(b"meta_test").unwrap())
@@ -51,7 +51,7 @@ pub fn metadata_reads_basic_stats_correctly() {
 }
 
 #[test]
-pub fn metadata_reads_owner_and_permission_stats_correctly() {
+pub fn reads_owner_and_permission_stats_correctly() {
     test_requires!(POSIX_SUPPORT_USERS_AND_GROUPS && POSIX_SUPPORT_PERMISSIONS);
 
     create_test_directory();

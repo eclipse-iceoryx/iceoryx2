@@ -48,7 +48,7 @@ impl SpinBarrier {
 }
 
 #[test]
-pub fn thread_set_name_works() {
+pub fn set_name_works() {
     const NUMBER_OF_THREADS: u32 = 2;
 
     let name = ThreadName::try_from(b"oh-a-thread").unwrap();
@@ -72,7 +72,7 @@ pub fn thread_set_name_works() {
 }
 
 #[test]
-pub fn thread_creation_does_not_block() {
+pub fn creation_does_not_block() {
     const NUMBER_OF_THREADS: u32 = 2;
 
     let barrier = SpinBarrier::new(NUMBER_OF_THREADS);
@@ -86,7 +86,7 @@ pub fn thread_creation_does_not_block() {
 }
 
 #[test]
-pub fn thread_affinity_is_set_to_all_existing_cores_when_nothing_was_configured() {
+pub fn affinity_is_set_to_all_existing_cores_when_nothing_was_configured() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
     let _watchdog = Watchdog::new();
     const NUMBER_OF_THREADS: u32 = 2;
@@ -115,7 +115,7 @@ pub fn thread_affinity_is_set_to_all_existing_cores_when_nothing_was_configured(
 }
 
 #[test]
-pub fn thread_set_affinity_to_one_cpu_core_on_creation_works() {
+pub fn set_affinity_to_one_cpu_core_on_creation_works() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
     let _watchdog = Watchdog::new();
     const NUMBER_OF_THREADS: u32 = 2;
@@ -141,7 +141,7 @@ pub fn thread_set_affinity_to_one_cpu_core_on_creation_works() {
 }
 
 #[test]
-pub fn thread_set_affinity_to_two_cpu_cores_on_creation_works() {
+pub fn set_affinity_to_two_cpu_cores_on_creation_works() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
     test_requires!(SystemInfo::NumberOfCpuCores.value() > 1);
     let _watchdog = Watchdog::new();
@@ -171,7 +171,7 @@ pub fn thread_set_affinity_to_two_cpu_cores_on_creation_works() {
 }
 
 #[test]
-pub fn thread_set_affinity_to_non_existing_cpu_cores_on_creation_fails() {
+pub fn set_affinity_to_non_existing_cpu_cores_on_creation_fails() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
     let _watchdog = Watchdog::new();
 
@@ -185,7 +185,7 @@ pub fn thread_set_affinity_to_non_existing_cpu_cores_on_creation_fails() {
 }
 
 #[test]
-pub fn thread_set_affinity_to_cores_greater_than_cpu_set_size_fails() {
+pub fn set_affinity_to_cores_greater_than_cpu_set_size_fails() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
     let _watchdog = Watchdog::new();
 
@@ -198,7 +198,7 @@ pub fn thread_set_affinity_to_cores_greater_than_cpu_set_size_fails() {
 }
 
 #[test]
-pub fn thread_set_affinity_to_one_core_from_handle_works() {
+pub fn set_affinity_to_one_core_from_handle_works() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
     let _watchdog = Watchdog::new();
     const NUMBER_OF_THREADS: u32 = 2;
@@ -224,7 +224,7 @@ pub fn thread_set_affinity_to_one_core_from_handle_works() {
 }
 
 #[test]
-pub fn thread_set_affinity_to_two_cores_from_handle_works() {
+pub fn set_affinity_to_two_cores_from_handle_works() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
     test_requires!(SystemInfo::NumberOfCpuCores.value() > 1);
     let _watchdog = Watchdog::new();
@@ -254,7 +254,7 @@ pub fn thread_set_affinity_to_two_cores_from_handle_works() {
 }
 
 #[test]
-pub fn thread_set_affinity_to_non_existing_cores_from_handle_fails() {
+pub fn set_affinity_to_non_existing_cores_from_handle_fails() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
     let _watchdog = Watchdog::new();
     let number_of_cpu_cores = SystemInfo::NumberOfCpuCores.value();
@@ -296,7 +296,7 @@ pub fn thread_set_affinity_to_non_existing_cores_from_handle_fails() {
 }
 
 #[test]
-pub fn thread_set_affinity_to_one_core_from_thread_works() {
+pub fn set_affinity_to_one_core_from_thread_works() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
     let _watchdog = Watchdog::new();
     const NUMBER_OF_THREADS: u32 = 2;
@@ -322,7 +322,7 @@ pub fn thread_set_affinity_to_one_core_from_thread_works() {
 }
 
 #[test]
-pub fn thread_set_affinity_to_two_cores_from_thread_works() {
+pub fn set_affinity_to_two_cores_from_thread_works() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
     test_requires!(SystemInfo::NumberOfCpuCores.value() > 1);
     let _watchdog = Watchdog::new();
@@ -352,7 +352,7 @@ pub fn thread_set_affinity_to_two_cores_from_thread_works() {
 }
 
 #[test]
-pub fn thread_set_affinity_to_non_existing_cores_from_thread_fails() {
+pub fn set_affinity_to_non_existing_cores_from_thread_fails() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
     let _watchdog = Watchdog::new();
     let number_of_cpu_cores = SystemInfo::NumberOfCpuCores.value();
@@ -384,7 +384,7 @@ pub fn thread_set_affinity_to_non_existing_cores_from_thread_fails() {
 }
 
 #[test]
-pub fn thread_destructor_does_not_block_on_empty_thread() {
+pub fn destructor_does_not_block_on_empty_thread() {
     let _watchdog = Watchdog::new();
     const NUMBER_OF_THREADS: u32 = 2;
 
@@ -403,7 +403,7 @@ pub fn thread_destructor_does_not_block_on_empty_thread() {
 }
 
 #[test]
-pub fn thread_destructor_does_block_on_busy_thread() {
+pub fn destructor_does_block_on_busy_thread() {
     let _watchdog = Watchdog::new();
     const SLEEP_DURATION: Duration = Duration::from_millis(100);
     const NUMBER_OF_THREADS: u32 = 2;
@@ -423,7 +423,7 @@ pub fn thread_destructor_does_block_on_busy_thread() {
 }
 
 #[test]
-pub fn thread_scoped_threads_work() {
+pub fn scoped_threads_work() {
     let _watchdog = Watchdog::new();
 
     let number_of_threads = MAX_SCOPED_THREADS;

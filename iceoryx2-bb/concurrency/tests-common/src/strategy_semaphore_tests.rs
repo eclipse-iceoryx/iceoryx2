@@ -22,7 +22,7 @@ use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 
 #[test]
-pub fn strategy_semaphore_post_and_try_wait_works() {
+pub fn post_and_try_wait_works() {
     let initial_value = 5;
     let sut = Semaphore::new(initial_value);
 
@@ -40,7 +40,7 @@ pub fn strategy_semaphore_post_and_try_wait_works() {
 }
 
 #[test]
-pub fn strategy_semaphore_post_and_wait_works() {
+pub fn post_and_wait_works() {
     let initial_value = 5;
     let sut = Semaphore::new(initial_value);
 
@@ -58,7 +58,7 @@ pub fn strategy_semaphore_post_and_wait_works() {
 }
 
 #[test]
-pub fn strategy_semaphore_wait_blocks() {
+pub fn wait_blocks() {
     const TIMEOUT: Duration = Duration::from_millis(25);
 
     let initial_value = 0;

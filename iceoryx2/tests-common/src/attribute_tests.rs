@@ -22,7 +22,7 @@ use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 
 #[test]
-fn attribute_returns_correct_key_value() {
+fn returns_correct_key_value() {
     let sut = AttributeVerifier::new()
         .require(&"key_1".try_into().unwrap(), &"value_1".try_into().unwrap())
         .unwrap();
@@ -36,7 +36,7 @@ fn attribute_returns_correct_key_value() {
 }
 
 #[test]
-fn attribute_verifier_require_fails_when_it_exceeds_max_number_of_attributes() {
+fn verifier_require_fails_when_it_exceeds_max_number_of_attributes() {
     let mut sut = AttributeVerifier::new();
     for n in 0..AttributeSet::capacity() {
         sut = sut
@@ -51,7 +51,7 @@ fn attribute_verifier_require_fails_when_it_exceeds_max_number_of_attributes() {
 }
 
 #[test]
-fn attribute_verifier_require_key_fails_when_it_exceeds_max_number_of_attributes() {
+fn verifier_require_key_fails_when_it_exceeds_max_number_of_attributes() {
     let mut sut = AttributeVerifier::new();
     for n in 0..AttributeSet::capacity() {
         sut = sut
@@ -66,7 +66,7 @@ fn attribute_verifier_require_key_fails_when_it_exceeds_max_number_of_attributes
 }
 
 #[test]
-fn attribute_set_returns_correct_key_len() {
+fn set_returns_correct_key_len() {
     let sut = AttributeVerifier::new()
         .require(&"key_1".try_into().unwrap(), &"value_1".try_into().unwrap())
         .unwrap()
@@ -78,7 +78,7 @@ fn attribute_set_returns_correct_key_len() {
 }
 
 #[test]
-fn attribute_set_returns_correct_value() {
+fn set_returns_correct_value() {
     let sut = AttributeVerifier::new()
         .require(
             &"another_key".try_into().unwrap(),
@@ -108,7 +108,7 @@ fn attribute_set_returns_correct_value() {
 }
 
 #[test]
-fn attribute_set_get_key_value_works() {
+fn set_get_key_value_works() {
     let sut = AttributeVerifier::new()
         .require(&"wild_ride".try_into().unwrap(), &"XXL".try_into().unwrap())
         .unwrap()
@@ -127,7 +127,7 @@ fn attribute_set_get_key_value_works() {
 }
 
 #[test]
-fn attribute_set_get_key_value_stops_on_request() {
+fn set_get_key_value_stops_on_request() {
     let sut = AttributeVerifier::new()
         .require(
             &"schwifty".try_into().unwrap(),
@@ -151,7 +151,7 @@ fn attribute_set_get_key_value_stops_on_request() {
 }
 
 #[test]
-fn attribute_set_get_key_value_no_callback_call_when_key_does_not_exist() {
+fn set_get_key_value_no_callback_call_when_key_does_not_exist() {
     let sut = AttributeVerifier::new()
         .require(
             &"schwifler".try_into().unwrap(),
@@ -175,7 +175,7 @@ fn attribute_set_get_key_value_no_callback_call_when_key_does_not_exist() {
 }
 
 #[test]
-fn attribute_set_verify_requirements_succeeds_when_compatible() {
+fn set_verify_requirements_succeeds_when_compatible() {
     let sut_verifier = AttributeVerifier::new()
         .require(
             &"schwifler".try_into().unwrap(),
@@ -197,7 +197,7 @@ fn attribute_set_verify_requirements_succeeds_when_compatible() {
 }
 
 #[test]
-fn attribute_set_verify_requirements_fails_when_value_is_wrong() {
+fn set_verify_requirements_fails_when_value_is_wrong() {
     let sut_verifier = AttributeVerifier::new()
         .require(
             &"schwifler".try_into().unwrap(),
@@ -222,7 +222,7 @@ fn attribute_set_verify_requirements_fails_when_value_is_wrong() {
 }
 
 #[test]
-fn attribute_set_verify_requirements_fails_when_key_does_not_exist() {
+fn set_verify_requirements_fails_when_key_does_not_exist() {
     let sut_verifier = AttributeVerifier::new()
         .require_key(&"the toad toad toad".try_into().unwrap())
         .unwrap();

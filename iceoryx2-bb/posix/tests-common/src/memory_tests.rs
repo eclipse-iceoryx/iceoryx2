@@ -17,7 +17,7 @@ use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 
 #[test]
-pub fn memory_allocate_and_deallocate_works() -> Result<(), MemoryError> {
+pub fn allocate_and_deallocate_works() -> Result<(), MemoryError> {
     const MEM_SIZE: usize = 1024;
     const MEM_ALIGN: usize = 256;
     let layout = unsafe { Layout::from_size_align_unchecked(MEM_SIZE, MEM_ALIGN) };
@@ -42,7 +42,7 @@ pub fn memory_allocate_and_deallocate_works() -> Result<(), MemoryError> {
 }
 
 #[test]
-pub fn memory_allocating_memory_with_size_of_zero_fails() {
+pub fn allocating_memory_with_size_of_zero_fails() {
     const MEM_SIZE: usize = 0;
     const MEM_ALIGN: usize = 256;
     let layout = unsafe { Layout::from_size_align_unchecked(MEM_SIZE, MEM_ALIGN) };
@@ -50,7 +50,7 @@ pub fn memory_allocating_memory_with_size_of_zero_fails() {
 }
 
 #[test]
-pub fn memory_allocate_zeroed_and_free_works() -> Result<(), MemoryError> {
+pub fn allocate_zeroed_and_free_works() -> Result<(), MemoryError> {
     const MEM_SIZE: usize = 1024;
     const MEM_ALIGN: usize = 256;
     let layout = unsafe { Layout::from_size_align_unchecked(MEM_SIZE, MEM_ALIGN) };
@@ -75,7 +75,7 @@ pub fn memory_allocate_zeroed_and_free_works() -> Result<(), MemoryError> {
 }
 
 #[test]
-pub fn memory_allocating_zeroed_memory_with_size_of_zero_fails() {
+pub fn allocating_zeroed_memory_with_size_of_zero_fails() {
     const MEM_SIZE: usize = 0;
     const MEM_ALIGN: usize = 8;
     let layout = unsafe { Layout::from_size_align_unchecked(MEM_SIZE, MEM_ALIGN) };
@@ -83,7 +83,7 @@ pub fn memory_allocating_zeroed_memory_with_size_of_zero_fails() {
 }
 
 #[test]
-pub fn memory_increasing_memory_keeps_content() -> Result<(), MemoryError> {
+pub fn increasing_memory_keeps_content() -> Result<(), MemoryError> {
     const MEM_SIZE: usize = 1024;
     const MEM_ALIGN: usize = 1;
     let layout = unsafe { Layout::from_size_align_unchecked(MEM_SIZE, MEM_ALIGN) };
@@ -124,7 +124,7 @@ pub fn memory_increasing_memory_keeps_content() -> Result<(), MemoryError> {
 }
 
 #[test]
-pub fn memory_decreasing_memory_keeps_content() -> Result<(), MemoryError> {
+pub fn decreasing_memory_keeps_content() -> Result<(), MemoryError> {
     const MEM_SIZE: usize = 1024;
     const MEM_ALIGN: usize = 1;
     let layout = unsafe { Layout::from_size_align_unchecked(MEM_SIZE, MEM_ALIGN) };
@@ -165,7 +165,7 @@ pub fn memory_decreasing_memory_keeps_content() -> Result<(), MemoryError> {
 }
 
 #[test]
-pub fn memory_decreasing_memory_to_zero_fails() -> Result<(), MemoryError> {
+pub fn decreasing_memory_to_zero_fails() -> Result<(), MemoryError> {
     const MEM_SIZE: usize = 1024;
     const MEM_ALIGN: usize = 1;
     let layout = unsafe { Layout::from_size_align_unchecked(MEM_SIZE, MEM_ALIGN) };
@@ -190,7 +190,7 @@ pub fn memory_decreasing_memory_to_zero_fails() -> Result<(), MemoryError> {
 }
 
 #[test]
-pub fn memory_resize_memory_with_increased_alignment_fails() -> Result<(), MemoryError> {
+pub fn resize_memory_with_increased_alignment_fails() -> Result<(), MemoryError> {
     const MEM_SIZE: usize = 1024;
     const MEM_ALIGN: usize = 1;
     let layout = unsafe { Layout::from_size_align_unchecked(MEM_SIZE, MEM_ALIGN) };

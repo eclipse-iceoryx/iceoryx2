@@ -44,7 +44,7 @@ fn generate_file_path() -> FilePath {
 }
 
 #[test]
-pub fn process_state_guard_can_be_created() {
+pub fn guard_can_be_created() {
     create_test_directory();
     let path = generate_file_path();
 
@@ -55,7 +55,7 @@ pub fn process_state_guard_can_be_created() {
 }
 
 #[test]
-pub fn process_state_guard_removes_file_when_dropped() {
+pub fn guard_removes_file_when_dropped() {
     create_test_directory();
     let path = generate_file_path();
 
@@ -66,7 +66,7 @@ pub fn process_state_guard_removes_file_when_dropped() {
 }
 
 #[test]
-pub fn process_state_guard_cannot_use_already_existing_file() {
+pub fn guard_cannot_use_already_existing_file() {
     create_test_directory();
     let path = generate_file_path();
 
@@ -83,7 +83,7 @@ pub fn process_state_guard_cannot_use_already_existing_file() {
 }
 
 #[test]
-pub fn process_state_monitor_detects_dead_state() {
+pub fn monitor_detects_dead_state() {
     create_test_directory();
     let path = generate_file_path();
     let mut cleaner_path = path;
@@ -99,7 +99,7 @@ pub fn process_state_monitor_detects_dead_state() {
 }
 
 #[test]
-pub fn process_state_monitor_detects_non_existing_state() {
+pub fn monitor_detects_non_existing_state() {
     create_test_directory();
     let path = generate_file_path();
 
@@ -108,7 +108,7 @@ pub fn process_state_monitor_detects_non_existing_state() {
 }
 
 #[test]
-pub fn process_state_monitor_transitions_work_starting_from_non_existing_process() {
+pub fn monitor_transitions_work_starting_from_non_existing_process() {
     create_test_directory();
     let path = generate_file_path();
     let mut cleaner_path = path;
@@ -134,7 +134,7 @@ pub fn process_state_monitor_transitions_work_starting_from_non_existing_process
 }
 
 #[test]
-pub fn process_state_monitor_transitions_work_starting_from_existing_process() {
+pub fn monitor_transitions_work_starting_from_existing_process() {
     create_test_directory();
     let path = generate_file_path();
     let mut owner_lock_path = path;
@@ -165,7 +165,7 @@ pub fn process_state_monitor_transitions_work_starting_from_existing_process() {
 }
 
 #[test]
-pub fn process_state_monitor_detects_initialized_state() {
+pub fn monitor_detects_initialized_state() {
     create_test_directory();
     let path = generate_file_path();
 
@@ -183,7 +183,7 @@ pub fn process_state_monitor_detects_initialized_state() {
 }
 
 #[test]
-pub fn process_state_owner_lock_cannot_be_created_when_process_does_not_exist() {
+pub fn owner_lock_cannot_be_created_when_process_does_not_exist() {
     create_test_directory();
     let path = generate_file_path();
     let mut owner_lock_path = path;
@@ -226,7 +226,7 @@ pub fn process_state_owner_lock_cannot_be_created_when_process_does_not_exist() 
 }
 
 #[test]
-pub fn process_state_cleaner_removes_state_files_on_drop() {
+pub fn cleaner_removes_state_files_on_drop() {
     create_test_directory();
     let path = generate_file_path();
     let mut owner_lock_path = path;
@@ -254,7 +254,7 @@ pub fn process_state_cleaner_removes_state_files_on_drop() {
 }
 
 #[test]
-pub fn process_state_cleaner_keeps_state_files_when_abandoned() {
+pub fn cleaner_keeps_state_files_when_abandoned() {
     create_test_directory();
     let path = generate_file_path();
     let mut owner_lock_path = path;
@@ -293,7 +293,7 @@ pub fn process_state_cleaner_keeps_state_files_when_abandoned() {
     target_os = "nto"
 )))]
 #[test]
-pub fn process_state_monitor_detects_alive_state_from_existing_process() {
+pub fn monitor_detects_alive_state_from_existing_process() {
     create_test_directory();
     let path = generate_file_path();
 
@@ -311,7 +311,7 @@ pub fn process_state_monitor_detects_alive_state_from_existing_process() {
     target_os = "macos",
     target_os = "nto"
 )))]
-pub fn process_state_owner_lock_cannot_be_acquired_from_living_process() {
+pub fn owner_lock_cannot_be_acquired_from_living_process() {
     create_test_directory();
     let path = generate_file_path();
 
@@ -331,7 +331,7 @@ pub fn process_state_owner_lock_cannot_be_acquired_from_living_process() {
     target_os = "nto"
 )))]
 #[test]
-pub fn process_state_owner_lock_cannot_be_acquired_twice() {
+pub fn owner_lock_cannot_be_acquired_twice() {
     create_test_directory();
     let path = generate_file_path();
     let mut owner_lock_path = path;

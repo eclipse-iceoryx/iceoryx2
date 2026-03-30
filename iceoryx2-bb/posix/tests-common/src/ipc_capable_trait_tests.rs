@@ -120,16 +120,14 @@ pub mod generic {
     }
 
     #[test]
-    pub fn ipc_capable_trait_new_handle_is_not_initialized<Sut: TestSut>() {
+    pub fn new_handle_is_not_initialized<Sut: TestSut>() {
         let sut_handle = Sut::Handle::new();
         assert_that!(sut_handle.is_initialized(), eq false);
     }
 
     #[test]
     #[should_panic]
-    pub fn ipc_capable_trait_creating_ipc_construct_from_uninitialized_handle_panics<
-        Sut: TestSut,
-    >() {
+    pub fn creating_ipc_construct_from_uninitialized_handle_panics<Sut: TestSut>() {
         if cfg!(not(feature = "std")) {
             // TODO #1300: Workaround for generic tests not yet propagating the '[cfg(requires_std("panics"))]' attribute
             return;
@@ -146,9 +144,7 @@ pub mod generic {
 
     #[test]
     #[should_panic]
-    pub fn ipc_capable_trait_creating_ipc_construct_from_process_local_handle_panics<
-        Sut: TestSut,
-    >() {
+    pub fn creating_ipc_construct_from_process_local_handle_panics<Sut: TestSut>() {
         if cfg!(not(feature = "std")) {
             // TODO #1300: Workaround for generic tests not yet propagating the '[cfg(requires_std("panics"))]' attribute
             return;
@@ -165,7 +161,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn ipc_capable_trait_creating_ipc_construct_from_ipc_handle_works<Sut: TestSut>() {
+    pub fn creating_ipc_construct_from_ipc_handle_works<Sut: TestSut>() {
         let sut_handle = Sut::Handle::new();
         Sut::init_inter_process_handle(&sut_handle);
 
@@ -175,7 +171,7 @@ pub mod generic {
 
     #[test]
     #[should_panic]
-    pub fn ipc_capable_trait_init_handle_twice_panics<Sut: TestSut>() {
+    pub fn init_handle_twice_panics<Sut: TestSut>() {
         if cfg!(not(feature = "std")) {
             // TODO #1300: Workaround for generic tests not yet propagating the '[cfg(requires_std("panics"))]' attribute
             return;
@@ -192,7 +188,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn ipc_capable_trait_initialized_handle_is_initialized<Sut: TestSut>() {
+    pub fn initialized_handle_is_initialized<Sut: TestSut>() {
         let sut_handle_1 = Sut::Handle::new();
         let sut_handle_2 = Sut::Handle::new();
 
@@ -207,7 +203,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn ipc_capable_trait_inter_process_capability_is_set_correctly<Sut: TestSut>() {
+    pub fn inter_process_capability_is_set_correctly<Sut: TestSut>() {
         let sut_handle_1 = Sut::Handle::new();
         let sut_handle_2 = Sut::Handle::new();
 

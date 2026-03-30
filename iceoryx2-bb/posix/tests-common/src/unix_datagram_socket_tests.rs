@@ -67,7 +67,7 @@ impl Drop for TestFixture {
 }
 
 #[test]
-pub fn unix_datagram_socket_send_receive_works() {
+pub fn send_receive_works() {
     create_test_directory();
     let socket_name = generate_file_path();
     let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
@@ -92,7 +92,7 @@ pub fn unix_datagram_socket_send_receive_works() {
 }
 
 #[test]
-pub fn unix_datagram_socket_adjust_buffer_size_works() {
+pub fn adjust_buffer_size_works() {
     create_test_directory();
     let socket_name = generate_file_path();
     let mut sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
@@ -113,7 +113,7 @@ pub fn unix_datagram_socket_adjust_buffer_size_works() {
 }
 
 #[test]
-pub fn unix_datagram_socket_non_blocking_mode_returns_zero_when_nothing_was_received() {
+pub fn non_blocking_mode_returns_zero_when_nothing_was_received() {
     create_test_directory();
     let socket_name = generate_file_path();
     let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
@@ -133,7 +133,7 @@ pub fn unix_datagram_socket_non_blocking_mode_returns_zero_when_nothing_was_rece
 }
 
 #[test]
-pub fn unix_datagram_socket_blocking_mode_blocks() {
+pub fn blocking_mode_blocks() {
     create_test_directory();
     let socket_name = generate_file_path();
     let received_message = AtomicBool::new(false);
@@ -178,7 +178,7 @@ pub fn unix_datagram_socket_blocking_mode_blocks() {
 }
 
 #[test]
-pub fn unix_datagram_socket_timeout_blocks_at_least() {
+pub fn timeout_blocks_at_least() {
     create_test_directory();
     let socket_name = generate_file_path();
     let handle = BarrierHandle::new();
@@ -218,7 +218,7 @@ pub fn unix_datagram_socket_timeout_blocks_at_least() {
 
 #[ignore]
 #[test]
-pub fn unix_datagram_socket_sending_receiving_with_single_fd_works() {
+pub fn sending_receiving_with_single_fd_works() {
     test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA);
 
     let mut test = TestFixture::new();
@@ -268,7 +268,7 @@ pub fn unix_datagram_socket_sending_receiving_with_single_fd_works() {
 // TODO iox2-#320
 #[ignore]
 #[test]
-pub fn unix_datagram_socket_sending_receiving_credentials_works() {
+pub fn sending_receiving_credentials_works() {
     test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA);
 
     create_test_directory();
@@ -298,7 +298,7 @@ pub fn unix_datagram_socket_sending_receiving_credentials_works() {
 // TODO iox2-#320
 #[ignore]
 #[test]
-pub fn unix_datagram_socket_sending_receiving_with_max_supported_fd_and_credentials_works() {
+pub fn sending_receiving_with_max_supported_fd_and_credentials_works() {
     test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA);
 
     let mut test = TestFixture::new();

@@ -19,7 +19,7 @@ use iceoryx2_pal_posix::posix;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_MEMORY_LOCK;
 
 #[test]
-pub fn memory_lock_works() {
+pub fn lock_works() {
     test_requires!(POSIX_SUPPORT_MEMORY_LOCK);
 
     let some_memory = [0u8; 1024];
@@ -36,7 +36,7 @@ pub fn memory_lock_works() {
 }
 
 #[test]
-pub fn memory_lock_all_works() {
+pub fn lock_all_works() {
     test_requires!(POSIX_SUPPORT_MEMORY_LOCK);
 
     assert_that!(

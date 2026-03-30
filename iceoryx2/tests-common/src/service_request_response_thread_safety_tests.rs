@@ -27,7 +27,7 @@ use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_testing_macros::test;
 
 #[test]
-fn service_request_response_loaning_and_sending_requests_concurrently_works() {
+fn loaning_and_sending_requests_concurrently_works() {
     let _watchdog = Watchdog::new();
     type ServiceType = ipc_threadsafe::Service;
     let service_name = generate_service_name();
@@ -90,7 +90,7 @@ fn service_request_response_loaning_and_sending_requests_concurrently_works() {
 }
 
 #[test]
-fn service_request_response_receiving_requests_concurrently_works() {
+fn receiving_requests_concurrently_works() {
     let _watchdog = Watchdog::new();
     type ServiceType = ipc_threadsafe::Service;
     let service_name = generate_service_name();

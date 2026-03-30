@@ -121,13 +121,13 @@ impl TestFixture {
 }
 
 #[test]
-pub fn directory_test_directory_does_exist() {
+pub fn test_directory_does_exist() {
     create_test_directory();
     assert_that!(Directory::does_exist(&TEST_DIRECTORY).unwrap(), eq true);
 }
 
 #[test]
-pub fn directory_non_existing_directory_does_not_exist() {
+pub fn non_existing_directory_does_not_exist() {
     create_test_directory();
     let mut non_existant_path = TEST_DIRECTORY;
     non_existant_path.push_bytes(b"i_do_not_exist").unwrap();
@@ -135,7 +135,7 @@ pub fn directory_non_existing_directory_does_not_exist() {
 }
 
 #[test]
-pub fn directory_file_is_not_a_directory() {
+pub fn file_is_not_a_directory() {
     create_test_directory();
 
     let not_a_directory_entry = FileName::new(b"not_a_directory").unwrap();
@@ -151,7 +151,7 @@ pub fn directory_file_is_not_a_directory() {
 }
 
 #[test]
-pub fn directory_create_from_path_works() {
+pub fn create_from_path_works() {
     let mut test = TestFixture::new();
 
     create_test_directory();
@@ -165,7 +165,7 @@ pub fn directory_create_from_path_works() {
 }
 
 #[test]
-pub fn directory_create_from_path_works_recursively() {
+pub fn create_from_path_works_recursively() {
     let mut test = TestFixture::new();
 
     create_test_directory();
@@ -191,7 +191,7 @@ pub fn directory_create_from_path_works_recursively() {
 }
 
 #[test]
-pub fn directory_create_from_path_is_thread_safe() {
+pub fn create_from_path_is_thread_safe() {
     let _watchdog = Watchdog::new();
 
     const NUMBER_OF_THREADS: usize = 4;
@@ -240,7 +240,7 @@ pub fn directory_create_from_path_is_thread_safe() {
 }
 
 #[test]
-pub fn directory_open_from_path_works() {
+pub fn open_from_path_works() {
     let mut test = TestFixture::new();
 
     create_test_directory();
@@ -253,7 +253,7 @@ pub fn directory_open_from_path_works() {
 }
 
 #[test]
-pub fn directory_list_contents_works() {
+pub fn list_contents_works() {
     let mut test = TestFixture::new();
 
     create_test_directory();

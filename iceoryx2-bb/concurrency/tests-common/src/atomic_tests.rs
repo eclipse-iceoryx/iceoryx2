@@ -108,7 +108,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_new_works<T: Req>() {
+    pub fn new_works<T: Req>() {
         let n = T::generate_value();
         let sut = Atomic::<T>::new(n);
 
@@ -116,7 +116,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_as_ptr_works<T: Req>() {
+    pub fn as_ptr_works<T: Req>() {
         let n1 = T::generate_value();
         let n2 = T::generate_value();
 
@@ -130,7 +130,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_compare_exchange_success_works<T: Req>() {
+    pub fn compare_exchange_success_works<T: Req>() {
         let n_old = T::generate_value();
         let n_new = T::generate_value();
         let sut = Atomic::<T>::new(n_old);
@@ -142,7 +142,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_compare_exchange_weak_success_works<T: Req>() {
+    pub fn compare_exchange_weak_success_works<T: Req>() {
         let n_old = T::generate_value();
         let n_new = T::generate_value();
         let sut = Atomic::<T>::new(n_old);
@@ -154,7 +154,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_compare_exchange_failure_works<T: Req>() {
+    pub fn compare_exchange_failure_works<T: Req>() {
         let n_outdated = T::generate_value();
         let n_old = T::generate_value();
         let n_new = T::generate_value();
@@ -167,7 +167,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_compare_exchange_weak_failure_works<T: Req>() {
+    pub fn compare_exchange_weak_failure_works<T: Req>() {
         let n_outdated = T::generate_value();
         let n_old = T::generate_value();
         let n_new = T::generate_value();
@@ -181,7 +181,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_fetch_add_works<T: Req>() {
+    pub fn fetch_add_works<T: Req>() {
         let n = T::generate_value();
         let sut = Atomic::<T>::new(n);
 
@@ -192,7 +192,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_fetch_and_works<T: Req>() {
+    pub fn fetch_and_works<T: Req>() {
         let n1 = T::generate_value();
         let n2 = T::generate_value();
 
@@ -207,7 +207,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_fetch_max_works<T: Req>() {
+    pub fn fetch_max_works<T: Req>() {
         let n1 = T::generate_value();
         let n2 = T::generate_value();
 
@@ -224,7 +224,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_fetch_min_works<T: Req>() {
+    pub fn fetch_min_works<T: Req>() {
         let n1 = T::generate_value();
         let n2 = T::generate_value();
 
@@ -241,7 +241,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_fetch_nand_works<T: Req>() {
+    pub fn fetch_nand_works<T: Req>() {
         let n1 = T::generate_value();
         let n2 = T::generate_value();
 
@@ -255,7 +255,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_fetch_or_works<T: Req>() {
+    pub fn fetch_or_works<T: Req>() {
         let n1 = T::generate_value();
         let n2 = T::generate_value();
 
@@ -270,7 +270,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_fetch_sub_works<T: Req>() {
+    pub fn fetch_sub_works<T: Req>() {
         let n1 = T::generate_value();
         let n2 = T::generate_value();
 
@@ -283,7 +283,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_fetch_update_success_works<T: Req>() {
+    pub fn fetch_update_success_works<T: Req>() {
         let n1 = T::generate_value();
 
         let sut = Atomic::<T>::new(n1);
@@ -298,7 +298,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_fetch_update_failure_works<T: Req>() {
+    pub fn fetch_update_failure_works<T: Req>() {
         let n1 = T::generate_value();
 
         let sut = Atomic::<T>::new(n1);
@@ -311,7 +311,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_fetch_xor_works<T: Req>() {
+    pub fn fetch_xor_works<T: Req>() {
         let n1 = T::generate_value();
         let n2 = T::generate_value();
 
@@ -326,7 +326,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_into_inner_works<T: Req>() {
+    pub fn into_inner_works<T: Req>() {
         let n = T::generate_value();
         let sut = Atomic::<T>::new(n);
 
@@ -334,7 +334,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_load_store_works<T: Req>() {
+    pub fn load_store_works<T: Req>() {
         let n1 = T::generate_value();
         let n2 = T::generate_value();
         let sut = Atomic::<T>::new(n1);
@@ -345,7 +345,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_swap_works<T: Req>() {
+    pub fn swap_works<T: Req>() {
         let n1 = T::generate_value();
         let n2 = T::generate_value();
         let sut = Atomic::<T>::new(n1);
@@ -357,7 +357,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_compatibility_new_works<T: Req>() {
+    pub fn compatibility_new_works<T: Req>() {
         let n = T::generate_compatibility_value();
         let sut = Atomic::<T>::new(n);
         let compat = AtomicU32::new(n.to_u32());
@@ -366,7 +366,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_compatibility_as_ptr_works<T: Req>() {
+    pub fn compatibility_as_ptr_works<T: Req>() {
         let n1 = T::generate_compatibility_value();
         let n2 = T::generate_compatibility_value();
 
@@ -383,7 +383,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_compatibility_compare_exchange_success_works<T: Req>() {
+    pub fn compatibility_compare_exchange_success_works<T: Req>() {
         let n1 = T::generate_compatibility_value();
         let n2 = T::generate_compatibility_value();
 
@@ -406,7 +406,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_compatibility_compare_exchange_weak_success_works<T: Req>() {
+    pub fn compatibility_compare_exchange_weak_success_works<T: Req>() {
         let n1 = T::generate_compatibility_value();
         let n2 = T::generate_compatibility_value();
 
@@ -429,7 +429,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_compatibility_compare_exchange_failure_works<T: Req>() {
+    pub fn compatibility_compare_exchange_failure_works<T: Req>() {
         let n1 = T::generate_compatibility_value();
         let n2 = T::generate_compatibility_value();
 
@@ -452,7 +452,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_compatibility_compare_exchange_weak_failure_works<T: Req>() {
+    pub fn compatibility_compare_exchange_weak_failure_works<T: Req>() {
         let n1 = T::generate_compatibility_value();
         let n2 = T::generate_compatibility_value();
 
@@ -475,7 +475,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_compatibility_fetch_add_works<T: Req>() {
+    pub fn compatibility_fetch_add_works<T: Req>() {
         let n1 = T::generate_compatibility_value();
         let n2 = T::generate_compatibility_value();
 
@@ -487,7 +487,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_compatibility_fetch_and_works<T: Req>() {
+    pub fn compatibility_fetch_and_works<T: Req>() {
         let n1 = T::generate_compatibility_value();
         let n2 = T::generate_compatibility_value();
 
@@ -499,7 +499,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_compatibility_fetch_max_works<T: Req>() {
+    pub fn compatibility_fetch_max_works<T: Req>() {
         let n1 = T::generate_compatibility_value();
         let n2 = T::generate_compatibility_value();
 
@@ -511,7 +511,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_compatibility_fetch_min_works<T: Req>() {
+    pub fn compatibility_fetch_min_works<T: Req>() {
         let n1 = T::generate_compatibility_value();
         let n2 = T::generate_compatibility_value();
 
@@ -523,7 +523,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_compatibility_fetch_nand_works<T: Req>() {
+    pub fn compatibility_fetch_nand_works<T: Req>() {
         let n1 = T::generate_compatibility_value();
         let n2 = T::generate_compatibility_value();
 
@@ -535,7 +535,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_compatibility_fetch_or_works<T: Req>() {
+    pub fn compatibility_fetch_or_works<T: Req>() {
         let n1 = T::generate_compatibility_value();
         let n2 = T::generate_compatibility_value();
 
@@ -547,7 +547,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_compatibility_fetch_sub_works<T: Req>() {
+    pub fn compatibility_fetch_sub_works<T: Req>() {
         let n1 = T::generate_compatibility_value();
         let n2 = T::generate_compatibility_value();
 
@@ -559,7 +559,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_compatibility_fetch_update_success_works<T: Req>() {
+    pub fn compatibility_fetch_update_success_works<T: Req>() {
         let n1 = T::generate_compatibility_value();
 
         let sut = Atomic::<T>::new(n1);
@@ -578,7 +578,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_compatibility_fetch_update_failure_works<T: Req>() {
+    pub fn compatibility_fetch_update_failure_works<T: Req>() {
         let n1 = T::generate_compatibility_value();
 
         let sut = Atomic::<T>::new(n1);
@@ -600,7 +600,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_compatibility_fetch_xor_works<T: Req>() {
+    pub fn compatibility_fetch_xor_works<T: Req>() {
         let n1 = T::generate_compatibility_value();
         let n2 = T::generate_compatibility_value();
 
@@ -612,7 +612,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_compatibility_swap_works<T: Req>() {
+    pub fn compatibility_swap_works<T: Req>() {
         let n1 = T::generate_compatibility_value();
         let n2 = T::generate_compatibility_value();
 
@@ -624,7 +624,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn atomic_placement_default_works<T: Req>() {
+    pub fn placement_default_works<T: Req>() {
         let layout = Layout::new::<Atomic<T>>();
         let raw_memory = unsafe { alloc(layout) } as *mut Atomic<T>;
         unsafe { Atomic::<T>::placement_default(raw_memory) };

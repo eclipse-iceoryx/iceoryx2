@@ -22,21 +22,21 @@ use iceoryx2_bb_testing_macros::test;
 const TIMEOUT: Duration = Duration::from_millis(100);
 
 #[test]
-pub fn clock_nanosleep_sleeps_at_least_given_amount_of_time() {
+pub fn nanosleep_sleeps_at_least_given_amount_of_time() {
     let start = Time::now().expect("failed to get current time");
     assert_that!(nanosleep(TIMEOUT), is_ok);
     assert_that!(start.elapsed().expect("failed to get elapsed time"), time_at_least TIMEOUT);
 }
 
 #[test]
-pub fn clock_nanosleep_with_clock_sleeps_at_least_given_amount_of_time() {
+pub fn nanosleep_with_clock_sleeps_at_least_given_amount_of_time() {
     let start = Time::now().expect("failed to get current time");
     assert_that!(nanosleep_with_clock(TIMEOUT, ClockType::Realtime), is_ok);
     assert_that!(start.elapsed().expect("failed to get elapsed time"), time_at_least TIMEOUT);
 }
 
 #[test]
-pub fn clock_timebuilder_default_values_are_set_correctly() {
+pub fn timebuilder_default_values_are_set_correctly() {
     let time = TimeBuilder::new().create();
     assert_that!(time.seconds(), eq 0);
     assert_that!(time.nanoseconds(), eq 0);
@@ -44,7 +44,7 @@ pub fn clock_timebuilder_default_values_are_set_correctly() {
 }
 
 #[test]
-pub fn clock_timebuilder_creates_time_correctly() {
+pub fn timebuilder_creates_time_correctly() {
     let time = TimeBuilder::new()
         .seconds(123)
         .nanoseconds(456)
@@ -56,7 +56,7 @@ pub fn clock_timebuilder_creates_time_correctly() {
 }
 
 #[test]
-pub fn clock_time_conversion_to_duration_works() {
+pub fn time_conversion_to_duration_works() {
     let time = TimeBuilder::new().seconds(789).nanoseconds(321).create();
     let d = time.as_duration();
 
@@ -65,7 +65,7 @@ pub fn clock_time_conversion_to_duration_works() {
 }
 
 #[test]
-pub fn clock_time_now_is_monotonic_with_monotonic_clock() {
+pub fn time_now_is_monotonic_with_monotonic_clock() {
     test_requires!(Feature::MonotonicClock.is_available());
 
     let start = Time::now_with_clock(ClockType::Monotonic).unwrap();
@@ -78,7 +78,7 @@ pub fn clock_time_now_is_monotonic_with_monotonic_clock() {
 }
 
 #[test]
-pub fn clock_time_as_timespec_works() {
+pub fn time_as_timespec_works() {
     let now = Time::now().unwrap();
     let timespec = now.as_timespec();
 
@@ -87,7 +87,7 @@ pub fn clock_time_as_timespec_works() {
 }
 
 #[test]
-pub fn clock_relocatable_duration_roundtrip_conversion() {
+pub fn relocatable_duration_roundtrip_conversion() {
     let secs = 123;
     let nsecs = 456;
     let duration = Duration::from_secs(secs) + Duration::from_nanos(nsecs);
@@ -100,7 +100,7 @@ pub fn clock_relocatable_duration_roundtrip_conversion() {
 }
 
 #[test]
-pub fn clock_relocatable_duration_max_value() {
+pub fn relocatable_duration_max_value() {
     let duration = Duration::MAX;
     let sut: RelocatableDuration = duration.into();
 

@@ -105,7 +105,7 @@ impl<'a> UnnamedSemaphoreTest<'a> {
 }
 
 #[test]
-pub fn semaphore_named_semaphore_initializes_correctly() {
+pub fn named_semaphore_initializes_correctly() {
     test_requires!(POSIX_SUPPORT_NAMED_SEMAPHORE);
 
     let initial_value = 4;
@@ -128,7 +128,7 @@ pub fn semaphore_named_semaphore_initializes_correctly() {
 }
 
 #[test]
-pub fn semaphore_named_semaphore_opens_correctly() {
+pub fn named_semaphore_opens_correctly() {
     test_requires!(POSIX_SUPPORT_NAMED_SEMAPHORE);
 
     let initial_value = 7;
@@ -154,7 +154,7 @@ pub fn semaphore_named_semaphore_opens_correctly() {
 }
 
 #[test]
-pub fn semaphore_unnamed_semaphore_initializes_correctly() {
+pub fn unnamed_semaphore_initializes_correctly() {
     let sut_handle = UnnamedSemaphoreHandle::new();
 
     let initial_value = 5;
@@ -187,7 +187,7 @@ pub fn post_and_try_wait_work<T: SemaphoreInterface>(initial_value: u64, sut: &T
 }
 
 #[test]
-pub fn semaphore_named_semaphore_post_and_try_wait_work() {
+pub fn named_semaphore_post_and_try_wait_work() {
     test_requires!(POSIX_SUPPORT_NAMED_SEMAPHORE);
 
     let test = NamedSemaphoreTest::new();
@@ -200,7 +200,7 @@ pub fn semaphore_named_semaphore_post_and_try_wait_work() {
 }
 
 #[test]
-pub fn semaphore_unnamed_semaphore_post_and_try_wait_work() {
+pub fn unnamed_semaphore_post_and_try_wait_work() {
     let handle1 = UnnamedSemaphoreHandle::new();
     let handle2 = UnnamedSemaphoreHandle::new();
 
@@ -221,7 +221,7 @@ pub fn post_and_wait_work<T: SemaphoreInterface>(initial_value: u64, sut: &T) {
 }
 
 #[test]
-pub fn semaphore_named_semaphore_post_and_wait_work() {
+pub fn named_semaphore_post_and_wait_work() {
     test_requires!(POSIX_SUPPORT_NAMED_SEMAPHORE);
 
     let test = NamedSemaphoreTest::new();
@@ -234,7 +234,7 @@ pub fn semaphore_named_semaphore_post_and_wait_work() {
 }
 
 #[test]
-pub fn semaphore_unnamed_semaphore_post_and_wait_work() {
+pub fn unnamed_semaphore_post_and_wait_work() {
     let handle1 = UnnamedSemaphoreHandle::new();
     let handle2 = UnnamedSemaphoreHandle::new();
 
@@ -258,7 +258,7 @@ pub fn post_and_timed_wait_work<T: SemaphoreInterface>(initial_value: u64, sut: 
 }
 
 #[test]
-pub fn semaphore_named_semaphore_post_and_timed_wait_work() {
+pub fn named_semaphore_post_and_timed_wait_work() {
     test_requires!(POSIX_SUPPORT_NAMED_SEMAPHORE);
 
     let test = NamedSemaphoreTest::new();
@@ -271,7 +271,7 @@ pub fn semaphore_named_semaphore_post_and_timed_wait_work() {
 }
 
 #[test]
-pub fn semaphore_unnamed_semaphore_post_and_timed_wait_work() {
+pub fn unnamed_semaphore_post_and_timed_wait_work() {
     let handle1 = UnnamedSemaphoreHandle::new();
     let handle2 = UnnamedSemaphoreHandle::new();
 
@@ -311,7 +311,7 @@ pub fn wait_blocks<T: SemaphoreInterface + Send + Sync>(sut1: &T, sut2: &T) {
 }
 
 #[test]
-pub fn semaphore_named_semaphore_wait_blocks() {
+pub fn named_semaphore_wait_blocks() {
     test_requires!(POSIX_SUPPORT_NAMED_SEMAPHORE);
     let test = NamedSemaphoreTest::new();
 
@@ -320,7 +320,7 @@ pub fn semaphore_named_semaphore_wait_blocks() {
 }
 
 #[test]
-pub fn semaphore_unnamed_semaphore_wait_blocks() {
+pub fn unnamed_semaphore_wait_blocks() {
     let handle1 = UnnamedSemaphoreHandle::new();
     let handle2 = UnnamedSemaphoreHandle::new();
 
@@ -355,7 +355,7 @@ pub fn timed_wait_blocks<T: SemaphoreInterface + Send + Sync>(sut1: &T, sut2: &T
 }
 
 #[test]
-pub fn semaphore_named_semaphore_timed_wait_blocks() {
+pub fn named_semaphore_timed_wait_blocks() {
     test_requires!(POSIX_SUPPORT_NAMED_SEMAPHORE);
 
     let test = NamedSemaphoreTest::new();
@@ -365,7 +365,7 @@ pub fn semaphore_named_semaphore_timed_wait_blocks() {
 }
 
 #[test]
-pub fn semaphore_unnamed_semaphore_timed_wait_blocks() {
+pub fn unnamed_semaphore_timed_wait_blocks() {
     let handle1 = UnnamedSemaphoreHandle::new();
     let handle2 = UnnamedSemaphoreHandle::new();
 
@@ -382,7 +382,7 @@ pub fn timed_wait_waits_at_least_timeout<T: SemaphoreInterface>(sut: &T) {
 }
 
 #[test]
-pub fn semaphore_named_semaphore_timed_wait_waits_at_least_timeout() {
+pub fn named_semaphore_timed_wait_waits_at_least_timeout() {
     test_requires!(POSIX_SUPPORT_NAMED_SEMAPHORE);
 
     let test = NamedSemaphoreTest::new();
@@ -395,7 +395,7 @@ pub fn semaphore_named_semaphore_timed_wait_waits_at_least_timeout() {
 }
 
 #[test]
-pub fn semaphore_unnamed_semaphore_timed_wait_waits_at_least_timeout() {
+pub fn unnamed_semaphore_timed_wait_waits_at_least_timeout() {
     let handle1 = UnnamedSemaphoreHandle::new();
     let handle2 = UnnamedSemaphoreHandle::new();
 

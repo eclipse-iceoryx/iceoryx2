@@ -19,7 +19,7 @@ use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 
 #[test]
-pub fn strategy_barrier_with_multiple_waiter_works() {
+pub fn multiple_waiters_works() {
     let counter = AtomicI32::new(0);
     let sut = Barrier::new(4);
     let sut2 = Barrier::new(4);

@@ -23,7 +23,7 @@ use iceoryx2_cal::zero_copy_connection::*;
 const TIMEOUT: Duration = Duration::from_millis(100);
 
 #[test]
-fn zero_copy_connection_posix_shared_memory_waiting_for_initialization_works() {
+fn waiting_for_initialization_works() {
     type Sut = iceoryx2_cal::zero_copy_connection::posix_shared_memory::Connection;
     let storage_name = generate_file_path().file_name();
     let file_name = <Sut as NamedConceptMgmt>::Configuration::default()

@@ -31,7 +31,7 @@ use iceoryx2_pal_posix::posix;
 static TIMEOUT: Duration = Duration::from_millis(10);
 
 #[test]
-pub fn file_descriptor_set_timed_wait_blocks_at_least_timeout() {
+pub fn timed_wait_blocks_at_least_timeout() {
     create_test_directory();
     let socket_name = generate_file_path();
 
@@ -64,7 +64,7 @@ pub fn file_descriptor_set_timed_wait_blocks_at_least_timeout() {
 }
 
 #[test]
-pub fn file_descriptor_set_add_and_remove_works() {
+pub fn add_and_remove_works() {
     let fd_set = FileDescriptorSet::new();
     let mut sockets = vec![];
     let number_of_fds: usize = core::cmp::min(128, posix::FD_SETSIZE);
@@ -103,7 +103,7 @@ pub fn file_descriptor_set_add_and_remove_works() {
 }
 
 #[test]
-pub fn file_descriptor_set_add_same_fd_twice_fails() {
+pub fn add_same_fd_twice_fails() {
     let fd_set = FileDescriptorSet::new();
 
     create_test_directory();
@@ -120,7 +120,7 @@ pub fn file_descriptor_set_add_same_fd_twice_fails() {
 }
 
 #[test]
-pub fn file_descriptor_set_timed_wait_works() {
+pub fn timed_wait_works() {
     create_test_directory();
     let socket_name = generate_file_path();
 
@@ -151,7 +151,7 @@ pub fn file_descriptor_set_timed_wait_works() {
 }
 
 #[test]
-pub fn file_descriptor_set_blocking_wait_immediately_returns_notifications() {
+pub fn blocking_wait_immediately_returns_notifications() {
     create_test_directory();
     let socket_name = generate_file_path();
 

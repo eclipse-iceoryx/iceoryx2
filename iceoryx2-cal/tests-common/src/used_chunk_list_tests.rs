@@ -20,7 +20,7 @@ pub mod generic {
     use iceoryx2_cal::zero_copy_connection::used_chunk_list::FixedSizeUsedChunkList;
 
     #[test]
-    fn used_chunk_list_insert_remove_all_works<const CAPACITY: usize>() {
+    fn insert_remove_all_works<const CAPACITY: usize>() {
         let mut sut = FixedSizeUsedChunkList::<CAPACITY>::new();
 
         for i in 0..sut.capacity() {
@@ -38,7 +38,7 @@ pub mod generic {
     }
 
     #[test]
-    fn used_chunk_list_insert_remove_works<const CAPACITY: usize>() {
+    fn insert_remove_works<const CAPACITY: usize>() {
         let sut = FixedSizeUsedChunkList::<CAPACITY>::new();
 
         for i in 0..sut.capacity() {

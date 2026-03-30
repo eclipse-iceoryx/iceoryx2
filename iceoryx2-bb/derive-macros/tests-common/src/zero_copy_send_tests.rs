@@ -97,7 +97,7 @@ union BasicUnionTest {
 }
 
 #[test]
-pub fn zero_copy_send_derive_works_for_named_struct() {
+pub fn works_for_named_struct() {
     let sut = NamedTestStruct {
         _val1: 1990,
         _val2: Foo(3),
@@ -106,13 +106,13 @@ pub fn zero_copy_send_derive_works_for_named_struct() {
 }
 
 #[test]
-pub fn zero_copy_send_derive_works_for_unnamed_struct() {
+pub fn works_for_unnamed_struct() {
     let sut = UnnamedTestStruct(4, 6, Foo(2));
     assert_that!(is_zero_copy_send(&sut), eq true);
 }
 
 #[test]
-pub fn zero_copy_send_derive_works_for_generic_named_struct() {
+pub fn works_for_generic_named_struct() {
     let sut = GenericNamedTestStruct {
         _val1: 2.3,
         _val2: 1984,
@@ -121,13 +121,13 @@ pub fn zero_copy_send_derive_works_for_generic_named_struct() {
 }
 
 #[test]
-pub fn zero_copy_send_derive_works_for_generic_unnamed_struct() {
+pub fn works_for_generic_unnamed_struct() {
     let sut = GenericUnnamedTestStruct(23.4, 2023);
     assert_that!(is_zero_copy_send(&sut), eq true);
 }
 
 #[test]
-pub fn zero_copy_send_derive_sets_type_name_correctly_for_named_structs() {
+pub fn sets_type_name_correctly_for_named_structs() {
     let sut = NamedTestStruct {
         _val1: 23,
         _val2: Foo(4),
@@ -144,7 +144,7 @@ pub fn zero_copy_send_derive_sets_type_name_correctly_for_named_structs() {
 }
 
 #[test]
-pub fn zero_copy_send_derive_sets_type_name_correctly_for_unnamed_structs() {
+pub fn sets_type_name_correctly_for_unnamed_structs() {
     let sut = UnnamedTestStruct(1, 2, Foo(3));
     assert_that!(is_zero_copy_send(&sut), eq true);
     assert_that!(unsafe { UnnamedTestStruct::type_name() }, eq core::any::type_name::<UnnamedTestStruct>());
@@ -155,7 +155,7 @@ pub fn zero_copy_send_derive_sets_type_name_correctly_for_unnamed_structs() {
 }
 
 #[test]
-pub fn zero_copy_send_derive_sets_type_name_correctly_for_generic_named_structs() {
+pub fn sets_type_name_correctly_for_generic_named_structs() {
     let sut = GenericNamedTestStruct {
         _val1: 11,
         _val2: Foo(11),
@@ -172,7 +172,7 @@ pub fn zero_copy_send_derive_sets_type_name_correctly_for_generic_named_structs(
 }
 
 #[test]
-pub fn zero_copy_send_derive_sets_type_name_correctly_for_generic_unnamed_struct() {
+pub fn sets_type_name_correctly_for_generic_unnamed_struct() {
     let sut = GenericUnnamedTestStruct(-13, 13);
     assert_that!(is_zero_copy_send(&sut), eq true);
     assert_that!(unsafe { GenericUnnamedTestStruct::<i32, i32>::type_name() }, eq core::any::type_name::<GenericUnnamedTestStruct<i32, i32>>());
@@ -183,7 +183,7 @@ pub fn zero_copy_send_derive_sets_type_name_correctly_for_generic_unnamed_struct
 }
 
 #[test]
-pub fn zero_copy_send_derive_for_unions() {
+pub fn for_unions() {
     let sut = BasicUnionTest { _val1: 12 };
     assert_that!(is_zero_copy_send(&sut), eq true);
     assert_that!(unsafe { BasicUnionTest::type_name() }, eq "TryMadHoney");

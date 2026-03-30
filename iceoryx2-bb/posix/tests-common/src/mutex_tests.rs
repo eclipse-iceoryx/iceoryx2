@@ -27,7 +27,7 @@ use iceoryx2_bb_testing_macros::test;
 const TIMEOUT: Duration = Duration::from_millis(100);
 
 #[test]
-pub fn mutex_lock_works() {
+pub fn lock_works() {
     let handle = MutexHandle::<i32>::new();
     let sut = MutexBuilder::new().create(123, &handle).unwrap();
     {
@@ -41,7 +41,7 @@ pub fn mutex_lock_works() {
 }
 
 #[test]
-pub fn mutex_try_lock_works() {
+pub fn try_lock_works() {
     let handle = MutexHandle::<i32>::new();
     let sut = MutexBuilder::new().create(789, &handle).unwrap();
     {
@@ -55,7 +55,7 @@ pub fn mutex_try_lock_works() {
 }
 
 #[test]
-pub fn mutex_try_lock_leads_to_blocked_mutex() {
+pub fn try_lock_leads_to_blocked_mutex() {
     let handle = MutexHandle::<i32>::new();
     let sut = MutexBuilder::new().create(111, &handle).unwrap();
     let mut value = sut.try_lock().unwrap().unwrap();
@@ -84,7 +84,7 @@ pub fn mutex_try_lock_leads_to_blocked_mutex() {
 }
 
 #[test]
-pub fn mutex_timed_lock_leads_to_blocked_mutex_realtime() {
+pub fn timed_lock_leads_to_blocked_mutex_realtime() {
     let handle = MutexHandle::<i32>::new();
     let sut = MutexBuilder::new()
         .clock_type(ClockType::Realtime)
@@ -115,7 +115,7 @@ pub fn mutex_timed_lock_leads_to_blocked_mutex_realtime() {
 }
 
 #[test]
-pub fn mutex_timed_lock_leads_to_blocked_mutex_monotonic() {
+pub fn timed_lock_leads_to_blocked_mutex_monotonic() {
     test_requires!(Feature::MonotonicClock.is_available());
 
     let handle = MutexHandle::<i32>::new();
@@ -148,7 +148,7 @@ pub fn mutex_timed_lock_leads_to_blocked_mutex_monotonic() {
 }
 
 #[test]
-pub fn mutex_try_lock_fails_when_already_locked() {
+pub fn try_lock_fails_when_already_locked() {
     let handle = MutexHandle::<i32>::new();
     let sut = MutexBuilder::new().create(111, &handle).unwrap();
     let value = sut.lock().unwrap();
@@ -169,7 +169,7 @@ pub fn mutex_try_lock_fails_when_already_locked() {
 }
 
 #[test]
-pub fn mutex_timed_lock_blocks_at_least_for_timeout_realtime_clock() {
+pub fn timed_lock_blocks_at_least_for_timeout_realtime_clock() {
     let barrier_handle = BarrierHandle::new();
     let barrier = BarrierBuilder::new(2).create(&barrier_handle).unwrap();
     let handle = MutexHandle::<i32>::new();
@@ -201,7 +201,7 @@ pub fn mutex_timed_lock_blocks_at_least_for_timeout_realtime_clock() {
 }
 
 #[test]
-pub fn mutex_timed_lock_blocks_at_least_for_timeout_monotonic_clock() {
+pub fn timed_lock_blocks_at_least_for_timeout_monotonic_clock() {
     test_requires!(Feature::MonotonicClock.is_available());
 
     let handle = MutexHandle::<i32>::new();
@@ -231,7 +231,7 @@ pub fn mutex_timed_lock_blocks_at_least_for_timeout_monotonic_clock() {
 }
 
 #[test]
-pub fn mutex_multiple_ipc_mutex_are_working() {
+pub fn multiple_ipc_mutex_are_working() {
     let handle = MutexHandle::new();
     let sut1 = MutexBuilder::new()
         .is_interprocess_capable(true)
@@ -256,7 +256,7 @@ pub fn mutex_multiple_ipc_mutex_are_working() {
 }
 
 #[test]
-pub fn mutex_recursive_mutex_can_be_locked_multiple_times_by_same_thread() {
+pub fn recursive_mutex_can_be_locked_multiple_times_by_same_thread() {
     let handle = MutexHandle::new();
     let sut = MutexBuilder::new()
         .mutex_type(MutexType::Recursive)
@@ -286,7 +286,7 @@ pub fn mutex_recursive_mutex_can_be_locked_multiple_times_by_same_thread() {
 }
 
 #[test]
-pub fn mutex_recursive_does_not_unlock_in_the_first_unlock_call() {
+pub fn recursive_does_not_unlock_in_the_first_unlock_call() {
     let _watchdog = Watchdog::new();
     let handle = MutexHandle::new();
     let sut = MutexBuilder::new()
@@ -331,7 +331,7 @@ pub fn mutex_recursive_does_not_unlock_in_the_first_unlock_call() {
 }
 
 #[test]
-pub fn mutex_deadlock_detection_works() {
+pub fn deadlock_detection_works() {
     for clock_type in ClockType::all_supported_clocks() {
         let handle = MutexHandle::new();
         let sut = MutexBuilder::new()
@@ -365,7 +365,7 @@ pub fn mutex_deadlock_detection_works() {
 }
 
 #[test]
-pub fn mutex_recursive_mutex_blocks() {
+pub fn recursive_mutex_blocks() {
     let handle = MutexHandle::<i32>::new();
     let sut = MutexBuilder::new()
         .mutex_type(MutexType::Recursive)
@@ -397,7 +397,7 @@ pub fn mutex_recursive_mutex_blocks() {
 }
 
 #[test]
-pub fn mutex_with_deadlock_detection_blocks() {
+pub fn deadlock_detection_blocks() {
     let handle = MutexHandle::<i32>::new();
     let sut = MutexBuilder::new()
         .mutex_type(MutexType::WithDeadlockDetection)
@@ -430,7 +430,7 @@ pub fn mutex_with_deadlock_detection_blocks() {
 
 #[test]
 #[cfg(not(target_os = "nto"))]
-pub fn mutex_can_be_recovered_when_thread_died() {
+pub fn can_be_recovered_when_thread_died() {
     let _watchdog = Watchdog::new();
     let handle = MutexHandle::<i32>::new();
     let sut = MutexBuilder::new()

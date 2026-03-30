@@ -25,7 +25,7 @@ use iceoryx2_bb_testing_macros::test;
 const TIMEOUT: Duration = Duration::from_millis(50);
 
 #[test]
-pub fn read_write_mutex_lock_works() {
+pub fn lock_works() {
     let handle = ReadWriteMutexHandle::<i32>::new();
     let sut = ReadWriteMutexBuilder::new().create(456, &handle).unwrap();
     {
@@ -39,7 +39,7 @@ pub fn read_write_mutex_lock_works() {
 }
 
 #[test]
-pub fn read_write_mutex_try_lock_works() {
+pub fn try_lock_works() {
     let handle = ReadWriteMutexHandle::<i32>::new();
     let sut = ReadWriteMutexBuilder::new().create(7890, &handle).unwrap();
     {
@@ -53,7 +53,7 @@ pub fn read_write_mutex_try_lock_works() {
 }
 
 #[test]
-pub fn read_write_mutex_write_lock_blocks_read_and_write_locks() {
+pub fn write_lock_blocks_read_and_write_locks() {
     const NUMBER_OF_THREADS: u32 = 2;
 
     let _watchdog = Watchdog::new();
@@ -99,7 +99,7 @@ pub fn read_write_mutex_write_lock_blocks_read_and_write_locks() {
 }
 
 #[test]
-pub fn read_write_mutex_read_lock_blocks_only_write_locks() {
+pub fn read_lock_blocks_only_write_locks() {
     let handle = ReadWriteMutexHandle::<i32>::new();
     let sut = ReadWriteMutexBuilder::new().create(781, &handle).unwrap();
     let counter = AtomicUsize::new(5);
@@ -127,7 +127,7 @@ pub fn read_write_mutex_read_lock_blocks_only_write_locks() {
 }
 
 #[test]
-pub fn read_write_mutex_try_lock_fails_when_lock_was_acquired() {
+pub fn try_lock_fails_when_lock_was_acquired() {
     let handle = ReadWriteMutexHandle::<i32>::new();
     let sut = ReadWriteMutexBuilder::new().create(781, &handle).unwrap();
     let _guard = sut.write_blocking_lock().unwrap();
@@ -140,7 +140,7 @@ pub fn read_write_mutex_try_lock_fails_when_lock_was_acquired() {
 }
 
 #[test]
-pub fn read_write_mutex_multiple_ipc_mutex_are_working() {
+pub fn multiple_ipc_mutex_are_working() {
     let handle = ReadWriteMutexHandle::<i32>::new();
     let sut1 = ReadWriteMutexBuilder::new()
         .is_interprocess_capable(true)
