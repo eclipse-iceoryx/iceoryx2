@@ -17,10 +17,16 @@ use syn::{
 };
 
 pub const TEST_ATTRIBUTE: &str = "test";
-pub const STRIPPED_ATTRIBUTES: &[&str] = &["should_panic", "ignore", TEST_ATTRIBUTE];
+pub const STRIPPED_ATTRIBUTES: &[&str] = &[TEST_ATTRIBUTE, "should_panic", "ignore"];
 
 #[derive(Clone)]
 pub enum ShouldPanic {
+    No,
+    Yes(Option<String>),
+}
+
+#[derive(Clone)]
+pub enum ShouldIgnore {
     No,
     Yes(Option<String>),
 }
@@ -32,30 +38,128 @@ pub fn instantiate_tests(
 ) -> TokenStream {
     let should_ignore = extract_should_ignore(&test_function.attrs);
     let should_panic = extract_should_panic(&test_function.attrs);
-    let stripped_test_function = strip_attributes(test_function);
+    let original_function = generate_original(test_function);
 
     match macro_parameters {
         None => {
             let (wrapper_function, inventory_submission) =
-                generate_standalone(test_function, should_ignore, &should_panic);
+                generate_standalone(test_function, &should_ignore, &should_panic);
 
-            quote! { #stripped_test_function #wrapper_function #inventory_submission }
+            quote! { #original_function #wrapper_function #inventory_submission }
         }
         Some(params) => {
             let (wrapper_functions, inventory_submissions) = if is_pair(params) {
                 generate_for_constexpr_type_pair(
                     test_function,
                     params,
-                    should_ignore,
+                    &should_ignore,
                     &should_panic,
                 )
             } else {
-                generate_for_type(test_function, params, should_ignore, &should_panic)
+                generate_for_type(test_function, params, &should_ignore, &should_panic)
             };
 
-            quote! { #stripped_test_function #wrapper_functions #inventory_submissions }
+            quote! { #original_function #wrapper_functions #inventory_submissions }
         }
     }
+}
+
+/// Generate a wrapper and inventory submission for a single non-generic test
+/// function.
+fn generate_standalone(
+    test_function: &ItemFn,
+    should_ignore: &ShouldIgnore,
+    should_panic: &ShouldPanic,
+) -> (TokenStream, TokenStream) {
+    let (wrapper_identifier, wrapper_function) =
+        generate_wrapper_function(test_function, &[], &TokenStream::new(), None);
+
+    let inventory_submission = generate_inventory_submission(
+        test_function.sig.ident.to_string(),
+        should_panic.clone(),
+        should_ignore.clone(),
+        &wrapper_identifier,
+    );
+    (wrapper_function, inventory_submission)
+}
+
+/// Generate wrappers and inventory submissions for a test function instantiated
+/// for each type in a comma-separated list.
+fn generate_for_type(
+    test_function: &ItemFn,
+    macro_parameters: &TokenStream,
+    should_ignore: &ShouldIgnore,
+    should_panic: &ShouldPanic,
+) -> (TokenStream, TokenStream) {
+    let constexprs: &[TokenStream] = &[];
+
+    let (wrapper_functions, inventory_submissions): (Vec<_>, Vec<_>) =
+        split_on_comma(macro_parameters.clone())
+            .into_iter()
+            .map(|type_name| {
+                let (wrapper_function_identifier, wrapper_function) = generate_wrapper_function(
+                    test_function,
+                    constexprs,
+                    &type_name,
+                    Some(vec![type_name.clone()]),
+                );
+                let inventory_submission = generate_inventory_submission(
+                    generate_test_name(&test_function.sig.ident, constexprs, &type_name),
+                    should_panic.clone(),
+                    should_ignore.clone(),
+                    &wrapper_function_identifier,
+                );
+
+                (wrapper_function, inventory_submission)
+            })
+            .unzip();
+
+    (
+        quote! { #(#wrapper_functions)* },
+        quote! { #(#inventory_submissions)* },
+    )
+}
+
+/// Generate wrappers and inventory submissions for a test function instantiated
+/// for each `(constexpr, ..., Type)` pair in the parameter list.
+fn generate_for_constexpr_type_pair(
+    test_function: &ItemFn,
+    macro_parameters: &TokenStream,
+    should_ignore: &ShouldIgnore,
+    should_panic: &ShouldPanic,
+) -> (TokenStream, TokenStream) {
+    let (wrapper_functions, inventory_submissions): (Vec<_>, Vec<_>) =
+        split_groups(macro_parameters)
+            .into_iter()
+            .map(|pair| {
+                let (constexprs, ty) = split_constexpr_and_type(pair);
+                let mut generic_params = Vec::new();
+                for constexpr in &constexprs {
+                    generic_params.push(constexpr.clone());
+                }
+                generic_params.push(ty.clone());
+
+                let (wrapper_function_identifier, wrapper_function) = generate_wrapper_function(
+                    test_function,
+                    &constexprs,
+                    &ty,
+                    Some(generic_params),
+                );
+                let inventory_submission = generate_inventory_submission(
+                    generate_test_name(&test_function.sig.ident, &constexprs, &ty),
+                    should_panic.clone(),
+                    should_ignore.clone(),
+                    &wrapper_function_identifier,
+                );
+
+                (wrapper_function, inventory_submission)
+            })
+            .unzip();
+
+    (
+        quote! { #(#wrapper_functions)* },
+        quote! { #(#inventory_submissions)* },
+    )
 }
 
 /// Generate the test display name for a generic test instantiation.
@@ -86,52 +190,27 @@ pub fn generate_test_name(
 /// Returns the wrapper function identifier alongside the generated function so
 /// it may be used in an inventory submission.
 pub fn generate_wrapper_function(
-    test_function_signature: &Signature,
+    test_function: &ItemFn,
     constexpr_identifiers: &[TokenStream],
     type_identifier: &TokenStream,
     generic_parameters: Option<Vec<TokenStream>>,
 ) -> (Ident, TokenStream) {
+    let attributes = strip_attributes(&test_function.attrs);
     let identifier = generate_wrapper_identifier(
-        &test_function_signature.ident,
+        &test_function.sig.ident,
         constexpr_identifiers,
         type_identifier,
     );
-    let body = generate_wrapper_body(test_function_signature, generic_parameters);
+    let body = generate_wrapper_body(&test_function.sig, generic_parameters);
     let function = quote! {
         #[allow(non_snake_case, dead_code)]
+        #(#attributes)*
         fn #identifier() {
             #body
         }
     };
 
     (identifier, function)
-}
-
-/// Generate an inventory submission for a test.
-pub fn generate_inventory_submission(
-    test_name: String,
-    should_panic: ShouldPanic,
-    should_ignore: bool,
-    wrapper_identifier: &Ident,
-) -> TokenStream {
-    let (should_panic, should_panic_message) = match should_panic {
-        ShouldPanic::No => (quote! { false }, quote! { None }),
-        ShouldPanic::Yes(None) => (quote! { true }, quote! { None }),
-        ShouldPanic::Yes(Some(msg)) => (quote! { true }, quote! { Some(#msg) }),
-    };
-
-    quote! {
-        ::iceoryx2_bb_testing::inventory::submit! {
-            ::iceoryx2_bb_testing::TestCase {
-                module: module_path!(),
-                name: #test_name,
-                test_fn: #wrapper_identifier,
-                should_ignore: #should_ignore,
-                should_panic: #should_panic,
-                should_panic_message: #should_panic_message,
-            }
-        }
-    }
 }
 
 /// Generate the identifier for the wrapper function that calls the test
@@ -186,107 +265,57 @@ fn generate_wrapper_body(
     }
 }
 
-/// Generate a wrapper and inventory submission for a single non-generic test
-/// function.
-fn generate_standalone(
-    test_function: &ItemFn,
-    should_ignore: bool,
-    should_panic: &ShouldPanic,
-) -> (TokenStream, TokenStream) {
-    let (wrapper_identifier, wrapper_function) =
-        generate_wrapper_function(&test_function.sig, &[], &TokenStream::new(), None);
-    let inventory_submission = generate_inventory_submission(
-        test_function.sig.ident.to_string(),
-        should_panic.clone(),
-        should_ignore,
-        &wrapper_identifier,
-    );
-    (wrapper_function, inventory_submission)
+/// Generate an inventory submission for a test.
+pub fn generate_inventory_submission(
+    test_name: String,
+    should_panic: ShouldPanic,
+    should_ignore: ShouldIgnore,
+    wrapper_identifier: &Ident,
+) -> TokenStream {
+    let (should_panic, should_panic_message) = match should_panic {
+        ShouldPanic::No => (quote! { false }, quote! { None }),
+        ShouldPanic::Yes(None) => (quote! { true }, quote! { None }),
+        ShouldPanic::Yes(Some(msg)) => (quote! { true }, quote! { Some(#msg) }),
+    };
+    let (should_ignore, should_ignore_reason) = match should_ignore {
+        ShouldIgnore::No => (quote! { false }, quote! { None }),
+        ShouldIgnore::Yes(None) => (quote! { true }, quote! {None}),
+        ShouldIgnore::Yes(Some(msg)) => (quote! { true }, quote! { Some(#msg) }),
+    };
+
+    quote! {
+        ::iceoryx2_bb_testing::inventory::submit! {
+            ::iceoryx2_bb_testing::TestCase {
+                module: module_path!(),
+                name: #test_name,
+                test_fn: #wrapper_identifier,
+                should_ignore: #should_ignore,
+                should_ignore_reason: #should_ignore_reason,
+                should_panic: #should_panic,
+                should_panic_message: #should_panic_message,
+            }
+        }
+    }
 }
 
-/// Generate wrappers and inventory submissions for a test function instantiated
-/// for each type in a comma-separated list.
-fn generate_for_type(
-    test_function: &ItemFn,
-    macro_parameters: &TokenStream,
-    should_ignore: bool,
-    should_panic: &ShouldPanic,
-) -> (TokenStream, TokenStream) {
-    let constexprs: &[TokenStream] = &[];
-
-    let (wrapper_functions, inventory_submissions): (Vec<_>, Vec<_>) =
-        split_on_comma(macro_parameters.clone())
-            .into_iter()
-            .map(|type_name| {
-                let (wrapper_function_identifier, wrapper_function) = generate_wrapper_function(
-                    &test_function.sig,
-                    constexprs,
-                    &type_name,
-                    Some(vec![type_name.clone()]),
-                );
-                let inventory_submission = generate_inventory_submission(
-                    generate_test_name(&test_function.sig.ident, constexprs, &type_name),
-                    should_panic.clone(),
-                    should_ignore,
-                    &wrapper_function_identifier,
-                );
-
-                (wrapper_function, inventory_submission)
-            })
-            .unzip();
-
-    (
-        quote! { #(#wrapper_functions)* },
-        quote! { #(#inventory_submissions)* },
-    )
-}
-
-/// Generate wrappers and inventory submissions for a test function instantiated
-/// for each `(constexpr, ..., Type)` pair in the parameter list.
-fn generate_for_constexpr_type_pair(
-    test_function: &ItemFn,
-    macro_parameters: &TokenStream,
-    should_ignore: bool,
-    should_panic: &ShouldPanic,
-) -> (TokenStream, TokenStream) {
-    let (wrapper_functions, inventory_submissions): (Vec<_>, Vec<_>) =
-        split_groups(macro_parameters)
-            .into_iter()
-            .map(|pair| {
-                let (constexprs, ty) = split_constexpr_and_type(pair);
-                let mut generic_params = Vec::new();
-                for constexpr in &constexprs {
-                    generic_params.push(constexpr.clone());
-                }
-                generic_params.push(ty.clone());
-
-                let (wrapper_function_identifier, wrapper_function) = generate_wrapper_function(
-                    &test_function.sig,
-                    &constexprs,
-                    &ty,
-                    Some(generic_params),
-                );
-                let inventory_submission = generate_inventory_submission(
-                    generate_test_name(&test_function.sig.ident, &constexprs, &ty),
-                    should_panic.clone(),
-                    should_ignore,
-                    &wrapper_function_identifier,
-                );
-
-                (wrapper_function, inventory_submission)
-            })
-            .unzip();
-
-    (
-        quote! { #(#wrapper_functions)* },
-        quote! { #(#inventory_submissions)* },
-    )
-}
-
-fn extract_should_ignore(test_function_attributes: &[Attribute]) -> bool {
-    test_function_attributes
+fn extract_should_ignore(test_function_attributes: &[Attribute]) -> ShouldIgnore {
+    let found = test_function_attributes
         .iter()
-        .any(|attr| attr.path().is_ident("ignore"))
+        .find(|attr| attr.path().is_ident("ignore") || attr.path().is_ident("requires_std"));
+
+    let Some(attr) = found else {
+        return ShouldIgnore::No;
+    };
+
+    let message = attr.parse_args::<Lit>().ok().and_then(|lit| {
+        if let Lit::Str(ignore_reason) = lit {
+            Some(ignore_reason.value())
+        } else {
+            None
+        }
+    });
+
+    ShouldIgnore::Yes(message)
 }
 
 fn extract_should_panic(test_function_attributes: &[Attribute]) -> ShouldPanic {
@@ -321,16 +350,25 @@ fn extract_should_panic(test_function_attributes: &[Attribute]) -> ShouldPanic {
     ShouldPanic::Yes(message)
 }
 
-/// Strips attributes handled by the test framework from the provided test
-/// function.
-fn strip_attributes(test_function: &ItemFn) -> TokenStream {
-    let mut test_function_clone = test_function.clone();
-    test_function_clone
-        .attrs
-        .retain(|attr| !STRIPPED_ATTRIBUTES.iter().any(|s| attr.path().is_ident(s)));
+/// Returns the attributes of the test function that are not handled by the
+/// test framework (i.e. not in `STRIPPED_ATTRIBUTES`).
+fn strip_attributes(attrs: &[Attribute]) -> Vec<Attribute> {
+    attrs
+        .iter()
+        .filter(|attr| !STRIPPED_ATTRIBUTES.iter().any(|s| attr.path().is_ident(s)))
+        .cloned()
+        .collect()
+}
+
+/// Generates a copy of the original test function, stripping anything that is
+/// not required in the test context
+fn generate_original(test_function: &ItemFn) -> TokenStream {
+    let attributes = strip_attributes(&test_function.attrs);
+    let (vis, sig, block) = (&test_function.vis, &test_function.sig, &test_function.block);
     quote! {
         #[allow(dead_code)]
-        #test_function_clone
+        #(#attributes)*
+        #vis #sig #block
     }
 }
 

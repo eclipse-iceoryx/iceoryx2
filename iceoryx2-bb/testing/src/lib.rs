@@ -47,6 +47,7 @@ pub struct TestCase {
     pub name: &'static str,
     pub test_fn: fn(),
     pub should_ignore: bool,
+    pub should_ignore_reason: Option<&'static str>,
     pub should_panic: bool,
     pub should_panic_message: Option<&'static str>,
 }
