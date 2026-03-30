@@ -305,6 +305,40 @@ impl Time {
     pub fn as_duration(&self) -> Duration {
         Duration::from_secs(self.seconds) + Duration::from_nanos(self.nanoseconds as u64)
     }
+
+    /// Converts [`Time`] into a [`Time`] based on [`ClockType::Realtime`]. If it is
+    /// already based on [`ClockType::Realtime`] it returns a copy of itself.
+    pub fn to_realtime_clock(&self) -> Result<Time, TimeError> {
+        const ONE_NANOSECOND: i64 = 1_000_000_000;
+        if self.clock_type == ClockType::Realtime {
+            return Ok(*self);
+        }
+
+        let monotonic_now = Time::now_with_clock(ClockType::Monotonic)?;
+        let realtime_now = Time::now_with_clock(ClockType::Realtime)?;
+
+        let mut offset_secs = realtime_now.seconds as i64 - monotonic_now.seconds as i64;
+        let mut offset_nsecs = realtime_now.nanoseconds as i64 - monotonic_now.nanoseconds as i64;
+
+        if offset_nsecs < 0 {
+            offset_secs -= 1;
+            offset_nsecs += ONE_NANOSECOND;
+        }
+
+        let mut realtime_secs = self.seconds as i64 + offset_secs;
+        let mut realtime_nsecs = self.nanoseconds as i64 + offset_nsecs;
+
+        if realtime_nsecs >= ONE_NANOSECOND {
+            realtime_secs += 1;
+            realtime_nsecs -= ONE_NANOSECOND;
+        }
+
+        Ok(Time {
+            clock_type: ClockType::Realtime,
+            seconds: realtime_secs as u64,
+            nanoseconds: realtime_nsecs as u32,
+        })
+    }
 }
 
 impl AsTimespec for Time {
