@@ -15,7 +15,7 @@ name = "iceoryx2_tunnel_zenoh"
 path = "src/lib.rs"
 
 [[test]]
-name = "tests"
+name = "main"
 harness = false
 
 [dependencies]
