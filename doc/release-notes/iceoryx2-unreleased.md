@@ -53,7 +53,7 @@
 * Fix GCC 9 build failure
   [#1342](https://github.com/eclipse-iceoryx/iceoryx2/issues/1342)
 * Bump cryptography from 45.0.7 to 46.0.5 in /iceoryx2-ffi/python
-  [#1316](https://github.com/eclipse-iceoryx/iceoryx2/issues/1348)
+  [#1348](https://github.com/eclipse-iceoryx/iceoryx2/issues/1348)
 * Fix memory order in queue guards and index queue
   [#1356](https://github.com/eclipse-iceoryx/iceoryx2/issues/1356)
 * Bump shellexpand from 3.1.1 to 3.1.2 in Rust and Bazel
@@ -86,6 +86,8 @@
   [#1477](https://github.com/eclipse-iceoryx/iceoryx2/issues/1463)
 * Bump requests from 2.32.5 to 2.33.0 in iceoryx2-ffi/python
   [#1486](https://github.com/eclipse-iceoryx/iceoryx2/issues/1486)
+* Bump cryptography from 46.0.5 to 46.0.6 in /iceoryx2-ffi/python
+  [#1499](https://github.com/eclipse-iceoryx/iceoryx2/issues/1499)
 
 ### Refactoring
 
