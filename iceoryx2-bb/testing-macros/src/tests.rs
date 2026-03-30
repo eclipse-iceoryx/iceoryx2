@@ -83,15 +83,19 @@ pub fn proc_macro(
     let instantiations: Vec<TokenStream> = items
         .into_iter()
         .map(|item| match item {
-            Item::Fn(ref test_function)
-                if test_function
+            Item::Fn(ref original_function)
+                if original_function
                     .attrs
                     .iter()
                     .any(|a| a.path().is_ident("test")) =>
             {
-                let params =
-                    (!test_function.sig.generics.params.is_empty()).then_some(&macro_parameters);
-                instantiate_tests(test_function, params)
+                let macro_parameters = if original_function.sig.generics.params.is_empty() {
+                    TokenStream::new()
+                } else {
+                    macro_parameters.clone()
+                };
+
+                instantiate_tests(original_function, macro_parameters)
             }
             other => quote! { #other },
         })

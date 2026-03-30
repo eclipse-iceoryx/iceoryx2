@@ -31,9 +31,8 @@ pub fn proc_macro(
     macro_parameters: proc_macro::TokenStream,
     item: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
-    let test_function = parse_macro_input!(item as ItemFn);
+    let original_function = parse_macro_input!(item as ItemFn);
     let macro_parameters: proc_macro2::TokenStream = macro_parameters.into();
-    let params = (!macro_parameters.is_empty()).then_some(&macro_parameters);
 
-    instantiate_tests(&test_function, params).into()
+    instantiate_tests(&original_function, macro_parameters).into()
 }

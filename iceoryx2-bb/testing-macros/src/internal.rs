@@ -10,13 +10,50 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use proc_macro2::{Delimiter, TokenStream, TokenTree};
+use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::{
-    Attribute, Expr, ExprLit, Ident, ItemFn, Lit, MetaNameValue, ReturnType, Signature, Type,
+    parse::{Parse, ParseStream},
+    punctuated::Punctuated,
+    token, Attribute, Expr, ExprLit, GenericArgument, Ident, ItemFn, Lit, MetaNameValue,
+    ReturnType, Signature, Token, Type,
 };
 
-pub const TEST_ATTRIBUTES: &[&str] = &["test", "should_panic", "ignore"];
+enum MacroParameters {
+    Types(Punctuated<GenericArgument, Token![,]>),
+    ConstexprTypePairs(Vec<(GenericArgument, GenericArgument)>),
+}
+
+impl Parse for MacroParameters {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        if input.peek(token::Paren) {
+            let mut pairs = Vec::new();
+
+            while !input.is_empty() {
+                let content;
+                syn::parenthesized!(content in input);
+                let constexpr = content.parse::<GenericArgument>()?;
+                let _: Token![,] = content.parse()?;
+                let ty = content.parse::<GenericArgument>()?;
+                pairs.push((constexpr, ty));
+
+                if input.peek(Token![,]) {
+                    let _: Token![,] = input.parse()?;
+                }
+            }
+
+            Ok(MacroParameters::ConstexprTypePairs(pairs))
+        } else {
+            Ok(MacroParameters::Types(Punctuated::parse_terminated(input)?))
+        }
+    }
+}
+
+enum TestGenerics<'a> {
+    None,
+    Type(&'a GenericArgument),
+    ConstexprAndType(&'a GenericArgument, &'a GenericArgument),
+}
 
 pub(crate) enum RunMode {
     Normal,
@@ -34,8 +71,8 @@ impl ToTokens for RunMode {
         tokens.extend(match self {
             Self::Normal => quote! { ::iceoryx2_bb_testing::RunMode::Normal },
             Self::Ignore(None) => quote! { ::iceoryx2_bb_testing::RunMode::Ignore(None) },
-            Self::Ignore(Some(r)) => {
-                quote! { ::iceoryx2_bb_testing::RunMode::Ignore(Some(#r)) }
+            Self::Ignore(Some(reason)) => {
+                quote! { ::iceoryx2_bb_testing::RunMode::Ignore(Some(#reason)) }
             }
             Self::ExpectPanic(None) => {
                 quote! { ::iceoryx2_bb_testing::RunMode::ExpectPanic(None) }
@@ -60,32 +97,35 @@ impl ToTokens for RequiresStd {
 }
 
 /// Generate tokens to instantiate tests and associated submission to the inventory.
-pub fn instantiate_tests(
-    original_function: &ItemFn,
-    macro_parameters: Option<&TokenStream>,
-) -> TokenStream {
+pub fn instantiate_tests(original_function: &ItemFn, macro_parameters: TokenStream) -> TokenStream {
+    let parameters = (!macro_parameters.is_empty()).then(|| {
+        syn::parse2::<MacroParameters>(macro_parameters).expect("failed to parse macro parameters")
+    });
+
     let run_mode = extract_run_mode(&original_function.attrs);
     let requires_std = extract_requires_std(&original_function.attrs);
     let test_function = generate_test_function(original_function);
 
-    match macro_parameters {
+    match parameters.as_ref() {
         None => {
             let (wrapper_function, inventory_submission) =
                 generate_standalone(original_function, &run_mode, &requires_std);
 
             quote! { #test_function #wrapper_function #inventory_submission }
         }
-        Some(params) => {
-            let (wrapper_functions, inventory_submissions) = if is_pair(params) {
-                generate_for_constexpr_type_pair(
-                    original_function,
-                    params,
-                    &run_mode,
-                    &requires_std,
-                )
-            } else {
-                generate_for_type(original_function, params, &run_mode, &requires_std)
-            };
+        Some(MacroParameters::Types(types)) => {
+            let (wrapper_functions, inventory_submissions) =
+                generate_for_types(original_function, types, &run_mode, &requires_std);
+
+            quote! { #test_function #wrapper_functions #inventory_submissions }
+        }
+        Some(MacroParameters::ConstexprTypePairs(pairs)) => {
+            let (wrapper_functions, inventory_submissions) = generate_for_constexpr_type_pairs(
+                original_function,
+                pairs,
+                &run_mode,
+                &requires_std,
+            );
 
             quote! { #test_function #wrapper_functions #inventory_submissions }
         }
@@ -99,52 +139,46 @@ fn generate_standalone(
     run_mode: &RunMode,
     requires_std: &RequiresStd,
 ) -> (TokenStream, TokenStream) {
-    let attributes = strip_requires_std(&strip_test_attributes(&original_function.attrs));
     let (wrapper_identifier, wrapper_function) =
-        generate_wrapper_function(original_function, &[], &TokenStream::new(), None);
+        generate_wrapper_function(original_function, TestGenerics::None);
 
+    let attributes = strip_requires_std(&strip_test_attributes(&original_function.attrs));
     let inventory_submission = generate_inventory_submission(
         original_function.sig.ident.to_string(),
+        &wrapper_identifier,
         &attributes,
         run_mode,
         requires_std,
-        &wrapper_identifier,
     );
     (wrapper_function, inventory_submission)
 }
 
 /// Generate wrappers and inventory submissions for a test function instantiated
 /// for each type in a comma-separated list.
-fn generate_for_type(
+fn generate_for_types(
     original_function: &ItemFn,
-    macro_parameters: &TokenStream,
+    types: &Punctuated<GenericArgument, Token![,]>,
     run_mode: &RunMode,
     requires_std: &RequiresStd,
 ) -> (TokenStream, TokenStream) {
-    let constexprs: &[TokenStream] = &[];
     let attributes = strip_requires_std(&strip_test_attributes(&original_function.attrs));
 
-    let (wrapper_functions, inventory_submissions): (Vec<_>, Vec<_>) =
-        split_on_comma(macro_parameters.clone())
-            .into_iter()
-            .map(|type_name| {
-                let (wrapper_function_identifier, wrapper_function) = generate_wrapper_function(
-                    original_function,
-                    constexprs,
-                    &type_name,
-                    Some(vec![type_name.clone()]),
-                );
-                let inventory_submission = generate_inventory_submission(
-                    generate_test_name(&original_function.sig.ident, constexprs, &type_name),
-                    &attributes,
-                    run_mode,
-                    requires_std,
-                    &wrapper_function_identifier,
-                );
+    let (wrapper_functions, inventory_submissions): (Vec<_>, Vec<_>) = types
+        .iter()
+        .map(|ty| {
+            let (wrapper_identifier, wrapper_function) =
+                generate_wrapper_function(original_function, TestGenerics::Type(ty));
+            let inventory_submission = generate_inventory_submission(
+                generate_test_name(&original_function.sig.ident, TestGenerics::Type(ty)),
+                &wrapper_identifier,
+                &attributes,
+                run_mode,
+                requires_std,
+            );
 
-                (wrapper_function, inventory_submission)
-            })
-            .unzip();
+            (wrapper_function, inventory_submission)
+        })
+        .unzip();
 
     (
         quote! { #(#wrapper_functions)* },
@@ -153,43 +187,36 @@ fn generate_for_type(
 }
 
 /// Generate wrappers and inventory submissions for a test function instantiated
-/// for each `(constexpr, ..., Type)` pair in the parameter list.
-fn generate_for_constexpr_type_pair(
-    original_function: &ItemFn,
-    macro_parameters: &TokenStream,
+/// for each `(constexpr, Type)` pair in the parameter list.
+fn generate_for_constexpr_type_pairs(
+    test_function: &ItemFn,
+    pairs: &[(GenericArgument, GenericArgument)],
     run_mode: &RunMode,
     requires_std: &RequiresStd,
 ) -> (TokenStream, TokenStream) {
-    let attributes = strip_requires_std(&strip_test_attributes(&original_function.attrs));
+    let attributes = strip_requires_std(&strip_test_attributes(&test_function.attrs));
 
-    let (wrapper_functions, inventory_submissions): (Vec<_>, Vec<_>) =
-        split_groups(macro_parameters)
-            .into_iter()
-            .map(|pair| {
-                let (constexprs, ty) = split_constexpr_and_type(pair);
-                let mut generic_params = Vec::new();
-                for constexpr in &constexprs {
-                    generic_params.push(constexpr.clone());
-                }
-                generic_params.push(ty.clone());
+    let (wrapper_functions, inventory_submissions): (Vec<_>, Vec<_>) = pairs
+        .iter()
+        .map(|(constexpr, ty)| {
+            let (wrapper_identifier, wrapper_function) = generate_wrapper_function(
+                test_function,
+                TestGenerics::ConstexprAndType(constexpr, ty),
+            );
+            let inventory_submission = generate_inventory_submission(
+                generate_test_name(
+                    &test_function.sig.ident,
+                    TestGenerics::ConstexprAndType(constexpr, ty),
+                ),
+                &wrapper_identifier,
+                &attributes,
+                run_mode,
+                requires_std,
+            );
 
-                let (wrapper_function_identifier, wrapper_function) = generate_wrapper_function(
-                    original_function,
-                    &constexprs,
-                    &ty,
-                    Some(generic_params),
-                );
-                let inventory_submission = generate_inventory_submission(
-                    generate_test_name(&original_function.sig.ident, &constexprs, &ty),
-                    &attributes,
-                    run_mode,
-                    requires_std,
-                    &wrapper_function_identifier,
-                );
-
-                (wrapper_function, inventory_submission)
-            })
-            .unzip();
+            (wrapper_function, inventory_submission)
+        })
+        .unzip();
 
     (
         quote! { #(#wrapper_functions)* },
@@ -198,25 +225,18 @@ fn generate_for_constexpr_type_pair(
 }
 
 /// Generate the test display name for a generic test instantiation.
-pub fn generate_test_name(
-    original_function_identifier: &Ident,
-    constexprs: &[TokenStream],
-    type_identifier: &TokenStream,
-) -> String {
-    let type_string = type_identifier.to_string().replace(' ', "");
-    if constexprs.is_empty() {
-        format!("<{}>::{}", type_string, original_function_identifier)
-    } else {
-        let constexpr_names: Vec<String> = constexprs
-            .iter()
-            .map(|c| c.to_string().replace(['{', '}', ' '], ""))
-            .collect();
-        format!(
+fn generate_test_name(original_identifier: &Ident, generics: TestGenerics<'_>) -> String {
+    match generics {
+        TestGenerics::Type(ty) => {
+            format!("<{}>::{}", type_display_string(ty), original_identifier)
+        }
+        TestGenerics::ConstexprAndType(c, ty) => format!(
             "<{}, {}>::{}",
-            constexpr_names.join(", "),
-            type_string,
-            original_function_identifier
-        )
+            constexpr_display_string(c),
+            type_display_string(ty),
+            original_identifier
+        ),
+        TestGenerics::None => unreachable!(),
     }
 }
 
@@ -224,20 +244,13 @@ pub fn generate_test_name(
 ///
 /// Returns the wrapper function identifier alongside the generated function so
 /// it may be used in an inventory submission.
-pub fn generate_wrapper_function(
+fn generate_wrapper_function(
     original_function: &ItemFn,
-    constexpr_identifiers: &[TokenStream],
-    type_identifier: &TokenStream,
-    generic_parameters: Option<Vec<TokenStream>>,
+    generics: TestGenerics<'_>,
 ) -> (Ident, TokenStream) {
     let attributes = strip_test_attributes(&original_function.attrs);
-    let identifier = generate_wrapper_identifier(
-        &original_function.sig.ident,
-        constexpr_identifiers,
-        type_identifier,
-    );
-    let body = generate_wrapper_body(&original_function.sig, generic_parameters);
-
+    let identifier = generate_wrapper_identifier(&original_function.sig.ident, &generics);
+    let body = generate_wrapper_body(&original_function.sig, generics);
     let function = quote! {
         #[allow(non_snake_case, dead_code)]
         #(#attributes)*
@@ -251,46 +264,39 @@ pub fn generate_wrapper_function(
 
 /// Generate the identifier for the wrapper function that calls the test
 /// function.
-fn generate_wrapper_identifier(
-    original_function_identifier: &Ident,
-    constexprs: &[TokenStream],
-    type_identifier: &TokenStream,
-) -> Ident {
-    let suffix = if constexprs.is_empty() {
-        type_identifier_string(&type_identifier.to_string())
-    } else {
-        let constexpr_id = constexprs
-            .iter()
-            .map(constexpr_identifier_string)
-            .collect::<Vec<_>>()
-            .join("_");
-        format!(
+fn generate_wrapper_identifier(original_identifier: &Ident, generics: &TestGenerics<'_>) -> Ident {
+    let suffix = match generics {
+        TestGenerics::None => String::new(),
+        TestGenerics::Type(ty) => type_identifier_string(ty),
+        TestGenerics::ConstexprAndType(c, ty) => format!(
             "__{}__{}",
-            constexpr_id,
-            type_identifier_string(&type_identifier.to_string())
-        )
+            constexpr_identifier_string(c),
+            type_identifier_string(ty)
+        ),
     };
-    let mangled_identifier = if suffix.is_empty() {
-        format!("__iox2_test_{}", original_function_identifier)
+
+    let wrapper_identifier = if suffix.is_empty() {
+        format!("__iox2_test_{}", original_identifier)
     } else {
-        format!("__iox2_test_{}_{}", original_function_identifier, suffix)
+        format!("__iox2_test_{}_{}", original_identifier, suffix)
     };
-    Ident::new(&mangled_identifier, original_function_identifier.span())
+
+    Ident::new(&wrapper_identifier, original_identifier.span())
 }
 
 // Generate the body of the wrapper function that calls the test function.
 fn generate_wrapper_body(
-    original_function_signature: &Signature,
-    generic_parameters: Option<Vec<TokenStream>>,
+    original_signature: &Signature,
+    generics: TestGenerics<'_>,
 ) -> TokenStream {
-    let identifier = &original_function_signature.ident;
-    let f = if let Some(generic) = generic_parameters {
-        quote! { #identifier::<#(#generic),*>() }
-    } else {
-        quote! { #identifier() }
+    let identifier = &original_signature.ident;
+    let f = match generics {
+        TestGenerics::None => quote! { #identifier() },
+        TestGenerics::Type(ty) => quote! { #identifier::<#ty>() },
+        TestGenerics::ConstexprAndType(c, ty) => quote! { #identifier::<#c, #ty>() },
     };
 
-    if returns_result(original_function_signature) {
+    if returns_result(original_signature) {
         quote! {
             if let Err(e) = #f {
                 panic!("Test failed: {:?}", e);
@@ -304,10 +310,10 @@ fn generate_wrapper_body(
 /// Generate an inventory submission for a test.
 pub fn generate_inventory_submission(
     test_name: String,
+    wrapper_identifier: &Ident,
     attributes: &[Attribute],
     run_mode: &RunMode,
     requires_std: &RequiresStd,
-    wrapper_identifier: &Ident,
 ) -> TokenStream {
     quote! {
         #(#attributes)*
@@ -384,6 +390,8 @@ fn extract_requires_std(attrs: &[Attribute]) -> RequiresStd {
 
 /// Strips test framework attributes from an attribute list.
 fn strip_test_attributes(attrs: &[Attribute]) -> Vec<Attribute> {
+    const TEST_ATTRIBUTES: &[&str] = &["test", "should_panic", "ignore"];
+
     attrs
         .iter()
         .filter(|attr| !TEST_ATTRIBUTES.iter().any(|s| attr.path().is_ident(s)))
@@ -417,18 +425,32 @@ fn generate_test_function(original_function: &ItemFn) -> TokenStream {
     }
 }
 
-/// `FileName::max_len()` -> `"max_len"`, `{ 64 }` -> `"64"`
-fn constexpr_identifier_string(constexpr: &TokenStream) -> String {
-    let s = constexpr.to_string().replace(['{', '}', '(', ')', ' '], "");
-    s.split("::").last().unwrap_or(&s).to_string()
+/// `FileName::max_len()` -> `"FileName::max_len"`, `{ 64 }` -> `"64"`
+fn constexpr_display_string(constexpr: &GenericArgument) -> String {
+    constexpr
+        .to_token_stream()
+        .to_string()
+        .replace(['{', '}', '(', ')', ' '], "")
 }
 
-/// "foo::Bar<u64>" -> "Bar_u64"
-fn type_identifier_string(type_identifier_string: &str) -> String {
-    type_identifier_string
-        .split("::")
+/// `FileName::max_len()` -> `"FileName_max_len"`, `{ 64 }` -> `"64"`
+fn constexpr_identifier_string(constexpr: &GenericArgument) -> String {
+    constexpr_display_string(constexpr).replace("::", "_")
+}
+
+/// Strips white-space present in the token stream.
+///
+/// `foo::Bar<u64>` -> `"foo::Bar<u64>"`, `[u8; 4]` -> `"[u8;4]"`
+fn type_display_string(ty: &GenericArgument) -> String {
+    ty.to_token_stream().to_string().replace(' ', "")
+}
+
+/// `foo::Bar<u64>` -> `"Bar_u64"`, `[u8; 4]` -> `"u8_4"`
+fn type_identifier_string(ty: &GenericArgument) -> String {
+    let s = ty.to_token_stream().to_string();
+    s.split("::")
         .last()
-        .unwrap_or(type_identifier_string)
+        .unwrap_or(&s)
         .chars()
         .filter_map(|c| match c {
             '<' | ';' => Some('_'),
@@ -438,66 +460,9 @@ fn type_identifier_string(type_identifier_string: &str) -> String {
         .collect()
 }
 
-/// Returns true if the macro parameters are constexpr/type pairs, e.g.
-/// `(64, MyType), (128, MyType)`.
-fn is_pair(macro_parameters: &TokenStream) -> bool {
-    if let Some(TokenTree::Group(g)) = macro_parameters.clone().into_iter().next() {
-        g.delimiter() == Delimiter::Parenthesis
-    } else {
-        false
-    }
-}
-
-/// `(a, b), (c, d)` -> [TokenStream("a, b"), TokenStream("c, d")]
-fn split_groups(macro_parameters: &TokenStream) -> Vec<TokenStream> {
-    macro_parameters
-        .clone()
-        .into_iter()
-        .filter_map(|token| match token {
-            TokenTree::Group(g) if g.delimiter() == Delimiter::Parenthesis => Some(g.stream()),
-            _ => None,
-        })
-        .collect()
-}
-
-/// Split a token stream into parts at each top-level comma.
-fn split_on_comma(stream: TokenStream) -> Vec<TokenStream> {
-    let mut result = Vec::new();
-    let mut current: Vec<TokenTree> = Vec::new();
-
-    for token in stream {
-        match token {
-            TokenTree::Punct(ref p) if p.as_char() == ',' => {
-                result.push(current.drain(..).collect());
-            }
-            other => current.push(other),
-        }
-    }
-
-    if !current.is_empty() {
-        result.push(current.into_iter().collect());
-    }
-
-    result
-}
-
-/// `const1, const2, Type` -> `([const1, const2], Type)`
-fn split_constexpr_and_type(pair: TokenStream) -> (Vec<TokenStream>, TokenStream) {
-    let mut parts = split_on_comma(pair);
-
-    if parts.len() < 2 {
-        panic!("Expected format: (const_expr, Type); got fewer than 2 comma-separated items");
-    }
-
-    let ty = parts.pop().unwrap();
-    let constexprs = parts;
-
-    (constexprs, ty)
-}
-
 /// Check if function returns a Result type
-fn returns_result(original_function_signature: &Signature) -> bool {
-    match &original_function_signature.output {
+fn returns_result(original_signature: &Signature) -> bool {
+    match &original_signature.output {
         ReturnType::Type(_, ty) => match ty.as_ref() {
             Type::Path(type_path) => type_path
                 .path
