@@ -42,7 +42,7 @@ pub use libtest_mimic;
 #[cfg(feature = "std")]
 pub const DEFAULT_TEST_THREADS: usize = 1;
 
-pub enum TestExecution {
+pub enum RunMode {
     Normal,
     Ignore(Option<&'static str>),
     ExpectPanic(Option<&'static str>),
@@ -57,7 +57,7 @@ pub struct TestCase {
     pub module: &'static str,
     pub name: &'static str,
     pub test_fn: fn(),
-    pub execution: TestExecution,
+    pub run_mode: RunMode,
     pub requires_std: RequiresStd,
 }
 inventory::collect!(TestCase);

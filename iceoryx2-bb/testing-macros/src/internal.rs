@@ -18,7 +18,7 @@ use syn::{
 
 pub const TEST_ATTRIBUTES: &[&str] = &["test", "should_panic", "ignore"];
 
-pub(crate) enum TestExecution {
+pub(crate) enum RunMode {
     Normal,
     Ignore(Option<String>),
     ExpectPanic(Option<String>),
@@ -29,19 +29,19 @@ pub(crate) enum RequiresStd {
     Yes(Option<String>),
 }
 
-impl ToTokens for TestExecution {
+impl ToTokens for RunMode {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         tokens.extend(match self {
-            Self::Normal => quote! { ::iceoryx2_bb_testing::TestExecution::Normal },
-            Self::Ignore(None) => quote! { ::iceoryx2_bb_testing::TestExecution::Ignore(None) },
+            Self::Normal => quote! { ::iceoryx2_bb_testing::RunMode::Normal },
+            Self::Ignore(None) => quote! { ::iceoryx2_bb_testing::RunMode::Ignore(None) },
             Self::Ignore(Some(r)) => {
-                quote! { ::iceoryx2_bb_testing::TestExecution::Ignore(Some(#r)) }
+                quote! { ::iceoryx2_bb_testing::RunMode::Ignore(Some(#r)) }
             }
             Self::ExpectPanic(None) => {
-                quote! { ::iceoryx2_bb_testing::TestExecution::ExpectPanic(None) }
+                quote! { ::iceoryx2_bb_testing::RunMode::ExpectPanic(None) }
             }
-            Self::ExpectPanic(Some(m)) => {
-                quote! { ::iceoryx2_bb_testing::TestExecution::ExpectPanic(Some(#m)) }
+            Self::ExpectPanic(Some(message)) => {
+                quote! { ::iceoryx2_bb_testing::RunMode::ExpectPanic(Some(#message)) }
             }
         });
     }
@@ -52,40 +52,42 @@ impl ToTokens for RequiresStd {
         tokens.extend(match self {
             Self::No => quote! { ::iceoryx2_bb_testing::RequiresStd::No },
             Self::Yes(None) => quote! { ::iceoryx2_bb_testing::RequiresStd::Yes(None) },
-            Self::Yes(Some(r)) => quote! { ::iceoryx2_bb_testing::RequiresStd::Yes(Some(#r)) },
+            Self::Yes(Some(reason)) => {
+                quote! { ::iceoryx2_bb_testing::RequiresStd::Yes(Some(#reason)) }
+            }
         });
     }
 }
 
 /// Generate tokens to instantiate tests and associated submission to the inventory.
 pub fn instantiate_tests(
-    test_function: &ItemFn,
+    original_function: &ItemFn,
     macro_parameters: Option<&TokenStream>,
 ) -> TokenStream {
-    let test_execution = extract_test_execution(&test_function.attrs);
-    let requires_std = extract_requires_std(&test_function.attrs);
-    let original_function = generate_original(test_function);
+    let run_mode = extract_run_mode(&original_function.attrs);
+    let requires_std = extract_requires_std(&original_function.attrs);
+    let test_function = generate_test_function(original_function);
 
     match macro_parameters {
         None => {
             let (wrapper_function, inventory_submission) =
-                generate_standalone(test_function, &test_execution, &requires_std);
+                generate_standalone(original_function, &run_mode, &requires_std);
 
-            quote! { #original_function #wrapper_function #inventory_submission }
+            quote! { #test_function #wrapper_function #inventory_submission }
         }
         Some(params) => {
             let (wrapper_functions, inventory_submissions) = if is_pair(params) {
                 generate_for_constexpr_type_pair(
-                    test_function,
+                    original_function,
                     params,
-                    &test_execution,
+                    &run_mode,
                     &requires_std,
                 )
             } else {
-                generate_for_type(test_function, params, &test_execution, &requires_std)
+                generate_for_type(original_function, params, &run_mode, &requires_std)
             };
 
-            quote! { #original_function #wrapper_functions #inventory_submissions }
+            quote! { #test_function #wrapper_functions #inventory_submissions }
         }
     }
 }
@@ -93,17 +95,18 @@ pub fn instantiate_tests(
 /// Generate a wrapper and inventory submission for a single non-generic test
 /// function.
 fn generate_standalone(
-    test_function: &ItemFn,
-    test_execution: &TestExecution,
+    original_function: &ItemFn,
+    run_mode: &RunMode,
     requires_std: &RequiresStd,
 ) -> (TokenStream, TokenStream) {
+    let attributes = strip_requires_std(&strip_test_attributes(&original_function.attrs));
     let (wrapper_identifier, wrapper_function) =
-        generate_wrapper_function(test_function, &[], &TokenStream::new(), None);
+        generate_wrapper_function(original_function, &[], &TokenStream::new(), None);
 
     let inventory_submission = generate_inventory_submission(
-        test_function.sig.ident.to_string(),
-        test_function,
-        test_execution,
+        original_function.sig.ident.to_string(),
+        &attributes,
+        run_mode,
         requires_std,
         &wrapper_identifier,
     );
@@ -113,27 +116,28 @@ fn generate_standalone(
 /// Generate wrappers and inventory submissions for a test function instantiated
 /// for each type in a comma-separated list.
 fn generate_for_type(
-    test_function: &ItemFn,
+    original_function: &ItemFn,
     macro_parameters: &TokenStream,
-    test_execution: &TestExecution,
+    run_mode: &RunMode,
     requires_std: &RequiresStd,
 ) -> (TokenStream, TokenStream) {
     let constexprs: &[TokenStream] = &[];
+    let attributes = strip_requires_std(&strip_test_attributes(&original_function.attrs));
 
     let (wrapper_functions, inventory_submissions): (Vec<_>, Vec<_>) =
         split_on_comma(macro_parameters.clone())
             .into_iter()
             .map(|type_name| {
                 let (wrapper_function_identifier, wrapper_function) = generate_wrapper_function(
-                    test_function,
+                    original_function,
                     constexprs,
                     &type_name,
                     Some(vec![type_name.clone()]),
                 );
                 let inventory_submission = generate_inventory_submission(
-                    generate_test_name(&test_function.sig.ident, constexprs, &type_name),
-                    test_function,
-                    test_execution,
+                    generate_test_name(&original_function.sig.ident, constexprs, &type_name),
+                    &attributes,
+                    run_mode,
                     requires_std,
                     &wrapper_function_identifier,
                 );
@@ -151,11 +155,13 @@ fn generate_for_type(
 /// Generate wrappers and inventory submissions for a test function instantiated
 /// for each `(constexpr, ..., Type)` pair in the parameter list.
 fn generate_for_constexpr_type_pair(
-    test_function: &ItemFn,
+    original_function: &ItemFn,
     macro_parameters: &TokenStream,
-    test_execution: &TestExecution,
+    run_mode: &RunMode,
     requires_std: &RequiresStd,
 ) -> (TokenStream, TokenStream) {
+    let attributes = strip_requires_std(&strip_test_attributes(&original_function.attrs));
+
     let (wrapper_functions, inventory_submissions): (Vec<_>, Vec<_>) =
         split_groups(macro_parameters)
             .into_iter()
@@ -168,15 +174,15 @@ fn generate_for_constexpr_type_pair(
                 generic_params.push(ty.clone());
 
                 let (wrapper_function_identifier, wrapper_function) = generate_wrapper_function(
-                    test_function,
+                    original_function,
                     &constexprs,
                     &ty,
                     Some(generic_params),
                 );
                 let inventory_submission = generate_inventory_submission(
-                    generate_test_name(&test_function.sig.ident, &constexprs, &ty),
-                    test_function,
-                    test_execution,
+                    generate_test_name(&original_function.sig.ident, &constexprs, &ty),
+                    &attributes,
+                    run_mode,
                     requires_std,
                     &wrapper_function_identifier,
                 );
@@ -193,13 +199,13 @@ fn generate_for_constexpr_type_pair(
 
 /// Generate the test display name for a generic test instantiation.
 pub fn generate_test_name(
-    test_function_identifier: &Ident,
+    original_function_identifier: &Ident,
     constexprs: &[TokenStream],
     type_identifier: &TokenStream,
 ) -> String {
     let type_string = type_identifier.to_string().replace(' ', "");
     if constexprs.is_empty() {
-        format!("<{}>::{}", type_string, test_function_identifier)
+        format!("<{}>::{}", type_string, original_function_identifier)
     } else {
         let constexpr_names: Vec<String> = constexprs
             .iter()
@@ -209,7 +215,7 @@ pub fn generate_test_name(
             "<{}, {}>::{}",
             constexpr_names.join(", "),
             type_string,
-            test_function_identifier
+            original_function_identifier
         )
     }
 }
@@ -219,18 +225,19 @@ pub fn generate_test_name(
 /// Returns the wrapper function identifier alongside the generated function so
 /// it may be used in an inventory submission.
 pub fn generate_wrapper_function(
-    test_function: &ItemFn,
+    original_function: &ItemFn,
     constexpr_identifiers: &[TokenStream],
     type_identifier: &TokenStream,
     generic_parameters: Option<Vec<TokenStream>>,
 ) -> (Ident, TokenStream) {
-    let attributes = strip_test_attributes(&test_function.attrs);
+    let attributes = strip_test_attributes(&original_function.attrs);
     let identifier = generate_wrapper_identifier(
-        &test_function.sig.ident,
+        &original_function.sig.ident,
         constexpr_identifiers,
         type_identifier,
     );
-    let body = generate_wrapper_body(&test_function.sig, generic_parameters);
+    let body = generate_wrapper_body(&original_function.sig, generic_parameters);
+
     let function = quote! {
         #[allow(non_snake_case, dead_code)]
         #(#attributes)*
@@ -245,7 +252,7 @@ pub fn generate_wrapper_function(
 /// Generate the identifier for the wrapper function that calls the test
 /// function.
 fn generate_wrapper_identifier(
-    test_function_name: &Ident,
+    original_function_identifier: &Ident,
     constexprs: &[TokenStream],
     type_identifier: &TokenStream,
 ) -> Ident {
@@ -263,27 +270,27 @@ fn generate_wrapper_identifier(
             type_identifier_string(&type_identifier.to_string())
         )
     };
-    let ident_str = if suffix.is_empty() {
-        format!("__iox2_test_{}", test_function_name)
+    let mangled_identifier = if suffix.is_empty() {
+        format!("__iox2_test_{}", original_function_identifier)
     } else {
-        format!("__iox2_test_{}_{}", test_function_name, suffix)
+        format!("__iox2_test_{}_{}", original_function_identifier, suffix)
     };
-    Ident::new(&ident_str, test_function_name.span())
+    Ident::new(&mangled_identifier, original_function_identifier.span())
 }
 
 // Generate the body of the wrapper function that calls the test function.
 fn generate_wrapper_body(
-    test_function_signature: &Signature,
+    original_function_signature: &Signature,
     generic_parameters: Option<Vec<TokenStream>>,
 ) -> TokenStream {
-    let identifier = &test_function_signature.ident;
+    let identifier = &original_function_signature.ident;
     let f = if let Some(generic) = generic_parameters {
         quote! { #identifier::<#(#generic),*>() }
     } else {
         quote! { #identifier() }
     };
 
-    if returns_result(test_function_signature) {
+    if returns_result(original_function_signature) {
         quote! {
             if let Err(e) = #f {
                 panic!("Test failed: {:?}", e);
@@ -297,12 +304,11 @@ fn generate_wrapper_body(
 /// Generate an inventory submission for a test.
 pub fn generate_inventory_submission(
     test_name: String,
-    test_function: &ItemFn,
-    test_execution: &TestExecution,
+    attributes: &[Attribute],
+    run_mode: &RunMode,
     requires_std: &RequiresStd,
     wrapper_identifier: &Ident,
 ) -> TokenStream {
-    let attributes = strip_requires_std(&strip_test_attributes(&test_function.attrs));
     quote! {
         #(#attributes)*
         ::iceoryx2_bb_testing::inventory::submit! {
@@ -310,14 +316,14 @@ pub fn generate_inventory_submission(
                 module: module_path!(),
                 name: #test_name,
                 test_fn: #wrapper_identifier,
-                execution: #test_execution,
+                run_mode: #run_mode,
                 requires_std: #requires_std,
             }
         }
     }
 }
 
-fn extract_test_execution(attrs: &[Attribute]) -> TestExecution {
+fn extract_run_mode(attrs: &[Attribute]) -> RunMode {
     let ignore = attrs.iter().find(|attr| attr.path().is_ident("ignore"));
     let should_panic = attrs
         .iter()
@@ -332,7 +338,7 @@ fn extract_test_execution(attrs: &[Attribute]) -> TestExecution {
                 None
             }
         });
-        return TestExecution::Ignore(reason);
+        return RunMode::Ignore(reason);
     }
 
     if let Some(attr) = should_panic {
@@ -353,10 +359,10 @@ fn extract_test_execution(attrs: &[Attribute]) -> TestExecution {
                     None
                 }
             });
-        return TestExecution::ExpectPanic(message);
+        return RunMode::ExpectPanic(message);
     }
 
-    TestExecution::Normal
+    RunMode::Normal
 }
 
 fn extract_requires_std(attrs: &[Attribute]) -> RequiresStd {
@@ -396,9 +402,14 @@ fn strip_requires_std(attrs: &[Attribute]) -> Vec<Attribute> {
 
 /// Generates a copy of the original test function, stripping anything that is
 /// not required in the test context
-fn generate_original(test_function: &ItemFn) -> TokenStream {
-    let attributes = strip_test_attributes(&test_function.attrs);
-    let (vis, sig, block) = (&test_function.vis, &test_function.sig, &test_function.block);
+fn generate_test_function(original_function: &ItemFn) -> TokenStream {
+    let attributes = strip_test_attributes(&original_function.attrs);
+    let (vis, sig, block) = (
+        &original_function.vis,
+        &original_function.sig,
+        &original_function.block,
+    );
+
     quote! {
         #[allow(dead_code)]
         #(#attributes)*
@@ -485,8 +496,8 @@ fn split_constexpr_and_type(pair: TokenStream) -> (Vec<TokenStream>, TokenStream
 }
 
 /// Check if function returns a Result type
-fn returns_result(test_function_signature: &Signature) -> bool {
-    match &test_function_signature.output {
+fn returns_result(original_function_signature: &Signature) -> bool {
+    match &original_function_signature.output {
         ReturnType::Type(_, ty) => match ty.as_ref() {
             Type::Path(type_path) => type_path
                 .path

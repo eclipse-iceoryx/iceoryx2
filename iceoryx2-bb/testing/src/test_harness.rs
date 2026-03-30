@@ -100,8 +100,8 @@ macro_rules! test_harness {
                         alloc::format!("{}::{}", module, test_case.name)
                     };
                     $crate::libtest_mimic::Trial::test(trial_name, move || {
-                        match test_case.execution {
-                            $crate::TestExecution::ExpectPanic(msg) => {
+                        match test_case.run_mode {
+                            $crate::RunMode::ExpectPanic(msg) => {
                                 $crate::test_harness::expect_panic(test_fn, msg)
                             }
                             _ => {
@@ -110,10 +110,7 @@ macro_rules! test_harness {
                             }
                         }
                     })
-                    .with_ignored_flag(matches!(
-                        test_case.execution,
-                        $crate::TestExecution::Ignore(_)
-                    ))
+                    .with_ignored_flag(matches!(test_case.run_mode, $crate::RunMode::Ignore(_)))
                 })
                 .collect::<Vec<_>>();
             $crate::libtest_mimic::run(&args, tests).exit();
@@ -187,19 +184,19 @@ macro_rules! test_harness {
                     continue;
                 }
 
-                match test.execution {
-                    $crate::TestExecution::Ignore(reason) => {
+                match test.run_mode {
+                    $crate::RunMode::Ignore(reason) => {
                         match reason {
                             Some(r) => $crate::internal::coutln!("ignored: {}", r),
                             None => $crate::internal::coutln!("ignored"),
                         }
                         continue;
                     }
-                    $crate::TestExecution::ExpectPanic(_) => {
+                    $crate::RunMode::ExpectPanic(_) => {
                         $crate::internal::coutln!("ignored: panics");
                         continue;
                     }
-                    $crate::TestExecution::Normal => {}
+                    $crate::RunMode::Normal => {}
                 }
 
                 (test.test_fn)();
