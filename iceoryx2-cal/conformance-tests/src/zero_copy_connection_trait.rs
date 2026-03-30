@@ -31,8 +31,6 @@ pub mod zero_copy_connection_trait {
     use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
-    #[cfg(debug_assertions)]
-    use iceoryx2_bb_testing_macros::requires_std;
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::named_concept::{NamedConceptBuilder, NamedConceptMgmt};
     use iceoryx2_cal::shm_allocator::{PointerOffset, SegmentId};
@@ -1192,7 +1190,6 @@ pub mod zero_copy_connection_trait {
     }
 
     #[cfg(debug_assertions)]
-    #[requires_std("panics")]
     #[should_panic]
     #[conformance_test]
     pub fn send_pointer_offset_with_out_of_bounds_segment_id_fails<Sut: ZeroCopyConnection>() {
@@ -1226,7 +1223,6 @@ pub mod zero_copy_connection_trait {
     }
 
     #[cfg(debug_assertions)]
-    #[requires_std("panics")]
     #[should_panic]
     #[conformance_test]
     pub fn release_pointer_offset_with_out_of_bounds_segment_id_fails<Sut: ZeroCopyConnection>() {
@@ -1550,7 +1546,6 @@ pub mod zero_copy_connection_trait {
     }
 
     #[cfg(debug_assertions)]
-    #[requires_std("panics")]
     #[should_panic]
     #[conformance_test]
     pub fn panic_when_same_offset_is_sent_twice_over_same_channel<Sut: ZeroCopyConnection>() {
@@ -1689,7 +1684,6 @@ pub mod zero_copy_connection_trait {
     }
 
     #[cfg(debug_assertions)]
-    #[requires_std("panics")]
     #[should_panic]
     #[conformance_test]
     pub fn panics_on_out_of_bounds_channel_id_in_try_send<Sut: ZeroCopyConnection>() {
@@ -1708,7 +1702,6 @@ pub mod zero_copy_connection_trait {
     }
 
     #[cfg(debug_assertions)]
-    #[requires_std("panics")]
     #[should_panic]
     #[conformance_test]
     pub fn panics_on_out_of_bounds_channel_id_in_blocking_send<Sut: ZeroCopyConnection>() {
@@ -1727,7 +1720,6 @@ pub mod zero_copy_connection_trait {
     }
 
     #[cfg(debug_assertions)]
-    #[requires_std("panics")]
     #[should_panic]
     #[conformance_test]
     pub fn panics_on_out_of_bounds_channel_id_in_reclaim<Sut: ZeroCopyConnection>() {
@@ -1746,7 +1738,6 @@ pub mod zero_copy_connection_trait {
     }
 
     #[cfg(debug_assertions)]
-    #[requires_std("panics")]
     #[should_panic]
     #[conformance_test]
     pub fn panics_on_out_of_bounds_channel_id_in_receive<Sut: ZeroCopyConnection>() {
@@ -1765,7 +1756,6 @@ pub mod zero_copy_connection_trait {
     }
 
     #[cfg(debug_assertions)]
-    #[requires_std("panics")]
     #[should_panic]
     #[conformance_test]
     pub fn panics_on_out_of_bounds_channel_id_in_release<Sut: ZeroCopyConnection>() {
@@ -1784,7 +1774,6 @@ pub mod zero_copy_connection_trait {
     }
 
     #[cfg(debug_assertions)]
-    #[requires_std("panics")]
     #[should_panic]
     #[conformance_test]
     pub fn panics_on_out_of_bounds_channel_id_in_has_data<Sut: ZeroCopyConnection>() {

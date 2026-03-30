@@ -43,7 +43,6 @@ pub mod service_blackboard {
     use iceoryx2_bb_posix::thread::thread_scope;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
-    use iceoryx2_bb_testing_macros::requires_std;
 
     #[conformance_test]
     pub fn open_with_attributes_fails_when_service_key_types_differ<Sut: Service>() {
@@ -2354,7 +2353,6 @@ pub mod service_blackboard {
     }
 
     #[conformance_test]
-    #[requires_std("panics")]
     #[should_panic]
     pub fn creation_fails_when_key_type_layout_is_invalid<Sut: Service>() {
         let service_name = generate_service_name();

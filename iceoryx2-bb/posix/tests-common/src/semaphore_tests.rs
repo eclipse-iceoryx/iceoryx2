@@ -23,8 +23,6 @@ use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_bb_testing::watchdog::Watchdog;
-#[cfg(debug_assertions)]
-use iceoryx2_bb_testing_macros::requires_std;
 use iceoryx2_bb_testing_macros::test;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_NAMED_SEMAPHORE;
 
@@ -425,7 +423,6 @@ pub fn unnamed_semaphore_multiple_ipc_semaphores_are_working() {
 }
 
 #[test]
-#[requires_std("panics")]
 #[should_panic]
 #[cfg(debug_assertions)]
 pub fn unnamed_semaphore_acquire_uninitialized_ipc_handle_failes() {
@@ -435,7 +432,6 @@ pub fn unnamed_semaphore_acquire_uninitialized_ipc_handle_failes() {
 }
 
 #[test]
-#[requires_std("panics")]
 #[should_panic]
 #[cfg(debug_assertions)]
 pub fn unnamed_semaphore_acquiring_non_ipc_capable_handle_fails() {

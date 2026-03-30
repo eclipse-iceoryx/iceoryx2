@@ -19,8 +19,6 @@ pub mod subscriber {
     use alloc::{format, vec};
     use iceoryx2::port::ReceiveError;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
-    #[cfg(debug_assertions)]
-    use iceoryx2_bb_testing_macros::requires_std;
 
     use iceoryx2::testing::generate_service_name;
     use iceoryx2::{
@@ -67,7 +65,6 @@ pub mod subscriber {
     }
 
     #[conformance_test]
-    #[requires_std("panics")]
     #[should_panic]
     #[cfg(debug_assertions)]
     pub fn subscriber_with_custom_payload_details_panics_when_calling_non_custom_receive<

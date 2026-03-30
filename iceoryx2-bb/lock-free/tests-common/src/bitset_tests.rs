@@ -22,7 +22,6 @@ use iceoryx2_bb_posix::system_configuration::SystemInfo;
 use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::watchdog::Watchdog;
-use iceoryx2_bb_testing_macros::requires_std;
 use iceoryx2_bb_testing_macros::test;
 
 #[test]
@@ -108,7 +107,6 @@ pub fn set_single_bit_works() {
 
 #[cfg_attr(debug_assertions, test)]
 #[should_panic]
-#[requires_std("panics")]
 pub fn set_bit_outside_of_bitset_leads_to_panic() {
     const CAPACITY: usize = 1551;
     let sut = BitSet::new(CAPACITY);

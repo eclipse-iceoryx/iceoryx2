@@ -124,7 +124,6 @@ pub fn expect_returns_value() {
 }
 
 #[test]
-#[requires_std("panics")]
 #[should_panic]
 pub fn expect_panics_when_empty() {
     let sut = RelocatableOption::<i32>::None;
@@ -268,7 +267,6 @@ pub fn unwrap_returns_value_when_it_has_one() {
 }
 
 #[test]
-#[requires_std("panics")]
 #[should_panic]
 pub fn unwrap_panics_when_empty() {
     let sut = RelocatableOption::<i32>::None;

@@ -34,8 +34,6 @@ pub mod publisher {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
     use iceoryx2_bb_testing::watchdog::Watchdog;
-    #[cfg(debug_assertions)]
-    use iceoryx2_bb_testing_macros::requires_std;
 
     const TIMEOUT: Duration = Duration::from_millis(25);
 
@@ -593,7 +591,6 @@ pub mod publisher {
     }
 
     #[conformance_test]
-    #[requires_std("panics")]
     #[should_panic]
     #[cfg(debug_assertions)]
     pub fn publisher_with_custom_payload_details_panics_when_calling_loan_slice_uninit<
@@ -621,7 +618,6 @@ pub mod publisher {
     }
 
     #[conformance_test]
-    #[requires_std("panics")]
     #[should_panic]
     #[cfg(debug_assertions)]
     pub fn custom_fixed_size_payload_panics_when_loaning_more_than_one_element<Sut: Service>() {

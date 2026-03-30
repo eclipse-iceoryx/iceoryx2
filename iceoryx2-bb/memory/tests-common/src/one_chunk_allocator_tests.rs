@@ -16,8 +16,6 @@ use iceoryx2_bb_elementary::math::*;
 use iceoryx2_bb_elementary_traits::allocator::*;
 use iceoryx2_bb_memory::one_chunk_allocator::*;
 use iceoryx2_bb_testing::assert_that;
-#[cfg(debug_assertions)]
-use iceoryx2_bb_testing_macros::requires_std;
 use iceoryx2_bb_testing_macros::test;
 
 struct TestFixture {
@@ -180,7 +178,6 @@ pub fn shrink_fails_when_alignment_increases() {
 }
 
 #[test]
-#[requires_std("panics")]
 #[should_panic]
 #[cfg(debug_assertions)]
 pub fn shrink_non_allocated_chunk_fails() {
@@ -335,7 +332,6 @@ pub fn grow_with_increased_alignment_fails() {
 }
 
 #[test]
-#[requires_std("panics")]
 #[should_panic]
 #[cfg(debug_assertions)]
 pub fn grow_with_non_allocated_chunk_fails() {
@@ -354,7 +350,6 @@ pub fn grow_with_non_allocated_chunk_fails() {
 }
 
 #[test]
-#[requires_std("panics")]
 #[should_panic]
 #[cfg(debug_assertions)]
 pub fn deallocate_non_allocated_chunk_fails() {

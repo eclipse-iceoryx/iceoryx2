@@ -20,7 +20,6 @@ use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
 use iceoryx2_bb_testing::memory::RawMemory;
-use iceoryx2_bb_testing_macros::requires_std;
 use iceoryx2_bb_testing_macros::test;
 
 const CAPACITY: usize = 100;
@@ -212,7 +211,6 @@ pub fn remove_until_empty_and_reinsert_works() {
 }
 
 #[test]
-#[requires_std("panics")]
 #[should_panic]
 pub fn double_init_call_causes_panic() {
     use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
@@ -228,7 +226,6 @@ pub fn double_init_call_causes_panic() {
 }
 
 #[test]
-#[requires_std("panics")]
 #[cfg(debug_assertions)]
 #[should_panic]
 pub fn panic_is_called_in_debug_mode_if_map_is_not_initialized() {
