@@ -112,7 +112,7 @@ pub fn clock_relocatable_duration_max_value() {
 pub fn converting_realtime_time_to_realtime_time_results_in_equal_times() {
     let sut = Time::now_with_clock(ClockType::Realtime).unwrap();
 
-    assert_that!(sut.to_realtime_clock(), eq Ok(sut));
+    assert_that!(sut.to_realtime(), eq Ok(sut));
 }
 
 #[test]
@@ -121,9 +121,12 @@ pub fn converting_monotonic_time_to_realtime_time_results_in_nearly_the_same_tim
 
     let sut_monotonic = Time::now_with_clock(ClockType::Monotonic).unwrap();
     let sut_realtime = Time::now_with_clock(ClockType::Realtime).unwrap();
-    let sut_converted = sut_monotonic.to_realtime_clock().unwrap();
+    let sut_converted = sut_monotonic.to_realtime().unwrap();
 
-    let time_diff_in_ms = (sut_converted.as_duration() - sut_realtime.as_duration()).as_millis();
+    let time_diff_in_ms = sut_converted
+        .as_duration()
+        .abs_diff(sut_realtime.as_duration())
+        .as_millis();
 
     assert_that!(time_diff_in_ms, le 1);
 }

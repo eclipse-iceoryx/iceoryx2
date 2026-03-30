@@ -308,8 +308,8 @@ impl Time {
 
     /// Converts [`Time`] into a [`Time`] based on [`ClockType::Realtime`]. If it is
     /// already based on [`ClockType::Realtime`] it returns a copy of itself.
-    pub fn to_realtime_clock(&self) -> Result<Time, TimeError> {
-        const ONE_NANOSECOND: i64 = 1_000_000_000;
+    pub fn to_realtime(&self) -> Result<Time, TimeError> {
+        const ONE_NANOSECOND_IN_SECONDS: i64 = 1_000_000_000;
         if self.clock_type == ClockType::Realtime {
             return Ok(*self);
         }
@@ -329,15 +329,15 @@ impl Time {
 
         if offset_nsecs < 0 {
             offset_secs -= 1;
-            offset_nsecs += ONE_NANOSECOND;
+            offset_nsecs += ONE_NANOSECOND_IN_SECONDS;
         }
 
         let mut realtime_secs = self.seconds as i64 + offset_secs;
         let mut realtime_nsecs = self.nanoseconds as i64 + offset_nsecs;
 
-        if realtime_nsecs >= ONE_NANOSECOND {
+        if realtime_nsecs >= ONE_NANOSECOND_IN_SECONDS {
             realtime_secs += 1;
-            realtime_nsecs -= ONE_NANOSECOND;
+            realtime_nsecs -= ONE_NANOSECOND_IN_SECONDS;
         }
 
         Ok(Time {
