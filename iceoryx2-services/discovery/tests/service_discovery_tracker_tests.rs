@@ -15,17 +15,8 @@ mod service_discovery_tracker {
 
     use iceoryx2::prelude::*;
     use iceoryx2::testing::*;
-    use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_services_discovery::service_discovery::Tracker;
-
-    fn generate_name() -> ServiceName {
-        ServiceName::new(&format!(
-            "test_service_tracker_{}",
-            UniqueSystemId::new().unwrap().value()
-        ))
-        .unwrap()
-    }
 
     #[test]
     fn syncs_added_publish_subscribe_services<S: Service>() {
@@ -39,7 +30,7 @@ mod service_discovery_tracker {
         // add a bunch of services
         let mut services = vec![];
         for _ in 0..NUMBER_OF_SERVICES_ADDED {
-            let service_name = generate_name();
+            let service_name = generate_service_name();
             let service = node
                 .service_builder(&service_name)
                 .publish_subscribe::<u64>()
@@ -75,7 +66,7 @@ mod service_discovery_tracker {
         // add a bunch of services
         let mut services = vec![];
         for _ in 0..NUMBER_OF_SERVICES_ADDED {
-            let service_name = generate_name();
+            let service_name = generate_service_name();
             let service = node
                 .service_builder(&service_name)
                 .publish_subscribe::<u64>()
@@ -91,7 +82,7 @@ mod service_discovery_tracker {
         let mut removed_ids = vec![];
         for _ in 0..NUMBER_OF_SERVICES_REMOVED {
             let removed = services.pop().unwrap();
-            removed_ids.push(removed.service_id().clone());
+            removed_ids.push(*removed.service_id());
             drop(removed);
         }
 

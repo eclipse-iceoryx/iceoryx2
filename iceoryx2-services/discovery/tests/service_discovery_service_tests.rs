@@ -16,21 +16,13 @@ mod service_discovery_service {
 
     use iceoryx2::prelude::*;
     use iceoryx2::service::static_config::StaticConfig;
+    use iceoryx2::testing::generate_service_name;
     use iceoryx2::testing::*;
-    use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::test_fail;
     use iceoryx2_services_discovery::service_discovery::{
         service_name, Config, Discovery, Payload, Service,
     };
-
-    fn generate_name() -> ServiceName {
-        ServiceName::new(&format!(
-            "test_service_monitor_service_{}",
-            UniqueSystemId::new().unwrap().value()
-        ))
-        .unwrap()
-    }
 
     #[test]
     fn publishes_details_of_added_and_removed_services_when_configured() {
@@ -68,7 +60,7 @@ mod service_discovery_service {
         // add some services
         let mut services = vec![];
         for _ in 0..NUMBER_OF_SERVICES_ADDED {
-            let service_name = generate_name();
+            let service_name = generate_service_name();
             let service = node
                 .service_builder(&service_name)
                 .publish_subscribe::<u64>()
@@ -131,7 +123,7 @@ mod service_discovery_service {
         let listener = service.listener_builder().create().unwrap();
 
         // add a service
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let service = node
             .service_builder(&service_name)
             .publish_subscribe::<u64>()
@@ -212,7 +204,7 @@ mod service_discovery_service {
             .create::<ipc::Service>()
             .unwrap();
 
-        let service_names: Vec<_> = (0..NUM_SERVICES).map(|_| generate_name()).collect();
+        let service_names: Vec<_> = (0..NUM_SERVICES).map(|_| generate_service_name()).collect();
 
         let _created_services: Vec<_> = service_names
             .iter()

@@ -16,18 +16,13 @@ use iceoryx2_bb_testing_macros::tests;
 
 #[tests(File, SharedMemory)]
 pub mod generic {
-    use iceoryx2_bb_container::semantic_string::SemanticString;
-    use iceoryx2_bb_elementary::math::ToB64;
-    use iceoryx2_bb_posix::config::*;
     use iceoryx2_bb_posix::file::*;
     use iceoryx2_bb_posix::file_descriptor::*;
     use iceoryx2_bb_posix::ownership::*;
     use iceoryx2_bb_posix::shared_memory::*;
     use iceoryx2_bb_posix::testing::create_test_directory;
-    use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
+    use iceoryx2_bb_posix::testing::generate_file_path;
     use iceoryx2_bb_posix::user::*;
-    use iceoryx2_bb_system_types::file_name::FileName;
-    use iceoryx2_bb_system_types::file_path::FilePath;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::test_requires;
     use iceoryx2_pal_posix::posix::{POSIX_SUPPORT_PERMISSIONS, POSIX_SUPPORT_USERS_AND_GROUPS};
@@ -43,20 +38,12 @@ pub mod generic {
         assert_that!(FileDescriptor::new(981), is_none);
     }
 
-    fn generate_name() -> FileName {
-        let mut dir = FileName::new(b"test_").unwrap();
-        dir.push_bytes(UniqueSystemId::new().unwrap().value().to_b64().as_bytes())
-            .unwrap();
-        dir
-    }
-
     pub trait GenericTestBuilder {
         fn sut() -> Self;
     }
-
     impl GenericTestBuilder for File {
         fn sut() -> Self {
-            let name = FilePath::from_path_and_file(&TEST_DIRECTORY, &generate_name()).unwrap();
+            let name = generate_file_path();
 
             let file_content = [170u8; 2048];
 
@@ -72,7 +59,7 @@ pub mod generic {
 
     impl GenericTestBuilder for SharedMemory {
         fn sut() -> Self {
-            let name = FileName::new(generate_name().as_bytes()).unwrap();
+            let name = generate_file_path().file_name();
             SharedMemoryBuilder::new(&name)
                 .creation_mode(CreationMode::PurgeAndCreate)
                 .size(2048)
@@ -110,7 +97,6 @@ pub mod generic {
         Sut: GenericTestBuilder + FileDescriptorManagement,
     >() {
         test_requires!(POSIX_SUPPORT_PERMISSIONS);
-
         create_test_directory();
 
         let mut sut = Sut::sut();

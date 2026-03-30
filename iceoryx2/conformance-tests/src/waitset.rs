@@ -15,24 +15,23 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod waitset {
-    use alloc::{format, vec};
+    use alloc::vec;
     use core::time::Duration;
 
     use iceoryx2::port::listener::Listener;
     use iceoryx2::port::notifier::Notifier;
     use iceoryx2::prelude::{WaitSetBuilder, *};
+    use iceoryx2::testing::generate_service_name;
     use iceoryx2::testing::*;
     use iceoryx2::waitset::{WaitSetAttachmentError, WaitSetRunError};
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_posix::clock::{nanosleep, Time};
-    use iceoryx2_bb_posix::config::TEST_DIRECTORY;
-    use iceoryx2_bb_posix::directory::Directory;
-    use iceoryx2_bb_posix::file::Permission;
+    use iceoryx2_bb_posix::testing::generate_file_path;
     use iceoryx2_bb_posix::unix_datagram_socket::{
         UnixDatagramReceiver, UnixDatagramSender, UnixDatagramSenderBuilder,
     };
     use iceoryx2_bb_posix::{
-        file_descriptor_set::SynchronousMultiplexing, unique_system_id::UniqueSystemId,
+        file_descriptor_set::SynchronousMultiplexing,
         unix_datagram_socket::UnixDatagramReceiverBuilder,
     };
     use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -41,29 +40,8 @@ pub mod waitset {
 
     const TIMEOUT: Duration = Duration::from_millis(100);
 
-    fn generate_name() -> ServiceName {
-        ServiceName::new(&format!(
-            "waitset_tests_{}",
-            UniqueSystemId::new().unwrap().value()
-        ))
-        .unwrap()
-    }
-
-    fn generate_uds_name() -> FilePath {
-        let mut path = TEST_DIRECTORY;
-        Directory::create(&path, Permission::OWNER_ALL).unwrap();
-        let _ = path.add_path_entry(
-            &Path::new(
-                format!("waitset_tests_{}", UniqueSystemId::new().unwrap().value()).as_bytes(),
-            )
-            .unwrap(),
-        );
-
-        FilePath::new(path.as_bytes()).unwrap()
-    }
-
     fn create_event<S: Service>(node: &Node<S>) -> (Listener<S>, Notifier<S>) {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let service = node
             .service_builder(&service_name)
             .event()
@@ -76,7 +54,7 @@ pub mod waitset {
     }
 
     fn create_socket() -> (UnixDatagramReceiver, UnixDatagramSender) {
-        let uds_name = generate_uds_name();
+        let uds_name = generate_file_path();
 
         let receiver = UnixDatagramReceiverBuilder::new(&uds_name)
             .create()

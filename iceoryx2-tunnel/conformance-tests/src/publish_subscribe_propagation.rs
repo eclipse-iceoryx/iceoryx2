@@ -15,7 +15,6 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod publish_subscribe_propagation {
-    use alloc::format;
     use alloc::string::{String, ToString};
     use core::fmt::Debug;
     use core::time::Duration;
@@ -24,8 +23,8 @@ pub mod publish_subscribe_propagation {
     use iceoryx2::testing::*;
 
     use iceoryx2::service::Service;
+    use iceoryx2::testing::generate_service_name;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
-    use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::test_fail;
     use iceoryx2_tunnel::Tunnel;
@@ -44,14 +43,6 @@ pub mod publish_subscribe_propagation {
         id: u32,
         value: f64,
         active: bool,
-    }
-
-    fn generate_service_name() -> ServiceName {
-        ServiceName::new(&format!(
-            "publish_subscribe_relay_tests_{}",
-            UniqueSystemId::new().unwrap().value()
-        ))
-        .unwrap()
     }
 
     fn propagate_struct_payloads<S: Service, B: Backend<S> + Debug, T: Testing>(num: usize) {

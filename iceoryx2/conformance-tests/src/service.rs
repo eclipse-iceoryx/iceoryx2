@@ -32,6 +32,7 @@ pub mod service {
     use iceoryx2::service::messaging_pattern::MessagingPattern;
     use iceoryx2::service::port_factory::{blackboard, event, publish_subscribe, request_response};
     use iceoryx2::service::{ServiceDetailsError, ServiceListError};
+    use iceoryx2::testing::generate_service_name;
     use iceoryx2::testing::*;
     use iceoryx2_bb_concurrency::atomic::AtomicU64;
     use iceoryx2_bb_concurrency::atomic::Ordering;
@@ -40,18 +41,9 @@ pub mod service {
     use iceoryx2_bb_posix::ipc_capable::Handle;
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
     use iceoryx2_bb_posix::thread::thread_scope;
-    use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_log::{set_log_level, LogLevel};
-
-    fn generate_name() -> ServiceName {
-        ServiceName::new(&format!(
-            "service_tests_{}",
-            UniqueSystemId::new().unwrap().value()
-        ))
-        .unwrap()
-    }
 
     pub trait SutFactory<Sut: Service>: Send + Sync {
         type Factory: PortFactory;
@@ -375,7 +367,7 @@ pub mod service {
         Sut: Service,
         Factory: SutFactory<Sut>,
     >() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut_pub_sub = node_1
@@ -432,7 +424,7 @@ pub mod service {
                 s.thread_builder().spawn(|| {
                     let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
                     for _ in 0..NUMBER_OF_ITERATIONS {
-                        let service_name = generate_name();
+                        let service_name = generate_service_name();
                         barrier_enter.wait();
 
                         let _sut = test
@@ -468,7 +460,7 @@ pub mod service {
         let barrier_exit = BarrierBuilder::new(number_of_threads as _)
             .create(&handle_exit)
             .unwrap();
-        let service_name = generate_name();
+        let service_name = generate_service_name();
 
         let config = generate_isolated_config();
         thread_scope(|s| {
@@ -525,7 +517,9 @@ pub mod service {
             .unwrap();
 
         const NUMBER_OF_ITERATIONS: usize = 100;
-        let service_names: Vec<_> = (0..NUMBER_OF_ITERATIONS).map(|_| generate_name()).collect();
+        let service_names: Vec<_> = (0..NUMBER_OF_ITERATIONS)
+            .map(|_| generate_service_name())
+            .collect();
         let service_names = &service_names;
 
         let config = generate_isolated_config();
@@ -573,7 +567,7 @@ pub mod service {
         Factory: SutFactory<Sut>,
     >() {
         let test = Factory::new();
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let defined_attributes = AttributeSpecifier::new()
             .define(
                 &"1. Hello".try_into().unwrap(),
@@ -609,7 +603,7 @@ pub mod service {
     #[conformance_test]
     pub fn opener_succeeds_when_attributes_do_match<Sut: Service, Factory: SutFactory<Sut>>() {
         let test = Factory::new();
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -672,7 +666,7 @@ pub mod service {
         Factory: SutFactory<Sut>,
     >() {
         let test = Factory::new();
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -712,7 +706,7 @@ pub mod service {
         Factory: SutFactory<Sut>,
     >() {
         let test = Factory::new();
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -752,7 +746,7 @@ pub mod service {
         Factory: SutFactory<Sut>,
     >() {
         let test = Factory::new();
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -802,7 +796,7 @@ pub mod service {
         Factory: SutFactory<Sut>,
     >() {
         let test = Factory::new();
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -839,7 +833,7 @@ pub mod service {
         Factory: SutFactory<Sut>,
     >() {
         let test = Factory::new();
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -912,7 +906,7 @@ pub mod service {
         let mut service_ids = vec![];
         let mut nodes = vec![];
         for _ in 0..NUMBER_OF_SERVICES {
-            let service_name = generate_name();
+            let service_name = generate_service_name();
             let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
             let sut = test
                 .create(&node, &service_name, &AttributeSpecifier::new())
@@ -947,7 +941,7 @@ pub mod service {
 
         let mut services = vec![];
         for _ in 0..NUMBER_OF_SERVICES {
-            let service_name = generate_name();
+            let service_name = generate_service_name();
             let sut = test
                 .create(&node, &service_name, &AttributeSpecifier::new())
                 .unwrap();
@@ -983,7 +977,7 @@ pub mod service {
                     barrier.wait();
 
                     for _ in 0..NUMBER_OF_ITERATIONS {
-                        let service_name = generate_name();
+                        let service_name = generate_service_name();
                         let sut = test
                             .create(&node, &service_name, &AttributeSpecifier::new())
                             .unwrap();
@@ -1023,7 +1017,7 @@ pub mod service {
 
         let config = generate_isolated_config();
         let main_node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let attributes = AttributeVerifier::new();
         let _service = test.create(&main_node, &service_name, &AttributeSpecifier::new());
 
@@ -1088,7 +1082,7 @@ pub mod service {
 
         let config = generate_isolated_config();
         let main_node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let attributes = AttributeVerifier::new();
         let _service = test.create(&main_node, &service_name, &AttributeSpecifier::new());
 
@@ -1149,7 +1143,7 @@ pub mod service {
 
         let config = generate_isolated_config();
         let main_node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let attributes = AttributeVerifier::new();
         let main_service = test
             .create(&main_node, &service_name, &AttributeSpecifier::new())
@@ -1209,7 +1203,7 @@ pub mod service {
     #[conformance_test]
     pub fn node_can_open_same_service_without_limits<Sut: Service, Factory: SutFactory<Sut>>() {
         let test = Factory::new();
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         const REPETITIONS: usize = 128;
 
         let config = generate_isolated_config();
@@ -1230,7 +1224,7 @@ pub mod service {
     #[conformance_test]
     pub fn uuid_is_equal_in_within_all_opened_instances<Sut: Service, Factory: SutFactory<Sut>>() {
         let test = Factory::new();
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
