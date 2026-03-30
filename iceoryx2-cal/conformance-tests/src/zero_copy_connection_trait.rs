@@ -1262,7 +1262,7 @@ pub mod zero_copy_connection_trait {
     pub fn receive_pointer_offset_with_out_of_bounds_segment_id_fails<Sut: ZeroCopyConnection>() {
         const BUFFER_SIZE: usize = 10;
         const NUMBER_OF_SEGMENTS: u8 = 123;
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut_sender = Sut::Builder::new(&name)

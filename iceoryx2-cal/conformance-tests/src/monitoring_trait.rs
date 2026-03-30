@@ -82,7 +82,7 @@ pub mod monitoring_trait {
     )))]
     #[conformance_test]
     pub fn monitor_works<Sut: Monitoring>() {
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut_monitor = Sut::Builder::new(&name).config(&config).monitor().unwrap();
