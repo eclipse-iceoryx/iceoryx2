@@ -16,7 +16,7 @@ mod replayer_tests {
     use iceoryx2::testing;
     use iceoryx2_bb_posix::{
         file::{CreationMode, FileBuilder},
-        testing::generate_file_name,
+        testing::generate_file_path,
     };
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_userland_record_and_replay::{
@@ -26,7 +26,7 @@ mod replayer_tests {
 
     #[test]
     fn open_non_existing_replay_fails() {
-        let file_name = generate_file_name();
+        let file_name = generate_file_path();
 
         let result = ReplayerOpener::new(&file_name).open();
         assert_that!(result.err(), eq Some(ReplayerOpenError::FailedToOpenFile));
@@ -34,7 +34,7 @@ mod replayer_tests {
 
     #[test]
     fn open_replay_with_invalid_content_fails() {
-        let file_name = generate_file_name();
+        let file_name = generate_file_path();
 
         let mut file = FileBuilder::new(&file_name)
             .has_ownership(true)
@@ -51,7 +51,7 @@ mod replayer_tests {
     #[test]
     fn open_parses_header_correctly() {
         let service_name = testing::generate_service_name();
-        let file_name = generate_file_name();
+        let file_name = generate_file_path();
 
         let types = ServiceTypes {
             payload: TypeDetail::new::<u64>(TypeVariant::FixedSize),
