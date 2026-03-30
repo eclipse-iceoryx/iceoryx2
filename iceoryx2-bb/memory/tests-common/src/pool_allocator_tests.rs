@@ -19,6 +19,7 @@ use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_elementary_traits::allocator::*;
 use iceoryx2_bb_memory::{bump_allocator::BumpAllocator, pool_allocator::*};
 use iceoryx2_bb_testing::assert_that;
+#[cfg(debug_assertions)]
 use iceoryx2_bb_testing_macros::requires_std;
 use iceoryx2_bb_testing_macros::test;
 

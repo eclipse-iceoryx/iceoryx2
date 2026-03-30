@@ -91,7 +91,7 @@ mod service_discovery_tracker {
         let mut removed_ids = vec![];
         for _ in 0..NUMBER_OF_SERVICES_REMOVED {
             let removed = services.pop().unwrap();
-            removed_ids.push(removed.service_id().clone());
+            removed_ids.push(*removed.service_id());
             drop(removed);
         }
 
