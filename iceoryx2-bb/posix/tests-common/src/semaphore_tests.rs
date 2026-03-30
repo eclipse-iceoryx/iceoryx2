@@ -12,18 +12,14 @@
 
 #![allow(clippy::disallowed_types)]
 
-use alloc::string::ToString;
-
 use core::time::Duration;
 use iceoryx2_bb_concurrency::atomic::{AtomicUsize, Ordering};
-use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_posix::barrier::*;
 use iceoryx2_bb_posix::clock::*;
 use iceoryx2_bb_posix::semaphore::*;
 use iceoryx2_bb_posix::system_configuration::Feature;
+use iceoryx2_bb_posix::testing::generate_file_path;
 use iceoryx2_bb_posix::thread::thread_scope;
-use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
-use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -44,8 +40,8 @@ const TIMEOUT: Duration = Duration::from_millis(25);
 
 impl NamedSemaphoreTest {
     fn new() -> Self {
-        let monotonic_name = Self::generate_name();
-        let realtime_name = Self::generate_name();
+        let monotonic_name = generate_file_path().file_name();
+        let realtime_name = generate_file_path().file_name();
 
         Self {
             monotonic_named_sut1: NamedSemaphoreBuilder::new(&monotonic_name)
@@ -80,20 +76,6 @@ impl NamedSemaphoreTest {
                 .unwrap(),
         }
     }
-
-    fn generate_name() -> FileName {
-        let mut file_name = FileName::new(b"semaphore_tests_").unwrap();
-        file_name
-            .push_bytes(
-                UniqueSystemId::new()
-                    .unwrap()
-                    .value()
-                    .to_string()
-                    .as_bytes(),
-            )
-            .unwrap();
-        file_name
-    }
 }
 
 struct UnnamedSemaphoreTest<'a> {
@@ -127,7 +109,7 @@ pub fn semaphore_named_semaphore_initializes_correctly() {
     test_requires!(POSIX_SUPPORT_NAMED_SEMAPHORE);
 
     let initial_value = 4;
-    let sem_name = NamedSemaphoreTest::generate_name();
+    let sem_name = generate_file_path().file_name();
     let sut = NamedSemaphoreBuilder::new(&sem_name)
         .clock_type(ClockType::Realtime)
         .creation_mode(CreationMode::PurgeAndCreate)
@@ -150,7 +132,7 @@ pub fn semaphore_named_semaphore_opens_correctly() {
     test_requires!(POSIX_SUPPORT_NAMED_SEMAPHORE);
 
     let initial_value = 7;
-    let sem_name = NamedSemaphoreTest::generate_name();
+    let sem_name = generate_file_path().file_name();
     let _creator = NamedSemaphoreBuilder::new(&sem_name)
         .creation_mode(CreationMode::PurgeAndCreate)
         .initial_value(initial_value)

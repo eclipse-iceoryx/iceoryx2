@@ -19,6 +19,7 @@ use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_posix::config::*;
 use iceoryx2_bb_posix::directory::Directory;
 use iceoryx2_bb_posix::file::*;
+use iceoryx2_bb_posix::testing::generate_file_path;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
@@ -28,7 +29,7 @@ use iceoryx2_cal::testing::*;
 
 #[test]
 fn static_storage_file_custom_suffix_works() {
-    let storage_name = generate_name();
+    let storage_name = generate_file_path().file_name();
     let config = generate_isolated_config::<Storage>()
         .suffix(unsafe { &FileName::new_unchecked(b".blubbme") });
 
@@ -58,11 +59,11 @@ fn static_storage_file_custom_suffix_works() {
 
 #[test]
 fn static_storage_file_path_is_created_when_it_does_not_exist() {
-    let storage_name = generate_name();
+    let storage_name = generate_file_path().file_name();
     let config = generate_isolated_config::<Storage>();
     let content = "some more funky content".to_string();
     let non_existing_path =
-        FilePath::from_path_and_file(&TEST_DIRECTORY, &generate_name()).unwrap();
+        FilePath::from_path_and_file(&TEST_DIRECTORY, &generate_file_path().file_name()).unwrap();
 
     Directory::remove(&non_existing_path.into()).ok();
     let config = config.path_hint(&non_existing_path.into());
@@ -106,7 +107,7 @@ fn static_storage_file_custom_path_and_suffix_list_storage_works() {
 
     let mut storages = vec![];
     for _i in 0..NUMBER_OF_STORAGES {
-        let storage_name = generate_name();
+        let storage_name = generate_file_path().file_name();
         storages.push(
             Builder::new(&storage_name)
                 .config(&config)
@@ -117,7 +118,9 @@ fn static_storage_file_custom_path_and_suffix_list_storage_works() {
 
     let mut some_files = vec![];
     for _i in 0..NUMBER_OF_STORAGES {
-        let storage_name = FilePath::from_path_and_file(&TEST_DIRECTORY, &generate_name()).unwrap();
+        let storage_name =
+            FilePath::from_path_and_file(&TEST_DIRECTORY, &generate_file_path().file_name())
+                .unwrap();
         FileBuilder::new(&storage_name)
             .creation_mode(CreationMode::PurgeAndCreate)
             .create()

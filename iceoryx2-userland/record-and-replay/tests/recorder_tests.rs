@@ -28,12 +28,12 @@ mod recorder_tests {
 
     use iceoryx2_bb_posix::{
         file::{CreationMode, File, FileBuilder},
-        testing::generate_file_name,
+        testing::generate_file_path,
     };
 
     #[test]
     fn fails_when_file_already_exists() {
-        let file_name = generate_file_name();
+        let file_name = generate_file_path();
         let service_name = testing::generate_service_name();
 
         let types = ServiceTypes {
@@ -55,7 +55,7 @@ mod recorder_tests {
     #[test]
     fn simple_recording_works() {
         let service_name = testing::generate_service_name();
-        let file_name = generate_file_name();
+        let file_name = generate_file_path();
         let service_types = ServiceTypes {
             payload: TypeDetail::new::<u64>(TypeVariant::FixedSize),
             user_header: TypeDetail::new::<()>(TypeVariant::FixedSize),
