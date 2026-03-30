@@ -53,7 +53,7 @@ where
 
 #[derive(serde::Serialize)]
 pub struct ServiceDescription {
-    pub service_id: String,
+    pub service_hash: String,
     pub service_name: String,
     pub attributes: IceoryxAttributeSet,
     pub pattern: IceoryxMessagingPattern,
@@ -68,7 +68,7 @@ where
         let config = &service.static_details;
 
         ServiceDescription {
-            service_id: config.service_id().as_str().to_string(),
+            service_hash: config.service_hash().as_str().to_string(),
             service_name: config.name().as_str().to_string(),
             attributes: config.attributes().clone(),
             pattern: *config.messaging_pattern(),

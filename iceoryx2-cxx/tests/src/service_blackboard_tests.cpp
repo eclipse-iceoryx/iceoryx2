@@ -1510,7 +1510,7 @@ TYPED_TEST(ServiceBlackboardTest, open_fails_when_attributes_are_incompatible) {
     ASSERT_THAT(service_open.error(), Eq(BlackboardOpenError::IncompatibleAttributes));
 }
 
-TYPED_TEST(ServiceBlackboardTest, service_id_is_unique_per_service) {
+TYPED_TEST(ServiceBlackboardTest, service_hash_is_unique_per_service) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name_1 = iox2_testing::generate_service_name();
     const auto service_name_2 = iox2_testing::generate_service_name();
@@ -1528,8 +1528,8 @@ TYPED_TEST(ServiceBlackboardTest, service_id_is_unique_per_service) {
                          .create()
                          .value();
 
-    ASSERT_THAT(service_1_create.service_id().c_str(), StrEq(service_1_open.service_id().c_str()));
-    ASSERT_THAT(service_1_create.service_id().c_str(), Not(StrEq(service_2.service_id().c_str())));
+    ASSERT_THAT(service_1_create.service_hash().c_str(), StrEq(service_1_open.service_hash().c_str()));
+    ASSERT_THAT(service_1_create.service_hash().c_str(), Not(StrEq(service_2.service_hash().c_str())));
 }
 
 TYPED_TEST(ServiceBlackboardTest, reader_details_are_correct) {

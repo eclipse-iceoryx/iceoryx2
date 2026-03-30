@@ -23,16 +23,16 @@ use serde::{Deserialize, Serialize};
 
 use super::{messaging_pattern::MessagingPattern, service_name::ServiceName};
 
-const SERVICE_ID_CAPACITY: usize = 64;
+const SERVICE_HASH_CAPACITY: usize = 64;
 
 /// The unique id of a [`Service`](crate::service::Service)
 #[derive(
     Debug, Eq, PartialEq, Ord, PartialOrd, Clone, Copy, Hash, ZeroCopySend, Serialize, Deserialize,
 )]
 #[repr(C)]
-pub struct ServiceId(pub(crate) RestrictedFileName<SERVICE_ID_CAPACITY>);
+pub struct ServiceHash(pub(crate) RestrictedFileName<SERVICE_HASH_CAPACITY>);
 
-impl ServiceId {
+impl ServiceHash {
     pub(crate) fn new<Hasher: Hash>(
         service_name: &ServiceName,
         messaging_pattern: MessagingPattern,
@@ -42,17 +42,17 @@ impl ServiceId {
             .value()
             .as_base64url();
 
-        Self(fatal_panic!(from "ServiceId::new()",
+        Self(fatal_panic!(from "ServiceHash::new()",
                    when RestrictedFileName::new(&value),
-                   "This should never happen! The Hasher used to create the ServiceId created an illegal value ({value}, len = {}).", value.len()))
+                   "This should never happen! The Hasher used to create the ServiceHash created an illegal value ({value}, len = {}).", value.len()))
     }
 
-    /// Returns the maximum string length of a [`ServiceId`]
+    /// Returns the maximum string length of a [`ServiceHash`]
     pub const fn max_number_of_characters() -> usize {
-        SERVICE_ID_CAPACITY
+        SERVICE_HASH_CAPACITY
     }
 
-    /// Returns a str reference to the [`ServiceId`]
+    /// Returns a str reference to the [`ServiceHash`]
     pub fn as_str(&self) -> &str {
         // SAFETY: a SemanticString is always a valid UTF-8 string
         unsafe { core::str::from_utf8_unchecked(self.0.as_bytes()) }

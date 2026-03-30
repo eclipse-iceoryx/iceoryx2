@@ -82,7 +82,7 @@ pub mod publish_subscribe_propagation {
 
         tunnel_a.discover_over_iceoryx().unwrap();
         assert_that!(tunnel_a.tunneled_services().len(), eq 1);
-        assert_that!(tunnel_a.tunneled_services().contains(service_a.service_id()), eq true);
+        assert_that!(tunnel_a.tunneled_services().contains(service_a.service_hash()), eq true);
 
         // --- Host B ---
         let iceoryx_config_b = generate_isolated_config();
@@ -106,7 +106,7 @@ pub mod publish_subscribe_propagation {
         )
         .unwrap_or_else(|e| panic!("Failed to discover remote services:\n{}", e));
 
-        T::sync(service_a.service_id().as_str().to_string(), TIMEOUT);
+        T::sync(service_a.service_hash().as_str().to_string(), TIMEOUT);
 
         // Create a subscriber to connect to the tunneled service
         let node_b = NodeBuilder::new()
@@ -204,7 +204,7 @@ pub mod publish_subscribe_propagation {
 
         tunnel_a.discover_over_iceoryx().unwrap();
         assert_that!(tunnel_a.tunneled_services().len(), eq 1);
-        assert_that!(tunnel_a.tunneled_services().contains(service_a.service_id()), eq true);
+        assert_that!(tunnel_a.tunneled_services().contains(service_a.service_hash()), eq true);
 
         // --- Host B ---
         let iceoryx_config_b = generate_isolated_config();
@@ -228,7 +228,7 @@ pub mod publish_subscribe_propagation {
         )
         .unwrap_or_else(|e| panic!("Failed to discover remote services:\n{}", e));
 
-        T::sync(service_a.service_id().as_str().to_string(), TIMEOUT);
+        T::sync(service_a.service_hash().as_str().to_string(), TIMEOUT);
 
         // Create a subscribe to connect to the tunneled service
         let node_b = NodeBuilder::new()
@@ -347,7 +347,7 @@ pub mod publish_subscribe_propagation {
         // Discover
         tunnel.discover_over_iceoryx().unwrap();
         assert_that!(tunnel.tunneled_services().len(), eq 1);
-        assert_that!(tunnel.tunneled_services().contains(service.service_id()), eq true);
+        assert_that!(tunnel.tunneled_services().contains(service.service_hash()), eq true);
 
         // ==================== TEST =====================
 

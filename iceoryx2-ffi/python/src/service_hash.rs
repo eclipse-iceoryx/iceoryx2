@@ -14,18 +14,18 @@ use pyo3::prelude::*;
 
 #[pyclass]
 /// The unique id of a `Service`
-pub struct ServiceId(pub(crate) iceoryx2::service::service_id::ServiceId);
+pub struct ServiceHash(pub(crate) iceoryx2::service::service_hash::ServiceHash);
 
 #[pymethods]
-impl ServiceId {
+impl ServiceHash {
     #[staticmethod]
-    /// Returns the maximum string length of a `ServiceId`
+    /// Returns the maximum string length of a `ServiceHash`
     pub fn max_number_of_characters() -> usize {
-        iceoryx2::service::service_id::ServiceId::max_number_of_characters()
+        iceoryx2::service::service_hash::ServiceHash::max_number_of_characters()
     }
 
     #[getter]
-    /// Returns a String containing the `ServiceId` value
+    /// Returns a String containing the `ServiceHash` value
     pub fn as_str(&self) -> String {
         self.0.as_str().to_string()
     }

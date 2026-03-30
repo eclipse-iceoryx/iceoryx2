@@ -95,7 +95,7 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
     type Relay = Relay<S>;
 
     fn create(self) -> Result<Self::Relay, Self::CreationError> {
-        let key = keys::publish_subscribe(self.static_config.service_id());
+        let key = keys::publish_subscribe(self.static_config.service_hash());
 
         let publisher = fail!(
             from self,

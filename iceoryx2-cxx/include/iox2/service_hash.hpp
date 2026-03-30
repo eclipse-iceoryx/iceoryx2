@@ -10,23 +10,23 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_SERVICE_ID_HPP
-#define IOX2_SERVICE_ID_HPP
+#ifndef IOX2_SERVICE_HASH_HPP
+#define IOX2_SERVICE_HASH_HPP
 
 #include "iox2/internal/iceoryx2.hpp"
 
 namespace iox2 {
 /// Represents the unique if of a [`Service`].
-class ServiceId {
+class ServiceHash {
   public:
-    /// Returns the maximum string length of a [`ServiceId`]
+    /// Returns the maximum string length of a [`ServiceHash`]
     auto max_number_of_characters() -> uint64_t;
 
-    /// Returns the string value of the [`ServiceId`]
+    /// Returns the string value of the [`ServiceHash`]
     auto c_str() const -> const char*;
 
   private:
-    explicit ServiceId(const iox2::bb::StaticString<IOX2_SERVICE_ID_LENGTH>& value);
+    explicit ServiceHash(const iox2::bb::StaticString<IOX2_SERVICE_HASH_LENGTH>& value);
 
     template <ServiceType>
     friend class PortFactoryEvent;
@@ -37,7 +37,7 @@ class ServiceId {
     template <ServiceType, typename>
     friend class PortFactoryBlackboard;
 
-    iox2::bb::StaticString<IOX2_SERVICE_ID_LENGTH> m_value;
+    iox2::bb::StaticString<IOX2_SERVICE_HASH_LENGTH> m_value;
 };
 
 } // namespace iox2

@@ -10,18 +10,18 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/service_id.hpp"
+#include "iox2/service_hash.hpp"
 
 namespace iox2 {
-auto ServiceId::max_number_of_characters() -> uint64_t {
-    return IOX2_SERVICE_ID_LENGTH;
+auto ServiceHash::max_number_of_characters() -> uint64_t {
+    return IOX2_SERVICE_HASH_LENGTH;
 }
 
-auto ServiceId::c_str() const -> const char* {
+auto ServiceHash::c_str() const -> const char* {
     return m_value.unchecked_access().c_str();
 }
 
-ServiceId::ServiceId(const iox2::bb::StaticString<IOX2_SERVICE_ID_LENGTH>& value)
+ServiceHash::ServiceHash(const iox2::bb::StaticString<IOX2_SERVICE_HASH_LENGTH>& value)
     : m_value { value } {
 }
 } // namespace iox2
