@@ -15,6 +15,7 @@ use iceoryx2_bb_posix::clock::Time;
 use iceoryx2_bb_posix::creation_mode::CreationMode;
 use iceoryx2_bb_posix::permission::Permission;
 use iceoryx2_bb_posix::shared_memory::SharedMemoryBuilder;
+use iceoryx2_bb_posix::testing::generate_file_path;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_cal::dynamic_storage::*;
@@ -32,7 +33,7 @@ unsafe impl Sync for TestData {}
 #[inventory_test]
 fn dynamic_storage_posix_shared_memory_version_check_works() {
     type Sut = iceoryx2_cal::dynamic_storage::posix_shared_memory::Storage<TestData>;
-    let storage_name = generate_name();
+    let storage_name = generate_file_path().file_name();
     let config = generate_isolated_config::<Sut>();
     let file_name = config.path_for(&storage_name).file_name();
 
@@ -58,7 +59,7 @@ fn dynamic_storage_posix_shared_memory_version_check_works() {
 #[inventory_test]
 fn dynamic_storage_posix_shared_memory_write_only_segment_is_not_initialized() {
     type Sut = iceoryx2_cal::dynamic_storage::posix_shared_memory::Storage<TestData>;
-    let storage_name = generate_name();
+    let storage_name = generate_file_path().file_name();
     let config = generate_isolated_config::<Sut>();
     let file_name = config.path_for(&storage_name).file_name();
 
@@ -81,7 +82,7 @@ fn dynamic_storage_posix_shared_memory_write_only_segment_is_not_initialized() {
 #[inventory_test]
 fn dynamic_storage_posix_shared_memory_waiting_for_initialization_works() {
     type Sut = iceoryx2_cal::dynamic_storage::posix_shared_memory::Storage<TestData>;
-    let storage_name = generate_name();
+    let storage_name = generate_file_path().file_name();
     let config = generate_isolated_config::<Sut>();
     let file_name = config.path_for(&storage_name).file_name();
 

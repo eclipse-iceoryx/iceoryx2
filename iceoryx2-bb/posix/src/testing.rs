@@ -38,7 +38,7 @@ pub fn create_test_directory() {
     };
 }
 
-pub fn generate_file_name() -> FilePath {
+pub fn generate_file_path() -> FilePath {
     create_test_directory();
     let mut file = FileName::new(b"test_").unwrap();
     file.push_bytes(

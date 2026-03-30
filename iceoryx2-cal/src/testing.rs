@@ -11,46 +11,13 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::named_concept::*;
-use iceoryx2_bb_container::semantic_string::*;
-use iceoryx2_bb_elementary::math::ToB64;
 use iceoryx2_bb_posix::{
     config::TEST_DIRECTORY,
     directory::{Directory, DirectoryCreateError},
     file::Permission,
-    unique_system_id::UniqueSystemId,
+    testing::generate_file_path,
 };
-use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_log::fatal_panic;
-
-pub fn generate_name() -> FileName {
-    let mut file = FileName::new(b"test_").unwrap();
-    file.push_bytes(
-        UniqueSystemId::new()
-            .unwrap()
-            .value()
-            .to_b64()
-            .to_lowercase()
-            .as_bytes(),
-    )
-    .unwrap();
-    file
-}
-
-fn generate_prefix() -> FileName {
-    let mut prefix = FileName::new(b"test_prefix_").unwrap();
-    prefix
-        .push_bytes(
-            UniqueSystemId::new()
-                .unwrap()
-                .value()
-                .to_b64()
-                .to_lowercase()
-                .as_bytes(),
-        )
-        .unwrap();
-
-    prefix
-}
 
 pub fn generate_isolated_config<T: NamedConceptMgmt>() -> T::Configuration {
     match Directory::create(&TEST_DIRECTORY, Permission::OWNER_ALL) {
@@ -63,6 +30,6 @@ pub fn generate_isolated_config<T: NamedConceptMgmt>() -> T::Configuration {
     };
 
     T::Configuration::default()
-        .prefix(&generate_prefix())
+        .prefix(&generate_file_path().file_name())
         .path_hint(&TEST_DIRECTORY)
 }

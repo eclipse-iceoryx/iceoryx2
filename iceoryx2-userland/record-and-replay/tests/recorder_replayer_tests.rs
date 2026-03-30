@@ -29,7 +29,7 @@ mod recorder_replayer {
 
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeName};
     use iceoryx2_bb_concurrency::atomic::AtomicU8;
-    use iceoryx2_bb_posix::testing::generate_file_name;
+    use iceoryx2_bb_posix::testing::generate_file_path;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 
     fn generate_type_detail(variant: TypeVariant, size: usize, alignment: usize) -> TypeDetail {
@@ -76,7 +76,7 @@ mod recorder_replayer {
         number_of_data: usize,
     ) {
         let service_name = iceoryx2::testing::generate_service_name();
-        let file_name = generate_file_name();
+        let file_name = generate_file_path();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::FixedSize, 8, 4),
             user_header: user_header_type,
@@ -192,7 +192,7 @@ mod recorder_replayer {
     ) {
         const NUMBER_OF_DATA: usize = 15;
         let service_name = iceoryx2::testing::generate_service_name();
-        let file_name = generate_file_name();
+        let file_name = generate_file_path();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::Dynamic, 256, 8),
             user_header: generate_type_detail(TypeVariant::FixedSize, 8, 2),
@@ -262,7 +262,7 @@ mod recorder_replayer {
 
     fn writing_decreasing_timestamps_fails(data_representation: DataRepresentation) {
         let service_name = iceoryx2::testing::generate_service_name();
-        let file_name = generate_file_name();
+        let file_name = generate_file_path();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::FixedSize, 8, 4),
             user_header: TypeDetail::new::<()>(TypeVariant::FixedSize),
@@ -316,7 +316,7 @@ mod recorder_replayer {
         messaging_pattern: MessagingPattern,
     ) {
         let service_name = iceoryx2::testing::generate_service_name();
-        let file_name = generate_file_name();
+        let file_name = generate_file_path();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::FixedSize, 32, 4),
             user_header: generate_type_detail(TypeVariant::FixedSize, 64, 8),
@@ -376,7 +376,7 @@ mod recorder_replayer {
         messaging_pattern: MessagingPattern,
     ) {
         let service_name = iceoryx2::testing::generate_service_name();
-        let file_name = generate_file_name();
+        let file_name = generate_file_path();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::Dynamic, 32, 4),
             user_header: generate_type_detail(TypeVariant::FixedSize, 64, 8),
@@ -437,7 +437,7 @@ mod recorder_replayer {
         user_header_type: TypeDetail,
     ) {
         let service_name = iceoryx2::testing::generate_service_name();
-        let file_name = generate_file_name();
+        let file_name = generate_file_path();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::Dynamic, 32, 4),
             user_header: user_header_type,
@@ -517,7 +517,7 @@ mod recorder_replayer {
         messaging_pattern: MessagingPattern,
     ) {
         let service_name = iceoryx2::testing::generate_service_name();
-        let file_name = generate_file_name();
+        let file_name = generate_file_path();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::Dynamic, 32, 4),
             user_header: generate_type_detail(TypeVariant::Dynamic, 32, 4),
@@ -579,7 +579,7 @@ mod recorder_replayer {
     ) {
         const NUMBER_OF_DATA: usize = 129;
         let service_name = iceoryx2::testing::generate_service_name();
-        let file_name = generate_file_name();
+        let file_name = generate_file_path();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::FixedSize, 8, 4),
             user_header: TypeDetail::new::<()>(TypeVariant::FixedSize),
@@ -648,7 +648,7 @@ mod recorder_replayer {
         messaging_pattern: MessagingPattern,
     ) {
         let service_name = iceoryx2::testing::generate_service_name();
-        let file_name = generate_file_name();
+        let file_name = generate_file_path();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::FixedSize, 8, 4),
             user_header: TypeDetail::new::<()>(TypeVariant::FixedSize),
@@ -711,7 +711,7 @@ mod recorder_replayer {
         messaging_pattern: MessagingPattern,
     ) {
         let service_name = iceoryx2::testing::generate_service_name();
-        let file_name = generate_file_name();
+        let file_name = generate_file_path();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::FixedSize, 8, 4),
             user_header: generate_type_detail(TypeVariant::FixedSize, 32, 4),
@@ -774,7 +774,7 @@ mod recorder_replayer {
         messaging_pattern: MessagingPattern,
     ) {
         let service_name = iceoryx2::testing::generate_service_name();
-        let file_name = generate_file_name();
+        let file_name = generate_file_path();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::FixedSize, 8, 4),
             user_header: generate_type_detail(TypeVariant::FixedSize, 32, 4),
@@ -834,7 +834,7 @@ mod recorder_replayer {
 
     fn reading_decreasing_timestamps_fails(data_representation: DataRepresentation) {
         let service_name = iceoryx2::testing::generate_service_name();
-        let file_name = generate_file_name();
+        let file_name = generate_file_path();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::FixedSize, 8, 4),
             user_header: TypeDetail::new::<()>(TypeVariant::FixedSize),

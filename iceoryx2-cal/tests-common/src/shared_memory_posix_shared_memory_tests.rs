@@ -14,19 +14,19 @@ use core::time::Duration;
 use iceoryx2_bb_posix::clock::Time;
 use iceoryx2_bb_posix::creation_mode::CreationMode;
 use iceoryx2_bb_posix::permission::Permission;
+use iceoryx2_bb_posix::testing::generate_file_path;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_cal::named_concept::*;
 use iceoryx2_cal::shared_memory::*;
 use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;
-use iceoryx2_cal::testing::generate_name;
 
 const TIMEOUT: Duration = Duration::from_millis(100);
 
 #[inventory_test]
 fn shared_memory_posix_shared_memory_waiting_for_initialization_works() {
     type Sut = iceoryx2_cal::shared_memory::posix::Memory<PoolAllocator>;
-    let storage_name = generate_name();
+    let storage_name = generate_file_path().file_name();
     let file_name = <Sut as NamedConceptMgmt>::Configuration::default()
         .path_for(&storage_name)
         .file_name();

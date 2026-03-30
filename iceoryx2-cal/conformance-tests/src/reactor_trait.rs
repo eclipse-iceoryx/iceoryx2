@@ -28,12 +28,13 @@ pub mod reactor_trait {
     use iceoryx2_bb_posix::ipc_capable::Handle;
     use iceoryx2_bb_posix::mutex::MutexBuilder;
     use iceoryx2_bb_posix::mutex::MutexHandle;
+    use iceoryx2_bb_posix::testing::generate_file_path;
     use iceoryx2_bb_posix::thread::thread_scope;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::event::unix_datagram_socket::*;
     use iceoryx2_cal::event::{Listener, ListenerBuilder, Notifier, NotifierBuilder};
     use iceoryx2_cal::reactor::{Reactor, *};
-    use iceoryx2_cal::testing::{generate_isolated_config, generate_name};
+    use iceoryx2_cal::testing::generate_isolated_config;
 
     const INFINITE_TIMEOUT: Duration = Duration::from_secs(3600 * 24);
     const NUMBER_OF_ATTACHMENTS: usize = 32;
@@ -45,7 +46,7 @@ pub mod reactor_trait {
 
     impl NotifierListenerPair {
         fn new() -> Self {
-            let name = generate_name();
+            let name = generate_file_path().file_name();
             let config = generate_isolated_config::<unix_datagram_socket::EventImpl>();
             let listener = unix_datagram_socket::ListenerBuilder::new(&name)
                 .config(&config)
@@ -68,7 +69,7 @@ pub mod reactor_trait {
         let mut listeners = vec![];
         let mut guards = vec![];
         for _ in 0..NUMBER_OF_ATTACHMENTS {
-            let name = generate_name();
+            let name = generate_file_path().file_name();
             listeners.push(
                 unix_datagram_socket::ListenerBuilder::new(&name)
                     .config(&config)
@@ -98,7 +99,7 @@ pub mod reactor_trait {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
         let config = generate_isolated_config::<unix_datagram_socket::EventImpl>();
 
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let listener = unix_datagram_socket::ListenerBuilder::new(&name)
             .config(&config)
             .create()
@@ -501,7 +502,7 @@ pub mod reactor_trait {
     pub fn timed_wait_blocks_until_triggered<Sut: Reactor>() {
         const TIMEOUT: Duration = Duration::from_millis(50);
 
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let barrier_handle = BarrierHandle::new();
         let barrier = BarrierBuilder::new(2).create(&barrier_handle).unwrap();
         let counter = AtomicU64::new(0);
@@ -557,7 +558,7 @@ pub mod reactor_trait {
     pub fn blocking_wait_blocks_until_triggered<Sut: Reactor>() {
         const TIMEOUT: Duration = Duration::from_millis(50);
 
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let barrier_handle = BarrierHandle::new();
         let barrier = BarrierBuilder::new(2).create(&barrier_handle).unwrap();
         let counter = AtomicU64::new(0);
