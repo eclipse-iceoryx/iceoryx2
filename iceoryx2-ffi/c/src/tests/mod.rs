@@ -10,6 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate alloc;
+extern crate iceoryx2_bb_loggers;
+
 mod iceoryx2_settings_tests;
 mod listener_tests;
 mod node_builder_tests;
@@ -20,7 +23,7 @@ mod service_builder_event_tests;
 mod service_builder_pub_sub_tests;
 mod service_name_tests;
 
-use crate::*;
+use crate::api::*;
 use iceoryx2::prelude::*;
 use iceoryx2_bb_testing::assert_that;
 

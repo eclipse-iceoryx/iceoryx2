@@ -12,7 +12,10 @@
 
 #[generic_tests::define]
 mod service_builder {
-    use crate::tests::*;
+    use crate::api::*;
+    use crate::tests::{create_event_service, create_node, ServiceTypeMapping};
+    use iceoryx2::prelude::*;
+    use iceoryx2_bb_testing::assert_that;
 
     #[test]
     fn basic_notifier_test<S: Service + ServiceTypeMapping>() {

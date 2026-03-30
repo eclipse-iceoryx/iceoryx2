@@ -236,14 +236,13 @@ windows-sys = { version = "0.48.0", features = [
 ] }
 zenoh = { version = "1.7.2", features = ["default", "unstable"] }
 
+[profile.dev]
+panic = "abort"
+
 [profile.release]
 strip = true
 lto = true
 # opt-level = "z"
-panic = "abort"
-
-[profile.dev-nostd]
-inherits = "dev"
 panic = "abort"
 
 [workspace.lints.rust]
