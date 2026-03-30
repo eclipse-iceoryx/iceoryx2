@@ -15,44 +15,25 @@
 use core::time::Duration;
 
 use alloc::format;
-use alloc::string::ToString;
 use alloc::vec;
 use alloc::vec::Vec;
 
-use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_posix::clock::Time;
-use iceoryx2_bb_posix::config::*;
 use iceoryx2_bb_posix::file_descriptor::FileDescriptorBased;
 use iceoryx2_bb_posix::file_descriptor_set::*;
 use iceoryx2_bb_posix::testing::create_test_directory;
-use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
+use iceoryx2_bb_posix::testing::generate_file_path;
 use iceoryx2_bb_posix::unix_datagram_socket::*;
-use iceoryx2_bb_system_types::file_name::FileName;
-use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_pal_posix::posix;
 
 static TIMEOUT: Duration = Duration::from_millis(10);
 
-pub fn generate_socket_name() -> FilePath {
-    let mut file = FileName::new(b"file_descriptor_set_tests").unwrap();
-    file.push_bytes(
-        UniqueSystemId::new()
-            .unwrap()
-            .value()
-            .to_string()
-            .as_bytes(),
-    )
-    .unwrap();
-
-    FilePath::from_path_and_file(&TEST_DIRECTORY, &file).unwrap()
-}
-
 #[inventory_test]
 pub fn file_descriptor_set_timed_wait_blocks_at_least_timeout() {
     create_test_directory();
-    let socket_name = generate_socket_name();
+    let socket_name = generate_file_path();
 
     let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
         .creation_mode(CreationMode::PurgeAndCreate)
@@ -90,7 +71,7 @@ pub fn file_descriptor_set_add_and_remove_works() {
 
     create_test_directory();
     for _ in 0..number_of_fds {
-        let socket_name = generate_socket_name();
+        let socket_name = generate_file_path();
         sockets.push(
             UnixDatagramReceiverBuilder::new(&socket_name)
                 .creation_mode(CreationMode::PurgeAndCreate)
@@ -126,7 +107,7 @@ pub fn file_descriptor_set_add_same_fd_twice_fails() {
     let fd_set = FileDescriptorSet::new();
 
     create_test_directory();
-    let socket_name = generate_socket_name();
+    let socket_name = generate_file_path();
     let socket = UnixDatagramReceiverBuilder::new(&socket_name)
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
@@ -141,7 +122,7 @@ pub fn file_descriptor_set_add_same_fd_twice_fails() {
 #[inventory_test]
 pub fn file_descriptor_set_timed_wait_works() {
     create_test_directory();
-    let socket_name = generate_socket_name();
+    let socket_name = generate_file_path();
 
     let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
         .creation_mode(CreationMode::PurgeAndCreate)
@@ -172,7 +153,7 @@ pub fn file_descriptor_set_timed_wait_works() {
 #[inventory_test]
 pub fn file_descriptor_set_blocking_wait_immediately_returns_notifications() {
     create_test_directory();
-    let socket_name = generate_socket_name();
+    let socket_name = generate_file_path();
 
     let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
         .creation_mode(CreationMode::PurgeAndCreate)
@@ -203,7 +184,7 @@ pub fn file_descriptor_set_blocking_wait_immediately_returns_notifications() {
 #[inventory_test]
 pub fn file_descriptor_guard_has_access_to_underlying_fd() {
     create_test_directory();
-    let socket_name = generate_socket_name();
+    let socket_name = generate_file_path();
 
     let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
         .creation_mode(CreationMode::PurgeAndCreate)
@@ -233,7 +214,7 @@ pub fn file_descriptor_triggering_many_returns_correct_number_of_notifications()
 
     create_test_directory();
     for _ in 0..number_of_fds {
-        let socket_name = generate_socket_name();
+        let socket_name = generate_file_path();
         sockets.push(
             UnixDatagramReceiverBuilder::new(&socket_name)
                 .creation_mode(CreationMode::PurgeAndCreate)

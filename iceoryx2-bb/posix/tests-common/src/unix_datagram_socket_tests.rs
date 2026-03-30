@@ -18,19 +18,16 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};
-use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_posix::barrier::*;
 use iceoryx2_bb_posix::clock::{nanosleep, Time};
-use iceoryx2_bb_posix::config::*;
 use iceoryx2_bb_posix::creation_mode::*;
 use iceoryx2_bb_posix::file::*;
 use iceoryx2_bb_posix::file_descriptor::*;
 use iceoryx2_bb_posix::socket_ancillary::*;
 use iceoryx2_bb_posix::testing::create_test_directory;
+use iceoryx2_bb_posix::testing::generate_file_path;
 use iceoryx2_bb_posix::thread::thread_scope;
-use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_posix::unix_datagram_socket::*;
-use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
@@ -38,34 +35,6 @@ use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA;
 
 pub const TIMEOUT: core::time::Duration = core::time::Duration::from_millis(100);
-
-fn generate_socket_name() -> FilePath {
-    let mut file = FileName::new(b"unix_datagram_socket_tests").unwrap();
-    file.push_bytes(
-        UniqueSystemId::new()
-            .unwrap()
-            .value()
-            .to_string()
-            .as_bytes(),
-    )
-    .unwrap();
-
-    FilePath::from_path_and_file(&TEST_DIRECTORY, &file).unwrap()
-}
-
-fn generate_file_name() -> FilePath {
-    let mut file = FileName::new(b"unix_datagram_socket_file_tests").unwrap();
-    file.push_bytes(
-        UniqueSystemId::new()
-            .unwrap()
-            .value()
-            .to_string()
-            .as_bytes(),
-    )
-    .unwrap();
-
-    FilePath::from_path_and_file(&TEST_DIRECTORY, &file).unwrap()
-}
 
 struct TestFixture {
     files: Vec<FilePath>,
@@ -77,7 +46,7 @@ impl TestFixture {
     }
 
     fn create_file_with_content(&mut self, content: &mut String) -> File {
-        let file_name = generate_file_name();
+        let file_name = generate_file_path();
         let mut file = FileBuilder::new(&file_name)
             .creation_mode(CreationMode::PurgeAndCreate)
             .create()
@@ -100,7 +69,7 @@ impl Drop for TestFixture {
 #[inventory_test]
 pub fn unix_datagram_socket_send_receive_works() {
     create_test_directory();
-    let socket_name = generate_socket_name();
+    let socket_name = generate_file_path();
     let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
         .permission(Permission::OWNER_ALL)
         .creation_mode(CreationMode::PurgeAndCreate)
@@ -125,7 +94,7 @@ pub fn unix_datagram_socket_send_receive_works() {
 #[inventory_test]
 pub fn unix_datagram_socket_adjust_buffer_size_works() {
     create_test_directory();
-    let socket_name = generate_socket_name();
+    let socket_name = generate_file_path();
     let mut sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
         .permission(Permission::OWNER_ALL)
         .creation_mode(CreationMode::PurgeAndCreate)
@@ -146,7 +115,7 @@ pub fn unix_datagram_socket_adjust_buffer_size_works() {
 #[inventory_test]
 pub fn unix_datagram_socket_non_blocking_mode_returns_zero_when_nothing_was_received() {
     create_test_directory();
-    let socket_name = generate_socket_name();
+    let socket_name = generate_file_path();
     let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
         .permission(Permission::OWNER_ALL)
         .creation_mode(CreationMode::PurgeAndCreate)
@@ -166,7 +135,7 @@ pub fn unix_datagram_socket_non_blocking_mode_returns_zero_when_nothing_was_rece
 #[inventory_test]
 pub fn unix_datagram_socket_blocking_mode_blocks() {
     create_test_directory();
-    let socket_name = generate_socket_name();
+    let socket_name = generate_file_path();
     let received_message = AtomicBool::new(false);
     let handle = BarrierHandle::new();
     let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
@@ -211,7 +180,7 @@ pub fn unix_datagram_socket_blocking_mode_blocks() {
 #[inventory_test]
 pub fn unix_datagram_socket_timeout_blocks_at_least() {
     create_test_directory();
-    let socket_name = generate_socket_name();
+    let socket_name = generate_file_path();
     let handle = BarrierHandle::new();
     let handle_2 = BarrierHandle::new();
     let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
@@ -255,7 +224,7 @@ pub fn unix_datagram_socket_sending_receiving_with_single_fd_works() {
     let mut test = TestFixture::new();
 
     create_test_directory();
-    let socket_name = generate_socket_name();
+    let socket_name = generate_file_path();
     let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
         .permission(Permission::OWNER_ALL)
         .creation_mode(CreationMode::PurgeAndCreate)
@@ -303,7 +272,7 @@ pub fn unix_datagram_socket_sending_receiving_credentials_works() {
     test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA);
 
     create_test_directory();
-    let socket_name = generate_socket_name();
+    let socket_name = generate_file_path();
     let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
         .permission(Permission::OWNER_ALL)
         .creation_mode(CreationMode::PurgeAndCreate)
@@ -335,7 +304,7 @@ pub fn unix_datagram_socket_sending_receiving_with_max_supported_fd_and_credenti
     let mut test = TestFixture::new();
 
     create_test_directory();
-    let socket_name = generate_socket_name();
+    let socket_name = generate_file_path();
     let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
         .permission(Permission::OWNER_ALL)
         .creation_mode(CreationMode::PurgeAndCreate)

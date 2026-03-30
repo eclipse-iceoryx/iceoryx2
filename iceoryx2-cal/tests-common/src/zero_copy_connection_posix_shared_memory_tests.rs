@@ -11,12 +11,10 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::time::Duration;
-use iceoryx2_bb_elementary::math::ToB64;
 use iceoryx2_bb_posix::clock::Time;
 use iceoryx2_bb_posix::creation_mode::CreationMode;
 use iceoryx2_bb_posix::permission::Permission;
-use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
-use iceoryx2_bb_system_types::file_name::*;
+use iceoryx2_bb_posix::testing::generate_file_path;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_cal::named_concept::*;
@@ -24,17 +22,10 @@ use iceoryx2_cal::zero_copy_connection::*;
 
 const TIMEOUT: Duration = Duration::from_millis(100);
 
-fn generate_name() -> FileName {
-    let mut file = FileName::new(b"test_").unwrap();
-    file.push_bytes(UniqueSystemId::new().unwrap().value().to_b64().as_bytes())
-        .unwrap();
-    file
-}
-
 #[inventory_test]
 fn zero_copy_connection_posix_shared_memory_waiting_for_initialization_works() {
     type Sut = iceoryx2_cal::zero_copy_connection::posix_shared_memory::Connection;
-    let storage_name = generate_name();
+    let storage_name = generate_file_path().file_name();
     let file_name = <Sut as NamedConceptMgmt>::Configuration::default()
         .path_for(&storage_name)
         .file_name();

@@ -12,36 +12,15 @@
 
 #![allow(clippy::disallowed_types)]
 
-use alloc::string::ToString;
-
-use iceoryx2_bb_container::semantic_string::SemanticString;
+use iceoryx2_bb_posix::testing::generate_file_path;
 use iceoryx2_bb_posix::{
-    config::TEST_DIRECTORY,
     file::{CreationMode, FileBuilder},
     file_descriptor::FileDescriptorBased,
     memory_mapping::*,
     system_configuration::SystemInfo,
-    testing::create_test_directory,
-    unique_system_id::UniqueSystemId,
 };
-use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::inventory_test;
-
-fn generate_file_name() -> FilePath {
-    create_test_directory();
-    let mut file = FileName::new(b"mmap_tests").unwrap();
-    file.push_bytes(
-        UniqueSystemId::new()
-            .unwrap()
-            .value()
-            .to_string()
-            .as_bytes(),
-    )
-    .unwrap();
-
-    FilePath::from_path_and_file(&TEST_DIRECTORY, &file).unwrap()
-}
 
 #[inventory_test]
 pub fn memory_mapping_mapping_anonymous_memory_works() {
@@ -96,7 +75,7 @@ pub fn memory_mapping_setting_permission_to_read_works() {
 #[inventory_test]
 pub fn memory_mapping_mapping_file_works() {
     let memory_size: usize = SystemInfo::PageSize.value() * 2;
-    let file_path = generate_file_name();
+    let file_path = generate_file_path();
     let mut file = FileBuilder::new(&file_path)
         .has_ownership(true)
         .creation_mode(CreationMode::PurgeAndCreate)
@@ -129,7 +108,7 @@ pub fn memory_mapping_mapping_file_works() {
 #[inventory_test]
 pub fn memory_mapping_mapping_file_descriptor_works() {
     let memory_size: usize = SystemInfo::PageSize.value() * 2;
-    let file_path = generate_file_name();
+    let file_path = generate_file_path();
     let mut file = FileBuilder::new(&file_path)
         .has_ownership(true)
         .creation_mode(CreationMode::PurgeAndCreate)
