@@ -22,9 +22,10 @@ use iceoryx2_bb_posix::system_configuration::SystemInfo;
 use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::watchdog::Watchdog;
-use iceoryx2_bb_testing_macros::{inventory_test, requires_std};
+use iceoryx2_bb_testing_macros::requires_std;
+use iceoryx2_bb_testing_macros::test;
 
-#[inventory_test]
+#[test]
 pub fn bit_set_create_fill_and_reset_works() {
     const CAPACITY: usize = 1234;
     let sut = BitSet::new(CAPACITY);
@@ -54,7 +55,7 @@ pub fn bit_set_create_fill_and_reset_works() {
     assert_that!(counter, eq 0);
 }
 
-#[inventory_test]
+#[test]
 pub fn fixed_size_bit_set_create_fill_and_reset_works() {
     const CAPACITY: usize = 122;
     let sut = FixedSizeBitSet::<CAPACITY>::new();
@@ -85,7 +86,7 @@ pub fn fixed_size_bit_set_create_fill_and_reset_works() {
     assert_that!(counter, eq 0);
 }
 
-#[inventory_test]
+#[test]
 pub fn bit_set_set_single_bit_works() {
     const CAPACITY: usize = 124;
     let sut = BitSet::new(CAPACITY);
@@ -105,7 +106,7 @@ pub fn bit_set_set_single_bit_works() {
     assert_that!(counter, eq 0);
 }
 
-#[cfg_attr(debug_assertions, inventory_test)]
+#[cfg_attr(debug_assertions, test)]
 #[should_panic]
 #[requires_std("panics")]
 pub fn bit_set_set_bit_outside_of_bitset_leads_to_panic() {
@@ -115,7 +116,7 @@ pub fn bit_set_set_bit_outside_of_bitset_leads_to_panic() {
     sut.set(CAPACITY);
 }
 
-#[inventory_test]
+#[test]
 pub fn bit_set_set_and_reset_next_works() {
     const CAPACITY: usize = 1551;
     let sut = BitSet::new(CAPACITY);
@@ -128,7 +129,7 @@ pub fn bit_set_set_and_reset_next_works() {
     assert_that!(sut.reset_next(), eq None);
 }
 
-#[inventory_test]
+#[test]
 pub fn bit_set_reset_next_is_fair() {
     const CAPACITY: usize = 1551;
     let sut = BitSet::new(CAPACITY);
@@ -148,7 +149,7 @@ pub fn bit_set_reset_next_is_fair() {
     assert_that!(sut.reset_next(), eq None);
 }
 
-#[inventory_test]
+#[test]
 pub fn bit_set_concurrent_set_and_reset_works() {
     let _watchdog = Watchdog::new_with_timeout(Duration::from_secs(60));
 

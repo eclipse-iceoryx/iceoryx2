@@ -14,11 +14,11 @@
 
 use iceoryx2_bb_posix::memory_lock::*;
 use iceoryx2_bb_testing::{assert_that, test_requires};
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 use iceoryx2_pal_posix::posix;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_MEMORY_LOCK;
 
-#[inventory_test]
+#[test]
 pub fn memory_lock_works() {
     test_requires!(POSIX_SUPPORT_MEMORY_LOCK);
 
@@ -35,7 +35,7 @@ pub fn memory_lock_works() {
     }
 }
 
-#[inventory_test]
+#[test]
 pub fn memory_lock_all_works() {
     test_requires!(POSIX_SUPPORT_MEMORY_LOCK);
 

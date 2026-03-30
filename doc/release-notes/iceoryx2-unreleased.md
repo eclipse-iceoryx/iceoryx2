@@ -126,7 +126,9 @@
     conflicts when merging.
 -->
 
-* Add framework for `no_std` testing
+* Add custom test framework that supports `no_std` testing
+  [#1300](https://github.com/eclipse-iceoryx/iceoryx2/issues/1300)
+* Add `no_std` tests for `iceoryx2` and crates below it in the architecture
   [#1300](https://github.com/eclipse-iceoryx/iceoryx2/issues/1300)
 * Add CI check for `std` feature propagation
   [#1300](https://github.com/eclipse-iceoryx/iceoryx2/issues/1300)

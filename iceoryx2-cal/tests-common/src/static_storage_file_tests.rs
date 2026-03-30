@@ -22,11 +22,11 @@ use iceoryx2_bb_posix::file::*;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 use iceoryx2_cal::static_storage::file::*;
 use iceoryx2_cal::testing::*;
 
-#[inventory_test]
+#[test]
 fn static_storage_file_custom_suffix_works() {
     let storage_name = generate_name();
     let config = generate_isolated_config::<Storage>()
@@ -56,7 +56,7 @@ fn static_storage_file_custom_suffix_works() {
     assert_that!(read_content, eq content);
 }
 
-#[inventory_test]
+#[test]
 fn static_storage_file_path_is_created_when_it_does_not_exist() {
     let storage_name = generate_name();
     let config = generate_isolated_config::<Storage>();
@@ -88,7 +88,7 @@ fn static_storage_file_path_is_created_when_it_does_not_exist() {
     assert_that!(read_content, eq content);
 }
 
-#[inventory_test]
+#[test]
 fn static_storage_file_custom_path_and_suffix_list_storage_works() {
     const NUMBER_OF_STORAGES: u64 = 12;
     let config = generate_isolated_config::<Storage>()

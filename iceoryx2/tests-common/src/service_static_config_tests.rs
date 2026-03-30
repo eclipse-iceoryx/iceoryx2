@@ -14,9 +14,9 @@ use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVar
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 
-#[inventory_test]
+#[test]
 fn service_static_config_internal_new_works() {
     #[derive(ZeroCopySend)]
     #[repr(C)]

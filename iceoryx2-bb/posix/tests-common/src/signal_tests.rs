@@ -28,7 +28,7 @@ use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_bb_testing::watchdog::Watchdog;
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 use iceoryx2_pal_posix::posix::support::POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING;
 use iceoryx2_pal_posix::*;
 
@@ -70,7 +70,7 @@ impl TestFixture {
     }
 }
 
-#[inventory_test]
+#[test]
 pub fn signal_register_single_handler_works() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
 
@@ -82,7 +82,7 @@ pub fn signal_register_single_handler_works() {
     test.verify(NonFatalFetchableSignal::UserDefined1, 1)
 }
 
-#[inventory_test]
+#[test]
 pub fn signal_register_multiple_handler_works() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
 
@@ -100,7 +100,7 @@ pub fn signal_register_multiple_handler_works() {
     test.verify(NonFatalFetchableSignal::UserDefined2, 2);
 }
 
-#[inventory_test]
+#[test]
 pub fn signal_register_handler_with_multiple_signals_works() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
 
@@ -115,7 +115,7 @@ pub fn signal_register_handler_with_multiple_signals_works() {
     test.verify(NonFatalFetchableSignal::UserDefined2, 2);
 }
 
-#[inventory_test]
+#[test]
 pub fn signal_guard_unregisters_on_drop() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
 
@@ -134,7 +134,7 @@ pub fn signal_guard_unregisters_on_drop() {
     test.verify(NonFatalFetchableSignal::UserDefined1, 10);
 }
 
-#[inventory_test]
+#[test]
 pub fn signal_register_signal_twice_fails() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
 
@@ -148,7 +148,7 @@ pub fn signal_register_signal_twice_fails() {
     );
 }
 
-#[inventory_test]
+#[test]
 pub fn signal_call_and_fetch_works() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
     let _watchdog = Watchdog::new();
@@ -164,7 +164,7 @@ pub fn signal_call_and_fetch_works() {
 
 // TODO: #1458
 #[ignore]
-#[inventory_test]
+#[test]
 pub fn signal_call_and_fetch_with_registered_handler_works() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
     let _watchdog = Watchdog::new();
@@ -183,7 +183,7 @@ pub fn signal_call_and_fetch_with_registered_handler_works() {
     test.verify(NonFatalFetchableSignal::UserDefined1, 1);
 }
 
-#[inventory_test]
+#[test]
 pub fn signal_wait_for_signal_blocks() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
     let _watchdog = Watchdog::new();
@@ -219,7 +219,7 @@ pub fn signal_wait_for_signal_blocks() {
     .expect("failed to execute thread scope");
 }
 
-#[inventory_test]
+#[test]
 pub fn signal_wait_twice_for_same_signal_blocks() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
     let _watchdog = Watchdog::new();
@@ -263,7 +263,7 @@ pub fn signal_wait_twice_for_same_signal_blocks() {
     .expect("failed to execute thread scope");
 }
 
-#[inventory_test]
+#[test]
 pub fn signal_timed_wait_blocks_at_least_for_timeout() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
     let _watchdog = Watchdog::new();
@@ -275,7 +275,7 @@ pub fn signal_timed_wait_blocks_at_least_for_timeout() {
     assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT);
 }
 
-#[inventory_test]
+#[test]
 pub fn signal_timed_wait_blocks_until_signal() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
     let _watchdog = Watchdog::new();
@@ -311,7 +311,7 @@ pub fn signal_timed_wait_blocks_until_signal() {
     .expect("failed to execute thread scope");
 }
 
-#[inventory_test]
+#[test]
 pub fn signal_termination_requested_with_terminate_works() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
 
@@ -328,7 +328,7 @@ pub fn signal_termination_requested_with_terminate_works() {
     assert_that!(SignalHandler::termination_requested(), eq false);
 }
 
-#[inventory_test]
+#[test]
 pub fn signal_termination_requested_with_interrupt_works() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
 

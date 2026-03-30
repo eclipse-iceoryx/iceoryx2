@@ -20,11 +20,11 @@ use iceoryx2_bb_posix::read_write_mutex::*;
 use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::watchdog::Watchdog;
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 
 const TIMEOUT: Duration = Duration::from_millis(50);
 
-#[inventory_test]
+#[test]
 pub fn read_write_mutex_lock_works() {
     let handle = ReadWriteMutexHandle::<i32>::new();
     let sut = ReadWriteMutexBuilder::new().create(456, &handle).unwrap();
@@ -38,7 +38,7 @@ pub fn read_write_mutex_lock_works() {
     assert_that!(*value, eq 123);
 }
 
-#[inventory_test]
+#[test]
 pub fn read_write_mutex_try_lock_works() {
     let handle = ReadWriteMutexHandle::<i32>::new();
     let sut = ReadWriteMutexBuilder::new().create(7890, &handle).unwrap();
@@ -52,7 +52,7 @@ pub fn read_write_mutex_try_lock_works() {
     assert_that!(*value.unwrap(), eq 551);
 }
 
-#[inventory_test]
+#[test]
 pub fn read_write_mutex_write_lock_blocks_read_and_write_locks() {
     const NUMBER_OF_THREADS: u32 = 2;
 
@@ -98,7 +98,7 @@ pub fn read_write_mutex_write_lock_blocks_read_and_write_locks() {
     assert_that!(counter.load(Ordering::Relaxed), eq NUMBER_OF_THREADS as usize);
 }
 
-#[inventory_test]
+#[test]
 pub fn read_write_mutex_read_lock_blocks_only_write_locks() {
     let handle = ReadWriteMutexHandle::<i32>::new();
     let sut = ReadWriteMutexBuilder::new().create(781, &handle).unwrap();
@@ -126,7 +126,7 @@ pub fn read_write_mutex_read_lock_blocks_only_write_locks() {
     assert_that!(counter.load(Ordering::Relaxed), eq 6);
 }
 
-#[inventory_test]
+#[test]
 pub fn read_write_mutex_try_lock_fails_when_lock_was_acquired() {
     let handle = ReadWriteMutexHandle::<i32>::new();
     let sut = ReadWriteMutexBuilder::new().create(781, &handle).unwrap();
@@ -139,7 +139,7 @@ pub fn read_write_mutex_try_lock_fails_when_lock_was_acquired() {
     assert_that!(sut.write_try_lock().unwrap(), is_none);
 }
 
-#[inventory_test]
+#[test]
 pub fn read_write_mutex_multiple_ipc_mutex_are_working() {
     let handle = ReadWriteMutexHandle::<i32>::new();
     let sut1 = ReadWriteMutexBuilder::new()

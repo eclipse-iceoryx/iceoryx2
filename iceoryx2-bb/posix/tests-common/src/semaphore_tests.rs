@@ -27,8 +27,8 @@ use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_bb_testing::watchdog::Watchdog;
-use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_bb_testing_macros::requires_std;
+use iceoryx2_bb_testing_macros::test;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_NAMED_SEMAPHORE;
 
 pub struct NamedSemaphoreTest {
@@ -121,7 +121,7 @@ impl<'a> UnnamedSemaphoreTest<'a> {
     }
 }
 
-#[inventory_test]
+#[test]
 pub fn semaphore_named_semaphore_initializes_correctly() {
     test_requires!(POSIX_SUPPORT_NAMED_SEMAPHORE);
 
@@ -144,7 +144,7 @@ pub fn semaphore_named_semaphore_initializes_correctly() {
     assert_that!(sut.try_wait().unwrap(), eq false);
 }
 
-#[inventory_test]
+#[test]
 pub fn semaphore_named_semaphore_opens_correctly() {
     test_requires!(POSIX_SUPPORT_NAMED_SEMAPHORE);
 
@@ -170,7 +170,7 @@ pub fn semaphore_named_semaphore_opens_correctly() {
     assert_that!(sut.try_wait().unwrap(), eq false);
 }
 
-#[inventory_test]
+#[test]
 pub fn semaphore_unnamed_semaphore_initializes_correctly() {
     let sut_handle = UnnamedSemaphoreHandle::new();
 
@@ -203,7 +203,7 @@ pub fn post_and_try_wait_work<T: SemaphoreInterface>(initial_value: u64, sut: &T
     assert_that!(sut.try_wait().unwrap(), eq false);
 }
 
-#[inventory_test]
+#[test]
 pub fn semaphore_named_semaphore_post_and_try_wait_work() {
     test_requires!(POSIX_SUPPORT_NAMED_SEMAPHORE);
 
@@ -216,7 +216,7 @@ pub fn semaphore_named_semaphore_post_and_try_wait_work() {
     post_and_try_wait_work(92, &test.realtime_named_sut2);
 }
 
-#[inventory_test]
+#[test]
 pub fn semaphore_unnamed_semaphore_post_and_try_wait_work() {
     let handle1 = UnnamedSemaphoreHandle::new();
     let handle2 = UnnamedSemaphoreHandle::new();
@@ -237,7 +237,7 @@ pub fn post_and_wait_work<T: SemaphoreInterface>(initial_value: u64, sut: &T) {
     }
 }
 
-#[inventory_test]
+#[test]
 pub fn semaphore_named_semaphore_post_and_wait_work() {
     test_requires!(POSIX_SUPPORT_NAMED_SEMAPHORE);
 
@@ -250,7 +250,7 @@ pub fn semaphore_named_semaphore_post_and_wait_work() {
     post_and_wait_work(92, &test.realtime_named_sut2);
 }
 
-#[inventory_test]
+#[test]
 pub fn semaphore_unnamed_semaphore_post_and_wait_work() {
     let handle1 = UnnamedSemaphoreHandle::new();
     let handle2 = UnnamedSemaphoreHandle::new();
@@ -274,7 +274,7 @@ pub fn post_and_timed_wait_work<T: SemaphoreInterface>(initial_value: u64, sut: 
     assert_that!(sut.timed_wait(TIMEOUT).unwrap(), eq false);
 }
 
-#[inventory_test]
+#[test]
 pub fn semaphore_named_semaphore_post_and_timed_wait_work() {
     test_requires!(POSIX_SUPPORT_NAMED_SEMAPHORE);
 
@@ -287,7 +287,7 @@ pub fn semaphore_named_semaphore_post_and_timed_wait_work() {
     post_and_timed_wait_work(92, &test.realtime_named_sut2);
 }
 
-#[inventory_test]
+#[test]
 pub fn semaphore_unnamed_semaphore_post_and_timed_wait_work() {
     let handle1 = UnnamedSemaphoreHandle::new();
     let handle2 = UnnamedSemaphoreHandle::new();
@@ -327,7 +327,7 @@ pub fn wait_blocks<T: SemaphoreInterface + Send + Sync>(sut1: &T, sut2: &T) {
     assert_that!(counter.load(Ordering::Relaxed), eq 1);
 }
 
-#[inventory_test]
+#[test]
 pub fn semaphore_named_semaphore_wait_blocks() {
     test_requires!(POSIX_SUPPORT_NAMED_SEMAPHORE);
     let test = NamedSemaphoreTest::new();
@@ -336,7 +336,7 @@ pub fn semaphore_named_semaphore_wait_blocks() {
     wait_blocks(&test.realtime_named_sut1, &test.realtime_named_sut2);
 }
 
-#[inventory_test]
+#[test]
 pub fn semaphore_unnamed_semaphore_wait_blocks() {
     let handle1 = UnnamedSemaphoreHandle::new();
     let handle2 = UnnamedSemaphoreHandle::new();
@@ -371,7 +371,7 @@ pub fn timed_wait_blocks<T: SemaphoreInterface + Send + Sync>(sut1: &T, sut2: &T
     assert_that!(counter.load(Ordering::Relaxed), eq 1);
 }
 
-#[inventory_test]
+#[test]
 pub fn semaphore_named_semaphore_timed_wait_blocks() {
     test_requires!(POSIX_SUPPORT_NAMED_SEMAPHORE);
 
@@ -381,7 +381,7 @@ pub fn semaphore_named_semaphore_timed_wait_blocks() {
     timed_wait_blocks(&test.realtime_named_sut1, &test.realtime_named_sut2);
 }
 
-#[inventory_test]
+#[test]
 pub fn semaphore_unnamed_semaphore_timed_wait_blocks() {
     let handle1 = UnnamedSemaphoreHandle::new();
     let handle2 = UnnamedSemaphoreHandle::new();
@@ -398,7 +398,7 @@ pub fn timed_wait_waits_at_least_timeout<T: SemaphoreInterface>(sut: &T) {
     assert_that!(now.elapsed().unwrap(), time_at_least TIMEOUT);
 }
 
-#[inventory_test]
+#[test]
 pub fn semaphore_named_semaphore_timed_wait_waits_at_least_timeout() {
     test_requires!(POSIX_SUPPORT_NAMED_SEMAPHORE);
 
@@ -411,7 +411,7 @@ pub fn semaphore_named_semaphore_timed_wait_waits_at_least_timeout() {
     timed_wait_waits_at_least_timeout(&test.realtime_named_sut2);
 }
 
-#[inventory_test]
+#[test]
 pub fn semaphore_unnamed_semaphore_timed_wait_waits_at_least_timeout() {
     let handle1 = UnnamedSemaphoreHandle::new();
     let handle2 = UnnamedSemaphoreHandle::new();
@@ -422,7 +422,7 @@ pub fn semaphore_unnamed_semaphore_timed_wait_waits_at_least_timeout() {
     timed_wait_waits_at_least_timeout(&test.realtime_unnamed_sut);
 }
 
-#[inventory_test]
+#[test]
 pub fn unnamed_semaphore_multiple_ipc_semaphores_are_working() {
     let handle = UnnamedSemaphoreHandle::new();
     let sut1 = UnnamedSemaphoreBuilder::new()
@@ -441,7 +441,7 @@ pub fn unnamed_semaphore_multiple_ipc_semaphores_are_working() {
     assert_that!(!sut1.try_wait().unwrap(), eq true);
 }
 
-#[inventory_test]
+#[test]
 #[requires_std("panics")]
 #[should_panic]
 #[cfg(debug_assertions)]
@@ -451,7 +451,7 @@ pub fn unnamed_semaphore_acquire_uninitialized_ipc_handle_failes() {
     unsafe { UnnamedSemaphore::from_ipc_handle(&handle) };
 }
 
-#[inventory_test]
+#[test]
 #[requires_std("panics")]
 #[should_panic]
 #[cfg(debug_assertions)]

@@ -16,9 +16,9 @@ use iceoryx2_bb_lock_free::spsc::index_queue::*;
 use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle, Handle};
 use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 
-#[inventory_test]
+#[test]
 pub fn spsc_index_queue_push_works_until_full() {
     const CAPACITY: usize = 128;
     let sut = FixedSizeIndexQueue::<CAPACITY>::new();
@@ -42,7 +42,7 @@ pub fn spsc_index_queue_push_works_until_full() {
     assert_that!(sut, is_not_empty);
 }
 
-#[inventory_test]
+#[test]
 pub fn spsc_index_queue_pop_works_until_empty() {
     const CAPACITY: usize = 128;
     let sut = FixedSizeIndexQueue::<CAPACITY>::new();
@@ -71,7 +71,7 @@ pub fn spsc_index_queue_pop_works_until_empty() {
     assert_that!(sut, is_empty);
 }
 
-#[inventory_test]
+#[test]
 pub fn spsc_index_queue_push_pop_alteration_works() {
     const CAPACITY: usize = 128;
     let sut = FixedSizeIndexQueue::<CAPACITY>::new();
@@ -86,14 +86,14 @@ pub fn spsc_index_queue_push_pop_alteration_works() {
     }
 }
 
-#[inventory_test]
+#[test]
 pub fn spsc_index_queue_get_consumer_twice_fails() {
     let sut = FixedSizeIndexQueue::<1024>::new();
     let _consumer = sut.acquire_consumer().unwrap();
     assert_that!(sut.acquire_consumer(), is_none);
 }
 
-#[inventory_test]
+#[test]
 pub fn spsc_index_queue_get_consumer_after_release_succeeds() {
     let sut = FixedSizeIndexQueue::<1024>::new();
     {
@@ -102,14 +102,14 @@ pub fn spsc_index_queue_get_consumer_after_release_succeeds() {
     assert_that!(sut.acquire_consumer(), is_some);
 }
 
-#[inventory_test]
+#[test]
 pub fn spsc_index_queue_get_producer_twice_fails() {
     let sut = FixedSizeIndexQueue::<1024>::new();
     let _producer = sut.acquire_producer().unwrap();
     assert_that!(sut.acquire_producer(), is_none);
 }
 
-#[inventory_test]
+#[test]
 pub fn spsc_index_queue_get_producer_after_release_succeeds() {
     let sut = FixedSizeIndexQueue::<1024>::new();
     {
@@ -118,7 +118,7 @@ pub fn spsc_index_queue_get_producer_after_release_succeeds() {
     assert_that!(sut.acquire_producer(), is_some);
 }
 
-#[inventory_test]
+#[test]
 pub fn spsc_index_queue_push_pop_works_concurrently() {
     const LIMIT: usize = 1000000;
     const CAPACITY: usize = 1024;

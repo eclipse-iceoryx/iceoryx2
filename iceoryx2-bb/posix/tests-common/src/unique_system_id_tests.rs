@@ -25,9 +25,9 @@ use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_posix::unique_system_id::*;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::watchdog::Watchdog;
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 
-#[inventory_test]
+#[test]
 pub fn unique_system_id_is_unique() {
     let sut1 = UniqueSystemId::new().unwrap();
     nanosleep(Duration::from_secs(1)).unwrap();
@@ -48,7 +48,7 @@ pub fn unique_system_id_is_unique() {
     assert_that!(sut1.creation_time().seconds() + 3, ge sut3.creation_time().seconds());
 }
 
-#[inventory_test]
+#[test]
 pub fn unique_system_id_concurrently_created_ids_are_unique() {
     let _watchdog = Watchdog::new();
 

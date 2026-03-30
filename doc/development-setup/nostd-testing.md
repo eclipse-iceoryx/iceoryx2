@@ -63,27 +63,36 @@ std = [
 ]
 ```
 
-Test functions are annotated with `#[inventory_test]` to make them discoverable
-by the custom test framework:
+Test functions are annotated with the custom `#[test]` attribute to make them
+discoverable by the custom test framework:
 
 ```rust
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 
-#[inventory_test]
+#[test]
 pub fn my_test_case() {
     // ... test logic
     assert_that!( /* .. */ )
 }
 ```
 
-For generic tests parameterized over multiple types:
+When many tests share the same type list, annotate the containing module with
+`#[tests(...)]`:
 
 ```rust
-use iceoryx2_bb_testing_macros::inventory_test_generic;
+use iceoryx2_bb_testing_macros::tests;
 
-#[inventory_test_generic(TypeA, TypeB)]
-pub fn my_generic_test<T>() {
-    // ... test logic
+#[tests(TypeA, TypeB)]
+pub mod generic {
+    #[test]
+    pub fn my_generic_test<T>() {
+        // ... test logic
+    }
+
+    #[test]
+    pub fn another_generic_test<T>() {
+        // ... test logic
+    }
 }
 ```
 
@@ -93,7 +102,7 @@ are skipped in `no_std` contexts:
 ```rust
 use iceoryx2_bb_testing_macros::requires_std;
 
-#[inventory_test]
+#[test]
 #[requires_std("panics")]
 pub fn my_test_case_using_threads() {
     // ... test logic
@@ -106,7 +115,7 @@ annotation should be used in conjunction to skip panic tests in `no_std`
 contexts.
 
 ```rust
-#[inventory_test]
+#[test]
 #[should_panic]
 pub fn my_test_that_panics() {
     // ... test logic that is expected to panic

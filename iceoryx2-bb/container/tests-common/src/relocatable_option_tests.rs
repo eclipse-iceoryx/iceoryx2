@@ -21,10 +21,10 @@ use iceoryx2_bb_container::relocatable_option::RelocatableOption;
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
-use iceoryx2_bb_testing_macros::inventory_test;
 use iceoryx2_bb_testing_macros::requires_std;
+use iceoryx2_bb_testing_macros::test;
 
-#[inventory_test]
+#[test]
 pub fn default_created_option_is_empty() {
     let sut = RelocatableOption::<i32>::default();
 
@@ -32,98 +32,98 @@ pub fn default_created_option_is_empty() {
     assert_that!(sut.is_none(), eq true);
 }
 
-#[inventory_test]
+#[test]
 pub fn when_empty_as_option_returns_empty_option() {
     let sut = RelocatableOption::<i32>::default();
 
     assert_that!(sut.as_option_ref(), eq Option::<&i32>::None);
 }
 
-#[inventory_test]
+#[test]
 pub fn when_with_value_as_option_returns_option_with_reference_to_that_value() {
     let sut = RelocatableOption::<i32>::Some(1234);
 
     assert_that!(*sut.as_option_ref().unwrap(), eq 1234);
 }
 
-#[inventory_test]
+#[test]
 pub fn when_empty_as_option_mut_returns_empty_option() {
     let mut sut = RelocatableOption::<i32>::default();
 
     assert_that!(sut.as_option_mut(), eq Option::<&mut i32>::None);
 }
 
-#[inventory_test]
+#[test]
 pub fn when_with_value_as_option_returns_option_with_mut_reference_to_that_value() {
     let mut sut = RelocatableOption::<i32>::Some(4313);
 
     assert_that!(*sut.as_option_mut().unwrap(), eq 4313);
 }
 
-#[inventory_test]
+#[test]
 pub fn when_empty_as_deref_returns_empty_option() {
     let sut = RelocatableOption::<Vec<i32>>::default();
 
     assert_that!(sut.as_deref(), eq RelocatableOption::<&[i32]>::None);
 }
 
-#[inventory_test]
+#[test]
 pub fn when_with_value_as_deref_returns_ref_to_target() {
     let sut = RelocatableOption::<Vec<i32>>::Some(vec![1, 2, 3]);
 
     assert_that!(sut.as_deref().unwrap(), eq [1,2,3]);
 }
 
-#[inventory_test]
+#[test]
 pub fn when_empty_as_deref_mut_returns_empty_option() {
     let mut sut = RelocatableOption::<Vec<i32>>::default();
 
     assert_that!(sut.as_deref_mut(), eq RelocatableOption::<&mut [i32]>::None);
 }
 
-#[inventory_test]
+#[test]
 pub fn when_with_value_as_deref_mut_returns_ref_to_target() {
     let mut sut = RelocatableOption::<Vec<i32>>::Some(vec![6, 6, 3]);
 
     assert_that!(sut.as_deref_mut().unwrap(), eq [6,6,3]);
 }
 
-#[inventory_test]
+#[test]
 pub fn when_empty_as_ref_returns_empty_option() {
     let sut = RelocatableOption::<i32>::default();
 
     assert_that!(sut.as_ref(), eq RelocatableOption::<&i32>::None);
 }
 
-#[inventory_test]
+#[test]
 pub fn when_with_value_as_ref_returns_ref_to_target() {
     let sut = RelocatableOption::<i32>::Some(98123);
 
     assert_that!(*sut.as_ref().unwrap(), eq 98123);
 }
 
-#[inventory_test]
+#[test]
 pub fn when_empty_as_mut_returns_empty_option() {
     let mut sut = RelocatableOption::<i32>::default();
 
     assert_that!(sut.as_mut(), eq RelocatableOption::<&mut i32>::None);
 }
 
-#[inventory_test]
+#[test]
 pub fn when_with_value_as_mut_returns_ref_to_target() {
     let mut sut = RelocatableOption::<i32>::Some(553);
 
     assert_that!(*sut.as_mut().unwrap(), eq 553);
 }
 
-#[inventory_test]
+#[test]
 pub fn expect_returns_value() {
     let sut = RelocatableOption::<i32>::Some(1553);
 
     assert_that!(sut.expect(""), eq 1553);
 }
 
-#[inventory_test]
+#[test]
 #[requires_std("panics")]
 #[should_panic]
 pub fn expect_panics_when_empty() {
@@ -132,7 +132,7 @@ pub fn expect_panics_when_empty() {
     sut.expect("");
 }
 
-#[inventory_test]
+#[test]
 pub fn none_creates_empty_value() {
     let sut = RelocatableOption::<i32>::None;
 
@@ -140,7 +140,7 @@ pub fn none_creates_empty_value() {
     assert_that!(sut.is_some(), eq false);
 }
 
-#[inventory_test]
+#[test]
 pub fn some_creates_option_that_contains_the_value() {
     let sut = RelocatableOption::<i32>::Some(89928);
 
@@ -149,7 +149,7 @@ pub fn some_creates_option_that_contains_the_value() {
     assert_that!(sut.unwrap(), eq 89928);
 }
 
-#[inventory_test]
+#[test]
 pub fn inspect_callback_is_not_called_when_empty() {
     let sut = RelocatableOption::<i32>::None;
     let mut callback_was_called = false;
@@ -158,7 +158,7 @@ pub fn inspect_callback_is_not_called_when_empty() {
     assert_that!(callback_was_called, eq false);
 }
 
-#[inventory_test]
+#[test]
 pub fn inspect_callback_is_called_when_it_contains_a_value() {
     let sut = RelocatableOption::<i32>::Some(778);
     let mut callback_was_called = false;
@@ -170,7 +170,7 @@ pub fn inspect_callback_is_called_when_it_contains_a_value() {
     assert_that!(callback_was_called, eq true);
 }
 
-#[inventory_test]
+#[test]
 pub fn map_of_empty_option_is_empty() {
     let sut = RelocatableOption::<i32>::None;
 
@@ -181,14 +181,14 @@ pub fn map_of_empty_option_is_empty() {
     assert_that!(callback_was_called, eq false);
 }
 
-#[inventory_test]
+#[test]
 pub fn map_uses_value_and_creates_new_option() {
     let sut = RelocatableOption::<i32>::Some(5);
 
     assert_that!(sut.map(|v: i32| v + 1), eq RelocatableOption::Some(6));
 }
 
-#[inventory_test]
+#[test]
 pub fn replace_returns_none_when_option_is_empty() {
     let mut sut = RelocatableOption::<i32>::None;
 
@@ -196,7 +196,7 @@ pub fn replace_returns_none_when_option_is_empty() {
     assert_that!(sut.unwrap(), eq 89123);
 }
 
-#[inventory_test]
+#[test]
 pub fn replace_returns_value_when_option_contains_value() {
     let mut sut = RelocatableOption::<i32>::Some(9012);
 
@@ -204,7 +204,7 @@ pub fn replace_returns_value_when_option_contains_value() {
     assert_that!(sut.unwrap(), eq 891231);
 }
 
-#[inventory_test]
+#[test]
 pub fn take_empties_sut_and_returns_content() {
     let mut sut_full = RelocatableOption::<i32>::Some(90125);
     let mut sut_empty = RelocatableOption::<i32>::None;
@@ -216,7 +216,7 @@ pub fn take_empties_sut_and_returns_content() {
     assert_that!(sut_empty.is_none(), eq true);
 }
 
-#[inventory_test]
+#[test]
 pub fn take_if_does_not_call_callback_when_empty() {
     let mut sut = RelocatableOption::<i32>::None;
     let mut callback_was_called = false;
@@ -230,7 +230,7 @@ pub fn take_if_does_not_call_callback_when_empty() {
     assert_that!(sut, eq RelocatableOption::None);
 }
 
-#[inventory_test]
+#[test]
 pub fn take_if_returns_none_when_callback_returns_false() {
     let mut sut = RelocatableOption::<i32>::Some(551);
     let mut callback_was_called = false;
@@ -245,7 +245,7 @@ pub fn take_if_returns_none_when_callback_returns_false() {
     assert_that!(sut, eq RelocatableOption::Some(551));
 }
 
-#[inventory_test]
+#[test]
 pub fn take_if_returns_value_and_empties_option_when_callback_returns_true() {
     let mut sut = RelocatableOption::<i32>::Some(1551);
     let mut callback_was_called = false;
@@ -260,14 +260,14 @@ pub fn take_if_returns_value_and_empties_option_when_callback_returns_true() {
     assert_that!(sut, eq RelocatableOption::None);
 }
 
-#[inventory_test]
+#[test]
 pub fn unwrap_returns_value_when_it_has_one() {
     let sut = RelocatableOption::<i32>::Some(15511);
 
     assert_that!(sut.unwrap(), eq 15511);
 }
 
-#[inventory_test]
+#[test]
 #[requires_std("panics")]
 #[should_panic]
 pub fn unwrap_panics_when_empty() {
@@ -276,42 +276,42 @@ pub fn unwrap_panics_when_empty() {
     sut.unwrap();
 }
 
-#[inventory_test]
+#[test]
 pub fn unwrap_or_returns_provided_value_when_empty() {
     let sut = RelocatableOption::<i32>::None;
 
     assert_that!(sut.unwrap_or(8192), eq 8192);
 }
 
-#[inventory_test]
+#[test]
 pub fn unwrap_or_returns_value() {
     let sut = RelocatableOption::<i32>::Some(661);
 
     assert_that!(sut.unwrap_or(8), eq 661);
 }
 
-#[inventory_test]
+#[test]
 pub fn unwrap_or_default_returns_default_when_empty() {
     let sut = RelocatableOption::<i32>::None;
 
     assert_that!(sut.unwrap_or_default(), eq i32::default());
 }
 
-#[inventory_test]
+#[test]
 pub fn unwrap_or_default_returns_value() {
     let sut = RelocatableOption::<i32>::Some(981);
 
     assert_that!(sut.unwrap_or_default(), eq 981);
 }
 
-#[inventory_test]
+#[test]
 pub fn unwrap_or_else_returns_callable_value_when_empty() {
     let sut = RelocatableOption::<i32>::None;
 
     assert_that!(sut.unwrap_or_else(|| 8127), eq 8127);
 }
 
-#[inventory_test]
+#[test]
 pub fn unwrap_or_else_returns_value() {
     let sut = RelocatableOption::<i32>::Some(113);
 
@@ -320,14 +320,14 @@ pub fn unwrap_or_else_returns_value() {
     assert_that!(callable_was_called, eq false);
 }
 
-#[inventory_test]
+#[test]
 pub fn unwrap_unchecked_returns_value() {
     let sut = RelocatableOption::<i32>::Some(1113);
 
     assert_that!(unsafe { sut.unwrap_unchecked() }, eq 1113);
 }
 
-#[inventory_test]
+#[test]
 pub fn element_is_dropped_on_option_drop() {
     let tracker = LifetimeTracker::start_tracking();
     let sut = RelocatableOption::<LifetimeTracker>::Some(LifetimeTracker::new());
@@ -337,7 +337,7 @@ pub fn element_is_dropped_on_option_drop() {
     assert_that!(tracker.number_of_living_instances(), eq 0);
 }
 
-#[inventory_test]
+#[test]
 pub fn clone_works() {
     let sut_orig_some = RelocatableOption::<i32>::Some(8812);
     let sut_orig_none = RelocatableOption::<i32>::None;
@@ -349,7 +349,7 @@ pub fn clone_works() {
     assert_that!(sut_clone_none, ne sut_clone_some);
 }
 
-#[inventory_test]
+#[test]
 pub fn placement_default_works() {
     let mut raw_sut = MaybeUninit::<RelocatableOption<i32>>::uninit();
     unsafe { RelocatableOption::placement_default(raw_sut.as_mut_ptr()) };
@@ -357,7 +357,7 @@ pub fn placement_default_works() {
     assert_that!(unsafe { raw_sut.assume_init().is_none() }, eq true);
 }
 
-#[inventory_test]
+#[test]
 #[requires_std("serde_test")]
 pub fn serialization_works() {
     use serde_test::{assert_tokens, Token};
@@ -369,21 +369,21 @@ pub fn serialization_works() {
     assert_tokens(&sut_some, &[Token::Some, Token::I32(551)]);
 }
 
-#[inventory_test]
+#[test]
 pub fn empty_create_empty_native_option() {
     let sut = RelocatableOption::<i32>::None;
 
     assert_that!(sut.to_option(), eq None);
 }
 
-#[inventory_test]
+#[test]
 pub fn value_creates_native_option_with_value() {
     let sut = RelocatableOption::<i32>::Some(772);
 
     assert_that!(sut.to_option(), eq Some(772));
 }
 
-#[inventory_test]
+#[test]
 pub fn native_to_relocatable_conversion_works() {
     let native = Option::<i32>::Some(551);
     let sut: RelocatableOption<i32> = native.into();
@@ -391,7 +391,7 @@ pub fn native_to_relocatable_conversion_works() {
     assert_that!(sut.to_option(), eq native);
 }
 
-#[inventory_test]
+#[test]
 pub fn relocatable_to_native_conversion_works() {
     let sut = RelocatableOption::<i32>::Some(1823);
     let native: Option<i32> = sut.into();

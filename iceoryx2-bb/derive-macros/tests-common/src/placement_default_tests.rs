@@ -15,7 +15,7 @@
 use iceoryx2_bb_derive_macros::PlacementDefault;
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_testing::{assert_that, memory::RawMemory};
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 use iceoryx2_pal_concurrency_sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 
 static DEFAULT_CTOR_COUNT: AtomicUsize = AtomicUsize::new(0);
@@ -72,7 +72,7 @@ struct GenericStruct<T1: PlacementDefault, T2: PlacementDefault> {
 #[derive(PlacementDefault)]
 struct GenericUnnamedStruct<T1: PlacementDefault, T2: PlacementDefault>(T1, T2);
 
-#[inventory_test]
+#[test]
 pub fn placement_default_derive_for_structs_works() {
     DEFAULT_CTOR_COUNT.store(0, Ordering::Relaxed);
     FUU_VALUE.store(123, Ordering::Relaxed);
@@ -86,7 +86,7 @@ pub fn placement_default_derive_for_structs_works() {
     assert_that!(unsafe {memory.assume_init()}.value3.value, eq BAR_VALUE.load(Ordering::Relaxed));
 }
 
-#[inventory_test]
+#[test]
 pub fn placement_default_derive_for_unnamed_structs_works() {
     DEFAULT_CTOR_COUNT.store(0, Ordering::Relaxed);
     FUU_VALUE.store(789, Ordering::Relaxed);
@@ -101,7 +101,7 @@ pub fn placement_default_derive_for_unnamed_structs_works() {
     assert_that!(unsafe {memory.assume_init()}.2.value, eq BAR_VALUE.load(Ordering::Relaxed));
 }
 
-#[inventory_test]
+#[test]
 pub fn placement_default_derive_for_generic_structs_works() {
     type SutType = GenericStruct<Fuu, Bar>;
     DEFAULT_CTOR_COUNT.store(0, Ordering::Relaxed);
@@ -116,7 +116,7 @@ pub fn placement_default_derive_for_generic_structs_works() {
     assert_that!(unsafe {memory.assume_init()}.value2.value, eq BAR_VALUE.load(Ordering::Relaxed));
 }
 
-#[inventory_test]
+#[test]
 pub fn placement_default_derive_for_generic_unnamed_structs_works() {
     type SutType = GenericUnnamedStruct<Fuu, Bar>;
     DEFAULT_CTOR_COUNT.store(0, Ordering::Relaxed);

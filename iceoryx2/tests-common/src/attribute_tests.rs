@@ -19,9 +19,9 @@ use iceoryx2::{
 };
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 
-#[inventory_test]
+#[test]
 fn attribute_returns_correct_key_value() {
     let sut = AttributeVerifier::new()
         .require(&"key_1".try_into().unwrap(), &"value_1".try_into().unwrap())
@@ -35,7 +35,7 @@ fn attribute_returns_correct_key_value() {
     assert_that!(sut.required_attributes().iter(), len 1);
 }
 
-#[inventory_test]
+#[test]
 fn attribute_verifier_require_fails_when_it_exceeds_max_number_of_attributes() {
     let mut sut = AttributeVerifier::new();
     for n in 0..AttributeSet::capacity() {
@@ -50,7 +50,7 @@ fn attribute_verifier_require_fails_when_it_exceeds_max_number_of_attributes() {
     assert_that!(sut.require(&"key".try_into().unwrap(), &"val".try_into().unwrap()).err(), eq Some(AttributeDefinitionError::ExceedsMaxSupportedAttributes));
 }
 
-#[inventory_test]
+#[test]
 fn attribute_verifier_require_key_fails_when_it_exceeds_max_number_of_attributes() {
     let mut sut = AttributeVerifier::new();
     for n in 0..AttributeSet::capacity() {
@@ -65,7 +65,7 @@ fn attribute_verifier_require_key_fails_when_it_exceeds_max_number_of_attributes
     assert_that!(sut.require_key(&"key".try_into().unwrap()).err(), eq Some(AttributeDefinitionError::ExceedsMaxSupportedAttributes));
 }
 
-#[inventory_test]
+#[test]
 fn attribute_set_returns_correct_key_len() {
     let sut = AttributeVerifier::new()
         .require(&"key_1".try_into().unwrap(), &"value_1".try_into().unwrap())
@@ -77,7 +77,7 @@ fn attribute_set_returns_correct_key_len() {
     assert_that!(sut.required_attributes().number_of_key_values(&"key_2".try_into().unwrap()), eq 0);
 }
 
-#[inventory_test]
+#[test]
 fn attribute_set_returns_correct_value() {
     let sut = AttributeVerifier::new()
         .require(
@@ -107,7 +107,7 @@ fn attribute_set_returns_correct_value() {
     assert_that!(sut.required_attributes().key_value(&"non_existing_key".try_into().unwrap(), 0), eq None);
 }
 
-#[inventory_test]
+#[test]
 fn attribute_set_get_key_value_works() {
     let sut = AttributeVerifier::new()
         .require(&"wild_ride".try_into().unwrap(), &"XXL".try_into().unwrap())
@@ -126,7 +126,7 @@ fn attribute_set_get_key_value_works() {
     assert_that!(values, contains "S");
 }
 
-#[inventory_test]
+#[test]
 fn attribute_set_get_key_value_stops_on_request() {
     let sut = AttributeVerifier::new()
         .require(
@@ -150,7 +150,7 @@ fn attribute_set_get_key_value_stops_on_request() {
     assert_that!(counter, eq 1);
 }
 
-#[inventory_test]
+#[test]
 fn attribute_set_get_key_value_no_callback_call_when_key_does_not_exist() {
     let sut = AttributeVerifier::new()
         .require(
@@ -174,7 +174,7 @@ fn attribute_set_get_key_value_no_callback_call_when_key_does_not_exist() {
     assert_that!(counter, eq 0);
 }
 
-#[inventory_test]
+#[test]
 fn attribute_set_verify_requirements_succeeds_when_compatible() {
     let sut_verifier = AttributeVerifier::new()
         .require(
@@ -196,7 +196,7 @@ fn attribute_set_verify_requirements_succeeds_when_compatible() {
     );
 }
 
-#[inventory_test]
+#[test]
 fn attribute_set_verify_requirements_fails_when_value_is_wrong() {
     let sut_verifier = AttributeVerifier::new()
         .require(
@@ -221,7 +221,7 @@ fn attribute_set_verify_requirements_fails_when_value_is_wrong() {
     );
 }
 
-#[inventory_test]
+#[test]
 fn attribute_set_verify_requirements_fails_when_key_does_not_exist() {
     let sut_verifier = AttributeVerifier::new()
         .require_key(&"the toad toad toad".try_into().unwrap())

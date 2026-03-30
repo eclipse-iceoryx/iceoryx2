@@ -10,30 +10,24 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-mod inventory_test;
-mod inventory_test_common;
-mod inventory_test_generic;
+mod internal;
 mod requires_std;
-mod test_module;
+mod test;
+mod tests;
 
 use proc_macro::TokenStream;
 
 #[proc_macro_attribute]
-pub fn inventory_test(attr: TokenStream, item: TokenStream) -> TokenStream {
-    inventory_test::proc_macro(attr, item)
+pub fn test(attr: TokenStream, item: TokenStream) -> TokenStream {
+    test::proc_macro(attr, item)
 }
 
 #[proc_macro_attribute]
-pub fn inventory_test_generic(attr: TokenStream, item: TokenStream) -> TokenStream {
-    inventory_test_generic::proc_macro(attr, item)
+pub fn tests(attr: TokenStream, item: TokenStream) -> TokenStream {
+    tests::proc_macro(attr, item)
 }
 
 #[proc_macro_attribute]
 pub fn requires_std(attr: TokenStream, item: TokenStream) -> TokenStream {
     requires_std::proc_macro(attr, item)
-}
-
-#[proc_macro_attribute]
-pub fn test_module(attr: TokenStream, item: TokenStream) -> TokenStream {
-    test_module::proc_macro(attr, item)
 }

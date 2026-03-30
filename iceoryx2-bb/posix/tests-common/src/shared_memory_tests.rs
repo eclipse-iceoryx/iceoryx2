@@ -19,7 +19,7 @@ use iceoryx2_bb_elementary::math::ToB64;
 use iceoryx2_bb_posix::{shared_memory::*, unique_system_id::UniqueSystemId};
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_testing::{assert_that, test_requires};
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
 
 fn generate_shm_name() -> FileName {
@@ -30,7 +30,7 @@ fn generate_shm_name() -> FileName {
     file_name
 }
 
-#[inventory_test]
+#[test]
 pub fn shared_memory_create_and_open_works() {
     let shm_name = generate_shm_name();
     let mut sut_create = SharedMemoryBuilder::new(&shm_name)
@@ -62,7 +62,7 @@ pub fn shared_memory_create_and_open_works() {
     }
 }
 
-#[inventory_test]
+#[test]
 pub fn shared_memory_create_and_modify_open_works() {
     let shm_name = generate_shm_name();
     let sut_create = SharedMemoryBuilder::new(&shm_name)
@@ -94,7 +94,7 @@ pub fn shared_memory_create_and_modify_open_works() {
     }
 }
 
-#[inventory_test]
+#[test]
 pub fn shared_memory_opening_with_non_fitting_size_fails() {
     let shm_name = generate_shm_name();
     let sut_create = SharedMemoryBuilder::new(&shm_name)
@@ -132,7 +132,7 @@ pub fn shared_memory_opening_with_non_fitting_size_fails() {
     );
 }
 
-#[inventory_test]
+#[test]
 pub fn shared_memory_release_ownership_works() {
     test_requires!(POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY);
 
@@ -176,7 +176,7 @@ pub fn shared_memory_release_ownership_works() {
     );
 }
 
-#[inventory_test]
+#[test]
 pub fn shared_memory_create_without_ownership_works() {
     test_requires!(POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY);
 
@@ -219,7 +219,7 @@ pub fn shared_memory_create_without_ownership_works() {
     );
 }
 
-#[inventory_test]
+#[test]
 pub fn shared_memory_acquire_ownership_works() {
     test_requires!(POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY);
 
@@ -240,7 +240,7 @@ pub fn shared_memory_acquire_ownership_works() {
     assert_that!(SharedMemory::does_exist(&shm_name), eq false);
 }
 
-#[inventory_test]
+#[test]
 pub fn shared_memory_existing_shm_can_be_listed() {
     const NUMBER_OF_SHM: usize = 32;
 
@@ -266,7 +266,7 @@ pub fn shared_memory_existing_shm_can_be_listed() {
     }
 }
 
-#[inventory_test]
+#[test]
 pub fn shared_memory_can_be_mapped_with_a_custom_offset() {
     const MAPPING_OFFSET: isize = 0; // only zero works reliably
     let shm_name = generate_shm_name();

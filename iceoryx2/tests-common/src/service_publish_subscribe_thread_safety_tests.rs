@@ -24,9 +24,9 @@ use iceoryx2_bb_posix::system_configuration::SystemInfo;
 use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::watchdog::Watchdog;
-use iceoryx2_bb_testing_macros::inventory_test;
+use iceoryx2_bb_testing_macros::test;
 
-#[inventory_test]
+#[test]
 fn service_publish_subscribe_loaning_and_sending_samples_concurrently_works() {
     let _watchdog = Watchdog::new();
     type ServiceType = ipc_threadsafe::Service;
@@ -91,7 +91,7 @@ fn service_publish_subscribe_loaning_and_sending_samples_concurrently_works() {
     .expect("failed to spawn thread");
 }
 
-#[inventory_test]
+#[test]
 fn service_publish_subscribe_receiving_samples_concurrently_works() {
     let _watchdog = Watchdog::new();
     type ServiceType = ipc_threadsafe::Service;
