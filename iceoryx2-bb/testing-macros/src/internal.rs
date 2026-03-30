@@ -16,8 +16,7 @@ use syn::{
     Attribute, Expr, ExprLit, Ident, ItemFn, Lit, MetaNameValue, ReturnType, Signature, Type,
 };
 
-pub const TEST_ATTRIBUTE: &str = "test";
-pub const STRIPPED_ATTRIBUTES: &[&str] = &[TEST_ATTRIBUTE, "should_panic", "ignore"];
+pub const TEST_ATTRIBUTES: &[&str] = &["test", "should_panic", "ignore"];
 
 /// Generate tokens to instantiate tests and associated submission to the inventory.
 pub fn instantiate_tests(
@@ -64,6 +63,7 @@ fn generate_standalone(
 
     let inventory_submission = generate_inventory_submission(
         test_function.sig.ident.to_string(),
+        test_function,
         test_execution.clone(),
         requires_std.clone(),
         &wrapper_identifier,
@@ -93,6 +93,7 @@ fn generate_for_type(
                 );
                 let inventory_submission = generate_inventory_submission(
                     generate_test_name(&test_function.sig.ident, constexprs, &type_name),
+                    test_function,
                     test_execution.clone(),
                     requires_std.clone(),
                     &wrapper_function_identifier,
@@ -135,6 +136,7 @@ fn generate_for_constexpr_type_pair(
                 );
                 let inventory_submission = generate_inventory_submission(
                     generate_test_name(&test_function.sig.ident, &constexprs, &ty),
+                    test_function,
                     test_execution.clone(),
                     requires_std.clone(),
                     &wrapper_function_identifier,
@@ -183,7 +185,7 @@ pub fn generate_wrapper_function(
     type_identifier: &TokenStream,
     generic_parameters: Option<Vec<TokenStream>>,
 ) -> (Ident, TokenStream) {
-    let attributes = strip_attributes(&test_function.attrs);
+    let attributes = strip_test_attributes(&test_function.attrs);
     let identifier = generate_wrapper_identifier(
         &test_function.sig.ident,
         constexpr_identifiers,
@@ -256,11 +258,14 @@ fn generate_wrapper_body(
 /// Generate an inventory submission for a test.
 pub fn generate_inventory_submission(
     test_name: String,
+    test_function: &ItemFn,
     test_execution: TokenStream,
     requires_std: TokenStream,
     wrapper_identifier: &Ident,
 ) -> TokenStream {
+    let attributes = strip_requires_std(&strip_test_attributes(&test_function.attrs));
     quote! {
+        #(#attributes)*
         ::iceoryx2_bb_testing::inventory::submit! {
             ::iceoryx2_bb_testing::TestCase {
                 module: module_path!(),
@@ -343,12 +348,20 @@ fn extract_requires_std(attrs: &[Attribute]) -> TokenStream {
     }
 }
 
-/// Returns the attributes of the test function that are not handled by the
-/// test framework (i.e. not in `STRIPPED_ATTRIBUTES`).
-fn strip_attributes(attrs: &[Attribute]) -> Vec<Attribute> {
+/// Strips test framework attributes from an attribute list.
+fn strip_test_attributes(attrs: &[Attribute]) -> Vec<Attribute> {
     attrs
         .iter()
-        .filter(|attr| !STRIPPED_ATTRIBUTES.iter().any(|s| attr.path().is_ident(s)))
+        .filter(|attr| !TEST_ATTRIBUTES.iter().any(|s| attr.path().is_ident(s)))
+        .cloned()
+        .collect()
+}
+
+/// Strips `#[requires_std]` from an attribute list.
+fn strip_requires_std(attrs: &[Attribute]) -> Vec<Attribute> {
+    attrs
+        .iter()
+        .filter(|attr| !attr.path().is_ident("requires_std"))
         .cloned()
         .collect()
 }
@@ -356,7 +369,7 @@ fn strip_attributes(attrs: &[Attribute]) -> Vec<Attribute> {
 /// Generates a copy of the original test function, stripping anything that is
 /// not required in the test context
 fn generate_original(test_function: &ItemFn) -> TokenStream {
-    let attributes = strip_attributes(&test_function.attrs);
+    let attributes = strip_test_attributes(&test_function.attrs);
     let (vis, sig, block) = (&test_function.vis, &test_function.sig, &test_function.block);
     quote! {
         #[allow(dead_code)]

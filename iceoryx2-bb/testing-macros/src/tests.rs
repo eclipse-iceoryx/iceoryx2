@@ -14,7 +14,7 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, Item, ItemMod};
 
-use crate::internal::{instantiate_tests, TEST_ATTRIBUTE};
+use crate::internal::instantiate_tests;
 
 /// Generates inventory submissions for all `#[test]`-annotated functions in
 /// the module.
@@ -87,7 +87,7 @@ pub fn proc_macro(
                 if test_function
                     .attrs
                     .iter()
-                    .any(|a| a.path().is_ident(TEST_ATTRIBUTE)) =>
+                    .any(|a| a.path().is_ident("test")) =>
             {
                 let params =
                     (!test_function.sig.generics.params.is_empty()).then_some(&macro_parameters);
