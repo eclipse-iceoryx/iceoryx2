@@ -100,17 +100,20 @@ macro_rules! test_harness {
                         alloc::format!("{}::{}", module, test_case.name)
                     };
                     $crate::libtest_mimic::Trial::test(trial_name, move || {
-                        if test_case.should_panic {
-                            $crate::test_harness::expect_panic(
-                                test_fn,
-                                test_case.should_panic_message,
-                            )
-                        } else {
-                            test_fn();
-                            Ok(())
+                        match test_case.execution {
+                            $crate::TestExecution::ExpectPanic(msg) => {
+                                $crate::test_harness::expect_panic(test_fn, msg)
+                            }
+                            _ => {
+                                test_fn();
+                                Ok(())
+                            }
                         }
                     })
-                    .with_ignored_flag(test_case.should_ignore)
+                    .with_ignored_flag(matches!(
+                        test_case.execution,
+                        $crate::TestExecution::Ignore(_)
+                    ))
                 })
                 .collect::<Vec<_>>();
             $crate::libtest_mimic::run(&args, tests).exit();
@@ -176,9 +179,27 @@ macro_rules! test_harness {
                 }
                 $crate::internal::cout!(" ... ");
 
-                if test.should_ignore {
-                    $crate::internal::coutln!("ignored");
+                if let $crate::RequiresStd::Yes(reason) = test.requires_std {
+                    match reason {
+                        Some(r) => $crate::internal::coutln!("std only: {}", r),
+                        None => $crate::internal::coutln!("std only"),
+                    }
                     continue;
+                }
+
+                match test.execution {
+                    $crate::TestExecution::Ignore(reason) => {
+                        match reason {
+                            Some(r) => $crate::internal::coutln!("ignored: {}", r),
+                            None => $crate::internal::coutln!("ignored"),
+                        }
+                        continue;
+                    }
+                    $crate::TestExecution::ExpectPanic(_) => {
+                        $crate::internal::coutln!("ignored: panics");
+                        continue;
+                    }
+                    $crate::TestExecution::Normal => {}
                 }
 
                 (test.test_fn)();

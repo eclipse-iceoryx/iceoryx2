@@ -19,31 +19,19 @@ use syn::{
 pub const TEST_ATTRIBUTE: &str = "test";
 pub const STRIPPED_ATTRIBUTES: &[&str] = &[TEST_ATTRIBUTE, "should_panic", "ignore"];
 
-#[derive(Clone)]
-pub enum ShouldPanic {
-    No,
-    Yes(Option<String>),
-}
-
-#[derive(Clone)]
-pub enum ShouldIgnore {
-    No,
-    Yes(Option<String>),
-}
-
 /// Generate tokens to instantiate tests and associated submission to the inventory.
 pub fn instantiate_tests(
     test_function: &ItemFn,
     macro_parameters: Option<&TokenStream>,
 ) -> TokenStream {
-    let should_ignore = extract_should_ignore(&test_function.attrs);
-    let should_panic = extract_should_panic(&test_function.attrs);
+    let test_execution = extract_test_execution(&test_function.attrs);
+    let requires_std = extract_requires_std(&test_function.attrs);
     let original_function = generate_original(test_function);
 
     match macro_parameters {
         None => {
             let (wrapper_function, inventory_submission) =
-                generate_standalone(test_function, &should_ignore, &should_panic);
+                generate_standalone(test_function, &test_execution, &requires_std);
 
             quote! { #original_function #wrapper_function #inventory_submission }
         }
@@ -52,11 +40,11 @@ pub fn instantiate_tests(
                 generate_for_constexpr_type_pair(
                     test_function,
                     params,
-                    &should_ignore,
-                    &should_panic,
+                    &test_execution,
+                    &requires_std,
                 )
             } else {
-                generate_for_type(test_function, params, &should_ignore, &should_panic)
+                generate_for_type(test_function, params, &test_execution, &requires_std)
             };
 
             quote! { #original_function #wrapper_functions #inventory_submissions }
@@ -68,16 +56,16 @@ pub fn instantiate_tests(
 /// function.
 fn generate_standalone(
     test_function: &ItemFn,
-    should_ignore: &ShouldIgnore,
-    should_panic: &ShouldPanic,
+    test_execution: &TokenStream,
+    requires_std: &TokenStream,
 ) -> (TokenStream, TokenStream) {
     let (wrapper_identifier, wrapper_function) =
         generate_wrapper_function(test_function, &[], &TokenStream::new(), None);
 
     let inventory_submission = generate_inventory_submission(
         test_function.sig.ident.to_string(),
-        should_panic.clone(),
-        should_ignore.clone(),
+        test_execution.clone(),
+        requires_std.clone(),
         &wrapper_identifier,
     );
     (wrapper_function, inventory_submission)
@@ -88,8 +76,8 @@ fn generate_standalone(
 fn generate_for_type(
     test_function: &ItemFn,
     macro_parameters: &TokenStream,
-    should_ignore: &ShouldIgnore,
-    should_panic: &ShouldPanic,
+    test_execution: &TokenStream,
+    requires_std: &TokenStream,
 ) -> (TokenStream, TokenStream) {
     let constexprs: &[TokenStream] = &[];
 
@@ -105,8 +93,8 @@ fn generate_for_type(
                 );
                 let inventory_submission = generate_inventory_submission(
                     generate_test_name(&test_function.sig.ident, constexprs, &type_name),
-                    should_panic.clone(),
-                    should_ignore.clone(),
+                    test_execution.clone(),
+                    requires_std.clone(),
                     &wrapper_function_identifier,
                 );
 
@@ -125,8 +113,8 @@ fn generate_for_type(
 fn generate_for_constexpr_type_pair(
     test_function: &ItemFn,
     macro_parameters: &TokenStream,
-    should_ignore: &ShouldIgnore,
-    should_panic: &ShouldPanic,
+    test_execution: &TokenStream,
+    requires_std: &TokenStream,
 ) -> (TokenStream, TokenStream) {
     let (wrapper_functions, inventory_submissions): (Vec<_>, Vec<_>) =
         split_groups(macro_parameters)
@@ -147,8 +135,8 @@ fn generate_for_constexpr_type_pair(
                 );
                 let inventory_submission = generate_inventory_submission(
                     generate_test_name(&test_function.sig.ident, &constexprs, &ty),
-                    should_panic.clone(),
-                    should_ignore.clone(),
+                    test_execution.clone(),
+                    requires_std.clone(),
                     &wrapper_function_identifier,
                 );
 
@@ -268,86 +256,91 @@ fn generate_wrapper_body(
 /// Generate an inventory submission for a test.
 pub fn generate_inventory_submission(
     test_name: String,
-    should_panic: ShouldPanic,
-    should_ignore: ShouldIgnore,
+    test_execution: TokenStream,
+    requires_std: TokenStream,
     wrapper_identifier: &Ident,
 ) -> TokenStream {
-    let (should_panic, should_panic_message) = match should_panic {
-        ShouldPanic::No => (quote! { false }, quote! { None }),
-        ShouldPanic::Yes(None) => (quote! { true }, quote! { None }),
-        ShouldPanic::Yes(Some(msg)) => (quote! { true }, quote! { Some(#msg) }),
-    };
-    let (should_ignore, should_ignore_reason) = match should_ignore {
-        ShouldIgnore::No => (quote! { false }, quote! { None }),
-        ShouldIgnore::Yes(None) => (quote! { true }, quote! {None}),
-        ShouldIgnore::Yes(Some(msg)) => (quote! { true }, quote! { Some(#msg) }),
-    };
-
     quote! {
         ::iceoryx2_bb_testing::inventory::submit! {
             ::iceoryx2_bb_testing::TestCase {
                 module: module_path!(),
                 name: #test_name,
                 test_fn: #wrapper_identifier,
-                should_ignore: #should_ignore,
-                should_ignore_reason: #should_ignore_reason,
-                should_panic: #should_panic,
-                should_panic_message: #should_panic_message,
+                execution: #test_execution,
+                requires_std: #requires_std,
             }
         }
     }
 }
 
-fn extract_should_ignore(test_function_attributes: &[Attribute]) -> ShouldIgnore {
-    let found = test_function_attributes
-        .iter()
-        .find(|attr| attr.path().is_ident("ignore") || attr.path().is_ident("requires_std"));
-
-    let Some(attr) = found else {
-        return ShouldIgnore::No;
-    };
-
-    let message = attr.parse_args::<Lit>().ok().and_then(|lit| {
-        if let Lit::Str(ignore_reason) = lit {
-            Some(ignore_reason.value())
-        } else {
-            None
-        }
-    });
-
-    ShouldIgnore::Yes(message)
-}
-
-fn extract_should_panic(test_function_attributes: &[Attribute]) -> ShouldPanic {
-    let found = test_function_attributes
+fn extract_test_execution(attrs: &[Attribute]) -> TokenStream {
+    let ignore = attrs.iter().find(|attr| attr.path().is_ident("ignore"));
+    let should_panic = attrs
         .iter()
         .find(|attr| attr.path().is_ident("should_panic"));
 
-    let Some(attr) = found else {
-        return ShouldPanic::No;
-    };
-
-    // #[should_panic(expected = "message")]
-    let message = attr
-        .parse_args::<MetaNameValue>()
-        .ok()
-        .and_then(|name_value| {
-            if !name_value.path.is_ident("expected") {
-                return None;
-            }
-
-            if let Expr::Lit(ExprLit {
-                lit: Lit::Str(expected_string),
-                ..
-            }) = name_value.value
-            {
-                Some(expected_string.value())
+    // #[ignore] takes priority over #[should_panic]
+    if let Some(attr) = ignore {
+        let reason = attr.parse_args::<Lit>().ok().and_then(|lit| {
+            if let Lit::Str(s) = lit {
+                Some(s.value())
             } else {
                 None
             }
         });
+        let reason_tokens = match reason {
+            Some(r) => quote! { Some(#r) },
+            None => quote! { None },
+        };
+        return quote! { ::iceoryx2_bb_testing::TestExecution::Ignore(#reason_tokens) };
+    }
 
-    ShouldPanic::Yes(message)
+    if let Some(attr) = should_panic {
+        let message = attr
+            .parse_args::<MetaNameValue>()
+            .ok()
+            .and_then(|name_value| {
+                if !name_value.path.is_ident("expected") {
+                    return None;
+                }
+                if let Expr::Lit(ExprLit {
+                    lit: Lit::Str(expected_string),
+                    ..
+                }) = name_value.value
+                {
+                    Some(expected_string.value())
+                } else {
+                    None
+                }
+            });
+        let msg_tokens = match message {
+            Some(m) => quote! { Some(#m) },
+            None => quote! { None },
+        };
+        return quote! { ::iceoryx2_bb_testing::TestExecution::ExpectPanic(#msg_tokens) };
+    }
+
+    quote! { ::iceoryx2_bb_testing::TestExecution::Normal }
+}
+
+fn extract_requires_std(attrs: &[Attribute]) -> TokenStream {
+    let Some(attr) = attrs
+        .iter()
+        .find(|attr| attr.path().is_ident("requires_std"))
+    else {
+        return quote! { ::iceoryx2_bb_testing::RequiresStd::No };
+    };
+    let reason = attr.parse_args::<Lit>().ok().and_then(|lit| {
+        if let Lit::Str(s) = lit {
+            Some(s.value())
+        } else {
+            None
+        }
+    });
+    match reason {
+        Some(r) => quote! { ::iceoryx2_bb_testing::RequiresStd::Yes(Some(#r)) },
+        None => quote! { ::iceoryx2_bb_testing::RequiresStd::Yes(None) },
+    }
 }
 
 /// Returns the attributes of the test function that are not handled by the
