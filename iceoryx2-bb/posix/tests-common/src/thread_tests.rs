@@ -10,8 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![allow(clippy::disallowed_types)]
-
 use core::time::Duration;
 
 use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};

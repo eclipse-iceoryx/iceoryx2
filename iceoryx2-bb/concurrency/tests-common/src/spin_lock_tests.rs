@@ -10,8 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![allow(clippy::disallowed_types)]
-
 use alloc::vec::Vec;
 
 use iceoryx2_bb_concurrency::spin_lock::SpinLock;

@@ -10,8 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![allow(clippy::disallowed_types)]
-
 use core::{alloc::Layout, ptr::NonNull};
 
 use iceoryx2_bb_memory::heap_allocator::*;

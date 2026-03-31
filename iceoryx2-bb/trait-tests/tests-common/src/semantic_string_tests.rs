@@ -10,8 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![allow(clippy::disallowed_types)]
-
 extern crate iceoryx2_bb_loggers;
 
 use alloc::vec;
