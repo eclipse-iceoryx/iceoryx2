@@ -120,8 +120,9 @@ use super::{
         receiver::{Receiver, SenderDetails},
     },
     update_connections::ConnectionFailure,
-    ReceiveError, UniqueServerId,
+    ReceiveError,
 };
+use crate::identifiers::UniqueServerId;
 
 // All requests are received via one channel with id 0
 const REQUEST_CHANNEL_ID: ChannelId = ChannelId::new(0);

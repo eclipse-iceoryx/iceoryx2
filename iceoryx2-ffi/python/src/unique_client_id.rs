@@ -15,7 +15,7 @@ use pyo3::prelude::*;
 #[pyclass(eq, str = "{0:?}")]
 #[derive(PartialEq, Eq)]
 /// The system-wide unique id of a `Client`.
-pub struct UniqueClientId(pub(crate) iceoryx2::port::port_identifiers::UniqueClientId);
+pub struct UniqueClientId(pub(crate) iceoryx2::identifiers::UniqueClientId);
 
 #[pymethods]
 impl UniqueClientId {

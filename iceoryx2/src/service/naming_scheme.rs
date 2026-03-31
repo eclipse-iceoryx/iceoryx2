@@ -16,7 +16,7 @@ use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_log::fatal_panic;
 
-use crate::port::port_identifiers::UniqueListenerId;
+use crate::identifiers::UniqueListenerId;
 
 pub(crate) fn event_concept_name(listener_id: &UniqueListenerId) -> FileName {
     let msg = "The system does not support the required file name length for the listeners event concept name.";

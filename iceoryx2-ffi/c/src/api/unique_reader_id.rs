@@ -12,7 +12,7 @@
 
 #![allow(non_camel_case_types)]
 
-use iceoryx2::port::port_identifiers::UniqueReaderId;
+use iceoryx2::identifiers::UniqueReaderId;
 use iceoryx2_bb_elementary::static_assert::static_assert_ge;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 

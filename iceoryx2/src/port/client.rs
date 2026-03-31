@@ -91,10 +91,9 @@ use iceoryx2_cal::{
 use iceoryx2_log::{fail, fatal_panic, warn};
 
 use crate::{
+    identifiers::UniqueClientId,
     pending_response::PendingResponse,
-    port::{
-        details::data_segment::DataSegment, update_connections::UpdateConnections, UniqueClientId,
-    },
+    port::{details::data_segment::DataSegment, update_connections::UpdateConnections},
     prelude::{PortFactory, UnableToDeliverStrategy},
     raw_sample::RawSampleMut,
     request_mut::RequestMut,

@@ -66,7 +66,7 @@ use iceoryx2_log::{fail, fatal_panic};
 extern crate alloc;
 use alloc::sync::Arc;
 
-use super::port_identifiers::UniqueWriterId;
+use crate::identifiers::UniqueWriterId;
 
 #[derive(Debug)]
 struct WriterSharedState<

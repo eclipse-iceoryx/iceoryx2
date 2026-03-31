@@ -453,11 +453,9 @@ pub mod internal {
     use port_factory::PortFactory;
 
     use crate::{
+        identifiers::UniquePortId,
         node::{NodeBuilder, NodeId},
-        port::{
-            listener::remove_connection_of_listener, notifier::Notifier,
-            port_identifiers::UniquePortId,
-        },
+        port::{listener::remove_connection_of_listener, notifier::Notifier},
         prelude::EventId,
         service::stale_resource_cleanup::{
             remove_data_segment_of_port, remove_receiver_port_from_all_connections,
