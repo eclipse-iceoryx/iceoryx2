@@ -107,3 +107,26 @@ pub fn relocatable_duration_max_value() {
     assert_that!(sut.as_secs(), eq sut.as_secs());
     assert_that!(sut.subsec_nanos(), eq sut.subsec_nanos());
 }
+
+#[test]
+pub fn converting_realtime_time_to_realtime_time_results_in_equal_times() {
+    let sut = Time::now_with_clock(ClockType::Realtime).unwrap();
+
+    assert_that!(sut.to_realtime(), eq Ok(sut));
+}
+
+#[test]
+pub fn converting_monotonic_time_to_realtime_time_results_in_nearly_the_same_time() {
+    test_requires!(Feature::MonotonicClock.is_available());
+
+    let sut_monotonic = Time::now_with_clock(ClockType::Monotonic).unwrap();
+    let sut_realtime = Time::now_with_clock(ClockType::Realtime).unwrap();
+    let sut_converted = sut_monotonic.to_realtime().unwrap();
+
+    let time_diff_in_ms = sut_converted
+        .as_duration()
+        .abs_diff(sut_realtime.as_duration())
+        .as_millis();
+
+    assert_that!(time_diff_in_ms, le 1);
+}
