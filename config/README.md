@@ -230,15 +230,11 @@ pub mod settings {
     pub const SHARED_MEMORY_DIRECTORY: &[u8] = b"/dev/my_shm/";
     pub const PATH_SEPARATOR: u8 = b'/';
     pub const ROOT: &[u8] = b"/";
+    pub const REQUIRED_SOCKET_DIRECTORY: Option<&[u8]> = None;
     pub const ICEORYX2_ROOT_PATH: &[u8] = b"/my_tmp/";
     pub const FILENAME_LENGTH: usize = 255;
-    // it is actually 4096 but to be more compatible with windows and also safe some stack the number
-    // is reduced to 255
     pub const PATH_LENGTH: usize = 255;
-    #[cfg(not(target_os = "macos"))]
     pub const AT_LEAST_TIMING_VARIANCE: f32 = 0.25;
-    #[cfg(target_os = "macos")]
-    pub const AT_LEAST_TIMING_VARIANCE: f32 = 1.0;
 }
 ```
 
@@ -265,6 +261,11 @@ The build steps are as follows:
    ```console
    warning: iceoryx2-pal-configuration@x.y.z: Building with custom configuration: /my/funky/platform/platform_configuration.rs
    ```
+
+> [!NOTE]
+> If there is an existing build with the default configuration, the `target`
+> folder needs to be deleted after the env variable is set, else the custom
+> config is not picked up.
 
 ## Custom Platform Abstraction Layer
 
