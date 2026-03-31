@@ -120,6 +120,8 @@
   [#1359](https://github.com/eclipse-iceoryx/iceoryx2/issues/1359)
 * Use `libc` constants in linux platform instead of hardcoded values
   [#1388](https://github.com/eclipse-iceoryx/iceoryx2/issues/1388)
+* Rename `ServiceId` into `ServiceHash`
+  [#1508](https://github.com/eclipse-iceoryx/iceoryx2/issues/1508)
 
 ### Workflow
 
@@ -181,4 +183,32 @@
 
     # new
     cargo build
+    ```
+
+1. `ServiceId` was renamed to `ServiceHash`.
+
+    ```rust
+    // old
+    use iceoryx2::*;
+
+    let node = NodeBuilder::new().create::<ipc::Service>()?;
+
+    let service = node
+        .service_builder(&"My/Funk/ServiceName".try_into()?)
+        .publish_subscribe::<TransmissionData>()
+        .open_or_create()?;
+    service.service_id(); // now service_hash()
+
+    // new
+   use iceoryx2::*;
+
+    let node = NodeBuilder::new().create::<ipc::Service>()?;
+
+    let service = node
+        .service_builder(&"My/Funk/ServiceName".try_into()?)
+        .publish_subscribe::<TransmissionData>()
+        .open_or_create()?;
+    service.service_hash();
+
+    
     ```

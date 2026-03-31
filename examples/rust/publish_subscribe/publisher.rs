@@ -29,6 +29,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .service_builder(&"My/Funk/ServiceName".try_into()?)
         .publish_subscribe::<TransmissionData>()
         .open_or_create()?;
+    service.service_hash();
 
     let publisher = service.publisher_builder().create()?;
 
