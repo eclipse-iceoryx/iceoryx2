@@ -22,7 +22,7 @@ use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 
 #[test]
-pub fn deadline_queue_attach_detach_works() {
+pub fn attach_detach_works() {
     const NUMBER_OF_ATTACHMENTS: usize = 16;
     let sut = DeadlineQueueBuilder::new().create().unwrap();
     let mut guards = vec![];
@@ -41,14 +41,14 @@ pub fn deadline_queue_attach_detach_works() {
 }
 
 #[test]
-pub fn deadline_queue_duration_until_next_deadline_is_max_for_empty_queue() {
+pub fn duration_until_next_deadline_is_max_for_empty_queue() {
     let sut = DeadlineQueueBuilder::new().create().unwrap();
 
     assert_that!(sut.duration_until_next_deadline().unwrap(), eq Duration::MAX);
 }
 
 #[test]
-pub fn deadline_queue_next_iteration_works_zero_deadline() {
+pub fn next_iteration_works_zero_deadline() {
     let sut = DeadlineQueueBuilder::new().create().unwrap();
 
     let _guard = sut.add_deadline_interval(Duration::from_secs(0)).unwrap();
@@ -57,7 +57,7 @@ pub fn deadline_queue_next_iteration_works_zero_deadline() {
 }
 
 #[test]
-pub fn deadline_queue_next_iteration_works_smallest_deadline_added_first() {
+pub fn next_iteration_works_smallest_deadline_added_first() {
     let sut = DeadlineQueueBuilder::new().create().unwrap();
 
     let _guard_1 = sut.add_deadline_interval(Duration::from_secs(5)).unwrap();
@@ -69,7 +69,7 @@ pub fn deadline_queue_next_iteration_works_smallest_deadline_added_first() {
 }
 
 #[test]
-pub fn deadline_queue_next_iteration_works_smallest_deadline_added_last() {
+pub fn next_iteration_works_smallest_deadline_added_last() {
     let sut = DeadlineQueueBuilder::new().create().unwrap();
 
     let _guard_1 = sut.add_deadline_interval(Duration::from_secs(100)).unwrap();
@@ -81,7 +81,7 @@ pub fn deadline_queue_next_iteration_works_smallest_deadline_added_last() {
 }
 
 #[test]
-pub fn deadline_queue_removing_deadline_works() {
+pub fn removing_deadline_works() {
     let sut = DeadlineQueueBuilder::new().create().unwrap();
 
     let _guard_1 = sut
@@ -97,7 +97,7 @@ pub fn deadline_queue_removing_deadline_works() {
 }
 
 #[test]
-pub fn deadline_queue_no_missed_deadline_works() {
+pub fn no_missed_deadline_works() {
     let sut = DeadlineQueueBuilder::new().create().unwrap();
 
     let _guard_1 = sut.add_deadline_interval(Duration::from_secs(10)).unwrap();
@@ -117,7 +117,7 @@ pub fn deadline_queue_no_missed_deadline_works() {
 }
 
 #[test]
-pub fn deadline_queue_one_missed_deadlines_works() {
+pub fn one_missed_deadlines_works() {
     let sut = DeadlineQueueBuilder::new().create().unwrap();
 
     let _guard_1 = sut.add_deadline_interval(Duration::from_nanos(1)).unwrap();
@@ -140,7 +140,7 @@ pub fn deadline_queue_one_missed_deadlines_works() {
 }
 
 #[test]
-pub fn deadline_queue_many_missed_deadlines_works() {
+pub fn many_missed_deadlines_works() {
     let sut = DeadlineQueueBuilder::new().create().unwrap();
 
     let guard_1 = sut.add_deadline_interval(Duration::from_nanos(1)).unwrap();
@@ -163,7 +163,7 @@ pub fn deadline_queue_many_missed_deadlines_works() {
 }
 
 #[test]
-pub fn deadline_queue_missed_deadline_iteration_stops_when_requested() {
+pub fn missed_deadline_iteration_stops_when_requested() {
     let sut = DeadlineQueueBuilder::new().create().unwrap();
 
     let _guard_1 = sut.add_deadline_interval(Duration::from_nanos(1)).unwrap();
@@ -183,7 +183,7 @@ pub fn deadline_queue_missed_deadline_iteration_stops_when_requested() {
 }
 
 #[test]
-pub fn deadline_queue_duration_until_next_deadline_is_zero_if_deadline_is_already_missed() {
+pub fn duration_until_next_deadline_is_zero_if_deadline_is_already_missed() {
     let sut = DeadlineQueueBuilder::new().create().unwrap();
 
     let guard_1 = sut
@@ -210,8 +210,7 @@ pub fn deadline_queue_duration_until_next_deadline_is_zero_if_deadline_is_alread
 }
 
 #[test]
-pub fn deadline_queue_duration_until_next_deadline_is_not_zero_if_missed_deadline_have_been_handled(
-) {
+pub fn duration_until_next_deadline_is_not_zero_if_missed_deadline_have_been_handled() {
     let sut = DeadlineQueueBuilder::new().create().unwrap();
 
     let _guard_1 = sut

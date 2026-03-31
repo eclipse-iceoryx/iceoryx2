@@ -20,7 +20,7 @@ use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_testing_macros::test;
 
 #[test]
-pub fn barrier_blocks() -> Result<(), BarrierCreationError> {
+pub fn blocks() -> Result<(), BarrierCreationError> {
     let _watchdog = Watchdog::new();
 
     let handle = BarrierHandle::new();
@@ -65,8 +65,7 @@ pub fn barrier_blocks() -> Result<(), BarrierCreationError> {
 }
 
 #[test]
-pub fn barrier_resets_when_the_one_and_only_waiter_has_woken_up() -> Result<(), BarrierCreationError>
-{
+pub fn resets_when_the_one_and_only_waiter_has_woken_up() -> Result<(), BarrierCreationError> {
     let _watchdog = Watchdog::new();
     const ITERATIONS: u64 = 10;
 
@@ -85,7 +84,7 @@ pub fn barrier_resets_when_the_one_and_only_waiter_has_woken_up() -> Result<(), 
 }
 
 #[test]
-pub fn barrier_resets_when_all_waiters_have_woken_up() -> Result<(), BarrierCreationError> {
+pub fn resets_when_all_waiters_have_woken_up() -> Result<(), BarrierCreationError> {
     let _watchdog = Watchdog::new();
     const ITERATIONS: u64 = 10;
     const NUMBER_OF_THREADS: usize = 8;

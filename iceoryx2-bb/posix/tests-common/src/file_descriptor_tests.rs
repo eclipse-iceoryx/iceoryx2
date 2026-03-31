@@ -28,12 +28,12 @@ pub mod generic {
     use iceoryx2_pal_posix::posix::{POSIX_SUPPORT_PERMISSIONS, POSIX_SUPPORT_USERS_AND_GROUPS};
 
     #[test]
-    pub fn file_descriptor_smaller_zero_is_invalid() {
+    pub fn smaller_than_zero_is_invalid() {
         assert_that!(FileDescriptor::new(-12), eq None);
     }
 
     #[test]
-    pub fn file_descriptor_with_arbitrary_number_greater_equal_zero_is_invalid() {
+    pub fn arbitrary_number_greater_equal_zero_is_invalid() {
         assert_that!(FileDescriptor::new(431), is_none);
         assert_that!(FileDescriptor::new(981), is_none);
     }
@@ -69,9 +69,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn file_descriptor_owner_handling_works<
-        Sut: GenericTestBuilder + FileDescriptorManagement,
-    >() {
+    pub fn owner_handling_works<Sut: GenericTestBuilder + FileDescriptorManagement>() {
         test_requires!(POSIX_SUPPORT_USERS_AND_GROUPS);
 
         create_test_directory();
@@ -93,9 +91,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn file_descriptor_permission_handling_works<
-        Sut: GenericTestBuilder + FileDescriptorManagement,
-    >() {
+    pub fn permission_handling_works<Sut: GenericTestBuilder + FileDescriptorManagement>() {
         test_requires!(POSIX_SUPPORT_PERMISSIONS);
         create_test_directory();
 
@@ -114,9 +110,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn file_descriptor_metadata_handling_works<
-        Sut: GenericTestBuilder + FileDescriptorManagement,
-    >() {
+    pub fn metadata_handling_works<Sut: GenericTestBuilder + FileDescriptorManagement>() {
         test_requires!(POSIX_SUPPORT_PERMISSIONS);
 
         create_test_directory();

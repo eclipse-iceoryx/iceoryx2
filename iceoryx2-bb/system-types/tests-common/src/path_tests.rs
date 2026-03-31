@@ -22,7 +22,7 @@ mod windows {
     use iceoryx2_bb_testing_macros::test;
 
     #[test]
-    pub fn path_new_with_illegal_name_fails() {
+    pub fn new_with_illegal_name_fails() {
         let sut = Path::new(b"\0a");
         assert_that!(sut, is_err);
 
@@ -34,7 +34,7 @@ mod windows {
     }
 
     #[test]
-    pub fn path_new_with_legal_name_works() {
+    pub fn new_with_legal_name_works() {
         let sut = Path::new(b"C:\\some\\file\\path");
         assert_that!(sut, is_ok);
 
@@ -52,7 +52,7 @@ mod windows {
     }
 
     #[test]
-    pub fn path_add_works() {
+    pub fn add_works() {
         let mut sut = Path::new(b"C:\\some").unwrap();
         sut.add_path_entry(&Path::new(b"file").unwrap()).unwrap();
         sut.add_path_entry(&Path::new(b"path").unwrap()).unwrap();
@@ -70,7 +70,7 @@ mod windows {
     }
 
     #[test]
-    pub fn path_is_absolute_works() {
+    pub fn is_absolute_works() {
         let sut = Path::new(b"D:\\bla").unwrap();
         assert_that!(sut.is_absolute(), eq true);
 
@@ -94,7 +94,7 @@ mod unix {
     use iceoryx2_bb_testing_macros::test;
 
     #[test]
-    pub fn path_new_with_illegal_name_fails() {
+    pub fn new_with_illegal_name_fails() {
         let sut = Path::new(b"\0a");
         assert_that!(sut, is_err);
 
@@ -106,7 +106,7 @@ mod unix {
     }
 
     #[test]
-    pub fn path_new_with_legal_name_works() {
+    pub fn new_with_legal_name_works() {
         let sut = Path::new(b"/some/file/path");
         assert_that!(sut, is_ok);
 
@@ -124,7 +124,7 @@ mod unix {
     }
 
     #[test]
-    pub fn path_add_works() {
+    pub fn add_works() {
         let mut sut = Path::new(b"/some").unwrap();
         sut.add_path_entry(&Path::new(b"file").unwrap()).unwrap();
         sut.add_path_entry(&Path::new(b"path").unwrap()).unwrap();
@@ -142,7 +142,7 @@ mod unix {
     }
 
     #[test]
-    pub fn path_list_all_entries_works() {
+    pub fn list_all_entries_works() {
         let sut = Path::new(b"/some/file/path/").unwrap();
         let entries = sut.entries();
 
@@ -209,7 +209,7 @@ mod unix {
     }
 
     #[test]
-    pub fn path_is_absolute_works() {
+    pub fn is_absolute_works() {
         let sut = Path::new(b"/").unwrap();
         assert_that!(sut.is_absolute(), eq true);
 

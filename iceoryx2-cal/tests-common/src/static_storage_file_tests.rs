@@ -28,7 +28,7 @@ use iceoryx2_cal::static_storage::file::*;
 use iceoryx2_cal::testing::*;
 
 #[test]
-fn static_storage_file_custom_suffix_works() {
+fn custom_suffix_works() {
     let storage_name = generate_file_path().file_name();
     let config = generate_isolated_config::<Storage>()
         .suffix(unsafe { &FileName::new_unchecked(b".blubbme") });
@@ -58,7 +58,7 @@ fn static_storage_file_custom_suffix_works() {
 }
 
 #[test]
-fn static_storage_file_path_is_created_when_it_does_not_exist() {
+fn path_is_created_when_it_does_not_exist() {
     let storage_name = generate_file_path().file_name();
     let config = generate_isolated_config::<Storage>();
     let content = "some more funky content".to_string();
@@ -90,7 +90,7 @@ fn static_storage_file_path_is_created_when_it_does_not_exist() {
 }
 
 #[test]
-fn static_storage_file_custom_path_and_suffix_list_storage_works() {
+fn custom_path_and_suffix_list_storage_works() {
     const NUMBER_OF_STORAGES: u64 = 12;
     let config = generate_isolated_config::<Storage>()
         .suffix(unsafe { &FileName::new_unchecked(b".blubbme") })

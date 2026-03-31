@@ -58,7 +58,7 @@ impl TestFixture {
 }
 
 #[test]
-pub fn one_chunk_allocator_acquire_works() {
+pub fn acquire_works() {
     const CHUNK_SIZE: usize = 128;
     const CHUNK_ALIGNMENT: usize = 1;
 
@@ -76,7 +76,7 @@ pub fn one_chunk_allocator_acquire_works() {
 }
 
 #[test]
-pub fn one_chunk_allocator_acquire_with_alignment_works() {
+pub fn acquire_with_alignment_works() {
     const CHUNK_SIZE: usize = 128;
     const CHUNK_ALIGNMENT: usize = 256;
     let mut test = TestFixture::new();
@@ -95,7 +95,7 @@ pub fn one_chunk_allocator_acquire_with_alignment_works() {
 }
 
 #[test]
-pub fn one_chunk_allocator_allocate_zeroed_works() {
+pub fn allocate_zeroed_works() {
     const CHUNK_SIZE: usize = 128;
     const CHUNK_ALIGNMENT: usize = 1;
     let mut test = TestFixture::new();
@@ -111,7 +111,7 @@ pub fn one_chunk_allocator_allocate_zeroed_works() {
 }
 
 #[test]
-pub fn one_chunk_allocator_shrink_works() {
+pub fn shrink_works() {
     const CHUNK_SIZE: usize = 128;
     const CHUNK_ALIGNMENT: usize = 1;
     let mut test = TestFixture::new();
@@ -134,7 +134,7 @@ pub fn one_chunk_allocator_shrink_works() {
 }
 
 #[test]
-pub fn one_chunk_allocator_shrink_fails_when_size_increases() {
+pub fn shrink_fails_when_size_increases() {
     const CHUNK_SIZE: usize = 128;
     const CHUNK_ALIGNMENT: usize = 1;
     let mut test = TestFixture::new();
@@ -157,7 +157,7 @@ pub fn one_chunk_allocator_shrink_fails_when_size_increases() {
 }
 
 #[test]
-pub fn one_chunk_allocator_shrink_fails_when_alignment_increases() {
+pub fn shrink_fails_when_alignment_increases() {
     const CHUNK_SIZE: usize = 128;
     const CHUNK_ALIGNMENT: usize = 1;
     let mut test = TestFixture::new();
@@ -183,7 +183,7 @@ pub fn one_chunk_allocator_shrink_fails_when_alignment_increases() {
 #[requires_std("panics")]
 #[should_panic]
 #[cfg(debug_assertions)]
-pub fn one_chunk_allocator_shrink_non_allocated_chunk_fails() {
+pub fn shrink_non_allocated_chunk_fails() {
     const CHUNK_SIZE: usize = 128;
     const CHUNK_ALIGNMENT: usize = 1;
     let mut test = TestFixture::new();
@@ -199,7 +199,7 @@ pub fn one_chunk_allocator_shrink_non_allocated_chunk_fails() {
 }
 
 #[test]
-pub fn one_chunk_allocator_grow_works() {
+pub fn grow_works() {
     const CHUNK_SIZE: usize = 128;
     const CHUNK_ALIGNMENT: usize = 1;
     let mut test = TestFixture::new();
@@ -231,7 +231,7 @@ pub fn one_chunk_allocator_grow_works() {
 }
 
 #[test]
-pub fn one_chunk_allocator_grow_zeroed_works() {
+pub fn grow_zeroed_works() {
     const CHUNK_SIZE: usize = 128;
     const CHUNK_ALIGNMENT: usize = 1;
     let mut test = TestFixture::new();
@@ -271,7 +271,7 @@ pub fn one_chunk_allocator_grow_zeroed_works() {
 }
 
 #[test]
-pub fn one_chunk_allocator_grow_with_decreased_size_fails() {
+pub fn grow_with_decreased_size_fails() {
     const CHUNK_SIZE: usize = 128;
     const CHUNK_ALIGNMENT: usize = 1;
     let mut test = TestFixture::new();
@@ -303,7 +303,7 @@ pub fn one_chunk_allocator_grow_with_decreased_size_fails() {
 }
 
 #[test]
-pub fn one_chunk_allocator_grow_with_increased_alignment_fails() {
+pub fn grow_with_increased_alignment_fails() {
     const CHUNK_SIZE: usize = 128;
     const CHUNK_ALIGNMENT: usize = 1;
     let mut test = TestFixture::new();
@@ -338,7 +338,7 @@ pub fn one_chunk_allocator_grow_with_increased_alignment_fails() {
 #[requires_std("panics")]
 #[should_panic]
 #[cfg(debug_assertions)]
-pub fn one_chunk_allocator_grow_with_non_allocated_chunk_fails() {
+pub fn grow_with_non_allocated_chunk_fails() {
     const CHUNK_SIZE: usize = 128;
     const CHUNK_ALIGNMENT: usize = 1;
     let mut test = TestFixture::new();
@@ -357,7 +357,7 @@ pub fn one_chunk_allocator_grow_with_non_allocated_chunk_fails() {
 #[requires_std("panics")]
 #[should_panic]
 #[cfg(debug_assertions)]
-pub fn one_chunk_allocator_deallocate_non_allocated_chunk_fails() {
+pub fn deallocate_non_allocated_chunk_fails() {
     const CHUNK_SIZE: usize = 128;
     const CHUNK_ALIGNMENT: usize = 1;
     let mut test = TestFixture::new();

@@ -72,7 +72,7 @@ impl<const NUMBER_OF_THREADS: usize> Default for ThreadInWait<NUMBER_OF_THREADS>
 }
 
 #[test]
-pub fn strategy_condition_variable_notify_one_unblocks_one() {
+pub fn notify_one_unblocks_one() {
     const NUMBER_OF_THREADS: usize = 3;
     let _watchdog = Watchdog::new();
     let barrier = Barrier::new(NUMBER_OF_THREADS as u32 + 1);
@@ -130,7 +130,7 @@ pub fn strategy_condition_variable_notify_one_unblocks_one() {
 }
 
 #[test]
-pub fn strategy_condition_variable_notify_all_unblocks_all() {
+pub fn notify_all_unblocks_all() {
     const NUMBER_OF_THREADS: usize = 5;
     let _watchdog = Watchdog::new();
     let barrier = Barrier::new(NUMBER_OF_THREADS as u32 + 1);
@@ -183,7 +183,7 @@ pub fn strategy_condition_variable_notify_all_unblocks_all() {
 }
 
 #[test]
-pub fn strategy_condition_variable_mutex_is_locked_when_wait_returns() {
+pub fn mutex_is_locked_when_wait_returns() {
     const NUMBER_OF_THREADS: usize = 5;
 
     let _watchdog = Watchdog::new();
@@ -241,7 +241,7 @@ pub fn strategy_condition_variable_mutex_is_locked_when_wait_returns() {
 }
 
 #[test]
-pub fn strategy_condition_variable_wait_returns_false_when_functor_returns_false() {
+pub fn wait_returns_false_when_functor_returns_false() {
     let sut = ConditionVariable::new();
     let mtx = Mutex::new();
     mtx.lock(|_, _| WaitAction::Continue);

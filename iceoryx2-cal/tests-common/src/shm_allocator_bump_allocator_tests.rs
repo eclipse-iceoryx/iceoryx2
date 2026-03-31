@@ -52,7 +52,7 @@ impl TestContext {
 }
 
 #[test]
-fn shm_allocator_bump_allocator_initial_setup_hint_is_layout_times_number_of_chunks() {
+fn initial_setup_hint_is_layout_times_number_of_chunks() {
     let layout = Layout::from_size_align(64, 2).unwrap();
     let max_number_of_chunks = 54;
     let hint = BumpAllocator::initial_setup_hint(layout, max_number_of_chunks);
@@ -70,19 +70,17 @@ fn no_new_resize_hint_when_there_is_memory_available(strategy: AllocationStrateg
 }
 
 #[test]
-fn shm_allocator_bump_allocator_no_new_resize_hint_with_power_of_two_when_there_is_memory_available(
-) {
+fn no_new_resize_hint_with_power_of_two_when_there_is_memory_available() {
     no_new_resize_hint_when_there_is_memory_available(AllocationStrategy::PowerOfTwo)
 }
 
 #[test]
-fn shm_allocator_bump_allocator_no_new_resize_hint_with_best_fit_when_there_is_memory_available() {
+fn no_new_resize_hint_with_best_fit_when_there_is_memory_available() {
     no_new_resize_hint_when_there_is_memory_available(AllocationStrategy::BestFit)
 }
 
 #[test]
-fn shm_allocator_bump_allocator_new_resize_hint_with_power_of_two_when_there_is_not_enough_memory_available(
-) {
+fn new_resize_hint_with_power_of_two_when_there_is_not_enough_memory_available() {
     let test_context = TestContext::new();
     let layout = Layout::from_size_align(test_context.sut.total_space() + 1, 1).unwrap();
     let hint = test_context
@@ -95,8 +93,7 @@ fn shm_allocator_bump_allocator_new_resize_hint_with_power_of_two_when_there_is_
 }
 
 #[test]
-fn shm_allocator_bump_allocator_new_resize_hint_with_best_fit_when_there_is_not_enough_memory_available(
-) {
+fn new_resize_hint_with_best_fit_when_there_is_not_enough_memory_available() {
     let test_context = TestContext::new();
     let layout = Layout::from_size_align(test_context.sut.total_space() + 1, 1).unwrap();
     let hint = test_context

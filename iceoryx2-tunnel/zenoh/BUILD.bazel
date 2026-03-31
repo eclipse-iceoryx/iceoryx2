@@ -42,8 +42,8 @@ rust_test(
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
         "//iceoryx2-pal/testing:iceoryx2-pal-testing",
         "//iceoryx2-tunnel/conformance-tests:iceoryx2-tunnel-conformance-tests",
-        ],
+    ],
     proc_macro_deps = [
         "//iceoryx2-bb/testing-macros:iceoryx2-bb-testing-macros",
-        ],
+    ],
 )

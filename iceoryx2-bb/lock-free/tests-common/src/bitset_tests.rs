@@ -26,7 +26,7 @@ use iceoryx2_bb_testing_macros::requires_std;
 use iceoryx2_bb_testing_macros::test;
 
 #[test]
-pub fn bit_set_create_fill_and_reset_works() {
+pub fn create_fill_and_reset_works() {
     const CAPACITY: usize = 1234;
     let sut = BitSet::new(CAPACITY);
 
@@ -56,7 +56,7 @@ pub fn bit_set_create_fill_and_reset_works() {
 }
 
 #[test]
-pub fn fixed_size_bit_set_create_fill_and_reset_works() {
+pub fn fixed_size_create_fill_and_reset_works() {
     const CAPACITY: usize = 122;
     let sut = FixedSizeBitSet::<CAPACITY>::new();
 
@@ -87,7 +87,7 @@ pub fn fixed_size_bit_set_create_fill_and_reset_works() {
 }
 
 #[test]
-pub fn bit_set_set_single_bit_works() {
+pub fn set_single_bit_works() {
     const CAPACITY: usize = 124;
     let sut = BitSet::new(CAPACITY);
 
@@ -109,7 +109,7 @@ pub fn bit_set_set_single_bit_works() {
 #[cfg_attr(debug_assertions, test)]
 #[should_panic]
 #[requires_std("panics")]
-pub fn bit_set_set_bit_outside_of_bitset_leads_to_panic() {
+pub fn set_bit_outside_of_bitset_leads_to_panic() {
     const CAPACITY: usize = 1551;
     let sut = BitSet::new(CAPACITY);
 
@@ -117,7 +117,7 @@ pub fn bit_set_set_bit_outside_of_bitset_leads_to_panic() {
 }
 
 #[test]
-pub fn bit_set_set_and_reset_next_works() {
+pub fn set_and_reset_next_works() {
     const CAPACITY: usize = 1551;
     let sut = BitSet::new(CAPACITY);
 
@@ -130,7 +130,7 @@ pub fn bit_set_set_and_reset_next_works() {
 }
 
 #[test]
-pub fn bit_set_reset_next_is_fair() {
+pub fn reset_next_is_fair() {
     const CAPACITY: usize = 1551;
     let sut = BitSet::new(CAPACITY);
 
@@ -150,7 +150,7 @@ pub fn bit_set_reset_next_is_fair() {
 }
 
 #[test]
-pub fn bit_set_concurrent_set_and_reset_works() {
+pub fn concurrent_set_and_reset_works() {
     let _watchdog = Watchdog::new_with_timeout(Duration::from_secs(60));
 
     let number_of_set_threads = (SystemInfo::NumberOfCpuCores.value() / 2).clamp(2, usize::MAX);

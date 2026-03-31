@@ -18,7 +18,7 @@ use iceoryx2_bb_testing_macros::test;
 use iceoryx2_pal_posix::posix::{self, POSIX_SUPPORT_SCHEDULER};
 
 #[test]
-pub fn process_can_acquire_from_self() {
+pub fn can_acquire_from_self() {
     let process = Process::from_self();
     assert_that!(process.id().value(), ne 0);
 
@@ -27,7 +27,7 @@ pub fn process_can_acquire_from_self() {
 }
 
 #[test]
-pub fn process_can_acquire_scheduler_information() {
+pub fn can_acquire_scheduler_information() {
     test_requires!(POSIX_SUPPORT_SCHEDULER);
 
     let process = Process::from_self();
@@ -41,7 +41,7 @@ pub fn process_can_acquire_scheduler_information() {
 }
 
 #[test]
-pub fn process_is_alive_works() {
+pub fn is_alive_works() {
     let process = Process::from_self();
     assert_that!(process.is_alive(), eq true);
 
@@ -50,7 +50,7 @@ pub fn process_is_alive_works() {
 }
 
 #[test]
-pub fn process_executable_path_works() {
+pub fn executable_path_works() {
     let process = Process::from_self();
     let executable_path = process.executable();
 

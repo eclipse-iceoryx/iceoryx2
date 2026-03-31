@@ -31,7 +31,7 @@ unsafe impl Send for TestData {}
 unsafe impl Sync for TestData {}
 
 #[test]
-fn dynamic_storage_posix_shared_memory_version_check_works() {
+fn version_check_works() {
     type Sut = iceoryx2_cal::dynamic_storage::posix_shared_memory::Storage<TestData>;
     let storage_name = generate_file_path().file_name();
     let config = generate_isolated_config::<Sut>();
@@ -57,7 +57,7 @@ fn dynamic_storage_posix_shared_memory_version_check_works() {
 }
 
 #[test]
-fn dynamic_storage_posix_shared_memory_write_only_segment_is_not_initialized() {
+fn write_only_segment_is_not_initialized() {
     type Sut = iceoryx2_cal::dynamic_storage::posix_shared_memory::Storage<TestData>;
     let storage_name = generate_file_path().file_name();
     let config = generate_isolated_config::<Sut>();
@@ -80,7 +80,7 @@ fn dynamic_storage_posix_shared_memory_write_only_segment_is_not_initialized() {
 }
 
 #[test]
-fn dynamic_storage_posix_shared_memory_waiting_for_initialization_works() {
+fn waiting_for_initialization_works() {
     type Sut = iceoryx2_cal::dynamic_storage::posix_shared_memory::Storage<TestData>;
     let storage_name = generate_file_path().file_name();
     let config = generate_isolated_config::<Sut>();

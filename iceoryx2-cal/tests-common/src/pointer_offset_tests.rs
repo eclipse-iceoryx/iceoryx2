@@ -15,7 +15,7 @@ use iceoryx2_bb_testing_macros::test;
 use iceoryx2_cal::shm_allocator::{PointerOffset, SegmentId};
 
 #[test]
-fn pointer_offset_new_works() {
+fn new_works() {
     const TEST_OFFSET: usize = 123914;
     let sut = PointerOffset::new(TEST_OFFSET);
 
@@ -24,7 +24,7 @@ fn pointer_offset_new_works() {
 }
 
 #[test]
-fn pointer_offset_set_segment_id_works() {
+fn set_segment_id_works() {
     const TEST_OFFSET: usize = 123914;
     const SEGMENT_ID: SegmentId = SegmentId::new(7);
     let mut sut = PointerOffset::new(TEST_OFFSET);
@@ -35,7 +35,7 @@ fn pointer_offset_set_segment_id_works() {
 }
 
 #[test]
-fn pointer_offset_set_segment_id_multiple_times_works() {
+fn set_segment_id_multiple_times_works() {
     const TEST_OFFSET: usize = 123914;
     const SEGMENT_ID_1: SegmentId = SegmentId::new(7);
     const SEGMENT_ID_2: SegmentId = SegmentId::new(8);

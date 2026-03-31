@@ -17,7 +17,7 @@ use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 
 #[test]
-pub fn base64url_new_with_legal_content_works() {
+pub fn new_with_legal_content_works() {
     let sut = Base64Url::new(b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_");
     assert_that!(sut, is_ok);
 
@@ -32,7 +32,7 @@ pub fn base64url_new_with_legal_content_works() {
 }
 
 #[test]
-pub fn base64url_new_with_illegal_content_fails() {
+pub fn new_with_illegal_content_fails() {
     let sut = Base64Url::new(b"");
     assert_that!(sut, is_err);
 
@@ -53,7 +53,7 @@ pub fn base64url_new_with_illegal_content_fails() {
 }
 
 #[test]
-pub fn base64url_as_file_name_works() {
+pub fn as_file_name_works() {
     let sut =
         Base64Url::new(b"abcdefghijklmnopqrstuvwDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_").unwrap();
     let sut_file = sut.as_file_name();

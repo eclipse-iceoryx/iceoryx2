@@ -28,13 +28,13 @@ use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 
 #[test]
-pub fn lazy_lock_primitive_type() {
+pub fn initialization_of_primitive_type() {
     static VALUE: LazyLock<u32> = LazyLock::new(|| 42);
     assert_eq!(*VALUE, 42);
 }
 
 #[test]
-pub fn lazy_lock_complex_type() {
+pub fn initialization_of_complex_type() {
     #[derive(Debug, PartialEq)]
     struct ComplexType {
         name: String,
@@ -52,7 +52,7 @@ pub fn lazy_lock_complex_type() {
 }
 
 #[test]
-pub fn lazy_lock_zero_sized_type() {
+pub fn initialization_of_zero_sized_type() {
     #[derive(Debug, PartialEq)]
     struct ZeroSized;
 
@@ -61,28 +61,28 @@ pub fn lazy_lock_zero_sized_type() {
 }
 
 #[test]
-pub fn lazy_lock_closure() {
+pub fn closure_is_executed_on_new() {
     let multiplier = 10;
     let lazy = LazyLock::new(move || multiplier * 5);
     assert_eq!(*lazy, 50);
 }
 
 #[test]
-pub fn lazy_lock_non_static() {
+pub fn non_static_usage() {
     let lazy = LazyLock::new(|| vec![1, 2, 3]);
     assert_eq!(lazy.len(), 3);
     assert_eq!(lazy[1], 2);
 }
 
 #[test]
-pub fn lazy_lock_deref() {
+pub fn deref_retrieves_stored_value() {
     static VALUE: LazyLock<String> = LazyLock::new(|| "hello".to_string());
     assert_eq!(VALUE.len(), 5);
     assert_eq!(&*VALUE, "hello");
 }
 
 #[test]
-pub fn lazy_lock_initialization_occurs_once() {
+pub fn initialization_occurs_once() {
     static CALL_COUNT: AtomicUsize = AtomicUsize::new(0);
     static VALUE: LazyLock<u32> = LazyLock::new(|| {
         CALL_COUNT.fetch_add(1, Ordering::SeqCst);
@@ -97,7 +97,7 @@ pub fn lazy_lock_initialization_occurs_once() {
 }
 
 #[test]
-pub fn lazy_lock_force_initialization() {
+pub fn force_initialization() {
     static CALL_COUNT: AtomicUsize = AtomicUsize::new(0);
     static VALUE: LazyLock<u32> = LazyLock::new(|| {
         CALL_COUNT.fetch_add(1, Ordering::SeqCst);
@@ -115,7 +115,7 @@ pub fn lazy_lock_force_initialization() {
 }
 
 #[test]
-pub fn lazy_lock_returns_same_reference() {
+pub fn returns_same_reference() {
     static VALUE: LazyLock<String> = LazyLock::new(|| "hello".to_string());
 
     let ref1 = &*VALUE;
@@ -125,7 +125,7 @@ pub fn lazy_lock_returns_same_reference() {
 }
 
 #[test]
-pub fn lazy_lock_dependent_initialization() {
+pub fn dependent_initialization() {
     static FIRST: LazyLock<u32> = LazyLock::new(|| 10);
     static SECOND: LazyLock<u32> = LazyLock::new(|| *FIRST * 2);
 
@@ -134,7 +134,7 @@ pub fn lazy_lock_dependent_initialization() {
 }
 
 #[test]
-pub fn lazy_lock_concurrent_access_from_multiple_threads() {
+pub fn concurrent_access_from_multiple_threads() {
     const NUMBER_OF_THREADS: u32 = 10;
     const TIMEOUT: Duration = Duration::from_millis(10);
 

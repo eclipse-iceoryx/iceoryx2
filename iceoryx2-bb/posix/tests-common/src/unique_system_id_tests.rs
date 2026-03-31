@@ -28,7 +28,7 @@ use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_testing_macros::test;
 
 #[test]
-pub fn unique_system_id_is_unique() {
+pub fn is_unique() {
     let sut1 = UniqueSystemId::new().unwrap();
     nanosleep(Duration::from_secs(1)).unwrap();
     let sut2 = UniqueSystemId::new().unwrap();
@@ -49,7 +49,7 @@ pub fn unique_system_id_is_unique() {
 }
 
 #[test]
-pub fn unique_system_id_concurrently_created_ids_are_unique() {
+pub fn concurrently_created_ids_are_unique() {
     let _watchdog = Watchdog::new();
 
     const NUMBER_OF_ITERATIONS: usize = 1000;

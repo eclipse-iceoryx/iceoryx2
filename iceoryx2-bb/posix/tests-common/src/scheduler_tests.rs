@@ -18,6 +18,6 @@ use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 
 #[test]
-pub fn scheduler_default_scheduler_set_correctly() {
+pub fn default_scheduler_set_correctly() {
     assert_that!(Scheduler::default(), eq DEFAULT_SCHEDULER)
 }

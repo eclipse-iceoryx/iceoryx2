@@ -73,7 +73,7 @@ struct GenericStruct<T1: PlacementDefault, T2: PlacementDefault> {
 struct GenericUnnamedStruct<T1: PlacementDefault, T2: PlacementDefault>(T1, T2);
 
 #[test]
-pub fn placement_default_derive_for_structs_works() {
+pub fn derive_for_structs_works() {
     DEFAULT_CTOR_COUNT.store(0, Ordering::Relaxed);
     FUU_VALUE.store(123, Ordering::Relaxed);
     BAR_VALUE.store(456, Ordering::Relaxed);
@@ -87,7 +87,7 @@ pub fn placement_default_derive_for_structs_works() {
 }
 
 #[test]
-pub fn placement_default_derive_for_unnamed_structs_works() {
+pub fn derive_for_unnamed_structs_works() {
     DEFAULT_CTOR_COUNT.store(0, Ordering::Relaxed);
     FUU_VALUE.store(789, Ordering::Relaxed);
     BAR_VALUE.store(1337, Ordering::Relaxed);
@@ -102,7 +102,7 @@ pub fn placement_default_derive_for_unnamed_structs_works() {
 }
 
 #[test]
-pub fn placement_default_derive_for_generic_structs_works() {
+pub fn derive_for_generic_structs_works() {
     type SutType = GenericStruct<Fuu, Bar>;
     DEFAULT_CTOR_COUNT.store(0, Ordering::Relaxed);
     FUU_VALUE.store(4711, Ordering::Relaxed);
@@ -117,7 +117,7 @@ pub fn placement_default_derive_for_generic_structs_works() {
 }
 
 #[test]
-pub fn placement_default_derive_for_generic_unnamed_structs_works() {
+pub fn derive_for_generic_unnamed_structs_works() {
     type SutType = GenericUnnamedStruct<Fuu, Bar>;
     DEFAULT_CTOR_COUNT.store(0, Ordering::Relaxed);
     FUU_VALUE.store(895711, Ordering::Relaxed);

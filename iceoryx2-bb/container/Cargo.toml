@@ -38,5 +38,5 @@ iceoryx2-bb-testing = { workspace = true, features = ["std"] }
 serde_test = { workspace = true }
 
 [[test]]
-name = "main"
+name = "tests"
 harness = false

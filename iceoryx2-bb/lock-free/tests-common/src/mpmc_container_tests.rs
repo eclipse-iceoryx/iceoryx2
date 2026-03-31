@@ -69,9 +69,7 @@ pub mod generic {
     const CAPACITY: usize = 129;
 
     #[test]
-    pub fn mpmc_container_add_elements_until_full_works<
-        T: Debug + Copy + From<usize> + Into<usize>,
-    >() {
+    pub fn add_elements_until_full_works<T: Debug + Copy + From<usize> + Into<usize>>() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
         assert_that!(sut.capacity(), eq CAPACITY);
         for i in 0..CAPACITY {
@@ -99,9 +97,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn mpmc_container_add_and_remove_elements_works<
-        T: Debug + Copy + From<usize> + Into<usize>,
-    >() {
+    pub fn add_and_remove_elements_works<T: Debug + Copy + From<usize> + Into<usize>>() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
         assert_that!(sut.is_empty(), eq true);
         let mut stored_indices = vec![];
@@ -136,7 +132,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn mpmc_container_add_and_remove_elements_works_with_uninitialized_memory<
+    pub fn add_and_remove_elements_works_with_uninitialized_memory<
         T: Debug + Copy + From<usize> + Into<usize>,
     >() {
         // TestType is the largest test type so it is safe to acquire this memory for every test
@@ -177,9 +173,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn mpmc_container_add_and_unsafe_remove_with_handle_works<
-        T: Debug + Copy + From<usize> + Into<usize>,
-    >() {
+    pub fn add_and_unsafe_remove_with_handle_works<T: Debug + Copy + From<usize> + Into<usize>>() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
         let mut stored_handles: Vec<ContainerHandle> = vec![];
 
@@ -213,9 +207,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn mpmc_container_state_of_empty_container_is_empty<
-        T: Debug + Copy + From<usize> + Into<usize>,
-    >() {
+    pub fn state_of_empty_container_is_empty<T: Debug + Copy + From<usize> + Into<usize>>() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
         let mut counter = 0;
 
@@ -235,7 +227,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn mpmc_container_state_not_updated_when_contents_do_not_change<
+    pub fn state_not_updated_when_contents_do_not_change<
         T: Debug + Copy + From<usize> + Into<usize>,
     >() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
@@ -266,9 +258,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn mpmc_container_state_updated_when_contents_are_removed<
-        T: Debug + Copy + From<usize> + Into<usize>,
-    >() {
+    pub fn state_updated_when_contents_are_removed<T: Debug + Copy + From<usize> + Into<usize>>() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
         let mut stored_indices: Vec<ContainerHandle> = vec![];
 
@@ -295,9 +285,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn mpmc_container_state_updated_when_contents_are_changed<
-        T: Debug + Copy + From<usize> + Into<usize>,
-    >() {
+    pub fn state_updated_when_contents_are_changed<T: Debug + Copy + From<usize> + Into<usize>>() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
         let mut stored_indices: Vec<ContainerHandle> = vec![];
 
@@ -332,7 +320,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn mpmc_container_state_updated_works_for_new_and_removed_elements<
+    pub fn state_updated_works_for_new_and_removed_elements<
         T: Debug + Copy + From<usize> + Into<usize>,
     >() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
@@ -379,7 +367,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn mpmc_container_state_updated_works_when_same_element_is_added_and_removed<
+    pub fn state_updated_works_when_same_element_is_added_and_removed<
         T: Debug + Copy + From<usize> + Into<usize>,
     >() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
@@ -391,9 +379,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn mpmc_container_concurrent_add_release_for_each<
-        T: Debug + Copy + From<usize> + Into<usize> + Send,
-    >() {
+    pub fn concurrent_add_release_for_each<T: Debug + Copy + From<usize> + Into<usize> + Send>() {
         const REPETITIONS: i64 = 1000;
         let number_of_threads_per_op =
             (SystemInfo::NumberOfCpuCores.value() / 2).clamp(2, usize::MAX);
@@ -494,6 +480,6 @@ pub mod generic {
         }
 
         // check if it is still in a consistent state
-        mpmc_container_add_and_remove_elements_works::<T>();
+        add_and_remove_elements_works::<T>();
     }
 }

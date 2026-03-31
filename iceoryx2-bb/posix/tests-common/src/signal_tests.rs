@@ -71,7 +71,7 @@ impl TestFixture {
 }
 
 #[test]
-pub fn signal_register_single_handler_works() {
+pub fn register_single_handler_works() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
 
     let test = TestFixture::new();
@@ -83,7 +83,7 @@ pub fn signal_register_single_handler_works() {
 }
 
 #[test]
-pub fn signal_register_multiple_handler_works() {
+pub fn register_multiple_handler_works() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
 
     let test = TestFixture::new();
@@ -101,7 +101,7 @@ pub fn signal_register_multiple_handler_works() {
 }
 
 #[test]
-pub fn signal_register_handler_with_multiple_signals_works() {
+pub fn register_handler_with_multiple_signals_works() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
 
     let test = TestFixture::new();
@@ -116,7 +116,7 @@ pub fn signal_register_handler_with_multiple_signals_works() {
 }
 
 #[test]
-pub fn signal_guard_unregisters_on_drop() {
+pub fn guard_unregisters_on_drop() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
 
     let test = TestFixture::new();
@@ -135,7 +135,7 @@ pub fn signal_guard_unregisters_on_drop() {
 }
 
 #[test]
-pub fn signal_register_signal_twice_fails() {
+pub fn register_signal_twice_fails() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
 
     let _test = TestFixture::new();
@@ -149,7 +149,7 @@ pub fn signal_register_signal_twice_fails() {
 }
 
 #[test]
-pub fn signal_call_and_fetch_works() {
+pub fn call_and_fetch_works() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
     let _watchdog = Watchdog::new();
 
@@ -165,7 +165,7 @@ pub fn signal_call_and_fetch_works() {
 // TODO: #1458
 #[ignore]
 #[test]
-pub fn signal_call_and_fetch_with_registered_handler_works() {
+pub fn call_and_fetch_with_registered_handler_works() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
     let _watchdog = Watchdog::new();
 
@@ -184,7 +184,7 @@ pub fn signal_call_and_fetch_with_registered_handler_works() {
 }
 
 #[test]
-pub fn signal_wait_for_signal_blocks() {
+pub fn wait_for_signal_blocks() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
     let _watchdog = Watchdog::new();
 
@@ -220,7 +220,7 @@ pub fn signal_wait_for_signal_blocks() {
 }
 
 #[test]
-pub fn signal_wait_twice_for_same_signal_blocks() {
+pub fn wait_twice_for_same_signal_blocks() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
     let _watchdog = Watchdog::new();
 
@@ -264,7 +264,7 @@ pub fn signal_wait_twice_for_same_signal_blocks() {
 }
 
 #[test]
-pub fn signal_timed_wait_blocks_at_least_for_timeout() {
+pub fn timed_wait_blocks_at_least_for_timeout() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
     let _watchdog = Watchdog::new();
 
@@ -276,7 +276,7 @@ pub fn signal_timed_wait_blocks_at_least_for_timeout() {
 }
 
 #[test]
-pub fn signal_timed_wait_blocks_until_signal() {
+pub fn timed_wait_blocks_until_signal() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
     let _watchdog = Watchdog::new();
 
@@ -312,7 +312,7 @@ pub fn signal_timed_wait_blocks_until_signal() {
 }
 
 #[test]
-pub fn signal_termination_requested_with_terminate_works() {
+pub fn termination_requested_with_terminate_works() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
 
     let _test = TestFixture::new();
@@ -329,7 +329,7 @@ pub fn signal_termination_requested_with_terminate_works() {
 }
 
 #[test]
-pub fn signal_termination_requested_with_interrupt_works() {
+pub fn termination_requested_with_interrupt_works() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
 
     let _test = TestFixture::new();

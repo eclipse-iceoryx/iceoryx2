@@ -19,7 +19,7 @@ use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 
 #[test]
-pub fn heap_allocator_allocate_deallocate_works() {
+pub fn allocate_deallocate_works() {
     const MEM_SIZE: usize = 1024;
     const MEM_ALIGN: usize = 256;
     let layout = unsafe { Layout::from_size_align_unchecked(MEM_SIZE, MEM_ALIGN) };
@@ -43,7 +43,7 @@ pub fn heap_allocator_allocate_deallocate_works() {
 }
 
 #[test]
-pub fn heap_allocator_allocating_memory_with_size_of_zero_fails() {
+pub fn allocating_memory_with_size_of_zero_fails() {
     const MEM_SIZE: usize = 0;
     const MEM_ALIGN: usize = 256;
     let sut = HeapAllocator::new();
@@ -52,7 +52,7 @@ pub fn heap_allocator_allocating_memory_with_size_of_zero_fails() {
 }
 
 #[test]
-pub fn heap_allocator_allocate_zeroed_and_free_works() {
+pub fn allocate_zeroed_and_free_works() {
     const MEM_SIZE: usize = 1024;
     const MEM_ALIGN: usize = 256;
     let layout = unsafe { Layout::from_size_align_unchecked(MEM_SIZE, MEM_ALIGN) };
@@ -76,7 +76,7 @@ pub fn heap_allocator_allocate_zeroed_and_free_works() {
 }
 
 #[test]
-pub fn heap_allocator_allocating_zeroed_memory_with_size_of_zero_fails() {
+pub fn allocating_zeroed_memory_with_size_of_zero_fails() {
     const MEM_SIZE: usize = 0;
     const MEM_ALIGN: usize = 8;
     let sut = HeapAllocator::new();
@@ -85,7 +85,7 @@ pub fn heap_allocator_allocating_zeroed_memory_with_size_of_zero_fails() {
 }
 
 #[test]
-pub fn heap_allocator_grow_memory_keeps_content() {
+pub fn grow_memory_keeps_content() {
     const MEM_SIZE: usize = 1024;
     const MEM_ALIGN: usize = 1;
     let sut = HeapAllocator::new();
@@ -126,7 +126,7 @@ pub fn heap_allocator_grow_memory_keeps_content() {
 }
 
 #[test]
-pub fn heap_allocator_shrink_memory_keeps_content() {
+pub fn shrink_memory_keeps_content() {
     const MEM_SIZE: usize = 1024;
     const MEM_ALIGN: usize = 1;
     let sut = HeapAllocator::new();
@@ -167,7 +167,7 @@ pub fn heap_allocator_shrink_memory_keeps_content() {
 }
 
 #[test]
-pub fn heap_allocator_shrink_memory_to_zero_fails() -> Result<(), AllocationError> {
+pub fn shrink_memory_to_zero_fails() -> Result<(), AllocationError> {
     const MEM_SIZE: usize = 1024;
     const MEM_ALIGN: usize = 1;
     let sut = HeapAllocator::new();
@@ -193,7 +193,7 @@ pub fn heap_allocator_shrink_memory_to_zero_fails() -> Result<(), AllocationErro
 }
 
 #[test]
-pub fn heap_allocator_grow_memory_with_increased_alignment_fails() -> Result<(), AllocationError> {
+pub fn grow_memory_with_increased_alignment_fails() -> Result<(), AllocationError> {
     const MEM_SIZE: usize = 1024;
     const MEM_ALIGN: usize = 1;
     let sut = HeapAllocator::new();

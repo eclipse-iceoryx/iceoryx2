@@ -48,7 +48,7 @@ rust_library(
 
 rust_test(
     name = "iceoryx2-conformance-tests-tests",
-    srcs = glob(["tests/main.rs"]),
+    srcs = glob(["tests/tests.rs"]),
     use_libtest_harness = False,
     crate_features = ["std"],
     deps = [

@@ -31,7 +31,7 @@ use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_testing_macros::test;
 
 #[test]
-fn service_event_notifying_events_concurrently_works() {
+fn notifying_events_concurrently_works() {
     let _watchdog = Watchdog::new();
     type ServiceType = ipc_threadsafe::Service;
     let service_name = generate_service_name();
@@ -107,7 +107,7 @@ fn service_event_notifying_events_concurrently_works() {
 }
 
 #[test]
-fn service_event_listening_on_events_concurrently_works() {
+fn listening_on_events_concurrently_works() {
     let _watchdog = Watchdog::new();
     type ServiceType = ipc_threadsafe::Service;
     let service_name = generate_service_name();

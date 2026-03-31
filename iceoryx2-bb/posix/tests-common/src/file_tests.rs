@@ -66,7 +66,7 @@ impl Drop for TestFixture {
 }
 
 #[test]
-pub fn file_opening_non_existing_file_fails() {
+pub fn opening_non_existing_file_fails() {
     let test = TestFixture::new();
     let result = FileBuilder::new(test.file()).open_existing(AccessMode::ReadWrite);
 
@@ -75,7 +75,7 @@ pub fn file_opening_non_existing_file_fails() {
 }
 
 #[test]
-pub fn file_creating_non_existing_file_succeeds() {
+pub fn creating_non_existing_file_succeeds() {
     let test = TestFixture::new();
     let result = FileBuilder::new(test.file())
         .creation_mode(CreationMode::CreateExclusive)
@@ -85,7 +85,7 @@ pub fn file_creating_non_existing_file_succeeds() {
 }
 
 #[test]
-pub fn file_creating_existing_file_fails() {
+pub fn creating_existing_file_fails() {
     let test = TestFixture::new();
 
     test.create_file(test.file());
@@ -99,7 +99,7 @@ pub fn file_creating_existing_file_fails() {
 }
 
 #[test]
-pub fn file_purge_and_create_non_existing_file_succeeds() {
+pub fn purge_and_create_non_existing_file_succeeds() {
     let test = TestFixture::new();
 
     let result = FileBuilder::new(test.file())
@@ -110,7 +110,7 @@ pub fn file_purge_and_create_non_existing_file_succeeds() {
 }
 
 #[test]
-pub fn file_purge_and_create_existing_file_succeeds() {
+pub fn purge_and_create_existing_file_succeeds() {
     let test = TestFixture::new();
     test.create_file(test.file());
 
@@ -122,7 +122,7 @@ pub fn file_purge_and_create_existing_file_succeeds() {
 }
 
 #[test]
-pub fn file_open_or_create_with_existing_file_succeeds() {
+pub fn open_or_create_with_existing_file_succeeds() {
     let test = TestFixture::new();
 
     test.create_file(test.file());
@@ -135,7 +135,7 @@ pub fn file_open_or_create_with_existing_file_succeeds() {
 }
 
 #[test]
-pub fn file_open_or_create_with_non_existing_file_succeeds() {
+pub fn open_or_create_with_non_existing_file_succeeds() {
     let test = TestFixture::new();
 
     let result = FileBuilder::new(&test.file)
@@ -146,7 +146,7 @@ pub fn file_open_or_create_with_non_existing_file_succeeds() {
 }
 
 #[test]
-pub fn file_creating_file_applies_additional_settings() {
+pub fn creating_file_applies_additional_settings() {
     test_requires!(POSIX_SUPPORT_PERMISSIONS && POSIX_SUPPORT_USERS_AND_GROUPS);
 
     let test = TestFixture::new();
@@ -166,7 +166,7 @@ pub fn file_creating_file_applies_additional_settings() {
 }
 
 #[test]
-pub fn file_simple_read_write_works() {
+pub fn simple_read_write_works() {
     let test = TestFixture::new();
     let mut file = test.create_file(&test.file);
 
@@ -187,7 +187,7 @@ pub fn file_simple_read_write_works() {
 }
 
 #[test]
-pub fn file_write_appends_content_to_file() {
+pub fn write_appends_content_to_file() {
     let test = TestFixture::new();
     let mut file = test.create_file(&test.file);
 
@@ -206,7 +206,7 @@ pub fn file_write_appends_content_to_file() {
 }
 
 #[test]
-pub fn file_multiple_read_calls_move_file_cursor() {
+pub fn multiple_read_calls_move_file_cursor() {
     let test = TestFixture::new();
     let mut file = test.create_file(&test.file);
 
@@ -226,7 +226,7 @@ pub fn file_multiple_read_calls_move_file_cursor() {
 }
 
 #[test]
-pub fn file_read_line_works() {
+pub fn read_line_works() {
     let test = TestFixture::new();
     let mut file = test.create_file(&test.file);
 
@@ -251,7 +251,7 @@ pub fn file_read_line_works() {
 }
 
 #[test]
-pub fn file_two_file_objects_read_work_with_ranges_in_same_file() {
+pub fn two_file_objects_read_work_with_ranges_in_same_file() {
     let test = TestFixture::new();
     let mut file_a = test.create_file(&test.file);
     let mut file_b = test.open_file(&test.file);
@@ -275,7 +275,7 @@ pub fn file_two_file_objects_read_work_with_ranges_in_same_file() {
 }
 
 #[test]
-pub fn file_created_file_does_exist() -> Result<(), FileError> {
+pub fn created_file_does_exist() -> Result<(), FileError> {
     let test = TestFixture::new();
     test.create_file(&test.file);
 
@@ -284,7 +284,7 @@ pub fn file_created_file_does_exist() -> Result<(), FileError> {
 }
 
 #[test]
-pub fn file_truncate_works() -> Result<(), FileError> {
+pub fn truncate_works() -> Result<(), FileError> {
     const NEW_SIZE: usize = 192;
     let test = TestFixture::new();
     let mut sut = test.create_file(&test.file);
@@ -295,7 +295,7 @@ pub fn file_truncate_works() -> Result<(), FileError> {
 }
 
 #[test]
-pub fn file_non_existing_file_does_not_exist() -> Result<(), FileError> {
+pub fn non_existing_file_does_not_exist() -> Result<(), FileError> {
     let test = TestFixture::new();
 
     assert_that!(!File::does_exist(&test.file)?, eq true);
@@ -303,7 +303,7 @@ pub fn file_non_existing_file_does_not_exist() -> Result<(), FileError> {
 }
 
 #[test]
-pub fn file_remove_returns_true_when_file_exists() -> Result<(), FileError> {
+pub fn remove_returns_true_when_file_exists() -> Result<(), FileError> {
     let test = TestFixture::new();
     test.create_file(&test.file);
 
@@ -312,7 +312,7 @@ pub fn file_remove_returns_true_when_file_exists() -> Result<(), FileError> {
 }
 
 #[test]
-pub fn file_remove_returns_false_when_file_not_exists() -> Result<(), FileError> {
+pub fn remove_returns_false_when_file_not_exists() -> Result<(), FileError> {
     let test = TestFixture::new();
 
     assert_that!(!File::remove(&test.file)?, eq true);
@@ -320,7 +320,7 @@ pub fn file_remove_returns_false_when_file_not_exists() -> Result<(), FileError>
 }
 
 #[test]
-pub fn file_newly_created_file_is_removed_when_it_has_ownership() -> Result<(), FileError> {
+pub fn newly_created_file_is_removed_when_it_has_ownership() -> Result<(), FileError> {
     create_test_directory();
     let file_name = generate_file_path();
 
@@ -338,7 +338,7 @@ pub fn file_newly_created_file_is_removed_when_it_has_ownership() -> Result<(), 
 }
 
 #[test]
-pub fn file_newly_created_file_has_not_ownership_by_default() -> Result<(), FileError> {
+pub fn newly_created_file_has_not_ownership_by_default() -> Result<(), FileError> {
     create_test_directory();
     let file_name = generate_file_path();
 
@@ -357,7 +357,7 @@ pub fn file_newly_created_file_has_not_ownership_by_default() -> Result<(), File
 }
 
 #[test]
-pub fn file_opened_file_is_removed_when_it_has_ownership() -> Result<(), FileError> {
+pub fn opened_file_is_removed_when_it_has_ownership() -> Result<(), FileError> {
     create_test_directory();
     let file_name = generate_file_path();
 
@@ -379,7 +379,7 @@ pub fn file_opened_file_is_removed_when_it_has_ownership() -> Result<(), FileErr
 }
 
 #[test]
-pub fn file_opened_file_has_not_ownership_by_default() -> Result<(), FileError> {
+pub fn opened_file_has_not_ownership_by_default() -> Result<(), FileError> {
     create_test_directory();
     let file_name = generate_file_path();
 
@@ -402,7 +402,7 @@ pub fn file_opened_file_has_not_ownership_by_default() -> Result<(), FileError> 
 }
 
 #[test]
-pub fn file_acquire_ownership_works() -> Result<(), FileError> {
+pub fn acquire_ownership_works() -> Result<(), FileError> {
     create_test_directory();
     let file_name = generate_file_path();
 
@@ -421,7 +421,7 @@ pub fn file_acquire_ownership_works() -> Result<(), FileError> {
 }
 
 #[test]
-pub fn file_release_ownership_works() -> Result<(), FileError> {
+pub fn release_ownership_works() -> Result<(), FileError> {
     create_test_directory();
     let file_name = generate_file_path();
 

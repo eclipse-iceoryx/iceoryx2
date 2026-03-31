@@ -32,7 +32,7 @@ const SUT_CAPACITY: usize = 128;
 type Sut<'a> = TriggerQueue<'a, usize, SUT_CAPACITY>;
 
 #[test]
-pub fn trigger_queue_new_queue_is_empty() {
+pub fn new_queue_is_empty() {
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
     let used_handle = UnnamedSemaphoreHandle::new();
@@ -47,7 +47,7 @@ pub fn trigger_queue_new_queue_is_empty() {
 }
 
 #[test]
-pub fn trigger_queue_try_push_pop_works() {
+pub fn try_push_pop_works() {
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
     let used_handle = UnnamedSemaphoreHandle::new();
@@ -74,7 +74,7 @@ pub fn trigger_queue_try_push_pop_works() {
 }
 
 #[test]
-pub fn trigger_queue_timed_push_pop_works() {
+pub fn timed_push_pop_works() {
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
     let used_handle = UnnamedSemaphoreHandle::new();
@@ -101,7 +101,7 @@ pub fn trigger_queue_timed_push_pop_works() {
 }
 
 #[test]
-pub fn trigger_queue_blocking_push_pop_works() {
+pub fn blocking_push_pop_works() {
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
     let used_handle = UnnamedSemaphoreHandle::new();
@@ -127,7 +127,7 @@ pub fn trigger_queue_blocking_push_pop_works() {
 }
 
 #[test]
-pub fn trigger_queue_timed_push_blocks_at_least_until_timeout_has_passed() {
+pub fn timed_push_blocks_at_least_until_timeout_has_passed() {
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
     let used_handle = UnnamedSemaphoreHandle::new();
@@ -144,7 +144,7 @@ pub fn trigger_queue_timed_push_blocks_at_least_until_timeout_has_passed() {
 }
 
 #[test]
-pub fn trigger_queue_timed_pop_blocks_at_least_until_timeout_has_passed() {
+pub fn timed_pop_blocks_at_least_until_timeout_has_passed() {
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
     let used_handle = UnnamedSemaphoreHandle::new();
@@ -157,7 +157,7 @@ pub fn trigger_queue_timed_pop_blocks_at_least_until_timeout_has_passed() {
 }
 
 #[test]
-pub fn trigger_queue_blocking_push_blocks_until_there_is_space_again() {
+pub fn blocking_push_blocks_until_there_is_space_again() {
     let _watchdog = Watchdog::new();
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
@@ -193,7 +193,7 @@ pub fn trigger_queue_blocking_push_blocks_until_there_is_space_again() {
 }
 
 #[test]
-pub fn trigger_queue_blocking_pop_blocks_until_there_is_something_pushed() {
+pub fn blocking_pop_blocks_until_there_is_something_pushed() {
     let _watchdog = Watchdog::new();
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
@@ -226,7 +226,7 @@ pub fn trigger_queue_blocking_pop_blocks_until_there_is_something_pushed() {
 }
 
 #[test]
-pub fn trigger_queue_one_pop_notifies_exactly_one_blocking_push() {
+pub fn one_pop_notifies_exactly_one_blocking_push() {
     let _watchdog = Watchdog::new();
     const NUMBER_OF_THREADS: u32 = 2;
     let mtx_handle = MutexHandle::new();
@@ -268,7 +268,7 @@ pub fn trigger_queue_one_pop_notifies_exactly_one_blocking_push() {
 }
 
 #[test]
-pub fn trigger_queue_one_pop_notifies_exactly_one_timed_push() {
+pub fn one_pop_notifies_exactly_one_timed_push() {
     const NUMBER_OF_THREADS: u32 = 2;
 
     let _watchdog = Watchdog::new();
@@ -310,7 +310,7 @@ pub fn trigger_queue_one_pop_notifies_exactly_one_timed_push() {
 }
 
 #[test]
-pub fn trigger_queue_one_push_notifies_exactly_one_blocking_pop() {
+pub fn one_push_notifies_exactly_one_blocking_pop() {
     let _watchdog = Watchdog::new();
     const NUMBER_OF_THREADS: u32 = 2;
     let mtx_handle = MutexHandle::new();
@@ -349,7 +349,7 @@ pub fn trigger_queue_one_push_notifies_exactly_one_blocking_pop() {
 }
 
 #[test]
-pub fn trigger_queue_one_push_notifies_exactly_one_timed_pop() {
+pub fn one_push_notifies_exactly_one_timed_pop() {
     const NUMBER_OF_THREADS: u32 = 2;
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();

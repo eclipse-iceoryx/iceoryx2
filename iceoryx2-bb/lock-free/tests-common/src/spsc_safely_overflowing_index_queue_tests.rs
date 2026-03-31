@@ -23,7 +23,7 @@ use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 
 #[test]
-pub fn spsc_safely_overflowing_index_queue_push_works_until_full() {
+pub fn push_works_until_full() {
     const CAPACITY: usize = 128;
     let sut = FixedSizeSafelyOverflowingIndexQueue::<CAPACITY>::new();
 
@@ -49,7 +49,7 @@ pub fn spsc_safely_overflowing_index_queue_push_works_until_full() {
 }
 
 #[test]
-pub fn spsc_safely_overflowing_index_queue_pop_works_until_empty() {
+pub fn pop_works_until_empty() {
     const CAPACITY: usize = 128;
     let sut = FixedSizeSafelyOverflowingIndexQueue::<CAPACITY>::new();
     let mut sut_producer = sut.acquire_producer().unwrap();
@@ -78,7 +78,7 @@ pub fn spsc_safely_overflowing_index_queue_pop_works_until_empty() {
 }
 
 #[test]
-pub fn spsc_safely_overflowing_index_queue_push_pop_alteration_works() {
+pub fn push_pop_alteration_works() {
     const CAPACITY: usize = 128;
     let sut = FixedSizeSafelyOverflowingIndexQueue::<CAPACITY>::new();
     let mut sut_producer = sut.acquire_producer().unwrap();
@@ -93,14 +93,14 @@ pub fn spsc_safely_overflowing_index_queue_push_pop_alteration_works() {
 }
 
 #[test]
-pub fn spsc_safely_overflowing_index_queue_get_consumer_twice_fails() {
+pub fn get_consumer_twice_fails() {
     let sut = FixedSizeSafelyOverflowingIndexQueue::<1024>::new();
     let _consumer = sut.acquire_consumer().unwrap();
     assert_that!(sut.acquire_consumer(), is_none);
 }
 
 #[test]
-pub fn spsc_safely_overflowing_index_queue_get_consumer_after_release_succeeds() {
+pub fn get_consumer_after_release_succeeds() {
     let sut = FixedSizeSafelyOverflowingIndexQueue::<1024>::new();
     {
         let _consumer = sut.acquire_consumer();
@@ -109,14 +109,14 @@ pub fn spsc_safely_overflowing_index_queue_get_consumer_after_release_succeeds()
 }
 
 #[test]
-pub fn spsc_safely_overflowing_index_queue_get_producer_twice_fails() {
+pub fn get_producer_twice_fails() {
     let sut = FixedSizeSafelyOverflowingIndexQueue::<1024>::new();
     let _producer = sut.acquire_producer().unwrap();
     assert_that!(sut.acquire_producer(), is_none);
 }
 
 #[test]
-pub fn spsc_safely_overflowing_index_queue_get_producer_after_release_succeeds() {
+pub fn get_producer_after_release_succeeds() {
     let sut = FixedSizeSafelyOverflowingIndexQueue::<1024>::new();
     {
         let _producer = sut.acquire_producer();
@@ -125,7 +125,7 @@ pub fn spsc_safely_overflowing_index_queue_get_producer_after_release_succeeds()
 }
 
 #[test]
-pub fn spsc_safely_overflowing_index_queue_push_pop_works_concurrently() {
+pub fn push_pop_works_concurrently() {
     const LIMIT: u64 = 1000000;
     const CAPACITY: usize = 1024;
 
@@ -201,7 +201,7 @@ pub fn spsc_safely_overflowing_index_queue_push_pop_works_concurrently() {
 }
 
 #[test]
-pub fn spsc_safely_overflowing_index_queue_push_pop_works_concurrently_with_full_queue() {
+pub fn push_pop_works_concurrently_with_full_queue() {
     const LIMIT: u64 = 1000000;
     const CAPACITY: usize = 1024;
     const NUMBER_OF_THREADS: u32 = 2;

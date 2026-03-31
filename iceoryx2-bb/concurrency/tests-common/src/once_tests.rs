@@ -21,7 +21,7 @@ use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 
 #[test]
-pub fn once_executes_exactly_once() {
+pub fn executes_exactly_once() {
     let once = Once::new();
     let counter = AtomicU32::new(0);
 
@@ -42,7 +42,7 @@ pub fn once_executes_exactly_once() {
 }
 
 #[test]
-pub fn once_works_with_multiple_threads() {
+pub fn works_with_multiple_threads() {
     const NUMBER_OF_THREADS: u32 = 10;
 
     let once = Once::new();
@@ -75,7 +75,7 @@ pub fn once_works_with_multiple_threads() {
 }
 
 #[test]
-pub fn once_is_completed_returns_false_initially() {
+pub fn is_completed_returns_false_initially() {
     let once = Once::new();
     assert_that!(once.is_completed(), eq false);
 }

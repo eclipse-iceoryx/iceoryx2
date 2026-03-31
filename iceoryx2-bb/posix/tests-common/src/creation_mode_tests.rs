@@ -20,7 +20,7 @@ use iceoryx2_bb_testing_macros::test;
 use iceoryx2_pal_posix::*;
 
 #[test]
-pub fn creation_mode_o_flag_conversion_works() {
+pub fn o_flag_conversion_works() {
     assert_that!(
         CreationMode::CreateExclusive.as_oflag(), eq
         posix::O_CREAT | posix::O_EXCL
@@ -33,7 +33,7 @@ pub fn creation_mode_o_flag_conversion_works() {
 }
 
 #[test]
-pub fn creation_mode_display_works() {
+pub fn display_works() {
     assert_that!(
         format!("{}", CreationMode::PurgeAndCreate),
         eq "CreationMode::PurgeAndCreate"

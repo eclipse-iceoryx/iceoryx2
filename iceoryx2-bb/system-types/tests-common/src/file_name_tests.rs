@@ -18,7 +18,7 @@ use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 
 #[test]
-pub fn file_name_new_with_illegal_name_fails() {
+pub fn new_with_illegal_name_fails() {
     let sut = FileName::new(b"");
     assert_that!(sut, is_err);
 
@@ -30,13 +30,13 @@ pub fn file_name_new_with_illegal_name_fails() {
 }
 
 #[test]
-pub fn file_name_new_name_with_slash_is_illegal() {
+pub fn new_name_with_slash_is_illegal() {
     let sut = FileName::new(b"hell/.txt");
     assert_that!(sut, is_err);
 }
 
 #[test]
-pub fn file_name_pop_fails_when_it_results_in_illegal_name() {
+pub fn pop_fails_when_it_results_in_illegal_name() {
     let sut = FileName::new(b"..f");
     assert_that!(sut, is_ok);
     let mut sut = sut.unwrap();
@@ -48,7 +48,7 @@ pub fn file_name_pop_fails_when_it_results_in_illegal_name() {
 }
 
 #[test]
-pub fn file_name_remove_fails_when_it_results_in_illegal_name() {
+pub fn remove_fails_when_it_results_in_illegal_name() {
     let sut = FileName::new(b".f.");
     assert_that!(sut, is_ok);
     let mut sut = sut.unwrap();
@@ -60,7 +60,7 @@ pub fn file_name_remove_fails_when_it_results_in_illegal_name() {
 }
 
 #[test]
-pub fn file_name_remove_range_fails_when_it_results_in_illegal_name() {
+pub fn remove_range_fails_when_it_results_in_illegal_name() {
     let sut = FileName::new(b".fuu");
     assert_that!(sut, is_ok);
     let mut sut = sut.unwrap();
@@ -72,7 +72,7 @@ pub fn file_name_remove_range_fails_when_it_results_in_illegal_name() {
 }
 
 #[test]
-pub fn file_name_retain_fails_when_it_results_in_illegal_name() {
+pub fn retain_fails_when_it_results_in_illegal_name() {
     let sut = FileName::new(b".fuu");
     assert_that!(sut, is_ok);
     let mut sut = sut.unwrap();

@@ -27,7 +27,7 @@ std = [
 ]
 
 [[test]]
-name = "main"
+name = "tests"
 harness = false
 
 [dependencies]

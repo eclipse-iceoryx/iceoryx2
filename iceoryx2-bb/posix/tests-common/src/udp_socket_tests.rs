@@ -24,7 +24,7 @@ use iceoryx2_bb_testing_macros::test;
 const TIMEOUT: core::time::Duration = core::time::Duration::from_millis(25);
 
 #[test]
-pub fn udp_socket_send_receive_works() {
+pub fn send_receive_works() {
     let sut_server = UdpServerBuilder::new().listen().unwrap();
     let sut_client_1 = UdpClientBuilder::new(ipv4_address::LOCALHOST)
         .connect_to(sut_server.port())
@@ -66,7 +66,7 @@ pub fn udp_socket_send_receive_works() {
 }
 
 #[test]
-pub fn udp_socket_server_with_same_address_and_port_fails() {
+pub fn server_with_same_address_and_port_fails() {
     let sut_server_1 = UdpServerBuilder::new()
         .address(Ipv4Address::new(127, 0, 0, 1))
         .listen()
@@ -81,7 +81,7 @@ pub fn udp_socket_server_with_same_address_and_port_fails() {
 }
 
 #[test]
-pub fn udp_socket_when_socket_goes_out_of_scope_address_is_free_again() {
+pub fn when_socket_goes_out_of_scope_address_is_free_again() {
     let port;
     {
         let sut_server_1 = UdpServerBuilder::new()
@@ -100,7 +100,7 @@ pub fn udp_socket_when_socket_goes_out_of_scope_address_is_free_again() {
 }
 
 #[test]
-pub fn udp_socket_server_has_correct_address() {
+pub fn server_has_correct_address() {
     let port = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
         .listen()
@@ -118,7 +118,7 @@ pub fn udp_socket_server_has_correct_address() {
 }
 
 #[test]
-pub fn udp_socket_client_returns_address_of_server() {
+pub fn client_returns_address_of_server() {
     let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
         .listen()
@@ -133,7 +133,7 @@ pub fn udp_socket_client_returns_address_of_server() {
 }
 
 #[test]
-pub fn udp_socket_client_can_send_data_to_server() {
+pub fn client_can_send_data_to_server() {
     let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
         .listen()
@@ -151,7 +151,7 @@ pub fn udp_socket_client_can_send_data_to_server() {
 }
 
 #[test]
-pub fn udp_socket_server_can_send_data_to_client() {
+pub fn server_can_send_data_to_client() {
     let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
         .listen()
@@ -177,7 +177,7 @@ pub fn udp_socket_server_can_send_data_to_client() {
 }
 
 #[test]
-pub fn udp_socket_client_try_receive_does_not_block() {
+pub fn client_try_receive_does_not_block() {
     let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
         .listen()
@@ -192,7 +192,7 @@ pub fn udp_socket_client_try_receive_does_not_block() {
 }
 
 #[test]
-pub fn udp_socket_server_try_receive_from_does_not_block() {
+pub fn server_try_receive_from_does_not_block() {
     let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
         .listen()
@@ -206,7 +206,7 @@ pub fn udp_socket_server_try_receive_from_does_not_block() {
 }
 
 #[test]
-pub fn udp_socket_client_timed_receive_does_block_for_at_least_timeout() {
+pub fn client_timed_receive_does_block_for_at_least_timeout() {
     let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
         .listen()
@@ -223,7 +223,7 @@ pub fn udp_socket_client_timed_receive_does_block_for_at_least_timeout() {
 }
 
 #[test]
-pub fn udp_socket_server_timed_receive_from_does_block_for_at_least_timeout() {
+pub fn server_timed_receive_from_does_block_for_at_least_timeout() {
     let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
         .listen()
@@ -241,7 +241,7 @@ pub fn udp_socket_server_timed_receive_from_does_block_for_at_least_timeout() {
 }
 
 #[test]
-pub fn udp_socket_client_blocking_receive_does_block() {
+pub fn client_blocking_receive_does_block() {
     let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
         .listen()
@@ -292,7 +292,7 @@ pub fn udp_socket_client_blocking_receive_does_block() {
 }
 
 #[test]
-pub fn udp_socket_server_blocking_receive_from_does_block() {
+pub fn server_blocking_receive_from_does_block() {
     let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
         .listen()
@@ -334,7 +334,7 @@ pub fn udp_socket_server_blocking_receive_from_does_block() {
 }
 
 #[test]
-pub fn udp_socket_client_timed_receive_does_blocks() {
+pub fn client_timed_receive_does_blocks() {
     let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
         .listen()
@@ -386,7 +386,7 @@ pub fn udp_socket_client_timed_receive_does_blocks() {
 }
 
 #[test]
-pub fn udp_socket_server_timed_receive_from_does_block() {
+pub fn server_timed_receive_from_does_block() {
     let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
         .listen()

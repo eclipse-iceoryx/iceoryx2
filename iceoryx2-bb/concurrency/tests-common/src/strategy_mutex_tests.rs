@@ -25,7 +25,7 @@ use iceoryx2_bb_testing_macros::test;
 pub const TIMEOUT: Duration = Duration::from_millis(25);
 
 #[test]
-pub fn strategy_mutex_lock_blocks() {
+pub fn lock_blocks() {
     let sut = Mutex::new();
     let counter = AtomicU32::new(0);
 
@@ -55,7 +55,7 @@ pub fn strategy_mutex_lock_blocks() {
 }
 
 #[test]
-pub fn strategy_mutex_lock_with_timeout_and_fails_after_timeout() {
+pub fn lock_with_timeout_and_fails_after_timeout() {
     const TIMEOUT: Duration = Duration::from_millis(25);
 
     let sut = Mutex::new();

@@ -74,7 +74,7 @@ impl<'a> Drop for TestFixture<'a> {
 }
 
 #[test]
-pub fn file_lock_unlocked_by_default() {
+pub fn unlocked_by_default() {
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 
     let handle = ReadWriteMutexHandle::new();
@@ -86,7 +86,7 @@ pub fn file_lock_unlocked_by_default() {
 }
 
 #[test]
-pub fn file_lock_write_lock_blocks_other_write_locks() {
+pub fn write_lock_blocks_other_write_locks() {
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 
     let handle = ReadWriteMutexHandle::new();
@@ -105,7 +105,7 @@ pub fn file_lock_write_lock_blocks_other_write_locks() {
 }
 
 #[test]
-pub fn file_lock_write_try_lock_denies_other_try_locks() {
+pub fn write_try_lock_denies_other_try_locks() {
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 
     let handle = ReadWriteMutexHandle::new();
@@ -128,7 +128,7 @@ pub fn file_lock_write_try_lock_denies_other_try_locks() {
 }
 
 #[test]
-pub fn file_lock_read_lock_allows_other_read_locks() {
+pub fn read_lock_allows_other_read_locks() {
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 
     let handle = ReadWriteMutexHandle::new();
@@ -158,7 +158,7 @@ pub fn file_lock_read_lock_allows_other_read_locks() {
 }
 
 #[test]
-pub fn file_lock_read_try_lock_allows_other_read_try_locks() {
+pub fn read_try_lock_allows_other_read_try_locks() {
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 
     let handle = ReadWriteMutexHandle::new();
@@ -188,7 +188,7 @@ pub fn file_lock_read_try_lock_allows_other_read_try_locks() {
 }
 
 #[test]
-pub fn file_lock_one_read_blocks_write() {
+pub fn one_read_blocks_write() {
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 
     let handle = ReadWriteMutexHandle::new();
@@ -201,7 +201,7 @@ pub fn file_lock_one_read_blocks_write() {
 }
 
 #[test]
-pub fn file_lock_multiple_readers_blocks_write() {
+pub fn multiple_readers_blocks_write() {
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 
     let handle = ReadWriteMutexHandle::new();
@@ -217,7 +217,7 @@ pub fn file_lock_multiple_readers_blocks_write() {
 }
 
 #[test]
-pub fn file_lock_write_lock_blocks() {
+pub fn write_lock_blocks() {
     use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
 
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
@@ -256,7 +256,7 @@ pub fn file_lock_write_lock_blocks() {
 }
 
 #[test]
-pub fn file_lock_read_lock_blocks_write_locks() {
+pub fn read_lock_blocks_write_locks() {
     use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
 
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
@@ -295,7 +295,7 @@ pub fn file_lock_read_lock_blocks_write_locks() {
 }
 
 #[test]
-pub fn file_lock_read_try_lock_does_not_block() {
+pub fn read_try_lock_does_not_block() {
     use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
 
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
@@ -323,7 +323,7 @@ pub fn file_lock_read_try_lock_does_not_block() {
 }
 
 #[test]
-pub fn file_lock_write_try_lock_does_not_block() {
+pub fn write_try_lock_does_not_block() {
     use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
 
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
@@ -351,7 +351,7 @@ pub fn file_lock_write_try_lock_does_not_block() {
 }
 
 #[test]
-pub fn file_lock_read_write_works() {
+pub fn read_write_works() {
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 
     let handle = ReadWriteMutexHandle::new();
@@ -379,7 +379,7 @@ pub fn file_lock_read_write_works() {
 }
 
 #[test]
-pub fn file_lock_try_lock_fails_when_locked() {
+pub fn try_lock_fails_when_locked() {
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 
     let handle = ReadWriteMutexHandle::new();
