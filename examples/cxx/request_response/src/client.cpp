@@ -16,17 +16,67 @@
 
 constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_secs(1);
 
+const char* ServiceOpenOrCreateErrorStrings[] = {
+    "OpenDoesNotExist",
+    "OpenDoesNotSupportRequestedAmountOfClientRequestLoans",
+    "OpenDoesNotSupportRequestedAmountOfActiveRequestsPerClient",
+    "OpenDoesNotSupportRequestedResponseBufferSize",
+    "OpenDoesNotSupportRequestedAmountOfServers",
+    "OpenDoesNotSupportRequestedAmountOfClients",
+    "OpenDoesNotSupportRequestedAmountOfNodes",
+    "OpenDoesNotSupportRequestedAmountOfBorrowedResponsesPerPendingResponse",
+    "OpenExceedsMaxNumberOfNodes",
+    "OpenHangsInCreation",
+    "OpenIncompatibleRequestType",
+    "OpenIncompatibleResponseType",
+    "OpenIncompatibleAttributes",
+    "OpenIncompatibleMessagingPattern",
+    "OpenIncompatibleOverflowBehaviorForRequests",
+    "OpenIncompatibleOverflowBehaviorForResponses",
+    "OpenIncompatibleBehaviorForFireAndForgetRequests",
+    "OpenInsufficientPermissions",
+    "OpenInternalFailure",
+    "OpenIsMarkedForDestruction",
+    "OpenServiceInCorruptedState",
+    "CreateAlreadyExists",
+    "CreateInternalFailure",
+    "CreateIsBeingCreatedByAnotherInstance",
+    "CreateInsufficientPermissions",
+    "CreateHangsInCreation",
+    "CreateServiceInCorruptedState",
+    "SystemInFlux",
+};
+
+const char* ClientCreateErrorStrings[] = {
+    "UnableToCreateDataSegment",
+    "ExceedsMaxSupportedClients",
+    "FailedToDeployThreadsafetyPolicy",
+};
+
 auto main() -> int {
     using namespace iox2;
     set_log_level_from_env_or(LogLevel::Info);
     auto node = NodeBuilder().create<ServiceType::Ipc>().value();
 
-    auto service = node.service_builder(ServiceName::create("My/Funk/ServiceName").value())
-                       .request_response<uint64_t, TransmissionData>()
-                       .open_or_create()
-                       .value();
+    auto service_result = node.service_builder(ServiceName::create("My/Funk/ServiceName").value())
+                              .request_response<uint64_t, TransmissionData>()
+                              .max_servers(3)
+                              .open_or_create();
 
-    auto client = service.client_builder().create().value();
+    if (!service_result.has_value()) {
+        auto error_index = static_cast<uint64_t>(service_result.error());
+        std::cout << "#### service open or create error: [" << error_index << "] "
+                  << ServiceOpenOrCreateErrorStrings[error_index] << std::endl;
+    }
+    auto service = std::move(service_result).value();
+
+    auto client_result = service.client_builder().create();
+    if (!client_result.has_value()) {
+        auto error_index = static_cast<uint64_t>(client_result.error());
+        std::cout << "#### client create error: [" << error_index << "] " << ClientCreateErrorStrings[error_index]
+                  << std::endl;
+    }
+    auto client = std::move(client_result).value();
 
     auto request_counter = 0U;
     auto response_counter = 0U;

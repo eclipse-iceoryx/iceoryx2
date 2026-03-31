@@ -15,17 +15,67 @@
 
 constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_millis(100);
 
+const char* ServiceOpenOrCreateErrorStrings[] = {
+    "OpenDoesNotExist",
+    "OpenDoesNotSupportRequestedAmountOfClientRequestLoans",
+    "OpenDoesNotSupportRequestedAmountOfActiveRequestsPerClient",
+    "OpenDoesNotSupportRequestedResponseBufferSize",
+    "OpenDoesNotSupportRequestedAmountOfServers",
+    "OpenDoesNotSupportRequestedAmountOfClients",
+    "OpenDoesNotSupportRequestedAmountOfNodes",
+    "OpenDoesNotSupportRequestedAmountOfBorrowedResponsesPerPendingResponse",
+    "OpenExceedsMaxNumberOfNodes",
+    "OpenHangsInCreation",
+    "OpenIncompatibleRequestType",
+    "OpenIncompatibleResponseType",
+    "OpenIncompatibleAttributes",
+    "OpenIncompatibleMessagingPattern",
+    "OpenIncompatibleOverflowBehaviorForRequests",
+    "OpenIncompatibleOverflowBehaviorForResponses",
+    "OpenIncompatibleBehaviorForFireAndForgetRequests",
+    "OpenInsufficientPermissions",
+    "OpenInternalFailure",
+    "OpenIsMarkedForDestruction",
+    "OpenServiceInCorruptedState",
+    "CreateAlreadyExists",
+    "CreateInternalFailure",
+    "CreateIsBeingCreatedByAnotherInstance",
+    "CreateInsufficientPermissions",
+    "CreateHangsInCreation",
+    "CreateServiceInCorruptedState",
+    "SystemInFlux",
+};
+
+const char* ServerCreateErrorStrings[] = {
+    "ExceedsMaxSupportedServers",
+    "UnableToCreateDataSegment",
+    "FailedToDeployThreadsafetyPolicy",
+};
+
 auto main() -> int {
     using namespace iox2;
     set_log_level_from_env_or(LogLevel::Info);
     auto node = NodeBuilder().create<ServiceType::Ipc>().value();
 
-    auto service = node.service_builder(ServiceName::create("My/Funk/ServiceName").value())
-                       .request_response<uint64_t, TransmissionData>()
-                       .open_or_create()
-                       .value();
+    auto service_result = node.service_builder(ServiceName::create("My/Funk/ServiceName").value())
+                              .request_response<uint64_t, TransmissionData>()
+                              .max_servers(3)
+                              .open_or_create();
 
-    auto server = service.server_builder().create().value();
+    if (!service_result.has_value()) {
+        auto error_index = static_cast<uint64_t>(service_result.error());
+        std::cout << "#### service open or create error: [" << error_index << "] "
+                  << ServiceOpenOrCreateErrorStrings[error_index] << std::endl;
+    }
+    auto service = std::move(service_result).value();
+
+    auto server_result = service.server_builder().create();
+    if (!server_result.has_value()) {
+        auto error_index = static_cast<uint64_t>(server_result.error());
+        std::cout << "#### server create error: [" << error_index << "] " << ServerCreateErrorStrings[error_index]
+                  << std::endl;
+    }
+    auto server = std::move(server_result).value();
 
     std::cout << "Server ready to receive requests!" << std::endl;
 

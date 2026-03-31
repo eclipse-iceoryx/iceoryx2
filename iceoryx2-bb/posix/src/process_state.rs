@@ -536,6 +536,10 @@ impl ProcessGuardBuilder {
             )
         } != -1
         {
+            if file.metadata().unwrap().number_of_links() == 0 {
+                panic!("AJSKLDHJALKSJDLKASDKJASLKDJSAKLD");
+            }
+
             return Ok(());
         }
 

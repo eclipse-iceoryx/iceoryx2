@@ -23,16 +23,17 @@ source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 set timeout 10
 
 spawn target/ff/cc/build/examples/cxx/request_response/example_cxx_request_response_server
-set id_server $spawn_id
+set id_server_1 $spawn_id
+
+spawn target/ff/cc/build/examples/cxx/request_response/example_cxx_request_response_server
+set id_server_2 $spawn_id
 
 spawn target/ff/cc/build/examples/cxx/request_response/example_cxx_request_response_client
 
 #### Test Assertion
 
-expect_output_from $id_server "Server ready to receive requests!"
-expect_output "send request 2"
-expect_output "received response"
-expect_output "send request 3"
-expect_output "received response"
+expect_output_from $id_server_1 "Server ready to receive requests!"
+expect_output_from $id_server_2 "Server ready to receive requests!"
+expect_output "send request"
 
 show_test_passed

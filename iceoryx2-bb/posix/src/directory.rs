@@ -372,13 +372,14 @@ impl Directory {
     pub fn remove_empty(path: &Path) -> Result<(), DirectoryRemoveError> {
         if unsafe { posix::rmdir(path.as_c_str()) } == -1 {
             let msg = format!("Unable to remove empty directory \"{path}\"");
-            handle_errno!(DirectoryRemoveError, from "Directory::remove",
+            handle_errno!(DirectoryRemoveError, from "Directory::remove_empty",
+                success Errno::ENOENT => (),
                 Errno::EACCES => (InsufficientPermissions, "{} due to insufficient permissions.", msg),
                 Errno::EPERM => (InsufficientPermissions, "{} due to insufficient permissions.", msg),
                 Errno::EBUSY => (CurrentlyInUse, "{} since the directory is currently in use.", msg),
                 Errno::EINVAL => (LastComponentIsDot, "{} since the last path component is \".\".", msg),
                 Errno::ELOOP => (LoopInSymbolicLinks, "{} due to a loop in the symbolic links of the path \".\".", msg),
-                Errno::ENOENT => (DanglingSymbolicLink, "{} since the path contains a dangling symbolic link.", msg),
+                // Errno::ENOENT => (DanglingSymbolicLink, "{} since the path contains a dangling symbolic link.", msg),
                 Errno::EEXIST => (DirectoryDoesNotExist, "{} since the directory does not exist.", msg),
                 Errno::ENOTDIR => (NotADirectory, "{} since it is not a directory.", msg),
                 Errno::EROFS => (ResidesOnReadOnlyFileSystem, "{} since the directory resides on a read only file system.", msg),
