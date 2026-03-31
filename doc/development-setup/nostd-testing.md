@@ -14,8 +14,9 @@ The following requirements steered the design of the solution:
 
 1. Test logic must not be duplicated
 1. No manual boilerplate maintenance when adding tests
-1. All tests must be executable with the standard test framework (`cargo test`)
-1. All `no_std` tests must be executable with the custom test framework
+1. All `std` tests must be executable using the usual `cargo test` command
+1. All `std` tests must be executable using `nextest`
+1. All `no_std` tests must be executable on the `no_std` targets
 
 ## Design
 
@@ -103,16 +104,15 @@ are skipped in `no_std` contexts:
 use iceoryx2_bb_testing_macros::requires_std;
 
 #[test]
-#[requires_std("panics")]
+#[requires_std("optional reason")]
 pub fn my_test_case_using_threads() {
     // ... test logic
 }
 ```
 
-The `#[should_panic]` attribute can be used and is handled in the `std` runner
-(via `catch_unwind`) but ignored by the `no_std` runner. The `#[requires_std]`
-annotation should be used in conjunction to skip panic tests in `no_std`
-contexts.
+The `#[should_panic]` attribute can be used. The panic is handled in the
+`std` runner (via `catch_unwind`) but the test is skipped in the `no_std`
+runner.
 
 ```rust
 #[test]
@@ -135,7 +135,7 @@ my-crate-tests-common/
 
 #### `std` Testing
 
-A single `tests/main.rs` file that sets up the test harness is all that is
+A single `tests/tests.rs` file that sets up the test harness is all that is
 required. Additionally, the common library should be linked so that all
 annotated test functions are registered for execution.
 
@@ -161,7 +161,7 @@ my-crate-tests-common = { workspace = true, features = ["std"] }
 iceoryx2-bb-testing = { workspace = true, features = ["std"] }
 
 [[test]]
-name = "main"
+name = "tests"
 harness = false
 ```
 

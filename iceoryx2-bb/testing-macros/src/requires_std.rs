@@ -15,7 +15,7 @@ use quote::quote;
 use syn::parse::Parser;
 
 /// Conditionally compiles in the function body based on the `std` feature.
-/// When `std` is not enabled, the body is replaced with a skip message.
+/// When `std` is not enabled, the body is replaced with a noop.
 ///
 /// Accepts an optional reason string to explain why `std` is required:
 ///
