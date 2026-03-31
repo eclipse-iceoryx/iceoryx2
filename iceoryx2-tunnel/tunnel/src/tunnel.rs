@@ -18,7 +18,7 @@ use alloc::format;
 use alloc::string::String;
 
 use iceoryx2::node::{Node, NodeBuilder, NodeId};
-use iceoryx2::service::service_id::ServiceId;
+use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
 use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2::service::Service;
@@ -86,8 +86,8 @@ impl core::error::Error for PropagateError {}
 
 #[derive(Debug)]
 pub(crate) struct Ports<S: Service> {
-    pub(crate) publish_subscribe: BTreeMap<ServiceId, PublishSubscribePorts<S>>,
-    pub(crate) event: BTreeMap<ServiceId, EventPorts<S>>,
+    pub(crate) publish_subscribe: BTreeMap<ServiceHash, PublishSubscribePorts<S>>,
+    pub(crate) event: BTreeMap<ServiceHash, EventPorts<S>>,
 }
 
 impl<S: Service> Ports<S> {
@@ -101,8 +101,8 @@ impl<S: Service> Ports<S> {
 
 #[derive(Debug, Default)]
 pub struct Relays<S: Service, B: Backend<S>> {
-    publish_subscribe: BTreeMap<ServiceId, B::PublishSubscribeRelay>,
-    event: BTreeMap<ServiceId, B::EventRelay>,
+    publish_subscribe: BTreeMap<ServiceHash, B::PublishSubscribeRelay>,
+    event: BTreeMap<ServiceHash, B::EventRelay>,
 }
 
 impl<S: Service, B: Backend<S>> Relays<S, B> {
@@ -244,25 +244,25 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
     }
 
     pub fn propagate(&mut self) -> Result<(), PropagateError> {
-        for (service_id, port) in &self.ports.publish_subscribe {
-            match self.relays.publish_subscribe.get(service_id) {
+        for (service_hash, port) in &self.ports.publish_subscribe {
+            match self.relays.publish_subscribe.get(service_hash) {
                 Some(relay) => {
                     propagate_publish_subscribe_payloads::<S, B>(self.node.id(), port, relay)?;
                 }
                 None => {
-                    warn!(from "Tunnel::propagate", "No relay available for {:?}", service_id);
+                    warn!(from "Tunnel::propagate", "No relay available for {:?}", service_hash);
                     return Ok(());
                 }
             };
         }
 
-        for (service_id, port) in &self.ports.event {
-            match self.relays.event.get(service_id) {
+        for (service_hash, port) in &self.ports.event {
+            match self.relays.event.get(service_hash) {
                 Some(relay) => {
                     propagate_events::<S, B>(port, relay)?;
                 }
                 None => {
-                    warn!(from "Tunnel::propagate", "No relay available for {:?}", service_id);
+                    warn!(from "Tunnel::propagate", "No relay available for {:?}", service_hash);
                     return Ok(());
                 }
             };
@@ -271,7 +271,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         Ok(())
     }
 
-    pub fn tunneled_services(&self) -> BTreeSet<ServiceId> {
+    pub fn tunneled_services(&self) -> BTreeSet<ServiceHash> {
         self.ports
             .publish_subscribe
             .keys()
@@ -285,7 +285,7 @@ fn on_discovery<S: Service, B: Backend<S> + Debug>(
     static_config: &StaticConfig,
     node: &Node<S>,
     backend: &B,
-    services: &BTreeSet<ServiceId>,
+    services: &BTreeSet<ServiceHash>,
     ports: &mut Ports<S>,
     relays: &mut Relays<S, B>,
 ) -> Result<(), DiscoveryError> {
@@ -295,7 +295,7 @@ fn on_discovery<S: Service, B: Backend<S> + Debug>(
         core::any::type_name::<B>()
     );
 
-    if services.contains(static_config.service_id()) {
+    if services.contains(static_config.service_hash()) {
         // Nothing to do.
         return Ok(());
     }
@@ -338,7 +338,7 @@ fn setup_publish_subscribe<S: Service, B: Backend<S> + Debug>(
         core::any::type_name::<B>()
     );
 
-    let service_id = static_config.service_id();
+    let service_hash = static_config.service_hash();
 
     let port = fail!(
         from origin,
@@ -346,7 +346,7 @@ fn setup_publish_subscribe<S: Service, B: Backend<S> + Debug>(
         with DiscoveryError::PublishSubscribePortCreation,
         "Failed to create publish-subscribe ports"
     );
-    ports.publish_subscribe.insert(*service_id, port);
+    ports.publish_subscribe.insert(*service_hash, port);
 
     let relay = fail!(
         from origin,
@@ -357,7 +357,7 @@ fn setup_publish_subscribe<S: Service, B: Backend<S> + Debug>(
         with DiscoveryError::PublishSubscribeRelayCreation,
         "Failed to create publish-subscribe relay"
     );
-    relays.publish_subscribe.insert(*service_id, relay);
+    relays.publish_subscribe.insert(*service_hash, relay);
 
     fail!(
         from origin,
@@ -382,7 +382,7 @@ fn setup_event<S: Service, B: Backend<S> + Debug>(
         core::any::type_name::<B>()
     );
 
-    let service_id = static_config.service_id();
+    let service_hash = static_config.service_hash();
 
     let port = fail!(
         from origin,
@@ -390,7 +390,7 @@ fn setup_event<S: Service, B: Backend<S> + Debug>(
         with DiscoveryError::EventPortsCreation,
         "Failed to create event ports"
     );
-    ports.event.insert(*service_id, port);
+    ports.event.insert(*service_hash, port);
 
     let relay = fail!(
         from origin,
@@ -401,7 +401,7 @@ fn setup_event<S: Service, B: Backend<S> + Debug>(
         with DiscoveryError::EventRelayCreation,
         "Failed to create event relay"
     );
-    relays.event.insert(*service_id, relay);
+    relays.event.insert(*service_hash, relay);
 
     fail!(
         from origin,

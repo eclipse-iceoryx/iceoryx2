@@ -14,7 +14,7 @@
 
 // BEGIN types definition
 
-use iceoryx2::port::port_identifiers::UniqueServerId;
+use iceoryx2::identifiers::UniqueServerId;
 use iceoryx2_bb_elementary::static_assert::static_assert_ge;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 

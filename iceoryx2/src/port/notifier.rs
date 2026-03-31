@@ -52,8 +52,9 @@ use iceoryx2_cal::{event::Event, named_concept::NamedConceptBuilder};
 use iceoryx2_log::{debug, fail, warn};
 
 use crate::{
+    identifiers::{UniqueListenerId, UniqueNotifierId},
     node::NodeId,
-    port::{port_identifiers::UniqueNotifierId, update_connections::UpdateConnections},
+    port::update_connections::UpdateConnections,
     service::{
         self,
         config_scheme::event_config,
@@ -63,7 +64,7 @@ use crate::{
     },
 };
 
-use super::{event_id::EventId, port_identifiers::UniqueListenerId};
+use super::event_id::EventId;
 
 /// Failures that can occur when a new [`Notifier`] is created with the
 /// [`crate::service::port_factory::notifier::PortFactoryNotifier`].

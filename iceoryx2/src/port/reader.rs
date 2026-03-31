@@ -61,7 +61,7 @@ use iceoryx2_log::{fail, fatal_panic};
 extern crate alloc;
 use alloc::sync::Arc;
 
-use super::port_identifiers::UniqueReaderId;
+use crate::identifiers::UniqueReaderId;
 
 /// A wrapper for the value returned by [`EntryHandle::get()`].
 pub struct BlackboardValue<ValueType: Copy> {

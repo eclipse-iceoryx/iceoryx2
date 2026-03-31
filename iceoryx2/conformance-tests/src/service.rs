@@ -903,7 +903,7 @@ pub mod service {
 
         let config = generate_isolated_config();
         let mut services = vec![];
-        let mut service_ids = vec![];
+        let mut service_hashs = vec![];
         let mut nodes = vec![];
         for _ in 0..NUMBER_OF_SERVICES {
             let service_name = generate_service_name();
@@ -912,20 +912,20 @@ pub mod service {
                 .create(&node, &service_name, &AttributeSpecifier::new())
                 .unwrap();
 
-            service_ids.push(*sut.service_id());
+            service_hashs.push(*sut.service_hash());
             services.push(sut);
             nodes.push(node);
         }
 
         let mut listed_services = vec![];
         let result = Sut::list(&config, |service| {
-            listed_services.push(*service.static_details.service_id());
+            listed_services.push(*service.static_details.service_hash());
             CallbackProgression::Continue
         });
         assert_that!(result, is_ok);
 
         for s in listed_services {
-            assert_that!(service_ids, contains s);
+            assert_that!(service_hashs, contains s);
         }
     }
 
@@ -984,7 +984,7 @@ pub mod service {
 
                         let mut found_me = false;
                         let result = Sut::list(&config, |s| {
-                            if sut.service_id() == s.static_details.service_id() {
+                            if sut.service_hash() == s.static_details.service_hash() {
                                 found_me = true;
                             }
                             CallbackProgression::Continue
@@ -1222,7 +1222,10 @@ pub mod service {
     }
 
     #[conformance_test]
-    pub fn uuid_is_equal_in_within_all_opened_instances<Sut: Service, Factory: SutFactory<Sut>>() {
+    pub fn service_hash_is_equal_in_within_all_opened_instances<
+        Sut: Service,
+        Factory: SutFactory<Sut>,
+    >() {
         let test = Factory::new();
         let service_name = generate_service_name();
         let config = generate_isolated_config();
@@ -1235,6 +1238,6 @@ pub mod service {
             .open(&node, &service_name, &AttributeVerifier::new())
             .unwrap();
 
-        assert_that!(sut.service_id(), eq sut2.service_id());
+        assert_that!(sut.service_hash(), eq sut2.service_hash());
     }
 }

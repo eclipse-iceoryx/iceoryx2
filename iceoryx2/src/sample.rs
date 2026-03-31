@@ -37,8 +37,8 @@ use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
 
+use crate::identifiers::UniquePublisherId;
 use crate::port::details::chunk_details::ChunkDetails;
-use crate::port::port_identifiers::UniquePublisherId;
 use crate::port::subscriber::SubscriberSharedState;
 use crate::raw_sample::RawSample;
 use crate::service::header::publish_subscribe::Header;

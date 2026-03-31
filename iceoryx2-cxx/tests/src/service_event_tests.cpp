@@ -603,7 +603,7 @@ TYPED_TEST(ServiceEventTest, number_of_listener_notifier_works) {
     ASSERT_THAT(service.dynamic_config().number_of_notifiers(), Eq(0));
 }
 
-TYPED_TEST(ServiceEventTest, service_id_is_unique_per_service) {
+TYPED_TEST(ServiceEventTest, service_hash_is_unique_per_service) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name_1 = iox2_testing::generate_service_name();
     const auto service_name_2 = iox2_testing::generate_service_name();
@@ -613,8 +613,8 @@ TYPED_TEST(ServiceEventTest, service_id_is_unique_per_service) {
     auto service_1_open = node.service_builder(service_name_1).event().open().value();
     auto service_2 = node.service_builder(service_name_2).event().create().value();
 
-    ASSERT_THAT(service_1_create.service_id().c_str(), StrEq(service_1_open.service_id().c_str()));
-    ASSERT_THAT(service_1_create.service_id().c_str(), Not(StrEq(service_2.service_id().c_str())));
+    ASSERT_THAT(service_1_create.service_hash().c_str(), StrEq(service_1_open.service_hash().c_str()));
+    ASSERT_THAT(service_1_create.service_hash().c_str(), Not(StrEq(service_2.service_hash().c_str())));
 }
 
 //NOLINTBEGIN(readability-function-cognitive-complexity), false positive caused by ASSERT_THAT

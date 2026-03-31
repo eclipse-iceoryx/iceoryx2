@@ -40,7 +40,7 @@ use iceoryx2_bb_lock_free::mpmc::{
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_log::{fail, fatal_panic};
 
-use crate::{node::NodeId, port::port_identifiers::UniquePortId};
+use crate::{identifiers::UniquePortId, node::NodeId};
 
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum PortCleanupAction {

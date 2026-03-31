@@ -39,18 +39,19 @@ use iceoryx2_log::fatal_panic;
 
 use serde::{Deserialize, Serialize};
 
-use crate::config;
+use crate::{config, identifiers::ServiceId, service::service_hash::ServiceHash};
 
 use self::messaging_pattern::MessagingPattern;
 
-use super::{attribute::AttributeSet, service_id::ServiceId, service_name::ServiceName};
+use super::{attribute::AttributeSet, service_name::ServiceName};
 
 /// Defines a common set of static service configuration details every service shares.
 #[derive(Debug, Eq, PartialEq, Clone, ZeroCopySend, Serialize, Deserialize)]
 #[repr(C)]
 pub struct StaticConfig {
-    service_id: ServiceId,
+    service_hash: ServiceHash,
     service_name: ServiceName,
+    service_id: ServiceId,
     pub(crate) attributes: AttributeSet,
     pub(crate) messaging_pattern: MessagingPattern,
 }
@@ -63,10 +64,11 @@ impl StaticConfig {
         let messaging_pattern =
             MessagingPattern::RequestResponse(request_response::StaticConfig::new(config));
         Self {
-            service_id: ServiceId::new::<Hasher>(
+            service_hash: ServiceHash::new::<Hasher>(
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::RequestResponse,
             ),
+            service_id: ServiceId::new(),
             service_name: *service_name,
             messaging_pattern,
             attributes: AttributeSet::new(),
@@ -79,10 +81,11 @@ impl StaticConfig {
     ) -> Self {
         let messaging_pattern = MessagingPattern::Event(event::StaticConfig::new(config));
         Self {
-            service_id: ServiceId::new::<Hasher>(
+            service_hash: ServiceHash::new::<Hasher>(
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::Event,
             ),
+            service_id: ServiceId::new(),
             service_name: *service_name,
             messaging_pattern,
             attributes: AttributeSet::new(),
@@ -96,10 +99,11 @@ impl StaticConfig {
         let messaging_pattern =
             MessagingPattern::PublishSubscribe(publish_subscribe::StaticConfig::new(config));
         Self {
-            service_id: ServiceId::new::<Hasher>(
+            service_hash: ServiceHash::new::<Hasher>(
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::PublishSubscribe,
             ),
+            service_id: ServiceId::new(),
             service_name: *service_name,
             messaging_pattern,
             attributes: AttributeSet::new(),
@@ -112,10 +116,11 @@ impl StaticConfig {
     ) -> Self {
         let messaging_pattern = MessagingPattern::Blackboard(blackboard::StaticConfig::new(config));
         Self {
-            service_id: ServiceId::new::<Hasher>(
+            service_hash: ServiceHash::new::<Hasher>(
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::Blackboard,
             ),
+            service_id: ServiceId::new(),
             service_name: *service_name,
             messaging_pattern,
             attributes: AttributeSet::new(),
@@ -127,9 +132,14 @@ impl StaticConfig {
         &self.attributes
     }
 
-    /// Returns the uuid of the [`crate::service::Service`]
-    pub fn service_id(&self) -> &ServiceId {
-        &self.service_id
+    /// Returns the hash of the [`crate::service::Service`]
+    pub fn service_hash(&self) -> &ServiceHash {
+        &self.service_hash
+    }
+
+    /// Returns the id of the [`crate::service::Service`]
+    pub fn service_id(&self) -> ServiceId {
+        self.service_id
     }
 
     /// Returns the [`ServiceName`] of the [`crate::service::Service`]

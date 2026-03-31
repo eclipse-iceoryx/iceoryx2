@@ -17,11 +17,9 @@ use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_log::fatal_panic;
 
 use crate::{
+    identifiers::{UniqueClientId, UniquePortId, UniqueServerId},
     node::NodeId,
-    port::{
-        details::data_segment::DataSegmentType,
-        port_identifiers::{UniqueClientId, UniquePortId, UniqueServerId},
-    },
+    port::details::data_segment::DataSegmentType,
 };
 
 use super::PortCleanupAction;

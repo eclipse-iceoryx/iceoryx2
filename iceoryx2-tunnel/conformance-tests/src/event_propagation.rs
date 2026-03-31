@@ -58,7 +58,7 @@ pub mod event_propagation {
 
         tunnel_a.discover_over_iceoryx().unwrap();
         assert_that!(tunnel_a.tunneled_services().len(), eq 1);
-        assert_that!(tunnel_a.tunneled_services().contains(service_a.service_id()), eq true);
+        assert_that!(tunnel_a.tunneled_services().contains(service_a.service_hash()), eq true);
 
         // --- Host B ---
         let iceoryx_config_b = generate_isolated_config();
@@ -81,7 +81,7 @@ pub mod event_propagation {
             Some(MAX_ATTEMPTS),
         )
         .unwrap();
-        T::sync(service_a.service_id().as_str().to_string(), TIMEOUT);
+        T::sync(service_a.service_hash().as_str().to_string(), TIMEOUT);
 
         // Create a listener to connect to the discovered service
         let node_b = NodeBuilder::new()
@@ -160,7 +160,7 @@ pub mod event_propagation {
 
         tunnel_a.discover_over_iceoryx().unwrap();
         assert_that!(tunnel_a.tunneled_services().len(), eq 1);
-        assert_that!(tunnel_a.tunneled_services().contains(service_a.service_id()), eq true);
+        assert_that!(tunnel_a.tunneled_services().contains(service_a.service_hash()), eq true);
 
         // --- Host B ---
         let tunnel_config_b = iceoryx2_tunnel::Config::default();
@@ -188,7 +188,7 @@ pub mod event_propagation {
         )
         .unwrap();
 
-        T::sync(service_a.service_id().as_str().to_string(), TIMEOUT);
+        T::sync(service_a.service_hash().as_str().to_string(), TIMEOUT);
 
         let node_b = NodeBuilder::new()
             .config(&iceoryx_config_b)
@@ -272,7 +272,7 @@ pub mod event_propagation {
 
         tunnel_a.discover_over_iceoryx().unwrap();
         assert_that!(tunnel_a.tunneled_services().len(), eq 1);
-        assert_that!(tunnel_a.tunneled_services().contains(service_a.service_id()), eq true);
+        assert_that!(tunnel_a.tunneled_services().contains(service_a.service_hash()), eq true);
 
         // --- Host B ---
         let tunnel_config_b = iceoryx2_tunnel::Config::default();
@@ -299,7 +299,7 @@ pub mod event_propagation {
         )
         .unwrap();
 
-        T::sync(service_a.service_id().as_str().to_string(), TIMEOUT);
+        T::sync(service_a.service_hash().as_str().to_string(), TIMEOUT);
 
         let node_b = NodeBuilder::new()
             .config(&iceoryx_config_b)

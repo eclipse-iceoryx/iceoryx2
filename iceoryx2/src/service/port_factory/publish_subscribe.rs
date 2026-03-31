@@ -22,7 +22,7 @@
 //!     .open_or_create()?;
 //!
 //! println!("name:                             {:?}", pubsub.name());
-//! println!("service id:                       {:?}", pubsub.service_id());
+//! println!("service id:                       {:?}", pubsub.service_hash());
 //! println!("type details:                     {:?}", pubsub.static_config().message_type_details());
 //! println!("max publishers:                   {:?}", pubsub.static_config().max_publishers());
 //! println!("max subscribers:                  {:?}", pubsub.static_config().max_subscribers());
@@ -47,9 +47,10 @@ use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
+use crate::identifiers::ServiceId;
 use crate::node::NodeListFailure;
 use crate::service::attribute::AttributeSet;
-use crate::service::service_id::ServiceId;
+use crate::service::service_hash::ServiceHash;
 use crate::service::service_name::ServiceName;
 use crate::service::{self, dynamic_config, static_config, NoResource, ServiceState};
 use alloc::sync::Arc;
@@ -102,8 +103,12 @@ impl<
         self.service.static_config.name()
     }
 
-    fn service_id(&self) -> &ServiceId {
+    fn service_id(&self) -> ServiceId {
         self.service.static_config.service_id()
+    }
+
+    fn service_hash(&self) -> &ServiceHash {
+        self.service.static_config.service_hash()
     }
 
     fn attributes(&self) -> &AttributeSet {

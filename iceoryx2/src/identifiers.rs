@@ -22,7 +22,7 @@ macro_rules! generate_id {
         $id_name:ident } => {
         $(#[$documentation])*
         #[repr(C)]
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ZeroCopySend)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ZeroCopySend, serde::Serialize, serde::Deserialize)]
         pub struct $id_name(pub(crate) UniqueSystemId);
 
         impl Default for $id_name {
@@ -79,6 +79,11 @@ generate_id! {
 generate_id! {
     /// The system-wide unique id of a [`Writer`](crate::port::writer::Writer).
     UniqueWriterId
+}
+
+generate_id! {
+    /// The system-wide unique id of a [`Service`](crate::service::Service).
+    ServiceId
 }
 
 /// Enum that contains the unique port id

@@ -44,7 +44,7 @@ mod service_discovery_tracker {
 
         assert_that!(added.len(), eq NUMBER_OF_SERVICES_ADDED);
         for service in &services {
-            assert_that!(added, contains * service.service_id());
+            assert_that!(added, contains * service.service_hash());
         }
 
         // verify added services are not detected again in subsequent sync
@@ -79,10 +79,10 @@ mod service_discovery_tracker {
         assert_that!(added.len(), eq NUMBER_OF_SERVICES_ADDED);
 
         // remove some services by dropping them
-        let mut removed_ids = vec![];
+        let mut removed_hashs = vec![];
         for _ in 0..NUMBER_OF_SERVICES_REMOVED {
             let removed = services.pop().unwrap();
-            removed_ids.push(*removed.service_id());
+            removed_hashs.push(*removed.service_hash());
             drop(removed);
         }
 
@@ -90,7 +90,10 @@ mod service_discovery_tracker {
         let (_, removed) = sut.sync().expect("failed to sync tracker");
         assert_that!(removed.len(), eq NUMBER_OF_SERVICES_REMOVED);
         for service in removed {
-            assert_that!(removed_ids, contains * service.static_details.service_id());
+            assert_that!(
+                removed_hashs,
+                contains * service.static_details.service_hash()
+            );
         }
     }
 

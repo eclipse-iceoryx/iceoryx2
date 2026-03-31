@@ -22,7 +22,7 @@
 //!     .open_or_create()?;
 //!
 //! println!("name:                         {:?}", event.name());
-//! println!("service id:                   {:?}", event.service_id());
+//! println!("service id:                   {:?}", event.service_hash());
 //! println!("deadline:                     {:?}", event.static_config().deadline());
 //! println!("max listeners:                {:?}", event.static_config().max_listeners());
 //! println!("max notifiers:                {:?}", event.static_config().max_notifiers());
@@ -37,9 +37,10 @@
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
+use crate::identifiers::ServiceId;
 use crate::node::NodeListFailure;
 use crate::service::attribute::AttributeSet;
-use crate::service::service_id::ServiceId;
+use crate::service::service_hash::ServiceHash;
 use crate::service::{self, static_config, NoResource, ServiceState};
 use crate::service::{dynamic_config, ServiceName};
 
@@ -71,8 +72,12 @@ impl<Service: service::Service> crate::service::port_factory::PortFactory for Po
         self.service.static_config.name()
     }
 
-    fn service_id(&self) -> &ServiceId {
+    fn service_id(&self) -> ServiceId {
         self.service.static_config.service_id()
+    }
+
+    fn service_hash(&self) -> &ServiceHash {
+        self.service.static_config.service_hash()
     }
 
     fn attributes(&self) -> &AttributeSet {

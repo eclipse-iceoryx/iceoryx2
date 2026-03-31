@@ -26,8 +26,6 @@ pub mod event_id;
 pub mod listener;
 /// Sending endpoint (port) for event based communication
 pub mod notifier;
-/// Defines port specific unique ids. Used to identify source/destination while communicating.
-pub mod port_identifiers;
 /// Sending endpoint (port) for publish-subscribe based communication
 pub mod publisher;
 /// Reading endpoint (port) for blackboard based communication
@@ -46,7 +44,6 @@ pub mod writer;
 /// receiver is full and the service does not overflow.
 pub mod unable_to_deliver_strategy;
 
-use crate::port::port_identifiers::*;
 use crate::service;
 
 /// Defines the action a port shall take when an internal failure occurs. Can happen when the

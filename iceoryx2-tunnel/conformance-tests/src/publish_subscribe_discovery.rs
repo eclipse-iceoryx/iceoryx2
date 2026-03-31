@@ -69,7 +69,7 @@ pub mod publish_subscribe_discovery {
         tunnel.discover_over_iceoryx().unwrap();
 
         assert_that!(tunnel.tunneled_services().len(), eq 1);
-        assert_that!(tunnel.tunneled_services().contains(service.service_id()), eq true);
+        assert_that!(tunnel.tunneled_services().contains(service.service_hash()), eq true);
     }
 
     #[conformance_test]
@@ -97,7 +97,7 @@ pub mod publish_subscribe_discovery {
         tunnel.discover_over_iceoryx().unwrap();
 
         assert_that!(tunnel.tunneled_services().len(), eq 1);
-        assert_that!(tunnel.tunneled_services().contains(service.service_id()), eq true);
+        assert_that!(tunnel.tunneled_services().contains(service.service_hash()), eq true);
     }
 
     #[conformance_test]
@@ -140,7 +140,7 @@ pub mod publish_subscribe_discovery {
 
         tunnel_b.discover_over_iceoryx().unwrap();
         assert_that!(tunnel_b.tunneled_services().len(), eq 1);
-        assert_that!(tunnel_b.tunneled_services().contains(service_b.service_id()), eq true);
+        assert_that!(tunnel_b.tunneled_services().contains(service_b.service_hash()), eq true);
 
         const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(250);
         const MAX_RETRIES: usize = 5;
@@ -161,6 +161,6 @@ pub mod publish_subscribe_discovery {
         .unwrap();
 
         assert_that!(tunnel_a.tunneled_services().len(), eq 1);
-        assert_that!(tunnel_a.tunneled_services().contains(service_b.service_id()), eq true);
+        assert_that!(tunnel_a.tunneled_services().contains(service_b.service_hash()), eq true);
     }
 }

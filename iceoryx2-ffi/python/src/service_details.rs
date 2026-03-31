@@ -18,7 +18,7 @@ use crate::{
     messaging_pattern::MessagingPattern,
     node_id::NodeId,
     node_state::{AliveNodeView, AliveNodeViewType, DeadNodeView, DeadNodeViewType, NodeState},
-    service_id::ServiceId,
+    service_hash::ServiceHash,
     service_name::ServiceName,
 };
 
@@ -91,11 +91,11 @@ impl ServiceDetails {
         }
     }
 
-    /// Returns the unique `ServiceId` of the `Service`
-    pub fn service_id(&self) -> ServiceId {
+    /// Returns the unique `ServiceHash` of the `Service`
+    pub fn service_hash(&self) -> ServiceHash {
         match &self.0 {
-            ServiceDetailsType::Ipc(v) => ServiceId(*v.static_details.service_id()),
-            ServiceDetailsType::Local(v) => ServiceId(*v.static_details.service_id()),
+            ServiceDetailsType::Ipc(v) => ServiceHash(*v.static_details.service_hash()),
+            ServiceDetailsType::Local(v) => ServiceHash(*v.static_details.service_hash()),
         }
     }
 

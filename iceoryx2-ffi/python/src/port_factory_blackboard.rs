@@ -24,7 +24,7 @@ use crate::node_state::{
 use crate::parc::Parc;
 use crate::port_factory_reader::PortFactoryReader;
 use crate::port_factory_writer::PortFactoryWriter;
-use crate::service_id::ServiceId;
+use crate::service_hash::ServiceHash;
 use crate::service_name::ServiceName;
 use crate::static_config_blackboard::StaticConfigBlackboard;
 use crate::type_storage::TypeStorage;
@@ -85,13 +85,13 @@ impl PortFactoryBlackboard {
     }
 
     #[getter]
-    /// Returns the `ServiceId` of the `Service`.
-    pub fn service_id(&self) -> ServiceId {
+    /// Returns the `ServiceHash` of the `Service`.
+    pub fn service_hash(&self) -> ServiceHash {
         match &*self.value.lock() {
-            PortFactoryBlackboardType::Ipc(Some(v)) => ServiceId(*v.service_id()),
-            PortFactoryBlackboardType::Local(Some(v)) => ServiceId(*v.service_id()),
+            PortFactoryBlackboardType::Ipc(Some(v)) => ServiceHash(*v.service_hash()),
+            PortFactoryBlackboardType::Local(Some(v)) => ServiceHash(*v.service_hash()),
             _ => {
-                fatal_panic!(from "PortFactoryBlackboard::service_id()", "Accessing a deleted PortFactoryBlackboard.")
+                fatal_panic!(from "PortFactoryBlackboard::service_hash()", "Accessing a deleted PortFactoryBlackboard.")
             }
         }
     }

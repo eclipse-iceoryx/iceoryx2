@@ -53,9 +53,9 @@ use iceoryx2_cal::{
 use iceoryx2_log::fail;
 
 use crate::{
+    identifiers::{UniqueClientId, UniqueServerId},
     port::{
         details::chunk_details::ChunkDetails,
-        port_identifiers::{UniqueClientId, UniqueServerId},
         server::{SharedServerState, INVALID_CONNECTION_ID},
         LoanError, SendError,
     },

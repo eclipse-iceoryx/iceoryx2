@@ -109,7 +109,7 @@ impl iceoryx2_tunnel_backend::traits::Discovery for Discovery {
     type AnnouncementError = AnnouncementError;
 
     fn announce(&self, static_config: &StaticConfig) -> Result<(), Self::AnnouncementError> {
-        let key = keys::service_details(static_config.service_id());
+        let key = keys::service_details(static_config.service_hash());
         let service_config_serialized = fail!(
             from self,
             when serde_json::to_string(&static_config),

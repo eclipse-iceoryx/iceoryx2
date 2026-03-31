@@ -41,7 +41,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         if attachment_id.has_event_from(&guard) {
             if let Some(response) = pending_response.receive().unwrap() {
                 for service in response.payload().iter() {
-                    coutln!("Service ID: {:?}", service.service_id().as_str());
+                    coutln!("Service Hash: {:?}", service.service_hash().as_str());
                     coutln!("Service Name: {:?}", service.name().as_str());
                 }
                 coutln!("exit");
