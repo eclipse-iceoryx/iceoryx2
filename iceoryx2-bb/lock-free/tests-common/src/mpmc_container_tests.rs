@@ -10,8 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![allow(clippy::disallowed_types)]
-
 use iceoryx2_bb_testing_macros::tests;
 
 #[tests(usize, TestType)]
@@ -21,8 +19,8 @@ pub mod generic {
     use alloc::vec;
     use alloc::vec::Vec;
     use core::fmt::Debug;
-    use core::sync::atomic::{AtomicU32, Ordering};
 
+    use iceoryx2_bb_concurrency::atomic::{AtomicU32, Ordering};
     use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
     use iceoryx2_bb_elementary::CallbackProgression;
     use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;

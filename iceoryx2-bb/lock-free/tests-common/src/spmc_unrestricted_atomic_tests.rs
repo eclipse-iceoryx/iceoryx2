@@ -10,8 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![allow(clippy::disallowed_types)]
-
 #[cfg(not(feature = "std"))]
 use iceoryx2_bb_concurrency::spin_lock::SpinLock as Mutex;
 #[cfg(feature = "std")]
@@ -19,8 +17,8 @@ use std::sync::Mutex;
 
 use alloc::alloc::{alloc, dealloc, Layout};
 use core::ptr::addr_of;
-use core::sync::atomic::{AtomicBool, Ordering};
 
+use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};
 use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::*;
 use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle, Handle};

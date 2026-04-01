@@ -122,6 +122,8 @@
   [#1359](https://github.com/eclipse-iceoryx/iceoryx2/issues/1359)
 * Use `libc` constants in linux platform instead of hardcoded values
   [#1388](https://github.com/eclipse-iceoryx/iceoryx2/issues/1388)
+* Update `inventory` crate and remove `disallowed_types` suppression from tests
+  [#1492](https://github.com/eclipse-iceoryx/iceoryx2/issues/1492)
 * Rename `ServiceId` into `ServiceHash`
   [#1508](https://github.com/eclipse-iceoryx/iceoryx2/issues/1508)
 
