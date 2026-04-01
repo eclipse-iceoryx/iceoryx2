@@ -127,16 +127,8 @@ pub mod generic {
 
     #[test]
     #[should_panic]
+    #[cfg(debug_assertions)]
     pub fn creating_ipc_construct_from_uninitialized_handle_panics<Sut: TestSut>() {
-        if cfg!(not(feature = "std")) {
-            // TODO #1300: Workaround for generic tests not yet propagating the '[cfg(requires_std("panics"))]' attribute
-            return;
-        } else if cfg!(not(debug_assertions)) {
-            panic!(
-                "TODO #1300: Workaround for generic tests not yet propagating the '[cfg(debug_assertions)]' attribute"
-            );
-        }
-
         let sut_handle = Sut::Handle::new();
 
         unsafe { Sut::Sut::from_ipc_handle(&sut_handle) };
@@ -144,16 +136,8 @@ pub mod generic {
 
     #[test]
     #[should_panic]
+    #[cfg(debug_assertions)]
     pub fn creating_ipc_construct_from_process_local_handle_panics<Sut: TestSut>() {
-        if cfg!(not(feature = "std")) {
-            // TODO #1300: Workaround for generic tests not yet propagating the '[cfg(requires_std("panics"))]' attribute
-            return;
-        } else if cfg!(not(debug_assertions)) {
-            panic!(
-                    "TODO #1300: Workaround for generic tests not yet propagating the '[cfg(debug_assertions)]' attribute"
-                );
-        }
-
         let sut_handle = Sut::Handle::new();
         Sut::init_process_local_handle(&sut_handle);
 
@@ -171,16 +155,8 @@ pub mod generic {
 
     #[test]
     #[should_panic]
+    #[cfg(debug_assertions)]
     pub fn init_handle_twice_panics<Sut: TestSut>() {
-        if cfg!(not(feature = "std")) {
-            // TODO #1300: Workaround for generic tests not yet propagating the '[cfg(requires_std("panics"))]' attribute
-            return;
-        } else if cfg!(not(debug_assertions)) {
-            panic!(
-                "TODO #1300: Workaround for generic tests not yet propagating the '[cfg(debug_assertions)]' attribute"
-            );
-        }
-
         let sut_handle = Sut::Handle::new();
         Sut::init_process_local_handle(&sut_handle);
 

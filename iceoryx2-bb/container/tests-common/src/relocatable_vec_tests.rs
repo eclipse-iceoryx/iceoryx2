@@ -15,11 +15,9 @@
 use iceoryx2_bb_container::vector::relocatable_vec::*;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::requires_std;
 use iceoryx2_bb_testing_macros::test;
 
 #[test]
-#[requires_std("panics")]
 #[should_panic]
 pub fn double_init_call_causes_panic() {
     const CAPACITY: usize = 12;
@@ -33,7 +31,6 @@ pub fn double_init_call_causes_panic() {
 }
 
 #[test]
-#[requires_std("panics")]
 #[cfg(debug_assertions)]
 #[should_panic]
 pub fn panic_is_called_in_debug_mode_if_vec_is_not_initialized() {

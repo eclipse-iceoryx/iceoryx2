@@ -43,7 +43,6 @@ pub mod generic {
     };
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
     use iceoryx2_bb_testing::assert_that;
-    use iceoryx2_bb_testing_macros::requires_std;
     use iceoryx2_cal::zero_copy_connection::used_chunk_list::RelocatableUsedChunkList;
 
     const MEMORY_SIZE: usize = 1024 * 128;
@@ -93,7 +92,6 @@ pub mod generic {
     }
 
     #[test]
-    #[requires_std("panics")]
     #[should_panic]
     pub fn init_twice_causes_panic<T: RelocatableContainer>() {
         const MAX_CAPACITY: usize = 18;

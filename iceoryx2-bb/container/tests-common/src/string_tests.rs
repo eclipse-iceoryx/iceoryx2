@@ -33,7 +33,6 @@ pub mod generic {
     use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
     use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
     use iceoryx2_bb_testing::assert_that;
-    use iceoryx2_bb_testing_macros::requires_std;
 
     const SUT_CAPACITY: usize = 129;
 
@@ -565,7 +564,6 @@ pub mod generic {
     }
 
     #[test]
-    #[requires_std("panics")]
     #[should_panic]
     pub fn insert_bytes_out_of_bounds_panics<Factory: StringTestFactory>() {
         let factory = Factory::new();

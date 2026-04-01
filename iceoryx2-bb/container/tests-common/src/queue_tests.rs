@@ -17,7 +17,6 @@ use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
 use iceoryx2_bb_testing::{assert_that, memory::RawMemory};
-use iceoryx2_bb_testing_macros::requires_std;
 use iceoryx2_bb_testing_macros::test;
 
 const SUT_CAPACITY: usize = 128;
@@ -276,7 +275,6 @@ pub fn fixed_size_queue_clear_drops_all_objects() {
 }
 
 #[test]
-#[requires_std("panics")]
 #[should_panic]
 pub fn get_invalid_index_panics() {
     let mut sut = FixedSizeQueue::<u64, SUT_CAPACITY>::new();
@@ -331,7 +329,6 @@ pub fn peek_works() {
 }
 
 #[test]
-#[requires_std("panics")]
 #[should_panic]
 pub fn double_init_call_causes_panic() {
     const MEM_SIZE: usize = RelocatableQueue::<usize>::const_memory_size(SUT_CAPACITY);
@@ -345,7 +342,6 @@ pub fn double_init_call_causes_panic() {
 }
 
 #[test]
-#[requires_std("panics")]
 #[cfg(debug_assertions)]
 #[should_panic]
 pub fn panic_is_called_in_debug_mode_if_queue_is_not_initialized() {
