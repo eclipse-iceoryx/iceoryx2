@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::marker::PhantomData;
-use core::mem::MaybeUninit;
+use core::mem::{transmute_copy, MaybeUninit};
 use iceoryx2_bb_concurrency::atomic::{AtomicU8, Ordering};
 use iceoryx2_log::fail;
 
@@ -40,9 +40,17 @@ impl<T: Copy, const SIZE: usize> AtomicMemcpy<T, SIZE> {
             fail!(from "AtomicMemcpy::new()", with AtomicMemcpyError::AtomicMemcpyCreateError,
                 "size_of::<T>() and SIZE must be equal.");
         }
-        let value_ptr = (&value as *const T) as *const u8;
+        // let value_ptr = (&value as *const T) as *const u8;
+        // Ok(Self {
+        //     // UB if memory is not initialized (padding bytes!)
+        //     data: core::array::from_fn(|i| AtomicU8::new(unsafe { *value_ptr.add(i) })),
+        //     _inner_type: PhantomData,
+        // })
+        //     // UB if memory is not initialized (padding bytes!)
+        let bytes: [u8; SIZE] = unsafe { transmute_copy(&value) };
+        // let bytes: [u8; SIZE] = unsafe { core::ptr::read(&value as *const T as *const _) };
         Ok(Self {
-            data: core::array::from_fn(|i| AtomicU8::new(unsafe { *value_ptr.add(i) })),
+            data: bytes.map(|b| AtomicU8::new(b)),
             _inner_type: PhantomData,
         })
     }
@@ -50,8 +58,8 @@ impl<T: Copy, const SIZE: usize> AtomicMemcpy<T, SIZE> {
     pub unsafe fn read(&self) -> MaybeUninit<T> {
         let mut data: MaybeUninit<T> = MaybeUninit::uninit();
         let data_ptr = data.as_mut_ptr() as *mut u8;
-        for (i, val) in self.data.iter().enumerate() {
-            *data_ptr.add(i) = val.load(Ordering::Relaxed);
+        for (i, item) in self.data.iter().enumerate() {
+            *data_ptr.add(i) = item.load(Ordering::Relaxed);
         }
         data
     }
