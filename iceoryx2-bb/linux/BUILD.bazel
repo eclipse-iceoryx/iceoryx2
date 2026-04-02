@@ -12,7 +12,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test_suite")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
 
 filegroup(
     name = "all_srcs",
@@ -34,7 +34,7 @@ rust_library(
     ],
 )
 
-rust_test_suite(
+rust_test(
     name = "iceoryx2-bb-linux-tests",
     srcs = ["tests/tests.rs"],
     deps = [
