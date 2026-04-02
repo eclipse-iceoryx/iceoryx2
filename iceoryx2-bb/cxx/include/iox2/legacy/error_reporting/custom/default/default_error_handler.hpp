@@ -14,8 +14,8 @@
 #ifndef IOX2_BB_REPORTING_ERROR_REPORTING_CUSTOM_DEFAULT_ERROR_HANDLER_HPP
 #define IOX2_BB_REPORTING_ERROR_REPORTING_CUSTOM_DEFAULT_ERROR_HANDLER_HPP
 
+#include "iox2/bb/detail/source_location.hpp"
 #include "iox2/legacy/error_reporting/custom/default/error_handler_interface.hpp"
-#include "iox2/legacy/error_reporting/source_location.hpp"
 #include "iox2/legacy/error_reporting/types.hpp"
 
 namespace iox2 {

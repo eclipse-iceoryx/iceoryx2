@@ -16,7 +16,7 @@
 
 #include <gtest/gtest.h>
 
-#include "iox2/legacy/error_reporting/source_location.hpp"
+#include "iox2/bb/detail/source_location.hpp"
 #include "iox2/legacy/testing/error_reporting/testing_error_handler.hpp"
 
 // NOLINTNEXTLINE(hicpp-deprecated-headers) required to work on some platforms
@@ -25,6 +25,7 @@
 
 namespace {
 using namespace ::testing;
+using namespace iox2::bb::detail;
 using namespace iox2::legacy::er;
 using namespace iox2::legacy::testing;
 using iox2::legacy::er::ErrorDescriptor;

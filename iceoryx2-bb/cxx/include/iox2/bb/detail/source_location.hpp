@@ -11,14 +11,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_BB_REPORTING_ERROR_REPORTING_LOCATION_HPP
-#define IOX2_BB_REPORTING_ERROR_REPORTING_LOCATION_HPP
+#ifndef IOX2_BB_DETAIL_SOURCE_LOCATION_HPP
+#define IOX2_BB_DETAIL_SOURCE_LOCATION_HPP
 
 #include <cstdint>
 
 namespace iox2 {
-namespace legacy {
-namespace er {
+namespace bb {
+namespace detail {
 struct SourceLocation {
   private:
     const char* m_file { nullptr };
@@ -50,8 +50,8 @@ struct SourceLocation {
     }
 };
 
-} // namespace er
-} // namespace legacy
+} // namespace detail
+} // namespace bb
 } // namespace iox2
 
-#endif // IOX2_BB_REPORTING_ERROR_REPORTING_LOCATION_HPP
+#endif // IOX2_BB_DETAIL_SOURCE_LOCATION_HPP

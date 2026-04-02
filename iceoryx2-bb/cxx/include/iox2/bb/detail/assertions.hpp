@@ -18,7 +18,7 @@
 #include "iox2/legacy/error_reporting/configuration.hpp"
 #include "iox2/legacy/error_reporting/error_forwarding.hpp"
 
-#include "iox2/legacy/error_reporting/source_location.hpp"
+#include "iox2/bb/detail/source_location.hpp"
 
 // ***
 // * Define public assertion API
@@ -36,7 +36,7 @@
 /// @brief calls panic handler and does not return
 /// @param message message to be forwarded
 /// @note could actually throw if desired without breaking control flow asssumptions
-#define IOX2_PANIC(message) iox2::legacy::er::forwardPanic(iox2::legacy::er::SourceLocation::current(), message)
+#define IOX2_PANIC(message) iox2::legacy::er::forwardPanic(iox2::bb::detail::SourceLocation::current(), message)
 
 //************************************************************************************************
 //* For documentation of intent, defensive programming and debugging
@@ -61,7 +61,7 @@
 /// @param condition boolean expression that must hold
 /// @param message message to be forwarded in case of violation
 #define IOX2_ASSERT(condition, message)                                                                                \
-    IOX2_ASSERT_INTERNAL(iox2::legacy::er::SourceLocation::current(), condition, message)
+    IOX2_ASSERT_INTERNAL(iox2::bb::detail::SourceLocation::current(), condition, message)
 
 /// @brief Only for internal usage
 #define IOX2_ENFORCE_INTERNAL(location, condition, message)                                                            \
@@ -79,16 +79,16 @@
 /// @param condition boolean expression that must hold
 /// @param message message to be forwarded in case of violation
 #define IOX2_ENFORCE(condition, message)                                                                               \
-    IOX2_ENFORCE_INTERNAL(iox2::legacy::er::SourceLocation::current(), condition, message)
+    IOX2_ENFORCE_INTERNAL(iox2::bb::detail::SourceLocation::current(), condition, message)
 
 /// @brief panic if control flow reaches this code at runtime
 #define IOX2_UNREACHABLE()                                                                                             \
-    iox2::legacy::er::detail::unreachable_wrapped<void, void>(iox2::legacy::er::SourceLocation::current(),             \
+    iox2::legacy::er::detail::unreachable_wrapped<void, void>(iox2::bb::detail::SourceLocation::current(),             \
                                                               "Reached code that was supposed to be unreachable.")
 
 /// @brief panic if control flow reaches this code at runtime and tells the user that this part of the code is not yet
 /// implemented
-#define IOX2_TODO() iox2::legacy::er::forwardPanic(iox2::legacy::er::SourceLocation::current(), "Not yet implemented!")
+#define IOX2_TODO() iox2::legacy::er::forwardPanic(iox2::bb::detail::SourceLocation::current(), "Not yet implemented!")
 
 // NOLINTEND(cppcoreguidelines-macro-usage)
 

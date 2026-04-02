@@ -14,7 +14,7 @@
 #ifndef IOX2_BB_REPORTING_ERROR_REPORTING_ERROR_LOGGING_HPP
 #define IOX2_BB_REPORTING_ERROR_REPORTING_ERROR_LOGGING_HPP
 
-#include "iox2/legacy/error_reporting/source_location.hpp"
+#include "iox2/bb/detail/source_location.hpp"
 #include "iox2/legacy/logging.hpp"
 
 // with a log stream interface this could be done with functions, not macros

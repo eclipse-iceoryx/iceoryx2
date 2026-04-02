@@ -11,9 +11,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include "iox2/bb/detail/source_location.hpp"
 #include "iox2/legacy/error_reporting/custom/error_kind.hpp"
 #include "iox2/legacy/error_reporting/error_kind.hpp"
-#include "iox2/legacy/error_reporting/source_location.hpp"
 #include "iox2/legacy/error_reporting/violation.hpp"
 #include "module_a/errors.hpp"
 
@@ -27,6 +27,7 @@
 namespace {
 
 using namespace ::testing;
+using namespace iox2::bb::detail;
 using namespace iox2::legacy::er;
 
 constexpr auto ERROR_CODE { module_a::errors::Code::OutOfBounds };

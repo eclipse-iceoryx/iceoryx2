@@ -13,12 +13,13 @@
 
 #include <gtest/gtest.h>
 
+#include "iox2/bb/detail/source_location.hpp"
 #include "iox2/legacy/error_reporting/custom/default/error_handler.hpp"
-#include "iox2/legacy/error_reporting/source_location.hpp"
 
 namespace {
 
 using namespace ::testing;
+using namespace iox2::bb::detail;
 using namespace iox2::legacy::er;
 
 constexpr ErrorCode CODE { 73 };

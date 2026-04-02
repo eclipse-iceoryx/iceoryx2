@@ -14,7 +14,7 @@
 #ifndef IOX2_BB_REPORTING_ERROR_REPORTING_CUSTOM_ERROR_HANDLER_INTERFACE_HPP
 #define IOX2_BB_REPORTING_ERROR_REPORTING_CUSTOM_ERROR_HANDLER_INTERFACE_HPP
 
-#include "iox2/legacy/error_reporting/source_location.hpp"
+#include "iox2/bb/detail/source_location.hpp"
 #include "iox2/legacy/error_reporting/types.hpp"
 #include "iox2/legacy/error_reporting/violation.hpp"
 
@@ -26,7 +26,7 @@ namespace er {
 /// @note We either need this, something like std::any or a class hierarchy for runtime polymorphism.
 /// The actual error type must be erased in some way.
 struct ErrorDescriptor {
-    constexpr ErrorDescriptor(const SourceLocation& location,
+    constexpr ErrorDescriptor(const bb::detail::SourceLocation& location,
                               const ErrorCode& code,
                               const ModuleId& module = ModuleId())
         : location(location)
@@ -34,7 +34,7 @@ struct ErrorDescriptor {
         , module(module) {
     }
 
-    SourceLocation location;
+    bb::detail::SourceLocation location;
     ErrorCode code;
     ModuleId module;
 };
