@@ -29,67 +29,49 @@ rust_cbindgen_headers(
     header = "include/iox2/iceoryx2.h",
 )
 
+ICEORYX2_FFI_C_SRC = glob(["src/**/*.rs"])
+
+ICEORYX2_FFI_C_FEATURES = select({
+    "//:cfg_feature_std": ["std"],
+    "//conditions:default": ["std"],
+})
+
+ICEORYX2_FFI_C_DEPS = [
+    "//iceoryx2:iceoryx2",
+    "//iceoryx2-bb/container:iceoryx2-bb-container",
+    "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
+    "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
+    "//iceoryx2-bb/lock-free:iceoryx2-bb-lock-free",
+    "//iceoryx2-log/log:iceoryx2-log",
+    "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
+    "//iceoryx2-bb/posix:iceoryx2-bb-posix",
+    "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
+    "//iceoryx2-cal:iceoryx2-cal",
+    "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
+    "@crate_index//:serde",
+]
+
+ICEORYX2_FFI_C_PROC_MACRO_DEPS = [
+    "//iceoryx2-bb/derive-macros:iceoryx2-bb-derive-macros",
+    "//iceoryx2-ffi/ffi-macros:iceoryx2-ffi-macros",
+]
+
 rust_shared_library(
     name = "iceoryx2-ffi-c-shared-rust",
-    srcs = glob(["src/**/*.rs"]),
-    crate_features = select({
-        "//:cfg_feature_std": [
-            "std",
-        ],
-        "//conditions:default": [
-            "std",
-        ],
-    }),
-    deps = [
-        "//iceoryx2:iceoryx2",
-        "//iceoryx2-bb/container:iceoryx2-bb-container",
-        "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
-        "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
-        "//iceoryx2-bb/lock-free:iceoryx2-bb-lock-free",
-        "//iceoryx2-log/log:iceoryx2-log",
-        "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
-        "//iceoryx2-bb/posix:iceoryx2-bb-posix",
-        "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
-        "//iceoryx2-cal:iceoryx2-cal",
-        "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
-        "@crate_index//:serde",
-    ],
+    srcs = ICEORYX2_FFI_C_SRC,
     tags = ["exclusive"],
-    proc_macro_deps = [
-        "//iceoryx2-bb/derive-macros:iceoryx2-bb-derive-macros",
-        "//iceoryx2-ffi/ffi-macros:iceoryx2-ffi-macros",
-    ],
+    crate_features = ICEORYX2_FFI_C_FEATURES,
+    deps = ICEORYX2_FFI_C_DEPS,
+    proc_macro_deps = ICEORYX2_FFI_C_PROC_MACRO_DEPS,
 )
 
 rust_static_library(
     name = "iceoryx2-ffi-c-static-rust",
-    srcs = glob(["src/**/*.rs"]),
-    crate_features = select({
-        "//:cfg_feature_std": [
-            "std",
-        ],
-        "//conditions:default": [
-            "std",
-        ],
-    }),
-    deps = [
-        "//iceoryx2:iceoryx2",
-        "//iceoryx2-bb/container:iceoryx2-bb-container",
-        "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
-        "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
-        "//iceoryx2-bb/lock-free:iceoryx2-bb-lock-free",
-        "//iceoryx2-log/log:iceoryx2-log",
-        "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
-        "//iceoryx2-bb/posix:iceoryx2-bb-posix",
-        "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
-        "//iceoryx2-cal:iceoryx2-cal",
-        "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
-        "@crate_index//:serde",
-    ],
-    proc_macro_deps = [
-        "//iceoryx2-bb/derive-macros:iceoryx2-bb-derive-macros",
-        "//iceoryx2-ffi/ffi-macros:iceoryx2-ffi-macros",
-    ],
+    srcs = ICEORYX2_FFI_C_SRC,
+    tags = ["exclusive"],
+    crate_features = ICEORYX2_FFI_C_FEATURES,
+    deps = ICEORYX2_FFI_C_DEPS,
+    proc_macro_deps = ICEORYX2_FFI_C_PROC_MACRO_DEPS,
 )
 
 # Combined library with header file
@@ -119,23 +101,10 @@ cc_library(
 rust_test(
     name = "iceoryx2-ffi-c-tests",
     srcs = glob(["src/**/*.rs"]),
-    deps = [
-        "//iceoryx2:iceoryx2",
-        "//iceoryx2-bb/container:iceoryx2-bb-container",
-        "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
-        "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
-        "//iceoryx2-bb/lock-free:iceoryx2-bb-lock-free",
-        "//iceoryx2-log/log:iceoryx2-log",
-        "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
-        "//iceoryx2-bb/posix:iceoryx2-bb-posix",
-        "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
-        "//iceoryx2-bb/testing:iceoryx2-bb-testing",
-        "//iceoryx2-cal:iceoryx2-cal",
-        "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
-    ],
-    proc_macro_deps = [
-        "//iceoryx2-bb/derive-macros:iceoryx2-bb-derive-macros",
-        "//iceoryx2-ffi/ffi-macros:iceoryx2-ffi-macros",
+    crate_features = ICEORYX2_FFI_C_FEATURES,
+    deps = ICEORYX2_FFI_C_DEPS + [
+        "//iceoryx2-bb/testing:iceoryx2-bb-testing"],
+    proc_macro_deps = ICEORYX2_FFI_C_PROC_MACRO_DEPS + [
         "@crate_index//:generic-tests",
     ],
 )

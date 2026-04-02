@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![cfg_attr(not(any(test, feature = "std")), no_std)]
+#![cfg_attr(not(feature = "std"), no_std)]
 #![allow(non_camel_case_types)]
 #![warn(clippy::alloc_instead_of_core)]
 #![warn(clippy::std_instead_of_alloc)]
@@ -22,4 +22,52 @@ mod api;
 pub use api::*;
 
 #[cfg(test)]
+#[cfg(feature = "std")]
 mod tests;
+
+#[cfg(not(feature = "std"))]
+mod no_std {
+    use alloc::alloc::{GlobalAlloc, Layout};
+    use iceoryx2_pal_posix::posix::{free, malloc};
+
+    struct LibcAllocator;
+
+    unsafe impl GlobalAlloc for LibcAllocator {
+        unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+            malloc(layout.size()) as *mut u8
+        }
+        unsafe fn dealloc(&self, ptr: *mut u8, _layout: Layout) {
+            free(ptr as *mut core::ffi::c_void)
+        }
+    }
+
+    #[global_allocator]
+    static GLOBAL: LibcAllocator = LibcAllocator;
+
+    use core::panic::PanicInfo;
+    use iceoryx2_bb_posix::signal::SignalHandler;
+    use iceoryx2_bb_print::coutln;
+
+    #[panic_handler]
+    pub fn panic(info: &PanicInfo) -> ! {
+        coutln!("");
+        coutln!("╔═══════════════════════════════════════╗");
+        coutln!("║           PANIC OCCURRED!             ║");
+        coutln!("╚═══════════════════════════════════════╝");
+
+        if let Some(location) = info.location() {
+            coutln!("Location: {}:{}\n", location.file(), location.line());
+        }
+
+        coutln!("Message: {}\n", info);
+
+        SignalHandler::abort();
+
+        loop {
+            core::hint::spin_loop();
+        }
+    }
+
+    #[no_mangle]
+    pub extern "C" fn rust_eh_personality() {}
+}

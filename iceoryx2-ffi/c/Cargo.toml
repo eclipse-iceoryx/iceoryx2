@@ -23,15 +23,17 @@ default = ["std"]
 std = [
   "iceoryx2-bb-concurrency/std",
   "iceoryx2-bb-container/std",
-  "iceoryx2-bb-elementary/std",  
-  "iceoryx2-bb-derive-macros/std",  
-  "iceoryx2-bb-lock-free/std",  
-  "iceoryx2-bb-loggers/std",  
+  "iceoryx2-bb-derive-macros/std",
+  "iceoryx2-bb-elementary/std",
+  "iceoryx2-bb-lock-free/std",
+  "iceoryx2-bb-loggers/std",
   "iceoryx2-bb-posix/std",
-  "iceoryx2-bb-system-types/std",  
-  "iceoryx2-cal/std",  
-  "iceoryx2-ffi-macros/std",  
-  "iceoryx2-log/std",  
+  "iceoryx2-bb-print/std",
+  "iceoryx2-bb-system-types/std",
+  "iceoryx2-cal/std",
+  "iceoryx2-ffi-macros/std",
+  "iceoryx2-log/std",
+  "iceoryx2-pal-posix/std",
   "iceoryx2/std",
 ]
 
@@ -39,10 +41,7 @@ std = [
 cbindgen = { workspace = true }
 
 [dependencies]
-iceoryx2-log = { workspace = true }
-iceoryx2-ffi-macros = { workspace = true }
 iceoryx2 = { workspace = true }
-iceoryx2-cal = { workspace = true }
 iceoryx2-bb-concurrency = { workspace = true }
 iceoryx2-bb-container = { workspace = true }
 iceoryx2-bb-derive-macros = { workspace = true }
@@ -50,8 +49,13 @@ iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-bb-lock-free = { workspace = true }
 iceoryx2-bb-loggers = { workspace = true }
-iceoryx2-bb-system-types = { workspace = true }
 iceoryx2-bb-posix = { workspace = true }
+iceoryx2-bb-print = { workspace = true }
+iceoryx2-bb-system-types = { workspace = true }
+iceoryx2-cal = { workspace = true }
+iceoryx2-ffi-macros = { workspace = true }
+iceoryx2-log = { workspace = true }
+iceoryx2-pal-posix = { workspace = true }
 
 [dev-dependencies]
 iceoryx2-bb-testing = { workspace = true }

@@ -158,6 +158,7 @@ pub fn iceoryx2_ffi(args: TokenStream, input: TokenStream) -> TokenStream {
         }
 
         #[cfg(test)]
+        #[cfg(feature = "std")]
         mod test_generated {
             use super::*;
 

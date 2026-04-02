@@ -41,11 +41,32 @@ jobs:
 
       - name: Run cargo clippy with no-default features for 'no_std' in debug mode
         if: ${{ runner.os == 'Linux' }}
-        run: cargo clippy --no-deps --workspace --all-targets --no-default-features --exclude iceoryx2-tunnel-zenoh --exclude iceoryx2-cli -- -D warnings
+        # NOTE: the following crates are excluded because:
+        #       * iceoryx2-ffi-c -> clippy uses std itself and complains about the panic handler
+        #       * iceoryx2-tunnel-zenoh -> Zenoh requires std
+        #       * iceoryx2-cli -> the CLI requires std
+        run: |
+            cargo clippy --no-deps --workspace --all-targets \
+                --no-default-features \
+                --exclude iceoryx2-ffi-c \
+                --exclude iceoryx2-tunnel-zenoh \
+                --exclude iceoryx2-cli \
+                -- -D warnings
 
       - name: Run cargo clippy with no-default features for 'no_std' in release mode
         if: ${{ runner.os == 'Linux' }}
-        run: cargo clippy --no-deps --workspace --all-targets --release --no-default-features --exclude iceoryx2-tunnel-zenoh --exclude iceoryx2-cli -- -D warnings
+        # NOTE: the following crates are excluded because:
+        #       * iceoryx2-ffi-c -> clippy uses std itself and complains about the panic handler
+        #       * iceoryx2-tunnel-zenoh -> Zenoh requires std
+        #       * iceoryx2-cli -> the CLI requires std
+        run: |
+            cargo clippy --no-deps --workspace --all-targets \
+                --release \
+                --no-default-features \
+                --exclude iceoryx2-ffi-c \
+                --exclude iceoryx2-tunnel-zenoh \
+                --exclude iceoryx2-cli \
+                -- -D warnings
 
       - name: Setup miri
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # version: v1

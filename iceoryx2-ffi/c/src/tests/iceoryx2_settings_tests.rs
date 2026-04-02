@@ -10,11 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::tests::*;
+use crate::api::*;
+use iceoryx2::prelude::*;
 use iceoryx2::service::{
     attribute::{AttributeKey, AttributeValue},
     static_config::message_type_details::TypeName,
 };
+use iceoryx2_bb_testing::assert_that;
 
 #[test]
 fn ffi_settings_are_equal_to_iceoryx2_settings() {
