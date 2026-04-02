@@ -36,7 +36,7 @@
 /// @brief calls panic handler and does not return
 /// @param message message to be forwarded
 /// @note could actually throw if desired without breaking control flow asssumptions
-#define IOX2_PANIC(message) iox2::legacy::er::forwardPanic(IOX2_CURRENT_SOURCE_LOCATION, message)
+#define IOX2_PANIC(message) iox2::legacy::er::forwardPanic(iox2::legacy::er::SourceLocation::current(), message)
 
 //************************************************************************************************
 //* For documentation of intent, defensive programming and debugging
@@ -45,15 +45,30 @@
 //* Instead a special internal error type is used.
 //************************************************************************************************
 
+/// @brief Only for internal usage
+#define IOX2_ASSERT_INTERNAL(location, condition, message)                                                             \
+    if (iox2::legacy::er::Configuration::CHECK_ASSERT && !(condition)) {                                               \
+        iox2::legacy::er::forwardFatalError(iox2::legacy::er::Violation::createAssertViolation(),                      \
+                                            iox2::legacy::er::ASSERT_VIOLATION,                                        \
+                                            location,                                                                  \
+                                            #condition,                                                                \
+                                            message);                                                                  \
+    }                                                                                                                  \
+    []() -> void { }() // the empty lambda forces a semicolon on the caller side
+
 /// @brief only for debug builds: report fatal assert violation if expression evaluates to false
 /// @note for conditions that should not happen with correct use
 /// @param condition boolean expression that must hold
 /// @param message message to be forwarded in case of violation
 #define IOX2_ASSERT(condition, message)                                                                                \
-    if (iox2::legacy::er::Configuration::CHECK_ASSERT && !(condition)) {                                               \
-        iox2::legacy::er::forwardFatalError(iox2::legacy::er::Violation::createAssertViolation(),                      \
-                                            iox2::legacy::er::ASSERT_VIOLATION,                                        \
-                                            IOX2_CURRENT_SOURCE_LOCATION,                                              \
+    IOX2_ASSERT_INTERNAL(iox2::legacy::er::SourceLocation::current(), condition, message)
+
+/// @brief Only for internal usage
+#define IOX2_ENFORCE_INTERNAL(location, condition, message)                                                            \
+    if (!(condition)) {                                                                                                \
+        iox2::legacy::er::forwardFatalError(iox2::legacy::er::Violation::createEnforceViolation(),                     \
+                                            iox2::legacy::er::ENFORCE_VIOLATION,                                       \
+                                            location,                                                                  \
                                             #condition,                                                                \
                                             message);                                                                  \
     }                                                                                                                  \
@@ -64,23 +79,16 @@
 /// @param condition boolean expression that must hold
 /// @param message message to be forwarded in case of violation
 #define IOX2_ENFORCE(condition, message)                                                                               \
-    if (!(condition)) {                                                                                                \
-        iox2::legacy::er::forwardFatalError(iox2::legacy::er::Violation::createEnforceViolation(),                     \
-                                            iox2::legacy::er::ENFORCE_VIOLATION,                                       \
-                                            IOX2_CURRENT_SOURCE_LOCATION,                                              \
-                                            #condition,                                                                \
-                                            message);                                                                  \
-    }                                                                                                                  \
-    []() -> void { }() // the empty lambda forces a semicolon on the caller side
+    IOX2_ENFORCE_INTERNAL(iox2::legacy::er::SourceLocation::current(), condition, message)
 
 /// @brief panic if control flow reaches this code at runtime
 #define IOX2_UNREACHABLE()                                                                                             \
-    iox2::legacy::er::detail::unreachable_wrapped<void, void>(IOX2_CURRENT_SOURCE_LOCATION,                            \
+    iox2::legacy::er::detail::unreachable_wrapped<void, void>(iox2::legacy::er::SourceLocation::current(),             \
                                                               "Reached code that was supposed to be unreachable.")
 
 /// @brief panic if control flow reaches this code at runtime and tells the user that this part of the code is not yet
 /// implemented
-#define IOX2_TODO() iox2::legacy::er::forwardPanic(IOX2_CURRENT_SOURCE_LOCATION, "Not yet implemented!")
+#define IOX2_TODO() iox2::legacy::er::forwardPanic(iox2::legacy::er::SourceLocation::current(), "Not yet implemented!")
 
 // NOLINTEND(cppcoreguidelines-macro-usage)
 

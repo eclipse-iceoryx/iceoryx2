@@ -65,7 +65,7 @@ template <class Message>
 namespace detail {
 inline log::LogStream& logStringifiedCondition(log::LogStream& stream, const char* stringifiedCondition) {
     if (stringifiedCondition != nullptr && strnlen(stringifiedCondition, 1) != 0) {
-        stream << "Conditiopn: \"" << stringifiedCondition << "\" ";
+        stream << "Condition: \"" << stringifiedCondition << "\" ";
     }
     return stream;
 }

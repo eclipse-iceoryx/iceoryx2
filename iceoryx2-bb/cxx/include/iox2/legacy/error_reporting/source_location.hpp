@@ -14,30 +14,44 @@
 #ifndef IOX2_BB_REPORTING_ERROR_REPORTING_LOCATION_HPP
 #define IOX2_BB_REPORTING_ERROR_REPORTING_LOCATION_HPP
 
+#include <cstdint>
+
 namespace iox2 {
 namespace legacy {
 namespace er {
 struct SourceLocation {
-    constexpr SourceLocation(const char* file, int line, const char* function)
-        : file(file)
-        , line(line)
-        , function(function) {
+  private:
+    const char* m_file { nullptr };
+    const char* m_function { nullptr };
+    uint32_t m_line { 0 };
+
+  public:
+    static constexpr auto current(const char* file = __builtin_FILE(),
+                                  const uint32_t line = __builtin_LINE(),
+                                  const char* function = __builtin_FUNCTION()) noexcept -> SourceLocation {
+        return SourceLocation { file, line, function };
     }
 
-    const char* file { nullptr };
-    int line { 0 };
-    const char* function { nullptr };
+    constexpr auto file_name() const noexcept -> const char* {
+        return m_file;
+    }
+    constexpr auto line() const noexcept -> uint32_t {
+        return m_line;
+    }
+    constexpr auto function_name() const noexcept -> const char* {
+        return m_function;
+    }
+
+  private:
+    constexpr SourceLocation(const char* file, uint32_t line, const char* function) noexcept
+        : m_file(file)
+        , m_function(function)
+        , m_line(line) {
+    }
 };
 
 } // namespace er
 } // namespace legacy
 } // namespace iox2
-
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage) macro is required for use of location intrinsics (__FILE__ etc.)
-#define IOX2_CURRENT_SOURCE_LOCATION                                                                                   \
-    iox2::legacy::er::SourceLocation {                                                                                 \
-        __FILE__, __LINE__, static_cast<const char*>(__FUNCTION__)                                                     \
-    } // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
-      // needed for source code location, safely wrapped in macro
 
 #endif // IOX2_BB_REPORTING_ERROR_REPORTING_LOCATION_HPP

@@ -34,7 +34,7 @@ TEST_F(IoxLogStream_test, CTorDelegatesParameterToLogger) {
     ::testing::Test::RecordProperty("TEST_ID", "209aadb5-9ea6-4620-a6d1-f8fb2d12b97d");
     constexpr const char* EXPECTED_FILE { "hypnotoad.hpp" };
     constexpr const char* EXPECTED_FUNCTION { "void all_glory_to_the_hypnotoad()" };
-    constexpr int EXPECTED_LINE { 42 };
+    constexpr uint32_t EXPECTED_LINE { 42 };
     constexpr auto EXPECTED_LOG_LEVEL { iox2::legacy::log::LogLevel::Warn };
     iox2::legacy::log::LogStream(loggerMock, EXPECTED_FILE, EXPECTED_LINE, EXPECTED_FUNCTION, EXPECTED_LOG_LEVEL) << "";
 

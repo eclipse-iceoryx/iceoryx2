@@ -56,7 +56,7 @@ class ConsoleLogger {
     // '__LINE__' and '__FUNCTION__'; these are compiler intrinsic and cannot be changed to fixed width types in a
     // platform agnostic way
     virtual void
-    createLogMessageHeader(const char* file, const int line, const char* function, LogLevel logLevel) noexcept;
+    createLogMessageHeader(const char* file, const uint32_t line, const char* function, LogLevel logLevel) noexcept;
 
     virtual void flush() noexcept;
 

@@ -24,21 +24,21 @@
 /// @param location the location of the error
 /// @param msg_stream is the log message stream; multiple items can be logged by using the '<<' operator
 #define IOX2_ERROR_INTERNAL_LOG(location, msg_stream)                                                                  \
-    IOX2_LOG_INTERNAL(location.file,                                                                                   \
-                      location.line,                                                                                   \
-                      location.function,                                                                               \
+    IOX2_LOG_INTERNAL(location.file_name(),                                                                            \
+                      location.line(),                                                                                 \
+                      location.function_name(),                                                                        \
                       iox2::legacy::log::LogLevel::Error,                                                              \
-                      location.file << ":" << location.line << " " << msg_stream)
+                      location.file_name() << ":" << location.line() << " " << msg_stream)
 
 /// @brief Log the location of a fatal error.
 /// @param location the location of the error
 /// @param msg_stream is the log message stream; multiple items can be logged by using the '<<' operator
 #define IOX2_ERROR_INTERNAL_LOG_FATAL(location, msg_stream)                                                            \
-    IOX2_LOG_INTERNAL(location.file,                                                                                   \
-                      location.line,                                                                                   \
-                      location.function,                                                                               \
+    IOX2_LOG_INTERNAL(location.file_name(),                                                                            \
+                      location.line(),                                                                                 \
+                      location.function_name(),                                                                        \
                       iox2::legacy::log::LogLevel::Fatal,                                                              \
-                      location.file << ":" << location.line << " " << msg_stream)
+                      location.file_name() << ":" << location.line() << " " << msg_stream)
 
 /// @brief Log a panic invocation.
 /// @param location the location of the panic invocation.

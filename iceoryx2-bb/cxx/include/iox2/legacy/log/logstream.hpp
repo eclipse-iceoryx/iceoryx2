@@ -19,6 +19,7 @@
 #include "iox2/legacy/log/logger.hpp"
 #include "iox2/legacy/type_traits.hpp"
 
+#include <cstdint>
 #include <string>
 
 namespace iox2 {
@@ -195,7 +196,7 @@ class LogStream {
     // AXIVION Next Construct AutosarC++19_03-A3.9.1 : file, line and function are used in conjunction with '__FILE__',
     // '__LINE__' and '__FUNCTION__'; these are compiler intrinsic and cannot be changed to fixed width types in a
     // platform agnostic way
-    LogStream(Logger& logger, const char* file, const int line, const char* function, LogLevel logLevel) noexcept;
+    LogStream(Logger& logger, const char* file, const uint32_t line, const char* function, LogLevel logLevel) noexcept;
 
     /// @brief Constructor for a LogStream object with the logger from iox2::legacy::log::Logger::get
     /// @note This is not intended for public use! Use the 'IOX2_LOG' macro instead
@@ -206,7 +207,7 @@ class LogStream {
     // AXIVION Next Construct AutosarC++19_03-A3.9.1 : file, line and function are used in conjunction with '__FILE__',
     // '__LINE__' and '__FUNCTION__'; these are compiler intrinsic and cannot be changed to fixed width types in a
     // platform agnostic way
-    LogStream(const char* file, const int line, const char* function, LogLevel logLevel) noexcept;
+    LogStream(const char* file, const uint32_t line, const char* function, LogLevel logLevel) noexcept;
 
     virtual ~LogStream() noexcept;
 

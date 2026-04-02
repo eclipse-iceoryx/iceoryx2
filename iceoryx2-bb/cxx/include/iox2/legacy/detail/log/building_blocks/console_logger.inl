@@ -52,7 +52,7 @@ inline void ConsoleLogger::initLogger(const LogLevel) noexcept {
 // AXIVION Next Construct AutosarC++19_03-M9.3.3 : This is the default implementation for a logger. The design requires
 // this to be non-static to not restrict custom implementations
 inline void ConsoleLogger::createLogMessageHeader(const char* file,
-                                                  const int line,
+                                                  const uint32_t line,
                                                   const char* function,
                                                   LogLevel logLevel) noexcept {
     timespec timestamp { 0, 0 };
@@ -157,20 +157,23 @@ inline void ConsoleLogger::createLogMessageHeader(const char* file,
 
 inline void ConsoleLogger::flush() noexcept {
     auto& data = getThreadLocalData();
+    // NOTE: the log message will eventually be forwarded to iceoryx2-bb-log; for now, we just use cerr for critical log
+#if 0
     // NOLINTJUSTIFICATION it is ensured that the index cannot be out of bounds
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
     data.buffer[data.bufferWriteIndex] = '\n'; // overwrite null-termination with line ending
-    // constexpr uint32_t LINE_ENDING_SIZE { 1 };
+    constexpr uint32_t LINE_ENDING_SIZE { 1 };
 
-    // NOTE: the log message will eventually be forwarded to iceoryx2-bb-log; for now, we just use cerr for critical log
-    // messages if (iox_write(STDERR_FILENO, &data.buffer[0], data.bufferWriteIndex + LINE_ENDING_SIZE) < 0)
-    // {
-    //     /// @todo iox-#1755 printing to the console failed; call the error handler after the error handler
-    //     refactoring
-    //     /// was merged
-    //}
-    if (getThreadLocalData().logLevel == LogLevel::Error || getThreadLocalData().logLevel == LogLevel::Fatal) {
-        std::cerr << getThreadLocalData().buffer << std::endl;
+    messages if (iox_write(STDERR_FILENO, &data.buffer[0], data.bufferWriteIndex + LINE_ENDING_SIZE) < 0)
+    {
+        /// @todo iox-#1755 printing to the console failed; call the error handler after the error handler
+        refactoring
+        /// was merged
+    }
+#endif
+
+    if (data.logLevel == LogLevel::Error || data.logLevel == LogLevel::Fatal) {
+        std::cerr << data.buffer << std::endl;
     }
     assumeFlushed();
 }

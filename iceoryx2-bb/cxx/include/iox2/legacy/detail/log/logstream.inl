@@ -86,13 +86,13 @@ inline constexpr LogRaw raw(const void* const data, const uint64_t size) noexcep
 // AXIVION Next Construct AutosarC++19_03-A3.9.1 : See at declaration in header
 // NOLINTNEXTLINE(readability-function-size)
 inline LogStream::LogStream(
-    Logger& logger, const char* file, const int line, const char* function, LogLevel logLevel) noexcept
+    Logger& logger, const char* file, const uint32_t line, const char* function, LogLevel logLevel) noexcept
     : m_logger(logger) {
     m_logger.createLogMessageHeader(file, line, function, logLevel);
 }
 
 // AXIVION Next Construct AutosarC++19_03-A3.9.1 : See at declaration in header
-inline LogStream::LogStream(const char* file, const int line, const char* function, LogLevel logLevel) noexcept
+inline LogStream::LogStream(const char* file, const uint32_t line, const char* function, LogLevel logLevel) noexcept
     : LogStream(Logger::get(), file, line, function, logLevel) {
 }
 

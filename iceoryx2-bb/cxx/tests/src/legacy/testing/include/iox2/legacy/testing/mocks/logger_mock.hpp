@@ -47,7 +47,7 @@ class Logger_Mock : public log::TestingLoggerBase {
 
     struct LogEntry {
         std::string file;
-        int line { 0 };
+        uint32_t line { 0 };
         std::string function;
         log::LogLevel logLevel { iox2::legacy::log::LogLevel::Off };
         std::string message;
@@ -58,7 +58,7 @@ class Logger_Mock : public log::TestingLoggerBase {
   private:
     /// @brief Overrides the base implementation to store the
     void createLogMessageHeader(const char* file,
-                                const int line,
+                                const uint32_t line,
                                 const char* function,
                                 log::LogLevel logLevel) noexcept override {
         Base::assumeFlushed();
