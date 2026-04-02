@@ -1,5 +1,5 @@
 {
-  "checksum": "6d66e56ec5ba6e5c1672aaf29f650e54bb809fa1ab1d2e09879ecda59debcab4",
+  "checksum": "a260f74bb850581d3b7d4f59cbfeb89c4550a0b3a65ebfd2e3a4836902f6fa29",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -1577,7 +1577,7 @@
               "target": "build_script_build"
             },
             {
-              "id": "bitflags 2.6.0",
+              "id": "bitflags 2.11.0",
               "target": "bitflags"
             },
             {
@@ -1660,14 +1660,14 @@
       ],
       "license_file": "LICENSE"
     },
-    "bitflags 2.6.0": {
+    "bitflags 2.11.0": {
       "name": "bitflags",
-      "version": "2.6.0",
+      "version": "2.11.0",
       "package_url": "https://github.com/bitflags/bitflags",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/bitflags/2.6.0/download",
-          "sha256": "b048fb63fd8b5923fc5aa7b340d8e156aec7ec02f0c78fa8a6ddc2613f6f71de"
+          "url": "https://static.crates.io/crates/bitflags/2.11.0/download",
+          "sha256": "843867be96c8daad0d758b57df9392b6d8d271134fce549de6ce169ff98a92af"
         }
       },
       "targets": [
@@ -1691,7 +1691,8 @@
         ],
         "crate_features": {
           "common": [
-            "serde"
+            "serde",
+            "serde_core"
           ],
           "selects": {
             "aarch64-apple-darwin": [
@@ -1714,14 +1715,14 @@
         "deps": {
           "common": [
             {
-              "id": "serde 1.0.228",
-              "target": "serde"
+              "id": "serde_core 1.0.228",
+              "target": "serde_core"
             }
           ],
           "selects": {}
         },
         "edition": "2021",
-        "version": "2.6.0"
+        "version": "2.11.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -9373,7 +9374,7 @@
         "deps": {
           "common": [
             {
-              "id": "inventory 0.3.22",
+              "id": "inventory 0.3.24",
               "target": "inventory"
             },
             {
@@ -12275,14 +12276,14 @@
       ],
       "license_file": "LICENSE-APACHE"
     },
-    "inventory 0.3.22": {
+    "inventory 0.3.24": {
       "name": "inventory",
-      "version": "0.3.22",
+      "version": "0.3.24",
       "package_url": "https://github.com/dtolnay/inventory",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/inventory/0.3.22/download",
-          "sha256": "009ae045c87e7082cb72dab0ccd01ae075dd00141ddc108f43a0ea150a9e7227"
+          "url": "https://static.crates.io/crates/inventory/0.3.24/download",
+          "sha256": "a4f0c30c76f2f4ccee3fe55a2435f691ca00c0e4bd87abe4f4a851b1d4dac39b"
         }
       },
       "targets": [
@@ -12316,7 +12317,7 @@
             ]
           }
         },
-        "version": "0.3.22"
+        "version": "0.3.24"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -13197,7 +13198,7 @@
         "deps": {
           "common": [
             {
-              "id": "bitflags 2.6.0",
+              "id": "bitflags 2.11.0",
               "target": "bitflags"
             },
             {
@@ -13567,6 +13568,46 @@
         "MIT"
       ],
       "license_file": "LICENSE"
+    },
+    "lru-slab 0.1.2": {
+      "name": "lru-slab",
+      "version": "0.1.2",
+      "package_url": "https://github.com/Ralith/lru-slab",
+      "repository": {
+        "Http": {
+          "url": "https://static.crates.io/crates/lru-slab/0.1.2/download",
+          "sha256": "112b39cec0b298b6c1999fee3e31427f74f676e4cb9879ed1a121b43661a4154"
+        }
+      },
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "lru_slab",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "lru_slab",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "edition": "2021",
+        "version": "0.1.2"
+      },
+      "license": "MIT OR Apache-2.0 OR Zlib",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT",
+        "Zlib"
+      ],
+      "license_file": "LICENSE-APACHE"
     },
     "lz4_flex 0.11.6": {
       "name": "lz4_flex",
@@ -14016,7 +14057,7 @@
         "deps": {
           "common": [
             {
-              "id": "bitflags 2.6.0",
+              "id": "bitflags 2.11.0",
               "target": "bitflags"
             },
             {
@@ -17228,7 +17269,7 @@
               "target": "build_script_build"
             },
             {
-              "id": "quinn-proto 0.11.11",
+              "id": "quinn-proto 0.11.14",
               "target": "quinn_proto",
               "alias": "proto"
             },
@@ -17303,14 +17344,14 @@
       ],
       "license_file": "LICENSE-APACHE"
     },
-    "quinn-proto 0.11.11": {
+    "quinn-proto 0.11.14": {
       "name": "quinn-proto",
-      "version": "0.11.11",
+      "version": "0.11.14",
       "package_url": "https://github.com/quinn-rs/quinn",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/quinn-proto/0.11.11/download",
-          "sha256": "bcbafbbdbb0f638fe3f35f3c56739f77a8a1d070cb25603226c83339b391472b"
+          "url": "https://static.crates.io/crates/quinn-proto/0.11.14/download",
+          "sha256": "434b42fec591c96ef50e21e886936e66d3cc3f737104fdb9b737c40ffb94c098"
         }
       },
       "targets": [
@@ -17348,6 +17389,10 @@
               "target": "bytes"
             },
             {
+              "id": "lru-slab 0.1.2",
+              "target": "lru_slab"
+            },
+            {
               "id": "rand 0.9.1",
               "target": "rand"
             },
@@ -17364,7 +17409,7 @@
               "target": "rustls"
             },
             {
-              "id": "rustls-platform-verifier 0.5.3",
+              "id": "rustls-platform-verifier 0.6.2",
               "target": "rustls_platform_verifier"
             },
             {
@@ -17402,7 +17447,7 @@
           }
         },
         "edition": "2021",
-        "version": "0.11.11"
+        "version": "0.11.14"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -18653,7 +18698,7 @@
               "target": "base64"
             },
             {
-              "id": "bitflags 2.6.0",
+              "id": "bitflags 2.11.0",
               "target": "bitflags"
             },
             {
@@ -18725,7 +18770,7 @@
         "deps": {
           "common": [
             {
-              "id": "bitflags 2.6.0",
+              "id": "bitflags 2.11.0",
               "target": "bitflags"
             },
             {
@@ -19104,7 +19149,7 @@
         "deps": {
           "common": [
             {
-              "id": "bitflags 2.6.0",
+              "id": "bitflags 2.11.0",
               "target": "bitflags"
             },
             {
@@ -19358,7 +19403,7 @@
             ],
             "cfg(target_os = \"macos\")": [
               {
-                "id": "security-framework 3.2.0",
+                "id": "security-framework 3.7.0",
                 "target": "security_framework"
               }
             ],
@@ -19506,14 +19551,14 @@
       ],
       "license_file": "LICENSE-APACHE"
     },
-    "rustls-platform-verifier 0.5.3": {
+    "rustls-platform-verifier 0.6.2": {
       "name": "rustls-platform-verifier",
-      "version": "0.5.3",
+      "version": "0.6.2",
       "package_url": "https://github.com/rustls/rustls-platform-verifier",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/rustls-platform-verifier/0.5.3/download",
-          "sha256": "19787cda76408ec5404443dc8b31795c87cd8fec49762dc75fa727740d34acc1"
+          "url": "https://static.crates.io/crates/rustls-platform-verifier/0.6.2/download",
+          "sha256": "1d99feebc72bae7ab76ba994bb5e121b8d83d910ca40b36e0921f53becc41784"
         }
       },
       "targets": [
@@ -19542,10 +19587,6 @@
               "target": "log"
             },
             {
-              "id": "once_cell 1.21.3",
-              "target": "once_cell"
-            },
-            {
               "id": "rustls 0.23.36",
               "target": "rustls"
             }
@@ -19571,11 +19612,11 @@
                 "target": "core_foundation_sys"
               },
               {
-                "id": "security-framework 3.2.0",
+                "id": "security-framework 3.7.0",
                 "target": "security_framework"
               },
               {
-                "id": "security-framework-sys 2.14.0",
+                "id": "security-framework-sys 2.17.0",
                 "target": "security_framework_sys"
               }
             ],
@@ -19585,7 +19626,7 @@
                 "target": "webpki"
               },
               {
-                "id": "webpki-root-certs 0.26.11",
+                "id": "webpki-root-certs 1.0.0",
                 "target": "webpki_root_certs"
               }
             ],
@@ -19593,6 +19634,10 @@
               {
                 "id": "jni 0.21.1",
                 "target": "jni"
+              },
+              {
+                "id": "once_cell 1.21.3",
+                "target": "once_cell"
               },
               {
                 "id": "rustls-platform-verifier-android 0.1.1",
@@ -19605,14 +19650,14 @@
             ],
             "cfg(windows)": [
               {
-                "id": "windows-sys 0.59.0",
+                "id": "windows-sys 0.60.2",
                 "target": "windows_sys"
               }
             ]
           }
         },
         "edition": "2021",
-        "version": "0.5.3"
+        "version": "0.6.2"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -20271,14 +20316,14 @@
       ],
       "license_file": "LICENSE-APACHE"
     },
-    "security-framework 3.2.0": {
+    "security-framework 3.7.0": {
       "name": "security-framework",
-      "version": "3.2.0",
+      "version": "3.7.0",
       "package_url": "https://github.com/kornelski/rust-security-framework",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/security-framework/3.2.0/download",
-          "sha256": "271720403f46ca04f7ba6f55d438f8bd878d6b8ca0a1046e8228c4145bcbb316"
+          "url": "https://static.crates.io/crates/security-framework/3.7.0/download",
+          "sha256": "b7f4bc775c73d9a02cde8bf7b2ec4c9d12743edf609006c7facc23998404cd1d"
         }
       },
       "targets": [
@@ -20302,8 +20347,6 @@
         ],
         "crate_features": {
           "common": [
-            "OSX_10_12",
-            "OSX_10_13",
             "OSX_10_14",
             "alpn",
             "default",
@@ -20314,7 +20357,7 @@
         "deps": {
           "common": [
             {
-              "id": "bitflags 2.6.0",
+              "id": "bitflags 2.11.0",
               "target": "bitflags"
             },
             {
@@ -20330,14 +20373,14 @@
               "target": "libc"
             },
             {
-              "id": "security-framework-sys 2.14.0",
+              "id": "security-framework-sys 2.17.0",
               "target": "security_framework_sys"
             }
           ],
           "selects": {}
         },
-        "edition": "2021",
-        "version": "3.2.0"
+        "edition": "2024",
+        "version": "3.7.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -20346,14 +20389,14 @@
       ],
       "license_file": "LICENSE-APACHE"
     },
-    "security-framework-sys 2.14.0": {
+    "security-framework-sys 2.17.0": {
       "name": "security-framework-sys",
-      "version": "2.14.0",
+      "version": "2.17.0",
       "package_url": "https://github.com/kornelski/rust-security-framework",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/security-framework-sys/2.14.0/download",
-          "sha256": "49db231d56a190491cb4aeda9527f1ad45345af50b0851622a7adb8c03b01c32"
+          "url": "https://static.crates.io/crates/security-framework-sys/2.17.0/download",
+          "sha256": "6ce2691df843ecc5d231c0b14ece2acc3efb62c0a398c7e1d875f3983ce020e3"
         }
       },
       "targets": [
@@ -20377,12 +20420,7 @@
         ],
         "crate_features": {
           "common": [
-            "OSX_10_10",
-            "OSX_10_11",
-            "OSX_10_12",
             "OSX_10_13",
-            "OSX_10_14",
-            "OSX_10_9",
             "default"
           ],
           "selects": {}
@@ -20401,7 +20439,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "2.14.0"
+        "version": "2.17.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -27047,54 +27085,6 @@
       ],
       "license_file": "LICENSE-APACHE"
     },
-    "webpki-root-certs 0.26.11": {
-      "name": "webpki-root-certs",
-      "version": "0.26.11",
-      "package_url": "https://github.com/rustls/webpki-roots",
-      "repository": {
-        "Http": {
-          "url": "https://static.crates.io/crates/webpki-root-certs/0.26.11/download",
-          "sha256": "75c7f0ef91146ebfb530314f5f1d24528d7f0767efbfd31dce919275413e393e"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "webpki_root_certs",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "allow_empty": true,
-              "include": [
-                "**/*.rs"
-              ]
-            }
-          }
-        }
-      ],
-      "library_target_name": "webpki_root_certs",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "deps": {
-          "common": [
-            {
-              "id": "webpki-root-certs 1.0.0",
-              "target": "webpki_root_certs",
-              "alias": "parent"
-            }
-          ],
-          "selects": {}
-        },
-        "edition": "2021",
-        "version": "0.26.11"
-      },
-      "license": "CDLA-Permissive-2.0",
-      "license_ids": [
-        "CDLA-Permissive-2.0"
-      ],
-      "license_file": "LICENSE"
-    },
     "webpki-root-certs 1.0.0": {
       "name": "webpki-root-certs",
       "version": "1.0.0",
@@ -27395,7 +27385,7 @@
           "selects": {
             "cfg(windows)": [
               {
-                "id": "windows-sys 0.59.0",
+                "id": "windows-sys 0.48.0",
                 "target": "windows_sys"
               }
             ]
@@ -28301,8 +28291,6 @@
             "Win32_Foundation",
             "Win32_Networking",
             "Win32_Networking_WinSock",
-            "Win32_Security",
-            "Win32_Security_Cryptography",
             "Win32_Storage",
             "Win32_Storage_FileSystem",
             "Win32_System",
@@ -28369,6 +28357,8 @@
             "Win32_Foundation",
             "Win32_Networking",
             "Win32_Networking_WinSock",
+            "Win32_Security",
+            "Win32_Security_Cryptography",
             "Win32_System",
             "Win32_System_IO",
             "Win32_System_Threading",
@@ -34947,7 +34937,7 @@
     "dirs 5.0.1",
     "enum-iterator 2.1.0",
     "human-panic 2.0.2",
-    "inventory 0.3.22",
+    "inventory 0.3.24",
     "libc 0.2.183",
     "libtest-mimic 0.8.1",
     "postcard 1.1.3",
