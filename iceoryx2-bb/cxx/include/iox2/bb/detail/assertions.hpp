@@ -46,12 +46,12 @@
 //************************************************************************************************
 
 /// @brief Only for internal usage
-#define IOX2_ASSERT_INTERNAL(location, condition, message)                                                             \
+#define IOX2_ASSERT_INTERNAL(location, condition, stringified_condition, message)                                      \
     if (iox2::legacy::er::Configuration::CHECK_ASSERT && !(condition)) {                                               \
         iox2::legacy::er::forwardFatalError(iox2::legacy::er::Violation::createAssertViolation(),                      \
                                             iox2::legacy::er::ASSERT_VIOLATION,                                        \
                                             location,                                                                  \
-                                            #condition,                                                                \
+                                            stringified_condition,                                                     \
                                             message);                                                                  \
     }                                                                                                                  \
     []() -> void { }() // the empty lambda forces a semicolon on the caller side
@@ -61,15 +61,15 @@
 /// @param condition boolean expression that must hold
 /// @param message message to be forwarded in case of violation
 #define IOX2_ASSERT(condition, message)                                                                                \
-    IOX2_ASSERT_INTERNAL(iox2::bb::detail::SourceLocation::current(), condition, message)
+    IOX2_ASSERT_INTERNAL(iox2::bb::detail::SourceLocation::current(), condition, #condition, message)
 
 /// @brief Only for internal usage
-#define IOX2_ENFORCE_INTERNAL(location, condition, message)                                                            \
+#define IOX2_ENFORCE_INTERNAL(location, condition, stringified_condition, message)                                     \
     if (!(condition)) {                                                                                                \
         iox2::legacy::er::forwardFatalError(iox2::legacy::er::Violation::createEnforceViolation(),                     \
                                             iox2::legacy::er::ENFORCE_VIOLATION,                                       \
                                             location,                                                                  \
-                                            #condition,                                                                \
+                                            stringified_condition,                                                     \
                                             message);                                                                  \
     }                                                                                                                  \
     []() -> void { }() // the empty lambda forces a semicolon on the caller side
@@ -79,7 +79,7 @@
 /// @param condition boolean expression that must hold
 /// @param message message to be forwarded in case of violation
 #define IOX2_ENFORCE(condition, message)                                                                               \
-    IOX2_ENFORCE_INTERNAL(iox2::bb::detail::SourceLocation::current(), condition, message)
+    IOX2_ENFORCE_INTERNAL(iox2::bb::detail::SourceLocation::current(), condition, #condition, message)
 
 /// @brief panic if control flow reaches this code at runtime
 #define IOX2_UNREACHABLE()                                                                                             \

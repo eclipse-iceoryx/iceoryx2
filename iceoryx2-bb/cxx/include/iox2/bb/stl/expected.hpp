@@ -14,6 +14,7 @@
 #define IOX2_INCLUDE_GUARD_BB_STL_EXPECTED_HPP
 
 #include "iox2/bb/detail/attributes.hpp"
+#include "iox2/bb/detail/source_location.hpp"
 #include "iox2/legacy/detail/expected_helper.hpp"
 #include "iox2/legacy/expected.hpp"
 #include <type_traits>
@@ -150,23 +151,26 @@ class IOX2_NO_DISCARD Expected {
     }
 
     template <typename U = T, std::enable_if_t<!std::is_void<U>::value, bool> = true>
-    constexpr auto value() & noexcept -> U& {
-        return m_value.value();
+    constexpr auto value(bb::detail::SourceLocation location = bb::detail::SourceLocation::current()) & noexcept -> U& {
+        return m_value.value(location);
     }
 
     template <typename U = T, std::enable_if_t<!std::is_void<U>::value, bool> = true>
-    constexpr auto value() const& noexcept -> const U& {
-        return m_value.value();
+    constexpr auto value(bb::detail::SourceLocation location = bb::detail::SourceLocation::current()) const& noexcept
+        -> const U& {
+        return m_value.value(location);
     }
 
     template <typename U = T, std::enable_if_t<!std::is_void<U>::value, bool> = true>
-    constexpr auto value() && noexcept -> U&& {
-        return std::move(m_value).value();
+    constexpr auto value(bb::detail::SourceLocation location = bb::detail::SourceLocation::current()) && noexcept
+        -> U&& {
+        return std::move(m_value).value(location);
     }
 
     template <typename U = T, std::enable_if_t<!std::is_void<U>::value, bool> = true>
-    constexpr auto value() const&& noexcept -> const U&& {
-        return std::move(m_value).value();
+    constexpr auto value(bb::detail::SourceLocation location = bb::detail::SourceLocation::current()) const&& noexcept
+        -> const U&& {
+        return std::move(m_value).value(location);
     }
     // END value method
 
@@ -209,20 +213,23 @@ class IOX2_NO_DISCARD Expected {
     // END operator->
 
     // BEGIN error method
-    constexpr auto error() & noexcept -> E& {
-        return m_value.error();
+    constexpr auto error(bb::detail::SourceLocation location = bb::detail::SourceLocation::current()) & noexcept -> E& {
+        return m_value.error(location);
     }
 
-    constexpr auto error() const& noexcept -> const E& {
-        return m_value.error();
+    constexpr auto error(bb::detail::SourceLocation location = bb::detail::SourceLocation::current()) const& noexcept
+        -> const E& {
+        return m_value.error(location);
     }
 
-    constexpr auto error() && noexcept -> E&& {
-        return std::move(m_value).error();
+    constexpr auto error(bb::detail::SourceLocation location = bb::detail::SourceLocation::current()) && noexcept
+        -> E&& {
+        return std::move(m_value).error(location);
     }
 
-    constexpr auto error() const&& noexcept -> const E&& {
-        return std::move(m_value).error();
+    constexpr auto error(bb::detail::SourceLocation location = bb::detail::SourceLocation::current()) const&& noexcept
+        -> const E&& {
+        return std::move(m_value).error(location);
     }
     // END error method
 };
