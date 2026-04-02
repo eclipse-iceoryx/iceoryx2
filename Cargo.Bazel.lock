@@ -8781,6 +8781,34 @@
       ],
       "license_file": null
     },
+    "iceoryx2-bb-linux-tests-nostd 0.8.999": {
+      "name": "iceoryx2-bb-linux-tests-nostd",
+      "version": "0.8.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [],
+      "library_target_name": null,
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "0.8.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
     "iceoryx2-bb-lock-free 0.8.999": {
       "name": "iceoryx2-bb-lock-free",
       "version": "0.8.999",
@@ -34668,6 +34696,7 @@
     "iceoryx2-bb-elementary-traits 0.8.999": "iceoryx2-bb/elementary-traits",
     "iceoryx2-bb-linux 0.8.999": "iceoryx2-bb/linux",
     "iceoryx2-bb-linux-tests-common 0.8.999": "iceoryx2-bb/linux/tests-common",
+    "iceoryx2-bb-linux-tests-nostd 0.8.999": "iceoryx2-bb/linux/tests-nostd",
     "iceoryx2-bb-lock-free 0.8.999": "iceoryx2-bb/lock-free",
     "iceoryx2-bb-lock-free-tests-common 0.8.999": "iceoryx2-bb/lock-free/tests-common",
     "iceoryx2-bb-lock-free-tests-nostd 0.8.999": "iceoryx2-bb/lock-free/tests-nostd",

@@ -29,6 +29,7 @@ members = [
     "iceoryx2-bb/elementary-traits",
     "iceoryx2-bb/linux",
     "iceoryx2-bb/linux/tests-common",
+    "iceoryx2-bb/linux/tests-nostd",
     "iceoryx2-bb/memory",
     "iceoryx2-bb/memory/tests-common",
     "iceoryx2-bb/memory/tests-nostd",
@@ -164,6 +165,7 @@ iceoryx2-bb-elementary-tests-nostd = { path = "iceoryx2-bb/elementary/tests-nost
 iceoryx2-bb-lock-free-tests-common = { path = "iceoryx2-bb/lock-free/tests-common" }
 iceoryx2-bb-lock-free-tests-nostd = { path = "iceoryx2-bb/lock-free/tests-nostd" }
 iceoryx2-bb-linux-tests-common = { path = "iceoryx2-bb/linux/tests-common" }
+iceoryx2-bb-linux-tests-nostd = { path = "iceoryx2-bb/linux/tests-common" }
 iceoryx2-bb-memory-tests-common = { path = "iceoryx2-bb/memory/tests-common" }
 iceoryx2-bb-memory-tests-nostd = { path = "iceoryx2-bb/memory/tests-nostd" }
 iceoryx2-bb-container-tests-common = { path = "iceoryx2-bb/container/tests-common" }
