@@ -45,6 +45,12 @@ pub unsafe trait ZeroCopySend {
     /// used as dummy call in the derive macro to ensure at compile-time that all fields of
     /// a struct implement ZeroCopySend
     fn __is_zero_copy_send(&self) {}
+
+    // TODO: better name + documentation
+    #[doc(hidden)]
+    fn __get_members(&self) -> alloc::vec::Vec<(usize, usize)> {
+        alloc::vec::Vec::new()
+    }
 }
 
 unsafe impl ZeroCopySend for usize {}

@@ -390,3 +390,27 @@ fn zero_copy_send_derive_does_not_work_for_generic_union_when_members_do_not_imp
 /// ```
 #[cfg(doctest)]
 fn zero_copy_send_derive_does_not_work_for_generic_union_when_not_all_members_implement_it() {}
+
+/// ```
+/// use iceoryx2_bb_derive_macros::ZeroCopySend;
+/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+///
+/// #[repr(C)]
+/// #[derive(ZeroCopySend)]
+/// struct NamedTestStruct {
+///     val1: u8,
+///     val2: u64,
+///     val3: u32,
+/// }
+/// let t = NamedTestStruct {val1: 0, val2: 0, val3: 0};
+/// let v = t.__get_members();
+/// assert_eq!(v[0], (0, 1));
+/// assert_eq!(v[1], (8, 8));
+/// assert_eq!(v[2], (16, 4));
+/// assert_eq!(v[2].0, 16);
+/// ```
+#[cfg(doctest)]
+fn blub() {}
+// TODO: test with members that contain padding bytes
+
+// TODO: check if tests fail because of missing include
