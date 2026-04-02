@@ -1517,6 +1517,7 @@ version = "0.8.999"
 dependencies = [
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-container",
+ "iceoryx2-bb-linux-tests-common",
  "iceoryx2-bb-loggers",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-system-types",
@@ -1524,6 +1525,19 @@ dependencies = [
  "iceoryx2-log",
  "iceoryx2-pal-os-api",
  "iceoryx2-pal-posix",
+]
+
+[[package]]
+name = "iceoryx2-bb-linux-tests-common"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-linux",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-posix",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+ "iceoryx2-pal-print",
 ]
 
 [[package]]
