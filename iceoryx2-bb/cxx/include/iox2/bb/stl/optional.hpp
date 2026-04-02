@@ -13,9 +13,10 @@
 #ifndef IOX2_INCLUDE_GUARD_BB_STL_OPTIONAL_HPP
 #define IOX2_INCLUDE_GUARD_BB_STL_OPTIONAL_HPP
 
+#include "iox2/bb/detail/assertions.hpp"
 #include "iox2/bb/detail/attributes.hpp"
+#include "iox2/bb/detail/source_location.hpp"
 
-#include <cstdlib>
 #include <memory>
 #include <type_traits>
 #include <utility>
@@ -230,30 +231,22 @@ class Optional {
     }
 
     constexpr auto operator*() const& noexcept -> const T& {
-        if (m_value.is_empty()) {
-            std::abort();
-        }
+        IOX2_ENFORCE(has_value(), "Trying to access the value on an empty Optional!");
         return m_value.unchecked_get();
     }
 
     constexpr auto operator*() & noexcept -> T& {
-        if (m_value.is_empty()) {
-            std::abort();
-        }
+        IOX2_ENFORCE(has_value(), "Trying to access the value on an empty Optional!");
         return m_value.unchecked_get();
     }
 
     constexpr auto operator*() && noexcept -> T&& {
-        if (m_value.is_empty()) {
-            std::abort();
-        }
+        IOX2_ENFORCE(has_value(), "Trying to access the value on an empty Optional!");
         return std::move(m_value).unchecked_get();
     }
 
     constexpr auto operator*() const&& noexcept -> const T&& {
-        if (m_value.is_empty()) {
-            std::abort();
-        }
+        IOX2_ENFORCE(has_value(), "Trying to access the value on an empty Optional!");
         return std::move(m_value).unchecked_get();
     }
 
@@ -265,20 +258,30 @@ class Optional {
         return !m_value.is_empty();
     }
 
-    constexpr auto value() const& -> const T& {
-        return **this;
+    constexpr auto
+    value(const bb::detail::SourceLocation location = bb::detail::SourceLocation::current()) const& -> const T& {
+        IOX2_ENFORCE_INTERNAL(
+            location, has_value(), "Optional::has_value()", "Trying to access the value on an empty Optional!");
+        return m_value.unchecked_get();
     }
 
-    constexpr auto value() & -> T& {
-        return **this;
+    constexpr auto value(const bb::detail::SourceLocation location = bb::detail::SourceLocation::current()) & -> T& {
+        IOX2_ENFORCE_INTERNAL(
+            location, has_value(), "Optional::has_value()", "Trying to access the value on an empty Optional!");
+        return m_value.unchecked_get();
     }
 
-    constexpr auto value() && -> T&& {
-        return std::move(**this);
+    constexpr auto value(const bb::detail::SourceLocation location = bb::detail::SourceLocation::current()) && -> T&& {
+        IOX2_ENFORCE_INTERNAL(
+            location, has_value(), "Optional::has_value()", "Trying to access the value on an empty Optional!");
+        return std::move(m_value).unchecked_get();
     }
 
-    constexpr auto value() const&& -> const T&& {
-        return std::move(**this);
+    constexpr auto
+    value(const bb::detail::SourceLocation location = bb::detail::SourceLocation::current()) const&& -> const T&& {
+        IOX2_ENFORCE_INTERNAL(
+            location, has_value(), "Optional::has_value()", "Trying to access the value on an empty Optional!");
+        return std::move(m_value).unchecked_get();
     }
 
     template <class U = std::remove_cv_t<T>>
