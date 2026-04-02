@@ -25,6 +25,7 @@ std = [
 iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-elementary-traits = { workspace = true }
 
+memoffset = "0.9"
 proc-macro2 = { workspace = true }
 quote = { workspace = true }
 syn = { workspace = true }

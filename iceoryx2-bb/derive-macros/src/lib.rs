@@ -214,12 +214,31 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                     }
                 });
 
+                // TODO: instead of memoffset use something like &(*ptr).field???
+                // use callable instead of returning vector
+                let mut member_pushes = Vec::new();
+                for field in fields_named.named.iter() {
+                    let field_name = field.ident.clone();
+                    let field_type = &field.ty;
+                    let offset = quote! {memoffset::offset_of!(#struct_name, #field_name)};
+                    let size = quote! {core::mem::size_of::<#field_type>()};
+                    member_pushes.push(quote! {
+                        members.push((#offset, #size));
+                    });
+                }
+
                 quote! {
                     fn __is_zero_copy_send(&self) {
                         #(#field_inits)*
                     }
 
                     #type_name_impl
+
+                    fn __get_members(&self) -> Vec<(usize, usize)> {
+                        let mut members: Vec<(usize, usize)> = Vec::new();
+                        #(#member_pushes)*
+                        members
+                    }
                 }
             }
             Fields::Unnamed(ref fields_unnamed) => {
