@@ -1674,6 +1674,7 @@ TYPED_TEST(ServicePublishSubscribeTest, only_max_subscribers_can_be_created) {
 
 TYPED_TEST(ServicePublishSubscribeTest, publisher_applies_max_loaned_samples) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t MAX_LOANED_SAMPLES_TEST_VALUE = 100;
 
     const auto service_name = iox2_testing::generate_service_name();
 
@@ -1685,8 +1686,8 @@ TYPED_TEST(ServicePublishSubscribeTest, publisher_applies_max_loaned_samples) {
     ASSERT_THAT(publisher_1.max_loaned_samples(), Eq(1));
 
     // Test with max_loaned_samples = 100
-    auto publisher_100 = service.publisher_builder().max_loaned_samples(100).create().value();
-    ASSERT_THAT(publisher_100.max_loaned_samples(), Eq(100));
+    auto publisher_100 = service.publisher_builder().max_loaned_samples(MAX_LOANED_SAMPLES_TEST_VALUE).create().value();
+    ASSERT_THAT(publisher_100.max_loaned_samples(), Eq(MAX_LOANED_SAMPLES_TEST_VALUE));
 }
 
 TYPED_TEST(ServicePublishSubscribeTest, publisher_applies_allocation_strategy) {

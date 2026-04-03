@@ -689,7 +689,7 @@ pub mod publisher {
     ) -> core::result::Result<(), Box<dyn core::error::Error>> {
         use iceoryx2_cal::shm_allocator::AllocationStrategy;
 
-        let service_name = generate_name()?;
+        let service_name = generate_service_name();
         let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
@@ -727,7 +727,7 @@ pub mod publisher {
 
         // Test non-slice type always has Static allocation strategy (default)
         let service_typed = node
-            .service_builder(&generate_name()?)
+            .service_builder(&generate_service_name())
             .publish_subscribe::<u64>()
             .create()?;
         let publisher_typed = service_typed.publisher_builder().create()?;
@@ -739,7 +739,7 @@ pub mod publisher {
     #[conformance_test]
     pub fn max_loaned_samples_is_set_correctly<Sut: Service>(
     ) -> core::result::Result<(), Box<dyn core::error::Error>> {
-        let service_name = generate_name()?;
+        let service_name = generate_service_name();
         let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let service = node
