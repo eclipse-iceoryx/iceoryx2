@@ -683,4 +683,86 @@ pub mod publisher {
 
         Ok(())
     }
+
+    #[conformance_test]
+    pub fn allocation_strategy_is_set_correctly<Sut: Service>(
+    ) -> core::result::Result<(), Box<dyn core::error::Error>> {
+        use iceoryx2_cal::shm_allocator::AllocationStrategy;
+
+        let service_name = generate_name()?;
+        let config = testing::generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        // Test with slice type since allocation_strategy setter is only available for slices
+        let service_slice = node
+            .service_builder(&service_name)
+            .publish_subscribe::<[u64]>()
+            .max_publishers(5) // Allow multiple publishers for this test
+            .create()?;
+
+        // Test default allocation strategy (Static)
+        let publisher_default = service_slice.publisher_builder().create()?;
+        assert_that!(publisher_default.allocation_strategy(), eq AllocationStrategy::Static);
+
+        // Test BestFit allocation strategy
+        let publisher_best_fit = service_slice
+            .publisher_builder()
+            .allocation_strategy(AllocationStrategy::BestFit)
+            .create()?;
+        assert_that!(publisher_best_fit.allocation_strategy(), eq AllocationStrategy::BestFit);
+
+        // Test PowerOfTwo allocation strategy
+        let publisher_power_of_two = service_slice
+            .publisher_builder()
+            .allocation_strategy(AllocationStrategy::PowerOfTwo)
+            .create()?;
+        assert_that!(publisher_power_of_two.allocation_strategy(), eq AllocationStrategy::PowerOfTwo);
+
+        // Test Static allocation strategy explicitly set
+        let publisher_static = service_slice
+            .publisher_builder()
+            .allocation_strategy(AllocationStrategy::Static)
+            .create()?;
+        assert_that!(publisher_static.allocation_strategy(), eq AllocationStrategy::Static);
+
+        // Test non-slice type always has Static allocation strategy (default)
+        let service_typed = node
+            .service_builder(&generate_name()?)
+            .publish_subscribe::<u64>()
+            .create()?;
+        let publisher_typed = service_typed.publisher_builder().create()?;
+        assert_that!(publisher_typed.allocation_strategy(), eq AllocationStrategy::Static);
+
+        Ok(())
+    }
+
+    #[conformance_test]
+    pub fn max_loaned_samples_is_set_correctly<Sut: Service>(
+    ) -> core::result::Result<(), Box<dyn core::error::Error>> {
+        let service_name = generate_name()?;
+        let config = testing::generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let service = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .max_publishers(3) // Allow multiple publishers for this test
+            .create()?;
+
+        // Test with max_loaned_samples = 1
+        let publisher_1 = service.publisher_builder().max_loaned_samples(1).create()?;
+        assert_that!(publisher_1.max_loaned_samples(), eq 1);
+
+        // Test with max_loaned_samples = 5
+        let publisher_5 = service.publisher_builder().max_loaned_samples(5).create()?;
+        assert_that!(publisher_5.max_loaned_samples(), eq 5);
+
+        // Test with max_loaned_samples = 100
+        let publisher_100 = service
+            .publisher_builder()
+            .max_loaned_samples(100)
+            .create()?;
+        assert_that!(publisher_100.max_loaned_samples(), eq 100);
+
+        Ok(())
+    }
 }
